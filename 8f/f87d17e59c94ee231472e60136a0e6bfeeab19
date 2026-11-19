@@ -1,0 +1,1979 @@
+server/polar/webhook/endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 58
+server/migrations/versions/2026-11-10-1519_add_scheduled_crons.py
+  s_1948f7c000ac71::t_61067a8463450d 1-38
+server/polar/benefit/strategies/base/schemas.py
+  s_1948f7c000ac71::t_61067a8463450d 114-127
+clients/adapters/adapter-utils/CHANGELOG.md
+  s_1948f7c000ac71::t_61067a8463450d 3-9
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/analytics/costs/[spanId]/CostsEventsTable.tsx
+  s_1948f7c000ac71::t_61067a8463450d 11,15,36,40
+DEVELOPMENT.md
+  s_1948f7c000ac71::t_61067a8463450d 144
+docs/integrate/cli/reference/orders.mdx
+  s_1948f7c000ac71::t_61067a8463450d 146
+clients/apps/app/components/Home/Tile.tsx
+  s_1948f7c000ac71::t_61067a8463450d 4,17-18,20-22,32,48
+sdk/e2e/pyproject.toml
+  s_1948f7c000ac71::t_61067a8463450d 10
+clients/packages/cli/src/services/billing-config/languages/typescript/locate.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-302
+server/polar/kit/signer.py
+  s_1948f7c000ac71::t_61067a8463450d 10
+server/tests/event/test_schemas.py
+  s_1948f7c000ac71::t_61067a8463450d 2,192-193
+clients/apps/web/src/components/Meter/MeterVersionSelect.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-31
+clients/apps/web/src/components/Benefit/LicenseKeys/LicenseKeyBenefitGrant.tsx
+  s_1948f7c000ac71::t_61067a8463450d 3,47,54,93,99
+server/polar/integrations/tinybird/client.py
+  s_1948f7c000ac71::t_61067a8463450d 8,43,52,78,120,123,125,131,134,136,162,168-169,174
+clients/apps/web/src/components/Landing/Pricing.tsx
+  s_1948f7c000ac71::t_61067a8463450d 107
+clients/apps/web/src/components/Subscriptions/SubscriptionDetailsGrid.tsx
+  s_1948f7c000ac71::t_61067a8463450d 4,104,106
+.github/workflows/deploy_server.sh
+  s_1948f7c000ac71::t_61067a8463450d 32,148
+server/scripts/generate_openapi.py
+  s_1948f7c000ac71::t_61067a8463450d 5,20-37,50-53,61-66,75
+clients/apps/web/src/components/Subscriptions/UpdateSubscriptionSection.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-37
+server/tests/license_key/test_tasks.py
+  s_1948f7c000ac71::t_61067a8463450d 215-216
+clients/apps/web/src/app/(main)/[organization]/portal/overview/page.tsx
+  s_1948f7c000ac71::t_61067a8463450d 26,28-29,50-51
+clients/packages/cli/src/commands/config/prune.ts
+  s_1948f7c000ac71::t_61067a8463450d 1,19,174-184,186-187,189-201,204-206
+server/polar/billing_interval/types.py
+  s_1948f7c000ac71::t_61067a8463450d 3,18-27
+server/polar/dispute/service.py
+  s_1948f7c000ac71::t_61067a8463450d 75-80,407-408
+clients/apps/web/src/components/Landing/usage/film/metering-film.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-92
+clients/apps/web/src/components/Landing/Chapter.tsx
+  s_1948f7c000ac71::t_61067a8463450d 20,29,63-64,83,94
+clients/apps/web/src/components/Landing/chapters/Meter.tsx
+  s_1948f7c000ac71::t_61067a8463450d 13,19,25,33-34,39
+clients/apps/orbit/package.json
+  s_1948f7c000ac71::t_61067a8463450d 13,22
+server/tests/e2e/lifecycle/test_full_lifecycle.py
+  s_1948f7c000ac71::t_61067a8463450d 12
+AGENTS.md
+  s_1948f7c000ac71::t_61067a8463450d 159,165,179-180,182-184,221,223-224,228-230,233-235
+clients/apps/web/src/hooks/queries/customerPortal.ts
+  s_1948f7c000ac71::t_61067a8463450d 195,197
+server/tests/oauth2/endpoints/list/test_list_oauth2_clients.py
+  s_1948f7c000ac71::t_61067a8463450d 2
+clients/packages/cli/src/utils/closest.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-28
+CODEOWNERS
+  s_1948f7c000ac71::t_61067a8463450d 52
+server/polar/merchant_migration/adapters/lemon_squeezy.py
+  s_1948f7c000ac71::t_61067a8463450d 1-621
+server/tests/backoffice/users/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 3,20,24-25,39
+server/tests/authz/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 4
+clients/apps/web/src/components/Products/PublishDraftButton.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-49
+server/scripts/pytest_shards.py
+  s_1948f7c000ac71::t_61067a8463450d 1-75
+sdk/generator/python/template/tests/outpost/test_client.py
+  s_1948f7c000ac71::t_61067a8463450d 2,17,19,228,296,422,426,429,445,482,494,582,625,645,693,703,723,770,785,813,906,946,988,1000,1009,1029,1059,1089-1120,1124,1149,1176,1202,1214,1247,1288,1312,1320,1366,1373,1400,1424,1449,1475,1501,1539,1558,1583,1623,1647,1688,1704,1739,1764,1786,1817,1846,1974,1979,1992,2007,2018-2029,2032,2052,2074,2091,2114,2132,2154,2169,2219,2256,2288,2315,2347,2376,2399,2420,2473,2539,2559,2585,2641,2702,2745,2778,2794,2809,2847,2928,2949,2975,3012,3030,3062,3075,3090,3111,3131,3169,3207,3226,3277,3312,3337,3361,3398,3439,3461,3476,3502,3546-3835
+sdk/e2e/python_client.py
+  s_1948f7c000ac71::t_61067a8463450d 8,30
+clients/packages/cli/src/utils/ui.ts
+  s_1948f7c000ac71::t_61067a8463450d 225-228,233-235,239,241,243,245
+server/polar/event/schemas.py
+  s_1948f7c000ac71::t_61067a8463450d 76,81,369-401,738-740
+server/polar/event_ingestion_api_app.py
+  s_1948f7c000ac71::t_61067a8463450d 1-15
+server/tests/customer_portal/service/test_customer.py
+  s_1948f7c000ac71::t_61067a8463450d 229
+clients/apps/web/src/components/CustomerPortal/TrialSubscriptionActions.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-105
+clients/packages/polar/src/schema/product.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 33-41
+clients/apps/web/src/components/Benefit/Downloadables/DownloadablesSection.tsx
+  s_1948f7c000ac71::t_61067a8463450d 33
+server/tests/e2e/purchase/subscription/test_trial_without_payment_method.py
+  s_1948f7c000ac71::t_61067a8463450d 1-86
+clients/packages/cli/src/commands/config/apply.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 153,160,229
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/products/versions/PublishedAt.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-34
+server/tests/oauth2/grants/test_jwt_bearer.py
+  s_1948f7c000ac71::t_61067a8463450d 8
+server/tests/e2e/purchase/subscription/test_fixed_price.py
+  s_1948f7c000ac71::t_61067a8463450d 8
+clients/apps/web/src/components/CustomerPortal/CustomerPortalGrantsSimple.tsx
+  s_1948f7c000ac71::t_61067a8463450d 4,6,18-22,28-32
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/products/versions/[id]/diff.ts
+  s_1948f7c000ac71::t_61067a8463450d 30,35-37
+clients/packages/i18n/src/locales/config/.cache.json
+  s_1948f7c000ac71::t_61067a8463450d 411-414,618-621,1231-1234,1629-1632,1828-1831,2027-2030,2823-2826
+adr/0007-no-default-in-output-schemas.md
+  s_1948f7c000ac71::t_61067a8463450d 1-41
+server/polar/models/event.py
+  s_1948f7c000ac71::t_61067a8463450d 67,190,201,233-234,237
+server/emails/src/types/openapi.ts
+  s_1948f7c000ac71::t_61067a8463450d 1930-1935,2581-2582,3363,3417-3426
+server/polar/webhook/schemas.py
+  s_1948f7c000ac71::t_61067a8463450d 28-33,37,96-103,201,233,315-317
+clients/apps/web/vitest.config.ts
+  s_1948f7c000ac71::t_61067a8463450d 23-30,35-48,74-79
+clients/packages/cli/src/utils/billing-config/sentences.ts
+  s_1948f7c000ac71::t_61067a8463450d 1,142-163,171,255-328,332,335-342
+clients/apps/web/src/app/(main)/[organization]/portal/authenticate/AuthenticatePage.tsx
+  s_1948f7c000ac71::t_61067a8463450d 14-15,27-28,74-79,82,107,120,122,135-136,140,143-144
+clients/apps/web/src/app/(main)/[organization]/portal/orders/[id]/page.tsx
+  s_1948f7c000ac71::t_61067a8463450d 19,21-22,43-44
+clients/apps/app/hooks/polar/organizationEmail.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-73
+clients/apps/web/src/components/Landing/usage/film/orbit.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-49
+server/tests/backoffice/orders/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 4,26,34-35,68,100,132,171,183,211
+clients/packages/polar/src/schema/deprecation.ts
+  s_1948f7c000ac71::t_61067a8463450d 18
+sdk/generator/typescript/template/src/outpost/client.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 8,17,110,297-298,331,632-646,1232-1237,2009,2053,2101-2286
+clients/apps/web/src/components/Benefit/BenefitPage.tsx
+  s_1948f7c000ac71::t_61067a8463450d 2,17,38-41,164-175,177
+server/tests/customer_portal/endpoints/test_subscription.py
+  s_1948f7c000ac71::t_61067a8463450d 5
+clients/apps/web/src/components/Subscriptions/utils.tsx
+  s_1948f7c000ac71::t_61067a8463450d 12-18,28,43
+sdk/generator/python/template/polar/base.py
+  s_1948f7c000ac71::t_61067a8463450d 3,9,11-17,21-99,184,199-203,221,223,239,242,255,257,273,276,304-317,324-326,387,419,435,443
+clients/apps/web/src/app/(main)/[organization]/portal/Navigation.tsx
+  s_1948f7c000ac71::t_61067a8463450d 8-9,11,77-87,91-92,95-106,109-131
+clients/packages/cli/src/commands/config/init/install.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-47
+sdk/generator/python/template/tests/metering/test_buffered.py
+  s_1948f7c000ac71::t_61067a8463450d 71-72,81-82,95-96,111,142,149,151,259,272,274-275,294,450,463,465-466,480-483,489-552
+clients/apps/web/src/components/Subscriptions/UpdateSubscriptionTrialForm.tsx
+  s_1948f7c000ac71::t_61067a8463450d 7,18,39-44,52,129-160,162-166,168-169,176,178-180
+server/polar/catalog/repository.py
+  s_1948f7c000ac71::t_61067a8463450d 3,17-27,31-37,69,87-98,178-196,260-278,293-430
+clients/packages/checkout/src/components/ui/CountryStatePicker.tsx
+  s_1948f7c000ac71::t_61067a8463450d 3,15-18
+server/tests/customer_session/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 4
+clients/packages/ingestion/src/strategies/LLM/index.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-137
+clients/apps/web/src/app/(main)/[organization]/portal/orders/[id]/OrdersPage.tsx
+  s_1948f7c000ac71::t_61067a8463450d 4,7,20,24-36
+clients/apps/orbit/next.config.mjs
+  s_1948f7c000ac71::t_61067a8463450d 1-3,12-15
+clients/apps/web/src/components/Benefit/LicenseKeys/LicenseKeyModal.tsx
+  s_1948f7c000ac71::t_61067a8463450d 48,54,66,90
+clients/apps/web/src/components/Settings/ProrationBehavior.tsx
+  s_1948f7c000ac71::t_61067a8463450d 10,12-14,19,24-25,36-64
+clients/packages/i18n/src/locales/zh-TW.ts
+  s_1948f7c000ac71::t_61067a8463450d 124-126
+server/scripts/repair_paused_billing_intervals.py
+  s_1948f7c000ac71::t_61067a8463450d 1-73
+clients/apps/web/src/utils/trial-change.ts
+  s_1948f7c000ac71::t_61067a8463450d 26-30,33-34,36,38,40,42,46-55
+sdk/e2e/justfile
+  s_1948f7c000ac71::t_61067a8463450d 15-17
+server/polar/models/product.py
+  s_1948f7c000ac71::t_61067a8463450d 158-159
+server/polar/refund/endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 14,64-66
+sdk/generator/typescript/template/src/version/client.ts
+  s_1948f7c000ac71::t_61067a8463450d 53-54
+lambda/image-resizer/pyproject.toml
+  s_1948f7c000ac71::t_61067a8463450d 8
+sdk/generator/pyproject.toml
+  s_1948f7c000ac71::t_61067a8463450d 17-18
+server/polar/meter/schemas.py
+  s_1948f7c000ac71::t_61067a8463450d 20,25-27,40-42,53,91-93,98,139-153,182-190
+server/tests/kit/test_external_id.py
+  s_1948f7c000ac71::t_61067a8463450d 1-30
+server/polar/oauth2/schemas.py
+  s_1948f7c000ac71::t_61067a8463450d 30
+clients/apps/web/src/app/(main)/[organization]/portal/settings/page.tsx
+  s_1948f7c000ac71::t_61067a8463450d 19,21-22,43-44
+clients/packages/cli/src/services/billing-config/generate/index.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-10
+server/polar/billing_entry/service.py
+  s_1948f7c000ac71::t_61067a8463450d 13,16,19-20,27,35,68-84,218-496,505-506,509-521,539,547-555
+clients/apps/web/src/components/CustomerPortal/LatestPurchaseOverview.tsx
+  s_1948f7c000ac71::t_61067a8463450d 3-4,6-12,22-46
+server/polar/worker/_sqs.py
+  s_1948f7c000ac71::t_61067a8463450d 9,300,326,328
+clients/apps/web/src/components/Landing/story/Frame.tsx
+  s_1948f7c000ac71::t_61067a8463450d 22,26-31,33,67
+docs/integrate/oauth2/introduction.mdx
+  s_1948f7c000ac71::t_61067a8463450d 3
+server/polar/payout_account/endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 29,97-101
+server/tests/notifications/testdata/test_MaintainerNewTrialNotification.html
+  s_1948f7c000ac71::t_61067a8463450d 15
+clients/apps/web/src/components/CustomerPortal/CustomerChangePlanModal.test.tsx
+  s_1948f7c000ac71::t_61067a8463450d 73-84,86,88,159-184
+server/tests/auth/test_turnstile.py
+  s_1948f7c000ac71::t_61067a8463450d 1,5,13-16,20,26-29
+clients/apps/web/src/components/CustomerPortal/CustomerCancellationModal.tsx
+  s_1948f7c000ac71::t_61067a8463450d 13,27,29-30,32,35-48,54,59,82,95,124-125,138,147-200,202-205,207-239,243-247
+server/polar/custom_field/repository.py
+  s_1948f7c000ac71::t_61067a8463450d 1,4-5,11-12,25-26,29-94
+server/tests/member/test_repository.py
+  s_1948f7c000ac71::t_61067a8463450d 2,249-320
+clients/apps/web/src/components/Products/CreateProductPage.tsx
+  s_1948f7c000ac71::t_61067a8463450d 38,272
+server/polar/event/repository.py
+  s_1948f7c000ac71::t_61067a8463450d 30,33,37,47-51,61-101,186-202,206-219,221-238,246-252,254,256,275,279,338-354,358-371,375-377,397-411,602-630,800-802,807-808,811,815,826-828,832,834,838,855-865,874-876,880,882,886
+clients/apps/web/src/components/CustomerPortal/UncancelSubscriptionButton.tsx
+  s_1948f7c000ac71::t_61067a8463450d 49
+server/polar/api.py
+  s_1948f7c000ac71::t_61067a8463450d 25,45,79-91,94-109,112-113,116-125,128-133,140-143,150-153,156,159-166,169-180,183-186,189-194,197-206
+server/scripts/pytest_profile.py
+  s_1948f7c000ac71::t_61067a8463450d 1-127
+clients/packages/cli/src/services/billing-config/publish.ts
+  s_1948f7c000ac71::t_61067a8463450d 1,12,23-24,76-86,104-111
+clients/packages/ingestion/src/opentelemetry/index.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-417
+clients/packages/cli/src/commands/config/apply.ts
+  s_1948f7c000ac71::t_61067a8463450d 1,31,64,107
+clients/packages/cli/src/services/billing-config/languages/json/remove.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-41
+server/tests/backoffice/email_logs/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 3,5,12,21,26-27,40,61,71,83,93-151
+server/emails/src/components/SaleSummary.tsx
+  s_1948f7c000ac71::t_61067a8463450d 72
+clients/apps/web/src/components/CustomerPortal/CustomerPortalGrantsComplex.tsx
+  s_1948f7c000ac71::t_61067a8463450d 5-7,11-16,60,64-75,78,83-96,98-106,108-120,122-123
+server/migrations/versions/2026-11-16-1300_add_catalog_custom_fields.py
+  s_1948f7c000ac71::t_61067a8463450d 1-145
+server/polar/worker/scheduler.py
+  s_1948f7c000ac71::t_61067a8463450d 22,79-81
+clients/apps/web/src/components/Landing/story/UnderstandFigure.tsx
+  s_1948f7c000ac71::t_61067a8463450d 35,43
+clients/apps/web/src/components/Customer/CustomerPage/CustomerUsageView.tsx
+  s_1948f7c000ac71::t_61067a8463450d 3,202-205
+server/polar/checkout_link/service.py
+  s_1948f7c000ac71::t_61067a8463450d 201-202,230-235,288
+server/polar/models/meter.py
+  s_1948f7c000ac71::t_61067a8463450d 70
+server/polar/auth/factors.py
+  s_1948f7c000ac71::t_61067a8463450d 163
+server/polar/backoffice/dependencies.py
+  s_1948f7c000ac71::t_61067a8463450d 1-2,21-23
+server/tests/billing_interval/test_service.py
+  s_1948f7c000ac71::t_61067a8463450d 80
+.github/workflows/deploy-lock.yml
+  s_1948f7c000ac71::t_61067a8463450d 17-21,24
+.github/workflows/test_sdk.yaml
+  s_1948f7c000ac71::t_61067a8463450d 27-33,62-67,70,75,79,84,89,109-115,135,151
+clients/packages/checkout/src/components/CheckoutUnitSelector.test.tsx
+  s_1948f7c000ac71::t_61067a8463450d 137-177
+server/tests/order/test_service.py
+  s_1948f7c000ac71::t_61067a8463450d 486-520,523,547-598
+server/polar/catalog/endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 1,20-27,54,56-59,65-82,99,104-129,142-146,154,158-160,162,165-166
+server/polar/declarative_config/catalogs.py
+  s_1948f7c000ac71::t_61067a8463450d 4,9-12,16,21,25-26,46-47,59-196,283-373
+server/tests/account/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 4
+server/polar/kit/http.py
+  s_1948f7c000ac71::t_61067a8463450d 10-11,84,93,101-102,107-109,111,121,130,139-141,143-144,146-147,169,182,184,186
+server/polar/billing_interval/service.py
+  s_1948f7c000ac71::t_61067a8463450d 1,4-5,12,15,19-20,22-23,25,29,35-36,42,51-60,69-71,83-86,130-139,156-158,164,177-456
+clients/packages/cli/turbo.json
+  s_1948f7c000ac71::t_61067a8463450d 1-15
+clients/adapters/nuxt/package.json
+  s_1948f7c000ac71::t_61067a8463450d 3,51,59
+sdk/generator/python/template/polar/version/services/service.py
+  s_1948f7c000ac71::t_61067a8463450d 6-8,167,305,458,593
+server/polar/auth/oauth2/router.py
+  s_1948f7c000ac71::t_61067a8463450d 57,88-94,120-122,124-125,148-149,177-179,193-195,216
+server/migrations/versions/2026-11-13-1050_add_mcp_subscription_fields_to_webhook_.py
+  s_1948f7c000ac71::t_61067a8463450d 1-70
+clients/apps/web/src/components/Benefit/BenefitProducts.tsx
+  s_1948f7c000ac71::t_61067a8463450d 4,78,80
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/sales/checkouts/CheckoutsPage.tsx
+  s_1948f7c000ac71::t_61067a8463450d 7,184,186
+server/polar/event/system.py
+  s_1948f7c000ac71::t_61067a8463450d 33-35,74-76,741-747
+clients/apps/web/src/app/api/homepage/route.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-67
+server/polar/models/__init__.py
+  s_1948f7c000ac71::t_61067a8463450d 18,122,169,272
+server/tests/custom_field/test_service.py
+  s_1948f7c000ac71::t_61067a8463450d 5,7,9-21,41-63,81-156,213-277
+server/polar/meter/endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 72-73
+server/tests/models/test_event.py
+  s_1948f7c000ac71::t_61067a8463450d 188-205
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/products/meters/(list)/[meterId]/MetersPage.tsx
+  s_1948f7c000ac71::t_61067a8463450d 5-6,8,17,114-120,134,178-186
+clients/packages/cli/src/commands/config/generate.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-147
+docs/features/usage-based-billing/billing.mdx
+  s_1948f7c000ac71::t_61067a8463450d 2-3,6-7,12,52
+server/tests/benefit/strategies/test_meter_credit.py
+  s_1948f7c000ac71::t_61067a8463450d 283-285,434-435
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/analytics/costs/[spanId]/CostsSpanPage.tsx
+  s_1948f7c000ac71::t_61067a8463450d 15-19,51,55
+clients/packages/cli/src/services/billing-config/suggest.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-50
+sdk/generator/typescript/template/src/outpost/client.ts
+  s_1948f7c000ac71::t_61067a8463450d 20,40-42,140-151,280-292,420,475-483,532,544,689-690,715-720,729-732,734-739,755-768,807-808,810,823-825,827-835,840-843,845,847-852,854-857,953-955,988-990,1015-1018,1020,1031-1034,1038-1039,1070-1071,1100-1101,1140,1196-1197,1233,1238,1341-1342,1353-1358,1363,1383-1384,1501-1518
+server/emails/pnpm-workspace.yaml
+  s_1948f7c000ac71::t_61067a8463450d 9
+clients/apps/mcp/src/outbound.ts
+  s_1948f7c000ac71::t_61067a8463450d 2-3,6-7,40,46-56
+clients/apps/web/src/hooks/queries/catalogs.ts
+  s_1948f7c000ac71::t_61067a8463450d 1,4,62-78,82-87,92,96-110,117-123,126-127,131-168
+server/tests/backoffice/organizations_v2/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 6,39,43-44,108,142,161,184,216,244,270,293,306,328,350,375,392,470,503,539,558,574,590,610,633,663,693,716,730,745,760,783,798,819,840,862,888,904,917,950,971
+server/tests/customer/test_service.py
+  s_1948f7c000ac71::t_61067a8463450d 181,187,197,199-200,204
+server/migrations/versions/2026-11-16-1200_add_settings_to_catalogs.py
+  s_1948f7c000ac71::t_61067a8463450d 1-40
+clients/adapters/nextjs/CHANGELOG.md
+  s_1948f7c000ac71::t_61067a8463450d 3-12
+clients/packages/checkout/vitest.setup.ts
+  s_1948f7c000ac71::t_61067a8463450d 3-37,42-50
+sdk/generator/typescript/template/src/outpost/vercel.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-191
+server/tests/e2e/infra/stripe_simulator.py
+  s_1948f7c000ac71::t_61067a8463450d 71
+server/tests/billing_entry/test_comparison.py
+  s_1948f7c000ac71::t_61067a8463450d 6,59,64-65,87,90,97-98,143,154,165,176-177,206-261
+server/tests/license_key/test_service.py
+  s_1948f7c000ac71::t_61067a8463450d 25,332-356
+clients/apps/app/app/(authenticated)/_layout.tsx
+  s_1948f7c000ac71::t_61067a8463450d 17,41,61-65
+server/tests/e2e/purchase/one_time/test_free_product.py
+  s_1948f7c000ac71::t_61067a8463450d 9
+server/polar/posthog.py
+  s_1948f7c000ac71::t_61067a8463450d 7
+server/polar/benefit/strategies/meter_credit/service.py
+  s_1948f7c000ac71::t_61067a8463450d 212
+clients/adapters/tanstack-start/package.json
+  s_1948f7c000ac71::t_61067a8463450d 3,42
+clients/apps/web/src/components/CustomerPortal/SubscriptionRetryPaymentButton.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-54
+clients/adapters/tanstack-start/CHANGELOG.md
+  s_1948f7c000ac71::t_61067a8463450d 3-12
+sdk/generator/typescript/template/src/metering/buffered.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 80,96,104,124,148,153,156,169,205-213,436,448-457,494-548,574
+clients/apps/mcp/test/server.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 215-217
+server/tests/integrations/tinybird/test_service.py
+  s_1948f7c000ac71::t_61067a8463450d 6,8,266-272,347-367,909-911,923,927-928,930-933,938-940,950-951,953-957,959-961,973,977-978,980-983,988-990,1002,1005,1007-1011,1018-1020,1033-1035,1037-1038,1040-1044,1046-1048,1058-1060,1062-1063
+clients/packages/ingestion/src/strategies/DeltaTime/index.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-49
+clients/apps/app/hooks/pushNotificationOptOut.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-11
+clients/packages/i18n/src/locales/pl.ts
+  s_1948f7c000ac71::t_61067a8463450d 117-119
+clients/apps/web/src/components/Auth/AgentSignupHint.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-17
+server/tests/backoffice/subscriptions/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 4,27,32-33,47,72,82,107,127,159,198
+clients/apps/web/src/app/api/not-found/route.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-22
+server/tests/email_update/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 4
+server/polar/declarative_config/validation.py
+  s_1948f7c000ac71::t_61067a8463450d 4,18,20,30,43,56,151-156,159,163,176,186,197-200,202,211-216,225,231,271-272,336-359,505-560,665-668,675,677-695,699-711,876-880,980,994-998,1008-1011,1018-1028,1041,1071-1072,1076-1081,1097-1100,1107-1111,1116,1190-1262,1323-1329,1331,1349,1358-1362,1370,1378-1383,1387,1401-1408
+sdk/generator/generator/openapi.py
+  s_1948f7c000ac71::t_61067a8463450d 35-36
+clients/packages/cli/src/services/billing-config/generate/names.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-69
+clients/apps/web/src/hooks/queries/webhooks.ts
+  s_1948f7c000ac71::t_61067a8463450d 27,39
+clients/packages/cli/src/services/billing-config/plan.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 131-201
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/products/versions/[id]/format.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-6,10,16-24,57,67,73-127,131,141-146,149-161,164-165,167,171-172,190-197,213-222
+docs/docs.json
+  s_1948f7c000ac71::t_61067a8463450d 40,44-45,48,51-55,69-79,81,83-84,86-103,105,107-111,114-120,129-135,137-138,140-142,148-197,200,204,206-227,230-243,292,294-296,303,387-405,455-456,472-473,480-488,532-534,538-542,564-578,586-587,604-612,617-619,732-736,746-749,839-857,907-908,924-925,932-940,984-986,990-994,1016-1030,1038-1039,1056-1064,1069-1071,1184-1188,1198-1201,1290-1308,1347-1348,1358-1360,1362-1363,1384-1385,1392-1400,1444-1446,1450-1454,1476-1490,1498-1499,1516-1524,1529-1531,1644-1648,1658-1662
+clients/packages/cli/src/utils/prompt.ts
+  s_1948f7c000ac71::t_61067a8463450d 1,29-54
+clients/apps/web/src/app/(main)/(website)/(landing)/layout.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1,23-36,53
+docs/features/usage-based-billing/ingestion-strategies/ingestion-strategy.mdx
+  s_1948f7c000ac71::t_61067a8463450d 3
+server/polar/event/service.py
+  s_1948f7c000ac71::t_61067a8463450d 64,117-119,1060,1068-1069,1071-1074,1078,1080-1103,1109-1111,1122-1127,1156-1171,1173,1226-1237,1256-1259,1438,1440,1442-1454,1456-1462,1465,1469-1470,1472,1476,1482,1556,1558,1560,1575-1578,1580-1583,1604,1606,1608,1621-1624,1626-1629
+.github/workflows/i18n_translate.yml
+  s_1948f7c000ac71::t_61067a8463450d 13-15,28-32,34,39,44
+clients/packages/cli/src/utils/billing-config/markdown.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 251-290
+clients/apps/web/src/components/Landing/usage/kit.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-491
+clients/packages/ingestion/README.md
+  s_1948f7c000ac71::t_61067a8463450d 1-350
+server/tests/customer_portal/endpoints/test_benefit_grant.py
+  s_1948f7c000ac71::t_61067a8463450d 2
+clients/apps/web/src/components/Customer/CustomerPage/CustomerOrdersTable.tsx
+  s_1948f7c000ac71::t_61067a8463450d 4,52,54
+server/polar/organization/repository.py
+  s_1948f7c000ac71::t_61067a8463450d 317,324,328,343
+server/polar/mcp_event/endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 1-82
+server/tests/e2e/purchase/one_time/test_fixed_price.py
+  s_1948f7c000ac71::t_61067a8463450d 8
+sdk/generator/typescript/template/src/metering/client.ts
+  s_1948f7c000ac71::t_61067a8463450d 1,101,103,109,381-382,386,401-403,427
+server/tests/kit/test_address.py
+  s_1948f7c000ac71::t_61067a8463450d 12-13,27-28,72-76,97-105
+clients/apps/web/src/components/Orders/DownloadInvoice.tsx
+  s_1948f7c000ac71::t_61067a8463450d 17-20,55,102,121-122,139,169-176,280,289,293,299,310,313-323,327,351-352,466-468,481,504-509,551,562,579
+server/tests/catalog/test_service.py
+  s_1948f7c000ac71::t_61067a8463450d 5-6,9-10,12-13,16,19-21,23-31,33-35,39,161-195,214-349,379-398
+server/tests/meter/test_filter.py
+  s_1948f7c000ac71::t_61067a8463450d 8-13,95-117
+clients/packages/i18n/src/locales/nl.ts
+  s_1948f7c000ac71::t_61067a8463450d 112-114
+adr/0002-status-coded-polar-errors.md
+  s_1948f7c000ac71::t_61067a8463450d 1-43
+clients/apps/web/src/components/Landing/features/FeaturePageLayout.tsx
+  s_1948f7c000ac71::t_61067a8463450d 164
+clients/packages/i18n/src/locales/pt-PT.ts
+  s_1948f7c000ac71::t_61067a8463450d 112-114
+clients/apps/web/src/components/Landing/chapters/PlatformVignettes.tsx
+  s_1948f7c000ac71::t_61067a8463450d 46,127,241
+clients/packages/polar/src/schema/money.ts
+  s_1948f7c000ac71::t_61067a8463450d 248,250,254,256,258,260,262,264,266,268,270
+clients/packages/polar/src/generate.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 236,273-311,351-362,647-663
+server/benchmarks/test_customer_meter.py
+  s_1948f7c000ac71::t_61067a8463450d 1-128
+server/emails/src/emails/notification_subscription_renewal.tsx
+  s_1948f7c000ac71::t_61067a8463450d 2,14-16
+server/tests/checkout/test_payment_methods.py
+  s_1948f7c000ac71::t_61067a8463450d 1-3,9,148-180
+server/polar/subscription/endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 40,42-43,51,57,121-124,285,294,297,315,323,336,358-389
+server/tests/agent/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 7
+clients/apps/web/src/app/(main)/[organization]/portal/request/RequestPage.tsx
+  s_1948f7c000ac71::t_61067a8463450d 8,26,137,144,147-150,157-158,160-175,177-182,184-185,188,208,212-215,218,258-259
+clients/packages/cli/lint/rules/commands-only.js
+  s_1948f7c000ac71::t_61067a8463450d 1-2,5-13,19,23,28
+server/polar/backoffice/feedbacks/endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 4,640
+clients/apps/web/src/app/(main)/[organization]/portal/orders/OrdersPage.tsx
+  s_1948f7c000ac71::t_61067a8463450d 4,19-22
+server/tests/metrics/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 4
+clients/apps/web/src/components/Landing/usage/Aggregations.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-237
+clients/packages/cli/src/utils/billing-config/tree.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 242-297,827-947
+clients/apps/web/src/components/Landing/integrate/Mcp.tsx
+  s_1948f7c000ac71::t_61067a8463450d 57
+clients/packages/cli/src/commands/config/init/report.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-256
+server/tests/email/test_tasks.py
+  s_1948f7c000ac71::t_61067a8463450d 9,20-24,282-382
+.github/workflows/sdk-release.yml
+  s_1948f7c000ac71::t_61067a8463450d 19-24,52-57,75-80,86,103-108,113,118,163-168,172,177,192-194,199-204,206,253-258,263,272
+clients/apps/web/src/components/Benefit/BenefitGrantAction.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-63
+clients/packages/cli/src/services/billing-config/languages/typescript/index.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-171
+clients/packages/cli/src/services/billing-config/languages/index.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-65
+.github/workflows/migrations-unlock.yml
+  s_1948f7c000ac71::t_61067a8463450d 12-16,19
+clients/apps/web/src/components/Subscriptions/SubscriptionStatusSelect.tsx
+  s_1948f7c000ac71::t_61067a8463450d 19
+docs/features/subscriptions/manage.mdx
+  s_1948f7c000ac71::t_61067a8463450d 15,50
+server/polar/subscription/update.py
+  s_1948f7c000ac71::t_61067a8463450d 6,181-259
+clients/apps/web/src/app/(main)/[organization]/portal/subscriptions/[id]/SubscriptionsPage.tsx
+  s_1948f7c000ac71::t_61067a8463450d 4,7,18-19,22-34
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/webhooks/endpoints/[id]/EndpointsPage.tsx
+  s_1948f7c000ac71::t_61067a8463450d 24,147-148,155-159,167-171,191-200
+clients/apps/web/src/components/Products/CatalogVersionLabel.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-37
+sdk/generator/outpost/prepare_snapshot.lua
+  s_1948f7c000ac71::t_61067a8463450d 1-18
+server/polar/organization/schemas.py
+  s_1948f7c000ac71::t_61067a8463450d 21,457
+server/polar/worker/_cron.py
+  s_1948f7c000ac71::t_61067a8463450d 1-115
+.github/workflows/emergency_merge_test_failure_alert.yml
+  s_1948f7c000ac71::t_61067a8463450d 28-32,34
+clients/apps/web/src/components/Benefit/BenefitGrantStatus.tsx
+  s_1948f7c000ac71::t_61067a8463450d 10-20,25-26,34-35
+clients/packages/i18n/src/locales/ja.ts
+  s_1948f7c000ac71::t_61067a8463450d 112-114
+server/docker-compose.yml
+  s_1948f7c000ac71::t_61067a8463450d 12,14-24,33-35,37-38,40,173-174
+server/emails/src/components/CustomerIdentity.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-19
+.github/workflows/test_client.yaml
+  s_1948f7c000ac71::t_61067a8463450d 27,29-35,48-58,67-70,73-74,78-82,84-86,100,107-111,115-116,120-124,126-128,133,135-136,140-144,148-149,153-157,159-161,165-173,175-177,179-183,185-189,191-194,196,198,202-203,213-217,221-222,226-230,232-234,239,252-256,258,260,264,270,290,297-301
+server/docker/pg15-dump.sh
+  s_1948f7c000ac71::t_61067a8463450d 1-14
+clients/packages/cli/src/services/billing-config/languages/typescript/remove.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-186
+server/polar/customer_portal/endpoints/subscription.py
+  s_1948f7c000ac71::t_61067a8463450d 31,224
+server/polar/meter/repository.py
+  s_1948f7c000ac71::t_61067a8463450d 4-5,15,19-20,66-96,131-157,175-177,184-186,208-248,250-252,257,260-261
+server/polar/kit/hash_secrets.py
+  s_1948f7c000ac71::t_61067a8463450d 33
+server/polar/models/scheduled_cron.py
+  s_1948f7c000ac71::t_61067a8463450d 1-16
+clients/packages/cli/src/utils/closest.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-17
+server/polar/customer_portal/service/customer_session.py
+  s_1948f7c000ac71::t_61067a8463450d 147
+clients/apps/web/src/components/Landing/chapters/useUsageStream.ts
+  s_1948f7c000ac71::t_61067a8463450d 4-7,12,16,22-24,28-30,33-37,40-42,51-53,110-114,132-133,143-147,167-168
+clients/packages/cli/src/utils/billing-config/keys.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 2-7,14-16,18,24-33
+.github/workflows/deploy.yml
+  s_1948f7c000ac71::t_61067a8463450d 64-69,143,147,161,172,186,199,225-230,233,238,246,261,286-291,294,303,311,314,321,324,331-335,337,356,369-373,375,381,400-404,406,412,431-435,437,443,466-471,529-564,601-606,608,612,661-665,667
+server/polar/mcp_event/catalog.py
+  s_1948f7c000ac71::t_61067a8463450d 1-64
+docs/pnpm-workspace.yaml
+  s_1948f7c000ac71::t_61067a8463450d 9-11
+server/polar/benefit/repository.py
+  s_1948f7c000ac71::t_61067a8463450d 34-56,134-147
+clients/packages/i18n/src/locales/sv.ts
+  s_1948f7c000ac71::t_61067a8463450d 112-114
+clients/packages/cli/src/commands/webhook/trigger.ts
+  s_1948f7c000ac71::t_61067a8463450d 1,15
+clients/apps/web/src/components/CheckoutLinks/CheckoutLinkForm.tsx
+  s_1948f7c000ac71::t_61067a8463450d 460-463
+clients/packages/polar/src/schema/benefit.ts
+  s_1948f7c000ac71::t_61067a8463450d 3,9,69,88,100,110,112,118,120,122
+server/migrations/versions/2026-11-12-1201_drop_ix_events_source.py
+  s_1948f7c000ac71::t_61067a8463450d 1-51
+server/polar/organization_access_token/service.py
+  s_1948f7c000ac71::t_61067a8463450d 1,9,20,28,50-52,120-140
+clients/apps/orbit/src/generated/icon-usage.json
+  s_1948f7c000ac71::t_61067a8463450d 20,50,117,282-285,591-592,674
+server/polar/integrations/resend/client.py
+  s_1948f7c000ac71::t_61067a8463450d 4,37,46
+clients/packages/cli/src/utils/billing-config/keys.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-2,34,37-40
+clients/packages/i18n/src/locales/de.ts
+  s_1948f7c000ac71::t_61067a8463450d 112-114
+server/migrations/versions/2026-11-12-1330_drop_ix_events_member_id.py
+  s_1948f7c000ac71::t_61067a8463450d 1-51
+server/polar/declarative_config/endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 33,90,215,226-229,247,289-291
+.github/workflows/build_infra_images.yml
+  s_1948f7c000ac71::t_61067a8463450d 23-28,60-65,68,73,81,88
+server/polar/payment_method/service.py
+  s_1948f7c000ac71::t_61067a8463450d 144-147,150-160
+clients/packages/checkout/vitest.config.ts
+  s_1948f7c000ac71::t_61067a8463450d 8-9,17
+server/polar/tax/calculation/numeral.py
+  s_1948f7c000ac71::t_61067a8463450d 5,177,179-183,258,309,352,398,511
+server/tests/backoffice/merchant_migrations/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 5,46,52-53,104-105,131,144,164,185,200,221,238,317,341,364,382,402,418,449,465,475,498,529,554,575,602,643,666,699,728,759,788
+.github/workflows/enable_maintenance_mode.yml
+  s_1948f7c000ac71::t_61067a8463450d 15-19,21
+adr/0009-use-bare-boolean-expressions-in-sqlalchemy-predicates.md
+  s_1948f7c000ac71::t_61067a8463450d 1-49
+clients/apps/web/src/components/Landing/integrate/IntegratePage.tsx
+  s_1948f7c000ac71::t_61067a8463450d 7,9,14-22
+clients/packages/cli/src/commands/config/init/index.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-855
+clients/packages/ingestion/src/strategies/LLM/index.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-139
+server/polar/license_key/endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 11,14,19,143-166
+clients/packages/cli/src/services/billing-config/generate/contract.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-108
+clients/apps/web/src/components/Customer/AddCredits/useMeterCreditOptions.ts
+  s_1948f7c000ac71::t_61067a8463450d 5,10,30-35
+server/tests/customer_meter/test_service.py
+  s_1948f7c000ac71::t_61067a8463450d 6-7,9-10,12,32,37-38,41,198,201,212,228-230,243,250,270,295,306,325-327,341,359-361,375,414-416,430,469-471,484,496,516,552,565,595,605,640,653,689,702,733,746,810,824,876,888,942,953,991,1061-1142,1552,1583,1590-1835
+clients/apps/web/src/components/Orders/OrderStatus.tsx
+  s_1948f7c000ac71::t_61067a8463450d 12
+server/tests/fixtures/tinybird.py
+  s_1948f7c000ac71::t_61067a8463450d 1,3,6,9,15,26-43,47-51,62-76,80-81,98,112
+server/polar/organization_email/service.py
+  s_1948f7c000ac71::t_61067a8463450d 123,154-167
+server/polar/config.py
+  s_1948f7c000ac71::t_61067a8463450d 129-131,142,162,237-239,411-412,841-847
+server/tests/customer_portal/service/test_subscription.py
+  s_1948f7c000ac71::t_61067a8463450d 9-10,330,398
+server/polar/kit/address.py
+  s_1948f7c000ac71::t_61067a8463450d 2-11,152-234,257-259,261-268,270,281-282,296-308,345-354
+sdk/generator/python/template/tests/metering/test_metering.py
+  s_1948f7c000ac71::t_61067a8463450d 9,290,381,520,596,637
+server/tests/backoffice/customers/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 6,28,33-34,48,85,102,112,139,183,207,229,240,258,307,349
+clients/packages/polar/src/schema/product.ts
+  s_1948f7c000ac71::t_61067a8463450d 3-6,126,142,152-159,203,223-229,233,236-237,239,243-246,251,257-268,270,273,276-283,285,289-296,300-307,317-325,338-341,343,346,352-354,359-362,364,367-370,372,377,386,389-397,401-422,433-442,444,448,451-468,506-511,514-523,525,527,529,531,533
+server/polar/integrations/polar/tasks.py
+  s_1948f7c000ac71::t_61067a8463450d 190-204,365
+sdk/generator/typescript/template/src/outpost/vercel.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-159
+clients/apps/web/src/components/Landing/LandingLayout.tsx
+  s_1948f7c000ac71::t_61067a8463450d 6
+server/tests/fixtures/file.py
+  s_1948f7c000ac71::t_61067a8463450d 13
+server/tests/models/test_benefit_grant.py
+  s_1948f7c000ac71::t_61067a8463450d 1-152
+clients/packages/cli/src/services/billing-config/generate/python.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-103
+server/.env.template
+  s_1948f7c000ac71::t_61067a8463450d 46-49
+clients/packages/cli/src/commands/config/index.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 4,13
+clients/apps/web/src/components/Landing/usage/film/kit.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-80
+clients/apps/web/src/components/Products/ProductSelect.tsx
+  s_1948f7c000ac71::t_61067a8463450d 29,90,92
+server/tests/customer/test_schemas.py
+  s_1948f7c000ac71::t_61067a8463450d 5,8-11,99-119
+adr/0010-jwks-signing-keys-in-kms.md
+  s_1948f7c000ac71::t_61067a8463450d 1-69
+server/load_tests/scenarios/event_ingestion.py
+  s_1948f7c000ac71::t_61067a8463450d 10,48,109-119
+clients/apps/web/vercel.json
+  s_1948f7c000ac71::t_61067a8463450d 26,30,34,38,42
+clients/packages/cli/src/commands/config/disable.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 29,33
+server/emails/package.json
+  s_1948f7c000ac71::t_61067a8463450d 19,22,25,29,31-32,34
+clients/packages/cli/src/utils/billing-config/tree.ts
+  s_1948f7c000ac71::t_61067a8463450d 2-3,7,13,18,22,35,43,54,69-70,75-111,117,125-145,197-204,210,217-227,238,244-254,270,272-273,289-291,317
+clients/apps/web/src/components/Landing/usage/film/grain.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-97
+docs/features/usage-based-billing/meters.mdx
+  s_1948f7c000ac71::t_61067a8463450d 3
+server/load_tests/config.py
+  s_1948f7c000ac71::t_61067a8463450d 6,43-45
+server/migrations/env.py
+  s_1948f7c000ac71::t_61067a8463450d 55
+server/tests/fixtures/__init__.py
+  s_1948f7c000ac71::t_61067a8463450d 7
+server/polar/email/schemas.py
+  s_1948f7c000ac71::t_61067a8463450d 406-407
+clients/packages/cli/src/commands/config/init/index.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-245
+server/emails/src/emails/notification_new_trial.tsx
+  s_1948f7c000ac71::t_61067a8463450d 3,12-13
+server/polar/reducer/tasks.py
+  s_1948f7c000ac71::t_61067a8463450d 5-6,16,57,72-88
+server/polar/logging.py
+  s_1948f7c000ac71::t_61067a8463450d 47
+clients/apps/web/src/components/Subscriptions/SubscriptionDiscountField.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-98
+server/polar/member/repository.py
+  s_1948f7c000ac71::t_61067a8463450d 119-121,131-135
+server/scripts/backfill_credit_reducer_buckets.py
+  s_1948f7c000ac71::t_61067a8463450d 2,4,9,14,16,24-28,53-54,69-71,76-77,80-94,96
+server/polar/declarative_config/export.py
+  s_1948f7c000ac71::t_61067a8463450d 7,15-16,20,25,37,42-43,65-66,85,103,106,119,169-181,186,198-202,213-214,219-222,226-228,230-236,240-243,247-248,282-286,291-299,302,305,310-321,337,343-368,404-411,415,432,440,442
+clients/packages/cli/src/services/billing-config/prune.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 7-12,15,57-64,75-78,96-97,100-101,104-111,118,122-126,161,172-174
+clients/apps/web/src/app/(main)/[organization]/portal/usage/page.tsx
+  s_1948f7c000ac71::t_61067a8463450d 19,21-22,43-44
+server/tests/customer_portal/endpoints/test_downloadables.py
+  s_1948f7c000ac71::t_61067a8463450d 6
+clients/packages/polar/src/schema/config.ts
+  s_1948f7c000ac71::t_61067a8463450d 10-18,59,105,238-273,277,279,281-284,397,399-403,416,420,423-424,430,432,435,437,439,442-444,446-448,454-457,460-467,492-503,551-561,612-617,647-648
+.github/workflows/emergency_merge.yml
+  s_1948f7c000ac71::t_61067a8463450d 7-9,23-27,30,47,59,67,93,201,267,289
+server/polar/email_update/service.py
+  s_1948f7c000ac71::t_61067a8463450d 100
+clients/apps/web/src/components/Subscriptions/UpdateSubscriptionModal.tsx
+  s_1948f7c000ac71::t_61067a8463450d 7,22-23,32,34-35,39,43,45
+.github/workflows/migrations-lock.yml
+  s_1948f7c000ac71::t_61067a8463450d 17-21,24
+server/tests/declarative_config/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 5,102-113,149-169,245-254,382,408
+server/polar/kit/versioning.py
+  s_1948f7c000ac71::t_61067a8463450d 585-587,590,595-602
+server/polar/merchant_migration/canonical.py
+  s_1948f7c000ac71::t_61067a8463450d 486,520,558-559,579,583,586,594,596,598,634
+server/polar/kit/encryption.py
+  s_1948f7c000ac71::t_61067a8463450d 10
+server/tests/models/test_subscription.py
+  s_1948f7c000ac71::t_61067a8463450d 115-117,201-217
+server/polar/webhook/service.py
+  s_1948f7c000ac71::t_61067a8463450d 38,112-120,142,158-160,256-259,297-298,493-504,982-985,990,1082-1085
+.claude/commands/create-changelog.md
+  s_1948f7c000ac71::t_61067a8463450d 46
+server/polar/outpost/service.py
+  s_1948f7c000ac71::t_61067a8463450d 218-221,228-231,272,324-330,363,365-371,376-399,401-427
+server/polar/webhook/constants.py
+  s_1948f7c000ac71::t_61067a8463450d 20-23
+clients/apps/web/src/components/Events/utils.tsx
+  s_1948f7c000ac71::t_61067a8463450d 15-17,37-39
+clients/apps/app/components/Home/AnimatedHeader.tsx
+  s_1948f7c000ac71::t_61067a8463450d 25,143
+clients/apps/web/src/components/Landing/chapters/MarginChart.tsx
+  s_1948f7c000ac71::t_61067a8463450d 46-53,169,171-183,186
+sdk/generator/typescript/template/src/outpost/scripts.ts
+  s_1948f7c000ac71::t_61067a8463450d 4-12
+server/tests/integrations/stripe/test_payment.py
+  s_1948f7c000ac71::t_61067a8463450d 568
+clients/apps/app/app/(authenticated)/home/index.tsx
+  s_1948f7c000ac71::t_61067a8463450d 18,109-110,112-117
+server/tests/backoffice/test_versioned_static.py
+  s_1948f7c000ac71::t_61067a8463450d 4,16-18,26,47,58
+.github/workflows/test_deploy_notify.yml
+  s_1948f7c000ac71::t_61067a8463450d 24-30
+clients/packages/cli/src/utils/billing-config/review.ts
+  s_1948f7c000ac71::t_61067a8463450d 50,56-58,64-67,70
+sdk/e2e/harness.py
+  s_1948f7c000ac71::t_61067a8463450d 167,344-345,387,483-485
+sdk/generator/tests/test_outpost_scripts.py
+  s_1948f7c000ac71::t_61067a8463450d 11-13
+server/emails/src/emails/subscription_trial_payment_method_required.tsx
+  s_1948f7c000ac71::t_61067a8463450d 12-36,44-45,47,51,53,65-66,74,90-91
+server/polar/customer/endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 117-122
+server/polar/webhook/webhooks.py
+  s_1948f7c000ac71::t_61067a8463450d 15,50-51,76,161-164,178-179,187-198
+server/tests/catalog/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 1,3,6-7,10,15,17,25-31,160-217,281-283,290-294,299,347-365,436-455,475-650
+clients/adapters/nuxt/playground/package.json
+  s_1948f7c000ac71::t_61067a8463450d 11
+clients/apps/web/e2e/utils/products.ts
+  s_1948f7c000ac71::t_61067a8463450d 18,53,78,109
+clients/apps/app/app/(authenticated)/subscriptions/[id]/index.tsx
+  s_1948f7c000ac71::t_61067a8463450d 29
+server/tests/e2e/lifecycle/test_seat_lifecycle.py
+  s_1948f7c000ac71::t_61067a8463450d 19
+clients/apps/web/src/components/CustomerPortal/SeatManagementTable.tsx
+  s_1948f7c000ac71::t_61067a8463450d 27-33,205-212,224-235,237-244,246-247,249-250,252-359,361
+server/tests/integrations/slack/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 9
+server/polar/checkout/payment_methods.py
+  s_1948f7c000ac71::t_61067a8463450d 4-5,104-125
+server/polar/meter/filter.py
+  s_1948f7c000ac71::t_61067a8463450d 5,21,43
+clients/packages/cli/src/commands/config/disable.ts
+  s_1948f7c000ac71::t_61067a8463450d 1,11,35,57
+server/polar/checkout_link/schemas.py
+  s_1948f7c000ac71::t_61067a8463450d 34,91-97,99-103,159-164,192-196
+adr/0011-specialized-webhooks-also-emit-updated.md
+  s_1948f7c000ac71::t_61067a8463450d 1-69
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/analytics/costs/CostsPage.tsx
+  s_1948f7c000ac71::t_61067a8463450d 14,56,60
+clients/apps/web/src/app/(main)/[organization]/portal/request/page.tsx
+  s_1948f7c000ac71::t_61067a8463450d 17,19-20,41-42
+clients/apps/web/src/components/Meter/MeterVersionBanner.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-120
+clients/packages/cli/src/services/billing-config/generate/write.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-136
+clients/packages/cli/src/commands/config/init/detect.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-74
+clients/packages/cli/src/utils/billing-config/markdown.ts
+  s_1948f7c000ac71::t_61067a8463450d 12,17,66,74,114-116,189-192
+clients/apps/web/src/components/Landing/chapters/UsageBillingCharge.tsx
+  s_1948f7c000ac71::t_61067a8463450d 18,20,25-28,31-34
+server/load_tests/scenarios/__init__.py
+  s_1948f7c000ac71::t_61067a8463450d 4-7,9
+server/polar/declarative_config/removals.py
+  s_1948f7c000ac71::t_61067a8463450d 139-224
+server/polar/catalog/service.py
+  s_1948f7c000ac71::t_61067a8463450d 5,9,16,18,21-22,25-26,31-32,34-35,51-53,57-64,69-70,74-75,78,81,85,89,92-103,107-119,124-125,134-137,142-227,230-249,262-270,315,320-430,444-452,457-480,551-650,685-696,710-711,714-715,717,719,755-758,767,774-783,792-819,824-830,838,840,845-846,857,861,869,871-872,877-879,885,897-903,909-910,913,917,937-938,940-943,949-960,962-978,980,986,991-1020,1026,1038,1040,1052,1066,1081,1092-1114,1156-1179,1182-1183,1186,1191,1200,1208-1230
+server/polar/subscription/service.py
+  s_1948f7c000ac71::t_61067a8463450d 51,108,141-142,150,167-171,184-193,750,753,793-800,855-868,900-907,913-915,917-918,937,943-946,1310-1313,1453-1457,1465,1560-1562,1589,1591-1594,1656-1660,1957-1959,2099-2101,2155-2157,2183,2239-2243,2428-2444,2447,2463,2474,2478,2647,2657-2661,2769,2779-2783,3155,3159-3161,3164,3185-3186,3196,3220,3319,3325-3328,3553-3554,3556,3568,3582-3583,3585,3588-3590,3599,3607-3625,3627,3630,3671-3676,3678,3682-3684,3693-3710,3712-3716,3718,3723,3729-3731,3844-3885,4755-4772,4776,4778-4782,4799-4825,5075,5084
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/analytics/metrics/page.tsx
+  s_1948f7c000ac71::t_61067a8463450d 7-8,15,19-24,30,56,58-61,63-70,127-135
+clients/apps/web/src/components/CustomerPortal/EditBillingDetails.tsx
+  s_1948f7c000ac71::t_61067a8463450d 6-10,25-47,59-67,74-78,81-87,124-128,149,164-183,189,230,250,267-287,319,321
+clients/apps/mcp/test/events.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-203
+server/polar/integrations/plain/service.py
+  s_1948f7c000ac71::t_61067a8463450d 7,1788,1817,1819,1823
+server/tests/checkout_link/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 4,181-197,340-359,574,583
+server/polar/reducer/types.py
+  s_1948f7c000ac71::t_61067a8463450d 6-7,30-36
+server/polar/payout_account/service.py
+  s_1948f7c000ac71::t_61067a8463450d 45-52,176-186
+clients/apps/web/src/components/Landing/desktopNavigation.ts
+  s_1948f7c000ac71::t_61067a8463450d 51,55
+sdk/generator/python/template/polar/outpost/vercel.py
+  s_1948f7c000ac71::t_61067a8463450d 1-80
+server/polar/user/schemas.py
+  s_1948f7c000ac71::t_61067a8463450d 6
+clients/apps/web/src/components/CustomerPortal/OrderPaymentRetryModal.tsx
+  s_1948f7c000ac71::t_61067a8463450d 6-7,14,63,75,84,87-102,104-113,115-126,128-161,163-165
+clients/packages/i18n/src/locales/tr.ts
+  s_1948f7c000ac71::t_61067a8463450d 112-114
+clients/apps/web/src/components/Landing/integrate/Quickstart.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-165
+clients/packages/cli/src/services/billing-config/languages/language.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-158
+clients/apps/app/app/(authenticated)/finance/withdraw/index.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1,13,25-29,51,74-77,79-104
+server/polar/benefit/auth.py
+  s_1948f7c000ac71::t_61067a8463450d 43-52
+server/tests/discount/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 5
+clients/packages/ingestion/src/index.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-3
+clients/apps/web/src/components/Customer/CustomerPage/GrantBenefitSheet.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-235
+clients/apps/web/src/components/Landing/features/UsageBillingPage.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-9,11-75,80-101,103-115,117-155,157-190,192-206,208-279,281-282
+server/polar/meter/property.py
+  s_1948f7c000ac71::t_61067a8463450d 1-28
+clients/packages/i18n/src/locales/fr.ts
+  s_1948f7c000ac71::t_61067a8463450d 114-116
+clients/apps/web/src/components/Landing/FeatureCarousel.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-253
+sdk/generator/tests/python/test_emitter.py
+  s_1948f7c000ac71::t_61067a8463450d 3-4,8-10,12,15,17,132-280
+clients/apps/web/src/components/Metadata/MetadataForm.tsx
+  s_1948f7c000ac71::t_61067a8463450d 19,136-149,152-157,325-329
+clients/apps/web/src/components/Customer/AddCredits/creditPreview.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 5,108-149
+server/scripts/tax_filing_imports.py
+  s_1948f7c000ac71::t_61067a8463450d 16,61
+clients/apps/web/src/components/Landing/MeterStream.tsx
+  s_1948f7c000ac71::t_61067a8463450d 118
+.github/workflows/disable_maintenance_mode.yml
+  s_1948f7c000ac71::t_61067a8463450d 15-19,21
+server/tests/openapi.2026-04.json
+  s_1948f7c000ac71::t_61067a8463450d 1
+server/tests/e2e/lifecycle/test_trial_metered_cancel.py
+  s_1948f7c000ac71::t_61067a8463450d 35
+server/tests/merchant_migration/test_lemon_squeezy_adapter.py
+  s_1948f7c000ac71::t_61067a8463450d 1-479
+sdk/generator/outpost/read_states.lua
+  s_1948f7c000ac71::t_61067a8463450d 1-47
+.github/workflows/deploy_image_resizer.yml
+  s_1948f7c000ac71::t_61067a8463450d 15-17,26-31,34,39,52,58
+clients/packages/cli/src/services/billing-config/languages/typescript/locate.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-178
+clients/apps/web/src/components/Landing/usage/film/palette.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-22
+sdk/generator/python/template/tests/outpost/test_vercel.py
+  s_1948f7c000ac71::t_61067a8463450d 1-99
+server/polar/customer_meter/endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 15,125,134-136,177,186
+server/polar/integrations/chargeback_stop/tasks.py
+  s_1948f7c000ac71::t_61067a8463450d 4-6,23-28,40-45
+server/tests/oauth2/endpoints/test_oauth2.py
+  s_1948f7c000ac71::t_61067a8463450d 6,154
+clients/apps/web/src/utils/metrics.ts
+  s_1948f7c000ac71::t_61067a8463450d 8,11,32-48
+clients/packages/cli/src/services/billing-config/issues.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 2,110-129
+sdk/CHANGELOG.md
+  s_1948f7c000ac71::t_61067a8463450d 13-31,44,77-81
+server/tests/auth/test_middlewares.py
+  s_1948f7c000ac71::t_61067a8463450d 36,47-52,854-890
+clients/apps/web/src/components/Orders/OrderDetails.tsx
+  s_1948f7c000ac71::t_61067a8463450d 3,47,49
+clients/packages/cli/src/commands/agent/setup.ts
+  s_1948f7c000ac71::t_61067a8463450d 1,26
+server/tests/backoffice/payout_accounts/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 4,24,29-30,44,54,74,92,107,115,131,141,159,187,216
+server/tests/benefit/test_tasks.py
+  s_1948f7c000ac71::t_61067a8463450d 4,6,8,23-31,36-81,86-115
+.github/workflows/openapi-generate-check.yml
+  s_1948f7c000ac71::t_61067a8463450d 12-14,25-31,58-62,64,83,88,92,97,197,205,214
+server/polar/kit/db/postgres.py
+  s_1948f7c000ac71::t_61067a8463450d 5,62-87,99,121,128
+server/tests/customer_portal/endpoints/test_member.py
+  s_1948f7c000ac71::t_61067a8463450d 4
+.github/workflows/terraform_drift.yaml
+  s_1948f7c000ac71::t_61067a8463450d 17-21,59-64,67,107-111,119
+clients/packages/polar/src/schema/price.ts
+  s_1948f7c000ac71::t_61067a8463450d 3,119,122,127-129,132,136-140,142,148-150,159,172-174,177-180,219-223,256,263,270,294,307,319,324,329,343,348-349,353-354,362-365,376,381-382,386-387,394,396,399,402,438,519
+server/polar/checkout/ip_geolocation.py
+  s_1948f7c000ac71::t_61067a8463450d 5,40,84-144,155-160
+server/tests/integrations/plain/test_service.py
+  s_1948f7c000ac71::t_61067a8463450d 2,6,8,42-47,61-65,68-69,71-75,393-414
+server/polar/order/service.py
+  s_1948f7c000ac71::t_61067a8463450d 494-507,1422,1434,1454-1455,1652,1655-1659
+clients/apps/web/src/components/Costs/CostsSidebarFilters.tsx
+  s_1948f7c000ac71::t_61067a8463450d 9,38,43
+clients/packages/cli/src/schemas/BillingConfig.ts
+  s_1948f7c000ac71::t_61067a8463450d 2,11-26,57,162,268-293
+server/polar/models/organization.py
+  s_1948f7c000ac71::t_61067a8463450d 42,44,92-104,938-942
+clients/packages/ingestion/src/ingestion.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-92
+server/polar/observability/slo_report/tasks.py
+  s_1948f7c000ac71::t_61067a8463450d 7,77,83
+server/polar/auth/middlewares.py
+  s_1948f7c000ac71::t_61067a8463450d 2,15,55,75-87,110,114-116,127,131-133,186-188,205-207
+clients/apps/web/src/app/(main)/[organization]/portal/claim/ClaimPage.tsx
+  s_1948f7c000ac71::t_61067a8463450d 11-14,147-156,158-166,168-176,178-192,195-209,211,214,217-233
+clients/packages/cli/src/services/billing-config/generate/python.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-54
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/sales/subscriptions/SubscriptionsPage.tsx
+  s_1948f7c000ac71::t_61067a8463450d 7,247
+.github/workflows/test_lambda.yaml
+  s_1948f7c000ac71::t_61067a8463450d 30-36,55-60,63,68,94-99,102,107
+server/tests/backoffice/webhooks/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 4,19,24-25,38,48,73,98,127,155,183,211
+server/tests/event/test_repository.py
+  s_1948f7c000ac71::t_61067a8463450d 9,509-534
+clients/apps/web/src/components/CustomerPortal/CustomerUsage.tsx
+  s_1948f7c000ac71::t_61067a8463450d 5-7,10-18,23-76,83-102,105-124
+server/polar/order/tasks.py
+  s_1948f7c000ac71::t_61067a8463450d 184,211,230-234,253,263,290-294
+server/scripts/backfill_billing_address_state.py
+  s_1948f7c000ac71::t_61067a8463450d 1-427
+clients/packages/cli/src/utils/billing-config/problems.ts
+  s_1948f7c000ac71::t_61067a8463450d 9-11,32-33,55-59,67-71,102,105,108-115,122,139,154-156
+server/polar/models/catalog.py
+  s_1948f7c000ac71::t_61067a8463450d 3,15,22,63-66,101-111
+server/tests/fixtures/base.py
+  s_1948f7c000ac71::t_61067a8463450d 4,19,37,67,83
+server/polar/integrations/polar/service.py
+  s_1948f7c000ac71::t_61067a8463450d 21,205-212,886,889-890,945-959
+.github/workflows/terraform.yaml
+  s_1948f7c000ac71::t_61067a8463450d 24-29,32,39,45
+clients/apps/app/hooks/useHomeHeaderHeight.ts
+  s_1948f7c000ac71::t_61067a8463450d 3-4,8
+server/tests/declarative_config/test_service.py
+  s_1948f7c000ac71::t_61067a8463450d 5,10,13,16-18,21,27,35,70,76,78,81,84,93,101,116,284-302,819-824,855,863-866,868,878-891,919,921,935,941-950,954-961,992,1006-1007,1018-1023,1448,1466-1474,1483,1508,1790-1822,1829-1846,1853-1854,1859-1881,1884,1891,1895-1902,1905-1917,1920,1927-1931,1933-1934,1936,1941,1943,1946-1963,1966,1973-1981,1983-1994,1996,1998-2019,2022,2024,2028,2030-2037,2042,2045-2048,2050,2054,2057-2424,2499-2591,2623,2783-2895,2898-2899,2905,2909,2913,2916-2923,2926-2928,2930-2935,2938-2939,2946-2947,2949-2956,2962-2965,2968-2977,3564,3994,4015-4024,4717-4923,4925,4930,4937-4939,4943,4945,4947-4963,4965,4967,4973-4974,4979,4981-4982,4989,4994-4995,4999-5001,5005,5008,5429-5464,5550-5566,5582,5614-5617,5626-5769,5800-5802,6013-6048,6262-6375,6416-6516,6545-6685
+sdk/generator/python/template/tests/benchmarks/test_requests.py
+  s_1948f7c000ac71::t_61067a8463450d 1-107
+clients/apps/web/src/components/Payouts/DownloadInvoice.tsx
+  s_1948f7c000ac71::t_61067a8463450d 6-9,47,168-170,179,198-203
+clients/packages/checkout/src/components/CheckoutForm.tsx
+  s_1948f7c000ac71::t_61067a8463450d 12,354-357,434-441,513-522,601-633
+clients/apps/mcp/turbo.json
+  s_1948f7c000ac71::t_61067a8463450d 1-15
+server/tests/meter/test_aggregation.py
+  s_1948f7c000ac71::t_61067a8463450d 2,26-34
+server/tests/kit/test_http.py
+  s_1948f7c000ac71::t_61067a8463450d 8-9,140,153-154,161,289,291,299,318,332,343
+.github/workflows/backoffice_reachability.yml
+  s_1948f7c000ac71::t_61067a8463450d 22-26,55
+adr/template.md
+  s_1948f7c000ac71::t_61067a8463450d 1-32
+clients/apps/web/src/components/CustomerPortal/InlineEditRow.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-78
+sdk/generator/typescript/template/src/outpost/jump-hash.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-28
+server/tests/integrations/github_repository_benefit/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 1-72
+server/tests/customer_portal/endpoints/test_oauth_accounts.py
+  s_1948f7c000ac71::t_61067a8463450d 1,7,13,405-431
+server/tests/customer_seat/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 5
+server/polar/custom_field/endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 58-59
+sdk/generator/typescript/template/README.md
+  s_1948f7c000ac71::t_61067a8463450d 140-141,166-167,169-174,177-178,220-233
+clients/packages/cli/src/commands/config/prune.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 64,71-72,91,103,109
+.agents/skills/local-environment/rules/service-architecture.md
+  s_1948f7c000ac71::t_61067a8463450d 15,19,78
+clients/packages/checkout/src/components/CheckoutUnitSelector.tsx
+  s_1948f7c000ac71::t_61067a8463450d 111-130,155-159
+sdk/generator/python/template/README.md
+  s_1948f7c000ac71::t_61067a8463450d 124-125,228-232,250-251,254-255
+clients/apps/web/src/components/CustomerPortal/CustomerSeatQuantityManager.tsx
+  s_1948f7c000ac71::t_61067a8463450d 7,9,48-54,56-57,67,92,124-130,146-192,195,197,199,201,208-209,211
+clients/packages/ingestion/src/strategies/Stream/index.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-65
+server/tests/benefit/grant/test_service.py
+  s_1948f7c000ac71::t_61067a8463450d 4,10,12-17,22,24-25,34-35,37-39,41-42,45,48,51,70-659,662-692,726-729,752-755,828-831,873-943,979,1006,1031-1035,1048,1061-1100,1116-1120,1133,1167,1184-1214,1257-1260,1293-1296,1330-1333,1377-1380,1483-1485,1563-1566,1635,1644,1674-1677,1686,1703-1727,1739-1742,1771,1797-1800,1835,1872-1875,1884,1902-1926,1938-1941,1971,2000,2022,2032,2035-2038,2040-2041,2048,2077-2080,2089,2175-2178,2201-2204,2233-2236,2287,2332-2335,2359-2362,2396,2431,2466,2516,2524,2610,2693-2741,2767
+clients/apps/web/src/components/CustomerPortal/CustomerPortalSubscription.tsx
+  s_1948f7c000ac71::t_61067a8463450d 20,29-30,32-40,73-81,134,152,164-169,171-173,175-176,179-209,211-215,217,220-222,224,229,231-236,238-239,247,256,263-297,307,310-312,315,318-321,327
+clients/apps/web/src/app/(main)/[organization]/portal/orders/page.tsx
+  s_1948f7c000ac71::t_61067a8463450d 19,21-22,43-44
+clients/apps/web/src/components/CustomerPortal/PaymentMethod.tsx
+  s_1948f7c000ac71::t_61067a8463450d 13,15,34-35,78-108
+server/tests/backoffice/test_layout.py
+  s_1948f7c000ac71::t_61067a8463450d 3,15,19-20,32,54,67
+clients/apps/web/src/components/TrialConfiguration/TrialConfigurationForm.tsx
+  s_1948f7c000ac71::t_61067a8463450d 5-6,12,14,23-24,39,42,47,52-63,65,68-134,136-183,185-188,191-196,198,200
+clients/apps/web/src/components/Customer/CustomerContextView.tsx
+  s_1948f7c000ac71::t_61067a8463450d 171,183-187
+clients/apps/web/src/components/Landing/usage/film/scenes.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-314
+server/polar/refund/service.py
+  s_1948f7c000ac71::t_61067a8463450d 95-100,320-325
+clients/packages/cli/src/services/billing-config/prune.ts
+  s_1948f7c000ac71::t_61067a8463450d 20-21,24-51,111,113-114,116-149
+server/polar/email/repository.py
+  s_1948f7c000ac71::t_61067a8463450d 6,43-63
+server/scripts/backfill_billing_intervals.py
+  s_1948f7c000ac71::t_61067a8463450d 5-6,20-21,33,100-123,133-135,137
+server/tests/benefit/strategies/test_slack_shared_channel.py
+  s_1948f7c000ac71::t_61067a8463450d 5,872,1742,2040
+server/tests/customer/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 5
+clients/apps/web/src/components/CustomerPortal/SubscriptionDateRows.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-116
+server/polar/customer_portal/endpoints/order.py
+  s_1948f7c000ac71::t_61067a8463450d 228,275
+server/tests/e2e/purchase/one_time/test_payment_failure.py
+  s_1948f7c000ac71::t_61067a8463450d 12
+.github/actions/setup-clients/action.yml
+  s_1948f7c000ac71::t_61067a8463450d 7,12,18-22
+clients/apps/web/src/proxy.ts
+  s_1948f7c000ac71::t_61067a8463450d 119-128,182
+adr/0003-request-scoped-unit-of-work.md
+  s_1948f7c000ac71::t_61067a8463450d 1-43
+sdk/e2e/scenarios.py
+  s_1948f7c000ac71::t_61067a8463450d 352-367
+server/tests/customer_meter/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 6,126-161
+clients/packages/polar/src/schema/external-id.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-8
+clients/apps/web/src/components/Landing/story/chapters.tsx
+  s_1948f7c000ac71::t_61067a8463450d 2-3,40-43,45
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/custom-fields/CustomFieldsPage.tsx
+  s_1948f7c000ac71::t_61067a8463450d 6,10,47,83,130-131,173-179,185
+server/polar/customer_portal/service/benefit_grant.py
+  s_1948f7c000ac71::t_61067a8463450d 159
+server/polar/models/product_price.py
+  s_1948f7c000ac71::t_61067a8463450d 242,274,348
+server/migrations/versions/2026-11-13-1030_enforce_meters_is_current_not_null.py
+  s_1948f7c000ac71::t_61067a8463450d 1-73
+server/polar/integrations/polar/client.py
+  s_1948f7c000ac71::t_61067a8463450d 22,219-236
+server/tests/fixtures/worker.py
+  s_1948f7c000ac71::t_61067a8463450d 1,6,28-32,34-37,47
+server/polar/benefit/grant/repository.py
+  s_1948f7c000ac71::t_61067a8463450d 5,21,23,26,30,69-99,102-137,143,177,268,293,316,356,371,375-377,426-430,440,443-459
+server/tests/benefit/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 5
+clients/packages/ingestion/src/strategies/DeltaTime/index.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-118
+server/tests/integrations/discord/test_client.py
+  s_1948f7c000ac71::t_61067a8463450d 1-2,4,24,26,36,39,41,50,53,56,58-59,77,83,89,95,98,100-101
+server/polar/benefit/grant/scope.py
+  s_1948f7c000ac71::t_61067a8463450d 12-17,24-25,33,84-85,89-109,145,149-150,153,167-170
+server/tests/metrics/test_dashboard_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 4
+clients/packages/cli/src/commands/config/plan.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 63,70
+server/polar/models/webhook_endpoint.py
+  s_1948f7c000ac71::t_61067a8463450d 76,89-96,113-115
+clients/packages/ui/src/components/ui/calendar.tsx
+  s_1948f7c000ac71::t_61067a8463450d 42,45,48,50-51,53-54,56
+.github/workflows/deploy-environment.yml
+  s_1948f7c000ac71::t_61067a8463450d 71-76,95-100,119,143-147,189-193,211-215
+clients/packages/polar/src/schema/webhook.ts
+  s_1948f7c000ac71::t_61067a8463450d 3,75
+clients/packages/cli/src/services/billing-config/plan.ts
+  s_1948f7c000ac71::t_61067a8463450d 21,50-55,63-68
+clients/packages/cli/src/commands/config/publish.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 66,73,128,131-148
+server/tests/benefit/grant/test_repository.py
+  s_1948f7c000ac71::t_61067a8463450d 5-6,39-60
+server/polar/auth/scope.py
+  s_1948f7c000ac71::t_61067a8463450d 170
+.github/workflows/benchmark.yaml
+  s_1948f7c000ac71::t_61067a8463450d 74-76,91-96,98-100,150-155,158,163,173,177,189-194,197,202,210,214,224-229,232,237,248,253,262,268,272,275,279,295-300,309,321,326,338
+clients/packages/cli/src/services/billing-config/generate/contract.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-204
+clients/apps/web/src/components/CustomerPortal/PortalDialog.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-250
+clients/apps/web/src/components/Landing/story/ChargeFigure.tsx
+  s_1948f7c000ac71::t_61067a8463450d 83,105,135,200
+clients/apps/web/src/components/Landing/Testimonials.tsx
+  s_1948f7c000ac71::t_61067a8463450d 125-127
+server/polar/models/subscription.py
+  s_1948f7c000ac71::t_61067a8463450d 73,87-90,95-98,500-501,528,559-561
+docs/migrate-away.mdx
+  s_1948f7c000ac71::t_61067a8463450d 22-23,30,33-43,67,108,111
+server/tests/integrations/resend/test_service.py
+  s_1948f7c000ac71::t_61067a8463450d 2,5,27,32,42,47-52,55-56,58-61,69,81,87-90,92-95,101,110,117-131,133-138,146,159,167-175,177-178,180-182,184-189,205,212-218,222-224,238,245-251,253-256,259-264,294,302-306,308-315,329,334-337,343,350,356-364,366-377,385,397,402-404,412,418,427,435,439-453,455-463,471
+server/tests/meter/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 4,8-16,104-171
+server/tests/event/test_resolve_pending_parents.py
+  s_1948f7c000ac71::t_61067a8463450d 415-440,522-616
+clients/packages/cli/src/services/billing-config/publish.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 110-123,163-178
+server/emails/src/emails/notification_subscription_cancellation.tsx
+  s_1948f7c000ac71::t_61067a8463450d 9,22-23
+.github/workflows/demo_config_plan.yaml
+  s_1948f7c000ac71::t_61067a8463450d 12,30-34,36,38,43,49,53-57
+clients/apps/web/src/components/Events/EventDetailFields.tsx
+  s_1948f7c000ac71::t_61067a8463450d 176-178
+server/polar/custom_field/schemas.py
+  s_1948f7c000ac71::t_61067a8463450d 25-26,36,194-208,295-303
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/products/meters/(list)/page.tsx
+  s_1948f7c000ac71::t_61067a8463450d 33
+clients/packages/i18n/src/locales/pt.ts
+  s_1948f7c000ac71::t_61067a8463450d 112-114
+server/tests/benefit/strategies/test_slack_shared_channel_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 2
+server/tests/checkout/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 7,67-69,1436,1453,1460-1468
+clients/apps/web/src/components/Products/ProductCombobox.tsx
+  s_1948f7c000ac71::t_61067a8463450d 25,78-120,138,142,146,229,250-269
+server/tests/fixtures/http.py
+  s_1948f7c000ac71::t_61067a8463450d 1-48
+server/polar/benefit/strategies/discord/service.py
+  s_1948f7c000ac71::t_61067a8463450d 3,92,108,169,185
+clients/packages/ingestion/src/opentelemetry/index.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-94
+clients/apps/web/src/components/Settings/OrganizationPaymentSettings.tsx
+  s_1948f7c000ac71::t_61067a8463450d 37
+sdk/generator/python/template/polar/version/inputs.py
+  s_1948f7c000ac71::t_61067a8463450d 9-10,50
+server/emails/src/emails/notification_new_subscription.tsx
+  s_1948f7c000ac71::t_61067a8463450d 2,11-12
+server/polar/integrations/chargeback_stop/types.py
+  s_1948f7c000ac71::t_61067a8463450d 11
+clients/apps/web/src/components/Products/ManageWithAgent.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-140
+server/polar/integrations/tinybird/service.py
+  s_1948f7c000ac71::t_61067a8463450d 736
+clients/apps/web/src/app/(main)/[organization]/portal/subscriptions/[id]/page.tsx
+  s_1948f7c000ac71::t_61067a8463450d 19,21-22,43-44
+clients/packages/ingestion/vitest.config.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-8
+adr/0004-orbit-box-design-system.md
+  s_1948f7c000ac71::t_61067a8463450d 1-42
+clients/apps/web/src/components/Landing/usage/plates.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-868
+.github/workflows/release_packages.yml
+  s_1948f7c000ac71::t_61067a8463450d 24-28,30,32,37,52
+.github/workflows/release_cli.yml
+  s_1948f7c000ac71::t_61067a8463450d 33-38,40,54-57,59-61,65,71,113-116,118-120,124,130,156,224,236-241,243,255,305,330-335,339,344
+clients/apps/app/app/(authenticated)/settings/notifications/index.tsx
+  s_1948f7c000ac71::t_61067a8463450d 14,202,230
+clients/apps/web/src/app/(main)/[organization]/portal/PortalShell.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-209
+clients/apps/web/src/components/CustomerPortal/UpcomingUsageCharge.test.tsx
+  s_1948f7c000ac71::t_61067a8463450d 8,46,49
+sdk/generator/python/template/pyproject.toml
+  s_1948f7c000ac71::t_61067a8463450d 19,43
+server/polar/postgres.py
+  s_1948f7c000ac71::t_61067a8463450d 20,26,31,46-49,52,100
+server/scripts/tinybird_test_workspace.py
+  s_1948f7c000ac71::t_61067a8463450d 7,20,23,28,32-33,113,125,131,139,141-156
+server/tests/customer_portal/endpoints/test_customer_seat.py
+  s_1948f7c000ac71::t_61067a8463450d 5
+sdk/generator/python/template/polar/outpost/client.py
+  s_1948f7c000ac71::t_61067a8463450d 15,193,260-273,369-391,458,495,584,773,775,814-817,827-840,867-875,877-881,926,929,931,947-952,954-958,962,964-965,967-978,982-985,1102,1176-1177,1199,1231,1239,1365-1370,1418-1420,1424,1435,1438,1464-1466,1470,1485-1490,1503,1517,1551-1552,1557,1595-1596,1598,1636-1637,1639-1642,1654-1666,1668,1685,1688-1690,1726
+server/polar/organization_review/collectors/setup.py
+  s_1948f7c000ac71::t_61067a8463450d 4,112,166,229
+adr/0008-encrypt-secrets-at-rest.md
+  s_1948f7c000ac71::t_61067a8463450d 1-65
+.github/workflows/agentic-review.yml
+  s_1948f7c000ac71::t_61067a8463450d 18-20,33-38,143,164-169,173
+server/docker/pg15-restore.sh
+  s_1948f7c000ac71::t_61067a8463450d 1-15
+server/polar/backoffice/auth/endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 12-13,33,45,52-65,79,155-165,171
+server/polar/models/checkout.py
+  s_1948f7c000ac71::t_61067a8463450d 1,6,31-37,103-105,109-112,118-130,198-201,420,444-453,501-508,510-535,538,541-543,548-554,557-570
+clients/apps/web/src/components/Customer/AddCredits/creditPreview.ts
+  s_1948f7c000ac71::t_61067a8463450d 2,12-56
+clients/packages/cli/src/commands/auth.ts
+  s_1948f7c000ac71::t_61067a8463450d 1,18
+server/migrations/versions/2026-11-10-1200_enforce_products_trial_payment_setup_required_not_null.py
+  s_1948f7c000ac71::t_61067a8463450d 1-73
+server/migrations/versions/2026-11-12-1404_drop_ix_events_external_customer_id_pattern.py
+  s_1948f7c000ac71::t_61067a8463450d 1-52
+server/polar/organization_review/policy.py
+  s_1948f7c000ac71::t_61067a8463450d 7,71
+clients/apps/web/src/components/CustomerPortal/PortalPrimitives.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-313
+clients/packages/ingestion/package.json
+  s_1948f7c000ac71::t_61067a8463450d 1-117
+server/tests/customer_portal/endpoints/test_wallet.py
+  s_1948f7c000ac71::t_61067a8463450d 4
+docs/features/usage-based-billing/credits.mdx
+  s_1948f7c000ac71::t_61067a8463450d 3
+server/tests/event/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 7
+server/tests/order/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 6
+clients/packages/cli/src/services/billing-config/languages/json/remove.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-48
+server/tests/e2e/lifecycle/test_meter_cycle.py
+  s_1948f7c000ac71::t_61067a8463450d 15
+clients/apps/web/src/components/Landing/integrate/Cli.tsx
+  s_1948f7c000ac71::t_61067a8463450d 61
+server/tests/conftest.py
+  s_1948f7c000ac71::t_61067a8463450d 2,7,10-27,30-45,50-77
+server/polar/organization/service.py
+  s_1948f7c000ac71::t_61067a8463450d 1607,1784
+clients/packages/cli/src/utils/billing-config/entries.ts
+  s_1948f7c000ac71::t_61067a8463450d 260-263,267
+.github/workflows/test_dev_cli.yaml
+  s_1948f7c000ac71::t_61067a8463450d 24-30,45-50,53
+clients/apps/web/src/components/CustomerPortal/CustomerPauseSubscriptionModal.tsx
+  s_1948f7c000ac71::t_61067a8463450d 7,18,21-22,28-29,33,52,67-84,87,102-103,110,114-118
+clients/apps/web/src/components/Events/EventCard/BenefitEventCard.tsx
+  s_1948f7c000ac71::t_61067a8463450d 20-22,41-46
+server/polar/integrations/github_repository_benefit/endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 3,21,29-30,53,101-114
+server/tests/auth/sso/test_flow.py
+  s_1948f7c000ac71::t_61067a8463450d 4,8,53-54,59,148,154,156,163,167,170,187,234-235,245-251,263-264,274-284,286,313-314,326-335,337,364-365,375-384,391-392,402-411,413-415,417-418,424,444-445,453-462,464,499-500,509-518,520,528-529,542-551,559-560,568-577,584-585,594-602,609-610,621-629
+clients/apps/web/src/components/Subscriptions/UpdateSubscriptionPlanForm.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-237
+server/polar/benefit/grant/service.py
+  s_1948f7c000ac71::t_61067a8463450d 2,9,14-15,21,24,27,37-38,40,53,63-69,71-253,367,376-377,379,391,445,454-455,457,463-466,469-470,549-551,558-561,567-569,580-582,589-591,657,660-665,728,731-737,780,796,812,816-817,845-907
+sdk/generator/python/template/polar/version/webhooks.py
+  s_1948f7c000ac71::t_61067a8463450d 6,52
+server/tests/merchant_migration/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 7
+server/polar/observability/remote_write.py
+  s_1948f7c000ac71::t_61067a8463450d 23,131,178,236
+server/polar/product/repository.py
+  s_1948f7c000ac71::t_61067a8463450d 6-12,33,37-38,112-154
+server/tests/models/test_checkout.py
+  s_1948f7c000ac71::t_61067a8463450d 1,8,86-269
+clients/apps/web/src/components/CustomerPortal/OrderPaymentRetry.tsx
+  s_1948f7c000ac71::t_61067a8463450d 10-11,19,376-393,396-397,399-424,427-464
+server/polar/tax/calculation/__init__.py
+  s_1948f7c000ac71::t_61067a8463450d 8-13,122,124-127,129-130
+server/tests/oauth2/endpoints/userinfo/test_userinfo.py
+  s_1948f7c000ac71::t_61067a8463450d 2
+clients/apps/web/src/components/Orders/DownloadReceipt.tsx
+  s_1948f7c000ac71::t_61067a8463450d 8,10,16-19,59-60,70-72,94-105,119,129,137,143-153,182,192-193,199-200,211-212
+server/polar/worker/_httpx.py
+  s_1948f7c000ac71::t_61067a8463450d 2,13,27-29,39
+server/tests/auth/conftest.py
+  s_1948f7c000ac71::t_61067a8463450d 3,14,18
+clients/packages/cli/src/services/billing-config/api.ts
+  s_1948f7c000ac71::t_61067a8463450d 69,180-218,254,263-270
+server/tests/oauth2/grants/test_claim.py
+  s_1948f7c000ac71::t_61067a8463450d 5
+clients/apps/web/src/components/Metrics/dashboards/useMetricsFilters.ts
+  s_1948f7c000ac71::t_61067a8463450d 4
+server/polar/subscription/schemas.py
+  s_1948f7c000ac71::t_61067a8463450d 19-23,311-323,325-335,342-343,377-386,395,434,444,460,665-675,710,717,724-734,737,744,753,760,769-771,783,801
+clients/packages/cli/AGENTS.md
+  s_1948f7c000ac71::t_61067a8463450d 12
+server/tests/fixtures/random_objects.py
+  s_1948f7c000ac71::t_61067a8463450d 529,554,1813,1834,2958,2963
+clients/apps/web/src/components/Landing/startup-program/StartupProgramHero.tsx
+  s_1948f7c000ac71::t_61067a8463450d 21,58-60,68-70
+clients/apps/web/src/components/Finance/Account/sections/PayoutAccountSection.tsx
+  s_1948f7c000ac71::t_61067a8463450d 6,79-82
+clients/packages/cli/src/utils/billing-config/problems.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 51-72
+server/polar/models/benefit_grant.py
+  s_1948f7c000ac71::t_61067a8463450d 8,48-51,78-83,88-93,102,112-116,118,126-138,148-153,232-239
+server/polar/observability/slo_report/client.py
+  s_1948f7c000ac71::t_61067a8463450d 11,44,47,60,83,91
+clients/apps/web/src/app/(main)/[organization]/portal/authenticate/page.tsx
+  s_1948f7c000ac71::t_61067a8463450d 17,19-20,41-42
+server/migrations/versions/2026-11-16-1305_scope_custom_field_slug_index_to_current.py
+  s_1948f7c000ac71::t_61067a8463450d 1-80
+clients/adapters/nextjs/package.json
+  s_1948f7c000ac71::t_61067a8463450d 3,42,47
+server/scripts/ingest_test_events.py
+  s_1948f7c000ac71::t_61067a8463450d 4,20
+clients/apps/web/src/components/Benefit/BenefitGrant.tsx
+  s_1948f7c000ac71::t_61067a8463450d 16,62,66,509-527,529-531,580
+server/tests/file/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 9
+clients/apps/web/src/components/Landing/usage/film/storyboard.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-91
+clients/pnpm-workspace.yaml
+  s_1948f7c000ac71::t_61067a8463450d 104-108
+server/tests/metrics/test_tinybird_metrics.py
+  s_1948f7c000ac71::t_61067a8463450d 44-49,61,1594-1597,1608-1619,1643
+docs/features/usage-based-billing/introduction.mdx
+  s_1948f7c000ac71::t_61067a8463450d 2-4,13-19,21,35,55
+server/polar/customer_meter/service.py
+  s_1948f7c000ac71::t_61067a8463450d 9-10,44-45,49,143-144,148-153,155,162,169-171,175,179-181,183-187,236-237,240-242,257-260,262-270,275,383,409,510,689-725,813-845,857
+server/tests/meter/test_tasks.py
+  s_1948f7c000ac71::t_61067a8463450d 29-48
+server/scripts/linters/__main__.py
+  s_1948f7c000ac71::t_61067a8463450d 14,22
+clients/apps/web/src/components/Landing/DesktopNav.tsx
+  s_1948f7c000ac71::t_61067a8463450d 14,40,62-65,67-74,83,93
+clients/packages/ingestion/tsconfig.json
+  s_1948f7c000ac71::t_61067a8463450d 1-13
+sdk/generator/justfile
+  s_1948f7c000ac71::t_61067a8463450d 28-29
+clients/adapters/better-auth/package.json
+  s_1948f7c000ac71::t_61067a8463450d 3,62,73
+clients/apps/web/src/components/Finance/Steps/PayoutAccountStep.tsx
+  s_1948f7c000ac71::t_61067a8463450d 3,5,58-60,70,72-78
+clients/packages/i18n/src/locales/ko.ts
+  s_1948f7c000ac71::t_61067a8463450d 112-114
+server/polar/enums.py
+  s_1948f7c000ac71::t_61067a8463450d 4,8-10,134-135
+clients/packages/cli/src/services/billing-config/init.ts
+  s_1948f7c000ac71::t_61067a8463450d 9,28,30,215-216
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/sales/[id]/SalesPage.tsx
+  s_1948f7c000ac71::t_61067a8463450d 19-22,25,64-65,103,110,113,117-118,130-137,144-150,232-237
+clients/apps/web/src/components/Auth/GetStartedButton.tsx
+  s_1948f7c000ac71::t_61067a8463450d 15-16,23-24,88-89,95
+server/tests/integrations/resend/test_client.py
+  s_1948f7c000ac71::t_61067a8463450d 2,4,12,15-17
+clients/packages/cli/src/services/billing-config/languages/json/locate.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-47
+server/polar/email/tasks.py
+  s_1948f7c000ac71::t_61067a8463450d 2,31-52,67,77-82
+clients/adapters/adapter-utils/package.json
+  s_1948f7c000ac71::t_61067a8463450d 3,41
+clients/apps/web/src/components/Subscriptions/UpdateSubscriptionChangeSummary.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-230
+server/polar/declarative_config/auth.py
+  s_1948f7c000ac71::t_61067a8463450d 13
+clients/apps/demo-app/package.json
+  s_1948f7c000ac71::t_61067a8463450d 11
+clients/apps/web/src/components/Settings/Webhook/WebhookSettings.tsx
+  s_1948f7c000ac71::t_61067a8463450d 24
+sdk/generator/python/types.py
+  s_1948f7c000ac71::t_61067a8463450d 8,61,97,104-121
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/products/versions/RemovedTab.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-158
+clients/packages/ui/src/components/atoms/CountryStatePicker.tsx
+  s_1948f7c000ac71::t_61067a8463450d 4,13-18
+server/tests/event_type/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 6
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/customers/[customerId]/meter/[meterId]/CustomerMeterPage.tsx
+  s_1948f7c000ac71::t_61067a8463450d 3,144-157
+server/polar/app.py
+  s_1948f7c000ac71::t_61067a8463450d 2-3,8,43,71,133-135,156-158,165,173-175,188-191,222-228,285
+.github/workflows/unapproved_merges_report.yml
+  s_1948f7c000ac71::t_61067a8463450d 15-19,22,92,165
+.github/workflows/test_e2e.yaml
+  s_1948f7c000ac71::t_61067a8463450d 33-37,39,41,46,81,132,142,157,172,204
+clients/adapters/better-auth/CHANGELOG.md
+  s_1948f7c000ac71::t_61067a8463450d 3-12
+server/tests/event/test_service.py
+  s_1948f7c000ac71::t_61067a8463450d 13,797-875,947-973,1892-1925,2723-2785
+server/polar/reducer/repository.py
+  s_1948f7c000ac71::t_61067a8463450d 2,5,11,112-128
+docs/integrate/mcp.mdx
+  s_1948f7c000ac71::t_61067a8463450d 141,169,187-189,193,272,277-278
+server/tests/dispute/test_service.py
+  s_1948f7c000ac71::t_61067a8463450d 11-15,84,1616-1627
+clients/apps/web/next.config.mjs
+  s_1948f7c000ac71::t_61067a8463450d 7,94-104,115-118,132-142
+clients/packages/cli/src/utils/billing-config/describe.ts
+  s_1948f7c000ac71::t_61067a8463450d 24-29
+flake.nix
+  s_1948f7c000ac71::t_61067a8463450d 20-68,73,78-79,85-87,89,91-116
+server/tests/observability/observability/test_instrumentation_smoke.py
+  s_1948f7c000ac71::t_61067a8463450d 1-3,9,11,32-35,74-75,90-135
+server/polar/worker/_enqueue.py
+  s_1948f7c000ac71::t_61067a8463450d 119,135-136,161,179,185-187,203
+sdk/generator/typescript/template/src/metering/buffered.ts
+  s_1948f7c000ac71::t_61067a8463450d 73,157-160,170,176-180,325-326
+server/polar/customer/schemas/customer.py
+  s_1948f7c000ac71::t_61067a8463450d 1,9,65-75,81,88
+server/tests/license_key/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 6
+.github/workflows/deploy-notify.yml
+  s_1948f7c000ac71::t_61067a8463450d 23-28,33
+clients/apps/demo-app/polar.config.ts
+  s_1948f7c000ac71::t_61067a8463450d 40-43,60-61
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/sales/subscriptions/[id]/SubscriptionsPage.tsx
+  s_1948f7c000ac71::t_61067a8463450d 14,82-84
+server/tests/e2e/lifecycle/test_reducer_billing.py
+  s_1948f7c000ac71::t_61067a8463450d 1-449
+clients/apps/web/src/components/CustomerPortal/SubscriptionStatusPill.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-31
+clients/packages/cli/src/utils/flags.ts
+  s_1948f7c000ac71::t_61067a8463450d 2
+server/polar/reducer/bucket_repository.py
+  s_1948f7c000ac71::t_61067a8463450d 10,20,28,57-59,84-109,190-208,245,301-304,307-314,317,327-332,337-339,347-350,354-358,362-376,480,483-486,491,498-501,505-509,512,514-517,618,625-655,660-661,663-693,702,711-729,731-736,738-745,747-769,771-772
+clients/packages/cli/src/services/billing-config/languages/json/index.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-69
+server/scripts/merge_test_durations.py
+  s_1948f7c000ac71::t_61067a8463450d 1-32
+server/AGENTS.md
+  s_1948f7c000ac71::t_61067a8463450d 105-106,169
+clients/apps/web/src/components/CustomerPortal/CurrentPeriodOverview.tsx
+  s_1948f7c000ac71::t_61067a8463450d 20-25,148-149,152-153,155-156,158,175,183-198,200-251,254-268,271-273,275,277-281,284-288,291-295,297-303,305,307-310,313-325,327,329-334
+server/polar/subscription/bulk_update.py
+  s_1948f7c000ac71::t_61067a8463450d 69
+clients/packages/i18n/src/locales/it.ts
+  s_1948f7c000ac71::t_61067a8463450d 112-114
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/products/versions/[id]/VersionTitle.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-123
+clients/apps/mcp/src/tools/operations.ts
+  s_1948f7c000ac71::t_61067a8463450d 7,11,13,28-32,45-47,89
+.github/workflows/stale.yml
+  s_1948f7c000ac71::t_61067a8463450d 15-20
+server/polar/backoffice/organizations_v2/views/sections/overview_section.py
+  s_1948f7c000ac71::t_61067a8463450d 746-759,815,817,821-824
+clients/apps/web/src/components/CustomerPortal/CustomerPortalOverview.tsx
+  s_1948f7c000ac71::t_61067a8463450d 14-21,45-46,48-51,68-76,78-80,82-83,88-104,111,113,125-133,143
+clients/apps/web/src/hooks/queries/meters.ts
+  s_1948f7c000ac71::t_61067a8463450d 27,50,62-66,71
+clients/packages/polar/src/generate.ts
+  s_1948f7c000ac71::t_61067a8463450d 4,30-44,136-182,443,468,474-483,499-500,525-535,556
+server/polar/customer_portal/endpoints/oauth_accounts.py
+  s_1948f7c000ac71::t_61067a8463450d 126
+server/tests/customer_portal/endpoints/test_order.py
+  s_1948f7c000ac71::t_61067a8463450d 7
+server/polar/tax/repository.py
+  s_1948f7c000ac71::t_61067a8463450d 100-105
+server/tests/backoffice/auth/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 2,6,17,26,39-40,46,63-74,76-79,99-101,105-110,124,182,189,191-194,196-202,204-207,215,236-261,263,279,296,308,338-410
+sdk/generator/python/template/polar/version/errors.py
+  s_1948f7c000ac71::t_61067a8463450d 5
+server/polar/checkout/endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 14,365,369,382-387,407,411,424-429
+server/tests/e2e/post_purchase/test_benefit_grants.py
+  s_1948f7c000ac71::t_61067a8463450d 14
+server/polar/metrics/endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 113-118,219,240,256,274,296
+clients/packages/cli/src/services/billing-config/load.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 8,21,24,129-156
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/products/versions/[id]/VersionPage.tsx
+  s_1948f7c000ac71::t_61067a8463450d 3-4,7,9,12-13,15-16,19,27-118,140,144-164,178-182,186-187,189,191-207,209-215,218-258,260,262
+server/tests/dispute/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 5
+clients/apps/app/hooks/polar/subscriptions.ts
+  s_1948f7c000ac71::t_61067a8463450d 48-49,58
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/products/versions/layout.tsx
+  s_1948f7c000ac71::t_61067a8463450d 21
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/products/versions/VersionsPage.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-110
+clients/apps/web/src/components/CustomerPortal/CustomerChangePlanModal.tsx
+  s_1948f7c000ac71::t_61067a8463450d 9-13,15-16,18,22-30,32,36-37,43-44,46-110,112-140,150-151,160-176,226-240,247-248,276-277,279,300-301,345-346,371-391,393-431,433-437,439-472,476-480
+server/polar/backoffice/subscriptions/endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 110-111
+server/polar/declarative_config/drafts.py
+  s_1948f7c000ac71::t_61067a8463450d 1-2,5-12,17,27-44,46-47,54,57,62,65-75,80-94
+server/scripts/backfill_customer_default_payment_method.py
+  s_1948f7c000ac71::t_61067a8463450d 1-140
+clients/apps/web/src/components/Products/DraftVersionBanner.tsx
+  s_1948f7c000ac71::t_61067a8463450d 7,54-60,76-79
+clients/apps/web/src/components/Timeline/renderers.tsx
+  s_1948f7c000ac71::t_61067a8463450d 163-174
+server/polar/declarative_config/products.py
+  s_1948f7c000ac71::t_61067a8463450d 5,95-106,111,119-123,126-129,137,141,147-150,161-162,167-170
+clients/packages/cli/src/services/billing-config/languages/typescript/remove.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-127
+server/polar/meter/aggregation.py
+  s_1948f7c000ac71::t_61067a8463450d 4,17,74,121
+server/polar/customer_email_update/service.py
+  s_1948f7c000ac71::t_61067a8463450d 113
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/products/versions/VersionsTab.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-85
+clients/apps/web/src/proxy.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 668-681
+.github/workflows/copilot-setup-steps.yml
+  s_1948f7c000ac71::t_61067a8463450d 14-16,30,47-52,54,63,68,79,84
+server/polar/auth/turnstile.py
+  s_1948f7c000ac71::t_61067a8463450d 1,6,22
+server/polar/integrations/discord/client.py
+  s_1948f7c000ac71::t_61067a8463450d 3,25,144
+clients/apps/web/src/components/Landing/integrate/Sdk.tsx
+  s_1948f7c000ac71::t_61067a8463450d 78
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/finance/taxes/TaxesPage.tsx
+  s_1948f7c000ac71::t_61067a8463450d 9,23,133-134
+clients/apps/web/src/app/(main)/[organization]/portal/CustomerPortalLayoutWrapper.tsx
+  s_1948f7c000ac71::t_61067a8463450d 30
+server/polar/backoffice/email_logs/endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 13,17,23,25,189-206,292-340
+server/tests/customer_portal/auth/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 5,24,28,53,65-66,77,87,95,111,126,139,187,215,240,252,262
+server/tests/mcp_event/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 1-329
+server/load_tests/locustfile.py
+  s_1948f7c000ac71::t_61067a8463450d 25-29,31
+clients/packages/cli/src/services/trigger.ts
+  s_1948f7c000ac71::t_61067a8463450d 15
+server/tests/integrations/polar/test_tasks.py
+  s_1948f7c000ac71::t_61067a8463450d 23,418-441
+clients/apps/web/src/components/Auth/EmailOTPForm.test.tsx
+  s_1948f7c000ac71::t_61067a8463450d 93
+clients/apps/app/eas.json
+  s_1948f7c000ac71::t_61067a8463450d 10-13,17-18,30-33
+server/polar/observability/cpu_starvation.py
+  s_1948f7c000ac71::t_61067a8463450d 1-72
+server/polar/models/custom_field.py
+  s_1948f7c000ac71::t_61067a8463450d 8,17,97-98,104,127-136,142-144
+clients/packages/i18n/src/locales/hu.ts
+  s_1948f7c000ac71::t_61067a8463450d 112-114
+sdk/generator/python/template/tests/test_base.py
+  s_1948f7c000ac71::t_61067a8463450d 6,8,14-16,45-137,313,317,323,335-345,430,433-500
+sdk/generator/outpost/push_telemetry.lua
+  s_1948f7c000ac71::t_61067a8463450d 1-13
+clients/apps/web/src/app/(main)/[organization]/portal/wallet/page.tsx
+  s_1948f7c000ac71::t_61067a8463450d 19,21-22,43-44
+server/tests/e2e/purchase/one_time/test_with_discount.py
+  s_1948f7c000ac71::t_61067a8463450d 9
+clients/apps/web/src/components/CustomerPortal/CustomerPortalTeam.tsx
+  s_1948f7c000ac71::t_61067a8463450d 10,31-32,42,48,176-211,213-216,218-287,289,292-293,296,298
+clients/packages/ingestion/tsdown.config.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-13
+server/polar/integrations/linear/client.py
+  s_1948f7c000ac71::t_61067a8463450d 3,37,39,41
+server/polar/backoffice/organizations_v2/endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 85-87,1513-1528
+server/tests/integrations/polar/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 9
+clients/packages/checkout/src/components/CustomFieldInput.test.tsx
+  s_1948f7c000ac71::t_61067a8463450d 30-31
+clients/packages/cli/src/utils/billing-config/name.ts
+  s_1948f7c000ac71::t_61067a8463450d 14-15,21,50-55,90,239-241
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/products/versions/[id]/format.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 1,3-8,28-130
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/products/versions/page.tsx
+  s_1948f7c000ac71::t_61067a8463450d 4,22
+clients/apps/web/src/components/CustomerPortal/CustomerPortalSubscriptions.tsx
+  s_1948f7c000ac71::t_61067a8463450d 3-4,6,11-18,39-42,51-56,94-110,112-118,125-128,130-138,142
+server/polar/organization_review/repository.py
+  s_1948f7c000ac71::t_61067a8463450d 31,526
+server/tests/auth/sso/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 4
+server/tests/observability/observability/test_cpu_starvation.py
+  s_1948f7c000ac71::t_61067a8463450d 1-56
+sdk/generator/typescript/template/src/metering/client.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 10,394,400,409-411,429,431-433,437,520,554,571,588-592,925,935-940
+server/polar/integrations/resend/endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 60-61
+clients/apps/web/src/components/Payouts/ManagePayoutAccountModal.tsx
+  s_1948f7c000ac71::t_61067a8463450d 13,92-98,103
+clients/packages/cli/scripts/docs.ts
+  s_1948f7c000ac71::t_61067a8463450d 41,46
+clients/packages/polar/src/schema/metadata.ts
+  s_1948f7c000ac71::t_61067a8463450d 42
+sdk/generator/tests/python/test_types.py
+  s_1948f7c000ac71::t_61067a8463450d 1-14
+server/polar/customer_portal/schemas/subscription.py
+  s_1948f7c000ac71::t_61067a8463450d 38,69-71,121,129,138,147-151
+server/polar/integrations/discord/endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 42
+server/polar/webhook/repository.py
+  s_1948f7c000ac71::t_61067a8463450d 6,16,22,195-199,217-227,233-236
+server/polar/mcp_event/schemas.py
+  s_1948f7c000ac71::t_61067a8463450d 1-65
+server/tests/notification_recipient/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 2
+sdk/generator/python/template/polar/version/outputs.py
+  s_1948f7c000ac71::t_61067a8463450d 6-7,74
+.github/workflows/deploy-unlock.yml
+  s_1948f7c000ac71::t_61067a8463450d 12-16,19
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/products/versions/[id]/VersionDiff.tsx
+  s_1948f7c000ac71::t_61067a8463450d 8-15,18-22,74,77,84-86,152,211,236,263,307,313,315-318,341-355
+server/polar/billing_entry/repository.py
+  s_1948f7c000ac71::t_61067a8463450d 7,20-24,124-126,130-131,133,136,140-142,144,156-178,186,193,206-208,212-214
+server/tests/integrations/polar/test_service.py
+  s_1948f7c000ac71::t_61067a8463450d 43,46,2650,2652-2654,2660,2826,2832,2839,2846,2852,2858,2871-2889,2892,2903
+server/polar/declarative_config/schemas.py
+  s_1948f7c000ac71::t_61067a8463450d 10,21-29,32,44-51,69,78,96,121-125,138,270-279,285,324-333,341-349,353-354,412,417,424-471,554-569,596,599,629,638-640,683-685,885-931,941-945,950-954,976-980,1057-1058
+server/polar/reducer/service.py
+  s_1948f7c000ac71::t_61067a8463450d 36,45,51,211-213,226-229,249-311,328-329,343,352-361,365-433,442-446,475,493-494,501,508-509,595-596,599-631,657-658,661-665,668,677,685-691,695-699,702-703,880,895-896,924-947,978-985,996-1000,1117,1242,1245-1248,1252,1263-1264,1271-1273,1277-1303
+clients/packages/cli/src/services/billing-config/service.ts
+  s_1948f7c000ac71::t_61067a8463450d 16-19,28,38-48,74,78-79,81-84,95-98,116-117,121
+server/polar/catalog/schemas.py
+  s_1948f7c000ac71::t_61067a8463450d 2,6-12,18-27,50-62,75-79,81,89-119,121-129,131-148
+server/tests/integrations/discord/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 1-21
+.github/pull_request_template.md
+  s_1948f7c000ac71::t_61067a8463450d 28
+adr/0005-auth-subject-and-scopes.md
+  s_1948f7c000ac71::t_61067a8463450d 1-53
+clients/apps/web/src/components/Customer/CustomerPage/CustomerOverview.tsx
+  s_1948f7c000ac71::t_61067a8463450d 40
+clients/apps/web/src/components/Customer/CustomerPage/CustomerBenefitGrantsTable.tsx
+  s_1948f7c000ac71::t_61067a8463450d 3,6,13,24-27,39-44,60-72,93-97,102-103,118-128
+clients/packages/polar/src/schema/customField.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-245
+.github/workflows/ci-timings.yml
+  s_1948f7c000ac71::t_61067a8463450d 17-22
+clients/packages/orbit/src/icons/lucide.ts
+  s_1948f7c000ac71::t_61067a8463450d 71
+sdk/cli-commands/src/orders/update.ts
+  s_1948f7c000ac71::t_61067a8463450d 34
+clients/adapters/better-auth/example/package.json
+  s_1948f7c000ac71::t_61067a8463450d 15
+sdk/generator/typescript/template/src/metering/flush.bench.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-41
+clients/packages/ingestion/LICENSE
+  s_1948f7c000ac71::t_61067a8463450d 1-201
+server/polar/openapi.py
+  s_1948f7c000ac71::t_61067a8463450d 176-178,189-197
+.github/workflows/compress_images.yaml
+  s_1948f7c000ac71::t_61067a8463450d 11-13,21-25,27,30
+clients/apps/web/src/components/Benefit/utils.tsx
+  s_1948f7c000ac71::t_61067a8463450d 90-100,104-110
+clients/apps/web/src/hooks/queries/benefits.ts
+  s_1948f7c000ac71::t_61067a8463450d 265-312
+clients/apps/web/src/components/Subscriptions/UpdateSubscriptionBillingPeriodForm.tsx
+  s_1948f7c000ac71::t_61067a8463450d 7,77-82,97,129
+.github/workflows/docs_links.yaml
+  s_1948f7c000ac71::t_61067a8463450d 18,23,26-30,32,34,36,39,43
+clients/apps/web/src/app/(main)/auth/page.tsx
+  s_1948f7c000ac71::t_61067a8463450d 3,44
+clients/apps/web/src/components/Landing/usage/film/stage.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-70
+server/tests/billing_entry/test_service.py
+  s_1948f7c000ac71::t_61067a8463450d 11,13-14,26,35,39,41,52-53,62,1674-2315
+clients/apps/app/components/Payouts/SupportEmailVerification.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-117
+clients/apps/app/package.json
+  s_1948f7c000ac71::t_61067a8463450d 39,51
+clients/apps/web/src/components/CustomerPortal/CustomerUnitQuantityManager.tsx
+  s_1948f7c000ac71::t_61067a8463450d 68-74,76-77,87,232-239
+server/polar/event/endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 61,431,442
+dev/docker/docker-compose.shared.yml
+  s_1948f7c000ac71::t_61067a8463450d 12,14-24,32-34,36-37,39,171-172
+server/tests/notifications/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 2
+sdk/generator/python/template/tests/benchmarks/conftest.py
+  s_1948f7c000ac71::t_61067a8463450d 12,130,133
+server/tests/billing_interval/test_service_usage_windows.py
+  s_1948f7c000ac71::t_61067a8463450d 1,4,11-17,19-21,25,32-33,210-404
+server/benchmarks/test_outpost.py
+  s_1948f7c000ac71::t_61067a8463450d 3,184-256
+dev/cli/commands/docker.py
+  s_1948f7c000ac71::t_61067a8463450d 746-754
+server/tests/integrations/chargeback_stop/test_tasks.py
+  s_1948f7c000ac71::t_61067a8463450d 1-34
+server/polar/mcp_event/service.py
+  s_1948f7c000ac71::t_61067a8463450d 1-179
+server/tests/openapi.2026-10.json
+  s_1948f7c000ac71::t_61067a8463450d 1
+server/polar/kit/external_id.py
+  s_1948f7c000ac71::t_61067a8463450d 3,7,15-20,30,36-37,39
+docs/package.json
+  s_1948f7c000ac71::t_61067a8463450d 17
+server/polar/webhook/tasks.py
+  s_1948f7c000ac71::t_61067a8463450d 7,22,24-28,38,110-111,151,159-160,177,191,195,213-215,217-220,222
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/products/versions/[id]/diff.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 28-44
+server/polar/benefit/strategies/slack_shared_channel/service.py
+  s_1948f7c000ac71::t_61067a8463450d 4,255,420,483,507,585,600,620,634
+server/polar/checkout/service.py
+  s_1948f7c000ac71::t_61067a8463450d 59,87-90,141,640,951,1107-1108,1111-1116,1191,1194-1223,1230-1245,1247-1260,1450-1453,1646-1648,1826,1838-1843,1868
+server/polar/customer_portal/endpoints/wallet.py
+  s_1948f7c000ac71::t_61067a8463450d 20
+clients/apps/web/src/components/Landing/integrate/Api.tsx
+  s_1948f7c000ac71::t_61067a8463450d 70
+clients/apps/mcp/src/server.ts
+  s_1948f7c000ac71::t_61067a8463450d 5,32-34
+server/polar/email/sender.py
+  s_1948f7c000ac71::t_61067a8463450d 4,6,72-75,78-81,108,156,165,173,188-203,224,240
+server/tests/fixtures/database.py
+  s_1948f7c000ac71::t_61067a8463450d 12,74-77,84-92
+server/tests/integrations/polar/test_client.py
+  s_1948f7c000ac71::t_61067a8463450d 8-10,21-23,275-318
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/sales/SalesPage.tsx
+  s_1948f7c000ac71::t_61067a8463450d 8,177,179
+server/tests/checkout/test_service.py
+  s_1948f7c000ac71::t_61067a8463450d 6,42,56,143-145,2687-2705,5038-5039,5066-5067,5104-5105,5144-5145,5515-5716,6381-6385,6473,6492-6624,6668,6747,6804,6974-7005,7455-7456,7598-7599,7664,7696-7697,8441-8480
+adr/README.md
+  s_1948f7c000ac71::t_61067a8463450d 1-110
+clients/apps/web/src/components/Benefit/UnrevokeBenefitGrantButton.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-37
+server/polar/customer_portal/service/subscription.py
+  s_1948f7c000ac71::t_61067a8463450d 33-35,278,281,290
+clients/packages/ingestion/.oxlintrc.json
+  s_1948f7c000ac71::t_61067a8463450d 1-5
+clients/packages/polar/src/schema/config.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 80-98,980-1103
+server/tests/oauth2/endpoints/test_well_known.py
+  s_1948f7c000ac71::t_61067a8463450d 3
+server/tests/declarative_config/test_schemas.py
+  s_1948f7c000ac71::t_61067a8463450d 1-2,5-10,24-36
+server/polar/billing_entry/comparison.py
+  s_1948f7c000ac71::t_61067a8463450d 11,21,25-27,123-128,219,223,226-231
+adr/0012-minimize-data-in-ai-api-calls.md
+  s_1948f7c000ac71::t_61067a8463450d 1-59
+clients/packages/cli/src/services/billing-config/generate/names.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-109
+clients/apps/web/src/components/CustomerPortal/CustomerPortalOrder.tsx
+  s_1948f7c000ac71::t_61067a8463450d 6-7,13,21,59-60,62-88,90,94,96-110,112-114,116,118-126,128,130-148,150-162,165,167-170,173,175-176,178-183,185-191,200
+clients/apps/web/src/components/CustomerPortal/CustomerPortalOrders.tsx
+  s_1948f7c000ac71::t_61067a8463450d 4-5,10,16-22,28,35,38,53-54,56-101,103-118,124-134,138
+clients/apps/web/src/components/Settings/Billing/BillingAddressModal.tsx
+  s_1948f7c000ac71::t_61067a8463450d 12-15,46,61-62,65,208,217,220
+clients/apps/web/src/components/Settings/Webhook/WebhookContextView.tsx
+  s_1948f7c000ac71::t_61067a8463450d 35
+server/polar/auth/helpers.py
+  s_1948f7c000ac71::t_61067a8463450d 21-26,28-33,40-41
+sdk/generator/typescript/template/tsdown.config.ts
+  s_1948f7c000ac71::t_61067a8463450d 8
+server/scripts/linters/table_column.py
+  s_1948f7c000ac71::t_61067a8463450d 1-87
+server/tests/auth/oauth2/test_router.py
+  s_1948f7c000ac71::t_61067a8463450d 1-2,6,8,13,15,22,46,51,93,122,137,158,181,194-288
+server/tests/e2e/post_purchase/test_seat_claim.py
+  s_1948f7c000ac71::t_61067a8463450d 10
+server/tests/metrics/test_service.py
+  s_1948f7c000ac71::t_61067a8463450d 43-49,64,366,375,384,393,402,2375-2378,2389-2400,2424
+.agents/skills/api-surface-review/SKILL.md
+  s_1948f7c000ac71::t_61067a8463450d 113
+clients/apps/web/vitest.setup.ts
+  s_1948f7c000ac71::t_61067a8463450d 3,7-40,51-59
+server/polar/billing_interval/repository.py
+  s_1948f7c000ac71::t_61067a8463450d 70-92
+adr/0014-agent-auth-subject.md
+  s_1948f7c000ac71::t_61067a8463450d 1-90
+clients/packages/ingestion/src/strategy.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-56
+.github/workflows/test_server.yaml
+  s_1948f7c000ac71::t_61067a8463450d 31-37,72-77,89,94,117-120,122-124,129,167-172,195-199,212-216,251,259,282,301-306,339,347,370,389-394,405,410,425,431-432,438-439,443,468,483-488,492,497,504,516,521,527,542,546,549-551,558,563-564,571,573-575,577-588,590,592-595,603-607,620-650
+server/polar/organization_review/collectors/website.py
+  s_1948f7c000ac71::t_61067a8463450d 7,79,403
+clients/apps/web/src/components/CustomerPortal/CustomerPortalSettings.tsx
+  s_1948f7c000ac71::t_61067a8463450d 13-14,22-27,44-49,109-110,112-148,150-180,186-191,195-203,206-209,214,216,218-220
+clients/apps/web/src/components/Landing/CustomerStory.tsx
+  s_1948f7c000ac71::t_61067a8463450d 6,22,93-102
+server/tests/customer_portal/endpoints/test_organization.py
+  s_1948f7c000ac71::t_61067a8463450d 2
+clients/apps/web/src/components/Subscriptions/UpdateSubscriptionPlanForm.test.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-105
+clients/packages/cli/src/commands/config/init/organization.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-111
+server/tests/benefit/grant/test_scope.py
+  s_1948f7c000ac71::t_61067a8463450d 7,11,13,15,21-52,62,85,96,118,129,142,155,177,210,222,236,249,271,283,297,305,327,338,352,360,385,396,424,437,453
+server/polar/benefit/grant/schemas.py
+  s_1948f7c000ac71::t_61067a8463450d 1-70
+.github/workflows/expo.yml
+  s_1948f7c000ac71::t_61067a8463450d 7-9,21-25,27,36,41,48,58,61
+clients/apps/web/src/components/Customer/CustomerPage/CustomerSubscriptionsTable.tsx
+  s_1948f7c000ac71::t_61067a8463450d 3,49,51
+clients/apps/app/app/(authenticated)/subscriptions/[id]/update/index.tsx
+  s_1948f7c000ac71::t_61067a8463450d 203-207,212,222,228,238-247,249-251,254-260
+server/polar/operational_errors.py
+  s_1948f7c000ac71::t_61067a8463450d 7,39,45-48,60-63
+clients/packages/cli/src/commands/config/publish.ts
+  s_1948f7c000ac71::t_61067a8463450d 1,28,52-60,63,137,144
+server/polar/subscription/repository.py
+  s_1948f7c000ac71::t_61067a8463450d 9,49-50,158-246,290,297,796-798,903-905,912-913,920-921
+dev/cli/up_steps/04_start_infrastructure.py
+  s_1948f7c000ac71::t_61067a8463450d 42-48
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/products/versions/Overview.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-69
+server/benchmarks/test_event.py
+  s_1948f7c000ac71::t_61067a8463450d 4-5,7,10-12,14-16,19-20,23,26-34,38-43,45,49-51,157-370
+server/tests/kit/db/test_postgres.py
+  s_1948f7c000ac71::t_61067a8463450d 8
+clients/apps/web/src/components/Landing/chapters/UsageBillingMock.tsx
+  s_1948f7c000ac71::t_61067a8463450d 26,38-60,63,117-121,124-131,147-153,156
+.workmux.yaml
+  s_1948f7c000ac71::t_61067a8463450d 1-34
+clients/apps/mcp/src/events.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-184
+server/tests/feedback/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 4
+clients/apps/web/src/components/Landing/NotFound.tsx
+  s_1948f7c000ac71::t_61067a8463450d 71,94-96
+server/tests/e2e/purchase/conftest.py
+  s_1948f7c000ac71::t_61067a8463450d 6
+clients/apps/web/src/components/CustomerPortal/SavedCardsSelector.tsx
+  s_1948f7c000ac71::t_61067a8463450d 4-5,12,45-54,59-69,71-83,87,89-106,110,112,114-115
+clients/packages/cli/src/commands/config/index.ts
+  s_1948f7c000ac71::t_61067a8463450d 4,12-20
+clients/apps/web/src/app/(main)/[organization]/portal/verify-email/VerifyEmailPage.tsx
+  s_1948f7c000ac71::t_61067a8463450d 6-7,10,35-40,46-51,56-61,64,66,71,76,79,82-84
+clients/apps/web/src/components/CustomerPortal/ChangeEmailForm.tsx
+  s_1948f7c000ac71::t_61067a8463450d 99,108-115,136
+.agents/skills/ship-safety/SKILL.md
+  s_1948f7c000ac71::t_61067a8463450d 74-77
+clients/apps/web/src/components/Customer/AddCredits/AddCreditsModal.tsx
+  s_1948f7c000ac71::t_61067a8463450d 3,60,149-156,218-221
+clients/apps/web/src/components/Landing/Pipeline.tsx
+  s_1948f7c000ac71::t_61067a8463450d 152,173
+server/polar/customer_portal/schemas/benefit_grant.py
+  s_1948f7c000ac71::t_61067a8463450d 6,62-64
+server/polar/product/schemas.py
+  s_1948f7c000ac71::t_61067a8463450d 609-614,655-659,822-826,1206-1214,1216-1220
+sdk/generator/benchmarks/customers.json
+  s_1948f7c000ac71::t_61067a8463450d 1-36
+docs/features/subscriptions/proration.mdx
+  s_1948f7c000ac71::t_61067a8463450d 13,46-57,107
+server/polar/declarative_config/service.py
+  s_1948f7c000ac71::t_61067a8463450d 2,12-15,20,22,25,27-36,92,105,151-163,232-239,284-295,426-432,442-448,454-458,465,468-469,471,473-487,489-493,499-500,503,508-525,534,544-545,547,550-557,560-586,594-595,601-602,617,638-644,663-673,679-694,706-709,727,872-885,979-980,984,986,1018,1021-1024,1028,1031-1054,1057-1061,1063,1065-1076,1081,1090-1160,1266,1270,1283,1290-1298,1334,1347-1355
+clients/apps/web/src/app/(main)/[organization]/portal/CustomerPortalPage.tsx
+  s_1948f7c000ac71::t_61067a8463450d 11,62-73
+clients/packages/i18n/src/locales/en.ts
+  s_1948f7c000ac71::t_61067a8463450d 230-244
+server/polar/benefit/tasks.py
+  s_1948f7c000ac71::t_61067a8463450d 13,26,134,149-155,161,172,193,224-231,237,249
+server/tests/observability/slo_report/test_client.py
+  s_1948f7c000ac71::t_61067a8463450d 1,13-14,26-27
+server/tests/backoffice/payouts/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 4,24,29-30,43,60,89,121,148,173,201,224,252,276,312,346,372,403,449
+server/tests/customer_portal/endpoints/test_customer.py
+  s_1948f7c000ac71::t_61067a8463450d 4,395
+server/polar/checkout/repository.py
+  s_1948f7c000ac71::t_61067a8463450d 164
+server/polar/logfire.py
+  s_1948f7c000ac71::t_61067a8463450d 9-13,38,228-230,260,298-301,305
+clients/apps/web/src/components/Landing/graphics/FeatureMarks.tsx
+  s_1948f7c000ac71::t_61067a8463450d 1-243
+clients/packages/cli/src/services/billing-config/load.ts
+  s_1948f7c000ac71::t_61067a8463450d 4,12,14,40
+clients/packages/cli/src/services/billing-config/issues.ts
+  s_1948f7c000ac71::t_61067a8463450d 6-8,41-42,74-79
+server/tests/e2e/purchase/one_time/test_with_tax.py
+  s_1948f7c000ac71::t_61067a8463450d 11
+clients/packages/polar/src/index.ts
+  s_1948f7c000ac71::t_61067a8463450d 37,40-43
+clients/packages/ui/src/lib/states.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-151
+server/polar/license_key/service.py
+  s_1948f7c000ac71::t_61067a8463450d 181-186,269-273,282
+clients/apps/web/src/components/Layout/OnboardingLayout.tsx
+  s_1948f7c000ac71::t_61067a8463450d 8-11,106
+sdk/generator/typescript/emitter.py
+  s_1948f7c000ac71::t_61067a8463450d 31,137-153,220-221,224
+sdk/generator/python/emitter.py
+  s_1948f7c000ac71::t_61067a8463450d 9,11,17,31,133,148,162,186-201,225,260-277,341-380,450,454-463,501
+clients/packages/checkout/src/checkout.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-9,20-43
+server/Dockerfile
+  s_1948f7c000ac71::t_61067a8463450d 82,84,102-103,126,187
+.github/workflows/deploy-timings.yml
+  s_1948f7c000ac71::t_61067a8463450d 23-28
+clients/apps/web/src/components/Benefit/LicenseKeys/LicenseKeysList.tsx
+  s_1948f7c000ac71::t_61067a8463450d 73
+adr/0001-record-architecture-decisions.md
+  s_1948f7c000ac71::t_61067a8463450d 1-48
+clients/packages/cli/src/commands/config/generate.test.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-249
+sdk/generator/typescript/template/src/metering/index.ts
+  s_1948f7c000ac71::t_61067a8463450d 14
+server/polar/license_key/tasks.py
+  s_1948f7c000ac71::t_61067a8463450d 49-50,55-58,64,75-78
+sdk/generator/python/template/polar/metering/buffered.py
+  s_1948f7c000ac71::t_61067a8463450d 73-74,190-194,209,215-220,226-227,292-293
+server/tests/checkout/test_repository.py
+  s_1948f7c000ac71::t_61067a8463450d 131-134,170
+server/tests/e2e/lifecycle/test_renewal.py
+  s_1948f7c000ac71::t_61067a8463450d 15
+server/polar/worker/_debounce.py
+  s_1948f7c000ac71::t_61067a8463450d 20,23,50-51,76-83
+docs/migrate-lemon-squeezy.mdx
+  s_1948f7c000ac71::t_61067a8463450d 1-63
+adr/0013-minimize-personal-data-in-telemetry.md
+  s_1948f7c000ac71::t_61067a8463450d 1-89
+clients/apps/web/src/hooks/queries/subscriptions.ts
+  s_1948f7c000ac71::t_61067a8463450d 78-94,168-170,242-244,290-292,439-440
+clients/packages/ingestion/src/strategies/S3/index.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-92
+adr/0006-migration-and-backfill-safety.md
+  s_1948f7c000ac71::t_61067a8463450d 1-115
+clients/apps/web/src/components/CustomerPortal/CustomerSubscriptionHeader.tsx
+  s_1948f7c000ac71::t_61067a8463450d 4-6,9,16,23-27,30-37,39-47,54,56,58-59
+server/migrations/versions/2026-11-12-1405_add_manual_benefit_grant_timestamps.py
+  s_1948f7c000ac71::t_61067a8463450d 1-116
+server/polar/benefit/grant/endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 4,7,9-11,14,16,18-19,29-103
+server/polar/order/schemas.py
+  s_1948f7c000ac71::t_61067a8463450d 396
+server/polar/subscription/tasks.py
+  s_1948f7c000ac71::t_61067a8463450d 7,19,118,186-187,192-194
+clients/apps/web/src/components/CustomerPortal/CustomerSubscriptionDetails.tsx
+  s_1948f7c000ac71::t_61067a8463450d 11,13,18-23,27-30,66-73,81,84-89,96-100,102-132,134-159,161-164,166-184,186,189,191,193-217,219-224,226-237,239,241,243-246,248,255-258,260-268,272,275-278,285
+clients/apps/app/app.config.js
+  s_1948f7c000ac71::t_61067a8463450d 4-6,56
+server/polar/models/catalog_custom_field.py
+  s_1948f7c000ac71::t_61067a8463450d 1-38
+server/tests/auth/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 4,7,27,32,57,63,77,92,202,207,227,247,263,286,305
+server/polar/product/service.py
+  s_1948f7c000ac71::t_61067a8463450d 350,491,670-674,677-682,831-832,911-916
+clients/packages/polar/src/schema/meter.ts
+  s_1948f7c000ac71::t_61067a8463450d 13,71,137,139,141,143,145,147,149,151,166,168,200-204,213,215,227,230,248,251,262,266,271,276,281,286,291,310,319,322-325,340
+clients/apps/app/components/Subscriptions/SubscriptionRow.tsx
+  s_1948f7c000ac71::t_61067a8463450d 24
+clients/apps/web/src/csp.mjs
+  s_1948f7c000ac71::t_61067a8463450d 48,50
+clients/apps/web/src/components/Meter/MeterFilterReadOnlyConfiguration.tsx
+  s_1948f7c000ac71::t_61067a8463450d 7-17,19,34
+server/tests/e2e/infra/external_mocks.py
+  s_1948f7c000ac71::t_61067a8463450d 12,26,29-30,38
+server/pyproject.toml
+  s_1948f7c000ac71::t_61067a8463450d 9,16-17,19,28-29,50,67-68,78,84-85,118,142,229
+clients/packages/polar/src/schema/visibility.ts
+  s_1948f7c000ac71::t_61067a8463450d 18,20
+server/polar/worker/_broker.py
+  s_1948f7c000ac71::t_61067a8463450d 74,84
+clients/apps/web/src/components/Orders/OrderDownloadActions.tsx
+  s_1948f7c000ac71::t_61067a8463450d 4,23,31,36,45,55
+.agents/skills/adr-check/SKILL.md
+  s_1948f7c000ac71::t_61067a8463450d 3,17,47
+server/tests/integrations/stripe/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 6,14,131-133,141,145
+clients/apps/web/src/components/CustomerPortal/UpcomingUsageCharge.tsx
+  s_1948f7c000ac71::t_61067a8463450d 5-11,38-41,51-78,80,82,85-88,91,93-98,100,102-106,108-113
+server/tests/order/test_tasks.py
+  s_1948f7c000ac71::t_61067a8463450d 89,123,165,198,227
+sdk/generator/typescript/template/src/requests.bench.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-89
+sdk/generator/typescript/template/src/outpost/index.ts
+  s_1948f7c000ac71::t_61067a8463450d 4,8
+sdk/generator/tests/test_openapi.py
+  s_1948f7c000ac71::t_61067a8463450d 16-21,30
+clients/apps/web/package.json
+  s_1948f7c000ac71::t_61067a8463450d 14,17,36-37,74,82
+server/tests/checkout_link/test_service.py
+  s_1948f7c000ac71::t_61067a8463450d 15,545-574
+server/polar/integrations/stripe/endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 14-17,95-99
+clients/apps/web/src/components/Landing/story/FigurePlaceholder.tsx
+  s_1948f7c000ac71::t_61067a8463450d 19
+sdk/generator/python/template/polar/version/literals.py
+  s_1948f7c000ac71::t_61067a8463450d 3-6,8-9,13
+server/tests/integrations/slack/test_client.py
+  s_1948f7c000ac71::t_61067a8463450d 3,12,14,16,20,22
+sdk/generator/benchmarks/customer-server.mjs
+  s_1948f7c000ac71::t_61067a8463450d 1-21
+clients/packages/cli/src/services/billing-config/languages/json/locate.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-25
+server/migrations/versions/2026-11-16-0803_add_customer_signals_to_checkouts.py
+  s_1948f7c000ac71::t_61067a8463450d 1-40
+server/benchmarks/test_reducer.py
+  s_1948f7c000ac71::t_61067a8463450d 220-223,225
+clients/packages/i18n/src/locales/es.ts
+  s_1948f7c000ac71::t_61067a8463450d 112-114
+server/polar/custom_field/service.py
+  s_1948f7c000ac71::t_61067a8463450d 27-28,33,44-52,62-63,87-91,134,175-182,258-260
+server/tests/member/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 4
+sdk/generator/typescript/template/src/outpost/jump-hash.ts
+  s_1948f7c000ac71::t_61067a8463450d 1-23
+server/polar/worker/repository.py
+  s_1948f7c000ac71::t_61067a8463450d 1-69
+server/tests/notifications/testdata/test_MaintainerSubscriptionCancellationNotification.html
+  s_1948f7c000ac71::t_61067a8463450d 15
+clients/apps/web/src/components/CustomerPortal/CustomerPortalWallet.tsx
+  s_1948f7c000ac71::t_61067a8463450d 2-11,23-41
+clients/adapters/nuxt/CHANGELOG.md
+  s_1948f7c000ac71::t_61067a8463450d 3-12
+server/tests/backoffice/impersonation/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 3,21,28-29,40
+server/polar/backoffice/auth/service.py
+  s_1948f7c000ac71::t_61067a8463450d 66-72
+sdk/generator/python/template/polar/_httpx_compat.py
+  s_1948f7c000ac71::t_61067a8463450d 1-23
+server/polar/meter/service.py
+  s_1948f7c000ac71::t_61067a8463450d 23,57-58,61,106-107,121-124,239-240,242-243,253,257-259,261-263,286-287,292-293,351-353,356,360-363
+server/polar/meter/tasks.py
+  s_1948f7c000ac71::t_61067a8463450d 16,89-92
+server/benchmarks/conftest.py
+  s_1948f7c000ac71::t_61067a8463450d 37,73
+server/polar/integrations/slack/client.py
+  s_1948f7c000ac71::t_61067a8463450d 4,29
+server/tests/benefit/grant/test_endpoints.py
+  s_1948f7c000ac71::t_61067a8463450d 2,4-5,8,10,15-17,20,34-71,323-475
+clients/apps/app/components/Shared/Banner.tsx
+  s_1948f7c000ac71::t_61067a8463450d 19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "8ff87d17e59c94ee231472e60136a0e6bfeeab19",
+  "prompts": {},
+  "sessions": {
+    "s_1948f7c000ac71": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e0ab2e82-88cf-49cb-aa72-78a7db35759c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

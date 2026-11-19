@@ -1,0 +1,27 @@
+clients/apps/web/src/components/Metrics/ShareChartModal.tsx
+  s_2411e7f448f265::t_13f2ab845c1732 156-160
+clients/apps/web/src/components/Shared/InternalServerError.tsx
+  s_2411e7f448f265::t_13f2ab845c1732 52
+clients/apps/web/src/components/Brand/logos/LogoType.tsx
+  s_2411e7f448f265::t_3534e32dd7a023 10,15,32
+clients/apps/web/src/app/api/og/route.tsx
+  s_2411e7f448f265::t_13f2ab845c1732 50
+clients/apps/web/src/app/layout.tsx
+  s_2411e7f448f265::t_13f2ab845c1732 74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "e3be458991d564adf92a304bc6acf4ca9e3bc8e1",
+  "prompts": {},
+  "sessions": {
+    "s_2411e7f448f265": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "36d6744c-c87b-40b9-882c-da95c1b2c126",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

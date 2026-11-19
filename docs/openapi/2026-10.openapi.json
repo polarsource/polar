@@ -18515,16 +18515,6 @@
               }
             }
           },
-          "409": {
-            "description": "Stripe already refunded the payment at its own expense.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RefundPaymentAlreadyRefundedByStripe"
-                }
-              }
-            }
-          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -72731,28 +72721,6 @@
         ],
         "title": "RefundDispute",
         "description": "Dispute associated with a refund,\nin case we prevented a dispute by issuing a refund."
-      },
-      "RefundPaymentAlreadyRefundedByStripe": {
-        "properties": {
-          "error": {
-            "type": "string",
-            "const": "RefundPaymentAlreadyRefundedByStripe",
-            "title": "Error",
-            "examples": [
-              "RefundPaymentAlreadyRefundedByStripe"
-            ]
-          },
-          "detail": {
-            "type": "string",
-            "title": "Detail"
-          }
-        },
-        "type": "object",
-        "required": [
-          "error",
-          "detail"
-        ],
-        "title": "RefundPaymentAlreadyRefundedByStripe"
       },
       "RefundReason": {
         "type": "string",

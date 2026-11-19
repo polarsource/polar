@@ -11,13 +11,6 @@ from polar.kit.repository import (
 )
 from polar.kit.utils import utc_now
 from polar.models import Organization, OrganizationDomain
-from polar.models.organization import STATUS_CAPABILITIES
-
-PAYING_STATUSES = frozenset(
-    status
-    for status, capabilities in STATUS_CAPABILITIES.items()
-    if capabilities["checkout_payments"]
-)
 
 
 class OrganizationDomainRepository(
@@ -50,7 +43,7 @@ class OrganizationDomainRepository(
             .where(
                 OrganizationDomain.domain.in_(domains),
                 OrganizationDomain.verified_at.is_not(None),
-                Organization.status.in_(PAYING_STATUSES),
+                Organization.can_accept_payments,
                 Organization.deleted_at.is_(None),
             )
             .options(contains_eager(OrganizationDomain.organization))

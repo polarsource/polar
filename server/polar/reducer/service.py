@@ -646,10 +646,11 @@ class ReducerService:
         await self._lock_buckets(
             repository, [(reducer, bucket_start, customer_id, external_customer_id)]
         )
-        await self._sync_bucket_intervals(
+        # Each window is synced twice: the second sync mostly finds nothing new.
+        if await self._sync_bucket_intervals(
             repository, reducer, bucket_start, customer_id, external_customer_id
-        )
-        _enqueue_outpost_event(reducer, customer_id, external_customer_id)
+        ):
+            _enqueue_outpost_event(reducer, customer_id, external_customer_id)
 
     async def get_cold_usage(
         self,
@@ -1337,7 +1338,9 @@ class ReducerService:
         bucket_start: datetime,
         customer_id: UUID | None,
         external_customer_id: str | None,
-    ) -> None:
+    ) -> bool:
+        """Whether a bucket was synced for the first time or its statistics changed."""
+        changed = False
         for start, end in await self._get_intervals(
             repository, reducer, bucket_start, customer_id, external_customer_id
         ):
@@ -1352,10 +1355,22 @@ class ReducerService:
             statistics = {"count": count, "sum": total, "min": minimum, "max": maximum}
             # Sealed buckets were billed: events since go to a new generation.
             if previous is not None and previous.sealed_at is None:
+                changed = (
+                    changed
+                    or previous.synced_at is None
+                    or (
+                        previous.count,
+                        previous.sum,
+                        previous.min,
+                        previous.max,
+                    )
+                    != (count, total, minimum, maximum)
+                )
                 await repository.update(
                     previous, update_dict={**statistics, "synced_at": utc_now()}
                 )
                 continue
+            changed = True
             await repository.create(
                 ReducerBucket(
                     organization_id=reducer.organization_id,
@@ -1370,6 +1385,7 @@ class ReducerService:
                 ),
                 flush=True,
             )
+        return changed
 
     async def _get_interval_containing(
         self,

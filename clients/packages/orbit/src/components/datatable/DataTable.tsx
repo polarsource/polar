@@ -212,7 +212,7 @@ export function DataTable<TData extends RowData>({
                               <TableCell
                                 colSpan={colSpan}
                                 className={twMerge(
-                                  'overflow-hidden [overflow-wrap:anywhere]',
+                                  'overflow-hidden',
                                   isSelectColumn && 'w-12',
                                 )}
                                 style={

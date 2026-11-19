@@ -1,0 +1,19 @@
+server/emails/src/types/openapi.ts
+  s_a4ac30ddd6a812::t_e8c7d526717c5f 2497-2502
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d8fd50eee77f026c25ad9e45f65e473710ecbda6",
+  "prompts": {},
+  "sessions": {
+    "s_a4ac30ddd6a812": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f369-7848-79b1-ae10-9dcf99d2a56c",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

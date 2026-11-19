@@ -1356,6 +1356,11 @@ class OrganizationService:
                 "payout.release_held_payouts",
                 account_id=confirmed.account_id,
             )
+        if confirmed is not None:
+            enqueue_job(
+                "organization_domain.register_organization_payment_method_domains",
+                organization_id=confirmed.id,
+            )
 
         return confirmed
 

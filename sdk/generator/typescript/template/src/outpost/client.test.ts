@@ -1435,6 +1435,30 @@ it("waits as long as a Polar that rate-limits it asks", async () => {
   expect(retryAt).toBeLessThanOrEqual(Date.now() + 30_000);
 });
 
+it("counts the failures flushers meet during one wait as one, and keeps the longest wait", async () => {
+  const outpost = await warm();
+  const failed = Date.now();
+  const backOff = (first: number) => outpost["backOff"](BACKOFF, { first, max: 60_000 });
+  await Promise.all(Array.from({ length: 8 }, () => backOff(1000)));
+  expect(Number(await redis.hget(BACKOFF, "retry_at"))).toBeLessThan(failed + 2000);
+  await backOff(30_000);
+  await backOff(1000);
+  expect(Number(await redis.hget(BACKOFF, "retry_at"))).toBeGreaterThanOrEqual(failed + 30_000);
+});
+
+it("keeps a backoff another flusher set while this one delivered", async () => {
+  const later = Date.now() + 60_000;
+  const outpost = await warm({
+    onDelivered: async () => {
+      await redis.hset(BACKOFF, "retry_at", later);
+    },
+  });
+  await redis.hset(BACKOFF, { failures: 1, retry_at: 1 });
+  await outpost.track(usage("event-0", 10));
+  await outpost.flush();
+  expect(await redis.hget(BACKOFF, "retry_at")).toBe(String(later));
+});
+
 it("drops a batch Polar refuses, settles its events and reports them", async () => {
   const onDropped = vi.fn();
   const outpost = await warm({ onDropped });

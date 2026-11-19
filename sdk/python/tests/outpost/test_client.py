@@ -2366,6 +2366,40 @@ async def test_waits_as_long_as_a_polar_that_rate_limits_it_asks(
 
 
 @pytest.mark.anyio
+async def test_counts_the_failures_of_one_wait_as_one_and_keeps_the_longest_wait(
+    redis_connection: tuple[str, Redis], polar_client: httpx2.AsyncClient
+) -> None:
+    url, redis = redis_connection
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        failed = time.time() * 1000
+        for _ in range(8):
+            await outpost._back_off(BACKOFF, first=1, maximum=60)
+        assert float(await redis.hget(BACKOFF, "retry_at") or 0) < failed + 2000
+        await outpost._back_off(BACKOFF, first=30, maximum=60)
+        await outpost._back_off(BACKOFF, first=1, maximum=60)
+        assert float(await redis.hget(BACKOFF, "retry_at") or 0) >= failed + 30_000
+
+
+@pytest.mark.anyio
+async def test_keeps_a_backoff_another_flusher_set_while_this_one_delivered(
+    redis_connection: tuple[str, Redis], polar_client: httpx2.AsyncClient
+) -> None:
+    url, redis = redis_connection
+    later = int(time.time() * 1000) + 60_000
+
+    async def on_delivered(events: list[EventInput]) -> None:
+        await redis.hset(BACKOFF, "retry_at", later)
+
+    await _seal(redis, BUCKET)
+    await redis.hset(BACKOFF, mapping={"failures": 1, "retry_at": 1})
+    async with Outpost(url, client=polar_client, on_delivered=on_delivered) as outpost:
+        await outpost.track(_usage("event-0", 10))
+        await outpost.flush()
+        assert await redis.hget(BACKOFF, "retry_at") == str(later).encode()
+
+
+@pytest.mark.anyio
 async def test_drops_a_batch_polar_refuses_settles_its_events_and_reports_them(
     redis_connection: tuple[str, Redis],
     polar_client: httpx2.AsyncClient,

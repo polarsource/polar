@@ -9,6 +9,7 @@ import {
   data,
   mergeInput,
   nullableStringFlag,
+  org,
 } from '../inputs'
 
 type Body = NonNullable<
@@ -20,6 +21,7 @@ export const command = Command.make(
   {
     confirm,
     fields,
+    org,
     path: {
       id: Argument.String('id'),
     },
@@ -122,6 +124,7 @@ export const command = Command.make(
         method: 'PATCH',
         requiresConfirmation: confirmationInput['enabled'] === false,
         confirm: config.confirm,
+        organizationId: config.org,
         fields: config.fields,
         preview: {
           fields: [

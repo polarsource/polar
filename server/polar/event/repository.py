@@ -41,6 +41,7 @@ from polar.models import (
     Event,
     Meter,
     MeterEvent,
+    MeterReducer,
     StagedEvent,
 )
 from polar.models.event import EventSource
@@ -501,6 +502,43 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             Event.name == SystemEvent.meter_reset,
             Event.user_metadata["meter_id"].as_string() == str(meter_id),
         )
+
+    async def get_latest_meter_reset_timestamps(
+        self,
+        organization_id: UUID,
+        customer_ids: Collection[UUID],
+        reducer_ids: Collection[UUID],
+    ) -> dict[tuple[UUID, UUID], datetime]:
+        """The timestamp of each customer's latest reset of a meter of each reducer,
+        by reducer id and customer id."""
+        if not customer_ids:
+            return {}
+        statement = (
+            select(
+                MeterReducer.reducer_id,
+                NotNullable(Event.customer_id),
+                func.max(Event.timestamp),
+            )
+            .select_from(Event)
+            .join(
+                MeterReducer,
+                cast(MeterReducer.meter_id, String)
+                == Event.user_metadata["meter_id"].as_string(),
+            )
+            .where(
+                Event.organization_id == organization_id,
+                Event.source == EventSource.system,
+                Event.name == SystemEvent.meter_reset,
+                Event.customer_id.in_(customer_ids),
+                MeterReducer.reducer_id.in_(reducer_ids),
+            )
+            .group_by(MeterReducer.reducer_id, Event.customer_id)
+        )
+        result = await self.session.execute(statement)
+        return {
+            (reducer_id, customer_id): timestamp
+            for reducer_id, customer_id, timestamp in result
+        }
 
     async def get_latest_meter_reset(
         self,

@@ -221,6 +221,7 @@ def test_cold_usage(
                 reducer.organization_id,
                 [(reducer.id, (None, "customer-0"))],
                 since=since,
+                customers={},
             )
         )[(reducer.id, (None, "customer-0"))]
 

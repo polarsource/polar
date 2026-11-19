@@ -2756,6 +2756,10 @@ class OrganizationService:
             f"Capability '{capability}' {action}{by}",
             reason=reason,
         )
+        if capability == "checkout_payments":
+            organization_domain_service.on_organization_checkout_payments_changed(
+                organization.id, value
+            )
 
         session.add(organization)
         return organization

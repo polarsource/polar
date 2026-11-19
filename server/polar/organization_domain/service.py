@@ -266,6 +266,16 @@ class OrganizationDomainService:
                 organization_id=organization_id,
             )
 
+    def on_organization_checkout_payments_changed(
+        self, organization_id: UUID, enabled: bool
+    ) -> None:
+        enqueue_job(
+            "organization_domain.register_organization_payment_method_domains"
+            if enabled
+            else "organization_domain.unregister_organization_payment_method_domains",
+            organization_id=organization_id,
+        )
+
     async def is_payment_method_domain_vouched_for(
         self, session: AsyncReadSession, domain: str
     ) -> bool:

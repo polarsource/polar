@@ -313,7 +313,7 @@ revoke_benefit(customer, benefit)
 |------|---------|--------|
 | `subscription.cycle` | Scheduler at period end | Renew subscription, create order |
 | `subscription.update_product_benefits_grants` | Product benefits changed | Update all grants |
-| `subscription.cancel_customer` | Customer deleted | Cancel all billable subscriptions (trialing, active, past_due) |
+| `subscription.cancel_customer` | Customer deleted | Cancel all cancelable subscriptions (trialing, active, past_due, paused) |
 
 ### Order Tasks
 **File:** `server/polar/order/tasks.py`

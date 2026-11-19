@@ -248,8 +248,11 @@ export const useGanttViewport = ({
     }
     syncHeader(toTime(scroller.scrollLeft + viewportWidth))
     syncRowEdges()
+    // Measured at the live zoom, not the rendered one: mid-zoom the two differ,
+    // and a threshold from a wider zoom would leave the window far behind.
     const visibleCenter = toTime(scroller.scrollLeft + viewportWidth / 2)
-    if (Math.abs(visibleCenter - center) > span) {
+    const liveSpan = (viewportWidth / pixelsPerDayRef.current) * DAY_MS
+    if (Math.abs(visibleCenter - center) > Math.min(span, liveSpan)) {
       setCenter(visibleCenter)
     }
     setScrollTop(Math.floor(scroller.scrollTop / ROW_HEIGHT) * ROW_HEIGHT)

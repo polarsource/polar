@@ -8,9 +8,14 @@ import { PolarQueryClientProvider } from '@/providers/PolarQueryClientProvider'
 import { useSession } from '@/providers/SessionProvider'
 import { ToastProvider } from '@/providers/ToastProvider'
 import { UserProvider } from '@/providers/UserProvider'
-import { DarkTheme, ThemeProvider } from '@react-navigation/native'
 import { useQueryClient } from '@tanstack/react-query'
-import { Redirect, Stack, useRouter } from 'expo-router'
+import {
+  DarkTheme,
+  Redirect,
+  Stack,
+  ThemeProvider,
+  useRouter,
+} from 'expo-router'
 import { PropsWithChildren } from 'react'
 import { ErrorBoundary as ErrorBoundaryComponent } from 'react-error-boundary'
 import { StatusBar } from 'react-native'

@@ -1496,6 +1496,30 @@ it("keeps a backoff another flusher set while this one delivered", async () => {
   expect(await redis.hget(BACKOFF, "retry_at")).toBe(String(later));
 });
 
+it.each([
+  ["event", '{"external_id":"unreadable","ratio":NaN}'],
+  ["event", '{"external_id":"unreadable","ratio":1e999}'],
+  ["other", "unreadable"],
+])("skips an outbox entry it cannot read (%s %s), and delivers the rest", async (field, value) => {
+  const outpost = await warm();
+  await redis.xadd("outpost:v1:org-1:outbox", "*", field, value);
+  await outpost.track(usage("event-0", 10));
+  await outpost.flush();
+  expect(delivered()).toEqual([["event-0"]]);
+  expect(await redis.xlen("outpost:v1:org-1:outbox")).toBe(0);
+});
+
+it("delivers an event another SDK queued in a form it cannot parse", async () => {
+  const outpost = await warm();
+  // Another SDK takes a timestamp this one refuses.
+  const foreign = { ...usage("foreign", 10), timestamp: "2026-10-12 12:00:00.123456+00" };
+  await redis.xadd("outpost:v1:org-1:outbox", "*", "event", JSON.stringify(foreign));
+  await outpost.track(usage("event-0", 10));
+  await outpost.flush();
+  expect(delivered()).toEqual([["foreign", "event-0"]]);
+  expect(await redis.xlen("outpost:v1:org-1:outbox")).toBe(0);
+});
+
 it("drops a batch Polar refuses, settles its events and reports them", async () => {
   const onDropped = vi.fn();
   const outpost = await warm({ onDropped });

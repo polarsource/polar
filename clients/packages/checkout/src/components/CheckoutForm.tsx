@@ -49,7 +49,11 @@ import {
   flattenFormErrors,
   useCheckoutWebMCP,
 } from '../hooks/webmcp'
-import { isDisplayedField, isRequiredField } from '../utils/address'
+import {
+  isAddressComplete,
+  isDisplayedField,
+  isRequiredField,
+} from '../utils/address'
 import { isTemporaryDiscount } from '../utils/discount'
 import { convertLocaleToStripeElementLocale } from '../utils/locale'
 import {
@@ -176,12 +180,23 @@ const BaseCheckoutForm = ({
       } else if (name.startsWith('customer_billing_address')) {
         const { customer_billing_address: customerBillingAddress } = value
         if (customerBillingAddress && customerBillingAddress.country) {
-          payload = {
-            ...payload,
-            customer_billing_address: {
-              ...customerBillingAddress,
-              country: customerBillingAddress.country,
-            },
+          const countryChanged =
+            customerBillingAddress.country !==
+            checkout.customer_billing_address?.country
+          if (
+            countryChanged ||
+            isAddressComplete(
+              customerBillingAddress,
+              checkout.billing_address_fields,
+            )
+          ) {
+            payload = {
+              ...payload,
+              customer_billing_address: {
+                ...customerBillingAddress,
+                country: customerBillingAddress.country,
+              },
+            }
           }
           clearErrors('customer_billing_address')
         }

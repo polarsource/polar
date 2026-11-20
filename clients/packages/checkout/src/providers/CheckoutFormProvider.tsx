@@ -51,10 +51,14 @@ const shownToBuyer = (error: object) => {
 export const isShownToBuyer = (error: unknown) =>
   errorsShownToBuyer.has(error as object)
 
-const CONTACT_FIELDS = new Set<string>(['customer_email', 'customer_name'])
+const NON_BLOCKING_FIELDS = new Set<string>([
+  'customer_email',
+  'customer_name',
+  'customer_billing_address',
+])
 
-const isContactOnly = (data: schemas['CheckoutUpdatePublic']) =>
-  Object.keys(data).every((field) => CONTACT_FIELDS.has(field))
+const blocksSubmit = (data: schemas['CheckoutUpdatePublic']) =>
+  Object.keys(data).some((field) => !NON_BLOCKING_FIELDS.has(field))
 
 export interface CheckoutFormContextProps {
   checkout: schemas['CheckoutPublic']
@@ -197,7 +201,7 @@ export const CheckoutFormProvider = ({
           deferred: createDeferred<schemas['CheckoutPublic']>(),
         }
       }
-      if (!isContactOnly(checkoutUpdatePublic)) {
+      if (blocksSubmit(checkoutUpdatePublic)) {
         setIsUpdatePending(true)
       }
       const { promise } = pendingRef.current.deferred

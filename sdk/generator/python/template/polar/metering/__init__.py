@@ -477,7 +477,7 @@ class Metering:
         redis_url = outpost_options.get("redis_url", os.environ.get("REDIS_URL"))
         if not redis_url:
             raise MeteringError("Outpost requires redis_url or REDIS_URL")
-        from polar.outpost.client import Outpost
+        from polar.outpost.client import SNAPSHOT_TIMEOUT, Outpost
 
         return cls(
             strategies=[
@@ -485,7 +485,9 @@ class Metering:
                     polar,
                     redis_url,
                     telemetry=outpost_options.get("telemetry", True),
-                    snapshot_timeout=outpost_options.get("snapshot_timeout"),
+                    snapshot_timeout=outpost_options.get(
+                        "snapshot_timeout", SNAPSHOT_TIMEOUT
+                    ),
                     on_delivered=outpost_options.get("on_delivered"),
                     on_dropped=outpost_options.get("on_dropped"),
                 )

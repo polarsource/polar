@@ -897,7 +897,7 @@ class Outpost:
         *,
         client: httpx2.AsyncClient,
         telemetry: bool = True,
-        snapshot_timeout: float | None = None,
+        snapshot_timeout: float = SNAPSHOT_TIMEOUT,
         confirm_timeout: float = CONFIRM_TIMEOUT,
         on_delivered: OnDelivered | None = None,
         on_dropped: OnDropped | None = None,
@@ -938,10 +938,8 @@ class Outpost:
         # This instance queued an event that no flusher was there to deliver: its next
         # flush drains.
         self._undrained = False
-        self._snapshot_timeout = (
-            SNAPSHOT_TIMEOUT if snapshot_timeout is None else snapshot_timeout
-        )
-        validate_timeout(self._snapshot_timeout)
+        validate_timeout(snapshot_timeout)
+        self._snapshot_timeout = snapshot_timeout
         self._confirm_timeout = confirm_timeout
         # Snapshots and what they trigger run one at a time, in order.
         self._applying = anyio.Lock()
@@ -967,7 +965,7 @@ class Outpost:
         redis_url: str,
         *,
         telemetry: bool = True,
-        snapshot_timeout: float | None = None,
+        snapshot_timeout: float = SNAPSHOT_TIMEOUT,
         on_delivered: OnDelivered | None = None,
         on_dropped: OnDropped | None = None,
     ) -> typing.Self:

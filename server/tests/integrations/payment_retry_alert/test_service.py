@@ -5,16 +5,16 @@ from unittest.mock import MagicMock
 import pytest
 from pytest_mock import MockerFixture
 
-from polar.integrations.chargeback_stop.payment_retry_alert import (
+from polar.integrations.payment_retry_alert.service import (
     STRIPE_METADATA_PAYMENT_RETRY_ALERT_ID,
     DeclinedPaymentNotFound,
     MissingNetworkTransactionId,
     SkipReason,
 )
-from polar.integrations.chargeback_stop.payment_retry_alert import (
+from polar.integrations.payment_retry_alert.service import (
     payment_retry_alert as payment_retry_alert_service,
 )
-from polar.integrations.chargeback_stop.types import PaymentRetryAlert
+from polar.integrations.payment_retry_alert.types import PaymentRetryAlert
 from polar.integrations.stripe.service import StripeService
 from polar.kit.utils import utc_now
 from polar.models import Customer, Order, Organization, Payment, Product
@@ -56,7 +56,7 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
 
 @pytest.fixture
 def log_mock(mocker: MockerFixture) -> MagicMock:
-    return mocker.patch("polar.integrations.chargeback_stop.payment_retry_alert.log")
+    return mocker.patch("polar.integrations.payment_retry_alert.service.log")
 
 
 @pytest.fixture

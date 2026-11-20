@@ -3,11 +3,8 @@ import hmac
 import json
 import time
 from datetime import timedelta
-from typing import Any
 
 from fastapi import Depends, Header, HTTPException, Request
-from standardwebhooks.webhooks import Webhook as StandardWebhook
-from standardwebhooks.webhooks import WebhookVerificationError
 
 from polar.config import settings
 from polar.external_event.service import external_event as external_event_service
@@ -25,8 +22,6 @@ WEBHOOK_EVENTS = {
     "alert.created",
     "alert.updated",
 }
-
-PAYMENT_RETRY_ALERT_WEBHOOK_EVENTS = {"alert.created"}
 
 
 def _verify_signature(raw_body: bytes, signature_header: str, secret: str) -> None:
@@ -68,40 +63,4 @@ async def webhook(
         task_name = f"chargeback_stop.webhook.{event_type}"
         await external_event_service.enqueue(
             session, ExternalEventSource.chargeback_stop, task_name, event["id"], event
-        )
-
-
-def _verify_payment_retry_alert_webhook(
-    raw_body: bytes, headers: dict[str, str]
-) -> dict[str, Any]:
-    secret = settings.PAYMENT_RETRY_ALERT_WEBHOOK_SECRET
-    if not secret:
-        raise HTTPException(status_code=500)
-
-    try:
-        return StandardWebhook(secret.removeprefix("whsec_")).verify(raw_body, headers)
-    except WebhookVerificationError, ValueError:
-        raise HTTPException(status_code=400)
-
-
-@router.post(
-    "/payment-retry-alert/webhook",
-    status_code=202,
-    name="integrations.chargeback_stop.payment_retry_alert.webhook",
-)
-async def payment_retry_alert_webhook(
-    request: Request,
-    session: AsyncSession = Depends(get_db_session),
-) -> None:
-    event = _verify_payment_retry_alert_webhook(
-        await request.body(), dict(request.headers)
-    )
-    event_type = event.get("type")
-    if event_type in PAYMENT_RETRY_ALERT_WEBHOOK_EVENTS:
-        await external_event_service.enqueue(
-            session,
-            ExternalEventSource.chargeback_stop,
-            f"chargeback_stop.payment_retry_alert.webhook.{event_type}",
-            event["id"],
-            event,
         )

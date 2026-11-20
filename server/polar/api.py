@@ -36,6 +36,9 @@ from polar.integrations.github.endpoints import router as github_router
 from polar.integrations.github_repository_benefit.endpoints import (
     router as github_repository_benefit_router,
 )
+from polar.integrations.payment_retry_alert.endpoints import (
+    router as payment_retry_alert_router,
+)
 from polar.integrations.plain.endpoints import router as plain_router
 from polar.integrations.polar.endpoints import router as polar_self_router
 from polar.integrations.resend.endpoints import router as resend_router
@@ -182,6 +185,8 @@ router.include_router(accounts_router)
 router.include_router(polar_self_router)
 # /integrations/chargeback-stop
 router.include_router(chargeback_stop_router)
+# /integrations/payment-retry-alert
+router.include_router(payment_retry_alert_router)
 # /integrations/discord
 router.include_router(discord_router)
 # /feedbacks

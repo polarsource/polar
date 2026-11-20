@@ -22,7 +22,6 @@ from polar.kit.extensions.sqlalchemy.types import StringEnum
 class ExternalEventSource(StrEnum):
     stripe = "stripe"
     chargeback_stop = "chargeback_stop"
-    payment_retry_alert = "payment_retry_alert"
     polar = "polar"
 
 
@@ -76,17 +75,6 @@ class ChargebackStopEvent(ExternalEvent):
 
     __mapper_args__ = {
         "polymorphic_identity": ExternalEventSource.chargeback_stop,
-        "polymorphic_load": "inline",
-    }
-
-
-class PaymentRetryAlertEvent(ExternalEvent):
-    source: Mapped[Literal[ExternalEventSource.payment_retry_alert]] = mapped_column(  # pyright: ignore
-        use_existing_column=True, default=ExternalEventSource.payment_retry_alert
-    )
-
-    __mapper_args__ = {
-        "polymorphic_identity": ExternalEventSource.payment_retry_alert,
         "polymorphic_load": "inline",
     }
 

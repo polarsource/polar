@@ -14,7 +14,7 @@ from polar.models.external_event import ExternalEvent, ExternalEventSource
 from polar.postgres import AsyncSession
 
 WEBHOOK_SECRET = base64.b64encode(b"test_payment_retry_alert").decode()
-WEBHOOK_URL = "/v1/integrations/payment-retry-alert/webhook"
+WEBHOOK_URL = "/v1/integrations/chargeback-stop/payment-retry-alert/webhook"
 
 
 def sign(event: dict[str, Any]) -> tuple[bytes, dict[str, str]]:
@@ -33,24 +33,22 @@ def sign(event: dict[str, Any]) -> tuple[bytes, dict[str, str]]:
 @pytest.fixture(autouse=True)
 def webhook_secret(mocker: MockerFixture) -> None:
     mocker.patch(
-        "polar.integrations.payment_retry_alert.endpoints.settings.PAYMENT_RETRY_ALERT_WEBHOOK_SECRET",
+        "polar.integrations.chargeback_stop.endpoints.settings.PAYMENT_RETRY_ALERT_WEBHOOK_SECRET",
         f"whsec_{WEBHOOK_SECRET}",
     )
 
 
 @pytest.mark.anyio
-class TestWebhook:
+class TestPaymentRetryAlertWebhook:
     @pytest.mark.parametrize(
-        ("organisation_mode", "signature", "status_code", "stored"),
+        ("signature", "status_code", "stored"),
         [
-            pytest.param("TEST", None, 202, True, id="valid"),
-            pytest.param("TEST", "v1,invalid", 400, False, id="invalid_signature"),
-            pytest.param("LIVE", None, 202, False, id="other_mode"),
+            pytest.param(None, 202, True, id="valid"),
+            pytest.param("v1,invalid", 400, False, id="invalid_signature"),
         ],
     )
     async def test_alert_created(
         self,
-        organisation_mode: str,
         signature: str | None,
         status_code: int,
         stored: bool,
@@ -60,7 +58,6 @@ class TestWebhook:
         event = {
             "id": "evt_test",
             "type": "alert.created",
-            "organisation_mode": organisation_mode,
             "data": {"object": {"id": "alrt_test"}},
         }
         body, headers = sign(event)
@@ -73,7 +70,7 @@ class TestWebhook:
         stored_event = (
             await session.execute(
                 select(ExternalEvent).where(
-                    ExternalEvent.source == ExternalEventSource.payment_retry_alert,
+                    ExternalEvent.source == ExternalEventSource.chargeback_stop,
                     ExternalEvent.external_id == "evt_test",
                 )
             )

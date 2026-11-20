@@ -762,27 +762,6 @@ class Outpost:
             if self._ingest_duration is not None:
                 self._ingest_duration.record(time.perf_counter() - started, attributes)
 
-    def _settlements(
-        self, events: collections.abc.Sequence[EventInput]
-    ) -> dict[tuple[str, int], list[str]]:
-        """The events' ids, by the (identity, bucket) whose pending usage they settle.
-        An event another SDK queued in a form this one cannot parse settles nothing
-        here: it stays pending until the snapshot that counts it."""
-        groups: dict[tuple[str, int], list[str]] = {}
-        for event in events:
-            try:
-                self.validate(event)
-                parsed = self._parse_event(event)
-            except (AttributeError, KeyError, PolarError, TypeError, ValueError):
-                continue
-            bucket_start = get_bucket_start(parsed.timestamp)
-            for reducer_id, _ in match_event(self._matchers, parsed):
-                identity = f"{parsed.external_customer_id}:{reducer_id}"
-                groups.setdefault((identity, bucket_start), []).append(
-                    typing.cast(str, event["external_id"])
-                )
-        return groups
-
     @_raise_redis_unavailable
     async def meter(
         self,
@@ -867,17 +846,6 @@ class Outpost:
             finally:
                 del self._flushing[scope]
 
-    async def _in_flight(self, timeout: float = 30.0) -> None:
-        with anyio.fail_after(timeout):
-            if self._pulling is not None:
-                await self._pulling.wait()
-            if self._relaying is not None:
-                await self._relaying.wait()
-            for fetching in list(self._requesting.values()):
-                await fetching.wait()
-            async with self._applying:
-                pass
-
     async def flush_telemetry(self) -> bool:
         """Hands this instance's telemetry to the shared Redis, where the next pull
         sends it to Polar."""
@@ -890,64 +858,194 @@ class Outpost:
         await self._push_telemetry()
         return flushed
 
-    async def _push_telemetry(self) -> None:
-        spans, metrics = self._telemetry_buffer.take()
-        if self._redis is None or not (spans or metrics):
+    def _require_redis(self) -> Redis:
+        if self._redis is None:
+            raise RuntimeError("Use Outpost inside an async with block")
+        # Fail fast during an outage: the reconnect says when Redis answers again.
+        if not self._redis_available:
+            raise RedisConnectionError("Redis is unavailable")
+        return self._redis
+
+    def _require_running(self) -> Redis:
+        """What the merchant calls fails while the instance is stopped. The pull goes
+        on behind it, at its backoff: one that succeeds ends the failure."""
+        if self._failure is not None:
+            if self._tasks is not None:
+                self._tasks.start_soon(self._refresh_quietly)
+            raise self._failure
+        return self._require_redis()
+
+    def _pulled(self, at: float) -> None:
+        """A pull that succeeded since the failure, on this instance or another, ends
+        it."""
+        self._pulled_at = at
+        if self._failure is not None and at > self._failed_at:
+            self._failure = None
+
+    def _fail_unless_transient(self, error: Exception) -> None:
+        if not _is_transient_error(error):
+            self._fail(error)
+
+    def _fail(self, error: Exception) -> None:
+        if not isinstance(error, PolarOutpostError):
+            failure = PolarOutpostError("Outpost stopped")
+            failure.__cause__ = error
+            error = failure
+        self._failure = error
+        self._failed_at = time.time()
+
+    def _lose_redis(self, error: Exception) -> None:
+        """Reads and writes fail fast until Redis answers again."""
+        if not self._redis_available or self._tasks is None:
             return
-        # A fleet that stops pulling keeps its newest exports only.
-        arguments = [
-            self._telemetry_key("spans"),
-            self._telemetry_key("metrics"),
-            TELEMETRY_CAP,
-            len(spans),
-            *spans,
-            *metrics,
+        self._redis_available = False
+        with self._span("outpost.redis.disconnect") as span:
+            span.record_exception(error)
+            span.set_status(StatusCode.ERROR)
+        self._tasks.start_soon(self._reconnect)
+
+    async def _reconnect(self) -> None:
+        redis = self._redis
+        assert redis is not None
+
+        async def ignore(error: Exception) -> None:
+            pass
+
+        await Retry(RedisReconnectBackoff(), -1).call_with_retry(redis.ping, ignore)
+        self._redis_available = True
+
+    @property
+    def _pull_key(self) -> str:
+        return f"{self._prefix}:pull"
+
+    @property
+    def _pull_lock_key(self) -> str:
+        return f"{self._prefix}:pull:lock"
+
+    @property
+    def _cold_key(self) -> str:
+        return f"{self._prefix}:cold"
+
+    @property
+    def _cold_lock_key(self) -> str:
+        return f"{self._prefix}:cold:lock"
+
+    # The events Polar has yet to receive, in the order Outpost tracked them.
+    @property
+    def _outbox_key(self) -> str:
+        return f"{self._prefix}:outbox"
+
+    @property
+    def _outbox_backoff_key(self) -> str:
+        return f"{self._outbox_key}:backoff"
+
+    @property
+    def _configuration_key(self) -> str:
+        """A new instance reads its token's configuration from Redis instead of Polar.
+        The key hashes the token: Redis never sees it."""
+        headers = self._client.headers
+        sent = [
+            str(self._client.base_url.join("/v1/outpost/configuration")),
+            headers.get("authorization"),
+            headers.get("polar-organization"),
         ]
-        try:
-            await _call_script(
-                self._redis, PUSH_TELEMETRY_SHA, PUSH_TELEMETRY_SCRIPT, 2, *arguments
-            )
-        except RedisError:
-            self._telemetry_buffer.put_back(spans, metrics, TELEMETRY_CAP)
+        # Compact, as JSON.stringify writes it: both SDKs share the key.
+        identity = hashlib.sha256(
+            json.dumps(sent, separators=(",", ":")).encode()
+        ).hexdigest()
+        return f"{KEY_VERSION}:configuration:{identity}"
 
     def _telemetry_key(self, kind: str) -> str:
         return f"{self._prefix}:telemetry:{kind}"
 
-    async def _relay_telemetry(self) -> None:
-        """The pulling instance relays the fleet's telemetry, one request of each kind:
-        protobuf messages concatenate into one whose repeated fields add up."""
-        if self._tracer_provider is None:
-            return
+    def _missing_key(self, identity: str) -> str:
+        return f"{self._prefix}:missing:{identity}"
+
+    def _fetch_key(self, identity: str) -> str:
+        return f"{self._prefix}:fetch:{identity}"
+
+    async def _request(self, method: str, path: str, **kwargs: typing.Any) -> typing.Any:
+        response = await self._client.request(method, path, **kwargs)
+        if response.status_code in (401, 403):
+            raise PolarOutpostError("Polar refused Outpost")
+        response.raise_for_status()
+        return response.json()
+
+    async def _configure(
+        self, source: typing.Literal["redis", "polar", "either"] = "either"
+    ) -> bool:
+        """From "redis", the organization's copy: each token reloads it once the pull
+        hash says the configuration changed. False when Redis holds none."""
         redis = self._require_redis()
-        lock = f"{self._prefix}:telemetry:lock"
-        token = await _take_lock(redis, lock, RELAY_LOCK_TTL)
-        if token is None:
-            return
-        try:
-            for kind, path in (
-                ("spans", "/v1/outpost/telemetry"),
-                ("metrics", "/v1/outpost/telemetry/metrics"),
-            ):
-                key = self._telemetry_key(kind)
-                batch = f"{key}:relaying"
-                # A batch Polar failed goes first; otherwise the list moves aside, and
-                # exports written meanwhile start a new one.
-                if not await redis.exists(batch):
-                    with contextlib.suppress(RedisResponseError):
-                        await redis.rename(key, batch)
-                exports = typing.cast(list[bytes], await redis.lrange(batch, 0, -1))
-                if not exports:
-                    continue
-                response = await self._client.post(
-                    path,
-                    content=b"".join(exports),
-                    headers={"Content-Type": "application/x-protobuf"},
-                )
-                # One Polar refused would be refused again.
-                if response.status_code < 500 and response.status_code != 429:
-                    await redis.delete(batch)
-        finally:
-            await _release_lock(redis, lock, token)
+        key = (
+            f"{self._prefix}:configuration"
+            if source == "redis"
+            else self._configuration_key
+        )
+        stored = None if source == "polar" else await redis.get(key)
+        if not stored and source == "redis":
+            return False
+        configuration: Configuration = (
+            json.loads(stored)
+            if stored
+            else await self._request("GET", "/v1/outpost/configuration")
+        )
+        prefix = f"{KEY_VERSION}:{configuration['organization_id']}"
+        if not stored:
+            dumped = json.dumps(configuration)
+            await redis.set(self._configuration_key, dumped)
+            # Only the pull writes the organization's copy: a fetch at start may be
+            # older than it.
+            if source == "polar":
+                await redis.set(f"{prefix}:configuration", dumped)
+        self._prefix = prefix
+        self._reducers = configuration["reducers"]
+        self._matchers = with_matchers(self._reducers)
+        self._configured.set()
+        return True
+
+    def _find_reducer(
+        self, kind: typing.Literal["usage", "credit"], meter_id: str
+    ) -> Reducer | None:
+        return next(
+            (
+                reducer
+                for reducer in self._reducers
+                if reducer["kind"] == kind and meter_id in reducer.get("meter_ids", [])
+            ),
+            None,
+        )
+
+    def _parse_event(self, event: EventInput) -> Event:
+        customer = self._customer_key(
+            event.get("customer_id"), event.get("external_customer_id")
+        )
+        raw_timestamp = event.get("timestamp")
+        if raw_timestamp is not None:
+            timestamp = datetime.datetime.fromisoformat(raw_timestamp)
+        else:
+            timestamp = datetime.datetime.now(datetime.UTC)
+        return Event(
+            name=event["name"],
+            external_customer_id=customer,
+            timestamp=timestamp,
+            metadata=event.get("metadata", {}),
+        )
+
+    def _customer_key(
+        self, customer_id: str | None, external_customer_id: str | None
+    ) -> str:
+        if (customer_id is None) == (external_customer_id is None):
+            raise ValueError("Provide exactly one customer_id or external_customer_id")
+        if customer_id is not None:
+            return f"customer:{customer_id}"
+        return f"external:{external_customer_id}"
+
+    def _customer_arguments(self, customer: str) -> dict[str, str]:
+        kind, identifier = customer.split(":", 1)
+        return {
+            "customer_id" if kind == "customer" else "external_customer_id": identifier
+        }
 
     async def _read(
         self, customer: str, reducers: list[Reducer], statistics: list[str]
@@ -1014,18 +1112,6 @@ class Outpost:
     def _is_stale(self, state: ReducerState | None) -> bool:
         return state is not None and state.confirmed_after_resets != self._resets
 
-    def _find_reducer(
-        self, kind: typing.Literal["usage", "credit"], meter_id: str
-    ) -> Reducer | None:
-        return next(
-            (
-                reducer
-                for reducer in self._reducers
-                if reducer["kind"] == kind and meter_id in reducer.get("meter_ids", [])
-            ),
-            None,
-        )
-
     @contextlib.contextmanager
     def _measure_read(self, operation: str) -> collections.abc.Generator[_Read]:
         read = _Read()
@@ -1049,73 +1135,6 @@ class Outpost:
                         "outpost.read.outcome": read.outcome,
                     },
                 )
-
-    @contextlib.contextmanager
-    def _span(
-        self, name: str, **attributes: AttributeValue
-    ) -> collections.abc.Generator[Span]:
-        if self._connection_id is not None:
-            attributes["outpost.connection_id"] = self._connection_id
-        span = self._tracer.start_span(
-            name, context=otel_context.Context(), attributes=attributes
-        )
-        if is_sampled(span.get_span_context().trace_id):
-            span.set_attribute(SAMPLE_RATE_ATTRIBUTE, SPAN_SAMPLE_RATE)
-        try:
-            yield span
-        except Exception as e:
-            span.record_exception(e)
-            span.set_status(StatusCode.ERROR)
-            raise
-        finally:
-            span.end()
-
-    async def _shutdown_telemetry(self) -> None:
-        tracer_provider = self._tracer_provider
-        meter_provider = self._meter_provider
-        self._tracer_provider = None
-        self._tracer = trace.NoOpTracer()
-        self._meter_provider = None
-        self._ingest_duration = None
-        self._ingest_buckets = None
-        self._read_duration = None
-        self._redis_memory = None
-        self._redis_keys = None
-        with anyio.CancelScope(shield=True):
-            if tracer_provider is not None:
-                await anyio.to_thread.run_sync(tracer_provider.shutdown)
-            if meter_provider is not None:
-                await anyio.to_thread.run_sync(meter_provider.shutdown)
-
-    def _customer_arguments(self, customer: str) -> dict[str, str]:
-        kind, identifier = customer.split(":", 1)
-        return {
-            "customer_id" if kind == "customer" else "external_customer_id": identifier
-        }
-
-    def _require_running(self) -> Redis:
-        """What the merchant calls fails while the instance is stopped. The pull goes
-        on behind it, at its backoff: one that succeeds ends the failure."""
-        if self._failure is not None:
-            if self._tasks is not None:
-                self._tasks.start_soon(self._refresh_quietly)
-            raise self._failure
-        return self._require_redis()
-
-    def _pulled(self, at: float) -> None:
-        """A pull that succeeded since the failure, on this instance or another, ends
-        it."""
-        self._pulled_at = at
-        if self._failure is not None and at > self._failed_at:
-            self._failure = None
-
-    def _require_redis(self) -> Redis:
-        if self._redis is None:
-            raise RuntimeError("Use Outpost inside an async with block")
-        # Fail fast during an outage: the reconnect says when Redis answers again.
-        if not self._redis_available:
-            raise RedisConnectionError("Redis is unavailable")
-        return self._redis
 
     def _fetch(self, customer: str, reducer: Reducer) -> anyio.Event:
         """Queues the identity once. The instance holding the cold lock asks Polar for
@@ -1159,6 +1178,124 @@ class Outpost:
                 done = self._requesting.pop(identity, None)
                 if done is not None:
                     done.set()
+
+    async def _drain_cold(self) -> None:
+        """Once it lets go of the lock, the instance looks again: a customer queued while
+        it held the lock is not left behind."""
+        redis = self._require_redis()
+        while True:
+            token = await _take_lock(redis, self._cold_lock_key, TIMEOUT)
+            if token is None:
+                return
+            try:
+                await anyio.sleep(FETCH_BATCH_WINDOW)
+
+                async def renew(token: str = token) -> None:
+                    await redis.eval(
+                        EXTEND_LOCK_SCRIPT,
+                        1,
+                        self._cold_lock_key,
+                        token,
+                        int(TIMEOUT * 1000),
+                    )
+
+                while True:
+                    batches: list[list[str]] = []
+                    while len(batches) < FETCH_CONCURRENCY:
+                        popped = typing.cast(
+                            list[bytes],
+                            await redis.spop(self._cold_key, SNAPSHOT_BATCH),
+                        )
+                        identities = [_decode(item) for item in popped]
+                        if not identities:
+                            break
+                        batches.append(identities)
+                    if not batches:
+                        break
+                    await renew()
+                    # A few batches at once: the cold start lasts as long as the
+                    # slowest, not their sum.
+                    async with anyio.create_task_group() as group:
+                        for identities in batches:
+                            group.start_soon(self._fetch_batch, identities, renew)
+            finally:
+                await _release_lock(redis, self._cold_lock_key, token)
+            if not await redis.scard(self._cold_key):
+                return
+
+    async def _fetch_batch(
+        self,
+        identities: list[str],
+        renew: collections.abc.Callable[[], collections.abc.Awaitable[None]],
+    ) -> None:
+        redis = self._require_redis()
+        # Its clock starts with the batch: a slow fetch does not push back the first extension.
+        renewed = _throttled(renew, TIMEOUT)
+        try:
+            requested = []
+            for identity in identities:
+                customer, reducer_id = identity.rsplit(":", 1)
+                requested.append(
+                    {**self._customer_arguments(customer), "reducer_id": reducer_id}
+                )
+            resets = self._resets
+            deadline = anyio.current_time() + self._snapshot_timeout
+
+            async def ask() -> list[Snapshot]:
+                """Its reads still wait: a failure that may pass is asked for again until
+                they give up."""
+                delay = FETCH_RETRY_DELAY
+                while True:
+                    try:
+                        return await self._request(
+                            "POST",
+                            "/v1/outpost/meter-usage",
+                            json={"identities": requested},
+                        )
+                    except (httpx2.HTTPStatusError, httpx2.TransportError) as error:
+                        response = getattr(error, "response", None)
+                        if response is not None and (
+                            response.is_client_error and response.status_code != 429
+                        ):
+                            raise
+                        wait = _retry_after(response) or delay
+                        if anyio.current_time() + wait >= deadline:
+                            raise
+                        await anyio.sleep(wait)
+                        await renew()
+                        delay *= 2
+
+            snapshots = await ask()
+            # Side by side, as a pulled page: one instance applies the snapshots of the
+            # fleet.
+            limiter = anyio.CapacityLimiter(PULL_CONCURRENCY)
+
+            async def apply(snapshot: Snapshot) -> None:
+                async with limiter:
+                    if await self._receive_snapshot(
+                        snapshot, pulled=False, resets=resets, renew=renew
+                    ):
+                        await renewed()
+
+            async with self._applying, anyio.create_task_group() as group:
+                for snapshot in snapshots:
+                    group.start_soon(apply, snapshot)
+        finally:
+            with contextlib.suppress(RedisError):
+                await redis.delete(
+                    *(self._fetch_key(identity) for identity in identities)
+                )
+
+    async def _in_flight(self, timeout: float = 30.0) -> None:
+        with anyio.fail_after(timeout):
+            if self._pulling is not None:
+                await self._pulling.wait()
+            if self._relaying is not None:
+                await self._relaying.wait()
+            for fetching in list(self._requesting.values()):
+                await fetching.wait()
+            async with self._applying:
+                pass
 
     async def _create_outbox_group(self) -> None:
         """A flusher reads the outbox through the group, which tracks each batch until
@@ -1207,6 +1344,13 @@ class Outpost:
         finally:
             self._draining = None
             done.set()
+
+    async def _drain_on_time(self) -> None:
+        """A long-running process delivers what it queued without a flush."""
+        while True:
+            await anyio.sleep(DRAIN_INTERVAL)
+            if self._undrained:
+                await self._drain_outbox_quietly()
 
     async def _drain_outbox(self) -> None:
         """One flusher per OUTBOX_BATCH events waiting, up to FLUSHERS across the fleet.
@@ -1416,243 +1560,26 @@ class Outpost:
                 log.warning("Outpost on_delivered failed: %s", error)
         return True
 
-    async def _drain_cold(self) -> None:
-        """Once it lets go of the lock, the instance looks again: a customer queued while
-        it held the lock is not left behind."""
-        redis = self._require_redis()
-        while True:
-            token = await _take_lock(redis, self._cold_lock_key, TIMEOUT)
-            if token is None:
-                return
+    def _settlements(
+        self, events: collections.abc.Sequence[EventInput]
+    ) -> dict[tuple[str, int], list[str]]:
+        """The events' ids, by the (identity, bucket) whose pending usage they settle.
+        An event another SDK queued in a form this one cannot parse settles nothing
+        here: it stays pending until the snapshot that counts it."""
+        groups: dict[tuple[str, int], list[str]] = {}
+        for event in events:
             try:
-                await anyio.sleep(FETCH_BATCH_WINDOW)
-
-                async def renew(token: str = token) -> None:
-                    await redis.eval(
-                        EXTEND_LOCK_SCRIPT,
-                        1,
-                        self._cold_lock_key,
-                        token,
-                        int(TIMEOUT * 1000),
-                    )
-
-                while True:
-                    batches: list[list[str]] = []
-                    while len(batches) < FETCH_CONCURRENCY:
-                        popped = typing.cast(
-                            list[bytes],
-                            await redis.spop(self._cold_key, SNAPSHOT_BATCH),
-                        )
-                        identities = [_decode(item) for item in popped]
-                        if not identities:
-                            break
-                        batches.append(identities)
-                    if not batches:
-                        break
-                    await renew()
-                    # A few batches at once: the cold start lasts as long as the
-                    # slowest, not their sum.
-                    async with anyio.create_task_group() as group:
-                        for identities in batches:
-                            group.start_soon(self._fetch_batch, identities, renew)
-            finally:
-                await _release_lock(redis, self._cold_lock_key, token)
-            if not await redis.scard(self._cold_key):
-                return
-
-    async def _fetch_batch(
-        self,
-        identities: list[str],
-        renew: collections.abc.Callable[[], collections.abc.Awaitable[None]],
-    ) -> None:
-        redis = self._require_redis()
-        # Its clock starts with the batch: a slow fetch does not push back the first extension.
-        renewed = _throttled(renew, TIMEOUT)
-        try:
-            requested = []
-            for identity in identities:
-                customer, reducer_id = identity.rsplit(":", 1)
-                requested.append(
-                    {**self._customer_arguments(customer), "reducer_id": reducer_id}
+                self.validate(event)
+                parsed = self._parse_event(event)
+            except (AttributeError, KeyError, PolarError, TypeError, ValueError):
+                continue
+            bucket_start = get_bucket_start(parsed.timestamp)
+            for reducer_id, _ in match_event(self._matchers, parsed):
+                identity = f"{parsed.external_customer_id}:{reducer_id}"
+                groups.setdefault((identity, bucket_start), []).append(
+                    typing.cast(str, event["external_id"])
                 )
-            resets = self._resets
-            deadline = anyio.current_time() + self._snapshot_timeout
-
-            async def ask() -> list[Snapshot]:
-                """Its reads still wait: a failure that may pass is asked for again until
-                they give up."""
-                delay = FETCH_RETRY_DELAY
-                while True:
-                    try:
-                        return await self._request(
-                            "POST",
-                            "/v1/outpost/meter-usage",
-                            json={"identities": requested},
-                        )
-                    except (httpx2.HTTPStatusError, httpx2.TransportError) as error:
-                        response = getattr(error, "response", None)
-                        if response is not None and (
-                            response.is_client_error and response.status_code != 429
-                        ):
-                            raise
-                        wait = _retry_after(response) or delay
-                        if anyio.current_time() + wait >= deadline:
-                            raise
-                        await anyio.sleep(wait)
-                        await renew()
-                        delay *= 2
-
-            snapshots = await ask()
-            # Side by side, as a pulled page: one instance applies the snapshots of the
-            # fleet.
-            limiter = anyio.CapacityLimiter(PULL_CONCURRENCY)
-
-            async def apply(snapshot: Snapshot) -> None:
-                async with limiter:
-                    if await self._receive_snapshot(
-                        snapshot, pulled=False, resets=resets, renew=renew
-                    ):
-                        await renewed()
-
-            async with self._applying, anyio.create_task_group() as group:
-                for snapshot in snapshots:
-                    group.start_soon(apply, snapshot)
-        finally:
-            with contextlib.suppress(RedisError):
-                await redis.delete(
-                    *(self._fetch_key(identity) for identity in identities)
-                )
-
-    async def _report_redis_size(self) -> None:
-        """Includes whatever else the merchant keeps in that Redis."""
-        redis, memory_gauge, keys_gauge = (
-            self._redis,
-            self._redis_memory,
-            self._redis_keys,
-        )
-        if redis is None or memory_gauge is None or keys_gauge is None:
-            return
-        try:
-            memory = await redis.info("memory")
-            keys = await redis.dbsize()
-        except RedisError:
-            # A Redis that refuses INFO or DBSIZE reports nothing.
-            return
-        memory_gauge.set(memory["used_memory"])
-        keys_gauge.set(keys)
-
-    async def _report_on_time(self) -> None:
-        while True:
-            await anyio.sleep(REPORT_INTERVAL)
-            await self.flush_telemetry()
-
-    async def _drain_on_time(self) -> None:
-        """A long-running process delivers what it queued without a flush."""
-        while True:
-            await anyio.sleep(DRAIN_INTERVAL)
-            if self._undrained:
-                await self._drain_outbox_quietly()
-
-    def _lose_redis(self, error: Exception) -> None:
-        """Reads and writes fail fast until Redis answers again."""
-        if not self._redis_available or self._tasks is None:
-            return
-        self._redis_available = False
-        with self._span("outpost.redis.disconnect") as span:
-            span.record_exception(error)
-            span.set_status(StatusCode.ERROR)
-        self._tasks.start_soon(self._reconnect)
-
-    async def _reconnect(self) -> None:
-        redis = self._redis
-        assert redis is not None
-
-        async def ignore(error: Exception) -> None:
-            pass
-
-        await Retry(RedisReconnectBackoff(), -1).call_with_retry(redis.ping, ignore)
-        self._redis_available = True
-
-    async def _request(self, method: str, path: str, **kwargs: typing.Any) -> typing.Any:
-        response = await self._client.request(method, path, **kwargs)
-        if response.status_code in (401, 403):
-            raise PolarOutpostError("Polar refused Outpost")
-        response.raise_for_status()
-        return response.json()
-
-    @property
-    def _pull_key(self) -> str:
-        return f"{self._prefix}:pull"
-
-    @property
-    def _pull_lock_key(self) -> str:
-        return f"{self._prefix}:pull:lock"
-
-    @property
-    def _cold_key(self) -> str:
-        return f"{self._prefix}:cold"
-
-    @property
-    def _cold_lock_key(self) -> str:
-        return f"{self._prefix}:cold:lock"
-
-    # The events Polar has yet to receive, in the order Outpost tracked them.
-    @property
-    def _outbox_key(self) -> str:
-        return f"{self._prefix}:outbox"
-
-    @property
-    def _outbox_backoff_key(self) -> str:
-        return f"{self._outbox_key}:backoff"
-
-    @property
-    def _configuration_key(self) -> str:
-        """A new instance reads its token's configuration from Redis instead of Polar.
-        The key hashes the token: Redis never sees it."""
-        headers = self._client.headers
-        sent = [
-            str(self._client.base_url.join("/v1/outpost/configuration")),
-            headers.get("authorization"),
-            headers.get("polar-organization"),
-        ]
-        # Compact, as JSON.stringify writes it: both SDKs share the key.
-        identity = hashlib.sha256(
-            json.dumps(sent, separators=(",", ":")).encode()
-        ).hexdigest()
-        return f"{KEY_VERSION}:configuration:{identity}"
-
-    async def _configure(
-        self, source: typing.Literal["redis", "polar", "either"] = "either"
-    ) -> bool:
-        """From "redis", the organization's copy: each token reloads it once the pull
-        hash says the configuration changed. False when Redis holds none."""
-        redis = self._require_redis()
-        key = (
-            f"{self._prefix}:configuration"
-            if source == "redis"
-            else self._configuration_key
-        )
-        stored = None if source == "polar" else await redis.get(key)
-        if not stored and source == "redis":
-            return False
-        configuration: Configuration = (
-            json.loads(stored)
-            if stored
-            else await self._request("GET", "/v1/outpost/configuration")
-        )
-        prefix = f"{KEY_VERSION}:{configuration['organization_id']}"
-        if not stored:
-            dumped = json.dumps(configuration)
-            await redis.set(self._configuration_key, dumped)
-            # Only the pull writes the organization's copy: a fetch at start may be
-            # older than it.
-            if source == "polar":
-                await redis.set(f"{prefix}:configuration", dumped)
-        self._prefix = prefix
-        self._reducers = configuration["reducers"]
-        self._matchers = with_matchers(self._reducers)
-        self._configured.set()
-        return True
+        return groups
 
     async def _refresh(self) -> None:
         """Starts the pull once due and no other instance pulled since. Waits for it, at
@@ -1670,6 +1597,10 @@ class Outpost:
         if stale:
             with anyio.move_on_after(self._snapshot_timeout):
                 await pulling.wait()
+
+    async def _refresh_quietly(self) -> None:
+        with contextlib.suppress(RedisError):
+            await self._refresh()
 
     def _pull_due(self) -> bool:
         now = time.time()
@@ -1730,10 +1661,6 @@ class Outpost:
             await anyio.sleep(PULL_CHECK_INTERVAL)
             await self._refresh_quietly()
 
-    async def _refresh_quietly(self) -> None:
-        with contextlib.suppress(RedisError):
-            await self._refresh()
-
     async def _run_pull(self, done: anyio.Event, wait: bool) -> None:
         try:
             with self._span("outpost.pull") as span:
@@ -1768,12 +1695,6 @@ class Outpost:
                     *forget,
                 )
         return retry_at / 1000
-
-    def _fetch_key(self, identity: str) -> str:
-        return f"{self._prefix}:fetch:{identity}"
-
-    def _missing_key(self, identity: str) -> str:
-        return f"{self._prefix}:missing:{identity}"
 
     async def _pull_changes(self, span: Span, wait: bool) -> None:
         """One instance of the fleet pulls at a time: the others learn the result through
@@ -1894,29 +1815,6 @@ class Outpost:
         if self._relaying is None and self._tasks is not None:
             self._relaying = anyio.Event()
             self._tasks.start_soon(self._relay_in_background, self._relaying)
-
-    async def _relay_in_background(self, done: anyio.Event) -> None:
-        try:
-            # Telemetry is best effort: no failure of it stops Outpost. The instance that
-            # pulled measures the shared Redis for the fleet.
-            with contextlib.suppress(Exception):
-                await self._report_redis_size()
-                await self._relay_telemetry()
-        finally:
-            self._relaying = None
-            done.set()
-
-    def _fail_unless_transient(self, error: Exception) -> None:
-        if not _is_transient_error(error):
-            self._fail(error)
-
-    def _fail(self, error: Exception) -> None:
-        if not isinstance(error, PolarOutpostError):
-            failure = PolarOutpostError("Outpost stopped")
-            failure.__cause__ = error
-            error = failure
-        self._failure = error
-        self._failed_at = time.time()
 
     async def _receive_snapshot(
         self,
@@ -2127,27 +2025,129 @@ class Outpost:
                     }
                 )
 
-    def _parse_event(self, event: EventInput) -> Event:
-        customer = self._customer_key(
-            event.get("customer_id"), event.get("external_customer_id")
-        )
-        raw_timestamp = event.get("timestamp")
-        if raw_timestamp is not None:
-            timestamp = datetime.datetime.fromisoformat(raw_timestamp)
-        else:
-            timestamp = datetime.datetime.now(datetime.UTC)
-        return Event(
-            name=event["name"],
-            external_customer_id=customer,
-            timestamp=timestamp,
-            metadata=event.get("metadata", {}),
-        )
+    async def _push_telemetry(self) -> None:
+        spans, metrics = self._telemetry_buffer.take()
+        if self._redis is None or not (spans or metrics):
+            return
+        # A fleet that stops pulling keeps its newest exports only.
+        arguments = [
+            self._telemetry_key("spans"),
+            self._telemetry_key("metrics"),
+            TELEMETRY_CAP,
+            len(spans),
+            *spans,
+            *metrics,
+        ]
+        try:
+            await _call_script(
+                self._redis, PUSH_TELEMETRY_SHA, PUSH_TELEMETRY_SCRIPT, 2, *arguments
+            )
+        except RedisError:
+            self._telemetry_buffer.put_back(spans, metrics, TELEMETRY_CAP)
 
-    def _customer_key(
-        self, customer_id: str | None, external_customer_id: str | None
-    ) -> str:
-        if (customer_id is None) == (external_customer_id is None):
-            raise ValueError("Provide exactly one customer_id or external_customer_id")
-        if customer_id is not None:
-            return f"customer:{customer_id}"
-        return f"external:{external_customer_id}"
+    async def _relay_telemetry(self) -> None:
+        """The pulling instance relays the fleet's telemetry, one request of each kind:
+        protobuf messages concatenate into one whose repeated fields add up."""
+        if self._tracer_provider is None:
+            return
+        redis = self._require_redis()
+        lock = f"{self._prefix}:telemetry:lock"
+        token = await _take_lock(redis, lock, RELAY_LOCK_TTL)
+        if token is None:
+            return
+        try:
+            for kind, path in (
+                ("spans", "/v1/outpost/telemetry"),
+                ("metrics", "/v1/outpost/telemetry/metrics"),
+            ):
+                key = self._telemetry_key(kind)
+                batch = f"{key}:relaying"
+                # A batch Polar failed goes first; otherwise the list moves aside, and
+                # exports written meanwhile start a new one.
+                if not await redis.exists(batch):
+                    with contextlib.suppress(RedisResponseError):
+                        await redis.rename(key, batch)
+                exports = typing.cast(list[bytes], await redis.lrange(batch, 0, -1))
+                if not exports:
+                    continue
+                response = await self._client.post(
+                    path,
+                    content=b"".join(exports),
+                    headers={"Content-Type": "application/x-protobuf"},
+                )
+                # One Polar refused would be refused again.
+                if response.status_code < 500 and response.status_code != 429:
+                    await redis.delete(batch)
+        finally:
+            await _release_lock(redis, lock, token)
+
+    async def _relay_in_background(self, done: anyio.Event) -> None:
+        try:
+            # Telemetry is best effort: no failure of it stops Outpost. The instance that
+            # pulled measures the shared Redis for the fleet.
+            with contextlib.suppress(Exception):
+                await self._report_redis_size()
+                await self._relay_telemetry()
+        finally:
+            self._relaying = None
+            done.set()
+
+    async def _report_redis_size(self) -> None:
+        """Includes whatever else the merchant keeps in that Redis."""
+        redis, memory_gauge, keys_gauge = (
+            self._redis,
+            self._redis_memory,
+            self._redis_keys,
+        )
+        if redis is None or memory_gauge is None or keys_gauge is None:
+            return
+        try:
+            memory = await redis.info("memory")
+            keys = await redis.dbsize()
+        except RedisError:
+            # A Redis that refuses INFO or DBSIZE reports nothing.
+            return
+        memory_gauge.set(memory["used_memory"])
+        keys_gauge.set(keys)
+
+    async def _report_on_time(self) -> None:
+        while True:
+            await anyio.sleep(REPORT_INTERVAL)
+            await self.flush_telemetry()
+
+    @contextlib.contextmanager
+    def _span(
+        self, name: str, **attributes: AttributeValue
+    ) -> collections.abc.Generator[Span]:
+        if self._connection_id is not None:
+            attributes["outpost.connection_id"] = self._connection_id
+        span = self._tracer.start_span(
+            name, context=otel_context.Context(), attributes=attributes
+        )
+        if is_sampled(span.get_span_context().trace_id):
+            span.set_attribute(SAMPLE_RATE_ATTRIBUTE, SPAN_SAMPLE_RATE)
+        try:
+            yield span
+        except Exception as e:
+            span.record_exception(e)
+            span.set_status(StatusCode.ERROR)
+            raise
+        finally:
+            span.end()
+
+    async def _shutdown_telemetry(self) -> None:
+        tracer_provider = self._tracer_provider
+        meter_provider = self._meter_provider
+        self._tracer_provider = None
+        self._tracer = trace.NoOpTracer()
+        self._meter_provider = None
+        self._ingest_duration = None
+        self._ingest_buckets = None
+        self._read_duration = None
+        self._redis_memory = None
+        self._redis_keys = None
+        with anyio.CancelScope(shield=True):
+            if tracer_provider is not None:
+                await anyio.to_thread.run_sync(tracer_provider.shutdown)
+            if meter_provider is not None:
+                await anyio.to_thread.run_sync(meter_provider.shutdown)

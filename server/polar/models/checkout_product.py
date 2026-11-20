@@ -5,6 +5,7 @@ from sqlalchemy import ForeignKey, Integer, UniqueConstraint, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
+from polar.models.product_price import PRICES_ORDER_BY
 
 if TYPE_CHECKING:
     from polar.models import Checkout, Product, ProductPrice
@@ -37,5 +38,8 @@ class CheckoutProduct(RecordModel):
     @declared_attr
     def ad_hoc_prices(cls) -> Mapped[list["ProductPrice"]]:
         return relationship(
-            "ProductPrice", lazy="selectin", back_populates="checkout_product"
+            "ProductPrice",
+            lazy="selectin",
+            order_by=PRICES_ORDER_BY,
+            back_populates="checkout_product",
         )

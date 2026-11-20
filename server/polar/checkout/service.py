@@ -2229,7 +2229,10 @@ class CheckoutService:
                 ),
             )
             errors = [*errors, *price_errors]
-            validated_prices[product] = validated_product_prices
+            # Match the order `CheckoutProduct.ad_hoc_prices` reloads them in
+            validated_prices[product] = sorted(
+                validated_product_prices, key=lambda price: price.amount_type_rank
+            )
 
         if len(errors) > 0:
             raise PolarRequestValidationError(errors)

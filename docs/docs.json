@@ -184,7 +184,8 @@
               "merchant-of-record/fees",
               "merchant-of-record/supported-countries",
               "merchant-of-record/acceptable-use/introduction",
-              "merchant-of-record/account-reviews"
+              "merchant-of-record/account-reviews",
+              "merchant-of-record/review-checklist"
             ]
           }
         ]

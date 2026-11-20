@@ -6723,8 +6723,7 @@ export interface paths {
      *     planning it for the same organization without edits reports no changes.
      *     Resources without an `external_id`, archived ones, ones config can't express
      *     (or that reference a skipped resource), and ones beyond the config limit are
-     *     listed in `skipped`, up to the config limit per section. Webhook endpoints
-     *     are not exported.
+     *     listed in `skipped`, up to the config limit per section.
      *
      *     Works before config as code is enabled, so the catalog can be reviewed
      *     before `init`; `enabled` says whether it is.
@@ -6790,8 +6789,8 @@ export interface paths {
      *     dashboard and API again.
      *
      *     The draft catalog is discarded, and the live catalog is removed: its
-     *     products and benefits stay as they are. So do meters, settings and webhook
-     *     endpoints applied in the meantime.
+     *     products and benefits stay as they are. So do meters and settings applied
+     *     in the meantime.
      *
      *     Only possible while at most one catalog was published.
      *
@@ -6817,7 +6816,7 @@ export interface paths {
      * Apply Config
      * @description Apply a declarative config document to the organization.
      *
-     *     Meters, benefits, products and webhook endpoints are matched by
+     *     Meters, benefits and products are matched by
      *     `external_id`: missing ones are created, and changed ones are updated.
      *     Deprecated products are neither created nor updated.
      *     Deprecated products, and products that `config pull` exports but the config
@@ -17152,11 +17151,6 @@ export interface components {
        */
       custom_fields?: components['schemas']['ConfigCustomField'][]
       /**
-       * Webhooks
-       * @description Webhook endpoints to create or update, matched by `external_id`. Existing endpoints that aren't listed are left untouched.
-       */
-      webhooks?: components['schemas']['ConfigWebhookEndpoint'][]
-      /**
        * Organization Id
        * @description The ID of the organization to apply the config to. **Required unless you use an organization token.**
        */
@@ -18617,49 +18611,6 @@ export interface components {
       error: 'ConfigUnsupportedResources'
       /** Detail */
       detail: string
-    }
-    /** ConfigWebhookConflict */
-    ConfigWebhookConflict: {
-      /**
-       * Error
-       * @example ConfigWebhookConflict
-       * @constant
-       */
-      error: 'ConfigWebhookConflict'
-      /** Detail */
-      detail: string
-    }
-    /** ConfigWebhookEndpoint */
-    ConfigWebhookEndpoint: {
-      /**
-       * External Id
-       * @description Your identifier for the webhook endpoint, used to match it.
-       */
-      external_id: string
-      /**
-       * Url
-       * Format: uri
-       * @description The URL where the webhook events will be sent.
-       * @example https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0
-       */
-      url: string
-      /**
-       * Format
-       * @description The format of the webhook payload.
-       * @enum {string}
-       */
-      format: 'raw' | 'discord' | 'slack'
-      /**
-       * Events
-       * @description The events that will trigger the webhook.
-       */
-      events: components['schemas']['WebhookEventType'][]
-      /**
-       * Api Version
-       * @description The API version that'll be used in event payloads.
-       * @enum {string}
-       */
-      api_version: '2026-04' | '2026-10' | '2027-01'
     }
     /** Configuration */
     Configuration: {
@@ -66448,7 +66399,7 @@ export interface operations {
   'config:apply': {
     parameters: {
       query?: {
-        /** @description Publish the catalog changes. By default, product, benefit, meter and settings changes are saved in the organization's draft catalog, to publish later. With `true`, they go live and a pending draft is discarded. Webhooks aren't versioned, so they apply right away. */
+        /** @description Publish the catalog changes. By default, product, benefit, meter and settings changes are saved in the organization's draft catalog, to publish later. With `true`, they go live and a pending draft is discarded. */
         publish?: boolean
       }
       header?: never
@@ -66502,7 +66453,6 @@ export interface operations {
             | components['schemas']['ConfigBenefitConflict']
             | components['schemas']['ConfigProductConflict']
             | components['schemas']['ConfigCustomFieldConflict']
-            | components['schemas']['ConfigWebhookConflict']
         }
       }
       /** @description Validation Error */
@@ -74673,12 +74623,6 @@ export const configResourceValues: ReadonlyArray<
 export const configSkippedReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigSkippedReason']
 > = ['missing_external_id', 'archived', 'invalid', 'over_limit']
-export const configWebhookEndpointFormatValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ConfigWebhookEndpoint']['format']
-> = ['raw', 'discord', 'slack']
-export const configWebhookEndpointApi_versionValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ConfigWebhookEndpoint']['api_version']
-> = ['2026-04', '2026-10', '2027-01']
 export const countAggregationFuncValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CountAggregation']['func']
 > = ['count']

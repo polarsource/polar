@@ -946,7 +946,6 @@ class DeclarativeConfigService:
                                 if is_organization(auth_subject)
                                 else organization.id,
                             ),
-                            declarative_config=True,
                         )
                         await repository.update(
                             endpoint, update_dict={"external_id": config.external_id}
@@ -961,7 +960,6 @@ class DeclarativeConfigService:
                     auth_subject,
                     endpoint=endpoint,
                     update_schema=WebhookEndpointUpdate(**change.update_dict),
-                    declarative_config=True,
                 )
             results.append(
                 ConfigResult(

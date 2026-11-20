@@ -25,10 +25,6 @@ from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.repository import CheckoutRepository
 from polar.config import settings
 from polar.customer.schemas.state import CustomerState
-from polar.declarative_config.guard import (
-    DeclarativeConfigManaged,
-    assert_catalog_editable,
-)
 from polar.email.schemas import EmailAdapter
 from polar.email.sender import enqueue_email_template
 from polar.exceptions import PolarError, PolarRequestValidationError, ResourceNotFound
@@ -200,8 +196,6 @@ class WebhookService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         create_schema: WebhookEndpointCreate,
-        *,
-        declarative_config: bool = False,
     ) -> WebhookEndpoint:
         repository = WebhookEndpointRepository.from_session(session)
         organization = await get_payload_organization(
@@ -213,8 +207,6 @@ class WebhookService:
             organization.id,
             OrganizationPermission.organization_manage,
         )
-        if not declarative_config and organization.is_config_as_code_enabled:
-            raise DeclarativeConfigManaged()
         secret: str
         secret_generated_at: datetime.datetime | None
         if (
@@ -246,13 +238,10 @@ class WebhookService:
         *,
         endpoint: WebhookEndpoint,
         update_schema: WebhookEndpointUpdate,
-        declarative_config: bool = False,
     ) -> WebhookEndpoint:
         await assert_resource_permission(
             session, auth_subject, endpoint, OrganizationPermission.organization_manage
         )
-        if not declarative_config:
-            await assert_catalog_editable(session, endpoint.organization_id)
         update_dict = update_schema.model_dump()
         if endpoint.format == WebhookFormat.mcp and update_dict.keys() - {"enabled"}:
             raise MCPWebhookEndpointReadOnly()
@@ -313,7 +302,6 @@ class WebhookService:
         await assert_resource_permission(
             session, auth_subject, endpoint, OrganizationPermission.organization_manage
         )
-        await assert_catalog_editable(session, endpoint.organization_id)
         repository = WebhookEndpointRepository.from_session(session)
         return await repository.soft_delete(endpoint)
 

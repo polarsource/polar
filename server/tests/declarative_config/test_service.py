@@ -1745,6 +1745,7 @@ class TestApply:
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled", "user_organization")
+    @pytest.mark.skip(reason="Webhooks are disabled in config")
     async def test_create_webhook(
         self,
         session: AsyncSession,
@@ -1783,6 +1784,7 @@ class TestApply:
         ]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
+    @pytest.mark.skip(reason="Webhooks are disabled in config")
     async def test_update_webhook(
         self,
         save_fixture: SaveFixture,
@@ -2809,6 +2811,7 @@ class TestPlan:
         AuthSubjectFixture(subject="agent"),
     )
     @pytest.mark.usefixtures("config_as_code_enabled")
+    @pytest.mark.skip(reason="Webhooks are disabled in config")
     async def test_webhooks_require_webhooks_scope(
         self, session: AsyncSession, auth_subject: AuthSubject[Organization | Agent]
     ) -> None:
@@ -2821,6 +2824,7 @@ class TestPlan:
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
+    @pytest.mark.skip(reason="Webhooks are disabled in config")
     async def test_webhooks_require_organization_manage(
         self,
         save_fixture: SaveFixture,
@@ -2845,6 +2849,7 @@ class TestPlan:
             )
 
     @pytest.mark.usefixtures("config_as_code_enabled")
+    @pytest.mark.skip(reason="Webhooks are disabled in config")
     async def test_webhook_diff(
         self,
         save_fixture: SaveFixture,
@@ -3005,6 +3010,7 @@ class TestPlan:
         ]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
+    @pytest.mark.skip(reason="Webhooks are disabled in config")
     async def test_webhook_events_order_ignored(
         self,
         save_fixture: SaveFixture,
@@ -4016,7 +4022,6 @@ class TestPlan:
             auth_subject,
             Config.model_validate(
                 {
-                    "webhooks": [ORDERS_WEBHOOK, ORDERS_WEBHOOK],
                     "custom_fields": [COMPANY_FIELD, COMPANY_FIELD],
                     "benefits": [BETA_BENEFIT, BETA_BENEFIT],
                     "products": [
@@ -4035,7 +4040,6 @@ class TestPlan:
             for issue in plan.issues
             if issue.type == ConfigIssueType.duplicate_external_id
         ] == [
-            ["body", "webhooks", 1, "external_id"],
             ["body", "benefits", 1, "external_id"],
         ]
         assert [

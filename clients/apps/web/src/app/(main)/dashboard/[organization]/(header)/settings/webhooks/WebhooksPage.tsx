@@ -4,7 +4,6 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { useModal } from '@/components/Modal/useModal'
 import NewWebhookModal from '@/components/Settings/Webhook/NewWebhookModal'
 import WebhookSettings from '@/components/Settings/Webhook/WebhookSettings'
-import { useIsManagedAsCode } from '@/hooks/permissions'
 import { schemas } from '@polar-sh/client'
 import { Button, InlineModal } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -16,7 +15,6 @@ export default function ClientPage({
   organization: schemas['Organization']
 }) {
   const { isShown, show, hide } = useModal()
-  const managedAsCode = useIsManagedAsCode(org.id)
 
   return (
     <DashboardBody
@@ -34,7 +32,7 @@ export default function ClientPage({
               <ArrowUpRight className="h-4 w-4" />
             </Button>
           </a>
-          {!managedAsCode && <Button onClick={show}>Add Endpoint</Button>}
+          <Button onClick={show}>Add Endpoint</Button>
         </Box>
       }
     >

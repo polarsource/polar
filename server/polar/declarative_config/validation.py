@@ -1346,9 +1346,6 @@ async def check(
     for_update: bool,
     catalog: Catalog | None = None,
 ) -> tuple[ConfigChanges, list[ConfigIssue]]:
-    webhooks = await diff_webhooks(
-        session, organization, config.webhooks, for_update=for_update
-    )
     custom_fields = await diff_custom_fields(
         session,
         organization,
@@ -1378,9 +1375,6 @@ async def check(
         manage_custom_fields="custom_fields" in config.model_fields_set,
     )
     issues = [
-        *unique_external_ids(
-            ConfigResource.webhook, [webhook.external_id for webhook in config.webhooks]
-        ),
         *unique_external_ids(
             ConfigResource.meter, [meter.external_id for meter in config.meters]
         ),
@@ -1430,7 +1424,7 @@ async def check(
     return (
         ConfigChanges(
             None if archived else settings,
-            webhooks,
+            [],
             meters,
             benefits,
             products,

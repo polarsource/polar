@@ -1,7 +1,7 @@
 'use client'
 
 import { DataTable } from '@polar-sh/orbit'
-import { Status } from '@polar-sh/orbit'
+import { Status, Truncated } from '@polar-sh/orbit'
 import { seatStatusDisplayConfig } from './seatStatus'
 
 interface CustomerSeat {
@@ -34,9 +34,9 @@ export const SeatViewOnlyTable = ({ seats }: SeatViewOnlyTableProps) => {
           accessorKey: 'customer_email',
           header: 'Email',
           cell: ({ row }) => (
-            <span className="text-sm">
+            <Truncated className="text-sm">
               {row.original.customer_email || '—'}
-            </span>
+            </Truncated>
           ),
         },
         {

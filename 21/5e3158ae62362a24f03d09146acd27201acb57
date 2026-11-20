@@ -1,0 +1,25 @@
+server/tests/customer_portal/service/test_customer_meter.py
+  s_82e71224b65bbf::t_bfd73ea24f8113 13,27,92,107,184
+  s_82e71224b65bbf::t_17b7bbb27b0c84 168-172,245-249
+server/polar/customer_portal/service/customer_meter.py
+  s_82e71224b65bbf::t_4e794617bb91c5 8,13,23,39,51,54-55,60,68-70,72-77
+server/polar/customer_portal/endpoints/customer_meter.py
+  s_82e71224b65bbf::t_66ae368bc8f73a 11,45,50,75
+  s_82e71224b65bbf::t_17b7bbb27b0c84 78
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "215e3158ae62362a24f03d09146acd27201acb57",
+  "prompts": {},
+  "sessions": {
+    "s_82e71224b65bbf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "acf63c68-f848-4401-9d67-6f72c5587477",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

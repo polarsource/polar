@@ -211,11 +211,16 @@ class CheckoutRepository(
     def get_public_eager_options(self) -> Options:
         """
         Options that only load what the `CheckoutPublic` schema serializes.
+
+        `Checkout.product` is always one of `Checkout.checkout_products`, so its
+        prices, benefits and medias are loaded once, through `checkout_products`.
         """
         return (
             joinedload(Checkout.organization),
-            selectinload(Checkout.product).options(
-                selectinload(Product.product_medias),
+            joinedload(Checkout.product).options(
+                raiseload(Product.prices),
+                raiseload(Product.product_benefits),
+                raiseload(Product.product_medias),
                 selectinload(Product.attached_custom_fields),
             ),
             selectinload(Checkout.checkout_products).options(

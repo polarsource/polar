@@ -1,0 +1,19 @@
+server/Dockerfile
+  s_bf12bde4fa22c0::t_31d075b57a895d 168-170
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "73a622eddf0ad604e3bed3e4ef71f140a4d3ad66",
+  "prompts": {},
+  "sessions": {
+    "s_bf12bde4fa22c0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "275b8dcf-e987-4178-b1f1-cd9c57e79848",
+        "model": "unknown"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

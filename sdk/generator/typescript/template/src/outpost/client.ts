@@ -162,7 +162,12 @@ interface OutpostRedis extends Redis {
   ): Promise<number>;
   outpostConfirm(numberOfKeys: number, ...args: (string | number)[]): Promise<number>;
   outpostApplySnapshot(key: string, ...args: (string | number)[]): Promise<string[]>;
-  outpostOutboxBacklog(key: string, backoffKey: string, group: string): Promise<[number, number, string]>;
+  outpostOutboxBacklog(
+    key: string,
+    backoffKey: string,
+    group: string,
+    ...ended: string[]
+  ): Promise<[number, number, string]>;
   outpostCommitPull(
     key: string,
     lockKey: string,
@@ -1341,11 +1346,14 @@ export class Outpost {
   private async drainOutbox(): Promise<void> {
     const redis = this.requireRedis();
     try {
+      // The backoff a round delivered past: the next round's read ends it.
+      let ended: string[] = [];
       for (let round = 0; ; round += 1) {
         const [length, delivering, retryAt] = await redis.outpostOutboxBacklog(
           this.outboxKey,
           this.outboxBackoffKey,
           OUTBOX_GROUP,
+          ...ended,
         );
         // The first round also takes back the batches that wait on a failed or frozen flusher.
         if (!length || (round && length === delivering)) return;
@@ -1365,7 +1373,7 @@ export class Outpost {
         }
         if (!outcomes.includes("drained")) return;
         // Polar takes batches again: the next failure waits the first delay.
-        if (retryAt) await redis.del(this.outboxBackoffKey);
+        ended = retryAt ? [retryAt] : [];
       }
     } catch (error) {
       // Redis lost the group, with the rest of its keys: the next flush reads a new one.

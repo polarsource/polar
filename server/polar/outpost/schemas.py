@@ -131,7 +131,7 @@ class Changes(Schema):
     """The page is full: pull again from the cursor right away."""
     reset: bool
     """Changes were missed: every snapshot the client holds may be stale. The client
-    drops them, and fetches each customer again at its next read."""
+    keeps serving them, and fetches each customer again at its next read."""
     configuration_changed: bool
     """The organization's reducers changed: fetch the configuration again."""
     next_poll_in: int

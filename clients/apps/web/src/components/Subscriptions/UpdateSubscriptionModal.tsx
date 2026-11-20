@@ -28,7 +28,7 @@ const UpdateSubscriptionModal = ({
       <InlineModalHeader hide={hide}>
         <h2 className="text-xl">Update Subscription</h2>
       </InlineModalHeader>
-      <div className="flex h-full flex-col gap-8 px-8 pb-12">
+      <div className="flex grow flex-col gap-8 px-8 pb-12">
         <Tabs defaultValue="plan">
           <TabsList className="mb-8">
             <TabsTrigger value="plan">Plan</TabsTrigger>

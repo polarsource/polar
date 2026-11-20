@@ -231,7 +231,8 @@ const metering = polar.metering({ outpost: outpost() });
 `outpost({ redisUrl: "redis://localhost:6379" })`. Every Outpost event requires an
 `external_id`; `track()` rejects events without one. An event counts locally until Polar confirms
 storage or refuses it. A first read of a customer waits up to `snapshotTimeout` for Polar's
-snapshot, then throws `NotReadyError` from `@polar-sh/sdk/outpost`; the next read asks again.
+snapshot. If it does not arrive in time, the read throws `NotReadyError` from
+`@polar-sh/sdk/outpost`; the next read asks again.
 
 Outpost delivers the events itself, instead of the buffer: it queues them in Redis and sends them
 to Polar in batches of up to 1,000 events, shared by every client, on `flush()` and every second on a

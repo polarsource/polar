@@ -206,7 +206,7 @@ In high throughput scenarios, Outpost can return you accurate meter reads only m
 
 Outpost needs an `external_id` on every event; `track()` rejects an event without one.
 
-A first read of a customer waits for Polar's snapshot, then raises `NotReadyError` from `polar.outpost` if it does not arrive in time; the next read asks again.
+A first read of a customer waits up to `snapshot_timeout` for Polar's snapshot. If it does not arrive in time, the read raises `NotReadyError` from `polar.outpost`; the next read asks again.
 
 An event counts locally until Polar confirms it stored it, or refuses it, so a meter read never loses an event Polar is still ingesting.
 
@@ -291,6 +291,7 @@ The metering helper buffers events in memory and sends them in batches to Polar.
 | -------------- | -------------------------------- | -------------------------------------------------------- |
 | `redis_url`    | `REDIS_URL` environment variable | Redis instance used by Outpost.                          |
 | `telemetry`    | `True`                           | Send Outpost metrics and traces to Polar.                |
+| `snapshot_timeout` | `5`                          | Seconds a cold read waits for its initial snapshot.      |
 | `on_delivered` | `None`                           | Async callback receiving the events Polar accepted.      |
 | `on_dropped`   | `None`                           | Async callback receiving the refused events and reason.  |
 

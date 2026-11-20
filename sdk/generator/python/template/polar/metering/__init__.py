@@ -39,12 +39,15 @@ class MeteringOutpostOptions(typing.TypedDict, total=False):
         redis_url: Redis connection URL. Defaults to the REDIS_URL environment variable.
         telemetry: Send Outpost metrics and traces to Polar. Defaults to True;
             POLAR_OUTPOST_TELEMETRY=0 disables it regardless of this option.
+        snapshot_timeout: Seconds a read of a cold customer waits for its first
+            snapshot. Defaults to 5.
         on_delivered: Called with each batch Polar accepted.
         on_dropped: Called with each batch Polar refused, and why.
     """
 
     redis_url: str
     telemetry: bool
+    snapshot_timeout: float
     on_delivered: typing.Callable[[list[EventInput]], typing.Awaitable[None]]
     on_dropped: typing.Callable[[list[EventInput], DropReason], typing.Awaitable[None]]
 
@@ -482,6 +485,7 @@ class Metering:
                     polar,
                     redis_url,
                     telemetry=outpost_options.get("telemetry", True),
+                    snapshot_timeout=outpost_options.get("snapshot_timeout"),
                     on_delivered=outpost_options.get("on_delivered"),
                     on_dropped=outpost_options.get("on_dropped"),
                 )

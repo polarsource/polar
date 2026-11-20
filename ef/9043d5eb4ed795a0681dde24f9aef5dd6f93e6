@@ -94,6 +94,7 @@ server/polar/event_type/schemas.py
 server/polar/custom_field/schemas.py
   s_a7be5626e771f2::t_db49dcdb269dea 133-134,141,148,155,162,169
   s_a7be5626e771f2::t_e3d3ada4c5ad13 4
+  s_a7be5626e771f2::t_b08c3f00b67917 26
 server/polar/customer/schemas/customer.py
   s_a7be5626e771f2::t_db49dcdb269dea 172,176-177,182,187
   s_a7be5626e771f2::t_23e3fc9e40bfd8 11,38,183
@@ -286,6 +287,12 @@ server/polar/organization/legacy_schemas.py
   s_a7be5626e771f2::t_6a4a193b51cb9d 2
   s_a7be5626e771f2::t_0e486a632dac2e 3
   s_a7be5626e771f2::t_db49dcdb269dea 17
+server/tests/openapi.2026-04.json
+  s_a7be5626e771f2::t_b08c3f00b67917 1
+server/tests/openapi.2026-10.json
+  s_a7be5626e771f2::t_b08c3f00b67917 1
+server/polar/kit/schemas.py
+  s_a7be5626e771f2::t_04dc9b70f381ae 8,112
 ---
 {
   "schema_version": "authorship/3.0.0",

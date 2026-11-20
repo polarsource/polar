@@ -210,6 +210,8 @@ In high throughput scenarios, Outpost can return you accurate meter reads only m
 
 Outpost needs an `external_id` on every event; `track()` rejects an event without one.
 
+A first read of a customer waits for Polar's snapshot, then raises `NotReadyError` from `polar.outpost` if it does not arrive in time; the next read asks again.
+
 An event counts locally until Polar confirms it stored it, or refuses it, so a meter read never loses an event Polar is still ingesting.
 
 Outpost delivers the events itself, instead of the buffer: it queues them in Redis and sends them to Polar in batches of up to 1,000 events, shared by every client, on `flush()` and every second on a long-running server. Pass `buffered` or `outpost`, not both.

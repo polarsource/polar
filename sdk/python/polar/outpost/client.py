@@ -62,8 +62,9 @@ from polar.outpost.telemetry import (
 class PolarOutpostError(PolarError): ...
 
 
-# What Polar has not sent yet: a snapshot. A read that raises it is not ready.
-class _NotReadyError(PolarOutpostError): ...
+class NotReadyError(PolarOutpostError):
+    """A read Outpost cannot answer yet: Polar has not sent the customer's snapshot
+    in time."""
 
 
 class UnavailableRedisError(PolarOutpostError):
@@ -1250,7 +1251,7 @@ class Outpost:
             if state.cold_until is None or (
                 credit_state is not None and credit_state.cold_until is None
             ):
-                raise _NotReadyError("Customer snapshot is not ready")
+                raise NotReadyError("Customer snapshot is not ready")
             read.outcome = "ready"
             consumed = consumed_units(state, usage["aggregation"]["func"])
             credited: int | float = 0
@@ -1479,7 +1480,7 @@ class Outpost:
         except (UnavailableRedisError, RedisConnectionError, RedisTimeoutError):
             read.outcome = "redis_unavailable"
             raise
-        except (TimeoutError, _NotReadyError, UnknownMeterError):
+        except (TimeoutError, NotReadyError, UnknownMeterError):
             raise
         except Exception:
             read.outcome = "error"

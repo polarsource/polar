@@ -229,8 +229,8 @@ const number = (value: string): number => {
   return parsed;
 };
 export class PolarOutpostError extends PolarError {}
-// What Polar has not sent yet: the configuration or a snapshot. A read that raises it is not ready.
-class NotReadyError extends PolarError {}
+/** A read Outpost cannot answer yet: Polar has not sent the configuration or the snapshot in time. */
+export class NotReadyError extends PolarOutpostError {}
 export class UnavailableRedisError extends PolarOutpostError {
   constructor(options?: ErrorOptions) {
     super("Redis is unavailable", options);

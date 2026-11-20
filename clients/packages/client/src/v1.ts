@@ -17184,6 +17184,7 @@ export interface components {
     ConfigBenefit:
       | components['schemas']['ConfigBenefitFeatureFlag']
       | components['schemas']['ConfigBenefitMeterCredit']
+      | components['schemas']['ConfigBenefitSlackSharedChannel']
     /** ConfigBenefitConflict */
     ConfigBenefitConflict: {
       /**
@@ -17348,6 +17349,114 @@ export interface components {
     ConfigBenefitRead:
       | components['schemas']['ConfigBenefitFeatureFlagRead']
       | components['schemas']['ConfigBenefitMeterCreditRead']
+      | components['schemas']['ConfigBenefitSlackSharedChannelRead']
+    /** ConfigBenefitSlackSharedChannel */
+    ConfigBenefitSlackSharedChannel: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Deprecated
+       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it. Leaving it empty is the same as `false`.
+       * @default false
+       */
+      deprecated: boolean | null
+      /**
+       * External Id
+       * @description Your identifier for the benefit, used to match it.
+       */
+      external_id: string
+      /**
+       * Description
+       * @description The description of the benefit. Will be displayed on products having this benefit.
+       */
+      description: string
+      /**
+       * Visibility
+       * @description Always `public`: customers set up their channel in the customer portal.
+       * @default public
+       * @constant
+       */
+      visibility: 'public'
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'slack_shared_channel'
+      properties: components['schemas']['ConfigBenefitSlackSharedChannelProperties']
+    }
+    /** ConfigBenefitSlackSharedChannelProperties */
+    ConfigBenefitSlackSharedChannelProperties: {
+      /**
+       * Slack Integration Id
+       * Format: uuid4
+       * @description Polar Slack integration to use for this benefit.
+       */
+      slack_integration_id: string
+      /** Channel Name Template */
+      channel_name_template: string
+      /**
+       * Private
+       * @default true
+       */
+      private: boolean
+      /** Welcome Message */
+      welcome_message?: string | null
+      /**
+       * Archive On Revoke
+       * @default true
+       */
+      archive_on_revoke: boolean
+      /** Team Invitees */
+      team_invitees?: string[]
+    }
+    /** ConfigBenefitSlackSharedChannelPropertiesRead */
+    ConfigBenefitSlackSharedChannelPropertiesRead: {
+      /**
+       * Slack Integration Id
+       * Format: uuid4
+       */
+      slack_integration_id: string
+      /** Channel Name Template */
+      channel_name_template: string
+      /** Private */
+      private: boolean
+      /** Welcome Message */
+      welcome_message: string | null
+      /** Archive On Revoke */
+      archive_on_revoke: boolean
+      /** Team Invitees */
+      team_invitees: string[]
+    }
+    /** ConfigBenefitSlackSharedChannelRead */
+    ConfigBenefitSlackSharedChannelRead: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'slack_shared_channel'
+      /** External Id */
+      external_id: string
+      /** Description */
+      description: string
+      visibility: components['schemas']['BenefitVisibility']
+      metadata: components['schemas']['MetadataOutputType']
+      properties: components['schemas']['ConfigBenefitSlackSharedChannelPropertiesRead']
+    }
     /** ConfigCatalog */
     ConfigCatalog: {
       /**
@@ -74392,6 +74501,12 @@ export const configBenefitMeterCreditTypeValues: ReadonlyArray<
 export const configBenefitMeterCreditReadTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigBenefitMeterCreditRead']['type']
 > = ['meter_credit']
+export const configBenefitSlackSharedChannelTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigBenefitSlackSharedChannel']['type']
+> = ['slack_shared_channel']
+export const configBenefitSlackSharedChannelReadTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigBenefitSlackSharedChannelRead']['type']
+> = ['slack_shared_channel']
 export const configCustomFieldCheckboxTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigCustomFieldCheckbox']['type']
 > = ['checkbox']

@@ -11,6 +11,9 @@ from polar.benefit.repository import BenefitRepository
 from polar.benefit.strategies.meter_credit.properties import (
     BenefitMeterCreditProperties,
 )
+from polar.benefit.strategies.slack_shared_channel.schemas import (
+    BenefitSlackSharedChannelProperties,
+)
 from polar.catalog.repository import (
     CatalogBenefitRepository,
     CatalogProductRepository,
@@ -49,9 +52,11 @@ from polar.webhook.repository import WebhookEndpointRepository
 
 from . import products as config_products
 from .schemas import (
+    CONFIG_BENEFIT_TYPES,
     Config,
     ConfigAction,
     ConfigBenefit,
+    ConfigBenefitFeatureFlag,
     ConfigBenefitMeterCredit,
     ConfigCustomField,
     ConfigFieldChange,
@@ -727,6 +732,11 @@ def _create_update_dict(
 def benefit_properties(
     benefit: Benefit, meter_external_ids: dict[str, str]
 ) -> dict[str, Any]:
+    if benefit.type == BenefitType.slack_shared_channel:
+        # Fills the defaults of properties added after the benefit was created.
+        return BenefitSlackSharedChannelProperties.model_validate(
+            benefit.properties
+        ).model_dump(mode="json")
     if benefit.type != BenefitType.meter_credit:
         return {}
     properties = cast(BenefitMeterCreditProperties, benefit.properties)
@@ -739,9 +749,9 @@ def benefit_properties(
 
 
 def _config_benefit_properties(benefit_config: ConfigBenefit) -> dict[str, Any]:
-    if isinstance(benefit_config, ConfigBenefitMeterCredit):
-        return benefit_config.properties.model_dump()
-    return {}
+    if isinstance(benefit_config, ConfigBenefitFeatureFlag):
+        return {}
+    return benefit_config.properties.model_dump(mode="json")
 
 
 def _get_benefit_update_dict(
@@ -807,7 +817,9 @@ async def diff_benefits(
                 continue
             create_dict = _create_update_dict(benefit_config)
             if "properties" in create_dict:
-                create_dict["properties"] = create_dict["properties"].model_dump()
+                create_dict["properties"] = create_dict["properties"].model_dump(
+                    mode="json"
+                )
             changes.append(
                 BenefitChange(
                     index,
@@ -834,18 +846,13 @@ async def diff_benefits(
     return changes
 
 
-VERSIONED_BENEFIT_TYPES = frozenset(
-    {BenefitType.feature_flag, BenefitType.meter_credit}
-)
-
-
 def benefit_type_changes(changes: Sequence[BenefitChange]) -> list[ConfigIssue]:
     issues: list[ConfigIssue] = []
     for change in changes:
         existing = change.existing
         if existing is None:
             continue
-        if existing.type not in VERSIONED_BENEFIT_TYPES:
+        if existing.type not in CONFIG_BENEFIT_TYPES:
             issues.append(
                 ConfigIssue(
                     severity=ConfigIssueSeverity.error,
@@ -853,8 +860,8 @@ def benefit_type_changes(changes: Sequence[BenefitChange]) -> list[ConfigIssue]:
                     loc=_loc(ConfigResource.benefit, change.index, "type"),
                     msg=(
                         f"This is a {existing.type.get_display_name()} benefit. "
-                        "Only feature flag and meter credit benefits can be "
-                        "managed in the config."
+                        "Only feature flag, meter credit and Slack shared channel "
+                        "benefits can be managed in the config."
                     ),
                     input=change.config.type,
                 )
@@ -870,6 +877,28 @@ def benefit_type_changes(changes: Sequence[BenefitChange]) -> list[ConfigIssue]:
                 )
             )
     return issues
+
+
+def changed_slack_shared_channels(
+    changes: Sequence[BenefitChange],
+) -> list[ConfigIssue]:
+    """A changed benefit gets a new row and grants don't follow it, so a customer
+    moved to the new row would have their channel archived."""
+    return [
+        ConfigIssue(
+            severity=ConfigIssueSeverity.error,
+            type=ConfigIssueType.not_supported,
+            loc=_loc(ConfigResource.benefit, change.index),
+            msg="A Slack shared channel benefit can't be changed from the config yet.",
+            input=change.config.external_id,
+        )
+        for change in changes
+        if change.existing is not None
+        and change.existing.type
+        == change.config.type
+        == BenefitType.slack_shared_channel
+        and change.update_dict
+    ]
 
 
 _PRODUCT_FIELDS = ("name", "description", "visibility")
@@ -1370,6 +1399,7 @@ async def check(
         *custom_field_type_changes(custom_fields),
         *await unknown_events(session, organization, meters),
         *benefit_type_changes(benefits),
+        *changed_slack_shared_channels(benefits),
         *unsupported_prices(products),
         *invalid_prices(products, meters),
         *changed_intervals(products),

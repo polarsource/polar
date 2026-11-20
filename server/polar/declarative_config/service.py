@@ -192,8 +192,9 @@ class ConfigUnsupportedResources(PolarError):
             *(f"product {name}" for name in products),
         ]
         super().__init__(
-            "Config can only manage feature flag and meter credit benefits, and "
-            "products with fixed, metered, seat-based or unit-based prices. "
+            "Config can only manage feature flag, meter credit and Slack shared "
+            "channel benefits, and products with fixed, metered, seat-based or "
+            "unit-based prices. "
             f"Unsupported: {', '.join(unsupported)}.",
             409,
         )

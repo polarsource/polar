@@ -2,8 +2,9 @@ from collections.abc import Sequence
 from typing import cast
 from uuid import UUID
 
-from sqlalchemy import Select, and_, case, func, or_, select, union
+from sqlalchemy import Select, Uuid, and_, case, func, or_, select, union
 from sqlalchemy.orm import (
+    aliased,
     contains_eager,
     joinedload,
     selectinload,
@@ -25,9 +26,11 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.models import (
+    Benefit,
     Catalog,
     CatalogProduct,
     CheckoutProduct,
+    Meter,
     Product,
     ProductBenefit,
     ProductCustomField,
@@ -39,6 +42,7 @@ from polar.models import (
     Subscription,
     SubscriptionUpdate,
 )
+from polar.models.benefit import BenefitType
 from polar.models.catalog import CatalogStatus
 from polar.models.product_price import ProductPriceAmountType, ProductPriceSource
 from polar.postgres import sql
@@ -198,6 +202,77 @@ class ProductRepository(
             .options(undefer(Product.external_id), *self.get_eager_options())
         )
         return await self.get_all(statement)
+
+    async def get_other_published_versions(
+        self, product: Product, *, options: Options = ()
+    ) -> Sequence[Product]:
+        """The other published versions of `product`, the current one first, then
+        the newest first."""
+        requested = aliased(Product)
+        drafts = select(Catalog.id).where(
+            Catalog.organization_id == product.organization_id,
+            Catalog.status == CatalogStatus.draft,
+        )
+        statement = (
+            self.get_base_statement()
+            .join(
+                requested,
+                and_(
+                    requested.organization_id == Product.organization_id,
+                    requested.external_id == Product.external_id,
+                ),
+            )
+            .where(
+                requested.id == product.id,
+                Product.id != product.id,
+                or_(
+                    Product.is_current,
+                    Product.catalog_id.is_(None),
+                    Product.catalog_id.not_in(drafts),
+                ),
+            )
+            .order_by(
+                Product.is_current.desc(), Product.created_at.desc(), Product.id.desc()
+            )
+            .options(*options)
+        )
+        return await self.get_all(statement)
+
+    async def get_meters(
+        self, product_ids: Sequence[UUID]
+    ) -> dict[UUID, dict[str, UUID]]:
+        """The meters each product bills or credits, by meter `external_id`."""
+        price = with_polymorphic(
+            ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
+        )
+        billed = select(price.product_id, price.ProductPriceMeteredUnit.meter_id).where(
+            price.product_id.in_(product_ids),
+            price.is_metered,
+            price.source == ProductPriceSource.catalog,
+            ~price.is_archived,
+            ~price.is_deleted,
+        )
+        credited = (
+            select(
+                ProductBenefit.product_id,
+                Benefit.properties["meter_id"].as_string().cast(Uuid),
+            )
+            .join(Benefit, Benefit.id == ProductBenefit.benefit_id)
+            .where(
+                ProductBenefit.product_id.in_(product_ids),
+                Benefit.type == BenefitType.meter_credit,
+                ~Benefit.is_deleted,
+            )
+        )
+        meters = union(billed, credited).subquery()
+        statement = select(meters.c.product_id, Meter.external_id, Meter.id).join(
+            Meter, Meter.id == meters.c.meter_id
+        )
+        result: dict[UUID, dict[str, UUID]] = {}
+        for product_id, external_id, meter_id in await self.session.execute(statement):
+            if external_id is not None:
+                result.setdefault(product_id, {})[external_id] = meter_id
+        return result
 
     async def get_version_ids_by_external_ids(
         self,

@@ -5,6 +5,7 @@ from pytest_mock import MockerFixture
 from polar.email.schemas import DomainVerificationLostEmail
 from polar.kit.utils import utc_now
 from polar.models import Organization, OrganizationDomain, UserOrganization
+from polar.models.organization import OrganizationStatus
 from polar.organization_domain.service import (
     organization_domain as organization_domain_service,
 )
@@ -170,3 +171,54 @@ class TestReverify:
         await organization_domain_service.reverify(session, organization)
 
         assert domain.verified_at is None
+
+
+@pytest.mark.anyio
+class TestRegisterPaymentMethodDomains:
+    async def test_only_embed_hosts_under_verified_domain(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization_domain.service.enqueue_job")
+        organization.embed_hosts = ["shop.acme.com"]
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization, domain="acme.com", verified_at=utc_now()
+            )
+        )
+
+        await organization_domain_service.register_payment_method_domains(
+            session, organization
+        )
+
+        enqueue_job_mock.assert_called_once_with(
+            "organization_domain.register_payment_method_domains",
+            domains=["shop.acme.com"],
+        )
+
+    async def test_organization_not_active(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization_domain.service.enqueue_job")
+        organization.status = OrganizationStatus.REVIEW
+        organization.embed_hosts = ["shop.acme.com"]
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization, domain="acme.com", verified_at=utc_now()
+            )
+        )
+
+        await organization_domain_service.register_payment_method_domains(
+            session, organization
+        )
+
+        enqueue_job_mock.assert_not_called()

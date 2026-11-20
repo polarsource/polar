@@ -2759,6 +2759,39 @@ class TestIngested:
         await session.refresh(customer_meter)
         assert customer_meter.activated_at is not None
 
+    async def test_activates_customers_sharing_an_external_id_across_organizations(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        customer_meters: list[CustomerMeter] = []
+        event_ids: list[uuid.UUID] = []
+        for org in (organization, organization_second):
+            customer = await create_customer(
+                save_fixture, organization=org, external_id="SHARED_EXTERNAL_ID"
+            )
+            meter = await create_meter(save_fixture, organization=org, id=uuid.uuid4())
+            customer_meter = CustomerMeter(
+                customer=customer, meter=meter, activated_at=None
+            )
+            await save_fixture(customer_meter)
+            customer_meters.append(customer_meter)
+            event = await create_event(
+                save_fixture,
+                organization=org,
+                external_customer_id="SHARED_EXTERNAL_ID",
+                source=EventSource.user,
+            )
+            event_ids.append(event.id)
+
+        await event_service.ingested(session, event_ids)
+
+        for customer_meter in customer_meters:
+            await session.refresh(customer_meter)
+            assert customer_meter.activated_at is not None
+
     async def test_activation_queries_do_not_scale_with_customers(
         self,
         save_fixture: SaveFixture,

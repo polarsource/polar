@@ -12,7 +12,6 @@ import structlog
 from opentelemetry import trace
 from sqlalchemy import or_, select
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.orm import contains_eager
 
 from polar.auth.models import AuthSubject, is_agent, is_organization, is_user
 from polar.auth.permission import OrganizationPermission
@@ -35,7 +34,7 @@ from polar.kit.metadata import MetadataQuery
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.time_queries import TimeInterval
-from polar.kit.utils import generate_uuid, utc_now
+from polar.kit.utils import generate_uuid
 from polar.logging import Logger
 from polar.meter.aggregation import PropertyAggregation
 from polar.meter.filter import Filter
@@ -43,7 +42,6 @@ from polar.meter.repository import MeterRepository
 from polar.models import (
     Agent,
     Customer,
-    CustomerMeter,
     Event,
     Member,
     Meter,
@@ -1425,49 +1423,29 @@ class EventService:
             return
 
         customer_meter_repository = CustomerMeterRepository.from_session(session)
-        customer_ids = [c.id for c in customers]
+        customer_ids = {c.id for c in customers}
+        customer_ids_by_external_id = {
+            (c.organization_id, c.external_id): c.id
+            for c in customers
+            if c.external_id is not None
+        }
+        external_ids = {external_id for _, external_id in customer_ids_by_external_id}
 
-        statement = (
-            customer_meter_repository.get_base_statement()
-            .join(CustomerMeter.meter)
-            .join(CustomerMeter.customer)
-            .options(
-                contains_eager(CustomerMeter.meter),
-                contains_eager(CustomerMeter.customer),
-            )
-            .where(
-                CustomerMeter.customer_id.in_(customer_ids),
-                CustomerMeter.activated_at.is_(None),
-            )
-        )
-        unactivated_meters = await customer_meter_repository.get_all(statement)
-
-        customer_meters_by_meter: dict[uuid.UUID, list[CustomerMeter]] = {}
-        for cm in unactivated_meters:
-            customer_meters_by_meter.setdefault(cm.meter_id, []).append(cm)
-
-        for customer_meters in customer_meters_by_meter.values():
+        for meter in await customer_meter_repository.get_unactivated_meters(
+            customer_ids
+        ):
             (
                 matched_customer_ids,
                 matched_external_ids,
             ) = await event_repository.get_meter_matching_customers(
-                event_ids,
-                customer_meters[0].meter,
-                {cm.customer_id for cm in customer_meters},
-                {
-                    cm.customer.external_id
-                    for cm in customer_meters
-                    if cm.customer.external_id is not None
-                },
+                event_ids, meter, customer_ids, external_ids
             )
-            for cm in customer_meters:
-                if (
-                    cm.customer_id in matched_customer_ids
-                    or cm.customer.external_id in matched_external_ids
-                ):
-                    cm.activated_at = utc_now()
-                    session.add(cm)
-        await session.flush()
+            matched = matched_customer_ids | {
+                customer_ids_by_external_id[(meter.organization_id, external_id)]
+                for external_id in matched_external_ids
+            }
+            if matched:
+                await customer_meter_repository.activate(meter.id, matched)
 
     async def _get_org_ids_with_feature(
         self,

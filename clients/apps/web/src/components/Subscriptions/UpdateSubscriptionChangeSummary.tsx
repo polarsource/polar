@@ -1,29 +1,29 @@
-'use client'
+"use client";
 
-import { ListRow } from '@/components/Widgets/ListRow'
-import { useDiscount } from '@/hooks/queries'
-import { useSubscriptionChangePreview } from '@/hooks/queries/subscriptions'
-import { extractApiErrorMessage } from '@/utils/api/errors'
-import { getDiscountDisplay } from '@/utils/discount'
-import { formatTrialEnd, type TrialChangeOutcome } from '@/utils/trial-change'
-import { ClientResponseError, schemas } from '@polar-sh/client'
-import { formatCurrency } from '@polar-sh/currency'
-import { Grid, Text } from '@polar-sh/orbit'
-import { Box } from '@polar-sh/orbit/Box'
-import { ArrowRight } from '@polar-sh/orbit/icons'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import type { ReactNode } from 'react'
+import { ListRow } from "@/components/Widgets/ListRow";
+import { useDiscount } from "@/hooks/queries";
+import { useSubscriptionChangePreview } from "@/hooks/queries/subscriptions";
+import { extractApiErrorMessage } from "@/utils/api/errors";
+import { getDiscountDisplay } from "@/utils/discount";
+import { formatTrialEnd, type TrialChangeOutcome } from "@/utils/trial-change";
+import { ClientResponseError, schemas } from "@polar-sh/client";
+import { formatCurrency } from "@polar-sh/currency";
+import { Grid, Text } from "@polar-sh/orbit";
+import { Box } from "@polar-sh/orbit/Box";
+import { ArrowRight } from "@polar-sh/orbit/icons";
+import FormattedDateTime from "@polar-sh/ui/components/atoms/FormattedDateTime";
+import type { ReactNode } from "react";
 
-const format = formatCurrency('accounting')
+const format = formatCurrency("accounting");
 
 const ChangeRow = ({
   label,
   from,
   to,
 }: {
-  label: string
-  from: ReactNode
-  to: ReactNode
+  label: string;
+  from: ReactNode;
+  to: ReactNode;
 }) => (
   <>
     <Text color="muted">{label}</Text>
@@ -35,33 +35,34 @@ const ChangeRow = ({
     </Box>
     <Text truncate>{to}</Text>
   </>
-)
+);
 
-const discountName = (discount: schemas['Discount'] | undefined) =>
-  discount ? `${discount.name} ${getDiscountDisplay(discount)}` : 'None'
+const discountName = (discount: schemas["Discount"] | undefined) =>
+  discount ? `${discount.name} ${getDiscountDisplay(discount)}` : "None";
 
 const splitLabel = (label: string) => {
-  const [name, period] = label.split(' — ')
-  return { name, period: period ?? null }
-}
+  const [name, period] = label.split(" — ");
+  return { name, period: period ?? null };
+};
 
 const headlineFor = (
-  preview: schemas['SubscriptionChangePreview'],
+  preview: schemas["SubscriptionChangePreview"],
   productName: string,
   nextInvoice: ReactNode,
   trialOutcome: TrialChangeOutcome,
+  isIntervalChanged: boolean,
 ): { amount: number; caption: ReactNode } => {
-  const { total_amount: total, due_amount: due } = preview
-  if (trialOutcome?.kind === 'continues') {
+  const { total_amount: total, due_amount: due } = preview;
+  if (trialOutcome?.kind === "continues") {
     return {
       amount: 0,
       caption: `until the trial ends on ${formatTrialEnd(trialOutcome.trialEnd)}`,
-    }
+    };
   }
-  if (trialOutcome?.kind === 'ends') {
-    return { amount: due, caption: 'charged today, ending the trial' }
+  if (trialOutcome?.kind === "ends") {
+    return { amount: due, caption: "charged today, ending the trial" };
   }
-  if (preview.proration_behavior === 'next_period') {
+  if (preview.proration_behavior === "next_period") {
     return {
       amount: 0,
       caption: (
@@ -69,27 +70,27 @@ const headlineFor = (
           today, {productName} starts {nextInvoice}
         </>
       ),
-    }
+    };
   }
-  if (preview.proration_behavior === 'prorate') {
+  if (preview.proration_behavior === "prorate" && !isIntervalChanged) {
     return {
       amount: total,
       caption: (
         <>
-          {total < 0 ? 'credit' : 'added'} on the {nextInvoice} invoice
+          {total < 0 ? "credit" : "added"} on the {nextInvoice} invoice
         </>
       ),
-    }
+    };
   }
-  if (due > 0) return { amount: due, caption: 'charged today' }
+  if (due > 0) return { amount: due, caption: "charged today" };
   if (total > 0) {
-    return { amount: total, caption: 'paid from the customer’s balance' }
+    return { amount: total, caption: "paid from the customer’s balance" };
   }
   if (total < 0) {
-    return { amount: total, caption: 'credit toward the next invoice' }
+    return { amount: total, caption: "credit toward the next invoice" };
   }
-  return { amount: 0, caption: 'charged today' }
-}
+  return { amount: 0, caption: "charged today" };
+};
 
 export const UpdateSubscriptionChangeSummary = ({
   subscription,
@@ -99,50 +100,61 @@ export const UpdateSubscriptionChangeSummary = ({
   newDiscountId,
   trialOutcome,
 }: {
-  subscription: schemas['Subscription']
-  selectedProduct: schemas['Product'] | undefined
-  change: schemas['SubscriptionChangeProduct'] | null
-  isChangingDiscount: boolean
-  newDiscountId: string | null
-  trialOutcome: TrialChangeOutcome
+  subscription: schemas["Subscription"];
+  selectedProduct: schemas["Product"] | undefined;
+  change: schemas["SubscriptionChangeProduct"] | null;
+  isChangingDiscount: boolean;
+  newDiscountId: string | null;
+  trialOutcome: TrialChangeOutcome;
 }) => {
-  const organizationId = subscription.product.organization_id
-  const { currency } = subscription
-  const preview = useSubscriptionChangePreview(subscription.id, change)
+  const organizationId = subscription.product.organization_id;
+  const { currency } = subscription;
+  const preview = useSubscriptionChangePreview(subscription.id, change);
   const { data: currentDiscount } = useDiscount(
     organizationId,
     subscription.discount_id,
-  )
+  );
   const { data: newDiscount } = useDiscount(
     organizationId,
     isChangingDiscount ? newDiscountId : null,
-  )
+  );
 
   const nextInvoiceDate =
-    subscription.status === 'trialing'
+    subscription.status === "trialing"
       ? subscription.trial_end
-      : subscription.current_period_end
+      : subscription.current_period_end;
   const nextInvoice = nextInvoiceDate ? (
     <FormattedDateTime dateStyle="medium" datetime={nextInvoiceDate} />
   ) : (
-    'next'
-  )
-  const productName = selectedProduct?.name ?? 'The new product'
+    "next"
+  );
+  const productName = selectedProduct?.name ?? "The new product";
+  const isIntervalChanged =
+    selectedProduct !== undefined &&
+    (selectedProduct.recurring_interval !== subscription.recurring_interval ||
+      selectedProduct.recurring_interval_count !==
+        subscription.recurring_interval_count);
 
   const headline =
     change !== null && preview.data
-      ? headlineFor(preview.data, productName, nextInvoice, trialOutcome)
-      : null
+      ? headlineFor(
+          preview.data,
+          productName,
+          nextInvoice,
+          trialOutcome,
+          isIntervalChanged,
+        )
+      : null;
 
   const lines = (preview.data?.prorations ?? []).map((proration, index) => ({
     id: `proration-${index}`,
     ...splitLabel(proration.label),
     amount: proration.amount,
-  }))
+  }));
   const sharedPeriod =
     lines.length > 0 && lines.every((line) => line.period === lines[0].period)
       ? lines[0].period
-      : null
+      : null;
 
   return (
     <Box flexDirection="column" rowGap="xl">
@@ -150,14 +162,14 @@ export const UpdateSubscriptionChangeSummary = ({
         <Text color="muted">
           {newDiscount
             ? `${newDiscount.name} applies`
-            : 'The discount is removed'}{' '}
+            : "The discount is removed"}{" "}
           from the {nextInvoice} invoice
         </Text>
       ) : preview.isError ? (
         <Text color="danger">
           {preview.error instanceof ClientResponseError
             ? extractApiErrorMessage({ detail: preview.error.error.detail })
-            : 'Could not preview this change.'}
+            : "Could not preview this change."}
         </Text>
       ) : (
         <Box alignItems="baseline" columnGap="m" flexWrap="wrap">
@@ -165,9 +177,9 @@ export const UpdateSubscriptionChangeSummary = ({
             variant="heading-m"
             weight="book"
             tabularNums
-            color={headline ? 'default' : 'muted'}
+            color={headline ? "default" : "muted"}
           >
-            {headline ? format(headline.amount, currency) : '–'}
+            {headline ? format(headline.amount, currency) : "–"}
           </Text>
           {headline && <Text color="muted">{headline.caption}</Text>}
         </Box>
@@ -226,5 +238,5 @@ export const UpdateSubscriptionChangeSummary = ({
         </Box>
       )}
     </Box>
-  )
-}
+  );
+};

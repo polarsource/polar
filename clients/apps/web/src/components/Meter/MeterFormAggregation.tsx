@@ -1,5 +1,6 @@
 'use client'
 
+import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { enums, schemas } from '@polar-sh/client'
 import {
   Select,
@@ -17,6 +18,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
+import { useContext } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
 
 type AggregationFunction =
@@ -44,6 +46,11 @@ const ALL_AGGREGATION_FUNCTIONS: AggregationFunction[] = [
 
 const MeterFormAggregation = () => {
   const { control } = useFormContext<schemas['MeterCreate']>()
+  const { organization } = useContext(OrganizationContext)
+  const aggregationFunctions = organization.feature_settings
+    ?.reducer_billing_enabled
+    ? ALL_AGGREGATION_FUNCTIONS.filter((fn) => fn !== 'unique')
+    : ALL_AGGREGATION_FUNCTIONS
   const func = useWatch({ control, name: 'aggregation.func' })
   const needsProperty = func && func !== 'count'
 
@@ -65,7 +72,7 @@ const MeterFormAggregation = () => {
                   <SelectValue placeholder="Select a function" />
                 </SelectTrigger>
                 <SelectContent>
-                  {ALL_AGGREGATION_FUNCTIONS.map((fn) => (
+                  {aggregationFunctions.map((fn) => (
                     <SelectItem key={fn} value={fn}>
                       {AGGREGATION_LABELS[fn]}
                     </SelectItem>

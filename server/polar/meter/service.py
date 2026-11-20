@@ -59,6 +59,7 @@ from polar.models import (
     SubscriptionProductPrice,
 )
 from polar.models.catalog import CatalogStatus
+from polar.organization.repository import OrganizationRepository
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.reducer.service import reducer as reducer_service
@@ -82,6 +83,7 @@ METER_LOCKED_FIELDS = ("filter", "aggregation")
 METER_LOCKED_FIELD_MESSAGE = (
     "This field can't be updated because the meter is already aggregating events."
 )
+UNIQUE_AGGREGATION_UNSUPPORTED_MESSAGE = "Unique aggregations aren't supported."
 
 
 class AmbiguousExternalMeterID(PolarError):
@@ -241,6 +243,21 @@ class MeterService:
     ) -> Meter:
         """Create a meter. A draft's meter isn't current and matches no events
         until `activate` runs when the draft is published."""
+        if (
+            organization.is_reducer_billing_enabled
+            and meter_create.aggregation.func == AggregationFunction.unique
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "aggregation"),
+                        "msg": UNIQUE_AGGREGATION_UNSUPPORTED_MESSAGE,
+                        "input": meter_create.aggregation,
+                    }
+                ]
+            )
+
         repository = MeterRepository.from_session(session)
         meter = await repository.create(
             Meter(
@@ -319,6 +336,22 @@ class MeterService:
                     "loc": ("body", "external_id"),
                     "msg": "A meter with this external ID already exists.",
                     "input": meter_update.external_id,
+                }
+            )
+
+        if (
+            meter_update.aggregation is not None
+            and meter_update.aggregation.func == AggregationFunction.unique
+            and await OrganizationRepository.from_session(session).get_ids_with_feature(
+                {meter.organization_id}, "reducer_billing_enabled"
+            )
+        ):
+            errors.append(
+                {
+                    "type": "value_error",
+                    "loc": ("body", "aggregation"),
+                    "msg": UNIQUE_AGGREGATION_UNSUPPORTED_MESSAGE,
+                    "input": meter_update.aggregation,
                 }
             )
 

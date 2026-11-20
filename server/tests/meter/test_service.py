@@ -244,6 +244,34 @@ class TestCreate:
 
         assert e.value.errors()[0]["loc"] == ("body", "external_id")
 
+    @pytest.mark.parametrize("reducer_billing", [True, False])
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_unique_aggregation(
+        self,
+        reducer_billing: bool,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {"reducer_billing_enabled": reducer_billing}
+        await save_fixture(organization)
+        meter_create = MeterCreate(
+            name="Meter",
+            filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
+            aggregation=UniqueAggregation(property="user_id"),
+        )
+
+        if not reducer_billing:
+            meter = await meter_service.create(session, meter_create, auth_subject)
+            assert meter.aggregation == meter_create.aggregation
+            return
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await meter_service.create(session, meter_create, auth_subject)
+
+        assert e.value.errors()[0]["loc"] == ("body", "aggregation")
+
 
 @pytest.mark.anyio
 class TestUpdate:
@@ -442,6 +470,36 @@ class TestUpdate:
             )
 
         assert e.value.errors()[0]["loc"] == ("body", "external_id")
+
+    @pytest.mark.parametrize("reducer_billing", [True, False])
+    @pytest.mark.auth
+    async def test_unique_aggregation(
+        self,
+        reducer_billing: bool,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {"reducer_billing_enabled": reducer_billing}
+        await save_fixture(organization)
+        meter = await create_meter(save_fixture, organization=organization)
+        meter_update = MeterUpdate(  # pyright: ignore
+            aggregation=UniqueAggregation(property="user_id")
+        )
+
+        if not reducer_billing:
+            meter = await meter_service.update(
+                session, meter, meter_update, auth_subject
+            )
+            assert meter.aggregation == meter_update.aggregation
+            return
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await meter_service.update(session, meter, meter_update, auth_subject)
+
+        assert e.value.errors()[0]["loc"] == ("body", "aggregation")
 
     @pytest.mark.auth
     async def test_same_external_id(

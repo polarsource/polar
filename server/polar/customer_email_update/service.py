@@ -155,7 +155,7 @@ class CustomerEmailUpdateService:
             customer, update_dict={"email": record.email, "email_verified": True}
         )
 
-        await member_service.sync_owner_email(session, customer)
+        await member_service.sync_owner(session, customer)
 
         if customer.stripe_customer_id is not None and customer.email is not None:
             await stripe_service.update_customer(

@@ -1,4 +1,5 @@
 import { schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import type { PillColor } from '@polar-sh/orbit'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -15,6 +16,14 @@ export const isDiscountApplicableToProduct = (
 ): boolean =>
   discount.products.length === 0 ||
   discount.products.some((product) => product.id === productId)
+
+export const formatSubscriptionPrice = ({
+  amount,
+  currency,
+  recurring_interval: interval,
+  recurring_interval_count: count,
+}: schemas['Subscription']): string =>
+  `${formatCurrency('compact')(amount, currency)} /${count > 1 ? `${count} ${interval}s` : interval}`
 
 export const subscriptionStatusDisplayNames: {
   [key in schemas['SubscriptionStatus']]: string

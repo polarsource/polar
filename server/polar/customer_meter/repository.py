@@ -1,8 +1,8 @@
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Select
+from sqlalchemy import Select, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import contains_eager
 
@@ -15,6 +15,7 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.kit.repository.base import Options
+from polar.kit.utils import utc_now
 from polar.models import Customer, CustomerMeter, Meter
 
 from .sorting import CustomerMeterSortProperty
@@ -115,6 +116,34 @@ class CustomerMeterRepository(
                 return customer_meter
             raise
         return customer_meter
+
+    async def get_unactivated_meters(
+        self, customer_ids: Collection[UUID]
+    ) -> Sequence[Meter]:
+        unactivated_meter_ids = (
+            self.get_base_statement()
+            .with_only_columns(CustomerMeter.meter_id)
+            .where(
+                CustomerMeter.customer_id.in_(customer_ids),
+                CustomerMeter.activated_at.is_(None),
+            )
+        )
+        result = await self.session.execute(
+            select(Meter).where(Meter.id.in_(unactivated_meter_ids))
+        )
+        return result.scalars().all()
+
+    async def activate(self, meter_id: UUID, customer_ids: Collection[UUID]) -> None:
+        await self.session.execute(
+            update(CustomerMeter)
+            .where(
+                CustomerMeter.meter_id == meter_id,
+                CustomerMeter.customer_id.in_(customer_ids),
+                CustomerMeter.activated_at.is_(None),
+                CustomerMeter.deleted_at.is_(None),
+            )
+            .values(activated_at=utc_now())
+        )
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]

@@ -1,9 +1,9 @@
-import { generateText as generateText7, streamText as streamText7 } from 'ai'
-import { generateText as generateText5, streamText as streamText5 } from 'ai-v5'
-import { MockLanguageModelV2 } from 'ai-v5/test'
-import { generateText as generateText6, streamText as streamText6 } from 'ai-v6'
-import { MockLanguageModelV3 } from 'ai-v6/test'
-import { convertArrayToReadableStream, MockLanguageModelV4 } from 'ai/test'
+import { generateText, streamText } from 'ai'
+import {
+  convertArrayToReadableStream,
+  MockLanguageModelV3,
+  MockLanguageModelV4,
+} from 'ai/test'
 import { describe, expect, it, vi } from 'vitest'
 import { LLMStrategy, type LLMStrategyModel } from '.'
 
@@ -18,21 +18,36 @@ const numbers = {
   totalTokens: 15,
   cachedInputTokens: 4,
 }
+
 const breakdown = {
   inputTokens: { total: 10, noCache: 6, cacheRead: 4, cacheWrite: 0 },
   outputTokens: { total: 5, text: 5, reasoning: 0 },
 }
+
 const stop = { unified: 'stop' as const, raw: undefined }
 
-const v2 = () =>
-  new MockLanguageModelV2({
-    doGenerate: { content, warnings, finishReason: 'stop', usage: numbers },
-    doStream: {
-      stream: convertArrayToReadableStream([
-        { type: 'finish' as const, finishReason: 'stop', usage: numbers },
-      ]),
-    },
-  })
+// AI SDK 7 has no mock for the v2 models of AI SDK 5
+const v2 = () => ({
+  specificationVersion: 'v2' as const,
+  provider: 'mock-provider',
+  modelId: 'mock-model-id',
+  supportedUrls: {},
+  doGenerate: async () => ({
+    content,
+    warnings,
+    finishReason: 'stop' as const,
+    usage: numbers,
+  }),
+  doStream: async () => ({
+    stream: convertArrayToReadableStream([
+      {
+        type: 'finish' as const,
+        finishReason: 'stop' as const,
+        usage: numbers,
+      },
+    ]),
+  }),
+})
 
 const v3 = () =>
   new MockLanguageModelV3({
@@ -62,51 +77,10 @@ const track = <TModel extends LLMStrategyModel>(model: TModel) => {
 }
 
 describe.each([
-  {
-    name: 'AI SDK 5',
-    generate: async ({ model, execute } = track(v2())) => {
-      await generateText5({ model, prompt })
-      return execute
-    },
-    stream: async ({ model, execute } = track(v2())) => {
-      await streamText5({ model, prompt }).consumeStream()
-      return execute
-    },
-  },
-  {
-    name: 'AI SDK 6',
-    generate: async ({ model, execute } = track(v3())) => {
-      await generateText6({ model, prompt })
-      return execute
-    },
-    stream: async ({ model, execute } = track(v3())) => {
-      await streamText6({ model, prompt }).consumeStream()
-      return execute
-    },
-  },
-  {
-    name: 'AI SDK 7',
-    generate: async ({ model, execute } = track(v4())) => {
-      await generateText7({ model, prompt })
-      return execute
-    },
-    stream: async ({ model, execute } = track(v4())) => {
-      await streamText7({ model, prompt }).consumeStream()
-      return execute
-    },
-  },
-  {
-    name: 'AI SDK 7 with an AI SDK 5 provider',
-    generate: async ({ model, execute } = track(v2())) => {
-      await generateText7({ model, prompt })
-      return execute
-    },
-    stream: async ({ model, execute } = track(v2())) => {
-      await streamText7({ model, prompt }).consumeStream()
-      return execute
-    },
-  },
-])('LLMStrategy on $name', ({ generate, stream }) => {
+  { spec: 'v2 (AI SDK 5)', create: v2 },
+  { spec: 'v3 (AI SDK 6)', create: v3 },
+  { spec: 'v4 (AI SDK 7)', create: v4 },
+])('LLMStrategy with a $spec model', ({ create }) => {
   const usage = {
     vendor: 'mock-provider',
     model: 'mock-model-id',
@@ -115,16 +89,21 @@ describe.each([
     outputTokens: 5,
     totalTokens: 15,
   }
+
   const context = { ...usage, strategy: 'LLM', _llm: usage }
 
   it('should ingest the usage of generateText', async () => {
-    const execute = await generate()
+    const { model, execute } = track(create())
+
+    await generateText({ model, prompt })
 
     expect(execute).toHaveBeenCalledExactlyOnceWith(context, { customerId })
   })
 
   it('should ingest the usage of streamText', async () => {
-    const execute = await stream()
+    const { model, execute } = track(create())
+
+    await streamText({ model, prompt }).consumeStream()
 
     expect(execute).toHaveBeenCalledExactlyOnceWith(context, { customerId })
   })

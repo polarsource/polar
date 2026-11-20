@@ -29,11 +29,13 @@ export type CostResolver = (
   context: LLMStrategyContext,
 ) => models.CostMetadataInput
 
+const TokenBreakdown = Schema.Struct({
+  total: Schema.optional(Schema.Number),
+  cacheRead: Schema.optional(Schema.Number),
+})
+
 // AI SDK 5 reports plain numbers, 6 and later a breakdown per direction
-type TokenCount =
-  | number
-  | { total: number | undefined; cacheRead?: number | undefined }
-  | undefined
+type TokenCount = number | typeof TokenBreakdown.Type | undefined
 
 type Usage = {
   inputTokens: TokenCount
@@ -52,11 +54,13 @@ export type LLMStrategyModel = {
   }>
 }
 
+const isBreakdown = Schema.is(TokenBreakdown)
+
 const total = (tokens: TokenCount) =>
-  (typeof tokens === 'object' ? tokens.total : tokens) ?? 0
+  (isBreakdown(tokens) ? tokens.total : tokens) ?? 0
 
 const cacheRead = (tokens: TokenCount) =>
-  typeof tokens === 'object' ? tokens.cacheRead : undefined
+  isBreakdown(tokens) ? tokens.cacheRead : undefined
 
 export class LLMStrategy<
   TModel extends LLMStrategyModel = LLMStrategyModel,
@@ -72,6 +76,7 @@ export class LLMStrategy<
   private context(usage: Usage): LLMStrategyContext {
     const inputTokens = total(usage.inputTokens)
     const outputTokens = total(usage.outputTokens)
+
     const llm = {
       vendor: this.model.provider,
       model: this.model.modelId,
@@ -97,6 +102,7 @@ export class LLMStrategy<
           return async (options: never) => {
             const result = await model.doGenerate(options)
             await ingest(result.usage)
+
             return result
           }
         }
@@ -124,6 +130,7 @@ export class LLMStrategy<
 
         // Read with the model as receiver so getters and private fields work
         const value = Reflect.get(model, property, model)
+
         return typeof value === 'function' ? value.bind(model) : value
       },
     })

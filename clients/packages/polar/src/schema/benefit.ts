@@ -144,7 +144,6 @@ export const credits = (name?: string) => ({
     new CreditsBuilder(name, meter),
 })
 
-// Always public: customers set up their channel in the customer portal.
 class SlackChannelDefinition extends withDeprecation(withMetadata(Builder)) {
   readonly type = 'slack_shared_channel'
 

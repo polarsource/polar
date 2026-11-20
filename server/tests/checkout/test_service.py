@@ -6233,6 +6233,12 @@ class TestConfirm:
         )
         customer.name = None
         await save_fixture(customer)
+        owner = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            role=MemberRole.owner,
+        )
         checkout_one_time_fixed.customer = customer
         checkout_one_time_fixed.customer_email = customer.email
         await save_fixture(checkout_one_time_fixed)
@@ -6260,6 +6266,9 @@ class TestConfirm:
         # cardholder name, so billing_name resolves and invoices can generate.
         assert checkout.customer.name == "John Smith"
         assert checkout.customer.billing_name == "John Smith"
+
+        await session.refresh(owner)
+        assert owner.name == "John Smith"
 
     async def test_valid_stripe_existing_customer_email(
         self,

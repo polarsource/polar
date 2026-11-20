@@ -16,9 +16,6 @@ from polar.benefit.repository import BenefitRepository
 from polar.benefit.strategies.meter_credit.properties import (
     BenefitMeterCreditProperties,
 )
-from polar.benefit.strategies.slack_shared_channel.properties import (
-    BenefitSlackSharedChannelProperties,
-)
 from polar.catalog.repository import (
     CatalogBenefitRepository,
     CatalogMeterRepository,
@@ -4905,7 +4902,7 @@ class TestBenefitVersioning:
                 session, redis, auth_subject, benefits_only
             )
 
-    async def test_slack_shared_channel_change_publishes_new_row(
+    async def test_slack_shared_channel_cannot_change(
         self,
         session: AsyncSession,
         redis: Redis,
@@ -4922,33 +4919,25 @@ class TestBenefitVersioning:
         )
         [created] = await repository.get_all_by_external_ids(organization.id, ["slack"])
 
-        await declarative_config_service.apply(
-            session,
-            redis,
-            auth_subject,
-            Config.model_validate(
-                {
-                    "benefits": [
-                        {
-                            **slack_benefit,
-                            "properties": {
-                                **slack_benefit["properties"],
-                                "welcome_message": "Welcome!",
-                            },
-                        }
-                    ]
-                }
-            ),
+        with pytest.raises(ConfigInvalid) as raised:
+            await declarative_config_service.apply(
+                session,
+                redis,
+                auth_subject,
+                Config.model_validate(
+                    {"benefits": [{**slack_benefit, "description": "Shared Slack"}]}
+                ),
+            )
+        unchanged = await declarative_config_service.plan(
+            session, auth_subject, Config.model_validate({"benefits": [slack_benefit]})
         )
-        [changed] = await repository.get_all_by_external_ids(organization.id, ["slack"])
+        [current] = await repository.get_all_by_external_ids(organization.id, ["slack"])
 
-        assert changed.id != created.id
-        assert [
-            cast(BenefitSlackSharedChannelProperties, benefit.properties)[
-                "welcome_message"
-            ]
-            for benefit in (created, changed)
-        ] == [None, "Welcome!"]
+        assert [(issue.type, issue.loc) for issue in raised.value.errors] == [
+            (ConfigIssueType.not_supported, ["body", "benefits", 0])
+        ]
+        assert unchanged.issues == []
+        assert current.id == created.id
 
     async def test_slack_shared_channel_stored_without_newer_properties(
         self,

@@ -879,6 +879,28 @@ def benefit_type_changes(changes: Sequence[BenefitChange]) -> list[ConfigIssue]:
     return issues
 
 
+def changed_slack_shared_channels(
+    changes: Sequence[BenefitChange],
+) -> list[ConfigIssue]:
+    """A changed benefit gets a new row and grants don't follow it, so a customer
+    moved to the new row would have their channel archived."""
+    return [
+        ConfigIssue(
+            severity=ConfigIssueSeverity.error,
+            type=ConfigIssueType.not_supported,
+            loc=_loc(ConfigResource.benefit, change.index),
+            msg="A Slack shared channel benefit can't be changed from the config yet.",
+            input=change.config.external_id,
+        )
+        for change in changes
+        if change.existing is not None
+        and change.existing.type
+        == change.config.type
+        == BenefitType.slack_shared_channel
+        and change.update_dict
+    ]
+
+
 _PRODUCT_FIELDS = ("name", "description", "visibility")
 _TRIAL_FIELDS = (
     "trial_interval",
@@ -1377,6 +1399,7 @@ async def check(
         *custom_field_type_changes(custom_fields),
         *await unknown_events(session, organization, meters),
         *benefit_type_changes(benefits),
+        *changed_slack_shared_channels(benefits),
         *unsupported_prices(products),
         *invalid_prices(products, meters),
         *changed_intervals(products),

@@ -191,13 +191,6 @@ export const UpdateSubscriptionPlanForm = ({
               )}
             />
           )}
-          {selectedProduct && (
-            <UpdateSubscriptionProductWarning
-              subscription={subscription}
-              selectedProduct={selectedProduct}
-              trialOutcome={trialOutcome}
-            />
-          )}
         </UpdateSubscriptionSection>
 
         <UpdateSubscriptionSection title="Discount" divider>
@@ -218,6 +211,13 @@ export const UpdateSubscriptionPlanForm = ({
               newDiscountId={selectedDiscountId ?? null}
               trialOutcome={trialOutcome}
             />
+            {selectedProduct && (
+              <UpdateSubscriptionProductWarning
+                subscription={subscription}
+                selectedProduct={selectedProduct}
+                trialOutcome={trialOutcome}
+              />
+            )}
           </UpdateSubscriptionSection>
         )}
 

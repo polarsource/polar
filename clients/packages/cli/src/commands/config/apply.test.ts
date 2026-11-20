@@ -130,13 +130,14 @@ const run = async (
   result: ApplyResult,
   args: ReadonlyArray<string> = [],
   options: Parameters<typeof runCli>[2] = {},
-  draft: { catalog: Catalog; plan: PlanResult } | null = null,
+  draft: { catalog: Catalog; plan: PlanResult } | 'unavailable' | null = null,
 ) => {
+  const drafted = draft === 'unavailable' ? null : draft
   const planned = vi.fn(
     (_config: LoadedConfig, _organization: unknown, options?: CatalogOptions) =>
       Effect.succeed(
-        draft !== null && options?.catalogId === draft.catalog.id
-          ? draft.plan
+        drafted !== null && options?.catalogId === drafted.catalog.id
+          ? drafted.plan
           : plan,
       ),
   )
@@ -163,7 +164,13 @@ const run = async (
           deprecations: () => Effect.die('unused'),
           prune: () => Effect.die('unused'),
           catalogs: () =>
-            Effect.succeed({ live: null, draft: draft?.catalog ?? null }),
+            draft === 'unavailable'
+              ? Effect.fail(
+                  new BillingConfigError({
+                    message: 'You do not have access to Acme',
+                  }),
+                )
+              : Effect.succeed({ live: null, draft: drafted?.catalog ?? null }),
           publish: () => Effect.die('unused'),
         }),
       ),
@@ -355,6 +362,19 @@ describe('polar config apply', () => {
     )
     expect(applied).toBe(0)
     expect(output).toContain('Acme (sandbox) is up to date, nothing to apply')
+  })
+
+  test('fails when it cannot tell whether a draft exists', async () => {
+    const { failed, applied, exit } = await run(
+      { entries: [kept], issues: [] },
+      { status: 'applied', entries: [kept] },
+      ['--confirm'],
+      {},
+      'unavailable',
+    )
+    expect(failed).toBe(true)
+    expect(applied).toBe(0)
+    expect(message(exit)).toBe('You do not have access to Acme')
   })
 
   test('still shows warnings when nothing changed', async () => {

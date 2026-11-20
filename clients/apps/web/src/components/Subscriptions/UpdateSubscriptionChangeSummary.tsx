@@ -50,7 +50,6 @@ const headlineFor = (
   productName: string,
   nextInvoice: ReactNode,
   trialOutcome: TrialChangeOutcome,
-  isIntervalChanged: boolean,
 ): { amount: number; caption: ReactNode } => {
   const { total_amount: total, due_amount: due } = preview
   if (trialOutcome?.kind === 'continues') {
@@ -72,7 +71,7 @@ const headlineFor = (
       ),
     }
   }
-  if (preview.proration_behavior === 'prorate' && !isIntervalChanged) {
+  if (preview.proration_behavior === 'prorate') {
     return {
       amount: total,
       caption: (
@@ -129,21 +128,10 @@ export const UpdateSubscriptionChangeSummary = ({
     'next'
   )
   const productName = selectedProduct?.name ?? 'The new product'
-  const isIntervalChanged =
-    selectedProduct !== undefined &&
-    (selectedProduct.recurring_interval !== subscription.recurring_interval ||
-      selectedProduct.recurring_interval_count !==
-        subscription.recurring_interval_count)
 
   const headline =
     change !== null && preview.data
-      ? headlineFor(
-          preview.data,
-          productName,
-          nextInvoice,
-          trialOutcome,
-          isIntervalChanged,
-        )
+      ? headlineFor(preview.data, productName, nextInvoice, trialOutcome)
       : null
 
   const lines = (preview.data?.prorations ?? []).map((proration, index) => ({

@@ -117,6 +117,17 @@ class SubscriptionUpdate(RecordModel):
             != self.subscription.recurring_interval_count
         )
 
+    def get_effective_proration_behavior(self) -> SubscriptionProrationBehavior:
+        """Return how the update is billed: a billing-interval change resets the
+        cycle, so outside a trial `prorate` is invoiced immediately."""
+        if (
+            self.proration_behavior == SubscriptionProrationBehavior.prorate
+            and self.is_interval_changed()
+            and not self.subscription.trialing
+        ):
+            return SubscriptionProrationBehavior.invoice
+        return self.proration_behavior
+
     def apply_update(self) -> Subscription:
         """Apply the subscription update to the subscription and return the updated subscription."""
         subscription = self.subscription

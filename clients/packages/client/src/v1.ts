@@ -39252,7 +39252,7 @@ export interface components {
        * @description Amount actually due in cents: total_amount plus the applied wallet balance, floored at zero. This is the figure charged today.
        */
       due_amount: number
-      /** @description How the change would be billed, resolved from the requested or organization setting. */
+      /** @description How the change would be billed, resolved from the requested or organization setting. A `prorate` change that switches the billing interval is reported as `invoice`, since it resets the billing cycle and is charged immediately. */
       proration_behavior: components['schemas']['SubscriptionProrationBehavior']
     }
     /** SubscriptionChangeProduct */

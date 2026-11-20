@@ -939,7 +939,8 @@ export type PaymentTrigger =
   | "retry_dunning"
   | "retry_customer"
   | "retry_payment_method_update"
-  | "retry_admin";
+  | "retry_admin"
+  | "retry_payment_alert";
 /**
  * Permission
  */
@@ -1261,7 +1262,8 @@ export type SubscriptionStatus =
   | "past_due"
   | "canceled"
   | "unpaid"
-  | "paused";
+  | "paused"
+  | "trial_ended";
 /**
  * TaxBehavior
  */
@@ -14110,7 +14112,7 @@ export interface EventTypeUpdate {
    */
   label: string;
   /**
-   * Property path to extract dynamic label from event metadata (e.g., 'subject' or 'metadata.subject').
+   * Property path to extract a dynamic label from event metadata (e.g., 'subject' or 'metadata.subject'). Set to `null` to clear it.
    */
   label_property_selector?: string | null;
 }
@@ -20655,14 +20657,6 @@ You can store up to **50 key-value pairs**.
    */
   description?: string | null;
   /**
-   * The recurring interval of the product. If `None`, the product is a one-time purchase. **Can only be set on legacy recurring products. Once set, it can't be changed.**
-   */
-  recurring_interval?: RecurringInterval | null;
-  /**
-   * Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. Once set, it can't be changed.**
-   */
-  recurring_interval_count?: number | null;
-  /**
    * Whether the product is archived. If `true`, the product won't be available for purchase anymore. Existing customers will still have access to their benefits, and subscriptions will continue normally.
    */
   is_archived?: boolean | null;
@@ -20694,6 +20688,14 @@ You can store up to **50 key-value pairs**.
    * attached_custom_fields
    */
   attached_custom_fields?: AttachedCustomFieldCreate[] | null;
+  /**
+   * The recurring interval of the product. If `None`, the product is a one-time purchase. **Can only be set on legacy recurring products. Once set, it can't be changed.**
+   */
+  recurring_interval?: RecurringInterval | null;
+  /**
+   * Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. Once set, it can't be changed.**
+   */
+  recurring_interval_count?: number | null;
 }
 
 /**
@@ -20882,6 +20884,20 @@ export interface RefundDispute {
    * The ID of the payment associated with the dispute.
    */
   payment_id: string;
+}
+
+/**
+ * RefundPaymentAlreadyRefundedByStripe
+ */
+export interface RefundPaymentAlreadyRefundedByStripe {
+  /**
+   * error
+   */
+  error: "RefundPaymentAlreadyRefundedByStripe";
+  /**
+   * detail
+   */
+  detail: string;
 }
 
 /**
@@ -23130,7 +23146,7 @@ You can store up to **50 key-value pairs**.
   /**
    * Set or extend the trial period of the subscription. If set to `now`, the trial will end immediately and the first billing cycle will be charged synchronously. The subscription remains trialing if the payment fails.
    */
-  trial_end?: string | "now" | null;
+  trial_end?: (string | "now") | null;
 }
 
 /**
@@ -23980,7 +23996,7 @@ export interface WebhookEndpointUpdate {
    */
   url?: string | null;
   /**
-   * An optional name for the webhook endpoint to help organize and identify it.
+   * An optional name for the webhook endpoint. Set to `null` to clear it.
    */
   name?: string | null;
   /**

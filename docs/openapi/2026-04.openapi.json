@@ -56341,7 +56341,7 @@
               }
             ],
             "title": "Label Property Selector",
-            "description": "Property path to extract dynamic label from event metadata (e.g., 'subject' or 'metadata.subject')."
+            "description": "Property path to extract a dynamic label from event metadata (e.g., 'subject' or 'metadata.subject'). Set to `null` to clear it."
           }
         },
         "type": "object",
@@ -72080,31 +72080,6 @@
             "title": "Description",
             "description": "The description of the product."
           },
-          "recurring_interval": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/RecurringInterval"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The recurring interval of the product. If `None`, the product is a one-time purchase. **Can only be set on legacy recurring products. Once set, it can't be changed.**"
-          },
-          "recurring_interval_count": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 999.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Recurring Interval Count",
-            "description": "Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. Once set, it can't be changed.**"
-          },
           "is_archived": {
             "anyOf": [
               {
@@ -72213,6 +72188,31 @@
               }
             ],
             "title": "Attached Custom Fields"
+          },
+          "recurring_interval": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RecurringInterval"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The recurring interval of the product. If `None`, the product is a one-time purchase. **Can only be set on legacy recurring products. Once set, it can't be changed.**"
+          },
+          "recurring_interval_count": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 999.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recurring Interval Count",
+            "description": "Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. Once set, it can't be changed.**"
           }
         },
         "type": "object",
@@ -77410,15 +77410,19 @@
           "trial_end": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "date-time",
-                "examples": [
-                  "2026-01-01T00:00:00.000000Z"
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time",
+                    "examples": [
+                      "2026-01-01T00:00:00.000000Z"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "const": "now"
+                  }
                 ]
-              },
-              {
-                "type": "string",
-                "const": "now"
               },
               {
                 "type": "null"
@@ -80125,7 +80129,7 @@
               }
             ],
             "title": "Name",
-            "description": "An optional name for the webhook endpoint to help organize and identify it."
+            "description": "An optional name for the webhook endpoint. Set to `null` to clear it."
           },
           "api_version": {
             "anyOf": [

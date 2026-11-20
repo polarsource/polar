@@ -922,12 +922,14 @@ PaymentTrigger: typing.TypeAlias = typing.Annotated[
         "retry_customer",
         "retry_payment_method_update",
         "retry_admin",
+        "retry_payment_alert",
     ],
     _OPEN_ENUM,
 ]
 Permission: typing.TypeAlias = typing.Annotated[
     typing.Literal["pull", "triage", "push", "maintain", "admin"], _OPEN_ENUM
 ]
+"""The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role)."""
 PresentmentCurrency: typing.TypeAlias = typing.Annotated[
     typing.Literal[
         "aed",
@@ -1236,6 +1238,7 @@ SubscriptionStatus: typing.TypeAlias = typing.Annotated[
         "canceled",
         "unpaid",
         "paused",
+        "trial_ended",
     ],
     _OPEN_ENUM,
 ]

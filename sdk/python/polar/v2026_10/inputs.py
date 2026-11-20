@@ -2123,7 +2123,7 @@ class EventTypeUpdate(typing.TypedDict):
     """The label for the event type."""
 
     label_property_selector: typing.NotRequired[str | None]
-    """Property path to extract dynamic label from event metadata (e.g., 'subject' or 'metadata.subject')."""
+    """Property path to extract a dynamic label from event metadata (e.g., 'subject' or 'metadata.subject'). Set to `null` to clear it."""
 
 
 class EventsIngest(typing.TypedDict):
@@ -3506,12 +3506,6 @@ You can store up to **50 key-value pairs**."""
     description: typing.NotRequired[str | None]
     """The description of the product."""
 
-    recurring_interval: typing.NotRequired[RecurringInterval | None]
-    """The recurring interval of the product. If `None`, the product is a one-time purchase. **Can only be set on legacy recurring products. Once set, it can't be changed.**"""
-
-    recurring_interval_count: typing.NotRequired[int | None]
-    """Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. Once set, it can't be changed.**"""
-
     is_archived: typing.NotRequired[bool | None]
     """Whether the product is archived. If `true`, the product won't be available for purchase anymore. Existing customers will still have access to their benefits, and subscriptions will continue normally."""
 
@@ -3549,6 +3543,12 @@ You can store up to **50 key-value pairs**."""
     """List of file IDs. Each one must be on the same organization as the product, of type `product_media` and correctly uploaded."""
 
     attached_custom_fields: typing.NotRequired[list[AttachedCustomFieldCreate] | None]
+
+    recurring_interval: typing.NotRequired[RecurringInterval | None]
+    """The recurring interval of the product. If `None`, the product is a one-time purchase. **Can only be set on legacy recurring products. Once set, it can't be changed.**"""
+
+    recurring_interval_count: typing.NotRequired[int | None]
+    """Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. Once set, it can't be changed.**"""
 
 
 class PropertyAggregation(typing.TypedDict):
@@ -3915,7 +3915,7 @@ class WebhookEndpointUpdate(typing.TypedDict):
     url: typing.NotRequired[str | None]
 
     name: typing.NotRequired[str | None]
-    """An optional name for the webhook endpoint to help organize and identify it."""
+    """An optional name for the webhook endpoint. Set to `null` to clear it."""
 
     api_version: typing.NotRequired[typing.Literal["2026-04", "2026-10"] | None]
     """The API version that'll be used in event payloads."""

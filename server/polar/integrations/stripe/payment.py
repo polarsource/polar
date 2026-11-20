@@ -7,6 +7,9 @@ from polar.checkout.repository import CheckoutRepository
 from polar.checkout.service import NotConfirmedCheckout
 from polar.checkout.service import checkout as checkout_service
 from polar.exceptions import PolarError
+from polar.integrations.payment_retry_alert.service import (
+    payment_retry_alert as payment_retry_alert_service,
+)
 from polar.integrations.stripe.service import (
     STRIPE_METADATA_PAYMENT_TRIGGER,
 )
@@ -215,6 +218,7 @@ async def handle_success(
         payment = await payment_service.upsert_from_stripe_charge(
             session, object, organization, checkout, wallet, order, trigger=trigger
         )
+        payment_retry_alert_service.enqueue_outcome_report(object.metadata, payment)
 
     if checkout is not None:
         if object.OBJECT_NAME == "setup_intent":
@@ -291,6 +295,9 @@ async def handle_failure(
         intent_id = object.id
     elif object.OBJECT_NAME == "setup_intent":
         intent_id = object.id
+
+    if payment is not None:
+        payment_retry_alert_service.enqueue_outcome_report(object.metadata, payment)
 
     if checkout is not None:
         current_intent_id = checkout.payment_processor_metadata.get("intent_id")

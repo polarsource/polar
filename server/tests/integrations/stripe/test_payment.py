@@ -374,6 +374,7 @@ class TestHandleFailureTrigger:
 
     async def test_payment_retry_alert_failure_keeps_dunning_schedule(
         self,
+        mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
         subscription: Subscription,
@@ -394,14 +395,22 @@ class TestHandleFailureTrigger:
             metadata={
                 "order_id": str(order.id),
                 "payment_trigger": "retry_payment_alert",
+                "payment_retry_alert_id": "alrt_test",
             },
             billing_details={"email": "test@example.com"},
             payment_method_details={"card": {"last4": "4444"}, "type": "card"},
         )
 
+        enqueue = mocker.patch(
+            "polar.integrations.payment_retry_alert.service.enqueue_job"
+        )
+
         await handle_failure(session, charge)
 
         assert order.next_payment_attempt_at == next_payment_attempt_at
+        enqueue.assert_called_once_with(
+            "payment_retry_alert.report_outcome", alert_id="alrt_test", outcome="FAILED"
+        )
 
     async def test_no_trigger_for_pre_deployment_charge(
         self,

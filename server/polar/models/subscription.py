@@ -155,6 +155,15 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
                 "AND resumes_at IS NOT NULL"
             ),
         ),
+        Index(
+            "ix_subscriptions_trial_ended_schedule",
+            "ends_at",
+            postgresql_where=(
+                "scheduler_locked_at IS NULL "
+                "AND status = 'trial_ended' "
+                "AND ends_at IS NOT NULL"
+            ),
+        ),
     )
 
     amount: Mapped[int] = mapped_column("amount_v2", BigInteger, nullable=False)

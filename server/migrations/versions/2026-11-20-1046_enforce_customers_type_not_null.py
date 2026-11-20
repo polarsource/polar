@@ -1,8 +1,8 @@
 """enforce customers.type NOT NULL
 
 Revision ID: 3c1e7a9d52f4
-Revises: 84205fdb9945
-Create Date: 2026-11-20 12:00:00.000000
+Revises: f3238e76d766
+Create Date: 2026-11-20 10:46:00.000000
 
 """
 
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "3c1e7a9d52f4"
-down_revision = "84205fdb9945"
+down_revision = "f3238e76d766"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

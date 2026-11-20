@@ -10,19 +10,12 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { createPolar } from "../2026-10/client";
 import { ClientBase, PolarError } from "../base";
 import { UnknownMeterError } from "../metering/errors";
-import {
-  decodeState,
-  MissingExternalIdError,
-  Outpost,
-  outpost,
-  type OutpostOptions,
-  PolarOutpostError,
-  UnavailableRedisError,
-  isSampled,
-} from "./client";
+import { Outpost, outpost, type OutpostOptions, isSampled } from "./client";
+import { MissingExternalIdError, PolarOutpostError, UnavailableRedisError } from "./errors";
 import { NotReadyError } from "./index";
 import { BUCKET_SIZE, getBucketStart, type Reducer } from "./reducer";
 import { APPLY_SNAPSHOT_SCRIPT, CONFIRM_SCRIPT } from "./scripts";
+import { decodeState } from "./state";
 import { SAMPLE_RATE_ATTRIBUTE, TELEMETRY_ENV } from "./telemetry";
 import { startRedisServer, type RedisServer } from "./testing";
 

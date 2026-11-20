@@ -1,11 +1,10 @@
+export { Outpost, outpost } from "./client";
 export {
   MissingExternalIdError,
   NotReadyError,
-  Outpost,
-  outpost,
   PolarOutpostError,
   UnavailableRedisError,
-} from "./client";
+} from "./errors";
 export type { OutpostFactoryOptions, OutpostOptions } from "./client";
 export type { CustomerMeter } from "../metering/meter";
 export type { EventInput } from "../metering/event";

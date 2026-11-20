@@ -144,6 +144,8 @@ class PythonEmitter(EmitterBase):
             ("polar", "outpost", "event.py"),
             ("polar", "outpost", "reducer.py"),
             ("polar", "outpost", "client.py"),
+            ("polar", "outpost", "errors.py"),
+            ("polar", "outpost", "state.py"),
             ("polar", "outpost", "telemetry.py"),
             ("polar", "outpost", "vercel.py"),
             ("tests", "__init__.py"),

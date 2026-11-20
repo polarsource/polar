@@ -1,12 +1,10 @@
 from polar.metering import EventInput
-from polar.outpost.client import (
-    CustomerMeter,
+from polar.outpost.client import CustomerMeter, Outpost, connect_redis
+from polar.outpost.errors import (
     MissingExternalIdError,
     NotReadyError,
-    Outpost,
     PolarOutpostError,
     UnavailableRedisError,
-    connect_redis,
 )
 from polar.outpost.event import Event
 from polar.outpost.reducer import (

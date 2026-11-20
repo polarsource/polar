@@ -44,17 +44,18 @@ from polar.outpost.client import (
     APPLY_SNAPSHOT_SCRIPT,
     CONFIRM_SCRIPT,
     WRITE_BUCKET_SCRIPT,
-    MissingExternalIdError,
     Outpost,
-    PolarOutpostError,
     RedisReconnectBackoff,
-    UnavailableRedisError,
     _is_transient_error,
-    _number,
-    decode_state,
     is_sampled,
 )
+from polar.outpost.errors import (
+    MissingExternalIdError,
+    PolarOutpostError,
+    UnavailableRedisError,
+)
 from polar.outpost.reducer import BUCKET_SIZE, get_bucket_start
+from polar.outpost.state import _number, decode_state
 from polar.outpost.telemetry import SAMPLE_RATE_ATTRIBUTE, TELEMETRY_ENV
 
 _ids = itertools.count(1)

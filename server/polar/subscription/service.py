@@ -269,6 +269,23 @@ class NotPausedSubscription(SubscriptionError):
         super().__init__(message, 409)
 
 
+class NotTrialEndedSubscription(SubscriptionError):
+    def __init__(self, subscription: Subscription) -> None:
+        self.subscription = subscription
+        message = "This subscription's trial has not ended without converting."
+        super().__init__(message, 409)
+
+
+class MissingBillingDetails(SubscriptionError):
+    def __init__(self, subscription: Subscription) -> None:
+        self.subscription = subscription
+        message = (
+            "Add a payment method and a complete billing address "
+            "before reactivating this subscription."
+        )
+        super().__init__(message, 409)
+
+
 class CannotReinstateSubscription(SubscriptionError):
     def __init__(self, subscription: Subscription) -> None:
         self.subscription = subscription
@@ -3166,28 +3183,7 @@ class SubscriptionService:
         ctx.record_billing_state(effective_at=now)
         await repository.release_scheduler_lock(subscription)
 
-        # Start a fresh billing period from now and charge immediately.
-        subscription.current_period_start = now
-        subscription.anchor_day = now.day
-        subscription.current_period_end = (
-            subscription.recurring_interval.get_next_period(
-                now, subscription.anchor_day, subscription.recurring_interval_count
-            )
-        )
-        subscription.initialize_meter_period(now)
-
-        # Scheduling a change on a paused subscription is still allowed; it
-        # snapshots the pre-pause period, which this fresh one supersedes.
-        if subscription.pending_update is not None:
-            subscription = await self.clear_pending_update(session, ctx, subscription)
-
-        self._clear_expired_discount(subscription)
-
-        await self.reset_meters(session, subscription, reset_at=now)
-        await self.enqueue_benefits_grants(session, subscription)
-        await self._create_cycle_billing_entries(session, subscription)
-
-        subscription = await repository.update(subscription)
+        subscription = await self._start_fresh_period(session, ctx, subscription, now)
 
         enqueue_job(
             "order.create_subscription_order",
@@ -3202,6 +3198,76 @@ class SubscriptionService:
             current_period_end=subscription.current_period_end,
         )
         return subscription
+
+    async def reactivate_ended_trial(
+        self,
+        session: AsyncSession,
+        ctx: SubscriptionUpdateContext,
+        subscription: Subscription,
+    ) -> Subscription:
+        """Start a paid period for a trial_ended subscription and charge it now.
+
+        The charge runs synchronously: if it fails, PaymentFailed propagates and
+        the caller's transaction rolls back, leaving the subscription trial_ended.
+        """
+        if subscription.status != SubscriptionStatus.trial_ended:
+            raise NotTrialEndedSubscription(subscription)
+
+        if not subscription.organization.can_renew_subscriptions:
+            raise PaymentNotReady("Organization is not ready to renew subscriptions")
+
+        if not self._has_payment_method(
+            subscription
+        ) or not self._has_complete_billing_address(subscription):
+            raise MissingBillingDetails(subscription)
+
+        now = utc_now()
+        subscription.status = SubscriptionStatus.active
+        subscription.ends_at = None
+        subscription = await self._start_fresh_period(session, ctx, subscription, now)
+        await billing_interval_service.record_subscription(
+            session, subscription, effective_at=now
+        )
+
+        await self._create_subscription_update_order(
+            session,
+            subscription,
+            OrderBillingReasonInternal.subscription_cycle_after_trial,
+            cutoff=now,
+        )
+
+        log.info("subscription.trial_ended.reactivated", id=subscription.id)
+        return subscription
+
+    async def _start_fresh_period(
+        self,
+        session: AsyncSession,
+        ctx: SubscriptionUpdateContext,
+        subscription: Subscription,
+        now: datetime,
+    ) -> Subscription:
+        subscription.current_period_start = now
+        subscription.anchor_day = now.day
+        subscription.current_period_end = (
+            subscription.recurring_interval.get_next_period(
+                now, subscription.anchor_day, subscription.recurring_interval_count
+            )
+        )
+        subscription.initialize_meter_period(now)
+
+        # A change scheduled before the subscription stopped snapshots the old
+        # period, which this fresh one supersedes.
+        if subscription.pending_update is not None:
+            subscription = await self.clear_pending_update(session, ctx, subscription)
+
+        self._clear_expired_discount(subscription)
+
+        await self.reset_meters(session, subscription, reset_at=now)
+        await self.enqueue_benefits_grants(session, subscription)
+        await self._create_cycle_billing_entries(session, subscription)
+
+        repository = SubscriptionRepository.from_session(session)
+        return await repository.update(subscription)
 
     async def cancel_customer(
         self, session: AsyncSession, customer_id: uuid.UUID
@@ -4058,9 +4124,12 @@ class SubscriptionService:
             and not SubscriptionStatus.is_active(previous_status)
             and not became_resumed
         )
-        became_reactivated = (
-            became_activated and previous_status == SubscriptionStatus.past_due
-        )
+        # Neither is a new subscription. A reactivated trial notifies the
+        # merchant through its trial-conversion order, like any converted trial.
+        became_reactivated = became_activated and previous_status in {
+            SubscriptionStatus.past_due,
+            SubscriptionStatus.trial_ended,
+        }
         became_reinstated = (
             became_activated and previous_status == SubscriptionStatus.canceled
         )

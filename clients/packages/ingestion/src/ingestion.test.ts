@@ -1,11 +1,15 @@
+import { createPolar } from '@polar-sh/sdk/2027-01'
 import { describe, expect, it, vi } from 'vitest'
 
 import { Ingestion } from './ingestion'
 import { DeltaTimeStrategy } from './strategies/DeltaTime'
 
-const meteringWithTrack = () => ({
-  track: vi.fn().mockResolvedValue(undefined),
-})
+const meteringWithTrack = () => {
+  const metering = createPolar({ accessToken: 'polar_oat_test' }).metering()
+  const track = vi.spyOn(metering, 'track').mockResolvedValue()
+
+  return { metering, track }
+}
 
 describe('Ingestion(polar.metering())', () => {
   it.each([
@@ -14,14 +18,14 @@ describe('Ingestion(polar.metering())', () => {
     [{ externalCustomerId: 'ext_1' }, { external_customer_id: 'ext_1' }],
     [{ external_customer_id: 'ext_1' }, { external_customer_id: 'ext_1' }],
   ])('should track %o as %o', async (customer, expected) => {
-    const metering = meteringWithTrack()
+    const { metering, track } = meteringWithTrack()
     const strategy = Ingestion(metering)
       .strategy(new DeltaTimeStrategy(() => 0))
       .ingest('elapsed')
 
     await strategy.execute({ deltaTime: 5, strategy: 'DeltaTime' }, customer)
 
-    expect(metering.track).toHaveBeenCalledExactlyOnceWith({
+    expect(track).toHaveBeenCalledExactlyOnceWith({
       ...expected,
       name: 'elapsed',
       metadata: { deltaTime: 5, strategy: 'DeltaTime' },
@@ -30,7 +34,7 @@ describe('Ingestion(polar.metering())', () => {
   })
 
   it('should snake-case the _llm metadata', async () => {
-    const metering = meteringWithTrack()
+    const { metering, track } = meteringWithTrack()
     const strategy = Ingestion(metering)
       .strategy(new DeltaTimeStrategy(() => 0))
       .ingest('tokens')
@@ -51,7 +55,7 @@ describe('Ingestion(polar.metering())', () => {
       { customerId: 'cus_1' },
     )
 
-    expect(metering.track.mock.calls[0][0].metadata._llm).toEqual({
+    expect(track.mock.calls[0]?.[0].metadata?._llm).toEqual({
       vendor: 'v',
       model: 'm',
       input_tokens: 10,
@@ -62,13 +66,13 @@ describe('Ingestion(polar.metering())', () => {
   })
 
   it('should pass ingest() events to track() as given', async () => {
-    const metering = meteringWithTrack()
+    const { metering, track } = meteringWithTrack()
     const event = { name: 'raw', external_customer_id: 'ext_1' }
 
     await Ingestion(metering).ingest([event, event])
 
-    expect(metering.track).toHaveBeenCalledTimes(2)
-    expect(metering.track).toHaveBeenCalledWith(event)
+    expect(track).toHaveBeenCalledTimes(2)
+    expect(track).toHaveBeenCalledWith(event)
   })
 })
 

@@ -4,6 +4,8 @@ import {
   type models,
   type Polar,
 } from '@polar-sh/sdk/2027-01'
+import type { EventInput, Metering } from '@polar-sh/sdk/metering'
+import * as Schema from 'effect/Schema'
 import type {
   IngestionStrategy,
   IngestionStrategyContext,
@@ -39,19 +41,6 @@ export type IngestionEvent =
   | models.EventCreateCustomer
   | models.EventCreateExternalCustomer
 
-export type IngestionMeteringEvent = (
-  | { customer_id: string }
-  | { external_customer_id: string }
-) & {
-  name: string
-  metadata?: Record<string, unknown>
-}
-
-// Anything shaped like polar.metering(), so an app's own copy of the SDK fits
-export interface IngestionMetering {
-  track(event: IngestionMeteringEvent): Promise<unknown>
-}
-
 // The options of the old SDK that 0.4 users pass, mapped onto the new one
 export type IngestionTokenConfig = {
   accessToken?: string
@@ -66,34 +55,55 @@ export const createTokenClient = (config?: IngestionTokenConfig): Polar =>
     baseUrl: config?.serverURL,
   })
 
-const toSnakeCase = (key: string) =>
-  key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
+export const LLMUsage = Schema.Struct({
+  inputTokens: Schema.Finite,
+  outputTokens: Schema.Finite,
+  totalTokens: Schema.Finite,
+  cachedInputTokens: Schema.Finite,
+  vendor: Schema.String,
+  model: Schema.String,
+})
+
+const isLLMUsage = Schema.is(LLMUsage)
 
 const snakeCustomer = (
   customer: IngestionStrategyCustomer | IngestionStrategyExternalCustomer,
 ): { customer_id: string } | { external_customer_id: string } => {
   if ('customerId' in customer) return { customer_id: customer.customerId }
+
   if ('externalCustomerId' in customer) {
     return { external_customer_id: customer.externalCustomerId }
   }
+
   return customer
 }
 
-// The API reads _llm in snake_case, the strategies build it in camelCase
-const snakeLLMMetadata = (metadata: Record<string, unknown>) => {
+// The API reads _llm in snake_case, the LLM strategy builds it in camelCase
+const toEventMetadata = (
+  metadata: Record<string, IngestionMetadataValue | models.CostMetadataInput>,
+): EventInput['metadata'] => {
+  // SAFETY: besides primitives, contexts only hold _cost and _llm objects, the two the API accepts
+  const eventMetadata = metadata as EventInput['metadata']
   const { _llm } = metadata
-  if (!_llm || typeof _llm !== 'object') return metadata
+
+  if (!isLLMUsage(_llm)) return eventMetadata
+
   return {
-    ...metadata,
-    _llm: Object.fromEntries(
-      Object.entries(_llm).map(([key, value]) => [toSnakeCase(key), value]),
-    ),
+    ...eventMetadata,
+    _llm: {
+      vendor: _llm.vendor,
+      model: _llm.model,
+      input_tokens: _llm.inputTokens,
+      cached_input_tokens: _llm.cachedInputTokens,
+      output_tokens: _llm.outputTokens,
+      total_tokens: _llm.totalTokens,
+    },
   }
 }
 
 export class PolarIngestion<TContext extends IngestionContext> {
   public polarClient?: Polar
-  public metering?: IngestionMetering
+  public metering?: Metering
   private transformers: Transformer<TContext>[] = []
   public costResolver?: (ctx: TContext) => models.CostMetadataInput
   public span?: Span
@@ -120,10 +130,10 @@ export class PolarIngestion<TContext extends IngestionContext> {
     ) => Record<string, IngestionMetadataValue>,
   ) {
     return this.pipe(async (ctx, customer) => {
-      const event = {
+      const event: EventInput = {
         ...snakeCustomer(customer),
         name: meter,
-        metadata: snakeLLMMetadata({
+        metadata: toEventMetadata({
           ...(metadataResolver ? metadataResolver(ctx) : ctx),
           ...(this.costResolver ? { _cost: this.costResolver(ctx) } : {}),
         }),
@@ -131,6 +141,7 @@ export class PolarIngestion<TContext extends IngestionContext> {
 
       if (this.metering) {
         await this.metering.track(event)
+
         return
       }
 
@@ -139,16 +150,11 @@ export class PolarIngestion<TContext extends IngestionContext> {
       }
 
       await this.polarClient.events.ingest({
-        events: [event as IngestionEvent],
+        events: [event],
       })
     })
   }
 }
-
-const isMetering = (
-  config?: IngestionTokenConfig | IngestionMetering,
-): config is IngestionMetering =>
-  typeof (config as IngestionMetering | undefined)?.track === 'function'
 
 type IngestionStrategyAttacher = <
   TContext extends IngestionStrategyContext,
@@ -157,24 +163,23 @@ type IngestionStrategyAttacher = <
   strategy: IngestionStrategy<TContext, TStrategyClient>,
 ) => IngestionStrategy<TContext, TStrategyClient>
 
-export function Ingestion<TMetering extends IngestionMetering>(
-  metering: TMetering,
-): {
+export function Ingestion(metering: Metering): {
   strategy: IngestionStrategyAttacher
-  ingest: (events: Parameters<TMetering['track']>[0][]) => Promise<void>
+  ingest: (events: EventInput[]) => Promise<void>
 }
 export function Ingestion(config?: IngestionTokenConfig): {
   strategy: IngestionStrategyAttacher
   ingest: (events: IngestionEvent[]) => Promise<models.EventsIngestResponse>
 }
-export function Ingestion(config?: IngestionTokenConfig | IngestionMetering) {
-  if (isMetering(config)) {
+export function Ingestion(config?: IngestionTokenConfig | Metering) {
+  if (config && 'track' in config) {
     return {
       strategy: ((strategy) => {
         strategy.metering = config
+
         return strategy
       }) satisfies IngestionStrategyAttacher,
-      ingest: async (events: IngestionMeteringEvent[]) => {
+      ingest: async (events: EventInput[]) => {
         await Promise.all(events.map((event) => config.track(event)))
       },
     }
@@ -183,6 +188,7 @@ export function Ingestion(config?: IngestionTokenConfig | IngestionMetering) {
   return {
     strategy: ((strategy) => {
       strategy.polarClient = createTokenClient(config)
+
       return strategy
     }) satisfies IngestionStrategyAttacher,
     ingest: (events: IngestionEvent[]) =>

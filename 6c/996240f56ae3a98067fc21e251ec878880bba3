@@ -1,0 +1,330 @@
+server/tests/sso/test_endpoints.py
+  s_a7be5626e771f2::t_21cd866b4f764b 8,22,612-613,615,626-628,632-634,637-638,640,651-656
+  s_a7be5626e771f2::t_4f14418f1786af 629-631
+server/polar/product/service.py
+  s_a7be5626e771f2::t_1a1bb2acf4231d 7,613
+  s_a7be5626e771f2::t_2b841bd6ce501f 73,494-505
+  s_a7be5626e771f2::t_1e49212e911b7b 625
+  s_a7be5626e771f2::t_c78147f101109d 328,449,462-463
+  s_a7be5626e771f2::t_da2c6580ced83f 477,529,562,628
+server/polar/customer_portal/service/customer.py
+  s_a7be5626e771f2::t_23e3fc9e40bfd8 6,73,76-77,80,99,135
+server/polar/checkout_link/schemas.py
+  s_a7be5626e771f2::t_db2d7689394cef 166,178,181,184
+  s_a7be5626e771f2::t_dac9e52487d500 182
+  s_a7be5626e771f2::t_c83984e45aded1 3,172,175
+  s_a7be5626e771f2::t_db49dcdb269dea 165,171,174,177,180,183
+  s_a7be5626e771f2::t_d0df1f27566664 24
+server/polar/checkout/schemas.py
+  s_a7be5626e771f2::t_c83984e45aded1 6,503,506,513
+  s_a7be5626e771f2::t_d0df1f27566664 65
+  s_a7be5626e771f2::t_61a4c694902e00 514,545
+  s_a7be5626e771f2::t_db49dcdb269dea 465-466,472-474,479-480,484-490,498-500,502,505,508-509,511-512,515-517,523-525,528-529,544
+server/tests/customer_portal/endpoints/test_customer.py
+  s_a7be5626e771f2::t_5ea6c56d426415 11,17,361-362,365,371
+server/polar/member/schemas.py
+  s_a7be5626e771f2::t_db49dcdb269dea 88-90
+  s_a7be5626e771f2::t_db2d7689394cef 5,91
+  s_a7be5626e771f2::t_d0df1f27566664 14
+server/polar/product/legacy_schemas.py
+  s_a7be5626e771f2::t_2b841bd6ce501f 6,93-112
+  s_a7be5626e771f2::t_da2c6580ced83f 4,114
+  s_a7be5626e771f2::t_db49dcdb269dea 113
+  s_a7be5626e771f2::t_4f14418f1786af 8
+server/polar/organization/endpoints.py
+  s_a7be5626e771f2::t_1e49212e911b7b 436
+server/polar/discount/service.py
+  s_a7be5626e771f2::t_6785a1225fc294 7,271,300,317
+  s_a7be5626e771f2::t_574076515499b3 285-288
+  s_a7be5626e771f2::t_c78147f101109d 156,208,331-335,339-350,352,375
+  s_a7be5626e771f2::t_1b9754575736aa 378-386,391-395
+  s_a7be5626e771f2::t_7441d1308864b6 387-390
+server/tests/product/test_endpoints.py
+  s_a7be5626e771f2::t_297a726c1fe62e 997-1004
+server/polar/custom_field/service.py
+  s_a7be5626e771f2::t_b9bbfc3360ed22 5
+  s_a7be5626e771f2::t_8d694ccb10abfa 179,198
+server/polar/license_key/schemas.py
+  s_a7be5626e771f2::t_e3d3ada4c5ad13 6,291
+  s_a7be5626e771f2::t_db49dcdb269dea 30,290
+server/polar/organization/schemas.py
+  s_a7be5626e771f2::t_0e486a632dac2e 35
+  s_a7be5626e771f2::t_db2d7689394cef 752
+  s_a7be5626e771f2::t_e51c53cca0b76c 314
+  s_a7be5626e771f2::t_e3d3ada4c5ad13 8,749,766,769,772
+  s_a7be5626e771f2::t_db49dcdb269dea 313,741,748,751,759-765,768,771
+server/tests/customer/test_service.py
+  s_a7be5626e771f2::t_d5a9fa1d4918d8 4,579,601-604,613-615,620,665,675-677,757-759
+  s_a7be5626e771f2::t_77ac0727cf31e2 19,28,773-775
+server/polar/order/schemas.py
+  s_a7be5626e771f2::t_db49dcdb269dea 37,393
+  s_a7be5626e771f2::t_e51c53cca0b76c 6,394
+server/polar/webhook/schemas.py
+  s_a7be5626e771f2::t_3c1fe42807eb43 249
+  s_a7be5626e771f2::t_db49dcdb269dea 227-228,232,236-238,247
+  s_a7be5626e771f2::t_4f14418f1786af 32
+  s_a7be5626e771f2::t_db2d7689394cef 7,233,239
+  s_a7be5626e771f2::t_e51c53cca0b76c 229-230
+  s_a7be5626e771f2::t_e5af627e166ccb 234
+  s_a7be5626e771f2::t_b56b54f2808161 246,248
+server/polar/account/schemas.py
+  s_a7be5626e771f2::t_db49dcdb269dea 7,33-34,37-38,41-42,45
+  s_a7be5626e771f2::t_f5c527b2563071 3,46
+server/polar/event_type/service.py
+  s_a7be5626e771f2::t_9f233d1fe5a7bb 4-5,214,220-221
+server/polar/discount/legacy_schemas.py
+  s_a7be5626e771f2::t_c78147f101109d 3,34,38,44
+  s_a7be5626e771f2::t_db49dcdb269dea 6,33,37
+server/polar/customer_portal/endpoints/member.py
+  s_a7be5626e771f2::t_73d1e9eb485ae6 5
+  s_a7be5626e771f2::t_90519dc62bdc4e 175
+server/polar/account/service.py
+  s_a7be5626e771f2::t_90519dc62bdc4e 59
+server/polar/benefit/strategies/downloadables/schemas.py
+  s_a7be5626e771f2::t_d0df1f27566664 8
+  s_a7be5626e771f2::t_db49dcdb269dea 68
+  s_a7be5626e771f2::t_714bb9a043c92c 4
+server/tests/kit/test_external_id.py
+  s_a7be5626e771f2::t_d5a9fa1d4918d8 17,23-36,38,40
+server/polar/member/service.py
+  s_a7be5626e771f2::t_d1d42e5c2080a9 7
+  s_a7be5626e771f2::t_90519dc62bdc4e 859-860,863,888,946,951,953
+server/polar/event_type/schemas.py
+  s_a7be5626e771f2::t_e51c53cca0b76c 6,20-24,39-42
+  s_a7be5626e771f2::t_db49dcdb269dea 10,19
+server/polar/custom_field/schemas.py
+  s_a7be5626e771f2::t_db49dcdb269dea 133-134,141,148,155,162,169
+  s_a7be5626e771f2::t_e3d3ada4c5ad13 4
+  s_a7be5626e771f2::t_b08c3f00b67917 26
+server/polar/customer/schemas/customer.py
+  s_a7be5626e771f2::t_db49dcdb269dea 172,176-177,182,187
+  s_a7be5626e771f2::t_23e3fc9e40bfd8 11,38,183
+  s_a7be5626e771f2::t_db2d7689394cef 8,173,188
+  s_a7be5626e771f2::t_d0df1f27566664 41
+server/polar/kit/versioning.py
+  s_a7be5626e771f2::t_c4b6a2feaf2f02 23,255-258,260-262,266,284-285,289
+  s_a7be5626e771f2::t_d0df1f27566664 267-271
+  s_a7be5626e771f2::t_273da9ad6c4b14 288
+  s_a7be5626e771f2::t_5588fbd6fdeed1 292-293
+  s_a7be5626e771f2::t_9794ab728940af 294-295
+  s_a7be5626e771f2::t_178dbd90932918 29-30,259,263-265,272-283,286-287,290-291
+server/polar/benefit/strategies/github_repository/schemas.py
+  s_a7be5626e771f2::t_d0df1f27566664 7
+  s_a7be5626e771f2::t_dd9597666977b7 3
+  s_a7be5626e771f2::t_db49dcdb269dea 83
+clients/packages/checkout/src/providers/CheckoutFormProvider.tsx
+  s_a7be5626e771f2::t_66aee12f90abb0 98-102
+server/tests/customer/test_endpoints.py
+  s_a7be5626e771f2::t_137a39e333227a 1417,1421,1424,1428-1429
+clients/apps/web/src/components/Products/EditProductPage.tsx
+  s_a7be5626e771f2::t_2b841bd6ce501f 124-126,129-130
+  s_a7be5626e771f2::t_e7fcf2a95eebb9 127-128
+server/polar/benefit/strategies/slack_shared_channel/schemas.py
+  s_a7be5626e771f2::t_d0df1f27566664 7
+  s_a7be5626e771f2::t_3c2bf7556599b6 3
+  s_a7be5626e771f2::t_db49dcdb269dea 82
+server/polar/organization_access_token/service.py
+  s_a7be5626e771f2::t_c76796e62a7d59 8
+  s_a7be5626e771f2::t_da2c6580ced83f 194
+server/polar/checkout/service.py
+  s_a7be5626e771f2::t_90519dc62bdc4e 2576-2577
+  s_a7be5626e771f2::t_da2c6580ced83f 10,1228,1305,1455-1456,1469,2369,2373,2395,2431,2460,2514,2521,2534,2548,2562,2588,2594-2595,2607,2610,2618,2620,2624-2626,2629,2683-2684,2757,2783
+  s_a7be5626e771f2::t_bdcbf29e1ff92b 1277-1279
+server/polar/benefit/strategies/custom/schemas.py
+  s_a7be5626e771f2::t_db49dcdb269dea 64
+  s_a7be5626e771f2::t_d0df1f27566664 7
+  s_a7be5626e771f2::t_d0844c9524f112 3
+server/polar/metrics/schemas.py
+  s_a7be5626e771f2::t_db49dcdb269dea 10,148,151
+  s_a7be5626e771f2::t_e3d3ada4c5ad13 4,149,152
+server/polar/kit/external_id.py
+  s_a7be5626e771f2::t_66a4240d63be76 40-41
+  s_a7be5626e771f2::t_5588fbd6fdeed1 36,44
+  s_c399151ee78a5f::t_a78defd8ecbffa 3
+  s_a7be5626e771f2::t_ae977d5de4d75c 39,42-43,45-47
+  s_a7be5626e771f2::t_db49dcdb269dea 8
+clients/apps/web/src/components/Customer/EditCustomerModal.tsx
+  s_a7be5626e771f2::t_66aee12f90abb0 64-65
+server/tests/discount/test_service.py
+  s_a7be5626e771f2::t_d5a9fa1d4918d8 6,434-436
+clients/packages/client/src/v1.ts
+  s_a7be5626e771f2::t_3901b987b54b93 10197,10371,10393,10401,10565,10768,10790,10796,10940,11116,11138,11144,11236,11401,11423,11431,11519,11735,11757,11763,12916,13105,13127,13135,13378,13592,13614,13622,13790,14003,14025,14031,15118,15121-15126,15131,15136,15138,15145-15146,15164,15166,15187,15190-15195,15200,15205,15207,15214-15215,15233,15235,15240,15781,15788,15793,16937,16940-16945,16950,16955,16957,16964-16965,16994,17004,17009,17014,17033,17064,17067-17072,17077,17082,17084,17091-17092,17110,17112,19886-19895,19901,19925-19934,19940,19964-19973,19979,20003-20012,20018,20042-20051,20057,21889,22169-22170,22173-22177,22247,22249,22255,23457,23930,23934,23937,23947,23952,23975,23979,23982,24203,24640,25163,25181-25185,25211-25224,25227-25240,26006,26268,26270,27258,28339-28349,28354,28934,29226,29228,29240,29246-29248,29253,29351,29356,31267,31792,31794,31969-31970,32750,33649-33650,33655,33886,33903,33905,34155-34169,34171,34173,34178,35853,35931,37191,37216-37220,37230,37232,37237-37238,37240-37247,37252-37257,37262,41074,41078,41095,42829,43782-43788,43791,43797-43808,43810,43815,78260,78263
+server/polar/benefit/strategies/discord/schemas.py
+  s_a7be5626e771f2::t_d0df1f27566664 7
+  s_a7be5626e771f2::t_db49dcdb269dea 67
+  s_a7be5626e771f2::t_3fdfea3f7db1d3 3
+server/polar/meter/schemas.py
+  s_a7be5626e771f2::t_c78147f101109d 9-13,94
+  s_a7be5626e771f2::t_d0df1f27566664 20
+  s_a7be5626e771f2::t_c83984e45aded1 5,96
+  s_a7be5626e771f2::t_db49dcdb269dea 95,98-99,104,112-113,116
+  s_a7be5626e771f2::t_e51c53cca0b76c 100,105
+  s_a7be5626e771f2::t_db2d7689394cef 114-115,117
+server/tests/meter/test_service.py
+  s_a7be5626e771f2::t_297a726c1fe62e 10,360-361,376-383
+server/polar/file/service.py
+  s_a7be5626e771f2::t_1297bb91c0a736 8
+  s_a7be5626e771f2::t_da2c6580ced83f 99,103
+server/polar/checkout/legacy_schemas.py
+  s_a7be5626e771f2::t_db2d7689394cef 3,42
+  s_a7be5626e771f2::t_db49dcdb269dea 41
+  s_a7be5626e771f2::t_d0df1f27566664 7
+server/polar/file/schemas.py
+  s_a7be5626e771f2::t_d0df1f27566664 15
+  s_a7be5626e771f2::t_db49dcdb269dea 213-214
+  s_a7be5626e771f2::t_db2d7689394cef 4
+server/polar/benefit/strategies/meter_credit/schemas.py
+  s_a7be5626e771f2::t_db49dcdb269dea 62
+  s_a7be5626e771f2::t_d0df1f27566664 8
+  s_a7be5626e771f2::t_bf5b1d91cabfcd 4
+server/polar/order/service.py
+  s_a7be5626e771f2::t_e51c53cca0b76c 12,494
+clients/apps/web/src/components/Discounts/UpdateDiscountModalContent.tsx
+  s_a7be5626e771f2::t_66aee12f90abb0 75,77
+  s_a7be5626e771f2::t_3c1fe42807eb43 76
+server/polar/integrations/polar/schemas.py
+  s_a7be5626e771f2::t_db49dcdb269dea 454-455
+  s_a7be5626e771f2::t_db2d7689394cef 6
+  s_a7be5626e771f2::t_d0df1f27566664 11
+server/polar/product/schemas.py
+  s_a7be5626e771f2::t_c83984e45aded1 8,778,788
+  s_a7be5626e771f2::t_db49dcdb269dea 775,777,787,791,794,802,804
+  s_a7be5626e771f2::t_db2d7689394cef 792,795,807
+  s_a7be5626e771f2::t_0e486a632dac2e 63
+clients/apps/web/src/components/Settings/Billing/BillingAddressModal.tsx
+  s_a7be5626e771f2::t_66aee12f90abb0 40-41,53-54
+server/polar/benefit/strategies/base/schemas.py
+  s_a7be5626e771f2::t_e3d3ada4c5ad13 4,50,62
+  s_a7be5626e771f2::t_db49dcdb269dea 10,49,61
+server/polar/subscription/schemas.py
+  s_a7be5626e771f2::t_db2d7689394cef 7,392,404,412
+  s_a7be5626e771f2::t_23e3fc9e40bfd8 427-429
+  s_a7be5626e771f2::t_0e486a632dac2e 39
+  s_a7be5626e771f2::t_db49dcdb269dea 391,396-397,403,411,439-440,455-456
+server/polar/discount/schemas.py
+  s_a7be5626e771f2::t_d0df1f27566664 34
+  s_a7be5626e771f2::t_3f7993a49aab9d 95,97-101
+  s_a7be5626e771f2::t_db49dcdb269dea 290-291,293-296,298-299,301-303,305
+  s_a7be5626e771f2::t_c83984e45aded1 7
+server/polar/customer_portal/schemas/subscription.py
+  s_a7be5626e771f2::t_db2d7689394cef 5,160
+  s_a7be5626e771f2::t_d0df1f27566664 23
+  s_a7be5626e771f2::t_db49dcdb269dea 159
+server/polar/checkout_link/service.py
+  s_a7be5626e771f2::t_da2c6580ced83f 6,204,238,253,260,269,276
+server/polar/benefit/service.py
+  s_a7be5626e771f2::t_90519dc62bdc4e 4,346-347
+  s_a7be5626e771f2::t_c78147f101109d 189,291,306-307
+server/polar/webhook/service.py
+  s_a7be5626e771f2::t_c016f38fc326a6 256-257
+server/polar/benefit/strategies/license_keys/schemas.py
+  s_a7be5626e771f2::t_d0df1f27566664 6
+  s_a7be5626e771f2::t_c32b61932f7be5 3
+  s_a7be5626e771f2::t_db49dcdb269dea 76
+server/polar/meter/service.py
+  s_a7be5626e771f2::t_c78147f101109d 219,329
+  s_a7be5626e771f2::t_da2c6580ced83f 7,368,370,374
+  s_a7be5626e771f2::t_c016f38fc326a6 317-318,324
+server/tests/customer_portal/service/test_customer.py
+  s_a7be5626e771f2::t_d5a9fa1d4918d8 5,361-363
+server/tests/organization/test_schemas.py
+  s_a7be5626e771f2::t_d5a9fa1d4918d8 11-15,172
+  s_a7be5626e771f2::t_1a51e4a7fbe68b 98-99
+clients/apps/web/src/components/Orders/DownloadInvoice.tsx
+  s_a7be5626e771f2::t_9f233d1fe5a7bb 134,136
+server/polar/customer_portal/schemas/member.py
+  s_a7be5626e771f2::t_db49dcdb269dea 36,40
+  s_a7be5626e771f2::t_d0df1f27566664 5
+  s_a7be5626e771f2::t_db2d7689394cef 1,37,41
+server/polar/benefit/strategies/feature_flag/schemas.py
+  s_a7be5626e771f2::t_fa07bc890287a7 3-4
+  s_a7be5626e771f2::t_d0df1f27566664 6
+  s_a7be5626e771f2::t_db49dcdb269dea 47
+server/uv.lock
+  s_a7be5626e771f2::t_931b0533d44aa4 3096
+server/polar/organization_access_token/schemas.py
+  s_a7be5626e771f2::t_0e486a632dac2e 8
+  s_a7be5626e771f2::t_e3d3ada4c5ad13 4
+  s_a7be5626e771f2::t_db49dcdb269dea 25-26
+server/polar/subscription/service.py
+  s_a7be5626e771f2::t_079896308724b5 1882
+  s_a7be5626e771f2::t_553af3d6e5c991 1934,1936-1937
+  s_a7be5626e771f2::t_23e3fc9e40bfd8 1876-1881,1883-1890,1901,1907,1913,1915,1928,1951,1960
+  s_8a8c5cf4d82dc7::t_1013cf5db3eac7 12
+  s_a7be5626e771f2::t_c016f38fc326a6 1935
+server/polar/sso/schemas.py
+  s_a7be5626e771f2::t_db49dcdb269dea 159,163
+  s_a7be5626e771f2::t_353f7b3e1c6a50 161
+  s_a7be5626e771f2::t_db2d7689394cef 4,160,164
+  s_a7be5626e771f2::t_4f14418f1786af 20
+server/polar/user/schemas.py
+  s_a7be5626e771f2::t_4f14418f1786af 14
+  s_a7be5626e771f2::t_db49dcdb269dea 95
+  s_a7be5626e771f2::t_db2d7689394cef 8
+server/polar/customer_portal/schemas/customer.py
+  s_a7be5626e771f2::t_d0df1f27566664 17
+  s_a7be5626e771f2::t_db49dcdb269dea 53-56
+  s_a7be5626e771f2::t_db2d7689394cef 3
+server/polar/sso/service.py
+  s_a7be5626e771f2::t_210d7fa76c537c 106
+  s_a7be5626e771f2::t_90519dc62bdc4e 4,108
+  s_a7be5626e771f2::t_d0930751fc5279 5,107
+clients/apps/web/src/components/Settings/Webhook/WebhookContextView.tsx
+  s_a7be5626e771f2::t_9f233d1fe5a7bb 48
+server/polar/organization/service.py
+  s_a7be5626e771f2::t_e51c53cca0b76c 632
+  s_a7be5626e771f2::t_da2c6580ced83f 628,636,662,678,706
+  s_a7be5626e771f2::t_8d694ccb10abfa 14,684
+server/polar/customer/service.py
+  s_a7be5626e771f2::t_8087ab4994aa38 494-495
+  s_a7be5626e771f2::t_23e3fc9e40bfd8 7,457,481,510,526,563,616,740
+  s_a7be5626e771f2::t_77ac0727cf31e2 602
+server/pyproject.toml
+  s_a7be5626e771f2::t_1e49212e911b7b 21
+server/tests/product/test_service.py
+  s_a7be5626e771f2::t_1d2e7cf58023c9 2268,2277
+  s_a7be5626e771f2::t_2b841bd6ce501f 51,2176,2200,2222,2233-2235,2237-2239
+server/polar/organization/legacy_schemas.py
+  s_a7be5626e771f2::t_db2d7689394cef 1,18
+  s_a7be5626e771f2::t_6a4a193b51cb9d 2
+  s_a7be5626e771f2::t_0e486a632dac2e 3
+  s_a7be5626e771f2::t_db49dcdb269dea 17
+server/tests/openapi.2026-04.json
+  s_a7be5626e771f2::t_b08c3f00b67917 1
+server/tests/openapi.2026-10.json
+  s_a7be5626e771f2::t_b08c3f00b67917 1
+server/polar/kit/schemas.py
+  s_a7be5626e771f2::t_04dc9b70f381ae 8,112
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6c996240f56ae3a98067fc21e251ec878880bba3",
+  "prompts": {},
+  "sessions": {
+    "s_8a8c5cf4d82dc7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f4c5-980a-7fb0-87d1-d9d08beda8d9",
+        "model": "unknown"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    },
+    "s_a7be5626e771f2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f46f-2f11-7d20-9713-16d9c75fd0ce",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    },
+    "s_c399151ee78a5f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f4ba-3ed7-7af0-a245-26e5edf581df",
+        "model": "unknown"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

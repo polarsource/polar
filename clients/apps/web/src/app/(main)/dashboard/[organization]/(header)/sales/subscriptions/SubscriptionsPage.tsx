@@ -1,27 +1,22 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { DateRange } from '@/components/Metrics/DateRangePicker'
+import { CANCELLATION_REASONS } from '@/components/Metrics/cancellations/constants'
 import { useModal } from '@/components/Modal/useModal'
-import ExportSubscriptionsModal from '@/components/Subscriptions/ExportSubscriptionsModal'
-import {
-  DEFAULT_SUBSCRIPTION_STATUS,
-  subscriptionStatusFilterValues,
-  type SubscriptionStatusFilter,
-} from '@/components/Subscriptions/SubscriptionStatusSelect'
-import { SubscriptionsTable } from '@/components/Subscriptions/SubscriptionsTable'
 import { type ProductFilter } from '@/components/Products/ProductSelect'
+import ExportSubscriptionsModal from '@/components/Subscriptions/ExportSubscriptionsModal'
+import { SubscriptionDetailPanel } from '@/components/Subscriptions/SubscriptionDetailPanel'
+import { SELECTABLE_STATUSES } from '@/components/Subscriptions/selectableStatuses'
+import { SubscriptionsTable } from '@/components/Subscriptions/SubscriptionsTable'
 import { useInfiniteSubscriptions } from '@/hooks/queries'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import {
   DataTableSortingState,
   sortingStateToQueryParam,
 } from '@/utils/datatable'
-import { useDateRange } from '@/utils/date'
 import { schemas } from '@polar-sh/client'
-import { Box } from '@polar-sh/orbit/Box'
+import { Download } from '@polar-sh/orbit/icons'
 import { functionalUpdate, OnChangeFn } from '@tanstack/react-table'
-import { useRouter } from 'next/navigation'
 import {
   parseAsArrayOf,
   parseAsBoolean,
@@ -30,17 +25,22 @@ import {
   useQueryStates,
 } from 'nuqs'
 import React from 'react'
-import SubscriptionFilters from './SubscriptionFilters'
+import { SubscriptionsToolbar } from './SubscriptionsToolbar'
+import { type ToolbarAction } from './ToolbarActionsMenu'
 
 const PAGE_SIZE = 50
 
 const filterParsers = {
   product_id: parseAsArrayOf(parseAsString),
   external_product_id: parseAsArrayOf(parseAsString),
-  status: parseAsStringLiteral(subscriptionStatusFilterValues).withDefault(
-    DEFAULT_SUBSCRIPTION_STATUS,
+  status: parseAsArrayOf(parseAsStringLiteral(SELECTABLE_STATUSES)),
+  customer_id: parseAsArrayOf(parseAsString),
+  discount_id: parseAsArrayOf(parseAsString),
+  customer_cancellation_reason: parseAsArrayOf(
+    parseAsStringLiteral(CANCELLATION_REASONS),
   ),
   cancel_at_period_end: parseAsBoolean,
+  subscription: parseAsString,
 }
 
 // Secondary sort on ends_at when sorting by status
@@ -63,8 +63,6 @@ interface ClientPageProps {
 }
 
 const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
-  const router = useRouter()
-
   const { sorting, setSorting: setSortingState } = useDataTableQueryState({
     defaultSorting: [{ id: 'started_at', desc: true }],
     defaultPageSize: PAGE_SIZE,
@@ -76,11 +74,13 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       external_product_id: externalProductId,
       status,
       cancel_at_period_end: cancelAtPeriodEnd,
+      customer_id: customerId,
+      discount_id: discountId,
+      customer_cancellation_reason: cancellationReason,
+      subscription: selectedId,
     },
     setFilters,
   ] = useQueryStates(filterParsers)
-
-  const { startDate, endDate, setStartDate, setEndDate } = useDateRange()
 
   const {
     isShown: isExportModalShown,
@@ -99,25 +99,25 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     external_product_id: externalProductId,
   }
 
-  const onProductSelect = (value: ProductFilter) => {
-    setFilters(value)
-  }
+  const hasActiveFilters =
+    productId !== null ||
+    externalProductId !== null ||
+    status !== null ||
+    cancelAtPeriodEnd !== null ||
+    customerId !== null ||
+    discountId !== null ||
+    cancellationReason !== null
 
-  const onStatusSelect = (value: SubscriptionStatusFilter) => {
+  const resetFilters = () =>
     setFilters({
-      status: value,
-      cancel_at_period_end: value === 'active' ? cancelAtPeriodEnd : null,
+      product_id: null,
+      external_product_id: null,
+      status: null,
+      cancel_at_period_end: null,
+      customer_id: null,
+      discount_id: null,
+      customer_cancellation_reason: null,
     })
-  }
-
-  const onCancelAtPeriodEndSelect = (value: boolean | null) => {
-    setFilters({ cancel_at_period_end: value })
-  }
-
-  const onDateChange = (range: DateRange) => {
-    setStartDate(range.from)
-    setEndDate(range.to)
-  }
 
   const { data, hasNextPage, isFetchingNextPage, fetchNextPage } =
     useInfiniteSubscriptions(organization.id, {
@@ -125,10 +125,11 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       sorting: sortingStateToQueryParam(sorting),
       product_id: productId ?? undefined,
       external_product_id: externalProductId ?? undefined,
-      status: status === 'any' ? undefined : [status],
+      status: status ?? undefined,
       cancel_at_period_end: cancelAtPeriodEnd ?? undefined,
-      started_after: startDate.toISOString(),
-      started_before: endDate.toISOString(),
+      customer_id: customerId ?? undefined,
+      discount_id: discountId ?? undefined,
+      customer_cancellation_reason: cancellationReason ?? undefined,
     })
 
   const subscriptions = data?.pages.flatMap((page) => page.items)
@@ -137,6 +138,12 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       fetchNextPage()
     }
   }
+  const selectedIndex =
+    subscriptions?.findIndex(({ id }) => id === selectedId) ?? -1
+  const selected = subscriptions?.[selectedIndex]
+  const previous = subscriptions?.[selectedIndex - 1]
+  const next = selected ? subscriptions?.[selectedIndex + 1] : undefined
+  const select = (id: string | null) => setFilters({ subscription: id })
 
   const totalCount = data?.pages[0]?.pagination.total_count
   const countLabel =
@@ -144,35 +151,68 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       ? undefined
       : `${totalCount.toLocaleString('en-US')} ${totalCount === 1 ? 'subscription' : 'subscriptions'}`
 
+  const actions: ToolbarAction[][] = [
+    [
+      {
+        key: 'export',
+        label: 'Export CSV',
+        icon: <Download />,
+        onSelect: showExportModal,
+      },
+    ],
+  ]
+
   return (
-    <DashboardBody className="min-h-0 flex-1 pb-0" wide>
-      <Box flexDirection="column" gap="xl" flexGrow={1} minHeight={0}>
-        <SubscriptionFilters
-          organization={organization}
-          product={product}
-          onProductSelect={onProductSelect}
-          status={status}
-          onStatusSelect={onStatusSelect}
-          cancelAtPeriodEnd={cancelAtPeriodEnd}
-          onCancelAtPeriodEndSelect={onCancelAtPeriodEndSelect}
-          dateRange={{ from: startDate, to: endDate }}
-          onDateChange={onDateChange}
-          onExport={showExportModal}
-        />
-        <SubscriptionsTable
-          subscriptions={subscriptions}
-          sorting={sorting}
-          onSortingChange={setSorting}
-          onOpen={(id) =>
-            router.push(
-              `/dashboard/${organization.slug}/sales/subscriptions/${id}`,
-            )
-          }
-          footerLabel={countLabel}
-          isLoadingMore={isFetchingNextPage}
-          onEndReached={loadMore}
-        />
-      </Box>
+    <DashboardBody
+      title={null}
+      wrapperClassName="gap-0 pt-0"
+      className="min-h-0 flex-1 pb-0"
+      detailView={
+        selected ? (
+          <SubscriptionDetailPanel
+            key={selected.id}
+            subscription={selected}
+            organization={organization}
+            onPrevious={previous ? () => select(previous.id) : undefined}
+            onNext={next ? () => select(next.id) : undefined}
+            onClose={() => select(null)}
+          />
+        ) : undefined
+      }
+      wide
+      flush
+    >
+      <SubscriptionsToolbar
+        organization={organization}
+        product={product}
+        onProductSelect={setFilters}
+        status={status}
+        cancelAtPeriodEnd={cancelAtPeriodEnd}
+        onStatusSelect={(value, cancel) =>
+          setFilters({ status: value, cancel_at_period_end: cancel })
+        }
+        customerId={customerId}
+        onCustomerSelect={(value) => setFilters({ customer_id: value })}
+        discountId={discountId}
+        onDiscountSelect={(value) => setFilters({ discount_id: value })}
+        cancellationReason={cancellationReason}
+        onCancellationReasonSelect={(value) =>
+          setFilters({ customer_cancellation_reason: value })
+        }
+        hasActiveFilters={hasActiveFilters}
+        onReset={resetFilters}
+        actions={actions}
+      />
+      <SubscriptionsTable
+        subscriptions={subscriptions}
+        sorting={sorting}
+        onSortingChange={setSorting}
+        selectedId={selectedId}
+        onSelect={select}
+        footerLabel={countLabel}
+        isLoadingMore={isFetchingNextPage}
+        onEndReached={loadMore}
+      />
       <ExportSubscriptionsModal
         organization={organization}
         product={product}

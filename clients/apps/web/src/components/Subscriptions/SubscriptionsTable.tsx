@@ -25,7 +25,6 @@ import {
 type Subscription = schemas['Subscription']
 
 const FOOTER_HEIGHT = 44
-const ignore = () => {}
 
 const formatDate = (date: string) => format(new Date(date), 'MMM d, yyyy')
 
@@ -86,7 +85,7 @@ const columns: CondensedTableColumn<Subscription>[] = [
     id: 'product',
     accessorFn: ({ product }) => product.name,
     header: 'Product',
-    meta: { skeleton: [90, 70, 100, 80, 60] },
+    meta: { minWidth: 72, skeleton: [90, 70, 100, 80, 60] },
     cell: ({ row }) => (
       <Text color="muted" truncate>
         {row.original.product.name}
@@ -118,7 +117,7 @@ const columns: CondensedTableColumn<Subscription>[] = [
     accessorKey: 'current_period_end',
     header: 'Next',
     sortDescFirst: false,
-    meta: { width: 168, skeleton: [130, 110, 140] },
+    meta: { width: 152, skeleton: [130, 110, 140] },
     cell: ({ row }) => (
       <Text color="muted" tabularNums truncate>
         {getNextStep(row.original)}
@@ -160,7 +159,8 @@ interface SubscriptionsTableProps {
   subscriptions: Subscription[] | undefined
   sorting: DataTableSortingState
   onSortingChange: OnChangeFn<DataTableSortingState>
-  onOpen: (id: string) => void
+  selectedId: string | null
+  onSelect: (id: string | null) => void
   footerLabel?: string
   isLoadingMore: boolean
   onEndReached: () => void
@@ -170,7 +170,8 @@ export const SubscriptionsTable = ({
   subscriptions,
   sorting,
   onSortingChange,
-  onOpen,
+  selectedId,
+  onSelect,
   footerLabel,
   isLoadingMore,
   onEndReached,
@@ -203,10 +204,9 @@ export const SubscriptionsTable = ({
         ) : (
           <CondensedTable
             table={table}
-            selectedId={null}
-            onSelect={onOpen}
-            onStep={ignore}
-            onClose={ignore}
+            selectedId={selectedId}
+            onSelect={onSelect}
+            onClose={() => onSelect(null)}
             renderCompact={(subscription) => (
               <CompactRow subscription={subscription} />
             )}

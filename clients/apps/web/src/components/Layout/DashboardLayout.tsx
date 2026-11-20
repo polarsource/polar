@@ -107,6 +107,8 @@ export interface DashboardBodyProps {
   header?: JSX.Element
   titleActions?: React.ReactNode
   wide?: boolean
+  /** Removes the horizontal padding so the content reaches the card edges. */
+  flush?: boolean
   detailView?: React.ReactNode
 }
 
@@ -122,6 +124,7 @@ export const DashboardBody = ({
   header,
   titleActions,
   wide = false,
+  flush = false,
   detailView,
 }: DashboardBodyProps) => {
   const { currentRoute, currentSubRoute } = useRoute()
@@ -156,7 +159,12 @@ export const DashboardBody = ({
       exit="exit"
     >
       {contextViewPlacement === 'left' && detailView}
-      <div className="dark:bg-polar-900 dark:border-polar-800 relative flex min-w-0 flex-2 flex-col items-center rounded-2xl border-gray-200 bg-white px-4 md:overflow-y-auto md:border md:px-8 md:shadow-xs">
+      <div
+        className={twMerge(
+          'dark:bg-polar-900 dark:border-polar-800 relative flex min-w-0 flex-2 flex-col items-center rounded-2xl border-gray-200 bg-white md:overflow-y-auto md:border md:shadow-xs',
+          flush ? '' : 'px-4 md:px-8',
+        )}
+      >
         <div
           className={twMerge(
             'flex h-full w-full flex-col gap-8 pt-8',
@@ -165,7 +173,12 @@ export const DashboardBody = ({
           )}
         >
           {(title !== null || !!header || contextView) && (
-            <div className="flex flex-col gap-y-4 md:flex-row md:items-center md:justify-between md:gap-x-4">
+            <div
+              className={twMerge(
+                'flex flex-col gap-y-4 md:flex-row md:items-center md:justify-between md:gap-x-4',
+                flush ? 'px-4 md:px-8' : '',
+              )}
+            >
               {(title !== null || contextView || titleActions) && (
                 <div className="flex items-center gap-x-2 md:contents">
                   {title !== null &&

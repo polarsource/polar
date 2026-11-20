@@ -34,7 +34,9 @@ def test_external_cors_allows_and_exposes_version_header() -> None:
 
     response = client.get("/", headers={"Origin": origin})
     assert response.status_code == 200
-    assert response.headers["Access-Control-Expose-Headers"] == VERSION_HEADER
+    assert response.headers["Access-Control-Expose-Headers"] == (
+        f"{VERSION_HEADER}, Deprecation, Sunset, Link"
+    )
 
 
 @pytest.mark.parametrize("backoffice_enabled", [True, False])

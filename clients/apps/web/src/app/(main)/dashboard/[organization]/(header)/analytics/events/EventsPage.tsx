@@ -1,9 +1,12 @@
 'use client'
 
 import { EventDetailPanel } from '@/components/Events/EventDetailPanel'
-import { EventLog } from '@/components/Events/EventLog'
-import { EventLogHeader } from '@/components/Events/EventLogRow'
-import { EventLogSkeleton } from '@/components/Events/EventLogSkeleton'
+import {
+  EventLog,
+  EventLogHeader,
+  EventLogSkeleton,
+  useEventLogTable,
+} from '@/components/Events/EventLog'
 import { EventSearch } from '@/components/Events/EventSearch'
 import { EventsHistogram } from '@/components/Events/EventsHistogram'
 import {
@@ -263,6 +266,7 @@ const ClientPage = ({
   )
 
   const items = events?.pages.flatMap((page) => page.items) ?? []
+  const table = useEventLogTable(items)
   const firstPagination = events?.pages[0]?.pagination
   const totalCount =
     firstPagination && 'total_count' in firstPagination
@@ -450,7 +454,7 @@ const ClientPage = ({
           />
         ) : (
           <Box flexDirection="column" flexGrow={1} minHeight={0}>
-            <EventLogHeader />
+            <EventLogHeader table={table} />
             <Box
               flexDirection="column"
               flexGrow={1}
@@ -459,10 +463,10 @@ const ClientPage = ({
               paddingBottom={{ md: 'xl' }}
             >
               {isLoading ? (
-                <EventLogSkeleton />
+                <EventLogSkeleton table={table} />
               ) : (
                 <EventLog
-                  events={items}
+                  table={table}
                   selectedEventId={selectedEventId}
                   onSelect={setSelectedEventId}
                   onStep={stepToEvent}

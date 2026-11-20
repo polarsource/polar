@@ -14,7 +14,8 @@ import { CopyButton } from './CopyButton'
 import { Field } from './EventDetailField'
 import { useEventDetailFields } from './EventDetailFields'
 import { EventCostComparison, useEventCostSamples } from './EventCostComparison'
-import { EventDetailSkeleton, SkeletonBar } from './EventDetailSkeleton'
+import { SkeletonBar } from '@/components/Shared/SkeletonBar'
+import { EventDetailSkeleton } from './EventDetailSkeleton'
 import { EventLLMFields } from './EventLLMFields'
 import {
   eventCost,

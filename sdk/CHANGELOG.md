@@ -10,6 +10,8 @@ History up to [1.0.0-alpha.22] is available in the existing GitHub releases.
 
 ## [Unreleased]
 
+- Regenerate 2027-01 version. Update schemas won't accept `null` values if the schema type is not nullable.
+
 ## [1.3.1] - 2026-11-18
 
 ### Fixed

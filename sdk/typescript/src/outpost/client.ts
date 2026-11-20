@@ -458,6 +458,17 @@ const holdsNoInfinity = (value: unknown): boolean => {
   return Object.values(value).every(holdsNoInfinity);
 };
 
+// A lock holds its owner's token: only the owner extends or releases it. Past its TTL, it may be
+// another instance's.
+const takeLock = async (redis: Redis, key: string, ttl: number): Promise<string | null> => {
+  const token = randomUUID();
+  return (await redis.set(key, token, "PX", ttl, "NX")) ? token : null;
+};
+
+const releaseLock = async (redis: Redis, key: string, token: string): Promise<void> => {
+  await redis.eval(RELEASE_LOCK_SCRIPT, 1, key, token).catch(() => {});
+};
+
 const recordError = (span: Span, error: unknown): void => {
   span.recordException(error instanceof Error ? error : String(error));
   span.setStatus({ code: SpanStatusCode.ERROR });
@@ -887,8 +898,8 @@ export class Outpost {
     if (!this.tracerProvider) return;
     const redis = this.requireRedis();
     const lock = `${this.prefix}:telemetry:lock`;
-    const token = randomUUID();
-    if (!(await redis.set(lock, token, "PX", RELAY_LOCK_TTL, "NX"))) return;
+    const token = await takeLock(redis, lock, RELAY_LOCK_TTL);
+    if (!token) return;
     try {
       for (const [kind, path] of [
         ["spans", "/v1/outpost/telemetry"],
@@ -906,7 +917,7 @@ export class Outpost {
         if (status < 500 && status !== 429) await redis.del(batch);
       }
     } finally {
-      await redis.eval(RELEASE_LOCK_SCRIPT, 1, lock, token).catch(() => {});
+      await releaseLock(redis, lock, token);
     }
   }
 
@@ -1168,8 +1179,8 @@ export class Outpost {
       this.pullRetryAt = retryAt;
       return;
     }
-    const lock = randomUUID();
-    if (!(await redis.set(this.pullLockKey, lock, "PX", PULL_LOCK_TTL, "NX"))) {
+    const lock = await takeLock(redis, this.pullLockKey, PULL_LOCK_TTL);
+    if (!lock) {
       span.setAttribute("outpost.pull.locked", true);
       // Unless a read needs it, this instance does not wait for the other one's pull: it checks
       // the pull again once a pull check has passed.
@@ -1238,8 +1249,7 @@ export class Outpost {
       }
     } finally {
       span.setAttributes({ "outpost.pull.pages": pages, "outpost.pull.applied": applied });
-      if (!released)
-        await redis.eval(RELEASE_LOCK_SCRIPT, 1, this.pullLockKey, lock).catch(() => {});
+      if (!released) await releaseLock(redis, this.pullLockKey, lock);
     }
     // The instance that pulled measures the shared Redis for the fleet.
     void this.reportRedisSize();
@@ -1308,8 +1318,8 @@ export class Outpost {
   private async drainCold(): Promise<void> {
     const redis = this.requireRedis();
     for (;;) {
-      const token = randomUUID();
-      if (!(await redis.set(this.coldLockKey, token, "PX", TIMEOUT, "NX"))) return;
+      const token = await takeLock(redis, this.coldLockKey, TIMEOUT);
+      if (!token) return;
       try {
         await sleep(FETCH_BATCH_WINDOW);
         const renew = () => redis.eval(EXTEND_LOCK_SCRIPT, 1, this.coldLockKey, token, TIMEOUT);
@@ -1329,7 +1339,7 @@ export class Outpost {
         }
       } finally {
         // Past its TTL, the lock may be another instance's.
-        await redis.eval(RELEASE_LOCK_SCRIPT, 1, this.coldLockKey, token).catch(() => {});
+        await releaseLock(redis, this.coldLockKey, token);
       }
       if (!(await redis.scard(this.coldKey))) return;
     }
@@ -1415,8 +1425,8 @@ export class Outpost {
     const redis = this.requireRedis();
     const lockKey = `${this.outboxKey}:flusher:${slot}`;
     const consumer = `flusher-${slot}`;
-    const token = randomUUID();
-    if (!(await redis.set(lockKey, token, "PX", FLUSHER_LOCK_TTL, "NX"))) return "busy";
+    const token = await takeLock(redis, lockKey, FLUSHER_LOCK_TTL);
+    if (!token) return "busy";
     try {
       if (slot === 0)
         await redis.xautoclaim(
@@ -1470,7 +1480,7 @@ export class Outpost {
       }
     } finally {
       // Past its TTL, the slot may be another flusher's.
-      await redis.eval(RELEASE_LOCK_SCRIPT, 1, lockKey, token).catch(() => {});
+      await releaseLock(redis, lockKey, token);
     }
   }
 

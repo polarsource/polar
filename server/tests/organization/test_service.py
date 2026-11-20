@@ -361,6 +361,7 @@ class TestCreate:
         create_customer_mock = mocker.patch(
             "polar.organization.service.polar_self_service.enqueue_create_customer"
         )
+        posthog_mock = mocker.patch("polar.organization.service.posthog")
 
         organization = await organization_service.create(
             session,
@@ -369,6 +370,16 @@ class TestCreate:
         )
 
         assert agent.organization_id == organization.id
+        posthog_mock.agent_event.assert_called_once_with(
+            agent,
+            "organization",
+            "create",
+            {
+                "organization_id": str(organization.id),
+                "organization_slug": "agent-organization",
+            },
+        )
+        posthog_mock.user_event.assert_not_called()
         assert organization.account is not None
         await session.refresh(organization)
         assert not organization.is_config_as_code_enabled

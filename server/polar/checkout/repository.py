@@ -11,7 +11,7 @@ from sqlalchemy import (
     select,
     update,
 )
-from sqlalchemy.orm import joinedload, raiseload, selectinload
+from sqlalchemy.orm import defer, joinedload, raiseload, selectinload
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
@@ -214,9 +214,22 @@ class CheckoutRepository(
 
         `Checkout.product` is always one of `Checkout.checkout_products`, so its
         prices, benefits and medias are loaded once, through `checkout_products`.
+
+        The organization skips its large columns the schema doesn't read, and the
+        discount's organization (the same row) only loads the currency it needs.
         """
         return (
-            joinedload(Checkout.organization),
+            joinedload(Checkout.organization).options(
+                defer(Organization.details, raiseload=True),
+                defer(Organization.slug_history, raiseload=True),
+                defer(Organization.profile_settings, raiseload=True),
+                defer(Organization.order_settings, raiseload=True),
+                defer(Organization.checkout_settings, raiseload=True),
+                defer(Organization.dispute_settings, raiseload=True),
+                defer(Organization.legal_entity, raiseload=True),
+                defer(Organization.embed_hosts, raiseload=True),
+                defer(Organization.internal_notes, raiseload=True),
+            ),
             joinedload(Checkout.product).options(
                 raiseload(Product.prices),
                 raiseload(Product.product_benefits),
@@ -229,6 +242,9 @@ class CheckoutRepository(
                 )
             ),
             joinedload(Checkout.discount).options(
+                joinedload(Discount.organization).load_only(
+                    Organization.default_presentment_currency, raiseload=True
+                ),
                 raiseload(Discount.discount_products),
             ),
             joinedload(Checkout.product_price),

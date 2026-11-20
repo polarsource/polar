@@ -3302,7 +3302,8 @@ class CheckoutService:
         # the company's name. But an existing customer with no name at all
         # (e.g. created through the API without one) should still get an initial
         # value so invoices can be generated.
-        if customer.name is None and customer_name is not None:
+        name_populated = customer.name is None and customer_name is not None
+        if name_populated:
             customer.name = customer_name
         if checkout.customer_billing_name is not None:
             customer.billing_name = checkout.customer_billing_name
@@ -3326,10 +3327,10 @@ class CheckoutService:
                 )
                 yield customer, generate_customer_session
         else:
-            yield (
-                await repository.update(customer, flush=True),
-                generate_customer_session,
-            )
+            customer = await repository.update(customer, flush=True)
+            if name_populated:
+                await member_service.sync_owner(session, customer)
+            yield customer, generate_customer_session
 
     async def _after_checkout_created(
         self, session: AsyncSession, checkout: Checkout

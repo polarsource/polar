@@ -1363,8 +1363,8 @@ class Outpost:
             return
         redis = self._require_redis()
         lock = f"{self._prefix}:telemetry:lock"
-        token = uuid.uuid4().hex
-        if not await redis.set(lock, token, px=int(RELAY_LOCK_TTL * 1000), nx=True):
+        token = await self._take_lock(lock, RELAY_LOCK_TTL)
+        if token is None:
             return
         try:
             for kind, path in (
@@ -1390,8 +1390,7 @@ class Outpost:
                 if response.status_code < 500 and response.status_code != 429:
                     await redis.delete(batch)
         finally:
-            with contextlib.suppress(RedisError):
-                await redis.eval(RELEASE_LOCK_SCRIPT, 1, lock, token)
+            await self._release_lock(lock, token)
 
     async def _read(
         self, customer: str, reducers: list[Reducer], statistics: list[str]
@@ -1716,10 +1715,8 @@ class Outpost:
         redis = self._require_redis()
         lock_key = f"{self._outbox_key}:flusher:{slot}"
         consumer = f"flusher-{slot}"
-        token = uuid.uuid4().hex
-        if not await redis.set(
-            lock_key, token, px=int(FLUSHER_LOCK_TTL * 1000), nx=True
-        ):
+        token = await self._take_lock(lock_key, FLUSHER_LOCK_TTL)
+        if token is None:
             return "busy"
         try:
             if slot == 0:
@@ -1779,9 +1776,7 @@ class Outpost:
                 elif start == "0":
                     start = ">"
         finally:
-            # Past its TTL, the slot may be another flusher's.
-            with contextlib.suppress(RedisError):
-                await redis.eval(RELEASE_LOCK_SCRIPT, 1, lock_key, token)
+            await self._release_lock(lock_key, token)
 
     async def _back_off_outbox(self, wait: float | None) -> None:
         """As long as Polar asks, or longer after each failure in a row."""
@@ -1878,10 +1873,8 @@ class Outpost:
         it held the lock is not left behind."""
         redis = self._require_redis()
         while True:
-            token = uuid.uuid4().hex
-            if not await redis.set(
-                self._cold_lock_key, token, px=int(TIMEOUT * 1000), nx=True
-            ):
+            token = await self._take_lock(self._cold_lock_key, TIMEOUT)
+            if token is None:
                 return
             try:
                 await anyio.sleep(FETCH_BATCH_WINDOW)
@@ -1915,9 +1908,7 @@ class Outpost:
                         for identities in batches:
                             group.start_soon(self._fetch_batch, identities, renew)
             finally:
-                # Past its TTL, the lock may be another instance's.
-                with contextlib.suppress(RedisError):
-                    await redis.eval(RELEASE_LOCK_SCRIPT, 1, self._cold_lock_key, token)
+                await self._release_lock(self._cold_lock_key, token)
             if not await redis.scard(self._cold_key):
                 return
 
@@ -2051,6 +2042,17 @@ class Outpost:
             raise PolarOutpostError("Polar refused Outpost")
         response.raise_for_status()
         return response.json()
+
+    async def _take_lock(self, key: str, ttl: float) -> str | None:
+        """A lock holds its owner's token: only the owner extends or releases it. Past
+        its TTL, it may be another instance's."""
+        token = uuid.uuid4().hex
+        taken = await self._require_redis().set(key, token, px=int(ttl * 1000), nx=True)
+        return token if taken else None
+
+    async def _release_lock(self, key: str, token: str) -> None:
+        with contextlib.suppress(RedisError):
+            await self._require_redis().eval(RELEASE_LOCK_SCRIPT, 1, key, token)
 
     @property
     def _pull_key(self) -> str:
@@ -2261,10 +2263,8 @@ class Outpost:
         if retry_at and float(retry_at) > time.time() * 1000:
             self._pull_retry_at = float(retry_at) / 1000
             return
-        lock = uuid.uuid4().hex
-        if not await redis.set(
-            self._pull_lock_key, lock, px=int(PULL_LOCK_TTL * 1000), nx=True
-        ):
+        lock = await self._take_lock(self._pull_lock_key, PULL_LOCK_TTL)
+        if lock is None:
             span.set_attribute("outpost.pull.locked", True)
             # Unless a read needs it, this instance does not wait for the other one's pull:
             # it checks the pull again once a pull check has passed.
@@ -2372,8 +2372,7 @@ class Outpost:
                 {"outpost.pull.pages": pages, "outpost.pull.applied": applied}
             )
             if not released:
-                with contextlib.suppress(RedisError):
-                    await redis.eval(RELEASE_LOCK_SCRIPT, 1, self._pull_lock_key, lock)
+                await self._release_lock(self._pull_lock_key, lock)
         # In the background: a read that waits for the pull does not wait for telemetry.
         if self._relaying is None and self._tasks is not None:
             self._relaying = anyio.Event()

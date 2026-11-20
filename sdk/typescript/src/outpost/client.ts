@@ -887,8 +887,8 @@ export class Outpost {
     if (!this.tracerProvider) return;
     const redis = this.requireRedis();
     const lock = `${this.prefix}:telemetry:lock`;
-    const token = randomUUID();
-    if (!(await redis.set(lock, token, "PX", RELAY_LOCK_TTL, "NX"))) return;
+    const token = await this.takeLock(lock, RELAY_LOCK_TTL);
+    if (!token) return;
     try {
       for (const [kind, path] of [
         ["spans", "/v1/outpost/telemetry"],
@@ -906,7 +906,7 @@ export class Outpost {
         if (status < 500 && status !== 429) await redis.del(batch);
       }
     } finally {
-      await redis.eval(RELEASE_LOCK_SCRIPT, 1, lock, token).catch(() => {});
+      await this.releaseLock(lock, token);
     }
   }
 
@@ -993,6 +993,19 @@ export class Outpost {
   private pulled(at: number): void {
     this.pulledAt = at;
     if (this.failure && at > this.failedAt) this.failure = undefined;
+  }
+
+  // A lock holds its owner's token: only the owner extends or releases it. Past its TTL, it may
+  // be another instance's.
+  private async takeLock(key: string, ttl: number): Promise<string | null> {
+    const token = randomUUID();
+    return (await this.requireRedis().set(key, token, "PX", ttl, "NX")) ? token : null;
+  }
+
+  private async releaseLock(key: string, token: string): Promise<void> {
+    await this.requireRedis()
+      .eval(RELEASE_LOCK_SCRIPT, 1, key, token)
+      .catch(() => {});
   }
 
   private get pullKey(): string {
@@ -1168,8 +1181,8 @@ export class Outpost {
       this.pullRetryAt = retryAt;
       return;
     }
-    const lock = randomUUID();
-    if (!(await redis.set(this.pullLockKey, lock, "PX", PULL_LOCK_TTL, "NX"))) {
+    const lock = await this.takeLock(this.pullLockKey, PULL_LOCK_TTL);
+    if (!lock) {
       span.setAttribute("outpost.pull.locked", true);
       // Unless a read needs it, this instance does not wait for the other one's pull: it checks
       // the pull again once a pull check has passed.
@@ -1238,8 +1251,7 @@ export class Outpost {
       }
     } finally {
       span.setAttributes({ "outpost.pull.pages": pages, "outpost.pull.applied": applied });
-      if (!released)
-        await redis.eval(RELEASE_LOCK_SCRIPT, 1, this.pullLockKey, lock).catch(() => {});
+      if (!released) await this.releaseLock(this.pullLockKey, lock);
     }
     // The instance that pulled measures the shared Redis for the fleet.
     void this.reportRedisSize();
@@ -1308,8 +1320,8 @@ export class Outpost {
   private async drainCold(): Promise<void> {
     const redis = this.requireRedis();
     for (;;) {
-      const token = randomUUID();
-      if (!(await redis.set(this.coldLockKey, token, "PX", TIMEOUT, "NX"))) return;
+      const token = await this.takeLock(this.coldLockKey, TIMEOUT);
+      if (!token) return;
       try {
         await sleep(FETCH_BATCH_WINDOW);
         const renew = () => redis.eval(EXTEND_LOCK_SCRIPT, 1, this.coldLockKey, token, TIMEOUT);
@@ -1329,7 +1341,7 @@ export class Outpost {
         }
       } finally {
         // Past its TTL, the lock may be another instance's.
-        await redis.eval(RELEASE_LOCK_SCRIPT, 1, this.coldLockKey, token).catch(() => {});
+        await this.releaseLock(this.coldLockKey, token);
       }
       if (!(await redis.scard(this.coldKey))) return;
     }
@@ -1415,8 +1427,8 @@ export class Outpost {
     const redis = this.requireRedis();
     const lockKey = `${this.outboxKey}:flusher:${slot}`;
     const consumer = `flusher-${slot}`;
-    const token = randomUUID();
-    if (!(await redis.set(lockKey, token, "PX", FLUSHER_LOCK_TTL, "NX"))) return "busy";
+    const token = await this.takeLock(lockKey, FLUSHER_LOCK_TTL);
+    if (!token) return "busy";
     try {
       if (slot === 0)
         await redis.xautoclaim(
@@ -1470,7 +1482,7 @@ export class Outpost {
       }
     } finally {
       // Past its TTL, the slot may be another flusher's.
-      await redis.eval(RELEASE_LOCK_SCRIPT, 1, lockKey, token).catch(() => {});
+      await this.releaseLock(lockKey, token);
     }
   }
 

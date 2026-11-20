@@ -1,0 +1,24 @@
+server/tests/customer_portal/endpoints/test_customer.py
+  s_a7be5626e771f2::t_76a9108918eec4 17,361,371
+server/tests/organization/test_schemas.py
+  s_a7be5626e771f2::t_76a9108918eec4 99-103
+server/tests/customer/test_service.py
+  s_a7be5626e771f2::t_76a9108918eec4 19,28,617-642
+  s_a7be5626e771f2::t_cd9340f2669d14 643
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8ca773812fe69fb7fdba7c2529446b3dd1acddac",
+  "prompts": {},
+  "sessions": {
+    "s_a7be5626e771f2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f46f-2f11-7d20-9713-16d9c75fd0ce",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

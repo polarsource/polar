@@ -1,0 +1,14 @@
+server/AGENTS.md
+  h_868de2c7aaf22e 26,92,151,291-293,413,419,421,430,432,437,441,443,447,453-455,463,471-473,481,495
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "72fc361b5a87cb6ff5140a381b8299bcd19dd8ce",
+  "prompts": {},
+  "humans": {
+    "h_868de2c7aaf22e": {
+      "author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

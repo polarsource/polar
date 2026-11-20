@@ -1,0 +1,354 @@
+{
+  "meters": [
+    {
+      "external_id": "tool_call",
+      "name": "Tool calls!",
+      "filter": {
+        "conjunction": "and",
+        "clauses": [
+          {
+            "property": "name",
+            "operator": "eq",
+            "value": "tool_call"
+          }
+        ]
+      },
+      "aggregation": {
+        "func": "count"
+      },
+      "unit": "custom",
+      "custom_label": "tool calls"
+    }
+  ],
+  "benefits": [
+    {
+      "external_id": "custom_servers",
+      "description": "Custom servers",
+      "metadata": {
+        "tag": "primary"
+      },
+      "type": "feature_flag"
+    },
+    {
+      "external_id": "tool_calls",
+      "description": "Included tool calls",
+      "type": "meter_credit",
+      "properties": {
+        "meter": "tool_call",
+        "units": 1200,
+        "rollover": false
+      }
+    },
+    {
+      "external_id": "free_tool_calls",
+      "description": "Free tool calls",
+      "type": "meter_credit",
+      "properties": {
+        "meter": "tool_call",
+        "units": 5,
+        "rollover": false
+      }
+    },
+    {
+      "external_id": "topup_100",
+      "description": "100 extra tool calls",
+      "type": "meter_credit",
+      "properties": {
+        "meter": "tool_call",
+        "units": 100,
+        "rollover": true
+      }
+    },
+    {
+      "external_id": "topup_500",
+      "description": "500 extra tool calls",
+      "type": "meter_credit",
+      "properties": {
+        "meter": "tool_call",
+        "units": 500,
+        "rollover": true
+      }
+    },
+    {
+      "external_id": "topup_1000",
+      "description": "1,000 extra tool calls",
+      "type": "meter_credit",
+      "properties": {
+        "meter": "tool_call",
+        "units": 1000,
+        "rollover": true
+      }
+    }
+  ],
+  "products": [
+    {
+      "external_id": "free",
+      "name": "Free",
+      "recurring_interval": "month",
+      "recurring_interval_count": 1,
+      "prices": [
+        {
+          "amount_type": "fixed",
+          "price_currency": "usd",
+          "price_amount": 0
+        }
+      ],
+      "benefits": ["free_tool_calls"]
+    },
+    {
+      "external_id": "team",
+      "name": "Team",
+      "recurring_interval": "month",
+      "recurring_interval_count": 1,
+      "prices": [
+        {
+          "price_currency": "usd",
+          "tiers": {
+            "type": "graduated",
+            "tiers": [
+              {
+                "bound": 5,
+                "unit_amount": "2400"
+              },
+              {
+                "bound": 10,
+                "unit_amount": "1800"
+              },
+              {
+                "unit_amount": "1500"
+              }
+            ]
+          },
+          "minimum_units": 1,
+          "amount_type": "seat_based"
+        },
+        {
+          "price_currency": "eur",
+          "tiers": {
+            "type": "graduated",
+            "tiers": [
+              {
+                "bound": 5,
+                "unit_amount": "1800"
+              },
+              {
+                "bound": 10,
+                "unit_amount": "1200"
+              },
+              {
+                "unit_amount": "1400"
+              }
+            ]
+          },
+          "minimum_units": 1,
+          "amount_type": "seat_based"
+        }
+      ],
+      "benefits": ["custom_servers"]
+    },
+    {
+      "external_id": "servers",
+      "name": "Servers",
+      "recurring_interval": "month",
+      "recurring_interval_count": 1,
+      "prices": [
+        {
+          "price_currency": "usd",
+          "tiers": {
+            "type": "volume",
+            "tiers": [
+              {
+                "bound": 10,
+                "unit_amount": "1900"
+              },
+              {
+                "unit_amount": "800"
+              }
+            ]
+          },
+          "minimum_units": 2,
+          "amount_type": "unit_based",
+          "unit_label": {
+            "en": {
+              "=1": "server",
+              "other": "servers"
+            }
+          }
+        },
+        {
+          "price_currency": "eur",
+          "tiers": {
+            "type": "volume",
+            "tiers": [
+              {
+                "bound": 10,
+                "unit_amount": "1400"
+              },
+              {
+                "unit_amount": "700"
+              }
+            ]
+          },
+          "minimum_units": 2,
+          "amount_type": "unit_based",
+          "unit_label": {
+            "en": {
+              "=1": "server",
+              "other": "servers"
+            }
+          }
+        }
+      ],
+      "benefits": []
+    },
+    {
+      "external_id": "usage",
+      "name": "Usage",
+      "recurring_interval": "month",
+      "recurring_interval_count": 1,
+      "prices": [
+        {
+          "price_currency": "usd",
+          "meter": "tool_call",
+          "cap_amount": 20000,
+          "amount_type": "metered_tiers",
+          "tiers": {
+            "type": "graduated",
+            "tiers": [
+              {
+                "bound": 1000,
+                "unit_amount": "0"
+              },
+              {
+                "bound": 10000,
+                "unit_amount": "0.2"
+              },
+              {
+                "unit_amount": "0.1"
+              }
+            ]
+          }
+        },
+        {
+          "price_currency": "eur",
+          "meter": "tool_call",
+          "cap_amount": 18000,
+          "amount_type": "metered_tiers",
+          "tiers": {
+            "type": "graduated",
+            "tiers": [
+              {
+                "bound": 1000,
+                "unit_amount": "0"
+              },
+              {
+                "bound": 10000,
+                "unit_amount": "0.18"
+              },
+              {
+                "unit_amount": "0.09"
+              }
+            ]
+          }
+        }
+      ],
+      "benefits": []
+    },
+    {
+      "external_id": "pro",
+      "name": "Pro",
+      "recurring_interval": "month",
+      "recurring_interval_count": 1,
+      "prices": [
+        {
+          "amount_type": "fixed",
+          "price_currency": "usd",
+          "price_amount": 9999
+        },
+        {
+          "amount_type": "fixed",
+          "price_currency": "eur",
+          "price_amount": 29999
+        },
+        {
+          "price_currency": "usd",
+          "meter": "tool_call",
+          "cap_amount": 10000,
+          "amount_type": "metered_unit",
+          "unit_amount": "0.1"
+        },
+        {
+          "price_currency": "eur",
+          "meter": "tool_call",
+          "cap_amount": 9000,
+          "amount_type": "metered_unit",
+          "unit_amount": "0.09"
+        }
+      ],
+      "benefits": ["custom_servers", "tool_calls"]
+    },
+    {
+      "external_id": "topup_100",
+      "name": "100 tool calls",
+      "recurring_interval": null,
+      "recurring_interval_count": null,
+      "prices": [
+        {
+          "tax_behavior": "inclusive",
+          "amount_type": "fixed",
+          "price_currency": "usd",
+          "price_amount": 900
+        },
+        {
+          "tax_behavior": "inclusive",
+          "amount_type": "fixed",
+          "price_currency": "eur",
+          "price_amount": 500
+        }
+      ],
+      "benefits": ["topup_100"]
+    },
+    {
+      "external_id": "topup_500",
+      "name": "500 tool calls",
+      "recurring_interval": null,
+      "recurring_interval_count": null,
+      "prices": [
+        {
+          "tax_behavior": "exclusive",
+          "amount_type": "fixed",
+          "price_currency": "usd",
+          "price_amount": 3900
+        },
+        {
+          "tax_behavior": "exclusive",
+          "amount_type": "fixed",
+          "price_currency": "eur",
+          "price_amount": 3000
+        }
+      ],
+      "benefits": ["topup_500"]
+    },
+    {
+      "external_id": "topup_1000",
+      "name": "1,000 tool calls",
+      "recurring_interval": null,
+      "recurring_interval_count": null,
+      "prices": [
+        {
+          "tax_behavior": "location",
+          "amount_type": "fixed",
+          "price_currency": "usd",
+          "price_amount": 7900
+        },
+        {
+          "tax_behavior": "location",
+          "amount_type": "fixed",
+          "price_currency": "eur",
+          "price_amount": 5000
+        }
+      ],
+      "benefits": ["topup_1000"]
+    }
+  ]
+}

@@ -1,13 +1,6 @@
-import type {
-  LanguageModelV2,
-  LanguageModelV2CallOptions,
-  LanguageModelV2StreamPart,
-} from '@ai-sdk/provider'
-import { type LanguageModelMiddleware, wrapLanguageModel } from 'ai'
 import * as Schema from 'effect/Schema'
 import { type IngestionContext, LLMUsage } from '../../ingestion'
 import {
-  type IngestionExecutionHandler,
   IngestionStrategy,
   type IngestionStrategyCustomer,
   type IngestionStrategyExternalCustomer,
@@ -36,112 +29,110 @@ export type CostResolver = (
   context: LLMStrategyContext,
 ) => models.CostMetadataInput
 
-export class LLMStrategy extends IngestionStrategy<
-  LLMStrategyContext,
-  LanguageModelV2
-> {
-  private model: LanguageModelV2
+const TokenBreakdown = Schema.Struct({
+  total: Schema.optional(Schema.Number),
+  cacheRead: Schema.optional(Schema.Number),
+})
 
-  constructor(model: LanguageModelV2) {
+// AI SDK 5 reports plain numbers, 6 and later a breakdown per direction
+type TokenCount = number | typeof TokenBreakdown.Type | undefined
+
+type Usage = {
+  inputTokens: TokenCount
+  outputTokens: TokenCount
+  totalTokens?: number | undefined
+  cachedInputTokens?: number | undefined
+}
+
+// The part of an AI SDK language model the strategy reads, in any spec version
+export type LLMStrategyModel = {
+  readonly provider: string
+  readonly modelId: string
+  doGenerate(options: never): PromiseLike<{ usage: Usage }>
+  doStream(options: never): PromiseLike<{
+    stream: ReadableStream<{ type: string; usage?: Usage }>
+  }>
+}
+
+const isBreakdown = Schema.is(TokenBreakdown)
+
+const total = (tokens: TokenCount) =>
+  (isBreakdown(tokens) ? tokens.total : tokens) ?? 0
+
+const cacheRead = (tokens: TokenCount) =>
+  isBreakdown(tokens) ? tokens.cacheRead : undefined
+
+export class LLMStrategy<
+  TModel extends LLMStrategyModel = LLMStrategyModel,
+> extends IngestionStrategy<LLMStrategyContext, TModel> {
+  private model: TModel
+
+  constructor(model: TModel) {
     super()
 
     this.model = model
   }
 
-  private middleware(
-    execute: IngestionExecutionHandler<LLMStrategyContext>,
-    customer: IngestionStrategyCustomer | IngestionStrategyExternalCustomer,
-  ): LanguageModelMiddleware {
-    const wrapGenerate = async (options: {
-      doGenerate: () => ReturnType<LanguageModelV2['doGenerate']>
-      params: LanguageModelV2CallOptions
-      model: LanguageModelV2
-    }): Promise<Awaited<ReturnType<LanguageModelV2['doGenerate']>>> => {
-      const result = await options.doGenerate()
+  private context(usage: Usage): LLMStrategyContext {
+    const inputTokens = total(usage.inputTokens)
+    const outputTokens = total(usage.outputTokens)
 
-      const llmEvent: LLMStrategyContext = {
-        vendor: this.model.provider,
-        model: this.model.modelId,
-        inputTokens: result.usage.inputTokens ?? 0,
-        cachedInputTokens: result.usage.cachedInputTokens ?? 0,
-        outputTokens: result.usage.outputTokens ?? 0,
-        totalTokens: result.usage.totalTokens ?? 0,
-        strategy: 'LLM',
-        _llm: {
-          vendor: this.model.provider,
-          model: this.model.modelId,
-          inputTokens: result.usage.inputTokens ?? 0,
-          cachedInputTokens: result.usage.cachedInputTokens ?? 0,
-          outputTokens: result.usage.outputTokens ?? 0,
-          totalTokens: result.usage.totalTokens ?? 0,
-        },
-      }
-
-      await execute(llmEvent, customer)
-
-      return result
+    const llm = {
+      vendor: this.model.provider,
+      model: this.model.modelId,
+      inputTokens,
+      cachedInputTokens:
+        usage.cachedInputTokens ?? cacheRead(usage.inputTokens) ?? 0,
+      outputTokens,
+      totalTokens: usage.totalTokens ?? inputTokens + outputTokens,
     }
 
-    const wrapStream = async ({
-      doStream,
-    }: {
-      doStream: () => ReturnType<LanguageModelV2['doStream']>
-      params: LanguageModelV2CallOptions
-      model: LanguageModelV2
-    }) => {
-      const { stream, ...rest } = await doStream()
-
-      const transformStream = new TransformStream<
-        LanguageModelV2StreamPart,
-        LanguageModelV2StreamPart
-      >({
-        transform: async (chunk, controller) => {
-          if (chunk.type === 'finish') {
-            const llmEvent: LLMStrategyContext = {
-              vendor: this.model.provider,
-              model: this.model.modelId,
-              inputTokens: chunk.usage.inputTokens ?? 0,
-              cachedInputTokens: chunk.usage.cachedInputTokens ?? 0,
-              outputTokens: chunk.usage.outputTokens ?? 0,
-              totalTokens: chunk.usage.totalTokens ?? 0,
-              strategy: 'LLM',
-              _llm: {
-                vendor: this.model.provider,
-                model: this.model.modelId,
-                inputTokens: chunk.usage.inputTokens ?? 0,
-                cachedInputTokens: chunk.usage.cachedInputTokens ?? 0,
-                outputTokens: chunk.usage.outputTokens ?? 0,
-                totalTokens: chunk.usage.totalTokens ?? 0,
-              },
-            }
-
-            await execute(llmEvent, customer)
-          }
-
-          controller.enqueue(chunk)
-        },
-      })
-
-      return {
-        stream: stream.pipeThrough(transformStream),
-        ...rest,
-      }
-    }
-
-    return {
-      wrapGenerate,
-      wrapStream,
-    }
+    return { ...llm, strategy: 'LLM', _llm: llm }
   }
 
   override client(
     customer: IngestionStrategyCustomer | IngestionStrategyExternalCustomer,
-  ): LanguageModelV2 {
-    const executionHandler = this.createExecutionHandler()
+  ): TModel {
+    const execute = this.createExecutionHandler()
+    const ingest = (usage: Usage) => execute(this.context(usage), customer)
 
-    return wrapLanguageModel({
-      model: this.model,
-      middleware: this.middleware(executionHandler, customer),
+    return new Proxy(this.model, {
+      get: (model, property) => {
+        if (property === 'doGenerate') {
+          return async (options: never) => {
+            const result = await model.doGenerate(options)
+            await ingest(result.usage)
+
+            return result
+          }
+        }
+
+        if (property === 'doStream') {
+          return async (options: never) => {
+            const { stream, ...rest } = await model.doStream(options)
+
+            return {
+              ...rest,
+              stream: stream.pipeThrough(
+                new TransformStream({
+                  transform: async (chunk, controller) => {
+                    if (chunk.type === 'finish' && chunk.usage) {
+                      await ingest(chunk.usage)
+                    }
+
+                    controller.enqueue(chunk)
+                  },
+                }),
+              ),
+            }
+          }
+        }
+
+        // Read with the model as receiver so getters and private fields work
+        const value = Reflect.get(model, property, model)
+
+        return typeof value === 'function' ? value.bind(model) : value
+      },
     })
   }
 }

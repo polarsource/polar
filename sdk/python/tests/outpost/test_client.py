@@ -931,6 +931,7 @@ async def test_pulls_a_snapshot_once_for_the_whole_fleet(
     url, redis = redis_connection
     key = "outpost:v1:org-1:state:external:alice:tokens"
     await redis.hset(key, mapping={"cold_until": BUCKET, "cold:sum": 10})
+    await _credit(redis, 100)
     async with (
         Outpost(url, client=polar_client) as first,
         Outpost(url, client=polar_client) as second,
@@ -3479,7 +3480,9 @@ async def test_missing_snapshot_times_out(
 
 @pytest.mark.anyio
 @pytest.mark.parametrize(
-    ("delay", "credited", "outcome"), [(0.05, 200, "ready"), (0.5, 0, "not_ready")]
+    ("delay", "credited", "outcome"),
+    # A balance without its credits would read as overdrawn: the read fails instead.
+    [(0.05, 200, "ready"), (0.5, None, "not_ready")],
 )
 async def test_cold_read_waits_for_its_own_meter(
     redis_connection: tuple[str, Redis],
@@ -3488,7 +3491,7 @@ async def test_cold_read_waits_for_its_own_meter(
     snapshots: dict[str, dict[str, typing.Any]],
     exported_metrics: list[MetricsData],
     delay: float,
-    credited: int,
+    credited: int | None,
     outcome: str,
 ) -> None:
     url, redis = redis_connection
@@ -3512,9 +3515,14 @@ async def test_cold_read_waits_for_its_own_meter(
         "delay": delay,
     }
     async with Outpost(url, client=polar_client) as outpost:
-        meter = await outpost.meter(meter_id="shared", external_customer_id="alice")
-    assert meter is not None
-    assert meter.credited_units == credited
+        read = outpost.meter(meter_id="shared", external_customer_id="alice")
+        if credited is None:
+            with pytest.raises(PolarOutpostError, match="snapshot is not ready"):
+                await read
+        else:
+            meter = await read
+            assert meter is not None
+            assert meter.credited_units == credited
     assert read_outcomes(exported_metrics) == [("meter", outcome)]
 
 

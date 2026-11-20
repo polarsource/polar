@@ -1252,18 +1252,16 @@ class Outpost:
             if state is None or (credit is not None and credit_state is None):
                 read.outcome = "unknown_customer"
                 return None
-            if state.cold_until is None:
+            # A balance without its credits would read as overdrawn.
+            if state.cold_until is None or (
+                credit_state is not None and credit_state.cold_until is None
+            ):
                 raise _NotReadyError("Customer snapshot is not ready")
+            read.outcome = "ready"
             consumed = consumed_units(state, usage["aggregation"]["func"])
             credited: int | float = 0
-            read.outcome = "ready"
-            if credit is not None:
-                if credit_state is not None and credit_state.cold_until is not None:
-                    credited = consumed_units(
-                        credit_state, credit["aggregation"]["func"]
-                    )
-                else:
-                    read.outcome = "not_ready"
+            if credit is not None and credit_state is not None:
+                credited = consumed_units(credit_state, credit["aggregation"]["func"])
             return CustomerMeter(
                 meter_id=meter_id,
                 customer_id=customer_id,

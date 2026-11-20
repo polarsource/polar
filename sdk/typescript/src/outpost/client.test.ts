@@ -2122,7 +2122,8 @@ it("reports a read whose snapshot never arrives as not ready", async () => {
 
 it.each([
   [50, 100, "ready"],
-  [500, 0, "not_ready"],
+  // A balance without its credits would read as overdrawn: the read fails instead.
+  [500, null, "not_ready"],
 ])(
   "waits for the credit snapshot of the meter it reads (delay %i ms)",
   async (delay, credits, outcome) => {
@@ -2130,7 +2131,9 @@ it.each([
     snapshot = aliceSnapshot;
     reducerSnapshots = { credits: { delay } };
     const outpost = await start();
-    expect((await outpost.meter(meter))?.credited_units).toBe(credits);
+    const read = outpost.meter(meter);
+    if (credits === null) await expect(read).rejects.toThrow("snapshot is not ready");
+    else expect((await read)?.credited_units).toBe(credits);
     expect(await readOutcomes(outpost)).toEqual([["meter", outcome]]);
   },
 );

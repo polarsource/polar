@@ -1,5 +1,6 @@
 'use client'
 
+import { CANCELLATION_REASONS } from '@/components/Metrics/cancellations/constants'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { useModal } from '@/components/Modal/useModal'
 import ExportSubscriptionsModal from '@/components/Subscriptions/ExportSubscriptionsModal'
@@ -16,13 +17,11 @@ import {
 } from '@/components/Subscriptions/Gantt/scale'
 import { SubscriptionsTable } from '@/components/Subscriptions/SubscriptionsTable'
 import { SubscriptionDetailPanel } from '@/components/Subscriptions/SubscriptionDetailPanel'
-import {
-  DEFAULT_SUBSCRIPTION_STATUS,
-  subscriptionStatusFilterValues,
-} from '@/components/Subscriptions/SubscriptionStatusSelect'
+import { SELECTABLE_STATUSES } from '@/components/Subscriptions/SubscriptionStatusSelect'
 import { type ProductFilter } from '@/components/Subscriptions/SubscriptionsProductSelect'
 import { useInfiniteSubscriptions } from '@/hooks/queries'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
+import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { useDebouncedCallback } from '@/hooks/utils'
 import { sortingStateToQueryParam } from '@/utils/datatable'
 import { schemas } from '@polar-sh/client'
@@ -40,6 +39,7 @@ import React, { useCallback, useRef, useState } from 'react'
 import {
   SubscriptionsToolbar,
   subscriptionViewValues,
+  type SubscriptionView,
 } from './SubscriptionsToolbar'
 
 // The timeline is laid out from the current time and the local timezone, so
@@ -66,16 +66,21 @@ const PAGE_SIZE = 50
 const ZOOM_COMMIT_DELAY = 150
 const DEFAULT_SORTING = [{ id: 'started_at', desc: true }]
 
+const isSubscriptionView = (value: unknown): value is SubscriptionView =>
+  subscriptionViewValues.includes(value as SubscriptionView)
+
 const filterParsers = {
   product_id: parseAsArrayOf(parseAsString),
   external_product_id: parseAsArrayOf(parseAsString),
-  status: parseAsStringLiteral(subscriptionStatusFilterValues).withDefault(
-    DEFAULT_SUBSCRIPTION_STATUS,
+  status: parseAsArrayOf(parseAsStringLiteral(SELECTABLE_STATUSES)),
+  discount_id: parseAsArrayOf(parseAsString),
+  customer_cancellation_reason: parseAsArrayOf(
+    parseAsStringLiteral(CANCELLATION_REASONS),
   ),
   cancel_at_period_end: parseAsBoolean,
   zoom: parseAsFloat.withDefault(DEFAULT_PIXELS_PER_DAY),
   subscription: parseAsString,
-  view: parseAsStringLiteral(subscriptionViewValues).withDefault('timeline'),
+  view: parseAsStringLiteral(subscriptionViewValues),
   group:
     parseAsStringLiteral(ganttGroupValues).withDefault(DEFAULT_GANTT_GROUP),
 }
@@ -96,13 +101,28 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       external_product_id: externalProductId,
       status,
       cancel_at_period_end: cancelAtPeriodEnd,
+      discount_id: discountId,
+      customer_cancellation_reason: cancellationReason,
       zoom,
       subscription: selectedId,
-      view,
+      view: linkedView,
       group,
     },
     setFilters,
   ] = useQueryStates(filterParsers)
+
+  // The view is remembered per organization. A link can still name one, which
+  // wins until the view is switched by hand.
+  const [storedView, setStoredView] = useLocalStorage<SubscriptionView>(
+    `subscriptions_view:${organization.id}`,
+    'timeline',
+    { validate: isSubscriptionView },
+  )
+  const view = linkedView ?? storedView
+  const selectView = (value: SubscriptionView) => {
+    setStoredView(value)
+    setFilters({ view: null })
+  }
 
   const {
     isShown: isExportModalShown,
@@ -123,8 +143,10 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const hasActiveFilters =
     productId !== null ||
     externalProductId !== null ||
-    status !== DEFAULT_SUBSCRIPTION_STATUS ||
+    status !== null ||
     cancelAtPeriodEnd !== null ||
+    discountId !== null ||
+    cancellationReason !== null ||
     sort?.id !== DEFAULT_SORTING[0].id ||
     sort.desc !== DEFAULT_SORTING[0].desc
 
@@ -134,6 +156,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       external_product_id: null,
       status: null,
       cancel_at_period_end: null,
+      discount_id: null,
+      customer_cancellation_reason: null,
     })
     setSorting(DEFAULT_SORTING)
   }
@@ -141,8 +165,10 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const listFilters = {
     product_id: productId ?? undefined,
     external_product_id: externalProductId ?? undefined,
-    status: status === 'any' ? undefined : [status],
+    status: status ?? undefined,
     cancel_at_period_end: cancelAtPeriodEnd ?? undefined,
+    discount_id: discountId ?? undefined,
+    customer_cancellation_reason: cancellationReason ?? undefined,
   }
   const { data, hasNextPage, isFetchingNextPage, fetchNextPage } =
     useInfiniteSubscriptions(organization.id, {
@@ -226,6 +252,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     >
       <SubscriptionsToolbar
         organization={organization}
+        totalCount={data?.pages[0]?.pagination.total_count}
         product={product}
         onProductSelect={onProductSelect}
         status={status}
@@ -233,10 +260,16 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         onStatusSelect={(value, cancel) =>
           setFilters({ status: value, cancel_at_period_end: cancel })
         }
+        discountId={discountId}
+        onDiscountSelect={(value) => setFilters({ discount_id: value })}
+        cancellationReason={cancellationReason}
+        onCancellationReasonSelect={(value) =>
+          setFilters({ customer_cancellation_reason: value })
+        }
         sorting={sorting}
         onSortingChange={setSorting}
         view={view}
-        onViewChange={(value) => setFilters({ view: value })}
+        onViewChange={selectView}
         group={group}
         onGroupChange={(value) => setFilters({ group: value })}
         hasActiveFilters={hasActiveFilters}

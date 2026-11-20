@@ -417,4 +417,10 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({
   )
 }
 
+export {
+  clearFilter,
+  isActive as isFilterActive,
+  isDefaulted as isFilterDefaulted,
+}
+
 export default FilterPopover

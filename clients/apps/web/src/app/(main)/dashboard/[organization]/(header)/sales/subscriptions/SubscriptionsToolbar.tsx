@@ -1,18 +1,22 @@
 'use client'
 
-import FilterPopover, { type Filter } from '@/components/Shared/FilterPopover'
+import {
+  CANCELLATION_REASONS,
+  REASON_LABELS,
+  type CancellationReason,
+} from '@/components/Metrics/cancellations/constants'
+import { type Filter } from '@/components/Shared/FilterPopover'
 import {
   DEFAULT_GANTT_GROUP,
   type GanttGroup,
 } from '@/components/Subscriptions/Gantt/scale'
-import { type SubscriptionStatusFilter } from '@/components/Subscriptions/SubscriptionStatusSelect'
+import { type SelectableSubscriptionStatus } from '@/components/Subscriptions/SubscriptionStatusSelect'
 import { type ProductFilter } from '@/components/Subscriptions/SubscriptionsProductSelect'
 import {
   latestVersions,
-  subscriptionCountKeys,
+  useDiscounts,
   useProducts,
   useSelectedProducts,
-  type SubscriptionCountKey,
 } from '@/hooks/queries'
 import { DataTableSortingState } from '@/utils/datatable'
 import { schemas } from '@polar-sh/client'
@@ -27,30 +31,43 @@ import {
 import { Box } from '@polar-sh/orbit/Box'
 import {
   ChartNoAxesGantt,
+  ChevronsUpDown,
+  CircleDashed,
   FileDownloadOutlined,
   FunnelX,
+  MessageCircle,
+  Package,
   Rows3,
+  TicketPercent,
 } from '@polar-sh/orbit/icons'
 import { ReactNode } from 'react'
-import { twMerge } from 'tailwind-merge'
-import { ToolbarMultiSelect } from './ToolbarMultiSelect'
-import { ToolbarSelect } from './ToolbarSelect'
+import { ToolbarFilterChips } from './ToolbarFilterChips'
+import { ToolbarFilterMenu } from './ToolbarFilterMenu'
+import { ToolbarMultiTabs } from './ToolbarMultiTabs'
 
 // The toolbar never wraps. Below this width of its own container, the status
-// tabs and the dropdowns collapse into a single filter popover.
-const WIDE_ONLY_CLASS = 'hidden @[1460px]:flex'
-const NARROW_ONLY_CLASS = 'flex @[1460px]:hidden'
+// tabs move into the filter menu.
+const WIDE_ONLY_CLASS = 'hidden @[1040px]:flex'
+const NARROW_ONLY_CLASS = 'flex @[1040px]:hidden'
 
-const STATUS_LABELS: Record<SubscriptionCountKey, string> = {
-  any: 'All',
-  active: 'Active',
-  trialing: 'Trialing',
-  past_due: 'Past due',
-  canceling: 'Canceling',
-  paused: 'Paused',
-  canceled: 'Canceled',
-  unpaid: 'Unpaid',
-}
+type StatusOption = SelectableSubscriptionStatus | 'canceling'
+
+const STATUS_OPTIONS: { value: StatusOption; label: string }[] = [
+  { value: 'active', label: 'Active' },
+  { value: 'trialing', label: 'Trialing' },
+  { value: 'past_due', label: 'Past due' },
+  { value: 'canceling', label: 'Canceling' },
+  { value: 'paused', label: 'Paused' },
+  { value: 'canceled', label: 'Canceled' },
+  { value: 'unpaid', label: 'Unpaid' },
+]
+
+const REASON_OPTIONS = CANCELLATION_REASONS.map((reason) => ({
+  value: reason,
+  label: REASON_LABELS[reason],
+}))
+
+const COUNT_FORMAT = new Intl.NumberFormat('en-US')
 
 const GROUP_OPTIONS: { value: GanttGroup; label: string }[] = [
   { value: 'customer', label: 'By customer' },
@@ -60,7 +77,7 @@ const GROUP_OPTIONS: { value: GanttGroup; label: string }[] = [
 ]
 
 export const subscriptionViewValues = ['timeline', 'table'] as const
-type SubscriptionView = (typeof subscriptionViewValues)[number]
+export type SubscriptionView = (typeof subscriptionViewValues)[number]
 
 const VIEW_OPTIONS: { value: SubscriptionView; label: ReactNode }[] = [
   {
@@ -106,14 +123,20 @@ const IconAction = ({
 
 interface SubscriptionsToolbarProps {
   organization: schemas['Organization']
+  // How many subscriptions match the filters, as the list reports it.
+  totalCount?: number
   product: ProductFilter
   onProductSelect: (product: ProductFilter) => void
-  status: SubscriptionStatusFilter
+  status: SelectableSubscriptionStatus[] | null
   cancelAtPeriodEnd: boolean | null
   onStatusSelect: (
-    status: SubscriptionStatusFilter,
+    status: SelectableSubscriptionStatus[] | null,
     cancelAtPeriodEnd: boolean | null,
   ) => void
+  discountId: string[] | null
+  onDiscountSelect: (value: string[] | null) => void
+  cancellationReason: CancellationReason[] | null
+  onCancellationReasonSelect: (value: CancellationReason[] | null) => void
   sorting: DataTableSortingState
   onSortingChange: (sorting: DataTableSortingState) => void
   view: SubscriptionView
@@ -127,11 +150,16 @@ interface SubscriptionsToolbarProps {
 
 export const SubscriptionsToolbar = ({
   organization,
+  totalCount,
   product,
   onProductSelect,
   status,
   cancelAtPeriodEnd,
   onStatusSelect,
+  discountId,
+  onDiscountSelect,
+  cancellationReason,
+  onCancellationReasonSelect,
   sorting,
   onSortingChange,
   view,
@@ -156,6 +184,7 @@ export const SubscriptionsToolbar = ({
     limit: 100,
   })
   const selectedValues = productFilter ?? []
+  const { data: discounts } = useDiscounts(organization.id, { limit: 100 })
   const { data: selectedProducts } = useSelectedProducts(
     filterByExternalId
       ? { organization_id: organization.id, external_id: selectedValues }
@@ -183,8 +212,9 @@ export const SubscriptionsToolbar = ({
       : []
   })
 
-  const statusValue: SubscriptionCountKey =
-    status === 'active' && cancelAtPeriodEnd ? 'canceling' : status
+  const statusValue: StatusOption[] = cancelAtPeriodEnd
+    ? ['canceling']
+    : (status ?? [])
   const [sort] = sorting
   // The table always lists subscriptions, so grouping only applies to the timeline.
   const isGroupable = view === 'timeline'
@@ -198,45 +228,76 @@ export const SubscriptionsToolbar = ({
         : { product_id: selected, external_product_id: null },
     )
   }
-  const selectStatus = (key: SubscriptionCountKey) =>
-    key === 'canceling'
-      ? onStatusSelect('active', true)
-      : onStatusSelect(key, null)
+  // Canceling is active subscriptions set to end, which the list cannot
+  // combine with other statuses, so picking it replaces the selection.
+  const selectStatus = (value: StatusOption[]) => {
+    if (value.includes('canceling') && !cancelAtPeriodEnd) {
+      onStatusSelect(['active'], true)
+      return
+    }
+    const statuses = value.filter(
+      (option): option is SelectableSubscriptionStatus =>
+        option !== 'canceling',
+    )
+    onStatusSelect(statuses.length > 0 ? statuses : null, null)
+  }
   const sortValue = sort ? `${sort.desc ? '-' : ''}${sort.id}` : ''
   const selectSort = (value: string) =>
     onSortingChange([
       { id: value.replace(/^-/, ''), desc: value.startsWith('-') },
     ])
 
-  // One popover holds every filter when the toolbar is too narrow for them.
-  const condensedFilters: Filter[] = [
-    {
-      key: 'status',
-      label: 'Status',
-      type: 'single',
-      options: subscriptionCountKeys
-        .filter((key) => key !== 'any')
-        .map((key) => ({
-          value: key,
-          label: STATUS_LABELS[key],
-        })),
-      value: statusValue === 'any' ? null : statusValue,
-      onChange: (value) =>
-        selectStatus((value ?? 'any') as SubscriptionCountKey),
-    },
+  const statusFilter: Filter = {
+    key: 'status',
+    label: 'Status',
+    icon: <CircleDashed className="size-4" />,
+    type: 'multi',
+    options: STATUS_OPTIONS,
+    value: statusValue,
+    onChange: (value) => selectStatus(value as StatusOption[]),
+  }
+  // Everything set from the filter menu. Each one away from its default also
+  // shows as a chip under the toolbar.
+  const filters: Filter[] = [
     {
       key: 'product',
       label: 'Product',
+      icon: <Package className="size-4" />,
       type: 'multi',
       options: productOptions,
       value: selectedValues,
       onChange: selectProducts,
+    },
+    {
+      key: 'discount',
+      label: 'Discount',
+      icon: <TicketPercent className="size-4" />,
+      type: 'multi',
+      options: (discounts?.items ?? []).map(({ id, name }) => ({
+        value: id,
+        label: name,
+      })),
+      value: discountId ?? [],
+      onChange: (value) => onDiscountSelect(value.length > 0 ? value : null),
+    },
+    {
+      key: 'cancellation_reason',
+      label: 'Cancellation reason',
+      icon: <MessageCircle className="size-4" />,
+      type: 'multi',
+      options: REASON_OPTIONS,
+      value: cancellationReason ?? [],
+      onChange: (value) =>
+        onCancellationReasonSelect(
+          value.length > 0 ? (value as CancellationReason[]) : null,
+        ),
     },
     ...(isGroupable
       ? [
           {
             key: 'group',
             label: 'Group',
+            icon: <Rows3 className="size-4" />,
             type: 'single' as const,
             options: GROUP_OPTIONS,
             value: group,
@@ -251,6 +312,7 @@ export const SubscriptionsToolbar = ({
           {
             key: 'sort',
             label: 'Sort',
+            icon: <ChevronsUpDown className="size-4" />,
             type: 'single' as const,
             options: SORT_OPTIONS,
             value: sortValue,
@@ -274,53 +336,34 @@ export const SubscriptionsToolbar = ({
         borderStyle="solid"
         borderColor="border-primary"
       >
-        <Box alignItems="center" columnGap="xl" minWidth={0}>
-          <Text as="h1" variant="body" wrap="nowrap">
-            Subscriptions
-          </Text>
+        <Box alignItems="center" columnGap="l" minWidth={0}>
+          <Box alignItems="baseline" gap="m">
+            <Text as="h1" variant="body" wrap="nowrap">
+              Subscriptions
+            </Text>
+            {totalCount !== undefined && (
+              <Text variant="body" color="muted" tabularNums>
+                {COUNT_FORMAT.format(totalCount)}
+              </Text>
+            )}
+          </Box>
           <div className={WIDE_ONLY_CLASS}>
-            <SegmentedControl
-              size="sm"
-              options={subscriptionCountKeys.map((key) => ({
-                value: key,
-                label: STATUS_LABELS[key],
-              }))}
+            <ToolbarMultiTabs
+              label="Status"
+              allLabel="All"
               value={statusValue}
+              options={STATUS_OPTIONS}
               onChange={selectStatus}
             />
           </div>
+          <ToolbarFilterChips filters={filters} />
         </Box>
         <Box alignItems="center" gap="s" flexShrink={0} minHeight={32}>
-          <div className={twMerge(WIDE_ONLY_CLASS, 'items-center gap-2')}>
-            <ToolbarMultiSelect
-              label="Product"
-              emptyLabel="All products"
-              manyLabel="products"
-              value={selectedValues}
-              options={productOptions}
-              onChange={selectProducts}
-            />
-            {isGroupable && (
-              <ToolbarSelect
-                label="Group"
-                showLabel={false}
-                value={group}
-                options={GROUP_OPTIONS}
-                onChange={onGroupChange}
-              />
-            )}
-            {isSortable && (
-              <ToolbarSelect
-                label="Sort"
-                showLabel={false}
-                value={sortValue}
-                options={SORT_OPTIONS}
-                onChange={selectSort}
-              />
-            )}
+          <div className={WIDE_ONLY_CLASS}>
+            <ToolbarFilterMenu filters={filters} />
           </div>
           <div className={NARROW_ONLY_CLASS}>
-            <FilterPopover filters={condensedFilters} variant="icon" />
+            <ToolbarFilterMenu filters={[statusFilter, ...filters]} />
           </div>
           <SegmentedControl
             size="sm"

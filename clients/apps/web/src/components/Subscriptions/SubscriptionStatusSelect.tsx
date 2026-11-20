@@ -11,7 +11,7 @@ import {
 import React from 'react'
 import { subscriptionStatusDisplayNames } from './utils'
 
-const SELECTABLE_STATUSES = [
+export const SELECTABLE_STATUSES = [
   'active',
   'trialing',
   'paused',
@@ -24,6 +24,8 @@ export const subscriptionStatusFilterValues = [
   'any',
   ...SELECTABLE_STATUSES,
 ] as const
+
+export type SelectableSubscriptionStatus = (typeof SELECTABLE_STATUSES)[number]
 
 export type SubscriptionStatusFilter =
   (typeof subscriptionStatusFilterValues)[number]

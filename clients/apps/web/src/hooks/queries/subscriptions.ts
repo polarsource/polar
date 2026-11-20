@@ -70,19 +70,6 @@ export const useInfiniteSubscriptions = (
     retry: defaultRetry,
   })
 
-export const subscriptionCountKeys = [
-  'any',
-  'active',
-  'trialing',
-  'past_due',
-  'canceling',
-  'paused',
-  'canceled',
-  'unpaid',
-] as const
-
-export type SubscriptionCountKey = (typeof subscriptionCountKeys)[number]
-
 const ALL_PAGE_SIZE = 100
 const ALL_MAX_PAGES = 20
 

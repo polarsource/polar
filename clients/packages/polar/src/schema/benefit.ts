@@ -44,8 +44,8 @@ export const BenefitConfig = Schema.Union([
         Schema.isMaxLength(80),
       ),
       private: Schema.Boolean,
-      welcome_message: Schema.NullOr(
-        Schema.String.check(Schema.isMaxLength(4000)),
+      welcome_message: Schema.optionalKey(
+        Schema.NullOr(Schema.String.check(Schema.isMaxLength(4000))),
       ),
       archive_on_revoke: Schema.Boolean,
       team_invitees: Schema.Array(Schema.String),

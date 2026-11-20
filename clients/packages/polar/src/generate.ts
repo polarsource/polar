@@ -128,9 +128,9 @@ const renderBenefit = (
       `.integration(${literal(properties.slack_integration_id)})`,
       `.channel(${literal(properties.channel_name_template)})`,
       ...(properties.private ? [] : ['.publicChannel()']),
-      ...(properties.welcome_message === null
-        ? []
-        : [`.welcome(${literal(properties.welcome_message)})`]),
+      ...(properties.welcome_message
+        ? [`.welcome(${literal(properties.welcome_message)})`]
+        : []),
       ...(properties.archive_on_revoke ? [] : ['.keepOnRevoke()']),
       ...(properties.team_invitees.length === 0
         ? []

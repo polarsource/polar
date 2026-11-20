@@ -110,8 +110,9 @@ class TestChanges:
 
         assert changes["changes"] == []
         assert changes["has_more"] is False
-        assert changes["reset"] is False
-        assert changes["configuration_changed"] is False
+        # The changes before the first cursor are not served: the client starts over.
+        assert changes["reset"] is True
+        assert changes["configuration_changed"] is True
         assert changes["next_poll_in"] == 30
         assert (await _get_changes(client, changes["cursor"]))["changes"] == []
 
@@ -536,7 +537,21 @@ class TestChanges:
         changes = await _get_changes(client, "1-0")
 
         assert changes["reset"] is True
-        assert changes["configuration_changed"] is False
+        # The new cursor is past the configuration change: the reset reports it.
+        assert changes["configuration_changed"] is True
+        assert (await _get_changes(client, changes["cursor"]))["reset"] is False
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_reset_when_the_cursor_is_ahead_of_the_clock(
+        self, client: httpx2.AsyncClient, redis: Redis, organization: Organization
+    ) -> None:
+        seconds, _ = await redis.time()
+        await _append_change(redis, organization, {"type": "configuration"})
+
+        changes = await _get_changes(client, f"{(seconds + 60) * 1000}-0")
+
+        assert changes["reset"] is True
+        assert changes["configuration_changed"] is True
         assert (await _get_changes(client, changes["cursor"]))["reset"] is False
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))

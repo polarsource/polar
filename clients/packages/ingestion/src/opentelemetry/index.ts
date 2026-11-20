@@ -1,13 +1,14 @@
 import type { SpanExporter, ReadableSpan } from '@opentelemetry/sdk-trace-base'
 import { ExportResultCode, type ExportResult } from '@opentelemetry/core'
-import { Polar, type SDKOptions } from '@polar-sh/sdk'
-import type { EventCreateCustomer } from '@polar-sh/sdk/models/components/eventcreatecustomer.js'
-import type { EventCreateExternalCustomer } from '@polar-sh/sdk/models/components/eventcreateexternalcustomer.js'
-import type { EventMetadataInput } from '@polar-sh/sdk/models/components/eventmetadatainput.js'
+import {
+  createTokenClient,
+  type IngestionEvent,
+  type IngestionTokenConfig,
+} from '../ingestion'
 
 const convertAttributesToMetadata = (
   attributes: ReadableSpan['attributes'],
-): Record<string, EventMetadataInput> => {
+): Record<string, string | number | boolean> => {
   return Object.entries(attributes).reduce(
     (acc, [key, value]) => {
       if (typeof value === 'string') {
@@ -22,36 +23,34 @@ const convertAttributesToMetadata = (
 
       return acc
     },
-    {} as Record<string, EventMetadataInput>,
+    {} as Record<string, string | number | boolean>,
   )
 }
 
 const customerIdKey = 'customerId' as const
 const externalCustomerIdKey = 'externalCustomerId' as const
 
-const convertSpanToPolarEvent = (
-  span: ReadableSpan,
-): (EventCreateCustomer | EventCreateExternalCustomer) | null => {
+const convertSpanToPolarEvent = (span: ReadableSpan): IngestionEvent | null => {
   const customerId = span.attributes[customerIdKey]
   const externalCustomerId = span.attributes[externalCustomerIdKey]
 
   if (customerId && typeof customerId === 'string') {
     return {
       name: span.name,
-      customerId,
+      customer_id: customerId,
       metadata: convertAttributesToMetadata(span.attributes),
-      parentId: span.parentSpanContext?.spanId,
-      externalId: span.spanContext().spanId,
+      parent_id: span.parentSpanContext?.spanId,
+      external_id: span.spanContext().spanId,
     }
   }
 
   if (externalCustomerId && typeof externalCustomerId === 'string') {
     return {
       name: span.name,
-      externalCustomerId,
+      external_customer_id: externalCustomerId,
       metadata: convertAttributesToMetadata(span.attributes),
-      parentId: span.parentSpanContext?.spanId,
-      externalId: span.spanContext().spanId,
+      parent_id: span.parentSpanContext?.spanId,
+      external_id: span.spanContext().spanId,
     }
   }
 
@@ -59,7 +58,7 @@ const convertSpanToPolarEvent = (
 }
 
 export class PolarTraceExporter implements SpanExporter {
-  constructor(private options: SDKOptions) {}
+  constructor(private options: IngestionTokenConfig) {}
 
   async export(
     spans: ReadableSpan[],
@@ -76,7 +75,7 @@ export class PolarTraceExporter implements SpanExporter {
         .map(convertSpanToPolarEvent)
         .filter((event) => event !== null)
 
-      const polar = new Polar(this.options)
+      const polar = createTokenClient(this.options)
 
       await polar.events.ingest({
         events: payload,

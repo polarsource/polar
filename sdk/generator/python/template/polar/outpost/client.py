@@ -205,6 +205,16 @@ class RedisReconnectBackoff(EqualJitterBackoff):
         return super().compute(min(failures, 16))
 
 
+def _retry_after(response: httpx2.Response | None) -> float | None:
+    """How long Polar asks to wait, which only a rate limit says."""
+    if response is None or response.status_code != 429:
+        return None
+    retry_after = response.headers.get("Retry-After")
+    if not retry_after or not retry_after.isdecimal():
+        return None
+    return retry_after_seconds(int(retry_after))
+
+
 async def _call_script(
     redis: Redis, sha: str, script: str, keys: int, *arguments: typing.Any
 ) -> typing.Any:
@@ -1465,14 +1475,7 @@ class Outpost:
                 refused += events
                 events = []
                 break
-            retry_after = response.headers.get("Retry-After")
-            await self._back_off_outbox(
-                retry_after_seconds(int(retry_after))
-                if response.status_code == 429
-                and retry_after
-                and retry_after.isdecimal()
-                else None
-            )
+            await self._back_off_outbox(_retry_after(response))
             return False
         assert self._confirm_script is not None
         # Polar will never count a refused event: it settles everywhere, hot bucket or
@@ -1580,16 +1583,7 @@ class Outpost:
                             response.is_client_error and response.status_code != 429
                         ):
                             raise
-                        retry_after = (
-                            response.headers.get("retry-after")
-                            if response is not None
-                            else None
-                        )
-                        wait = (
-                            float(retry_after)
-                            if retry_after and retry_after.isdecimal()
-                            else delay
-                        )
+                        wait = _retry_after(response) or delay
                         if anyio.current_time() + wait >= deadline:
                             raise
                         await anyio.sleep(wait)

@@ -20,35 +20,22 @@ import {
 } from '@/hooks/queries'
 import { DataTableSortingState } from '@/utils/datatable'
 import { schemas } from '@polar-sh/client'
-import {
-  Button,
-  SegmentedControl,
-  Text,
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@polar-sh/orbit'
+import { SegmentedControl, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import {
   ChartNoAxesGantt,
   ChevronsUpDown,
   CircleDashed,
-  FileDownloadOutlined,
-  FunnelX,
   MessageCircle,
   Package,
   Rows3,
   TicketPercent,
 } from '@polar-sh/orbit/icons'
 import { ReactNode } from 'react'
+import { ToolbarActionsMenu, type ToolbarAction } from './ToolbarActionsMenu'
 import { ToolbarFilterChips } from './ToolbarFilterChips'
 import { ToolbarFilterMenu } from './ToolbarFilterMenu'
-import { ToolbarMultiTabs } from './ToolbarMultiTabs'
-
-// The toolbar never wraps. Below this width of its own container, the status
-// tabs move into the filter menu.
-const WIDE_ONLY_CLASS = 'hidden @[1040px]:flex'
-const NARROW_ONLY_CLASS = 'flex @[1040px]:hidden'
+import { useCustomerFilter } from './useCustomerFilter'
 
 type StatusOption = SelectableSubscriptionStatus | 'canceling'
 
@@ -96,31 +83,6 @@ const SORT_OPTIONS = [
   { value: '-amount', label: 'Highest amount' },
 ]
 
-const IconAction = ({
-  label,
-  onClick,
-  children,
-}: {
-  label: string
-  onClick: () => void
-  children: ReactNode
-}) => (
-  <Tooltip>
-    <TooltipTrigger asChild>
-      <Button
-        size="icon"
-        variant="ghost"
-        className="h-7 w-7 [&_svg]:size-4!"
-        onClick={onClick}
-        aria-label={label}
-      >
-        {children}
-      </Button>
-    </TooltipTrigger>
-    <TooltipContent>{label}</TooltipContent>
-  </Tooltip>
-)
-
 interface SubscriptionsToolbarProps {
   organization: schemas['Organization']
   // How many subscriptions match the filters, as the list reports it.
@@ -133,6 +95,8 @@ interface SubscriptionsToolbarProps {
     status: SelectableSubscriptionStatus[] | null,
     cancelAtPeriodEnd: boolean | null,
   ) => void
+  customerId: string[] | null
+  onCustomerSelect: (value: string[] | null) => void
   discountId: string[] | null
   onDiscountSelect: (value: string[] | null) => void
   cancellationReason: CancellationReason[] | null
@@ -145,7 +109,8 @@ interface SubscriptionsToolbarProps {
   onGroupChange: (group: GanttGroup) => void
   hasActiveFilters: boolean
   onReset: () => void
-  onExport: () => void
+  // Shown in the more menu, one list per group.
+  actions: ToolbarAction[][]
 }
 
 export const SubscriptionsToolbar = ({
@@ -156,6 +121,8 @@ export const SubscriptionsToolbar = ({
   status,
   cancelAtPeriodEnd,
   onStatusSelect,
+  customerId,
+  onCustomerSelect,
   discountId,
   onDiscountSelect,
   cancellationReason,
@@ -168,7 +135,7 @@ export const SubscriptionsToolbar = ({
   onGroupChange,
   hasActiveFilters,
   onReset,
-  onExport,
+  actions,
 }: SubscriptionsToolbarProps) => {
   // A product_id link keeps filtering by ID until the selection is cleared
   const filterByExternalId =
@@ -247,6 +214,11 @@ export const SubscriptionsToolbar = ({
       { id: value.replace(/^-/, ''), desc: value.startsWith('-') },
     ])
 
+  const customerFilter = useCustomerFilter(
+    organization.id,
+    customerId,
+    onCustomerSelect,
+  )
   const statusFilter: Filter = {
     key: 'status',
     label: 'Status',
@@ -259,15 +231,18 @@ export const SubscriptionsToolbar = ({
   // Everything set from the filter menu. Each one away from its default also
   // shows as a chip under the toolbar.
   const filters: Filter[] = [
+    statusFilter,
     {
       key: 'product',
       label: 'Product',
+      searchPlaceholder: 'Filter...',
       icon: <Package className="size-4" />,
       type: 'multi',
       options: productOptions,
       value: selectedValues,
       onChange: selectProducts,
     },
+    customerFilter,
     {
       key: 'discount',
       label: 'Discount',
@@ -347,40 +322,20 @@ export const SubscriptionsToolbar = ({
               </Text>
             )}
           </Box>
-          <div className={WIDE_ONLY_CLASS}>
-            <ToolbarMultiTabs
-              label="Status"
-              allLabel="All"
-              value={statusValue}
-              options={STATUS_OPTIONS}
-              onChange={selectStatus}
-            />
-          </div>
           <ToolbarFilterChips filters={filters} />
         </Box>
         <Box alignItems="center" gap="s" flexShrink={0} minHeight={32}>
-          <div className={WIDE_ONLY_CLASS}>
-            <ToolbarFilterMenu filters={filters} />
-          </div>
-          <div className={NARROW_ONLY_CLASS}>
-            <ToolbarFilterMenu filters={[statusFilter, ...filters]} />
-          </div>
           <SegmentedControl
             size="sm"
             options={VIEW_OPTIONS}
             value={view}
             onChange={onViewChange}
           />
-          <Box alignItems="center" gap="s">
-            {hasActiveFilters && (
-              <IconAction label="Reset filters" onClick={onReset}>
-                <FunnelX />
-              </IconAction>
-            )}
-            <IconAction label="Export" onClick={onExport}>
-              <FileDownloadOutlined fontSize="inherit" />
-            </IconAction>
-          </Box>
+          <ToolbarFilterMenu
+            filters={filters}
+            onReset={hasActiveFilters ? onReset : undefined}
+          />
+          <ToolbarActionsMenu groups={actions} />
         </Box>
       </Box>
     </div>

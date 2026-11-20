@@ -1,6 +1,7 @@
 'use client'
 
 import { CANCELLATION_REASONS } from '@/components/Metrics/cancellations/constants'
+import { toast } from '@/components/Toast/use-toast'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { useModal } from '@/components/Modal/useModal'
 import ExportSubscriptionsModal from '@/components/Subscriptions/ExportSubscriptionsModal'
@@ -21,11 +22,13 @@ import { SELECTABLE_STATUSES } from '@/components/Subscriptions/SubscriptionStat
 import { type ProductFilter } from '@/components/Subscriptions/SubscriptionsProductSelect'
 import { useInfiniteSubscriptions } from '@/hooks/queries'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
+import { useSafeCopy } from '@/hooks/clipboard'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { useDebouncedCallback } from '@/hooks/utils'
 import { sortingStateToQueryParam } from '@/utils/datatable'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
+import { CalendarDays, Copy, Download, RotateCcw } from '@polar-sh/orbit/icons'
 import {
   parseAsArrayOf,
   parseAsBoolean,
@@ -36,6 +39,7 @@ import {
 } from 'nuqs'
 import dynamic from 'next/dynamic'
 import React, { useCallback, useRef, useState } from 'react'
+import { type ToolbarAction } from './ToolbarActionsMenu'
 import {
   SubscriptionsToolbar,
   subscriptionViewValues,
@@ -73,6 +77,7 @@ const filterParsers = {
   product_id: parseAsArrayOf(parseAsString),
   external_product_id: parseAsArrayOf(parseAsString),
   status: parseAsArrayOf(parseAsStringLiteral(SELECTABLE_STATUSES)),
+  customer_id: parseAsArrayOf(parseAsString),
   discount_id: parseAsArrayOf(parseAsString),
   customer_cancellation_reason: parseAsArrayOf(
     parseAsStringLiteral(CANCELLATION_REASONS),
@@ -101,6 +106,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       external_product_id: externalProductId,
       status,
       cancel_at_period_end: cancelAtPeriodEnd,
+      customer_id: customerId,
       discount_id: discountId,
       customer_cancellation_reason: cancellationReason,
       zoom,
@@ -145,6 +151,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     externalProductId !== null ||
     status !== null ||
     cancelAtPeriodEnd !== null ||
+    customerId !== null ||
     discountId !== null ||
     cancellationReason !== null ||
     sort?.id !== DEFAULT_SORTING[0].id ||
@@ -156,6 +163,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       external_product_id: null,
       status: null,
       cancel_at_period_end: null,
+      customer_id: null,
       discount_id: null,
       customer_cancellation_reason: null,
     })
@@ -167,6 +175,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     external_product_id: externalProductId ?? undefined,
     status: status ?? undefined,
     cancel_at_period_end: cancelAtPeriodEnd ?? undefined,
+    customer_id: customerId ?? undefined,
     discount_id: discountId ?? undefined,
     customer_cancellation_reason: cancellationReason ?? undefined,
   }
@@ -190,6 +199,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const next = selected ? subscriptions?.[selectedIndex + 1] : undefined
   const select = (id: string | null) => setFilters({ subscription: id })
 
+  const safeCopy = useSafeCopy(toast)
   const [focus, setFocus] = useState<number>()
   // Dragging the zoom moves the chart directly. The URL and the render that
   // follows from it only catch up once the drag pauses.
@@ -211,6 +221,49 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     zoomRef.current?.zoomTo(value)
     commitSpan(value)
   }
+  const resetZoom = () => {
+    sliderRef.current?.show(DEFAULT_PIXELS_PER_DAY)
+    onZoom(DEFAULT_PIXELS_PER_DAY)
+  }
+  // The view is not in the address unless a link put it there, so it is added.
+  const copyLink = async () => {
+    const url = new URL(window.location.href)
+    url.searchParams.set('view', view)
+    await safeCopy(url.toString())
+    toast({ title: 'Link copied' })
+  }
+  const actions: ToolbarAction[][] = [
+    [
+      {
+        key: 'export',
+        label: 'Export CSV',
+        icon: <Download />,
+        onSelect: showExportModal,
+      },
+      {
+        key: 'copy-link',
+        label: 'Copy link to this view',
+        icon: <Copy />,
+        onSelect: copyLink,
+      },
+    ],
+    view === 'timeline'
+      ? [
+          {
+            key: 'today',
+            label: 'Jump to today',
+            icon: <CalendarDays />,
+            onSelect: () => zoomRef.current?.scrollToToday(),
+          },
+          {
+            key: 'reset-zoom',
+            label: 'Reset zoom',
+            icon: <RotateCcw />,
+            onSelect: resetZoom,
+          },
+        ]
+      : [],
+  ]
   const drillDown = ({
     groupKey,
     start,
@@ -260,6 +313,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         onStatusSelect={(value, cancel) =>
           setFilters({ status: value, cancel_at_period_end: cancel })
         }
+        customerId={customerId}
+        onCustomerSelect={(value) => setFilters({ customer_id: value })}
         discountId={discountId}
         onDiscountSelect={(value) => setFilters({ discount_id: value })}
         cancellationReason={cancellationReason}
@@ -274,7 +329,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         onGroupChange={(value) => setFilters({ group: value })}
         hasActiveFilters={hasActiveFilters}
         onReset={resetFilters}
-        onExport={showExportModal}
+        actions={actions}
       />
       {view === 'table' ? (
         <SubscriptionsTable

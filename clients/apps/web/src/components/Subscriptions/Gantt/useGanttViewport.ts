@@ -231,8 +231,6 @@ export const useGanttViewport = ({
     return () => scroller.removeEventListener('wheel', onWheel)
   }, [start, onZoomChange])
 
-  useImperativeHandle(zoomRef, () => ({ zoomTo: applyZoom }))
-
   const onScroll = () => {
     const scroller = scrollerRef.current
     if (!scroller || viewportWidth === 0) return
@@ -268,6 +266,11 @@ export const useGanttViewport = ({
       left: toX(time) - anchorOffset,
       behavior: 'smooth',
     })
+
+  useImperativeHandle(zoomRef, () => ({
+    zoomTo: applyZoom,
+    scrollToToday: () => scrollToTime(now),
+  }))
 
   const panHandlers = useGanttPan(scrollerRef)
 

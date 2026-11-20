@@ -7,7 +7,12 @@ import {
   type FilterOption,
 } from '@/components/Shared/FilterPopover'
 import { Button } from '@polar-sh/orbit'
-import { Check, ChevronRight, FilterListOutlined } from '@polar-sh/orbit/icons'
+import {
+  Check,
+  ChevronRight,
+  FilterListOutlined,
+  FunnelX,
+} from '@polar-sh/orbit/icons'
 import {
   Popover,
   PopoverContent,
@@ -23,7 +28,7 @@ const PANEL_CLASS =
 const SEARCH_CLASS =
   'dark:placeholder:text-polar-500 dark:border-polar-700 dark:focus:border-polar-700 w-full rounded-t-xl border-x-0 border-t-0 border-b border-gray-200 bg-transparent px-3.5 py-2 text-[13px] outline-none placeholder:text-gray-400 focus:border-gray-200 focus:ring-0 focus:outline-none'
 const ITEM_CLASS =
-  'flex h-7 w-full cursor-pointer items-center gap-2 rounded-md px-2 text-left'
+  'flex h-7 w-full cursor-pointer items-center gap-3 rounded-md px-2 text-left'
 const ITEM_ACTIVE_CLASS = 'dark:bg-polar-700 bg-gray-100'
 const ITEM_HOVER_CLASS = 'dark:hover:bg-polar-700 hover:bg-gray-100'
 const ICON_CLASS =
@@ -49,8 +54,14 @@ const OptionsPanel = ({
   filter: Filter
   onPicked: () => void
 }) => {
-  const [query, setQuery] = useState('')
-  const options = filter.options.filter(({ label }) => matches(label, query))
+  const [localQuery, setLocalQuery] = useState('')
+  // A filter that searches for itself gets the text and returns its matches.
+  const isRemote = filter.onSearchQueryChange !== undefined
+  const query = isRemote ? (filter.searchQuery ?? '') : localQuery
+  const setQuery = filter.onSearchQueryChange ?? setLocalQuery
+  const options = isRemote
+    ? filter.options
+    : filter.options.filter(({ label }) => matches(label, query))
   const pick = (option: FilterOption) => {
     if (filter.type === 'single') {
       filter.onChange(option.value)
@@ -66,16 +77,22 @@ const OptionsPanel = ({
 
   return (
     <div className={twMerge(PANEL_CLASS, 'w-64')}>
-      <input
-        autoFocus
-        className={SEARCH_CLASS}
-        placeholder="Filter..."
-        aria-label={`Filter ${filter.label.toLowerCase()} options`}
-        value={query}
-        onChange={(event) => setQuery(event.target.value)}
-      />
+      {filter.searchPlaceholder && (
+        <input
+          autoFocus
+          className={SEARCH_CLASS}
+          placeholder={filter.searchPlaceholder}
+          aria-label={`Filter ${filter.label.toLowerCase()} options`}
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+      )}
       <div className="max-h-72 overflow-y-auto p-1.5">
-        {options.length === 0 && <div className={EMPTY_CLASS}>No matches</div>}
+        {options.length === 0 && (
+          <div className={EMPTY_CLASS}>
+            {filter.loading ? 'Loading...' : 'No matches'}
+          </div>
+        )}
         {options.map((option) => {
           const isOn = isSelected(filter, option)
           return (
@@ -111,12 +128,15 @@ const OptionsPanel = ({
 
 interface ToolbarFilterMenuProps {
   filters: Filter[]
+  // Offered at the foot of the menu while there is something to reset.
+  onReset?: () => void
   className?: string
 }
 
 // A list of properties, each opening its options beside it.
 export const ToolbarFilterMenu = ({
   filters,
+  onReset,
   className,
 }: ToolbarFilterMenuProps) => {
   const [open, setOpen] = useState(false)
@@ -124,9 +144,17 @@ export const ToolbarFilterMenu = ({
   const hasApplied = filters.some(
     (filter) => isFilterActive(filter) && !isFilterDefaulted(filter),
   )
+  // Leaving a property clears what was typed into its search.
+  const activate = (key: string | null) => {
+    if (key === activeKey) return
+    filters
+      .find((filter) => filter.key === activeKey)
+      ?.onSearchQueryChange?.('')
+    setActiveKey(key)
+  }
   const onOpenChange = (value: boolean) => {
     setOpen(value)
-    setActiveKey(null)
+    activate(null)
   }
 
   return (
@@ -158,7 +186,7 @@ export const ToolbarFilterMenu = ({
               <div
                 key={filter.key}
                 className="relative"
-                onMouseEnter={() => setActiveKey(filter.key)}
+                onMouseEnter={() => activate(filter.key)}
               >
                 <button
                   type="button"
@@ -169,7 +197,7 @@ export const ToolbarFilterMenu = ({
                     ITEM_HOVER_CLASS,
                     isActive && ITEM_ACTIVE_CLASS,
                   )}
-                  onClick={() => setActiveKey(filter.key)}
+                  onClick={() => activate(filter.key)}
                 >
                   <span className={ICON_CLASS}>{filter.icon}</span>
                   <span className="grow truncate">{filter.label}</span>
@@ -188,6 +216,26 @@ export const ToolbarFilterMenu = ({
             )
           })}
         </div>
+        {onReset && (
+          <div
+            className="dark:border-polar-700 border-t border-gray-200 p-1.5"
+            onMouseEnter={() => activate(null)}
+          >
+            <button
+              type="button"
+              className={twMerge(ITEM_CLASS, ITEM_HOVER_CLASS)}
+              onClick={() => {
+                onReset()
+                onOpenChange(false)
+              }}
+            >
+              <span className={ICON_CLASS}>
+                <FunnelX />
+              </span>
+              Reset filters
+            </button>
+          </div>
+        )}
       </PopoverContent>
     </Popover>
   )

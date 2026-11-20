@@ -42,6 +42,7 @@ export const PIXELS_PER_DAY_VAR = '--gantt-pixels-per-day'
 
 export interface GanttZoomHandle {
   zoomTo: (pixelsPerDay: number) => void
+  scrollToToday: () => void
 }
 
 export interface GanttScale {

@@ -72,6 +72,7 @@ export const EditProductPage = ({
   const form = useForm<ProductEditOrCreateForm>({
     defaultValues: {
       ...product,
+      external_id: product.external_id ?? undefined,
       medias: product.medias.map((media) => media.id),
       full_medias: product.medias,
       prices: product.prices.map((price) => {

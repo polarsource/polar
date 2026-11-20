@@ -49,8 +49,10 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
 
   const form = useForm<CustomerPortalCustomerUpdate>({
     defaultValues: {
-      billing_name: customer?.billing_name || customer?.name,
-      billing_address: customer?.billing_address as schemas['AddressInput'],
+      billing_name: customer?.billing_name || customer?.name || undefined,
+      billing_address: (customer?.billing_address ?? undefined) as
+        | schemas['AddressInput']
+        | undefined,
       tax_id: customer?.tax_id ? customer.tax_id[0] : null,
     },
   })
@@ -91,10 +93,11 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
         const updatedCustomer = await update.mutateAsync(data)
 
         reset({
-          billing_name: updatedCustomer.billing_name || updatedCustomer.name,
-          billing_address: updatedCustomer.billing_address as
+          billing_name:
+            updatedCustomer.billing_name || updatedCustomer.name || undefined,
+          billing_address: (updatedCustomer.billing_address ?? undefined) as
             | schemas['AddressInput']
-            | null,
+            | undefined,
           tax_id: updatedCustomer.tax_id ? updatedCustomer.tax_id[0] : null,
         })
 

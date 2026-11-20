@@ -185,7 +185,7 @@ export const SeatManagementTable = ({
     try {
       await updateMember.mutateAsync({
         id: seat.member.id,
-        body: { name: editName.trim() || null },
+        body: { name: editName.trim() },
       })
       cancelEditingName()
       toast({

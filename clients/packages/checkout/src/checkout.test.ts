@@ -188,6 +188,30 @@ describe('PolarEmbedCheckout', () => {
       checkout.close()
     })
 
+    it('shows a placeholder card until the checkout loads', async () => {
+      const promise = PolarEmbedCheckout.create(
+        'https://buy.polar.sh/polar_cl_123',
+      )
+
+      const iframe = document.querySelector('iframe')!
+      expect(document.querySelector('.polar-loader-card')).not.toBeNull()
+      expect(iframe.style.backgroundColor).toBe('')
+
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          origin: ALLOWED_ORIGIN,
+          data: { type: 'POLAR_CHECKOUT', event: 'loaded' },
+        }),
+      )
+
+      const checkout = await promise
+
+      expect(document.querySelector('.polar-loader-card')).toBeNull()
+      expect(iframe.style.backgroundColor).toBe('rgba(0, 0, 0, 0.5)')
+
+      checkout.close()
+    })
+
     it('adds polar-no-scroll class to body', async () => {
       const promise = PolarEmbedCheckout.create(
         'https://buy.polar.sh/polar_cl_123',

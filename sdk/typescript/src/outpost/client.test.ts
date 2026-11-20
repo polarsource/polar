@@ -1692,6 +1692,20 @@ it("applies a snapshot Polar did not confirm in time, keeping its events pending
   expect(await redis.hget(key, `pending:${bucket}:count`)).toBe("3");
 });
 
+it("asks Polar again at the next read about a snapshot it did not confirm in time", async () => {
+  const outpost = await warm({ confirmTimeout: 50 });
+  for (let i = 0; i < 3; i++) await outpost.track(usage(`event-${i}`, 10));
+  answerConfirm = false;
+  snapshot = sealing(3, 30);
+  await deliver(outpost, snapshot!);
+  await vi.waitFor(async () => expect((await outpost.meter(meter))?.consumed_units).toBe(60));
+  // No change of this customer follows, so no pull brings its snapshot back: its reads do.
+  answerConfirm = true;
+  ingested = new Set(["event-0", "event-1", "event-2"]);
+  await vi.waitFor(async () => expect((await outpost.meter(meter))?.consumed_units).toBe(30));
+  expect(await redis.hget(key, `pending:${bucket}:count`)).toBeNull();
+});
+
 it("keeps the pull lock while a page outlasts its TTL", async () => {
   const outpost = await warm({ confirmTimeout: 150 });
   for (let i = 0; i < 3; i++) await outpost.track(usage(`event-${i}`, 10));

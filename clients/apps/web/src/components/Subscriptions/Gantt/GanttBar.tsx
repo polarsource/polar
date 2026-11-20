@@ -30,9 +30,9 @@ const DIVIDER_OPACITY: Record<GanttTone, number> = {
   danger: 0.3,
 }
 const FRAME_OPACITY: Record<GanttTone, number> = {
-  neutral: 0.14,
-  warning: 0.3,
-  danger: 0.3,
+  neutral: 0.08,
+  warning: 0.18,
+  danger: 0.18,
 }
 const LABEL_GAP = 14
 const MARKER_LABELS: Record<TimelineMarkerKind, string> = {

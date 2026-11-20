@@ -6,12 +6,18 @@ import {
   type GanttTone,
 } from './tone'
 
-// Diagonal stripes for a trial, upright ones for a pause.
+// Diagonal stripes for a trial, upright ones for a pause. The diagonal one is
+// a square tile: a repeating gradient at an angle has a period that is not a
+// whole number of pixels, which draws every other stripe wider.
 const PATTERN_IMAGE: Record<GanttPattern, string> = {
   trial:
-    'repeating-linear-gradient(135deg, currentColor 0 2px, transparent 2px 4px)',
+    'linear-gradient(135deg, currentColor 25%, transparent 25% 50%, currentColor 50% 75%, transparent 75%)',
   paused:
     'repeating-linear-gradient(90deg, currentColor 0 2px, transparent 2px 4px)',
+}
+const PATTERN_SIZE: Record<GanttPattern, string | undefined> = {
+  trial: '6px 6px',
+  paused: undefined,
 }
 const PATTERN_OPACITY: Record<GanttPattern, number> = {
   trial: 0.7,
@@ -36,7 +42,14 @@ export const GanttFill = ({
   >
     <div
       className={pattern ? 'size-full' : 'size-full bg-current'}
-      style={pattern ? { backgroundImage: PATTERN_IMAGE[pattern] } : undefined}
+      style={
+        pattern
+          ? {
+              backgroundImage: PATTERN_IMAGE[pattern],
+              backgroundSize: PATTERN_SIZE[pattern],
+            }
+          : undefined
+      }
     />
   </Box>
 )

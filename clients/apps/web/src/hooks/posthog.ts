@@ -70,6 +70,7 @@ export interface PolarHog {
     options?: CaptureOptions,
   ) => void
   identify: (user: schemas['UserRead']) => void
+  getDistinctId: () => string | undefined
   reset: () => void
 }
 
@@ -104,6 +105,11 @@ export const usePostHog = (): PolarHog => {
     [posthog],
   )
 
+  const getDistinctId: PolarHog['getDistinctId'] = useCallback(
+    () => posthog.get_distinct_id() || undefined,
+    [posthog],
+  )
+
   const reset: PolarHog['reset'] = useCallback(() => {
     posthog.reset()
     document.cookie = `${DISTINCT_ID_COOKIE}=; max-age=0; path=/; samesite=lax`
@@ -114,9 +120,10 @@ export const usePostHog = (): PolarHog => {
       setPersistence,
       capture,
       identify,
+      getDistinctId,
       reset,
     }),
-    [setPersistence, capture, identify, reset],
+    [setPersistence, capture, identify, getDistinctId, reset],
   )
 
   return context

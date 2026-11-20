@@ -10,7 +10,6 @@ import {
   applyDiscountCode,
   CHECKOUT_URL,
   CUSTOMER_SESSION_TOKEN,
-  DISTINCT_ID,
   freeProductCheckout,
   renderCheckout,
   submitCheckout,
@@ -30,7 +29,7 @@ describe('Checkout page', () => {
         expect.objectContaining({
           method: 'POST',
           path: '/v1/checkouts/client/polar_c_test/opened',
-          body: { distinct_id: DISTINCT_ID },
+          body: { distinct_id: 'test-distinct-id' },
         }),
       ),
     )

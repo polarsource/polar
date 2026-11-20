@@ -53,6 +53,7 @@ export default async function RootLayout({
       translate="no"
       suppressHydrationWarning
       className="antialiased"
+      data-distinct-id={distinctId}
     >
       <head>
         {CONFIG.GOOGLE_ANALYTICS_ID && (

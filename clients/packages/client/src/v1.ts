@@ -14756,7 +14756,7 @@ export interface components {
       /**
        * Reset
        * @description Changes were missed: every snapshot the client holds may be stale. The client
-       *     drops them, and fetches each customer again at its next read.
+       *     keeps serving them, and fetches each customer again at its next read.
        */
       reset: boolean
       /**

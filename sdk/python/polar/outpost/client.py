@@ -46,6 +46,12 @@ from polar.metering.errors import (
 )
 from polar.metering.events import EventInput
 from polar.metering.meter import CustomerMeter
+from polar.outpost.errors import (
+    MissingExternalIdError,
+    NotReadyError,
+    PolarOutpostError,
+    UnavailableRedisError,
+)
 from polar.outpost.event import Event
 from polar.outpost.reducer import (
     BUCKET_SIZE,
@@ -53,25 +59,25 @@ from polar.outpost.reducer import (
     Reducer,
     ReducerMatcher,
     get_bucket_start,
-    reduce,
+    match_event,
     with_matchers,
+)
+from polar.outpost.state import (
+    ReducerState,
+    _decode,
+    _is_ready,
+    _number,
+    _statistics_of,
+    consumed_units,
+    decode_state,
 )
 from polar.outpost.telemetry import (
     SAMPLE_RATE_ATTRIBUTE,
-    Outbox,
+    TelemetryBuffer,
     create_meter_provider,
     create_tracer_provider,
     is_telemetry_enabled,
 )
-
-
-class PolarOutpostError(PolarError): ...
-
-
-class NotReadyError(PolarOutpostError):
-    """A read Outpost cannot answer yet: Polar has not sent the customer's snapshot
-    in time."""
-
 
 # The reset count of a state whose snapshot Polar did not confirm.
 UNCONFIRMED = -1
@@ -114,29 +120,6 @@ def _refused_indexes(response: httpx2.Response) -> set[int] | None:
             return None
         indexes.add(location[2])
     return indexes
-
-
-class UnavailableRedisError(PolarOutpostError):
-    def __init__(self) -> None:
-        super().__init__("Redis is unavailable")
-
-
-class MissingExternalIdError(PolarOutpostError):
-    def __init__(self) -> None:
-        super().__init__("Outpost needs an external_id on every event")
-
-
-def _number(value: str) -> int | float:
-    if value.isdecimal() or (value[:1] == "-" and value[1:].isdecimal()):
-        return int(value)
-    number = float(value)
-    if not math.isfinite(number):
-        raise ValueError("Stored aggregation values must be finite")
-    return number
-
-
-def _decode(value: str | bytes) -> str:
-    return value.decode() if isinstance(value, bytes) else value
 
 
 def _report_local_value(
@@ -215,6 +198,29 @@ def _retry_after(response: httpx2.Response | None) -> float | None:
     return retry_after_seconds(int(retry_after))
 
 
+async def _take_lock(redis: Redis, key: str, ttl: float) -> str | None:
+    """A lock holds its owner's token: only the owner extends or releases it. Past its
+    TTL, it may be another instance's."""
+    token = uuid.uuid4().hex
+    taken = await redis.set(key, token, px=int(ttl * 1000), nx=True)
+    return token if taken else None
+
+
+async def _release_lock(redis: Redis, key: str, token: str) -> None:
+    with contextlib.suppress(RedisError):
+        await redis.eval(RELEASE_LOCK_SCRIPT, 1, key, token)
+
+
+async def _call_script(
+    redis: Redis, sha: str, script: str, keys: int, *arguments: typing.Any
+) -> typing.Any:
+    try:
+        return await redis.evalsha(sha, keys, *arguments)
+    except NoScriptError:
+        # Redis caches the script with the first EVAL, so this happens once per server.
+        return await redis.eval(script, keys, *arguments)
+
+
 _P = typing.ParamSpec("_P")
 _R = typing.TypeVar("_R")
 
@@ -243,9 +249,9 @@ class _Read:
     outcome: str = "not_ready"
 
 
-def _is_connection_error(error: BaseException) -> bool:
+def _is_transient_error(error: BaseException) -> bool:
     if isinstance(error, BaseExceptionGroup):
-        return all(_is_connection_error(inner) for inner in error.exceptions)
+        return all(_is_transient_error(inner) for inner in error.exceptions)
     if isinstance(error, (AuthenticationError, AuthorizationError)):
         return False
     return isinstance(
@@ -358,11 +364,6 @@ end
 return {length, redis.call('XPENDING', KEYS[1], ARGV[1])[1], retry_at}
 """
 
-READ_STATE_SCRIPT = """
-redis.call('EXPIRE', KEYS[1], 86400)
-return redis.call('HGETALL', KEYS[1])
-"""
-
 READ_STATES_SCRIPT = """
 -- A customer's read in one command: for each reducer, KEYS holds its state and its missing marker,
 -- and the last key is the pull. ARGV names, per reducer, the statistics the reader adds up,
@@ -459,46 +460,38 @@ PUSH_TELEMETRY_SHA = hashlib.sha1(PUSH_TELEMETRY_SCRIPT.encode()).hexdigest()
 WRITE_BUCKET_SCRIPT = """
 local bucket = 'bucket:' .. ARGV[1] .. ':'
 local pending = 'pending:' .. ARGV[1] .. ':'
-local total = tonumber(redis.call('HGET', KEYS[1], bucket .. 'sum') or '0') + tonumber(ARGV[3])
+-- ARGV[2] is the event's value, or nothing when it only counts.
+local value = ARGV[2] ~= '' and tonumber(ARGV[2]) or nil
+assert(ARGV[2] == '' or (value and value == value and math.abs(value) ~= math.huge), 'Invalid value')
+local total = tonumber(redis.call('HGET', KEYS[1], bucket .. 'sum') or '0') + (value or 0)
 assert(total == total and math.abs(total) ~= math.huge, 'Aggregation values must be finite')
-for i, func in ipairs({'min', 'max'}) do
-    local raw = ARGV[3 + i]
-    if raw ~= '' then
-        local value = tonumber(raw)
-        assert(value and value == value and math.abs(value) ~= math.huge, 'Invalid value')
-    end
-end
--- One event pending: its value, or nothing when it only counts. An external_id Polar has not
--- confirmed yet: tracking it again changes nothing.
-assert(ARGV[2] == '1', 'One event per write')
-local entry = ARGV[4] ~= '' and ARGV[3] or ''
-if redis.call('HSETNX', KEYS[2], ARGV[6], entry) == 0 then
+-- One event pending, under its external_id, ARGV[3]. An external_id Polar has not confirmed yet:
+-- tracking it again changes nothing.
+if redis.call('HSETNX', KEYS[2], ARGV[3], ARGV[2]) == 0 then
     return 0
 end
 -- The write that first sees an event queues it for Polar, as Polar ingests it: KEYS[3] is the
--- stream, ARGV[7] the event, or nothing for the other reducers the event matches. A flusher
+-- stream, ARGV[4] the event, or nothing for the other reducers the event matches. A flusher
 -- holding the first slot, KEYS[4], reads the stream again once it lets go: it delivers the event.
 -- Otherwise the write returns 2, and the instance drains the stream on its next flush.
 local written = 1
-if ARGV[7] and ARGV[7] ~= '' then
-    redis.call('XADD', KEYS[3], '*', 'event', ARGV[7])
+if ARGV[4] ~= '' then
+    redis.call('XADD', KEYS[3], '*', 'event', ARGV[4])
     if redis.call('EXISTS', KEYS[4]) == 0 then
         written = 2
     end
 end
 -- Every local event counts in its bucket; the pending part is what Polar has not confirmed.
 for _, prefix in ipairs({bucket, pending}) do
-    redis.call('HINCRBYFLOAT', KEYS[1], prefix .. 'sum', ARGV[3])
-    redis.call('HINCRBY', KEYS[1], prefix .. 'count', ARGV[2])
-    for i, func in ipairs({'min', 'max'}) do
-        local raw = ARGV[3 + i]
-        if raw ~= '' then
-            local value = tonumber(raw)
+    redis.call('HINCRBYFLOAT', KEYS[1], prefix .. 'sum', value and ARGV[2] or '0')
+    redis.call('HINCRBY', KEYS[1], prefix .. 'count', 1)
+    if value then
+        for _, func in ipairs({'min', 'max'}) do
             local stored = redis.call('HGET', KEYS[1], prefix .. func)
             local previous = stored and tonumber(stored)
             if not previous or (func == 'min' and value < previous)
                 or (func == 'max' and value > previous) then
-                redis.call('HSET', KEYS[1], prefix .. func, raw)
+                redis.call('HSET', KEYS[1], prefix .. func, ARGV[2])
             end
         end
     end
@@ -520,13 +513,8 @@ CONFIRM_SCRIPT = """
 -- the lock's token and TTL, ARGV[4] the number of entries, then the entries; then each group
 -- gives its bucket start, its number of ids and the ids.
 local BATCH = 1000
--- An entry is the event's value, or nothing when it only counts. Earlier SDK versions stored
--- the event's count, sum, min and max as a JSON array; their entries expire within the hour.
+-- An entry is the event's value, or nothing when it only counts.
 local function value_of(entry)
-    if entry:sub(1, 1) == '[' then
-        local legacy = cjson.decode(entry)
-        entry = legacy[3] ~= '' and legacy[2] or ''
-    end
     return entry ~= '' and tonumber(entry) or nil
 end
 local function settle(state, pending_key, start, ids)
@@ -743,80 +731,6 @@ return retry_at
 """
 
 
-@dataclasses.dataclass
-class ReducerState:
-    cold_until: int | None
-    cold: BucketStatistics
-    buckets: dict[int, BucketStatistics]
-    # The part of each bucket Polar has not confirmed yet.
-    pending: dict[int, BucketStatistics]
-    # The pull's reset count when Polar last answered for it.
-    confirmed_after_resets: int | None = None
-
-
-def decode_state(values: collections.abc.Sequence[str | bytes]) -> ReducerState:
-    cold_until: int | None = None
-    cold = BucketStatistics()
-    buckets: dict[int, BucketStatistics] = {}
-    pending: dict[int, BucketStatistics] = {}
-    confirmed_after_resets: int | None = None
-    # The statistics each `<group>:<statistic>` field writes to, by group: `cold` and every
-    # `bucket:<start>` or `pending:<start>` seen so far.
-    groups: dict[str, BucketStatistics] = {"cold": cold}
-    # Fields and values alternate: zipping one iterator with itself reads them in pairs.
-    pairs = iter(values)
-    for field, value in zip(pairs, pairs, strict=True):
-        if isinstance(field, bytes):
-            field = field.decode()
-        if isinstance(value, bytes):
-            value = value.decode()
-        group, separator, statistic = field.rpartition(":")
-        bucket = groups.get(group)
-        if bucket is None:
-            if not separator:
-                if field == "cold_until":
-                    cold_until = int(value)
-                elif field == "reset":
-                    confirmed_after_resets = int(value)
-                continue
-            kind, _, timestamp = group.partition(":")
-            if kind == "bucket" or kind == "pending":
-                bucket = BucketStatistics()
-                (buckets if kind == "bucket" else pending)[int(timestamp)] = bucket
-                groups[group] = bucket
-            else:
-                continue
-        setattr(bucket, statistic, int(value) if value.isdecimal() else _number(value))
-    return ReducerState(
-        cold_until=cold_until,
-        cold=cold,
-        buckets=buckets,
-        pending=pending,
-        confirmed_after_resets=confirmed_after_resets,
-    )
-
-
-# Polar's totals cover the cold buckets: the local read adds what Polar has not confirmed in
-# them, and every local event in the buckets Polar has not sealed yet.
-def consumed_units(state: ReducerState, func: str) -> int | float:
-    cold_until = state.cold_until
-    assert cold_until is not None
-    cold = state.cold
-    count, total, low, high = cold.count, cold.sum, cold.min, cold.max
-    parts = [s for start, s in state.pending.items() if start < cold_until]
-    parts += [s for start, s in state.buckets.items() if start >= cold_until]
-    for statistics in parts:
-        count += statistics.count
-        total += statistics.sum
-        if statistics.min is not None and (low is None or statistics.min < low):
-            low = statistics.min
-        if statistics.max is not None and (high is None or statistics.max > high):
-            high = statistics.max
-    if isinstance(total, float) and not math.isfinite(total):
-        raise ValueError("Aggregation values must be finite")
-    return BucketStatistics(count, total, low, high).quantity(func)
-
-
 def _throttled(
     extend: collections.abc.Callable[[], collections.abc.Awaitable[None]], ttl: float
 ) -> collections.abc.Callable[[], collections.abc.Awaitable[None]]:
@@ -832,12 +746,6 @@ def _throttled(
         await extend()
 
     return renew
-
-
-# The statistics a reducer's quantity adds up: all a read needs of its state.
-def _statistics_of(reducer: Reducer) -> str:
-    func = reducer["aggregation"]["func"]
-    return "sum,count" if func == "avg" else func
 
 
 @dataclasses.dataclass
@@ -873,11 +781,6 @@ def _confirm_arguments(
         ]
         args += [bucket_start, len(ids), *ids]
     return keys, args
-
-
-# A customer's state for one reducer is None while Polar does not know the customer.
-def _is_ready(state: ReducerState | None) -> bool:
-    return state is None or state.cold_until is not None
 
 
 log = get_logger(__name__)
@@ -921,12 +824,6 @@ class Changes(typing.TypedDict):
     configuration_changed: bool
     # Seconds.
     next_poll_in: float
-
-
-@dataclasses.dataclass
-class IngestResult:
-    inserted: int
-    duplicates: int = 0
 
 
 # What Polar said of the pending events a snapshot seals.
@@ -979,7 +876,7 @@ class Outpost:
         self._matchers: list[ReducerMatcher] = []
         # The fetches in flight, by identity: each event is set once its fetch ends.
         self._requesting: dict[str, anyio.Event] = {}
-        self._outbox = Outbox()
+        self._telemetry_buffer = TelemetryBuffer()
         self._queued: list[str] = []
         self._configured = anyio.Event()
         self._apply_snapshot: AsyncScript | None = None
@@ -1042,9 +939,9 @@ class Outpost:
         self._resets = None
         self._failure = None
         if self._telemetry:
-            self._tracer_provider = create_tracer_provider(self._outbox)
+            self._tracer_provider = create_tracer_provider(self._telemetry_buffer)
             self._tracer = self._tracer_provider.get_tracer("polar.outpost")
-            self._meter_provider = create_meter_provider(self._outbox)
+            self._meter_provider = create_meter_provider(self._telemetry_buffer)
             meter = self._meter_provider.get_meter("polar.outpost")
             self._ingest_duration = meter.create_histogram(
                 "outpost.ingest.duration", unit="s"
@@ -1108,7 +1005,7 @@ class Outpost:
             try:
                 await self._in_flight()
                 await self._drain_outbox_quietly()
-                # Their last exports land in the outbox, which the shared Redis takes
+                # Their last exports land in the buffer, which the shared Redis takes
                 # before it closes.
                 await self._shutdown_telemetry()
                 await self._push_telemetry()
@@ -1160,13 +1057,10 @@ class Outpost:
         try:
             self.validate(event)
             parsed = self._parse_event(event)
-            updates = reduce(
-                self._matchers,
-                [parsed],
-                oldest_bucket_start=get_bucket_start(parsed.timestamp),
-            )
+            bucket_start = get_bucket_start(parsed.timestamp)
+            matches = match_event(self._matchers, parsed)
             if self._ingest_buckets is not None:
-                self._ingest_buckets.add(len(updates))
+                self._ingest_buckets.add(len(matches))
             assert self._redis is not None
             # Polar dates the event as Outpost bucketed it.
             queued = _encode_event(
@@ -1175,24 +1069,19 @@ class Outpost:
                     "timestamp": event.get("timestamp") or parsed.timestamp.isoformat(),
                 }
             )
-            if not updates:
+            if not matches:
                 await self._redis.xadd(self._outbox_key, {"event": queued})
                 self._undrained = True
             writes: list[list[str | int | float]] = []
-            for index, ((customer, reducer_id, bucket_start), statistics) in enumerate(
-                updates.items()
-            ):
-                identity = f"{customer}:{reducer_id}"
+            for index, (reducer_id, value) in enumerate(matches):
+                identity = f"{parsed.external_customer_id}:{reducer_id}"
                 arguments: list[str | int | float] = [
                     f"{self._prefix}:state:{identity}",
                     f"{self._prefix}:pending:{identity}:{bucket_start}",
                     self._outbox_key,
                     f"{self._outbox_key}:flusher:0",
                     bucket_start,
-                    statistics.count,
-                    statistics.sum,
-                    statistics.min if statistics.min is not None else "",
-                    statistics.max if statistics.max is not None else "",
+                    value if value is not None else "",
                     typing.cast(str, event["external_id"]),
                     queued if index == 0 else "",
                 ]
@@ -1237,35 +1126,6 @@ class Outpost:
             if self._ingest_duration is not None:
                 self._ingest_duration.record(time.perf_counter() - started, attributes)
 
-    async def confirm(self, events: collections.abc.Sequence[EventInput]) -> None:
-        """Settle events Polar has ingested: their usage stays in its bucket, no longer pending.
-
-        Args:
-            events: Tracked events, including their external_id.
-        """
-        await self._settle(events, hot_only=False)
-
-    async def acknowledge(self, events: collections.abc.Sequence[EventInput]) -> None:
-        """Settle events Polar has received, in the buckets no snapshot has sealed yet.
-        Events of a sealed bucket stay pending until a snapshot counts them.
-
-        Args:
-            events: Tracked events, including their external_id.
-        """
-        await self._settle(events, hot_only=True)
-
-    @_raise_redis_unavailable
-    async def _settle(
-        self, events: collections.abc.Sequence[EventInput], *, hot_only: bool
-    ) -> None:
-        self._require_running()
-        groups = self._settlements(events)
-        assert self._confirm_script is not None
-        if groups:
-            await self._confirm_script(
-                *_confirm_arguments(self._prefix, hot_only, groups)
-            )
-
     def _settlements(
         self, events: collections.abc.Sequence[EventInput]
     ) -> dict[tuple[str, int], list[str]]:
@@ -1279,13 +1139,9 @@ class Outpost:
                 parsed = self._parse_event(event)
             except (AttributeError, KeyError, PolarError, TypeError, ValueError):
                 continue
-            updates = reduce(
-                self._matchers,
-                [parsed],
-                oldest_bucket_start=get_bucket_start(parsed.timestamp),
-            )
-            for customer, reducer_id, bucket_start in updates:
-                identity = f"{customer}:{reducer_id}"
+            bucket_start = get_bucket_start(parsed.timestamp)
+            for reducer_id, _ in match_event(self._matchers, parsed):
+                identity = f"{parsed.external_customer_id}:{reducer_id}"
                 groups.setdefault((identity, bucket_start), []).append(
                     typing.cast(str, event["external_id"])
                 )
@@ -1399,7 +1255,7 @@ class Outpost:
         return flushed
 
     async def _push_telemetry(self) -> None:
-        spans, metrics = self._outbox.take()
+        spans, metrics = self._telemetry_buffer.take()
         if self._redis is None or not (spans or metrics):
             return
         # A fleet that stops pulling keeps its newest exports only.
@@ -1412,13 +1268,11 @@ class Outpost:
             *metrics,
         ]
         try:
-            try:
-                await self._redis.evalsha(PUSH_TELEMETRY_SHA, 2, *arguments)
-            except NoScriptError:
-                # Redis caches the script with the first EVAL, so this happens once per server.
-                await self._redis.eval(PUSH_TELEMETRY_SCRIPT, 2, *arguments)
+            await _call_script(
+                self._redis, PUSH_TELEMETRY_SHA, PUSH_TELEMETRY_SCRIPT, 2, *arguments
+            )
         except RedisError:
-            self._outbox.put_back(spans, metrics, TELEMETRY_CAP)
+            self._telemetry_buffer.put_back(spans, metrics, TELEMETRY_CAP)
 
     def _telemetry_key(self, kind: str) -> str:
         return f"{self._prefix}:telemetry:{kind}"
@@ -1430,8 +1284,8 @@ class Outpost:
             return
         redis = self._require_redis()
         lock = f"{self._prefix}:telemetry:lock"
-        token = uuid.uuid4().hex
-        if not await redis.set(lock, token, px=int(RELAY_LOCK_TTL * 1000), nx=True):
+        token = await _take_lock(redis, lock, RELAY_LOCK_TTL)
+        if token is None:
             return
         try:
             for kind, path in (
@@ -1457,8 +1311,7 @@ class Outpost:
                 if response.status_code < 500 and response.status_code != 429:
                     await redis.delete(batch)
         finally:
-            with contextlib.suppress(RedisError):
-                await redis.eval(RELEASE_LOCK_SCRIPT, 1, lock, token)
+            await _release_lock(redis, lock, token)
 
     async def _read(
         self, customer: str, reducers: list[Reducer], statistics: list[str]
@@ -1509,12 +1362,12 @@ class Outpost:
                 f"{self._prefix}:state:{identity}",
                 self._missing_key(identity),
             ]
+        # Inline: a call through _call_script costs a read a coroutine.
         try:
             results = await redis.evalsha(
                 READ_STATES_SHA, len(keys), *keys, *statistics
             )
         except NoScriptError:
-            # Redis caches the script with the first EVAL, so this happens once per server.
             results = await redis.eval(
                 READ_STATES_SCRIPT, len(keys), *keys, *statistics
             )
@@ -1783,10 +1636,8 @@ class Outpost:
         redis = self._require_redis()
         lock_key = f"{self._outbox_key}:flusher:{slot}"
         consumer = f"flusher-{slot}"
-        token = uuid.uuid4().hex
-        if not await redis.set(
-            lock_key, token, px=int(FLUSHER_LOCK_TTL * 1000), nx=True
-        ):
+        token = await _take_lock(redis, lock_key, FLUSHER_LOCK_TTL)
+        if token is None:
             return "busy"
         try:
             if slot == 0:
@@ -1846,9 +1697,7 @@ class Outpost:
                 elif start == "0":
                     start = ">"
         finally:
-            # Past its TTL, the slot may be another flusher's.
-            with contextlib.suppress(RedisError):
-                await redis.eval(RELEASE_LOCK_SCRIPT, 1, lock_key, token)
+            await _release_lock(redis, lock_key, token)
 
     async def _back_off_outbox(self, wait: float | None) -> None:
         """As long as Polar asks, or longer after each failure in a row."""
@@ -1938,10 +1787,8 @@ class Outpost:
         it held the lock is not left behind."""
         redis = self._require_redis()
         while True:
-            token = uuid.uuid4().hex
-            if not await redis.set(
-                self._cold_lock_key, token, px=int(TIMEOUT * 1000), nx=True
-            ):
+            token = await _take_lock(redis, self._cold_lock_key, TIMEOUT)
+            if token is None:
                 return
             try:
                 await anyio.sleep(FETCH_BATCH_WINDOW)
@@ -1975,9 +1822,7 @@ class Outpost:
                         for identities in batches:
                             group.start_soon(self._fetch_batch, identities, renew)
             finally:
-                # Past its TTL, the lock may be another instance's.
-                with contextlib.suppress(RedisError):
-                    await redis.eval(RELEASE_LOCK_SCRIPT, 1, self._cold_lock_key, token)
+                await _release_lock(redis, self._cold_lock_key, token)
             if not await redis.scard(self._cold_key):
                 return
 
@@ -2312,10 +2157,8 @@ class Outpost:
         if retry_at and float(retry_at) > time.time() * 1000:
             self._pull_retry_at = float(retry_at) / 1000
             return
-        lock = uuid.uuid4().hex
-        if not await redis.set(
-            self._pull_lock_key, lock, px=int(PULL_LOCK_TTL * 1000), nx=True
-        ):
+        lock = await _take_lock(redis, self._pull_lock_key, PULL_LOCK_TTL)
+        if lock is None:
             span.set_attribute("outpost.pull.locked", True)
             # Unless a read needs it, this instance does not wait for the other one's pull:
             # it checks the pull again once a pull check has passed.
@@ -2423,8 +2266,7 @@ class Outpost:
                 {"outpost.pull.pages": pages, "outpost.pull.applied": applied}
             )
             if not released:
-                with contextlib.suppress(RedisError):
-                    await redis.eval(RELEASE_LOCK_SCRIPT, 1, self._pull_lock_key, lock)
+                await _release_lock(redis, self._pull_lock_key, lock)
         # In the background: a read that waits for the pull does not wait for telemetry.
         if self._relaying is None and self._tasks is not None:
             self._relaying = anyio.Event()
@@ -2442,7 +2284,7 @@ class Outpost:
             done.set()
 
     def _fail_unless_transient(self, error: Exception) -> None:
-        if not _is_connection_error(error):
+        if not _is_transient_error(error):
             self._fail(error)
 
     def _fail(self, error: Exception) -> None:
@@ -2507,11 +2349,9 @@ class Outpost:
             "1" if pulled else "",
             snapshot["cold_until"],
         )
-        try:
-            sealed = await redis.evalsha(PREPARE_SNAPSHOT_SHA, 2, *arguments)
-        except NoScriptError:
-            # Redis caches the script with the first EVAL, so this happens once per server.
-            sealed = await redis.eval(PREPARE_SNAPSHOT_SCRIPT, 2, *arguments)
+        sealed = await _call_script(
+            redis, PREPARE_SNAPSHOT_SHA, PREPARE_SNAPSHOT_SCRIPT, 2, *arguments
+        )
         if sealed is None:
             return False
         confirmation, answered = await self._ask_confirmation(

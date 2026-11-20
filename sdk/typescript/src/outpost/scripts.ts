@@ -1,8 +1,3 @@
-export const READ_STATE_SCRIPT = `
-redis.call('EXPIRE', KEYS[1], 86400)
-return redis.call('HGETALL', KEYS[1])
-`;
-
 export const READ_STATES_SCRIPT = `
 -- A customer's read in one command: for each reducer, KEYS holds its state and its missing marker,
 -- and the last key is the pull. ARGV names, per reducer, the statistics the reader adds up,
@@ -93,46 +88,38 @@ return 1
 export const WRITE_BUCKET_SCRIPT = `
 local bucket = 'bucket:' .. ARGV[1] .. ':'
 local pending = 'pending:' .. ARGV[1] .. ':'
-local total = tonumber(redis.call('HGET', KEYS[1], bucket .. 'sum') or '0') + tonumber(ARGV[3])
+-- ARGV[2] is the event's value, or nothing when it only counts.
+local value = ARGV[2] ~= '' and tonumber(ARGV[2]) or nil
+assert(ARGV[2] == '' or (value and value == value and math.abs(value) ~= math.huge), 'Invalid value')
+local total = tonumber(redis.call('HGET', KEYS[1], bucket .. 'sum') or '0') + (value or 0)
 assert(total == total and math.abs(total) ~= math.huge, 'Aggregation values must be finite')
-for i, func in ipairs({'min', 'max'}) do
-    local raw = ARGV[3 + i]
-    if raw ~= '' then
-        local value = tonumber(raw)
-        assert(value and value == value and math.abs(value) ~= math.huge, 'Invalid value')
-    end
-end
--- One event pending: its value, or nothing when it only counts. An external_id Polar has not
--- confirmed yet: tracking it again changes nothing.
-assert(ARGV[2] == '1', 'One event per write')
-local entry = ARGV[4] ~= '' and ARGV[3] or ''
-if redis.call('HSETNX', KEYS[2], ARGV[6], entry) == 0 then
+-- One event pending, under its external_id, ARGV[3]. An external_id Polar has not confirmed yet:
+-- tracking it again changes nothing.
+if redis.call('HSETNX', KEYS[2], ARGV[3], ARGV[2]) == 0 then
     return 0
 end
 -- The write that first sees an event queues it for Polar, as Polar ingests it: KEYS[3] is the
--- stream, ARGV[7] the event, or nothing for the other reducers the event matches. A flusher
+-- stream, ARGV[4] the event, or nothing for the other reducers the event matches. A flusher
 -- holding the first slot, KEYS[4], reads the stream again once it lets go: it delivers the event.
 -- Otherwise the write returns 2, and the instance drains the stream on its next flush.
 local written = 1
-if ARGV[7] and ARGV[7] ~= '' then
-    redis.call('XADD', KEYS[3], '*', 'event', ARGV[7])
+if ARGV[4] ~= '' then
+    redis.call('XADD', KEYS[3], '*', 'event', ARGV[4])
     if redis.call('EXISTS', KEYS[4]) == 0 then
         written = 2
     end
 end
 -- Every local event counts in its bucket; the pending part is what Polar has not confirmed.
 for _, prefix in ipairs({bucket, pending}) do
-    redis.call('HINCRBYFLOAT', KEYS[1], prefix .. 'sum', ARGV[3])
-    redis.call('HINCRBY', KEYS[1], prefix .. 'count', ARGV[2])
-    for i, func in ipairs({'min', 'max'}) do
-        local raw = ARGV[3 + i]
-        if raw ~= '' then
-            local value = tonumber(raw)
+    redis.call('HINCRBYFLOAT', KEYS[1], prefix .. 'sum', value and ARGV[2] or '0')
+    redis.call('HINCRBY', KEYS[1], prefix .. 'count', 1)
+    if value then
+        for _, func in ipairs({'min', 'max'}) do
             local stored = redis.call('HGET', KEYS[1], prefix .. func)
             local previous = stored and tonumber(stored)
             if not previous or (func == 'min' and value < previous)
                 or (func == 'max' and value > previous) then
-                redis.call('HSET', KEYS[1], prefix .. func, raw)
+                redis.call('HSET', KEYS[1], prefix .. func, ARGV[2])
             end
         end
     end
@@ -152,13 +139,8 @@ export const CONFIRM_SCRIPT = `
 -- the lock's token and TTL, ARGV[4] the number of entries, then the entries; then each group
 -- gives its bucket start, its number of ids and the ids.
 local BATCH = 1000
--- An entry is the event's value, or nothing when it only counts. Earlier SDK versions stored
--- the event's count, sum, min and max as a JSON array; their entries expire within the hour.
+-- An entry is the event's value, or nothing when it only counts.
 local function value_of(entry)
-    if entry:sub(1, 1) == '[' then
-        local legacy = cjson.decode(entry)
-        entry = legacy[3] ~= '' and legacy[2] or ''
-    end
     return entry ~= '' and tonumber(entry) or nil
 end
 local function settle(state, pending_key, start, ids)

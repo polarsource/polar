@@ -8,7 +8,6 @@ from redis import Redis
 
 from polar.outpost.client import (
     APPLY_SNAPSHOT_SCRIPT,
-    READ_STATE_SCRIPT,
     WRITE_BUCKET_SCRIPT,
 )
 from polar.outpost.reducer import BUCKET_SIZE
@@ -61,9 +60,6 @@ def write_args(
         "outpost:v1:outbox:flusher:0",
         bucket_start,
     ] + [
-        1,
-        7,
-        7,
         7,
         f"event-{next(_ids)}",
         QUEUED_EVENT if queued else "",
@@ -113,12 +109,6 @@ def test_write_bucket_three_reducers(benchmark: BenchmarkFixture, redis: Redis) 
         pipeline.execute()
 
     benchmark(write)
-
-
-@pytest.mark.parametrize("buckets", BUCKET_COUNTS)
-def test_read_state(benchmark: BenchmarkFixture, redis: Redis, buckets: int) -> None:
-    sha = redis.script_load(READ_STATE_SCRIPT)
-    benchmark(redis.evalsha, sha, 1, key_of(buckets))
 
 
 @pytest.mark.parametrize("buckets", BUCKET_COUNTS)

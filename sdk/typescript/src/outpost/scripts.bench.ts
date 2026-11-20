@@ -4,7 +4,7 @@ import { afterAll, beforeAll, bench, describe } from "vitest";
 
 import { BUCKET_COUNTS, COLD_UNTIL, encodeState } from "./benchmark";
 import { BUCKET_SIZE } from "./reducer";
-import { APPLY_SNAPSHOT_SCRIPT, READ_STATE_SCRIPT, WRITE_BUCKET_SCRIPT } from "./scripts";
+import { APPLY_SNAPSHOT_SCRIPT, WRITE_BUCKET_SCRIPT } from "./scripts";
 import { startRedisServer, type RedisServer } from "./testing";
 
 const OPTIONS = { warmupTime: 500, time: 2_000 };
@@ -32,9 +32,6 @@ const writeArgs = (identity: string, bucketStart: number, queued = true) => [
   "outpost:v1:outbox",
   "outpost:v1:outbox:flusher:0",
   bucketStart,
-  1,
-  7,
-  7,
   7,
   `event-${++sequence}`,
   queued ? queuedEvent : "",
@@ -43,7 +40,6 @@ const writeArgs = (identity: string, bucketStart: number, queued = true) => [
 let redisServer: RedisServer;
 let redis: Redis;
 let writeBucketSha: string;
-let readStateSha: string;
 let applySnapshotSha: string;
 
 const seedState = async (identity: string, buckets: number): Promise<void> => {
@@ -56,7 +52,6 @@ beforeAll(async () => {
   await once(redis, "ready");
   // The client loads each script once and calls it by hash.
   writeBucketSha = (await redis.script("LOAD", WRITE_BUCKET_SCRIPT)) as string;
-  readStateSha = (await redis.script("LOAD", READ_STATE_SCRIPT)) as string;
   applySnapshotSha = (await redis.script("LOAD", APPLY_SNAPSHOT_SCRIPT)) as string;
   for (const buckets of BUCKET_COUNTS) await seedState(identityOf(buckets), buckets);
   for (const reducer of REDUCERS) await seedState(`external:alice:${reducer}`, 1);
@@ -95,18 +90,6 @@ describe("WRITE_BUCKET", () => {
     },
     OPTIONS,
   );
-});
-
-describe("READ_STATE", () => {
-  for (const buckets of BUCKET_COUNTS) {
-    bench(
-      `read a ${buckets}-bucket state`,
-      async () => {
-        await redis.evalsha(readStateSha, 1, keyOf(buckets));
-      },
-      OPTIONS,
-    );
-  }
 });
 
 describe("APPLY_SNAPSHOT", () => {

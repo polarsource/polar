@@ -1,6 +1,3 @@
-export const READ_STATE_SCRIPT = `
-{{ outpost_scripts.read_state }}`;
-
 export const READ_STATES_SCRIPT = `
 {{ outpost_scripts.read_states }}`;
 

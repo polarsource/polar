@@ -200,7 +200,18 @@ if meter is not None:
 
 ### Local reduction with Outpost
 
-Outpost is our local reduction engine. It can reduce events locally and share a state across all your clients via Redis. Pass `outpost=True` to `polar.metering()` to enable it; it then uses the Redis at the `REDIS_URL` environment variable.
+Outpost is our local reduction engine. It can reduce events locally and share a state across all your clients via Redis. Pass `outpost=True` to `polar.metering()` to enable it. Outpost needs the `outpost` extra; the rest of the SDK does not.
+
+```bash
+pip install "polar-sdk[outpost]"
+```
+
+```python
+async with polar.metering(outpost=True) as metering:
+    ...
+```
+
+`outpost=True` uses `REDIS_URL` and raises if it is unset.
 
 In high throughput scenarios, Outpost can return you accurate meter reads only milliseconds after the event is ingested.
 

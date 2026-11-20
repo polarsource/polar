@@ -97,3 +97,30 @@ class TestPaginateHasMore:
             assert has_more is (page < 4)
 
         assert sorted(paged_ids) == sorted(user.id for user in users)
+
+
+@pytest.mark.anyio
+class TestPaginate:
+    async def test_ties_on_the_sort_key(
+        self, save_fixture: SaveFixture, session: AsyncSession
+    ) -> None:
+        created_at = utc_now() - timedelta(days=1)
+        users = [await create_user(save_fixture) for _ in range(12)]
+        for user in users:
+            user.created_at = created_at
+        await session.flush()
+
+        repository = UserRepository.from_session(session)
+        statement = (
+            select(User)
+            .where(User.id.in_([user.id for user in users]))
+            .order_by(User.created_at.desc())
+        )
+
+        paged_ids: list[uuid.UUID] = []
+        for page in range(1, 5):
+            items, count = await repository.paginate(statement, limit=3, page=page)
+            paged_ids.extend(item.id for item in items)
+            assert count == len(users)
+
+        assert sorted(paged_ids) == sorted(user.id for user in users)

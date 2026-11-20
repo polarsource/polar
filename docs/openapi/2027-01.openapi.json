@@ -55328,14 +55328,7 @@
             ]
           },
           "type": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/CustomerType"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "$ref": "#/components/schemas/CustomerType",
             "description": "The customer type. Can only be upgraded from 'individual' to 'team', never downgraded.",
             "examples": [
               "team"

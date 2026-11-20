@@ -45,10 +45,12 @@ class TestListMCPEvents:
         assert [item["name"] for item in items] == list(MCP_EVENTS)
         assert items[0]["input_schema"]["required"] == ["organization_id"]
         assert items[0]["input_schema"]["additionalProperties"] is False
-        payload_schema = items[0]["payload_schema"]
-        assert "id" in payload_schema["properties"]
-        assert "$defs" not in payload_schema
-        assert "$ref" not in json.dumps(payload_schema)
+        for item in items:
+            payload_schema = item["payload_schema"]
+            variants = payload_schema.get("oneOf", [payload_schema])
+            assert all("id" in variant["properties"] for variant in variants)
+            assert "$defs" not in payload_schema
+            assert "$ref" not in json.dumps(payload_schema)
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_organization(self, client: AsyncClient) -> None:

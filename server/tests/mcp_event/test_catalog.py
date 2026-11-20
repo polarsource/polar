@@ -53,3 +53,18 @@ def test_payload_schema() -> None:
         ],
         "title": "Animal",
     }
+
+
+def test_payload_schema_top_level_union() -> None:
+    schema = MCPEventDefinition(
+        "An animal event.",
+        TypeAdapter(Annotated[Cat | Dog, Field(discriminator="kind")]),
+    ).payload_schema()
+
+    assert "$ref" not in json.dumps(schema)
+    assert "$defs" not in schema
+    cat, dog = schema["oneOf"]
+    assert cat["title"] == "Cat"
+    assert set(cat["properties"]) == {"kind", "lives"}
+    assert dog["title"] == "Dog"
+    assert set(dog["properties"]) == {"kind", "breed"}

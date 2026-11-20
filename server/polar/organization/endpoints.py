@@ -117,7 +117,7 @@ from polar.user_organization.service import (
 from polar.version import V2027_01
 
 from . import auth, legacy_schemas, sorting
-from .embed_hosts import is_shared_host
+from .embed_hosts import is_shared_host, parse_host_pattern
 from .schemas import Organization as OrganizationSchema
 from .schemas import (
     OrganizationAppealRequest,
@@ -293,13 +293,27 @@ async def get_kyc(
 )
 async def get_embed_status(
     authz: AuthorizeOrgManageRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> OrganizationEmbedStatus:
     """Whether this organization needs to configure its embed hosts."""
     organization = authz.organization
+    payment_method_domains = (
+        await organization_domain_service.get_payment_method_domains(
+            session, organization
+        )
+    )
     return OrganizationEmbedStatus(
         embed_hosts=organization.embed_hosts,
         shared_hosts=[
             entry for entry in organization.embed_hosts if is_shared_host(entry)
+        ],
+        wallet_hosts=[
+            entry
+            for entry in organization.embed_hosts
+            if (pattern := parse_host_pattern(entry)) is not None
+            and not pattern.wildcard
+            and pattern.scheme is None
+            and pattern.host in payment_method_domains
         ],
     )
 

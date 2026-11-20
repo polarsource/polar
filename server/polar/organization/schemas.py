@@ -676,6 +676,12 @@ class OrganizationEmbedStatus(Schema):
             "such as `*.vercel.app`."
         )
     )
+    wallet_hosts: list[str] = Field(
+        description=(
+            "Entries of `embed_hosts` registered with Stripe for wallet payments, "
+            "such as Apple Pay and Google Pay."
+        )
+    )
 
 
 class OrganizationKYC(Organization):

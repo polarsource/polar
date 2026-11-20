@@ -1,0 +1,19 @@
+server/AGENTS.md
+  s_a7be5626e771f2::t_38c140db63d992 279-280,282,299-300,304-310
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "291bbe55a520fa792da6e3f65a45635015942387",
+  "prompts": {},
+  "sessions": {
+    "s_a7be5626e771f2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f46f-2f11-7d20-9713-16d9c75fd0ce",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

@@ -1,0 +1,34 @@
+clients/apps/web/src/components/Benefit/UpdateBenefitModalContent.tsx
+  s_a7be5626e771f2::t_7b18ac62ca2202 43-47
+clients/apps/web/src/components/CustomerPortal/SeatManagementTable.tsx
+  s_a7be5626e771f2::t_7b18ac62ca2202 188
+clients/apps/web/src/components/Products/ProductForm/ProductForm.tsx
+  s_a7be5626e771f2::t_7b18ac62ca2202 40-43
+clients/apps/web/src/components/Settings/FeatureSettings.tsx
+  s_a7be5626e771f2::t_7b18ac62ca2202 13-17,25-29,34,57-62
+clients/apps/web/src/components/Products/EditProductPage.tsx
+  s_a7be5626e771f2::t_7b18ac62ca2202 75
+clients/apps/web/src/components/Settings/OrganizationProfileSettings.tsx
+  s_a7be5626e771f2::t_4a17f4e867c012 510,571
+clients/apps/web/src/components/CustomerPortal/EditBillingDetails.tsx
+  s_a7be5626e771f2::t_7b18ac62ca2202 52,96-97
+  s_a7be5626e771f2::t_1de85919e8905c 53-55,98,100
+clients/apps/web/src/utils/product.ts
+  s_a7be5626e771f2::t_7b18ac62ca2202 165
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "56b480b4596a5c9ea2f963ca3250ebe9ed543e4c",
+  "prompts": {},
+  "sessions": {
+    "s_a7be5626e771f2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f46f-2f11-7d20-9713-16d9c75fd0ce",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

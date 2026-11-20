@@ -181,7 +181,6 @@ async def test_factory_runs_outpost_alone_and_refuses_buffer_options_beside_it()
     options = MeteringOutpostOptions(
         redis_url="redis://localhost:6379",
         telemetry=False,
-        batch_size=50,
         on_delivered=on_delivered,
         on_dropped=on_dropped,
     )
@@ -190,7 +189,6 @@ async def test_factory_runs_outpost_alone_and_refuses_buffer_options_beside_it()
             polar.metering(buffered=BufferedMeteringOptions(), outpost=options)
         [outpost] = polar.metering(outpost=options).strategies
         assert isinstance(outpost, Outpost)
-        assert outpost._batch_size == 50
         assert outpost._on_delivered is on_delivered
         assert outpost._on_dropped is on_dropped
 

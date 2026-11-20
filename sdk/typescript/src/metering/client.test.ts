@@ -497,12 +497,7 @@ it("runs Outpost alone, on its own batches, and refuses buffer options beside it
   const { Outpost } = await import("../outpost/client");
   const polar = createPolar({ accessToken: "token" });
   const onDelivered = vi.fn();
-  const create = outpost({
-    redisUrl: "redis://localhost:6379",
-    telemetry: false,
-    batchSize: 50,
-    onDelivered,
-  });
+  const create = outpost({ redisUrl: "redis://localhost:6379", telemetry: false, onDelivered });
   expect(() => polar.metering({ buffered: {}, outpost: create })).toThrow(MeteringError);
   const start = vi
     .spyOn(Outpost.prototype, "start")
@@ -515,7 +510,7 @@ it("runs Outpost alone, on its own batches, and refuses buffer options beside it
     await metering.flush();
     expect(metering.strategies).toHaveLength(1);
     expect(metering.strategies[0]).not.toBeInstanceOf(BufferedMeteringStrategy);
-    expect(start.mock.instances[0]).toMatchObject({ options: { batchSize: 50, onDelivered } });
+    expect(start.mock.instances[0]).toMatchObject({ options: { onDelivered } });
   } finally {
     await metering.close();
   }

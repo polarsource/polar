@@ -409,7 +409,7 @@ export const createMetering = (
     return new Metering({ strategies: [new BufferedMeteringStrategy(polar, options.buffered)], client });
   }
   if (options.buffered !== undefined)
-    throw new MeteringError("Outpost delivers its events itself: configure its batches in outpost()");
+    throw new MeteringError("Outpost delivers its events itself: pass buffered or outpost, not both");
   const createOutpost = options.outpost;
   let outpost: Outpost | undefined;
   const strategy: MeteringStrategy = {

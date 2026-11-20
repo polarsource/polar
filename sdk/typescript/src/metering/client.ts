@@ -415,7 +415,7 @@ export const createMetering = (
   }
   if (options.buffered !== undefined)
     throw new MeteringError(
-      "Outpost delivers its events itself: configure its batches in outpost()",
+      "Outpost delivers its events itself: pass buffered or outpost, not both",
     );
   const createOutpost = options.outpost;
   let outpost: Outpost | undefined;

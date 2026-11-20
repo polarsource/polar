@@ -451,8 +451,6 @@ export interface OutpostOptions {
    * then applies with the events still pending.
    */
   confirmTimeout?: number;
-  /** Events per request delivering the outbox to Polar. Defaults to 1000. */
-  batchSize?: number;
   /** Called with each batch of events Polar accepted from the outbox; may be async. */
   onDelivered?: (events: EventInput[]) => void | Promise<void>;
   /** Called with each batch of events Polar refused, which leave the outbox; may be async. */
@@ -500,11 +498,7 @@ export class Outpost {
   constructor(
     readonly redisUrl: string,
     private readonly options: OutpostOptions,
-  ) {
-    const { batchSize } = options;
-    if (batchSize !== undefined && (!Number.isSafeInteger(batchSize) || batchSize < 1))
-      throw new RangeError("Batch size must be a positive integer");
-  }
+  ) {}
 
   get connectionId(): string | undefined {
     return this._connectionId;
@@ -834,10 +828,6 @@ export class Outpost {
   }
 
   readonly [OUTPOST] = true;
-
-  private get batchSize(): number {
-    return this.options.batchSize ?? OUTBOX_BATCH;
-  }
 
   private get delivers(): boolean {
     return Boolean(this.redis && !this.failure);
@@ -1373,7 +1363,7 @@ export class Outpost {
           return;
         }
         // A partial batch goes only when no flusher delivers: the last one in flight takes it.
-        const full = Math.floor((length - delivering) / this.batchSize);
+        const full = Math.floor((length - delivering) / OUTBOX_BATCH);
         const slots = Math.min(FLUSHERS, full || (round && delivering ? 0 : 1));
         if (!slots) return;
         const outcomes = await Promise.all(
@@ -1411,7 +1401,7 @@ export class Outpost {
           OUTBOX_CLAIM_IDLE,
           "0-0",
           "COUNT",
-          this.batchSize,
+          OUTBOX_BATCH,
           "JUSTID",
         );
       for (let from = "0"; ; ) {
@@ -1424,7 +1414,7 @@ export class Outpost {
           if (length === delivering) return "drained";
           // The flusher still in flight takes a partial batch; if it let go meanwhile, the next
           // drain does.
-          if (delivering && length - delivering < this.batchSize) {
+          if (delivering && length - delivering < OUTBOX_BATCH) {
             this.undrained = true;
             return "drained";
           }
@@ -1434,7 +1424,7 @@ export class Outpost {
           OUTBOX_GROUP,
           consumer,
           "COUNT",
-          this.batchSize,
+          OUTBOX_BATCH,
           "STREAMS",
           this.outboxKey,
           from,
@@ -1805,7 +1795,7 @@ export class Outpost {
   }
 }
 
-export type OutpostFactoryOptions = Omit<OutpostOptions, "client"> & {
+export type OutpostFactoryOptions = Omit<OutpostOptions, "client" | "confirmTimeout"> & {
   /** Redis connection URL. Defaults to the REDIS_URL environment variable. */
   redisUrl?: string;
 };

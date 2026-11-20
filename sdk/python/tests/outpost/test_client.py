@@ -2459,14 +2459,14 @@ async def test_sends_only_full_batches_while_another_flusher_delivers(
 ) -> None:
     url, redis = redis_connection
     await _seal(redis, BUCKET)
-    async with Outpost(url, client=polar_client, batch_size=2) as outpost:
+    async with Outpost(url, client=polar_client) as outpost:
         await outpost.track(_usage("event-0", 10))
         # Another flusher holds a batch in flight.
         await redis.xreadgroup("polar", "other", {OUTBOX: ">"})
-        for external_id in ("event-1", "event-2", "event-3"):
-            await outpost.track(_usage(external_id, 10))
+        for index in range(1, 1002):
+            await outpost.track(_usage(f"event-{index}", 1))
         await outpost.flush()
-        assert _delivered(ingest) == [["event-1", "event-2"]]
+        assert [len(ids) for ids in _delivered(ingest)] == [1000]
         # The other flusher delivered its batch, and the rest goes.
         [[entry, _]] = typing.cast(
             list[typing.Any], await redis.xrange(OUTBOX, count=1)
@@ -2474,7 +2474,8 @@ async def test_sends_only_full_batches_while_another_flusher_delivers(
         await redis.xack(OUTBOX, "polar", entry)
         await redis.xdel(OUTBOX, entry)
         await outpost.flush()
-        assert _delivered(ingest) == [["event-1", "event-2"], ["event-3"]]
+        assert [len(ids) for ids in _delivered(ingest)] == [1000, 1]
+        assert _delivered(ingest)[1] == ["event-1001"]
 
 
 @pytest.mark.anyio

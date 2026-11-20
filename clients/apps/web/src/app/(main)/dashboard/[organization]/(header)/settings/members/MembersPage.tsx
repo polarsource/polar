@@ -29,7 +29,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
-import { Text } from '@polar-sh/orbit'
+import { Text, Truncated } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useRouter } from 'next/navigation'
 import { useCallback, useState } from 'react'
@@ -143,9 +143,11 @@ export default function ClientPage({
       ),
       cell: ({ row: { original: member } }) => {
         return (
-          <Box flexDirection="row" alignItems="center" gap="s">
+          <Box flexDirection="row" alignItems="center" gap="s" minWidth={0}>
             <Avatar avatar_url={member.avatar_url} name={member.email} />
-            <Text>{member.email}</Text>
+            <Truncated>
+              <Text as="span">{member.email}</Text>
+            </Truncated>
           </Box>
         )
       },

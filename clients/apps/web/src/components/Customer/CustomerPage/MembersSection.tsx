@@ -124,15 +124,23 @@ export const MembersSection = ({
             accessorKey: 'email',
             size: 260,
             cell: ({ row: { original } }) => (
-              <Box alignItems="center" gap="m">
+              <Box alignItems="center" gap="m" minWidth={0}>
                 <Avatar
                   className="h-8 w-8"
                   name={original.name ?? original.email}
                   avatar_url={null}
                 />
-                <Box flexDirection="column">
-                  <Text>{original.name ?? original.email}</Text>
-                  {original.name && <Text color="muted">{original.email}</Text>}
+                <Box flexDirection="column" minWidth={0}>
+                  <Truncated>
+                    <Text as="span">{original.name ?? original.email}</Text>
+                  </Truncated>
+                  {original.name && (
+                    <Truncated>
+                      <Text as="span" color="muted">
+                        {original.email}
+                      </Text>
+                    </Truncated>
+                  )}
                 </Box>
               </Box>
             ),

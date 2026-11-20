@@ -11,7 +11,7 @@ from sqlalchemy import (
     select,
     update,
 )
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm import joinedload, raiseload, selectinload
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
@@ -26,6 +26,7 @@ from polar.kit.utils import utc_now
 from polar.models import (
     Checkout,
     CheckoutProduct,
+    Discount,
     Organization,
     Payment,
     Product,
@@ -204,6 +205,27 @@ class CheckoutRepository(
             ),
             joinedload(Checkout.subscription),
             joinedload(Checkout.discount),
+            joinedload(Checkout.product_price),
+        )
+
+    def get_public_eager_options(self) -> Options:
+        """
+        Options that only load what the `CheckoutPublic` schema serializes.
+        """
+        return (
+            joinedload(Checkout.organization),
+            selectinload(Checkout.product).options(
+                selectinload(Product.product_medias),
+                selectinload(Product.attached_custom_fields),
+            ),
+            selectinload(Checkout.checkout_products).options(
+                joinedload(CheckoutProduct.product).options(
+                    selectinload(Product.product_medias),
+                )
+            ),
+            joinedload(Checkout.discount).options(
+                raiseload(Discount.discount_products),
+            ),
             joinedload(Checkout.product_price),
         )
 

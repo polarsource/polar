@@ -118,10 +118,6 @@ interface Snapshot {
   max: number | null;
 }
 interface Confirmed {
-  reducer_id: string;
-  customer_id: string | null;
-  external_customer_id: string | null;
-  bucket_start: number;
   ids: string[];
   // Read with the ids: it counts exactly those.
   snapshot: Snapshot;

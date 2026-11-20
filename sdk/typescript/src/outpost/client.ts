@@ -417,7 +417,7 @@ const reportLocalValue = (
   }
 };
 
-class RefusedError extends PolarError {
+class RefusedError extends PolarOutpostError {
   constructor(message = "Polar refused Outpost") {
     super(message);
   }
@@ -492,7 +492,8 @@ export class Outpost {
   private configurationRevision: number | null = null;
   // How many times Polar's changes went past their retention, as of the last read of the pull hash.
   private resets: number | null = null;
-  private failure?: Error;
+  private failure?: PolarOutpostError;
+  private failedAt = 0;
   private messages: Promise<unknown> = Promise.resolve();
 
   constructor(
@@ -598,15 +599,13 @@ export class Outpost {
         throw redisUnavailable(error);
       });
       // A long-running process pulls on time, reads or not.
-      this.pullTimer = setInterval(() => {
-        if (!this.failure) void this.refresh().catch(() => {});
-      }, PULL_CHECK_INTERVAL);
+      this.pullTimer = setInterval(() => void this.refresh().catch(() => {}), PULL_CHECK_INTERVAL);
       this.refreshTimer = setInterval(() => void this.flushTelemetry(), REPORT_INTERVAL);
       // A long-running process delivers what it queued without a flush.
       this.drainTimer = setInterval(() => {
         if (this.undrained && this.delivers) void this.drain().catch(() => {});
       }, DRAIN_INTERVAL);
-      this.requireRedis();
+      this.requireRunning();
       return this;
     } catch (error) {
       await this.close();
@@ -663,7 +662,7 @@ export class Outpost {
   }
 
   async track(event: EventInput): Promise<void> {
-    const redis = this.requireRedis();
+    const redis = this.requireRunning();
     const started = performance.now();
     let outcome = "ok";
     try {
@@ -731,7 +730,7 @@ export class Outpost {
   }
 
   private async settle(events: EventInput[], hotOnly: boolean): Promise<void> {
-    const redis = this.requireRedis();
+    const redis = this.requireRunning();
     const settlements = this.settlements(events);
     if (!settlements.length) return;
     await redis
@@ -762,7 +761,7 @@ export class Outpost {
   async meter(input: Customer & { meter_id: string }): Promise<CustomerMeter | null> {
     return this.measureRead("meter", async (read) => {
       const customer = customerKey(input);
-      this.requireRedis();
+      this.requireRunning();
       await this.refresh();
       const reducer = this.findReducer("usage", input.meter_id);
       if (!reducer) {
@@ -795,7 +794,7 @@ export class Outpost {
 
   async actor(input: Customer): Promise<void> {
     return this.measureRead("actor", async (read) => {
-      this.requireRedis();
+      this.requireRunning();
       await this.refresh();
       // Readiness alone: no statistic of any state.
       const reads = await this.read(
@@ -921,7 +920,7 @@ export class Outpost {
       .filter((_, index) => !isReady(reads[index]))
       .map((reducer) => this.fetchKey(`${customer}:${reducer.id}`));
     for (;;) {
-      const fetching = await this.requireRedis()
+      const fetching = await this.requireRunning()
         .exists(...markers)
         .catch((error: unknown) => {
           throw redisUnavailable(error);
@@ -941,7 +940,7 @@ export class Outpost {
       const identity = `${customer}:${reducer.id}`;
       return [`${this.prefix}:state:${identity}`, this.missingKey(identity)];
     });
-    const results = await this.requireRedis()
+    const results = await this.requireRunning()
       .outpostReadStates(keys.length + 1, ...keys, this.pullKey, ...statistics)
       .catch((error: unknown) => {
         throw redisUnavailable(error);
@@ -965,9 +964,24 @@ export class Outpost {
   }
 
   private requireRedis(): OutpostRedis {
-    if (this.failure) throw this.failure;
     if (!this.redis) throw new PolarError("Call Outpost.start() before using Outpost");
     return this.redis;
+  }
+
+  // What the merchant calls fails while the instance is stopped. The pull goes on behind it,
+  // at its backoff: one that succeeds ends the failure.
+  private requireRunning(): OutpostRedis {
+    if (this.failure) {
+      void this.refresh().catch(() => {});
+      throw this.failure;
+    }
+    return this.requireRedis();
+  }
+
+  // A pull that succeeded since the failure, on this instance or another, ends it.
+  private pulled(at: number): void {
+    this.pulledAt = at;
+    if (this.failure && at > this.failedAt) this.failure = undefined;
   }
 
   private get pullKey(): string {
@@ -1081,7 +1095,7 @@ export class Outpost {
     const configured = revision === null ? null : Number(revision);
     if (configured !== this.configurationRevision && (await this.configure("redis")))
       this.configurationRevision = configured;
-    this.pulledAt = Number(pulledAt ?? 0);
+    this.pulled(Number(pulledAt ?? 0));
     this.pullInterval = Number(nextPoll ?? PULL_INTERVAL);
     this.pullRetryAt = Number(retryAt ?? 0);
     this.resets = resets === null ? null : Number(resets);
@@ -1204,7 +1218,7 @@ export class Outpost {
           changes.has_more ? "" : "1",
         );
         if (committed) {
-          this.pulledAt = pulledAt;
+          this.pulled(pulledAt);
           this.pullInterval = nextPoll;
           this.pullRetryAt = 0;
         }
@@ -1552,7 +1566,11 @@ export class Outpost {
   }
 
   private fail(error: unknown): void {
-    this.failure = error instanceof Error ? error : new PolarError(String(error));
+    this.failure =
+      error instanceof PolarOutpostError
+        ? error
+        : new PolarOutpostError("Outpost stopped", { cause: error });
+    this.failedAt = Date.now();
   }
 
   private startSpan(name: string, attributes: Attributes = {}): Span {

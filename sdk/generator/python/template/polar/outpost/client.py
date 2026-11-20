@@ -533,6 +533,7 @@ class Outpost:
         self._redis: Redis | None = None
         self._connection_id: str | None = None
         self._failure: PolarOutpostError | None = None
+        self._failed_at = 0.0
         self._tasks: anyio.abc.TaskGroup | None = None
         self._reducers: list[Reducer] = []
         self._matchers: list[ReducerMatcher] = []
@@ -709,7 +710,7 @@ class Outpost:
 
     @_raise_redis_unavailable
     async def track(self, event: EventInput) -> None:
-        self._require_redis()
+        self._require_running()
         started = time.perf_counter()
         outcome = "ok"
         try:
@@ -813,7 +814,7 @@ class Outpost:
     async def _settle(
         self, events: collections.abc.Sequence[EventInput], *, hot_only: bool
     ) -> None:
-        self._require_redis()
+        self._require_running()
         groups = self._settlements(events)
         assert self._confirm_script is not None
         if groups:
@@ -851,7 +852,7 @@ class Outpost:
     ) -> CustomerMeter | None:
         with self._measure_read("meter") as read:
             customer = self._customer_key(customer_id, external_customer_id)
-            self._require_redis()
+            self._require_running()
             await self._refresh()
             usage = self._find_reducer("usage", meter_id)
             if usage is None:
@@ -895,7 +896,7 @@ class Outpost:
     ) -> None:
         with self._measure_read("actor") as read:
             customer = self._customer_key(customer_id, external_customer_id)
-            self._require_redis()
+            self._require_running()
             await self._refresh()
             # Readiness alone: no statistic of any state.
             states = await self._read(
@@ -1051,7 +1052,7 @@ class Outpost:
     ) -> list[ReducerState | None]:
         """One command: each reducer's state, with only the statistics the read adds
         up, unless Polar does not know the customer."""
-        redis = self._require_redis()
+        redis = self._require_running()
         keys = [self._pull_key]
         for reducer in reducers:
             identity = f"{customer}:{reducer['id']}"
@@ -1154,9 +1155,23 @@ class Outpost:
             "customer_id" if kind == "customer" else "external_customer_id": identifier
         }
 
-    def _require_redis(self) -> Redis:
+    def _require_running(self) -> Redis:
+        """What the merchant calls fails while the instance is stopped. The pull goes
+        on behind it, at its backoff: one that succeeds ends the failure."""
         if self._failure is not None:
+            if self._tasks is not None:
+                self._tasks.start_soon(self._refresh_quietly)
             raise self._failure
+        return self._require_redis()
+
+    def _pulled(self, at: float) -> None:
+        """A pull that succeeded since the failure, on this instance or another, ends
+        it."""
+        self._pulled_at = at
+        if self._failure is not None and at > self._failed_at:
+            self._failure = None
+
+    def _require_redis(self) -> Redis:
         if self._redis is None:
             raise RuntimeError("Use Outpost inside an async with block")
         # Fail fast during an outage: the reconnect says when Redis answers again.
@@ -1721,7 +1736,7 @@ class Outpost:
         configured = None if revision is None else int(revision)
         if configured != self._configuration_revision and await self._configure("redis"):
             self._configuration_revision = configured
-        self._pulled_at = float(pulled_at) / 1000 if pulled_at else 0.0
+        self._pulled(float(pulled_at) / 1000 if pulled_at else 0.0)
         self._pull_interval = (
             float(next_poll_in) / 1000 if next_poll_in else PULL_INTERVAL
         )
@@ -1754,9 +1769,11 @@ class Outpost:
         """A long-running process pulls on time, reads or not."""
         while True:
             await anyio.sleep(PULL_CHECK_INTERVAL)
-            if self._failure is None:
-                with contextlib.suppress(RedisError):
-                    await self._refresh()
+            await self._refresh_quietly()
+
+    async def _refresh_quietly(self) -> None:
+        with contextlib.suppress(RedisError):
+            await self._refresh()
 
     async def _run_pull(self, done: anyio.Event, wait: bool) -> None:
         try:
@@ -1904,7 +1921,7 @@ class Outpost:
                     ],
                 )
                 if committed:
-                    self._pulled_at = now / 1000
+                    self._pulled(now / 1000)
                     self._pull_interval = next_poll_in
                     self._pull_retry_at = 0.0
                 released = not committed or not changes["has_more"]
@@ -1943,6 +1960,7 @@ class Outpost:
             failure.__cause__ = error
             error = failure
         self._failure = error
+        self._failed_at = time.time()
 
     async def _receive_snapshot(
         self,

@@ -1884,7 +1884,21 @@ it("fails when Polar refuses a pull", async () => {
   refuseConnections = true;
   await outpost["pull"]();
   await expect(outpost.actor(customer)).rejects.toThrow("refused");
+  await expect(outpost.actor(customer)).rejects.toBeInstanceOf(PolarOutpostError);
   expect(outpost.connected).toBe(false);
+});
+
+it("resumes once a pull succeeds after Polar refused one", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  const outpost = await start();
+  refuseConnections = true;
+  await outpost["pull"]();
+  await expect(outpost.track(usage(eventId(), 1))).rejects.toThrow("refused");
+  refuseConnections = false;
+  // Once the pull's backoff ends, a call on the failed instance starts the next pull.
+  vi.advanceTimersByTime(60_000);
+  await vi.waitFor(() => outpost.track(usage(eventId(), 1)));
+  expect(outpost.connected).toBe(true);
 });
 
 it.each([
@@ -1968,9 +1982,12 @@ it.each([
   snapshot = aliceSnapshot;
   const outpost = await start();
   vi.spyOn(outpost["redis"]!, "outpostApplySnapshot").mockRejectedValueOnce(error);
-  await expect(outpost.actor(customer)).rejects.toBe(error);
-  await expect(outpost.meter(meter)).rejects.toBe(error);
-  await expect(ingest(outpost, 5)).rejects.toBe(error);
+  await expect(outpost.actor(customer)).rejects.toThrow();
+  // Every later call fails with one Outpost error, which names what stopped the instance.
+  const stopped = (failure: unknown) =>
+    failure instanceof PolarOutpostError && failure.cause === error;
+  await expect(outpost.meter(meter)).rejects.toSatisfy(stopped);
+  await expect(ingest(outpost, 5)).rejects.toSatisfy(stopped);
   expect(outpost.connected).toBe(false);
 });
 

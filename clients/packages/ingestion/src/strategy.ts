@@ -1,13 +1,13 @@
-import type { CostMetadataInput } from '@polar-sh/sdk/models/components/costmetadatainput.js'
+import type { models } from '@polar-sh/sdk/2027-01'
 import { type IngestionContext, PolarIngestion } from './ingestion'
 
-export type IngestionStrategyCustomer = {
-  customerId: string
-}
+export type IngestionStrategyCustomer =
+  | { customerId: string }
+  | { customer_id: string }
 
-export type IngestionStrategyExternalCustomer = {
-  externalCustomerId: string
-}
+export type IngestionStrategyExternalCustomer =
+  | { externalCustomerId: string }
+  | { external_customer_id: string }
 
 export type IngestionExecutionHandler<TUsageContext extends IngestionContext> =
   (
@@ -49,7 +49,7 @@ export abstract class IngestionStrategy<
   }
 
   public cost(
-    costResolver: (ctx: TUsageContext) => CostMetadataInput,
+    costResolver: (ctx: TUsageContext) => models.CostMetadataInput,
   ): IngestionStrategy<TUsageContext, TStrategyClient> {
     this.costResolver = costResolver
     return this

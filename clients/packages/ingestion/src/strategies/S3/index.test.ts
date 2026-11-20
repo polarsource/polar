@@ -40,7 +40,7 @@ const upload = (key: string) =>
 
 const billedCustomers = (ingest: ReturnType<typeof trackUploads>['ingest']) =>
   ingest.mock.calls.flatMap(([{ events }]) =>
-    events.map((event) => ('customerId' in event ? event.customerId : null)),
+    events.map((event) => ('customer_id' in event ? event.customer_id : null)),
   )
 
 describe('S3Strategy', () => {
@@ -81,7 +81,7 @@ describe('S3Strategy', () => {
     expect(ingest).toHaveBeenCalledExactlyOnceWith({
       events: [
         {
-          customerId: 'alice',
+          customer_id: 'alice',
           name: 's3-bytes',
           metadata: { bytes: 5, strategy: 'S3', bucket: 'bucket', key: 'key' },
         },

@@ -8,19 +8,8 @@ import { useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '../Modal/useModal'
+import { cookieConsentGiven } from './cookieConsentGiven'
 import { CookiePreferencesModal } from './CookiePreferencesModal'
-
-export function cookieConsentGiven() {
-  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
-    return 'undecided'
-  }
-
-  if (!localStorage.getItem('cookie_consent')) {
-    return 'undecided'
-  }
-
-  return localStorage.getItem('cookie_consent')
-}
 
 export function CookieConsent({ countryCode }: { countryCode: string | null }) {
   const isEU = countryCode ? EU_COUNTRY_CODES.includes(countryCode) : false

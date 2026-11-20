@@ -1,6 +1,6 @@
 'use client'
 
-import { cookieConsentGiven } from '@/components/Privacy/CookieConsent'
+import { cookieConsentGiven } from '@/components/Privacy/cookieConsentGiven'
 import { DISTINCT_ID_COOKIE } from '@/experiments/constants'
 import { getQueryClient } from '@/utils/api/query'
 import { CONFIG } from '@/utils/config'

@@ -12,7 +12,7 @@ from sqlalchemy import select
 from starlette.applications import Starlette
 
 from polar.auth.service import auth as auth_service
-from polar.backoffice import app as backoffice_app
+from polar.backoffice.app import app as backoffice_app
 from polar.backoffice.auth.factor import GOOGLE_DISCOVERY_ENDPOINT
 from polar.config import Environment, settings
 from polar.kit.utils import utc_now

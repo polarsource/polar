@@ -18,7 +18,7 @@ from polar.auth.exception_handlers import (
 )
 from polar.auth.middlewares import AuthSubjectMiddleware
 from polar.auth.models import ORGANIZATION_HEADER
-from polar.backoffice import app as backoffice_app
+from polar.backoffice.app import app as backoffice_app
 from polar.checkout import ip_geolocation
 from polar.checkout_link.app import app as checkout_link_redirect_app
 from polar.config import settings

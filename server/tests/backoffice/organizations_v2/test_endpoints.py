@@ -7,7 +7,7 @@ import httpx2
 import pytest
 from pytest_mock import MockerFixture
 
-from polar.backoffice import app as backoffice_app
+from polar.backoffice.app import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
 from polar.backoffice.organizations_v2.endpoints import _stripe_reject_reason_for_aup
 from polar.kit.utils import utc_now

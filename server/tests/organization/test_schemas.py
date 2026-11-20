@@ -96,7 +96,11 @@ class TestBlockedWords:
 
     def test_update_without_name_skips_validation(self) -> None:
         org = OrganizationUpdate()
-        assert "name" not in org.model_dump(exclude_unset=True)
+        assert "name" not in org.model_dump()
+
+    def test_update_rejects_null_name(self) -> None:
+        with pytest.raises(ValidationError, match="name"):
+            OrganizationUpdate.model_validate({"name": None})
 
 
 class TestSlugMaxLength:

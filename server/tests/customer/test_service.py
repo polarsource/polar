@@ -16,7 +16,7 @@ from polar.event.system import SystemEvent
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.address import Address, AddressInput, CountryAlpha2, CountryAlpha2Input
 from polar.kit.pagination import PaginationParams
-from polar.kit.versioning import api_version_context
+from polar.kit.versioning import APIVersion, api_version_context
 from polar.member.repository import MemberRepository
 from polar.models import Customer, Organization, User, UserOrganization
 from polar.models.customer import CustomerType
@@ -25,7 +25,7 @@ from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEvent
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from polar.tax.tax_id import TaxIDFormat
-from polar.version import V2026_10
+from polar.version import V2026_04, V2026_10
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer, create_member
@@ -613,6 +613,33 @@ class TestUpdate:
     async def test_explicit_null_billing_address(self) -> None:
         with pytest.raises(ValidationError):
             CustomerUpdate.model_validate({"billing_address": None})
+
+    @pytest.mark.parametrize("api_version", [V2026_04, V2026_10], ids=str)
+    async def test_legacy_null_fields_leave_customer_unchanged(
+        self,
+        api_version: APIVersion,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        billing_address = Address(country=CountryAlpha2("FR"))
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            external_id="legacy-customer",
+            billing_address=billing_address,
+        )
+
+        with api_version_context(api_version):
+            update = CustomerUpdate.model_validate(
+                {"external_id": None, "billing_address": None}
+            )
+            await customer_service.update(session, customer, update)
+
+        await session.flush()
+        await session.refresh(customer)
+        assert customer.external_id == "legacy-customer"
+        assert customer.billing_address == billing_address
 
     async def test_existing_email(
         self, session: AsyncSession, customer: Customer, customer_second: Customer

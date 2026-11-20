@@ -14,7 +14,7 @@ from polar.models.customer_email_verification import CustomerEmailVerification
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.tax.tax_id import TaxIDFormat
-from polar.version import V2026_10, V2027_01
+from polar.version import V2026_04, V2026_10, V2027_01
 from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT, MEMBER_AUTH_SUBJECT
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -358,7 +358,7 @@ class TestUpdateDefaultPaymentMethod:
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     @pytest.mark.keep_session_state
-    @pytest.mark.api_version(V2026_10, V2027_01)
+    @pytest.mark.api_version(V2026_04, V2026_10, V2027_01)
     async def test_null_default_payment_method_id(
         self,
         client: AsyncClient,
@@ -368,7 +368,7 @@ class TestUpdateDefaultPaymentMethod:
             "/v1/customer-portal/customers/me",
             json={"default_payment_method_id": None},
         )
-        assert response.status_code == (200 if api_version == V2026_10 else 422)
+        assert response.status_code == (422 if api_version == V2027_01 else 200)
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     @pytest.mark.keep_session_state

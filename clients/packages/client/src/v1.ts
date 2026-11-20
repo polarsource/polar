@@ -37045,7 +37045,7 @@ export interface components {
        * @description The description of the product.
        */
       description?: string | null
-      /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. **Can only be set on legacy recurring products. Once set, it can't be changed.** */
+      /** @description The recurring interval of the product. **It can't be changed.** */
       recurring_interval?: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count

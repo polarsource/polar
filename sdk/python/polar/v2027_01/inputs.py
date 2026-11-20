@@ -3688,7 +3688,7 @@ You can store up to **50 key-value pairs**."""
     """The description of the product."""
 
     recurring_interval: typing.NotRequired[RecurringInterval | None]
-    """The recurring interval of the product. If `None`, the product is a one-time purchase. **Can only be set on legacy recurring products. Once set, it can't be changed.**"""
+    """The recurring interval of the product. **It can't be changed.**"""
 
     recurring_interval_count: typing.NotRequired[int | None]
     """Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. Once set, it can't be changed.**"""

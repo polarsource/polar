@@ -59,7 +59,7 @@ from polar.kit.schemas import (
     TimestampedSchema,
 )
 from polar.kit.trial import TrialConfigurationInputMixin, TrialConfigurationOutputMixin
-from polar.kit.versioning import QuerySchema, Version
+from polar.kit.versioning import QuerySchema, Version, VersionedJsonSchema
 from polar.kit.visibility import Visibility
 from polar.meter.unit import MeterUnit
 from polar.models import Benefit as BenefitModel
@@ -773,15 +773,30 @@ class ProductUpdate(
 
     name: ProductName | None = None
     description: ProductDescription = None
-    recurring_interval: SubscriptionRecurringInterval | None = Field(
-        default=None,
-        description=(
-            "The recurring interval of the product. "
-            "If `None`, the product is a one-time purchase. "
-            "**Can only be set on legacy recurring products. "
-            "Once set, it can't be changed.**"
+    recurring_interval: Annotated[
+        SubscriptionRecurringInterval | None,
+        VersionedJsonSchema(
+            lambda schema: {
+                **schema,
+                "description": (
+                    "The recurring interval of the product. "
+                    "If `None`, the product is a one-time purchase. "
+                    "**Can only be set on legacy recurring products. "
+                    "Once set, it can't be changed.**"
+                ),
+            },
+            up_to=V2026_10,
         ),
-    )
+        VersionedJsonSchema(
+            lambda schema: {
+                **schema,
+                "description": (
+                    "The recurring interval of the product. **It can't be changed.**"
+                ),
+            },
+            starting_from=V2027_01,
+        ),
+    ] = None
     recurring_interval_count: int | None = Field(
         default=None,
         ge=1,

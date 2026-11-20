@@ -21386,7 +21386,7 @@ You can store up to **50 key-value pairs**.
    */
   description?: string | null;
   /**
-   * The recurring interval of the product. If `None`, the product is a one-time purchase. **Can only be set on legacy recurring products. Once set, it can't be changed.**
+   * The recurring interval of the product. **It can't be changed.**
    */
   recurring_interval?: RecurringInterval | null;
   /**

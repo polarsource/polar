@@ -2285,9 +2285,6 @@ class SubscriptionService:
             session, ctx, subscription, discount=discount, product=product
         ) as resolved_discount:
             assert is_recurring_product(product)
-            # We are checking for product.is_recurring instead of is_recurring_product
-            # because legacy products will have is_recurring but not be of type RecurringProduct
-            # which is_recurring_product asserts.
             assert previous_product.is_recurring
 
             proration_behavior = resolve_proration_behavior(

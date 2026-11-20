@@ -9,6 +9,7 @@ import {
 import { schemas } from '@polar-sh/client'
 import { Spinner, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { isTyping } from '@/components/Shared/CondensedTable/CondensedTable'
 import { useEffect, type Ref } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { GanttBar } from './GanttBar'
@@ -19,6 +20,7 @@ import { GanttSkeletonLabels, GanttSkeletonTrack } from './GanttSkeleton'
 import {
   MIN_CYCLE_WIDTH,
   ROW_HEIGHT,
+  ROW_DIMMED_CLASS,
   ROW_HOVERABLE_CLASS,
   ROW_SELECTED_CLASS,
   type GanttZoomHandle,
@@ -39,7 +41,7 @@ interface SubscriptionsGanttProps {
   onZoomChange?: (zoom: number) => void
   focus?: number
   selectedId: string | null
-  onSelect: (id: string) => void
+  onSelect: (id: string | null) => void
   isLoadingMore: boolean
   onEndReached: () => void
 }
@@ -66,8 +68,22 @@ export const SubscriptionsGantt = ({
   }, [isEndVisible, isLoadingMore, onEndReached])
 
   const subscriptions = loaded ?? []
+  const hasSelection = subscriptions.some(({ id }) => id === selectedId)
   const rowClassName = (id: string) =>
-    id === selectedId ? ROW_SELECTED_CLASS : ROW_HOVERABLE_CLASS
+    id === selectedId
+      ? ROW_SELECTED_CLASS
+      : twMerge(ROW_HOVERABLE_CLASS, hasSelection && ROW_DIMMED_CLASS)
+
+  useEffect(() => {
+    if (!hasSelection) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !isTyping(event.target)) {
+        onSelect(null)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [hasSelection, onSelect])
 
   return (
     <GanttFrame
@@ -169,6 +185,7 @@ export const SubscriptionsGantt = ({
                         rendered={rendered}
                         tone={getGanttTone(subscription)}
                         now={now}
+                        isSelected={subscription.id === selectedId}
                       />
                     </Box>
                   </div>

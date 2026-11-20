@@ -13,8 +13,8 @@ export const TONE_COLOR = {
 
 export const TONE_OPACITY: Record<GanttTone, number> = {
   neutral: 0.16,
-  warning: 0.55,
-  danger: 0.55,
+  warning: 0.3,
+  danger: 0.3,
 }
 
 export const getGanttTone = (

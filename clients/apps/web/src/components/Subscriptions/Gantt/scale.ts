@@ -80,3 +80,5 @@ export const SURFACE_CLASS = 'dark:bg-polar-900 bg-white'
 export const ROW_SELECTED_CLASS = 'dark:bg-polar-800 bg-gray-100'
 export const ROW_HOVERABLE_CLASS =
   'data-[hovered=true]:bg-gray-50 dark:data-[hovered=true]:bg-polar-800/50'
+// Rows other than the selected one step back, and return while pointed at.
+export const ROW_DIMMED_CLASS = 'opacity-40 data-[hovered=true]:opacity-100'

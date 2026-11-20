@@ -18,11 +18,19 @@ import { GanttFill } from './GanttFill'
 import { TONE_COLOR, type GanttTone } from './tone'
 
 const SEGMENT_GAP = 2
+// A 1px border, then the same gap that separates the segments. The frame's
+// radius is the bar's plus this, so the two corners stay concentric.
+const FRAME_PADDING = 1 + SEGMENT_GAP
 const DIVIDER_WIDTH = 2
 const DIVIDER_INSET = 5
 // Drawn in the bar's own color, on top of it, so it reads as a deeper shade.
 const DIVIDER_OPACITY: Record<GanttTone, number> = {
   neutral: 0.12,
+  warning: 0.3,
+  danger: 0.3,
+}
+const FRAME_OPACITY: Record<GanttTone, number> = {
+  neutral: 0.14,
   warning: 0.3,
   danger: 0.3,
 }
@@ -35,11 +43,8 @@ const MARKER_LABELS: Record<TimelineMarkerKind, string> = {
   resuming: 'Resumes',
 }
 
-const STANDALONE_KINDS = new Set<TimelineSegmentKind>([
-  'trial',
-  'paused',
-  'current',
-])
+const isBilled = (kind: TimelineSegmentKind) =>
+  kind === 'past' || kind === 'current'
 
 interface Run {
   kind: TimelineSegmentKind
@@ -48,17 +53,24 @@ interface Run {
   dividers: number[]
 }
 
-// Billing cycles of the same kind are drawn as one stretch with a divider at
-// each cycle point, which keeps the element count per row small. A trial, a
-// pause and the current cycle each stand alone.
-const toRuns = (segments: TimelineSegment[]): Run[] => {
+// Billing cycles are drawn as one stretch with a divider at each cycle point,
+// which keeps the element count per row small. The billed cycles form one
+// stretch and the upcoming ones another. A trial and a pause stand alone, and
+// so does any cycle the caller wants told apart.
+const toRuns = (
+  segments: TimelineSegment[],
+  isSplit: (kind: TimelineSegmentKind) => boolean,
+): Run[] => {
+  const isStandalone = (kind: TimelineSegmentKind) =>
+    kind === 'trial' || kind === 'paused' || isSplit(kind)
   const runs: Run[] = []
   for (const segment of segments) {
     const run = runs.at(-1)
     if (
       run &&
-      !STANDALONE_KINDS.has(run.kind) &&
-      !STANDALONE_KINDS.has(segment.kind)
+      !isStandalone(run.kind) &&
+      !isStandalone(segment.kind) &&
+      isBilled(run.kind) === isBilled(segment.kind)
     ) {
       run.dividers.push(segment.start)
       run.end = segment.end
@@ -75,6 +87,7 @@ interface GanttBarProps {
   rendered: TimelineRange
   tone: GanttTone
   now: number
+  isSelected?: boolean
 }
 
 export const GanttBar = ({
@@ -83,11 +96,19 @@ export const GanttBar = ({
   rendered,
   tone,
   now,
+  isSelected = false,
 }: GanttBarProps) => {
   const { segments, marker } = timeline
   const first = segments[0]
   const last = segments.at(-1)
-  const runs = toRuns(segments)
+  // Past due is about one payment, so only the cycle it was for is marked.
+  const restTone = tone === 'danger' ? 'neutral' : tone
+  const runs = toRuns(
+    segments,
+    (kind) =>
+      (isSelected && isBilled(kind)) ||
+      (tone === 'danger' && kind === 'current'),
+  )
   const dividers = runs
     .flatMap((run) => run.dividers)
     .filter((time) => time > rendered.start && time < rendered.end)
@@ -108,6 +129,23 @@ export const GanttBar = ({
           {formatGanttDate(timeline.start, now)}
         </Text>
       </Box>
+      {first && last && (
+        <Box
+          position="absolute"
+          top={BAR_TOP - FRAME_PADDING}
+          left={scale.x(first.start, -FRAME_PADDING)}
+          width={scale.span(first.start, last.end, -FRAME_PADDING * 2)}
+          height={BAR_HEIGHT + FRAME_PADDING * 2}
+          color={TONE_COLOR[restTone]}
+          opacity={FRAME_OPACITY[restTone]}
+          pointerEvents="none"
+        >
+          <div
+            className="size-full border border-current"
+            style={{ borderRadius: BAR_RADIUS + FRAME_PADDING }}
+          />
+        </Box>
+      )}
       {first && last && (
         <Box
           position="absolute"
@@ -140,7 +178,7 @@ export const GanttBar = ({
                     }}
                   >
                     <GanttFill
-                      tone={tone}
+                      tone={run.kind === 'current' ? tone : restTone}
                       pattern={
                         run.kind === 'trial' || run.kind === 'paused'
                           ? run.kind
@@ -160,8 +198,8 @@ export const GanttBar = ({
           position="absolute"
           inset={0}
           pointerEvents="none"
-          color={TONE_COLOR[tone]}
-          opacity={DIVIDER_OPACITY[tone]}
+          color={TONE_COLOR[restTone]}
+          opacity={DIVIDER_OPACITY[restTone]}
         >
           {dividers.map((time) => (
             <div

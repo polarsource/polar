@@ -9,9 +9,9 @@ import {
 // Diagonal stripes for a trial, upright ones for a pause.
 const PATTERN_IMAGE: Record<GanttPattern, string> = {
   trial:
-    'repeating-linear-gradient(135deg, currentColor 0 2px, transparent 2px 6px)',
+    'repeating-linear-gradient(135deg, currentColor 0 2px, transparent 2px 4px)',
   paused:
-    'repeating-linear-gradient(90deg, currentColor 0 2px, transparent 2px 6px)',
+    'repeating-linear-gradient(90deg, currentColor 0 2px, transparent 2px 4px)',
 }
 const PATTERN_OPACITY: Record<GanttPattern, number> = {
   trial: 0.7,

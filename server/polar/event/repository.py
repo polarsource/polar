@@ -17,6 +17,7 @@ from sqlalchemy import (
     case,
     cast,
     delete,
+    false,
     func,
     literal,
     or_,
@@ -462,18 +463,26 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         organization_id: UUID,
         external_ids: Sequence[str],
         *,
-        timestamp_from: datetime,
-        timestamp_to: datetime,
+        bucket_start: datetime,
+        bucket_end: datetime,
+        synced_end: datetime | None,
     ) -> set[str]:
-        """The given external ids of events with a timestamp in the range, stored
-        or still staged."""
+        """The given external ids of events, stored or still staged, with a timestamp
+        in the bucket, either before `synced_end` or ingested after the bucket
+        closed."""
         statement = union_all(
             *(
                 select(NotNullable(model.external_id)).where(
                     model.organization_id == organization_id,
                     model.external_id.in_(external_ids),
-                    model.timestamp >= timestamp_from,
-                    model.timestamp < timestamp_to,
+                    model.timestamp >= bucket_start,
+                    model.timestamp < bucket_end,
+                    or_(
+                        model.timestamp < synced_end
+                        if synced_end is not None
+                        else false(),
+                        model.ingested_at >= bucket_end,
+                    ),
                 )
                 for model in (Event, StagedEvent)
             )

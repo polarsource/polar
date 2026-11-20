@@ -715,24 +715,27 @@ class ReducerService:
         external_ids: Sequence[str],
     ) -> set[str]:
         """The given external ids of the customer identity's stored events that the
-        synced part of the bucket starting at `bucket_start` counts: a seal can
-        split a bucket, and sync then recomputes each part on its own."""
-        repository = ReducerBucketRepository.from_session(session)
-        synced_end = await repository.get_synced_end_within(
+        bucket starting at `bucket_start` counts. Its synced part counts them: a
+        seal can split a bucket, and sync then recomputes each part on its own. So
+        does any part for an event ingested after the bucket closed: ingest adds it
+        to the bucket in the transaction that stores it."""
+        bucket_end = bucket_start + REDUCER_BUCKET_SIZE
+        synced_end = await ReducerBucketRepository.from_session(
+            session
+        ).get_synced_end_within(
             reducer.organization_id,
             reducer.id,
             customer_id,
             external_customer_id,
             bucket_start,
-            bucket_start + REDUCER_BUCKET_SIZE,
+            bucket_end,
         )
-        if synced_end is None:
-            return set()
         return await EventRepository.from_session(session).get_stored_external_ids(
             reducer.organization_id,
             external_ids,
-            timestamp_from=bucket_start,
-            timestamp_to=synced_end,
+            bucket_start=bucket_start,
+            bucket_end=bucket_end,
+            synced_end=synced_end,
         )
 
     async def get_database_now(self, session: AsyncReadSession) -> datetime:

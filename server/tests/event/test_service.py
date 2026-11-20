@@ -63,6 +63,7 @@ from polar.order.service import order as order_service
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from polar.reducer.redis_store import get_reducer_bucket_key
+from polar.reducer.repository import ReducerRepository
 from polar.reducer.service import (
     REDUCER_BUCKET_SIZE,
     get_reducer_bucket_start,
@@ -1795,6 +1796,44 @@ class TestCreateEvent:
         enqueue_seal_mock.assert_called_once_with(
             customer.id, meter.id, at=event.timestamp
         )
+
+    async def test_meter_reset_logs_a_change_of_the_usage(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer_external_id: Customer,
+        meter: Meter,
+    ) -> None:
+        customer = customer_external_id
+        await reducer_service.sync_meter(session, meter)
+        usage = await ReducerRepository.from_session(session).get_by_meter_and_kind(
+            meter.id, ReducerKind.usage
+        )
+        assert usage is not None
+        enqueue_outpost_event = mocker.patch(
+            "polar.reducer.service.enqueue_outpost_event"
+        )
+
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.meter_reset,
+                customer,
+                organization,
+                {"meter_id": str(meter.id)},
+            ),
+        )
+
+        assert [
+            (event["customer_id"], event["external_customer_id"])
+            for (_, event), _ in enqueue_outpost_event.call_args_list
+            if event["reducer_id"] == usage.id
+        ] == [
+            (customer.id, None),
+            (None, customer.external_id),
+            (customer.id, customer.external_id),
+        ]
 
     async def test_meter_reset_of_a_deleted_customer(
         self,

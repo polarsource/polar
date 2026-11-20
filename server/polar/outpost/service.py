@@ -385,16 +385,22 @@ class OutpostService:
                 if customer is not None
             ],
         )
+        usage_customers = {
+            (reducer.id, identity): customer
+            for reducer, customers in requested.items()
+            if reducer.kind != ReducerKind.credit
+            for identity, customer in customers.items()
+        }
         cold_usage = await reducer_service.get_cold_usage(
             session,
             organization_id,
-            [
-                (reducer.id, identity)
-                for reducer, customers in requested.items()
-                if reducer.kind != ReducerKind.credit
-                for identity in customers
-            ],
+            list(usage_customers),
             since=since,
+            customers={
+                identity: customer.id
+                for identity, customer in usage_customers.items()
+                if customer is not None
+            },
         )
         payloads = []
         for reducer, customers in requested.items():

@@ -1272,6 +1272,7 @@ class EventService:
                     session, customer, meter_id, at=event.timestamp
                 )
                 reducer_service.enqueue_seal(customer.id, meter_id, at=event.timestamp)
+                await reducer_service.enqueue_usage_change(session, customer, meter_id)
 
         enqueue_events(event.id)
 

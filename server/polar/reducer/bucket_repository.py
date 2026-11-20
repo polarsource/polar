@@ -299,18 +299,23 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         self,
         organization_id: UUID,
         before: Mapping[ReducerIdentity, datetime | None],
+        *,
+        since: Mapping[ReducerIdentity, datetime] | None = None,
     ) -> dict[ReducerIdentity, Totals]:
         """count, sum, min and max of each identity's unsealed buckets on its
-        reducer, starting before the identity's datetime if given."""
+        reducer, starting before the identity's datetime in `before` if given, and
+        from its datetime in `since` if it has one."""
         if not before:
             return {}
-        # Pairs that share an identity and a bound share one condition: a cold
+        since = since or {}
+        # Pairs that share an identity and its bounds share one condition: a cold
         # customer's reducers mostly do, so the conditions do not grow with them.
         reducers_by_bound: dict[
-            tuple[CustomerIdentity, datetime | None], set[UUID]
+            tuple[CustomerIdentity, datetime | None, datetime | None], set[UUID]
         ] = {}
         for (reducer_id, identity), end in before.items():
-            reducers_by_bound.setdefault((identity, end), set()).add(reducer_id)
+            start = since.get((reducer_id, identity))
+            reducers_by_bound.setdefault((identity, start, end), set()).add(reducer_id)
         all_reducers = {reducer_id for reducer_id, _ in before}
         statement = (
             select(
@@ -340,12 +345,16 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
                             _is_customer(
                                 ReducerBucket, customer_id, external_customer_id
                             ),
+                            ReducerBucket.bucket_start >= start
+                            if start is not None
+                            else true(),
                             ReducerBucket.bucket_start < end
                             if end is not None
                             else true(),
                         )
                         for (
                             (customer_id, external_customer_id),
+                            start,
                             end,
                         ), reducer_ids in reducers_by_bound.items()
                     )

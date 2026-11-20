@@ -149,6 +149,16 @@ class ReducerService:
         are all in Postgres already."""
         await self._seal(session, customer, meter_id, (ReducerKind.credit,), at=at)
 
+    async def enqueue_usage_change(
+        self, session: AsyncReadSession, customer: Customer, meter_id: UUID
+    ) -> None:
+        """Logs a change of the customer's usage on the meter for Outpost: a reset
+        moves the start of the usage its snapshots count."""
+        reducers = await self._get_reducers(session, [meter_id], ReducerKind.usage)
+        for reducer in reducers.values():
+            for customer_id, external_customer_id in get_customer_identities(customer):
+                _enqueue_outpost_event(reducer, customer_id, external_customer_id)
+
     async def sync_credits(
         self, session: AsyncSession, customer: Customer, meter_id: UUID
     ) -> None:
@@ -659,11 +669,13 @@ class ReducerService:
         identities: Sequence[ReducerIdentity],
         *,
         since: datetime,
+        customers: Mapping[ReducerIdentity, UUID],
     ) -> dict[ReducerIdentity, tuple[datetime, Totals]]:
         """For each customer identity on its reducer, the end of its last fully
         synced slot starting from `since`, or `since`, with the count, sum, min and
-        max of its usage not billed yet before it. Clients count whole slots: a slot
-        a seal split, with only its first part synced, stays theirs."""
+        max of its usage not billed yet before it, since the latest meter reset of
+        its customer in `customers`. Clients count whole slots: a slot a seal split,
+        with only its first part synced, stays theirs."""
         repository = ReducerBucketRepository.from_session(session)
         synced_ends = await repository.get_last_synced_ends(
             organization_id, identities, since=since
@@ -674,8 +686,25 @@ class ReducerService:
             else since
             for identity in identities
         }
+        resets = await EventRepository.from_session(
+            session
+        ).get_latest_meter_reset_timestamps(
+            organization_id,
+            set(customers.values()),
+            {reducer_id for reducer_id, _ in customers},
+        )
         totals = await repository.get_unsealed_totals_by_identity(
-            organization_id, cold_until
+            organization_id,
+            cold_until,
+            # The seal of the usage before a reset runs minutes after it. Until it
+            # splits the slot of the reset, the bucket of that slot starts before it.
+            since={
+                (reducer_id, identity): get_reducer_bucket_start(
+                    resets[(reducer_id, customer_id)]
+                )
+                for (reducer_id, identity), customer_id in customers.items()
+                if (reducer_id, customer_id) in resets
+            },
         )
         return {
             identity: (cold_until[identity], totals[identity])

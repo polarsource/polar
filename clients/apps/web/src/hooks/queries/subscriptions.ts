@@ -6,7 +6,6 @@ import {
   keepPreviousData,
   useInfiniteQuery,
   useMutation,
-  useQueries,
   useQuery,
 } from '@tanstack/react-query'
 import { useEffect } from 'react'
@@ -83,57 +82,6 @@ export const subscriptionCountKeys = [
 ] as const
 
 export type SubscriptionCountKey = (typeof subscriptionCountKeys)[number]
-
-type SubscriptionListQuery = NonNullable<
-  operations['subscriptions:list']['parameters']['query']
->
-
-const COUNT_FILTERS: Record<SubscriptionCountKey, SubscriptionListQuery> = {
-  any: {},
-  active: { status: ['active'] },
-  trialing: { status: ['trialing'] },
-  past_due: { status: ['past_due'] },
-  canceling: { status: ['active'], cancel_at_period_end: true },
-  paused: { status: ['paused'] },
-  canceled: { status: ['canceled'] },
-  unpaid: { status: ['unpaid'] },
-}
-
-export const useSubscriptionCounts = (
-  organizationId: string,
-  parameters: Pick<SubscriptionListQuery, 'product_id' | 'external_product_id'>,
-): Partial<Record<SubscriptionCountKey, number>> =>
-  useQueries({
-    queries: subscriptionCountKeys.map((key) => ({
-      queryKey: [
-        'subscriptions',
-        'count',
-        { organizationId, key, ...parameters },
-      ],
-      queryFn: () =>
-        unwrap(
-          api.GET('/v1/subscriptions/', {
-            params: {
-              query: {
-                organization_id: organizationId,
-                ...parameters,
-                ...COUNT_FILTERS[key],
-                limit: 1,
-              },
-            },
-          }),
-        ),
-      retry: defaultRetry,
-      placeholderData: keepPreviousData,
-    })),
-    combine: (results) =>
-      Object.fromEntries(
-        results.map(({ data }, index) => [
-          subscriptionCountKeys[index],
-          data?.pagination.total_count,
-        ]),
-      ),
-  })
 
 const ALL_PAGE_SIZE = 100
 const ALL_MAX_PAGES = 20

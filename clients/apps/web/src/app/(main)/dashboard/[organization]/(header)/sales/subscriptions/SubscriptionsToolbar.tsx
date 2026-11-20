@@ -12,7 +12,6 @@ import {
   subscriptionCountKeys,
   useProducts,
   useSelectedProducts,
-  useSubscriptionCounts,
   type SubscriptionCountKey,
 } from '@/hooks/queries'
 import { DataTableSortingState } from '@/utils/datatable'
@@ -79,13 +78,6 @@ const SORT_OPTIONS = [
   { value: 'product', label: 'Product' },
   { value: '-amount', label: 'Highest amount' },
 ]
-
-// Compact, so a large organization does not stretch the tabs: 1.2K, 3.4M.
-const formatCount = (count: number) =>
-  new Intl.NumberFormat('en-US', {
-    notation: 'compact',
-    maximumFractionDigits: 1,
-  }).format(count)
 
 const IconAction = ({
   label,
@@ -191,10 +183,6 @@ export const SubscriptionsToolbar = ({
       : []
   })
 
-  const counts = useSubscriptionCounts(organization.id, {
-    product_id: product.product_id ?? undefined,
-    external_product_id: product.external_product_id ?? undefined,
-  })
   const statusValue: SubscriptionCountKey =
     status === 'active' && cancelAtPeriodEnd ? 'canceling' : status
   const [sort] = sorting
@@ -230,10 +218,7 @@ export const SubscriptionsToolbar = ({
         .filter((key) => key !== 'any')
         .map((key) => ({
           value: key,
-          label:
-            counts[key] === undefined
-              ? STATUS_LABELS[key]
-              : `${STATUS_LABELS[key]} (${formatCount(counts[key])})`,
+          label: STATUS_LABELS[key],
         })),
       value: statusValue === 'any' ? null : statusValue,
       onChange: (value) =>
@@ -298,16 +283,7 @@ export const SubscriptionsToolbar = ({
               size="sm"
               options={subscriptionCountKeys.map((key) => ({
                 value: key,
-                label: (
-                  <>
-                    {STATUS_LABELS[key]}
-                    {counts[key] !== undefined && (
-                      <span className="ml-1.5 tabular-nums opacity-50">
-                        {formatCount(counts[key])}
-                      </span>
-                    )}
-                  </>
-                ),
+                label: STATUS_LABELS[key],
               }))}
               value={statusValue}
               onChange={selectStatus}

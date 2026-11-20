@@ -164,7 +164,11 @@ class RepositoryBase[M: ModelIDProtocol[Any]]:
         count_result = await self.session.execute(count_statement)
         count = count_result.scalar_one()
 
-        paginated_statement = statement.limit(limit).offset(offset)
+        # Rows tied on the sort key come back in an arbitrary order for each
+        # page query, so the primary key breaks the tie.
+        paginated_statement = (
+            statement.order_by(self.model.id).limit(limit).offset(offset)
+        )
         # Streaming can't be applied here, since we need to call ORM's unique()
         results = await self.session.execute(paginated_statement)
         items = list(results.unique().scalars().all())

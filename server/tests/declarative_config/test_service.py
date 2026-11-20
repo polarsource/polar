@@ -6349,6 +6349,42 @@ class TestCatalogDrafts:
         assert isinstance(price, ProductPriceFixed)
         assert price.price_amount == 2500
 
+    async def test_reapply_updates_a_draft_product_loaded_in_another_request(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+        )
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO_25]}),
+            publish=False,
+        )
+        _, first_products = await self._draft_members(session, organization)
+        session.expire(first_products["pro"], ["is_deletable"])
+
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {"products": [{**MONTHLY_PRO_25, "name": "Pro Plus"}]}
+            ),
+            publish=False,
+        )
+
+        _, products = await self._draft_members(session, organization)
+        assert products["pro"].name == "Pro Plus"
+
     async def test_reapply_reverting_a_resource_drops_its_draft_row(
         self,
         session: AsyncSession,

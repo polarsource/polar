@@ -1,6 +1,8 @@
 from collections import defaultdict
 from uuid import uuid4
 
+from sqlalchemy.orm import undefer
+
 from polar.benefit.repository import BenefitRepository
 from polar.catalog.repository import (
     CatalogBenefitRepository,
@@ -60,7 +62,10 @@ async def rows(
     ).get_products_by_external_ids(
         draft.id,
         list(product_changes),
-        options=ProductRepository.from_session(session).get_eager_options(),
+        options=(
+            undefer(Product.is_deletable),
+            *ProductRepository.from_session(session).get_eager_options(),
+        ),
     )
     meter_external_ids = {change.config.external_id for change in changes.meters}
     custom_field_slugs = {change.config.slug for change in changes.custom_fields}

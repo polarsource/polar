@@ -6,6 +6,7 @@ import {
   type AppliedEntry,
   type ApplyResult,
   BillingConfigError,
+  type Catalog,
   type ConfigIssue,
   type LoadedConfig,
   type PlanResult,
@@ -129,13 +130,16 @@ const run = async (
   result: ApplyResult,
   args: ReadonlyArray<string> = [],
   options: Parameters<typeof runCli>[2] = {},
+  draft: { catalog: Catalog; plan: PlanResult } | 'unavailable' | null = null,
 ) => {
+  const drafted = draft === 'unavailable' ? null : draft
   const planned = vi.fn(
-    (
-      _config: LoadedConfig,
-      _organization: unknown,
-      _options?: CatalogOptions,
-    ) => Effect.succeed(plan),
+    (_config: LoadedConfig, _organization: unknown, options?: CatalogOptions) =>
+      Effect.succeed(
+        drafted !== null && options?.catalogId === drafted.catalog.id
+          ? drafted.plan
+          : plan,
+      ),
   )
   const applied = vi.fn(
     (
@@ -159,7 +163,14 @@ const run = async (
           disable: () => Effect.die('unused'),
           deprecations: () => Effect.die('unused'),
           prune: () => Effect.die('unused'),
-          catalogs: () => Effect.die('unused'),
+          catalogs: () =>
+            draft === 'unavailable'
+              ? Effect.fail(
+                  new BillingConfigError({
+                    message: 'You do not have access to Acme',
+                  }),
+                )
+              : Effect.succeed({ live: null, draft: drafted?.catalog ?? null }),
           publish: () => Effect.die('unused'),
         }),
       ),
@@ -309,6 +320,61 @@ describe('polar config apply', () => {
     expect(failed).toBe(false)
     expect(applied).toBe(0)
     expect(output).toContain('Acme (sandbox) is up to date, nothing to apply')
+  })
+
+  test('applies when the draft holds a change the file no longer has', async () => {
+    const reverted: AppliedEntry = {
+      section: 'meters',
+      id: 'tool-calls',
+      action: 'updated',
+      diff: [{ field: 'name', before: 'Calls', after: 'Tool calls' }],
+    }
+    const { output, failed, applied } = await run(
+      { entries: [kept], issues: [] },
+      { status: 'applied', entries: [kept] },
+      ['--confirm'],
+      {},
+      {
+        catalog: { id: 'cat-draft', name: null },
+        plan: { entries: [reverted], issues: [] },
+      },
+    )
+    expect(failed).toBe(false)
+    expect(applied).toBe(1)
+    expect(output).toContain('~ tool-calls')
+    expect(output).toContain('"Calls" → "Tool calls"')
+    expect(output).toContain(
+      'Changes that are no longer in polar.json were removed from the draft of Acme (sandbox)',
+    )
+    expect(output).not.toContain('nothing to apply')
+  })
+
+  test('does nothing when the draft already matches the file', async () => {
+    const { output, applied } = await run(
+      { entries: [kept], issues: [] },
+      { status: 'applied', entries: [kept] },
+      [],
+      {},
+      {
+        catalog: { id: 'cat-draft', name: null },
+        plan: { entries: [kept], issues: [] },
+      },
+    )
+    expect(applied).toBe(0)
+    expect(output).toContain('Acme (sandbox) is up to date, nothing to apply')
+  })
+
+  test('fails when it cannot tell whether a draft exists', async () => {
+    const { failed, applied, exit } = await run(
+      { entries: [kept], issues: [] },
+      { status: 'applied', entries: [kept] },
+      ['--confirm'],
+      {},
+      'unavailable',
+    )
+    expect(failed).toBe(true)
+    expect(applied).toBe(0)
+    expect(message(exit)).toBe('You do not have access to Acme')
   })
 
   test('still shows warnings when nothing changed', async () => {

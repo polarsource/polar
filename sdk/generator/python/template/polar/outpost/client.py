@@ -37,7 +37,12 @@ from redis.exceptions import TimeoutError as RedisTimeoutError
 from polar.base import PolarError
 from polar.logging import get_logger
 from polar.metering.client import PolarClient
-from polar.metering.errors import DropReason, UnknownMeterError, retry_after_seconds
+from polar.metering.errors import (
+    DropReason,
+    UnknownMeterError,
+    retry_after_seconds,
+    validate_timeout,
+)
 from polar.metering.events import EventInput
 from polar.metering.meter import CustomerMeter
 from polar.outpost.event import Event
@@ -516,6 +521,7 @@ class Outpost:
         *,
         client: httpx2.AsyncClient,
         telemetry: bool = True,
+        snapshot_timeout: float = SNAPSHOT_TIMEOUT,
         confirm_timeout: float = CONFIRM_TIMEOUT,
         on_delivered: OnDelivered | None = None,
         on_dropped: OnDropped | None = None,
@@ -556,6 +562,8 @@ class Outpost:
         # This instance queued an event that no flusher was there to deliver: its next
         # flush drains.
         self._undrained = False
+        validate_timeout(snapshot_timeout)
+        self._snapshot_timeout = snapshot_timeout
         self._confirm_timeout = confirm_timeout
         # Snapshots and what they trigger run one at a time, in order.
         self._applying = anyio.Lock()
@@ -581,6 +589,7 @@ class Outpost:
         redis_url: str,
         *,
         telemetry: bool = True,
+        snapshot_timeout: float = SNAPSHOT_TIMEOUT,
         on_delivered: OnDelivered | None = None,
         on_dropped: OnDropped | None = None,
     ) -> typing.Self:
@@ -588,6 +597,7 @@ class Outpost:
             redis_url=redis_url,
             client=polar._client._client,
             telemetry=telemetry,
+            snapshot_timeout=snapshot_timeout,
             on_delivered=on_delivered,
             on_dropped=on_dropped,
         )
@@ -1020,7 +1030,7 @@ class Outpost:
     ) -> list[ReducerState | None]:
         """Reads the customer's states from Redis. One Polar has no snapshot of yet is
         asked for once, then read again once the fleet's fetch of it ends."""
-        deadline = anyio.current_time() + SNAPSHOT_TIMEOUT
+        deadline = anyio.current_time() + self._snapshot_timeout
         states = await self._load(customer, reducers, statistics)
         # Polar sends no snapshot without a connection.
         if not self.connected:
@@ -1512,7 +1522,7 @@ class Outpost:
                     {**self._customer_arguments(customer), "reducer_id": reducer_id}
                 )
             resets = self._resets
-            deadline = anyio.current_time() + SNAPSHOT_TIMEOUT
+            deadline = anyio.current_time() + self._snapshot_timeout
 
             async def ask() -> list[Snapshot]:
                 """Its reads still wait: a failure that may pass is asked for again until
@@ -1701,7 +1711,7 @@ class Outpost:
 
     async def _refresh(self) -> None:
         """Starts the pull once due and no other instance pulled since. Waits for it, at
-        most SNAPSHOT_TIMEOUT, once Redis may be stale, unless the last pull failed."""
+        most snapshot_timeout, once Redis may be stale, unless the last pull failed."""
         if not self._pull_due():
             return
         await self._load_pull()
@@ -1713,7 +1723,7 @@ class Outpost:
         )
         pulling = self._start_pull(wait=stale)
         if stale:
-            with anyio.move_on_after(SNAPSHOT_TIMEOUT):
+            with anyio.move_on_after(self._snapshot_timeout):
                 await pulling.wait()
 
     def _pull_due(self) -> bool:

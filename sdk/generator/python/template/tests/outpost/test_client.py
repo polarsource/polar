@@ -102,7 +102,9 @@ async def redis_connection(
 
 @pytest.fixture(autouse=True)
 def short_snapshot_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("polar.outpost.client.SNAPSHOT_TIMEOUT", 0.1)
+    defaults = Outpost.__init__.__kwdefaults__
+    assert defaults is not None
+    monkeypatch.setitem(defaults, "snapshot_timeout", 0.1)
 
 
 @pytest.fixture(autouse=True)
@@ -801,6 +803,26 @@ async def test_reports_a_missing_snapshot_and_an_unknown_meter(
 
 
 @pytest.mark.anyio
+async def test_a_cold_read_waits_for_its_snapshot_as_long_as_snapshot_timeout(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+) -> None:
+    url, _ = redis_connection
+    async with Outpost(url, client=polar_client, snapshot_timeout=0.05) as outpost:
+        with anyio.fail_after(1), pytest.raises(NotReadyError):
+            await outpost.meter(external_customer_id="alice", meter_id="meter")
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("snapshot_timeout", [float("nan"), float("inf"), -1])
+async def test_refuses_a_snapshot_timeout_no_read_could_wait_out(
+    polar_client: httpx2.AsyncClient, snapshot_timeout: float
+) -> None:
+    with pytest.raises(ValueError, match="finite and non-negative"):
+        Outpost("redis://localhost", client=polar_client, snapshot_timeout=snapshot_timeout)
+
+
+@pytest.mark.anyio
 async def test_concurrent_writers_count_a_repeated_event_once(
     redis_connection: tuple[str, Redis],
     polar_client: httpx2.AsyncClient,
@@ -1471,16 +1493,14 @@ async def test_lets_a_read_that_waits_for_a_pull_go_before_the_telemetry_relay_e
     polar_client: httpx2.AsyncClient,
     telemetry_requests: list[tuple[str, bytes]],
     telemetry_status: dict[str, float],
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     url, redis = redis_connection
-    monkeypatch.setattr("polar.outpost.client.SNAPSHOT_TIMEOUT", 2)
     await redis.hset(
         "outpost:v1:org-1:state:external:alice:tokens",
         mapping={"cold_until": BUCKET, "cold:sum": 10},
     )
     await _credit(redis, 100)
-    async with Outpost(url, client=polar_client) as outpost:
+    async with Outpost(url, client=polar_client, snapshot_timeout=2) as outpost:
         outpost._outbox.add("spans", b"spans;")
         await outpost.flush_telemetry()
         telemetry_status["delay"] = 0.5
@@ -1786,15 +1806,13 @@ async def test_asks_polar_only_while_the_shared_redis_has_no_snapshot(
     polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     polar_requests: list[tuple[str, typing.Any]],
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     url, _ = redis_connection
-    monkeypatch.setattr("polar.outpost.client.SNAPSHOT_TIMEOUT", 1)
     snapshots["external:alice:tokens"] = ALICE_SNAPSHOT
     snapshots["external:alice:credits"] = ALICE_CREDITS
-    async with Outpost(url, client=polar_client) as first:
+    async with Outpost(url, client=polar_client, snapshot_timeout=1) as first:
         assert await _consumed(first) == 3
-        async with Outpost(url, client=polar_client) as second:
+        async with Outpost(url, client=polar_client, snapshot_timeout=1) as second:
             assert await _consumed(second) == 3
     assert sorted(
         body["reducer_id"]
@@ -1807,10 +1825,8 @@ async def test_keeps_the_cold_fetch_lock_another_instance_took_once_its_own_expi
     redis_connection: tuple[str, Redis],
     polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     url, redis = redis_connection
-    monkeypatch.setattr("polar.outpost.client.SNAPSHOT_TIMEOUT", 1)
     snapshots["external:alice:tokens"] = {**ALICE_SNAPSHOT, "delay": 0.1}
     snapshots["external:alice:credits"] = ALICE_CREDITS
     lock = "outpost:v1:org-1:cold:lock"
@@ -1819,7 +1835,7 @@ async def test_keeps_the_cold_fetch_lock_another_instance_took_once_its_own_expi
     async def consume(outpost: Outpost) -> None:
         read.append(await _consumed(outpost))
 
-    async with Outpost(url, client=polar_client) as outpost:
+    async with Outpost(url, client=polar_client, snapshot_timeout=1) as outpost:
         async with anyio.create_task_group() as tasks:
             tasks.start_soon(consume, outpost)
             with anyio.fail_after(1):
@@ -1839,10 +1855,8 @@ async def test_lets_one_instance_of_the_fleet_ask_polar_for_a_cold_customer(
     polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     polar_requests: list[tuple[str, typing.Any]],
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     url, _ = redis_connection
-    monkeypatch.setattr("polar.outpost.client.SNAPSHOT_TIMEOUT", 1)
     snapshots["external:alice:tokens"] = {**ALICE_SNAPSHOT, "delay": 0.1}
     snapshots["external:alice:credits"] = {**ALICE_CREDITS, "delay": 0.1}
     read: list[int | float] = []
@@ -1851,13 +1865,13 @@ async def test_lets_one_instance_of_the_fleet_ask_polar_for_a_cold_customer(
         read.append(await _consumed(outpost))
 
     async with (
-        Outpost(url, client=polar_client) as first,
-        Outpost(url, client=polar_client) as second,
-        Outpost(url, client=polar_client) as third,
+        Outpost(url, client=polar_client, snapshot_timeout=1) as first,
+        Outpost(url, client=polar_client, snapshot_timeout=1) as second,
+        Outpost(url, client=polar_client, snapshot_timeout=1) as third,
+        anyio.create_task_group() as tasks,
     ):
-        async with anyio.create_task_group() as tasks:
-            for outpost in (first, second, third):
-                tasks.start_soon(consume, outpost)
+        for outpost in (first, second, third):
+            tasks.start_soon(consume, outpost)
     assert read == [3, 3, 3]
     assert len(_requested(polar_requests, "POST /v1/outpost/meter-usage")) == 2
 
@@ -3259,7 +3273,7 @@ async def test_snapshot_redis_error_keeps_serving(
         monkeypatch.setattr(outpost, "_apply_snapshot", apply_snapshot)
         await outpost.actor(external_customer_id="alice")
         await outpost.actor(external_customer_id="alice")
-        # Asked again, the snapshot can arrive after the test's short SNAPSHOT_TIMEOUT.
+        # Asked again, the snapshot can arrive after the test's short snapshot timeout.
         with anyio.fail_after(1):
             while True:
                 try:
@@ -3574,10 +3588,8 @@ async def test_asks_polar_in_one_request_for_the_cold_customers_the_whole_fleet_
     polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     meter_usage: dict[str, typing.Any],
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     url, _ = redis_connection
-    monkeypatch.setattr("polar.outpost.client.SNAPSHOT_TIMEOUT", 1)
     customers = ["alice", "bob", "carol"]
     for customer in customers:
         snapshots[f"external:{customer}:tokens"] = {
@@ -3589,9 +3601,9 @@ async def test_asks_polar_in_one_request_for_the_cold_customers_the_whole_fleet_
             "external_customer_id": customer,
         }
     async with (
-        Outpost(url, client=polar_client) as first,
-        Outpost(url, client=polar_client) as second,
-        Outpost(url, client=polar_client) as third,
+        Outpost(url, client=polar_client, snapshot_timeout=1) as first,
+        Outpost(url, client=polar_client, snapshot_timeout=1) as second,
+        Outpost(url, client=polar_client, snapshot_timeout=1) as third,
     ):
         await first._pull()
         async with anyio.create_task_group() as tasks:
@@ -3612,13 +3624,11 @@ async def test_asks_polar_again_for_a_batch_of_cold_customers_a_passing_error_fa
     polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     meter_usage: dict[str, typing.Any],
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     url, _ = redis_connection
-    monkeypatch.setattr("polar.outpost.client.SNAPSHOT_TIMEOUT", 2)
     snapshots["external:alice:tokens"] = ALICE_SNAPSHOT
     snapshots["external:alice:credits"] = ALICE_CREDITS
-    async with Outpost(url, client=polar_client) as outpost:
+    async with Outpost(url, client=polar_client, snapshot_timeout=2) as outpost:
         await outpost._pull()
         meter_usage["failures"] = 1
         assert await _consumed(outpost) == 3
@@ -3633,7 +3643,6 @@ async def test_applies_the_cold_customers_it_asked_polar_for_side_by_side(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     url, _ = redis_connection
-    monkeypatch.setattr("polar.outpost.client.SNAPSHOT_TIMEOUT", 2)
     customers = [f"customer-{index}" for index in range(10)]
     for customer in customers:
         snapshots[f"external:{customer}:tokens"] = {
@@ -3666,7 +3675,7 @@ async def test_applies_the_cold_customers_it_asked_polar_for_side_by_side(
             await outpost.meter(external_customer_id=customer, meter_id="meter")
         )
 
-    async with Outpost(url, client=polar_client) as outpost:
+    async with Outpost(url, client=polar_client, snapshot_timeout=2) as outpost:
         await outpost._pull()
         async with anyio.create_task_group() as tasks:
             for customer in customers:
@@ -3685,7 +3694,6 @@ async def test_asks_polar_for_a_few_batches_of_cold_customers_at_once(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     url, _ = redis_connection
-    monkeypatch.setattr("polar.outpost.client.SNAPSHOT_TIMEOUT", 2)
     monkeypatch.setattr("polar.outpost.client.SNAPSHOT_BATCH", 4)
     customers = [f"customer-{index}" for index in range(3)]
     for customer in customers:
@@ -3698,7 +3706,7 @@ async def test_asks_polar_for_a_few_batches_of_cold_customers_at_once(
             **ALICE_CREDITS,
             "external_customer_id": customer,
         }
-    async with Outpost(url, client=polar_client) as outpost:
+    async with Outpost(url, client=polar_client, snapshot_timeout=2) as outpost:
         await outpost._pull()
         async with anyio.create_task_group() as tasks:
             for customer in customers:

@@ -23903,7 +23903,7 @@ export interface components {
        * @description The customer type. Can only be upgraded from 'individual' to 'team', never downgraded.
        * @example team
        */
-      type?: components['schemas']['CustomerType'] | null
+      type?: components['schemas']['CustomerType']
     }
     /** CustomerUpdateExternalID */
     CustomerUpdateExternalID: {

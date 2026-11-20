@@ -521,7 +521,7 @@ class SubscriptionUpdateContext:
         self._notify_customer = notify_customer
         self._customer_initiated = customer_initiated
 
-        self._billing_effect: Literal["invoice", "cycle", "cycle_sync"] | None = None
+        self._billing_effect: Literal["invoice", "cycle"] | None = None
         self._event_metadata: SubscriptionUpdatedMetadataFields = {}
         self._has_changes = True
         self._previous_product: Product | None = None
@@ -550,13 +550,6 @@ class SubscriptionUpdateContext:
         match self._billing_effect:
             case "cycle":
                 await self.service.cycle(self.session, self, self.subscription)
-            case "cycle_sync":
-                await self.service.cycle(
-                    self.session,
-                    self,
-                    self.subscription,
-                    payment_mode=PaymentMode.sync,
-                )
             case "invoice":
                 await self.service._create_subscription_update_order(
                     self.session, self.subscription
@@ -593,9 +586,7 @@ class SubscriptionUpdateContext:
     def set_previous_product(self, product: Product) -> None:
         self._previous_product = product
 
-    def set_billing_effect(
-        self, effect: Literal["invoice", "cycle", "cycle_sync"]
-    ) -> None:
+    def set_billing_effect(self, effect: Literal["invoice", "cycle"]) -> None:
         self._billing_effect = effect
 
     def record_billing_state(self, *, effective_at: datetime) -> None:
@@ -2574,7 +2565,7 @@ class SubscriptionService:
                         "Organization is not ready to renew subscriptions"
                     )
                 subscription.trial_end = subscription.current_period_end = utc_now()
-                ctx.set_billing_effect("cycle_sync")
+                ctx.set_billing_effect("cycle")
             # Set new trial end date
             else:
                 subscription.trial_end = subscription.current_period_end = trial_end

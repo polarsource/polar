@@ -30,9 +30,7 @@ from polar.models.order import OrderStatus
 from polar.models.product_price import ProductPriceSeatUnit
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.models.subscription_meter import SubscriptionMeter
-from polar.order.service import PaymentFailed, PaymentFailedReason
 from polar.postgres import AsyncSession
-from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
 from polar.version import V2026_04, V2026_10, V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
@@ -1600,20 +1598,20 @@ class TestSubscriptionUpdateSeats:
 @pytest.mark.anyio
 class TestSubscriptionUpdateTrial:
     @pytest.mark.auth
-    async def test_end_trial_payment_failure_returns_402(
+    async def test_end_trial_now_activates_and_defers_payment(
         self,
         client: AsyncClient,
-        session: AsyncSession,
         save_fixture: SaveFixture,
         mocker: MockerFixture,
         user_organization: UserOrganization,
         product: Product,
         customer: Customer,
     ) -> None:
-        mocker.patch.object(
+        enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
+        create_subscription_update_order_mock = mocker.patch.object(
             subscription_service,
             "_create_subscription_update_order",
-            new=AsyncMock(side_effect=PaymentFailed(PaymentFailedReason.card_error)),
+            new_callable=AsyncMock,
         )
         subscription = await create_subscription(
             save_fixture,
@@ -1624,21 +1622,19 @@ class TestSubscriptionUpdateTrial:
             trial_start=utc_now(),
             trial_end=utc_now() + timedelta(days=14),
         )
-        original_trial_end = subscription.trial_end
-        original_period_end = subscription.current_period_end
-        nested = await session.begin_nested()
+
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}", json={"trial_end": "now"}
         )
 
-        assert response.status_code == 402
-        await nested.rollback()
-        repository = SubscriptionRepository.from_session(session)
-        persisted_subscription = await repository.get_by_id(subscription.id)
-        assert persisted_subscription is not None
-        assert persisted_subscription.status == SubscriptionStatus.trialing
-        assert persisted_subscription.trial_end == original_trial_end
-        assert persisted_subscription.current_period_end == original_period_end
+        assert response.status_code == 200
+        json = response.json()
+        assert json["status"] == SubscriptionStatus.active
+        create_subscription_update_order_mock.assert_not_awaited()
+        assert any(
+            call.args and call.args[0] == "order.create_subscription_order"
+            for call in enqueue_job_mock.call_args_list
+        )
 
     @pytest.mark.auth
     async def test_extend_trial_seat_based_subscription(

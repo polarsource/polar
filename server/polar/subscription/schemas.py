@@ -412,8 +412,8 @@ class SubscriptionUpdateBase(MetadataInputMixin, Schema):
         description=(
             "Set or extend the trial period of the subscription. "
             "If set to `now`, the trial will end immediately and the first "
-            "billing cycle will be charged synchronously. The subscription "
-            "remains trialing if the payment fails."
+            "billing cycle will be charged. If the payment fails, the "
+            "subscription becomes `past_due` and enters dunning."
         ),
     )
 

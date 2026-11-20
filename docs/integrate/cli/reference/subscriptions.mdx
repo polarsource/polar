@@ -117,7 +117,7 @@ polar subscriptions update [flags] <id>
 | `--product-id` | `string` | Update subscription to another product. |
 | `--proration-behavior` | `choice` | Determine how to handle the proration billing. If not provided, will use the default organization setting. (choices: invoice, prorate, next_period, reset) |
 | `--discount-id` | `string` | Update the subscription to apply a new discount. If set to `null`, the discount will be removed. The change will be applied on the next billing cycle. |
-| `--trial-end` | `string` | Set or extend the trial period of the subscription. If set to `now`, the trial will end immediately and the first billing cycle will be charged synchronously. The subscription remains trialing if the payment fails. |
+| `--trial-end` | `string` | Set or extend the trial period of the subscription. If set to `now`, the trial will end immediately and the first billing cycle will be charged. If the payment fails, the subscription becomes `past_due` and enters dunning. |
 | `--seats` | `integer` | Update the number of seats for this subscription. |
 | `--units` | `integer` | Update the number of units for this subscription. |
 | `--current-billing-period-end` | `string` | Set a new date for the end of the current billing period. The subscription will renew on this date. The new date can be earlier or later than the current period end, as long as it's in the future. |

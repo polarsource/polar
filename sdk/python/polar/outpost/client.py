@@ -53,7 +53,7 @@ from polar.outpost.reducer import (
     Reducer,
     ReducerMatcher,
     get_bucket_start,
-    reduce,
+    match_event,
     with_matchers,
 )
 from polar.outpost.telemetry import (
@@ -454,46 +454,38 @@ PUSH_TELEMETRY_SHA = hashlib.sha1(PUSH_TELEMETRY_SCRIPT.encode()).hexdigest()
 WRITE_BUCKET_SCRIPT = """
 local bucket = 'bucket:' .. ARGV[1] .. ':'
 local pending = 'pending:' .. ARGV[1] .. ':'
-local total = tonumber(redis.call('HGET', KEYS[1], bucket .. 'sum') or '0') + tonumber(ARGV[3])
+-- ARGV[2] is the event's value, or nothing when it only counts.
+local value = ARGV[2] ~= '' and tonumber(ARGV[2]) or nil
+assert(ARGV[2] == '' or (value and value == value and math.abs(value) ~= math.huge), 'Invalid value')
+local total = tonumber(redis.call('HGET', KEYS[1], bucket .. 'sum') or '0') + (value or 0)
 assert(total == total and math.abs(total) ~= math.huge, 'Aggregation values must be finite')
-for i = 1, 2 do
-    local raw = ARGV[3 + i]
-    if raw ~= '' then
-        local value = tonumber(raw)
-        assert(value and value == value and math.abs(value) ~= math.huge, 'Invalid value')
-    end
-end
--- One event pending: its value, or nothing when it only counts. An external_id Polar has not
--- confirmed yet: tracking it again changes nothing.
-assert(ARGV[2] == '1', 'One event per write')
-local entry = ARGV[4] ~= '' and ARGV[3] or ''
-if redis.call('HSETNX', KEYS[2], ARGV[6], entry) == 0 then
+-- One event pending, under its external_id, ARGV[3]. An external_id Polar has not confirmed yet:
+-- tracking it again changes nothing.
+if redis.call('HSETNX', KEYS[2], ARGV[3], ARGV[2]) == 0 then
     return 0
 end
 -- The write that first sees an event queues it for Polar, as Polar ingests it: KEYS[3] is the
--- stream, ARGV[7] the event, or nothing for the other reducers the event matches. A flusher
+-- stream, ARGV[4] the event, or nothing for the other reducers the event matches. A flusher
 -- holding the first slot, KEYS[4], reads the stream again once it lets go: it delivers the event.
 -- Otherwise the write returns 2, and the instance drains the stream on its next flush.
 local written = 1
-if ARGV[7] and ARGV[7] ~= '' then
-    redis.call('XADD', KEYS[3], '*', 'event', ARGV[7])
+if ARGV[4] ~= '' then
+    redis.call('XADD', KEYS[3], '*', 'event', ARGV[4])
     if redis.call('EXISTS', KEYS[4]) == 0 then
         written = 2
     end
 end
 -- Every local event counts in its bucket; the pending part is what Polar has not confirmed.
 for _, prefix in ipairs({bucket, pending}) do
-    redis.call('HINCRBYFLOAT', KEYS[1], prefix .. 'sum', ARGV[3])
-    redis.call('HINCRBY', KEYS[1], prefix .. 'count', ARGV[2])
-    for i, func in ipairs({'min', 'max'}) do
-        local raw = ARGV[3 + i]
-        if raw ~= '' then
-            local value = tonumber(raw)
+    redis.call('HINCRBYFLOAT', KEYS[1], prefix .. 'sum', value and ARGV[2] or '0')
+    redis.call('HINCRBY', KEYS[1], prefix .. 'count', 1)
+    if value then
+        for _, func in ipairs({'min', 'max'}) do
             local stored = redis.call('HGET', KEYS[1], prefix .. func)
             local previous = stored and tonumber(stored)
             if not previous or (func == 'min' and value < previous)
                 or (func == 'max' and value > previous) then
-                redis.call('HSET', KEYS[1], prefix .. func, raw)
+                redis.call('HSET', KEYS[1], prefix .. func, ARGV[2])
             end
         end
     end
@@ -1144,13 +1136,10 @@ class Outpost:
         try:
             self.validate(event)
             parsed = self._parse_event(event)
-            updates = reduce(
-                self._matchers,
-                [parsed],
-                oldest_bucket_start=get_bucket_start(parsed.timestamp),
-            )
+            bucket_start = get_bucket_start(parsed.timestamp)
+            matches = match_event(self._matchers, parsed)
             if self._ingest_buckets is not None:
-                self._ingest_buckets.add(len(updates))
+                self._ingest_buckets.add(len(matches))
             assert self._redis is not None
             # Polar dates the event as Outpost bucketed it.
             queued = _encode_event(
@@ -1159,24 +1148,19 @@ class Outpost:
                     "timestamp": event.get("timestamp") or parsed.timestamp.isoformat(),
                 }
             )
-            if not updates:
+            if not matches:
                 await self._redis.xadd(self._outbox_key, {"event": queued})
                 self._undrained = True
             writes: list[list[str | int | float]] = []
-            for index, ((customer, reducer_id, bucket_start), statistics) in enumerate(
-                updates.items()
-            ):
-                identity = f"{customer}:{reducer_id}"
+            for index, (reducer_id, value) in enumerate(matches):
+                identity = f"{parsed.external_customer_id}:{reducer_id}"
                 arguments: list[str | int | float] = [
                     f"{self._prefix}:state:{identity}",
                     f"{self._prefix}:pending:{identity}:{bucket_start}",
                     self._outbox_key,
                     f"{self._outbox_key}:flusher:0",
                     bucket_start,
-                    statistics.count,
-                    statistics.sum,
-                    statistics.min if statistics.min is not None else "",
-                    statistics.max if statistics.max is not None else "",
+                    value if value is not None else "",
                     typing.cast(str, event["external_id"]),
                     queued if index == 0 else "",
                 ]
@@ -1234,13 +1218,9 @@ class Outpost:
                 parsed = self._parse_event(event)
             except (AttributeError, KeyError, PolarError, TypeError, ValueError):
                 continue
-            updates = reduce(
-                self._matchers,
-                [parsed],
-                oldest_bucket_start=get_bucket_start(parsed.timestamp),
-            )
-            for customer, reducer_id, bucket_start in updates:
-                identity = f"{customer}:{reducer_id}"
+            bucket_start = get_bucket_start(parsed.timestamp)
+            for reducer_id, _ in match_event(self._matchers, parsed):
+                identity = f"{parsed.external_customer_id}:{reducer_id}"
                 groups.setdefault((identity, bucket_start), []).append(
                     typing.cast(str, event["external_id"])
                 )

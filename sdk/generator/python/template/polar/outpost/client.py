@@ -53,7 +53,7 @@ from polar.outpost.reducer import (
     Reducer,
     ReducerMatcher,
     get_bucket_start,
-    reduce,
+    match_event,
     with_matchers,
 )
 from polar.outpost.telemetry import (
@@ -771,13 +771,10 @@ class Outpost:
         try:
             self.validate(event)
             parsed = self._parse_event(event)
-            updates = reduce(
-                self._matchers,
-                [parsed],
-                oldest_bucket_start=get_bucket_start(parsed.timestamp),
-            )
+            bucket_start = get_bucket_start(parsed.timestamp)
+            matches = match_event(self._matchers, parsed)
             if self._ingest_buckets is not None:
-                self._ingest_buckets.add(len(updates))
+                self._ingest_buckets.add(len(matches))
             assert self._redis is not None
             # Polar dates the event as Outpost bucketed it.
             queued = _encode_event(
@@ -786,24 +783,19 @@ class Outpost:
                     "timestamp": event.get("timestamp") or parsed.timestamp.isoformat(),
                 }
             )
-            if not updates:
+            if not matches:
                 await self._redis.xadd(self._outbox_key, {"event": queued})
                 self._undrained = True
             writes: list[list[str | int | float]] = []
-            for index, ((customer, reducer_id, bucket_start), statistics) in enumerate(
-                updates.items()
-            ):
-                identity = f"{customer}:{reducer_id}"
+            for index, (reducer_id, value) in enumerate(matches):
+                identity = f"{parsed.external_customer_id}:{reducer_id}"
                 arguments: list[str | int | float] = [
                     f"{self._prefix}:state:{identity}",
                     f"{self._prefix}:pending:{identity}:{bucket_start}",
                     self._outbox_key,
                     f"{self._outbox_key}:flusher:0",
                     bucket_start,
-                    statistics.count,
-                    statistics.sum,
-                    statistics.min if statistics.min is not None else "",
-                    statistics.max if statistics.max is not None else "",
+                    value if value is not None else "",
                     typing.cast(str, event["external_id"]),
                     queued if index == 0 else "",
                 ]
@@ -861,13 +853,9 @@ class Outpost:
                 parsed = self._parse_event(event)
             except (AttributeError, KeyError, PolarError, TypeError, ValueError):
                 continue
-            updates = reduce(
-                self._matchers,
-                [parsed],
-                oldest_bucket_start=get_bucket_start(parsed.timestamp),
-            )
-            for customer, reducer_id, bucket_start in updates:
-                identity = f"{customer}:{reducer_id}"
+            bucket_start = get_bucket_start(parsed.timestamp)
+            for reducer_id, _ in match_event(self._matchers, parsed):
+                identity = f"{parsed.external_customer_id}:{reducer_id}"
                 groups.setdefault((identity, bucket_start), []).append(
                     typing.cast(str, event["external_id"])
                 )

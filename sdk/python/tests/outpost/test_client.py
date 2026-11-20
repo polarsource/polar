@@ -2942,7 +2942,7 @@ async def test_cutoff_keeps_microsecond_precision(
         pending_key = f"outpost:v1:org-1:pending:{identity}:{bucket_start}"
         await write(
             keys=[key, pending_key],
-            args=[bucket_start, 1, tokens, tokens, tokens, external_id],
+            args=[bucket_start, tokens, external_id, ""],
         )
 
     await track(BUCKET, 2, "first")

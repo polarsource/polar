@@ -88,7 +88,6 @@ class BucketStatistics:
                 raise ValueError(f"Unsupported aggregation: {func}")
 
 
-Updates: typing.TypeAlias = dict[tuple[str, str, int], BucketStatistics]
 BUCKET_SIZE = 300000000
 EPOCH = datetime.datetime(1970, 1, 1, tzinfo=datetime.UTC)
 FILTER_OPERATORS = {
@@ -217,32 +216,20 @@ def get_bucket_start(timestamp: datetime.datetime) -> int:
     return epoch - epoch % BUCKET_SIZE
 
 
-def reduce(
-    reducers: collections.abc.Sequence[ReducerMatcher],
-    events: collections.abc.Sequence[Event],
-    *,
-    oldest_bucket_start: int,
-) -> Updates:
-    updates: Updates = {}
-    for event in events:
-        bucket_start = get_bucket_start(event.timestamp)
-        if bucket_start < oldest_bucket_start:
+def match_event(
+    reducers: collections.abc.Sequence[ReducerMatcher], event: Event
+) -> list[tuple[str, int | float | None]]:
+    """The reducers an event counts for, each with the event's value, or None when it
+    only counts."""
+    matches: list[tuple[str, int | float | None]] = []
+    for reducer, matcher, read in reducers:
+        if not matcher(event):
             continue
-        for reducer, matcher, read in reducers:
-            if not matcher(event):
-                continue
-            value = read(event)
-            if not isinstance(value, (int, float)) or isinstance(value, bool):
-                continue
-            if isinstance(value, float) and not math.isfinite(value):
-                raise ValueError("Aggregation values must be finite")
-
-            update_key = (event.external_customer_id, reducer["id"], bucket_start)
-            statistics = updates.get(update_key)
-            if statistics is None:
-                statistics = updates[update_key] = BucketStatistics()
-            if reducer["aggregation"]["func"] == "count":
-                statistics.count += 1
-            else:
-                statistics.add_value(value)
-    return updates
+        value = read(event)
+        if not isinstance(value, (int, float)) or isinstance(value, bool):
+            continue
+        if isinstance(value, float) and not math.isfinite(value):
+            raise ValueError("Aggregation values must be finite")
+        counts = reducer["aggregation"]["func"] == "count"
+        matches.append((reducer["id"], None if counts else value))
+    return matches

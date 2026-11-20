@@ -10,6 +10,10 @@ import CountryStatePicker, {
 } from '@polar-sh/ui/components/atoms/CountryStatePicker'
 import { Input } from '@polar-sh/orbit'
 import {
+  getTaxAddressFields,
+  type TaxAddressField,
+} from '@polar-sh/ui/lib/taxAddressFields'
+import {
   Form,
   FormControl,
   FormField,
@@ -22,18 +26,13 @@ import { useForm, useWatch, useFormState } from 'react-hook-form'
 
 type CustomerPortalCustomerUpdate = schemas['CustomerPortalCustomerUpdate']
 
-// Mirrors the checkout requirements in server/polar/models/checkout.py
-const LINE1_REQUIRED_COUNTRIES = ['US']
-const CITY_REQUIRED_COUNTRIES = ['US', 'BR']
-const POSTAL_CODE_REQUIRED_COUNTRIES = ['US', 'ES', 'PT']
-
-const requiredInCountries = (countries: string[]) => ({
+const requiredTaxField = (field: TaxAddressField) => ({
   validate: (
     value: string | null | undefined,
     values: CustomerPortalCustomerUpdate,
   ) => {
-    const country = values.billing_address?.country
-    if (country && countries.includes(country) && !value) {
+    const taxFields = getTaxAddressFields(values.billing_address?.country)
+    if (taxFields.includes(field) && !value) {
       return 'This field is required'
     }
     return true
@@ -186,7 +185,6 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
             <FormField
               control={control}
               name="billing_address.line1"
-              rules={requiredInCountries(LINE1_REQUIRED_COUNTRIES)}
               render={({ field }) => (
                 <div className="flex flex-col gap-y-2">
                   <Input
@@ -227,7 +225,7 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
               <FormField
                 control={control}
                 name="billing_address.postal_code"
-                rules={requiredInCountries(POSTAL_CODE_REQUIRED_COUNTRIES)}
+                rules={requiredTaxField('postal_code')}
                 render={({ field }) => (
                   <div className="flex flex-col gap-y-2">
                     <Input
@@ -247,7 +245,7 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
               <FormField
                 control={control}
                 name="billing_address.city"
-                rules={requiredInCountries(CITY_REQUIRED_COUNTRIES)}
+                rules={requiredTaxField('city')}
                 render={({ field }) => (
                   <div className="flex flex-col gap-y-2">
                     <Input
@@ -269,7 +267,7 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
               <FormField
                 control={control}
                 name="billing_address.state"
-                rules={requiredInCountries(COUNTRIES_WITH_FIXED_STATE_OPTIONS)}
+                rules={requiredTaxField('state')}
                 render={({ field }) => (
                   <div className="flex flex-col gap-y-2">
                     <CountryStatePicker

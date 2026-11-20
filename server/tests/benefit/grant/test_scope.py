@@ -7,10 +7,20 @@ from polar.benefit.grant.scope import (
     InvalidScopeError,
     MemberIdRequired,
     MemberNotFound,
+    is_team_grant,
     resolve_member,
     resolve_selector,
 )
-from polar.models import Account, BenefitGrant, Member, Order, Product, Subscription
+from polar.models import (
+    Account,
+    Benefit,
+    BenefitGrant,
+    Member,
+    Order,
+    Product,
+    Subscription,
+)
+from polar.models.benefit import BenefitType
 from polar.models.member import MemberRole
 from polar.models.product_price import ProductPriceSeatUnit
 from polar.postgres import AsyncSession
@@ -48,6 +58,40 @@ def purchase_subscription() -> Subscription:
 @pytest.fixture
 def seat_based_subscription() -> Subscription:
     return Subscription(product=Product(prices=[ProductPriceSeatUnit()]))
+
+
+class TestIsTeamGrant:
+    @pytest.mark.parametrize(
+        ("type", "properties", "seat_based", "expected"),
+        [
+            (BenefitType.meter_credit, {"allocation": "team"}, True, True),
+            (BenefitType.meter_credit, {"allocation": "team"}, False, False),
+            (BenefitType.meter_credit, {"allocation": "per_claimed_seat"}, True, False),
+            (BenefitType.meter_credit, {}, True, False),
+            (BenefitType.custom, {"allocation": "team"}, True, False),
+        ],
+    )
+    def test_subscription(
+        self,
+        type: BenefitType,
+        properties: dict[str, str],
+        seat_based: bool,
+        expected: bool,
+        purchase_subscription: Subscription,
+        seat_based_subscription: Subscription,
+    ) -> None:
+        benefit = Benefit(type=type, properties=properties)
+        subscription = seat_based_subscription if seat_based else purchase_subscription
+
+        assert is_team_grant(benefit, {"subscription": subscription}) is expected
+
+    @pytest.mark.parametrize(("seats", "expected"), [(3, True), (None, False)])
+    def test_order(self, seats: int | None, expected: bool) -> None:
+        benefit = Benefit(
+            type=BenefitType.meter_credit, properties={"allocation": "team"}
+        )
+
+        assert is_team_grant(benefit, {"order": Order(seats=seats)}) is expected
 
 
 @pytest.mark.anyio

@@ -233,6 +233,25 @@ class BenefitServiceProtocol[BP: BenefitProperties, BGP: BenefitGrantProperties]
         """
         ...
 
+    async def validate_properties_update(self, benefit: Benefit, properties: BP) -> BP:
+        """
+        Validates the benefit properties of an update against the current ones.
+
+        Called after `validate_properties` when a benefit is updated.
+
+        Args:
+            benefit: The benefit being updated, with its current properties.
+            properties: The validated input properties.
+
+        Returns:
+            The properties to store.
+
+        Raises:
+            BenefitPropertiesValidationError: The benefit
+            properties can't be updated this way.
+        """
+        return properties
+
     def _get_properties(self, benefit: Benefit) -> BP:
         """
         Returns the Benefit properties.

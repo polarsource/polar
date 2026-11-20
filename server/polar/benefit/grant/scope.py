@@ -3,12 +3,16 @@ from uuid import UUID
 import structlog
 from sqlalchemy.orm import joinedload
 
+from polar.benefit.strategies.meter_credit.properties import (
+    BenefitMeterCreditAllocation,
+)
 from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarError
 from polar.logging import Logger
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
-from polar.models import Member, Organization
+from polar.models import Benefit, Member, Organization
+from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import (
     BenefitGrantScope,
     BenefitGrantScopeArgs,
@@ -116,6 +120,29 @@ def scope_to_args(scope: BenefitGrantScope) -> BenefitGrantScopeArgs:
     return args
 
 
+def is_seat_based_scope(scope: BenefitGrantScope) -> bool:
+    if subscription := scope.get("subscription"):
+        return subscription.product.has_seat_based_price
+    if order := scope.get("order"):
+        return order.seats is not None
+    return False
+
+
+def is_team_benefit(benefit: Benefit) -> bool:
+    return (
+        benefit.type == BenefitType.meter_credit
+        and benefit.properties.get("allocation") == BenefitMeterCreditAllocation.team
+    )
+
+
+def is_team_grant(benefit: Benefit, scope: BenefitGrantScope) -> bool:
+    """
+    Whether the benefit is granted once to the billing customer for this purchase,
+    instead of to each member holding a seat.
+    """
+    return is_team_benefit(benefit) and is_seat_based_scope(scope)
+
+
 async def _resolve_owner_member(
     session: AsyncSession,
     customer_id: UUID,
@@ -164,10 +191,7 @@ async def resolve_member(
             raise MemberNotFound(member_id)
         return member
 
-    if subscription := selector.get("subscription"):
-        if subscription.product.has_seat_based_price:
-            raise MemberIdRequired()
-    elif (order := selector.get("order")) and order.seats is not None:
+    if is_seat_based_scope(selector):
         raise MemberIdRequired()
 
     member = await _resolve_owner_member(

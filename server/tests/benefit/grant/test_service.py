@@ -21,6 +21,7 @@ from polar.benefit.strategies.base.properties import BenefitGrantProperties
 from polar.benefit.strategies.base.service import BenefitRetriableError
 from polar.benefit.tasks import benefit_grant, benefit_revoke
 from polar.config import settings
+from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import NotPermitted, PolarRequestValidationError, ResourceNotFound
 from polar.kit.utils import utc_now
 from polar.models import (
@@ -50,7 +51,9 @@ from tests.fixtures.random_objects import (
     create_customer,
     create_member,
     create_order,
+    create_product,
     create_subscription,
+    create_subscription_with_seats,
     set_product_benefits,
 )
 
@@ -1595,6 +1598,309 @@ class TestEnqueueBenefitsGrants:
             enqueue_grants_actor.message.return_value
         )
         group_mock.return_value.run.assert_called_once()
+
+
+@pytest.fixture
+async def seat_based_product(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    return await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.month,
+        prices=[("seat", 1000, "usd")],
+    )
+
+
+@pytest.fixture
+async def team_benefit(
+    save_fixture: SaveFixture, organization: Organization
+) -> Benefit:
+    return await create_benefit(
+        save_fixture,
+        organization=organization,
+        type=BenefitType.meter_credit,
+        properties={
+            "meter_id": str(uuid4()),
+            "units": 10_000,
+            "rollover": False,
+            "allocation": "team",
+        },
+    )
+
+
+@pytest.mark.anyio
+class TestEnqueueBenefitsGrantsSeatBased:
+    async def _setup(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        benefits: list[Benefit],
+    ) -> Subscription:
+        await set_product_benefits(save_fixture, product=product, benefits=benefits)
+        return await create_subscription_with_seats(
+            save_fixture, product=product, customer=customer, seats=3
+        )
+
+    async def test_without_member_grants_team_benefits(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        seat_based_product: Product,
+        benefit_organization: Benefit,
+        team_benefit: Benefit,
+        customer: Customer,
+        member: Member,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.benefit.grant.service.enqueue_job")
+        subscription = await self._setup(
+            save_fixture,
+            seat_based_product,
+            customer,
+            [benefit_organization, team_benefit],
+        )
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            team_benefit,
+            granted=True,
+            member=member,
+            subscription=subscription,
+        )
+
+        await benefit_grant_service.enqueue_benefits_grants(
+            session, "grant", customer, seat_based_product, subscription=subscription
+        )
+
+        enqueue_job_mock.assert_called_once_with(
+            "benefit.enqueue_grants",
+            customer_id=customer.id,
+            grant_benefit_ids=[team_benefit.id],
+            member_id=None,
+            subscription_id=subscription.id,
+        )
+
+    async def test_without_member_skips_granted_team_benefits(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        seat_based_product: Product,
+        benefit_organization: Benefit,
+        team_benefit: Benefit,
+        customer: Customer,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.benefit.grant.service.enqueue_job")
+        subscription = await self._setup(
+            save_fixture,
+            seat_based_product,
+            customer,
+            [benefit_organization, team_benefit],
+        )
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            team_benefit,
+            granted=True,
+            subscription=subscription,
+        )
+
+        await benefit_grant_service.enqueue_benefits_grants(
+            session, "grant", customer, seat_based_product, subscription=subscription
+        )
+
+        enqueue_job_mock.assert_not_called()
+
+    async def test_with_member_skips_team_benefits(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        seat_based_product: Product,
+        benefit_organization: Benefit,
+        team_benefit: Benefit,
+        customer: Customer,
+        member: Member,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.benefit.grant.service.enqueue_job")
+        subscription = await self._setup(
+            save_fixture,
+            seat_based_product,
+            customer,
+            [benefit_organization, team_benefit],
+        )
+
+        await benefit_grant_service.enqueue_benefits_grants(
+            session,
+            "grant",
+            customer,
+            seat_based_product,
+            member_id=member.id,
+            subscription=subscription,
+        )
+
+        enqueue_job_mock.assert_called_once_with(
+            "benefit.enqueue_grants",
+            customer_id=customer.id,
+            grant_benefit_ids=[benefit_organization.id],
+            member_id=member.id,
+            subscription_id=subscription.id,
+        )
+
+    async def test_revoke_without_member_revokes_team_grants(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        seat_based_product: Product,
+        benefit_organization: Benefit,
+        team_benefit: Benefit,
+        customer: Customer,
+        member: Member,
+    ) -> None:
+        mocker.patch("polar.benefit.grant.service.group")
+        broker = mocker.patch("polar.benefit.grant.service.dramatiq.get_broker")
+        revoke_actor = MagicMock()
+        broker.return_value.get_actor.side_effect = {
+            "benefit.revoke": revoke_actor,
+            "benefit.enqueue_grants": MagicMock(),
+        }.__getitem__
+        subscription = await self._setup(
+            save_fixture,
+            seat_based_product,
+            customer,
+            [benefit_organization, team_benefit],
+        )
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            team_benefit,
+            granted=True,
+            subscription=subscription,
+        )
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            member=member,
+            subscription=subscription,
+        )
+
+        await benefit_grant_service.enqueue_benefits_grants(
+            session, "revoke", customer, seat_based_product, subscription=subscription
+        )
+
+        revoke_actor.message.assert_called_once_with(
+            customer_id=customer.id,
+            benefit_id=team_benefit.id,
+            member_id=None,
+            subscription_id=subscription.id,
+        )
+
+    async def test_revoke_without_member_revokes_outdated_team_grants_only(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        seat_based_product: Product,
+        benefit_organization: Benefit,
+        team_benefit: Benefit,
+        customer: Customer,
+        member: Member,
+    ) -> None:
+        mocker.patch("polar.benefit.grant.service.group")
+        broker = mocker.patch("polar.benefit.grant.service.dramatiq.get_broker")
+        revoke_actor = MagicMock()
+        broker.return_value.get_actor.side_effect = {
+            "benefit.revoke": revoke_actor,
+            "benefit.enqueue_grants": MagicMock(),
+        }.__getitem__
+        subscription = await self._setup(save_fixture, seat_based_product, customer, [])
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            team_benefit,
+            granted=True,
+            subscription=subscription,
+        )
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            member=member,
+            subscription=subscription,
+        )
+
+        await benefit_grant_service.enqueue_benefits_grants(
+            session, "grant", customer, seat_based_product, subscription=subscription
+        )
+
+        revoke_actor.message.assert_called_once_with(
+            customer_id=customer.id,
+            benefit_id=team_benefit.id,
+            member_id=None,
+            subscription_id=subscription.id,
+        )
+
+    async def test_with_member_revokes_member_team_grants(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        seat_based_product: Product,
+        benefit_organization: Benefit,
+        team_benefit: Benefit,
+        customer: Customer,
+        member: Member,
+    ) -> None:
+        mocker.patch("polar.benefit.grant.service.group")
+        broker = mocker.patch("polar.benefit.grant.service.dramatiq.get_broker")
+        revoke_actor = MagicMock()
+        enqueue_grants_actor = MagicMock()
+        broker.return_value.get_actor.side_effect = {
+            "benefit.revoke": revoke_actor,
+            "benefit.enqueue_grants": enqueue_grants_actor,
+        }.__getitem__
+        subscription = await self._setup(
+            save_fixture,
+            seat_based_product,
+            customer,
+            [benefit_organization, team_benefit],
+        )
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            team_benefit,
+            granted=True,
+            member=member,
+            subscription=subscription,
+        )
+
+        await benefit_grant_service.enqueue_benefits_grants(
+            session,
+            "grant",
+            customer,
+            seat_based_product,
+            member_id=member.id,
+            subscription=subscription,
+        )
+
+        revoke_actor.message.assert_called_once_with(
+            customer_id=customer.id,
+            benefit_id=team_benefit.id,
+            member_id=member.id,
+            subscription_id=subscription.id,
+        )
+        enqueue_grants_actor.message.assert_called_once_with(
+            customer_id=customer.id,
+            grant_benefit_ids=[benefit_organization.id],
+            member_id=member.id,
+            subscription_id=subscription.id,
+        )
 
 
 @pytest.mark.anyio

@@ -4,6 +4,7 @@ from typing import Any, Unpack, cast
 
 from polar.auth.models import Agent, AuthSubject
 from polar.authz.types import AccessibleOrganizationID
+from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.customer_meter.service import customer_meter as customer_meter_service
 from polar.event.repository import EventRepository
 from polar.event.service import event as event_service
@@ -14,7 +15,11 @@ from polar.models import Benefit, Customer, Member, Organization, User
 from polar.models.benefit_grant import BenefitGrantScopeArgs
 
 from ..base.service import BenefitPropertiesValidationError, BenefitServiceProtocol
-from .properties import BenefitGrantMeterCreditProperties, BenefitMeterCreditProperties
+from .properties import (
+    BenefitGrantMeterCreditProperties,
+    BenefitMeterCreditAllocation,
+    BenefitMeterCreditProperties,
+)
 
 
 class BenefitMeterCreditService(
@@ -179,7 +184,39 @@ class BenefitMeterCreditService(
                 ]
             )
 
+        if properties.get("allocation") is None:
+            properties.pop("allocation", None)
+
         return cast(BenefitMeterCreditProperties, properties)
+
+    async def validate_properties_update(
+        self, benefit: Benefit, properties: BenefitMeterCreditProperties
+    ) -> BenefitMeterCreditProperties:
+        current_allocation = self._get_properties(benefit).get(
+            "allocation", BenefitMeterCreditAllocation.per_claimed_seat
+        )
+        allocation = properties.get("allocation")
+        if allocation is None:
+            return {**properties, "allocation": current_allocation}
+
+        if allocation != current_allocation:
+            benefit_grant_repository = BenefitGrantRepository.from_session(self.session)
+            if await benefit_grant_repository.has_any_by_benefit(benefit):
+                raise BenefitPropertiesValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "msg": (
+                                "The allocation can't be changed once the benefit "
+                                "has been granted. Create a new benefit instead."
+                            ),
+                            "loc": ("allocation",),
+                            "input": allocation,
+                        }
+                    ]
+                )
+
+        return properties
 
     async def _create_event(
         self,

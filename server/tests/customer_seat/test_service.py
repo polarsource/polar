@@ -2148,6 +2148,27 @@ class TestBenefitGranting:
             assert kwargs["member_id"] == member_id
 
     @pytest.mark.anyio
+    async def test_revoke_seat_without_member_skips_benefit_revocation(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_with_seats: Subscription,
+        customer: Customer,
+    ) -> None:
+        seat = await create_customer_seat(
+            save_fixture, subscription=subscription_with_seats, customer=customer
+        )
+        await session.refresh(seat, ["subscription"])
+        await session.refresh(subscription_with_seats, ["product"])
+        await session.refresh(subscription_with_seats.product, ["organization"])
+
+        with patch("polar.customer_seat.service.enqueue_job") as mock_enqueue_job:
+            seat = await seat_service.revoke_seat(session, seat)
+
+        assert seat.status == SeatStatus.revoked
+        mock_enqueue_job.assert_not_called()
+
+    @pytest.mark.anyio
     async def test_claim_seat_publishes_event(
         self,
         session: AsyncSession,
@@ -2353,6 +2374,11 @@ class TestRevokeAllSeatsForSubscription:
             save_fixture,
             subscription=subscription_with_seats,
             customer=customer1,
+            member=await create_member(
+                save_fixture,
+                customer=customer1,
+                organization=subscription_with_seats.product.organization,
+            ),
             status=SeatStatus.claimed,
             claimed_at=utc_now(),
         )
@@ -2360,6 +2386,11 @@ class TestRevokeAllSeatsForSubscription:
             save_fixture,
             subscription=subscription_with_seats,
             customer=customer2,
+            member=await create_member(
+                save_fixture,
+                customer=customer2,
+                organization=subscription_with_seats.product.organization,
+            ),
             status=SeatStatus.claimed,
             claimed_at=utc_now(),
         )
@@ -2938,6 +2969,9 @@ class TestRevokeAllSeatsForOrder:
             save_fixture,
             order=order_with_seats,
             customer=claimed_customer,
+            member=await create_member(
+                save_fixture, customer=claimed_customer, organization=organization
+            ),
             status=SeatStatus.claimed,
             claimed_at=utc_now(),
         )
@@ -2945,6 +2979,9 @@ class TestRevokeAllSeatsForOrder:
             save_fixture,
             order=order_with_seats,
             customer=pending_customer,
+            member=await create_member(
+                save_fixture, customer=pending_customer, organization=organization
+            ),
             status=SeatStatus.pending,
             invitation_token="PENDING_TOKEN",
         )

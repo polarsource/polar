@@ -513,7 +513,8 @@ class RefundService:
 
         if refund.revoke_benefits and order.seats is not None:
             await customer_seat_service.revoke_all_seats_for_order(session, order)
-        elif refund.revoke_benefits and order.product is not None:
+        # On seat-based orders, this only revokes team benefits
+        if refund.revoke_benefits and order.product is not None:
             await benefit_grant_service.enqueue_benefits_grants(
                 session,
                 task="revoke",

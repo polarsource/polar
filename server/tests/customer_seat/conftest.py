@@ -81,10 +81,17 @@ async def customer_seat_claimed(
     customer: Customer,
     session: AsyncSession,
 ) -> CustomerSeat:
+    member = await create_member(
+        save_fixture,
+        customer=customer,
+        organization=subscription_with_seats.product.organization,
+        email=customer.email,
+    )
     seat = await create_customer_seat(
         save_fixture,
         subscription=subscription_with_seats,
         customer=customer,
+        member=member,
         email=customer.email,
         status=SeatStatus.claimed,
         claimed_at=utc_now(),

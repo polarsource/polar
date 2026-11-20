@@ -1,5 +1,5 @@
 from typing import Any
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import stripe as stripe_lib
@@ -780,7 +780,7 @@ class TestCreateFromDispute:
 
         assert refund_transaction_service_mock.create.call_count == 1
 
-    async def test_seat_based_order_revokes_seats(
+    async def test_seat_based_order_revokes_seats_and_team_benefits(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -795,6 +795,7 @@ class TestCreateFromDispute:
         benefit_grant_service_mock = mocker.patch(
             "polar.refund.service.benefit_grant_service"
         )
+        benefit_grant_service_mock.enqueue_benefits_grants = AsyncMock()
         product = await create_product(
             save_fixture,
             organization=organization,
@@ -821,7 +822,10 @@ class TestCreateFromDispute:
             customer_seat_service_mock.revoke_all_seats_for_order.await_args.args[1].id
             == order.id
         )
-        benefit_grant_service_mock.enqueue_benefits_grants.assert_not_called()
+        benefit_grant_service_mock.enqueue_benefits_grants.assert_awaited_once()
+        call = benefit_grant_service_mock.enqueue_benefits_grants.await_args
+        assert call.kwargs["task"] == "revoke"
+        assert call.kwargs["order"].id == order.id
 
     async def test_valid_exceeding_refund(
         self,

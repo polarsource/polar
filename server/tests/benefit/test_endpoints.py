@@ -1,11 +1,16 @@
 import uuid
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from httpx2 import AsyncClient
 
 from polar.auth.scope import Scope
+from polar.benefit.repository import BenefitRepository
+from polar.benefit.strategies.meter_credit.properties import (
+    BenefitMeterCreditProperties,
+)
 from polar.kit.utils import utc_now
+from polar.kit.versioning import APIVersion
 from polar.kit.visibility import Visibility
 from polar.models import (
     Benefit,
@@ -21,12 +26,14 @@ from polar.models.benefit import BenefitType
 from polar.models.catalog import CatalogStatus
 from polar.models.downloadable import DownloadableStatus
 from polar.models.file import FileServiceTypes
-from polar.version import V2027_01
+from polar.postgres import AsyncSession
+from polar.version import V2026_10, V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_benefit,
     create_benefit_grant,
+    create_meter,
     create_support_case_attachment_file,
 )
 
@@ -646,6 +653,46 @@ class TestCreateBenefit:
         assert response.status_code == 201
         assert response.json()["external_id"] == "ext_1337"
 
+    @pytest.mark.api_version(V2026_10, V2027_01)
+    @pytest.mark.auth
+    async def test_meter_credit_allocation(
+        self,
+        api_version: APIVersion,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        meter = await create_meter(save_fixture, organization=organization)
+
+        response = await client.post(
+            "/v1/benefits/",
+            json={
+                "type": "meter_credit",
+                "description": "Team credits",
+                "properties": {
+                    "meter_id": str(meter.id),
+                    "units": 100,
+                    "rollover": False,
+                    "allocation": "team",
+                },
+                "organization_id": str(organization.id),
+            },
+        )
+
+        assert response.status_code == 201
+        json = response.json()
+        benefit = await BenefitRepository.from_session(session).get_by_id(json["id"])
+        assert benefit is not None
+        if api_version == V2026_10:
+            assert "allocation" not in json["properties"]
+            assert "allocation" not in benefit.properties
+        else:
+            assert json["properties"]["allocation"] == "team"
+            properties = cast(BenefitMeterCreditProperties, benefit.properties)
+            assert properties["allocation"] == "team"
+
 
 @pytest.mark.anyio
 class TestUpdateBenefit:
@@ -769,6 +816,45 @@ class TestUpdateBenefit:
         assert json["description"] == "Updated Description"
         assert "properties" in json
         assert json["properties"]["note"] == "UPDATED NOTE"
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_meter_credit_keeps_omitted_allocation(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        meter = await create_meter(save_fixture, organization=organization)
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.meter_credit,
+            properties={
+                "meter_id": str(meter.id),
+                "units": 100,
+                "rollover": False,
+                "allocation": "team",
+            },
+        )
+
+        response = await client.patch(
+            f"/v1/benefits/{benefit.id}",
+            json={
+                "type": "meter_credit",
+                "properties": {
+                    "meter_id": str(meter.id),
+                    "units": 200,
+                    "rollover": False,
+                },
+            },
+        )
+
+        assert response.status_code == 200
+        properties = response.json()["properties"]
+        assert properties["units"] == 200
+        assert properties["allocation"] == "team"
 
     @pytest.mark.auth
     async def test_ignores_visibility_update_for_non_configurable_benefit(

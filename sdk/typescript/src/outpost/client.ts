@@ -30,7 +30,7 @@ import {
 } from "../metering/errors";
 import { customerKey, parseEvent } from "./event";
 import {
-  reduce,
+  matchEvent,
   withMatchers,
   getBucketStart,
   BUCKET_SIZE,
@@ -703,28 +703,25 @@ export class Outpost {
     try {
       this.validate(event);
       const parsed = parseEvent(event);
-      const updates = reduce(this.matchers, [parsed], getBucketStart(parsed.timestamp));
-      this.ingestBuckets?.add(updates.length);
+      const bucketStart = getBucketStart(parsed.timestamp);
+      const matches = matchEvent(this.matchers, parsed);
+      this.ingestBuckets?.add(matches.length);
       // Polar dates the event as Outpost bucketed it.
       const queued = JSON.stringify({
         ...event,
         timestamp: event.timestamp ?? new Date(Math.floor(parsed.timestamp / 1000)).toISOString(),
       });
       const pipeline = redis.pipeline() as OutpostPipeline;
-      if (!updates.length) pipeline.xadd(this.outboxKey, "*", "event", queued);
-      for (const [index, update] of updates.entries()) {
-        const identity = `${update.customer}:${update.reducer}`;
-        const statistics = update.statistics;
+      if (!matches.length) pipeline.xadd(this.outboxKey, "*", "event", queued);
+      for (const [index, match] of matches.entries()) {
+        const identity = `${parsed.customer}:${match.reducer}`;
         pipeline.outpostWriteBucket(
           `${this.prefix}:state:${identity}`,
-          `${this.prefix}:pending:${identity}:${update.bucketStart}`,
+          `${this.prefix}:pending:${identity}:${bucketStart}`,
           this.outboxKey,
           `${this.outboxKey}:flusher:0`,
-          update.bucketStart,
-          statistics.count,
-          statistics.sum,
-          statistics.min ?? "",
-          statistics.max ?? "",
+          bucketStart,
+          match.value ?? "",
           event.external_id!,
           index === 0 ? queued : "",
         );
@@ -735,7 +732,7 @@ export class Outpost {
       if (results === null) throw new UnavailableRedisError();
       const failed = results.find(([error]) => error)?.[0];
       if (failed) throw redisUnavailable(failed);
-      if (!updates.length || results[0][1] === 2) this.undrained = true;
+      if (!matches.length || results[0][1] === 2) this.undrained = true;
     } catch (error) {
       outcome = "error";
       throw error;
@@ -758,12 +755,12 @@ export class Outpost {
       } catch {
         continue;
       }
-      for (const update of reduce(this.matchers, [parsed], getBucketStart(parsed.timestamp))) {
-        const identity = `${update.customer}:${update.reducer}`;
-        const key = `${identity}:${update.bucketStart}`;
+      const bucketStart = getBucketStart(parsed.timestamp);
+      for (const match of matchEvent(this.matchers, parsed)) {
+        const identity = `${parsed.customer}:${match.reducer}`;
+        const key = `${identity}:${bucketStart}`;
         let group = groups.get(key);
-        if (!group)
-          groups.set(key, (group = { identity, bucketStart: update.bucketStart, ids: [] }));
+        if (!group) groups.set(key, (group = { identity, bucketStart, ids: [] }));
         group.ids.push(event.external_id!);
       }
     }

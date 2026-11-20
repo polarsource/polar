@@ -12,9 +12,8 @@ from polar.outpost.reducer import (
     FilterClause,
     Reducer,
     ReducerMatcher,
-    get_bucket_start,
     get_matcher,
-    reduce,
+    match_event,
     with_matchers,
 )
 from tests.benchmarks import DATA
@@ -74,7 +73,6 @@ def make_events(count: int) -> list[Event]:
 
 
 events = make_events(EVENTS["count"])
-oldest_bucket_start = get_bucket_start(START)
 
 
 def clause(property: str, operator: Operator, value: str | int) -> FilterClause:
@@ -100,7 +98,8 @@ def match_all(filter: Filter) -> None:
 
 
 def reduce_all(matchers: list[ReducerMatcher], batch: list[Event]) -> None:
-    reduce(matchers, batch, oldest_bucket_start=oldest_bucket_start)
+    for event in batch:
+        match_event(matchers, event)
 
 
 @pytest.mark.parametrize("operator", OPERATORS)

@@ -16,10 +16,9 @@ from polar.outpost.reducer import (
     Filter,
     FilterClause,
     Reducer,
-    Updates,
     get_bucket_start,
     get_matcher,
-    reduce,
+    match_event,
 )
 
 __all__ = [
@@ -37,9 +36,8 @@ __all__ = [
     "PolarOutpostError",
     "Reducer",
     "UnavailableRedisError",
-    "Updates",
     "connect_redis",
     "get_bucket_start",
     "get_matcher",
-    "reduce",
+    "match_event",
 ]

@@ -60,9 +60,6 @@ def write_args(
         "outpost:v1:outbox:flusher:0",
         bucket_start,
     ] + [
-        1,
-        7,
-        7,
         7,
         f"event-{next(_ids)}",
         QUEUED_EVENT if queued else "",

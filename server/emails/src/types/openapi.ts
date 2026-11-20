@@ -2494,6 +2494,12 @@ export interface components {
        * @default false
        */
       reducer_billing_enabled: boolean
+      /**
+       * Lemon Squeezy Migration Enabled
+       * @description If this organization can migrate its billing from Lemon Squeezy to Polar.
+       * @default false
+       */
+      lemon_squeezy_migration_enabled: boolean
     }
     /** OrganizationInviteEmail */
     OrganizationInviteEmail: {
@@ -3360,6 +3366,7 @@ export interface components {
       | 'canceled'
       | 'unpaid'
       | 'paused'
+      | 'trial_ended'
     /** SubscriptionTrialConversionReminderEmail */
     SubscriptionTrialConversionReminderEmail: {
       /**
@@ -3413,6 +3420,16 @@ export interface components {
       previous_billing_provider: string | null
       /** Trial End Date */
       trial_end_date: string
+      /**
+       * Payment Method Required
+       * @default true
+       */
+      payment_method_required: boolean
+      /**
+       * Billing Address Required
+       * @default false
+       */
+      billing_address_required: boolean
     }
     /** SubscriptionUncanceledEmail */
     SubscriptionUncanceledEmail: {

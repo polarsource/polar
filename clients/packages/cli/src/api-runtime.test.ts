@@ -67,6 +67,56 @@ describe('generated commands', () => {
     }
   }
 
+  test.each([
+    {
+      title: 'a JSON list',
+      value:
+        '["00000000-0000-4000-8000-0000000000b1","00000000-0000-4000-8000-0000000000b2"]',
+    },
+    {
+      title: 'a JSON list after whitespace',
+      value:
+        ' ["00000000-0000-4000-8000-0000000000b1","00000000-0000-4000-8000-0000000000b2"]',
+    },
+    {
+      title: 'comma-separated IDs',
+      value:
+        '00000000-0000-4000-8000-0000000000b1, 00000000-0000-4000-8000-0000000000b2',
+    },
+  ])('splits $title passed to a repeatable flag', async ({ value }) => {
+    await run([
+      'products',
+      'update_benefits',
+      'prod-1',
+      '--benefits',
+      value,
+      '--confirm',
+    ]).promise
+
+    expect(await requests.at(-1)!.json()).toEqual({
+      benefits: [
+        '00000000-0000-4000-8000-0000000000b1',
+        '00000000-0000-4000-8000-0000000000b2',
+      ],
+    })
+  })
+
+  test.each(['one,two', '[]'])(
+    'sends %j as it was written, not as a list',
+    async (value) => {
+      await run([
+        'products',
+        'update_benefits',
+        'prod-1',
+        '--benefits',
+        value,
+        '--confirm',
+      ]).promise
+
+      expect(await requests.at(-1)!.json()).toEqual({ benefits: [value] })
+    },
+  )
+
   test('keeps the status code of an API failure', async () => {
     vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
       requests.push(new Request(input, init))
@@ -689,6 +739,15 @@ describe('organization resolution', () => {
       expect(config.state.writes).toBe(0)
     },
   )
+
+  test('--org selects the organization on a command without an organization input', async () => {
+    await run(['products', 'get', 'product-1', `--org=${sandbox.id}`]).promise
+    const url = new URL(requests.at(-1)!.url)
+    expect(url.hostname).toBe('sandbox-api.polar.sh')
+    expect(url.pathname).toBe('/v1/products/product-1')
+    expect(requests.map(scope)).toEqual([sandbox.id, sandbox.id])
+    expect(config.state.activeOrganization).toEqual(production)
+  })
 
   test('repeated organization flags filter by every organization without scoping to one', async () => {
     organizations.push({

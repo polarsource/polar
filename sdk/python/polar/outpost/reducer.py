@@ -127,12 +127,33 @@ def get_matcher(clause: Filter | FilterClause) -> EventMatcher:
 
         filter_operator = FILTER_OPERATORS[clause["operator"]]
         if filter_operator in (operator.eq, operator.ne):
+            # Like Polar, a boolean never equals a number: `True` is not 1. The type
+            # is only looked at when the values compare equal.
+            if isinstance(expected, bool):
+                if filter_operator is operator.eq:
+                    return lambda event: read(event) is expected
 
-            def equality_matcher(event: Event) -> bool:
+                def differs_from_boolean(event: Event) -> bool:
+                    actual = read(event)
+                    return actual is not None and actual is not expected
+
+                return differs_from_boolean
+
+            if filter_operator is operator.eq:
+
+                def equals(event: Event) -> bool:
+                    actual = read(event)
+                    return actual == expected and type(actual) is not bool
+
+                return equals
+
+            def differs(event: Event) -> bool:
                 actual = read(event)
-                return actual is not None and filter_operator(actual, expected)
+                return actual is not None and (
+                    actual != expected or type(actual) is bool
+                )
 
-            return equality_matcher
+            return differs
 
         if expected_type in (int, float):
             comparable: tuple[type, ...] = (int, float)

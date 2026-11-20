@@ -4,6 +4,7 @@ from typing import Any
 import httpx2
 import pytest
 
+from polar.enums import TaxBehavior
 from polar.merchant_migration.adapters.lemon_squeezy import (
     API_BASE_URL,
     LemonSqueezyAdapter,
@@ -180,6 +181,9 @@ ROUTES: dict[str, dict[str, Any]] = {
         ]
     ),
     "/v1/subscriptions": _page([_subscription(), _subscription(status="expired")]),
+    "/v1/orders": _page(
+        [{"type": "orders", "id": "70", "attributes": {"tax_inclusive": False}}]
+    ),
 }
 
 
@@ -244,6 +248,8 @@ class TestExtract:
         assert subscription.payment_method is not None
         assert subscription.payment_method.type == CanonicalPaymentMethodType.card
         assert subscription.payment_method.last4 == "4242"
+        assert subscription.price_tax_behavior == TaxBehavior.exclusive
+        assert subscription.import_tax_behavior() == TaxBehavior.exclusive
 
     async def test_usage_price_reads_decimal_cents(self) -> None:
         usage = {"usage_aggregation": "sum"}
@@ -279,6 +285,25 @@ class TestExtract:
             (None, CanonicalPricingScheme.metered),
             (10, CanonicalPricingScheme.metered),
         ]
+
+    async def test_one_time_price_is_not_recurring(self) -> None:
+        adapter, _ = _adapter(
+            {
+                "/v1/prices": _page(
+                    [
+                        _price(
+                            "21", 10, 1200, "2026-01-01T00:00:00Z", category="one_time"
+                        )
+                    ]
+                )
+            }
+        )
+
+        records = [record async for record in adapter.extract()]
+
+        [product] = [r for r in records if isinstance(r, CanonicalProduct)]
+        assert product.recurring_interval is None
+        assert product.recurring_interval_count == 1
 
     async def test_tiered_price_has_no_single_amount(self) -> None:
         adapter, _ = _adapter(

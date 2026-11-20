@@ -49,23 +49,23 @@ export const CATALOG_EMPTY_COPY: Record<
   all_switched: {
     title: 'All subscriptions already switched',
     description:
-      'Every Stripe subscription in this migration is already on Polar. Refresh if you have added more since.',
+      'Every subscription in this migration is already on Polar. Refresh if you have added more since.',
   },
   no_stripe_subscriptions: {
     title: 'Nothing to import',
     description:
-      'We found no subscriptions in Stripe that can move to Polar. If you have added some since, scan again.',
+      'We found no subscriptions that can move to Polar. If you have added some since, scan again.',
   },
   subscriptions_on_connected_accounts: {
-    title: 'No subscriptions on this Stripe account',
+    title: 'No subscriptions on this account',
     description:
       "If you bill your customers through connected accounts, those subscriptions can't be migrated automatically. Contact us at support@polar.sh and we'll look at it with you.",
   },
 }
 
 export const CATALOG_REFRESH_COPY = {
-  title: 'Refreshing from Stripe',
-  description: `We're reading your Stripe catalog again. ${CATALOG_READ_DURATION}.`,
+  title: 'Refreshing your catalog',
+  description: `We're reading your catalog again. ${CATALOG_READ_DURATION}.`,
 } as const
 
 export const CATALOG_READ_ERROR_TITLE = "We couldn't read your subscriptions"

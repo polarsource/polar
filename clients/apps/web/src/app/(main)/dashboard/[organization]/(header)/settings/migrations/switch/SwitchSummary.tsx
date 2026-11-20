@@ -18,7 +18,7 @@ export function SwitchSummary({
   ]
   const left = report.skipped + report.failed
   if (left > 0) {
-    parts.push(`${numberFormat.format(left)} left on Stripe`)
+    parts.push(`${numberFormat.format(left)} not switched`)
   }
 
   return (

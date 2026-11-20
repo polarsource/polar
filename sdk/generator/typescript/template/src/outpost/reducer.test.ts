@@ -107,7 +107,7 @@ describe("reduction", () => {
     });
     expect(match(event)).toBe(true);
     expect(getMatcher({ property: "missing", operator: "ne", value: 1 })(event)).toBe(false);
-    expect(getMatcher({ property: "nested.flag", operator: "eq", value: 1 })(event)).toBe(true);
+    expect(getMatcher({ property: "nested.flag", operator: "eq", value: 1 })(event)).toBe(false);
     expect(getMatcher({ property: "nested.flag", operator: "gt", value: false })(event)).toBe(
       false,
     );
@@ -123,10 +123,11 @@ describe("reduction", () => {
   );
 
   it.each([
-    [true, 1, true],
-    [1, true, true],
-    [false, 0, true],
-    [0, false, true],
+    [true, true, true],
+    [true, 1, false],
+    [1, true, false],
+    [false, 0, false],
+    [0, false, false],
     [true, 2, false],
     [false, 1, false],
     ["1", 1, false],

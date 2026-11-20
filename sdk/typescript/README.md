@@ -230,7 +230,12 @@ const metering = polar.metering({ outpost: outpost() });
 `outpost()` uses `REDIS_URL` and throws if it is unset. Pass options to configure it, such as
 `outpost({ redisUrl: "redis://localhost:6379" })`. Every Outpost event requires an
 `external_id`; `track()` rejects events without one. An event counts locally until Polar confirms
-storage or the buffer gives it up.
+storage or refuses it. A first read of a customer waits up to `snapshotTimeout` for Polar's
+snapshot, then throws `NotReadyError` from `@polar-sh/sdk/outpost`; the next read asks again.
+
+Outpost delivers the events itself, instead of the buffer: it queues them in Redis and sends them
+to Polar in batches of up to 1,000 events, shared by every client, on `flush()` and every second on a
+long-running server. Pass `buffered` or `outpost`, not both.
 
 ### Options
 
@@ -246,12 +251,13 @@ storage or the buffer gives it up.
 
 #### Outpost
 
-| Option            | Default                          | Meaning                                                    |
-| ----------------- | -------------------------------- | ---------------------------------------------------------- |
-| `redisUrl`        | `REDIS_URL` environment variable | Redis instance used by Outpost.                            |
-| `telemetry`       | `true`                           | Send Outpost metrics and traces to Polar.                  |
-| `snapshotTimeout` | `5000`                           | Milliseconds a cold read waits for its initial snapshot.   |
-| `confirmTimeout`  | `2000`                           | Milliseconds a snapshot waits for Polar to confirm events. |
+| Option            | Default                          | Meaning                                                           |
+| ----------------- | -------------------------------- | ----------------------------------------------------------------- |
+| `redisUrl`        | `REDIS_URL` environment variable | Redis instance used by Outpost.                                   |
+| `telemetry`       | `true`                           | Send Outpost metrics and traces to Polar.                         |
+| `snapshotTimeout` | `5000`                           | Milliseconds a cold read waits for its initial snapshot.          |
+| `onDelivered`     | `undefined`                      | Callback for events Polar accepted; may be async.                 |
+| `onDropped`       | `undefined`                      | Callback for events Polar refused and their reason; may be async. |
 
 Telemetry can also be disabled with `POLAR_OUTPOST_TELEMETRY=0`.
 

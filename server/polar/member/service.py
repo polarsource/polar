@@ -360,30 +360,40 @@ class MemberService:
 
         return deleted
 
-    async def sync_owner_email(
+    async def sync_owner(
         self,
         session: AsyncSession,
         customer: Customer,
     ) -> None:
-        """Mirror customer.email to the owner member's email for individual
-        customers. Any drift otherwise causes the portal sign-in flow to
+        """Mirror customer.email and customer.name to the owner member of an
+        individual customer. Email drift causes the portal sign-in flow to
         auto-create a duplicate owner (the owner-by-email lookup misses the
-        drifted row). Team customers legitimately have members with distinct
-        emails, so they are skipped."""
-        if customer.type != CustomerType.individual or customer.email is None:
+        drifted row); name drift shows a stale name in the customer portal.
+        Team customers legitimately have members with distinct details, so
+        they are skipped."""
+        if customer.type != CustomerType.individual:
             return
 
         repository = MemberRepository.from_session(session)
         owner = await repository.get_owner_by_customer_id(customer.id)
-        if owner is None or owner.email.lower() == customer.email.lower():
+        if owner is None:
             return
 
-        await repository.update(owner, update_dict={"email": customer.email})
+        update_dict: dict[str, str | None] = {}
+        if customer.email is not None and owner.email.lower() != customer.email.lower():
+            update_dict["email"] = customer.email
+        if owner.name != customer.name:
+            update_dict["name"] = customer.name
+        if not update_dict:
+            return
+
+        await repository.update(owner, update_dict=update_dict)
         log.info(
-            "member.sync_owner_email",
+            "member.sync_owner",
             customer_id=customer.id,
             member_id=owner.id,
             organization_id=customer.organization_id,
+            fields=sorted(update_dict),
         )
 
     async def create_owner_member(
@@ -806,7 +816,7 @@ class MemberService:
         new_email: str,
     ) -> None:
         # An individual customer's only member is its owner, whose email is
-        # auto-synced from customer.email (see sync_owner_email). A direct edit
+        # auto-synced from customer.email (see sync_owner). A direct edit
         # would be silently reverted and could spawn a duplicate owner on portal
         # sign-in.
         customer_repository = CustomerRepository.from_session(session)

@@ -98,14 +98,19 @@ class JobQueueManager:
         self._appended.append((stream, fields, int(retention.total_seconds() * 1000)))
 
     async def flush(self, broker: dramatiq.Broker, redis: Redis) -> None:
+        try:
+            await self._flush_jobs(broker, redis)
+        finally:
+            await self._publish(redis)
+        self.reset()
+
+    async def _flush_jobs(self, broker: dramatiq.Broker, redis: Redis) -> None:
         for chunk in itertools.batched(
             self._ingested_events, EVENT_INGESTED_CHUNK_SIZE
         ):
             self.enqueue_job("event.ingested", list(chunk))
 
         if not self._enqueued_jobs:
-            await self._publish(redis)
-            self.reset()
             return
 
         sqs_jobs = [job for job in self._enqueued_jobs if should_route_to_sqs(job[0])]
@@ -203,12 +208,10 @@ class JobQueueManager:
             await debounce_pipeline.execute()
             await _sqs.send_jobs(prepared_sqs_jobs)
 
-        await self._publish(redis)
-        self.reset()
-
     async def _publish(self, redis: Redis) -> None:
         """Publish last and never raise: a lost entry must not drop or replay the
-        jobs of a committed transaction."""
+        jobs of a committed transaction. Published even when the jobs failed: the
+        transaction committed all the same."""
         if not self._appended:
             return
         now = int(time.time() * 1000)
@@ -216,6 +219,9 @@ class JobQueueManager:
             async with redis.pipeline(transaction=False) as pipeline:
                 for stream, fields, retention in self._appended:
                     pipeline.xadd(stream, fields, minid=now - retention)
+                    # Trimming only runs on an append: a stream nothing appends to
+                    # any more goes with its last entries.
+                    pipeline.pexpire(stream, retention)
                 await pipeline.execute()
         except RedisError:
             log.warning(

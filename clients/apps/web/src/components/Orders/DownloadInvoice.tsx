@@ -18,6 +18,7 @@ import CountryStatePicker, {
   getStateLabel,
   hasFixedStateOptions,
 } from '@polar-sh/ui/components/atoms/CountryStatePicker'
+import { getTaxAddressFields } from '@polar-sh/ui/lib/taxAddressFields'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -139,6 +140,9 @@ const DownloadInvoice = ({
   const { control, handleSubmit, setError, clearErrors, setValue } = form
   const { errors, isDirty } = useFormState({ control })
   const country = useWatch({ control, name: 'billing_address.country' })
+  const lockedTaxFields = order.billing_address
+    ? getTaxAddressFields(order.billing_address.country)
+    : []
 
   const fetchInvoiceUrl = useCallback(async (): Promise<string | null> => {
     const response = await api.GET(invoiceURL, {
@@ -430,6 +434,7 @@ const DownloadInvoice = ({
                               placeholder="Postal code"
                               {...field}
                               value={field.value || ''}
+                              disabled={lockedTaxFields.includes('postal_code')}
                             />
                             <FormMessage />
                           </div>
@@ -451,6 +456,7 @@ const DownloadInvoice = ({
                               placeholder="City"
                               {...field}
                               value={field.value || ''}
+                              disabled={lockedTaxFields.includes('city')}
                             />
                             <FormMessage />
                           </div>
@@ -470,10 +476,7 @@ const DownloadInvoice = ({
                       render={({ field }) => (
                         <>
                           <CountryStatePicker
-                            disabled={
-                              !!order.billing_address?.state ||
-                              order.is_invoice_generated
-                            }
+                            disabled={lockedTaxFields.includes('state')}
                             autoComplete="billing address-level1"
                             country={country}
                             value={field.value || ''}
@@ -495,10 +498,7 @@ const DownloadInvoice = ({
                       render={({ field }) => (
                         <>
                           <CountryPicker
-                            disabled={
-                              !!order.billing_address?.country ||
-                              order.is_invoice_generated
-                            }
+                            disabled={lockedTaxFields.includes('country')}
                             autoComplete="billing country"
                             value={field.value || undefined}
                             onChange={(value) => {

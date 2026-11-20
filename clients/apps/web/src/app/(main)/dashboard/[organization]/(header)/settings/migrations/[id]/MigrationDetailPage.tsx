@@ -13,6 +13,7 @@ import { ImportedStep } from '../ImportedStep'
 import { MigrationStepper } from '../MigrationStepper'
 import { PrecheckPanel } from '../PrecheckPanel'
 import { ReviewTable } from '../review/ReviewTable'
+import { SOURCE_LABELS, sourceAccountLabel } from '../sources'
 import {
   currentStepDef,
   MigrationStepDef,
@@ -34,7 +35,7 @@ export default function MigrationDetailPage({ migrationId }: Props) {
 
   return (
     <DashboardBody
-      title="Stripe"
+      title={migration ? SOURCE_LABELS[migration.source_platform] : 'Migration'}
       header={migration ? <SourceMeta migration={migration} /> : undefined}
     >
       {isLoading ? (
@@ -62,13 +63,15 @@ function SourceMeta({
   migration: schemas['MerchantMigration']
 }) {
   const connected = migration.source_connected
-  const stripeUserId = migration.source?.stripe_user_id as string | undefined
+  const accountLabel = sourceAccountLabel(migration)
   const livemode = migration.source?.livemode as boolean | undefined
+  const connectedStatus =
+    livemode === undefined ? 'Connected' : livemode ? 'Live' : 'Test'
   return (
     <Box alignItems="center" columnGap="s">
-      {stripeUserId && <Text color="muted">{stripeUserId}</Text>}
+      {accountLabel && <Text color="muted">{accountLabel}</Text>}
       <Status
-        status={connected ? (livemode ? 'Live' : 'Test') : 'Not connected'}
+        status={connected ? connectedStatus : 'Not connected'}
         color="gray"
         size="small"
       />
@@ -117,7 +120,7 @@ function StepContent({
   if (!migration.source_connected) {
     return (
       <Text color="muted">
-        Connect your Stripe account to start the migration.
+        Connect your billing provider to start the migration.
       </Text>
     )
   }
@@ -162,9 +165,9 @@ function StepContent({
       return (
         <Box flexDirection="column" rowGap="l">
           <Text variant="caption" color="muted">
-            This migration is complete, and Polar deleted your Stripe key.
-            Subscriptions that didn&apos;t switch stay on Stripe. To move them,
-            start a new migration.
+            This migration is complete, and Polar deleted your API key.
+            Subscriptions that didn&apos;t switch stay with your current
+            provider. To move them, start a new migration.
           </Text>
           <SwitchPanel migrationId={migration.id} readOnly />
         </Box>
@@ -173,7 +176,7 @@ function StepContent({
       return (
         <Text variant="caption" color="muted">
           This migration was closed after 90 days without activity. To move
-          subscriptions still on Stripe, start a new migration.
+          subscriptions still with your current provider, start a new migration.
         </Text>
       )
   }

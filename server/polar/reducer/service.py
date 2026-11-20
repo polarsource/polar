@@ -646,10 +646,11 @@ class ReducerService:
         await self._lock_buckets(
             repository, [(reducer, bucket_start, customer_id, external_customer_id)]
         )
-        await self._sync_bucket_intervals(
+        # Each window is synced twice: the second sync mostly finds nothing new.
+        if await self._sync_bucket_intervals(
             repository, reducer, bucket_start, customer_id, external_customer_id
-        )
-        _enqueue_outpost_event(reducer, customer_id, external_customer_id)
+        ):
+            _enqueue_outpost_event(reducer, customer_id, external_customer_id)
 
     async def get_cold_usage(
         self,
@@ -714,24 +715,27 @@ class ReducerService:
         external_ids: Sequence[str],
     ) -> set[str]:
         """The given external ids of the customer identity's stored events that the
-        synced part of the bucket starting at `bucket_start` counts: a seal can
-        split a bucket, and sync then recomputes each part on its own."""
-        repository = ReducerBucketRepository.from_session(session)
-        synced_end = await repository.get_synced_end_within(
+        bucket starting at `bucket_start` counts. Its synced part counts them: a
+        seal can split a bucket, and sync then recomputes each part on its own. So
+        does any part for an event ingested after the bucket closed: ingest adds it
+        to the bucket in the transaction that stores it."""
+        bucket_end = bucket_start + REDUCER_BUCKET_SIZE
+        synced_end = await ReducerBucketRepository.from_session(
+            session
+        ).get_synced_end_within(
             reducer.organization_id,
             reducer.id,
             customer_id,
             external_customer_id,
             bucket_start,
-            bucket_start + REDUCER_BUCKET_SIZE,
+            bucket_end,
         )
-        if synced_end is None:
-            return set()
         return await EventRepository.from_session(session).get_stored_external_ids(
             reducer.organization_id,
             external_ids,
-            timestamp_from=bucket_start,
-            timestamp_to=synced_end,
+            bucket_start=bucket_start,
+            bucket_end=bucket_end,
+            synced_end=synced_end,
         )
 
     async def get_database_now(self, session: AsyncReadSession) -> datetime:
@@ -1337,7 +1341,9 @@ class ReducerService:
         bucket_start: datetime,
         customer_id: UUID | None,
         external_customer_id: str | None,
-    ) -> None:
+    ) -> bool:
+        """Whether a bucket was synced for the first time or its statistics changed."""
+        changed = False
         for start, end in await self._get_intervals(
             repository, reducer, bucket_start, customer_id, external_customer_id
         ):
@@ -1352,10 +1358,22 @@ class ReducerService:
             statistics = {"count": count, "sum": total, "min": minimum, "max": maximum}
             # Sealed buckets were billed: events since go to a new generation.
             if previous is not None and previous.sealed_at is None:
+                changed = (
+                    changed
+                    or previous.synced_at is None
+                    or (
+                        previous.count,
+                        previous.sum,
+                        previous.min,
+                        previous.max,
+                    )
+                    != (count, total, minimum, maximum)
+                )
                 await repository.update(
                     previous, update_dict={**statistics, "synced_at": utc_now()}
                 )
                 continue
+            changed = True
             await repository.create(
                 ReducerBucket(
                     organization_id=reducer.organization_id,
@@ -1370,6 +1388,7 @@ class ReducerService:
                 ),
                 flush=True,
             )
+        return changed
 
     async def _get_interval_containing(
         self,

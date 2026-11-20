@@ -38,10 +38,6 @@ async def webhook(
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     event = _verify_webhook(await request.body(), dict(request.headers))
-    expected_mode = "LIVE" if settings.is_production() else "TEST"
-    if event.get("organisation_mode") != expected_mode:
-        return
-
     event_type = event.get("type")
     if event_type in WEBHOOK_EVENTS:
         await external_event_service.enqueue(

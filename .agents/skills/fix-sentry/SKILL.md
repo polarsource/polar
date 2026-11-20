@@ -65,4 +65,4 @@ Commit your changes to the branch you created in the worktree. Make sure to writ
 
 ### Step 5.4: Open a pull request
 
-Open a pull request on `polarsource/polar` using github tools, detailing your analysis, adding relevant links to the Sentry issue and Logfire logs, and describing the changes you made to fix the issue.
+Open a pull request on `polarsource/polar` using github tools, detailing your analysis, adding relevant links to the Sentry issue and Logfire logs, and describing the changes you made to fix the issue. The PR is public: never include numbers from production (e.g. how many customers are affected) or other PII.

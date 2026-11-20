@@ -17,6 +17,7 @@ from sqlalchemy import (
     case,
     cast,
     delete,
+    false,
     func,
     literal,
     or_,
@@ -373,7 +374,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
 
         uuid_pending_in_batch: list[UUID] = []
         for event_id, _, pending_ref in batch_rows:
-            if pending_ref is None:
+            if pending_ref is None or pending_ref.lower().startswith("urn:uuid:"):
                 continue
             try:
                 UUID(pending_ref)
@@ -462,18 +463,26 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         organization_id: UUID,
         external_ids: Sequence[str],
         *,
-        timestamp_from: datetime,
-        timestamp_to: datetime,
+        bucket_start: datetime,
+        bucket_end: datetime,
+        synced_end: datetime | None,
     ) -> set[str]:
-        """The given external ids of events with a timestamp in the range, stored
-        or still staged."""
+        """The given external ids of events, stored or still staged, with a timestamp
+        in the bucket, either before `synced_end` or ingested after the bucket
+        closed."""
         statement = union_all(
             *(
                 select(NotNullable(model.external_id)).where(
                     model.organization_id == organization_id,
                     model.external_id.in_(external_ids),
-                    model.timestamp >= timestamp_from,
-                    model.timestamp < timestamp_to,
+                    model.timestamp >= bucket_start,
+                    model.timestamp < bucket_end,
+                    or_(
+                        model.timestamp < synced_end
+                        if synced_end is not None
+                        else false(),
+                        model.ingested_at >= bucket_end,
+                    ),
                 )
                 for model in (Event, StagedEvent)
             )
@@ -598,6 +607,35 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             Event.organization_id == meter.organization_id,
             self.get_meter_clause(meter),
         )
+
+    async def get_meter_matching_customers(
+        self,
+        event_ids: Sequence[UUID],
+        meter: Meter,
+        customer_ids: Collection[UUID],
+        external_customer_ids: Collection[str],
+    ) -> tuple[set[UUID], set[str]]:
+        statement = (
+            select(Event.customer_id, Event.external_customer_id)
+            .where(
+                Event.id.in_(event_ids),
+                Event.organization_id == meter.organization_id,
+                or_(
+                    Event.customer_id.in_(customer_ids),
+                    Event.external_customer_id.in_(external_customer_ids),
+                ),
+                self.get_meter_clause(meter),
+            )
+            .distinct()
+        )
+        matched_customer_ids: set[UUID] = set()
+        matched_external_ids: set[str] = set()
+        for customer_id, external_customer_id in await self.session.execute(statement):
+            if customer_id is not None:
+                matched_customer_ids.add(customer_id)
+            if external_customer_id is not None:
+                matched_external_ids.add(external_customer_id)
+        return matched_customer_ids, matched_external_ids
 
     async def get_meter_billing_page(
         self,

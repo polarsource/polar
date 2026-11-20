@@ -70,13 +70,14 @@ class EmailSender(ABC):
         pass
 
     @abstractmethod
-    async def remove_suppression(self, email: str) -> None:
+    async def remove_suppression(self, email: str) -> bool:
         pass
 
 
 class LoggingEmailSender(EmailSender):
-    async def remove_suppression(self, email: str) -> None:
+    async def remove_suppression(self, email: str) -> bool:
         log.info("Removing email suppression")
+        return True
 
     async def send(
         self,
@@ -184,7 +185,7 @@ class ResendEmailSender(EmailSender):
 
         return email["id"]
 
-    async def remove_suppression(self, email: str) -> None:
+    async def remove_suppression(self, email: str) -> bool:
         path = f"/suppressions/{quote(to_ascii_email(email), safe='')}"
         try:
             response = await self.client.delete(path)
@@ -198,6 +199,7 @@ class ResendEmailSender(EmailSender):
             )
 
         log.info("resend.remove_suppression", removed=response.is_success)
+        return response.is_success
 
 
 class EmailFromReply(TypedDict):

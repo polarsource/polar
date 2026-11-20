@@ -8,6 +8,11 @@ const MONTH_DAY = new Intl.DateTimeFormat('en-US', {
   month: 'short',
   day: 'numeric',
 })
+const MONTH_DAY_YEAR = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+})
 const HOUR = 60 * 60 * 1000
 const DAY = 24 * HOUR
 
@@ -31,7 +36,12 @@ export function renewsLabel(
   const delta = renews - now
   const days = Math.round(delta / DAY)
   if (calendarAfterDays != null && Math.abs(days) >= calendarAfterDays) {
-    return `on ${MONTH_DAY.format(new Date(row.renews_at))}`
+    const date = new Date(row.renews_at)
+    const format =
+      date.getFullYear() === new Date(now).getFullYear()
+        ? MONTH_DAY
+        : MONTH_DAY_YEAR
+    return `on ${format.format(date)}`
   }
   if (Math.abs(delta) < DAY) {
     return RELATIVE.format(Math.round(delta / HOUR), 'hour')

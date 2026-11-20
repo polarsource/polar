@@ -75,6 +75,23 @@ export const useSubscriptionMeterChargePreview = (
     enabled: options?.enabled ?? true,
   })
 
+export const useSubscriptionChangePreview = (
+  id: string,
+  change: schemas['SubscriptionChangeProduct'] | null,
+) =>
+  useQuery({
+    queryKey: ['subscriptions', { id }, 'change-preview', change],
+    queryFn: () =>
+      unwrap(
+        api.POST('/v1/subscriptions/{id}/change-preview', {
+          params: { path: { id } },
+          body: change!,
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: change !== null,
+  })
+
 export const useSubscriptionCancelPreview = (
   id: string,
   options?: { enabled?: boolean },
@@ -148,6 +165,9 @@ export const useUpdateSubscription = (id: string) =>
       queryClient.invalidateQueries({
         queryKey: ['subscriptions', { id }, 'cancel-preview'],
       })
+      queryClient.invalidateQueries({
+        queryKey: ['subscriptions', { id }, 'change-preview'],
+      })
     },
   })
 
@@ -219,6 +239,9 @@ export const useUncancelSubscription = (id: string) =>
       queryClient.invalidateQueries({
         queryKey: ['subscriptions', { id }, 'cancel-preview'],
       })
+      queryClient.invalidateQueries({
+        queryKey: ['subscriptions', { id }, 'change-preview'],
+      })
     },
   })
 
@@ -263,6 +286,9 @@ const applySubscriptionUpdateToCache = (
   })
   queryClient.invalidateQueries({
     queryKey: ['subscriptions', { id }, 'cancel-preview'],
+  })
+  queryClient.invalidateQueries({
+    queryKey: ['subscriptions', { id }, 'change-preview'],
   })
   queryClient.invalidateQueries({
     queryKey: [
@@ -409,6 +435,9 @@ export const useClearPendingSubscriptionUpdate = (id: string) =>
       })
       queryClient.invalidateQueries({
         queryKey: ['subscriptions', { id }, 'cancel-preview'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['subscriptions', { id }, 'change-preview'],
       })
     },
   })

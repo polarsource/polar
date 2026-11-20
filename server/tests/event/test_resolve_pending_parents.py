@@ -412,6 +412,32 @@ class TestResolvePendingParents:
         assert by_ext["child"].root_id == parent_id
         assert by_ext["child"].pending_parent_external_id is None
 
+    async def test_parent_referenced_by_urn_uuid_does_not_link(
+        self, save_fixture: SaveFixture, session: AsyncSession, account: Account
+    ) -> None:
+        organization = await create_organization(save_fixture, account)
+        repository = EventRepository.from_session(session)
+
+        parent_id = uuid.uuid4()
+        pending_ref = f"urn:uuid:{parent_id}"
+        events = [
+            _make_event(organization, "child", pending_parent_external_id=pending_ref),
+            {
+                "id": parent_id,
+                "name": "event.parent",
+                "source": EventSource.user,
+                "organization_id": organization.id,
+                "external_id": "parent",
+                "root_id": parent_id,
+            },
+        ]
+        event_ids, _ = await repository.insert_batch(events)
+        await _resolve(repository, event_ids)
+
+        by_ext = await _get_events(session, organization)
+        assert by_ext["child"].parent_id is None
+        assert by_ext["child"].pending_parent_external_id == pending_ref
+
     async def test_cross_org_isolation(
         self,
         save_fixture: SaveFixture,

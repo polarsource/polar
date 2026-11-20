@@ -186,6 +186,25 @@ test('an explicit slug is looked up by listing instead of fetching by id', async
   ).toBe(true)
 })
 
+test('a slug that exists in two environments asks for the ID', async () => {
+  pages = {
+    sandbox: [[first]],
+    production: [[{ ...second, slug: 'first' }]],
+  }
+  const organizations = await service()
+  await expect(
+    Effect.runPromise(organizations.resolve('first')),
+  ).rejects.toThrow('first is an organization in sandbox and production')
+})
+
+test.each(['', ' '])('an empty reference %j is rejected', async (reference) => {
+  const organizations = await service()
+  await expect(
+    Effect.runPromise(organizations.resolve(reference)),
+  ).rejects.toThrow('The organization is empty')
+  expect(requests).toEqual([])
+})
+
 test('an unknown slug in a single environment says so', async () => {
   auth.state.sessions = ['sandbox']
   const organizations = await service()

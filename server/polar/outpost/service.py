@@ -72,17 +72,16 @@ class OutpostService:
         # Later entries get an id from this millisecond on.
         seen = Cursor(now - 1, MAX_SEQUENCE)
         next_poll_in = int(settings.OUTPOST_PULL_INTERVAL.total_seconds())
-        reset = (
-            after is not None
-            and after.milliseconds < now - CURSOR_MAX_AGE / timedelta(milliseconds=1)
-        )
-        if after is None or reset:
+        oldest = now - CURSOR_MAX_AGE / timedelta(milliseconds=1)
+        # The changes behind the new cursor are not served, a configuration change
+        # included: the client starts over from the current configuration.
+        if after is None or not oldest <= after.milliseconds <= now:
             return Changes(
                 changes=[],
                 cursor=str(seen),
                 has_more=False,
-                reset=reset,
-                configuration_changed=False,
+                reset=True,
+                configuration_changed=True,
                 next_poll_in=next_poll_in,
             )
 
@@ -203,7 +202,7 @@ class OutpostService:
         requested: dict[uuid.UUID, list[Identity]] = {}
         for payload in payloads:
             if payload.reducer_id not in reducers:
-                raise ResourceNotFound()
+                continue
             identity: Identity
             if isinstance(payload, CustomerMeterUsageIdentity):
                 identity = (payload.customer_id, None)

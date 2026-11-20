@@ -1,6 +1,7 @@
 import { Box } from '@/components/Shared/Box'
 import { useOrganizations } from '@/hooks/polar/organizations'
 import { useStorageState } from '@/hooks/storage'
+import { posthog } from '@/utils/posthog'
 import { ExtensionStorage } from '@bacons/apple-targets'
 import { schemas } from '@polar-sh/client'
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -73,6 +74,7 @@ export function PolarOrganizationProvider({ children }: PropsWithChildren) {
     if (organization) {
       storage.set('widget_organization_id', organization.id)
       storage.set('widget_organization_name', organization.name)
+      posthog.group('organization', organization.id)
     }
   }, [organization])
 

@@ -17,7 +17,8 @@ import { createHash, randomUUID } from "node:crypto";
 import { once } from "node:events";
 import { setTimeout as sleep } from "node:timers/promises";
 
-import { MeteringError, UnknownMeterError } from "../metering/errors";
+import { type MeteringOutpost, OUTPOST } from "../metering/client";
+import { type DropReason, MeteringError, UnknownMeterError, retryAfterMs } from "../metering/errors";
 import type { EventInput } from "../metering/event";
 import type { CustomerMeter } from "../metering/meter";
 
@@ -37,7 +38,9 @@ import {
   quantity,
 } from "./reducer";
 import {
-  READ_STATE_SCRIPT,
+  READ_STATES_SCRIPT,
+  PREPARE_SNAPSHOT_SCRIPT,
+  PUSH_TELEMETRY_SCRIPT,
   WRITE_BUCKET_SCRIPT,
   CONFIRM_SCRIPT,
   APPLY_SNAPSHOT_SCRIPT,
@@ -45,6 +48,7 @@ import {
   BACKOFF_SCRIPT,
   RELEASE_LOCK_SCRIPT,
   EXTEND_LOCK_SCRIPT,
+  OUTBOX_BACKLOG_SCRIPT,
 } from "./scripts";
 import {
   createMeterProvider,
@@ -61,6 +65,15 @@ const TIMEOUT = {{ outpost_constants.timeout }};
 const SNAPSHOT_TIMEOUT = {{ outpost_constants.snapshot_timeout }};
 const CONFIRM_TIMEOUT = {{ outpost_constants.confirm_timeout }};
 const CONFIRM_BATCH = {{ outpost_constants.confirm_batch }};
+const OUTBOX_BATCH = {{ outpost_constants.outbox_batch }};
+const FLUSHERS = {{ outpost_constants.flushers }};
+const OUTBOX_CLAIM_IDLE = {{ outpost_constants.outbox_claim_idle }};
+const FLUSHER_LOCK_TTL = {{ outpost_constants.flusher_lock_ttl }};
+const DRAIN_INTERVAL = {{ outpost_constants.drain_interval }};
+const OUTBOX_RETRY_DELAY = {{ outpost_constants.outbox_retry_delay }};
+const MAX_OUTBOX_RETRY_DELAY = {{ outpost_constants.max_outbox_retry_delay }};
+// The consumer group the flushers read the outbox through.
+const OUTBOX_GROUP = "polar";
 const REPORT_INTERVAL = {{ outpost_constants.report_interval }};
 const SPAN_SAMPLE_RATE = {{ outpost_constants.span_sample_rate }};
 const TELEMETRY_CAP = {{ outpost_constants.telemetry_cap }};
@@ -135,8 +148,26 @@ interface Confirmation {
 // A customer's state for one reducer, or `missing` while Polar does not know the customer.
 type Read = State | "missing";
 interface OutpostRedis extends Redis {
-  outpostReadState(key: string): Promise<string[]>;
+  outpostReadStates(numberOfKeys: number, ...args: string[]): Promise<unknown[]>;
+  outpostPrepareSnapshot(
+    key: string,
+    missingKey: string,
+    pulled: string,
+    coldUntil: number,
+  ): Promise<string[] | null>;
+  outpostPushTelemetry(
+    spansKey: string,
+    metricsKey: string,
+    ...args: (string | number | Buffer)[]
+  ): Promise<number>;
+  outpostConfirm(numberOfKeys: number, ...args: (string | number)[]): Promise<number>;
   outpostApplySnapshot(key: string, ...args: (string | number)[]): Promise<string[]>;
+  outpostOutboxBacklog(
+    key: string,
+    backoffKey: string,
+    group: string,
+    ...ended: string[]
+  ): Promise<[number, number, string]>;
   outpostCommitPull(
     key: string,
     lockKey: string,
@@ -144,11 +175,51 @@ interface OutpostRedis extends Redis {
   ): Promise<number>;
 }
 interface OutpostPipeline extends ChainableCommander {
-  outpostReadState(key: string): this;
-  outpostWriteBucket(key: string, pendingKey: string, ...args: (string | number)[]): this;
-  outpostConfirm(key: string, pendingKey: string, ...args: (string | number)[]): this;
+  outpostWriteBucket(
+    key: string,
+    pendingKey: string,
+    outboxKey: string,
+    flusherKey: string,
+    ...args: (string | number)[]
+  ): this;
+  outpostConfirm(numberOfKeys: number, ...args: (string | number)[]): this;
   outpostApplySnapshot(key: string, ...args: (string | number)[]): this;
 }
+
+interface Settlement {
+  identity: string;
+  bucketStart: number;
+  ids: string[];
+}
+
+// The outbox entries a flusher delivered, and the slot it holds.
+interface Delivery {
+  entries: string[];
+  lockKey: string;
+  token: string;
+}
+
+// The arguments of one CONFIRM call settling every group, with its number of keys first.
+const confirmArguments = (
+  prefix: string,
+  hotOnly: boolean,
+  settlements: Settlement[],
+  delivery?: Delivery,
+): [number, ...(string | number)[]] => [
+  2 + settlements.length * 2,
+  `${prefix}:outbox`,
+  delivery?.lockKey ?? `${prefix}:outbox`,
+  ...settlements.flatMap(({ identity, bucketStart }) => [
+    `${prefix}:state:${identity}`,
+    `${prefix}:pending:${identity}:${bucketStart}`,
+  ]),
+  hotOnly ? "1" : "",
+  delivery?.token ?? "",
+  FLUSHER_LOCK_TTL,
+  delivery?.entries.length ?? 0,
+  ...(delivery?.entries ?? []),
+  ...settlements.flatMap(({ bucketStart, ids }) => [bucketStart, ids.length, ...ids]),
+];
 
 const number = (value: string): number => {
   const parsed = Number(value);
@@ -157,8 +228,8 @@ const number = (value: string): number => {
   return parsed;
 };
 export class PolarOutpostError extends PolarError {}
-// What Polar has not sent yet: the configuration or a snapshot. A read that raises it is not ready.
-class NotReadyError extends PolarError {}
+/** A read Outpost cannot answer yet: Polar has not sent the configuration or the snapshot in time. */
+export class NotReadyError extends PolarOutpostError {}
 export class UnavailableRedisError extends PolarOutpostError {
   constructor(options?: ErrorOptions) {
     super("Redis is unavailable", options);
@@ -265,6 +336,19 @@ export const decodeState = (value: string[]): State => {
   }
   return state;
 };
+// Extends a lock at most once per quarter of its time to live: it stays held, and a page of
+// snapshots does not cost a command each.
+const throttled = (extend: () => Promise<unknown>, ttl: number): (() => Promise<unknown>) => {
+  let extended = Date.now();
+  return async () => {
+    if (Date.now() - extended < ttl / 4) return;
+    extended = Date.now();
+    await extend();
+  };
+};
+// The statistics a reducer's quantity adds up: all a read needs of its state.
+const statisticsOf = ({ aggregation }: Reducer): string =>
+  aggregation.func === "avg" ? "sum,count" : aggregation.func;
 // Polar's totals cover the cold buckets: the local read adds what Polar has not confirmed in
 // them, and every local event in the buckets Polar has not sealed yet.
 export const consumedUnits = (state: State, func: Aggregation["func"]): number => {
@@ -332,7 +416,10 @@ const reportLocalValue = (
   }
 };
 
-class RefusedError extends PolarError {
+// The reset count of a state whose snapshot Polar did not confirm.
+const UNCONFIRMED = -1;
+
+class RefusedError extends PolarOutpostError {
   constructor(message = "Polar refused Outpost") {
     super(message);
   }
@@ -366,6 +453,10 @@ export interface OutpostOptions {
    * then applies with the events still pending.
    */
   confirmTimeout?: number;
+  /** Called with each batch of events Polar accepted from the outbox; may be async. */
+  onDelivered?: (events: EventInput[]) => void | Promise<void>;
+  /** Called with each batch of events Polar refused, which leave the outbox; may be async. */
+  onDropped?: (events: EventInput[], reason: DropReason) => void | Promise<void>;
 }
 export class Outpost {
   private redis?: OutpostRedis;
@@ -388,17 +479,23 @@ export class Outpost {
   private prefix = KEY_VERSION;
   private refreshTimer?: ReturnType<typeof setInterval>;
   private pullTimer?: ReturnType<typeof setInterval>;
+  private drainTimer?: ReturnType<typeof setInterval>;
   private pulledAt = 0;
   private pullInterval = PULL_INTERVAL;
   private pulling?: Promise<void>;
   private relaying?: Promise<void>;
   private releaseFlush?: () => void;
+  private draining?: Promise<void>;
+  private drainAgain = false;
+  // This instance queued an event that no flusher was there to deliver: its next flush drains.
+  private undrained = false;
   private pullRetryAt = 0;
   // The configuration's revision in the pull hash, as of the configuration this instance runs.
   private configurationRevision: number | null = null;
   // How many times Polar's changes went past their retention, as of the last read of the pull hash.
   private resets: number | null = null;
-  private failure?: Error;
+  private failure?: PolarOutpostError;
+  private failedAt = 0;
   private messages: Promise<unknown> = Promise.resolve();
 
   constructor(
@@ -447,16 +544,25 @@ export class Outpost {
         commandTimeout: TIMEOUT,
         retryStrategy: reconnectDelay,
       }) as OutpostRedis;
-      this.redis.defineCommand("outpostReadState", { numberOfKeys: 1, lua: READ_STATE_SCRIPT });
-      this.redis.defineCommand("outpostWriteBucket", {
+      this.redis.defineCommand("outpostReadStates", { lua: READ_STATES_SCRIPT });
+      this.redis.defineCommand("outpostPrepareSnapshot", {
         numberOfKeys: 2,
+        lua: PREPARE_SNAPSHOT_SCRIPT,
+      });
+      this.redis.defineCommand("outpostPushTelemetry", {
+        numberOfKeys: 2,
+        lua: PUSH_TELEMETRY_SCRIPT,
+      });
+      this.redis.defineCommand("outpostWriteBucket", {
+        numberOfKeys: 4,
         lua: WRITE_BUCKET_SCRIPT,
       });
-      this.redis.defineCommand("outpostConfirm", { numberOfKeys: 2, lua: CONFIRM_SCRIPT });
+      this.redis.defineCommand("outpostConfirm", { lua: CONFIRM_SCRIPT });
       this.redis.defineCommand("outpostApplySnapshot", {
         numberOfKeys: 1,
         lua: APPLY_SNAPSHOT_SCRIPT,
       });
+      this.redis.defineCommand("outpostOutboxBacklog", { numberOfKeys: 2, lua: OUTBOX_BACKLOG_SCRIPT });
       this.redis.defineCommand("outpostCommitPull", { numberOfKeys: 2, lua: COMMIT_PULL_SCRIPT });
       const redis = this.redis;
       this.redis.on("error", () => {});
@@ -488,19 +594,21 @@ export class Outpost {
       });
       // Keys carry the organization: organizations can share a Redis.
       await this.configure();
+      await this.createOutboxGroup().catch((error: unknown) => {
+        throw redisUnavailable(error);
+      });
       this._connectionId = randomUUID();
       await this.loadPull().catch((error: unknown) => {
         throw redisUnavailable(error);
       });
       // A long-running process pulls on time, reads or not.
-      this.pullTimer = setInterval(() => {
-        if (!this.failure) void this.refresh().catch(() => {});
-      }, PULL_CHECK_INTERVAL);
-      this.refreshTimer = setInterval(() => {
-        void this.reportRedisSize();
-        void this.flushTelemetry();
-      }, REPORT_INTERVAL);
-      this.requireRedis();
+      this.pullTimer = setInterval(() => void this.refresh().catch(() => {}), PULL_CHECK_INTERVAL);
+      this.refreshTimer = setInterval(() => void this.flushTelemetry(), REPORT_INTERVAL);
+      // A long-running process delivers what it queued without a flush.
+      this.drainTimer = setInterval(() => {
+        if (this.undrained && this.delivers) void this.drain().catch(() => {});
+      }, DRAIN_INTERVAL);
+      this.requireRunning();
       return this;
     } catch (error) {
       await this.close();
@@ -511,7 +619,9 @@ export class Outpost {
   async close(): Promise<void> {
     clearInterval(this.refreshTimer);
     clearInterval(this.pullTimer);
+    clearInterval(this.drainTimer);
     await this.inFlight();
+    if (this.delivers) await this.drain().catch(() => {});
     const redis = this.redis;
     if (redis) this.event("outpost.redis.disconnect");
     const tracerProvider = this.tracerProvider;
@@ -555,7 +665,7 @@ export class Outpost {
   }
 
   async track(event: EventInput): Promise<void> {
-    const redis = this.requireRedis();
+    const redis = this.requireRunning();
     const started = performance.now();
     let outcome = "ok";
     try {
@@ -563,19 +673,28 @@ export class Outpost {
       const parsed = parseEvent(event);
       const updates = reduce(this.matchers, [parsed], getBucketStart(parsed.timestamp));
       this.ingestBuckets?.add(updates.length);
+      // Polar dates the event as Outpost bucketed it.
+      const queued = JSON.stringify({
+        ...event,
+        timestamp: event.timestamp ?? new Date(Math.floor(parsed.timestamp / 1000)).toISOString(),
+      });
       const pipeline = redis.pipeline() as OutpostPipeline;
-      for (const update of updates) {
+      if (!updates.length) pipeline.xadd(this.outboxKey, "*", "event", queued);
+      for (const [index, update] of updates.entries()) {
         const identity = `${update.customer}:${update.reducer}`;
         const statistics = update.statistics;
         pipeline.outpostWriteBucket(
           `${this.prefix}:state:${identity}`,
           `${this.prefix}:pending:${identity}:${update.bucketStart}`,
+          this.outboxKey,
+          `${this.outboxKey}:flusher:0`,
           update.bucketStart,
           statistics.count,
           statistics.sum,
           statistics.min ?? "",
           statistics.max ?? "",
           event.external_id!,
+          index === 0 ? queued : "",
         );
       }
       const results = await pipeline.exec().catch((error: unknown) => {
@@ -584,6 +703,7 @@ export class Outpost {
       if (results === null) throw new UnavailableRedisError();
       const failed = results.find(([error]) => error)?.[0];
       if (failed) throw redisUnavailable(failed);
+      if (!updates.length || results[0][1] === 2) this.undrained = true;
     } catch (error) {
       outcome = "error";
       throw error;
@@ -613,8 +733,19 @@ export class Outpost {
   }
 
   private async settle(events: EventInput[], hotOnly: boolean): Promise<void> {
-    const redis = this.requireRedis();
-    const groups = new Map<string, { identity: string; bucketStart: number; ids: string[] }>();
+    const redis = this.requireRunning();
+    const settlements = this.settlements(events);
+    if (!settlements.length) return;
+    await redis
+      .outpostConfirm(...confirmArguments(this.prefix, hotOnly, settlements))
+      .catch((error: unknown) => {
+        throw redisUnavailable(error);
+      });
+  }
+
+  // The events' ids, by the (customer, reducer, bucket) whose pending usage they settle.
+  private settlements(events: EventInput[]): Settlement[] {
+    const groups = new Map<string, Settlement>();
     for (const event of events) {
       this.validate(event);
       const parsed = parseEvent(event);
@@ -627,28 +758,13 @@ export class Outpost {
         group.ids.push(event.external_id!);
       }
     }
-    const confirmations = [...groups.values()];
-    const pipeline = redis.pipeline() as OutpostPipeline;
-    for (const { identity, bucketStart, ids } of confirmations)
-      pipeline.outpostConfirm(
-        `${this.prefix}:state:${identity}`,
-        `${this.prefix}:pending:${identity}:${bucketStart}`,
-        bucketStart,
-        hotOnly ? "1" : "",
-        ...ids,
-      );
-    const results = await pipeline.exec().catch((error: unknown) => {
-      throw redisUnavailable(error);
-    });
-    if (results === null) throw new UnavailableRedisError();
-    const failed = results.find(([error]) => error)?.[0];
-    if (failed) throw redisUnavailable(failed);
+    return [...groups.values()];
   }
 
   async meter(input: Customer & { meter_id: string }): Promise<CustomerMeter | null> {
     return this.measureRead("meter", async (read) => {
       const customer = customerKey(input);
-      this.requireRedis();
+      this.requireRunning();
       await this.refresh();
       const reducer = this.findReducer("usage", input.meter_id);
       if (!reducer) {
@@ -656,21 +772,18 @@ export class Outpost {
         throw new UnknownMeterError(`Outpost reduces no meter ${input.meter_id}`);
       }
       const creditReducer = this.findReducer("credit", input.meter_id);
-      const [state, creditState] = await this.read(
-        customer,
-        creditReducer ? [reducer, creditReducer] : [reducer],
-      );
+      const reducers = creditReducer ? [reducer, creditReducer] : [reducer];
+      const [state, creditState] = await this.read(customer, reducers, reducers.map(statisticsOf));
       if (state === "missing" || creditState === "missing") {
         read.outcome = "unknown_customer";
         return null;
       }
-      if (state.coldUntil === undefined) throw new NotReadyError("Customer snapshot is not ready");
-      const creditReady = creditState?.coldUntil !== undefined;
-      read.outcome = !creditReducer || creditReady ? "ready" : "not_ready";
+      // A balance without its credits would read as overdrawn.
+      if (state.coldUntil === undefined || (creditReducer && creditState.coldUntil === undefined))
+        throw new NotReadyError("Customer snapshot is not ready");
+      read.outcome = "ready";
       const consumed = consumedUnits(state, reducer.aggregation.func);
-      const credited = creditReady
-        ? consumedUnits(creditState, creditReducer!.aggregation.func)
-        : 0;
+      const credited = creditReducer ? consumedUnits(creditState, creditReducer.aggregation.func) : 0;
       return {
         ...input,
         consumed_units: consumed,
@@ -682,9 +795,14 @@ export class Outpost {
 
   async actor(input: Customer): Promise<void> {
     return this.measureRead("actor", async (read) => {
-      this.requireRedis();
+      this.requireRunning();
       await this.refresh();
-      const reads = await this.read(customerKey(input), this.reducers);
+      // Readiness alone: no statistic of any state.
+      const reads = await this.read(
+        customerKey(input),
+        this.reducers,
+        this.reducers.map(() => ""),
+      );
       read.outcome = !reads.every(isReady)
         ? "not_ready"
         : reads.includes("missing")
@@ -694,13 +812,23 @@ export class Outpost {
   }
 
   /**
-   * Wait for the pull in flight: a serverless function must not freeze in the middle of it.
-   * A newer flush releases this one, since it waits for the same work.
+   * Deliver the events this instance queued, and wait for the pull in flight: a serverless function
+   * must not freeze in the middle of either. A newer flush releases this one, since it waits for the
+   * same work.
    */
   async flush(): Promise<void> {
     this.releaseFlush?.();
     const released = new Promise<void>((resolve) => (this.releaseFlush = resolve));
-    await Promise.race([this.inFlight(), released]);
+    // Redis keeps what a drain fails to deliver: the next flush takes it. Without an event of its
+    // own to deliver, a flush waits for the drain in flight, if any.
+    const draining = !this.delivers ? undefined : (this.undrained ? this.drain() : this.draining)?.catch(() => {});
+    await Promise.race([Promise.all([this.inFlight(), draining]), released]);
+  }
+
+  readonly [OUTPOST] = true;
+
+  private get delivers(): boolean {
+    return Boolean(this.redis && !this.failure);
   }
 
   private async inFlight(): Promise<void> {
@@ -719,18 +847,20 @@ export class Outpost {
     const spans = this.outbox.spans.splice(0);
     const metrics = this.outbox.metrics.splice(0);
     if (!this.redis || (!spans.length && !metrics.length)) return;
-    const pipeline = this.redis.pipeline();
-    for (const [key, exports] of [
-      [this.telemetryKey("spans"), spans],
-      [this.telemetryKey("metrics"), metrics],
-    ] as const) {
-      if (!exports.length) continue;
-      pipeline.rpush(key, ...exports.map((body) => Buffer.from(body)));
-      // A fleet that stops pulling keeps its newest exports only.
-      pipeline.ltrim(key, -TELEMETRY_CAP, -1);
-    }
-    const results = await pipeline.exec().catch(() => null);
-    if (results !== null && !results.some(([error]) => error)) return;
+    // A fleet that stops pulling keeps its newest exports only.
+    const pushed = await this.redis
+      .outpostPushTelemetry(
+        this.telemetryKey("spans"),
+        this.telemetryKey("metrics"),
+        TELEMETRY_CAP,
+        spans.length,
+        ...[...spans, ...metrics].map((body) => Buffer.from(body)),
+      )
+      .then(
+        () => true,
+        () => false,
+      );
+    if (pushed) return;
     // Redis lost the write: the exports wait for the next flush, the newest at most.
     this.outbox.spans = [...spans, ...this.outbox.spans].slice(-TELEMETRY_CAP);
     this.outbox.metrics = [...metrics, ...this.outbox.metrics].slice(-TELEMETRY_CAP);
@@ -769,10 +899,10 @@ export class Outpost {
   }
 
   // Reads the customer's states from Redis. One Polar has no snapshot of yet is asked for once,
-  // then read again until it lands.
-  private async read(customer: string, reducers: Reducer[]): Promise<Read[]> {
+  // then read again once the fleet's fetch of it ends.
+  private async read(customer: string, reducers: Reducer[], statistics: string[]): Promise<Read[]> {
     const deadline = Date.now() + (this.options.snapshotTimeout ?? SNAPSHOT_TIMEOUT);
-    let reads = await this.load(customer, reducers);
+    let reads = await this.load(customer, reducers, statistics);
     // Polar sends no snapshot without a connection.
     if (!this.connected) return reads;
     // A state confirmed before the last reset serves the read while Polar confirms it again.
@@ -785,35 +915,41 @@ export class Outpost {
     );
     if (reads.every(isReady)) return reads;
     await waitAtMost(fetched, deadline - Date.now());
+    const markers = reducers
+      .filter((_, index) => !isReady(reads[index]))
+      .map((reducer) => this.fetchKey(`${customer}:${reducer.id}`));
     for (;;) {
-      reads = await this.load(customer, reducers);
-      if (reads.every(isReady) || Date.now() >= deadline) return reads;
+      const fetching = await this.requireRunning()
+        .exists(...markers)
+        .catch((error: unknown) => {
+          throw redisUnavailable(error);
+        });
+      if (!fetching || Date.now() >= deadline) {
+        reads = await this.load(customer, reducers, statistics);
+        if (reads.every(isReady) || Date.now() >= deadline) return reads;
+      }
       await sleep(Math.min(POLL_INTERVAL, deadline - Date.now()));
     }
   }
 
-  // One round trip: each reducer's state, unless Polar does not know the customer.
-  private async load(customer: string, reducers: Reducer[]): Promise<Read[]> {
-    const pipeline = this.requireRedis().pipeline() as OutpostPipeline;
-    for (const reducer of reducers) {
+  // One command: each reducer's state, with only the statistics the read adds up, unless Polar
+  // does not know the customer.
+  private async load(customer: string, reducers: Reducer[], statistics: string[]): Promise<Read[]> {
+    const keys = reducers.flatMap((reducer) => {
       const identity = `${customer}:${reducer.id}`;
-      pipeline.outpostReadState(`${this.prefix}:state:${identity}`);
-      pipeline.hget(this.missingKey(identity), "retry_at");
-    }
-    pipeline.hget(this.pullKey, "reset");
-    const results = await pipeline.exec().catch((error: unknown) => {
-      throw redisUnavailable(error);
+      return [`${this.prefix}:state:${identity}`, this.missingKey(identity)];
     });
-    if (results === null) throw new UnavailableRedisError();
-    const failed = results.find(([error]) => error)?.[0];
-    if (failed) throw redisUnavailable(failed);
-    const resets = results[2 * reducers.length][1] as string | null;
+    const results = await this.requireRunning()
+      .outpostReadStates(keys.length + 1, ...keys, this.pullKey, ...statistics)
+      .catch((error: unknown) => {
+        throw redisUnavailable(error);
+      });
+    const resets = results[reducers.length] as string | null;
     this.resets = resets === null ? null : Number(resets);
-    return reducers.map((_, index) =>
-      Number(results[2 * index + 1][1]) > Date.now()
-        ? "missing"
-        : decodeState(results[2 * index][1] as string[]),
-    );
+    return reducers.map((_, index) => {
+      const [retryAt, state] = results[index] as [string | null, string[]];
+      return Number(retryAt) > Date.now() ? "missing" : decodeState(state);
+    });
   }
 
   private isStale(read: Read): boolean {
@@ -827,9 +963,24 @@ export class Outpost {
   }
 
   private requireRedis(): OutpostRedis {
-    if (this.failure) throw this.failure;
     if (!this.redis) throw new PolarError("Call Outpost.start() before using Outpost");
     return this.redis;
+  }
+
+  // What the merchant calls fails while the instance is stopped. The pull goes on behind it,
+  // at its backoff: one that succeeds ends the failure.
+  private requireRunning(): OutpostRedis {
+    if (this.failure) {
+      void this.refresh().catch(() => {});
+      throw this.failure;
+    }
+    return this.requireRedis();
+  }
+
+  // A pull that succeeded since the failure, on this instance or another, ends it.
+  private pulled(at: number): void {
+    this.pulledAt = at;
+    if (this.failure && at > this.failedAt) this.failure = undefined;
   }
 
   private get pullKey(): string {
@@ -848,6 +999,15 @@ export class Outpost {
     return `${this.prefix}:cold:lock`;
   }
 
+  // The events Polar has yet to receive, in the order Outpost tracked them.
+  private get outboxKey(): string {
+    return `${this.prefix}:outbox`;
+  }
+
+  private get outboxBackoffKey(): string {
+    return `${this.outboxKey}:backoff`;
+  }
+
   private async request<T>(
     method: string,
     path: string,
@@ -859,6 +1019,9 @@ export class Outpost {
       timeout === undefined ? undefined : { timeout: timeout / 1000 },
     );
     if (response.status === 401 || response.status === 403) throw new RefusedError();
+    // Only a 2xx carries Polar's answer: a redirect is a failure that may pass.
+    if (response.status >= 300 && response.status < 400)
+      throw new PolarError(`Polar answered ${response.status}`);
     return client.parseResponse<T>(response, "json");
   }
 
@@ -909,10 +1072,9 @@ export class Outpost {
     if (!this.pullDue()) return;
     await this.loadPull();
     if (!this.pullDue()) return;
-    const age = Date.now() - this.pulledAt;
-    const pull = this.pull();
-    if (age >= 2 * this.pullInterval && !this.pullRetryAt)
-      await waitAtMost(pull, this.options.snapshotTimeout ?? SNAPSHOT_TIMEOUT);
+    const stale = Date.now() - this.pulledAt >= 2 * this.pullInterval && !this.pullRetryAt;
+    const pull = this.pull(stale);
+    if (stale) await waitAtMost(pull, this.options.snapshotTimeout ?? SNAPSHOT_TIMEOUT);
   }
 
   private pullDue(): boolean {
@@ -930,7 +1092,7 @@ export class Outpost {
     const configured = revision === null ? null : Number(revision);
     if (configured !== this.configurationRevision && (await this.configure("redis")))
       this.configurationRevision = configured;
-    this.pulledAt = Number(pulledAt ?? 0);
+    this.pulled(Number(pulledAt ?? 0));
     this.pullInterval = Number(nextPoll ?? PULL_INTERVAL);
     this.pullRetryAt = Number(retryAt ?? 0);
     this.resets = resets === null ? null : Number(resets);
@@ -945,8 +1107,9 @@ export class Outpost {
     await this.loadPull();
   }
 
-  private pull(): Promise<void> {
-    this.pulling ??= this.trace("outpost.pull", (span) => this.pullChanges(span))
+  // `wait`: a read needs the pull's snapshots, and waits for another instance's pull to end.
+  private pull(wait = true): Promise<void> {
+    this.pulling ??= this.trace("outpost.pull", (span) => this.pullChanges(span, wait))
       .catch(async (error: unknown) => {
         // Polar or Redis failed: the next pull starts again from the same cursor, later.
         this.pullRetryAt = await this.backOff(this.pullKey);
@@ -959,20 +1122,27 @@ export class Outpost {
   }
 
   // One more failure on the key, for the whole fleet: when to try again, in milliseconds.
-  private async backOff(key: string, ...forget: number[]): Promise<number> {
+  private async backOff(
+    key: string,
+    { first = PULL_RETRY_DELAY, max = MAX_PULL_RETRY_DELAY, forget }: { first?: number; max?: number; forget?: number } = {},
+  ): Promise<number> {
     const now = Date.now();
     const retryAt = await this.redis
-      ?.eval(BACKOFF_SCRIPT, 1, key, now, PULL_RETRY_DELAY, MAX_PULL_RETRY_DELAY, ...forget)
+      ?.eval(BACKOFF_SCRIPT, 1, key, now, first, max, ...(forget === undefined ? [] : [forget]))
       .catch(() => undefined);
-    return Number(retryAt ?? now + PULL_RETRY_DELAY);
+    return Number(retryAt ?? now + first);
   }
 
   private missingKey(identity: string): string {
     return `${this.prefix}:missing:${identity}`;
   }
 
+  private fetchKey(identity: string): string {
+    return `${this.prefix}:fetch:${identity}`;
+  }
+
   // One instance of the fleet pulls at a time: the others learn the result through Redis.
-  private async pullChanges(span: Span): Promise<void> {
+  private async pullChanges(span: Span, wait: boolean): Promise<void> {
     const redis = this.requireRedis();
     // A pull another instance failed still holds the fleet back.
     const retryAt = Number(await redis.hget(this.pullKey, "retry_at"));
@@ -983,11 +1153,15 @@ export class Outpost {
     const lock = randomUUID();
     if (!(await redis.set(this.pullLockKey, lock, "PX", PULL_LOCK_TTL, "NX"))) {
       span.setAttribute("outpost.pull.locked", true);
-      await this.waitForPull();
+      // Unless a read needs it, this instance does not wait for the other one's pull: it checks
+      // the pull again once a pull check has passed.
+      if (wait) await this.waitForPull();
+      else this.pulledAt = Date.now() - this.pullInterval + PULL_CHECK_INTERVAL;
       return;
     }
     // The page's snapshots and their confirms would outlast the lock otherwise.
-    const renew = () => redis.eval(EXTEND_LOCK_SCRIPT, 1, this.pullLockKey, lock, PULL_LOCK_TTL);
+    const extend = () => redis.eval(EXTEND_LOCK_SCRIPT, 1, this.pullLockKey, lock, PULL_LOCK_TTL);
+    const renew = throttled(extend, PULL_LOCK_TTL);
     let pages = 0;
     let applied = 0;
     let released = false;
@@ -1018,7 +1192,8 @@ export class Outpost {
         await this.serial(() =>
           eachAtMost([...customers.values()], PULL_CONCURRENCY, async (snapshots) => {
             for (const snapshot of snapshots)
-              if (await this.receiveSnapshot(snapshot, true, resets, renew)) {
+              // A confirm waits on Polar: the lock is extended before each one.
+              if (await this.receiveSnapshot(snapshot, true, resets, extend)) {
                 applied += 1;
                 await renew();
               }
@@ -1036,7 +1211,7 @@ export class Outpost {
           changes.has_more ? "" : "1",
         );
         if (committed) {
-          this.pulledAt = pulledAt;
+          this.pulled(pulledAt);
           this.pullInterval = nextPoll;
           this.pullRetryAt = 0;
         }
@@ -1047,6 +1222,8 @@ export class Outpost {
       span.setAttributes({ "outpost.pull.pages": pages, "outpost.pull.applied": applied });
       if (!released) await redis.eval(RELEASE_LOCK_SCRIPT, 1, this.pullLockKey, lock).catch(() => {});
     }
+    // The instance that pulled measures the shared Redis for the fleet.
+    void this.reportRedisSize();
     // In the background: a read that waits for the pull does not wait for telemetry.
     this.relaying ??= this.relayTelemetry()
       .catch(() => {})
@@ -1085,7 +1262,7 @@ export class Outpost {
       // A customer already queued or asked for stays out of the queue until Polar answers.
       const marking = redis.pipeline();
       for (const { identity } of queued)
-        marking.set(`${this.prefix}:fetch:${identity}`, "1", "PX", TIMEOUT, "NX");
+        marking.set(this.fetchKey(identity), "1", "PX", TIMEOUT, "NX");
       const marked = await marking.exec().catch((error: unknown) => {
         throw redisUnavailable(error);
       });
@@ -1139,8 +1316,151 @@ export class Outpost {
     }
   }
 
+  // A flusher reads the outbox through the group, which tracks each batch until Polar has it.
+  private async createOutboxGroup(): Promise<void> {
+    await this.requireRedis()
+      .xgroup("CREATE", this.outboxKey, OUTBOX_GROUP, "0", "MKSTREAM")
+      .catch((error: unknown) => {
+        if (!String(error).includes("BUSYGROUP")) throw error;
+      });
+  }
+
+  // One flusher per OUTBOX_BATCH events waiting, up to FLUSHERS across the fleet. Once its
+  // flushers let go of their slots, the instance looks again: an event queued while they held
+  // them is not left behind.
+  // One drain at a time per instance: a flush during one waits for it, and asks for one more round
+  // so that its own events do not stay queued.
+  private drain(): Promise<void> {
+    if (this.draining) {
+      this.drainAgain = true;
+      return this.draining;
+    }
+    const drain = async () => {
+      do {
+        this.drainAgain = false;
+        this.undrained = false;
+        await this.drainOutbox().catch((error: unknown) => {
+          this.undrained = true;
+          throw error;
+        });
+      } while (this.drainAgain);
+    };
+    this.draining = drain().finally(() => (this.draining = undefined));
+    return this.draining;
+  }
+
+  private async drainOutbox(): Promise<void> {
+    const redis = this.requireRedis();
+    try {
+      // The backoff a round delivered past: the next round's read ends it.
+      let ended: string[] = [];
+      for (let round = 0; ; round += 1) {
+        const [length, delivering, retryAt] = await redis.outpostOutboxBacklog(
+          this.outboxKey,
+          this.outboxBackoffKey,
+          OUTBOX_GROUP,
+          ...ended,
+        );
+        // The first round also takes back the batches that wait on a failed or frozen flusher.
+        if (!length || (round && length === delivering)) return;
+        // Polar failed to take a batch: the fleet waits before sending the outbox again.
+        if (Number(retryAt) > Date.now()) {
+          this.undrained = true;
+          return;
+        }
+        // A partial batch goes only when no flusher delivers: the last one in flight takes it.
+        const full = Math.floor((length - delivering) / OUTBOX_BATCH);
+        const slots = Math.min(FLUSHERS, full || (round && delivering ? 0 : 1));
+        if (!slots) return;
+        const outcomes = await Promise.all(Array.from({ length: slots }, (_, slot) => this.flushSlot(slot)));
+        if (outcomes.includes("failed")) {
+          this.undrained = true;
+          return;
+        }
+        if (!outcomes.includes("drained")) return;
+        // Polar takes batches again: the next failure waits the first delay.
+        ended = retryAt ? [retryAt] : [];
+      }
+    } catch (error) {
+      // Redis lost the group, with the rest of its keys: the next flush reads a new one.
+      if (String(error).includes("NOGROUP")) await this.createOutboxGroup();
+      throw error;
+    }
+  }
+
+  // A batch whose flusher froze is taken back once idle long enough; one this slot left behind,
+  // as Polar failed, goes before the new events.
+  private async flushSlot(slot: number): Promise<"busy" | "failed" | "drained"> {
+    const redis = this.requireRedis();
+    const lockKey = `${this.outboxKey}:flusher:${slot}`;
+    const consumer = `flusher-${slot}`;
+    const token = randomUUID();
+    if (!(await redis.set(lockKey, token, "PX", FLUSHER_LOCK_TTL, "NX"))) return "busy";
+    try {
+      if (slot === 0)
+        await redis.xautoclaim(this.outboxKey, OUTBOX_GROUP, consumer, OUTBOX_CLAIM_IDLE, "0-0", "COUNT", OUTBOX_BATCH, "JUSTID");
+      for (let from = "0"; ; ) {
+        if (from === ">") {
+          const [length, delivering] = await redis.outpostOutboxBacklog(this.outboxKey, this.outboxBackoffKey, OUTBOX_GROUP);
+          if (length === delivering) return "drained";
+          // The flusher still in flight takes a partial batch; if it let go meanwhile, the next
+          // drain does.
+          if (delivering && length - delivering < OUTBOX_BATCH) {
+            this.undrained = true;
+            return "drained";
+          }
+        }
+        const read = (await redis.xreadgroup("GROUP", OUTBOX_GROUP, consumer, "COUNT", OUTBOX_BATCH, "STREAMS", this.outboxKey, from)) as
+          | [string, [string, string[] | null][]][]
+          | null;
+        const entries = read?.[0]?.[1] ?? [];
+        if (entries.length) {
+          if (!(await this.deliver(entries, { entries: entries.map(([id]) => id), lockKey, token })))
+            return "failed";
+        } else if (from === "0") from = ">";
+      }
+    } finally {
+      // Past its TTL, the slot may be another flusher's.
+      await redis.eval(RELEASE_LOCK_SCRIPT, 1, lockKey, token).catch(() => {});
+    }
+  }
+
+  // Sends a batch to Polar, then acknowledges it and settles its events in one script. Polar
+  // refusing the batch drops it; failing to take it leaves it for the next flush.
+  private async deliver(entries: [string, string[] | null][], delivery: Delivery): Promise<boolean> {
+    const events = entries.flatMap(([, fields]) => (fields ? [JSON.parse(fields[1]) as EventInput] : []));
+    let dropped = false;
+    if (events.length)
+      try {
+        await this.request("POST", "/v1/events/ingest", { body: { events }, timeout: TIMEOUT });
+      } catch (error) {
+        dropped = error instanceof PolarClientError && !(error instanceof PolarRateLimitError);
+        if (!dropped) {
+          // As long as Polar asks, or longer after each failure in a row.
+          const wait = retryAfterMs(error);
+          await this.backOff(this.outboxBackoffKey, {
+            first: wait ?? OUTBOX_RETRY_DELAY,
+            max: wait ?? MAX_OUTBOX_RETRY_DELAY,
+          });
+          return false;
+        }
+      }
+    await this.requireRedis().outpostConfirm(
+      ...confirmArguments(this.prefix, !dropped, this.settlements(events), delivery),
+    );
+    try {
+      if (dropped) await this.options.onDropped?.(events, "permanent_error");
+      else if (events.length) await this.options.onDelivered?.(events);
+    } catch (error) {
+      console.warn(`Outpost ${dropped ? "onDropped" : "onDelivered"} failed: ${String(error)}`);
+    }
+    return true;
+  }
+
   private async fetchBatch(identities: string[], renew: () => Promise<unknown>): Promise<void> {
     try {
+      // Its clock starts with the batch: a slow fetch does not push back the first extension.
+      const renewed = throttled(renew, TIMEOUT);
       const resets = this.resets;
       const body = {
         identities: identities.map((identity) => {
@@ -1176,24 +1496,14 @@ export class Outpost {
       // Side by side, as a pulled page: one instance applies the snapshots of the fleet.
       await this.serial(() =>
         eachAtMost(snapshots, PULL_CONCURRENCY, async (snapshot) => {
-          if (await this.receiveSnapshot(snapshot, false, resets, renew)) await renew();
+          if (await this.receiveSnapshot(snapshot, false, resets, renew)) await renewed();
         }),
       );
     } finally {
       await this.requireRedis()
-        .del(...identities.map((identity) => `${this.prefix}:fetch:${identity}`))
+        .del(...identities.map((identity) => this.fetchKey(identity)))
         .catch(() => {});
     }
-  }
-
-  private async loadState(identity: string): Promise<State> {
-    return decodeState(
-      await this.requireRedis()
-        .outpostReadState(`${this.prefix}:state:${identity}`)
-        .catch((error: unknown) => {
-          throw redisUnavailable(error);
-        }),
-    );
   }
 
   // Includes whatever else the merchant keeps in that Redis.
@@ -1216,7 +1526,9 @@ export class Outpost {
   }
 
   private fail(error: unknown): void {
-    this.failure = error instanceof Error ? error : new PolarError(String(error));
+    this.failure =
+      error instanceof PolarOutpostError ? error : new PolarOutpostError("Outpost stopped", { cause: error });
+    this.failedAt = Date.now();
   }
 
   private startSpan(name: string, attributes: Attributes = {}): Span {
@@ -1293,31 +1605,39 @@ export class Outpost {
     });
     const identity = `${customer}:${reducer.id}`;
     const key = `${this.prefix}:state:${identity}`;
-    // A pulled snapshot of a customer nobody here reads or writes has no state in Redis.
-    if (pulled && !(await this.requireRedis().exists(key))) return false;
     if (!snapshot.customer_exists) {
+      // A pulled snapshot of a customer nobody here reads or writes has no state in Redis.
+      if (pulled && !(await this.requireRedis().exists(key))) return false;
       // The fleet asks again later, longer after each miss, and forgets the misses past the
       // longest wait.
-      await this.backOff(this.missingKey(identity), 2 * MAX_PULL_RETRY_DELAY);
+      await this.backOff(this.missingKey(identity), { forget: 2 * MAX_PULL_RETRY_DELAY });
       return false;
     }
-    await this.redis?.del(this.missingKey(identity)).catch(() => {});
     if (!Number.isSafeInteger(snapshot.version) || !Number.isSafeInteger(snapshot.cold_until))
       throw new TypeError("Snapshot timestamps must be safe integer microseconds");
     for (const value of [snapshot.count, snapshot.sum, snapshot.min, snapshot.max])
       if (value !== null && !Number.isFinite(value))
         throw new TypeError("Snapshot values must be finite");
+    const sealed = await this.requireRedis()
+      .outpostPrepareSnapshot(key, this.missingKey(identity), pulled ? "1" : "", snapshot.cold_until)
+      .catch((error: unknown) => {
+        throw redisUnavailable(error);
+      });
+    if (sealed === null) return false;
     const [confirmation, answered] = await this.askConfirmation(
       identity,
       customer,
       snapshot,
+      sealed.map(Number),
       renew,
     );
     await this.applySnapshot(
       identity,
       customer,
       confirmation?.snapshot ?? snapshot,
-      resets,
+      // Polar did not say which pending events the snapshot counts: no reset count matches, so
+      // the state asks again at its next read.
+      confirmation && !answered ? UNCONFIRMED : resets,
       confirmation,
       answered,
     );
@@ -1330,13 +1650,11 @@ export class Outpost {
     identity: string,
     customer: string,
     snapshot: Snapshot,
+    // The buckets the snapshot seals that hold pending events.
+    sealed: number[],
     renew?: () => Promise<unknown>,
   ): Promise<[Confirmation | undefined, boolean]> {
     const started = performance.now();
-    const state = await this.loadState(identity);
-    const sealed = [...state.pending]
-      .filter(([start, statistics]) => start < snapshot.cold_until && statistics.count > 0)
-      .map(([start]) => start);
     if (!sealed.length) return [undefined, false];
     const confirmation: Confirmation = {
       snapshot,
@@ -1411,14 +1729,13 @@ export class Outpost {
         if (confirmed.length) {
           const transaction = redis.multi() as OutpostPipeline;
           transaction.hgetall(key);
-          for (const [bucketStart, ids] of confirmed)
-            transaction.outpostConfirm(
-              key,
-              `${this.prefix}:pending:${identity}:${bucketStart}`,
-              bucketStart,
-              "",
-              ...ids,
-            );
+          transaction.outpostConfirm(
+            ...confirmArguments(
+              this.prefix,
+              false,
+              confirmed.map(([bucketStart, ids]) => ({ identity, bucketStart, ids })),
+            ),
+          );
           transaction.outpostApplySnapshot(key, ...snapshotArguments);
           const results = await transaction.exec();
           if (results === null) throw new UnavailableRedisError();
@@ -1451,7 +1768,7 @@ export class Outpost {
   }
 }
 
-export type OutpostFactoryOptions = Omit<OutpostOptions, "client"> & {
+export type OutpostFactoryOptions = Omit<OutpostOptions, "client" | "confirmTimeout"> & {
   /** Redis connection URL. Defaults to the REDIS_URL environment variable. */
   redisUrl?: string;
 };
@@ -1464,7 +1781,7 @@ export type OutpostFactoryOptions = Omit<OutpostOptions, "client"> & {
 export const outpost = ({
   redisUrl = process.env.REDIS_URL,
   ...options
-}: OutpostFactoryOptions = {}): ((client: ClientBase) => Outpost) => {
+}: OutpostFactoryOptions = {}): MeteringOutpost => {
   if (!redisUrl) throw new MeteringError("Outpost requires redisUrl or REDIS_URL");
   return (client) => new Outpost(redisUrl, { ...options, client });
 };

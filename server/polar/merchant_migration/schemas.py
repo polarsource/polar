@@ -1,13 +1,13 @@
 from collections.abc import Sequence
 from datetime import datetime
 from enum import StrEnum
-from typing import Any, Self
+from typing import Annotated, Any, Literal, Self
 
-from pydantic import UUID4, ConfigDict, Field, model_validator
+from pydantic import UUID4, ConfigDict, Discriminator, Field, model_validator
 
 from polar.enums import TaxBehavior
 from polar.kit.address import Address, AddressInput
-from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
+from polar.kit.schemas import IDSchema, Schema, SetSchemaReference, TimestampedSchema
 from polar.kit.versioning import QuerySchema
 from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
@@ -27,11 +27,14 @@ from .canonical import CanonicalPaymentMethodType
 from .pan_transfer import PanTransferMethod, PanTransferStep
 
 
-class MerchantMigrationCreate(Schema):
+class MerchantMigrationCreateBase(Schema):
     organization_id: UUID4 = Field(
         description="The organization the migration belongs to."
     )
-    source_platform: MerchantMigrationSourcePlatform = Field(
+
+
+class MerchantMigrationStripeCreate(MerchantMigrationCreateBase):
+    source_platform: Literal[MerchantMigrationSourcePlatform.stripe] = Field(
         description="The provider to migrate the billing from.",
     )
     api_key: str = Field(
@@ -43,6 +46,34 @@ class MerchantMigrationCreate(Schema):
             "migration is saved."
         ),
     )
+
+
+class MerchantMigrationLemonSqueezyCreate(MerchantMigrationCreateBase):
+    source_platform: Literal[MerchantMigrationSourcePlatform.lemon_squeezy] = Field(
+        description="The provider to migrate the billing from.",
+    )
+    api_key: str = Field(
+        min_length=1,
+        description=(
+            "A Lemon Squeezy API key. It is validated against the store before the "
+            "migration is saved."
+        ),
+    )
+    store_id: str | None = Field(
+        None,
+        min_length=1,
+        description=(
+            "The Lemon Squeezy store to migrate. Required when the API key can "
+            "read more than one store."
+        ),
+    )
+
+
+MerchantMigrationCreate = Annotated[
+    MerchantMigrationStripeCreate | MerchantMigrationLemonSqueezyCreate,
+    Discriminator("source_platform"),
+    SetSchemaReference("MerchantMigrationCreate"),
+]
 
 
 class PrecheckIssueLevel(StrEnum):
@@ -475,8 +506,9 @@ class MerchantMigration(IDSchema, TimestampedSchema):
     source: dict[str, Any] | None = Field(
         description=(
             "Non-secret metadata about the connected source. The shape varies by "
-            "provider (e.g. Stripe exposes `stripe_user_id`, `livemode`, "
-            "`has_connected_accounts`)."
+            "provider: Stripe exposes `stripe_user_id`, `livemode` and "
+            "`has_connected_accounts`; Lemon Squeezy exposes `store_id` and "
+            "`store_name`."
         ),
     )
     operation: MerchantMigrationOperation | None = Field(

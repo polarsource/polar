@@ -41,16 +41,14 @@ def webhook_secret(mocker: MockerFixture) -> None:
 @pytest.mark.anyio
 class TestWebhook:
     @pytest.mark.parametrize(
-        ("organisation_mode", "signature", "status_code", "stored"),
+        ("signature", "status_code", "stored"),
         [
-            pytest.param("TEST", None, 202, True, id="valid"),
-            pytest.param("TEST", "v1,invalid", 400, False, id="invalid_signature"),
-            pytest.param("LIVE", None, 202, False, id="other_mode"),
+            pytest.param(None, 202, True, id="valid"),
+            pytest.param("v1,invalid", 400, False, id="invalid_signature"),
         ],
     )
     async def test_alert_created(
         self,
-        organisation_mode: str,
         signature: str | None,
         status_code: int,
         stored: bool,
@@ -60,7 +58,6 @@ class TestWebhook:
         event = {
             "id": "evt_test",
             "type": "alert.created",
-            "organisation_mode": organisation_mode,
             "data": {"object": {"id": "alrt_test"}},
         }
         body, headers = sign(event)

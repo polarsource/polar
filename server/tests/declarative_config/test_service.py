@@ -6014,6 +6014,38 @@ class TestExport:
 @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
 @pytest.mark.usefixtures("config_as_code_enabled")
 class TestCatalogDrafts:
+    async def test_draft_benefit_type_changed(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"benefits": [BETA_BENEFIT]}),
+            publish=False,
+        )
+
+        with pytest.raises(ConfigInvalid) as exc_info:
+            await declarative_config_service.apply(
+                session,
+                redis,
+                auth_subject,
+                Config.model_validate(
+                    {
+                        "meters": [TOOL_CALLS_METER],
+                        "benefits": [{**CREDITS_BENEFIT, "external_id": "beta"}],
+                    }
+                ),
+                publish=False,
+            )
+
+        assert [(issue.type, issue.loc) for issue in exc_info.value.errors] == [
+            (ConfigIssueType.type_changed, ["body", "benefits", 0, "type"])
+        ]
+
     async def test_apply_saves_and_replaces_the_draft(
         self,
         session: AsyncSession,

@@ -11,9 +11,11 @@ import {
   useUpdateUserOrganizationNotificationSettings,
   useUserOrganizationNotificationSettings,
 } from '@/hooks/polar/userOrganizations'
+import { setPushNotificationsOptedOut } from '@/hooks/pushNotificationOptOut'
 import { useNotifications } from '@/providers/NotificationsProvider'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { useToast } from '@/providers/ToastProvider'
+import { capture } from '@/utils/posthog'
 import { schemas } from '@polar-sh/client'
 import * as Notifications from 'expo-notifications'
 import { Stack } from 'expo-router'
@@ -56,6 +58,10 @@ export default function NotificationsPage() {
             ...notificationSettings,
             [key]: value,
           },
+        })
+        capture('app:settings:notification_setting:update', {
+          setting: key,
+          enabled: value,
         })
       },
     [organizationId, notificationSettings, updateNotificationSettings],
@@ -198,6 +204,7 @@ const usePushNotifications = () => {
   }, [notificationRecipient])
 
   const enablePushNotifications = useCallback(async () => {
+    await setPushNotificationsOptedOut(false)
     const status = await Notifications.requestPermissionsAsync()
 
     if (status.granted) {
@@ -205,11 +212,13 @@ const usePushNotifications = () => {
         const token = await Notifications.getExpoPushTokenAsync()
         if (token.data) {
           await createNotificationRecipient(token.data)
+          capture('app:settings:push_notifications:update', { enabled: true })
           setPushNotificationsEnabled(true)
           return
         }
       } catch (error: any) {
         if (error?.response?.status === 422) {
+          capture('app:settings:push_notifications:update', { enabled: true })
           setPushNotificationsEnabled(true)
           return
         }
@@ -225,10 +234,12 @@ const usePushNotifications = () => {
   }, [createNotificationRecipient, toast])
 
   const disablePushNotifications = useCallback(async () => {
+    await setPushNotificationsOptedOut(true)
     if (notificationRecipient?.id) {
       await deleteNotificationRecipient(notificationRecipient.id)
     }
 
+    capture('app:settings:push_notifications:update', { enabled: false })
     setPushNotificationsEnabled(false)
   }, [deleteNotificationRecipient, notificationRecipient])
 

@@ -16,6 +16,7 @@ const SELECTABLE_STATUSES = [
   'trialing',
   'paused',
   'past_due',
+  'trial_ended',
   'canceled',
   'unpaid',
 ] as const satisfies readonly schemas['SubscriptionStatus'][]

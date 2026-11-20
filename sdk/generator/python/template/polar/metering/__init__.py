@@ -1,13 +1,13 @@
 import contextlib
 import datetime
 import os
+import sys
 import types
 import typing
 
 import anyio
 
 from polar.base import AsyncClientBase, parse_response_json
-from polar.logging import get_logger
 from polar.metering.buffered import (
     BufferedMeteringOptions,
     BufferedMeteringStrategy,
@@ -31,23 +31,22 @@ from polar.metering.events import (
 )
 from polar.metering.meter import CustomerMeter, CustomerMeterList, MeterProtocol
 
-if typing.TYPE_CHECKING:
-    from polar.outpost import Outpost
-
-log = get_logger(__name__)
-
 
 class MeteringOutpostOptions(typing.TypedDict, total=False):
-    """Configure the optional Outpost strategy.
+    """Configure the optional Outpost strategy, which delivers the events itself.
 
     Attributes:
         redis_url: Redis connection URL. Defaults to the REDIS_URL environment variable.
         telemetry: Send Outpost metrics and traces to Polar. Defaults to True;
             POLAR_OUTPOST_TELEMETRY=0 disables it regardless of this option.
+        on_delivered: Called with each batch Polar accepted.
+        on_dropped: Called with each batch Polar refused, and why.
     """
 
     redis_url: str
     telemetry: bool
+    on_delivered: typing.Callable[[list[EventInput]], typing.Awaitable[None]]
+    on_dropped: typing.Callable[[list[EventInput], DropReason], typing.Awaitable[None]]
 
 
 class MeteringStrategyProtocol(
@@ -431,9 +430,10 @@ class Metering:
             polar: Async Polar client used for event delivery and meter reads.
             buffered: Buffer options; omitted fields use BufferedMeteringOptions defaults.
             outpost: True or Outpost options to enable Outpost, which then requires
-                redis_url or REDIS_URL. Disabled by default.
+                redis_url or REDIS_URL and delivers the events instead of the buffer.
+                Disabled by default.
             strategies: Replace all default strategies. Cannot be combined with
-                buffered or outpost options.
+                buffered or outpost options, nor hold both a buffer and an Outpost.
 
         Returns:
             A helper to enter with async with before use.
@@ -446,58 +446,48 @@ class Metering:
                 raise MeteringError(
                     "Cannot combine strategies with buffered or outpost options"
                 )
+            # An Outpost exists only once its module is loaded: Redis stays optional.
+            outpost_module = sys.modules.get("polar.outpost.client")
+            if (
+                outpost_module is not None
+                and any(isinstance(s, BufferedMeteringStrategy) for s in strategies)
+                and any(isinstance(s, outpost_module.Outpost) for s in strategies)
+            ):
+                raise MeteringError(
+                    "Outpost delivers its events itself: the buffer would send them twice"
+                )
             return cls(strategies=strategies, client=polar._client)
-        buffered = buffered or BufferedMeteringOptions()
-        strategies = []
-        if outpost is not None and outpost is not False:
-            outpost_options = MeteringOutpostOptions() if outpost is True else outpost
-            redis_url = outpost_options.get("redis_url", os.environ.get("REDIS_URL"))
-            if not redis_url:
-                raise MeteringError("Outpost requires redis_url or REDIS_URL")
-            from polar.outpost import Outpost
-
-            outpost_strategy = Outpost.create(
-                polar, redis_url, telemetry=outpost_options.get("telemetry", True)
+        if outpost is None or outpost is False:
+            return cls(
+                strategies=[
+                    BufferedMeteringStrategy(
+                        polar, **(buffered or BufferedMeteringOptions())
+                    )
+                ],
+                client=polar._client,
             )
-            strategies.append(outpost_strategy)
-            buffered = _confirming(buffered, outpost_strategy)
+        if buffered is not None:
+            raise MeteringError(
+                "Outpost delivers its events itself: pass buffered or outpost, not both"
+            )
+        outpost_options = MeteringOutpostOptions() if outpost is True else outpost
+        redis_url = outpost_options.get("redis_url", os.environ.get("REDIS_URL"))
+        if not redis_url:
+            raise MeteringError("Outpost requires redis_url or REDIS_URL")
+        from polar.outpost.client import Outpost
+
         return cls(
-            strategies=[BufferedMeteringStrategy(polar, **buffered), *strategies],
+            strategies=[
+                Outpost.create(
+                    polar,
+                    redis_url,
+                    telemetry=outpost_options.get("telemetry", True),
+                    on_delivered=outpost_options.get("on_delivered"),
+                    on_dropped=outpost_options.get("on_dropped"),
+                )
+            ],
             client=polar._client,
         )
-
-
-def _confirming(
-    buffered: BufferedMeteringOptions, outpost: "Outpost"
-) -> BufferedMeteringOptions:
-    """Settle in Outpost the events the buffer delivered or dropped, before the user's
-    callbacks. Polar received the delivered events: they settle where their bucket is hot.
-    It will never count the dropped ones: they settle everywhere."""
-    user_delivered = buffered.get("on_delivered")
-    user_dropped = buffered.get("on_dropped")
-
-    async def settle(events: list[EventInput], *, dropped: bool) -> None:
-        try:
-            if dropped:
-                await outpost.confirm(events)
-            else:
-                await outpost.acknowledge(events)
-        except Exception:
-            log.warning(
-                "Could not settle %s events in Outpost", len(events), exc_info=True
-            )
-
-    async def on_delivered(events: list[EventInput]) -> None:
-        await settle(events, dropped=False)
-        if user_delivered is not None:
-            await user_delivered(events)
-
-    async def on_dropped(events: list[EventInput], reason: DropReason) -> None:
-        await settle(events, dropped=True)
-        if user_dropped is not None:
-            await user_dropped(events, reason)
-
-    return {**buffered, "on_delivered": on_delivered, "on_dropped": on_dropped}
 
 
 def _validate_actor(

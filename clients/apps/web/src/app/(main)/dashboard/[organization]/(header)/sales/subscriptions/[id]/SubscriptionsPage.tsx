@@ -11,7 +11,7 @@ import SubscriptionUsageChargePreview from '@/components/Subscriptions/Subscript
 import SubscriptionOrdersSection from '@/components/Subscriptions/SubscriptionOrdersSection'
 import { SubscriptionSecondaryDetails } from '@/components/Subscriptions/SubscriptionSecondaryDetails'
 import UpdateSubscriptionModal from '@/components/Subscriptions/UpdateSubscriptionModal'
-import { useCustomFields, useProduct, useSubscription } from '@/hooks/queries'
+import { useProduct, useSubscription } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { Button, InlineModal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -30,7 +30,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
     _subscription.id,
     _subscription,
   )
-  const { data: customFields } = useCustomFields(organization.id)
   const { data: product } = useProduct(_subscription.product.id)
   const {
     hide: hideUpdateModal,
@@ -80,7 +79,9 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
       <SubscriptionSecondaryDetails
         subscription={subscription}
-        customFields={customFields?.items}
+        customFields={product?.attached_custom_fields.map(
+          ({ custom_field }) => custom_field,
+        )}
       />
 
       <SubscriptionSeatsSection subscription={subscription} />

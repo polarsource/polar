@@ -9,7 +9,7 @@ const PAYMENT_METHOD_COPY = {
   notCopiedTitle: "Payment method can't be copied",
   notCopied: (label: string) =>
     `${label} can't be copied to Polar. The subscription still moves, and renews with another card copied for this customer if there is one. Otherwise its first renewal on Polar fails and goes to dunning until the customer adds a card.`,
-  none: `This customer has no saved payment method on Stripe. ${NO_CARD_CONSEQUENCE}`,
+  none: `This customer has no saved payment method at your current provider. ${NO_CARD_CONSEQUENCE}`,
 }
 
 // The pre-check's own payment notes. The side panel shows the payment method

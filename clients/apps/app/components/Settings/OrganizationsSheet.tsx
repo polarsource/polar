@@ -1,5 +1,6 @@
 import { useTheme } from '@/design-system/useTheme'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
+import { capture } from '@/utils/posthog'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { router } from 'expo-router'
 import { useContext } from 'react'
@@ -69,6 +70,7 @@ export const OrganizationsSheet = ({
                 setOrganization(organization)
                 onDismiss()
                 if (didSwitch) {
+                  capture('app:organizations:organization:switch')
                   onSelect?.()
                 }
               }}

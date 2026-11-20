@@ -638,8 +638,8 @@ class CustomerService:
                 ) from e
             raise
 
-        if email_changed:
-            await member_service.sync_owner_email(session, updated_customer)
+        if email_changed or "name" in customer_update.model_fields_set:
+            await member_service.sync_owner(session, updated_customer)
 
         return updated_customer
 

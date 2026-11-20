@@ -21,10 +21,12 @@ from polar.cli.service import (
     trigger_event,
 )
 from polar.exceptions import PolarRequestValidationError
+from polar.kit.versioning import api_version_context
 from polar.models import Organization
 from polar.models.organization import STATUS_CAPABILITIES, OrganizationStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.redis import Redis
+from polar.version import CURRENT_API_VERSION
 
 
 @pytest.fixture
@@ -239,6 +241,17 @@ class TestTriggerEvent:
         assert response.delivered is False
         assert response.payload["type"] == "subscription.active"
         publish.assert_not_called()
+
+    @pytest.mark.parametrize("event", SUPPORTED_EVENTS)
+    async def test_builds_every_event_inside_a_versioned_request(
+        self, redis: Redis, organization: Organization, event: WebhookEventType
+    ) -> None:
+        with api_version_context(CURRENT_API_VERSION):
+            response = await trigger_event(
+                redis, organization, TriggerRequest(event=event, deliver=False)
+            )
+
+        assert response.payload["type"] == event
 
     async def test_rejects_overrides_the_schema_would_drop(
         self, redis: Redis, organization: Organization

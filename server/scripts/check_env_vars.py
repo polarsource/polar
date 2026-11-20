@@ -25,6 +25,10 @@ NAME = re.compile(r"POLAR_[A-Z0-9_]+")
 # Read somewhere this script cannot see.
 ALLOWED: frozenset[str] = frozenset()
 
+# A variable added to terraform/ this recently is not reported: the Terraform
+# often lands before the code that reads it.
+GRACE_DAYS = 7
+
 
 def _grep(*paths: str) -> set[str]:
     result = subprocess.run(
@@ -62,8 +66,44 @@ def read() -> set[str]:
     return fields | _grep("clients", "server")
 
 
+def added_recently(name: str) -> bool:
+    """Whether `name` entered terraform/ within GRACE_DAYS.
+
+    Needs history: on a shallow clone the oldest commit looks like it added
+    everything, so we answer False and the variable is reported as before.
+    """
+    shallow = subprocess.run(
+        ["git", "rev-parse", "--is-shallow-repository"],
+        cwd=REPO,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if shallow.returncode != 0 or shallow.stdout.strip() != "false":
+        return False
+    result = subprocess.run(
+        [
+            "git",
+            "log",
+            f"--since={GRACE_DAYS}.days",
+            "--pickaxe-regex",
+            f"-S(^|[^A-Z0-9_]){name}($|[^A-Z0-9_])",
+            "--format=%H",
+            "--",
+            "terraform",
+        ],
+        cwd=REPO,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return result.returncode == 0 and bool(result.stdout.strip())
+
+
 def main() -> int:
-    orphans = provisioned() - read() - ALLOWED
+    orphans = {
+        name for name in provisioned() - read() - ALLOWED if not added_recently(name)
+    }
     if not orphans:
         print("OK: every POLAR_* variable Terraform sets is read.")
         return 0
@@ -72,8 +112,9 @@ def main() -> int:
     for name in sorted(orphans):
         print(f"  {name}")
     print(
-        "\nRemove them from terraform/, or add them to ALLOWED in this script "
-        "with a reason."
+        f"\nRemove them from terraform/, or add them to ALLOWED in this script "
+        f"with a reason. Variables added to terraform/ in the last {GRACE_DAYS} "
+        "days are not reported."
     )
     return 1
 

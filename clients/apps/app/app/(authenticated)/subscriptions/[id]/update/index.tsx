@@ -12,6 +12,7 @@ import {
   useUpdateSubscription,
 } from '@/hooks/polar/subscriptions'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
+import { capture } from '@/utils/posthog'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { schemas } from '@polar-sh/client'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
@@ -70,6 +71,9 @@ export default function Index() {
           return
         }
 
+        capture('app:subscriptions:subscription:update', {
+          proration_behavior: body.proration_behavior ?? null,
+        })
         router.back()
       })
     },

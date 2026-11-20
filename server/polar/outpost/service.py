@@ -52,6 +52,12 @@ SYNCED_LOOKBACK = timedelta(hours=1)
 CURSOR_MAX_AGE = stream.CHANGES_RETENTION / 2
 
 
+def _get_identity(payload: MeterUsageIdentity | ConfirmRequest) -> Identity:
+    if isinstance(payload, CustomerMeterUsageIdentity | CustomerConfirmRequest):
+        return (payload.customer_id, None)
+    return (None, payload.external_customer_id)
+
+
 class OutpostService:
     async def get_changes(
         self,
@@ -191,24 +197,12 @@ class OutpostService:
     ) -> list[Snapshot]:
         """The snapshots of every identity of the requested customers, reading the
         customers once for all reducers."""
-        reducers = {
-            reducer.id: reducer
-            for reducer in await ReducerRepository.from_session(
-                session
-            ).get_all_active_by_organization_and_kinds(
-                organization.id, tuple(ReducerKind)
-            )
-        }
+        reducers = await self._get_reducers(session, organization)
         requested: dict[uuid.UUID, list[Identity]] = {}
         for payload in payloads:
             if payload.reducer_id not in reducers:
                 continue
-            identity: Identity
-            if isinstance(payload, CustomerMeterUsageIdentity):
-                identity = (payload.customer_id, None)
-            else:
-                identity = (None, payload.external_customer_id)
-            requested.setdefault(payload.reducer_id, []).append(identity)
+            requested.setdefault(payload.reducer_id, []).append(_get_identity(payload))
         customers = await self._get_customers(
             session,
             organization,
@@ -254,10 +248,7 @@ class OutpostService:
             ).get_active_by_id_and_kinds(payload.reducer_id, (ReducerKind.usage,))
             if reducer is None or reducer.organization_id != organization.id:
                 raise ResourceNotFound()
-            if isinstance(payload, CustomerConfirmRequest):
-                identity: Identity = (payload.customer_id, None)
-            else:
-                identity = (None, payload.external_customer_id)
+            identity = _get_identity(payload)
             stored = await reducer_service.get_stored_external_ids(
                 session,
                 reducer,
@@ -283,6 +274,18 @@ class OutpostService:
                 snapshot=snapshots[0],
             )
 
+    async def _get_reducers(
+        self, session: AsyncReadSession, organization: Organization
+    ) -> dict[uuid.UUID, Reducer]:
+        return {
+            reducer.id: reducer
+            for reducer in await ReducerRepository.from_session(
+                session
+            ).get_all_active_by_organization_and_kinds(
+                organization.id, tuple(ReducerKind)
+            )
+        }
+
     async def _get_reducer_bucket_usage(
         self,
         session: AsyncReadSession,
@@ -291,14 +294,7 @@ class OutpostService:
     ) -> list[Snapshot]:
         if not events:
             return []
-        reducers = {
-            reducer.id: reducer
-            for reducer in await ReducerRepository.from_session(
-                session
-            ).get_all_active_by_organization_and_kinds(
-                organization.id, tuple(ReducerKind)
-            )
-        }
+        reducers = await self._get_reducers(session, organization)
         customers = await self._get_customers(
             session,
             organization,

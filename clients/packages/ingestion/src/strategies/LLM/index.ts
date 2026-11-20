@@ -5,7 +5,7 @@ import type {
 } from '@ai-sdk/provider'
 import { type LanguageModelMiddleware, wrapLanguageModel } from 'ai'
 import * as Schema from 'effect/Schema'
-import type { IngestionContext } from '../../ingestion'
+import { type IngestionContext, LLMUsage } from '../../ingestion'
 import {
   type IngestionExecutionHandler,
   IngestionStrategy,
@@ -14,20 +14,11 @@ import {
 } from '../../strategy'
 import type { models } from '@polar-sh/sdk/2027-01'
 
-const LLMUsage = {
-  inputTokens: Schema.Finite,
-  outputTokens: Schema.Finite,
-  totalTokens: Schema.Finite,
-  cachedInputTokens: Schema.Finite,
-  vendor: Schema.String,
-  model: Schema.String,
-}
-
 export const LLMStrategyContext = Schema.toStandardSchemaV1(
   Schema.Struct({
-    ...LLMUsage,
+    ...LLMUsage.fields,
     strategy: Schema.Literal('LLM'),
-    _llm: Schema.Struct(LLMUsage),
+    _llm: LLMUsage,
     _cost: Schema.optionalKey(
       Schema.Struct({
         amount: Schema.Union([Schema.Finite, Schema.String]),

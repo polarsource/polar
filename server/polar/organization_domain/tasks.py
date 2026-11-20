@@ -21,7 +21,12 @@ async def register_payment_method_domains(
     domains: Annotated[list[str], LoggableField],
 ) -> None:
     for domain in domains:
-        if await stripe_service.get_payment_method_domain(domain) is not None:
+        payment_method_domain = await stripe_service.get_payment_method_domain(domain)
+        if payment_method_domain is not None:
+            if not payment_method_domain.enabled:
+                await stripe_service.update_payment_method_domain(
+                    payment_method_domain.id, enabled=True
+                )
             continue
         try:
             await stripe_service.create_payment_method_domain(domain)
@@ -43,5 +48,38 @@ async def register_organization_payment_method_domains(
         if organization is None:
             raise OrganizationDoesNotExist(organization_id)
         await organization_domain_service.register_payment_method_domains(
+            session, organization
+        )
+
+
+@actor(actor_name="organization_domain.unregister_payment_method_domains")
+async def unregister_payment_method_domains(
+    domains: Annotated[list[str], LoggableField],
+) -> None:
+    async with AsyncSessionMaker() as session:
+        for domain in domains:
+            if await organization_domain_service.is_payment_method_domain_vouched_for(
+                session, domain
+            ):
+                continue
+            payment_method_domain = await stripe_service.get_payment_method_domain(
+                domain
+            )
+            if payment_method_domain is not None and payment_method_domain.enabled:
+                await stripe_service.update_payment_method_domain(
+                    payment_method_domain.id, enabled=False
+                )
+
+
+@actor(actor_name="organization_domain.unregister_organization_payment_method_domains")
+async def unregister_organization_payment_method_domains(
+    organization_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = OrganizationRepository.from_session(session)
+        organization = await repository.get_by_id(organization_id, include_blocked=True)
+        if organization is None:
+            raise OrganizationDoesNotExist(organization_id)
+        await organization_domain_service.unregister_payment_method_domains(
             session, organization
         )

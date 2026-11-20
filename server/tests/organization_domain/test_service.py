@@ -172,6 +172,36 @@ class TestReverify:
 
         assert domain.verified_at is None
 
+    async def test_record_removed_unregisters_payment_method_domains(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        mocker.patch(
+            "polar.organization_domain.service._lookup_txt", return_value=set()
+        )
+        mocker.patch("polar.organization_domain.service.enqueue_email_template")
+        enqueue_job_mock = mocker.patch("polar.organization_domain.service.enqueue_job")
+        organization.embed_hosts = ["acme.com"]
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization,
+                domain="acme.com",
+                verification_record_value="TOKEN",
+                verified_at=utc_now(),
+            )
+        )
+
+        await organization_domain_service.reverify(session, organization)
+
+        enqueue_job_mock.assert_called_once_with(
+            "organization_domain.unregister_payment_method_domains",
+            domains=["acme.com"],
+        )
+
 
 @pytest.mark.anyio
 class TestRegisterPaymentMethodDomains:
@@ -209,6 +239,32 @@ class TestRegisterPaymentMethodDomains:
     ) -> None:
         enqueue_job_mock = mocker.patch("polar.organization_domain.service.enqueue_job")
         organization.status = OrganizationStatus.REVIEW
+        organization.embed_hosts = ["shop.acme.com"]
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization, domain="acme.com", verified_at=utc_now()
+            )
+        )
+
+        await organization_domain_service.register_payment_method_domains(
+            session, organization
+        )
+
+        enqueue_job_mock.assert_not_called()
+
+    async def test_organization_without_checkout(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization_domain.service.enqueue_job")
+        organization.capabilities = {
+            **organization.capabilities,
+            "checkout_payments": False,
+        }
         organization.embed_hosts = ["shop.acme.com"]
         await save_fixture(organization)
         await save_fixture(

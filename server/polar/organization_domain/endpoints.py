@@ -104,7 +104,9 @@ async def delete_organization_domain(
     )
     if organization_domain is None:
         raise ResourceNotFound()
-    await organization_domain_service.delete(session, organization_domain)
+    await organization_domain_service.delete(
+        session, authz.organization, organization_domain
+    )
 
 
 @router.post(

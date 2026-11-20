@@ -15,7 +15,7 @@ import { Fragment, type ReactNode } from 'react'
 const CONTENT_CLASS =
   'dark:bg-polar-800 dark:border-polar-700 w-56 rounded-xl border border-gray-200 bg-white p-1.5 text-[13px] shadow-xl'
 const ITEM_CLASS =
-  'dark:focus:bg-polar-700 h-7 gap-3 rounded-md px-2 text-[13px] focus:bg-gray-100 [&_svg]:size-3.5!'
+  'dark:focus:bg-polar-700 h-7 gap-3 rounded-md px-2 text-[13px] text-black focus:bg-gray-100 focus:text-black dark:text-white dark:focus:text-white [&_svg]:size-3.5!'
 const ICON_CLASS = 'dark:text-polar-400 flex shrink-0 text-gray-500'
 const SEPARATOR_CLASS = 'dark:bg-polar-700 -mx-1.5 my-1.5 bg-gray-200'
 

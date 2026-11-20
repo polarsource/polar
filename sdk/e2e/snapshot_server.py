@@ -72,6 +72,10 @@ class SnapshotServer:
                     "snapshot": self.snapshots[customer_key(payload)],
                 }
             )
+        # The scenarios say what Polar stored: Outpost's deliveries stay in Redis, settling
+        # nothing.
+        if route == "POST /v1/events/ingest":
+            return JSONResponse({}, status_code=503)
         if route == "GET /v1/outpost/changes":
             cursor = request.query_params.get("cursor")
             start = int(cursor.split("-")[0]) if cursor else len(self.changes)
@@ -125,7 +129,8 @@ async def main() -> None:
     fixture = SnapshotServer()
     app = Starlette(
         routes=[
-            Route("/v1/outpost/{path:path}", fixture.handle, methods=["GET", "POST"])
+            Route("/v1/outpost/{path:path}", fixture.handle, methods=["GET", "POST"]),
+            Route("/v1/events/ingest", fixture.handle, methods=["POST"]),
         ]
     )
     server = uvicorn.Server(

@@ -77,12 +77,13 @@ export const getMatcher = (filter: Filter | FilterClause): EventMatcher => {
   }
   const read = getPropertyReader(filter.property);
   if (filter.operator === "eq" || filter.operator === "ne") {
-    const expected = typeof filter.value === "boolean" ? Number(filter.value) : filter.value;
+    // Like Polar, values of different types are never equal: `true` is not 1.
+    const expected = filter.value;
     const equal = filter.operator === "eq";
     return (event) => {
       const actual = read(event);
       if (actual === undefined || actual === null) return false;
-      return ((typeof actual === "boolean" ? Number(actual) : actual) === expected) === equal;
+      return (actual === expected) === equal;
     };
   }
   if (filter.operator === "like" || filter.operator === "not_like") {

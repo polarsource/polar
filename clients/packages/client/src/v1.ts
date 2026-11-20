@@ -7213,7 +7213,8 @@ export interface paths {
     put?: never
     /**
      * Meter Usage
-     * @description The snapshot of every identity of each requested customer.
+     * @description The snapshot of every identity of each requested customer. An identity whose
+     *     reducer Polar does not know has none.
      *
      *     **Scopes**: `events:write`
      */
@@ -23274,6 +23275,11 @@ export interface components {
       customer_cancellation_comment: string | null
       product: components['schemas']['CustomerSubscriptionProduct']
       /**
+       * Payment Method Id
+       * @description ID of the payment method pinned to the subscription, if any.
+       */
+      payment_method_id: string | null
+      /**
        * Prices
        * @description List of enabled prices for the subscription.
        */
@@ -23316,12 +23322,12 @@ export interface components {
        */
       cancellation_comment?: string | null
     }
-    CustomerSubscriptionChangePreview:
-      | components['schemas']['CustomerSubscriptionChangePreviewProduct']
-      | components['schemas']['CustomerSubscriptionChangePreviewSeats']
-      | components['schemas']['CustomerSubscriptionChangePreviewUnits']
-    /** CustomerSubscriptionChangePreviewProduct */
-    CustomerSubscriptionChangePreviewProduct: {
+    CustomerSubscriptionChange:
+      | components['schemas']['CustomerSubscriptionChangeProduct']
+      | components['schemas']['CustomerSubscriptionChangeSeats']
+      | components['schemas']['CustomerSubscriptionChangeUnits']
+    /** CustomerSubscriptionChangeProduct */
+    CustomerSubscriptionChangeProduct: {
       /**
        * Product Id
        * Format: uuid4
@@ -23329,16 +23335,16 @@ export interface components {
        */
       product_id: string
     }
-    /** CustomerSubscriptionChangePreviewSeats */
-    CustomerSubscriptionChangePreviewSeats: {
+    /** CustomerSubscriptionChangeSeats */
+    CustomerSubscriptionChangeSeats: {
       /**
        * Seats
        * @description Preview a change of the subscription to this number of seats.
        */
       seats: number
     }
-    /** CustomerSubscriptionChangePreviewUnits */
-    CustomerSubscriptionChangePreviewUnits: {
+    /** CustomerSubscriptionChangeUnits */
+    CustomerSubscriptionChangeUnits: {
       /**
        * Units
        * @description Preview a change of the subscription to this number of units.
@@ -26666,6 +26672,28 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** LemonSqueezyStoreNotFound */
+    LemonSqueezyStoreNotFound: {
+      /**
+       * Error
+       * @example LemonSqueezyStoreNotFound
+       * @constant
+       */
+      error: 'LemonSqueezyStoreNotFound'
+      /** Detail */
+      detail: string
+    }
+    /** LemonSqueezyStoreRequired */
+    LemonSqueezyStoreRequired: {
+      /**
+       * Error
+       * @example LemonSqueezyStoreRequired
+       * @constant
+       */
+      error: 'LemonSqueezyStoreRequired'
+      /** Detail */
+      detail: string
+    }
     /** LicenseKeyActivate */
     LicenseKeyActivate: {
       /** Key */
@@ -28177,7 +28205,7 @@ export interface components {
       source_connected: boolean
       /**
        * Source
-       * @description Non-secret metadata about the connected source. The shape varies by provider (e.g. Stripe exposes `stripe_user_id`, `livemode`, `has_connected_accounts`).
+       * @description Non-secret metadata about the connected source. The shape varies by provider: Stripe exposes `stripe_user_id`, `livemode` and `has_connected_accounts`; Lemon Squeezy exposes `store_id` and `store_name`.
        */
       source: {
         [key: string]: unknown
@@ -28185,22 +28213,9 @@ export interface components {
       /** @description Background work for the current step, if any. None until a run starts. */
       operation: components['schemas']['MerchantMigrationOperation'] | null
     }
-    /** MerchantMigrationCreate */
-    MerchantMigrationCreate: {
-      /**
-       * Organization Id
-       * Format: uuid4
-       * @description The organization the migration belongs to.
-       */
-      organization_id: string
-      /** @description The provider to migrate the billing from. */
-      source_platform: components['schemas']['MerchantMigrationSourcePlatform']
-      /**
-       * Api Key
-       * @description A Stripe API key for the source account (a restricted `rk_...` key is recommended). It is validated for all required permissions before the migration is saved.
-       */
-      api_key: string
-    }
+    MerchantMigrationCreate:
+      | components['schemas']['MerchantMigrationStripeCreate']
+      | components['schemas']['MerchantMigrationLemonSqueezyCreate']
     /**
      * MerchantMigrationCutoverReport
      * @description Where the switch has got to, for the imported subscriptions.
@@ -28282,6 +28297,30 @@ export interface components {
        * @description Prepare every importable subscription except these — the opt-out selection for large catalogs. Ignored when `record_ids` is set.
        */
       exclude_record_ids?: string[] | null
+    }
+    /** MerchantMigrationLemonSqueezyCreate */
+    MerchantMigrationLemonSqueezyCreate: {
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The organization the migration belongs to.
+       */
+      organization_id: string
+      /**
+       * @description The provider to migrate the billing from. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      source_platform: 'lemon_squeezy'
+      /**
+       * Api Key
+       * @description A Lemon Squeezy API key. It is validated against the store before the migration is saved.
+       */
+      api_key: string
+      /**
+       * Store Id
+       * @description The Lemon Squeezy store to migrate. Required when the API key can read more than one store.
+       */
+      store_id?: string | null
     }
     /** MerchantMigrationNotEnabled */
     MerchantMigrationNotEnabled: {
@@ -28595,6 +28634,25 @@ export interface components {
       | 'activate_subscriptions'
       | 'completed'
       | 'closed'
+    /** MerchantMigrationStripeCreate */
+    MerchantMigrationStripeCreate: {
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The organization the migration belongs to.
+       */
+      organization_id: string
+      /**
+       * @description The provider to migrate the billing from. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      source_platform: 'stripe'
+      /**
+       * Api Key
+       * @description A Stripe API key for the source account (a restricted `rk_...` key is recommended). It is validated for all required permissions before the migration is saved.
+       */
+      api_key: string
+    }
     /** MerchantMigrationTaxBehaviorUpdateResult */
     MerchantMigrationTaxBehaviorUpdateResult: {
       /**
@@ -32483,6 +32541,12 @@ export interface components {
        * @default false
        */
       reducer_billing_enabled: boolean
+      /**
+       * Lemon Squeezy Migration Enabled
+       * @description If this organization can migrate its billing from Lemon Squeezy to Polar.
+       * @default false
+       */
+      lemon_squeezy_migration_enabled: boolean
     }
     /**
      * OrganizationFeatureSettingsUpdate
@@ -37303,6 +37367,17 @@ export interface components {
        */
       payment_id: string
     }
+    /** RefundPaymentAlreadyRefundedByStripe */
+    RefundPaymentAlreadyRefundedByStripe: {
+      /**
+       * Error
+       * @example RefundPaymentAlreadyRefundedByStripe
+       * @constant
+       */
+      error: 'RefundPaymentAlreadyRefundedByStripe'
+      /** Detail */
+      detail: string
+    }
     /**
      * RefundReason
      * @enum {string}
@@ -39004,12 +39079,75 @@ export interface components {
       /** Cancel At Period End */
       cancel_at_period_end?: boolean
     }
-    SubscriptionChangePreview:
-      | components['schemas']['SubscriptionChangePreviewProduct']
-      | components['schemas']['SubscriptionChangePreviewSeats']
-      | components['schemas']['SubscriptionChangePreviewUnits']
-    /** SubscriptionChangePreviewProduct */
-    SubscriptionChangePreviewProduct: {
+    SubscriptionChange:
+      | components['schemas']['SubscriptionChangeProduct']
+      | components['schemas']['SubscriptionChangeSeats']
+      | components['schemas']['SubscriptionChangeUnits']
+    /**
+     * SubscriptionChangePreview
+     * @description Preview of what a subscription change would cost, without applying it.
+     */
+    SubscriptionChangePreview: {
+      /**
+       * Base Amount
+       * @description Base subscription amount in cents (sum of product prices)
+       */
+      base_amount: number
+      /**
+       * Metered Amount
+       * @description Metered usage in cents billed on this invoice. Zero when usage is billed on its own meter cycle, ending before this invoice.
+       */
+      metered_amount: number
+      /**
+       * Proration Amount
+       * @description Net pending proration adjustments in cents from mid-period changes (seat or product changes), to be billed on the next invoice.
+       */
+      proration_amount: number
+      /**
+       * Prorations
+       * @description Itemized pending proration adjustments to be billed on the next invoice.
+       */
+      prorations: components['schemas']['SubscriptionChargePreviewProration'][]
+      /**
+       * Subtotal Amount
+       * @description Subtotal amount in cents (base + metered + prorations, before discount and tax)
+       */
+      subtotal_amount: number
+      /**
+       * Discount Amount
+       * @description Discount amount in cents
+       */
+      discount_amount: number
+      /**
+       * Net Amount
+       * @description Net amount in cents before taxes
+       */
+      net_amount: number
+      /**
+       * Tax Amount
+       * @description Tax amount in cents
+       */
+      tax_amount: number
+      /**
+       * Total Amount
+       * @description Total amount in cents (net + tax, before applying wallet balance)
+       */
+      total_amount: number
+      /**
+       * Applied Balance Amount
+       * @description Wallet balance applied to this charge in cents: negative when the customer's account credit reduces the amount due, positive when the charge clears outstanding debt, zero otherwise.
+       */
+      applied_balance_amount: number
+      /**
+       * Due Amount
+       * @description Amount actually due in cents: total_amount plus the applied wallet balance, floored at zero. This is the figure charged today.
+       */
+      due_amount: number
+      /** @description How the change would be billed, resolved from the requested or organization setting. */
+      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+    }
+    /** SubscriptionChangeProduct */
+    SubscriptionChangeProduct: {
       /**
        * Product Id
        * Format: uuid4
@@ -39025,9 +39163,14 @@ export interface components {
         | components['schemas']['SubscriptionProrationBehavior']
         | 'auto'
         | null
+      /**
+       * Discount Id
+       * @description Preview the change with this discount applied. If set to `null`, preview it with the current discount removed.
+       */
+      discount_id?: string | null
     }
-    /** SubscriptionChangePreviewSeats */
-    SubscriptionChangePreviewSeats: {
+    /** SubscriptionChangeSeats */
+    SubscriptionChangeSeats: {
       /**
        * Seats
        * @description Preview a change of the subscription to this number of seats.
@@ -39042,8 +39185,8 @@ export interface components {
         | 'auto'
         | null
     }
-    /** SubscriptionChangePreviewUnits */
-    SubscriptionChangePreviewUnits: {
+    /** SubscriptionChangeUnits */
+    SubscriptionChangeUnits: {
       /**
        * Units
        * @description Preview a change of the subscription to this number of units.
@@ -40549,6 +40692,7 @@ export interface components {
       | 'canceled'
       | 'unpaid'
       | 'paused'
+      | 'trial_ended'
     /**
      * SubscriptionUncanceledEvent
      * @description An event created by Polar when a subscription cancellation is reversed.
@@ -49807,7 +49951,7 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['CustomerSubscriptionChangePreview']
+        'application/json': components['schemas']['CustomerSubscriptionChange']
       }
     }
     responses: {
@@ -51562,7 +51706,7 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['SubscriptionChangePreview']
+        'application/json': components['schemas']['SubscriptionChange']
       }
     }
     responses: {
@@ -51572,7 +51716,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['SubscriptionChargePreview']
+          'application/json': components['schemas']['SubscriptionChangePreview']
         }
       }
       /** @description Forbidden */
@@ -58894,6 +59038,15 @@ export interface operations {
           'application/json': components['schemas']['RefundedAlready']
         }
       }
+      /** @description Stripe already refunded the payment at its own expense. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RefundPaymentAlreadyRefundedByStripe']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -64197,7 +64350,7 @@ export interface operations {
           'application/json': components['schemas']['MerchantMigration']
         }
       }
-      /** @description The Stripe API key is invalid, wrong mode, or missing permissions, or the account it belongs to can't be migrated. */
+      /** @description The API key is invalid, in the wrong mode or missing permissions, the Lemon Squeezy store needs choosing, or the account it belongs to can't be migrated. */
       400: {
         headers: {
           [name: string]: unknown
@@ -64208,7 +64361,8 @@ export interface operations {
             | components['schemas']['MissingStripeScopes']
             | components['schemas']['SourceAccountNotMigratable']
             | components['schemas']['SourceKeyModeMismatch']
-            | components['schemas']['UnsupportedMigrationSource']
+            | components['schemas']['LemonSqueezyStoreRequired']
+            | components['schemas']['LemonSqueezyStoreNotFound']
         }
       }
       /** @description Not allowed to manage this organization, migrations aren't enabled for it, or it hasn't finished onboarding. */
@@ -64223,7 +64377,7 @@ export interface operations {
             | components['schemas']['OrganizationNotOnboarded']
         }
       }
-      /** @description The Stripe account is already used by another migration. */
+      /** @description The source account is already used by another migration. */
       409: {
         headers: {
           [name: string]: unknown
@@ -64241,7 +64395,7 @@ export interface operations {
           'application/json': components['schemas']['HTTPValidationError']
         }
       }
-      /** @description Couldn't reach Stripe to validate the key. */
+      /** @description Couldn't reach the source provider to validate the key. */
       502: {
         headers: {
           [name: string]: unknown
@@ -67129,15 +67283,6 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['Snapshot'][]
-        }
-      }
-      /** @description Reducer not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -75242,6 +75387,9 @@ export const memberSortPropertyValues: ReadonlyArray<
 export const merchantMigrationCutoverStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationCutoverStatus']
 > = ['moved', 'skipped', 'failed']
+export const merchantMigrationLemonSqueezyCreateSource_platformValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MerchantMigrationLemonSqueezyCreate']['source_platform']
+> = ['lemon_squeezy']
 export const merchantMigrationOperationKindValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationOperationKind']
 > = ['precheck', 'import', 'cutover']
@@ -75265,6 +75413,9 @@ export const merchantMigrationStepValues: ReadonlyArray<
   'completed',
   'closed',
 ]
+export const merchantMigrationStripeCreateSource_platformValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MerchantMigrationStripeCreate']['source_platform']
+> = ['stripe']
 export const meterCreditEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MeterCreditEvent']['name']
 > = ['meter.credited']
@@ -77462,6 +77613,7 @@ export const subscriptionStatusValues: ReadonlyArray<
   'canceled',
   'unpaid',
   'paused',
+  'trial_ended',
 ]
 export const subscriptionUncanceledEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionUncanceledEvent']['name']

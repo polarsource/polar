@@ -304,6 +304,8 @@ jobs:
           egress-policy: audit
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # The check ignores variables added to terraform/ in the last 7 days
 
       - name: Find POLAR_* variables nothing reads
         id: check
@@ -361,7 +363,8 @@ jobs:
 
             A credential nobody reads is a credential nobody watches. Remove them from
             `terraform/`, or add them to `ALLOWED` in `server/scripts/check_env_vars.py`
-            with a reason.
+            with a reason. Variables added to `terraform/` in the last 7 days are not
+            reported.
 
             This check does not block the merge.
 

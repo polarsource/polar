@@ -392,9 +392,7 @@ class TestUpdateDefaultPaymentMethod:
 
         stripe_service_mock.update_customer.assert_awaited_once()
         call_kwargs = stripe_service_mock.update_customer.await_args.kwargs
-        assert call_kwargs["invoice_settings"] == {
-            "default_payment_method": payment_method.processor_id,
-        }
+        assert "invoice_settings" not in call_kwargs
 
 
 @pytest.mark.anyio

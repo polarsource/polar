@@ -1,5 +1,6 @@
 export {
   MissingExternalIdError,
+  NotReadyError,
   Outpost,
   outpost,
   PolarOutpostError,

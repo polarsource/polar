@@ -1,5 +1,5 @@
-import { Effect, Schema } from 'effect'
-import { Command, Flag, Prompt } from 'effect/cli'
+import { Effect, Option, Schema } from 'effect'
+import { Argument, Command, Flag, Prompt } from 'effect/cli'
 import {
   ActiveOrganization,
   AuthError,
@@ -183,7 +183,7 @@ const selectionLines = (selection: Selection) => {
       return [
         ui.warning('Organization selection requires an interactive terminal'),
         ui.step(
-          `Run ${ui.command(orgCommand)} interactively, or use POLAR_ACCESS_TOKEN with ${ui.command('--org <id>')} in CI`,
+          `Run ${ui.command('polar auth list')} to see them, then ${ui.command(`${orgCommand} <id>`)} or pass ${ui.command('--org <id>')} on a command`,
         ),
         ui.blank,
       ]
@@ -362,11 +362,28 @@ const list = Command.make('list', {}).pipe(
   }),
 )
 
-const org = Command.make('org', {}).pipe(
+const org = Command.make('org', {
+  organization: Argument.String('organization').pipe(
+    Argument.withDescription(
+      'Organization ID or slug. Omit to pick from a list',
+    ),
+    Argument.optional,
+  ),
+}).pipe(
   Command.withDescription('Choose the active organization'),
+  Command.withExamples([
+    {
+      command: 'polar auth org',
+      description: 'Pick the active organization from a list',
+    },
+    {
+      command: 'polar auth org acme',
+      description: 'Set it by slug or ID, for scripts and agents',
+    },
+  ]),
   output({
     result: Selection,
-    run: () =>
+    run: ({ organization }) =>
       Effect.gen(function* () {
         const auth = yield* Auth
         if (yield* auth.override) {
@@ -378,6 +395,12 @@ const org = Command.make('org', {}).pipe(
           return yield* new AuthError({
             message: `Not logged in. Run ${loginCommand('sandbox')} or ${loginCommand('production')}.`,
           })
+        }
+        if (Option.isSome(organization)) {
+          const organizations = yield* Organizations
+          return yield* activate(
+            yield* organizations.resolve(organization.value),
+          )
         }
         return yield* selectOrganization
       }),

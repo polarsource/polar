@@ -35,7 +35,8 @@ import {
   useQueryStates,
 } from 'nuqs'
 import React from 'react'
-import SalesFilters, { type ProductFilter } from './SalesFilters'
+import { type ProductFilter } from '@/components/Products/ProductSelect'
+import SalesFilters from './SalesFilters'
 
 const filterParsers = {
   product_id: parseAsArrayOf(parseAsString),

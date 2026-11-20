@@ -61,7 +61,21 @@ describe("CONFIRM then APPLY_SNAPSHOT", () => {
             .multi()
             .hset(stateKey, ...fields)
             .hset(pendingKey, ...entries)
-            .evalsha(confirmSha, 2, stateKey, pendingKey, newestBucketStart, "", ...ids)
+            .evalsha(
+              confirmSha,
+              4,
+              "outpost:v1:outbox",
+              "outpost:v1:outbox",
+              stateKey,
+              pendingKey,
+              "",
+              "",
+              0,
+              0,
+              newestBucketStart,
+              ids.length,
+              ...ids,
+            )
             .evalsha(applySnapshotSha, 1, stateKey, cutoff, cutoff + 1, 1000, 123456, 1, 999)
             .exec();
           for (const [error] of results ?? []) if (error) throw error;

@@ -110,8 +110,9 @@ class TestChanges:
 
         assert changes["changes"] == []
         assert changes["has_more"] is False
-        assert changes["reset"] is False
-        assert changes["configuration_changed"] is False
+        # The changes before the first cursor are not served: the client starts over.
+        assert changes["reset"] is True
+        assert changes["configuration_changed"] is True
         assert changes["next_poll_in"] == 30
         assert (await _get_changes(client, changes["cursor"]))["changes"] == []
 
@@ -536,7 +537,21 @@ class TestChanges:
         changes = await _get_changes(client, "1-0")
 
         assert changes["reset"] is True
-        assert changes["configuration_changed"] is False
+        # The new cursor is past the configuration change: the reset reports it.
+        assert changes["configuration_changed"] is True
+        assert (await _get_changes(client, changes["cursor"]))["reset"] is False
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_reset_when_the_cursor_is_ahead_of_the_clock(
+        self, client: httpx2.AsyncClient, redis: Redis, organization: Organization
+    ) -> None:
+        seconds, _ = await redis.time()
+        await _append_change(redis, organization, {"type": "configuration"})
+
+        changes = await _get_changes(client, f"{(seconds + 60) * 1000}-0")
+
+        assert changes["reset"] is True
+        assert changes["configuration_changed"] is True
         assert (await _get_changes(client, changes["cursor"]))["reset"] is False
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
@@ -922,18 +937,32 @@ class TestRequests:
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_meter_usage_unknown_reducer(
-        self, client: httpx2.AsyncClient
+        self,
+        save_fixture: SaveFixture,
+        client: httpx2.AsyncClient,
+        organization: Organization,
+        meter: Meter,
     ) -> None:
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+
+        # A reducer Polar does not know does not cost the other identities of the
+        # request their snapshots.
         response = await client.post(
             "/v1/outpost/meter-usage",
             json={
                 "identities": [
-                    {"reducer_id": str(uuid.uuid4()), "external_customer_id": "alice"}
+                    {"reducer_id": str(uuid.uuid4()), "external_customer_id": "alice"},
+                    {"reducer_id": str(reducer.id), "external_customer_id": "alice"},
                 ]
             },
         )
 
-        assert response.status_code == 404
+        assert response.status_code == 200
+        assert [snapshot["reducer_id"] for snapshot in response.json()] == [
+            str(reducer.id)
+        ]
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_meter_usage_too_many_identities(
@@ -1068,6 +1097,7 @@ class TestRequests:
                 save_fixture,
                 organization=organization,
                 timestamp=timestamp,
+                ingested_at=timestamp,
                 external_customer_id="alice",
                 external_id=external_id,
             )
@@ -1105,6 +1135,7 @@ class TestRequests:
             save_fixture,
             organization=organization,
             timestamp=bucket_start + timedelta(seconds=1),
+            ingested_at=bucket_start + timedelta(seconds=1),
             external_customer_id="alice",
             external_id="ingested",
         )
@@ -1127,6 +1158,53 @@ class TestRequests:
         assert confirmation["snapshot"]["cold_until"] <= to_epoch_microseconds(
             bucket_start
         )
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_confirm_event_ingested_after_its_bucket_closed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        client: httpx2.AsyncClient,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        synced_end = await _save_synced_bucket(
+            save_fixture, organization, reducer, "alice", 1
+        )
+        # Ingest adds an event of a closed bucket to its row at once, and no sync
+        # visits that bucket again: the snapshot counts the event, so it is confirmed.
+        bucket_start = synced_end - timedelta(minutes=20)
+        event = await create_event(
+            save_fixture,
+            organization=organization,
+            timestamp=bucket_start + timedelta(seconds=1),
+            external_customer_id="alice",
+            external_id="late",
+        )
+        await reducer_service.rollup(session, redis, organization.id, [event])
+        await session.flush()
+
+        response = await client.post(
+            "/v1/outpost/confirm",
+            json={
+                "reducer_id": str(reducer.id),
+                "external_customer_id": "alice",
+                "bucket_start": to_epoch_microseconds(bucket_start),
+                "ids": ["late"],
+            },
+        )
+
+        assert response.status_code == 200
+        confirmation = response.json()
+        assert confirmation["snapshot"]["cold_until"] == to_epoch_microseconds(
+            synced_end
+        )
+        assert confirmation["snapshot"]["count"] == 2
+        assert confirmation["ids"] == ["late"]
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_confirm_bucket_start_out_of_range(

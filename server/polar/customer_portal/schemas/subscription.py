@@ -35,7 +35,7 @@ from polar.subscription.schemas import (
     SubscriptionBase,
     SubscriptionMeterBase,
 )
-from polar.version import V2026_10
+from polar.version import V2026_10, V2027_01
 
 from .organization import CustomerOrganization
 
@@ -66,6 +66,9 @@ class CustomerSubscription(SubscriptionBase):
         deprecated="Use `customer_id`.",
     )
     product: CustomerSubscriptionProduct
+    payment_method_id: Annotated[UUID4 | None, Version(starting_from=V2027_01)] = Field(
+        description="ID of the payment method pinned to the subscription, if any."
+    )
 
     price: Annotated[SkipJsonSchema[ProductPrice], Version(up_to=V2026_10)] = Field(
         deprecated="Use `prices` instead.",
@@ -115,7 +118,7 @@ class CustomerSubscriptionUpdateUnits(Schema):
     )
 
 
-class CustomerSubscriptionChangePreviewProduct(Schema):
+class CustomerSubscriptionChangeProduct(Schema):
     model_config = ConfigDict(extra="forbid")
 
     product_id: UUID4 = Field(
@@ -123,7 +126,7 @@ class CustomerSubscriptionChangePreviewProduct(Schema):
     )
 
 
-class CustomerSubscriptionChangePreviewSeats(Schema):
+class CustomerSubscriptionChangeSeats(Schema):
     model_config = ConfigDict(extra="forbid")
 
     seats: Int32 = Field(
@@ -132,7 +135,7 @@ class CustomerSubscriptionChangePreviewSeats(Schema):
     )
 
 
-class CustomerSubscriptionChangePreviewUnits(Schema):
+class CustomerSubscriptionChangeUnits(Schema):
     model_config = ConfigDict(extra="forbid")
 
     units: Int32 = Field(
@@ -141,11 +144,11 @@ class CustomerSubscriptionChangePreviewUnits(Schema):
     )
 
 
-CustomerSubscriptionChangePreview = Annotated[
-    CustomerSubscriptionChangePreviewProduct
-    | CustomerSubscriptionChangePreviewSeats
-    | CustomerSubscriptionChangePreviewUnits,
-    SetSchemaReference("CustomerSubscriptionChangePreview"),
+CustomerSubscriptionChange = Annotated[
+    CustomerSubscriptionChangeProduct
+    | CustomerSubscriptionChangeSeats
+    | CustomerSubscriptionChangeUnits,
+    SetSchemaReference("CustomerSubscriptionChange"),
 ]
 
 

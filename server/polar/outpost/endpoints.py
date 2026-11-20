@@ -57,17 +57,14 @@ async def configuration(
     return await outpost_service.get_configuration(session, auth_subject.subject)
 
 
-@router.post(
-    "/meter-usage",
-    response_model=list[Snapshot],
-    responses={404: ReducerNotFound},
-)
+@router.post("/meter-usage", response_model=list[Snapshot])
 async def meter_usage(
     payload: MeterUsageRequest,
     auth_subject: OutpostWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> list[Snapshot]:
-    """The snapshot of every identity of each requested customer."""
+    """The snapshot of every identity of each requested customer. An identity whose
+    reducer Polar does not know has none."""
     return await outpost_service.get_requested_meter_usage(
         session, auth_subject.subject, payload.identities
     )

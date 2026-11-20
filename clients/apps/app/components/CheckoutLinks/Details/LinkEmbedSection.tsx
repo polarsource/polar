@@ -3,6 +3,7 @@ import { Text } from '@/components/Shared/Text'
 import { Touchable } from '@/components/Shared/Touchable'
 import { useTheme } from '@/design-system/useTheme'
 import { useToast } from '@/providers/ToastProvider'
+import { capture } from '@/utils/posthog'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import * as Clipboard from 'expo-clipboard'
 import { useCallback } from 'react'
@@ -17,6 +18,7 @@ export const LinkEmbedSection = ({ url }: LinkEmbedSectionProps) => {
 
   const handleCopyLink = useCallback(async () => {
     await Clipboard.setStringAsync(url)
+    capture('app:checkout_links:link:copy')
     toast.showInfo('Copied to clipboard')
   }, [url, toast])
 

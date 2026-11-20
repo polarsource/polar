@@ -9,6 +9,7 @@ import {
   data,
   mergeInput,
   nullableStringFlag,
+  org,
 } from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['licenseKeys']['update']>[1]>
@@ -18,6 +19,7 @@ export const command = Command.make(
   {
     confirm,
     fields,
+    org,
     path: {
       id: Argument.String('id'),
     },
@@ -79,6 +81,7 @@ export const command = Command.make(
           confirmationInput['status'] === 'revoked' ||
           confirmationInput['status'] === 'disabled',
         confirm: config.confirm,
+        organizationId: config.org,
         fields: config.fields,
         preview: {
           fields: [

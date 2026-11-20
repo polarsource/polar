@@ -10,6 +10,7 @@ import {
   mergeInput,
   missingFlags,
   nullableStringFlag,
+  org,
 } from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['customerMeters']['credits']>[0]>
@@ -19,6 +20,7 @@ export const command = Command.make(
   {
     confirm,
     fields,
+    org,
     data,
     input: {
       units: Flag.Int('units').pipe(
@@ -82,6 +84,7 @@ export const command = Command.make(
         method: 'POST',
         requiresConfirmation: true,
         confirm: config.confirm,
+        organizationId: config.org,
         fields: config.fields,
         invoke: (client) => client.customerMeters.credits(body),
       })

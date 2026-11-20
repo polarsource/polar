@@ -61,28 +61,30 @@ variable "backend_config" {
 
 variable "backend_secrets" {
   type = object({
-    mcp_oauth2_client_id           = string
-    stripe_publishable_key         = string
-    discord_bot_token              = string
-    discord_client_id              = string
-    discord_client_secret          = string
-    discord_proxy_url              = optional(string, "")
-    posthog_project_api_key        = optional(string, "")
-    resend_api_key                 = string
-    resend_active_users_segment_id = optional(string, "")
-    resend_webhook_secret          = optional(string, "")
-    logo_dev_publishable_key       = optional(string, "")
-    sentry_dsn                     = string
-    plain_request_signing_secret   = optional(string, "")
-    plain_token                    = optional(string, "")
-    plain_chat_secret              = optional(string, "")
-    app_review_email               = optional(string, "")
-    app_review_otp_code            = optional(string, "")
-    chargeback_stop_webhook_secret = optional(string, "")
-    numeral_api_key                = optional(string, "")
-    firecrawl_api_key              = optional(string, "")
-    linear_api_key                 = optional(string, "")
-    turnstile_secret               = string
+    mcp_oauth2_client_id               = string
+    stripe_publishable_key             = string
+    discord_bot_token                  = string
+    discord_client_id                  = string
+    discord_client_secret              = string
+    discord_proxy_url                  = optional(string, "")
+    posthog_project_api_key            = optional(string, "")
+    resend_api_key                     = string
+    resend_active_users_segment_id     = optional(string, "")
+    resend_webhook_secret              = optional(string, "")
+    logo_dev_publishable_key           = optional(string, "")
+    sentry_dsn                         = string
+    plain_request_signing_secret       = optional(string, "")
+    plain_token                        = optional(string, "")
+    plain_chat_secret                  = optional(string, "")
+    app_review_email                   = optional(string, "")
+    app_review_otp_code                = optional(string, "")
+    chargeback_stop_webhook_secret     = optional(string, "")
+    payment_retry_alert_api_key        = optional(string, "")
+    payment_retry_alert_webhook_secret = optional(string, "")
+    numeral_api_key                    = optional(string, "")
+    firecrawl_api_key                  = optional(string, "")
+    linear_api_key                     = optional(string, "")
+    turnstile_secret                   = string
   })
   sensitive = true
 }

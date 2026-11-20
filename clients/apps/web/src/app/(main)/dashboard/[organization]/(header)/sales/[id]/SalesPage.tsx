@@ -22,7 +22,7 @@ import {
 } from '@/components/Orders/DownloadReceipt'
 import { InvoicePreview } from '@/components/Orders/InvoicePreview'
 import { toast } from '@/components/Toast/use-toast'
-import { useCustomFields, useProduct, useSubscription } from '@/hooks/queries'
+import { useProduct, useSubscription } from '@/hooks/queries'
 import { useOrder } from '@/hooks/queries/orders'
 import { usePayments } from '@/hooks/queries/payments'
 import { useRefunds } from '@/hooks/queries/refunds'
@@ -55,7 +55,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
 }) => {
   const { data: order, refetch: refetchOrder } = useOrder(_order.id, _order)
   const { data: product } = useProduct(_order.product_id)
-  const { data: customFields } = useCustomFields(organization.id)
   const { data: payments, isLoading: paymentsLoading } = usePayments(
     organization.id,
     { order_id: _order.id },
@@ -230,7 +229,12 @@ const ClientPage: React.FC<ClientPageProps> = ({
         </OrderSection>
       </Box>
 
-      <OrderSecondaryDetails order={order} customFields={customFields?.items} />
+      <OrderSecondaryDetails
+        order={order}
+        customFields={product?.attached_custom_fields.map(
+          ({ custom_field }) => custom_field,
+        )}
+      />
 
       <OrderPaymentsTable
         payments={orderPayments}

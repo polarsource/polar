@@ -77,6 +77,7 @@ class TestDeriveMeterBillingStates:
             (SubscriptionStatus.past_due, UsagePolicy.charge),
             (SubscriptionStatus.trialing, UsagePolicy.trial),
             (SubscriptionStatus.paused, UsagePolicy.paused),
+            (SubscriptionStatus.trial_ended, UsagePolicy.paused),
             (SubscriptionStatus.incomplete, None),
             (SubscriptionStatus.incomplete_expired, None),
             (SubscriptionStatus.canceled, None),

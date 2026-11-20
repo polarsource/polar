@@ -13,7 +13,7 @@ export function switchStatus(row: SwitchRow): SwitchStatus {
     case 'failed':
       return { label: 'Failed', color: 'red' }
     case 'skipped':
-      return { label: 'Left on Stripe', color: 'yellow' }
+      return { label: 'Not switched', color: 'yellow' }
   }
   if (row.has_payment_method === false) {
     return { label: 'No payment method', color: 'yellow' }

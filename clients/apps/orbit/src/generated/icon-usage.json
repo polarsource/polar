@@ -671,7 +671,7 @@
       "apps/web/src/components/Products/Benefits/components/SortableBenefitRow.tsx",
       "apps/web/src/components/Settings/Billing/BillingPaymentMethods.tsx",
       "apps/web/src/components/Settings/OrganizationEmbedSettings.tsx",
-      "apps/web/src/components/Subscriptions/UpdateSubscriptionDiscountForm.tsx",
+      "apps/web/src/components/Subscriptions/SubscriptionDiscountField.tsx",
       "apps/web/src/components/Toast/index.tsx",
       "packages/orbit/src/components/Alert.tsx",
       "packages/orbit/src/components/Modal.tsx",

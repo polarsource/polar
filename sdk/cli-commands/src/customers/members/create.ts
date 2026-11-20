@@ -9,6 +9,7 @@ import {
   mergeInput,
   missingFlags,
   nullableStringFlag,
+  org,
 } from '../../inputs'
 
 type Body = NonNullable<Parameters<Polar['customers']['members']['create']>[1]>
@@ -17,6 +18,7 @@ export const command = Command.make(
   'create',
   {
     fields,
+    org,
     path: {
       id: Argument.String('id'),
     },
@@ -65,6 +67,7 @@ export const command = Command.make(
         method: 'POST',
         requiresConfirmation: false,
         confirm: false,
+        organizationId: config.org,
         fields: config.fields,
         invoke: (client) =>
           client.customers.members.create(config.path.id, body),

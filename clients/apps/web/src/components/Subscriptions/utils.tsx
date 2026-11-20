@@ -9,6 +9,13 @@ export const subscriptionUpdateValidationDiscriminators = [
   'SubscriptionUpdateSeats',
 ]
 
+export const isDiscountApplicableToProduct = (
+  discount: schemas['Discount'],
+  productId: string,
+): boolean =>
+  discount.products.length === 0 ||
+  discount.products.some((product) => product.id === productId)
+
 export const subscriptionStatusDisplayNames: {
   [key in schemas['SubscriptionStatus']]: string
 } = {
@@ -18,6 +25,7 @@ export const subscriptionStatusDisplayNames: {
   active: 'Active',
   past_due: 'Past due',
   paused: 'Paused',
+  trial_ended: 'Trial ended',
   canceled: 'Canceled',
   unpaid: 'Unpaid',
 }
@@ -32,6 +40,7 @@ export const getSubscriptionStatusColor = (
     case 'trialing':
       return 'blue'
     case 'past_due':
+    case 'trial_ended':
       return 'yellow'
     case 'unpaid':
     case 'canceled':

@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from typing import Literal
 
+import stripe as stripe_lib
+
 PaymentMode = Literal["payment", "subscription", "setup"]
 
 
@@ -97,6 +99,30 @@ PAYMENT_METHOD_RULES: dict[str, PaymentMethodRule] = {
         amount_limits={"eur": (1, 99_999_999)},
     ),
 }
+
+
+# Methods whose confirmation token carries no country but that imply one.
+IMPLIED_COUNTRIES: dict[str, str] = {
+    "bancontact": "BE",
+    "ideal": "NL",
+    "eps": "AT",
+    "kr_card": "KR",
+    "kakao_pay": "KR",
+    "naver_pay": "KR",
+    "samsung_pay": "KR",
+    "upi": "IN",
+    "cashapp": "US",
+}
+
+
+def get_payment_method_country(
+    payment_method_preview: stripe_lib.ConfirmationToken.PaymentMethodPreview,
+) -> str | None:
+    payment_method_type = payment_method_preview.type
+    details = getattr(payment_method_preview, payment_method_type, None)
+    return getattr(details, "country", None) or IMPLIED_COUNTRIES.get(
+        payment_method_type
+    )
 
 
 def get_payment_mode(

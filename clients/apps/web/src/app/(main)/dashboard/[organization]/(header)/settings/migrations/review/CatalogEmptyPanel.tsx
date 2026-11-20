@@ -62,7 +62,7 @@ export function CatalogEmptyPanel({
           onClick={onRerunPrecheck}
           disabled={refreshing}
         >
-          {refreshing ? 'Refreshing…' : 'Refresh from Stripe'}
+          {refreshing ? 'Refreshing…' : 'Refresh catalog'}
         </Button>
       )}
     </Box>

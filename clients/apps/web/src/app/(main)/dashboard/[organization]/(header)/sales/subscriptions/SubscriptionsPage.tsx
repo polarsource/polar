@@ -11,7 +11,7 @@ import {
   subscriptionStatusFilterValues,
   type SubscriptionStatusFilter,
 } from '@/components/Subscriptions/SubscriptionStatusSelect'
-import { type ProductFilter } from '@/components/Subscriptions/SubscriptionsProductSelect'
+import { type ProductFilter } from '@/components/Products/ProductSelect'
 import { useSubscriptions } from '@/hooks/queries'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { DataTableSortingState, getAPIParams } from '@/utils/datatable'
@@ -41,8 +41,8 @@ import React from 'react'
 import SubscriptionFilters from './SubscriptionFilters'
 
 const filterParsers = {
-  product_id: parseAsString,
-  external_product_id: parseAsString,
+  product_id: parseAsArrayOf(parseAsString),
+  external_product_id: parseAsArrayOf(parseAsString),
   status: parseAsStringLiteral(subscriptionStatusFilterValues).withDefault(
     DEFAULT_SUBSCRIPTION_STATUS,
   ),

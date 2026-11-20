@@ -16,6 +16,7 @@ from polar.metering.errors import (
     DropReason,
     MeteringDeliveryError,
     MeteringTimeoutError,
+    retry_after_seconds,
     validate_timeout,
 )
 from polar.metering.events import EventInput
@@ -374,8 +375,13 @@ class BufferedMeteringStrategy:
                 await self.polar.events.ingest(events=batch)
                 break
             except (PolarNetworkError, PolarRateLimitError, PolarServerError) as e:
-                if isinstance(e, PolarRateLimitError) and e.retry_after is not None:
-                    delay = max(float(e.retry_after), 1.0)
+                retry_after = (
+                    retry_after_seconds(e.retry_after)
+                    if isinstance(e, PolarRateLimitError)
+                    else None
+                )
+                if retry_after is not None:
+                    delay = retry_after
                     waited += delay
                     if waited > RETRY_AFTER_BUDGET:
                         return DeliveryFailure(batch, "retry_exhausted", e)

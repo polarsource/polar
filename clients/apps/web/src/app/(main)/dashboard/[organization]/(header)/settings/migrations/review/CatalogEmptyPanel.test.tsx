@@ -35,12 +35,12 @@ describe('CatalogEmptyPanel', () => {
     )
 
     expect(
-      screen.getByRole('heading', { name: 'Refreshing from Stripe' }),
+      screen.getByRole('heading', { name: 'Refreshing your catalog' }),
     ).toBeTruthy()
     expect(
       screen.queryByRole('heading', { name: 'Nothing to import' }),
     ).toBeNull()
-    expect(screen.getByText(/reading your Stripe catalog again/i)).toBeTruthy()
+    expect(screen.getByText(/reading your catalog again/i)).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Refreshing…' })).toBeDisabled()
   })
 
@@ -56,7 +56,7 @@ describe('CatalogEmptyPanel', () => {
       screen.getByRole('heading', { name: 'Nothing to import' }),
     ).toBeTruthy()
     expect(
-      screen.getByRole('button', { name: 'Refresh from Stripe' }),
+      screen.getByRole('button', { name: 'Refresh catalog' }),
     ).toBeEnabled()
   })
 
@@ -71,11 +71,11 @@ describe('CatalogEmptyPanel', () => {
     )
 
     expect(
-      screen.getByRole('heading', { name: 'Refreshing from Stripe' }),
+      screen.getByRole('heading', { name: 'Refreshing your catalog' }),
     ).toBeTruthy()
     expect(screen.getByText(/no progress for a while/i)).toBeTruthy()
     expect(
-      screen.getByRole('button', { name: 'Refresh from Stripe' }),
+      screen.getByRole('button', { name: 'Refresh catalog' }),
     ).toBeEnabled()
   })
 })

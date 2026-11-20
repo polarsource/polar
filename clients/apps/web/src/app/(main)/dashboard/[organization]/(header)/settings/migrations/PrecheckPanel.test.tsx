@@ -52,7 +52,7 @@ describe('PrecheckPanel', () => {
   it('shows the pre-check that create started without asking for a click', () => {
     render(<PrecheckPanel migration={migrationWith(false, 'pending')} />)
 
-    expect(screen.getByText(/reading your stripe catalog/i)).toBeTruthy()
+    expect(screen.getByText(/reading your catalog/i)).toBeTruthy()
     expect(screen.queryByRole('button')).toBeNull()
   })
 

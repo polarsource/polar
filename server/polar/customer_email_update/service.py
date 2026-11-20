@@ -45,8 +45,7 @@ class CustomerEmailUpdateService:
         customer: Customer,
         new_email: str,
     ) -> tuple[CustomerEmailVerification, str]:
-        customer_type = customer.type or CustomerType.individual
-        if customer_type == CustomerType.team:
+        if customer.type == CustomerType.team:
             raise PolarRequestValidationError(
                 [
                     {

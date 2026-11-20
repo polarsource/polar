@@ -522,12 +522,10 @@ class CustomerService:
                 )
 
         # Prevent downgrade from team to individual
-        # NULL type is treated as 'individual' (legacy customers)
-        current_type = customer.type or CustomerType.individual
         if (
             isinstance(customer_update, CustomerUpdate)
             and "type" in customer_update.model_fields_set
-            and current_type == CustomerType.team
+            and customer.type == CustomerType.team
             and customer_update.type != CustomerType.team
         ):
             errors.append(
@@ -614,11 +612,15 @@ class CustomerService:
                     ]
                 ) from e
 
+        exclude = {"email", "tax_id"}
+        if isinstance(customer_update, CustomerUpdate) and customer_update.type is None:
+            exclude.add("type")
+
         try:
             updated_customer = await repository.update(
                 customer,
                 update_dict=customer_update.model_dump(
-                    exclude={"email", "tax_id"}, exclude_unset=True, by_alias=True
+                    exclude=exclude, exclude_unset=True, by_alias=True
                 ),
             )
         except IntegrityError as e:
@@ -649,11 +651,9 @@ class CustomerService:
         """Upgrade a customer to the 'team' type for seat-based purchases.
 
         One-way and idempotent: customers already on 'team' (or any non-individual
-        type) are left untouched. NULL type is treated as 'individual' (legacy
-        customers).
+        type) are left untouched.
         """
-        current_type = customer.type or CustomerType.individual
-        if current_type != CustomerType.individual:
+        if customer.type != CustomerType.individual:
             return customer
 
         repository = CustomerRepository.from_session(session)

@@ -1350,6 +1350,27 @@ class TestUpdateCustomer:
         assert response.status_code == 422
 
     @pytest.mark.auth
+    @pytest.mark.parametrize(
+        ("api_version", "expected_status_code"),
+        [("2026-10", 200), ("2027-01", 422)],
+    )
+    async def test_null_type(
+        self,
+        api_version: str,
+        expected_status_code: int,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        customer: Customer,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/customers/{customer.id}",
+            headers={"Polar-Version": api_version},
+            json={"type": None},
+        )
+
+        assert response.status_code == expected_status_code
+
+    @pytest.mark.auth
     async def test_email_update(
         self,
         save_fixture: SaveFixture,

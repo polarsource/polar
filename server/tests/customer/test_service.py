@@ -791,6 +791,25 @@ class TestUpdate:
 
         assert "downgraded" in exc_info.value.errors()[0]["msg"].lower()
 
+    async def test_null_type_on_individual_ignored(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="individual-null@example.com",
+        )
+
+        updated_customer = await customer_service.update(
+            session, customer, CustomerUpdate(type=None)
+        )
+        await session.flush()
+
+        assert updated_customer.type == CustomerType.individual
+
     async def test_same_type_update_allowed(
         self,
         session: AsyncSession,

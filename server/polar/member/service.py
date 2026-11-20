@@ -714,9 +714,7 @@ class MemberService:
         repository = MemberRepository.from_session(session)
 
         # Individual customers can only have 1 member (the owner)
-        # NULL type is treated as 'individual' (legacy customers)
-        customer_type = customer.type or CustomerType.individual
-        if customer_type == CustomerType.individual:
+        if customer.type == CustomerType.individual:
             existing_members = await repository.list_by_customer(customer_id)
             active_members = [m for m in existing_members if not m.is_deleted]
             if len(active_members) >= 1:

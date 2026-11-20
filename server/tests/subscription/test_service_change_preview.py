@@ -67,6 +67,63 @@ class TestCalculateChangePreview:
         assert len(preview.prorations) == 2
         assert preview.proration_amount > 0
         assert preview.total_amount == preview.proration_amount
+        assert preview.proration_behavior == SubscriptionProrationBehavior.prorate
+
+    async def test_prorate_interval_change_reports_invoice(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+            prices=[(50000, "usd")],
+        )
+
+        preview = await subscription_service.calculate_change_preview(
+            session,
+            subscription,
+            product_id=new_product.id,
+            proration_behavior=SubscriptionProrationBehavior.prorate,
+        )
+
+        assert preview.proration_behavior == SubscriptionProrationBehavior.invoice
+
+    async def test_trialing_prorate_interval_change_reports_prorate(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+            prices=[(50000, "usd")],
+            trial_interval=TrialInterval.month,
+            trial_interval_count=3,
+        )
+
+        preview = await subscription_service.calculate_change_preview(
+            session,
+            subscription,
+            product_id=new_product.id,
+            proration_behavior=SubscriptionProrationBehavior.prorate,
+        )
+
+        assert preview.proration_behavior == SubscriptionProrationBehavior.prorate
 
     async def test_upgrade_at_half_period_prices_half_of_each(
         self,

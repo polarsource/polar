@@ -23431,6 +23431,69 @@ export interface components {
       | components['schemas']['CustomerSubscriptionChangeProduct']
       | components['schemas']['CustomerSubscriptionChangeSeats']
       | components['schemas']['CustomerSubscriptionChangeUnits']
+    /**
+     * CustomerSubscriptionChangePreview
+     * @description Preview of what a subscription change would cost, without applying it.
+     */
+    CustomerSubscriptionChangePreview: {
+      /**
+       * Base Amount
+       * @description Base subscription amount in cents (sum of product prices)
+       */
+      base_amount: number
+      /**
+       * Metered Amount
+       * @description Metered usage in cents billed on this invoice. Zero when usage is billed on its own meter cycle, ending before this invoice.
+       */
+      metered_amount: number
+      /**
+       * Proration Amount
+       * @description Net pending proration adjustments in cents from mid-period changes (seat or product changes), to be billed on the next invoice.
+       */
+      proration_amount: number
+      /**
+       * Prorations
+       * @description Itemized pending proration adjustments to be billed on the next invoice.
+       */
+      prorations: components['schemas']['SubscriptionChargePreviewProration'][]
+      /**
+       * Subtotal Amount
+       * @description Subtotal amount in cents (base + metered + prorations, before discount and tax)
+       */
+      subtotal_amount: number
+      /**
+       * Discount Amount
+       * @description Discount amount in cents
+       */
+      discount_amount: number
+      /**
+       * Net Amount
+       * @description Net amount in cents before taxes
+       */
+      net_amount: number
+      /**
+       * Tax Amount
+       * @description Tax amount in cents
+       */
+      tax_amount: number
+      /**
+       * Total Amount
+       * @description Total amount in cents (net + tax, before applying wallet balance)
+       */
+      total_amount: number
+      /**
+       * Applied Balance Amount
+       * @description Wallet balance applied to this charge in cents: negative when the customer's account credit reduces the amount due, positive when the charge clears outstanding debt, zero otherwise.
+       */
+      applied_balance_amount: number
+      /**
+       * Due Amount
+       * @description Amount actually due in cents: total_amount plus the applied wallet balance, floored at zero. This is the figure charged today.
+       */
+      due_amount: number
+      /** @description How the change would be billed. */
+      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+    }
     /** CustomerSubscriptionChangeProduct */
     CustomerSubscriptionChangeProduct: {
       /**
@@ -50092,7 +50155,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['SubscriptionChargePreview']
+          'application/json': components['schemas']['CustomerSubscriptionChangePreview']
         }
       }
       /** @description Previewing this change is not allowed. */

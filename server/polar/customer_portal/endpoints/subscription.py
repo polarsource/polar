@@ -14,6 +14,7 @@ from polar.postgres import get_db_session
 from polar.routing import APIRouter
 from polar.subscription.schemas import (
     SubscriptionCancelPreview,
+    SubscriptionChangePreview,
     SubscriptionChargePreview,
     SubscriptionID,
     SubscriptionMeterChargePreview,
@@ -29,6 +30,7 @@ from ..schemas.subscription import (
     CustomerPortalSubscriptionListParams,
     CustomerSubscription,
     CustomerSubscriptionChange,
+    CustomerSubscriptionChangePreview,
     CustomerSubscriptionRevoke,
     CustomerSubscriptionUpdate,
 )
@@ -206,7 +208,7 @@ async def get_cancel_preview(
 @router.post(
     "/{id}/change-preview",
     summary="Preview Subscription Change",
-    response_model=SubscriptionChargePreview,
+    response_model=CustomerSubscriptionChangePreview,
     responses={
         403: {
             "description": "Previewing this change is not allowed.",
@@ -224,7 +226,7 @@ async def preview_change(
     change: CustomerSubscriptionChange,
     auth_subject: auth.CustomerPortalUnionBillingWrite,
     session: AsyncSession = Depends(get_db_session),
-) -> SubscriptionChargePreview:
+) -> SubscriptionChangePreview:
     """Preview what a subscription change would cost, without applying it."""
     subscription = await customer_subscription_service.get_by_id(
         session, auth_subject, id

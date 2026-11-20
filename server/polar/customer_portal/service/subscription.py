@@ -22,7 +22,7 @@ from polar.models import (
 )
 from polar.models.subscription import CustomerCancellationReason
 from polar.payment_method.service import payment_method as payment_method_service
-from polar.subscription.schemas import SubscriptionChargePreview
+from polar.subscription.schemas import SubscriptionChangePreview
 from polar.subscription.service import (
     AlreadyCanceledSubscription,
     SubscriptionUpdateContext,
@@ -276,7 +276,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
         subscription: Subscription,
         *,
         change: CustomerSubscriptionChange,
-    ) -> SubscriptionChargePreview:
+    ) -> SubscriptionChangePreview:
         organization = subscription.product.organization
         if isinstance(change, CustomerSubscriptionChangeSeats):
             if not organization.customer_portal_subscription_update_seats:

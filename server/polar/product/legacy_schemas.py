@@ -1,9 +1,11 @@
 import builtins
 from typing import Annotated, Literal
 
-from pydantic import BeforeValidator, Discriminator, Field, Tag
+from pydantic import MISSING, BeforeValidator, Discriminator, Field, Tag
 
+from polar.enums import SubscriptionRecurringInterval
 from polar.kit.schemas import SetSchemaReference
+from polar.kit.versioning import Omissible
 from polar.models.product_price import ProductPriceAmountType
 from polar.models.product_price import (
     ProductPriceSeatUnit as ProductPriceSeatUnitModel,
@@ -88,6 +90,26 @@ class ProductUpdate(schemas.ProductUpdate):
     Schema to update a product.
     """
 
-    prices: list[ProductPriceUpdate] | None = Field(  # type: ignore[assignment]
-        default=None, description=PRODUCT_UPDATE_PRICES_DESCRIPTION
+    recurring_interval: Omissible[SubscriptionRecurringInterval] = Field(
+        default=MISSING,
+        description=(
+            "The recurring interval of the product. "
+            "If `None`, the product is a one-time purchase. "
+            "**Can only be set on legacy recurring products. "
+            "Once set, it can't be changed.**"
+        ),
+    )
+    recurring_interval_count: Omissible[int] = Field(
+        default=MISSING,
+        ge=1,
+        le=999,
+        description=(
+            "Number of interval units of the subscription. "
+            "If this is set to 1 the charge will happen every interval (e.g. every month), "
+            "if set to 2 it will be every other month, and so on. "
+            "Once set, it can't be changed.**"
+        ),
+    )
+    prices: Omissible[list[ProductPriceUpdate]] = Field(  # type: ignore[assignment]
+        default=MISSING, description=PRODUCT_UPDATE_PRICES_DESCRIPTION
     )

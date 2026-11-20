@@ -24,6 +24,7 @@ const FIELD_PATTERNS: Record<string, RegExp> = {
     /\.(count|sum|max|min|avg|unique)\(|(?<![\w.])aggregation(?=\s*:)/,
   unit: /\.unit\(|(?<![\w.])unit(?=\s*:)/,
   custom_label: /\.unit\(|(?<![\w.])custom_label(?=\s*:)/,
+  custom_multiplier: /\.unit\(|(?<![\w.])custom_multiplier(?=\s*:)/,
   meter_interval: /\.meterCycle\(|(?<![\w.])meter_interval(?=\s*:)/,
   meter_interval_count: /\.meterCycle\(|(?<![\w.])meter_interval_count(?=\s*:)/,
 }

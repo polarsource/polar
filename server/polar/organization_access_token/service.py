@@ -5,6 +5,7 @@ from typing import Any
 from uuid import UUID
 
 import structlog
+from pydantic import MISSING
 from sqlalchemy import UnaryExpression, asc, desc
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.elements import OrderByList
@@ -190,7 +191,7 @@ class OrganizationAccessTokenService:
         repository = OrganizationAccessTokenRepository.from_session(session)
 
         update_dict = update_schema.model_dump(exclude={"scopes"}, exclude_unset=True)
-        if update_schema.scopes is not None:
+        if update_schema.scopes is not MISSING:
             self._validate_scopes_within_caller(auth_subject, update_schema.scopes)
             update_dict["scope"] = " ".join(update_schema.scopes)
 

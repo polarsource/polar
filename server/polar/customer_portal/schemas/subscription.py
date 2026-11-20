@@ -2,6 +2,7 @@ import inspect
 from typing import Annotated, Literal
 
 from pydantic import (
+    MISSING,
     UUID4,
     AliasChoices,
     AliasPath,
@@ -19,7 +20,7 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
-from polar.kit.versioning import QuerySchema, Version
+from polar.kit.versioning import Omissible, QuerySchema, Version
 from polar.meter.schemas import NAME_DESCRIPTION as METER_NAME_DESCRIPTION
 from polar.models.subscription import CustomerCancellationReason
 from polar.product.schemas import (
@@ -155,8 +156,8 @@ CustomerSubscriptionChange = Annotated[
 class CustomerSubscriptionCancel(Schema):
     model_config = ConfigDict(extra="forbid")
 
-    cancel_at_period_end: bool | None = Field(
-        None,
+    cancel_at_period_end: Omissible[bool] = Field(
+        MISSING,
         description=inspect.cleandoc(
             """
         Cancel an active subscription once the current period ends.

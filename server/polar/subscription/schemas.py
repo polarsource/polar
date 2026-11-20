@@ -4,6 +4,7 @@ from typing import Annotated, Literal
 
 from fastapi import Path
 from pydantic import (
+    MISSING,
     UUID4,
     AliasChoices,
     AliasPath,
@@ -35,7 +36,7 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
-from polar.kit.versioning import QuerySchema, Version, VersionedJsonSchema
+from polar.kit.versioning import Omissible, QuerySchema, Version, VersionedJsonSchema
 from polar.meter.schemas import Meter
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.openapi import destructive_when_equals
@@ -387,28 +388,28 @@ def _discount_input(
 class SubscriptionUpdateBase(MetadataInputMixin, Schema):
     model_config = ConfigDict(extra="forbid")
 
-    product_id: UUID4 | None = Field(
-        default=None,
+    product_id: Omissible[UUID4] = Field(
+        default=MISSING,
         description="Update subscription to another product.",
         examples=[PRODUCT_ID_EXAMPLE],
     )
-    proration_behavior: ProrationBehaviorSetting | None = Field(
-        default=None,
+    proration_behavior: Omissible[ProrationBehaviorSetting] = Field(
+        default=MISSING,
         description=(
             "Determine how to handle the proration billing. "
             "If not provided, will use the default organization setting."
         ),
     )
-    discount_id: UUID4 | None = Field(
-        default=None,
+    discount_id: Omissible[UUID4 | None] = Field(
+        default=MISSING,
         description=(
             "Update the subscription to apply a new discount. "
             "If set to `null`, the discount will be removed."
             " The change will be applied on the next billing cycle."
         ),
     )
-    trial_end: FutureDatetime | Literal["now"] | None = Field(
-        default=None,
+    trial_end: Omissible[FutureDatetime | Literal["now"]] = Field(
+        default=MISSING,
         description=(
             "Set or extend the trial period of the subscription. "
             "If set to `now`, the trial will end immediately and the first "
@@ -418,20 +419,14 @@ class SubscriptionUpdateBase(MetadataInputMixin, Schema):
     )
 
     @property
-    def has_product(self) -> bool:
-        return self.product_id is not None
-
-    @property
-    def has_trial_end(self) -> bool:
-        return self.trial_end is not None
-
-    @property
     def has_metadata(self) -> bool:
         return "metadata" in self.model_fields_set
 
     @property
     def discount(self) -> UUID4 | Literal["unset"] | None:
-        return _discount_input(self.discount_id, self.model_fields_set)
+        if self.discount_id is MISSING:
+            return None
+        return "unset" if self.discount_id is None else self.discount_id
 
 
 class SubscriptionUpdateSeats(Schema):
@@ -441,8 +436,8 @@ class SubscriptionUpdateSeats(Schema):
         description="Update the number of seats for this subscription.",
         ge=1,
     )
-    proration_behavior: ProrationBehaviorSetting | None = Field(
-        default=None,
+    proration_behavior: Omissible[ProrationBehaviorSetting] = Field(
+        default=MISSING,
         description=(
             "Determine how to handle the proration billing. "
             "If not provided, will use the default organization setting."
@@ -457,8 +452,8 @@ class SubscriptionUpdateUnits(Schema):
         description="Update the number of units for this subscription.",
         ge=1,
     )
-    proration_behavior: ProrationBehaviorSetting | None = Field(
-        default=None,
+    proration_behavior: Omissible[ProrationBehaviorSetting] = Field(
+        default=MISSING,
         description=(
             "Determine how to handle the proration billing. "
             "If not provided, will use the default organization setting."

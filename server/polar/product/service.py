@@ -4,6 +4,7 @@ from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from typing import Literal
 
+from pydantic import MISSING
 from sqlalchemy import select
 from sqlalchemy.orm import contains_eager, selectinload, undefer
 
@@ -69,6 +70,7 @@ from polar.product.repository import ProductRepository
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
+from .legacy_schemas import ProductUpdate as LegacyProductUpdate
 from .name_check import FLAGGED_PRODUCT_PHRASES
 from .schemas import (
     ExistingProductPrice,
@@ -323,7 +325,7 @@ class ProductService:
             )
 
         if (
-            create_schema.external_id is not None
+            create_schema.external_id is not MISSING
             and await repository.get_by_external_id_and_organization(
                 create_schema.external_id, organization.id
             )
@@ -444,7 +446,7 @@ class ProductService:
         errors: list[ValidationError] = []
 
         if (
-            "external_id" in update_schema.model_fields_set
+            update_schema.external_id is not MISSING
             and update_schema.external_id != product.external_id
         ):
             repository = ProductRepository.from_session(session)
@@ -457,11 +459,8 @@ class ProductService:
                         "input": update_schema.external_id,
                     }
                 )
-            elif (
-                update_schema.external_id is not None
-                and await repository.get_by_external_id_and_organization(
-                    update_schema.external_id, product.organization_id
-                )
+            elif await repository.get_by_external_id_and_organization(
+                update_schema.external_id, product.organization_id
             ):
                 errors.append(
                     {
@@ -475,7 +474,7 @@ class ProductService:
         # Validate prices
         existing_prices = set(product.prices)
         added_prices: list[ProductPrice] = []
-        if update_schema.prices is not None:
+        if update_schema.prices is not MISSING:
             (
                 _,
                 existing_prices,
@@ -492,56 +491,18 @@ class ProductService:
             )
             errors.extend(prices_errors)
 
-        # Prevent products from changing their recurring interval
-        if (
-            update_schema.recurring_interval is not None
-            or update_schema.recurring_interval_count is not None
-        ) and (
-            (
-                update_schema.recurring_interval is not None
-                and update_schema.recurring_interval != product.recurring_interval
-            )
-            or (
-                update_schema.recurring_interval_count is not None
-                and update_schema.recurring_interval_count
-                != product.recurring_interval_count
-            )
-        ):
-            errors.append(
-                {
-                    "type": "value_error",
-                    "loc": ("body", "recurring_interval"),
-                    "msg": "Recurring interval cannot be changed.",
-                    "input": update_schema.recurring_interval,
-                }
-            )
-
-        if (
-            "recurring_interval" in update_schema.model_fields_set
-            and update_schema.recurring_interval is None
-            and product.recurring_interval is not None
-        ):
-            errors.append(
-                {
-                    "type": "value_error",
-                    "loc": ("body", "recurring_interval"),
-                    "msg": "Recurring interval cannot be changed.",
-                    "input": update_schema.recurring_interval,
-                }
-            )
-        if (
-            "recurring_interval_count" in update_schema.model_fields_set
-            and update_schema.recurring_interval_count is None
-            and product.recurring_interval_count is not None
-        ):
-            errors.append(
-                {
-                    "type": "value_error",
-                    "loc": ("body", "recurring_interval_count"),
-                    "msg": "Recurring interval cannot be changed.",
-                    "input": update_schema.recurring_interval_count,
-                }
-            )
+        if isinstance(update_schema, LegacyProductUpdate):
+            for field in ("recurring_interval", "recurring_interval_count"):
+                value = getattr(update_schema, field)
+                if value is not MISSING and value != getattr(product, field):
+                    errors.append(
+                        {
+                            "type": "value_error",
+                            "loc": ("body", field),
+                            "msg": "Recurring interval cannot be changed.",
+                            "input": value,
+                        }
+                    )
 
         # Prevent trying to add trial configuration to non-recurring products
         if (
@@ -565,7 +526,7 @@ class ProductService:
                 ]
             )
 
-        if update_schema.medias is not None:
+        if update_schema.medias is not MISSING:
             # Lock the product row and reload product_medias. Two transactions
             # otherwise both delete the rows and insert the same order values.
             await session.refresh(product, {"product_medias"}, with_for_update=True)
@@ -598,7 +559,7 @@ class ProductService:
             except _SavepointRollback:
                 errors.extend(medias_errors)
 
-        if update_schema.attached_custom_fields is not None:
+        if update_schema.attached_custom_fields is not MISSING:
             # Lock the product row and reload attached_custom_fields. Two
             # transactions otherwise both delete the rows and insert order=0.
             await session.refresh(
@@ -649,7 +610,7 @@ class ProductService:
         if product.is_archived and update_schema.is_archived is False:
             product = await self._unarchive(product)
 
-        if update_schema.name is not None and update_schema.name != product.name:
+        if update_schema.name is not MISSING and update_schema.name != product.name:
             product.name = update_schema.name
         if (
             update_schema.description is not None
@@ -657,17 +618,14 @@ class ProductService:
         ):
             product.description = update_schema.description
 
-        if update_schema.recurring_interval is not None:
-            product.recurring_interval = update_schema.recurring_interval
-
         deleted_prices = set(product.prices) - existing_prices
         for deleted_price in deleted_prices:
             deleted_price.is_archived = True
 
-        if update_schema.is_archived:
+        if update_schema.is_archived is True:
             product = await self._archive(session, product)
 
-        if update_schema.trial_payment_setup_required is not None:
+        if update_schema.trial_payment_setup_required is not MISSING:
             product.trial_payment_setup_required = (
                 update_schema.trial_payment_setup_required
             )

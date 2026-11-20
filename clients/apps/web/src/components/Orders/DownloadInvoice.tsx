@@ -131,9 +131,9 @@ const DownloadInvoice = ({
     {
       defaultValues: {
         ...order,
-        billing_address: order.billing_address as
+        billing_address: (order.billing_address ?? undefined) as
           | schemas['AddressInput']
-          | null,
+          | undefined,
       },
     },
   )

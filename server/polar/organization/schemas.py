@@ -5,6 +5,7 @@ from typing import Annotated, Any, Literal, Self
 from urllib.parse import urlparse
 
 from pydantic import (
+    MISSING,
     UUID4,
     AfterValidator,
     BeforeValidator,
@@ -31,7 +32,7 @@ from polar.kit.schemas import (
     SlugValidator,
     TimestampedSchema,
 )
-from polar.kit.versioning import QuerySchema, Version
+from polar.kit.versioning import Omissible, QuerySchema, Version
 from polar.models.organization import (
     OrganizationCustomerEmailSettings,
     OrganizationCustomerPortalSettings,
@@ -309,8 +310,8 @@ class OrganizationFeatureSettingsUpdate(Schema):
         False,
         description="If this organization has checkout localization enabled",
     )
-    overview_metrics: OverviewMetrics = Field(
-        None,
+    overview_metrics: Omissible[list[str]] = Field(
+        MISSING,
         description="Ordered list of metric slugs shown on the dashboard overview.",
     )
 
@@ -737,38 +738,38 @@ class OrganizationCreate(Schema):
 
 
 class OrganizationUpdate(Schema):
-    name: NameInput | None = None
+    name: Omissible[NameInput] = MISSING
     avatar_url: AvatarUrl | None = None
 
     email: EmailStrDNS | None = Field(None, description="Public support email.")
     website: HttpUrlToStr | None = Field(
         None, description="Official website of the organization."
     )
-    socials: list[OrganizationSocialLink] | None = Field(
-        None, description="Links to social profiles."
+    socials: Omissible[list[OrganizationSocialLink]] = Field(
+        MISSING, description="Links to social profiles."
     )
-    details: OrganizationDetailsInput | None = Field(
-        None,
+    details: Omissible[OrganizationDetailsInput] = Field(
+        MISSING,
         description="Additional, private, business details Polar needs about active organizations for compliance (KYC).",
     )
     country: CountryAlpha2Input | None = Field(
         None, description="Two-letter country code (ISO 3166-1 alpha-2)."
     )
 
-    feature_settings: OrganizationFeatureSettingsUpdate | None = None
-    subscription_settings: OrganizationSubscriptionSettings | None = None
-    customer_email_settings: OrganizationCustomerEmailSettings | None = None
-    customer_portal_settings: OrganizationCustomerPortalSettings | None = None
-    dispute_settings: OrganizationDisputeSettingsUpdate | None = None
-    embed_hosts: EmbedHostsInput | None = None
-    default_presentment_currency: PresentmentCurrency | None = Field(
-        None, description="Default presentment currency for the organization"
+    feature_settings: Omissible[OrganizationFeatureSettingsUpdate] = MISSING
+    subscription_settings: Omissible[OrganizationSubscriptionSettings] = MISSING
+    customer_email_settings: Omissible[OrganizationCustomerEmailSettings] = MISSING
+    customer_portal_settings: Omissible[OrganizationCustomerPortalSettings] = MISSING
+    dispute_settings: Omissible[OrganizationDisputeSettingsUpdate] = MISSING
+    embed_hosts: Omissible[EmbedHostsInput] = MISSING
+    default_presentment_currency: Omissible[PresentmentCurrency] = Field(
+        MISSING, description="Default presentment currency for the organization"
     )
-    default_tax_behavior: TaxBehaviorOption | None = Field(
-        None, description="Default tax behavior applied on products."
+    default_tax_behavior: Omissible[TaxBehaviorOption] = Field(
+        MISSING, description="Default tax behavior applied on products."
     )
-    sso_enforced: bool | None = Field(
-        None,
+    sso_enforced: Omissible[bool] = Field(
+        MISSING,
         description=(
             "Whether members must access this organization through its SSO "
             "connection. Turning this on requires an active SSO session for "

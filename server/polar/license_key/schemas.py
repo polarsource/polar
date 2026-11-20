@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Annotated, Literal, Self
 
 from dateutil.relativedelta import relativedelta
-from pydantic import UUID4, AliasChoices, AliasPath, Field
+from pydantic import MISSING, UUID4, AliasChoices, AliasPath, Field
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.benefit.schemas import BenefitID
@@ -27,7 +27,7 @@ from polar.kit.schemas import (
     TimestampedSchema,
 )
 from polar.kit.utils import generate_uuid, utc_now
-from polar.kit.versioning import QuerySchema, Version
+from polar.kit.versioning import Omissible, QuerySchema, Version
 from polar.models.license_key import LicenseKeyStatus
 from polar.models.order import OrderStatus
 from polar.models.subscription import SubscriptionStatus
@@ -287,8 +287,8 @@ class LicenseKeyActivationCreated(LicenseKeyActivationRead):
 
 
 class LicenseKeyUpdate(Schema):
-    status: LicenseKeyStatus | None = Field(
-        default=None,
+    status: Omissible[LicenseKeyStatus] = Field(
+        default=MISSING,
         json_schema_extra=destructive_when_one_of("revoked", "disabled"),
     )
     usage: Int32 = 0

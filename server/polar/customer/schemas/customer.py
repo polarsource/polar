@@ -5,17 +5,17 @@ from typing import Annotated, Literal
 from annotated_types import MaxLen
 from fastapi import Path
 from pydantic import (
+    MISSING,
     UUID4,
     AfterValidator,
+    BeforeValidator,
     Discriminator,
     Field,
     Tag,
     TypeAdapter,
-    field_validator,
     model_validator,
 )
 from pydantic.aliases import AliasChoices
-from pydantic.json_schema import JsonSchemaValue
 
 from polar.kit.address import Address, AddressInput
 from polar.kit.email import EmailStrDNS
@@ -35,12 +35,10 @@ from polar.kit.schemas import (
     Schema,
     SetSchemaReference,
     TimestampedSchema,
+    empty_str_to_none,
 )
 from polar.kit.time_queries import TimeInterval
-from polar.kit.versioning import (
-    _ACTIVE_API_VERSION,
-    QuerySchema,
-)
+from polar.kit.versioning import Omissible, QuerySchema
 from polar.member import MemberOwnerCreate
 from polar.models.customer import CustomerType
 from polar.organization.schemas import OrganizationID
@@ -50,7 +48,6 @@ from polar.payment_method.schemas import (
     PaymentMethodKrCard,
 )
 from polar.tax.tax_id import TaxID
-from polar.version import V2027_01
 
 CustomerID = Annotated[UUID4, Path(description="The customer ID.")]
 ExternalCustomerID = Annotated[str, Path(description="The customer external ID.")]
@@ -172,49 +169,29 @@ CustomerCreate = Annotated[
 
 
 class CustomerUpdateBase(MetadataInputMixin, Schema):
-    email: EmailStrDNS | None = Field(
-        default=None, description=_email_description, examples=[_email_example]
+    email: Omissible[EmailStrDNS] = Field(
+        default=MISSING, description=_email_description, examples=[_email_example]
     )
     name: CustomerNameInput | None = None
-    billing_address: AddressInput | None = None
-    tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
+    billing_address: Omissible[AddressInput] = MISSING
+    tax_id: Annotated[Omissible[str | None], EmptyStrToNoneValidator] = MISSING
     locale: Locale | None = None
 
 
-def _is_type_non_nullable() -> bool:
-    active_version = _ACTIVE_API_VERSION.get()
-    return active_version is not None and active_version >= V2027_01
-
-
-def _drop_null_type_from_json_schema(schema: JsonSchemaValue) -> None:
-    if _is_type_non_nullable():
-        del schema["default"]
-        (type_schema,) = [s for s in schema.pop("anyOf") if s != {"type": "null"}]
-        schema.update(type_schema)
-
-
 class CustomerUpdate(CustomerUpdateBase):
-    external_id: Annotated[str | None, EmptyStrToNoneValidator] = Field(
-        default=None,
+    external_id: Omissible[Annotated[str, BeforeValidator(empty_str_to_none)]] = Field(
+        default=MISSING,
         description=_external_id_description,
         examples=[_external_id_example],
     )
-    type: CustomerType | None = Field(
-        default=None,
+    type: Omissible[CustomerType] = Field(
+        default=MISSING,
         description=(
             "The customer type. "
             "Can only be upgraded from 'individual' to 'team', never downgraded."
         ),
         examples=["team"],
-        json_schema_extra=_drop_null_type_from_json_schema,
     )
-
-    @field_validator("type")
-    @classmethod
-    def _validate_type_not_null(cls, value: CustomerType | None) -> CustomerType | None:
-        if value is None and _is_type_non_nullable():
-            raise ValueError("Customer type cannot be null.")
-        return value
 
 
 class CustomerUpdateExternalID(CustomerUpdateBase): ...

@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock
 from zoneinfo import ZoneInfo
 
 import pytest
-from pydantic import ValidationError
+from pydantic import MISSING, ValidationError
 from pytest_mock import MockerFixture
 from sqlalchemy import select
 
@@ -357,6 +357,8 @@ class TestUpdate:
         meter = await create_meter(
             save_fixture, organization=organization, last_billed_event=None
         )
+        original_filter = meter.filter
+        original_aggregation = meter.aggregation
         original_reducer = None
         if has_reducer:
             original_reducer = Reducer(
@@ -371,10 +373,14 @@ class TestUpdate:
             session, meter, meter_update, auth_subject
         )
 
-        if meter_update.filter:
-            assert updated_meter.filter == meter_update.filter
-        if meter_update.aggregation:
-            assert updated_meter.aggregation == meter_update.aggregation
+        assert updated_meter.filter == (
+            original_filter if meter_update.filter is MISSING else meter_update.filter
+        )
+        assert updated_meter.aggregation == (
+            original_aggregation
+            if meter_update.aggregation is MISSING
+            else meter_update.aggregation
+        )
         reducer = (
             await session.scalars(
                 select(Reducer)

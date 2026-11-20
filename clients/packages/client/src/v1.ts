@@ -10193,7 +10193,7 @@ export interface components {
        * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
-      external_id?: string | null
+      external_id?: string
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -10367,7 +10367,7 @@ export interface components {
        * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
-      external_id?: string | null
+      external_id?: string
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -10389,7 +10389,7 @@ export interface components {
        * Description
        * @description The description of the benefit. Will be displayed on products having this benefit.
        */
-      description?: string | null
+      description?: string
       /** @description The visibility of the benefit in the customer portal. */
       visibility?: components['schemas']['BenefitVisibility'] | null
       /**
@@ -10397,7 +10397,7 @@ export interface components {
        * @constant
        */
       type: 'custom'
-      properties?: components['schemas']['BenefitCustomProperties'] | null
+      properties?: components['schemas']['BenefitCustomProperties']
     }
     /**
      * BenefitCycledEvent
@@ -10561,7 +10561,7 @@ export interface components {
        * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
-      external_id?: string | null
+      external_id?: string
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -10764,7 +10764,7 @@ export interface components {
        * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
-      external_id?: string | null
+      external_id?: string
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -10786,15 +10786,13 @@ export interface components {
        * Description
        * @description The description of the benefit. Will be displayed on products having this benefit.
        */
-      description?: string | null
+      description?: string
       /**
        * Type
        * @constant
        */
       type: 'discord'
-      properties?:
-        | components['schemas']['BenefitDiscordCreateProperties']
-        | null
+      properties?: components['schemas']['BenefitDiscordCreateProperties']
     }
     /** BenefitDownloadableFile */
     BenefitDownloadableFile: {
@@ -10938,7 +10936,7 @@ export interface components {
        * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
-      external_id?: string | null
+      external_id?: string
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -11114,7 +11112,7 @@ export interface components {
        * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
-      external_id?: string | null
+      external_id?: string
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -11136,15 +11134,13 @@ export interface components {
        * Description
        * @description The description of the benefit. Will be displayed on products having this benefit.
        */
-      description?: string | null
+      description?: string
       /**
        * Type
        * @constant
        */
       type: 'downloadables'
-      properties?:
-        | components['schemas']['BenefitDownloadablesCreateProperties']
-        | null
+      properties?: components['schemas']['BenefitDownloadablesCreateProperties']
     }
     /**
      * BenefitFeatureFlag
@@ -11236,7 +11232,7 @@ export interface components {
        * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
-      external_id?: string | null
+      external_id?: string
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -11401,7 +11397,7 @@ export interface components {
        * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
-      external_id?: string | null
+      external_id?: string
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -11423,7 +11419,7 @@ export interface components {
        * Description
        * @description The description of the benefit. Will be displayed on products having this benefit.
        */
-      description?: string | null
+      description?: string
       /** @description The visibility of the benefit in the customer portal. */
       visibility?: components['schemas']['BenefitVisibility'] | null
       /**
@@ -11431,7 +11427,7 @@ export interface components {
        * @constant
        */
       type: 'feature_flag'
-      properties?: components['schemas']['BenefitFeatureFlagProperties'] | null
+      properties?: components['schemas']['BenefitFeatureFlagProperties']
     }
     /**
      * BenefitGitHubRepository
@@ -11519,7 +11515,7 @@ export interface components {
        * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
-      external_id?: string | null
+      external_id?: string
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -11735,7 +11731,7 @@ export interface components {
        * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
-      external_id?: string | null
+      external_id?: string
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -11757,15 +11753,13 @@ export interface components {
        * Description
        * @description The description of the benefit. Will be displayed on products having this benefit.
        */
-      description?: string | null
+      description?: string
       /**
        * Type
        * @constant
        */
       type: 'github_repository'
-      properties?:
-        | components['schemas']['BenefitGitHubRepositoryCreateProperties']
-        | null
+      properties?: components['schemas']['BenefitGitHubRepositoryCreateProperties']
     }
     /** BenefitGrant */
     BenefitGrant: {
@@ -12918,7 +12912,7 @@ export interface components {
        * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
-      external_id?: string | null
+      external_id?: string
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -13107,7 +13101,7 @@ export interface components {
        * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
-      external_id?: string | null
+      external_id?: string
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -13129,7 +13123,7 @@ export interface components {
        * Description
        * @description The description of the benefit. Will be displayed on products having this benefit.
        */
-      description?: string | null
+      description?: string
       /** @description The visibility of the benefit in the customer portal. */
       visibility?: components['schemas']['BenefitVisibility'] | null
       /**
@@ -13137,9 +13131,7 @@ export interface components {
        * @constant
        */
       type: 'license_keys'
-      properties?:
-        | components['schemas']['BenefitLicenseKeysCreateProperties']
-        | null
+      properties?: components['schemas']['BenefitLicenseKeysCreateProperties']
     }
     /**
      * BenefitManuallyGrantedEvent
@@ -13382,7 +13374,7 @@ export interface components {
        * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
-      external_id?: string | null
+      external_id?: string
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -13596,7 +13588,7 @@ export interface components {
        * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
-      external_id?: string | null
+      external_id?: string
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -13618,7 +13610,7 @@ export interface components {
        * Description
        * @description The description of the benefit. Will be displayed on products having this benefit.
        */
-      description?: string | null
+      description?: string
       /** @description The visibility of the benefit in the customer portal. */
       visibility?: components['schemas']['BenefitVisibility'] | null
       /**
@@ -13626,9 +13618,7 @@ export interface components {
        * @constant
        */
       type: 'meter_credit'
-      properties?:
-        | components['schemas']['BenefitMeterCreditCreateProperties']
-        | null
+      properties?: components['schemas']['BenefitMeterCreditCreateProperties']
     }
     BenefitPublic:
       | components['schemas']['BenefitCustomPublic']
@@ -13796,7 +13786,7 @@ export interface components {
        * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
-      external_id?: string | null
+      external_id?: string
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -14009,7 +13999,7 @@ export interface components {
        * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
-      external_id?: string | null
+      external_id?: string
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -14031,15 +14021,13 @@ export interface components {
        * Description
        * @description The description of the benefit. Will be displayed on products having this benefit.
        */
-      description?: string | null
+      description?: string
       /**
        * Type
        * @constant
        */
       type: 'slack_shared_channel'
-      properties?:
-        | components['schemas']['BenefitSlackSharedChannelCreateProperties']
-        | null
+      properties?: components['schemas']['BenefitSlackSharedChannelCreateProperties']
     }
     /**
      * BenefitSortProperty
@@ -15126,30 +15114,35 @@ export interface components {
       }
       /**
        * Product Id
+       * Format: uuid4
        * @description ID of the product to checkout. Must be present in the checkout's product list.
        */
-      product_id?: string | null
-      /** Amount */
-      amount?: number | null
+      product_id?: string
+      /**
+       * Amount
+       * @description Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices.
+       */
+      amount?: number
       /**
        * Seats
        * @description Number of seats for seat-based pricing.
        */
-      seats?: number | null
+      seats?: number
       /**
        * Units
        * @description Number of units for unit-based pricing.
        */
-      units?: number | null
+      units?: number
       /** Is Business Customer */
-      is_business_customer?: boolean | null
+      is_business_customer?: boolean
       /** Customer Name */
       customer_name?: string | null
       /** Customer Email */
       customer_email?: string | null
       /** Customer Billing Name */
       customer_billing_name?: string | null
-      customer_billing_address?: components['schemas']['AddressInput'] | null
+      /** @description Billing address of the customer. */
+      customer_billing_address?: components['schemas']['AddressInput']
       /** Customer Tax Id */
       customer_tax_id?: string | null
       /** Locale */
@@ -15167,8 +15160,9 @@ export interface components {
       /**
        * Allow Trial
        * @description Disable the trial period for the checkout session. It's mainly useful when the trial is blocked because the customer already redeemed one.
+       * @constant
        */
-      allow_trial?: false | null
+      allow_trial?: false
       /**
        * Shared Payment Token Id
        * @description ID of the Stripe shared payment token (`spt_...`).
@@ -15189,30 +15183,35 @@ export interface components {
       }
       /**
        * Product Id
+       * Format: uuid4
        * @description ID of the product to checkout. Must be present in the checkout's product list.
        */
-      product_id?: string | null
-      /** Amount */
-      amount?: number | null
+      product_id?: string
+      /**
+       * Amount
+       * @description Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices.
+       */
+      amount?: number
       /**
        * Seats
        * @description Number of seats for seat-based pricing.
        */
-      seats?: number | null
+      seats?: number
       /**
        * Units
        * @description Number of units for unit-based pricing.
        */
-      units?: number | null
+      units?: number
       /** Is Business Customer */
-      is_business_customer?: boolean | null
+      is_business_customer?: boolean
       /** Customer Name */
       customer_name?: string | null
       /** Customer Email */
       customer_email?: string | null
       /** Customer Billing Name */
       customer_billing_name?: string | null
-      customer_billing_address?: components['schemas']['AddressInput'] | null
+      /** @description Billing address of the customer. */
+      customer_billing_address?: components['schemas']['AddressInput']
       /** Customer Tax Id */
       customer_tax_id?: string | null
       /** Locale */
@@ -15230,13 +15229,14 @@ export interface components {
       /**
        * Allow Trial
        * @description Disable the trial period for the checkout session. It's mainly useful when the trial is blocked because the customer already redeemed one.
+       * @constant
        */
-      allow_trial?: false | null
+      allow_trial?: false
       /**
        * Confirmation Token Id
        * @description ID of the Stripe confirmation token. Required for fixed prices and custom prices.
        */
-      confirmation_token_id?: string | null
+      confirmation_token_id?: string
     }
     CheckoutCreate:
       | components['schemas']['CheckoutProductsCreate']
@@ -15777,19 +15777,19 @@ export interface components {
        * Products
        * @description List of products that will be available to select at checkout.
        */
-      products?: string[] | null
+      products?: string[]
       /** Label */
       label?: string | null
       /**
        * Allow Discount Codes
        * @description Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
        */
-      allow_discount_codes?: boolean | null
+      allow_discount_codes?: boolean
       /**
        * Require Billing Address
        * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting.
        */
-      require_billing_address?: boolean | null
+      require_billing_address?: boolean
       /**
        * Discount Id
        * @description ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored.
@@ -16933,30 +16933,35 @@ export interface components {
       }
       /**
        * Product Id
+       * Format: uuid4
        * @description ID of the product to checkout. Must be present in the checkout's product list.
        */
-      product_id?: string | null
-      /** Amount */
-      amount?: number | null
+      product_id?: string
+      /**
+       * Amount
+       * @description Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices.
+       */
+      amount?: number
       /**
        * Seats
        * @description Number of seats for seat-based pricing.
        */
-      seats?: number | null
+      seats?: number
       /**
        * Units
        * @description Number of units for unit-based pricing.
        */
-      units?: number | null
+      units?: number
       /** Is Business Customer */
-      is_business_customer?: boolean | null
+      is_business_customer?: boolean
       /** Customer Name */
       customer_name?: string | null
       /** Customer Email */
       customer_email?: string | null
       /** Customer Billing Name */
       customer_billing_name?: string | null
-      customer_billing_address?: components['schemas']['AddressInput'] | null
+      /** @description Billing address of the customer. */
+      customer_billing_address?: components['schemas']['AddressInput']
       /** Customer Tax Id */
       customer_tax_id?: string | null
       /** Locale */
@@ -16985,7 +16990,7 @@ export interface components {
       metadata?: {
         [key: string]: string | number | boolean
       }
-      currency?: components['schemas']['PresentmentCurrency'] | null
+      currency?: components['schemas']['PresentmentCurrency']
       /**
        * Discount Id
        * @description ID of the discount to apply to the checkout.
@@ -16995,17 +17000,17 @@ export interface components {
        * Allow Discount Codes
        * @description Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
        */
-      allow_discount_codes?: boolean | null
+      allow_discount_codes?: boolean
       /**
        * Require Billing Address
        * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.
        */
-      require_billing_address?: boolean | null
+      require_billing_address?: boolean
       /**
        * Allow Trial
        * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
        */
-      allow_trial?: boolean | null
+      allow_trial?: boolean
       /** Customer Ip Address */
       customer_ip_address?: string | null
       /**
@@ -17024,7 +17029,7 @@ export interface components {
        */
       customer_metadata?: {
         [key: string]: string | number | boolean
-      } | null
+      }
       /**
        * Success Url
        * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
@@ -17055,30 +17060,35 @@ export interface components {
       }
       /**
        * Product Id
+       * Format: uuid4
        * @description ID of the product to checkout. Must be present in the checkout's product list.
        */
-      product_id?: string | null
-      /** Amount */
-      amount?: number | null
+      product_id?: string
+      /**
+       * Amount
+       * @description Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices.
+       */
+      amount?: number
       /**
        * Seats
        * @description Number of seats for seat-based pricing.
        */
-      seats?: number | null
+      seats?: number
       /**
        * Units
        * @description Number of units for unit-based pricing.
        */
-      units?: number | null
+      units?: number
       /** Is Business Customer */
-      is_business_customer?: boolean | null
+      is_business_customer?: boolean
       /** Customer Name */
       customer_name?: string | null
       /** Customer Email */
       customer_email?: string | null
       /** Customer Billing Name */
       customer_billing_name?: string | null
-      customer_billing_address?: components['schemas']['AddressInput'] | null
+      /** @description Billing address of the customer. */
+      customer_billing_address?: components['schemas']['AddressInput']
       /** Customer Tax Id */
       customer_tax_id?: string | null
       /** Locale */
@@ -17096,8 +17106,9 @@ export interface components {
       /**
        * Allow Trial
        * @description Disable the trial period for the checkout session. It's mainly useful when the trial is blocked because the customer already redeemed one.
+       * @constant
        */
-      allow_trial?: false | null
+      allow_trial?: false
     }
     /** ConcurrentRoleModification */
     ConcurrentRoleModification: {
@@ -19823,16 +19834,22 @@ export interface components {
       metadata?: {
         [key: string]: string | number | boolean
       }
-      /** Name */
-      name?: string | null
-      /** Slug */
-      slug?: string | null
+      /**
+       * Name
+       * @description Name of the custom field.
+       */
+      name?: string
+      /**
+       * Slug
+       * @description Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens.
+       */
+      slug?: string
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
       type: 'checkbox'
-      properties?: components['schemas']['CustomFieldCheckboxProperties'] | null
+      properties?: components['schemas']['CustomFieldCheckboxProperties']
     }
     /**
      * CustomFieldUpdateDate
@@ -19856,16 +19873,22 @@ export interface components {
       metadata?: {
         [key: string]: string | number | boolean
       }
-      /** Name */
-      name?: string | null
-      /** Slug */
-      slug?: string | null
+      /**
+       * Name
+       * @description Name of the custom field.
+       */
+      name?: string
+      /**
+       * Slug
+       * @description Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens.
+       */
+      slug?: string
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
       type: 'date'
-      properties?: components['schemas']['CustomFieldDateProperties'] | null
+      properties?: components['schemas']['CustomFieldDateProperties']
     }
     /**
      * CustomFieldUpdateNumber
@@ -19889,16 +19912,22 @@ export interface components {
       metadata?: {
         [key: string]: string | number | boolean
       }
-      /** Name */
-      name?: string | null
-      /** Slug */
-      slug?: string | null
+      /**
+       * Name
+       * @description Name of the custom field.
+       */
+      name?: string
+      /**
+       * Slug
+       * @description Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens.
+       */
+      slug?: string
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
       type: 'number'
-      properties?: components['schemas']['CustomFieldNumberProperties'] | null
+      properties?: components['schemas']['CustomFieldNumberProperties']
     }
     /**
      * CustomFieldUpdateSelect
@@ -19922,16 +19951,22 @@ export interface components {
       metadata?: {
         [key: string]: string | number | boolean
       }
-      /** Name */
-      name?: string | null
-      /** Slug */
-      slug?: string | null
+      /**
+       * Name
+       * @description Name of the custom field.
+       */
+      name?: string
+      /**
+       * Slug
+       * @description Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens.
+       */
+      slug?: string
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
       type: 'select'
-      properties?: components['schemas']['CustomFieldSelectProperties'] | null
+      properties?: components['schemas']['CustomFieldSelectProperties']
     }
     /**
      * CustomFieldUpdateText
@@ -19955,16 +19990,22 @@ export interface components {
       metadata?: {
         [key: string]: string | number | boolean
       }
-      /** Name */
-      name?: string | null
-      /** Slug */
-      slug?: string | null
+      /**
+       * Name
+       * @description Name of the custom field.
+       */
+      name?: string
+      /**
+       * Slug
+       * @description Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens.
+       */
+      slug?: string
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
        */
       type: 'text'
-      properties?: components['schemas']['CustomFieldTextProperties'] | null
+      properties?: components['schemas']['CustomFieldTextProperties']
     }
     Customer:
       | components['schemas']['CustomerIndividual']
@@ -21796,7 +21837,7 @@ export interface components {
        */
       billing_name?: string | null
       /** @description The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated. */
-      billing_address?: components['schemas']['AddressInput'] | null
+      billing_address?: components['schemas']['AddressInput']
     }
     /** CustomerOrganization */
     CustomerOrganization: {
@@ -22076,12 +22117,15 @@ export interface components {
     /** CustomerPortalCustomerUpdate */
     CustomerPortalCustomerUpdate: {
       /** Billing Name */
-      billing_name?: string | null
-      billing_address?: components['schemas']['AddressInput'] | null
+      billing_name?: string
+      billing_address?: components['schemas']['AddressInput']
       /** Tax Id */
       tax_id?: string | null
-      /** Default Payment Method Id */
-      default_payment_method_id?: string | null
+      /**
+       * Default Payment Method Id
+       * Format: uuid4
+       */
+      default_payment_method_id?: string
     }
     /**
      * CustomerPortalMember
@@ -22151,14 +22195,15 @@ export interface components {
       /**
        * Name
        * @description The new name for the member.
+       * @example Jane Doe
        */
-      name?: string | null
+      name?: string
       /**
        * @description The new role for the member.
        * @example billing_manager
        * @example member
        */
-      role?: components['schemas']['MemberRole'] | null
+      role?: components['schemas']['MemberRole']
     }
     /** CustomerPortalOAuthAccount */
     CustomerPortalOAuthAccount: {
@@ -23360,7 +23405,7 @@ export interface components {
        *
        *     Or uncancel a subscription currently set to be revoked at period end.
        */
-      cancel_at_period_end?: boolean | null
+      cancel_at_period_end?: boolean
       /**
        * @description Customers reason for cancellation.
        *
@@ -23833,13 +23878,14 @@ export interface components {
       }
       /**
        * Email
+       * Format: email
        * @description The email address of the customer. This must be unique within the organization.
        * @example customer@example.com
        */
-      email?: string | null
+      email?: string
       /** Name */
       name?: string | null
-      billing_address?: components['schemas']['AddressInput'] | null
+      billing_address?: components['schemas']['AddressInput']
       /** Tax Id */
       tax_id?: string | null
       /** Locale */
@@ -23849,7 +23895,7 @@ export interface components {
        * @description The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
        * @example usr_1337
        */
-      external_id?: string | null
+      external_id?: string
       /**
        * @description The customer type. Can only be upgraded from 'individual' to 'team', never downgraded.
        * @example team
@@ -23877,13 +23923,14 @@ export interface components {
       }
       /**
        * Email
+       * Format: email
        * @description The email address of the customer. This must be unique within the organization.
        * @example customer@example.com
        */
-      email?: string | null
+      email?: string
       /** Name */
       name?: string | null
-      billing_address?: components['schemas']['AddressInput'] | null
+      billing_address?: components['schemas']['AddressInput']
       /** Tax Id */
       tax_id?: string | null
       /** Locale */
@@ -24104,7 +24151,7 @@ export interface components {
        * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
-      external_id?: string | null
+      external_id?: string
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -24541,7 +24588,7 @@ export interface components {
        * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
-      external_id?: string | null
+      external_id?: string
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -25064,7 +25111,7 @@ export interface components {
        * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
-      external_id?: string | null
+      external_id?: string
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -25082,8 +25129,11 @@ export interface components {
       metadata?: {
         [key: string]: string | number | boolean
       }
-      /** Name */
-      name?: string | null
+      /**
+       * Name
+       * @description Name of the discount. Will be displayed to the customer when the discount is applied.
+       */
+      name?: string
       /**
        * Code
        * @description Code customers can use to apply the discount during checkout. Must be between 3 and 256 characters long and contain only alphanumeric characters.If not provided, the discount can only be applied via the API.
@@ -25109,18 +25159,36 @@ export interface components {
        * @description Optional maximum number of times the discount can be redeemed by a single customer.
        */
       max_redemptions_per_customer?: number | null
-      duration?: components['schemas']['DiscountDuration'] | null
-      /** Duration In Months */
-      duration_in_months?: number | null
-      type?: components['schemas']['DiscountType'] | null
-      /** Amounts */
+      duration?: components['schemas']['DiscountDuration']
+      /**
+       * Duration In Months
+       * @description Number of months the discount should be applied.
+       *
+       *     For this to work on yearly pricing, you should multiply this by 12.
+       *     For example, to apply the discount for 2 years, set this to 24.
+       */
+      duration_in_months?: number
+      type?: components['schemas']['DiscountType']
+      /**
+       * Amounts
+       * @description Map of currency to fixed amount to discount from the total. This allows specifying different discount amounts for different currencies.
+       */
       amounts?: {
         [key: string]: number
-      } | null
-      /** Basis Points */
-      basis_points?: number | null
-      /** Products */
-      products?: string[] | null
+      }
+      /**
+       * Basis Points
+       * @description Discount percentage in basis points.
+       *
+       *     A basis point is 1/100th of a percent.
+       *     For example, to create a 25.5% discount, set this to 2550.
+       */
+      basis_points?: number
+      /**
+       * Products
+       * @description List of product IDs the discount can be applied to.
+       */
+      products?: string[]
     }
     /**
      * Dispute
@@ -25886,7 +25954,7 @@ export interface components {
       label: string
       /**
        * Label Property Selector
-       * @description Property path to extract dynamic label from event metadata (e.g., 'subject' or 'metadata.subject').
+       * @description Property path to extract a dynamic label from event metadata (e.g., 'subject' or 'metadata.subject'). Set to `null` to clear it.
        */
       label_property_selector?: string | null
     }
@@ -26148,9 +26216,9 @@ export interface components {
     /** FilePatch */
     FilePatch: {
       /** Name */
-      name?: string | null
+      name?: string
       /** Version */
-      version?: string | null
+      version?: string
     }
     FileRead:
       | components['schemas']['DownloadableFileRead']
@@ -27138,7 +27206,7 @@ export interface components {
     }
     /** LicenseKeyUpdate */
     LicenseKeyUpdate: {
-      status?: components['schemas']['LicenseKeyStatus'] | null
+      status?: components['schemas']['LicenseKeyStatus']
       /**
        * Usage
        * @default 0
@@ -28219,15 +28287,22 @@ export interface components {
      * @description Schema for updating a member.
      */
     MemberUpdate: {
-      /** Name */
-      name?: string | null
-      /** Email */
-      email?: string | null
+      /**
+       * Name
+       * @description The name of the member.
+       * @example Jane Doe
+       */
+      name?: string
+      /**
+       * Email
+       * Format: email
+       */
+      email?: string
       /**
        * @description The role of the member within the customer.
        * @example member
        */
-      role?: components['schemas']['MemberRole'] | null
+      role?: components['schemas']['MemberRole']
     }
     /** MerchantMigration */
     MerchantMigration: {
@@ -28807,7 +28882,7 @@ export interface components {
        * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
-      external_id?: string | null
+      external_id?: string
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -29099,9 +29174,9 @@ export interface components {
        * Name
        * @description The name of the meter. Will be shown on customer's invoices and usage.
        */
-      name?: string | null
+      name?: string
       /** @description The unit of the meter. */
-      unit?: components['schemas']['MeterUnit'] | null
+      unit?: components['schemas']['MeterUnit']
       /**
        * Custom Label
        * @description The label for the custom unit. Required when unit is 'custom'.
@@ -29113,23 +29188,20 @@ export interface components {
        */
       custom_multiplier?: number | null
       /** @description The filter to apply on events that'll be used to calculate the meter. */
-      filter?: components['schemas']['Filter'] | null
+      filter?: components['schemas']['Filter']
       /**
        * Aggregation
        * @description The aggregation to apply on the filtered events to calculate the meter.
        */
       aggregation?:
-        | (
-            | components['schemas']['CountAggregation']
-            | components['schemas']['PropertyAggregation']
-            | components['schemas']['UniqueAggregation']
-          )
-        | null
+        | components['schemas']['CountAggregation']
+        | components['schemas']['PropertyAggregation']
+        | components['schemas']['UniqueAggregation']
       /**
        * Is Archived
        * @description Whether the meter is archived. Archived meters are no longer used for billing.
        */
-      is_archived?: boolean | null
+      is_archived?: boolean
     }
     MeterUsageIdentity:
       | components['schemas']['CustomerMeterUsageIdentity']
@@ -29227,12 +29299,12 @@ export interface components {
        * Name
        * @description Display name for the dashboard.
        */
-      name?: string | null
+      name?: string
       /**
        * Metrics
        * @description List of metric slugs to display in this dashboard.
        */
-      metrics?: string[] | null
+      metrics?: string[]
     }
     /** MetricPeriod */
     MetricPeriod: {
@@ -31143,7 +31215,7 @@ export interface components {
        */
       billing_name?: string | null
       /** @description The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated. */
-      billing_address?: components['schemas']['AddressInput'] | null
+      billing_address?: components['schemas']['AddressInput']
     }
     /**
      * OrderVoidedEvent
@@ -31668,9 +31740,9 @@ export interface components {
     /** OrganizationAccessTokenUpdate */
     OrganizationAccessTokenUpdate: {
       /** Comment */
-      comment?: string | null
+      comment?: string
       /** Scopes */
-      scopes?: components['schemas']['AvailableScope'][] | null
+      scopes?: components['schemas']['AvailableScope'][]
     }
     /** OrganizationAppealRequest */
     OrganizationAppealRequest: {
@@ -31845,8 +31917,8 @@ export interface components {
     /** OrganizationBillingDetailsUpdate */
     OrganizationBillingDetailsUpdate: {
       /** Billing Name */
-      billing_name?: string | null
-      billing_address?: components['schemas']['AddressInput'] | null
+      billing_name?: string
+      billing_address?: components['schemas']['AddressInput']
       /** Tax Id */
       tax_id?: string | null
     }
@@ -32626,7 +32698,7 @@ export interface components {
        * Overview Metrics
        * @description Ordered list of metric slugs shown on the dashboard overview.
        */
-      overview_metrics?: string[] | null
+      overview_metrics?: string[]
     }
     /** OrganizationIndividualLegalEntitySchema */
     OrganizationIndividualLegalEntitySchema: {
@@ -33525,16 +33597,13 @@ export interface components {
        * @description Provider-specific configuration of the connection.
        */
       configuration?:
-        | (
-            | components['schemas']['OIDCConfigurationClientSecret']
-            | components['schemas']['OIDCConfigurationPrivateKeyJWT']
-          )
-        | null
+        | components['schemas']['OIDCConfigurationClientSecret']
+        | components['schemas']['OIDCConfigurationPrivateKeyJWT']
       /**
        * Enabled
        * @description Whether the connection can be used to sign in.
        */
-      enabled?: boolean | null
+      enabled?: boolean
     }
     /** OrganizationSlugAvailability */
     OrganizationSlugAvailability: {
@@ -33765,7 +33834,7 @@ export interface components {
     /** OrganizationUpdate */
     OrganizationUpdate: {
       /** Name */
-      name?: string | null
+      name?: string
       /** Avatar Url */
       avatar_url?: string | null
       /**
@@ -33782,9 +33851,9 @@ export interface components {
        * Socials
        * @description Links to social profiles.
        */
-      socials?: components['schemas']['OrganizationSocialLink'][] | null
+      socials?: components['schemas']['OrganizationSocialLink'][]
       /** @description Additional, private, business details Polar needs about active organizations for compliance (KYC). */
-      details?: components['schemas']['OrganizationDetailsInput'] | null
+      details?: components['schemas']['OrganizationDetailsInput']
       /** @description Two-letter country code (ISO 3166-1 alpha-2). */
       country?:
         | (
@@ -34034,34 +34103,30 @@ export interface components {
             | 'ZW'
           )
         | null
-      feature_settings?:
-        | components['schemas']['OrganizationFeatureSettingsUpdate']
-        | null
-      subscription_settings?:
-        | components['schemas']['OrganizationSubscriptionSettings']
-        | null
-      customer_email_settings?:
-        | components['schemas']['OrganizationCustomerEmailSettings']
-        | null
-      customer_portal_settings?:
-        | components['schemas']['OrganizationCustomerPortalSettings']
-        | null
-      dispute_settings?:
-        | components['schemas']['OrganizationDisputeSettingsUpdate']
-        | null
-      /** Embed Hosts */
-      embed_hosts?: string[] | null
+      feature_settings?: components['schemas']['OrganizationFeatureSettingsUpdate']
+      subscription_settings?: components['schemas']['OrganizationSubscriptionSettings']
+      customer_email_settings?: components['schemas']['OrganizationCustomerEmailSettings']
+      customer_portal_settings?: components['schemas']['OrganizationCustomerPortalSettings']
+      dispute_settings?: components['schemas']['OrganizationDisputeSettingsUpdate']
+      /**
+       * Embed Hosts
+       * @description Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for local hosts — `localhost`, any `.localhost` or `.local` name, and loopback or private addresses. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on.
+       * @example [
+       *       "example.com",
+       *       "*.example.com",
+       *       "localhost:3000"
+       *     ]
+       */
+      embed_hosts?: string[]
       /** @description Default presentment currency for the organization */
-      default_presentment_currency?:
-        | components['schemas']['PresentmentCurrency']
-        | null
+      default_presentment_currency?: components['schemas']['PresentmentCurrency']
       /** @description Default tax behavior applied on products. */
-      default_tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
+      default_tax_behavior?: components['schemas']['TaxBehaviorOption']
       /**
        * Sso Enforced
        * @description Whether members must access this organization through its SSO connection. Turning this on requires an active SSO session for this organization and at least one enabled SSO connection.
        */
-      sso_enforced?: boolean | null
+      sso_enforced?: boolean
     }
     /** OrganizationValidateWebsiteRequest */
     OrganizationValidateWebsiteRequest: {
@@ -35736,7 +35801,7 @@ export interface components {
        * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
-      external_id?: string | null
+      external_id?: string
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -35814,7 +35879,7 @@ export interface components {
        * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
-      external_id?: string | null
+      external_id?: string
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -37074,7 +37139,7 @@ export interface components {
        * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
-      external_id?: string | null
+      external_id?: string
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -37099,58 +37164,53 @@ export interface components {
        * @description The number of interval units for the trial period.
        */
       trial_interval_count?: number | null
-      /** Name */
-      name?: string | null
+      /**
+       * Name
+       * @description The name of the product.
+       */
+      name?: string
       /**
        * Description
        * @description The description of the product.
        */
       description?: string | null
-      /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. **Can only be set on legacy recurring products. Once set, it can't be changed.** */
-      recurring_interval?: components['schemas']['RecurringInterval'] | null
-      /**
-       * Recurring Interval Count
-       * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. Once set, it can't be changed.**
-       */
-      recurring_interval_count?: number | null
       /**
        * Is Archived
        * @description Whether the product is archived. If `true`, the product won't be available for purchase anymore. Existing customers will still have access to their benefits, and subscriptions will continue normally.
        */
-      is_archived?: boolean | null
+      is_archived?: boolean
       /** @description The visibility of the product. */
-      visibility?: components['schemas']['ProductVisibility'] | null
+      visibility?: components['schemas']['ProductVisibility']
       /**
        * Prices
        * @description List of available prices for this product. If you want to keep existing prices, include them in the list as an `ExistingProductPrice` object.
        */
-      prices?:
+      prices?: (
+        | components['schemas']['ExistingProductPrice']
         | (
-            | components['schemas']['ExistingProductPrice']
-            | (
-                | components['schemas']['ProductPriceFixedCreate']
-                | components['schemas']['ProductPriceCustomCreate']
-                | components['schemas']['ProductPriceSeatBasedCreate']
-                | components['schemas']['ProductPriceUnitBasedCreate']
-                | components['schemas']['ProductPriceMeteredUnitCreate']
-                | components['schemas']['ProductPriceMeteredTiersCreate']
-              )
-          )[]
-        | null
+            | components['schemas']['ProductPriceFixedCreate']
+            | components['schemas']['ProductPriceCustomCreate']
+            | components['schemas']['ProductPriceSeatBasedCreate']
+            | components['schemas']['ProductPriceUnitBasedCreate']
+            | components['schemas']['ProductPriceMeteredUnitCreate']
+            | components['schemas']['ProductPriceMeteredTiersCreate']
+          )
+      )[]
       /**
        * Medias
        * @description List of file IDs. Each one must be on the same organization as the product, of type `product_media` and correctly uploaded.
        */
-      medias?: string[] | null
-      /** Attached Custom Fields */
-      attached_custom_fields?:
-        | components['schemas']['AttachedCustomFieldCreate'][]
-        | null
+      medias?: string[]
+      /**
+       * Attached Custom Fields
+       * @description List of custom fields to attach.
+       */
+      attached_custom_fields?: components['schemas']['AttachedCustomFieldCreate'][]
       /**
        * Trial Payment Setup Required
        * @description Whether customers must provide a payment method to start a trial. If `false`, customers can start a trial without entering payment details.
        */
-      trial_payment_setup_required?: boolean | null
+      trial_payment_setup_required?: boolean
     }
     /**
      * Visibility
@@ -40962,10 +41022,11 @@ export interface components {
       }
       /**
        * Product Id
+       * Format: uuid4
        * @description Update subscription to another product.
        * @example d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23
        */
-      product_id?: string | null
+      product_id?: string
       /**
        * Proration Behavior
        * @description Determine how to handle the proration billing. If not provided, will use the default organization setting.
@@ -40973,7 +41034,6 @@ export interface components {
       proration_behavior?:
         | components['schemas']['SubscriptionProrationBehavior']
         | 'auto'
-        | null
       /**
        * Discount Id
        * @description Update the subscription to apply a new discount. If set to `null`, the discount will be removed. The change will be applied on the next billing cycle.
@@ -40983,7 +41043,7 @@ export interface components {
        * Trial End
        * @description Set or extend the trial period of the subscription. If set to `now`, the trial will end immediately and the first billing cycle will be charged synchronously. The subscription remains trialing if the payment fails.
        */
-      trial_end?: string | 'now' | null
+      trial_end?: string | 'now'
     }
     /** SubscriptionUpdateBillingPeriod */
     SubscriptionUpdateBillingPeriod: {
@@ -41102,7 +41162,6 @@ export interface components {
       proration_behavior?:
         | components['schemas']['SubscriptionProrationBehavior']
         | 'auto'
-        | null
     }
     /** SubscriptionUpdateUnits */
     SubscriptionUpdateUnits: {
@@ -41118,7 +41177,6 @@ export interface components {
       proration_behavior?:
         | components['schemas']['SubscriptionProrationBehavior']
         | 'auto'
-        | null
     }
     /**
      * SubscriptionUpdatedEvent
@@ -42719,7 +42777,7 @@ export interface components {
       /** Date Of Birth */
       date_of_birth?: string | null
       /** Accepted Terms Of Service */
-      accepted_terms_of_service?: boolean | null
+      accepted_terms_of_service?: boolean
     }
     /** ValidatedLicenseKey */
     ValidatedLicenseKey: {
@@ -43672,27 +43730,40 @@ export interface components {
      * @description Schema to update a webhook endpoint.
      */
     WebhookEndpointUpdate: {
-      /** Url */
-      url?: string | null
+      /**
+       * Url
+       * Format: uri
+       * @description The URL where the webhook events will be sent.
+       * @example https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0
+       */
+      url?: string
       /**
        * Name
-       * @description An optional name for the webhook endpoint to help organize and identify it.
+       * @description An optional name for the webhook endpoint. Set to `null` to clear it.
        */
       name?: string | null
       /**
        * Api Version
        * @description The API version that'll be used in event payloads.
+       * @enum {string}
        */
-      api_version?: ('2026-04' | '2026-10' | '2027-01') | null
-      /** Format */
-      format?: ('raw' | 'discord' | 'slack') | null
-      /** Events */
-      events?: components['schemas']['WebhookEventType'][] | null
+      api_version?: '2026-04' | '2026-10' | '2027-01'
+      /**
+       * Format
+       * @description The format of the webhook payload.
+       * @enum {string}
+       */
+      format?: 'raw' | 'discord' | 'slack'
+      /**
+       * Events
+       * @description The events that will trigger the webhook.
+       */
+      events?: components['schemas']['WebhookEventType'][]
       /**
        * Enabled
        * @description Whether the webhook endpoint is enabled.
        */
-      enabled?: boolean | null
+      enabled?: boolean
     }
     /**
      * WebhookEvent
@@ -78130,10 +78201,10 @@ export const webhookEndpointCreateApi_versionValues: ReadonlyArray<
 export const webhookEndpointCreateFormatValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['WebhookEndpointCreate']['format']
 > = ['raw', 'discord', 'slack']
-export const webhookEndpointUpdateApi_versionAnyOf0Values: ReadonlyArray<
+export const webhookEndpointUpdateApi_versionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['WebhookEndpointUpdate']['api_version']
 > = ['2026-04', '2026-10', '2027-01']
-export const webhookEndpointUpdateFormatAnyOf0Values: ReadonlyArray<
+export const webhookEndpointUpdateFormatValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['WebhookEndpointUpdate']['format']
 > = ['raw', 'discord', 'slack']
 export const webhookEventTypeValues: ReadonlyArray<

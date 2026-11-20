@@ -1,6 +1,7 @@
 from typing import Annotated, Any, Literal
 
 from pydantic import (
+    MISSING,
     UUID4,
     BeforeValidator,
     Discriminator,
@@ -22,7 +23,7 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
-from polar.kit.versioning import QuerySchema, Version
+from polar.kit.versioning import Omissible, QuerySchema, Version
 from polar.models.catalog import CatalogStatus
 from polar.models.custom_field import (
     CustomFieldCheckboxProperties,
@@ -129,43 +130,43 @@ CustomFieldCreate = Annotated[
 class CustomFieldUpdateBase(MetadataInputMixin, Schema):
     """Schema to update an existing custom field."""
 
-    name: Name | None = None
-    slug: Slug | None = None
+    name: Omissible[Name] = MISSING
+    slug: Omissible[Slug] = MISSING
 
 
 class CustomFieldUpdateText(CustomFieldUpdateBase):
     """Schema to update a custom field of type text."""
 
     type: Literal[CustomFieldType.text]
-    properties: TextPropertiesInput | None = None
+    properties: Omissible[TextPropertiesInput] = MISSING
 
 
 class CustomFieldUpdateNumber(CustomFieldUpdateBase):
     """Schema to update a custom field of type number."""
 
     type: Literal[CustomFieldType.number]
-    properties: NumberPropertiesInput | None = None
+    properties: Omissible[NumberPropertiesInput] = MISSING
 
 
 class CustomFieldUpdateDate(CustomFieldUpdateBase):
     """Schema to update a custom field of type date."""
 
     type: Literal[CustomFieldType.date]
-    properties: DatePropertiesInput | None = None
+    properties: Omissible[DatePropertiesInput] = MISSING
 
 
 class CustomFieldUpdateCheckbox(CustomFieldUpdateBase):
     """Schema to update a custom field of type checkbox."""
 
     type: Literal[CustomFieldType.checkbox]
-    properties: CheckboxPropertiesInput | None = None
+    properties: Omissible[CheckboxPropertiesInput] = MISSING
 
 
 class CustomFieldUpdateSelect(CustomFieldUpdateBase):
     """Schema to update a custom field of type select."""
 
     type: Literal[CustomFieldType.select]
-    properties: SelectPropertiesInput | None = None
+    properties: Omissible[SelectPropertiesInput] = MISSING
 
 
 CustomFieldUpdate = Annotated[

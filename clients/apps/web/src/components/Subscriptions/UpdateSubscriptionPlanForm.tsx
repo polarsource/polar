@@ -46,7 +46,6 @@ export const UpdateSubscriptionPlanForm = ({
 
   const form = useForm<schemas['SubscriptionUpdateBase']>({
     defaultValues: {
-      product_id: null,
       discount_id: currentDiscountId,
       proration_behavior: defaultProrationBehavior,
     },

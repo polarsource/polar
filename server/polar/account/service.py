@@ -56,9 +56,7 @@ class AccountService:
         self, session: AsyncSession, account: Account, account_update: AccountUpdate
     ) -> Account:
         repository = AccountRepository.from_session(session)
-        return await repository.update(
-            account, update_dict=account_update.model_dump(exclude_unset=True)
-        )
+        return await repository.update(account, update_dict=account_update.model_dump())
 
     async def set_platform_fee(
         self,

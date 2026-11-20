@@ -1,10 +1,10 @@
 from typing import Annotated, Literal
 
-from pydantic import Field
+from pydantic import MISSING, Field
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.kit.schemas import Schema
-from polar.kit.versioning import Version
+from polar.kit.versioning import Omissible, Version
 from polar.models.benefit import BenefitType
 from polar.version import V2026_10
 
@@ -61,7 +61,7 @@ class BenefitCustomCreate(BenefitCreateBase):
 
 class BenefitCustomUpdate(BenefitUpdateVisibilityMixin, BenefitUpdateBase):
     type: Literal[BenefitType.custom]
-    properties: BenefitCustomProperties | None = None
+    properties: Omissible[BenefitCustomProperties] = MISSING
 
 
 class BenefitCustom(BenefitBase):

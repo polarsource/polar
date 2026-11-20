@@ -2,6 +2,7 @@ from uuid import UUID
 
 import structlog
 from fastapi import Depends
+from pydantic import MISSING
 
 from polar.auth.models import is_member
 from polar.exceptions import NotPermitted, PolarRequestValidationError, ResourceNotFound
@@ -171,7 +172,7 @@ async def update_member(
     # Prevent changing your own role (self-demotion). A no-op role value and
     # name changes are allowed.
     if (
-        member_update.role is not None
+        member_update.role is not MISSING
         and member_update.role != member.role
         and member.id == actor_member.id
     ):

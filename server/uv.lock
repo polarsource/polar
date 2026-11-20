@@ -3093,7 +3093,7 @@ requires-dist = [
     { name = "psycopg", extras = ["binary"], specifier = ">=3.3.6" },
     { name = "py-svg-hush", specifier = ">=0.3.0" },
     { name = "pycountry", specifier = ">=24.6.1" },
-    { name = "pydantic", specifier = ">=2.13.4" },
+    { name = "pydantic", specifier = ">=2.14" },
     { name = "pydantic-ai-slim", extras = ["openai", "typesafe"], specifier = ">=2.2.0" },
     { name = "pydantic-extra-types", specifier = ">=2.9.0" },
     { name = "pydantic-settings", specifier = ">=2.14.2" },

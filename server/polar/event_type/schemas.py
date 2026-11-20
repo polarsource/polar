@@ -3,11 +3,11 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import Path
-from pydantic import UUID4, Field, field_validator
+from pydantic import MISSING, UUID4, Field, field_validator
 
 from polar.customer.schemas.customer import CustomerID
 from polar.kit.schemas import IDSchema, MultipleQueryFilter, Schema, TimestampedSchema
-from polar.kit.versioning import QuerySchema
+from polar.kit.versioning import Omissible, QuerySchema
 from polar.models.event import EventSource
 from polar.organization.schemas import OrganizationID
 
@@ -16,9 +16,12 @@ class EventTypeUpdate(Schema):
     label: str = Field(
         ..., description="The label for the event type.", min_length=1, max_length=128
     )
-    label_property_selector: str | None = Field(
-        None,
-        description="Property path to extract dynamic label from event metadata (e.g., 'subject' or 'metadata.subject').",
+    label_property_selector: Omissible[str | None] = Field(
+        MISSING,
+        description=(
+            "Property path to extract a dynamic label from event metadata "
+            "(e.g., 'subject' or 'metadata.subject'). Set to `null` to clear it."
+        ),
         min_length=1,
         max_length=256,
     )
@@ -33,12 +36,10 @@ class EventTypeUpdate(Schema):
 
     @field_validator("label_property_selector")
     @classmethod
-    def strip_and_validate_label_property_selector(cls, v: str | None) -> str | None:
-        if v is not None:
-            v = v.strip()
-            if not v:
-                return None
-        return v
+    def strip_and_validate_label_property_selector(
+        cls, v: str | None | MISSING
+    ) -> str | None | MISSING:
+        return (v.strip() or None) if isinstance(v, str) else v
 
 
 class EventType(IDSchema, TimestampedSchema):

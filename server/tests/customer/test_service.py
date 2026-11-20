@@ -1,6 +1,7 @@
 from typing import Any
 
 import pytest
+from pydantic import ValidationError
 from pytest_mock import MockerFixture
 from sqlalchemy.exc import IntegrityError
 
@@ -15,6 +16,7 @@ from polar.event.system import SystemEvent
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.address import Address, AddressInput, CountryAlpha2, CountryAlpha2Input
 from polar.kit.pagination import PaginationParams
+from polar.kit.versioning import APIVersion, api_version_context
 from polar.member.repository import MemberRepository
 from polar.models import Customer, Organization, User, UserOrganization
 from polar.models.customer import CustomerType
@@ -23,6 +25,7 @@ from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEvent
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from polar.tax.tax_id import TaxIDFormat
+from polar.version import V2026_04, V2026_10
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer, create_member
@@ -573,6 +576,7 @@ class TestUpdate:
     async def test_existing_external_id(
         self, session: AsyncSession, customer: Customer, customer_external_id: Customer
     ) -> None:
+        assert customer_external_id.external_id is not None
         with pytest.raises(PolarRequestValidationError):
             await customer_service.update(
                 session,
@@ -594,6 +598,10 @@ class TestUpdate:
         session: AsyncSession,
         customer_external_id: Customer,
     ) -> None:
+        if external_id is None:
+            with pytest.raises(ValidationError):
+                CustomerUpdate.model_validate({"external_id": None})
+            return
         with pytest.raises(PolarRequestValidationError):
             await customer_service.update(
                 session,
@@ -602,27 +610,41 @@ class TestUpdate:
             )
             await session.flush()
 
-    async def test_explicit_null_billing_address(
+    async def test_explicit_null_billing_address(self) -> None:
+        with pytest.raises(ValidationError):
+            CustomerUpdate.model_validate({"billing_address": None})
+
+    @pytest.mark.parametrize("api_version", [V2026_04, V2026_10], ids=str)
+    async def test_legacy_null_fields_leave_customer_unchanged(
         self,
-        save_fixture: SaveFixture,
+        api_version: APIVersion,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
+        billing_address = Address(country=CountryAlpha2("FR"))
         customer = await create_customer(
             save_fixture,
             organization=organization,
-            billing_address=Address(country=CountryAlpha2("FR")),
+            external_id="legacy-customer",
+            billing_address=billing_address,
         )
-        with pytest.raises(PolarRequestValidationError):
-            await customer_service.update(
-                session, customer, CustomerUpdate(billing_address=None)
+
+        with api_version_context(api_version):
+            update = CustomerUpdate.model_validate(
+                {"external_id": None, "billing_address": None}
             )
-            await session.flush()
-        assert customer.billing_address is not None
+            await customer_service.update(session, customer, update)
+
+        await session.flush()
+        await session.refresh(customer)
+        assert customer.external_id == "legacy-customer"
+        assert customer.billing_address == billing_address
 
     async def test_existing_email(
         self, session: AsyncSession, customer: Customer, customer_second: Customer
     ) -> None:
+        assert customer_second.email is not None
         with pytest.raises(PolarRequestValidationError):
             await customer_service.update(
                 session,
@@ -667,6 +689,7 @@ class TestUpdate:
     async def test_valid_same_external_id(
         self, session: AsyncSession, customer_external_id: Customer
     ) -> None:
+        assert customer_external_id.external_id is not None
         customer = await customer_service.update(
             session,
             customer_external_id,
@@ -676,17 +699,9 @@ class TestUpdate:
 
         assert customer.external_id == customer_external_id.external_id
 
-    async def test_valid_explicitly_none_email(
-        self, session: AsyncSession, customer: Customer
-    ) -> None:
-        updated_customer = await customer_service.update(
-            session,
-            customer,
-            CustomerUpdate(email=None),
-        )
-        await session.flush()
-
-        assert updated_customer.email == customer.email
+    async def test_explicit_null_email(self) -> None:
+        with pytest.raises(ValidationError):
+            CustomerUpdate.model_validate({"email": None})
 
     async def test_valid_billing_address(
         self, session: AsyncSession, customer: Customer
@@ -766,30 +781,9 @@ class TestUpdate:
 
         assert "downgraded" in exc_info.value.errors()[0]["msg"].lower()
 
-    async def test_cannot_downgrade_type_team_to_null(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-    ) -> None:
-        """Test that setting type=null on a team customer is rejected."""
-
-        customer = await create_customer(
-            save_fixture,
-            organization=organization,
-            email="team-null@example.com",
-        )
-        customer.type = CustomerType.team
-        await save_fixture(customer)
-
-        with pytest.raises(PolarRequestValidationError) as exc_info:
-            await customer_service.update(
-                session,
-                customer,
-                CustomerUpdate(type=None),
-            )
-
-        assert "downgraded" in exc_info.value.errors()[0]["msg"].lower()
+    async def test_explicit_null_type(self) -> None:
+        with pytest.raises(ValidationError):
+            CustomerUpdate.model_validate({"type": None})
 
     async def test_null_type_on_individual_ignored(
         self,
@@ -803,9 +797,9 @@ class TestUpdate:
             email="individual-null@example.com",
         )
 
-        updated_customer = await customer_service.update(
-            session, customer, CustomerUpdate(type=None)
-        )
+        with api_version_context(V2026_10):
+            update = CustomerUpdate.model_validate({"type": None})
+            updated_customer = await customer_service.update(session, customer, update)
         await session.flush()
 
         assert updated_customer.type == CustomerType.individual

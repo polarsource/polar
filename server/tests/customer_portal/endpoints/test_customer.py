@@ -8,11 +8,13 @@ from polar.customer_email_update.service import TOKEN_PREFIX
 from polar.integrations.stripe.service import StripeService
 from polar.kit.address import Address, CountryAlpha2
 from polar.kit.crypto import generate_token_hash_pair
+from polar.kit.versioning import APIVersion
 from polar.models import Customer, Organization, Product
 from polar.models.customer_email_verification import CustomerEmailVerification
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.tax.tax_id import TaxIDFormat
+from polar.version import V2026_04, V2026_10, V2027_01
 from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT, MEMBER_AUTH_SUBJECT
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -356,15 +358,17 @@ class TestUpdateDefaultPaymentMethod:
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     @pytest.mark.keep_session_state
-    async def test_null_default_payment_method_id_rejected(
+    @pytest.mark.api_version(V2026_04, V2026_10, V2027_01)
+    async def test_null_default_payment_method_id(
         self,
         client: AsyncClient,
+        api_version: APIVersion,
     ) -> None:
         response = await client.patch(
             "/v1/customer-portal/customers/me",
             json={"default_payment_method_id": None},
         )
-        assert response.status_code == 422
+        assert response.status_code == (422 if api_version == V2027_01 else 200)
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     @pytest.mark.keep_session_state

@@ -89,6 +89,13 @@ const cases: [string, PolarConfig][] = [
           unit: 'custom' as const,
           custom_label: '',
         })),
+        {
+          ...meter,
+          external_id: 'requests',
+          unit: 'custom' as const,
+          custom_label: 'requests',
+          custom_multiplier: 1000,
+        },
       ],
     },
   ],

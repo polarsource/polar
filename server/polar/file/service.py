@@ -5,6 +5,7 @@ from typing import Any
 
 import structlog
 from py_svg_hush import filter_svg
+from pydantic import MISSING
 
 from polar.auth.models import Agent, AuthSubject
 from polar.auth.permission import OrganizationPermission
@@ -95,11 +96,11 @@ class FileService:
         patches: FilePatch,
     ) -> File:
         changes = False
-        if patches.name:
+        if patches.name is not MISSING and patches.name:
             file.name = patches.name
             changes = True
 
-        if patches.version:
+        if patches.version is not MISSING and patches.version:
             file.version = patches.version
             changes = True
 

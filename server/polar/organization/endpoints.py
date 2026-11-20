@@ -433,7 +433,7 @@ async def _update(
     session: AsyncSession,
 ) -> Organization:
     """Update an organization."""
-    if organization_update.sso_enforced:
+    if organization_update.sso_enforced is True:
         # Only allow enforcing SSO from a dashboard session already authenticated
         # through this organization's SSO — proof it works — and only while an
         # enabled connection exists, so an admin can't lock everyone out.

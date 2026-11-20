@@ -1,10 +1,10 @@
 from typing import Annotated, Literal
 
-from pydantic import UUID4, AfterValidator, Field, StringConstraints
+from pydantic import MISSING, UUID4, AfterValidator, Field, StringConstraints
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.kit.schemas import Schema
-from polar.kit.versioning import Version
+from polar.kit.versioning import Omissible, Version
 from polar.models.benefit import BenefitType
 from polar.version import V2026_10
 
@@ -79,7 +79,7 @@ class BenefitSlackSharedChannelCreate(BenefitCreateBase):
 
 class BenefitSlackSharedChannelUpdate(BenefitUpdateBase):
     type: Literal[BenefitType.slack_shared_channel]
-    properties: BenefitSlackSharedChannelCreateProperties | None = None
+    properties: Omissible[BenefitSlackSharedChannelCreateProperties] = MISSING
 
 
 class BenefitSlackSharedChannel(BenefitBase):

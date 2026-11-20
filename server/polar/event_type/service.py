@@ -1,6 +1,8 @@
 from collections.abc import Sequence
 from uuid import UUID
 
+from pydantic import MISSING
+
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
@@ -209,13 +211,14 @@ class EventTypeService:
         label: str,
         auth_subject: AuthSubject[User | Organization],
         *,
-        label_property_selector: str | None = None,
+        label_property_selector: str | None | MISSING = MISSING,
     ) -> EventType:
         await assert_resource_permission(
             session, auth_subject, event_type, OrganizationPermission.analytics_manage
         )
         event_type.label = label
-        event_type.label_property_selector = label_property_selector
+        if label_property_selector is not MISSING:
+            event_type.label_property_selector = label_property_selector
         session.add(event_type)
         return event_type
 

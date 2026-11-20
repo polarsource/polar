@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Annotated, Any, Literal, Self
 
-from pydantic import UUID4, Discriminator, Field, TypeAdapter, computed_field
+from pydantic import MISSING, UUID4, Discriminator, Field, TypeAdapter, computed_field
 
 from polar.integrations.aws.s3.schemas import (
     S3DownloadURL,
@@ -12,7 +12,7 @@ from polar.integrations.aws.s3.schemas import (
     S3FileUploadCompleted,
 )
 from polar.kit.schemas import ClassName, MultipleQueryFilter, Schema, SetSchemaReference
-from polar.kit.versioning import QuerySchema
+from polar.kit.versioning import Omissible, QuerySchema
 from polar.models.file import File, FileServiceTypes
 from polar.organization.schemas import OrganizationID
 
@@ -210,8 +210,8 @@ class FileUpdate(Schema):
 
 
 class FilePatch(Schema):
-    name: str | None = None
-    version: str | None = None
+    name: Omissible[str] = MISSING
+    version: Omissible[str] = MISSING
 
 
 class FileListParams(QuerySchema):

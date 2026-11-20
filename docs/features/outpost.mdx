@@ -67,7 +67,7 @@ Every instance of your application that runs the SDK with the same Redis shares 
 
     const polar = createPolar({ accessToken: process.env.POLAR_ACCESS_TOKEN! });
 
-    await using metering = await polar.metering({ outpost: outpost() }).start();
+    const metering = polar.metering({ outpost: outpost() });
     ```
 
     `outpost()` reads `REDIS_URL` and throws if it is unset. Pass options to configure it:
@@ -78,9 +78,11 @@ Every instance of your application that runs the SDK with the same Redis shares 
     | `telemetry`       | `true`                           | Send Outpost metrics and traces to Polar.                        |
     | `snapshotTimeout` | `5000`                           | Milliseconds the first read of a customer waits for Polar's snapshot before it throws. |
     | `onDelivered`     | `undefined`                      | Called with each batch Polar accepted; may be async.             |
-    | `onDropped`       | `undefined`                      | Called with each batch Polar refused, and why; may be async.     |
+    | `onDropped`       | `undefined`                      | Called with the events Polar refused, and why; may be async.     |
   </Tab>
   <Tab title="Python">
+    Outpost needs the `outpost` extra: `pip install "polar-sdk[outpost]"`.
+
     ```python
     import os
 
@@ -91,22 +93,25 @@ Every instance of your application that runs the SDK with the same Redis shares 
             ...
     ```
 
-    `outpost=True` reads `REDIS_URL`. Pass a dictionary instead to configure it:
+    `outpost=True` reads `REDIS_URL` and raises if it is unset. Pass a dictionary instead to configure it:
 
-    | Option         | Default                          | Meaning                                                   |
-    | -------------- | -------------------------------- | --------------------------------------------------------- |
-    | `redis_url`    | `REDIS_URL` environment variable | The Redis Outpost uses.                                   |
-    | `telemetry`    | `True`                           | Send Outpost metrics and traces to Polar.                 |
-    | `on_delivered` | `None`                           | Called with each batch Polar accepted.                    |
-    | `on_dropped`   | `None`                           | Called with each batch Polar refused, and why.            |
+    | Option             | Default                          | Meaning                                                                           |
+    | ------------------ | -------------------------------- | --------------------------------------------------------------------------------- |
+    | `redis_url`        | `REDIS_URL` environment variable | The Redis Outpost uses.                                                           |
+    | `telemetry`        | `True`                           | Send Outpost metrics and traces to Polar.                                         |
+    | `snapshot_timeout` | `5`                              | Seconds the first read of a customer waits for Polar's snapshot before it raises. |
+    | `on_delivered`     | `None`                           | Async function called with each batch Polar accepted.                             |
+    | `on_dropped`       | `None`                           | Async function called with the events Polar refused, and why.                     |
   </Tab>
 </Tabs>
 
 ## Track and read
 
-Every event needs an `external_id`. Outpost uses it to count an event once, however many times it is tracked or retried, and to settle it once Polar confirms it. `track()` rejects an event without one.
+Every event needs an `external_id`. Outpost uses it to count an event once while Polar has not confirmed it, and Polar uses it to bill the event once. `track()` rejects an event without one. An event tracked again after Polar confirmed it counts locally a second time, until Polar's totals replace its bucket a few minutes later.
 
-The first read of a customer waits for Polar's snapshot, up to 5 seconds. Past that, `meter()` throws a Polar error, "Customer snapshot is not ready", and the next read asks Polar again. Warm the customer when the session starts, so the read that matters is ready:
+In Python, `track()` also rejects a NaN or an infinity anywhere in the event.
+
+The first read of a customer waits for Polar's snapshot, up to `snapshotTimeout` (5 seconds by default). If it does not arrive in time, `meter()` throws `NotReadyError`, and the next read asks Polar again. Import the error from `@polar-sh/sdk/outpost` or `polar.outpost`. Warm the customer when the session starts, so the read that matters is ready:
 
 <Tabs>
   <Tab title="TypeScript">
@@ -136,7 +141,9 @@ A read returns the customer's `consumed_units`, `credited_units` and `balance` f
 
 ## Deliver the events
 
-Outpost queues each event in Redis when you track it, and delivers the queue to Polar in batches shared by every instance. A long-running server delivers every second on its own. In a serverless runtime, flush `Metering` after each response, as the [SDK guide](/integrate/sdk/typescript) explains, so the function does not freeze before the delivery starts.
+Outpost queues each event in Redis when you track it, and delivers the queue to Polar in batches of up to 1,000 events, shared by every instance. A long-running server delivers every second on its own. In a serverless runtime, flush `Metering` after each response, as the [SDK guide](/integrate/sdk/typescript) explains, so the function does not freeze before the delivery starts.
+
+With Outpost, `flush()` does not fail when a delivery does: the events stay queued, and the next flush takes them. It can still time out.
 
 `onDelivered` and `onDropped` run on the instance that delivered the batch. A batch mixes events from every instance, so it does not map to one request.
 
@@ -197,7 +204,7 @@ Install the optional `@vercel/oidc` peer dependency, then wire three pieces:
     From Next.js 16, the middleware is `proxy.ts` and its function is named `proxy`. A request without a customer, or outside Vercel, goes on unpinned.
   </Step>
   <Step title="Answer warm-ups in the pinned route">
-    Before a shard moves, the SDK sends its next instance one warm-up request, so the customers it moves find Outpost started.
+    Before a shard moves, the SDK sends its next instance one warm-up request, so the customers it moves find Outpost started. The warm-up is a `POST` to the pinned route, whatever method your requests use.
 
     ```typescript
     import { isVercelAffinityWarmup, warmNextVercelInstance } from "@polar-sh/sdk/outpost/vercel";
@@ -222,21 +229,25 @@ Each customer moves to the next instance at its own moment, within a short windo
 
 **Redis is unreachable.** `track()` and `meter()` fail with `UnavailableRedisError`, and the event is not queued for Polar. Your code decides whether to serve the request without a balance, and whether to track the event again. Outpost reconnects on its own.
 
-**Polar is unreachable or overloaded.** Reads keep answering, with the last totals Polar sent plus every event tracked since. Events stay queued in Redis. After a failed delivery, every instance waits before it tries again: as long as Polar asks with `Retry-After`, otherwise 1 second, doubling up to a minute. A first read of a customer Outpost has never seen fails once `snapshotTimeout` passes, because no snapshot can arrive.
+**Polar is unreachable or overloaded.** Reads keep answering, with the last totals Polar sent plus every event tracked since. Events stay queued in Redis. After a failed delivery, every instance waits before it tries again: as long as Polar asks with `Retry-After`, otherwise 1 second, doubling up to a minute. A first read of a customer Outpost has never seen fails with `NotReadyError` once `snapshotTimeout` passes, because no snapshot can arrive.
 
-**Polar refuses a batch.** A `4xx` other than `401`, `403` or `429` means a retry cannot succeed. Outpost drops the batch and reports it to `onDropped`. Polar never bills a dropped event, so it leaves local reads too.
+**Polar refuses events.** A `4xx` other than `401`, `403` or `429` means a retry cannot succeed. When Polar names the events it refuses, Outpost drops those, reports them to `onDropped`, and sends the rest of the batch again. Otherwise it drops the whole batch. Polar never bills a dropped event; it leaves local reads once Polar's totals replace its bucket, a few minutes later. Polar accepts a timestamp up to 5 seconds ahead of its clock.
+
+**Polar refuses the token.** On a `401` or a `403`, Outpost keeps the events queued and tries again. `track()` and `meter()` fail with `PolarOutpostError` until a pull succeeds; Outpost tries one every 30 seconds.
+
+**The queue holds an entry Outpost cannot read.** Outpost drops it with a warning in your logs and delivers the rest.
 
 **An instance restarts.** Nothing to rebuild: the state and the queue live in Redis. A new instance reads them, and asks Polar for a snapshot of each customer it touches for the first time.
 
 ## Telemetry
 
-Outpost sends Polar the latency of local writes and reads, their outcomes, connection events, and the difference between local and Polar totals at each snapshot. Polar uses it to improve Outpost and to see how it runs in your deployment. It holds numbers, meter IDs and customer identities, never your events' metadata. Each instance queues its exports in Redis, and the instance that pulls sends them to Polar, over the same token.
+Outpost sends Polar the latency of local writes and reads, their outcomes, connection events, and the difference between local and Polar totals at each snapshot. Polar uses it to improve Outpost and to see how it runs in your deployment. It holds numbers, reducer IDs and customer identities, never your events' metadata. Each instance queues its exports in Redis, and the instance that pulls sends them to Polar, over the same token.
 
 To turn it off, pass `telemetry: false`, or set `POLAR_OUTPOST_TELEMETRY=0`.
 
 ## What Outpost stores in Redis
 
-Every key starts with `outpost:v1:` and your organization ID, which the table leaves out.
+Every key starts with `outpost:v1:` and your organization ID, which the table leaves out. One key is the exception: `outpost:v1:configuration:<hash>` holds your meters' configuration under a hash of the access token, with no expiry.
 
 | Key                               | Content                                                                            | Lifetime                                         |
 | --------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------ |

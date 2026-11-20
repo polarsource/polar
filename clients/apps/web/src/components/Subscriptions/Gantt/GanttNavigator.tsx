@@ -11,8 +11,9 @@ import {
   type GanttView,
 } from './scale'
 
+// The strip holds the pointer during a drag, so it carries the drag's cursor.
 const TRACK_CLASS =
-  'dark:bg-polar-800 relative h-3 grow cursor-pointer touch-none rounded-full bg-gray-100'
+  'dark:bg-polar-800 relative h-3 grow cursor-pointer touch-none rounded-full bg-gray-100 data-[drag=end]:cursor-ew-resize data-[drag=pan]:cursor-grabbing data-[drag=start]:cursor-ew-resize'
 const THUMB_CLASS =
   'dark:bg-polar-600 dark:hover:bg-polar-500/30 absolute inset-y-0 min-w-6 cursor-grab rounded-full transition-colors duration-[120ms] bg-gray-300 hover:bg-gray-400/60 active:cursor-grabbing'
 // Each end of the thumb is a grip, marked by a dot.
@@ -86,6 +87,7 @@ export const GanttNavigator = ({
     const track = trackRef.current
     if (!view || !track) return
     track.setPointerCapture(event.pointerId)
+    track.dataset.drag = mode
     const extentEnd = extentEndOf(view)
     dragRef.current = {
       mode,
@@ -162,6 +164,7 @@ export const GanttNavigator = ({
 
   const endDrag = () => {
     dragRef.current = null
+    delete trackRef.current?.dataset.drag
     sync()
   }
 

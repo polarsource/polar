@@ -8,6 +8,7 @@ from redis import RedisError
 
 from polar.auth.models import AuthSubject
 from polar.config import settings
+from polar.customer.service import customer as customer_service
 from polar.customer_meter.repository import CustomerMeterRepository
 from polar.customer_meter.service import customer_meter as customer_meter_service
 from polar.enums import SubscriptionRecurringInterval
@@ -1924,3 +1925,35 @@ class TestGetReducerUnits:
 
         assert [result.consumed_units for result in results] == [Decimal(0)]
 
+
+@pytest.mark.anyio
+class TestCustomerStateReducerUnits:
+    async def test_reads_the_reducer_uncached_on_reducer_billing(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        stale_customer_meter: CustomerMeter,
+    ) -> None:
+        customer = stale_customer_meter.customer
+        organization = customer.organization
+        organization.feature_settings = {"reducer_billing_enabled": True}
+        await save_fixture(organization)
+
+        state = await customer_service.get_state(session, redis, customer)
+
+        assert [meter.consumed_units for meter in state.active_meters] == [3]
+        assert await redis.get(f"polar:customer_state:v8:{customer.id}") is None
+
+    async def test_caches_the_stored_units_without_reducer_billing(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        stale_customer_meter: CustomerMeter,
+    ) -> None:
+        customer = stale_customer_meter.customer
+
+        state = await customer_service.get_state(session, redis, customer)
+
+        assert [meter.consumed_units for meter in state.active_meters] == [0]
+        assert await redis.get(f"polar:customer_state:v8:{customer.id}") is not None

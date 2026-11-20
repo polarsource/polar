@@ -1431,15 +1431,15 @@ class EventService:
         }
         external_ids = {external_id for _, external_id in customer_ids_by_external_id}
 
-        for meter in await customer_meter_repository.get_unactivated_meters(
-            customer_ids
-        ):
-            (
-                matched_customer_ids,
-                matched_external_ids,
-            ) = await event_repository.get_meter_matching_customers(
-                event_ids, meter, customer_ids, external_ids
-            )
+        meters = await customer_meter_repository.get_unactivated_meters(customer_ids)
+        if not meters:
+            return
+
+        matches = await event_repository.get_meters_matching_customers(
+            event_ids, meters, customer_ids, external_ids
+        )
+        for meter in meters:
+            matched_customer_ids, matched_external_ids = matches[meter.id]
             matched = matched_customer_ids | {
                 customer_ids_by_external_id[(meter.organization_id, external_id)]
                 for external_id in matched_external_ids

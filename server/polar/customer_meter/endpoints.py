@@ -48,10 +48,12 @@ async def list(
     sorting: sorting.ListSorting,
     filters: Annotated[CustomerMeterListParams, Query()],
     session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis),
 ) -> ListResource[CustomerMeterSchema]:
     """List customer meters."""
     results, count = await customer_meter_service.list(
         session,
+        redis,
         auth_subject,
         organization_id=filters.organization_id,
         customer_id=filters.customer_id,
@@ -78,9 +80,10 @@ async def get(
     id: CustomerMeterID,
     auth_subject: auth.CustomerMeterRead,
     session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis),
 ) -> CustomerMeter:
     """Get a customer meter by ID."""
-    customer_meter = await customer_meter_service.get(session, auth_subject, id)
+    customer_meter = await customer_meter_service.get(session, redis, auth_subject, id)
 
     if customer_meter is None:
         raise ResourceNotFound()

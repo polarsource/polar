@@ -19,6 +19,7 @@ from polar.authz.service import (
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.config import settings
 from polar.customer_meter.repository import CustomerMeterRepository
+from polar.customer_meter.service import customer_meter as customer_meter_service
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.exceptions import PolarRequestValidationError, ValidationError
 from polar.kit.address import Address
@@ -39,6 +40,7 @@ from polar.member_session.service import member_session as member_session_servic
 from polar.models import (
     BenefitGrant,
     Customer,
+    CustomerMeter,
     Order,
     Organization,
     PaymentMethod,
@@ -1022,17 +1024,23 @@ class CustomerService:
         )
 
         customer_meter_repository = CustomerMeterRepository.from_session(session)
-        customer.active_meters = await customer_meter_repository.get_all_by_customer(
-            customer.id
+        active_meters = await customer_meter_repository.get_all_by_customer(
+            customer.id, options=(joinedload(CustomerMeter.customer),)
         )
+        has_live_units = await customer_meter_service.apply_reducer_units(
+            session, redis, active_meters
+        )
+        customer.active_meters = active_meters
 
         state = _CustomerStateAdapter.validate_python(customer, from_attributes=True)
 
-        await redis.set(
-            cache_key,
-            state.model_dump_json(),
-            ex=int(timedelta(hours=1).total_seconds()),
-        )
+        # A cached state would freeze the live meter units for an hour.
+        if not has_live_units:
+            await redis.set(
+                cache_key,
+                state.model_dump_json(),
+                ex=int(timedelta(hours=1).total_seconds()),
+            )
 
         return state
 

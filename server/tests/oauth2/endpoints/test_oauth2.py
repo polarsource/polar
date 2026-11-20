@@ -1,4 +1,7 @@
+import threading
+from collections.abc import Callable, Iterator
 from datetime import timedelta
+from typing import Any
 from urllib.parse import parse_qs, urlparse
 
 import jwt
@@ -30,6 +33,7 @@ from polar.models import (
 )
 from polar.models.user_organization import OrganizationRole
 from polar.models.user_session_organization import UserSessionOrganization
+from polar.oauth2.authorization_server import AuthorizationServer
 from polar.oauth2.service.oauth2_grant import oauth2_grant as oauth2_grant_service
 from polar.oauth2.sub_type import SubType
 from tests.fixtures.auth import AuthSubjectFixture
@@ -37,6 +41,41 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_agent
 
 from ..conftest import create_oauth2_authorization_code, create_oauth2_token
+
+SYNCHRONOUS_AUTHORIZATION_SERVER_METHODS = (
+    "create_authorization_response",
+    "create_endpoint_response",
+    "create_token_response",
+    "get_consent_grant",
+)
+
+
+@pytest.fixture(autouse=True)
+def authorization_server_runs_off_the_event_loop(
+    mocker: MockerFixture,
+) -> Iterator[None]:
+    calling_threads: set[int] = set()
+
+    def record_calling_thread(method: Callable[..., Any]) -> Callable[..., Any]:
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            calling_threads.add(threading.get_ident())
+            return method(*args, **kwargs)
+
+        return wrapper
+
+    for method_name in SYNCHRONOUS_AUTHORIZATION_SERVER_METHODS:
+        mocker.patch.object(
+            AuthorizationServer,
+            method_name,
+            autospec=True,
+            side_effect=record_calling_thread(
+                getattr(AuthorizationServer, method_name)
+            ),
+        )
+
+    yield
+
+    assert threading.get_ident() not in calling_threads
 
 
 @pytest.fixture

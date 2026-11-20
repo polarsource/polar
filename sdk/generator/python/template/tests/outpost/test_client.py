@@ -2325,7 +2325,8 @@ async def test_keeps_a_batch_polar_fails_to_take_and_the_fleet_waits_to_send_it_
     ):
         await outpost.track(_usage("event-0", 10))
         ingest["statuses"] = [503]
-        failed = time.time() * 1000
+        # Redis stores whole milliseconds.
+        failed = int(time.time() * 1000)
         await outpost.flush()
         assert await _queued(redis) == [_usage("event-0", 10)]
         assert float(await redis.hget(BACKOFF, "retry_at") or 0) >= failed + 1000
@@ -2375,7 +2376,8 @@ async def test_waits_as_long_as_a_polar_that_rate_limits_it_asks(
     async with Outpost(url, client=polar_client) as outpost:
         await outpost.track(_usage("event-0", 10))
         ingest["statuses"] = [429]
-        failed = time.time() * 1000
+        # Redis stores whole milliseconds.
+        failed = int(time.time() * 1000)
         await outpost.flush()
         retry_at = float(await redis.hget(BACKOFF, "retry_at") or 0)
         assert failed + 30_000 <= retry_at <= time.time() * 1000 + 30_000
@@ -2388,7 +2390,8 @@ async def test_counts_the_failures_of_one_wait_as_one_and_keeps_the_longest_wait
     url, redis = redis_connection
     await _seal(redis, BUCKET)
     async with Outpost(url, client=polar_client) as outpost:
-        failed = time.time() * 1000
+        # Redis stores whole milliseconds.
+        failed = int(time.time() * 1000)
         for _ in range(8):
             await outpost._back_off(BACKOFF, first=1, maximum=60)
         assert float(await redis.hget(BACKOFF, "retry_at") or 0) < failed + 2000

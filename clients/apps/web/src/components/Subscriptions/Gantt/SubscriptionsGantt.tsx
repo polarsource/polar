@@ -20,7 +20,6 @@ import { GanttSkeletonLabels, GanttSkeletonTrack } from './GanttSkeleton'
 import {
   MIN_CYCLE_WIDTH,
   ROW_HEIGHT,
-  ROW_DIMMED_CLASS,
   ROW_HOVERABLE_CLASS,
   ROW_SELECTED_CLASS,
   type GanttZoomHandle,
@@ -40,6 +39,7 @@ interface SubscriptionsGanttProps {
   zoomRef?: Ref<GanttZoomHandle>
   onZoomChange?: (zoom: number) => void
   focus?: number
+  footerLabel?: string
   selectedId: string | null
   onSelect: (id: string | null) => void
   isLoadingMore: boolean
@@ -53,6 +53,7 @@ export const SubscriptionsGantt = ({
   zoomRef,
   onZoomChange,
   focus,
+  footerLabel,
   selectedId,
   onSelect,
   isLoadingMore,
@@ -70,9 +71,7 @@ export const SubscriptionsGantt = ({
   const subscriptions = loaded ?? []
   const hasSelection = subscriptions.some(({ id }) => id === selectedId)
   const rowClassName = (id: string) =>
-    id === selectedId
-      ? ROW_SELECTED_CLASS
-      : twMerge(ROW_HOVERABLE_CLASS, hasSelection && ROW_DIMMED_CLASS)
+    id === selectedId ? ROW_SELECTED_CLASS : ROW_HOVERABLE_CLASS
 
   useEffect(() => {
     if (!hasSelection) return
@@ -93,6 +92,7 @@ export const SubscriptionsGantt = ({
       onZoomChange={onZoomChange}
       focus={focus}
       cornerLabel="Customer"
+      footerLabel={footerLabel}
     >
       {({ scale, rendered, now, getVisibleRows }) => {
         if (!loaded) {

@@ -54,8 +54,6 @@ const REASON_OPTIONS = CANCELLATION_REASONS.map((reason) => ({
   label: REASON_LABELS[reason],
 }))
 
-const COUNT_FORMAT = new Intl.NumberFormat('en-US')
-
 const GROUP_OPTIONS: { value: GanttGroup; label: string }[] = [
   { value: 'customer', label: 'By customer' },
   { value: 'total', label: 'Totals' },
@@ -85,8 +83,6 @@ const SORT_OPTIONS = [
 
 interface SubscriptionsToolbarProps {
   organization: schemas['Organization']
-  // How many subscriptions match the filters, as the list reports it.
-  totalCount?: number
   product: ProductFilter
   onProductSelect: (product: ProductFilter) => void
   status: SelectableSubscriptionStatus[] | null
@@ -115,7 +111,6 @@ interface SubscriptionsToolbarProps {
 
 export const SubscriptionsToolbar = ({
   organization,
-  totalCount,
   product,
   onProductSelect,
   status,
@@ -312,17 +307,19 @@ export const SubscriptionsToolbar = ({
         borderColor="border-primary"
       >
         <Box alignItems="center" columnGap="l" minWidth={0}>
-          <Box alignItems="baseline" gap="m">
-            <Text as="h1" variant="body" wrap="nowrap">
-              Subscriptions
-            </Text>
-            {totalCount !== undefined && (
-              <Text variant="body" color="muted" tabularNums>
-                {COUNT_FORMAT.format(totalCount)}
-              </Text>
-            )}
-          </Box>
-          <ToolbarFilterChips filters={filters} />
+          <Text as="h1" variant="body" wrap="nowrap">
+            Subscriptions
+          </Text>
+          <ToolbarFilterChips
+            filters={filters}
+            trailing={
+              <ToolbarFilterMenu
+                filters={filters}
+                onReset={hasActiveFilters ? onReset : undefined}
+                variant="add"
+              />
+            }
+          />
         </Box>
         <Box alignItems="center" gap="s" flexShrink={0} minHeight={32}>
           <SegmentedControl

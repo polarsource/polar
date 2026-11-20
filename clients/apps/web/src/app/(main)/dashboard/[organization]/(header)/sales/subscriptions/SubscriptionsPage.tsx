@@ -5,11 +5,6 @@ import { toast } from '@/components/Toast/use-toast'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { useModal } from '@/components/Modal/useModal'
 import ExportSubscriptionsModal from '@/components/Subscriptions/ExportSubscriptionsModal'
-import { GanttLegend } from '@/components/Subscriptions/Gantt/GanttLegend'
-import {
-  GanttZoomSlider,
-  type GanttZoomSliderHandle,
-} from '@/components/Subscriptions/Gantt/GanttZoomSlider'
 import {
   DEFAULT_GANTT_GROUP,
   DEFAULT_PIXELS_PER_DAY,
@@ -38,7 +33,7 @@ import {
   useQueryStates,
 } from 'nuqs'
 import dynamic from 'next/dynamic'
-import React, { useCallback, useRef, useState } from 'react'
+import React, { useRef, useState } from 'react'
 import { type ToolbarAction } from './ToolbarActionsMenu'
 import {
   SubscriptionsToolbar,
@@ -199,31 +194,24 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const next = selected ? subscriptions?.[selectedIndex + 1] : undefined
   const select = (id: string | null) => setFilters({ subscription: id })
 
+  // How many subscriptions match the filters, as the list reports it.
+  const totalCount = data?.pages[0]?.pagination.total_count
+  const countLabel =
+    totalCount === undefined
+      ? undefined
+      : `${totalCount.toLocaleString('en-US')} ${totalCount === 1 ? 'subscription' : 'subscriptions'}`
   const safeCopy = useSafeCopy(toast)
   const [focus, setFocus] = useState<number>()
   // Dragging the zoom moves the chart directly. The URL and the render that
   // follows from it only catch up once the drag pauses.
   const zoomRef = useRef<GanttZoomHandle>(null)
   const commitSpan = useDebouncedCallback(
-    (value: number) => setFilters({ zoom: Math.round(value * 100) / 100 }),
+    (value: number) => setFilters({ zoom: Math.round(value * 1000) / 1000 }),
     ZOOM_COMMIT_DELAY,
   )
-  const sliderRef = useRef<GanttZoomSliderHandle>(null)
-  // Stable, because the chart subscribes to it from an effect.
-  const onPinch = useCallback(
-    (value: number) => {
-      sliderRef.current?.show(value)
-      commitSpan(value)
-    },
-    [commitSpan],
-  )
-  const onZoom = (value: number) => {
-    zoomRef.current?.zoomTo(value)
-    commitSpan(value)
-  }
   const resetZoom = () => {
-    sliderRef.current?.show(DEFAULT_PIXELS_PER_DAY)
-    onZoom(DEFAULT_PIXELS_PER_DAY)
+    zoomRef.current?.zoomTo(DEFAULT_PIXELS_PER_DAY)
+    commitSpan(DEFAULT_PIXELS_PER_DAY)
   }
   // The view is not in the address unless a link put it there, so it is added.
   const copyLink = async () => {
@@ -305,7 +293,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     >
       <SubscriptionsToolbar
         organization={organization}
-        totalCount={data?.pages[0]?.pagination.total_count}
         product={product}
         onProductSelect={onProductSelect}
         status={status}
@@ -336,6 +323,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           subscriptions={subscriptions}
           selectedId={selectedId}
           onSelect={select}
+          footerLabel={countLabel}
           isLoadingMore={isFetchingNextPage}
           onEndReached={loadMore}
         />
@@ -347,8 +335,9 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
               filters={listFilters}
               zoom={zoom}
               zoomRef={zoomRef}
-              onZoomChange={onPinch}
+              onZoomChange={commitSpan}
               group={group}
+              footerLabel={countLabel}
               onSelect={drillDown}
             />
           ) : (
@@ -357,27 +346,15 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
               earliest={new Date(organization.created_at).getTime()}
               zoom={zoom}
               zoomRef={zoomRef}
-              onZoomChange={onPinch}
+              onZoomChange={commitSpan}
               focus={focus}
+              footerLabel={countLabel}
               selectedId={selectedId}
               onSelect={select}
               isLoadingMore={isFetchingNextPage}
               onEndReached={loadMore}
             />
           )}
-          <Box
-            px="l"
-            py="m"
-            alignItems="center"
-            gap="l"
-            borderTopWidth={1}
-            borderStyle="solid"
-            borderColor="border-primary"
-          >
-            <GanttZoomSlider ref={sliderRef} zoom={zoom} onChange={onZoom} />
-
-            <GanttLegend aggregate={group !== 'customer'} />
-          </Box>
         </Box>
       )}
       <ExportSubscriptionsModal

@@ -14,6 +14,7 @@ import { format } from 'date-fns'
 import { useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { formatSubscriptionPrice } from './Gantt/GanttRowLabel'
+import { FOOTER_HEIGHT } from './Gantt/scale'
 import {
   getSubscriptionStatusBorderColor,
   subscriptionStatusDisplayNames,
@@ -150,6 +151,7 @@ interface SubscriptionsTableProps {
   subscriptions: Subscription[] | undefined
   selectedId: string | null
   onSelect: (id: string | null) => void
+  footerLabel?: string
   isLoadingMore: boolean
   onEndReached: () => void
 }
@@ -158,6 +160,7 @@ export const SubscriptionsTable = ({
   subscriptions,
   selectedId,
   onSelect,
+  footerLabel,
   isLoadingMore,
   onEndReached,
 }: SubscriptionsTableProps) => {
@@ -198,6 +201,21 @@ export const SubscriptionsTable = ({
           <Box justifyContent="center" paddingVertical="l">
             <Spinner />
           </Box>
+        )}
+      </Box>
+      <Box
+        flexShrink={0}
+        height={FOOTER_HEIGHT}
+        alignItems="center"
+        px="l"
+        borderTopWidth={1}
+        borderStyle="solid"
+        borderColor="border-primary"
+      >
+        {footerLabel && (
+          <Text color="muted" truncate tabularNums>
+            {footerLabel}
+          </Text>
         )}
       </Box>
     </Box>

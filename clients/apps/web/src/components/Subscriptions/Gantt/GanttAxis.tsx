@@ -20,7 +20,7 @@ const YEAR_WIDTH = 36
 // just right of the label column, or just left of the year. It is placed with
 // a spacer because a margin would stop it from sticking to the right.
 const TODAY_CLASS =
-  'group sticky left-[168px] right-[68px] z-10 shrink-0 cursor-pointer self-start md:left-[280px]'
+  'group sticky left-[calc(var(--gantt-labels-width)+8px)] right-[68px] z-10 shrink-0 cursor-pointer self-start'
 // The arrow points to where today is: the opposite of the edge it stuck to.
 const ARROW_LEFT_CLASS = 'hidden size-3 group-data-[stuck=left]:block'
 const ARROW_RIGHT_CLASS = 'hidden size-3 group-data-[stuck=right]:block'

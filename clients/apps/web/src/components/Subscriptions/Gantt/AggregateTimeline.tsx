@@ -61,6 +61,7 @@ interface AggregateTimelineProps {
   zoomRef?: Ref<GanttZoomHandle>
   onZoomChange?: (zoom: number) => void
   group: AggregateGrouping
+  footerLabel?: string
   onSelect: (selection: { groupKey: string; start?: number }) => void
 }
 
@@ -71,6 +72,7 @@ export const AggregateTimeline = ({
   zoomRef,
   onZoomChange,
   group,
+  footerLabel,
   onSelect,
 }: AggregateTimelineProps) => {
   const [hoveredStart, setHoveredStart] = useState<number | null>(null)
@@ -86,6 +88,7 @@ export const AggregateTimeline = ({
       zoomRef={zoomRef}
       onZoomChange={onZoomChange}
       cornerLabel={cornerLabel}
+      footerLabel={footerLabel}
     >
       {({ scale, rendered, now }) => {
         const rows = aggregateSubscriptions(subscriptions, {

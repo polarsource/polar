@@ -12,6 +12,7 @@ import {
   ChevronRight,
   FilterListOutlined,
   FunnelX,
+  Plus,
 } from '@polar-sh/orbit/icons'
 import {
   Popover,
@@ -23,6 +24,8 @@ import { twMerge } from 'tailwind-merge'
 
 // Filled while the menu is open or anything is applied, in place of a badge.
 const TRIGGER_ON_CLASS = 'dark:bg-polar-700 bg-gray-200'
+// Sized to stand beside a filter chip.
+const ADD_TRIGGER_CLASS = 'size-[26px] shrink-0 rounded-md [&_svg]:size-3.5!'
 const PANEL_CLASS =
   'dark:bg-polar-800 dark:border-polar-700 rounded-xl border border-gray-200 bg-white text-[13px] shadow-xl'
 const SEARCH_CLASS =
@@ -130,17 +133,20 @@ interface ToolbarFilterMenuProps {
   filters: Filter[]
   // Offered at the foot of the menu while there is something to reset.
   onReset?: () => void
-  className?: string
+  // The toolbar button, or a plus that follows the filter chips. The plus sits
+  // at the left of the toolbar, so its menu and options open to the right.
+  variant?: 'toolbar' | 'add'
 }
 
 // A list of properties, each opening its options beside it.
 export const ToolbarFilterMenu = ({
   filters,
   onReset,
-  className,
+  variant = 'toolbar',
 }: ToolbarFilterMenuProps) => {
   const [open, setOpen] = useState(false)
   const [activeKey, setActiveKey] = useState<string | null>(null)
+  const isAdd = variant === 'add'
   const hasApplied = filters.some(
     (filter) => isFilterActive(filter) && !isFilterDefaulted(filter),
   )
@@ -164,18 +170,23 @@ export const ToolbarFilterMenu = ({
           size="icon"
           variant="ghost"
           className={twMerge(
-            'h-7 w-7 [&_svg]:size-4!',
-            (hasApplied || open) && TRIGGER_ON_CLASS,
-            className,
+            isAdd ? ADD_TRIGGER_CLASS : 'h-7 w-7 [&_svg]:size-4!',
+            (open || (hasApplied && !isAdd)) && TRIGGER_ON_CLASS,
           )}
-          aria-label={hasApplied ? 'Filters, some applied' : 'Filters'}
-          title="Filters"
+          aria-label={
+            isAdd
+              ? 'Add filter'
+              : hasApplied
+                ? 'Filters, some applied'
+                : 'Filters'
+          }
+          title={isAdd ? 'Add filter' : 'Filters'}
         >
-          <FilterListOutlined fontSize="inherit" />
+          {isAdd ? <Plus /> : <FilterListOutlined fontSize="inherit" />}
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        align="end"
+        align={isAdd ? 'start' : 'end'}
         sideOffset={8}
         className={twMerge(PANEL_CLASS, 'w-60 overflow-visible p-0')}
       >
@@ -205,7 +216,12 @@ export const ToolbarFilterMenu = ({
                 </button>
                 {isActive && (
                   // Padded, not offset, so the pointer can cross the gap.
-                  <div className="absolute top-0 right-full -mt-[7px] pr-3">
+                  <div
+                    className={twMerge(
+                      'absolute top-0 -mt-[7px]',
+                      isAdd ? 'left-full pl-3' : 'right-full pr-3',
+                    )}
+                  >
                     <OptionsPanel
                       filter={filter}
                       onPicked={() => onOpenChange(false)}

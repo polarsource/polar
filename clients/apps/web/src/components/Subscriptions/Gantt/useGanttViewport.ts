@@ -13,10 +13,11 @@ import {
   FALLBACK_VIEWPORT_HEIGHT,
   FALLBACK_VIEWPORT_WIDTH,
   MAX_PIXELS_PER_DAY,
-  MIN_PIXELS_PER_DAY,
+  NAVIGATOR_FUTURE_DAYS,
   PIXELS_PER_DAY_VAR,
   ROW_HEIGHT,
   TODAY_VIEWPORT_RATIO,
+  type GanttView,
   type GanttZoomHandle,
 } from './scale'
 import { useGanttPan } from './useGanttPan'
@@ -105,7 +106,15 @@ export const useGanttViewport = ({
     start: Math.max(start, center - WINDOW_SPANS * span),
     end: center + WINDOW_SPANS * span,
   }
-  const scale = createGanttScale({ start, end: rendered.end }, pixelsPerDay)
+  // The track is wider than what is rendered, so the navigator can move the
+  // view anywhere on its strip without waiting for a render.
+  const scale = createGanttScale(
+    {
+      start,
+      end: Math.max(rendered.end, now + NAVIGATOR_FUTURE_DAYS * DAY_MS),
+    },
+    pixelsPerDay,
+  )
 
   // Layout effect: the first measurement has to land before the first paint,
   // or the chart is drawn once at a fallback width and then jumps.
@@ -121,6 +130,8 @@ export const useGanttViewport = ({
     measure()
     const observer = new ResizeObserver(measure)
     observer.observe(scroller)
+    // The label column can be resized, which changes how much track is in view.
+    if (labelsRef.current) observer.observe(labelsRef.current)
     return () => observer.disconnect()
   }, [])
 
@@ -203,12 +214,13 @@ export const useGanttViewport = ({
       if (!event.ctrlKey) return
       event.preventDefault()
       const current = pixelsPerDayRef.current
+      // Zoomed all the way out, the view holds the navigator's whole strip.
+      const fit =
+        viewportWidthRef.current /
+        ((now - start) / DAY_MS + NAVIGATOR_FUTURE_DAYS)
       const next = Math.min(
         MAX_PIXELS_PER_DAY,
-        Math.max(
-          MIN_PIXELS_PER_DAY,
-          current * Math.exp(-event.deltaY * PINCH_SPEED),
-        ),
+        Math.max(fit, current * Math.exp(-event.deltaY * PINCH_SPEED)),
       )
       const pointerX =
         event.clientX -
@@ -229,7 +241,7 @@ export const useGanttViewport = ({
     }
     scroller.addEventListener('wheel', onWheel, { passive: false })
     return () => scroller.removeEventListener('wheel', onWheel)
-  }, [start, onZoomChange])
+  }, [start, now, onZoomChange])
 
   const onScroll = () => {
     const scroller = scrollerRef.current
@@ -267,6 +279,32 @@ export const useGanttViewport = ({
       behavior: 'smooth',
     })
 
+  const getView = (): GanttView | null => {
+    const scroller = scrollerRef.current
+    const width = viewportWidthRef.current
+    if (!scroller || width === 0) return null
+    return {
+      start: toTime(scroller.scrollLeft),
+      end: toTime(scroller.scrollLeft + width),
+      width,
+      pixelsPerDay: pixelsPerDayRef.current,
+    }
+  }
+
+  // Puts a given time at the left edge, at a given zoom.
+  const setView = (visibleStart: number, next: number) => {
+    const scroller = scrollerRef.current
+    if (!scroller) return
+    if (next !== pixelsPerDayRef.current) {
+      scroller.style.setProperty(PIXELS_PER_DAY_VAR, String(next))
+      pixelsPerDayRef.current = next
+      onZoomChange?.(next)
+    }
+    scroller.scrollLeft = toX(visibleStart)
+    // No scroll event follows when only the zoom changed.
+    onScroll()
+  }
+
   useImperativeHandle(zoomRef, () => ({
     zoomTo: applyZoom,
     scrollToToday: () => scrollToTime(now),
@@ -285,6 +323,8 @@ export const useGanttViewport = ({
     toTime,
     onScroll,
     scrollToTime,
+    getView,
+    setView,
     panHandlers,
   }
 }

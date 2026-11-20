@@ -4,7 +4,6 @@ import { format } from 'date-fns'
 // Zoom is a fixed scale in pixels per day, not a number of days to fit. That
 // way the chart does not rescale when its width changes, for example when the
 // detail panel opens beside it.
-export const MIN_PIXELS_PER_DAY = 1
 export const MAX_PIXELS_PER_DAY = 36
 export const DEFAULT_PIXELS_PER_DAY = 3
 
@@ -23,6 +22,8 @@ export const DEFAULT_GANTT_GROUP: GanttGroup = 'customer'
 export const ROW_HEIGHT = 38
 // Matches the CondensedTable header, so both views share one heading height.
 export const HEADER_HEIGHT = 38
+// The strip under the timeline and the table, which holds the count.
+export const FOOTER_HEIGHT = 44
 export const DATE_LABEL_HEIGHT = 22
 export const DATE_LABEL_TOP = Math.floor(
   (HEADER_HEIGHT - DATE_LABEL_HEIGHT) / 2,
@@ -39,6 +40,21 @@ export const FALLBACK_VIEWPORT_HEIGHT = 800
 // Horizontal positions are CSS expressions of this variable, so zooming only
 // has to change its value. Nothing is re-rendered while the zoom is dragged.
 export const PIXELS_PER_DAY_VAR = '--gantt-pixels-per-day'
+
+// The label column's width. Its default is set where the scroller is styled,
+// and anything stuck beside the column is offset by it.
+export const LABELS_WIDTH_VAR = '--gantt-labels-width'
+
+// How far past today the navigator strip and the scrollable track always reach.
+export const NAVIGATOR_FUTURE_DAYS = 3 * 365
+
+/** The part of the timeline in view, and the scale it is drawn at. */
+export interface GanttView {
+  start: number
+  end: number
+  width: number
+  pixelsPerDay: number
+}
 
 export interface GanttZoomHandle {
   zoomTo: (pixelsPerDay: number) => void
@@ -81,5 +97,3 @@ export const SURFACE_CLASS = 'dark:bg-polar-900 bg-white'
 export const ROW_SELECTED_CLASS = 'dark:bg-polar-800 bg-gray-100'
 export const ROW_HOVERABLE_CLASS =
   'data-[hovered=true]:bg-gray-50 dark:data-[hovered=true]:bg-polar-800/50'
-// Rows other than the selected one step back, and return while pointed at.
-export const ROW_DIMMED_CLASS = 'opacity-40 data-[hovered=true]:opacity-100'

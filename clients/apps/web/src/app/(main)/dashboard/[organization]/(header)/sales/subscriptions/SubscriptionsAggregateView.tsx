@@ -16,6 +16,7 @@ interface SubscriptionsAggregateViewProps {
   zoomRef: Ref<GanttZoomHandle>
   onZoomChange: (zoom: number) => void
   group: AggregateGrouping
+  footerLabel?: string
   onSelect: (selection: { groupKey: string; start?: number }) => void
 }
 
@@ -26,6 +27,7 @@ export const SubscriptionsAggregateView = ({
   zoomRef,
   onZoomChange,
   group,
+  footerLabel,
   onSelect,
 }: SubscriptionsAggregateViewProps) => {
   const timeline = {
@@ -34,6 +36,7 @@ export const SubscriptionsAggregateView = ({
     zoomRef,
     onZoomChange,
     group,
+    footerLabel,
     onSelect,
   }
   const { subscriptions, isLoading } = useAllSubscriptions(

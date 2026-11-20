@@ -383,7 +383,8 @@ async def polar_client(
                 return await respond({}, meter_usage["status"])
             if meter_usage["failures"]:
                 meter_usage["failures"] -= 1
-                return await respond({}, 503)
+                # A proxy's wait is not Polar's: only a rate limit sets the pace.
+                return await respond({}, 503, ((b"retry-after", b"30"),))
             meter_usage["in_flight"] += 1
             meter_usage["most_in_flight"] = max(
                 meter_usage["most_in_flight"], meter_usage["in_flight"]

@@ -105,7 +105,7 @@ from polar.models import (
     User,
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
-from polar.models.discount import DiscountPercentage
+from polar.models.discount import DiscountDuration, DiscountPercentage
 from polar.models.order import OrderBillingReasonInternal
 from polar.models.product_price import (
     ProductPriceFixed,
@@ -176,6 +176,8 @@ SUBSCRIPTION_CANCELLATION_BATCH_SIZE = 50
 """Max subscriptions cancelled per ``cancel_for_organization`` job, so a large
 merchant winds down across several short jobs that each stay under the worker's
 60s time limit."""
+
+TRIAL_ENDED_CANCELLATION_DELAY = timedelta(days=14)
 
 
 class SubscriptionError(PolarError): ...
@@ -1471,6 +1473,58 @@ class SubscriptionService:
             )
 
         return subscription
+
+    def should_expire_trial(self, subscription: Subscription) -> bool:
+        if not subscription.trialing or subscription.cancel_at_period_end:
+            return False
+        # A change the merchant scheduled for the trial end is applied as is.
+        if subscription.pending_update is not None:
+            return False
+        if not self._charges_after_trial(subscription):
+            return False
+        return not self._has_payment_method(
+            subscription
+        ) or not self._has_complete_billing_address(subscription)
+
+    async def expire_trial(
+        self,
+        session: AsyncSession,
+        ctx: SubscriptionUpdateContext,
+        subscription: Subscription,
+    ) -> Subscription:
+        trial_end = subscription.current_period_end
+        subscription.status = SubscriptionStatus.trial_ended
+        subscription.ends_at = trial_end + TRIAL_ENDED_CANCELLATION_DELAY
+        subscription.pause_at_period_end = False
+        subscription.resumes_at = None
+        ctx.record_billing_state(effective_at=trial_end)
+        await self.enqueue_benefits_grants(session, subscription)
+        repository = SubscriptionRepository.from_session(session)
+        return await repository.release_scheduler_lock(subscription)
+
+    def _charges_after_trial(self, subscription: Subscription) -> bool:
+        # Same rule checkout uses to decide whether to ask for a card.
+        has_metered_prices = any(
+            is_metered_price(price) for price in subscription.prices
+        )
+        discount = subscription.discount
+        renews_at = subscription.current_period_end
+        if discount is not None and discount.is_repetition_expired(
+            subscription.discount_applied_at or renews_at, renews_at
+        ):
+            discount = None
+        amount = (
+            subscription.amount
+            if discount is not None
+            else sum(spp.amount for spp in subscription.subscription_product_prices)
+        )
+        if amount == 0 and not has_metered_prices:
+            return False
+        return not (
+            isinstance(discount, DiscountPercentage)
+            and discount.duration == DiscountDuration.forever
+            and discount.basis_points == 10_000
+        )
 
     def _clear_expired_discount(
         self,
@@ -3268,6 +3322,11 @@ class SubscriptionService:
             # lost when the subscription closes.
             if subscription.current_meter_period_end is not None:
                 self._enqueue_meter_cycle_order(subscription, now)
+            # Trial usage is never billed: drop it when an ended trial is closed.
+            if subscription.status == SubscriptionStatus.trial_ended:
+                await self.reset_meters(
+                    session, subscription, reset_at=now, include_meter_credits=False
+                )
             subscription.ends_at = now
             subscription.ended_at = now
             subscription.status = SubscriptionStatus.canceled
@@ -4745,14 +4804,9 @@ class SubscriptionService:
     async def send_trial_conversion_reminder_email(
         self, session: AsyncSession, subscription: Subscription
     ) -> None:
-        if all(
-            spp.product_price.is_free
-            for spp in subscription.subscription_product_prices
-        ):
-            return
         if subscription.trial_end is None:
             return
-        if self._is_free_after_trial(subscription, subscription.trial_end):
+        if not self._charges_after_trial(subscription):
             return
         payment_method_required = not self._has_payment_method(subscription)
         billing_address_required = not self._has_complete_billing_address(subscription)
@@ -4805,23 +4859,6 @@ class SubscriptionService:
     def _has_complete_billing_address(self, subscription: Subscription) -> bool:
         billing_address = subscription.customer.billing_address
         return billing_address is not None and billing_address.has_tax_fields()
-
-    def _is_free_after_trial(
-        self, subscription: Subscription, trial_end: datetime
-    ) -> bool:
-        discount = subscription.discount
-        if discount is None or subscription.amount > 0:
-            return False
-        if discount.is_repetition_expired(
-            subscription.discount_applied_at or trial_end, trial_end
-        ):
-            return False
-        covers_usage = (
-            isinstance(discount, DiscountPercentage) and discount.basis_points == 10_000
-        )
-        return covers_usage or not any(
-            is_metered_price(price) for price in subscription.prices
-        )
 
     async def _send_customer_email(
         self,

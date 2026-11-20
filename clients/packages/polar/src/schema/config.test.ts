@@ -353,6 +353,32 @@ test('benefits serialize with meter credits linked by meter key', () => {
   ])
 })
 
+test('slack channels serialize with their defaults', () => {
+  const config = defineConfig({
+    meters: () => ({}),
+    benefits: ({ slackChannel }) => ({
+      slack: slackChannel('Slack Channel')
+        .integration('0d8f6f0c-2f55-4f7a-9d6d-3f1c2a4b5c6d')
+        .channel('acme-{customer_name}'),
+    }),
+  })
+  expect(config.toJSON().benefits).toEqual([
+    {
+      external_id: 'slack',
+      type: 'slack_shared_channel',
+      description: 'Slack Channel',
+      properties: {
+        slack_integration_id: '0d8f6f0c-2f55-4f7a-9d6d-3f1c2a4b5c6d',
+        channel_name_template: 'acme-{customer_name}',
+        private: true,
+        welcome_message: null,
+        archive_on_revoke: true,
+        team_invitees: [],
+      },
+    },
+  ])
+})
+
 test('meter credits only accept declared meter keys', () => {
   expect(() =>
     defineConfig({

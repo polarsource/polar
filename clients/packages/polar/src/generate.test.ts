@@ -325,6 +325,27 @@ const cases: [string, PolarConfig][] = [
       .toJSON(),
   ],
   [
+    'slack channels',
+    api
+      .defineConfig({
+        meters: () => ({}),
+        benefits: ({ slackChannel }) => ({
+          support: slackChannel('Slack Channel')
+            .integration('0d8f6f0c-2f55-4f7a-9d6d-3f1c2a4b5c6d')
+            .channel('acme-{customer_name}'),
+          community: slackChannel('Community')
+            .integration('0d8f6f0c-2f55-4f7a-9d6d-3f1c2a4b5c6d')
+            .channel("it's-{customer_name}")
+            .publicChannel()
+            .welcome('Welcome!\nSay hi')
+            .keepOnRevoke()
+            .invite('U1', 'U2')
+            .metadata({ tier: 4 }),
+        }),
+      })
+      .toJSON(),
+  ],
+  [
     'deprecated meters, benefits and products',
     api
       .defineConfig({

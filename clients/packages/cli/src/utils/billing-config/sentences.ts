@@ -228,6 +228,13 @@ export const benefitSentence = (input: unknown) => {
       ...visibility,
     ])
   }
+  if (benefit['type'] === 'slack_shared_channel' && properties !== undefined) {
+    return fields([
+      ['type', 'Slack channel'],
+      ['channel', name(properties['channel_name_template'])],
+      ...visibility,
+    ])
+  }
   return fields([
     [
       'type',

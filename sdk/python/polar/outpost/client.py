@@ -1221,35 +1221,6 @@ class Outpost:
             if self._ingest_duration is not None:
                 self._ingest_duration.record(time.perf_counter() - started, attributes)
 
-    async def confirm(self, events: collections.abc.Sequence[EventInput]) -> None:
-        """Settle events Polar has ingested: their usage stays in its bucket, no longer pending.
-
-        Args:
-            events: Tracked events, including their external_id.
-        """
-        await self._settle(events, hot_only=False)
-
-    async def acknowledge(self, events: collections.abc.Sequence[EventInput]) -> None:
-        """Settle events Polar has received, in the buckets no snapshot has sealed yet.
-        Events of a sealed bucket stay pending until a snapshot counts them.
-
-        Args:
-            events: Tracked events, including their external_id.
-        """
-        await self._settle(events, hot_only=True)
-
-    @_raise_redis_unavailable
-    async def _settle(
-        self, events: collections.abc.Sequence[EventInput], *, hot_only: bool
-    ) -> None:
-        self._require_running()
-        groups = self._settlements(events)
-        assert self._confirm_script is not None
-        if groups:
-            await self._confirm_script(
-                *_confirm_arguments(self._prefix, hot_only, groups)
-            )
-
     def _settlements(
         self, events: collections.abc.Sequence[EventInput]
     ) -> dict[tuple[str, int], list[str]]:

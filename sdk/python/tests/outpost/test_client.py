@@ -42,6 +42,7 @@ from polar.metering.errors import UnknownMeterError
 from polar.outpost import NotReadyError
 from polar.outpost.client import (
     APPLY_SNAPSHOT_SCRIPT,
+    CONFIRM_SCRIPT,
     WRITE_BUCKET_SCRIPT,
     MissingExternalIdError,
     Outpost,
@@ -1970,6 +1971,7 @@ async def test_independent_reducers_concurrent_statistics_and_meter_credits(
             f"outpost:v1:org-1:state:{identity}",
             *(f"bucket:{BUCKET}:{name}" for name in ("count", "sum", "min", "max")),
         ) == [b"20", b"100", b"2", b"8"]
+        await first.flush()
         await first.track(
             {
                 "name": "call",
@@ -1979,7 +1981,6 @@ async def test_independent_reducers_concurrent_statistics_and_meter_credits(
                 "metadata": {"tokens": 4},
             }
         )
-        await first.confirm(events)
         await seal("tokens", BUCKET + BUCKET_SIZE, 21, 22, 120, 2, 15)
         await seal("credits", BUCKET + BUCKET_SIZE, 21, 2, 150, 50, 100)
         # Every event in the bucket is confirmed: Polar counts it, the local copy is gone.
@@ -2081,29 +2082,13 @@ async def test_counts_an_event_from_before_1970(
 
 
 @pytest.mark.anyio
-async def test_confirms_ingested_events_and_keeps_the_rest_pending(
-    redis_connection: tuple[str, Redis], polar_client: httpx2.AsyncClient
-) -> None:
-    url, redis = redis_connection
-    key = "outpost:v1:org-1:state:external:alice:tokens"
-    await _seal(redis, BUCKET)
-    async with Outpost(url, client=polar_client) as outpost:
-        await outpost.actor(external_customer_id="alice")
-        events = [_usage(f"event-{index}", 10) for index in range(10)]
-        for event in events:
-            await outpost.track(event)
-        await outpost.confirm(events[:4])
-        await _seal(redis, BUCKET + BUCKET_SIZE, 4, 40)
-        assert await _consumed(outpost) == 100
-    assert await redis.hget(key, f"bucket:{BUCKET}:count") == b"10"
-    assert await redis.hget(key, f"pending:{BUCKET}:count") == b"6"
-
-
-@pytest.mark.anyio
 async def test_keeps_the_pending_extrema_of_the_events_still_pending(
     redis_connection: tuple[str, Redis],
     polar_client: httpx2.AsyncClient,
     configuration: dict[str, typing.Any],
+    snapshots: dict[str, dict[str, typing.Any]],
+    changes: dict[str, typing.Any],
+    ingested: set[str],
 ) -> None:
     url, redis = redis_connection
     key = "outpost:v1:org-1:state:external:alice:tokens"
@@ -2116,14 +2101,22 @@ async def test_keeps_the_pending_extrema_of_the_events_still_pending(
             await outpost.track(event)
         assert await redis.hget(key, f"pending:{BUCKET}:min") == b"3"
         assert await redis.hget(key, f"pending:{BUCKET}:max") == b"9"
-        await outpost.confirm([events[1], events[0]])
+        ingested.update(["high", "low"])
+        sealing = {**_sealing(2, 12), "min": 3, "max": 9}
+        snapshots["external:alice:tokens"] = sealing
+        await _deliver(outpost, changes, sealing)
+
+        async def one_pending() -> bool:
+            return await _pending_count(redis) == b"1"
+
+        await _wait_for(one_pending)
         assert await redis.hget(key, f"pending:{BUCKET}:min") == b"5"
         assert await redis.hget(key, f"pending:{BUCKET}:max") == b"5"
         assert await redis.hget(key, f"pending:{BUCKET}:count") == b"1"
 
 
 @pytest.mark.anyio
-async def test_settles_an_event_once_however_many_times_a_confirmation_names_it(
+async def test_settles_an_event_once_however_many_times_confirm_names_it(
     redis_connection: tuple[str, Redis], polar_client: httpx2.AsyncClient
 ) -> None:
     url, redis = redis_connection
@@ -2134,7 +2127,24 @@ async def test_settles_an_event_once_however_many_times_a_confirmation_names_it(
         events = [_usage("event-0", 10), _usage("event-1", 10)]
         for event in events:
             await outpost.track(event)
-        await outpost.confirm([events[0], events[0]])
+        outbox = "outpost:v1:org-1:outbox"
+        pending = f"outpost:v1:org-1:pending:external:alice:tokens:{BUCKET}"
+        await redis.eval(
+            CONFIRM_SCRIPT,
+            4,
+            outbox,
+            outbox,
+            key,
+            pending,
+            "",
+            "",
+            0,
+            0,
+            BUCKET,
+            2,
+            "event-0",
+            "event-0",
+        )
         assert await redis.hget(key, f"pending:{BUCKET}:count") == b"1"
         assert await redis.hget(key, f"pending:{BUCKET}:sum") == b"10"
 
@@ -2151,7 +2161,7 @@ async def test_settles_a_hot_buckets_events_on_polars_receipt(
         events = [_usage("event-0", 10), _usage("event-1", 10)]
         for event in events:
             await outpost.track(event)
-        await outpost.acknowledge(events)
+        await outpost.flush()
         assert await _consumed(outpost) == 20
     assert await redis.hget(key, f"pending:{BUCKET}:count") is None
     assert await redis.hget(key, f"bucket:{BUCKET}:count") == b"2"
@@ -2159,7 +2169,11 @@ async def test_settles_a_hot_buckets_events_on_polars_receipt(
 
 @pytest.mark.anyio
 async def test_keeps_a_cold_buckets_events_pending_on_polars_receipt(
-    redis_connection: tuple[str, Redis], polar_client: httpx2.AsyncClient
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    snapshots: dict[str, dict[str, typing.Any]],
+    changes: dict[str, typing.Any],
+    ingested: set[str],
 ) -> None:
     url, redis = redis_connection
     key = "outpost:v1:org-1:state:external:alice:tokens"
@@ -2171,12 +2185,23 @@ async def test_keeps_a_cold_buckets_events_pending_on_polars_receipt(
             await outpost.track(event)
         await _seal(redis, BUCKET + BUCKET_SIZE)
         # Received is not counted: the snapshot that sealed the bucket did not have them.
-        await outpost.acknowledge(events)
+        await outpost.flush()
         assert await redis.hget(key, f"pending:{BUCKET}:count") == b"2"
         assert await _consumed(outpost) == 20
-        await outpost.confirm(events)
-        assert await redis.hget(key, f"pending:{BUCKET}:count") is None
-        assert await _consumed(outpost) == 0
+        ingested.update(["event-0", "event-1"])
+        sealing = {
+            **_sealing(2, 20),
+            "cold_until": BUCKET + 2 * BUCKET_SIZE,
+            "version": 1791807000000006,
+        }
+        snapshots["external:alice:tokens"] = sealing
+        await _deliver(outpost, changes, sealing)
+
+        async def none_pending() -> bool:
+            return await _pending_count(redis) is None
+
+        await _wait_for(none_pending)
+        assert await _consumed(outpost) == 20
 
 
 async def _queued(redis: Redis) -> list[typing.Any]:
@@ -2623,25 +2648,6 @@ async def test_ignores_a_duplicate_external_id(
         await outpost.track(_usage("same", 10))
         assert await _consumed(outpost) == 10
         assert await redis.hget(key, f"pending:{BUCKET}:count") == b"1"
-
-
-@pytest.mark.anyio
-async def test_drops_a_cold_bucket_once_every_event_is_confirmed(
-    redis_connection: tuple[str, Redis], polar_client: httpx2.AsyncClient
-) -> None:
-    url, redis = redis_connection
-    key = "outpost:v1:org-1:state:external:alice:tokens"
-    await _seal(redis, BUCKET)
-    async with Outpost(url, client=polar_client) as outpost:
-        await outpost.actor(external_customer_id="alice")
-        events = [_usage("event-1", 10), _usage("event-2", 10)]
-        for event in events:
-            await outpost.track(event)
-        await outpost.confirm(events)
-        await _seal(redis, BUCKET + BUCKET_SIZE, 2, 20)
-        assert await _consumed(outpost) == 20
-    assert await redis.hget(key, f"bucket:{BUCKET}:sum") is None
-    assert await redis.hget(key, f"pending:{BUCKET}:sum") is None
 
 
 # Before applying a snapshot that seals a bucket, the client asks Polar which of the bucket's
@@ -3260,7 +3266,7 @@ async def test_state_lives_a_day_refreshed_by_reads_writes_and_confirmations(
         pending = f"outpost:v1:org-1:pending:external:alice:tokens:{get_bucket_start(written)}"
         assert 0 < await redis.ttl(pending) <= 3_900
         await redis.expire(key, 60)
-        await outpost.confirm([event])
+        await outpost.flush()
         assert await redis.ttl(key) > 60
 
 
@@ -4134,7 +4140,7 @@ async def test_reads_a_meter_in_one_command(
 
 
 @pytest.mark.anyio
-async def test_tracks_and_acknowledges_an_event_in_one_command_each(
+async def test_tracks_an_event_in_one_command(
     redis_connection: tuple[str, Redis],
     polar_client: httpx2.AsyncClient,
     redis_commands: collections.Counter[str],
@@ -4144,29 +4150,7 @@ async def test_tracks_and_acknowledges_an_event_in_one_command_each(
     async with Outpost(url, client=polar_client, telemetry=False) as outpost:
         warm, measured = _event(), _event()
         await outpost.track(warm)
-        await outpost.acknowledge([warm])
         assert await _cost(redis_commands, lambda: outpost.track(measured)) == {
-            "evalsha": 1
-        }
-        assert await _cost(redis_commands, lambda: outpost.acknowledge([measured])) == {
-            "evalsha": 1
-        }
-
-
-@pytest.mark.anyio
-async def test_acknowledges_a_thousand_events_over_a_hundred_customers_in_one_command(
-    redis_connection: tuple[str, Redis],
-    polar_client: httpx2.AsyncClient,
-    redis_commands: collections.Counter[str],
-) -> None:
-    url, redis = redis_connection
-    await _seed(redis)
-    async with Outpost(url, client=polar_client, telemetry=False) as outpost:
-        events = [_event(f"customer-{index % 100}") for index in range(1000)]
-        for event in events:
-            await outpost.track(event)
-        await outpost.acknowledge(events[:1])
-        assert await _cost(redis_commands, lambda: outpost.acknowledge(events[1:])) == {
             "evalsha": 1
         }
 

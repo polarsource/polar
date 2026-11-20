@@ -342,7 +342,7 @@ class MeterService:
             )
 
         if (
-            meter_update.aggregation is not None
+            meter_update.aggregation is not MISSING
             and meter_update.aggregation.func == AggregationFunction.unique
             and await OrganizationRepository.from_session(session).get_ids_with_feature(
                 {meter.organization_id}, "reducer_billing_enabled"

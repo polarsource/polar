@@ -801,6 +801,28 @@ async def test_reports_a_missing_snapshot_and_an_unknown_meter(
 
 
 @pytest.mark.anyio
+async def test_a_cold_read_waits_for_its_snapshot_as_long_as_snapshot_timeout(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("polar.outpost.client.SNAPSHOT_TIMEOUT", 30)
+    url, _ = redis_connection
+    async with Outpost(url, client=polar_client, snapshot_timeout=0.05) as outpost:
+        with anyio.fail_after(5), pytest.raises(NotReadyError):
+            await outpost.meter(external_customer_id="alice", meter_id="meter")
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("snapshot_timeout", [float("nan"), float("inf"), -1])
+async def test_refuses_a_snapshot_timeout_no_read_could_wait_out(
+    polar_client: httpx2.AsyncClient, snapshot_timeout: float
+) -> None:
+    with pytest.raises(ValueError, match="finite and non-negative"):
+        Outpost("redis://localhost", client=polar_client, snapshot_timeout=snapshot_timeout)
+
+
+@pytest.mark.anyio
 async def test_concurrent_writers_count_a_repeated_event_once(
     redis_connection: tuple[str, Redis],
     polar_client: httpx2.AsyncClient,

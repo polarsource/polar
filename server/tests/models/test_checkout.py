@@ -4,14 +4,22 @@ from datetime import UTC, datetime
 from decimal import Decimal
 
 import pytest
+from sqlalchemy.orm import selectinload
 
+from polar.checkout.repository import CheckoutRepository
 from polar.config import Environment, settings
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.address import Address, CountryAlpha2
 from polar.kit.trial import TrialInterval
-from polar.models import Checkout, Meter, Organization, Product
+from polar.models import Checkout, CheckoutProduct, Meter, Organization, Product
 from polar.models.checkout import BillingAddressFieldMode, CheckoutStatus
+from polar.models.product_price import (
+    ProductPriceMeteredUnit,
+    ProductPriceSeatUnit,
+    ProductPriceSource,
+)
 from polar.postgres import AsyncSession
+from polar.product.price_set import PriceSet
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_checkout, create_product
 
@@ -457,3 +465,84 @@ async def test_active_trial_interval_count_none_for_non_recurring_product(
     )
 
     assert checkout.active_trial_interval_count is None
+
+
+@pytest.mark.anyio
+class TestPrices:
+    async def test_seat_and_metered_product(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(100), None, "usd"), ("seat", 1000, "usd")],
+        )
+        checkout = await create_checkout(save_fixture, products=[product])
+
+        session.expunge_all()
+        repository = CheckoutRepository.from_session(session)
+        reloaded = await repository.get_by_id(
+            checkout.id, options=repository.get_eager_options()
+        )
+
+        assert reloaded is not None
+        prices = reloaded.prices[product.id]
+        assert isinstance(prices[0], ProductPriceSeatUnit)
+        assert isinstance(prices[1], ProductPriceMeteredUnit)
+        assert prices[0] == PriceSet.from_prices(prices, "usd").get_default_price()
+        assert prices[0] == reloaded.product_price
+
+    async def test_ad_hoc_prices_static_first_across_reloads(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        meter: Meter,
+    ) -> None:
+        checkout = await create_checkout(save_fixture, products=[product])
+        checkout_product = checkout.checkout_products[0]
+        metered_price = ProductPriceMeteredUnit(
+            price_currency="usd",
+            unit_amount=Decimal(100),
+            meter=meter,
+            product=product,
+            source=ProductPriceSource.ad_hoc,
+            checkout_product=checkout_product,
+        )
+        await save_fixture(metered_price)
+        seat_price = ProductPriceSeatUnit(
+            price_currency="usd",
+            seat_tiers={
+                "seat_tier_type": "volume",
+                "tiers": [{"min_seats": 1, "max_seats": None, "price_per_seat": 1000}],
+            },
+            product=product,
+            source=ProductPriceSource.ad_hoc,
+            checkout_product=checkout_product,
+        )
+        await save_fixture(seat_price)
+
+        repository = CheckoutRepository.from_session(session)
+        loaded_price_ids: list[list[uuid.UUID]] = []
+        for options in (
+            (selectinload(Checkout.checkout_products),),
+            (selectinload(Checkout.checkout_products),),
+            (
+                selectinload(Checkout.checkout_products).joinedload(
+                    CheckoutProduct.ad_hoc_prices
+                ),
+            ),
+        ):
+            session.expunge_all()
+            reloaded = await repository.get_by_id(checkout.id, options=options)
+            assert reloaded is not None
+            loaded_price_ids.append(
+                [price.id for price in reloaded.checkout_products[0].ad_hoc_prices]
+            )
+
+        assert loaded_price_ids == [[seat_price.id, metered_price.id]] * 3

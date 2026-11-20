@@ -508,7 +508,7 @@ export class Outpost {
   private fetchTimer?: ReturnType<typeof setTimeout>;
   private isConfigured = false;
   private prefix = KEY_VERSION;
-  private refreshTimer?: ReturnType<typeof setInterval>;
+  private telemetryTimer?: ReturnType<typeof setInterval>;
   private pullTimer?: ReturnType<typeof setInterval>;
   private drainTimer?: ReturnType<typeof setInterval>;
   private pulledAt = 0;
@@ -634,7 +634,7 @@ export class Outpost {
       });
       // A long-running process pulls on time, reads or not.
       this.pullTimer = setInterval(() => void this.refresh().catch(() => {}), PULL_CHECK_INTERVAL);
-      this.refreshTimer = setInterval(() => void this.flushTelemetry(), REPORT_INTERVAL);
+      this.telemetryTimer = setInterval(() => void this.flushTelemetry(), REPORT_INTERVAL);
       // A long-running process delivers what it queued without a flush.
       this.drainTimer = setInterval(() => {
         if (this.undrained && this.delivers) void this.drain().catch(() => {});
@@ -648,7 +648,7 @@ export class Outpost {
   }
 
   async close(): Promise<void> {
-    clearInterval(this.refreshTimer);
+    clearInterval(this.telemetryTimer);
     clearInterval(this.pullTimer);
     clearInterval(this.drainTimer);
     await this.inFlight();

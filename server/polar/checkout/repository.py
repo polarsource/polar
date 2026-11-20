@@ -11,7 +11,7 @@ from sqlalchemy import (
     select,
     update,
 )
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm import defer, joinedload, raiseload, selectinload
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
@@ -26,6 +26,7 @@ from polar.kit.utils import utc_now
 from polar.models import (
     Checkout,
     CheckoutProduct,
+    Discount,
     Organization,
     Payment,
     Product,
@@ -204,6 +205,49 @@ class CheckoutRepository(
             ),
             joinedload(Checkout.subscription),
             joinedload(Checkout.discount),
+            joinedload(Checkout.product_price),
+        )
+
+    def get_public_eager_options(self) -> Options:
+        """
+        Options that only load what the `CheckoutPublic` schema serializes.
+
+        `Checkout.product` is always one of `Checkout.checkout_products`, so its
+        prices, benefits and medias are loaded once, through `checkout_products`.
+
+        The organization skips its large columns the schema doesn't read, and the
+        discount's organization (the same row) only loads the currency it needs.
+        """
+        return (
+            joinedload(Checkout.organization).options(
+                defer(Organization.details, raiseload=True),
+                defer(Organization.slug_history, raiseload=True),
+                defer(Organization.profile_settings, raiseload=True),
+                defer(Organization.order_settings, raiseload=True),
+                defer(Organization.checkout_settings, raiseload=True),
+                defer(Organization.dispute_settings, raiseload=True),
+                defer(Organization.legal_entity, raiseload=True),
+                defer(Organization.embed_hosts, raiseload=True),
+                defer(Organization.internal_notes, raiseload=True),
+            ),
+            joinedload(Checkout.product).options(
+                raiseload(Product.prices),
+                raiseload(Product.product_benefits),
+                raiseload(Product.product_medias),
+                selectinload(Product.attached_custom_fields),
+            ),
+            selectinload(Checkout.checkout_products).options(
+                joinedload(CheckoutProduct.product).options(
+                    selectinload(Product.product_medias),
+                ),
+                joinedload(CheckoutProduct.ad_hoc_prices),
+            ),
+            joinedload(Checkout.discount).options(
+                joinedload(Discount.organization).load_only(
+                    Organization.default_presentment_currency, raiseload=True
+                ),
+                raiseload(Discount.discount_products),
+            ),
             joinedload(Checkout.product_price),
         )
 

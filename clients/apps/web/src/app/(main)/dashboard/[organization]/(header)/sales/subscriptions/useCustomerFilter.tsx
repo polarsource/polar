@@ -1,0 +1,58 @@
+import { type Filter } from '@/components/Shared/FilterPopover'
+import { useCustomers, useCustomersByIds } from '@/hooks/queries'
+import { useDebouncedCallback } from '@/hooks/utils'
+import { schemas } from '@polar-sh/client'
+import { User } from '@polar-sh/orbit/icons'
+import { useState } from 'react'
+
+const SEARCH_DELAY = 200
+const RESULT_LIMIT = 20
+
+const toOption = ({ id, name, email }: schemas['Customer']) => ({
+  value: id,
+  label: name || email || id,
+})
+
+// Customers are searched on the server, since there can be too many to list.
+// The selected ones are fetched on their own and stay at the top, so they keep
+// their names whatever the search shows.
+export const useCustomerFilter = (
+  organizationId: string,
+  value: string[] | null,
+  onChange: (value: string[] | null) => void,
+): Filter => {
+  const [query, setQuery] = useState('')
+  const [search, setSearch] = useState('')
+  const commitSearch = useDebouncedCallback(setSearch, SEARCH_DELAY)
+
+  const { data, isLoading } = useCustomers(organizationId, {
+    query: search || undefined,
+    limit: RESULT_LIMIT,
+  })
+  const selected = useCustomersByIds(value ?? []).flatMap((result) =>
+    result.data ? [toOption(result.data)] : [],
+  )
+  const found = (data?.pages[0]?.items ?? []).map(toOption)
+
+  return {
+    key: 'customer',
+    label: 'Customer',
+    icon: <User className="size-4" />,
+    type: 'multi',
+    options: [
+      ...selected,
+      ...found.filter(
+        (option) => !selected.some(({ value }) => value === option.value),
+      ),
+    ],
+    value: value ?? [],
+    onChange: (next) => onChange(next.length > 0 ? next : null),
+    searchPlaceholder: 'Search customers...',
+    searchQuery: query,
+    onSearchQueryChange: (next) => {
+      setQuery(next)
+      commitSearch(next)
+    },
+    loading: isLoading,
+  }
+}

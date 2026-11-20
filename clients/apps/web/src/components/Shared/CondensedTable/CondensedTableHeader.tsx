@@ -34,7 +34,7 @@ export const CondensedTableHeader = <T extends RowData>({
       const Icon =
         (sorted || column.getNextSortingOrder()) === 'desc' ? MoveDown : MoveUp
       const label = (
-        <Text color={sorted ? undefined : 'muted'} wrap="nowrap">
+        <Text color={sorted ? undefined : 'muted'} truncate>
           {flexRender(column.columnDef.header, header.getContext())}
         </Text>
       )

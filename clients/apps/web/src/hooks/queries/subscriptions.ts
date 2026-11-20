@@ -2,7 +2,12 @@ import { extractApiErrorMessage } from '@/utils/api/errors'
 import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { operations, schemas, unwrap } from '@polar-sh/client'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+} from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export const useSubscriptions = (
@@ -27,6 +32,41 @@ export const useSubscriptions = (
       ),
     retry: defaultRetry,
     enabled: !!organizationId,
+  })
+
+export const useInfiniteSubscriptions = (
+  organizationId: string,
+  parameters?: Omit<
+    NonNullable<operations['subscriptions:list']['parameters']['query']>,
+    'organization_id' | 'page'
+  >,
+) =>
+  useInfiniteQuery({
+    queryKey: [
+      'subscriptions',
+      'infinite',
+      { organizationId, ...(parameters || {}) },
+    ],
+    queryFn: ({ pageParam }) =>
+      unwrap(
+        api.GET('/v1/subscriptions/', {
+          params: {
+            query: {
+              organization_id: organizationId,
+              ...parameters,
+              page: pageParam,
+            },
+          },
+        }),
+      ),
+    placeholderData: keepPreviousData,
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, _allPages, lastPageParam) =>
+      lastPage.items.length === 0 ||
+      lastPageParam >= lastPage.pagination.max_page
+        ? null
+        : lastPageParam + 1,
+    retry: defaultRetry,
   })
 
 export const useSubscription = (

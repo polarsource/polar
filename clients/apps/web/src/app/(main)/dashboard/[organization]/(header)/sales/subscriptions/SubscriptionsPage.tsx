@@ -1,35 +1,22 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { DateRange } from '@/components/Metrics/DateRangePicker'
+import { CANCELLATION_REASONS } from '@/components/Metrics/cancellations/constants'
 import { useModal } from '@/components/Modal/useModal'
-import ExportSubscriptionsModal from '@/components/Subscriptions/ExportSubscriptionsModal'
-import { CatalogVersionLabel } from '@/components/Products/CatalogVersionLabel'
-import { SubscriptionStatus as SubscriptionStatusComponent } from '@/components/Subscriptions/SubscriptionStatus'
-import {
-  DEFAULT_SUBSCRIPTION_STATUS,
-  subscriptionStatusFilterValues,
-  type SubscriptionStatusFilter,
-} from '@/components/Subscriptions/SubscriptionStatusSelect'
 import { type ProductFilter } from '@/components/Products/ProductSelect'
-import { useSubscriptions } from '@/hooks/queries'
+import ExportSubscriptionsModal from '@/components/Subscriptions/ExportSubscriptionsModal'
+import { SubscriptionDetailPanel } from '@/components/Subscriptions/SubscriptionDetailPanel'
+import { SELECTABLE_STATUSES } from '@/components/Subscriptions/selectableStatuses'
+import { SubscriptionsTable } from '@/components/Subscriptions/SubscriptionsTable'
+import { useInfiniteSubscriptions } from '@/hooks/queries'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
-import { DataTableSortingState, getAPIParams } from '@/utils/datatable'
-import { useDateRange } from '@/utils/date'
-import { formatMetadataValue } from '@/utils/formatters'
-import { schemas } from '@polar-sh/client'
-import { Box } from '@polar-sh/orbit/Box'
-import { Avatar } from '@polar-sh/orbit'
 import {
-  DataTable,
-  DataTableColumnDef,
-  DataTableColumnHeader,
-} from '@polar-sh/orbit'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { Status } from '@polar-sh/orbit'
-import { Text } from '@polar-sh/orbit'
+  DataTableSortingState,
+  sortingStateToQueryParam,
+} from '@/utils/datatable'
+import { schemas } from '@polar-sh/client'
+import { Download } from '@polar-sh/orbit/icons'
 import { functionalUpdate, OnChangeFn } from '@tanstack/react-table'
-import { useRouter } from 'next/navigation'
 import {
   parseAsArrayOf,
   parseAsBoolean,
@@ -38,16 +25,22 @@ import {
   useQueryStates,
 } from 'nuqs'
 import React from 'react'
-import SubscriptionFilters from './SubscriptionFilters'
+import { SubscriptionsToolbar } from './SubscriptionsToolbar'
+import { type ToolbarAction } from './ToolbarActionsMenu'
+
+const PAGE_SIZE = 50
 
 const filterParsers = {
   product_id: parseAsArrayOf(parseAsString),
   external_product_id: parseAsArrayOf(parseAsString),
-  status: parseAsStringLiteral(subscriptionStatusFilterValues).withDefault(
-    DEFAULT_SUBSCRIPTION_STATUS,
+  status: parseAsArrayOf(parseAsStringLiteral(SELECTABLE_STATUSES)),
+  customer_id: parseAsArrayOf(parseAsString),
+  discount_id: parseAsArrayOf(parseAsString),
+  customer_cancellation_reason: parseAsArrayOf(
+    parseAsStringLiteral(CANCELLATION_REASONS),
   ),
   cancel_at_period_end: parseAsBoolean,
-  metadata: parseAsArrayOf(parseAsString),
+  subscription: parseAsString,
 }
 
 // Secondary sort on ends_at when sorting by status
@@ -70,17 +63,9 @@ interface ClientPageProps {
 }
 
 const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
-  const router = useRouter()
-
-  const {
-    pagination,
-    setPagination,
-    sorting,
-    setSorting: setSortingState,
-    resetPage,
-  } = useDataTableQueryState({
+  const { sorting, setSorting: setSortingState } = useDataTableQueryState({
     defaultSorting: [{ id: 'started_at', desc: true }],
-    defaultPageSize: 50,
+    defaultPageSize: PAGE_SIZE,
   })
 
   const [
@@ -89,12 +74,13 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       external_product_id: externalProductId,
       status,
       cancel_at_period_end: cancelAtPeriodEnd,
-      metadata,
+      customer_id: customerId,
+      discount_id: discountId,
+      customer_cancellation_reason: cancellationReason,
+      subscription: selectedId,
     },
     setFilters,
   ] = useQueryStates(filterParsers)
-
-  const { startDate, endDate, setStartDate, setEndDate } = useDateRange()
 
   const {
     isShown: isExportModalShown,
@@ -113,203 +99,126 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     external_product_id: externalProductId,
   }
 
-  const onProductSelect = (value: ProductFilter) => {
-    setFilters(value)
-    resetPage()
-  }
+  const hasActiveFilters =
+    productId !== null ||
+    externalProductId !== null ||
+    status !== null ||
+    cancelAtPeriodEnd !== null ||
+    customerId !== null ||
+    discountId !== null ||
+    cancellationReason !== null
 
-  const onStatusSelect = (value: SubscriptionStatusFilter) => {
+  const resetFilters = () =>
     setFilters({
-      status: value,
-      cancel_at_period_end: value === 'active' ? cancelAtPeriodEnd : null,
+      product_id: null,
+      external_product_id: null,
+      status: null,
+      cancel_at_period_end: null,
+      customer_id: null,
+      discount_id: null,
+      customer_cancellation_reason: null,
     })
-    resetPage()
+
+  const { data, hasNextPage, isFetchingNextPage, fetchNextPage } =
+    useInfiniteSubscriptions(organization.id, {
+      limit: PAGE_SIZE,
+      sorting: sortingStateToQueryParam(sorting),
+      product_id: productId ?? undefined,
+      external_product_id: externalProductId ?? undefined,
+      status: status ?? undefined,
+      cancel_at_period_end: cancelAtPeriodEnd ?? undefined,
+      customer_id: customerId ?? undefined,
+      discount_id: discountId ?? undefined,
+      customer_cancellation_reason: cancellationReason ?? undefined,
+    })
+
+  // Rows that tie on the sorted value have no fixed order between requests, so
+  // one can come back on two pages.
+  const subscriptions = data && [
+    ...new Map(
+      data.pages.flatMap((page) => page.items.map((item) => [item.id, item])),
+    ).values(),
+  ]
+  const loadMore = () => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage()
+    }
   }
+  const selectedIndex =
+    subscriptions?.findIndex(({ id }) => id === selectedId) ?? -1
+  const selected = subscriptions?.[selectedIndex]
+  const previous = subscriptions?.[selectedIndex - 1]
+  const next = selected ? subscriptions?.[selectedIndex + 1] : undefined
+  const select = (id: string | null) => setFilters({ subscription: id })
 
-  const onCancelAtPeriodEndSelect = (value: boolean | null) => {
-    setFilters({ cancel_at_period_end: value })
-    resetPage()
-  }
+  const totalCount = data?.pages[0]?.pagination.total_count
+  const countLabel =
+    totalCount === undefined
+      ? undefined
+      : `${totalCount.toLocaleString('en-US')} ${totalCount === 1 ? 'subscription' : 'subscriptions'}`
 
-  const onDateChange = (range: DateRange) => {
-    setStartDate(range.from)
-    setEndDate(range.to)
-    resetPage()
-  }
-
-  const subscriptionsHook = useSubscriptions(organization.id, {
-    ...getAPIParams(pagination, sorting),
-    product_id: productId ?? undefined,
-    external_product_id: externalProductId ?? undefined,
-    status: status === 'any' ? undefined : [status],
-    cancel_at_period_end: cancelAtPeriodEnd ?? undefined,
-    started_after: startDate.toISOString(),
-    started_before: endDate.toISOString(),
-  })
-
-  const subscriptions = subscriptionsHook.data?.items || []
-  const rowCount = subscriptionsHook.data?.pagination.total_count ?? 0
-  const pageCount = subscriptionsHook.data?.pagination.max_page ?? 1
-
-  const columns: DataTableColumnDef<schemas['Subscription']>[] = [
-    {
-      id: 'customer',
-      accessorKey: 'customer',
-      enableSorting: true,
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Customer" />
-      ),
-      cell: ({ row: { original: subscription } }) => {
-        const customer = subscription.customer
-        const showBillingName =
-          !!customer.billing_name &&
-          customer.name?.toLocaleLowerCase() !==
-            customer.billing_name.toLocaleLowerCase()
-        return (
-          <div className="flex flex-row items-center gap-2 overflow-hidden">
-            <Avatar
-              avatar_url={customer.avatar_url}
-              name={customer.email ?? customer.name ?? '—'}
-            />
-            <div className="overflow-hidden text-ellipsis">
-              {customer.name || customer.email || '—'}
-              {showBillingName && (
-                <Box as="span" ml="s">
-                  <Text as="span" color="muted">
-                    {customer.billing_name}
-                  </Text>
-                </Box>
-              )}
-            </div>
-          </div>
-        )
+  const actions: ToolbarAction[][] = [
+    [
+      {
+        key: 'export',
+        label: 'Export CSV',
+        icon: <Download />,
+        onSelect: showExportModal,
       },
-    },
-    {
-      accessorKey: 'status',
-      enableSorting: true,
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Status" />
-      ),
-      cell: ({ row: { original: subscription } }) => {
-        return <SubscriptionStatusComponent subscription={subscription} />
-      },
-    },
-    {
-      accessorKey: 'started_at',
-      enableSorting: true,
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Subscription Date" />
-      ),
-      cell: (props) => (
-        <Text as="span" tabularNums>
-          <FormattedDateTime datetime={props.getValue() as string} />
-        </Text>
-      ),
-    },
-    {
-      accessorKey: 'current_period_end',
-      enableSorting: true,
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Renewal Date" />
-      ),
-      cell: ({
-        getValue,
-        row: {
-          original: { status, cancel_at_period_end },
-        },
-      }) => {
-        const datetime = getValue() as string | null
-        const willRenew =
-          (status === 'active' || status === 'trialing') &&
-          !cancel_at_period_end
-        return datetime && willRenew ? (
-          <Text as="span" tabularNums>
-            <FormattedDateTime datetime={datetime} />
-          </Text>
-        ) : (
-          '—'
-        )
-      },
-    },
-    {
-      accessorKey: 'product',
-      id: 'product',
-      enableSorting: true,
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Product" />
-      ),
-      cell: ({ getValue }) => {
-        const tier = getValue() as schemas['Product']
-        return (
-          <div className="flex flex-row items-center gap-2">
-            {tier.name}
-            <CatalogVersionLabel organization={organization} version={tier} />
-            {tier.is_archived && (
-              <Status status="Archived" color="red" size="small" />
-            )}
-          </div>
-        )
-      },
-    },
-    ...(metadata
-      ? metadata.map<DataTableColumnDef<schemas['Subscription']>>((key) => ({
-          accessorKey: `metadata.${key}`,
-          enableSorting: false,
-          header: ({ column }) => (
-            <DataTableColumnHeader column={column} title={key} />
-          ),
-          cell: (props) => (
-            <Text as="span" monospace>
-              {formatMetadataValue(
-                props.getValue() as
-                  | string
-                  | number
-                  | boolean
-                  | null
-                  | undefined,
-              )}
-            </Text>
-          ),
-        }))
-      : []),
+    ],
   ]
 
   return (
-    <DashboardBody wide>
-      <div className="flex flex-col gap-8">
-        <SubscriptionFilters
-          organization={organization}
-          product={product}
-          onProductSelect={onProductSelect}
-          status={status}
-          onStatusSelect={onStatusSelect}
-          cancelAtPeriodEnd={cancelAtPeriodEnd}
-          onCancelAtPeriodEndSelect={onCancelAtPeriodEndSelect}
-          dateRange={{ from: startDate, to: endDate }}
-          onDateChange={onDateChange}
-          onExport={showExportModal}
-        />
-        {subscriptions && pageCount !== undefined ? (
-          <DataTable
-            columns={columns}
-            data={subscriptions}
-            rowCount={rowCount}
-            pageCount={pageCount}
-            pagination={pagination}
-            onPaginationChange={setPagination}
-            sorting={sorting}
-            onSortingChange={setSorting}
-            isLoading={subscriptionsHook}
-            onRowClick={(row) =>
-              router.push(
-                `/dashboard/${organization.slug}/sales/subscriptions/${row.original.id}`,
-              )
-            }
-            getRowId={(row) => row.id.toString()}
+    <DashboardBody
+      title={null}
+      wrapperClassName="gap-0 pt-0"
+      className="min-h-0 flex-1 pb-0"
+      detailView={
+        selected ? (
+          <SubscriptionDetailPanel
+            key={selected.id}
+            subscription={selected}
+            organization={organization}
+            onPrevious={previous ? () => select(previous.id) : undefined}
+            onNext={next ? () => select(next.id) : undefined}
+            onClose={() => select(null)}
           />
-        ) : null}
-      </div>
+        ) : undefined
+      }
+      wide
+      flush
+    >
+      <SubscriptionsToolbar
+        organization={organization}
+        product={product}
+        onProductSelect={setFilters}
+        status={status}
+        cancelAtPeriodEnd={cancelAtPeriodEnd}
+        onStatusSelect={(value, cancel) =>
+          setFilters({ status: value, cancel_at_period_end: cancel })
+        }
+        customerId={customerId}
+        onCustomerSelect={(value) => setFilters({ customer_id: value })}
+        discountId={discountId}
+        onDiscountSelect={(value) => setFilters({ discount_id: value })}
+        cancellationReason={cancellationReason}
+        onCancellationReasonSelect={(value) =>
+          setFilters({ customer_cancellation_reason: value })
+        }
+        hasActiveFilters={hasActiveFilters}
+        onReset={resetFilters}
+        actions={actions}
+      />
+      <SubscriptionsTable
+        subscriptions={subscriptions}
+        sorting={sorting}
+        onSortingChange={setSorting}
+        selectedId={selectedId}
+        onSelect={select}
+        footerLabel={countLabel}
+        isLoadingMore={isFetchingNextPage}
+        onEndReached={loadMore}
+      />
       <ExportSubscriptionsModal
         organization={organization}
         product={product}

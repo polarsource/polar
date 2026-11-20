@@ -6,7 +6,7 @@ import { downloadCsvExport } from '@/components/Export/utils'
 import { schemas } from '@polar-sh/client'
 import React from 'react'
 import { type ProductFilter } from '@/components/Products/ProductSelect'
-import { SubscriptionStatusFilter } from './SubscriptionStatusSelect'
+import { type SelectableSubscriptionStatus } from './selectableStatuses'
 
 type ExportColumn = schemas['SubscriptionExportColumn']
 
@@ -68,7 +68,7 @@ const defaultColumns: ExportColumn[] = [
 interface ExportSubscriptionsModalProps {
   organization: schemas['Organization']
   product: ProductFilter
-  status: SubscriptionStatusFilter
+  status: SelectableSubscriptionStatus[] | null
   cancelAtPeriodEnd?: boolean | null
   isShown: boolean
   hide: () => void
@@ -101,8 +101,8 @@ const ExportSubscriptionsModal: React.FC<ExportSubscriptionsModalProps> = ({
           for (const id of product.external_product_id ?? []) {
             search.append('external_product_id', id)
           }
-          if (status !== 'any') {
-            search.append('status', status)
+          for (const value of status ?? []) {
+            search.append('status', value)
           }
           if (cancelAtPeriodEnd !== null && cancelAtPeriodEnd !== undefined) {
             search.set('cancel_at_period_end', String(cancelAtPeriodEnd))

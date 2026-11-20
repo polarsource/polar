@@ -1328,7 +1328,10 @@ class EventService:
             organization_ids.add(event.organization_id)
             if event.customer and not event.customer.is_deleted:
                 customers.add(event.customer)
-                if event.source == EventSource.user:
+                first_user_event_at = event.customer.first_user_event_at
+                if event.source == EventSource.user and (
+                    first_user_event_at is None or event.timestamp < first_user_event_at
+                ):
                     customers_with_user_events.add(event.customer.id)
 
         span = trace.get_current_span()

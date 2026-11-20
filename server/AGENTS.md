@@ -276,7 +276,10 @@ dependencies from `polar/auth/dependencies.py` instead of defining your own: `We
 
 ```python
 # polar/{module}/schemas.py
+from pydantic import MISSING, Field
+
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
+from polar.kit.versioning import Omissible
 
 
 class ResourceBase(Schema):
@@ -293,12 +296,18 @@ class ResourceCreate(ResourceBase):
 
 
 class ResourceUpdate(Schema):
-    name: str | None = None
-    slug: str | None = None
+    name: Omissible[str] = MISSING
+    description: Omissible[str | None] = MISSING
 ```
 
 - The read schema gets `id` from `IDSchema`; don't redeclare `id: UUID4`.
-- Every field on an update schema is optional with a `None` default.
+- Use `Omissible[T] = MISSING` for update fields that callers can omit. Use
+  `Omissible[T | None] = MISSING` when callers can explicitly clear the value with null.
+- For API versions before 2027-01, `Omissible[T]` treats explicit null as omission when
+  `T` rejects null. From 2027-01 onward, those fields reject null.
+- In update logic, check `value is not MISSING` for individual fields. For bulk updates,
+  `model_dump()` skips `MISSING` and preserves explicit `None`. A legacy null normalized
+  to `MISSING` can still appear in `model_fields_set`.
 - Type fields with their enum (`status: ResourceStatus`), not `str`.
 
 ## Background Tasks

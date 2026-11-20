@@ -1,13 +1,13 @@
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import UUID4, Field, computed_field, field_validator
+from pydantic import MISSING, UUID4, Field, computed_field, field_validator
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.kit.external_id import ExternalIDInputMixin, ExternalIDOutputMixin
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
-from polar.kit.versioning import Version
+from polar.kit.versioning import Omissible, Version
 from polar.kit.visibility import Visibility
 from polar.models.benefit import BenefitType, BenefitVisibility
 from polar.models.benefit_grant import BenefitGrantError
@@ -46,8 +46,8 @@ class BenefitCreateBase(MetadataInputMixin, ExternalIDInputMixin, Schema):
 
 
 class BenefitUpdateBase(MetadataInputMixin, ExternalIDInputMixin, Schema):
-    description: str | None = Field(
-        None,
+    description: Omissible[str] = Field(
+        MISSING,
         min_length=BENEFIT_DESCRIPTION_MIN_LENGTH,
         max_length=BENEFIT_DESCRIPTION_MAX_LENGTH,
         description=(
@@ -58,8 +58,8 @@ class BenefitUpdateBase(MetadataInputMixin, ExternalIDInputMixin, Schema):
 
 
 class BenefitUpdateVisibilityMixin(Schema):
-    visibility: BenefitVisibility | None = Field(
-        None,
+    visibility: Omissible[BenefitVisibility | None] = Field(
+        MISSING,
         description="The visibility of the benefit in the customer portal.",
     )
 

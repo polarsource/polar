@@ -45,7 +45,7 @@ export default function WebhookContextView({
     async (body: schemas['WebhookEndpointUpdate']) => {
       const { error } = await updateWebhookEndpoint.mutateAsync({
         id: endpoint.id,
-        body,
+        body: { ...body, name: body.name === '' ? null : body.name },
       })
       if (error) {
         toast({

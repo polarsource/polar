@@ -3,6 +3,7 @@ from typing import Annotated
 
 from fastapi import Path
 from pydantic import (
+    MISSING,
     UUID4,
     AliasChoices,
     AliasPath,
@@ -33,7 +34,7 @@ from polar.kit.schemas import (
     TimestampedSchema,
     empty_str_to_none,
 )
-from polar.kit.versioning import QuerySchema, Version
+from polar.kit.versioning import Omissible, QuerySchema, Version
 from polar.models.order import (
     OrderBillingReason,
     OrderBillingReasonInternal,
@@ -389,8 +390,8 @@ class OrderUpdateBase(Schema):
     billing_name: str | None = Field(
         None, description="The name of the customer that should appear on the invoice."
     )
-    billing_address: AddressInput | None = Field(
-        None,
+    billing_address: Omissible[AddressInput] = Field(
+        MISSING,
         description=(
             "The address of the customer that should appear on the invoice. "
             "Address fields used for tax calculation cannot be updated."

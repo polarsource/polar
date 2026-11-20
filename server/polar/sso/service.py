@@ -1,6 +1,7 @@
 from collections.abc import Sequence
-from typing import Any
 from uuid import UUID
+
+from pydantic import MISSING
 
 from polar.exceptions import PolarError
 from polar.kit.pagination import PaginationParams, paginate
@@ -102,15 +103,9 @@ class OrganizationSSOConnectionService:
         ):
             raise LastSSOConnectionRequired()
         repository = OrganizationSSOConnectionRepository.from_session(session)
-        update_dict: dict[str, Any] = {
-            field: value
-            for field, value in update.model_dump(
-                exclude_unset=True, exclude={"configuration"}
-            ).items()
-            if value is not None or field == "name"
-        }
+        update_dict = update.model_dump(exclude_unset=True, exclude={"configuration"})
 
-        if update.configuration is not None:
+        if update.configuration is not MISSING:
             update_dict["configuration"] = update.configuration.model_dump()
 
         return await repository.update(connection, update_dict=update_dict)

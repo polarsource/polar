@@ -37,8 +37,8 @@ export const BillingAddressModal = ({
 
   const form = useForm<OrganizationBillingDetailsUpdate>({
     defaultValues: {
-      billing_name: details?.billing_name ?? null,
-      billing_address: details?.billing_address ?? null,
+      billing_name: details?.billing_name ?? undefined,
+      billing_address: details?.billing_address ?? undefined,
       tax_id: details?.tax_id ?? null,
     },
   })
@@ -50,8 +50,8 @@ export const BillingAddressModal = ({
   useEffect(() => {
     if (details) {
       reset({
-        billing_name: details.billing_name,
-        billing_address: details.billing_address,
+        billing_name: details.billing_name ?? undefined,
+        billing_address: details.billing_address ?? undefined,
         tax_id: details.tax_id,
       })
     }

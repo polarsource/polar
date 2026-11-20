@@ -3,11 +3,12 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Annotated, Any, Literal, overload
 
 from dateutil.relativedelta import relativedelta
-from pydantic import AfterValidator, Discriminator, EmailStr, Field, Tag
+from pydantic import MISSING, AfterValidator, Discriminator, EmailStr, Field, Tag
 
 from polar.kit.address import AddressInput
 from polar.kit.http import get_safe_return_url
 from polar.kit.schemas import Schema
+from polar.kit.versioning import Omissible
 from polar.v2026_04.outputs import (
     PaymentMethodCard,
     ProductPriceFixed,
@@ -450,8 +451,8 @@ class OrganizationBillingDetails(Schema):
 
 
 class OrganizationBillingDetailsUpdate(Schema):
-    billing_name: str | None = None
-    billing_address: AddressInput | None = None
+    billing_name: Omissible[str] = MISSING
+    billing_address: Omissible[AddressInput] = MISSING
     tax_id: str | None = None
 
 

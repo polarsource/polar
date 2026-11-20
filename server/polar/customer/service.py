@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 import structlog
-from pydantic import TypeAdapter
+from pydantic import MISSING, TypeAdapter
 from sqlalchemy import UnaryExpression, asc, desc, func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
@@ -454,7 +454,7 @@ class CustomerService:
         email_changed = False
 
         errors: list[ValidationError] = []
-        if customer_update.email is not None and (
+        if customer_update.email is not MISSING and (
             customer.email is None
             or customer.email.lower() != customer_update.email.lower()
         ):
@@ -475,24 +475,10 @@ class CustomerService:
             customer.email_verified = False
             email_changed = True
 
-        # Prevent setting billing address to null
-        if (
-            "billing_address" in customer_update.model_fields_set
-            and customer_update.billing_address is None
-        ):
-            errors.append(
-                {
-                    "type": "value_error",
-                    "loc": ("body", "billing_address"),
-                    "msg": "Customer billing address cannot be reset to null once set.",
-                    "input": customer_update.billing_address,
-                }
-            )
-
         # Validate external_id changes (only for CustomerUpdate schema)
         if (
             isinstance(customer_update, CustomerUpdate)
-            and "external_id" in customer_update.model_fields_set
+            and customer_update.external_id is not MISSING
             and customer.external_id != customer_update.external_id
         ):
             if customer.external_id is not None:
@@ -505,11 +491,8 @@ class CustomerService:
                         "input": customer_update.external_id,
                     }
                 )
-            elif (
-                customer_update.external_id is not None
-                and await repository.get_by_external_id_and_organization(
-                    customer_update.external_id, customer.organization_id
-                )
+            elif await repository.get_by_external_id_and_organization(
+                customer_update.external_id, customer.organization_id
             ):
                 # Setting new external_id that already exists
                 errors.append(
@@ -524,7 +507,7 @@ class CustomerService:
         # Prevent downgrade from team to individual
         if (
             isinstance(customer_update, CustomerUpdate)
-            and "type" in customer_update.model_fields_set
+            and customer_update.type is not MISSING
             and customer.type == CustomerType.team
             and customer_update.type != CustomerType.team
         ):
@@ -540,7 +523,7 @@ class CustomerService:
         if errors:
             raise PolarRequestValidationError(errors)
 
-        if "tax_id" in customer_update.model_fields_set:
+        if customer_update.tax_id is not MISSING:
             if customer_update.tax_id is None:
                 # Explicitly clearing the tax ID.
                 customer.tax_id = None
@@ -577,7 +560,7 @@ class CustomerService:
                         ]
                     ) from e
         elif (
-            "billing_address" in customer_update.model_fields_set
+            customer_update.billing_address is not MISSING
             and customer.tax_id is not None
         ):
             # Billing address changed while an existing tax ID is set:
@@ -612,15 +595,11 @@ class CustomerService:
                     ]
                 ) from e
 
-        exclude = {"email", "tax_id"}
-        if isinstance(customer_update, CustomerUpdate) and customer_update.type is None:
-            exclude.add("type")
-
         try:
             updated_customer = await repository.update(
                 customer,
                 update_dict=customer_update.model_dump(
-                    exclude=exclude, exclude_unset=True, by_alias=True
+                    exclude={"email", "tax_id"}, exclude_unset=True, by_alias=True
                 ),
             )
         except IntegrityError as e:
@@ -634,6 +613,7 @@ class CustomerService:
                             "msg": "A customer with this external ID already exists.",
                             "input": customer_update.external_id
                             if isinstance(customer_update, CustomerUpdate)
+                            and customer_update.external_id is not MISSING
                             else None,
                         }
                     ]
@@ -757,10 +737,7 @@ class CustomerService:
         # Resolve the billing address used for tax ID validation: prefer the
         # value from this update payload (if explicitly provided and non-null),
         # otherwise fall back to the customer's existing billing address.
-        if (
-            "billing_address" in customer_update.model_fields_set
-            and customer_update.billing_address is not None
-        ):
+        if customer_update.billing_address is not MISSING:
             return customer_update.billing_address
         return customer.billing_address
 

@@ -4,6 +4,7 @@ from collections.abc import AsyncIterator, Sequence
 from typing import Any, Literal
 
 import structlog
+from pydantic import MISSING
 from sqlalchemy import Select, UnaryExpression, asc, delete, desc, func, or_, select
 from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.sql.elements import OrderByList
@@ -152,7 +153,7 @@ class DiscountService(ResourceServiceReader[Discount]):
                 repository, discount_create.code, organization.id
             )
 
-        if discount_create.external_id is not None:
+        if discount_create.external_id is not MISSING:
             await self._assert_external_id_available(
                 repository, discount_create.external_id, organization.id
             )
@@ -204,7 +205,7 @@ class DiscountService(ResourceServiceReader[Discount]):
                 await self._assert_code_available(
                     repository, discount_create.code, organization.id
                 )
-            if discount_create.external_id is not None:
+            if discount_create.external_id is not MISSING:
                 await self._assert_external_id_available(
                     repository, discount_create.external_id, organization.id
                 )
@@ -267,7 +268,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         )
 
         if (
-            "duration" in discount_update.model_fields_set
+            discount_update.duration is not MISSING
             and discount_update.duration != discount.duration
         ):
             raise PolarRequestValidationError(
@@ -281,7 +282,10 @@ class DiscountService(ResourceServiceReader[Discount]):
                 ]
             )
 
-        if discount_update.type is not None and discount_update.type != discount.type:
+        if (
+            discount_update.type is not MISSING
+            and discount_update.type != discount.type
+        ):
             raise PolarRequestValidationError(
                 [
                     {
@@ -293,7 +297,7 @@ class DiscountService(ResourceServiceReader[Discount]):
                 ]
             )
 
-        if discount_update.code is not None:
+        if discount_update.code is not MISSING and discount_update.code is not None:
             existing_discount = await self.get_by_code_and_organization(
                 session, discount_update.code, discount.organization, redeemable=False
             )
@@ -310,7 +314,7 @@ class DiscountService(ResourceServiceReader[Discount]):
                 )
 
         if (
-            "external_id" in discount_update.model_fields_set
+            discount_update.external_id is not MISSING
             and discount_update.external_id != discount.external_id
         ):
             if discount.external_id is not None:
@@ -324,30 +328,28 @@ class DiscountService(ResourceServiceReader[Discount]):
                         }
                     ]
                 )
-            if discount_update.external_id is not None:
-                await self._assert_external_id_available(
-                    DiscountRepository.from_session(session),
-                    discount_update.external_id,
-                    discount.organization_id,
-                )
+            await self._assert_external_id_available(
+                DiscountRepository.from_session(session),
+                discount_update.external_id,
+                discount.organization_id,
+            )
 
         if discount.redemptions_count > 0:
             for field in DISCOUNT_LOCKED_FIELDS[discount.type]:
-                if field in discount_update.model_fields_set:
-                    discount_update_value = getattr(discount_update, field)
-                    if discount_update_value != getattr(discount, field, None):
-                        raise PolarRequestValidationError(
-                            [
-                                {
-                                    "type": "value_error",
-                                    "loc": ("body", field),
-                                    "msg": DISCOUNT_LOCKED_FIELD_MESSAGE,
-                                    "input": getattr(discount, field),
-                                }
-                            ]
-                        )
+                value = getattr(discount_update, field, MISSING)
+                if value is not MISSING and value != getattr(discount, field, None):
+                    raise PolarRequestValidationError(
+                        [
+                            {
+                                "type": "value_error",
+                                "loc": ("body", field),
+                                "msg": DISCOUNT_LOCKED_FIELD_MESSAGE,
+                                "input": value,
+                            }
+                        ]
+                    )
 
-        if discount_update.products is not None:
+        if discount_update.products is not MISSING:
             async with session.begin_nested():
                 discount.discount_products = []
                 await session.flush()
@@ -370,20 +372,28 @@ class DiscountService(ResourceServiceReader[Discount]):
                         )
                     discount.discount_products.append(DiscountProduct(product=product))
 
-        exclude = {"products"}
+        exclude = {"products", "amount", "currency"}
         if isinstance(discount, DiscountFixed):
             exclude.add("basis_points")
-            if (
-                isinstance(discount_update, legacy_schemas.DiscountUpdate)
-                and discount_update.amount
-                and discount_update.currency
-            ):
-                discount.amounts = {discount_update.currency: discount_update.amount}
-                exclude.add("amount")
-                exclude.add("currency")
+            if isinstance(discount_update, legacy_schemas.DiscountUpdate):
+                amount, currency = discount_update.amount, discount_update.currency
+                if amount is not MISSING and currency is not MISSING:
+                    discount.amounts = {currency: amount}
+                elif amount is not MISSING or currency is not MISSING:
+                    raise PolarRequestValidationError(
+                        [
+                            {
+                                "type": "missing",
+                                "loc": (
+                                    "body",
+                                    "amount" if amount is MISSING else "currency",
+                                ),
+                                "msg": "Both amount and currency must be set together.",
+                                "input": None,
+                            }
+                        ]
+                    )
         else:
-            exclude.add("amount")
-            exclude.add("currency")
             exclude.add("amounts")
         for attr, value in discount_update.model_dump(
             exclude_unset=True, exclude=exclude, by_alias=True

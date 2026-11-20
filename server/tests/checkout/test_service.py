@@ -7032,7 +7032,6 @@ class TestConfirm:
                 CheckoutConfirmStripe(
                     customer_email="test@example.com",
                     customer_name="Test Customer",
-                    confirmation_token_id=None,
                 ),
             )
 
@@ -7123,7 +7122,6 @@ class TestConfirm:
             CheckoutConfirmStripe(
                 customer_email="test@example.com",
                 customer_name="Test Customer",
-                confirmation_token_id=None,
             ),
         )
 
@@ -7435,7 +7433,6 @@ class TestConfirm:
             CheckoutConfirmStripe(
                 customer_email="test@example.com",
                 customer_name="Test Customer",
-                confirmation_token_id=None,
             ),
         )
 

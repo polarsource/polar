@@ -8,7 +8,11 @@ from polar.models.organization import (
     resolve_default_customer_email_settings,
 )
 from polar.organization import legacy_schemas
-from polar.organization.schemas import OrganizationCreate, OrganizationUpdate
+from polar.organization.schemas import (
+    OrganizationCreate,
+    OrganizationDetailsInput,
+    OrganizationUpdate,
+)
 
 
 def test_reset_proration_behavior_accepted_in_schema() -> None:
@@ -91,8 +95,12 @@ class TestBlockedWords:
         assert org.name == name
 
     def test_update_without_name_skips_validation(self) -> None:
-        org = OrganizationUpdate(name=None)
-        assert org.name is None
+        org = OrganizationUpdate()
+        assert "name" not in org.model_dump()
+
+    def test_update_rejects_null_name(self) -> None:
+        with pytest.raises(ValidationError, match="name"):
+            OrganizationUpdate.model_validate({"name": None})
 
 
 class TestSlugMaxLength:
@@ -165,7 +173,7 @@ def test_retired_onboarding_inputs_are_ignored(
             },
         }
     )
-    assert model.details is not None
+    assert isinstance(model.details, OrganizationDetailsInput)
     assert model.details.model_dump() == {
         "product_description": "Current description",
         "selling_categories": [],

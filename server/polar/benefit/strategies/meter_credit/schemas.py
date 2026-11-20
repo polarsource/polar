@@ -1,9 +1,11 @@
 from typing import Annotated, Literal
 
 from annotated_types import Gt
+from pydantic import MISSING
 from pydantic.types import UUID4
 
 from polar.kit.schemas import Int32, Schema
+from polar.kit.versioning import Omissible
 from polar.models.benefit import BenefitType
 
 from ..base.schemas import (
@@ -57,7 +59,7 @@ class BenefitMeterCreditCreate(BenefitCreateBase):
 
 class BenefitMeterCreditUpdate(BenefitUpdateVisibilityMixin, BenefitUpdateBase):
     type: Literal[BenefitType.meter_credit]
-    properties: BenefitMeterCreditCreateProperties | None = None
+    properties: Omissible[BenefitMeterCreditCreateProperties] = MISSING
 
 
 class BenefitMeterCredit(BenefitBase):

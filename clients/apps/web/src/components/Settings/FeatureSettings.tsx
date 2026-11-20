@@ -10,6 +10,11 @@ import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
 import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
+type FeatureSettingsForm = Pick<
+  schemas['OrganizationFeatureSettingsUpdate'],
+  'checkout_localization_enabled'
+>
+
 export default function FeatureSettings({
   organization,
   readOnly,
@@ -17,15 +22,16 @@ export default function FeatureSettings({
   organization: schemas['Organization']
   readOnly: boolean
 }) {
-  const form = useForm<schemas['OrganizationFeatureSettings']>({
-    defaultValues: organization.feature_settings || {},
+  const form = useForm<FeatureSettingsForm>({
+    defaultValues: {
+      checkout_localization_enabled:
+        organization.feature_settings?.checkout_localization_enabled ?? false,
+    },
   })
   const { control, setError } = form
 
   const updateOrganization = useUpdateOrganization()
-  const onSave = async (
-    featureSettings: schemas['OrganizationFeatureSettings'],
-  ) => {
+  const onSave = async (featureSettings: FeatureSettingsForm) => {
     const { data, error } = await updateOrganization.mutateAsync({
       id: organization.id,
       body: {
@@ -48,7 +54,12 @@ export default function FeatureSettings({
       return
     }
 
-    return data.feature_settings ?? undefined
+    return data.feature_settings
+      ? {
+          checkout_localization_enabled:
+            data.feature_settings.checkout_localization_enabled,
+        }
+      : undefined
   }
 
   useAutoSave({

@@ -1,9 +1,10 @@
 from datetime import timedelta
 
-from pydantic import Field, field_validator
+from pydantic import MISSING, Field, field_validator
 
 from polar.kit.address import Address, AddressInput
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
+from polar.kit.versioning import Omissible
 
 
 class Account(TimestampedSchema, IDSchema):
@@ -29,19 +30,19 @@ class Account(TimestampedSchema, IDSchema):
 
 
 class AccountUpdate(Schema):
-    billing_name: str | None = Field(
-        default=None,
+    billing_name: Omissible[str | None] = Field(
+        MISSING,
         description="Billing name that should appear on the reverse invoice.",
     )
-    billing_address: AddressInput | None = Field(
-        default=None,
+    billing_address: Omissible[AddressInput | None] = Field(
+        default=MISSING,
         description="Billing address that should appear on the reverse invoice.",
     )
-    billing_additional_info: str | None = Field(
-        default=None,
+    billing_additional_info: Omissible[str | None] = Field(
+        default=MISSING,
         description="Additional information that should appear on the reverse invoice.",
     )
-    billing_notes: str | None = Field(
-        default=None,
+    billing_notes: Omissible[str | None] = Field(
+        default=MISSING,
         description="Notes that should appear on the reverse invoice.",
     )

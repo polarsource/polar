@@ -1,8 +1,9 @@
 from typing import Literal
 
-from pydantic import Field, model_validator
+from pydantic import MISSING, Field, model_validator
 
 from polar.kit.schemas import EmptyStrToNone, Int32, Schema
+from polar.kit.versioning import Omissible
 from polar.models.benefit import BenefitType
 
 from ..base.schemas import (
@@ -72,7 +73,7 @@ class BenefitLicenseKeysCreate(BenefitCreateBase):
 
 class BenefitLicenseKeysUpdate(BenefitUpdateVisibilityMixin, BenefitUpdateBase):
     type: Literal[BenefitType.license_keys]
-    properties: BenefitLicenseKeysCreateProperties | None = None
+    properties: Omissible[BenefitLicenseKeysCreateProperties] = MISSING
 
 
 class BenefitLicenseKeys(BenefitBase):

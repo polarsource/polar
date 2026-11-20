@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from pydantic import MISSING
 from sqlalchemy import (
     ColumnElement,
     ColumnExpressionArgument,
@@ -215,7 +216,7 @@ class MeterService:
 
         repository = MeterRepository.from_session(session)
         if (
-            meter_create.external_id is not None
+            meter_create.external_id is not MISSING
             and await repository.get_by_external_id_and_organization(
                 meter_create.external_id, organization.id
             )
@@ -313,18 +314,19 @@ class MeterService:
         errors: list[ValidationError] = []
         if meter.last_billed_event is not None:
             for sensitive_field in METER_LOCKED_FIELDS:
-                if sensitive_field in meter_update.model_fields_set:
+                value = getattr(meter_update, sensitive_field)
+                if value is not MISSING:
                     errors.append(
                         {
                             "type": "forbidden",
                             "loc": ("body", sensitive_field),
                             "msg": METER_LOCKED_FIELD_MESSAGE,
-                            "input": getattr(meter_update, sensitive_field),
+                            "input": value,
                         }
                     )
 
         if (
-            meter_update.external_id is not None
+            isinstance(meter_update.external_id, str)
             and meter_update.external_id != meter.external_id
             and await repository.get_by_external_id_and_organization(
                 meter_update.external_id, meter.organization_id
@@ -340,7 +342,7 @@ class MeterService:
             )
 
         if (
-            meter_update.aggregation is not None
+            meter_update.aggregation is not MISSING
             and meter_update.aggregation.func == AggregationFunction.unique
             and await OrganizationRepository.from_session(session).get_ids_with_feature(
                 {meter.organization_id}, "reducer_billing_enabled"
@@ -363,13 +365,13 @@ class MeterService:
             exclude_unset=True,
             exclude={"filter", "aggregation", "is_archived"},
         )
-        if meter_update.filter is not None:
+        if meter_update.filter is not MISSING:
             update_dict["filter"] = meter_update.filter
-        if meter_update.aggregation is not None:
+        if meter_update.aggregation is not MISSING:
             update_dict["aggregation"] = meter_update.aggregation
 
         # Handle archiving/unarchiving
-        if meter_update.is_archived is not None:
+        if meter_update.is_archived is not MISSING:
             if meter_update.is_archived:
                 meter = await self.archive(session, meter)
             else:

@@ -507,6 +507,7 @@ const OrganizationProfileSettings: React.FC<
   const form = useForm<schemas['OrganizationUpdate']>({
     defaultValues: {
       ...organization,
+      feature_settings: undefined,
     },
   })
   const { setError } = form
@@ -567,6 +568,7 @@ const OrganizationProfileSettings: React.FC<
 
     return {
       ...data,
+      feature_settings: undefined,
       default_presentment_currency:
         data.default_presentment_currency as schemas['PresentmentCurrency'],
       country: data.country as schemas['CountryAlpha2Input'] | undefined,

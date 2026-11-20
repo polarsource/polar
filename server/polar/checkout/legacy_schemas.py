@@ -1,9 +1,10 @@
 from typing import Annotated
 
-from pydantic import UUID4, BaseModel, Field
+from pydantic import MISSING, UUID4, BaseModel, Field
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.kit.schemas import SetSchemaReference
+from polar.kit.versioning import Omissible
 from polar.product.legacy_schemas import ProductPriceCreateList
 
 from . import schemas
@@ -37,8 +38,8 @@ CheckoutCreate = Annotated[
 
 
 class CheckoutProductPriceUpdateMixin(BaseModel):
-    product_price_id: UUID4 | None = Field(
-        default=None,
+    product_price_id: Omissible[UUID4] = Field(
+        default=MISSING,
         description=(
             "ID of the product price to checkout. "
             "Must correspond to a price present in the checkout's product list."

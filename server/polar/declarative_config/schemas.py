@@ -18,6 +18,9 @@ from polar.benefit.strategies.base.schemas import (
     BENEFIT_DESCRIPTION_MAX_LENGTH,
     BENEFIT_DESCRIPTION_MIN_LENGTH,
 )
+from polar.benefit.strategies.slack_shared_channel.schemas import (
+    BenefitSlackSharedChannelCreateProperties,
+)
 from polar.custom_field.schemas import (
     CheckboxPropertiesInput,
     DatePropertiesInput,
@@ -176,13 +179,30 @@ class ConfigBenefitMeterCredit(ConfigBenefitBase):
     properties: ConfigBenefitMeterCreditProperties
 
 
+class ConfigBenefitSlackSharedChannelProperties(
+    BenefitSlackSharedChannelCreateProperties
+):
+    model_config = ConfigDict(extra="forbid")
+
+
+class ConfigBenefitSlackSharedChannel(ConfigBenefitBase):
+    type: Literal[BenefitType.slack_shared_channel]
+    properties: ConfigBenefitSlackSharedChannelProperties
+
+
 ConfigBenefit = Annotated[
-    ConfigBenefitFeatureFlag | ConfigBenefitMeterCredit,
+    ConfigBenefitFeatureFlag
+    | ConfigBenefitMeterCredit
+    | ConfigBenefitSlackSharedChannel,
     Discriminator("type"),
     SetSchemaReference("ConfigBenefit"),
 ]
 
-CONFIG_BENEFIT_TYPES = (BenefitType.feature_flag, BenefitType.meter_credit)
+CONFIG_BENEFIT_TYPES = (
+    BenefitType.feature_flag,
+    BenefitType.meter_credit,
+    BenefitType.slack_shared_channel,
+)
 
 
 class ConfigProductPriceSeatBased(ProductPriceSeatBasedCreate):
@@ -812,8 +832,28 @@ class ConfigBenefitMeterCreditRead(_ConfigRead):
     properties: ConfigBenefitMeterCreditPropertiesRead
 
 
+class ConfigBenefitSlackSharedChannelPropertiesRead(_ConfigRead):
+    slack_integration_id: UUID4
+    channel_name_template: str
+    private: bool
+    welcome_message: str | None
+    archive_on_revoke: bool
+    team_invitees: list[str]
+
+
+class ConfigBenefitSlackSharedChannelRead(_ConfigRead):
+    type: Literal[BenefitType.slack_shared_channel]
+    external_id: str
+    description: str
+    visibility: BenefitVisibility
+    metadata: MetadataOutputType
+    properties: ConfigBenefitSlackSharedChannelPropertiesRead
+
+
 ConfigBenefitRead = Annotated[
-    ConfigBenefitFeatureFlagRead | ConfigBenefitMeterCreditRead,
+    ConfigBenefitFeatureFlagRead
+    | ConfigBenefitMeterCreditRead
+    | ConfigBenefitSlackSharedChannelRead,
     Discriminator("type"),
     SetSchemaReference("ConfigBenefitRead"),
 ]

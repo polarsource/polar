@@ -16,6 +16,9 @@ from polar.benefit.repository import BenefitRepository
 from polar.benefit.strategies.meter_credit.properties import (
     BenefitMeterCreditProperties,
 )
+from polar.benefit.strategies.slack_shared_channel.properties import (
+    BenefitSlackSharedChannelProperties,
+)
 from polar.catalog.repository import (
     CatalogBenefitRepository,
     CatalogMeterRepository,
@@ -83,6 +86,7 @@ from polar.models import (
     ProductPriceMeteredTiers,
     ProductPriceMeteredUnit,
     ProductPriceUnit,
+    SlackApp,
     SubscriptionMeter,
     SubscriptionUpdate,
     User,
@@ -430,6 +434,30 @@ class TestInit:
     ) -> None:
         await create_benefit(
             save_fixture, organization=organization, description="Priority support"
+        )
+
+        await declarative_config_service.init(
+            session, auth_subject, ConfigInit.model_validate({})
+        )
+
+        assert organization.is_config_as_code_enabled
+
+    async def test_allows_slack_shared_channel_benefits(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            description="Slack Channel",
+            properties={
+                "slack_integration_id": str(uuid.uuid4()),
+                "channel_name_template": "acme-{customer_name}",
+            },
         )
 
         await declarative_config_service.init(
@@ -4663,6 +4691,43 @@ SUPPORT_BENEFIT = {
 }
 
 
+@pytest.fixture
+async def slack_integration(
+    save_fixture: SaveFixture, organization: Organization
+) -> SlackApp:
+    organization.feature_settings = {
+        **organization.feature_settings,
+        "slack_benefit_enabled": True,
+    }
+    await save_fixture(organization)
+    integration = SlackApp(
+        organization=organization,
+        display_name="Support",
+        slack_app_id="A0TESTAPPID",
+        client_id="100.200",
+        team_id="T1",
+    )
+    integration.id = SlackApp.generate_id()
+    integration.bot_token_encrypted = await SlackApp.encrypt_bot_token(
+        integration.id, "xoxb-test-token"
+    )
+    await save_fixture(integration)
+    return integration
+
+
+@pytest.fixture
+def slack_benefit(slack_integration: SlackApp) -> dict[str, Any]:
+    return {
+        "type": "slack_shared_channel",
+        "external_id": "slack",
+        "description": "Slack Channel",
+        "properties": {
+            "slack_integration_id": str(slack_integration.id),
+            "channel_name_template": "acme-{customer_name}",
+        },
+    }
+
+
 @pytest.mark.anyio
 @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
 @pytest.mark.usefixtures("config_as_code_enabled")
@@ -4839,6 +4904,81 @@ class TestBenefitVersioning:
             await declarative_config_service.apply(
                 session, redis, auth_subject, benefits_only
             )
+
+    async def test_slack_shared_channel_change_publishes_new_row(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        slack_benefit: dict[str, Any],
+    ) -> None:
+        repository = BenefitRepository.from_session(session)
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"benefits": [slack_benefit]}),
+        )
+        [created] = await repository.get_all_by_external_ids(organization.id, ["slack"])
+
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "benefits": [
+                        {
+                            **slack_benefit,
+                            "properties": {
+                                **slack_benefit["properties"],
+                                "welcome_message": "Welcome!",
+                            },
+                        }
+                    ]
+                }
+            ),
+        )
+        [changed] = await repository.get_all_by_external_ids(organization.id, ["slack"])
+
+        assert changed.id != created.id
+        assert [
+            cast(BenefitSlackSharedChannelProperties, benefit.properties)[
+                "welcome_message"
+            ]
+            for benefit in (created, changed)
+        ] == [None, "Welcome!"]
+
+    async def test_slack_shared_channel_stored_without_newer_properties(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        slack_integration: SlackApp,
+    ) -> None:
+        await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            description="Slack Channel",
+            external_id="slack",
+            properties={
+                "slack_integration_id": str(slack_integration.id),
+                "channel_name_template": "acme-{customer_name}",
+            },
+        )
+
+        exported = await declarative_config_service.export(session, auth_subject, None)
+        plan = await declarative_config_service.plan(
+            session, auth_subject, Config.model_validate(exported.config.model_dump())
+        )
+
+        assert [benefit.external_id for benefit in exported.config.benefits] == [
+            "slack"
+        ]
+        assert [change.action for change in plan.changes] == [ConfigAction.unchanged]
 
 
 USAGE_WITH_CREDITS = {**USAGE_PRODUCT, "benefits": ["tool-call-credits"]}
@@ -5774,10 +5914,15 @@ class TestExport:
         session: AsyncSession,
         redis: Redis,
         auth_subject: AuthSubject[Organization],
+        slack_benefit: dict[str, Any],
     ) -> None:
         mocker.patch("polar.meter.service.enqueue_job")
+        round_trip_config = {
+            **ROUND_TRIP_CONFIG,
+            "benefits": [*ROUND_TRIP_CONFIG["benefits"], slack_benefit],
+        }
         await declarative_config_service.apply(
-            session, redis, auth_subject, Config.model_validate(ROUND_TRIP_CONFIG)
+            session, redis, auth_subject, Config.model_validate(round_trip_config)
         )
 
         exported = await declarative_config_service.export(session, auth_subject, None)
@@ -5804,7 +5949,7 @@ class TestExport:
             type(price) for product in config.products for price in product.prices
         } == set(get_args(get_args(ConfigProductPrice)[0]))
         assert exported.skipped == []
-        assert config == Config.model_validate(ROUND_TRIP_CONFIG)
+        assert config == Config.model_validate(round_trip_config)
         assert [
             issue
             for issue in plan.issues

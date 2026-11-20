@@ -239,7 +239,8 @@ class CheckoutRepository(
             selectinload(Checkout.checkout_products).options(
                 joinedload(CheckoutProduct.product).options(
                     selectinload(Product.product_medias),
-                )
+                ),
+                joinedload(CheckoutProduct.ad_hoc_prices),
             ),
             joinedload(Checkout.discount).options(
                 joinedload(Discount.organization).load_only(

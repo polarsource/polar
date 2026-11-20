@@ -1277,9 +1277,9 @@ class TestClientGet:
             sqlalchemy_event.remove(bind, "before_cursor_execute", count_statement)
 
         assert response.status_code == 200
-        # checkout, custom fields, checkout products, ad-hoc prices,
+        # checkout, custom fields, checkout products with their ad-hoc prices,
         # then medias, prices and benefits once for all products
-        assert statements == 7
+        assert statements == 6
 
     @pytest.mark.api_version(V2027_01)
     async def test_no_product_price_id_2027_01(

@@ -116,11 +116,13 @@ def test_empty_conjunction_matches_every_event(
 @pytest.mark.parametrize(
     ("actual", "expected", "equal"),
     [
-        (True, 1, True),
-        (1, True, True),
-        (False, 0, True),
-        (0, False, True),
-        (True, 1.0, True),
+        (True, True, True),
+        (1, 1.0, True),
+        (True, 1, False),
+        (1, True, False),
+        (False, 0, False),
+        (0, False, False),
+        (True, 1.0, False),
         (True, 2, False),
         (False, 1, False),
         ("1", 1, False),

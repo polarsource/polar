@@ -18,6 +18,9 @@ per-area `AGENTS.md` linked from the Architecture and Conventions sections befor
   `gh pr create`. Run the `open-pr` skill only when the user names it (`/open-pr`):
   it runs lint, type-check, tests and two review passes, and takes several minutes.
   Do not mark a PR ready for review unless told so.
+- This is an open source repository: PR titles, descriptions and comments are public.
+  Never include numbers from production (e.g. how many customers, orders or
+  organizations are affected), or other PII or internal business data.
 
 ## Architecture
 

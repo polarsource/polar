@@ -276,10 +276,12 @@ export default function ClientPage({
               <div className="flex flex-col items-center gap-y-2">
                 <h3 className="text-lg font-medium">No products found</h3>
                 <p className="dark:text-polar-500 text-gray-500">
-                  Start selling digital products today
+                  {query
+                    ? 'No products match your search query'
+                    : 'Start selling digital products today'}
                 </p>
               </div>
-              {!managedAsCode && (
+              {!managedAsCode && !query && (
                 <Link href={`/dashboard/${org.slug}/products/new`}>
                   <Button role="link" variant="secondary">
                     <span>Create Product</span>

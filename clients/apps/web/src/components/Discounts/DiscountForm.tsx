@@ -328,7 +328,6 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
               <FormField
                 control={control}
                 name="duration_in_months"
-                shouldUnregister={duration !== 'repeating'}
                 rules={{
                   required: 'This field is required',
                   min: { value: 1, message: 'This field must be at least 1' },

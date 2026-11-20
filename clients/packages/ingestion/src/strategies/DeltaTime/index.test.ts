@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { DeltaTimeStrategy } from '.'
+import { DeltaTimeStrategy, DeltaTimeStrategyContext } from '.'
 import { Ingestion } from '../../ingestion'
 import { IngestionStrategy } from '../../strategy'
 
@@ -25,6 +25,15 @@ describe('DeltaTimeStrategy', () => {
     vi.spyOn(deltaTimeStrategy, 'createExecutionHandler').mockReturnValue(
       mockExecute,
     )
+  })
+
+  it('should send a context that DeltaTimeStrategyContext accepts', async () => {
+    deltaTimeStrategy.client({ customerId: 'test-customer-id' })()()
+
+    const [context] = mockExecute.mock.calls[0]
+    expect(
+      await DeltaTimeStrategyContext['~standard'].validate(context),
+    ).toEqual({ value: context })
   })
 
   it('should be an instance of IngestionStrategy', () => {

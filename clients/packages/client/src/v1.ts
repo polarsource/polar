@@ -17386,10 +17386,12 @@ export interface components {
        */
       description: string
       /**
-       * @description The visibility of the benefit.
+       * Visibility
+       * @description Always `public`: customers set up their channel in the customer portal.
        * @default public
+       * @constant
        */
-      visibility: components['schemas']['BenefitVisibility']
+      visibility: 'public'
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}

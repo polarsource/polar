@@ -6,6 +6,7 @@ from typing import Any, cast, get_args
 from uuid import UUID
 
 import pytest
+from pydantic import ValidationError
 from pytest_mock import MockerFixture
 from sqlalchemy import select
 
@@ -4938,6 +4939,14 @@ class TestBenefitVersioning:
         ]
         assert unchanged.issues == []
         assert current.id == created.id
+
+    async def test_slack_shared_channel_is_always_public(
+        self, slack_benefit: dict[str, Any]
+    ) -> None:
+        with pytest.raises(ValidationError):
+            Config.model_validate(
+                {"benefits": [{**slack_benefit, "visibility": "private"}]}
+            )
 
     async def test_slack_shared_channel_stored_without_newer_properties(
         self,

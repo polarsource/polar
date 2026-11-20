@@ -187,6 +187,12 @@ class ConfigBenefitSlackSharedChannelProperties(
 
 class ConfigBenefitSlackSharedChannel(ConfigBenefitBase):
     type: Literal[BenefitType.slack_shared_channel]
+    visibility: Literal[Visibility.public] = Field(
+        default=Visibility.public,
+        description=(
+            "Always `public`: customers set up their channel in the customer portal."
+        ),
+    )
     properties: ConfigBenefitSlackSharedChannelProperties
 
 

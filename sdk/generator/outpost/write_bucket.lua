@@ -2,7 +2,7 @@ local bucket = 'bucket:' .. ARGV[1] .. ':'
 local pending = 'pending:' .. ARGV[1] .. ':'
 local total = tonumber(redis.call('HGET', KEYS[1], bucket .. 'sum') or '0') + tonumber(ARGV[3])
 assert(total == total and math.abs(total) ~= math.huge, 'Aggregation values must be finite')
-for i, func in ipairs({'min', 'max'}) do
+for i = 1, 2 do
     local raw = ARGV[3 + i]
     if raw ~= '' then
         local value = tonumber(raw)

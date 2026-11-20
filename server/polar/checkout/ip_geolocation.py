@@ -1,5 +1,6 @@
 import argparse
 import sys
+from collections import defaultdict
 from typing import Annotated, cast
 
 import httpx2
@@ -81,65 +82,79 @@ def get_ip_country(client: IPGeolocationClient, ip: str) -> str | None:
     return ret
 
 
-# Countries an IP or payment method lookup may report for a billing country.
-BILLING_COUNTRY_ALIASES: dict[str, tuple[str, ...]] = {
-    "AX": ("FI",),
-    "GP": ("FR",),
-    "MQ": ("FR",),
-    "RE": ("FR",),
-    "GF": ("FR",),
-    "YT": ("FR",),
-    "MF": ("FR",),
-    "BL": ("FR",),
-    "PM": ("FR",),
-    "NC": ("FR",),
-    "PF": ("FR",),
-    "WF": ("FR",),
-    "TF": ("FR",),
-    "MC": ("FR",),
-    "AD": ("FR", "ES"),
-    "SM": ("IT",),
-    "VA": ("IT",),
-    "FO": ("DK",),
-    "GL": ("DK",),
-    "BQ": ("NL",),
-    "CW": ("NL",),
-    "AW": ("NL",),
-    "SX": ("NL",),
-    "SJ": ("NO",),
-    "LI": ("CH",),
-    "IM": ("GB",),
-    "JE": ("GB",),
-    "GG": ("GB",),
-    "GI": ("GB", "ES"),
-    "PR": ("US",),
-    "GU": ("US",),
-    "VI": ("US",),
-    "AS": ("US",),
-    "MP": ("US",),
-    "UM": ("US",),
-    "CX": ("AU",),
-    "CC": ("AU",),
-    "HM": ("AU",),
-    "NF": ("AU",),
-    "CK": ("NZ",),
-    "NU": ("NZ",),
-    "TK": ("NZ",),
-    "HK": ("CN",),
-    "MO": ("CN",),
-    "TW": ("CN",),
-    "BM": ("GB",),
-    "KY": ("GB",),
-    "VG": ("GB",),
-    "AI": ("GB",),
-    "MS": ("GB",),
-    "TC": ("GB",),
-    "FK": ("GB",),
-    "SH": ("GB",),
-    "IO": ("GB",),
-    "GS": ("GB",),
-    "PN": ("GB",),
-}
+# Territories and their parent countries. IP and payment method lookups can report
+# either one, so each pair matches in both directions.
+_IP_COUNTRY_ALIAS_PAIRS: list[tuple[str, str]] = [
+    ("AX", "FI"),
+    ("GP", "FR"),
+    ("MQ", "FR"),
+    ("RE", "FR"),
+    ("GF", "FR"),
+    ("YT", "FR"),
+    ("MF", "FR"),
+    ("BL", "FR"),
+    ("PM", "FR"),
+    ("NC", "FR"),
+    ("PF", "FR"),
+    ("WF", "FR"),
+    ("TF", "FR"),
+    ("MC", "FR"),
+    ("AD", "FR"),
+    ("AD", "ES"),
+    ("SM", "IT"),
+    ("VA", "IT"),
+    ("FO", "DK"),
+    ("GL", "DK"),
+    ("BQ", "NL"),
+    ("CW", "NL"),
+    ("AW", "NL"),
+    ("SX", "NL"),
+    ("SJ", "NO"),
+    ("LI", "CH"),
+    ("IM", "GB"),
+    ("JE", "GB"),
+    ("GG", "GB"),
+    ("GI", "GB"),
+    ("GI", "ES"),
+    ("PR", "US"),
+    ("GU", "US"),
+    ("VI", "US"),
+    ("AS", "US"),
+    ("MP", "US"),
+    ("UM", "US"),
+    ("CX", "AU"),
+    ("CC", "AU"),
+    ("HM", "AU"),
+    ("NF", "AU"),
+    ("CK", "NZ"),
+    ("NU", "NZ"),
+    ("TK", "NZ"),
+    ("HK", "CN"),
+    ("MO", "CN"),
+    ("TW", "CN"),
+    ("BM", "GB"),
+    ("KY", "GB"),
+    ("VG", "GB"),
+    ("AI", "GB"),
+    ("MS", "GB"),
+    ("TC", "GB"),
+    ("FK", "GB"),
+    ("SH", "GB"),
+    ("IO", "GB"),
+    ("GS", "GB"),
+    ("PN", "GB"),
+]
+
+
+def _build_symmetric(pairs: list[tuple[str, str]]) -> dict[str, frozenset[str]]:
+    aliases: defaultdict[str, set[str]] = defaultdict(set)
+    for a, b in pairs:
+        aliases[a].add(b)
+        aliases[b].add(a)
+    return {k: frozenset(v) for k, v in aliases.items()}
+
+
+IP_COUNTRY_ALIASES = _build_symmetric(_IP_COUNTRY_ALIAS_PAIRS)
 
 
 if __name__ == "__main__":
@@ -153,7 +168,7 @@ if __name__ == "__main__":
     sys.stdout.write(f"Database downloaded to {DATABASE_PATH}\n")
 
 __all__ = [
-    "BILLING_COUNTRY_ALIASES",
+    "IP_COUNTRY_ALIASES",
     "IPGeolocationClient",
     "get_client",
     "get_ip_country",

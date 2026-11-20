@@ -538,6 +538,15 @@ class OrganizationService:
             )
             if agent is None:
                 raise CannotCreateOrganizationError(_AGENT_ONE_ORGANIZATION_MESSAGE)
+            posthog.agent_event(
+                agent,
+                "organization",
+                "create",
+                {
+                    "organization_id": str(organization.id),
+                    "organization_slug": organization.slug,
+                },
+            )
             return organization
 
         assert is_user(auth_subject)

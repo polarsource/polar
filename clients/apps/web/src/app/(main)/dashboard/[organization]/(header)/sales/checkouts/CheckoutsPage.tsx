@@ -16,7 +16,7 @@ import {
   DataTableColumnHeader,
 } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { Input, Text } from '@polar-sh/orbit'
+import { Input, Text, Truncated } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useRouter } from 'next/navigation'
 import {
@@ -140,20 +140,24 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           customerName.toLocaleLowerCase() !==
             customerBillingName.toLocaleLowerCase()
         return (
-          <div className="flex flex-row items-center gap-2 overflow-hidden">
+          <Box alignItems="center" minWidth={0}>
             {customerEmail ? (
-              <div className="overflow-hidden text-ellipsis">
-                {customerName || customerEmail}
-                {showBillingName && (
-                  <span className="dark:text-polar-500 ml-2 text-gray-500">
-                    {customerBillingName}
-                  </span>
-                )}
-              </div>
+              <Truncated>
+                <Text as="span">
+                  {customerName || customerEmail}
+                  {showBillingName && (
+                    <Box as="span" ml="s">
+                      <Text as="span" color="muted">
+                        {customerBillingName}
+                      </Text>
+                    </Box>
+                  )}
+                </Text>
+              </Truncated>
             ) : (
               <>—</>
             )}
-          </div>
+          </Box>
         )
       },
     },
@@ -179,8 +183,11 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                   display="inline-flex"
                   alignItems="center"
                   columnGap="s"
+                  maxWidth="100%"
                 >
-                  {product.name}
+                  <Truncated>
+                    <Text as="span">{product.name}</Text>
+                  </Truncated>
                   <CatalogVersionLabel
                     organization={organization}
                     version={product}

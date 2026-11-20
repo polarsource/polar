@@ -27,7 +27,7 @@ import {
 } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { Status } from '@polar-sh/orbit'
-import { Text } from '@polar-sh/orbit'
+import { Text, Truncated } from '@polar-sh/orbit'
 import { functionalUpdate, OnChangeFn } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
 import {
@@ -166,22 +166,24 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           customer.name?.toLocaleLowerCase() !==
             customer.billing_name.toLocaleLowerCase()
         return (
-          <div className="flex flex-row items-center gap-2 overflow-hidden">
+          <Box alignItems="center" columnGap="s" minWidth={0}>
             <Avatar
               avatar_url={customer.avatar_url}
               name={customer.email ?? customer.name ?? '—'}
             />
-            <div className="overflow-hidden text-ellipsis">
-              {customer.name || customer.email || '—'}
-              {showBillingName && (
-                <Box as="span" ml="s">
-                  <Text as="span" color="muted">
-                    {customer.billing_name}
-                  </Text>
-                </Box>
-              )}
-            </div>
-          </div>
+            <Truncated>
+              <Text as="span">
+                {customer.name || customer.email || '—'}
+                {showBillingName && (
+                  <Box as="span" ml="s">
+                    <Text as="span" color="muted">
+                      {customer.billing_name}
+                    </Text>
+                  </Box>
+                )}
+              </Text>
+            </Truncated>
+          </Box>
         )
       },
     },
@@ -242,13 +244,15 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       cell: ({ getValue }) => {
         const tier = getValue() as schemas['Product']
         return (
-          <div className="flex flex-row items-center gap-2">
-            {tier.name}
+          <Box alignItems="center" columnGap="s" minWidth={0}>
+            <Truncated>
+              <Text as="span">{tier.name}</Text>
+            </Truncated>
             <CatalogVersionLabel organization={organization} version={tier} />
             {tier.is_archived && (
               <Status status="Archived" color="red" size="small" />
             )}
-          </div>
+          </Box>
         )
       },
     },

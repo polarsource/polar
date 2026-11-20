@@ -119,8 +119,7 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
                 member_repository, customer, customer_create.external_member_id
             )
 
-        customer_type = customer.type or CustomerType.individual
-        if customer_type == CustomerType.team:
+        if customer.type == CustomerType.team:
             raise PolarRequestValidationError(
                 [
                     {

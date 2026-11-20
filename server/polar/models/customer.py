@@ -265,25 +265,11 @@ class Customer(MetadataMixin, RecordModel):
     a seat-based product. Individual customers can transition to a team customer by
     purchasing a seat-based product. This transition is only one-way.
     """
-    _type: Mapped[CustomerType | None] = mapped_column(
-        "type",
+    type: Mapped[CustomerType] = mapped_column(
         String,
-        nullable=True,
+        nullable=False,
         default=CustomerType.individual,
     )
-
-    @hybrid_property
-    def type(self) -> CustomerType:
-        return self._type or CustomerType.individual
-
-    @type.inplace.setter
-    def _type_setter(self, value: CustomerType | None) -> None:
-        self._type = value
-
-    @type.inplace.expression
-    @classmethod
-    def _type_expression(cls) -> ColumnElement[str]:
-        return cls._type  # type: ignore[return-value]
 
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:

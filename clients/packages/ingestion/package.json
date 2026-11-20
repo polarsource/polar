@@ -109,9 +109,7 @@
     "@polar-sh/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "@typescript/native": "catalog:",
-    "ai": "^7.0.0",
-    "ai-v5": "npm:ai@^5.0.18",
-    "ai-v6": "npm:ai@^6.0.0",
+    "ai": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

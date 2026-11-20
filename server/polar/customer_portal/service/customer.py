@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 import stripe as stripe_lib
+from pydantic import MISSING
 
 from polar.auth.models import AuthSubject, Customer, Member
 from polar.customer.repository import CustomerRepository
@@ -69,37 +70,14 @@ class CustomerService:
         customer: CustomerModel,
         customer_update: CustomerPortalCustomerUpdate,
     ) -> CustomerModel:
-        if customer_update.billing_name is not None:
+        if isinstance(customer_update.billing_name, str):
             customer.billing_name = customer_update.billing_name
 
-        if "billing_address" in customer_update.model_fields_set:
-            if customer_update.billing_address is None:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "missing",
-                            "loc": ("body", "billing_address"),
-                            "msg": "Customer billing address cannot be reset to null once set.",
-                            "input": customer_update.billing_address,
-                        }
-                    ]
-                )
-            else:
-                customer.billing_address = customer_update.billing_address
+        if customer_update.billing_address is not MISSING:
+            customer.billing_address = customer_update.billing_address
 
         new_default_payment_method: PaymentMethod | None = None
-        if "default_payment_method_id" in customer_update.model_fields_set:
-            if customer_update.default_payment_method_id is None:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "missing",
-                            "loc": ("body", "default_payment_method_id"),
-                            "msg": "Default payment method cannot be reset to null.",
-                            "input": customer_update.default_payment_method_id,
-                        }
-                    ]
-                )
+        if customer_update.default_payment_method_id is not MISSING:
             payment_method_repository = PaymentMethodRepository.from_session(session)
             new_default_payment_method = (
                 await payment_method_repository.get_by_id_and_customer(
@@ -118,7 +96,7 @@ class CustomerService:
                     ]
                 )
 
-        if "tax_id" in customer_update.model_fields_set:
+        if customer_update.tax_id is not MISSING:
             if customer_update.tax_id is None:
                 # Explicitly clearing the tax ID.
                 customer.tax_id = None
@@ -154,7 +132,7 @@ class CustomerService:
                         ]
                     ) from e
         elif (
-            "billing_address" in customer_update.model_fields_set
+            customer_update.billing_address is not MISSING
             and customer.tax_id is not None
         ):
             # Billing address changed while an existing tax ID is set:

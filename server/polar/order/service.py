@@ -9,6 +9,7 @@ from urllib.parse import urlencode
 
 import stripe as stripe_lib
 import structlog
+from pydantic import MISSING
 from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload
 
@@ -490,7 +491,7 @@ class OrderService:
         errors: list[ValidationError] = []
 
         billing_address = order_update.billing_address
-        if billing_address is not None and order.billing_address is not None:
+        if billing_address is not MISSING and order.billing_address is not None:
             for field in order.billing_address.get_tax_fields():
                 value = getattr(billing_address, field)
                 if value != getattr(order.billing_address, field):

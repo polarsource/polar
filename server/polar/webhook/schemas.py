@@ -4,6 +4,7 @@ from typing import Annotated, Literal
 
 import idna
 from pydantic import (
+    MISSING,
     UUID4,
     AfterValidator,
     AnyUrl,
@@ -28,6 +29,7 @@ from polar.kit.schemas import (
 from polar.kit.versioning import (
     _ACTIVE_API_VERSION,
     APIVersion,
+    Omissible,
     QuerySchema,
     Version,
 )
@@ -222,28 +224,30 @@ class WebhookEndpointUpdate(Schema):
     Schema to update a webhook endpoint.
     """
 
-    url: EndpointURL | None = None
-    name: str | None = Field(
-        default=None,
-        description="An optional name for the webhook endpoint to help organize and identify it.",
+    url: Omissible[EndpointURL] = MISSING
+    name: Omissible[str | None] = Field(
+        default=MISSING,
+        description="An optional name for the webhook endpoint. Set to `null` to clear it.",
     )
-    api_version: AvailableAPIVersion | None = Field(
-        default=None, description="The API version that'll be used in event payloads."
+    api_version: Omissible[AvailableAPIVersion] = Field(
+        default=MISSING,
+        description="The API version that'll be used in event payloads.",
     )
-    format: CreatableEndpointFormat | None = None
-    events: EndpointEvents | None = None
-    enabled: bool | None = Field(
-        default=None,
+    format: Omissible[CreatableEndpointFormat] = MISSING
+    events: Omissible[EndpointEvents] = MISSING
+    enabled: Omissible[bool] = Field(
+        default=MISSING,
         description="Whether the webhook endpoint is enabled.",
         json_schema_extra=destructive_when_equals(False),
     )
 
 
 class DeprecatedWebhookEndpointUpdateWithSecret(WebhookEndpointUpdate):
-    secret: SkipJsonSchema[EndpointSecret | None] = Field(
-        default=None,
+    secret: SkipJsonSchema[
+        Omissible[Annotated[EndpointSecret, Field(min_length=32)]]
+    ] = Field(
+        default=MISSING,
         deprecated="The secret should is now generated on the backend.",
-        min_length=32,
     )
 
 

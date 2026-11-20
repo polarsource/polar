@@ -1414,37 +1414,19 @@ class TestUpdateCustomer:
         assert json["metadata"] == {"test": "test"}
 
     @pytest.mark.auth
-    async def test_empty_external_id_converts_to_none(
+    async def test_empty_external_id_is_rejected(
         self,
-        save_fixture: SaveFixture,
         client: AsyncClient,
         user_organization: UserOrganization,
-        organization: Organization,
+        customer: Customer,
     ) -> None:
-        # Create two customers with None external_id
-        customer1 = await create_customer(
-            save_fixture,
-            organization=organization,
-            email="customer1@example.com",
-            external_id=None,
-        )
-        customer2 = await create_customer(
-            save_fixture,
-            organization=organization,
-            email="customer2@example.com",
-            external_id=None,
-        )
-
-        # Try to update customer1 with empty string external_id
-        # This should be converted to None and not cause a conflict
         response = await client.patch(
-            f"/v1/customers/{customer1.id}",
+            f"/v1/customers/{customer.id}",
             json={"external_id": ""},
         )
 
-        assert response.status_code == 200
-        json = response.json()
-        assert json["external_id"] is None
+        assert response.status_code == 422
+        assert response.json()["detail"][0]["loc"] == ["body", "external_id"]
 
     @pytest.mark.auth
     async def test_external_id_conflict(

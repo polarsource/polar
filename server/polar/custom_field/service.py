@@ -2,6 +2,7 @@ import uuid
 from collections.abc import Sequence
 from typing import Any
 
+from pydantic import MISSING
 from sqlalchemy import (
     Select,
     UnaryExpression,
@@ -175,7 +176,7 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
         await assert_catalog_editable(session, custom_field.organization_id)
         repository = CustomFieldRepository.from_session(session)
         if not custom_field.is_current or (
-            custom_field_update.slug is not None
+            custom_field_update.slug is not MISSING
             and custom_field.slug != custom_field_update.slug
             and await repository.has_versions(custom_field)
         ):
@@ -194,7 +195,7 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
             )
 
         if (
-            custom_field_update.slug is not None
+            custom_field_update.slug is not MISSING
             and custom_field.slug != custom_field_update.slug
         ):
             existing_field = await repository.get_by_organization_and_slug(

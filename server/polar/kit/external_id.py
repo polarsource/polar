@@ -1,11 +1,11 @@
 from typing import Annotated
 
-from pydantic import BaseModel, BeforeValidator, Field, StringConstraints
+from pydantic import MISSING, BaseModel, BeforeValidator, Field, StringConstraints
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from polar.kit.schemas import empty_str_to_none
-from polar.kit.versioning import Version
+from polar.kit.versioning import Omissible, Version
 from polar.version import V2027_01
 
 ExternalIDColumn = Annotated[
@@ -33,11 +33,18 @@ _example = "ext_1337"
 
 class ExternalIDInputMixin(BaseModel):
     external_id: Annotated[
-        ExternalID | None,
-        BeforeValidator(empty_str_to_none),
+        Omissible[Annotated[ExternalID, BeforeValidator(empty_str_to_none)]],
         Version(starting_from=V2027_01),
         Field(description=_input_description, examples=[_example]),
-    ] = None
+    ] = MISSING
+
+
+class ResettableExternalIDInputMixin(BaseModel):
+    external_id: Annotated[
+        Omissible[Annotated[ExternalID | None, BeforeValidator(empty_str_to_none)]],
+        Version(starting_from=V2027_01),
+        Field(description=_input_description, examples=[_example]),
+    ] = MISSING
 
 
 class ExternalIDOutputMixin(BaseModel):

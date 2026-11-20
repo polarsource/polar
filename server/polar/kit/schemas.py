@@ -5,6 +5,7 @@ from typing import Annotated, Any, Literal, Self, cast, get_args, overload
 
 from annotated_types import Ge, Le
 from pydantic import (
+    MISSING,
     UUID4,
     AfterValidator,
     AnyUrl,
@@ -108,7 +109,7 @@ class TimestampedSchema(Schema):
     )
 
 
-def empty_str_to_none(value: str | None) -> str | None:
+def empty_str_to_none(value: str | None | MISSING) -> str | None | MISSING:
     if isinstance(value, str):
         stripped_value = value.strip()
         if stripped_value == "":

@@ -1,10 +1,11 @@
 from typing import Annotated, Any, Literal
 
 from annotated_types import Len
-from pydantic import UUID4, Field, model_validator
+from pydantic import MISSING, UUID4, Field, model_validator
 
 from polar.file.schemas import DownloadableFileRead
 from polar.kit.schemas import Schema
+from polar.kit.versioning import Omissible
 from polar.models.benefit import BenefitType
 
 from ..base.schemas import (
@@ -64,7 +65,7 @@ class BenefitDownloadablesCreate(BenefitCreateBase):
 
 class BenefitDownloadablesUpdate(BenefitUpdateBase):
     type: Literal[BenefitType.downloadables]
-    properties: BenefitDownloadablesCreateProperties | None = None
+    properties: Omissible[BenefitDownloadablesCreateProperties] = MISSING
 
 
 class BenefitDownloadables(BenefitBase):

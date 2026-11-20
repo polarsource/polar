@@ -2,6 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 import stripe as stripe_lib
+from pydantic import ValidationError
 from pytest_mock import MockerFixture
 
 from polar.customer_portal.schemas.customer import (
@@ -357,22 +358,9 @@ class TestUpdate:
         assert errors[0]["loc"] == ("body", "tax_id")
         assert errors[0]["input"] == "FR61954506077"
 
-    async def test_explicit_null_billing_address(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> None:
-        customer = await create_customer(
-            save_fixture,
-            organization=organization,
-            billing_address=Address(country=CountryAlpha2("FR")),
-        )
-        with pytest.raises(PolarRequestValidationError):
-            await customer_service.update(
-                session, customer, CustomerPortalCustomerUpdate(billing_address=None)
-            )
-        assert customer.billing_address is not None
+    async def test_explicit_null_billing_address(self) -> None:
+        with pytest.raises(ValidationError):
+            CustomerPortalCustomerUpdate.model_validate({"billing_address": None})
 
     async def test_billing_name_update(
         self,

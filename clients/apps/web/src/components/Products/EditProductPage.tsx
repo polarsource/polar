@@ -121,7 +121,13 @@ export const EditProductPage = ({
   const onSubmit = useCallback(
     async (productUpdate: ProductEditOrCreateForm) => {
       try {
-        const { full_medias, metadata, ...productUpdateRest } = productUpdate
+        const {
+          full_medias,
+          metadata,
+          recurring_interval: _recurringInterval,
+          recurring_interval_count: _recurringIntervalCount,
+          ...productUpdateRest
+        } = productUpdate
 
         const { data: updatedProduct, error } = await updateProduct.mutateAsync(
           {

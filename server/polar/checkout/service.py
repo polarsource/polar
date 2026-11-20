@@ -7,7 +7,7 @@ from datetime import datetime
 import sentry_sdk
 import stripe as stripe_lib
 import structlog
-from pydantic import UUID4
+from pydantic import MISSING, UUID4
 from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy import func, select
 from sqlalchemy.exc import DBAPIError
@@ -1225,7 +1225,7 @@ class CheckoutService:
         if (
             checkout.payment_processor == PaymentProcessor.stripe
             and isinstance(checkout_confirm, CheckoutConfirmStripe)
-            and checkout_confirm.confirmation_token_id is not None
+            and checkout_confirm.confirmation_token_id is not MISSING
         ):
             if should_load_confirmation_token:
                 try:
@@ -1274,10 +1274,9 @@ class CheckoutService:
 
         required_fields = self._get_required_confirm_fields(checkout)
         for required_field in required_fields:
-            if (
-                attrgetter(checkout, required_field) is None
-                and attrgetter(checkout_confirm, required_field) is None
-            ):
+            if attrgetter(checkout, required_field) is None and attrgetter(
+                checkout_confirm, required_field
+            ) in (None, MISSING):
                 errors.append(
                     {
                         "type": "missing",
@@ -1303,7 +1302,7 @@ class CheckoutService:
         if (
             checkout.is_payment_form_required
             and isinstance(checkout_confirm, CheckoutConfirmStripe)
-            and checkout_confirm.confirmation_token_id is None
+            and checkout_confirm.confirmation_token_id is MISSING
         ):
             errors.append(
                 {
@@ -1453,7 +1452,8 @@ class CheckoutService:
                                 }
                             else:
                                 assert (
-                                    checkout_confirm.confirmation_token_id is not None
+                                    checkout_confirm.confirmation_token_id
+                                    is not MISSING
                                 )
                                 payment_intent_params["payment_method_types"] = (
                                     checkout.payment_method_types
@@ -1466,7 +1466,7 @@ class CheckoutService:
                                 )
                         else:
                             assert isinstance(checkout_confirm, CheckoutConfirmStripe)
-                            assert checkout_confirm.confirmation_token_id is not None
+                            assert checkout_confirm.confirmation_token_id is not MISSING
                             setup_intent_params: SetupIntentCreateParams = {
                                 "payment_method_types": checkout.payment_method_types,
                                 "confirm": True,
@@ -2366,11 +2366,11 @@ class CheckoutService:
         updated_currency = (
             checkout_update.currency
             if isinstance(checkout_update, CheckoutUpdate)
-            else None
+            else MISSING
         )
 
         # Currency is updated, but not the product, make sure the product supports it
-        if updated_currency and checkout_update.product_id is None:
+        if updated_currency is not MISSING and checkout_update.product_id is MISSING:
             assert checkout.product is not None
             checkout.currency = updated_currency
             try:
@@ -2392,7 +2392,7 @@ class CheckoutService:
                 checkout, checkout_update, currency_prices
             )
         # Product is updated
-        elif checkout_update.product_id is not None:
+        elif checkout_update.product_id is not MISSING:
             product_repository = ProductRepository.from_session(session)
             product = await product_repository.get_by_id_and_checkout(
                 checkout_update.product_id,
@@ -2428,7 +2428,7 @@ class CheckoutService:
 
             if (
                 isinstance(checkout_update, CheckoutProductPriceUpdateMixin)
-                and checkout_update.product_price_id is not None
+                and checkout_update.product_price_id is not MISSING
             ):
                 try:
                     price = next(
@@ -2457,7 +2457,7 @@ class CheckoutService:
                 checkout.currency = price.price_currency
             else:
                 # Product and currency are both updated, make sure the product supports it
-                if updated_currency is not None:
+                if updated_currency is not MISSING:
                     try:
                         currency_prices = PriceSet.from_product(
                             product, updated_currency
@@ -2511,14 +2511,14 @@ class CheckoutService:
             custom_price = price_set.get_custom_price()
             static_prices = price_set.get_static_prices()
 
-        if custom_price is not None and checkout_update.amount is not None:
+        if custom_price is not None and checkout_update.amount is not MISSING:
             validate_custom_price_amount(
                 custom_price, checkout_update.amount, checkout.currency
             )
             checkout.amount = checkout_update.amount
 
         # Handle seat updates for seat-based pricing
-        if seat_price is not None and checkout_update.seats is not None:
+        if seat_price is not None and checkout_update.seats is not MISSING:
             self._validate_seat_limits(
                 seat_price,
                 checkout_update.seats,
@@ -2531,7 +2531,7 @@ class CheckoutService:
                 custom_amount=None,
                 seats=checkout_update.seats,
             )
-        elif checkout_update.seats is not None:
+        elif checkout_update.seats is not MISSING:
             # Seats provided for non-seat-based pricing
             raise PolarRequestValidationError(
                 [
@@ -2545,7 +2545,7 @@ class CheckoutService:
             )
 
         # Handle unit updates for unit-based pricing
-        if unit_price is not None and checkout_update.units is not None:
+        if unit_price is not None and checkout_update.units is not MISSING:
             validate_unit_limits(
                 unit_price,
                 checkout_update.units,
@@ -2559,7 +2559,7 @@ class CheckoutService:
                 seats=checkout.seats,
                 units=checkout_update.units,
             )
-        elif checkout_update.units is not None:
+        elif checkout_update.units is not MISSING:
             # Units provided for non-unit-based pricing
             raise PolarRequestValidationError(
                 [
@@ -2573,9 +2573,8 @@ class CheckoutService:
             )
 
         if isinstance(checkout_update, CheckoutUpdate):
-            if (
-                has_product_checkout(checkout)
-                and checkout_update.discount_id is not None
+            if has_product_checkout(checkout) and isinstance(
+                checkout_update.discount_id, uuid.UUID
             ):
                 checkout.discount = await self._get_validated_discount(
                     session,
@@ -2586,15 +2585,14 @@ class CheckoutService:
                     discount_id=checkout_update.discount_id,
                 )
             # User explicitly removed the discount
-            elif "discount_id" in checkout_update.model_fields_set:
+            elif checkout_update.discount_id is not MISSING:
                 checkout.discount = None
         elif (
             isinstance(checkout_update, CheckoutUpdatePublic)
             and checkout.allow_discount_codes
         ):
-            if (
-                has_product_checkout(checkout)
-                and checkout_update.discount_code is not None
+            if has_product_checkout(checkout) and isinstance(
+                checkout_update.discount_code, str
             ):
                 discount = await self._get_validated_discount(
                     session,
@@ -2606,10 +2604,10 @@ class CheckoutService:
                 )
                 checkout.discount = discount
             # User explicitly removed the discount
-            elif "discount_code" in checkout_update.model_fields_set:
+            elif checkout_update.discount_code is not MISSING:
                 checkout.discount = None
 
-        if checkout_update.customer_billing_address:
+        if checkout_update.customer_billing_address is not MISSING:
             checkout.customer_billing_address = checkout_update.customer_billing_address
 
         # Turning off business purchase must clear the business billing fields.
@@ -2617,25 +2615,18 @@ class CheckoutService:
         # order and invoice even though the checkout is no longer a business purchase.
         # `customer_billing_name` is cleared after the field-copy loop below, since
         # that loop would otherwise re-apply it from the same request.
-        disabling_business_customer = (
-            checkout_update.is_business_customer is False
-            and "is_business_customer" in checkout_update.model_fields_set
-        )
+        disabling_business_customer = checkout_update.is_business_customer is False
 
-        if disabling_business_customer or (
-            checkout_update.customer_tax_id is None
-            and "customer_tax_id" in checkout_update.model_fields_set
-        ):
+        if disabling_business_customer or checkout_update.customer_tax_id is None:
             checkout.customer_tax_id = None
         else:
             customer_tax_id_number = (
-                checkout_update.customer_tax_id or checkout.customer_tax_id_number
+                checkout.customer_tax_id_number
+                if checkout_update.customer_tax_id is MISSING
+                else checkout_update.customer_tax_id
             )
             if customer_tax_id_number is not None:
-                customer_billing_address = (
-                    checkout_update.customer_billing_address
-                    or checkout.customer_billing_address
-                )
+                customer_billing_address = checkout.customer_billing_address
                 if customer_billing_address is None:
                     raise PolarRequestValidationError(
                         [
@@ -2689,6 +2680,8 @@ class CheckoutService:
             "product_id",
             "product_price_id",
             "amount",
+            "seats",
+            "units",
             "currency",
             "customer_billing_address",
             "customer_tax_id",
@@ -2761,7 +2754,7 @@ class CheckoutService:
             is_seat_count_locked = (
                 checkout.min_seats is not None or checkout.max_seats is not None
             )
-            if checkout_update.seats is not None:
+            if checkout_update.seats is not MISSING:
                 seats = checkout_update.seats
             elif previous_seats is not None and not is_seat_count_locked:
                 # Preserve the existing seat count across a product switch,
@@ -2787,7 +2780,7 @@ class CheckoutService:
             is_unit_count_locked = (
                 checkout.min_units is not None or checkout.max_units is not None
             )
-            if checkout_update.units is not None:
+            if checkout_update.units is not MISSING:
                 units = checkout_update.units
             elif previous_units is not None and not is_unit_count_locked:
                 # Preserve the existing unit count across a product switch,

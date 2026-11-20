@@ -5,12 +5,13 @@ from datetime import date
 from enum import StrEnum
 from typing import Literal
 
-from pydantic import UUID4, EmailStr, Field, computed_field
+from pydantic import MISSING, UUID4, EmailStr, Field, computed_field
 
 from polar.auth.scope import Scope
 from polar.config import settings
 from polar.kit.address import CountryAlpha2Input
 from polar.kit.schemas import Schema, TimestampedSchema, UUID4ToStr
+from polar.kit.versioning import Omissible
 from polar.models.user import IdentityVerificationStatus, OAuthPlatform
 from polar.organization.schemas import OrganizationWithRole
 
@@ -91,7 +92,7 @@ class UserUpdate(Schema):
     last_name: str | None = None
     country: CountryAlpha2Input | None = None
     date_of_birth: date | None = None
-    accepted_terms_of_service: bool | None = None
+    accepted_terms_of_service: Omissible[bool] = MISSING
 
 
 class UserIdentityVerification(Schema):

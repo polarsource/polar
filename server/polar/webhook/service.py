@@ -253,9 +253,8 @@ class WebhookService:
         )
         if not declarative_config:
             await assert_catalog_editable(session, endpoint.organization_id)
-        if endpoint.format == WebhookFormat.mcp and (
-            update_schema.model_fields_set - {"enabled"}
-        ):
+        update_dict = update_schema.model_dump()
+        if endpoint.format == WebhookFormat.mcp and update_dict.keys() - {"enabled"}:
             raise MCPWebhookEndpointReadOnly()
         repository = WebhookEndpointRepository.from_session(session)
 
@@ -275,7 +274,6 @@ class WebhookService:
                     ]
                 ) from e
 
-        update_dict = update_schema.model_dump(exclude_unset=True, exclude_none=True)
         if "secret" in update_dict:
             update_dict["secret_generated_at"] = None
 

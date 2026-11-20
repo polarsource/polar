@@ -2,18 +2,22 @@ from datetime import datetime
 from typing import Annotated, Self
 
 from fastapi import Path
-from pydantic import UUID4, AwareDatetime, Field, model_validator
+from pydantic import MISSING, UUID4, AwareDatetime, Field, model_validator
 from pydantic_extra_types.timezone_name import TimeZoneName
 
 from polar.customer.schemas.customer import CustomerID
-from polar.kit.external_id import ExternalIDInputMixin, ExternalIDOutputMixin
+from polar.kit.external_id import (
+    ExternalIDInputMixin,
+    ExternalIDOutputMixin,
+    ResettableExternalIDInputMixin,
+)
 from polar.kit.metadata import (
     MetadataInputMixin,
     MetadataOutputMixin,
 )
 from polar.kit.schemas import IDSchema, MultipleQueryFilter, Schema, TimestampedSchema
 from polar.kit.time_queries import MIN_DATETIME, TimeInterval
-from polar.kit.versioning import QuerySchema, Version
+from polar.kit.versioning import Omissible, QuerySchema, Version
 from polar.meter.aggregation import Aggregation, AggregationFunction
 from polar.meter.filter import Filter
 from polar.meter.unit import MeterUnit
@@ -87,28 +91,30 @@ class MeterCreate(MeterCreateBase, ExternalIDInputMixin):
     )
 
 
-class MeterUpdate(Schema, MetadataInputMixin, ExternalIDInputMixin):
-    name: str | None = Field(
-        None, description=NAME_DESCRIPTION, min_length=3, max_length=NAME_MAX_LENGTH
+class MeterUpdate(Schema, MetadataInputMixin, ResettableExternalIDInputMixin):
+    name: Omissible[str] = Field(
+        MISSING, description=NAME_DESCRIPTION, min_length=3, max_length=NAME_MAX_LENGTH
     )
-    unit: MeterUnit | None = Field(None, description="The unit of the meter.")
-    custom_label: str | None = Field(
-        None,
+    unit: Omissible[MeterUnit] = Field(MISSING, description="The unit of the meter.")
+    custom_label: Omissible[str | None] = Field(
+        MISSING,
         description=("The label for the custom unit. Required when unit is 'custom'."),
         max_length=CUSTOM_LABEL_MAX_LENGTH,
     )
-    custom_multiplier: int | None = Field(
-        None,
+    custom_multiplier: Omissible[int | None] = Field(
+        MISSING,
         description=(
             "The multiplier to convert from base unit to display scale. "
             "Required when unit is 'custom'."
         ),
         gt=0,
     )
-    filter: Filter | None = Field(None, description=_filter_description)
-    aggregation: Aggregation | None = Field(None, description=_aggregation_description)
-    is_archived: bool | None = Field(
-        None,
+    filter: Omissible[Filter] = Field(MISSING, description=_filter_description)
+    aggregation: Omissible[Aggregation] = Field(
+        MISSING, description=_aggregation_description
+    )
+    is_archived: Omissible[bool] = Field(
+        MISSING,
         json_schema_extra=destructive_when_equals(True),
         description=(
             "Whether the meter is archived. "

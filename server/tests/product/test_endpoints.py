@@ -994,6 +994,14 @@ class TestUpdateProduct:
             json={"trial_payment_setup_required": None},
         )
 
+        assert response.status_code == 422
+        assert response.json()["detail"][0]["loc"] == [
+            "body",
+            "trial_payment_setup_required",
+        ]
+
+        response = await client.patch(f"/v1/products/{product.id}", json={})
+
         assert response.status_code == 200
         assert response.json()["trial_payment_setup_required"] is False
 

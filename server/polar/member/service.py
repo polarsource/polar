@@ -4,6 +4,7 @@ from typing import Any
 from uuid import UUID
 
 import structlog
+from pydantic import MISSING
 from sqlalchemy import Select, UnaryExpression, asc, desc
 from sqlalchemy.exc import IntegrityError, MultipleResultsFound
 from sqlalchemy.orm import joinedload
@@ -855,11 +856,11 @@ class MemberService:
         session: AsyncSession,
         member: Member,
         *,
-        name: str | None = None,
-        role: MemberRole | None = None,
+        name: str | MISSING = MISSING,
+        role: MemberRole | MISSING = MISSING,
         caller_member: Member | None = None,
         allow_ownership_transfer: bool = False,
-        email: str | None = None,
+        email: str | MISSING = MISSING,
     ) -> Member:
         """
         Update a member.
@@ -884,7 +885,7 @@ class MemberService:
         transferred = False
         current_owner: Member | None = None
 
-        if role is not None and member.role != role:
+        if role is not MISSING and member.role != role:
             members = await repository.list_by_customer(member.customer_id)
             owner_count = sum(1 for m in members if m.role == MemberRole.owner)
 
@@ -942,14 +943,14 @@ class MemberService:
                 )
 
         new_email: str | None = None
-        if email is not None and email.strip() != member.email:
+        if email is not MISSING and email.strip() != member.email:
             new_email = email.strip()
             await self._validate_email_change(session, member, new_email)
 
         update_dict = {}
-        if name is not None:
+        if isinstance(name, str):
             update_dict["name"] = name
-        if role is not None and role != member.role and not transferred:
+        if role is not MISSING and role != member.role and not transferred:
             update_dict["role"] = role
         if new_email is not None:
             update_dict["email"] = new_email

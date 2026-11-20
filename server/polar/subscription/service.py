@@ -9,6 +9,7 @@ from typing import Any, Literal, Self, Unpack, cast, overload
 from urllib.parse import urlencode
 
 import structlog
+from pydantic import MISSING
 from sqlalchemy import select
 from sqlalchemy.orm import (
     contains_eager,
@@ -1872,10 +1873,21 @@ class SubscriptionService:
         *,
         update: SubscriptionUpdate,
     ) -> Subscription:
-        if (
-            (isinstance(update, SubscriptionUpdateBase) and update.has_product)
-            or isinstance(update, SubscriptionUpdateSeats | SubscriptionUpdateUnits)
-        ) and update.proration_behavior == SubscriptionProrationBehavior.reset:
+        proration_behavior = (
+            update.proration_behavior
+            if isinstance(
+                update,
+                SubscriptionUpdateBase
+                | SubscriptionUpdateSeats
+                | SubscriptionUpdateUnits,
+            )
+            and update.proration_behavior is not MISSING
+            else None
+        )
+        if proration_behavior == SubscriptionProrationBehavior.reset and (
+            not isinstance(update, SubscriptionUpdateBase)
+            or update.product_id is not MISSING
+        ):
             organization = subscription.organization
             if not organization.feature_settings.get(
                 "reset_proration_behavior_enabled"
@@ -1886,22 +1898,21 @@ class SubscriptionService:
                             "type": "value_error",
                             "loc": ("body", "proration_behavior"),
                             "msg": "The 'reset' proration behavior is not enabled for this organization.",
-                            "input": update.proration_behavior,
+                            "input": proration_behavior,
                         }
                     ]
                 )
 
         if isinstance(update, SubscriptionUpdateBase):
-            if update.has_product:
-                assert update.product_id is not None
+            if update.product_id is not MISSING:
                 subscription = await self.update_product(
                     session,
                     ctx,
                     subscription,
                     product_id=update.product_id,
-                    proration_behavior=update.proration_behavior,
+                    proration_behavior=proration_behavior,
                     discount=update.discount,
-                    trial_end=update.trial_end,
+                    trial_end=None if update.trial_end is MISSING else update.trial_end,
                 )
             # Only update discount if product is not being updated,
             # otherwise it will be handled in update_product()
@@ -1914,14 +1925,16 @@ class SubscriptionService:
                     discount=update.discount,
                 )
 
-            if update.has_trial_end:
-                assert update.trial_end is not None
+            if update.trial_end is not MISSING:
                 subscription = await self.update_trial(
                     session, ctx, subscription, trial_end=update.trial_end
                 )
 
             if update.has_metadata:
-                if update.model_fields_set == {"metadata"} and json.dumps(
+                metadata_only = not update.model_dump(
+                    exclude_unset=True, exclude={"metadata"}
+                )
+                if metadata_only and json.dumps(
                     update.metadata, sort_keys=True
                 ) == json.dumps(subscription.user_metadata, sort_keys=True):
                     ctx.mark_unchanged()
@@ -1935,7 +1948,7 @@ class SubscriptionService:
                 ctx,
                 subscription,
                 seats=update.seats,
-                proration_behavior=update.proration_behavior,
+                proration_behavior=proration_behavior,
             )
 
         if isinstance(update, SubscriptionUpdateUnits):
@@ -1944,7 +1957,7 @@ class SubscriptionService:
                 ctx,
                 subscription,
                 units=update.units,
-                proration_behavior=update.proration_behavior,
+                proration_behavior=proration_behavior,
             )
 
         if isinstance(update, SubscriptionUpdateBillingPeriod):

@@ -11,7 +11,7 @@ from uuid import UUID
 import email_validator
 import stripe as stripe_lib
 import structlog
-from pydantic import BaseModel, Field, TypeAdapter
+from pydantic import MISSING, BaseModel, Field, TypeAdapter
 from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy.exc import IntegrityError
 
@@ -625,15 +625,15 @@ class OrganizationService:
         if organization.onboarded_at is None:
             organization.onboarded_at = datetime.now(UTC)
 
-        if update_schema.feature_settings is not None:
+        if update_schema.feature_settings is not MISSING:
             organization.feature_settings = {
                 **organization.feature_settings,
                 **update_schema.feature_settings.model_dump(
-                    mode="json", exclude_unset=True, exclude_none=True
+                    mode="json", exclude_unset=True
                 ),
             }
 
-        if update_schema.subscription_settings is not None:
+        if update_schema.subscription_settings is not MISSING:
             if (
                 update_schema.subscription_settings.get("proration_behavior")
                 == SubscriptionProrationBehavior.reset
@@ -659,7 +659,7 @@ class OrganizationService:
                 )
             organization.subscription_settings = update_schema.subscription_settings
 
-        if update_schema.dispute_settings is not None:
+        if update_schema.dispute_settings is not MISSING:
             if (
                 update_schema.dispute_settings.auto_accept_below_amount is not None
                 and not organization.is_dispute_auto_accept_enabled
@@ -675,13 +675,13 @@ class OrganizationService:
                 },
             )
 
-        if update_schema.customer_portal_settings is not None:
+        if update_schema.customer_portal_settings is not MISSING:
             organization.customer_portal_settings = _merge_customer_portal_settings(
                 organization.customer_portal_settings,
                 update_schema.customer_portal_settings,
             )
 
-        if update_schema.default_presentment_currency is not None:
+        if update_schema.default_presentment_currency is not MISSING:
             await self._validate_currency_change(
                 session, organization, update_schema.default_presentment_currency
             )
@@ -703,7 +703,7 @@ class OrganizationService:
             },
         )
 
-        if update_schema.details:
+        if update_schema.details is not MISSING:
             organization.details = cast(
                 OrganizationDetails, update_schema.details.model_dump()
             )

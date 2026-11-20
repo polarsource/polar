@@ -1601,10 +1601,7 @@ export class Outpost {
         try {
           return await this.request<Snapshot[]>("POST", "/v1/outpost/meter-usage", { body });
         } catch (error) {
-          const wait =
-            error instanceof PolarRateLimitError && error.retryAfter !== null
-              ? error.retryAfter * 1000
-              : delay;
+          const wait = retryAfterMs(error) ?? delay;
           if (
             error instanceof RefusedError ||
             (error instanceof PolarClientError && !(error instanceof PolarRateLimitError)) ||

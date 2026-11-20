@@ -1,3 +1,5 @@
+import { createSpinner, spinnerStyles } from './utils/spinner'
+
 const POLAR_CHECKOUT_EVENT = 'POLAR_CHECKOUT'
 const BACKDROP_COLOR = 'rgba(0, 0, 0, 0.5)'
 
@@ -145,6 +147,7 @@ class EmbedCheckout {
         justify-content: center;
         border-radius: 24px;
         background: ${theme === 'dark' ? '#111' : '#f9fafb'};
+        color: ${spinnerColor};
       }
       @media (min-width: 768px) {
         .polar-loader-card {
@@ -157,17 +160,7 @@ class EmbedCheckout {
           border-radius: 32px;
         }
       }
-      .polar-loader-spinner {
-        width: 20px;
-        aspect-ratio: 1;
-        border-radius: 50%;
-        background: ${spinnerColor};
-        box-shadow: 0 0 0 0 ${spinnerColor};
-        animation: polar-loader-spinner-animation 1s infinite;
-      }
-      @keyframes polar-loader-spinner-animation {
-        100% {box-shadow: 0 0 0 30px #0000}
-      }
+      ${spinnerStyles}
       body.polar-no-scroll {
         overflow: hidden;
       }
@@ -184,8 +177,7 @@ class EmbedCheckout {
     loader.appendChild(card)
 
     // Create spinning icon
-    const spinner = document.createElement('div')
-    spinner.className = 'polar-loader-spinner'
+    const spinner = createSpinner()
     card.appendChild(spinner)
 
     // Insert into the DOM

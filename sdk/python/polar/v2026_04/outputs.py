@@ -9425,6 +9425,13 @@ class RefundDispute:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class RefundPaymentAlreadyRefundedByStripe:
+    error: typing.Literal["RefundPaymentAlreadyRefundedByStripe"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class RefundedAlready:
     error: typing.Literal["RefundedAlready"]
 

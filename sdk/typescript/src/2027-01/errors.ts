@@ -32,6 +32,7 @@ import type {
   PaymentMethodSetupFailed as PaymentMethodSetupFailedModel,
   PaymentNotReady as PaymentNotReadyModel,
   ProductNotDeletable as ProductNotDeletableModel,
+  RefundPaymentAlreadyRefundedByStripe as RefundPaymentAlreadyRefundedByStripeModel,
   RefundedAlready as RefundedAlreadyModel,
   ResourceNotFound as ResourceNotFoundModel,
   RotateNotPermitted as RotateNotPermittedModel,
@@ -921,6 +922,18 @@ export class RefundedAlready extends PolarClientError<RefundedAlreadyModel> {
   ) {
     super(statusCode, error);
     this.name = "RefundedAlready";
+  }
+}
+/**
+ * Stripe already refunded the payment at its own expense.
+ */
+export class RefundPaymentAlreadyRefundedByStripe extends PolarClientError<RefundPaymentAlreadyRefundedByStripeModel> {
+  constructor(
+    public readonly statusCode: 409,
+    public readonly error: RefundPaymentAlreadyRefundedByStripeModel,
+  ) {
+    super(statusCode, error);
+    this.name = "RefundPaymentAlreadyRefundedByStripe";
   }
 }
 /**

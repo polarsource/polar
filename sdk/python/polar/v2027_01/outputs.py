@@ -5763,6 +5763,9 @@ class CustomerSubscription:
 
     product: CustomerSubscriptionProduct
 
+    payment_method_id: str | None
+    """ID of the payment method pinned to the subscription, if any."""
+
     prices: list[ProductPrice]
     """List of enabled prices for the subscription."""
 
@@ -9092,6 +9095,9 @@ class OrganizationFeatureSettings:
     reducer_billing_enabled: bool = False
     """If this organization's metered usage is billed from the reducer instead of the legacy billing entries."""
 
+    lemon_squeezy_migration_enabled: bool = False
+    """If this organization can migrate its billing from Lemon Squeezy to Polar."""
+
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class OrganizationNotReadyForPayments:
@@ -9797,6 +9803,13 @@ class RefundDispute:
 
     payment_id: str
     """The ID of the payment associated with the dispute."""
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class RefundPaymentAlreadyRefundedByStripe:
+    error: typing.Literal["RefundPaymentAlreadyRefundedByStripe"]
+
+    detail: str
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)

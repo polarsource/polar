@@ -12,6 +12,7 @@ from polar.base import (
 from polar.v2026_04.errors import (
     HTTPValidationError,
     RefundedAlready,
+    RefundPaymentAlreadyRefundedByStripe,
 )
 from polar.v2026_04.inputs import (
     RefundCreate,
@@ -178,6 +179,7 @@ class RefundsSync(SyncServiceBase):
 
         Raises:
             RefundedAlready: Order is already fully refunded.
+            RefundPaymentAlreadyRefundedByStripe: Stripe already refunded the payment at its own expense.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -195,6 +197,7 @@ class RefundsSync(SyncServiceBase):
         response = self.client.send_request(request)
         method_errors = {
             403: RefundedAlready,
+            409: RefundPaymentAlreadyRefundedByStripe,
             422: HTTPValidationError,
         }
         return parse_response_json(response, Refund, method_errors)
@@ -354,6 +357,7 @@ class RefundsAsync(AsyncServiceBase):
 
         Raises:
             RefundedAlready: Order is already fully refunded.
+            RefundPaymentAlreadyRefundedByStripe: Stripe already refunded the payment at its own expense.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -371,6 +375,7 @@ class RefundsAsync(AsyncServiceBase):
         response = await self.client.send_request(request)
         method_errors = {
             403: RefundedAlready,
+            409: RefundPaymentAlreadyRefundedByStripe,
             422: HTTPValidationError,
         }
         return parse_response_json(response, Refund, method_errors)

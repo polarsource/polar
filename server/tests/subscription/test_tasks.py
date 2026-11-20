@@ -29,6 +29,7 @@ from polar.subscription.service import SubscriptionMeterCycleLag, SubscriptionSe
 from polar.subscription.tasks import (  # type: ignore[attr-defined]
     SubscriptionDoesNotExist,
     SubscriptionTierDoesNotExist,
+    cancel_expired_trial_ended,
     scan_grace_expired_revocations,
     subscription_cancel_for_organization,
     subscription_cycle,
@@ -724,3 +725,92 @@ class TestScanGraceExpiredRevocations:
             )
         else:
             enqueue_job_mock.assert_not_called()
+
+
+@pytest.mark.anyio
+class TestCancelExpiredTrialEnded:
+    async def test_not_existing_subscription(self, session: AsyncSession) -> None:
+        session.expunge_all()
+
+        with pytest.raises(SubscriptionDoesNotExist):
+            await cancel_expired_trial_ended(uuid.uuid4())
+
+    async def test_cancels(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_recurring_metered: Product,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        mocker.patch("polar.subscription.service.enqueue_job")
+        enqueue_email_mock = mocker.patch(
+            "polar.subscription.service.enqueue_email_template"
+        )
+        webhook_send_mock = mocker.patch(
+            "polar.subscription.service.webhook_service.send"
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            product=product_recurring_metered,
+            customer=customer,
+            status=SubscriptionStatus.trial_ended,
+            ends_at=utc_now() - timedelta(hours=1),
+            scheduler_locked_at=utc_now(),
+        )
+        session.expunge_all()
+
+        await cancel_expired_trial_ended(subscription.id)
+
+        updated_subscription = await session.get(Subscription, subscription.id)
+        assert updated_subscription is not None
+        assert updated_subscription.status == SubscriptionStatus.canceled
+        assert updated_subscription.ended_at is not None
+        assert updated_subscription.canceled_at == updated_subscription.ended_at
+        assert updated_subscription.ends_at == updated_subscription.ended_at
+        assert updated_subscription.scheduler_locked_at is None
+        webhook_events = [call.args[2] for call in webhook_send_mock.call_args_list]
+        assert webhook_events.count(WebhookEventType.subscription_canceled) == 1
+        assert webhook_events.count(WebhookEventType.subscription_revoked) == 1
+        enqueue_email_mock.assert_not_called()
+        event_repository = EventRepository.from_session(session)
+        meter_reset = await event_repository.get_latest_meter_reset(customer, meter.id)
+        assert meter_reset is not None
+        assert meter_reset.timestamp == updated_subscription.ended_at
+
+    @pytest.mark.parametrize(
+        ("status", "ends_in"),
+        [
+            (SubscriptionStatus.active, timedelta(hours=-1)),
+            (SubscriptionStatus.trial_ended, timedelta(days=1)),
+        ],
+    )
+    async def test_skips(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+        status: SubscriptionStatus,
+        ends_in: timedelta,
+    ) -> None:
+        mocker.patch("polar.subscription.service.enqueue_job")
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=status,
+            ends_at=utc_now() + ends_in,
+            scheduler_locked_at=utc_now(),
+        )
+        session.expunge_all()
+
+        await cancel_expired_trial_ended(subscription.id)
+
+        updated_subscription = await session.get(Subscription, subscription.id)
+        assert updated_subscription is not None
+        assert updated_subscription.status == status
+        assert updated_subscription.ended_at is None
+        assert updated_subscription.scheduler_locked_at is None

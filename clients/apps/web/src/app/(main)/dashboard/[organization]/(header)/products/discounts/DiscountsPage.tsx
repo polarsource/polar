@@ -32,7 +32,7 @@ import {
   DataTableColumnHeader,
 } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { Input } from '@polar-sh/orbit'
+import { Input, Text, Truncated } from '@polar-sh/orbit'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -156,18 +156,14 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const columns: DataTableColumnDef<schemas['Discount']>[] = [
     {
       accessorKey: 'name',
-      meta: { truncate: true },
       enableSorting: true,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Name" />
       ),
-      cell: ({ getValue }) => {
-        return <>{getValue()}</>
-      },
+      cell: ({ getValue }) => <Truncated>{getValue() as string}</Truncated>,
     },
     {
       accessorKey: 'code',
-      meta: { truncate: true },
       enableSorting: true,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Code" />
@@ -175,9 +171,11 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       cell: ({ getValue }) => {
         const code = getValue() as string | null
         return code ? (
-          <div className="flex flex-row items-center gap-1 font-mono">
-            {code}
-          </div>
+          <Truncated>
+            <Text as="span" monospace>
+              {code}
+            </Text>
+          </Truncated>
         ) : (
           '—'
         )

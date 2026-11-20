@@ -19,7 +19,6 @@ import {
 } from '../ui/table'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
-import { Truncated } from '../Truncated'
 import { DataTablePagination } from './DataTablePagination'
 import {
   createSelectionColumn,
@@ -221,18 +220,9 @@ export function DataTable<TData extends RowData>({
                                     : { width: cell.column.getSize() }
                                 }
                               >
-                                {cell.column.columnDef.meta?.truncate ? (
-                                  <Truncated>
-                                    {flexRender(
-                                      cell.column.columnDef.cell,
-                                      cell.getContext(),
-                                    )}
-                                  </Truncated>
-                                ) : (
-                                  flexRender(
-                                    cell.column.columnDef.cell,
-                                    cell.getContext(),
-                                  )
+                                {flexRender(
+                                  cell.column.columnDef.cell,
+                                  cell.getContext(),
                                 )}
                               </TableCell>
                             ) : null}

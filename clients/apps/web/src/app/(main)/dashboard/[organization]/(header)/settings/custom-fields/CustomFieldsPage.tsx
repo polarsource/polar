@@ -14,7 +14,7 @@ import { extractApiErrorMessage } from '@/utils/api/errors'
 import { getAPIParams } from '@/utils/datatable'
 import { MoreVertOutlined } from '@polar-sh/orbit/icons'
 import { enums, schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { Button, Truncated } from '@polar-sh/orbit'
 import {
   DataTable,
   DataTableColumnDef,
@@ -90,30 +90,21 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const columns: DataTableColumnDef<schemas['CustomField']>[] = [
     {
       accessorKey: 'slug',
-      meta: { truncate: true },
       enableSorting: true,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Slug" />
       ),
       cell: ({ getValue }) => {
-        const value = getValue() as string
-        return (
-          <div className="flex flex-row items-center gap-1">
-            <span>{value}</span>
-          </div>
-        )
+        return <Truncated>{getValue() as string}</Truncated>
       },
     },
     {
       accessorKey: 'name',
-      meta: { truncate: true },
       enableSorting: true,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Name" />
       ),
-      cell: ({ getValue }) => {
-        return getValue() as string
-      },
+      cell: ({ getValue }) => <Truncated>{getValue() as string}</Truncated>,
     },
     {
       accessorKey: 'type',

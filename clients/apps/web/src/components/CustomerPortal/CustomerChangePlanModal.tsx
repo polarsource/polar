@@ -219,7 +219,11 @@ const ChangePlanDialog = ({
     [organization],
   )
 
-  const trialOutcome = useTrialChangeOutcome(subscription, selectedProduct)
+  const trialOutcome = useTrialChangeOutcome(
+    subscription,
+    selectedProduct,
+    prorationBehavior,
+  )
 
   const isTrialing = subscription.status === 'trialing'
 

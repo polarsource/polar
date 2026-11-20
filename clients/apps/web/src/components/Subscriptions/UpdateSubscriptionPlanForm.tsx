@@ -64,7 +64,11 @@ export const UpdateSubscriptionPlanForm = ({
     subscription.product.organization_id,
     selectedDiscountId,
   )
-  const trialOutcome = useTrialChangeOutcome(subscription, selectedProduct)
+  const trialOutcome = useTrialChangeOutcome(
+    subscription,
+    selectedProduct,
+    selectedProrationBehavior,
+  )
 
   const isChangingProduct = !!selectedProductId
   const isChangingDiscount = (selectedDiscountId ?? null) !== currentDiscountId

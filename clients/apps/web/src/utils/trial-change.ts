@@ -70,10 +70,18 @@ export const formatTrialEnd = (date: Date): string =>
  * When changing the product on a trialing subscription, determine whether the
  * trial continues with the new product (recomputed against the original
  * trial_start) or ends immediately, triggering a charge.
+ *
+ * Returns null under `next_period`: the backend then schedules the change for
+ * the current trial end and leaves the trial untouched.
  */
 export const useTrialChangeOutcome = (
   subscription: TrialSubscriptionLike,
   selectedProduct: TrialProductLike | null | undefined,
+  prorationBehavior:
+    | schemas['SubscriptionProrationBehavior']
+    | 'auto'
+    | null
+    | undefined,
 ): TrialChangeOutcome => {
   // Capture once when the hook mounts — trials don't expire mid-session, and
   // pinning `now` keeps the memo pure.
@@ -81,6 +89,7 @@ export const useTrialChangeOutcome = (
 
   return useMemo<TrialChangeOutcome>(() => {
     if (subscription.status !== 'trialing') return null
+    if (prorationBehavior === 'next_period') return null
     if (!selectedProduct || selectedProduct.id === subscription.product.id)
       return null
     if (!subscription.trial_start) return null
@@ -93,5 +102,5 @@ export const useTrialChangeOutcome = (
       return { kind: 'continues', trialEnd: newTrialEnd }
     }
     return { kind: 'ends' }
-  }, [subscription, selectedProduct, now])
+  }, [subscription, selectedProduct, prorationBehavior, now])
 }

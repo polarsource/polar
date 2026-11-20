@@ -4,6 +4,7 @@ import type { ProductCheckoutPublic } from '../guards'
 import {
   createCheckout,
   createFixedPrice,
+  createMeteredPrice,
   createSeatBasedPrice,
 } from '../test-utils/makeCheckout'
 import CheckoutProductSwitcher from './CheckoutProductSwitcher'
@@ -225,6 +226,83 @@ describe('CheckoutProductSwitcher', () => {
       expect(screen.getByText('$31.47')).toBeInTheDocument()
 
       expect(screen.getByText('$5.49')).toBeInTheDocument()
+    })
+  })
+
+  describe('product with metered and seat-based prices', () => {
+    const teamProduct = {
+      ...createCheckout().product,
+      id: 'prod_team',
+      name: 'Team',
+    }
+    const starterProduct = {
+      ...createCheckout().product,
+      id: 'prod_starter',
+      name: 'Starter',
+    }
+    const meteredPrice = createMeteredPrice({
+      id: 'price_metered',
+      product_id: 'prod_team',
+    })
+    const seatPrice = createSeatBasedPrice({
+      id: 'price_seat',
+      product_id: 'prod_team',
+    })
+    const starterPrice = createFixedPrice({
+      id: 'price_starter',
+      product_id: 'prod_starter',
+      price_amount: 1900,
+    })
+    const prices = {
+      prod_team: [meteredPrice, seatPrice],
+      prod_starter: [starterPrice],
+    }
+
+    const renderSwitcher = (checkout: ProductCheckoutPublic) =>
+      render(
+        <CheckoutProductSwitcher
+          checkout={checkout}
+          update={noopUpdate}
+          themePreset={themePreset}
+          locale="en"
+        />,
+      )
+
+    it('checks the selected product and shows its seat price', () => {
+      renderSwitcher(
+        createCheckout({
+          product: teamProduct,
+          product_id: 'prod_team',
+          product_price: seatPrice,
+          net_amount: 1000,
+          products: [teamProduct, starterProduct],
+          prices,
+        }),
+      )
+
+      const [teamRadio, starterRadio] = screen.getAllByRole('radio')
+      expect(teamRadio).toBeChecked()
+      expect(starterRadio).not.toBeChecked()
+      expect(screen.getByText('$10')).toBeInTheDocument()
+      expect(screen.queryByText(/unit/)).not.toBeInTheDocument()
+    })
+
+    it('shows the seat price when the product is not selected', () => {
+      renderSwitcher(
+        createCheckout({
+          product: starterProduct,
+          product_id: 'prod_starter',
+          product_price: starterPrice,
+          products: [teamProduct, starterProduct],
+          prices,
+        }),
+      )
+
+      const [teamRadio, starterRadio] = screen.getAllByRole('radio')
+      expect(teamRadio).not.toBeChecked()
+      expect(starterRadio).toBeChecked()
+      expect(screen.getByText(/From/)).toHaveTextContent('From $10')
+      expect(screen.queryByText(/unit/)).not.toBeInTheDocument()
     })
   })
 })

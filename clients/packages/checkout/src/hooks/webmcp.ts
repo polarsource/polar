@@ -5,7 +5,7 @@ import {
   COUNTRIES_WITH_FIXED_STATE_OPTIONS,
   FIXED_STATE_OPTIONS,
 } from '../components/ui/CountryStatePicker'
-import { hasProductCheckout } from '../guards'
+import { getDefaultPrice, hasProductCheckout } from '../guards'
 import { isRequiredField } from '../utils/address'
 
 interface ModelContextTool {
@@ -144,8 +144,10 @@ const describeOrder = (checkout: schemas['CheckoutPublic']) => {
   }
   const priceOf = (productId: string) =>
     describePrice(
-      checkout.prices[productId]?.find(
-        (price) => price.price_currency === checkout.currency,
+      getDefaultPrice(
+        (checkout.prices[productId] ?? []).filter(
+          (price) => price.price_currency === checkout.currency,
+        ),
       ),
     )
   const { amount_type } = checkout.product_price

@@ -1,4 +1,5 @@
 import type { schemas } from '@polar-sh/client'
+import { isMeteredPrice } from './utils/product'
 
 interface ProductCheckoutMixin {
   product_id: string
@@ -15,6 +16,11 @@ export const hasProductCheckout = (
 ): checkout is ProductCheckoutPublic => {
   return checkout.product !== null && checkout.prices !== null
 }
+
+export const getDefaultPrice = (
+  prices: schemas['ProductPrice'][],
+): schemas['ProductPrice'] | undefined =>
+  prices.find((price) => !isMeteredPrice(price)) ?? prices[0]
 
 export const getSeatPrice = (
   checkout: schemas['CheckoutPublic'],

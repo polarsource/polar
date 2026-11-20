@@ -215,6 +215,16 @@ def _retry_after(response: httpx2.Response | None) -> float | None:
     return retry_after_seconds(int(retry_after))
 
 
+async def _call_script(
+    redis: Redis, sha: str, script: str, keys: int, *arguments: typing.Any
+) -> typing.Any:
+    try:
+        return await redis.evalsha(sha, keys, *arguments)
+    except NoScriptError:
+        # Redis caches the script with the first EVAL, so this happens once per server.
+        return await redis.eval(script, keys, *arguments)
+
+
 _P = typing.ParamSpec("_P")
 _R = typing.TypeVar("_R")
 
@@ -1347,11 +1357,9 @@ class Outpost:
             *metrics,
         ]
         try:
-            try:
-                await self._redis.evalsha(PUSH_TELEMETRY_SHA, 2, *arguments)
-            except NoScriptError:
-                # Redis caches the script with the first EVAL, so this happens once per server.
-                await self._redis.eval(PUSH_TELEMETRY_SCRIPT, 2, *arguments)
+            await _call_script(
+                self._redis, PUSH_TELEMETRY_SHA, PUSH_TELEMETRY_SCRIPT, 2, *arguments
+            )
         except RedisError:
             self._outbox.put_back(spans, metrics, TELEMETRY_CAP)
 
@@ -1444,12 +1452,12 @@ class Outpost:
                 f"{self._prefix}:state:{identity}",
                 self._missing_key(identity),
             ]
+        # Inline: a call through _call_script costs a read a coroutine.
         try:
             results = await redis.evalsha(
                 READ_STATES_SHA, len(keys), *keys, *statistics
             )
         except NoScriptError:
-            # Redis caches the script with the first EVAL, so this happens once per server.
             results = await redis.eval(
                 READ_STATES_SCRIPT, len(keys), *keys, *statistics
             )
@@ -2442,11 +2450,9 @@ class Outpost:
             "1" if pulled else "",
             snapshot["cold_until"],
         )
-        try:
-            sealed = await redis.evalsha(PREPARE_SNAPSHOT_SHA, 2, *arguments)
-        except NoScriptError:
-            # Redis caches the script with the first EVAL, so this happens once per server.
-            sealed = await redis.eval(PREPARE_SNAPSHOT_SCRIPT, 2, *arguments)
+        sealed = await _call_script(
+            redis, PREPARE_SNAPSHOT_SHA, PREPARE_SNAPSHOT_SCRIPT, 2, *arguments
+        )
         if sealed is None:
             return False
         confirmation, answered = await self._ask_confirmation(

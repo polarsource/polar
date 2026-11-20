@@ -132,7 +132,13 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       customer_cancellation_reason: cancellationReason ?? undefined,
     })
 
-  const subscriptions = data?.pages.flatMap((page) => page.items)
+  // Rows that tie on the sorted value have no fixed order between requests, so
+  // one can come back on two pages.
+  const subscriptions = data && [
+    ...new Map(
+      data.pages.flatMap((page) => page.items.map((item) => [item.id, item])),
+    ).values(),
+  ]
   const loadMore = () => {
     if (hasNextPage && !isFetchingNextPage) {
       fetchNextPage()

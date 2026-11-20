@@ -53,12 +53,17 @@ const render = (
   config: LoadedConfig,
   organization: ActiveOrganization,
   result: ApplyResult,
+  revertedDraft: boolean,
 ) =>
   result.status === 'rejected'
     ? [ui.blank]
     : [
         ...(unchanged(result.entries) ? [ui.blank] : []),
-        applied(config, organization, result.entries),
+        revertedDraft
+          ? ui.success(
+              `Changes that are no longer in ${config.file} were removed from the draft of ${target(organization)}`,
+            )
+          : applied(config, organization, result.entries),
         ...(result.draft
           ? next(
               `${ui.INDENT}Products, benefits, meters and settings are saved to the draft catalog.\n${ui.INDENT}Run ${ui.command('polar config publish')} to make it live.`,
@@ -157,12 +162,30 @@ export const apply = Command.make('apply', { file, org, confirmed, name }).pipe(
                   const organization = yield* (yield* Organizations).resolve(
                     Option.getOrUndefined(org),
                   )
-                  const plan = yield* billing.plan(
+                  const againstLive = yield* billing.plan(
                     config,
                     organization,
                     catalog,
                   )
-                  return { organization, plan }
+                  if (
+                    !unchanged(againstLive.entries) ||
+                    errors(againstLive.issues) > 0
+                  ) {
+                    return { organization, plan: againstLive }
+                  }
+                  const { draft } = yield* billing
+                    .catalogs(organization)
+                    .pipe(Effect.orElseSucceed(() => ({ draft: null })))
+                  return {
+                    organization,
+                    plan:
+                      draft === null
+                        ? againstLive
+                        : yield* billing.plan(config, organization, {
+                            ...catalog,
+                            catalogId: draft.id,
+                          }),
+                  }
                 }),
               )
               yield* progress.finish(milliseconds(planned))
@@ -223,13 +246,15 @@ export const apply = Command.make('apply', { file, org, confirmed, name }).pipe(
                   result.status === 'applied'
                     ? { ...result, issues: plan.issues }
                     : result,
+                revertedDraft:
+                  result.status === 'applied' && unchanged(result.entries),
               }
             }),
           'columns',
         )
       }),
-    render: ({ config, organization, result }) =>
-      render(config, organization, result),
+    render: ({ config, organization, result, revertedDraft = false }) =>
+      render(config, organization, result, revertedDraft),
     json: ({ config, result }) => ({ file: config.file, ...result }),
     failed: ({ config, result }) =>
       result.status === 'rejected'

@@ -342,7 +342,7 @@ def _create_seed_customer(
         name=name,
         external_id=external_id,
         organization=organization,
-        _type=customer_type,
+        type=customer_type,
     )
     if created_at is not None:
         customer.created_at = created_at

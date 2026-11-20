@@ -12,7 +12,7 @@ import {
   type IngestionStrategyCustomer,
   type IngestionStrategyExternalCustomer,
 } from '../../strategy'
-import type { CostMetadataInput } from '@polar-sh/sdk/models/components/costmetadatainput.js'
+import type { models } from '@polar-sh/sdk/2027-01'
 
 const LLMUsage = {
   inputTokens: Schema.Finite,
@@ -41,7 +41,9 @@ export type LLMStrategyContext = IngestionContext<
   typeof LLMStrategyContext.Type
 >
 
-export type CostResolver = (context: LLMStrategyContext) => CostMetadataInput
+export type CostResolver = (
+  context: LLMStrategyContext,
+) => models.CostMetadataInput
 
 export class LLMStrategy extends IngestionStrategy<
   LLMStrategyContext,

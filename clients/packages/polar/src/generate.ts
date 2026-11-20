@@ -87,7 +87,11 @@ const renderMeter = (meter: MeterConfig, imports: Set<string>): string => {
   }
 
   if (meter.unit === 'custom') {
-    lines.push(`.unit("custom", ${literal(meter.custom_label)})`)
+    const multiplier =
+      meter.custom_multiplier === undefined
+        ? ''
+        : `, ${meter.custom_multiplier}`
+    lines.push(`.unit("custom", ${literal(meter.custom_label)}${multiplier})`)
   } else if (meter.unit === 'token') {
     lines.push('.unit("token")')
   }

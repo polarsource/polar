@@ -82,6 +82,9 @@ export const MeterConfig = Schema.Union([
     ...meterFields,
     unit: Schema.Literal('custom'),
     custom_label: Schema.String,
+    custom_multiplier: Schema.optionalKey(
+      Schema.Int.check(Schema.isGreaterThan(0)),
+    ),
   }),
 ])
 
@@ -193,7 +196,11 @@ const expand = (
 
 type Unit =
   | { readonly unit: 'scalar' | 'token' }
-  | { readonly unit: 'custom'; readonly custom_label: string }
+  | {
+      readonly unit: 'custom'
+      readonly custom_label: string
+      readonly custom_multiplier?: number
+    }
 
 // What an aggregation returns: the meter's fields, plus `.metadata()` and
 // `.deprecated()` so they can still go at the end of the chain.
@@ -245,13 +252,19 @@ export class MeterBuilder<
     return this.refine({ meterFilter: structuredClone(combined) })
   }
 
-  /** How prices on this meter display: `'scalar'` ($0.05 / unit), `'token'` ($20.00 / 1M tokens) or `'custom'` with your own label. Doesn't affect billing. */
+  /** How prices on this meter display: `'scalar'` ($0.05 / unit), `'token'` ($20.00 / 1M tokens) or `'custom'` with your own label, and optionally per how many units (`.unit('custom', 'requests', 1000)` → $5.00 / 1,000 requests). Doesn't affect billing. */
   unit(
-    ...args: [unit: 'scalar' | 'token'] | [unit: 'custom', label: string]
+    ...args:
+      | [unit: 'scalar' | 'token']
+      | [unit: 'custom', label: string, multiplier?: number]
   ): MeterBuilder<Names, Metadata, this[typeof deprecatedKey]> {
     const meterUnit: Unit =
       args[0] === 'custom'
-        ? { unit: 'custom', custom_label: args[1] }
+        ? {
+            unit: 'custom',
+            custom_label: args[1],
+            ...(args[2] === undefined ? {} : { custom_multiplier: args[2] }),
+          }
         : { unit: args[0] }
     return this.refine({ meterUnit })
   }

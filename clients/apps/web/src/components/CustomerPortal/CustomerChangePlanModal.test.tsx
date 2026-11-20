@@ -54,15 +54,21 @@ const subscription = {
 } as unknown as schemas['CustomerSubscription']
 
 const organization = {
-  proration_behavior: 'invoice',
+  proration_behavior: 'prorate',
 } as unknown as schemas['CustomerOrganization']
 
 const mockPreview = (
-  preview: { total_amount: number; due_amount: number } | undefined,
+  preview:
+    | {
+        total_amount: number
+        due_amount: number
+        proration_behavior?: schemas['SubscriptionProrationBehavior']
+      }
+    | undefined,
   state: { isFetching?: boolean; isError?: boolean } = {},
 ) =>
   vi.mocked(useCustomerSubscriptionChangePreview).mockReturnValue({
-    data: preview,
+    data: preview && { proration_behavior: 'invoice', ...preview },
     isFetching: state.isFetching ?? false,
     isError: state.isError ?? false,
   } as unknown as ReturnType<typeof useCustomerSubscriptionChangePreview>)
@@ -107,7 +113,6 @@ describe('CustomerChangePlanModal', () => {
       {},
       'subscription-1',
       'product-seats-yearly',
-      true,
     )
     expect(
       screen.getByText(
@@ -137,6 +142,28 @@ describe('CustomerChangePlanModal', () => {
       screen.getByText('The new yearly plan will be paid from your balance.'),
     ).toBeTruthy()
   })
+
+  it.each([
+    [
+      'prorate',
+      'Your next invoice will include the new plan plus the proration for the current period.',
+    ],
+    ['next_period', 'The new plan will be applied on your next billing cycle.'],
+  ] as const)(
+    'follows the %s behavior the server previews',
+    (prorationBehavior, message) => {
+      mockPreview({
+        total_amount: 12000,
+        due_amount: 12000,
+        proration_behavior: prorationBehavior,
+      })
+
+      renderAndSelectSeatPlan()
+
+      expect(screen.getByText(message)).toBeTruthy()
+      expect(screen.queryByText(immediateCycleNotice)).toBeNull()
+    },
+  )
 
   it.each([
     ['loading', undefined, {}],

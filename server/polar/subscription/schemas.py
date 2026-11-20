@@ -668,9 +668,7 @@ class SubscriptionChangePreview(SubscriptionChargePreview):
     proration_behavior: SubscriptionProrationBehavior = Field(
         description=(
             "How the change would be billed, resolved from the requested "
-            "or organization setting. A `prorate` change that switches the "
-            "billing interval is reported as `invoice`, since it resets the "
-            "billing cycle and is charged immediately."
+            "or organization setting."
         )
     )
 

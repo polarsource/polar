@@ -989,6 +989,47 @@ class TestPreviewChange:
         assert len(response.json()["prorations"]) == 2
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    @pytest.mark.parametrize(
+        ("api_version", "expected_proration_behavior"),
+        [("2026-10", None), ("2027-01", "invoice")],
+    )
+    async def test_interval_change_proration_behavior(
+        self,
+        api_version: str,
+        expected_proration_behavior: str | None,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        organization.subscription_settings = {
+            **organization.subscription_settings,
+            "proration_behavior": "prorate",
+        }
+        await save_fixture(organization)
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+            prices=[(50000, "usd")],
+        )
+
+        response = await client.post(
+            f"/v1/customer-portal/subscriptions/{subscription.id}/change-preview",
+            headers={"Polar-Version": api_version},
+            json={"product_id": str(new_product.id)},
+        )
+
+        assert response.status_code == 200
+        assert response.json().get("proration_behavior") == (
+            expected_proration_behavior
+        )
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_product_change_rejects_proration_behavior(
         self,
         save_fixture: SaveFixture,

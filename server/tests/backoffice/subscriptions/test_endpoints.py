@@ -5,7 +5,7 @@ import httpx2
 import pytest
 from pytest_mock import MockerFixture
 
-from polar.backoffice import app as backoffice_app
+from polar.backoffice.app import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
 from polar.kit.utils import utc_now
 from polar.models import Customer, Organization, Product, Subscription

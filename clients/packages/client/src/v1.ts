@@ -7213,7 +7213,8 @@ export interface paths {
     put?: never
     /**
      * Meter Usage
-     * @description The snapshot of every identity of each requested customer.
+     * @description The snapshot of every identity of each requested customer. An identity whose
+     *     reducer Polar does not know has none.
      *
      *     **Scopes**: `events:write`
      */

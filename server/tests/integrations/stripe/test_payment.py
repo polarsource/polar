@@ -372,6 +372,37 @@ class TestHandleFailureTrigger:
         assert payment is not None
         assert payment.trigger == PaymentTrigger.retry_dunning
 
+    async def test_payment_retry_alert_failure_keeps_dunning_schedule(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        next_payment_attempt_at = utc_now() + timedelta(days=3)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            next_payment_attempt_at=next_payment_attempt_at,
+        )
+        charge = build_stripe_charge(
+            status="failed",
+            metadata={
+                "order_id": str(order.id),
+                "payment_trigger": "retry_payment_alert",
+            },
+            billing_details={"email": "test@example.com"},
+            payment_method_details={"card": {"last4": "4444"}, "type": "card"},
+        )
+
+        await handle_failure(session, charge)
+
+        assert order.next_payment_attempt_at == next_payment_attempt_at
+
     async def test_no_trigger_for_pre_deployment_charge(
         self,
         session: AsyncSession,

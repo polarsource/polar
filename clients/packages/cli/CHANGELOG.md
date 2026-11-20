@@ -1,5 +1,15 @@
 # @polar-sh/cli
 
+## 3.3.0
+
+### Minor Changes
+
+- 2f25731: Accept `--org` on every API command that acts on an organization, and let `polar auth org <id-or-slug>` set the active organization without the interactive picker.
+
+### Patch Changes
+
+- 139b067: Suggest the right command for common guesses such as `polar login` and `polar auth status`, accept `--fields items.id` on list commands, and accept a JSON or comma-separated list of IDs on repeatable flags.
+
 ## 3.2.0
 
 ### Minor Changes

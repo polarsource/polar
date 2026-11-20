@@ -25,17 +25,33 @@ import type { CustomerMeter } from "../metering/meter";
 import { ClientBase, PolarClientError, PolarError, PolarRateLimitError } from "../base";
 import { customerKey, parseEvent } from "./event";
 import {
+  MissingExternalIdError,
+  NotReadyError,
+  PolarOutpostError,
+  RefusedError,
+  UnavailableRedisError,
+  isRedisConnectionError,
+  redisUnavailable,
+} from "./errors";
+import {
+  COLD_PREFIX,
+  consumedUnits,
+  decodeState,
+  isReady,
+  number,
+  statisticsOf,
+  type Read,
+} from "./state";
+import {
   matchEvent,
   withMatchers,
   getBucketStart,
   BUCKET_SIZE,
-  type Aggregation,
   type Reducer,
   type ReducerMatchers,
   type BucketStatistics,
   emptyStatistics,
   addStatistics,
-  quantity,
 } from "./reducer";
 import {
   READ_STATES_SCRIPT,
@@ -92,18 +108,6 @@ const FETCH_BATCH_WINDOW = {{ outpost_constants.fetch_batch_window }};
 const FETCH_CONCURRENCY = {{ outpost_constants.fetch_concurrency }};
 const FETCH_RETRY_DELAY = {{ outpost_constants.fetch_retry_delay }};
 const PULL_CHECK_INTERVAL = {{ outpost_constants.pull_check_interval }};
-const BUCKET_PREFIX = "bucket:";
-const PENDING_PREFIX = "pending:";
-const COLD_PREFIX = "cold:";
-export interface State {
-  coldUntil?: number;
-  cold: BucketStatistics;
-  buckets: Map<number, BucketStatistics>;
-  // The part of each bucket Polar has not confirmed yet.
-  pending: Map<number, BucketStatistics>;
-  // The pull's reset count when Polar last answered for it.
-  confirmedAfterResets?: number;
-}
 type Customer = Parameters<typeof customerKey>[0];
 interface Snapshot {
   reducer_id: string;
@@ -141,8 +145,6 @@ interface Confirmation {
   asked: number;
   confirmed: Map<number, string[]>;
 }
-// A customer's state for one reducer, or `missing` while Polar does not know the customer.
-type Read = State | "missing";
 interface OutpostRedis extends Redis {
   outpostReadStates(numberOfKeys: number, ...args: string[]): Promise<unknown[]>;
   outpostPrepareSnapshot(
@@ -217,50 +219,6 @@ const confirmArguments = (
   ...settlements.flatMap(({ bucketStart, ids }) => [bucketStart, ids.length, ...ids]),
 ];
 
-const number = (value: string): number => {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed))
-    throw new TypeError("Stored aggregation values must be finite numbers");
-  return parsed;
-};
-export class PolarOutpostError extends PolarError {}
-/** A read Outpost cannot answer yet: Polar has not sent the configuration or the snapshot in time. */
-export class NotReadyError extends PolarOutpostError {}
-export class UnavailableRedisError extends PolarOutpostError {
-  constructor(options?: ErrorOptions) {
-    super("Redis is unavailable", options);
-  }
-}
-export class MissingExternalIdError extends PolarOutpostError {
-  constructor() {
-    super("Outpost needs an external_id on every event");
-  }
-}
-const redisUnavailable = (error: unknown): UnavailableRedisError =>
-  new UnavailableRedisError({ cause: error });
-const isRedisConnectionError = (error: unknown): boolean => {
-  if (error instanceof UnavailableRedisError) return isRedisConnectionError(error.cause);
-  return (
-    error instanceof Error &&
-    (error.name === "MaxRetriesPerRequestError" ||
-      [
-        "ECONNABORTED",
-        "ECONNREFUSED",
-        "ECONNRESET",
-        "EHOSTUNREACH",
-        "ENETUNREACH",
-        "ENOTFOUND",
-        "EPIPE",
-        "ETIMEDOUT",
-        "EAI_AGAIN",
-      ].includes((error as NodeJS.ErrnoException).code ?? "") ||
-      [
-        "Command timed out",
-        "Connection is closed.",
-        "Stream isn't writeable and enableOfflineQueue options is false",
-      ].includes(error.message))
-  );
-};
 const withTimeout = async <T>(promise: Promise<T>): Promise<T> => {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
@@ -274,7 +232,6 @@ const withTimeout = async <T>(promise: Promise<T>): Promise<T> => {
     clearTimeout(timer);
   }
 };
-const isReady = (read: Read): boolean => read === "missing" || read.coldUntil !== undefined;
 const eachAtMost = async <T>(
   items: T[],
   limit: number,
@@ -303,35 +260,6 @@ const waitAtMost = async (promise: Promise<unknown>, milliseconds: number): Prom
   ]);
   clearTimeout(timer);
 };
-export const decodeState = (value: string[]): State => {
-  const state: State = {
-    coldUntil: undefined,
-    cold: emptyStatistics(),
-    buckets: new Map(),
-    pending: new Map(),
-  };
-  for (let i = 0; i < value.length; i += 2) {
-    const field = value[i];
-    const raw = value[i + 1];
-    const buckets = field.startsWith(BUCKET_PREFIX)
-      ? state.buckets
-      : field.startsWith(PENDING_PREFIX)
-        ? state.pending
-        : undefined;
-    if (buckets) {
-      const prefix = buckets === state.buckets ? BUCKET_PREFIX : PENDING_PREFIX;
-      const separator = field.lastIndexOf(":");
-      const start = Number(field.slice(prefix.length, separator));
-      let bucket = buckets.get(start);
-      if (!bucket) buckets.set(start, (bucket = emptyStatistics()));
-      bucket[field.slice(separator + 1) as keyof BucketStatistics] = number(raw);
-    } else if (field.startsWith(COLD_PREFIX))
-      state.cold[field.slice(COLD_PREFIX.length) as keyof BucketStatistics] = number(raw);
-    else if (field === "cold_until") state.coldUntil = number(raw);
-    else if (field === "reset") state.confirmedAfterResets = number(raw);
-  }
-  return state;
-};
 // Extends a lock at most once per quarter of its time to live: it stays held, and a page of
 // snapshots does not cost a command each.
 const throttled = (extend: () => Promise<unknown>, ttl: number): (() => Promise<unknown>) => {
@@ -341,19 +269,6 @@ const throttled = (extend: () => Promise<unknown>, ttl: number): (() => Promise<
     extended = Date.now();
     await extend();
   };
-};
-// The statistics a reducer's quantity adds up: all a read needs of its state.
-const statisticsOf = ({ aggregation }: Reducer): string =>
-  aggregation.func === "avg" ? "sum,count" : aggregation.func;
-// Polar's totals cover the cold buckets: the local read adds what Polar has not confirmed in
-// them, and every local event in the buckets Polar has not sealed yet.
-export const consumedUnits = (state: State, func: Aggregation["func"]): number => {
-  const combined = { ...state.cold };
-  for (const [start, statistics] of state.pending)
-    if (start < state.coldUntil!) addStatistics(combined, statistics);
-  for (const [start, statistics] of state.buckets)
-    if (start >= state.coldUntil!) addStatistics(combined, statistics);
-  return quantity(combined, func);
 };
 
 const isClose = (a: number, b: number): boolean =>
@@ -438,12 +353,6 @@ const refusedIndexes = (error: unknown): Set<number> | undefined => {
   }
   return indexes;
 };
-
-class RefusedError extends PolarOutpostError {
-  constructor(message = "Polar refused Outpost") {
-    super(message);
-  }
-}
 
 // A number too large to read, such as 1e999, parses to an infinity no request could carry.
 const holdsNoInfinity = (value: unknown): boolean => {

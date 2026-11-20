@@ -11,16 +11,9 @@ import { ClientBase, PolarError } from "../base";
 import { UnknownMeterError } from "../metering/errors";
 import { NotReadyError } from "./index";
 import { createPolar } from "../{{ (ir.versions[-2] | default(ir.versions[0])).version }}/client";
-import {
-  decodeState,
-  MissingExternalIdError,
-  Outpost,
-  outpost,
-  type OutpostOptions,
-  PolarOutpostError,
-  UnavailableRedisError,
-  isSampled,
-} from "./client";
+import { Outpost, outpost, type OutpostOptions, isSampled } from "./client";
+import { MissingExternalIdError, PolarOutpostError, UnavailableRedisError } from "./errors";
+import { decodeState } from "./state";
 import { BUCKET_SIZE, getBucketStart, type Reducer } from "./reducer";
 import { APPLY_SNAPSHOT_SCRIPT, CONFIRM_SCRIPT } from "./scripts";
 import { SAMPLE_RATE_ATTRIBUTE, TELEMETRY_ENV } from "./telemetry";

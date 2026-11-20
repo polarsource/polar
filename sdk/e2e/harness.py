@@ -79,14 +79,6 @@ class IngestStep(TimelineStep):
     operation: typing.ClassVar[typing.Literal["ingest"]] = "ingest"
 
 
-# Polar ingested these events: the client stops counting them as pending.
-@dataclasses.dataclass(frozen=True)
-class ConfirmStep(TimelineStep):
-    client: str
-    arguments: IngestArguments
-    operation: typing.ClassVar[typing.Literal["confirm"]] = "confirm"
-
-
 @dataclasses.dataclass(frozen=True)
 class ReadStep(TimelineStep):
     client: str
@@ -147,7 +139,6 @@ class IngestedStep(TimelineStep):
 
 Step: typing.TypeAlias = (
     IngestStep
-    | ConfirmStep
     | ReadStep
     | ActorStep
     | RestartStep
@@ -343,7 +334,7 @@ async def run(
     payloads = [*scenario.snapshots]
     steps = (*scenario.initial_reads, *scenario.steps)
     for step in steps:
-        if isinstance(step, IngestStep | ConfirmStep):
+        if isinstance(step, IngestStep):
             payloads.extend(step.arguments["events"])
         elif not isinstance(step, RestartStep | RedisStep):
             payloads.append(step.arguments)

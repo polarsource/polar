@@ -740,36 +740,6 @@ export class Outpost {
     }
   }
 
-  /**
-   * Settle events Polar has ingested: their usage stays in its bucket, no longer pending.
-   *
-   * @param events Tracked events, including their external_id.
-   */
-  async confirm(events: EventInput[]): Promise<void> {
-    await this.settle(events, false);
-  }
-
-  /**
-   * Settle events Polar has received, in the buckets no snapshot has sealed yet. Events of a
-   * sealed bucket stay pending until a snapshot counts them.
-   *
-   * @param events Tracked events, including their external_id.
-   */
-  async acknowledge(events: EventInput[]): Promise<void> {
-    await this.settle(events, true);
-  }
-
-  private async settle(events: EventInput[], hotOnly: boolean): Promise<void> {
-    const redis = this.requireRunning();
-    const settlements = this.settlements(events);
-    if (!settlements.length) return;
-    await redis
-      .outpostConfirm(...confirmArguments(this.prefix, hotOnly, settlements))
-      .catch((error: unknown) => {
-        throw redisUnavailable(error);
-      });
-  }
-
   // The events' ids, by the (customer, reducer, bucket) whose pending usage they settle. An event
   // another SDK queued in a form this one cannot parse settles nothing here: it stays pending
   // until the snapshot that counts it.

@@ -49,7 +49,7 @@ def is_telemetry_enabled(telemetry: bool) -> bool:
     return telemetry and os.environ.get(TELEMETRY_ENV) != "0"
 
 
-class Outbox:
+class TelemetryBuffer:
     """The serialized exports an instance holds until it hands them to the shared
     Redis. The exporters fill it from their own threads."""
 
@@ -85,19 +85,19 @@ def _kept(span: ReadableSpan) -> bool:
     )
 
 
-class OutboxSpanExporter(SpanExporter):
-    def __init__(self, outbox: Outbox) -> None:
-        self._outbox = outbox
+class BufferSpanExporter(SpanExporter):
+    def __init__(self, buffer: TelemetryBuffer) -> None:
+        self._buffer = buffer
 
     def export(self, spans: collections.abc.Sequence[ReadableSpan]) -> SpanExportResult:
         if kept := [span for span in spans if _kept(span)]:
-            self._outbox.add("spans", encode_spans(kept).SerializeToString())
+            self._buffer.add("spans", encode_spans(kept).SerializeToString())
         return SpanExportResult.SUCCESS
 
 
-class OutboxMetricExporter(MetricExporter):
-    def __init__(self, outbox: Outbox) -> None:
-        self._outbox = outbox
+class BufferMetricExporter(MetricExporter):
+    def __init__(self, buffer: TelemetryBuffer) -> None:
+        self._buffer = buffer
         MetricExporter.__init__(
             self,
             preferred_temporality={
@@ -112,7 +112,7 @@ class OutboxMetricExporter(MetricExporter):
         timeout_millis: float = 10_000,
         **kwargs: typing.Any,
     ) -> MetricExportResult:
-        self._outbox.add("metrics", encode_metrics(metrics_data).SerializeToString())
+        self._buffer.add("metrics", encode_metrics(metrics_data).SerializeToString())
         return MetricExportResult.SUCCESS
 
     def force_flush(self, timeout_millis: float = 10_000) -> bool:
@@ -132,14 +132,14 @@ def _resource() -> Resource:
     )
 
 
-def create_tracer_provider(outbox: Outbox) -> TracerProvider:
+def create_tracer_provider(buffer: TelemetryBuffer) -> TracerProvider:
     provider = TracerProvider(resource=_resource(), sampler=ALWAYS_ON)
-    provider.add_span_processor(BatchSpanProcessor(OutboxSpanExporter(outbox)))
+    provider.add_span_processor(BatchSpanProcessor(BufferSpanExporter(buffer)))
     return provider
 
 
-def create_meter_provider(outbox: Outbox) -> MeterProvider:
-    exporter = OutboxMetricExporter(outbox)
+def create_meter_provider(buffer: TelemetryBuffer) -> MeterProvider:
+    exporter = BufferMetricExporter(buffer)
     reader = PeriodicExportingMetricReader(
         exporter, export_interval_millis=EXPORT_INTERVAL_MILLIS
     )

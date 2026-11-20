@@ -58,7 +58,7 @@ from polar.outpost.reducer import (
 )
 from polar.outpost.telemetry import (
     SAMPLE_RATE_ATTRIBUTE,
-    Outbox,
+    TelemetryBuffer,
     create_meter_provider,
     create_tracer_provider,
     is_telemetry_enabled,
@@ -965,7 +965,7 @@ class Outpost:
         self._matchers: list[ReducerMatcher] = []
         # The fetches in flight, by identity: each event is set once its fetch ends.
         self._requesting: dict[str, anyio.Event] = {}
-        self._outbox = Outbox()
+        self._telemetry_buffer = TelemetryBuffer()
         self._queued: list[str] = []
         self._configured = anyio.Event()
         self._apply_snapshot: AsyncScript | None = None
@@ -1028,9 +1028,9 @@ class Outpost:
         self._resets = None
         self._failure = None
         if self._telemetry:
-            self._tracer_provider = create_tracer_provider(self._outbox)
+            self._tracer_provider = create_tracer_provider(self._telemetry_buffer)
             self._tracer = self._tracer_provider.get_tracer("polar.outpost")
-            self._meter_provider = create_meter_provider(self._outbox)
+            self._meter_provider = create_meter_provider(self._telemetry_buffer)
             meter = self._meter_provider.get_meter("polar.outpost")
             self._ingest_duration = meter.create_histogram(
                 "outpost.ingest.duration", unit="s"
@@ -1094,7 +1094,7 @@ class Outpost:
             try:
                 await self._in_flight()
                 await self._drain_outbox_quietly()
-                # Their last exports land in the outbox, which the shared Redis takes
+                # Their last exports land in the buffer, which the shared Redis takes
                 # before it closes.
                 await self._shutdown_telemetry()
                 await self._push_telemetry()
@@ -1344,7 +1344,7 @@ class Outpost:
         return flushed
 
     async def _push_telemetry(self) -> None:
-        spans, metrics = self._outbox.take()
+        spans, metrics = self._telemetry_buffer.take()
         if self._redis is None or not (spans or metrics):
             return
         # A fleet that stops pulling keeps its newest exports only.
@@ -1361,7 +1361,7 @@ class Outpost:
                 self._redis, PUSH_TELEMETRY_SHA, PUSH_TELEMETRY_SCRIPT, 2, *arguments
             )
         except RedisError:
-            self._outbox.put_back(spans, metrics, TELEMETRY_CAP)
+            self._telemetry_buffer.put_back(spans, metrics, TELEMETRY_CAP)
 
     def _telemetry_key(self, kind: str) -> str:
         return f"{self._prefix}:telemetry:{kind}"

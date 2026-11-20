@@ -804,8 +804,8 @@ it("reloads a configuration another token of the organization pulled", async () 
 it("sends the fleet's telemetry in one relay of each kind after a pull", async () => {
   const fleet = await Promise.all(Array.from({ length: 3 }, () => start()));
   for (const [index, outpost] of fleet.entries()) {
-    outpost["outbox"].spans.push(Buffer.from(`spans-${index};`));
-    outpost["outbox"].metrics.push(Buffer.from(`metrics-${index};`));
+    outpost["telemetryBuffer"].spans.push(Buffer.from(`spans-${index};`));
+    outpost["telemetryBuffer"].metrics.push(Buffer.from(`metrics-${index};`));
     await outpost.flushTelemetry();
   }
   await fleet[0]["pull"]();
@@ -818,8 +818,8 @@ it("sends the fleet's telemetry in one relay of each kind after a pull", async (
 
 it("keeps the fleet's telemetry for the next pull when Polar fails the relay", async () => {
   const outpost = await start();
-  outpost["outbox"].spans.push(Buffer.from("spans;"));
-  outpost["outbox"].metrics.push(Buffer.from("metrics;"));
+  outpost["telemetryBuffer"].spans.push(Buffer.from("spans;"));
+  outpost["telemetryBuffer"].metrics.push(Buffer.from("metrics;"));
   await outpost.flushTelemetry();
   telemetryStatus = 503;
   await outpost["pull"]();
@@ -837,7 +837,7 @@ it("keeps the fleet's telemetry for the next pull when Polar fails the relay", a
 it("lets a read that waits for a pull go before the telemetry relay ends", async () => {
   await seed();
   const outpost = await start({ snapshotTimeout: 2_000 });
-  outpost["outbox"].spans.push(Buffer.from("spans;"));
+  outpost["telemetryBuffer"].spans.push(Buffer.from("spans;"));
   await outpost.flushTelemetry();
   telemetryDelay = 500;
   const started = performance.now();
@@ -849,12 +849,12 @@ it("lets a read that waits for a pull go before the telemetry relay ends", async
 
 it("keeps the exports written while a relay is in flight", async () => {
   const outpost = await start();
-  outpost["outbox"].spans.push(...Array.from({ length: 1000 }, (_, index) => Buffer.from(`old-${index};`)));
+  outpost["telemetryBuffer"].spans.push(...Array.from({ length: 1000 }, (_, index) => Buffer.from(`old-${index};`)));
   await outpost.flushTelemetry();
   telemetryDelay = 200;
   const pulling = outpost["pull"]();
   await vi.waitFor(() => expect(telemetryRequests).toHaveLength(1));
-  outpost["outbox"].spans.push(Buffer.from("new;"));
+  outpost["telemetryBuffer"].spans.push(Buffer.from("new;"));
   await outpost.flushTelemetry();
   await pulling;
   await outpost.flush();
@@ -863,7 +863,7 @@ it("keeps the exports written while a relay is in flight", async () => {
 
 it("waits in flush for the relay a pull in flight starts", async () => {
   const outpost = await start();
-  outpost["outbox"].spans.push(Buffer.from("spans;"));
+  outpost["telemetryBuffer"].spans.push(Buffer.from("spans;"));
   await outpost.flushTelemetry();
   telemetryDelay = 200;
   void outpost["pull"]();
@@ -877,7 +877,7 @@ it("keeps its telemetry for the next flush when Redis fails the write", async ()
   vi.spyOn(outpost["redis"]!, "outpostPushTelemetry").mockRejectedValueOnce(
     new Error("Connection is closed."),
   );
-  outpost["outbox"].spans.push(Buffer.from("spans;"));
+  outpost["telemetryBuffer"].spans.push(Buffer.from("spans;"));
   await outpost.flushTelemetry();
   expect(await redis.llen(spans)).toBe(0);
   await outpost.flushTelemetry();
@@ -2594,8 +2594,8 @@ describe("Redis cost", () => {
   it("pushes an instance's telemetry in one command", async () => {
     const outpost = await start();
     const push = (name: string) => {
-      outpost["outbox"].spans.push(Buffer.from(`${name}-span;`));
-      outpost["outbox"].metrics.push(Buffer.from(`${name}-metric;`));
+      outpost["telemetryBuffer"].spans.push(Buffer.from(`${name}-span;`));
+      outpost["telemetryBuffer"].metrics.push(Buffer.from(`${name}-metric;`));
       return outpost["pushTelemetry"]();
     };
     await push("first");

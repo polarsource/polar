@@ -11,7 +11,7 @@ The **Submit for review** button stays disabled until every required item is com
 | Item | Required | Complete when |
 | --- | --- | --- |
 | [Create your first product](#create-your-first-product) | Yes | You have at least one product that isn't archived |
-| [Set up checkout](#set-up-checkout) | Yes | You have a checkout link that delivers something, or an API key and a webhook |
+| [Set up checkout](#set-up-checkout) | Yes | You have a checkout link that delivers something, or an API key (a webhook is recommended) |
 | [Verify your identity](#verify-your-identity) | Yes | The organization owner passed Stripe Identity verification |
 | [Connect a payout account](#connect-a-payout-account) | Yes | Your Stripe account can receive payouts |
 | [Describe what you sell](#describe-what-you-sell) | Yes | Your product description is at least 30 characters |
@@ -32,7 +32,7 @@ We need to see how customers pay you and how they get what they paid for. You ca
 - **Checkout link (no code).** Create a [checkout link](/features/checkout/links). Every checkout link must be able to deliver something to the customer, so each one needs either:
   - a **success URL**, so you handle delivery after the redirect, or
   - a [benefit](/features/benefits/introduction) on every product in the link that Polar delivers on its own, such as a license key, file download, GitHub repository access, Discord or Slack invite, or custom note.
-- **API integration.** Create an organization access token (API key) and a [webhook endpoint](/integrate/webhooks/endpoints).
+- **API integration.** Create an organization access token (API key). We also recommend a [webhook endpoint](/integrate/webhooks/endpoints); without one, the item shows a warning but doesn't block submission.
 
 <AccordionGroup>
   <Accordion title="I created a checkout link, but the item is still incomplete">

@@ -2,47 +2,19 @@ import { Field } from '@/components/Events/EventDetailField'
 import { IconButton, Section } from '@/components/Events/EventDetailPanel'
 import { buildCustomerDashboardPath } from '@/utils/customer'
 import { getDiscountDisplay } from '@/utils/discount'
-import {
-  getSubscriptionActivity,
-  type SubscriptionActivityKind,
-} from '@/utils/subscriptionSummary'
+import { getSubscriptionActivity } from '@/utils/subscriptionSummary'
 import { schemas } from '@polar-sh/client'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import {
-  ChevronDown,
-  ChevronUp,
-  CircleAlert,
-  CircleCheck,
-  CircleDashed,
-  CircleX,
-  Clock,
-  FlaskConical,
-  Plus,
-  RefreshCw,
-  X,
-} from '@polar-sh/orbit/icons'
+import { ChevronDown, ChevronUp, X } from '@polar-sh/orbit/icons'
 import { format } from 'date-fns'
 import Link from 'next/link'
 import { useState } from 'react'
-import { formatSubscriptionPrice } from './Gantt/GanttRowLabel'
-import { SubscriptionStatus } from './SubscriptionStatus'
+import { SubscriptionActivityList } from './SubscriptionActivityList'
+import { SubscriptionSummary } from './SubscriptionSummary'
+import { useSubscriptionDunning } from './useSubscriptionDunning'
 
-const ACTIVITY_ICONS: Record<SubscriptionActivityKind, typeof Clock> = {
-  started: Plus,
-  trial: FlaskConical,
-  converted: CircleCheck,
-  renewal: RefreshCw,
-  failed: CircleAlert,
-  canceled: CircleX,
-  paused: CircleDashed,
-  ended: CircleX,
-  scheduled: Clock,
-}
-
-const ACTIVITY_ROW_HEIGHT = 40
-const ACTIVITY_ICON_SIZE = 14
-const ACTIVITY_LINE_GAP = 7
+const CUSTOMER_LINK_CLASS = 'min-w-0 truncate hover:underline'
 
 const formatDate = (value: string | number): string =>
   format(new Date(value), 'MMM d, yyyy')
@@ -73,8 +45,9 @@ export const SubscriptionDetailPanel = ({
   onClose,
 }: SubscriptionDetailPanelProps) => {
   const [now] = useState(() => Date.now())
-  const { customer, product, discount } = subscription
-  const activity = getSubscriptionActivity(subscription, now)
+  const { customer, discount } = subscription
+  const dunning = useSubscriptionDunning(organization.id, subscription.id)
+  const activity = getSubscriptionActivity(subscription, now, dunning)
 
   return (
     <div className="dark:bg-polar-900 dark:border-polar-800 fixed inset-0 z-50 flex flex-col overflow-y-auto bg-white lg:static lg:z-auto lg:w-[400px] lg:shrink-0 lg:rounded-2xl lg:border lg:border-gray-200 lg:shadow-xs">
@@ -112,22 +85,16 @@ export const SubscriptionDetailPanel = ({
         </Box>
       </Box>
 
+      <SubscriptionSummary subscription={subscription} />
+
       <Box flexDirection="column" paddingHorizontal="l" paddingVertical="m">
-        <Field label="Status">
-          <Text as="div">
-            <SubscriptionStatus subscription={subscription} />
-          </Text>
-        </Field>
-        {customer.email && (
-          <Field label="Email" copyValue={customer.email}>
-            <Text truncate>{customer.email}</Text>
-          </Field>
-        )}
-        <Field label="Product">
-          <Text truncate>{product.name}</Text>
-        </Field>
-        <Field label="Price">
-          <Text tabularNums>{formatSubscriptionPrice(subscription)}</Text>
+        <Field label="Customer">
+          <Link
+            href={buildCustomerDashboardPath(organization.slug, customer)}
+            className={CUSTOMER_LINK_CLASS}
+          >
+            <Text truncate>{customer.name || customer.email || '—'}</Text>
+          </Link>
         </Field>
         {discount && (
           <Field label="Discount">
@@ -158,69 +125,7 @@ export const SubscriptionDetailPanel = ({
         </Field>
       </Box>
 
-      <Section title="Activity">
-        <Box flexDirection="column">
-          {activity.map(({ kind, label, at, upcoming }, index) => {
-            const Icon = upcoming ? Clock : ACTIVITY_ICONS[kind]
-            return (
-              <Box
-                key={`${label}-${at}`}
-                alignItems="center"
-                gap="s"
-                position="relative"
-                height={ACTIVITY_ROW_HEIGHT}
-              >
-                {index < activity.length - 1 && (
-                  <Box
-                    position="absolute"
-                    left={ACTIVITY_ICON_SIZE / 2 - 0.5}
-                    top={
-                      (ACTIVITY_ROW_HEIGHT + ACTIVITY_ICON_SIZE) / 2 +
-                      ACTIVITY_LINE_GAP
-                    }
-                    height={
-                      ACTIVITY_ROW_HEIGHT -
-                      ACTIVITY_ICON_SIZE -
-                      ACTIVITY_LINE_GAP * 2
-                    }
-                    borderLeftWidth={1}
-                    borderStyle="solid"
-                    borderColor="border-primary"
-                  />
-                )}
-                <Icon className="dark:text-polar-500 h-3.5 w-3.5 shrink-0 text-gray-400" />
-                <Box flexGrow={1} minWidth={0}>
-                  <Text color={upcoming ? 'muted' : 'default'} truncate>
-                    {label}
-                  </Text>
-                </Box>
-                <Box flexShrink={0}>
-                  <Text color="muted" tabularNums>
-                    {formatDate(at)}
-                  </Text>
-                </Box>
-              </Box>
-            )
-          })}
-        </Box>
-      </Section>
-
-      <Box
-        gap="s"
-        paddingHorizontal="l"
-        paddingVertical="l"
-        borderTopWidth={1}
-        borderStyle="solid"
-        borderColor="border-secondary"
-      >
-        <Link
-          href={buildCustomerDashboardPath(organization.slug, customer)}
-          className="flex-1"
-        >
-          <Button variant="secondary" fullWidth>
-            View customer
-          </Button>
-        </Link>
+      <Box paddingHorizontal="l" paddingTop="s" paddingBottom="l">
         <Link
           href={`/dashboard/${organization.slug}/sales/subscriptions/${subscription.id}`}
           className="flex-1"
@@ -228,6 +133,10 @@ export const SubscriptionDetailPanel = ({
           <Button fullWidth>Manage</Button>
         </Link>
       </Box>
+
+      <Section title="Activity">
+        <SubscriptionActivityList activity={activity} />
+      </Section>
     </div>
   )
 }

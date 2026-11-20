@@ -38,6 +38,7 @@ export type SubscriptionActivityKind =
   | 'converted'
   | 'renewal'
   | 'failed'
+  | 'recovered'
   | 'canceled'
   | 'paused'
   | 'ended'
@@ -46,8 +47,15 @@ export type SubscriptionActivityKind =
 export interface SubscriptionActivityItem {
   kind: SubscriptionActivityKind
   label: string
+  detail?: string
   at: number
   upcoming: boolean
+}
+
+export interface SubscriptionDunning {
+  attempts: { at: number; isRetry: boolean; reason: string | null }[]
+  nextAttemptAt: number | null
+  recoveredAt: number | null
 }
 
 export type ActivitySubscription = Pick<
@@ -73,6 +81,7 @@ const toTime = (value: string | null | undefined): number | null =>
 export const getSubscriptionActivity = (
   subscription: ActivitySubscription,
   now: number,
+  dunning?: SubscriptionDunning,
 ): SubscriptionActivityItem[] => {
   const items: SubscriptionActivityItem[] = []
   const add = (
@@ -117,7 +126,36 @@ export const getSubscriptionActivity = (
   ) {
     add('renewal', 'Renewed', periodStart)
   }
-  add('failed', 'Payment failed', toTime(subscription.past_due_at))
+  // The attempts say more than the past due date, which is the first of them.
+  if (dunning && dunning.attempts.length > 0) {
+    for (const { at, isRetry, reason } of dunning.attempts) {
+      items.push({
+        kind: 'failed',
+        label: isRetry ? 'Retry failed' : 'Payment failed',
+        detail: reason ?? undefined,
+        at,
+        upcoming: false,
+      })
+    }
+  } else {
+    add('failed', 'Payment failed', toTime(subscription.past_due_at))
+  }
+  if (dunning?.recoveredAt) {
+    items.push({
+      kind: 'recovered',
+      label: 'Payment recovered',
+      at: dunning.recoveredAt,
+      upcoming: false,
+    })
+  }
+  if (dunning?.nextAttemptAt) {
+    items.push({
+      kind: 'scheduled',
+      label: 'Payment retry',
+      at: dunning.nextAttemptAt,
+      upcoming: true,
+    })
+  }
   add('canceled', 'Cancellation requested', toTime(subscription.canceled_at))
   add('paused', 'Paused', toTime(subscription.paused_at))
   add('ended', 'Ended', endedAt)

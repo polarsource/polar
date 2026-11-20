@@ -7,6 +7,7 @@ from collections.abc import Sequence
 import httpx2
 import pytest
 from pytest_codspeed import BenchmarkFixture
+from sqlalchemy import insert
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from starlette.types import ASGIApp, Receive, Send
 from starlette.types import Scope as ASGIScope
@@ -24,6 +25,7 @@ from polar.kit.crypto import get_token_hash
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.logfire import instrument_sqlalchemy
+from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.middlewares import TransactionalMiddleware
 from polar.models import CustomerMeter, Organization, OrganizationAccessToken
 from polar.models.event import EventSource
@@ -357,6 +359,85 @@ def test_ingested_50_customers_with_4_unactivated_meters(
                     "source": EventSource.user,
                     "organization_id": organization.id,
                     "customer_id": customer.id,
+                    "root_id": event_id,
+                }
+            )
+        event_ids, _ = await repository.insert_batch(rows)
+        return event_ids
+
+    event_ids = run(seed())
+    analyze(run, session)
+    benchmark.pedantic(
+        lambda: run(event_service.ingested(session, event_ids)), rounds=5
+    )
+
+
+# A batch from the mover: 1,000 events over 1,000 customers, each customer with one meter its
+# events match, already activated, and 49 meters its events never match.
+def test_ingested_1000_customers_with_49_unactivated_meters(
+    benchmark: BenchmarkFixture,
+    run: Run[typing.Any],
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    organization: Organization,
+) -> None:
+    repository = EventRepository.from_session(session)
+
+    async def seed() -> Sequence[uuid.UUID]:
+        matched_meter = await create_meter(
+            save_fixture, organization=organization, id=uuid.uuid4()
+        )
+        unmatched_meters = [
+            await create_meter(
+                save_fixture,
+                organization=organization,
+                id=uuid.uuid4(),
+                filter=Filter(
+                    conjunction=FilterConjunction.and_,
+                    clauses=[
+                        FilterClause(
+                            property="name",
+                            operator=FilterOperator.eq,
+                            value=f"benchmark.unmetered-{index}",
+                        )
+                    ],
+                ),
+            )
+            for index in range(49)
+        ]
+        customers = [
+            await create_customer(
+                save_fixture,
+                organization=organization,
+                external_id=f"customer-{index}",
+                email=f"customer-{index}@example.com",
+                stripe_customer_id=None,
+            )
+            for index in range(1_000)
+        ]
+        await session.execute(
+            insert(CustomerMeter),
+            [
+                {
+                    "customer_id": customer.id,
+                    "meter_id": meter.id,
+                    "activated_at": utc_now() if meter is matched_meter else None,
+                }
+                for customer in customers
+                for meter in [matched_meter, *unmatched_meters]
+            ],
+        )
+        rows: list[dict[str, typing.Any]] = []
+        for customer in customers:
+            event_id = uuid.uuid4()
+            rows.append(
+                {
+                    "id": event_id,
+                    "name": METER_TEST_EVENT,
+                    "source": EventSource.user,
+                    "organization_id": organization.id,
+                    "customer_id": customer.id,
+                    "external_customer_id": customer.external_id,
                     "root_id": event_id,
                 }
             )

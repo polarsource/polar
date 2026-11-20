@@ -427,6 +427,29 @@ class TestIngest:
         json = response.json()
         assert json == {"inserted": len(events), "duplicates": 0}
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.parametrize(
+        ("ahead", "status_code"),
+        [(timedelta(seconds=2), 200), (timedelta(minutes=1), 422)],
+    )
+    async def test_timestamp_ahead_of_the_clock(
+        self, ahead: timedelta, status_code: int, client: AsyncClient
+    ) -> None:
+        # The sender's clock may run a little ahead: one such event does not cost the
+        # others of its request their ingestion.
+        events = [
+            {"name": "event1", "external_customer_id": "CUSTOMER_ID"},
+            {
+                "name": "event1",
+                "external_customer_id": "CUSTOMER_ID",
+                "timestamp": (utc_now() + ahead).isoformat(),
+            },
+        ]
+
+        response = await client.post("/v1/events/ingest", json={"events": events})
+
+        assert response.status_code == status_code
+
     @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_2027_01_organization_token(self, client: AsyncClient) -> None:

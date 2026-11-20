@@ -54,7 +54,7 @@ import {
   createMeterProvider,
   createTracerProvider,
   isTelemetryEnabled,
-  Outbox,
+  TelemetryBuffer,
   relay,
   SAMPLE_RATE_ATTRIBUTE,
 } from "./telemetry";
@@ -499,7 +499,7 @@ export class Outpost {
   private reducers: Reducer[] = [];
   private matchers: ReducerMatchers = [];
   private readonly requesting = new Map<string, Promise<void>>();
-  private readonly outbox = new Outbox();
+  private readonly telemetryBuffer = new TelemetryBuffer();
   private queued: { identity: string; done: () => void }[] = [];
   private fetchTimer?: ReturnType<typeof setTimeout>;
   private isConfigured = false;
@@ -523,7 +523,7 @@ export class Outpost {
   private resets: number | null = null;
   private failure?: PolarOutpostError;
   private failedAt = 0;
-  private messages: Promise<unknown> = Promise.resolve();
+  private applying: Promise<unknown> = Promise.resolve();
 
   constructor(
     readonly redisUrl: string,
@@ -549,11 +549,11 @@ export class Outpost {
     this.configurationRevision = null;
     this.resets = null;
     this.isConfigured = false;
-    this.messages = Promise.resolve();
+    this.applying = Promise.resolve();
     if (isTelemetryEnabled(this.options.telemetry ?? true)) {
-      this.tracerProvider = createTracerProvider(this.outbox);
+      this.tracerProvider = createTracerProvider(this.telemetryBuffer);
       this.tracer = this.tracerProvider.getTracer("polar.outpost");
-      this.meterProvider = createMeterProvider(this.outbox);
+      this.meterProvider = createMeterProvider(this.telemetryBuffer);
       const meter = this.meterProvider.getMeter("polar.outpost");
       this.ingestDuration = meter.createHistogram("outpost.ingest.duration", { unit: "s" });
       this.ingestBuckets = meter.createCounter("outpost.ingest.buckets");
@@ -661,7 +661,7 @@ export class Outpost {
     this.readDuration = undefined;
     this.redisMemory = undefined;
     this.redisKeys = undefined;
-    // Their last exports land in the outbox, which the shared Redis takes before it closes.
+    // Their last exports land in the buffer, which the shared Redis takes before it closes.
     await Promise.all([tracerProvider?.shutdown(), meterProvider?.shutdown()]);
     await this.pushTelemetry();
     this._connectionId = undefined;
@@ -672,7 +672,7 @@ export class Outpost {
         ? Promise.resolve()
         : once(redis, "end");
     redis?.disconnect();
-    await Promise.allSettled([closed, this.messages, ...this.requesting.values()]);
+    await Promise.allSettled([closed, this.applying, ...this.requesting.values()]);
     this.requesting.clear();
     this.reducers = [];
     this.matchers = [];
@@ -833,7 +833,7 @@ export class Outpost {
   }
 
   private async inFlight(): Promise<void> {
-    await Promise.allSettled([this.pulling, this.messages, ...this.requesting.values()]);
+    await Promise.allSettled([this.pulling, this.applying, ...this.requesting.values()]);
     // The pull that just ended may have started one.
     await this.relaying;
   }
@@ -845,8 +845,8 @@ export class Outpost {
   }
 
   private async pushTelemetry(): Promise<void> {
-    const spans = this.outbox.spans.splice(0);
-    const metrics = this.outbox.metrics.splice(0);
+    const spans = this.telemetryBuffer.spans.splice(0);
+    const metrics = this.telemetryBuffer.metrics.splice(0);
     if (!this.redis || (!spans.length && !metrics.length)) return;
     // A fleet that stops pulling keeps its newest exports only.
     const pushed = await this.redis
@@ -863,8 +863,8 @@ export class Outpost {
       );
     if (pushed) return;
     // Redis lost the write: the exports wait for the next flush, the newest at most.
-    this.outbox.spans = [...spans, ...this.outbox.spans].slice(-TELEMETRY_CAP);
-    this.outbox.metrics = [...metrics, ...this.outbox.metrics].slice(-TELEMETRY_CAP);
+    this.telemetryBuffer.spans = [...spans, ...this.telemetryBuffer.spans].slice(-TELEMETRY_CAP);
+    this.telemetryBuffer.metrics = [...metrics, ...this.telemetryBuffer.metrics].slice(-TELEMETRY_CAP);
   }
 
   private telemetryKey(kind: "spans" | "metrics"): string {
@@ -1235,8 +1235,8 @@ export class Outpost {
 
   // Snapshots and what they trigger run one at a time, in order.
   private serial<T>(work: () => Promise<T>): Promise<T> {
-    const result = this.messages.then(work);
-    this.messages = result.catch(() => {});
+    const result = this.applying.then(work);
+    this.applying = result.catch(() => {});
     return result;
   }
 

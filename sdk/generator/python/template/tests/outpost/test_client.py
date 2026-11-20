@@ -121,7 +121,7 @@ def exported_spans(monkeypatch: pytest.MonkeyPatch) -> list[ReadableSpan]:
 
     monkeypatch.delenv(TELEMETRY_ENV, raising=False)
     monkeypatch.setattr(
-        "polar.outpost.telemetry.OutboxSpanExporter", lambda *_: Exporter()
+        "polar.outpost.telemetry.BufferSpanExporter", lambda *_: Exporter()
     )
     monkeypatch.setattr(
         "polar.outpost.telemetry.BatchSpanProcessor", SimpleSpanProcessor
@@ -152,7 +152,7 @@ def exported_metrics(monkeypatch: pytest.MonkeyPatch) -> list[MetricsData]:
             pass
 
     monkeypatch.setattr(
-        "polar.outpost.telemetry.OutboxMetricExporter", lambda *_: Exporter()
+        "polar.outpost.telemetry.BufferMetricExporter", lambda *_: Exporter()
     )
     return exported
 
@@ -1466,8 +1466,8 @@ async def test_sends_the_fleets_telemetry_in_one_relay_of_each_kind_after_a_pull
         Outpost(url, client=polar_client) as third,
     ):
         for index, outpost in enumerate((first, second, third)):
-            outpost._outbox.add("spans", f"spans-{index};".encode())
-            outpost._outbox.add("metrics", f"metrics-{index};".encode())
+            outpost._telemetry_buffer.add("spans", f"spans-{index};".encode())
+            outpost._telemetry_buffer.add("metrics", f"metrics-{index};".encode())
             await outpost.flush_telemetry()
         await first._pull()
         await first.flush()
@@ -1486,8 +1486,8 @@ async def test_keeps_the_fleets_telemetry_for_the_next_pull_when_polar_fails_the
 ) -> None:
     url, _ = redis_connection
     async with Outpost(url, client=polar_client) as outpost:
-        outpost._outbox.add("spans", b"spans;")
-        outpost._outbox.add("metrics", b"metrics;")
+        outpost._telemetry_buffer.add("spans", b"spans;")
+        outpost._telemetry_buffer.add("metrics", b"metrics;")
         await outpost.flush_telemetry()
         telemetry_status["status"] = 503
         await outpost._pull()
@@ -1516,7 +1516,7 @@ async def test_lets_a_read_that_waits_for_a_pull_go_before_the_telemetry_relay_e
     )
     await _credit(redis, 100)
     async with Outpost(url, client=polar_client, snapshot_timeout=2) as outpost:
-        outpost._outbox.add("spans", b"spans;")
+        outpost._telemetry_buffer.add("spans", b"spans;")
         await outpost.flush_telemetry()
         telemetry_status["delay"] = 0.5
         started = anyio.current_time()
@@ -1538,7 +1538,7 @@ async def test_keeps_the_exports_written_while_a_relay_is_in_flight(
     monkeypatch.setattr("polar.outpost.client.TELEMETRY_CAP", 3)
     async with Outpost(url, client=polar_client) as outpost:
         for index in range(3):
-            outpost._outbox.add("spans", f"old-{index};".encode())
+            outpost._telemetry_buffer.add("spans", f"old-{index};".encode())
         await outpost.flush_telemetry()
         telemetry_status["delay"] = 0.2
         async with anyio.create_task_group() as tasks:
@@ -1546,7 +1546,7 @@ async def test_keeps_the_exports_written_while_a_relay_is_in_flight(
             with anyio.fail_after(1):
                 while not telemetry_requests:
                     await anyio.sleep(0.01)
-            outpost._outbox.add("spans", b"new;")
+            outpost._telemetry_buffer.add("spans", b"new;")
             await outpost.flush_telemetry()
         await outpost.flush()
         assert await redis.lrange("outpost:v1:org-1:telemetry:spans", 0, -1) == [b"new;"]
@@ -1567,7 +1567,7 @@ async def test_keeps_its_telemetry_for_the_next_flush_when_redis_fails_the_write
     async with Outpost(url, client=polar_client) as outpost:
         assert outpost._redis is not None
         monkeypatch.setattr(outpost._redis, "evalsha", fail)
-        outpost._outbox.add("spans", b"spans;")
+        outpost._telemetry_buffer.add("spans", b"spans;")
         await outpost.flush_telemetry()
         assert await redis.llen(spans) == 0
         monkeypatch.delattr(outpost._redis, "evalsha")
@@ -4365,8 +4365,8 @@ async def test_pushes_an_instances_telemetry_in_one_command(
     async with Outpost(url, client=polar_client) as outpost:
 
         async def push(name: str) -> None:
-            outpost._outbox.add("spans", f"{name}-span;".encode())
-            outpost._outbox.add("metrics", f"{name}-metric;".encode())
+            outpost._telemetry_buffer.add("spans", f"{name}-span;".encode())
+            outpost._telemetry_buffer.add("metrics", f"{name}-metric;".encode())
             await outpost._push_telemetry()
 
         await push("first")

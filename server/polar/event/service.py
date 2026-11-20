@@ -1312,12 +1312,16 @@ class EventService:
             .where(Event.id.in_(candidate_ids), Event.root_id.is_not(None))
             .options(*repository.get_eager_options())
         )
-        events = await repository.get_all(statement)
+        with logfire.span("load_events", event_count=len(candidate_ids)):
+            events = await repository.get_all(statement)
         if not events:
             return
 
         complete_ids = [event.id for event in events]
-        ancestors_by_event = await self._build_ancestors_batch(session, complete_ids)
+        with logfire.span("build_ancestors"):
+            ancestors_by_event = await self._build_ancestors_batch(
+                session, complete_ids
+            )
 
         customers: set[Customer] = set()
         organization_ids: set[uuid.UUID] = set()
@@ -1337,14 +1341,16 @@ class EventService:
         # Temporarily do this sync on ingestion instead
         # await self._create_meter_events(session, events)
 
-        await self._activate_matching_customer_meters(
-            session, repository, complete_ids, customers
-        )
+        with logfire.span("activate_customer_meters", customer_count=len(customers)):
+            await self._activate_matching_customer_meters(
+                session, repository, complete_ids, customers
+            )
 
         for customer in customers:
             enqueue_job("customer_meter.update_customer", customer.id)
 
-        tinybird_events = events_to_tinybird(events, ancestors_by_event)
+        with logfire.span("build_tinybird_events"):
+            tinybird_events = events_to_tinybird(events, ancestors_by_event)
         for chunk in chunk_tinybird_events(tinybird_events):
             enqueue_job("tinybird.ingest", chunk)
 

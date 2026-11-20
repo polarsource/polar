@@ -1304,6 +1304,63 @@ class TestUpdate:
         assert updated_customer.email == "foo.baz@example.com"
         assert member.email == "foo.baz@example.com"
 
+    async def test_syncs_owner_member_name_for_individual_customer(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture, organization=organization, name="Old Name"
+        )
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="customer@example.com",
+            name="Old Name",
+            role=MemberRole.owner,
+        )
+        await save_fixture(member)
+
+        updated_customer = await customer_service.update(
+            session, customer, CustomerUpdate(name="New Name")
+        )
+        await session.flush()
+        await session.refresh(member)
+
+        assert updated_customer.name == "New Name"
+        assert member.name == "New Name"
+
+    async def test_no_owner_member_name_sync_for_team_customer(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture, organization=organization, name="Acme Inc."
+        )
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="customer@example.com",
+            name="Jane Doe",
+            role=MemberRole.owner,
+        )
+        await save_fixture(member)
+
+        updated_customer = await customer_service.update(
+            session, customer, CustomerUpdate(name="Acme Corp.")
+        )
+        await session.flush()
+        await session.refresh(member)
+
+        assert updated_customer.name == "Acme Corp."
+        assert member.name == "Jane Doe"
+
 
 @pytest.mark.anyio
 class TestDelete:

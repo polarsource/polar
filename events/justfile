@@ -1,0 +1,33 @@
+set dotenv-path := "../server/.env"
+
+run:
+    cargo run
+
+test:
+    cargo test --locked
+
+test-db:
+    cargo test --locked -- --ignored
+
+bench-seed:
+    cd ../server && PYTHONPATH=. uv run python ../events/benches/seed.py
+
+bench:
+    POLAR_POSTGRES_DATABASE="${POLAR_POSTGRES_DATABASE}_benchmarks_events" POLAR_REDIS_DB=14 cargo bench --locked --bench ingest
+
+load pool="16":
+    POLAR_POSTGRES_DATABASE="${POLAR_POSTGRES_DATABASE}_benchmarks_events" POLAR_REDIS_DB=14 POLAR_DATABASE_POOL_SIZE={{pool}} POLAR_ORGANIZATION_ACCESS_TOKEN_CACHE_TTL_SECONDS=60 cargo bench --locked --bench load
+
+lint:
+    cargo fmt
+    cargo clippy --all-targets --fix --allow-dirty --allow-staged -- -D warnings
+
+lint-check:
+    cargo fmt --check
+    cargo clippy --all-targets --locked -- -D warnings
+
+build:
+    cargo build --release --locked
+
+docker-build:
+    docker build -t polar-events .

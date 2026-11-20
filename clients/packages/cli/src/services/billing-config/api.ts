@@ -18,6 +18,7 @@ import {
 import { apiUrl, describeApiFailure, withOrganization } from '@/services/api'
 import type { ApiClient } from '@/services/client'
 import { isSet, record } from '@/utils/billing-config/describe'
+import { SETTINGS_KEY } from '@/services/billing-config/generate/settings'
 
 export type Clients = Record<PolarEnvironment, ApiClient>
 
@@ -26,8 +27,8 @@ export interface CatalogOptions {
   readonly catalogId?: string | undefined
 }
 
-// Sections the config API doesn't accept yet
-const UNSUPPORTED_SECTIONS = new Set([''])
+// Keys that stay in the file: sections the config API doesn't accept yet, and what the CLI keeps there for itself
+const UNSUPPORTED_SECTIONS = new Set(['', SETTINGS_KEY])
 
 const requestBody = (input: unknown, { name }: CatalogOptions) =>
   typeof input === 'object' && input !== null && !Array.isArray(input)

@@ -1,4 +1,12 @@
-import { basename, dirname, extname, join, resolve } from 'node:path'
+import {
+  basename,
+  dirname,
+  extname,
+  join,
+  relative,
+  resolve,
+  sep,
+} from 'node:path'
 import { Effect, type FileSystem } from 'effect'
 import { BillingConfigError, type LoadedConfig } from '@/schemas/BillingConfig'
 import {
@@ -12,6 +20,11 @@ import {
   isGenerated,
 } from '@/services/billing-config/generate/contract'
 import { namesOf, unreadable } from '@/services/billing-config/generate/names'
+import {
+  rememberedOut,
+  rememberOut,
+  SETTINGS_KEY,
+} from '@/services/billing-config/generate/settings'
 import { ancestors, exists } from '@/services/billing-config/languages/language'
 
 export interface GenerateOptions {
@@ -25,6 +38,7 @@ export interface Generated {
   readonly file: string
   readonly language: GeneratedLanguage
   readonly status: 'written' | 'unchanged' | 'outdated' | 'missing'
+  readonly saved: boolean
   readonly events: number
   readonly meters: number
   readonly benefits: number
@@ -99,19 +113,28 @@ export const write =
     { language, out, check, directory }: GenerateOptions,
   ) =>
     Effect.gen(function* () {
+      const remembered = rememberedOut(config.input)
+      const path =
+        out ??
+        (remembered === undefined
+          ? undefined
+          : join(dirname(config.file), remembered))
       const chosen =
         language ??
-        (out === undefined ? undefined : languageOfFile(out)) ??
+        (path === undefined ? undefined : languageOfFile(path)) ??
         (yield* detect(fs, [
           ...ancestors(resolve(dirname(config.file))),
           ...ancestors(resolve(directory)),
         ]))
       const generator: Generator = GENERATORS[chosen]
       const extension = extname(generator.file)
-      if (out !== undefined && extname(out) !== extension) {
+      if (path !== undefined && extname(path) !== extension) {
         return yield* new BillingConfigError({
-          message: `${out} is not a ${generator.title} file`,
-          hint: `Give --out a path that ends in ${extension}.`,
+          message: `${path} is not a ${generator.title} file`,
+          hint:
+            out === undefined
+              ? `Change ${SETTINGS_KEY}.out in ${config.file} to a path that ends in ${extension}.`
+              : `Give --out a path that ends in ${extension}.`,
         })
       }
       const reason = unreadable(config.input)
@@ -121,13 +144,34 @@ export const write =
           hint: `${reason} Run polar config plan to see what to fix.`,
         })
       }
-      const file = out ?? join(dirname(config.file), generator.file)
+      const file = path ?? join(dirname(config.file), generator.file)
       const source = generate(config.input, generator, basename(config.file))
+      const status = yield* save(fs, file, source, generator, check)
+      const stored = relative(dirname(config.file), file).split(sep).join('/')
+      const saved =
+        !check &&
+        out !== undefined &&
+        stored !== remembered &&
+        extname(config.file) === '.json'
+      if (saved) {
+        yield* fs
+          .writeFileString(config.file, rememberOut(config.source, stored))
+          .pipe(
+            Effect.mapError(
+              (error) =>
+                new BillingConfigError({
+                  message: `Could not save ${SETTINGS_KEY}.out in ${config.file}`,
+                  hint: error.message,
+                }),
+            ),
+          )
+      }
       const names = namesOf(config.input)
       return {
         file,
         language: chosen,
-        status: yield* save(fs, file, source, generator, check),
+        status,
+        saved,
         events: names.events.length,
         meters: names.meters.length,
         benefits: names.benefits.length,

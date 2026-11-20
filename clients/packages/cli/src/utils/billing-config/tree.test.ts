@@ -333,6 +333,36 @@ describe('formatTree', () => {
     )
   })
 
+  test('shows the channel template of a created Slack channel benefit', () => {
+    const output = stripAnsi(
+      formatTree(
+        {
+          ...input,
+          benefits: [
+            {
+              external_id: 'slack',
+              description: 'Slack Channel',
+              type: 'slack_shared_channel',
+              properties: {
+                slack_integration_id: '0d8f6f0c-2f55-4f7a-9d6d-3f1c2a4b5c6d',
+                channel_name_template: 'acme-{customer_name}',
+              },
+            },
+          ],
+        },
+        [entry('benefits', 'slack', 'created', [])],
+      ),
+    )
+    expect(output).toBe(
+      [
+        '  benefits',
+        '  + slack',
+        '      type     Slack channel',
+        '      channel  acme-{customer_name}',
+      ].join('\n'),
+    )
+  })
+
   test('lists the meters a created product charges for as nodes', () => {
     const metered = (price_currency: string, unit_amount: string) => ({
       amount_type: 'metered_unit',

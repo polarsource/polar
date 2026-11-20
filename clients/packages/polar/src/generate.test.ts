@@ -325,6 +325,27 @@ const cases: [string, PolarConfig][] = [
       .toJSON(),
   ],
   [
+    'slack channels',
+    api
+      .defineConfig({
+        meters: () => ({}),
+        benefits: ({ slackChannel }) => ({
+          support: slackChannel('Slack Channel')
+            .integration('0d8f6f0c-2f55-4f7a-9d6d-3f1c2a4b5c6d')
+            .channel('acme-{customer_name}'),
+          community: slackChannel('Community')
+            .integration('0d8f6f0c-2f55-4f7a-9d6d-3f1c2a4b5c6d')
+            .channel("it's-{customer_name}")
+            .publicChannel()
+            .welcome('Welcome!\nSay hi')
+            .keepOnRevoke()
+            .invite('U1', 'U2')
+            .metadata({ tier: 4 }),
+        }),
+      })
+      .toJSON(),
+  ],
+  [
     'deprecated meters, benefits and products',
     api
       .defineConfig({
@@ -435,6 +456,30 @@ test('generated modules typecheck against the public API', async () => {
     )
   expect(diagnostics).toEqual([])
 }, 30_000)
+
+test('renders a Slack channel exported without a welcome message', async () => {
+  const source = await Effect.runPromise(
+    generateConfig({
+      meters: [],
+      benefits: [
+        {
+          type: 'slack_shared_channel',
+          external_id: 'support',
+          description: 'Support',
+          properties: {
+            slack_integration_id: '0d8f6f0c-2f55-4f7a-9d6d-3f1c2a4b5c6d',
+            channel_name_template: 'acme-{customer_name}',
+            private: true,
+            archive_on_revoke: true,
+            team_invitees: [],
+          },
+        },
+      ],
+    }),
+  )
+  expect(source).toContain(".channel('acme-{customer_name}'),")
+  expect(source).not.toContain('.welcome(')
+})
 
 test('renders free tiers with free() and included()', async () => {
   const source = await Effect.runPromise(

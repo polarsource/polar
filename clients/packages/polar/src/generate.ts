@@ -120,6 +120,25 @@ const renderBenefit = (
       ...renderDeprecated(benefit.deprecated),
     ].join('\n')
   }
+  if (benefit.type === 'slack_shared_channel') {
+    helpers.add('slackChannel')
+    const properties = benefit.properties
+    return [
+      `slackChannel(${name})`,
+      `.integration(${literal(properties.slack_integration_id)})`,
+      `.channel(${literal(properties.channel_name_template)})`,
+      ...(properties.private ? [] : ['.publicChannel()']),
+      ...(properties.welcome_message
+        ? [`.welcome(${literal(properties.welcome_message)})`]
+        : []),
+      ...(properties.archive_on_revoke ? [] : ['.keepOnRevoke()']),
+      ...(properties.team_invitees.length === 0
+        ? []
+        : [`.invite(${properties.team_invitees.map(literal).join(', ')})`]),
+      ...renderMetadata(benefit.metadata),
+      ...renderDeprecated(benefit.deprecated),
+    ].join('\n')
+  }
   helpers.add('credits')
   const { meter, units, rollover } = benefit.properties
   return [

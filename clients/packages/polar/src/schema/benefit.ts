@@ -33,9 +33,32 @@ export const BenefitConfig = Schema.Union([
       rollover: Schema.Boolean,
     }),
   }),
+  Schema.Struct({
+    ...benefitFields,
+    type: Schema.Literal('slack_shared_channel'),
+    visibility: Schema.optionalKey(Schema.Literal('public')),
+    properties: Schema.Struct({
+      slack_integration_id: Schema.String.check(Schema.isMinLength(1)),
+      channel_name_template: Schema.String.check(
+        Schema.isMinLength(1),
+        Schema.isMaxLength(80),
+      ),
+      private: Schema.Boolean,
+      welcome_message: Schema.optionalKey(
+        Schema.NullOr(Schema.String.check(Schema.isMaxLength(4000))),
+      ),
+      archive_on_revoke: Schema.Boolean,
+      team_invitees: Schema.Array(Schema.String),
+    }),
+  }),
 ])
 
 export type BenefitConfig = typeof BenefitConfig.Type
+
+type SlackChannelProperties = Extract<
+  BenefitConfig,
+  { type: 'slack_shared_channel' }
+>['properties']
 
 export type BenefitDefinition<Meter extends string = string> =
   | ({
@@ -52,6 +75,13 @@ export type BenefitDefinition<Meter extends string = string> =
         readonly units: number
         readonly rollover: boolean
       }
+    } & HasMetadata &
+      HasVisibility &
+      HasDeprecation)
+  | ({
+      readonly name: string | undefined
+      readonly type: 'slack_shared_channel'
+      readonly properties: SlackChannelProperties
     } & HasMetadata &
       HasVisibility &
       HasDeprecation)
@@ -114,6 +144,58 @@ export const credits = (name?: string) => ({
     new CreditsBuilder(name, meter),
 })
 
+class SlackChannelDefinition extends withDeprecation(withMetadata(Builder)) {
+  readonly type = 'slack_shared_channel'
+
+  constructor(
+    readonly name: string | undefined,
+    readonly properties: SlackChannelProperties,
+  ) {
+    super()
+  }
+
+  private withProperties(patch: Partial<SlackChannelProperties>): this {
+    return this.with({ properties: { ...this.properties, ...patch } })
+  }
+
+  /** Creates public channels. Channels are private unless you call this. */
+  publicChannel(): this {
+    return this.withProperties({ private: false })
+  }
+
+  /** Posts this message in each channel right after it is created. */
+  welcome(message: string): this {
+    return this.withProperties({ welcome_message: message })
+  }
+
+  /** Leaves the channel open when a customer loses the benefit, instead of archiving it. */
+  keepOnRevoke(): this {
+    return this.withProperties({ archive_on_revoke: false })
+  }
+
+  /** Slack user IDs from your workspace to add to every channel. */
+  invite(...users: string[]): this {
+    return this.withProperties({ team_invitees: users })
+  }
+}
+
+/** A Slack Connect channel shared with each customer. The name defaults to its key in `benefits`. */
+export const slackChannel = (name?: string) => ({
+  /** The ID of the Slack integration connected to your organization. */
+  integration: (slackIntegrationId: string) => ({
+    /** Template for the channel name, like `acme-{customer_name}`. */
+    channel: (template: string) =>
+      new SlackChannelDefinition(name, {
+        slack_integration_id: slackIntegrationId,
+        channel_name_template: template,
+        private: true,
+        welcome_message: null,
+        archive_on_revoke: true,
+        team_invitees: [],
+      }),
+  }),
+})
+
 export type BenefitHelpers<Meter extends string> = {
   /** A feature your app checks a customer has. The name defaults to its key in `benefits`. */
   readonly flag: typeof flag
@@ -124,4 +206,6 @@ export type BenefitHelpers<Meter extends string> = {
       meter: Credited,
     ) => CreditsBuilder<Credited>
   }
+  /** A Slack Connect channel shared with each customer. The name defaults to its key in `benefits`. */
+  readonly slackChannel: typeof slackChannel
 }

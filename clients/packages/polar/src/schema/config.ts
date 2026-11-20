@@ -634,7 +634,12 @@ export const defineConfig = <
     }),
   })
 
-  type Connected = ConnectedConfig<Meters, Benefits, Events, Record<never, never>>
+  type Connected = ConnectedConfig<
+    Meters,
+    Benefits,
+    Events,
+    Record<never, never>
+  >
   return {
     toJSON: () => structuredClone(config),
     [runtimeConfig]: () =>

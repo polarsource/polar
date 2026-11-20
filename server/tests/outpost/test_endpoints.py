@@ -937,18 +937,32 @@ class TestRequests:
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_meter_usage_unknown_reducer(
-        self, client: httpx2.AsyncClient
+        self,
+        save_fixture: SaveFixture,
+        client: httpx2.AsyncClient,
+        organization: Organization,
+        meter: Meter,
     ) -> None:
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+
+        # A reducer Polar does not know does not cost the other identities of the
+        # request their snapshots.
         response = await client.post(
             "/v1/outpost/meter-usage",
             json={
                 "identities": [
-                    {"reducer_id": str(uuid.uuid4()), "external_customer_id": "alice"}
+                    {"reducer_id": str(uuid.uuid4()), "external_customer_id": "alice"},
+                    {"reducer_id": str(reducer.id), "external_customer_id": "alice"},
                 ]
             },
         )
 
-        assert response.status_code == 404
+        assert response.status_code == 200
+        assert [snapshot["reducer_id"] for snapshot in response.json()] == [
+            str(reducer.id)
+        ]
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_meter_usage_too_many_identities(

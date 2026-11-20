@@ -202,7 +202,7 @@ class OutpostService:
         requested: dict[uuid.UUID, list[Identity]] = {}
         for payload in payloads:
             if payload.reducer_id not in reducers:
-                raise ResourceNotFound()
+                continue
             identity: Identity
             if isinstance(payload, CustomerMeterUsageIdentity):
                 identity = (payload.customer_id, None)

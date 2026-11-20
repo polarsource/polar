@@ -132,6 +132,8 @@ let meterUsageFailures = 0;
 // Each ingest request's events, and the statuses Polar answers the next ones with.
 const ingestRequests: Record<string, unknown>[][] = [];
 let ingestStatuses: number[] = [];
+// The external ids of the events Polar's validation refuses, naming each by its index.
+let ingestRefused = new Set<string>();
 let ingestDelay = 0;
 const outposts: Outpost[] = [];
 
@@ -288,6 +290,13 @@ const answer = async (request: IncomingMessage, response: ServerResponse): Promi
     }
     case "POST /v1/events/ingest": {
       ingestRequests.push(body.events);
+      const refused = (body.events as { external_id: string }[]).flatMap((event, index) =>
+        ingestRefused.has(event.external_id)
+          ? [{ type: "value_error", loc: ["body", "events", index, "timestamp"], msg: "Refused" }]
+          : [],
+      );
+      if (refused.length)
+        return respond(response, { error: "RequestValidationError", detail: refused }, 422);
       const status = ingestStatuses.shift() ?? 200;
       setTimeout(
         () =>
@@ -362,6 +371,7 @@ beforeEach(async () => {
   confirmRequests.length = 0;
   ingestRequests.length = 0;
   ingestStatuses = [];
+  ingestRefused = new Set();
   ingestDelay = 0;
   exported.length = 0;
   metrics.length = 0;
@@ -1502,6 +1512,23 @@ it("delivers an event another SDK queued in a form it cannot parse", async () =>
   await outpost.flush();
   expect(delivered()).toEqual([["foreign", "event-0"]]);
   expect(await redis.xlen("outpost:v1:org-1:outbox")).toBe(0);
+});
+
+it("drops only the events Polar names when it refuses a batch, and delivers the rest", async () => {
+  const [onDelivered, onDropped] = [vi.fn(), vi.fn()];
+  const outpost = await warm({ onDelivered, onDropped });
+  const events = [usage("event-0", 10), usage("refused", 10), usage("event-1", 10)];
+  for (const event of events) await outpost.track(event);
+  ingestRefused = new Set(["refused"]);
+  await outpost.flush();
+  expect(delivered()).toEqual([
+    ["event-0", "refused", "event-1"],
+    ["event-0", "event-1"],
+  ]);
+  expect(onDropped).toHaveBeenCalledWith([events[1]], "permanent_error");
+  expect(onDelivered).toHaveBeenCalledWith([events[0], events[2]]);
+  expect(await redis.xlen("outpost:v1:org-1:outbox")).toBe(0);
+  expect(await redis.hget(key, `pending:${bucket}:count`)).toBeNull();
 });
 
 it("drops a batch Polar refuses, settles its events and reports them", async () => {

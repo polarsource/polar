@@ -89,6 +89,33 @@ def _finite(number: str) -> float:
     return value if math.isfinite(value) else _not_json(number)
 
 
+# How many times a batch goes again without the events Polar named, before it is dropped
+# whole.
+REFUSED_RESENDS = 3
+
+
+def _refused_indexes(response: httpx2.Response) -> set[int] | None:
+    """The indexes of the events Polar's validation refuses, when each of its errors
+    names one."""
+    if response.status_code != 422:
+        return None
+    try:
+        locations = [error["loc"] for error in response.json()["detail"]]
+    except (ValueError, KeyError, TypeError):
+        return None
+    indexes: set[int] = set()
+    for location in locations:
+        if (
+            not isinstance(location, list)
+            or len(location) < 3
+            or location[:2] != ["body", "events"]
+            or not isinstance(location[2], int)
+        ):
+            return None
+        indexes.add(location[2])
+    return indexes
+
+
 class UnavailableRedisError(PolarOutpostError):
     def __init__(self) -> None:
         super().__init__("Redis is unavailable")
@@ -1840,8 +1867,9 @@ class Outpost:
             except ValueError:
                 # It can never be sent: it leaves the outbox with the batch.
                 log.warning("Outpost dropped an outbox entry it cannot read")
-        dropped = False
-        if events:
+        refused: list[EventInput] = []
+        resent = 0
+        while events:
             try:
                 response = await self._client.post(
                     "/v1/events/ingest", json={"events": events}, timeout=TIMEOUT
@@ -1849,41 +1877,57 @@ class Outpost:
             except httpx2.TransportError:
                 await self._back_off_outbox(None)
                 return False
-            # Only a 2xx means Polar has the batch; a 4xx other than a refusal or a rate
-            # limit drops it; anything else leaves it for the next flush.
-            dropped = response.is_client_error and response.status_code not in (
-                401,
-                403,
-                429,
+            # Only a 2xx means Polar has the batch.
+            if response.is_success:
+                break
+            # Polar refuses a whole request for the events it names: the others go
+            # again without them, a few times at most.
+            named = _refused_indexes(response)
+            if named and len(named) < len(events) and resent < REFUSED_RESENDS:
+                resent += 1
+                refused += [e for index, e in enumerate(events) if index in named]
+                events = [e for index, e in enumerate(events) if index not in named]
+                continue
+            # A 4xx other than a refusal or a rate limit drops the batch; anything else
+            # leaves it for the next flush.
+            if response.is_client_error and response.status_code not in (401, 403, 429):
+                refused += events
+                events = []
+                break
+            retry_after = response.headers.get("Retry-After")
+            await self._back_off_outbox(
+                retry_after_seconds(int(retry_after))
+                if response.status_code == 429
+                and retry_after
+                and retry_after.isdecimal()
+                else None
             )
-            if not response.is_success and not dropped:
-                retry_after = response.headers.get("Retry-After")
-                await self._back_off_outbox(
-                    retry_after_seconds(int(retry_after))
-                    if response.status_code == 429
-                    and retry_after
-                    and retry_after.isdecimal()
-                    else None
-                )
-                return False
+            return False
         assert self._confirm_script is not None
+        # Polar will never count a refused event: it settles everywhere, hot bucket or
+        # cold.
+        if refused and events:
+            await self._confirm_script(
+                *_confirm_arguments(self._prefix, False, self._settlements(refused))
+            )
         await self._confirm_script(
             *_confirm_arguments(
-                self._prefix, not dropped, self._settlements(events), delivery
+                self._prefix,
+                bool(events),
+                self._settlements(events or refused),
+                delivery,
             )
         )
-        try:
-            if dropped:
-                if self._on_dropped is not None:
-                    await self._on_dropped(events, "permanent_error")
-            elif events and self._on_delivered is not None:
+        if refused and self._on_dropped is not None:
+            try:
+                await self._on_dropped(refused, "permanent_error")
+            except Exception as error:  # noqa: BLE001
+                log.warning("Outpost on_dropped failed: %s", error)
+        if events and self._on_delivered is not None:
+            try:
                 await self._on_delivered(events)
-        except Exception as error:  # noqa: BLE001
-            log.warning(
-                "Outpost %s failed: %s",
-                "on_dropped" if dropped else "on_delivered",
-                error,
-            )
+            except Exception as error:  # noqa: BLE001
+                log.warning("Outpost on_delivered failed: %s", error)
         return True
 
     async def _drain_cold(self) -> None:

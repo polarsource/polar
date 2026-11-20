@@ -284,7 +284,7 @@ def meter_usage() -> dict[str, typing.Any]:
 # it holds each answer back in seconds.
 @pytest.fixture
 def ingest() -> dict[str, typing.Any]:
-    return {"requests": [], "statuses": [], "delay": 0}
+    return {"requests": [], "statuses": [], "delay": 0, "refused": set()}
 
 
 # Polar's side of Outpost: the configuration, the snapshots, the confirmations and the changes.
@@ -418,6 +418,20 @@ async def polar_client(
             )
         if route == "POST /v1/events/ingest":
             ingest["requests"].append(body["events"])
+            # Polar's validation names each event it refuses by its index.
+            refused = [
+                {
+                    "type": "value_error",
+                    "loc": ["body", "events", index, "timestamp"],
+                    "msg": "Refused",
+                }
+                for index, event in enumerate(body["events"])
+                if event["external_id"] in ingest["refused"]
+            ]
+            if refused:
+                return await respond(
+                    {"error": "RequestValidationError", "detail": refused}, 422
+                )
             status = ingest["statuses"].pop(0) if ingest["statuses"] else 200
             await anyio.sleep(ingest["delay"])
             return await respond(
@@ -2481,6 +2495,33 @@ async def test_refuses_to_track_a_number_json_cannot_carry(
         event["metadata"] = {"tokens": 10, "ratio": float("nan")}
         with pytest.raises(ValueError, match="JSON"):
             await outpost.track(event)
+        assert await redis.xlen(OUTBOX) == 0
+        assert await _pending_count(redis) is None
+
+
+@pytest.mark.anyio
+async def test_drops_only_the_events_polar_names_and_delivers_the_rest(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    ingest: dict[str, typing.Any],
+) -> None:
+    url, redis = redis_connection
+    on_delivered, on_dropped = AsyncMock(), AsyncMock()
+    await _seal(redis, BUCKET)
+    async with Outpost(
+        url, client=polar_client, on_delivered=on_delivered, on_dropped=on_dropped
+    ) as outpost:
+        events = [_usage("event-0", 10), _usage("refused", 10), _usage("event-1", 10)]
+        for event in events:
+            await outpost.track(event)
+        ingest["refused"] = {"refused"}
+        await outpost.flush()
+        assert _delivered(ingest) == [
+            ["event-0", "refused", "event-1"],
+            ["event-0", "event-1"],
+        ]
+        on_dropped.assert_awaited_once_with([events[1]], "permanent_error")
+        on_delivered.assert_awaited_once_with([events[0], events[2]])
         assert await redis.xlen(OUTBOX) == 0
         assert await _pending_count(redis) is None
 

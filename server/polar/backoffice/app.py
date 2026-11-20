@@ -15,6 +15,7 @@ from .email_logs.endpoints import router as email_logs_router
 from .exception_handlers import backoffice_polar_exception_handler
 from .external_events.endpoints import router as external_events_router
 from .feedbacks.endpoints import router as feedbacks_router
+from .files.endpoints import router as files_router
 from .impersonation.endpoints import router as impersonation_router
 from .layout import layout
 from .merchant_migrations.endpoints import router as merchant_migrations_router
@@ -61,6 +62,7 @@ protected_router.include_router(
 protected_router.include_router(customers_router, prefix="/customers")
 protected_router.include_router(benefits_router, prefix="/benefits")
 protected_router.include_router(products_router, prefix="/products")
+protected_router.include_router(files_router, prefix="/files")
 protected_router.include_router(
     merchant_migrations_router, prefix="/merchant-migrations"
 )

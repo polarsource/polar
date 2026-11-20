@@ -48,7 +48,7 @@ from polar.outpost.client import (
     PolarOutpostError,
     RedisReconnectBackoff,
     UnavailableRedisError,
-    _is_connection_error,
+    _is_transient_error,
     _number,
     decode_state,
     is_sampled,
@@ -3336,7 +3336,7 @@ async def test_fails_to_start_when_polar_refuses_outpost(
 def test_connection_errors(error: Exception, retryable: bool, nested: bool) -> None:
     if nested:
         error = ExceptionGroup("outer", [ExceptionGroup("inner", [error])])
-    assert _is_connection_error(error) is retryable
+    assert _is_transient_error(error) is retryable
 
 
 @pytest.mark.anyio

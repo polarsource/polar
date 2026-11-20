@@ -233,9 +233,9 @@ class _Read:
     outcome: str = "not_ready"
 
 
-def _is_connection_error(error: BaseException) -> bool:
+def _is_transient_error(error: BaseException) -> bool:
     if isinstance(error, BaseExceptionGroup):
-        return all(_is_connection_error(inner) for inner in error.exceptions)
+        return all(_is_transient_error(inner) for inner in error.exceptions)
     if isinstance(error, (AuthenticationError, AuthorizationError)):
         return False
     return isinstance(
@@ -2046,7 +2046,7 @@ class Outpost:
             done.set()
 
     def _fail_unless_transient(self, error: Exception) -> None:
-        if not _is_connection_error(error):
+        if not _is_transient_error(error):
             self._fail(error)
 
     def _fail(self, error: Exception) -> None:

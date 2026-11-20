@@ -1,0 +1,21 @@
+docs/features/usage-based-billing/meters.mdx
+  s_04de121fad9bdc::t_d0e42c028c4dfa 87,89
+  s_04de121fad9bdc::t_9bd43dd43110af 85-86
+  s_04de121fad9bdc::t_4419730cbf7d36 88
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "23382d5405de962255871d8368f01c963300fc4b",
+  "prompts": {},
+  "sessions": {
+    "s_04de121fad9bdc": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1f03334c-25a0-4c3a-8937-637bcd2e7ca5",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": null
+    }
+  }
+}

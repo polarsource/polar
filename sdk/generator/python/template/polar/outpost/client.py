@@ -33,6 +33,7 @@ from redis.exceptions import (
 from redis.exceptions import ConnectionError as RedisConnectionError
 from redis.exceptions import ResponseError as RedisResponseError
 from redis.exceptions import TimeoutError as RedisTimeoutError
+from redis.typing import StreamIdT
 
 from polar.base import PolarError
 from polar.logging import get_logger
@@ -1406,6 +1407,20 @@ class Outpost:
                         [_decode(entry) for entry, _ in entries], lock_key, token
                     )
                     if not await self._deliver(entries, delivery):
+                        # Slot 0 starts every drain and sends what it holds first: the
+                        # batch goes to it, and does not wait for a drain large enough
+                        # to start this slot again.
+                        if slot:
+                            ids: list[StreamIdT] = [*delivery.entries]
+                            with contextlib.suppress(RedisError):
+                                await redis.xclaim(
+                                    self._outbox_key,
+                                    OUTBOX_GROUP,
+                                    "flusher-0",
+                                    0,
+                                    ids,
+                                    justid=True,
+                                )
                         return "failed"
                 elif start == "0":
                     start = ">"

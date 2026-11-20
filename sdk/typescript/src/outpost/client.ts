@@ -1462,10 +1462,16 @@ export class Outpost {
         )) as [string, [string, string[] | null][]][] | null;
         const entries = read?.[0]?.[1] ?? [];
         if (entries.length) {
-          if (
-            !(await this.deliver(entries, { entries: entries.map(([id]) => id), lockKey, token }))
-          )
+          const ids = entries.map(([id]) => id);
+          if (!(await this.deliver(entries, { entries: ids, lockKey, token }))) {
+            // Slot 0 starts every drain and sends what it holds first: the batch goes to it, and
+            // does not wait for a drain large enough to start this slot again.
+            if (slot)
+              await redis
+                .xclaim(this.outboxKey, OUTBOX_GROUP, "flusher-0", 0, ...ids, "JUSTID")
+                .catch(() => {});
             return "failed";
+          }
         } else if (from === "0") from = ">";
       }
     } finally {

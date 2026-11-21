@@ -664,7 +664,16 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         for organization_id, organization_meters in meters_by_organization.items():
             clauses = [self.get_meter_clause(meter) for meter in organization_meters]
             statement = (
-                select(Event.customer_id, Event.external_customer_id, *clauses)
+                select(
+                    Event.customer_id,
+                    Event.external_customer_id,
+                    # Label each clause: identical constant clauses (`true()` or
+                    # `false()`) would otherwise be merged into a single column
+                    *(
+                        and_(clause).label(f"meter_{index}")
+                        for index, clause in enumerate(clauses)
+                    ),
+                )
                 .where(
                     Event.id.in_(event_ids),
                     Event.organization_id == organization_id,

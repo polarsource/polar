@@ -9,11 +9,12 @@ from sqlalchemy import select
 from polar.event.repository import _INSERT_STAGED_EVENTS_COLUMNS, EventRepository
 from polar.event.system import SystemEvent
 from polar.kit.utils import utc_now
+from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import Event, Organization, StagedEvent
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_customer
+from tests.fixtures.random_objects import create_customer, create_meter
 
 
 async def _create_event(
@@ -471,6 +472,99 @@ class TestGetLatestMeterReset:
 
         assert reset is not None
         assert reset.timestamp == now - timedelta(days=1)
+
+
+@pytest.mark.anyio
+class TestGetMetersMatchingCustomers:
+    async def test_meters_with_the_same_constant_clause(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        event = await _create_event(
+            save_fixture,
+            organization=organization,
+            ingested_at=utc_now(),
+            customer_id=customer.id,
+        )
+        # A value of the wrong type for `name` makes the filter a constant `false`
+        never_matching_filter = Filter(
+            conjunction=FilterConjunction.and_,
+            clauses=[
+                FilterClause(property="name", operator=FilterOperator.eq, value=True)
+            ],
+        )
+        never_matching_meters = [
+            await create_meter(
+                save_fixture,
+                organization=organization,
+                id=uuid.uuid4(),
+                filter=never_matching_filter,
+            )
+            for _ in range(2)
+        ]
+        # An empty filter with a count aggregation is a constant `true`
+        always_matching_filter = Filter(conjunction=FilterConjunction.and_, clauses=[])
+        always_matching_meters = [
+            await create_meter(
+                save_fixture,
+                organization=organization,
+                id=uuid.uuid4(),
+                filter=always_matching_filter,
+            )
+            for _ in range(2)
+        ]
+
+        repository = EventRepository.from_session(session)
+        matches = await repository.get_meters_matching_customers(
+            [event.id],
+            [*never_matching_meters, *always_matching_meters],
+            {customer.id},
+            set(),
+        )
+
+        for meter in never_matching_meters:
+            assert matches[meter.id] == (set(), set())
+        for meter in always_matching_meters:
+            assert matches[meter.id] == ({customer.id}, set())
+
+    async def test_meters_with_the_same_constant_false_clause(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        event = await _create_event(
+            save_fixture,
+            organization=organization,
+            ingested_at=utc_now(),
+            customer_id=customer.id,
+        )
+        never_matching_filter = Filter(
+            conjunction=FilterConjunction.and_,
+            clauses=[
+                FilterClause(property="name", operator=FilterOperator.eq, value=True)
+            ],
+        )
+        meters = [
+            await create_meter(
+                save_fixture,
+                organization=organization,
+                id=uuid.uuid4(),
+                filter=never_matching_filter,
+            )
+            for _ in range(2)
+        ]
+
+        repository = EventRepository.from_session(session)
+        matches = await repository.get_meters_matching_customers(
+            [event.id], meters, {customer.id}, set()
+        )
+
+        assert all(matches[meter.id] == (set(), set()) for meter in meters)
 
 
 @pytest.mark.anyio

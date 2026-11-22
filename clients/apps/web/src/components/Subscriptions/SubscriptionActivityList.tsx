@@ -101,7 +101,7 @@ export const SubscriptionActivityList = ({
           <Box height={ACTIVITY_ROW_HEIGHT} alignItems="center" flexShrink={0}>
             <Tooltip>
               <TooltipTrigger>
-                <Text color="muted" tabularNums>
+                <Text as="span" color="muted" tabularNums>
                   {format(at, DATE_FORMAT)}
                 </Text>
               </TooltipTrigger>

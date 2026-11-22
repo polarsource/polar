@@ -10,6 +10,9 @@ import {
 } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
+// The lists that load page by page, which mutations refetch.
+const INFINITE_SUBSCRIPTIONS_KEY = ['subscriptions', 'infinite']
+
 export const useSubscriptions = (
   organizationId?: string,
   parameters?: Omit<
@@ -43,8 +46,7 @@ export const useInfiniteSubscriptions = (
 ) =>
   useInfiniteQuery({
     queryKey: [
-      'subscriptions',
-      'infinite',
+      ...INFINITE_SUBSCRIPTIONS_KEY,
       { organizationId, ...(parameters || {}) },
     ],
     queryFn: ({ pageParam }) =>
@@ -169,6 +171,7 @@ export const useUpdateSubscription = (id: string) =>
         },
         data,
       )
+      queryClient.invalidateQueries({ queryKey: INFINITE_SUBSCRIPTIONS_KEY })
       queryClient.setQueriesData<schemas['ListResource_Subscription_']>(
         {
           queryKey: [
@@ -243,6 +246,7 @@ export const useUncancelSubscription = (id: string) =>
         },
         data,
       )
+      queryClient.invalidateQueries({ queryKey: INFINITE_SUBSCRIPTIONS_KEY })
       queryClient.setQueriesData<schemas['ListResource_Subscription_']>(
         {
           queryKey: [
@@ -297,6 +301,7 @@ const applySubscriptionUpdateToCache = (
     },
     data,
   )
+  queryClient.invalidateQueries({ queryKey: INFINITE_SUBSCRIPTIONS_KEY })
   queryClient.setQueriesData<schemas['ListResource_Subscription_']>(
     {
       queryKey: [
@@ -440,6 +445,7 @@ export const useClearPendingSubscriptionUpdate = (id: string) =>
         },
         data,
       )
+      queryClient.invalidateQueries({ queryKey: INFINITE_SUBSCRIPTIONS_KEY })
       queryClient.setQueriesData<schemas['ListResource_Subscription_']>(
         {
           queryKey: [

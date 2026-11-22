@@ -65,6 +65,19 @@ describe('getSubscriptionActivity', () => {
     ).toEqual(['Ended', 'Cancellation requested', 'Trial started'])
   })
 
+  it('shows a trial that ran out without a payment method', () => {
+    expect(
+      labels({
+        status: 'trial_ended',
+        trial_start: '2026-03-10T00:00:00Z',
+        trial_end: '2026-03-24T00:00:00Z',
+        current_period_start: '2026-03-10T00:00:00Z',
+        current_period_end: '2026-03-24T00:00:00Z',
+        ends_at: '2026-06-24T00:00:00Z',
+      }),
+    ).toEqual(['Ends (upcoming)', 'Trial ended', 'Trial started'])
+  })
+
   it('shows a scheduled cancellation instead of a renewal', () => {
     expect(
       labels({

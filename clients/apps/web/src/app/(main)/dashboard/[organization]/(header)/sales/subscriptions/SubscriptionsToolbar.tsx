@@ -8,25 +8,20 @@ import {
 import { type Filter } from '@/components/Shared/FilterPopover'
 import { type SelectableSubscriptionStatus } from '@/components/Subscriptions/selectableStatuses'
 import { type ProductFilter } from '@/components/Products/ProductSelect'
-import {
-  latestVersions,
-  useDiscounts,
-  useProducts,
-  useSelectedProducts,
-} from '@/hooks/queries'
+import { useDiscounts } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import {
   CircleDashed,
   MessageCircle,
-  Package,
   TicketPercent,
 } from '@polar-sh/orbit/icons'
 import { ToolbarActionsMenu, type ToolbarAction } from './ToolbarActionsMenu'
 import { ToolbarFilterChips } from './ToolbarFilterChips'
 import { ToolbarFilterMenu } from './ToolbarFilterMenu'
 import { useCustomerFilter } from './useCustomerFilter'
+import { useProductFilter } from './useProductFilter'
 
 type StatusOption = SelectableSubscriptionStatus | 'canceling'
 
@@ -85,59 +80,12 @@ export const SubscriptionsToolbar = ({
   onReset,
   actions,
 }: SubscriptionsToolbarProps) => {
-  // A product_id link keeps filtering by ID until the selection is cleared
-  const filterByExternalId =
-    !!organization.feature_settings?.config_as_code_enabled &&
-    !product.product_id
-  const productFilter = filterByExternalId
-    ? product.external_product_id
-    : product.product_id
-
-  const { data: queriedProducts } = useProducts(organization.id, {
-    is_recurring: true,
-    sorting: ['name'],
-    limit: 100,
-  })
-  const selectedValues = productFilter ?? []
+  const productFilter = useProductFilter(organization, product, onProductSelect)
   const { data: discounts } = useDiscounts(organization.id, { limit: 100 })
-  const { data: selectedProducts } = useSelectedProducts(
-    filterByExternalId
-      ? { organization_id: organization.id, external_id: selectedValues }
-      : { id: selectedValues },
-    { includeArchived: true, includeAllVersions: true },
-  )
-  const listedProducts = queriedProducts?.items ?? []
-  const allProducts = [
-    ...listedProducts,
-    ...(selectedProducts ?? []).filter(
-      (selected) => !listedProducts.some(({ id }) => id === selected.id),
-    ),
-  ]
-  const productOptions = (
-    filterByExternalId ? latestVersions(allProducts) : allProducts
-  ).flatMap((product) => {
-    const value = filterByExternalId ? product.external_id : product.id
-    return value
-      ? [
-          {
-            value,
-            label: `${product.name}${product.is_archived ? ' (Archived)' : ''}`,
-          },
-        ]
-      : []
-  })
 
   const statusValue: StatusOption[] = cancelAtPeriodEnd
     ? ['canceling']
     : (status ?? [])
-  const selectProducts = (value: string[]) => {
-    const selected = value.length > 0 ? value : null
-    onProductSelect(
-      filterByExternalId
-        ? { product_id: null, external_product_id: selected }
-        : { product_id: selected, external_product_id: null },
-    )
-  }
   // Canceling is active subscriptions set to end, which the list cannot
   // combine with other statuses, so picking it replaces the selection.
   const selectStatus = (value: StatusOption[]) => {
@@ -169,16 +117,7 @@ export const SubscriptionsToolbar = ({
   // shows as a chip under the toolbar.
   const filters: Filter[] = [
     statusFilter,
-    {
-      key: 'product',
-      label: 'Product',
-      searchPlaceholder: 'Filter...',
-      icon: <Package className="size-4" />,
-      type: 'multi',
-      options: productOptions,
-      value: selectedValues,
-      onChange: selectProducts,
-    },
+    productFilter,
     customerFilter,
     {
       key: 'discount',

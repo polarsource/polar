@@ -27,6 +27,7 @@ import {
 import React from 'react'
 import { SubscriptionsToolbar } from './SubscriptionsToolbar'
 import { type ToolbarAction } from './ToolbarActionsMenu'
+import { useSelectedSubscription } from './useSelectedSubscription'
 
 const PAGE_SIZE = 50
 
@@ -73,7 +74,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       product_id: productId,
       external_product_id: externalProductId,
       status,
-      cancel_at_period_end: cancelAtPeriodEnd,
+      cancel_at_period_end: cancelAtPeriodEndParam,
       customer_id: customerId,
       discount_id: discountId,
       customer_cancellation_reason: cancellationReason,
@@ -81,6 +82,10 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     },
     setFilters,
   ] = useQueryStates(filterParsers)
+
+  // Only "set to end" is offered as a filter. Older links can carry false,
+  // which no control shows, so it is left out.
+  const cancelAtPeriodEnd = cancelAtPeriodEndParam ? true : null
 
   const {
     isShown: isExportModalShown,
@@ -119,18 +124,24 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       customer_cancellation_reason: null,
     })
 
-  const { data, hasNextPage, isFetchingNextPage, fetchNextPage } =
-    useInfiniteSubscriptions(organization.id, {
-      limit: PAGE_SIZE,
-      sorting: sortingStateToQueryParam(sorting),
-      product_id: productId ?? undefined,
-      external_product_id: externalProductId ?? undefined,
-      status: status ?? undefined,
-      cancel_at_period_end: cancelAtPeriodEnd ?? undefined,
-      customer_id: customerId ?? undefined,
-      discount_id: discountId ?? undefined,
-      customer_cancellation_reason: cancellationReason ?? undefined,
-    })
+  const {
+    data,
+    hasNextPage,
+    isFetching,
+    isFetchingNextPage,
+    isFetchNextPageError,
+    fetchNextPage,
+  } = useInfiniteSubscriptions(organization.id, {
+    limit: PAGE_SIZE,
+    sorting: sortingStateToQueryParam(sorting),
+    product_id: productId ?? undefined,
+    external_product_id: externalProductId ?? undefined,
+    status: status ?? undefined,
+    cancel_at_period_end: cancelAtPeriodEnd ?? undefined,
+    customer_id: customerId ?? undefined,
+    discount_id: discountId ?? undefined,
+    customer_cancellation_reason: cancellationReason ?? undefined,
+  })
 
   // Rows that tie on the sorted value have no fixed order between requests, so
   // one can come back on two pages.
@@ -139,16 +150,18 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       data.pages.flatMap((page) => page.items.map((item) => [item.id, item])),
     ).values(),
   ]
+  // Not while the first page for new filters is loading, and not again after a
+  // page failed, or the visible end of the list would retry it without pause.
   const loadMore = () => {
-    if (hasNextPage && !isFetchingNextPage) {
+    if (hasNextPage && !isFetching && !isFetchNextPageError) {
       fetchNextPage()
     }
   }
-  const selectedIndex =
-    subscriptions?.findIndex(({ id }) => id === selectedId) ?? -1
-  const selected = subscriptions?.[selectedIndex]
-  const previous = subscriptions?.[selectedIndex - 1]
-  const next = selected ? subscriptions?.[selectedIndex + 1] : undefined
+  const { selected, previous, next } = useSelectedSubscription(
+    organization.id,
+    subscriptions,
+    selectedId,
+  )
   const select = (id: string | null) => setFilters({ subscription: id })
 
   const totalCount = data?.pages[0]?.pagination.total_count
@@ -224,6 +237,9 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         product={product}
         status={status}
         cancelAtPeriodEnd={cancelAtPeriodEnd}
+        customerId={customerId}
+        discountId={discountId}
+        cancellationReason={cancellationReason}
         isShown={isExportModalShown}
         hide={hideExportModal}
       />

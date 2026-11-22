@@ -101,8 +101,10 @@ export const getSubscriptionActivity = (
   const endsAt = toTime(subscription.ends_at)
   const periodStart = new Date(subscription.current_period_start).getTime()
   const periodEnd = new Date(subscription.current_period_end).getTime()
+  // A trial that ran out without a payment method did not convert.
+  const hasLapsed = subscription.status === 'trial_ended'
   const hasConverted =
-    trialEnd !== null && (endedAt === null || endedAt > trialEnd)
+    trialEnd !== null && !hasLapsed && (endedAt === null || endedAt > trialEnd)
 
   if (trialStart !== null) {
     add('trial', 'Trial started', trialStart)
@@ -112,6 +114,8 @@ export const getSubscriptionActivity = (
       } else {
         add('converted', 'Trial converted', trialEnd)
       }
+    } else if (hasLapsed) {
+      add('trial', 'Trial ended', trialEnd)
     }
   } else {
     add('started', 'Subscribed', startedAt)

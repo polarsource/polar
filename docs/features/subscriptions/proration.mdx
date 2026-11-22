@@ -147,17 +147,11 @@ A downgrade credit is **never paid back to the customer's card**. It goes to the
 
 If you'd rather give the customer their money back, [refund](/features/refunds) the **order they paid before the downgrade**. You can still refund that order after the downgrade, for up to the amount the customer paid on it.
 
-A refund also reduces any positive balance the customer has, by up to the refunded amount. So refunding the credited amount moves the credit from the balance back to the customer's card, and they aren't credited twice. Using the downgrade example above:
+A refund also reduces the credit the customer still has from Polar, by up to the refunded amount: first their positive balance, then any `prorate` credit still waiting for the next invoice. So refunding the credited amount moves the credit back to the customer's card, and they aren't credited twice. Using the downgrade example above:
 
-1. The customer downgrades with `invoice`, and \$14.50 is added to their balance.
+1. The customer downgrades, and is credited \$14.50.
 2. You refund \$14.50 on the original \$20 order. Enter the amount excluding tax; Polar adds the matching tax.
-3. The customer gets \$14.50 back on their card and their balance returns to zero. Their next renewal is charged the full \$5.
-
-<Warning>
-  Only a balance that already exists is reduced. A `prorate` credit that's still waiting for the
-  next invoice isn't affected by the refund, so the customer would get both. Use `invoice` for
-  downgrades you plan to refund, or `next_period` to avoid issuing a credit at all.
-</Warning>
+3. The customer gets \$14.50 back on their card and the credit is gone. Their next renewal is charged the full \$5.
 
 <Note>
   Because proration is computed from the exact number of seconds remaining, the change time-of-day

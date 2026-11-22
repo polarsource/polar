@@ -82,6 +82,22 @@ class BillingEntryRepository(
         )
         return await self.get_all(statement)
 
+    async def get_pending_proration_by_subscription(
+        self, subscription_id: UUID
+    ) -> Sequence[BillingEntry]:
+        statement = self.get_pending_by_subscription_statement(subscription_id).where(
+            BillingEntry.type.in_(
+                (
+                    BillingEntryType.proration,
+                    BillingEntryType.subscription_seats_increase,
+                    BillingEntryType.subscription_seats_decrease,
+                    BillingEntryType.subscription_units_increase,
+                    BillingEntryType.subscription_units_decrease,
+                )
+            )
+        )
+        return await self.get_all(statement)
+
     async def get_static_pending_by_subscription(
         self, subscription_id: UUID, *, cutoff: datetime | None = None
     ) -> AsyncGenerator[BillingEntry]:

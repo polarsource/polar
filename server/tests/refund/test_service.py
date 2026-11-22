@@ -17,6 +17,7 @@ from polar.models import (
     Product,
     Transaction,
 )
+from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.dispute import DisputeAlertProcessor
 from polar.models.order import OrderStatus
 from polar.models.refund import RefundReason, RefundStatus
@@ -36,6 +37,8 @@ from polar.tax.calculation.base import AlreadyRevertedError
 from polar.wallet.service import wallet as wallet_service
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_active_subscription,
+    create_billing_entry,
     create_dispute,
     create_order,
     create_order_and_payment,
@@ -352,6 +355,81 @@ class TestCreate(StripeRefund):
             session, customer, order.currency
         )
         assert new_balance == expected_balance
+
+    @pytest.mark.parametrize(
+        ("initial_balance", "order_tax_amount", "expected_credit"),
+        [
+            pytest.param(0, 0, 483, id="no balance"),
+            pytest.param(0, 500, 483, id="no balance with tax"),
+            pytest.param(500, 0, 983, id="balance absorbs part of the refund"),
+        ],
+    )
+    async def test_create_reduces_pending_proration_credit(
+        self,
+        initial_balance: int,
+        order_tax_amount: int,
+        expected_credit: int,
+        session: AsyncSession,
+        stripe_service_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        order, payment, _ = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=2000,
+            tax_amount=order_tax_amount,
+            subscription=subscription,
+        )
+        await create_wallet_billing(
+            save_fixture, customer=customer, initial_balance=initial_balance
+        )
+        price = product.prices[0]
+        credit = await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.proration,
+            direction=BillingEntryDirection.credit,
+            amount=1933,
+            currency="usd",
+            customer=customer,
+            product_price=price,
+            subscription=subscription,
+        )
+        await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.proration,
+            direction=BillingEntryDirection.debit,
+            amount=483,
+            currency="usd",
+            customer=customer,
+            product_price=price,
+            subscription=subscription,
+        )
+
+        refund_amount = 1450
+        refund_tax_amount = order.calculate_refunded_tax_from_subtotal(refund_amount)
+        stripe_service_mock.create_refund.return_value = build_stripe_refund(
+            amount=refund_amount + refund_tax_amount, charge_id=payment.processor_id
+        )
+
+        await refund_service.create(
+            session,
+            order,
+            amount=refund_amount,
+            tax_amount=refund_tax_amount,
+            reason=RefundReason.customer_request,
+        )
+
+        assert credit.amount == expected_credit
+        balance = await wallet_service.get_billing_wallet_balance(
+            session, customer, order.currency
+        )
+        assert balance == 0
 
     @pytest.mark.parametrize(
         (

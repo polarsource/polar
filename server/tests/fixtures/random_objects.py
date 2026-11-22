@@ -1166,11 +1166,13 @@ async def create_order_and_payment(
     tax_processor: TaxProcessor | None = None,
     tax_transaction_processor_id: str | None = None,
     billing_address: Address | None = None,
+    subscription: Subscription | None = None,
 ) -> tuple[Order, Payment, Transaction]:
     order = await create_order(
         save_fixture,
         product=product,
         customer=customer,
+        subscription=subscription,
         subtotal_amount=subtotal_amount,
         tax_amount=tax_amount,
         applied_balance_amount=applied_balance_amount,

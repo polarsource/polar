@@ -8,6 +8,7 @@ from logfire.testing import CaptureLogfire
 from pytest_mock import MockerFixture
 from sqlalchemy import Select
 
+from polar.billing_entry.repository import BillingEntryRepository
 from polar.billing_entry.service import ReducerUsageAlreadyBilled
 from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.billing_interval.repository import BillingIntervalRepository
@@ -55,6 +56,7 @@ from polar.reducer.types import UsageWindow
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
+    create_billing_entry,
     create_event,
     create_meter,
     create_order,
@@ -395,6 +397,130 @@ async def create_seat_change_billing_entry(
 
     await save_fixture(billing_entry)
     return billing_entry
+
+
+@pytest.mark.anyio
+class TestReducePendingProrationCredit:
+    @pytest.mark.parametrize(
+        ("amount", "expected_reduced", "expected_credit"),
+        [
+            pytest.param(1450, 1450, 483, id="net credit"),
+            pytest.param(1000, 1000, 933, id="partial"),
+            pytest.param(2000, 1450, 483, id="capped at net credit"),
+        ],
+    )
+    async def test_downgrade(
+        self,
+        amount: int,
+        expected_reduced: int,
+        expected_credit: int,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        price = product.prices[0]
+        credit = await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.proration,
+            direction=BillingEntryDirection.credit,
+            amount=1933,
+            currency="usd",
+            customer=customer,
+            product_price=price,
+            subscription=subscription,
+        )
+        await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.proration,
+            direction=BillingEntryDirection.debit,
+            amount=483,
+            currency="usd",
+            customer=customer,
+            product_price=price,
+            subscription=subscription,
+        )
+
+        reduced = await billing_entry_service.reduce_pending_proration_credit(
+            session, subscription.id, amount
+        )
+
+        assert reduced == expected_reduced
+        assert credit.amount == expected_credit
+
+    async def test_net_debit(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        price = product.prices[0]
+        credit = await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.proration,
+            direction=BillingEntryDirection.credit,
+            amount=483,
+            currency="usd",
+            customer=customer,
+            product_price=price,
+            subscription=subscription,
+        )
+        await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.proration,
+            direction=BillingEntryDirection.debit,
+            amount=1933,
+            currency="usd",
+            customer=customer,
+            product_price=price,
+            subscription=subscription,
+        )
+
+        reduced = await billing_entry_service.reduce_pending_proration_credit(
+            session, subscription.id, 1000
+        )
+
+        assert reduced == 0
+        assert credit.amount == 483
+
+    async def test_fully_reduced_credit_is_deleted(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.subscription_seats_decrease,
+            direction=BillingEntryDirection.credit,
+            amount=1000,
+            currency="usd",
+            customer=customer,
+            product_price=product.prices[0],
+            subscription=subscription,
+        )
+
+        reduced = await billing_entry_service.reduce_pending_proration_credit(
+            session, subscription.id, 1000
+        )
+
+        assert reduced == 1000
+        repository = BillingEntryRepository.from_session(session)
+        pending = await repository.get_pending_proration_by_subscription(
+            subscription.id
+        )
+        assert len(pending) == 0
 
 
 @pytest.mark.anyio

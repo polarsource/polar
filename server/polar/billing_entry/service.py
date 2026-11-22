@@ -83,6 +83,44 @@ async def _no_line_items() -> AsyncGenerator[
 
 
 class BillingEntryService:
+    async def reduce_pending_proration_credit(
+        self, session: AsyncSession, subscription_id: uuid.UUID, amount: int
+    ) -> int:
+        """Reduce the subscription's unbilled proration credit by up to ``amount``.
+
+        Capped at the net pending credit (credits minus debits), so a refund
+        never turns into an extra charge on the next invoice.
+        Returns the amount actually reduced.
+        """
+        repository = BillingEntryRepository.from_session(session)
+        await repository.lock_pending_by_subscription(subscription_id)
+        entries = await repository.get_pending_proration_by_subscription(
+            subscription_id
+        )
+
+        credits = [e for e in entries if e.direction == BillingEntryDirection.credit]
+        net_credit = sum(e.amount or 0 for e in credits) - sum(
+            e.amount or 0 for e in entries if e.direction == BillingEntryDirection.debit
+        )
+        remaining = min(amount, net_credit)
+        reduced = 0
+        for entry in credits:
+            if remaining <= 0:
+                break
+            reduction = min(entry.amount or 0, remaining)
+            new_amount = (entry.amount or 0) - reduction
+            await repository.update(
+                entry,
+                update_dict={
+                    "amount": new_amount,
+                    **({"deleted_at": utc_now()} if new_amount == 0 else {}),
+                },
+            )
+            remaining -= reduction
+            reduced += reduction
+
+        return reduced
+
     @contextlib.asynccontextmanager
     async def _create_order_items(
         self,

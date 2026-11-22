@@ -11,6 +11,7 @@ from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_resource_permission, get_accessible_org_ids
 from polar.benefit.grant.service import benefit_grant as benefit_grant_service
+from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.customer_seat.service import seat_service as customer_seat_service
 from polar.dispute.repository import DisputeRepository
 from polar.enums import PaymentProcessor
@@ -598,6 +599,20 @@ class RefundService:
                     order.currency,
                     order=order,
                 )
+            else:
+                reduction_amount = 0
+
+            # Reduce unbilled proration credit, e.g. from a downgrade with
+            # `prorate`, so it isn't returned twice. Billing entries exclude tax,
+            # so only the pre-tax share the balance didn't absorb is offset.
+            refund_total = refund.amount + refund.tax_amount
+            if order.subscription_id is not None and refund_total > 0:
+                absorbed_amount = refund.amount * reduction_amount // refund_total
+                remaining_amount = refund.amount - absorbed_amount
+                if remaining_amount > 0:
+                    await billing_entry_service.reduce_pending_proration_credit(
+                        session, order.subscription_id, remaining_amount
+                    )
 
             await event_service.create_event(
                 session,

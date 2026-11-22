@@ -4,9 +4,9 @@ Thank you for your interest in Polar!
 
 ## 🚫 We're not accepting outside contributions
 
-Polar is open source, but **we are not accepting contributions from outside collaborators at this time**. Pull requests from people outside the Polar team will be closed without review.
+Polar is open source, but **we are not accepting contributions from outside collaborators at this time**.
 
-This applies to all changes, including bug fixes, features, documentation and typo fixes. Please don't take it personally: we want to be upfront rather than leave your work waiting on a review that won't happen.
+This applies to all changes, including bug fixes, features, documentation and typo fixes.
 
 ## How you can still help
 

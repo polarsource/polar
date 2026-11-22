@@ -36,6 +36,11 @@ const STATUS_OPTIONS: { value: StatusOption; label: string }[] = [
   { value: 'unpaid', label: 'Unpaid' },
 ]
 
+const CANCELING_STATUSES: SelectableSubscriptionStatus[] = [
+  'active',
+  'trialing',
+]
+
 const REASON_OPTIONS = CANCELLATION_REASONS.map((reason) => ({
   value: reason,
   label: REASON_LABELS[reason],
@@ -86,11 +91,11 @@ export const SubscriptionsToolbar = ({
   const statusValue: StatusOption[] = cancelAtPeriodEnd
     ? ['canceling']
     : (status ?? [])
-  // Canceling is active subscriptions set to end, which the list cannot
-  // combine with other statuses, so picking it replaces the selection.
+  // Canceling is subscriptions still running but set to end. "Set to end"
+  // applies to every status asked for, so picking it replaces the selection.
   const selectStatus = (value: StatusOption[]) => {
     if (value.includes('canceling') && !cancelAtPeriodEnd) {
-      onStatusSelect(['active'], true)
+      onStatusSelect(CANCELING_STATUSES, true)
       return
     }
     const statuses = value.filter(

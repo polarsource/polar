@@ -10,8 +10,8 @@ import { Package } from '@polar-sh/orbit/icons'
 import { useState } from 'react'
 
 // Products are searched on the server, since a catalog can hold more than one
-// page of them. Without a search the selected ones are listed too, so they
-// keep their names when they fall outside the first page.
+// page of them. The selected ones are fetched on their own and stay at the
+// top, so they keep their names whatever the search shows.
 export const useProductFilter = (
   organization: schemas['Organization'],
   product: ProductFilter,
@@ -39,14 +39,12 @@ export const useProductFilter = (
     { includeArchived: true, includeAllVersions: true },
   )
   const listedProducts = queriedProducts?.items ?? []
-  const products = query
-    ? listedProducts
-    : [
-        ...listedProducts,
-        ...(selectedProducts ?? []).filter(
-          (selected) => !listedProducts.some(({ id }) => id === selected.id),
-        ),
-      ]
+  const products = [
+    ...(selectedProducts ?? []),
+    ...listedProducts.filter(
+      (listed) => !selectedProducts?.some(({ id }) => id === listed.id),
+    ),
+  ]
 
   return {
     key: 'product',

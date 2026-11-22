@@ -95,6 +95,24 @@ class TestCreatePayoutAccount:
 
         assert response.status_code == 422
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
+    async def test_member_without_finance_permission(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization_second: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/payout-accounts/",
+            json={
+                "type": "stripe",
+                "country": "US",
+                "organization_id": str(organization.id),
+            },
+        )
+
+        assert response.status_code == 403
+
     @pytest.mark.auth(AuthSubjectFixture(scopes=READ_ONLY_SCOPES))
     async def test_impersonation_session_blocked(
         self,

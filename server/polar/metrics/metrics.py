@@ -403,8 +403,6 @@ class CashflowMetric(MetaMetric):
         return cumulative_sum(periods, cls.slug)
 
 
-# TODO: Move churn rate to Tinybird — extend the metrics_cancellations pipe
-# to compute the rolling 30-day window in ClickHouse instead of PG.
 class ChurnRateMetric(SQLMetric):
     slug = "churn_rate"
     display_name = "Churn Rate"

@@ -108,3 +108,4 @@ async def test_paused_subscription_in_metrics(
     assert period.monthly_recurring_revenue == expected_mrr
     # Only the canceled control counts as churn — pause does not.
     assert period.churned_subscriptions == 1
+    assert period.churn_rate == pytest.approx(1 / 3)

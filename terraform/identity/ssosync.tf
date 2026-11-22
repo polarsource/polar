@@ -8,6 +8,8 @@ locals {
     "awsaccess@polar.sh",
     "finance@polar.sh",
     "executive@polar.sh",
+    "merchant-ops@polar.sh",
+    "risk-compliance-ops@polar.sh",
   ]
 }
 

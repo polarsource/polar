@@ -31,7 +31,7 @@ When you pick a date range, Polar splits it into equal-width **intervals** — o
 
 - **Canceled Subscriptions** — Subscriptions where the customer triggered a cancellation in the interval. The subscription itself may still be active until the end of the paid period.
 - **Churned Subscriptions** — Subscriptions whose paid period actually ended inside the interval. This is "real" churn — the moment access stops.
-- **Churn Rate** — Churned subscriptions in the interval divided by the active subscription base at the start of the interval, expressed as a percentage.
+- **Churn Rate** — Subscriptions canceled in a window divided by the subscriptions active at the start of that window, expressed as a percentage. It counts cancellations, not churned subscriptions: a subscription counts when the customer cancels, even if it stays active until the end of its paid period. For yearly intervals, the window is the interval itself. For all shorter intervals, it is the 30 days leading up to the start of each interval, so values are most meaningful with monthly or longer intervals.
 - **Active Subscriptions** — Same definition as in the [Subscriptions](#subscriptions) dashboard. Shown here to contextualise churn against the underlying base.
 - **Committed Subscriptions** — Same definition as in the [Subscriptions](#subscriptions) dashboard.
 - **Cancellation reasons** — Stacked chart of canceled subscriptions broken down by the reason the customer picked at cancellation: *too expensive*, *missing features*, *switched service*, *unused*, *customer service*, *low quality*, *too complex*, or *other* (free-form or no reason given).

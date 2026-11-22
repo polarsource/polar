@@ -334,10 +334,11 @@ class AverageRevenuePerUserMetric(SQLMetric):
     def get_sql_expression(
         cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
     ) -> ColumnElement[int]:
-        subscriber_count = func.count(t.table.c.customer_id.distinct())
-        mrr = func.coalesce(
-            func.sum(t.table.c.monthly_amount).filter(_not_in_trial(t, i)), 0
+        not_in_trial = _not_in_trial(t, i)
+        subscriber_count = func.count(t.table.c.customer_id.distinct()).filter(
+            not_in_trial
         )
+        mrr = func.coalesce(func.sum(t.table.c.monthly_amount).filter(not_in_trial), 0)
         return func.cast(
             case(
                 (subscriber_count == 0, 0),

@@ -1303,9 +1303,33 @@ async def _seed_arpu(
         orders2,
         events=events,
     )
+    c3 = await create_customer(
+        save_fixture, organization=organization, email="c3@example.com"
+    )
+    sub_c3: dict[str, SubscriptionFixture] = {
+        "subscription_3": {
+            "started_at": date(2024, 1, 1),
+            "trial_start": date(2024, 1, 1),
+            "trial_end": date(2024, 3, 1),
+            "product": "monthly_subscription",
+        }
+    }
+    products3, subs3, orders3 = await _create_fixtures(
+        save_fixture, c3, organization, PRODUCTS, sub_c3, {}
+    )
+    await _append_fixture_events(
+        save_fixture,
+        organization,
+        c3,
+        products3,
+        subs3,
+        orders3,
+        events=events,
+    )
     all_product_ids = {k: v.id for k, v in products1.items()}
     all_product_ids.update({k: v.id for k, v in products2.items()})
-    return all_product_ids, {"c1": c1.id, "c2": c2.id}
+    all_product_ids.update({k: v.id for k, v in products3.items()})
+    return all_product_ids, {"c1": c1.id, "c2": c2.id, "c3": c3.id}
 
 
 async def _seed_mrr_interval_count(
@@ -3919,21 +3943,21 @@ class TestGetMetrics:
         assert len(metrics.periods) == 3
 
         jan = metrics.periods[0]
-        assert jan.active_subscriptions == 2
+        assert jan.active_subscriptions == 3
         assert jan.monthly_recurring_revenue == 183_33
         assert jan.average_revenue_per_user == 91_67
 
         feb = metrics.periods[1]
-        assert feb.active_subscriptions == 2
+        assert feb.active_subscriptions == 3
         assert feb.monthly_recurring_revenue == 183_33
         assert feb.average_revenue_per_user == 91_67
 
         mar = metrics.periods[2]
-        assert mar.active_subscriptions == 2
-        assert mar.monthly_recurring_revenue == 183_33
-        assert mar.average_revenue_per_user == 91_67
+        assert mar.active_subscriptions == 3
+        assert mar.monthly_recurring_revenue == 283_33
+        assert mar.average_revenue_per_user == 94_44
 
-        assert metrics.totals.average_revenue_per_user == 91_67
+        assert metrics.totals.average_revenue_per_user == 94_44
 
     async def test_mrr_with_recurring_interval_count_3mo(
         self,

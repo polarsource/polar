@@ -698,7 +698,7 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         label="churn_rate_daily",
         org_key="churn_rate_ended",
         start_date=date(2024, 1, 1),
-        end_date=date(2024, 3, 15),
+        end_date=date(2024, 3, 31),
         interval=TimeInterval.day,
         auth_type="user",
     ),
@@ -4416,10 +4416,12 @@ class TestGetMetrics:
 
         periods_by_date = {p.timestamp.date(): p for p in metrics.periods}
 
+        # Each daily point covers the 30 days ending with that day.
         assert periods_by_date[date(2024, 2, 1)].churn_rate == 0.0
         assert periods_by_date[date(2024, 2, 29)].churn_rate == 0.0
         assert periods_by_date[date(2024, 3, 1)].churn_rate == pytest.approx(0.2)
-        assert periods_by_date[date(2024, 3, 2)].churn_rate == 0.0
+        assert periods_by_date[date(2024, 3, 30)].churn_rate == pytest.approx(0.2)
+        assert periods_by_date[date(2024, 3, 31)].churn_rate == 0.0
 
     async def test_churn_rate_yearly(
         self,

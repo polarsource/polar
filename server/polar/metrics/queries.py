@@ -17,6 +17,7 @@ from sqlalchemy import (
     func,
     or_,
     select,
+    text,
     true,
     union_all,
 )
@@ -585,8 +586,11 @@ def get_churn_rate_cte(
         customer_id=customer_id,
     )
 
-    window_start = timestamp_column
     window_end = timestamp_column + interval.sql_interval()
+    if interval in {TimeInterval.year, TimeInterval.month}:
+        window_start = timestamp_column
+    else:
+        window_start = window_end - text("'30 days'::interval")
     end_date = func.coalesce(Subscription.ended_at, Subscription.ends_at)
 
     ended_in_window = and_(

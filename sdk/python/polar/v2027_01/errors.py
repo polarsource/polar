@@ -104,6 +104,9 @@ from polar.v2027_01.outputs import (
     RefundedAlready as RefundedAlreadyModel,
 )
 from polar.v2027_01.outputs import (
+    RefundPaymentAlreadyRefundedByStripe as RefundPaymentAlreadyRefundedByStripeModel,
+)
+from polar.v2027_01.outputs import (
     ResourceNotFound as ResourceNotFoundModel,
 )
 from polar.v2027_01.outputs import (
@@ -847,6 +850,17 @@ class RefundedAlready(PolarClientError):
     error: RefundedAlreadyModel
 
     def __init__(self, status_code: int, error: RefundedAlreadyModel) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class RefundPaymentAlreadyRefundedByStripe(PolarClientError):
+    error_type = RefundPaymentAlreadyRefundedByStripeModel
+    error: RefundPaymentAlreadyRefundedByStripeModel
+
+    def __init__(
+        self, status_code: int, error: RefundPaymentAlreadyRefundedByStripeModel
+    ) -> None:
         self.error = error
         super().__init__(status_code, error)
 

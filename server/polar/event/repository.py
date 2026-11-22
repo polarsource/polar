@@ -646,34 +646,56 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             self.get_meter_clause(meter),
         )
 
-    async def get_meter_matching_customers(
+    async def get_meters_matching_customers(
         self,
         event_ids: Sequence[UUID],
-        meter: Meter,
+        meters: Sequence[Meter],
         customer_ids: Collection[UUID],
         external_customer_ids: Collection[str],
-    ) -> tuple[set[UUID], set[str]]:
-        statement = (
-            select(Event.customer_id, Event.external_customer_id)
-            .where(
-                Event.id.in_(event_ids),
-                Event.organization_id == meter.organization_id,
-                or_(
-                    Event.customer_id.in_(customer_ids),
-                    Event.external_customer_id.in_(external_customer_ids),
-                ),
-                self.get_meter_clause(meter),
+    ) -> dict[UUID, tuple[set[UUID], set[str]]]:
+        """Per meter, the customers and external customers of the events it matches."""
+        matches: dict[UUID, tuple[set[UUID], set[str]]] = {
+            meter.id: (set(), set()) for meter in meters
+        }
+        meters_by_organization: dict[UUID, list[Meter]] = {}
+        for meter in meters:
+            meters_by_organization.setdefault(meter.organization_id, []).append(meter)
+
+        for organization_id, organization_meters in meters_by_organization.items():
+            clauses = [self.get_meter_clause(meter) for meter in organization_meters]
+            statement = (
+                select(
+                    Event.customer_id,
+                    Event.external_customer_id,
+                    # Label each clause: identical constant clauses (`true()` or
+                    # `false()`) would otherwise be merged into a single column
+                    *(
+                        and_(clause).label(f"meter_{index}")
+                        for index, clause in enumerate(clauses)
+                    ),
+                )
+                .where(
+                    Event.id.in_(event_ids),
+                    Event.organization_id == organization_id,
+                    or_(
+                        Event.customer_id.in_(customer_ids),
+                        Event.external_customer_id.in_(external_customer_ids),
+                    ),
+                    or_(*clauses),
+                )
+                .distinct()
             )
-            .distinct()
-        )
-        matched_customer_ids: set[UUID] = set()
-        matched_external_ids: set[str] = set()
-        for customer_id, external_customer_id in await self.session.execute(statement):
-            if customer_id is not None:
-                matched_customer_ids.add(customer_id)
-            if external_customer_id is not None:
-                matched_external_ids.add(external_customer_id)
-        return matched_customer_ids, matched_external_ids
+            for row in await self.session.execute(statement):
+                customer_id, external_customer_id = row[0], row[1]
+                for index, meter in enumerate(organization_meters, start=2):
+                    if not row[index]:
+                        continue
+                    matched_customer_ids, matched_external_ids = matches[meter.id]
+                    if customer_id is not None:
+                        matched_customer_ids.add(customer_id)
+                    if external_customer_id is not None:
+                        matched_external_ids.add(external_customer_id)
+        return matches
 
     async def get_meter_billing_page(
         self,

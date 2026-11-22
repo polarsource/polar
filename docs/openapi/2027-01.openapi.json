@@ -3879,11 +3879,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.members.update_member(\n    '00000000-0000-4000-8000-000000000000',\n    role='billing_manager',\n)\nprint(response)\n"
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.members.update_member(\n    '00000000-0000-4000-8000-000000000000',\n    name='Jane Doe',\n    role='billing_manager',\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.members.updateMember(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"role\": \"billing_manager\"\n  },\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.members.updateMember(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"name\": \"Jane Doe\",\n    \"role\": \"billing_manager\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
       },
@@ -12564,11 +12564,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.organizations.update(\n    '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n)\nprint(response)\n"
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.organizations.update(\n    '1dbfc517-0bbf-4301-9ba8-555ca42b9737',\n    embed_hosts=['example.com', '*.example.com', 'localhost:3000'],\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.organizations.update(\n  \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  {},\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.organizations.update(\n  \"1dbfc517-0bbf-4301-9ba8-555ca42b9737\",\n  {\n    \"embed_hosts\": [\n      \"example.com\",\n      \"*.example.com\",\n      \"localhost:3000\"\n    ]\n  },\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -20000,11 +20000,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.webhooks.update_webhook_endpoint(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.webhooks.update_webhook_endpoint(\n    '00000000-0000-4000-8000-000000000000',\n    url='https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0',\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.webhooks.updateWebhookEndpoint(\n  \"00000000-0000-4000-8000-000000000000\",\n  {},\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.webhooks.updateWebhookEndpoint(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"url\": \"https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
       },
@@ -25043,11 +25043,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customers.members.update(\n    '00000000-0000-4000-8000-000000000000',\n    '00000000-0000-4000-8000-000000000000',\n    role='member',\n)\nprint(response)\n"
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customers.members.update(\n    '00000000-0000-4000-8000-000000000000',\n    '00000000-0000-4000-8000-000000000000',\n    name='Jane Doe',\n    role='member',\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customers.members.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"role\": \"member\"\n  },\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customers.members.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"name\": \"Jane Doe\",\n    \"role\": \"member\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
       },
@@ -25418,11 +25418,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customers.members.update_external(\n    'string',\n    'string',\n    role='member',\n)\nprint(response)\n"
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customers.members.update_external(\n    'string',\n    'string',\n    name='Jane Doe',\n    role='member',\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customers.members.updateExternal(\n  \"string\",\n  \"string\",\n  {\n    \"role\": \"member\"\n  },\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customers.members.updateExternal(\n  \"string\",\n  \"string\",\n  {\n    \"name\": \"Jane Doe\",\n    \"role\": \"member\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
       },
@@ -30475,15 +30475,8 @@
       "BenefitCustomCreate": {
         "properties": {
           "external_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
             "title": "External Id",
             "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.",
             "examples": [
@@ -30824,15 +30817,8 @@
       "BenefitCustomUpdate": {
         "properties": {
           "external_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
             "title": "External Id",
             "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.",
             "examples": [
@@ -30868,16 +30854,9 @@
             "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "description": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 42,
-                "minLength": 3
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "maxLength": 42,
+            "minLength": 3,
             "title": "Description",
             "description": "The description of the benefit. Will be displayed on products having this benefit."
           },
@@ -30898,14 +30877,7 @@
             "title": "Type"
           },
           "properties": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/BenefitCustomProperties"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/BenefitCustomProperties"
           }
         },
         "type": "object",
@@ -31195,15 +31167,8 @@
       "BenefitDiscordCreate": {
         "properties": {
           "external_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
             "title": "External Id",
             "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.",
             "examples": [
@@ -31528,15 +31493,8 @@
       "BenefitDiscordUpdate": {
         "properties": {
           "external_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
             "title": "External Id",
             "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.",
             "examples": [
@@ -31572,16 +31530,9 @@
             "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "description": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 42,
-                "minLength": 3
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "maxLength": 42,
+            "minLength": 3,
             "title": "Description",
             "description": "The description of the benefit. Will be displayed on products having this benefit."
           },
@@ -31591,14 +31542,7 @@
             "title": "Type"
           },
           "properties": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/BenefitDiscordCreateProperties"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/BenefitDiscordCreateProperties"
           }
         },
         "type": "object",
@@ -31915,15 +31859,8 @@
       "BenefitDownloadablesCreate": {
         "properties": {
           "external_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
             "title": "External Id",
             "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.",
             "examples": [
@@ -32253,15 +32190,8 @@
       "BenefitDownloadablesUpdate": {
         "properties": {
           "external_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
             "title": "External Id",
             "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.",
             "examples": [
@@ -32297,16 +32227,9 @@
             "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "description": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 42,
-                "minLength": 3
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "maxLength": 42,
+            "minLength": 3,
             "title": "Description",
             "description": "The description of the benefit. Will be displayed on products having this benefit."
           },
@@ -32316,14 +32239,7 @@
             "title": "Type"
           },
           "properties": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/BenefitDownloadablesCreateProperties"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/BenefitDownloadablesCreateProperties"
           }
         },
         "type": "object",
@@ -32470,15 +32386,8 @@
       "BenefitFeatureFlagCreate": {
         "properties": {
           "external_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
             "title": "External Id",
             "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.",
             "examples": [
@@ -32753,15 +32662,8 @@
       "BenefitFeatureFlagUpdate": {
         "properties": {
           "external_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
             "title": "External Id",
             "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.",
             "examples": [
@@ -32797,16 +32699,9 @@
             "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "description": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 42,
-                "minLength": 3
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "maxLength": 42,
+            "minLength": 3,
             "title": "Description",
             "description": "The description of the benefit. Will be displayed on products having this benefit."
           },
@@ -32827,14 +32722,7 @@
             "title": "Type"
           },
           "properties": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/BenefitFeatureFlagProperties"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/BenefitFeatureFlagProperties"
           }
         },
         "type": "object",
@@ -32981,15 +32869,8 @@
       "BenefitGitHubRepositoryCreate": {
         "properties": {
           "external_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
             "title": "External Id",
             "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.",
             "examples": [
@@ -33352,15 +33233,8 @@
       "BenefitGitHubRepositoryUpdate": {
         "properties": {
           "external_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
             "title": "External Id",
             "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.",
             "examples": [
@@ -33396,16 +33270,9 @@
             "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "description": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 42,
-                "minLength": 3
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "maxLength": 42,
+            "minLength": 3,
             "title": "Description",
             "description": "The description of the benefit. Will be displayed on products having this benefit."
           },
@@ -33415,14 +33282,7 @@
             "title": "Type"
           },
           "properties": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/BenefitGitHubRepositoryCreateProperties"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/BenefitGitHubRepositoryCreateProperties"
           }
         },
         "type": "object",
@@ -36136,15 +35996,8 @@
       "BenefitLicenseKeysCreate": {
         "properties": {
           "external_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
             "title": "External Id",
             "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.",
             "examples": [
@@ -36559,15 +36412,8 @@
       "BenefitLicenseKeysUpdate": {
         "properties": {
           "external_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
             "title": "External Id",
             "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.",
             "examples": [
@@ -36603,16 +36449,9 @@
             "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "description": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 42,
-                "minLength": 3
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "maxLength": 42,
+            "minLength": 3,
             "title": "Description",
             "description": "The description of the benefit. Will be displayed on products having this benefit."
           },
@@ -36633,14 +36472,7 @@
             "title": "Type"
           },
           "properties": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/BenefitLicenseKeysCreateProperties"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/BenefitLicenseKeysCreateProperties"
           }
         },
         "type": "object",
@@ -37073,15 +36905,8 @@
       "BenefitMeterCreditCreate": {
         "properties": {
           "external_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
             "title": "External Id",
             "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.",
             "examples": [
@@ -37441,15 +37266,8 @@
       "BenefitMeterCreditUpdate": {
         "properties": {
           "external_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
             "title": "External Id",
             "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.",
             "examples": [
@@ -37485,16 +37303,9 @@
             "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "description": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 42,
-                "minLength": 3
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "maxLength": 42,
+            "minLength": 3,
             "title": "Description",
             "description": "The description of the benefit. Will be displayed on products having this benefit."
           },
@@ -37515,14 +37326,7 @@
             "title": "Type"
           },
           "properties": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/BenefitMeterCreditCreateProperties"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/BenefitMeterCreditCreateProperties"
           }
         },
         "type": "object",
@@ -37852,15 +37656,8 @@
       "BenefitSlackSharedChannelCreate": {
         "properties": {
           "external_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
             "title": "External Id",
             "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.",
             "examples": [
@@ -38228,15 +38025,8 @@
       "BenefitSlackSharedChannelUpdate": {
         "properties": {
           "external_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
             "title": "External Id",
             "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.",
             "examples": [
@@ -38272,16 +38062,9 @@
             "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "description": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 42,
-                "minLength": 3
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "maxLength": 42,
+            "minLength": 3,
             "title": "Description",
             "description": "The description of the benefit. Will be displayed on products having this benefit."
           },
@@ -38291,14 +38074,7 @@
             "title": "Type"
           },
           "properties": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/BenefitSlackSharedChannelCreateProperties"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/BenefitSlackSharedChannelCreateProperties"
           }
         },
         "type": "object",
@@ -39754,68 +39530,33 @@
             "description": "Key-value object storing custom field values."
           },
           "product_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "format": "uuid4",
             "title": "Product Id",
             "description": "ID of the product to checkout. Must be present in the checkout's product list."
           },
           "amount": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 0.0,
-                "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices. "
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Amount"
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Amount",
+            "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices. "
           },
           "seats": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 10000.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "integer",
+            "maximum": 10000.0,
+            "minimum": 1.0,
             "title": "Seats",
             "description": "Number of seats for seat-based pricing."
           },
           "units": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 2147483647.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "integer",
+            "maximum": 2147483647.0,
+            "minimum": 1.0,
             "title": "Units",
             "description": "Number of units for unit-based pricing."
           },
           "is_business_customer": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "boolean",
             "title": "Is Business Customer"
           },
           "customer_name": {
@@ -39860,15 +39601,8 @@
             "title": "Customer Billing Name"
           },
           "customer_billing_address": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AddressInput",
-                "description": "Billing address of the customer."
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/AddressInput",
+            "description": "Billing address of the customer."
           },
           "customer_tax_id": {
             "anyOf": [
@@ -39924,15 +39658,8 @@
             "description": "Discount code to apply to the checkout."
           },
           "allow_trial": {
-            "anyOf": [
-              {
-                "type": "boolean",
-                "const": false
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "boolean",
+            "const": false,
             "title": "Allow Trial",
             "description": "Disable the trial period for the checkout session. It's mainly useful when the trial is blocked because the customer already redeemed one."
           },
@@ -39981,68 +39708,33 @@
             "description": "Key-value object storing custom field values."
           },
           "product_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "format": "uuid4",
             "title": "Product Id",
             "description": "ID of the product to checkout. Must be present in the checkout's product list."
           },
           "amount": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 0.0,
-                "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices. "
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Amount"
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Amount",
+            "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices. "
           },
           "seats": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 10000.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "integer",
+            "maximum": 10000.0,
+            "minimum": 1.0,
             "title": "Seats",
             "description": "Number of seats for seat-based pricing."
           },
           "units": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 2147483647.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "integer",
+            "maximum": 2147483647.0,
+            "minimum": 1.0,
             "title": "Units",
             "description": "Number of units for unit-based pricing."
           },
           "is_business_customer": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "boolean",
             "title": "Is Business Customer"
           },
           "customer_name": {
@@ -40087,15 +39779,8 @@
             "title": "Customer Billing Name"
           },
           "customer_billing_address": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AddressInput",
-                "description": "Billing address of the customer."
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/AddressInput",
+            "description": "Billing address of the customer."
           },
           "customer_tax_id": {
             "anyOf": [
@@ -40151,27 +39836,13 @@
             "description": "Discount code to apply to the checkout."
           },
           "allow_trial": {
-            "anyOf": [
-              {
-                "type": "boolean",
-                "const": false
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "boolean",
+            "const": false,
             "title": "Allow Trial",
             "description": "Disable the trial period for the checkout session. It's mainly useful when the trial is blocked because the customer already redeemed one."
           },
           "confirmation_token_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
             "title": "Confirmation Token Id",
             "description": "ID of the Stripe confirmation token. Required for fixed prices and custom prices."
           }
@@ -41302,19 +40973,12 @@
             "description": "Whether customers must provide a payment method to start a trial. If `false`, customers can start a trial without entering payment details. If `null`, the product's setting is used."
           },
           "products": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string",
-                  "format": "uuid4"
-                },
-                "type": "array",
-                "minItems": 1
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "items": {
+              "type": "string",
+              "format": "uuid4"
+            },
+            "type": "array",
+            "minItems": 1,
             "title": "Products",
             "description": "List of products that will be available to select at checkout."
           },
@@ -41330,26 +40994,12 @@
             "title": "Label"
           },
           "allow_discount_codes": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "boolean",
             "title": "Allow Discount Codes",
             "description": "Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it."
           },
           "require_billing_address": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "boolean",
             "title": "Require Billing Address",
             "description": "Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting."
           },
@@ -44120,68 +43770,33 @@
             "description": "Key-value object storing custom field values."
           },
           "product_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "format": "uuid4",
             "title": "Product Id",
             "description": "ID of the product to checkout. Must be present in the checkout's product list."
           },
           "amount": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 0.0,
-                "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices. "
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Amount"
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Amount",
+            "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices. "
           },
           "seats": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 10000.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "integer",
+            "maximum": 10000.0,
+            "minimum": 1.0,
             "title": "Seats",
             "description": "Number of seats for seat-based pricing."
           },
           "units": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 2147483647.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "integer",
+            "maximum": 2147483647.0,
+            "minimum": 1.0,
             "title": "Units",
             "description": "Number of units for unit-based pricing."
           },
           "is_business_customer": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "boolean",
             "title": "Is Business Customer"
           },
           "customer_name": {
@@ -44226,15 +43841,8 @@
             "title": "Customer Billing Name"
           },
           "customer_billing_address": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AddressInput",
-                "description": "Billing address of the customer."
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/AddressInput",
+            "description": "Billing address of the customer."
           },
           "customer_tax_id": {
             "anyOf": [
@@ -44319,16 +43927,9 @@
             "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "currency": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/PresentmentCurrency",
-                "maxLength": 3,
-                "minLength": 3
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/PresentmentCurrency",
+            "maxLength": 3,
+            "minLength": 3
           },
           "discount_id": {
             "anyOf": [
@@ -44344,38 +43945,17 @@
             "description": "ID of the discount to apply to the checkout."
           },
           "allow_discount_codes": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "boolean",
             "title": "Allow Discount Codes",
             "description": "Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it."
           },
           "require_billing_address": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "boolean",
             "title": "Require Billing Address",
             "description": "Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`."
           },
           "allow_trial": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "boolean",
             "title": "Allow Trial",
             "description": "Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured."
           },
@@ -44392,38 +43972,30 @@
             "title": "Customer Ip Address"
           },
           "customer_metadata": {
-            "anyOf": [
-              {
-                "additionalProperties": {
-                  "anyOf": [
-                    {
-                      "type": "string",
-                      "maxLength": 500,
-                      "minLength": 1
-                    },
-                    {
-                      "type": "integer"
-                    },
-                    {
-                      "type": "number"
-                    },
-                    {
-                      "type": "boolean"
-                    }
-                  ]
-                },
-                "propertyNames": {
-                  "maxLength": 40,
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500,
                   "minLength": 1
                 },
-                "type": "object",
-                "maxProperties": 50,
-                "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
-              },
-              {
-                "type": "null"
-              }
-            ],
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
+            },
+            "type": "object",
+            "maxProperties": 50,
             "title": "Customer Metadata",
             "description": "Key-value object allowing you to store additional information that'll be copied to the created customer.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
@@ -44505,68 +44077,33 @@
             "description": "Key-value object storing custom field values."
           },
           "product_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "format": "uuid4",
             "title": "Product Id",
             "description": "ID of the product to checkout. Must be present in the checkout's product list."
           },
           "amount": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 0.0,
-                "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices. "
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Amount"
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Amount",
+            "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices. "
           },
           "seats": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 10000.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "integer",
+            "maximum": 10000.0,
+            "minimum": 1.0,
             "title": "Seats",
             "description": "Number of seats for seat-based pricing."
           },
           "units": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 2147483647.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "integer",
+            "maximum": 2147483647.0,
+            "minimum": 1.0,
             "title": "Units",
             "description": "Number of units for unit-based pricing."
           },
           "is_business_customer": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "boolean",
             "title": "Is Business Customer"
           },
           "customer_name": {
@@ -44611,15 +44148,8 @@
             "title": "Customer Billing Name"
           },
           "customer_billing_address": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AddressInput",
-                "description": "Billing address of the customer."
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/AddressInput",
+            "description": "Billing address of the customer."
           },
           "customer_tax_id": {
             "anyOf": [
@@ -44675,15 +44205,8 @@
             "description": "Discount code to apply to the checkout."
           },
           "allow_trial": {
-            "anyOf": [
-              {
-                "type": "boolean",
-                "const": false
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "boolean",
+            "const": false,
             "title": "Allow Trial",
             "description": "Disable the trial period for the checkout session. It's mainly useful when the trial is blocked because the customer already redeemed one."
           }
@@ -46480,31 +46003,17 @@
             "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "name": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1,
-                "description": "Name of the custom field."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
+            "type": "string",
+            "minLength": 1,
+            "title": "Name",
+            "description": "Name of the custom field."
           },
           "slug": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1,
-                "pattern": "^[a-z0-9-_]+$",
-                "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Slug"
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9-_]+$",
+            "title": "Slug",
+            "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens."
           },
           "type": {
             "type": "string",
@@ -46512,14 +46021,7 @@
             "title": "Type"
           },
           "properties": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/CustomFieldCheckboxProperties"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/CustomFieldCheckboxProperties"
           }
         },
         "type": "object",
@@ -46560,31 +46062,17 @@
             "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "name": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1,
-                "description": "Name of the custom field."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
+            "type": "string",
+            "minLength": 1,
+            "title": "Name",
+            "description": "Name of the custom field."
           },
           "slug": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1,
-                "pattern": "^[a-z0-9-_]+$",
-                "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Slug"
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9-_]+$",
+            "title": "Slug",
+            "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens."
           },
           "type": {
             "type": "string",
@@ -46592,14 +46080,7 @@
             "title": "Type"
           },
           "properties": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/CustomFieldDateProperties"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/CustomFieldDateProperties"
           }
         },
         "type": "object",
@@ -46640,31 +46121,17 @@
             "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "name": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1,
-                "description": "Name of the custom field."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
+            "type": "string",
+            "minLength": 1,
+            "title": "Name",
+            "description": "Name of the custom field."
           },
           "slug": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1,
-                "pattern": "^[a-z0-9-_]+$",
-                "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Slug"
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9-_]+$",
+            "title": "Slug",
+            "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens."
           },
           "type": {
             "type": "string",
@@ -46672,14 +46139,7 @@
             "title": "Type"
           },
           "properties": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/CustomFieldNumberProperties"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/CustomFieldNumberProperties"
           }
         },
         "type": "object",
@@ -46720,31 +46180,17 @@
             "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "name": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1,
-                "description": "Name of the custom field."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
+            "type": "string",
+            "minLength": 1,
+            "title": "Name",
+            "description": "Name of the custom field."
           },
           "slug": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1,
-                "pattern": "^[a-z0-9-_]+$",
-                "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Slug"
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9-_]+$",
+            "title": "Slug",
+            "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens."
           },
           "type": {
             "type": "string",
@@ -46752,14 +46198,7 @@
             "title": "Type"
           },
           "properties": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/CustomFieldSelectProperties"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/CustomFieldSelectProperties"
           }
         },
         "type": "object",
@@ -46800,31 +46239,17 @@
             "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "name": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1,
-                "description": "Name of the custom field."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
+            "type": "string",
+            "minLength": 1,
+            "title": "Name",
+            "description": "Name of the custom field."
           },
           "slug": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1,
-                "pattern": "^[a-z0-9-_]+$",
-                "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Slug"
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z0-9-_]+$",
+            "title": "Slug",
+            "description": "Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens."
           },
           "type": {
             "type": "string",
@@ -46832,14 +46257,7 @@
             "title": "Type"
           },
           "properties": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/CustomFieldTextProperties"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/CustomFieldTextProperties"
           }
         },
         "type": "object",
@@ -51041,14 +50459,7 @@
             "description": "The name of the customer that should appear on the invoice."
           },
           "billing_address": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AddressInput"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "$ref": "#/components/schemas/AddressInput",
             "description": "The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated."
           }
         },
@@ -51683,26 +51094,12 @@
       "CustomerPortalCustomerUpdate": {
         "properties": {
           "billing_name": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 256
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "maxLength": 256,
             "title": "Billing Name"
           },
           "billing_address": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AddressInput"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/AddressInput"
           },
           "tax_id": {
             "anyOf": [
@@ -51716,15 +51113,8 @@
             "title": "Tax Id"
           },
           "default_payment_method_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "format": "uuid4",
             "title": "Default Payment Method Id"
           }
         },
@@ -51838,31 +51228,16 @@
       "CustomerPortalMemberUpdate": {
         "properties": {
           "name": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 256,
-                "description": "The name of the member.",
-                "examples": [
-                  "Jane Doe"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "maxLength": 256,
             "title": "Name",
-            "description": "The new name for the member."
+            "description": "The new name for the member.",
+            "examples": [
+              "Jane Doe"
+            ]
           },
           "role": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/MemberRole"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "$ref": "#/components/schemas/MemberRole",
             "description": "The new role for the member.",
             "examples": [
               "billing_manager",
@@ -54198,6 +53573,19 @@
           "product": {
             "$ref": "#/components/schemas/CustomerSubscriptionProduct"
           },
+          "payment_method_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Method Id",
+            "description": "ID of the payment method pinned to the subscription, if any."
+          },
           "prices": {
             "items": {
               "oneOf": [
@@ -54262,6 +53650,7 @@
           "customer_cancellation_reason",
           "customer_cancellation_comment",
           "product",
+          "payment_method_id",
           "prices",
           "meters",
           "pending_update"
@@ -54271,14 +53660,7 @@
       "CustomerSubscriptionCancel": {
         "properties": {
           "cancel_at_period_end": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "boolean",
             "title": "Cancel At Period End",
             "description": "Cancel an active subscription once the current period ends.\n\nOr uncancel a subscription currently set to be revoked at period end."
           },
@@ -55242,15 +54624,8 @@
             "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "email": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "email"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "format": "email",
             "title": "Email",
             "description": "The email address of the customer. This must be unique within the organization.",
             "examples": [
@@ -55274,14 +54649,7 @@
             "title": "Name"
           },
           "billing_address": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AddressInput"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/AddressInput"
           },
           "tax_id": {
             "anyOf": [
@@ -55313,14 +54681,7 @@
             "title": "Locale"
           },
           "external_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
             "title": "External Id",
             "description": "The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.",
             "examples": [
@@ -55369,15 +54730,8 @@
             "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "email": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "email"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "format": "email",
             "title": "Email",
             "description": "The email address of the customer. This must be unique within the organization.",
             "examples": [
@@ -55401,14 +54755,7 @@
             "title": "Name"
           },
           "billing_address": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AddressInput"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/AddressInput"
           },
           "tax_id": {
             "anyOf": [
@@ -55768,15 +55115,8 @@
       "DiscountFixedCreate": {
         "properties": {
           "external_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
             "title": "External Id",
             "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.",
             "examples": [
@@ -56722,15 +56062,8 @@
       "DiscountPercentageCreate": {
         "properties": {
           "external_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
             "title": "External Id",
             "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.",
             "examples": [
@@ -57855,15 +57188,8 @@
       "DiscountUpdate": {
         "properties": {
           "external_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
             "title": "External Id",
             "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.",
             "examples": [
@@ -57899,17 +57225,10 @@
             "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "name": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 1,
-                "description": "Name of the discount. Will be displayed to the customer when the discount is applied."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
+            "type": "string",
+            "minLength": 1,
+            "title": "Name",
+            "description": "Name of the discount. Will be displayed to the customer when the discount is applied."
           },
           "code": {
             "anyOf": [
@@ -57984,90 +57303,48 @@
             "description": "Optional maximum number of times the discount can be redeemed by a single customer."
           },
           "duration": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/DiscountDuration"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/DiscountDuration"
           },
           "duration_in_months": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 999.0,
-                "minimum": 1.0,
-                "description": "Number of months the discount should be applied.\n\nFor this to work on yearly pricing, you should multiply this by 12.\nFor example, to apply the discount for 2 years, set this to 24."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Duration In Months"
+            "type": "integer",
+            "maximum": 999.0,
+            "minimum": 1.0,
+            "title": "Duration In Months",
+            "description": "Number of months the discount should be applied.\n\nFor this to work on yearly pricing, you should multiply this by 12.\nFor example, to apply the discount for 2 years, set this to 24."
           },
           "type": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/DiscountType"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/DiscountType"
           },
           "amounts": {
-            "anyOf": [
-              {
-                "additionalProperties": {
-                  "type": "integer",
-                  "maximum": 999999999999.0,
-                  "minimum": 0.0,
-                  "description": "Fixed amount to discount from the invoice total."
-                },
-                "propertyNames": {
-                  "$ref": "#/components/schemas/PresentmentCurrency"
-                },
-                "type": "object",
-                "minProperties": 1,
-                "description": "Map of currency to fixed amount to discount from the total. This allows specifying different discount amounts for different currencies."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Amounts"
+            "additionalProperties": {
+              "type": "integer",
+              "maximum": 999999999999.0,
+              "minimum": 0.0,
+              "description": "Fixed amount to discount from the invoice total."
+            },
+            "propertyNames": {
+              "$ref": "#/components/schemas/PresentmentCurrency"
+            },
+            "type": "object",
+            "minProperties": 1,
+            "title": "Amounts",
+            "description": "Map of currency to fixed amount to discount from the total. This allows specifying different discount amounts for different currencies."
           },
           "basis_points": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 10000.0,
-                "minimum": 1.0,
-                "description": "Discount percentage in basis points.\n\nA basis point is 1/100th of a percent.\nFor example, to create a 25.5% discount, set this to 2550."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Basis Points"
+            "type": "integer",
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Basis Points",
+            "description": "Discount percentage in basis points.\n\nA basis point is 1/100th of a percent.\nFor example, to create a 25.5% discount, set this to 2550."
           },
           "products": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string",
-                  "format": "uuid4"
-                },
-                "type": "array",
-                "description": "List of product IDs the discount can be applied to."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Products"
+            "items": {
+              "type": "string",
+              "format": "uuid4"
+            },
+            "type": "array",
+            "title": "Products",
+            "description": "List of product IDs the discount can be applied to."
           }
         },
         "type": "object",
@@ -59258,7 +58535,7 @@
               }
             ],
             "title": "Label Property Selector",
-            "description": "Property path to extract dynamic label from event metadata (e.g., 'subject' or 'metadata.subject')."
+            "description": "Property path to extract a dynamic label from event metadata (e.g., 'subject' or 'metadata.subject'). Set to `null` to clear it."
           }
         },
         "type": "object",
@@ -59643,25 +58920,11 @@
       "FilePatch": {
         "properties": {
           "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
             "title": "Name"
           },
           "version": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
             "title": "Version"
           }
         },
@@ -61671,14 +60934,7 @@
       "LicenseKeyUpdate": {
         "properties": {
           "status": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/LicenseKeyStatus"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "$ref": "#/components/schemas/LicenseKeyStatus",
             "x-tool-destructive-when": {
               "one_of": [
                 "revoked",
@@ -62933,42 +62189,21 @@
       "MemberUpdate": {
         "properties": {
           "name": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 256,
-                "description": "The name of the member.",
-                "examples": [
-                  "Jane Doe"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
+            "type": "string",
+            "maxLength": 256,
+            "title": "Name",
+            "description": "The name of the member.",
+            "examples": [
+              "Jane Doe"
+            ]
           },
           "email": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "email"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "format": "email",
             "title": "Email"
           },
           "role": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/MemberRole"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "$ref": "#/components/schemas/MemberRole",
             "description": "The role of the member within the customer.",
             "examples": [
               "member"
@@ -63173,15 +62408,8 @@
       "MeterCreate": {
         "properties": {
           "external_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
             "title": "External Id",
             "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.",
             "examples": [
@@ -63759,28 +62987,14 @@
             "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "name": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 128,
-                "minLength": 3
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 3,
             "title": "Name",
             "description": "The name of the meter. Will be shown on customer's invoices and usage."
           },
           "unit": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/MeterUnit"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "$ref": "#/components/schemas/MeterUnit",
             "description": "The unit of the meter."
           },
           "custom_label": {
@@ -63810,59 +63024,37 @@
             "description": "The multiplier to convert from base unit to display scale. Required when unit is 'custom'."
           },
           "filter": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Filter",
-                "description": "The filter to apply on events that'll be used to calculate the meter."
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "$ref": "#/components/schemas/Filter",
             "description": "The filter to apply on events that'll be used to calculate the meter."
           },
           "aggregation": {
-            "anyOf": [
+            "oneOf": [
               {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/CountAggregation"
-                  },
-                  {
-                    "$ref": "#/components/schemas/PropertyAggregation"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UniqueAggregation"
-                  }
-                ],
-                "discriminator": {
-                  "propertyName": "func",
-                  "mapping": {
-                    "avg": "#/components/schemas/PropertyAggregation",
-                    "count": "#/components/schemas/CountAggregation",
-                    "max": "#/components/schemas/PropertyAggregation",
-                    "min": "#/components/schemas/PropertyAggregation",
-                    "sum": "#/components/schemas/PropertyAggregation",
-                    "unique": "#/components/schemas/UniqueAggregation"
-                  }
-                }
+                "$ref": "#/components/schemas/CountAggregation"
               },
               {
-                "type": "null"
+                "$ref": "#/components/schemas/PropertyAggregation"
+              },
+              {
+                "$ref": "#/components/schemas/UniqueAggregation"
               }
             ],
             "title": "Aggregation",
-            "description": "The aggregation to apply on the filtered events to calculate the meter."
+            "description": "The aggregation to apply on the filtered events to calculate the meter.",
+            "discriminator": {
+              "propertyName": "func",
+              "mapping": {
+                "avg": "#/components/schemas/PropertyAggregation",
+                "count": "#/components/schemas/CountAggregation",
+                "max": "#/components/schemas/PropertyAggregation",
+                "min": "#/components/schemas/PropertyAggregation",
+                "sum": "#/components/schemas/PropertyAggregation",
+                "unique": "#/components/schemas/UniqueAggregation"
+              }
+            }
           },
           "is_archived": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "boolean",
             "title": "Is Archived",
             "description": "Whether the meter is archived. Archived meters are no longer used for billing.",
             "x-tool-destructive-when": {
@@ -68850,14 +68042,7 @@
             "description": "The name of the customer that should appear on the invoice."
           },
           "billing_address": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AddressInput"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "$ref": "#/components/schemas/AddressInput",
             "description": "The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated."
           }
         },
@@ -71071,17 +70256,10 @@
             "default": false
           },
           "overview_metrics": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
             "title": "Overview Metrics",
             "description": "Ordered list of metric slugs shown on the dashboard overview."
           }
@@ -71284,15 +70462,8 @@
       "OrganizationUpdate": {
         "properties": {
           "name": {
-            "anyOf": [
-              {
-                "type": "string",
-                "minLength": 3
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "minLength": 3,
             "title": "Name"
           },
           "avatar_url": {
@@ -71338,29 +70509,15 @@
             "description": "Official website of the organization."
           },
           "socials": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/OrganizationSocialLink"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "items": {
+              "$ref": "#/components/schemas/OrganizationSocialLink"
+            },
+            "type": "array",
             "title": "Socials",
             "description": "Links to social profiles."
           },
           "details": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/OrganizationDetailsInput"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "$ref": "#/components/schemas/OrganizationDetailsInput",
             "description": "Additional, private, business details Polar needs about active organizations for compliance (KYC)."
           },
           "country": {
@@ -71868,108 +71025,45 @@
             "description": "Two-letter country code (ISO 3166-1 alpha-2)."
           },
           "feature_settings": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/OrganizationFeatureSettingsUpdate"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/OrganizationFeatureSettingsUpdate"
           },
           "subscription_settings": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/OrganizationSubscriptionSettings"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/OrganizationSubscriptionSettings"
           },
           "customer_email_settings": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/OrganizationCustomerEmailSettings"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/OrganizationCustomerEmailSettings"
           },
           "customer_portal_settings": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/OrganizationCustomerPortalSettings"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/OrganizationCustomerPortalSettings"
           },
           "dispute_settings": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/OrganizationDisputeSettingsUpdate"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/OrganizationDisputeSettingsUpdate"
           },
           "embed_hosts": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array",
-                "description": "Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for local hosts \u2014 `localhost`, any `.localhost` or `.local` name, and loopback or private addresses. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on.",
-                "examples": [
-                  [
-                    "example.com",
-                    "*.example.com",
-                    "localhost:3000"
-                  ]
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Embed Hosts"
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Embed Hosts",
+            "description": "Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for local hosts \u2014 `localhost`, any `.localhost` or `.local` name, and loopback or private addresses. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on.",
+            "examples": [
+              [
+                "example.com",
+                "*.example.com",
+                "localhost:3000"
+              ]
+            ]
           },
           "default_presentment_currency": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/PresentmentCurrency"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "$ref": "#/components/schemas/PresentmentCurrency",
             "description": "Default presentment currency for the organization"
           },
           "default_tax_behavior": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/TaxBehaviorOption"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "$ref": "#/components/schemas/TaxBehaviorOption",
             "description": "Default tax behavior applied on products."
           },
           "sso_enforced": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "boolean",
             "title": "Sso Enforced",
             "description": "Whether members must access this organization through its SSO connection. Turning this on requires an active SSO session for this organization and at least one enabled SSO connection."
           }
@@ -73098,15 +72192,8 @@
       "ProductCreateOneTime": {
         "properties": {
           "external_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
             "title": "External Id",
             "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.",
             "examples": [
@@ -73266,15 +72353,8 @@
       "ProductCreateRecurring": {
         "properties": {
           "external_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
             "title": "External Id",
             "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.",
             "examples": [
@@ -74902,15 +73982,8 @@
       "ProductUpdate": {
         "properties": {
           "external_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
             "title": "External Id",
             "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.",
             "examples": [
@@ -74971,18 +74044,11 @@
             "description": "The number of interval units for the trial period."
           },
           "name": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 64,
-                "minLength": 3,
-                "description": "The name of the product."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 3,
+            "title": "Name",
+            "description": "The name of the product."
           },
           "description": {
             "anyOf": [
@@ -74996,40 +74062,8 @@
             "title": "Description",
             "description": "The description of the product."
           },
-          "recurring_interval": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/RecurringInterval"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The recurring interval of the product. If `None`, the product is a one-time purchase. **Can only be set on legacy recurring products. Once set, it can't be changed.**"
-          },
-          "recurring_interval_count": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 999.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Recurring Interval Count",
-            "description": "Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. Once set, it can't be changed.**"
-          },
           "is_archived": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "boolean",
             "title": "Is Archived",
             "description": "Whether the product is archived. If `true`, the product won't be available for purchase anymore. Existing customers will still have access to their benefits, and subscriptions will continue normally.",
             "x-tool-destructive-when": {
@@ -75037,108 +74071,73 @@
             }
           },
           "visibility": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ProductVisibility"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "$ref": "#/components/schemas/ProductVisibility",
             "description": "The visibility of the product."
           },
           "prices": {
-            "anyOf": [
-              {
-                "items": {
-                  "anyOf": [
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ExistingProductPrice"
+                },
+                {
+                  "oneOf": [
                     {
-                      "$ref": "#/components/schemas/ExistingProductPrice"
+                      "$ref": "#/components/schemas/ProductPriceFixedCreate"
                     },
                     {
-                      "oneOf": [
-                        {
-                          "$ref": "#/components/schemas/ProductPriceFixedCreate"
-                        },
-                        {
-                          "$ref": "#/components/schemas/ProductPriceCustomCreate"
-                        },
-                        {
-                          "$ref": "#/components/schemas/ProductPriceSeatBasedCreate"
-                        },
-                        {
-                          "$ref": "#/components/schemas/ProductPriceUnitBasedCreate"
-                        },
-                        {
-                          "$ref": "#/components/schemas/ProductPriceMeteredUnitCreate"
-                        },
-                        {
-                          "$ref": "#/components/schemas/ProductPriceMeteredTiersCreate"
-                        }
-                      ],
-                      "discriminator": {
-                        "propertyName": "amount_type",
-                        "mapping": {
-                          "custom": "#/components/schemas/ProductPriceCustomCreate",
-                          "fixed": "#/components/schemas/ProductPriceFixedCreate",
-                          "metered_tiers": "#/components/schemas/ProductPriceMeteredTiersCreate",
-                          "metered_unit": "#/components/schemas/ProductPriceMeteredUnitCreate",
-                          "seat_based": "#/components/schemas/ProductPriceSeatBasedCreate",
-                          "unit_based": "#/components/schemas/ProductPriceUnitBasedCreate"
-                        }
-                      }
+                      "$ref": "#/components/schemas/ProductPriceCustomCreate"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ProductPriceSeatBasedCreate"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ProductPriceUnitBasedCreate"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ProductPriceMeteredUnitCreate"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ProductPriceMeteredTiersCreate"
                     }
-                  ]
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
+                  ],
+                  "discriminator": {
+                    "propertyName": "amount_type",
+                    "mapping": {
+                      "custom": "#/components/schemas/ProductPriceCustomCreate",
+                      "fixed": "#/components/schemas/ProductPriceFixedCreate",
+                      "metered_tiers": "#/components/schemas/ProductPriceMeteredTiersCreate",
+                      "metered_unit": "#/components/schemas/ProductPriceMeteredUnitCreate",
+                      "seat_based": "#/components/schemas/ProductPriceSeatBasedCreate",
+                      "unit_based": "#/components/schemas/ProductPriceUnitBasedCreate"
+                    }
+                  }
+                }
+              ]
+            },
+            "type": "array",
             "title": "Prices",
             "description": "List of available prices for this product. If you want to keep existing prices, include them in the list as an `ExistingProductPrice` object."
           },
           "medias": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string",
-                  "format": "uuid4"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "items": {
+              "type": "string",
+              "format": "uuid4"
+            },
+            "type": "array",
             "title": "Medias",
             "description": "List of file IDs. Each one must be on the same organization as the product, of type `product_media` and correctly uploaded."
           },
           "attached_custom_fields": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/AttachedCustomFieldCreate"
-                },
-                "type": "array",
-                "description": "List of custom fields to attach."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Attached Custom Fields"
+            "items": {
+              "$ref": "#/components/schemas/AttachedCustomFieldCreate"
+            },
+            "type": "array",
+            "title": "Attached Custom Fields",
+            "description": "List of custom fields to attach."
           },
           "trial_payment_setup_required": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "boolean",
             "title": "Trial Payment Setup Required",
             "description": "Whether customers must provide a payment method to start a trial. If `false`, customers can start a trial without entering payment details."
           }
@@ -80369,15 +79368,8 @@
             "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
           "product_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "format": "uuid4",
             "title": "Product Id",
             "description": "Update subscription to another product.",
             "examples": [
@@ -80392,9 +79384,6 @@
               {
                 "type": "string",
                 "const": "auto"
-              },
-              {
-                "type": "null"
               }
             ],
             "title": "Proration Behavior",
@@ -80425,9 +79414,6 @@
               {
                 "type": "string",
                 "const": "now"
-              },
-              {
-                "type": "null"
               }
             ],
             "title": "Trial End",
@@ -80645,9 +79631,6 @@
               {
                 "type": "string",
                 "const": "auto"
-              },
-              {
-                "type": "null"
               }
             ],
             "title": "Proration Behavior",
@@ -80678,9 +79661,6 @@
               {
                 "type": "string",
                 "const": "auto"
-              },
-              {
-                "type": "null"
               }
             ],
             "title": "Proration Behavior",
@@ -83283,22 +82263,15 @@
       "WebhookEndpointUpdate": {
         "properties": {
           "url": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 2083,
-                "minLength": 1,
-                "format": "uri",
-                "description": "The URL where the webhook events will be sent.",
-                "examples": [
-                  "https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Url"
+            "type": "string",
+            "maxLength": 2083,
+            "minLength": 1,
+            "format": "uri",
+            "title": "Url",
+            "description": "The URL where the webhook events will be sent.",
+            "examples": [
+              "https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0"
+            ]
           },
           "name": {
             "anyOf": [
@@ -83310,66 +82283,38 @@
               }
             ],
             "title": "Name",
-            "description": "An optional name for the webhook endpoint to help organize and identify it."
+            "description": "An optional name for the webhook endpoint. Set to `null` to clear it."
           },
           "api_version": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "2026-04",
-                  "2026-10",
-                  "2027-01"
-                ]
-              },
-              {
-                "type": "null"
-              }
+            "type": "string",
+            "enum": [
+              "2026-04",
+              "2026-10",
+              "2027-01"
             ],
             "title": "Api Version",
             "description": "The API version that'll be used in event payloads."
           },
           "format": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "raw",
-                  "discord",
-                  "slack"
-                ],
-                "description": "The format of the webhook payload."
-              },
-              {
-                "type": "null"
-              }
+            "type": "string",
+            "enum": [
+              "raw",
+              "discord",
+              "slack"
             ],
-            "title": "Format"
+            "title": "Format",
+            "description": "The format of the webhook payload."
           },
           "events": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/WebhookEventType"
-                },
-                "type": "array",
-                "description": "The events that will trigger the webhook."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Events"
+            "items": {
+              "$ref": "#/components/schemas/WebhookEventType"
+            },
+            "type": "array",
+            "title": "Events",
+            "description": "The events that will trigger the webhook."
           },
           "enabled": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "boolean",
             "title": "Enabled",
             "description": "Whether the webhook endpoint is enabled.",
             "x-tool-destructive-when": {

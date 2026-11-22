@@ -32,15 +32,7 @@ import { fixed, free, metered, seats, TaxBehavior, tier, units } from './price'
 import { product, ProductConfig, productPrices } from './product'
 import type { ProductDefinition, ProductHelpers } from './product'
 import { visibilityKey } from './visibility'
-import {
-  discord,
-  endpoint,
-  HandledWebhookEndpoint,
-  slack,
-  WEBHOOK_API_VERSION,
-  WebhookEndpointConfig,
-} from './webhook'
-import type { WebhookEntries, WebhookHelpers } from './webhook'
+import type { WebhookEntries } from './webhook'
 
 export const SettingsConfig = Schema.Struct({
   payments: Schema.optionalKey(
@@ -59,7 +51,6 @@ export const PolarConfig = Schema.Struct({
   custom_fields: Schema.optionalKey(Schema.Array(CustomFieldConfig)),
   benefits: Schema.optionalKey(Schema.Array(BenefitConfig)),
   products: Schema.optionalKey(Schema.Array(ProductConfig)),
-  webhooks: Schema.optionalKey(Schema.Array(WebhookEndpointConfig)),
 })
 
 export type PolarConfig = typeof PolarConfig.Type
@@ -413,7 +404,7 @@ type ProductsInput<
 // given, this repeats its key as required.
 type Present<Entries, Section> = [Entries] extends [never] ? unknown : Section
 
-/** Declares your Polar setup as code: meters, benefits, products and webhooks. */
+/** Declares your Polar setup as code: meters, benefits and products. */
 export const defineConfig = <
   const Meters extends MeterEntries,
   const Benefits extends BenefitEntries<MeterKey<Meters>> = never,
@@ -424,7 +415,6 @@ export const defineConfig = <
     CustomFieldKey<CustomFields>
   > = never,
   Events extends EventDefinitions | undefined = undefined,
-  const Webhooks extends WebhookEntries = Record<never, never>,
 >(
   input: {
     /** Organization defaults, like the payment currency and tax behavior. */
@@ -445,8 +435,6 @@ export const defineConfig = <
     readonly benefits?: BenefitsInput<Meters, Benefits>
     /** What customers buy, keyed by ID. */
     readonly products?: ProductsInput<Meters, Benefits, Products, CustomFields>
-    /** Where Polar sends events, keyed by ID. */
-    readonly webhooks?: (helpers: WebhookHelpers) => Webhooks
   } & Present<
     Benefits,
     { readonly benefits: BenefitsInput<Meters, Benefits> }
@@ -466,7 +454,7 @@ export const defineConfig = <
         >
       }
     >,
-): Config<Meters, Benefits, Events, Webhooks> => {
+): Config<Meters, Benefits, Events> => {
   const events = input.events as Events
   const entries = toEntries(
     input.meters({
@@ -512,19 +500,6 @@ export const defineConfig = <
   })
   const productEntries =
     products === undefined ? [] : toEntries<ProductDefinition>(products)
-  const webhooks = input.webhooks?.({ endpoint, slack, discord })
-  const webhookEntries = Object.entries(webhooks ?? {})
-  const secretEnvs = webhookEntries.flatMap(([, webhook]) =>
-    webhook instanceof HandledWebhookEndpoint ? [webhook.secretEnv] : [],
-  )
-  const sharedSecret = secretEnvs.find(
-    (env, index) => secretEnvs.indexOf(env) !== index,
-  )
-  if (sharedSecret !== undefined) {
-    throw new Error(
-      `Webhooks with handlers each get their own signing secret, but more than one reads ${sharedSecret}. Give each a different .secret().`,
-    )
-  }
   const config = Schema.decodeUnknownSync(PolarConfig, {
     errors: 'all',
     onExcessProperty: 'error',
@@ -657,20 +632,14 @@ export const defineConfig = <
         }
       }),
     }),
-    ...(webhooks !== undefined && {
-      webhooks: webhookEntries.map(
-        ([external_id, { url, format, events }]) => ({
-          external_id,
-          url,
-          format,
-          events,
-          api_version: WEBHOOK_API_VERSION,
-        }),
-      ),
-    }),
   })
 
-  type Connected = ConnectedConfig<Meters, Benefits, Events, Webhooks>
+  type Connected = ConnectedConfig<
+    Meters,
+    Benefits,
+    Events,
+    Record<never, never>
+  >
   return {
     toJSON: () => structuredClone(config),
     [runtimeConfig]: () =>
@@ -678,7 +647,7 @@ export const defineConfig = <
         ...(events !== undefined && { events }),
         meters: byExternalId('meter', config.meters),
         benefits: byExternalId('benefit', config.benefits ?? []),
-        webhooks: Object.fromEntries(webhookEntries),
+        webhooks: {},
       }) as Connected,
   }
 }

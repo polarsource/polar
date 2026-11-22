@@ -593,14 +593,6 @@ class Config(Schema):
             "All custom fields are left untouched when `custom_fields` is omitted."
         ),
     )
-    webhooks: list[ConfigWebhookEndpoint] = Field(
-        default_factory=list,
-        max_length=MAXIMUM_WEBHOOK_ENDPOINTS,
-        description=(
-            "Webhook endpoints to create or update, matched by `external_id`. "
-            "Existing endpoints that aren't listed are left untouched."
-        ),
-    )
     organization_id: OrganizationID | None = Field(
         default=None,
         description=(

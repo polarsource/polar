@@ -453,7 +453,7 @@ class TestOrganization:
 def test_user_agent(client: SyncClientBase | AsyncClientBase) -> None:
     request = client.build_request(method="GET", url="/v1/items/")
 
-    assert request.headers["User-Agent"] == "polar-sdk-python/1.3.1"
+    assert request.headers["User-Agent"] == "polar-sdk-python/1.3.2"
 
 
 def test_parse_response_json_empty_body() -> None:

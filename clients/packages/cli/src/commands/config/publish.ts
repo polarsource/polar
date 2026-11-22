@@ -49,7 +49,6 @@ interface Drift {
   readonly entries: ReadonlyArray<AppliedEntry>
 }
 
-// Webhooks apply right away, everything else waits in the draft
 const DRAFTED = new Set([
   'products',
   'benefits',

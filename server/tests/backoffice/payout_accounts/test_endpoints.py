@@ -5,7 +5,7 @@ import httpx2
 import pytest
 from pytest_mock import MockerFixture
 
-from polar.backoffice import app as backoffice_app
+from polar.backoffice.app import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
 from polar.models import Organization, PayoutAccount, User
 from polar.models.backoffice_user_session import BackofficeUserSession

@@ -1,7 +1,11 @@
 import type { ClientBase, RequestOptions } from "../../base";
 import type { ListResourceRefund, Refund, RefundCreate, RefundSortProperty } from "../models";
 
-import { HTTPValidationError, RefundedAlready } from "../errors";
+import {
+  HTTPValidationError,
+  RefundPaymentAlreadyRefundedByStripe,
+  RefundedAlready,
+} from "../errors";
 
 export const listRefunds = (client: ClientBase) => {
   /**
@@ -111,6 +115,7 @@ export const createRefunds = (client: ClientBase) => {
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {RefundedAlready} Order is already fully refunded.
+   * @throws {RefundPaymentAlreadyRefundedByStripe} Stripe already refunded the payment at its own expense.
    * @throws {HTTPValidationError} Validation Error
    */
   return async (body: RefundCreate, requestOptions?: RequestOptions): Promise<Refund> => {
@@ -120,6 +125,7 @@ export const createRefunds = (client: ClientBase) => {
     const response = await client.sendRequest(request, requestOptions);
     return client.parseResponse<Refund>(response, "json", {
       403: RefundedAlready,
+      409: RefundPaymentAlreadyRefundedByStripe,
       422: HTTPValidationError,
     });
   };

@@ -35,7 +35,6 @@ from .service import (
     ConfigMeterConflict,
     ConfigProductConflict,
     ConfigUnsupportedResources,
-    ConfigWebhookConflict,
 )
 from .service import declarative_config as declarative_config_service
 
@@ -93,8 +92,7 @@ async def export(
     planning it for the same organization without edits reports no changes.
     Resources without an `external_id`, archived ones, ones config can't express
     (or that reference a skipped resource), and ones beyond the config limit are
-    listed in `skipped`, up to the config limit per section. Webhook endpoints
-    are not exported.
+    listed in `skipped`, up to the config limit per section.
 
     Works before config as code is enabled, so the catalog can be reviewed
     before `init`; `enabled` says whether it is.
@@ -180,8 +178,8 @@ async def disable(
     dashboard and API again.
 
     The draft catalog is discarded, and the live catalog is removed: its
-    products and benefits stay as they are. So do meters, settings and webhook
-    endpoints applied in the meantime.
+    products and benefits stay as they are. So do meters and settings applied
+    in the meantime.
 
     Only possible while at most one catalog was published.
     """
@@ -212,8 +210,7 @@ async def disable(
             | ConfigMeterConflict.schema()
             | ConfigBenefitConflict.schema()
             | ConfigProductConflict.schema()
-            | ConfigCustomFieldConflict.schema()
-            | ConfigWebhookConflict.schema(),
+            | ConfigCustomFieldConflict.schema(),
         },
     },
 )
@@ -226,7 +223,7 @@ async def apply(
             "Publish the catalog changes. By default, product, benefit, meter "
             "and settings changes are saved in the organization's draft catalog, "
             "to publish later. With `true`, they go live and a pending draft is "
-            "discarded. Webhooks aren't versioned, so they apply right away."
+            "discarded."
         ),
     ),
     session: AsyncSession = Depends(get_db_session),
@@ -235,7 +232,7 @@ async def apply(
     """
     Apply a declarative config document to the organization.
 
-    Meters, benefits, products and webhook endpoints are matched by
+    Meters, benefits and products are matched by
     `external_id`: missing ones are created, and changed ones are updated.
     Deprecated products are neither created nor updated.
     Deprecated products, and products that `config pull` exports but the config

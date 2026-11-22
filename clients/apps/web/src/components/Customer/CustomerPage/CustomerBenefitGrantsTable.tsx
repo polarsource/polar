@@ -6,7 +6,7 @@ import { benefitsDisplayNames } from '@/components/Benefit/utils'
 import { useHasPermission } from '@/hooks/permissions'
 import { useBenefitGrants } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
-import { Button, DataTable, Text } from '@polar-sh/orbit'
+import { Button, DataTable, Text, Truncated } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Link from 'next/link'
@@ -49,8 +49,10 @@ export const CustomerBenefitGrantsTable = ({
             header: 'Benefit Name',
             accessorKey: 'benefit.description',
             cell: ({ row: { original } }) => (
-              <Box flexDirection="column" rowGap="xs">
-                <span>{original.benefit.description}</span>
+              <Box flexDirection="column" rowGap="xs" minWidth={0}>
+                <Truncated>
+                  <Text as="span">{original.benefit.description}</Text>
+                </Truncated>
                 <Text as="span" variant="caption" color="muted">
                   {benefitsDisplayNames[original.benefit.type]}
                 </Text>
@@ -66,7 +68,9 @@ export const CustomerBenefitGrantsTable = ({
                     row,
                   }: {
                     row: { original: schemas['BenefitGrant'] }
-                  }) => row.original.member?.email ?? '—',
+                  }) => (
+                    <Truncated>{row.original.member?.email ?? '—'}</Truncated>
+                  ),
                 },
               ]
             : []),

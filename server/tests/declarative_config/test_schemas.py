@@ -34,3 +34,8 @@ def test_webhook_endpoint_rejects_mcp_format() -> None:
                 "api_version": str(CURRENT_API_VERSION),
             }
         )
+
+
+def test_config_rejects_webhooks() -> None:
+    with pytest.raises(ValidationError, match="extra_forbidden"):
+        Config.model_validate({"meters": [], "webhooks": []})

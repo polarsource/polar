@@ -165,6 +165,9 @@ COPY --from=build-emails-bin /app/bin/react-email-pkg /app/server/
 COPY --from=build-backoffice /app/static /app/server/polar/backoffice/static
 COPY . /app/server/
 
+# Lambda's filesystem is read-only, so without precompiled bytecode every cold start recompiles polar/.
+RUN python3 -m compileall -q -j 0 --invalidation-mode unchecked-hash /app/server/polar
+
 COPY --from=tailscale /usr/local/bin/tailscaled /usr/local/bin/tailscale /var/runtime/
 
 WORKDIR /app/server

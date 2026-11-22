@@ -5,7 +5,7 @@ import pytest
 
 from polar.auth.scope import READ_ONLY_SCOPES, Scope
 from polar.auth.service import auth as auth_service
-from polar.backoffice import app as backoffice_app
+from polar.backoffice.app import app as backoffice_app
 from polar.backoffice.auth.service import create_user_session
 from polar.config import settings
 from polar.models import BackofficeUser, Organization, User, UserOrganization

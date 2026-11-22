@@ -2759,6 +2759,39 @@ class TestIngested:
         await session.refresh(customer_meter)
         assert customer_meter.activated_at is not None
 
+    async def test_activates_customers_sharing_an_external_id_across_organizations(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        customer_meters: list[CustomerMeter] = []
+        event_ids: list[uuid.UUID] = []
+        for org in (organization, organization_second):
+            customer = await create_customer(
+                save_fixture, organization=org, external_id="SHARED_EXTERNAL_ID"
+            )
+            meter = await create_meter(save_fixture, organization=org, id=uuid.uuid4())
+            customer_meter = CustomerMeter(
+                customer=customer, meter=meter, activated_at=None
+            )
+            await save_fixture(customer_meter)
+            customer_meters.append(customer_meter)
+            event = await create_event(
+                save_fixture,
+                organization=org,
+                external_customer_id="SHARED_EXTERNAL_ID",
+                source=EventSource.user,
+            )
+            event_ids.append(event.id)
+
+        await event_service.ingested(session, event_ids)
+
+        for customer_meter in customer_meters:
+            await session.refresh(customer_meter)
+            assert customer_meter.activated_at is not None
+
     async def test_activation_queries_do_not_scale_with_customers(
         self,
         save_fixture: SaveFixture,
@@ -2960,6 +2993,55 @@ class TestIngestedFirstUserEventAt:
             for call in enqueue_job_mock.call_args_list
             if call.args[0] == "customer.resolve_first_user_event_at"
         ]
+
+    async def test_skips_customers_with_an_earlier_first_user_event(
+        self,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        customer.first_user_event_at = utc_now() - timedelta(days=1)
+        await save_fixture(customer)
+        event = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.user,
+        )
+
+        await event_service.ingested(session, [event.id])
+
+        assert not [
+            call
+            for call in enqueue_job_mock.call_args_list
+            if call.args[0] == "customer.resolve_first_user_event_at"
+        ]
+
+    async def test_enqueues_for_events_before_the_first_user_event(
+        self,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        customer.first_user_event_at = utc_now()
+        await save_fixture(customer)
+        event = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.user,
+            timestamp=utc_now() - timedelta(days=1),
+        )
+
+        await event_service.ingested(session, [event.id])
+
+        enqueue_job_mock.assert_any_call(
+            "customer.resolve_first_user_event_at", customer.id
+        )
 
 
 @pytest.mark.anyio

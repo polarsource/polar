@@ -3,7 +3,7 @@ from collections.abc import AsyncGenerator
 import httpx2
 import pytest
 
-from polar.backoffice import app as backoffice_app
+from polar.backoffice.app import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
 from polar.models.backoffice_user_session import BackofficeUserSession
 from polar.postgres import AsyncSession, get_db_session

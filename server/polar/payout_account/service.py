@@ -6,7 +6,8 @@ import structlog
 from sqlalchemy.orm import selectinload
 
 from polar.auth.models import AuthSubject
-from polar.authz.service import get_accessible_org_ids
+from polar.auth.permission import OrganizationPermission
+from polar.authz.service import assert_organization_permission, get_accessible_org_ids
 from polar.enums import PayoutAccountType
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import StripeAccountRejectReason, stripe
@@ -134,6 +135,12 @@ class PayoutAccountService:
     ) -> PayoutAccount:
         organization = await get_payload_organization(
             session, auth_subject, payout_account_create
+        )
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            organization.id,
+            OrganizationPermission.finance_manage,
         )
 
         current = None

@@ -4,7 +4,9 @@ import pytest
 from pydantic import ValidationError
 
 from polar.kit.schemas import HttpsUrl
+from polar.kit.versioning import APIVersion, api_version_context
 from polar.models.webhook_endpoint import WebhookFormat
+from polar.version import CURRENT_API_VERSION, V2026_04, V2026_10, V2027_01
 from polar.webhook.schemas import WebhookEndpointCreate
 
 
@@ -59,3 +61,35 @@ def test_invalid_api_version(api_version: str) -> None:
                 "organization_id": None,
             }
         )
+
+
+@pytest.mark.parametrize(
+    ("active_version", "expected"),
+    [
+        pytest.param(None, CURRENT_API_VERSION, id="no active version"),
+        pytest.param(V2026_04, V2026_04, id="older version"),
+        pytest.param(V2026_10, V2026_10, id="current version"),
+        pytest.param(V2027_01, CURRENT_API_VERSION, id="next version"),
+    ],
+)
+def test_default_api_version(
+    active_version: APIVersion | None, expected: APIVersion
+) -> None:
+    payload: dict[str, typing.Any] = {
+        "url": "https://example.com/hook",
+        "format": WebhookFormat.raw,
+        "events": [],
+        "organization_id": None,
+    }
+    if active_version is None:
+        create = WebhookEndpointCreate.model_validate(payload)
+        json_schema = WebhookEndpointCreate.model_json_schema()
+    else:
+        with api_version_context(active_version):
+            create = WebhookEndpointCreate.model_validate(payload)
+            json_schema = WebhookEndpointCreate.model_json_schema()
+
+    assert create.api_version == expected
+    api_version_schema = json_schema["properties"]["api_version"]
+    assert api_version_schema["default"] == str(expected)
+    assert api_version_schema["default"] in api_version_schema["enum"]

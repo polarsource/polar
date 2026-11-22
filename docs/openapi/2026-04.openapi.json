@@ -18798,11 +18798,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_04 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.webhooks.create_webhook_endpoint(\n    url='https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0',\n    api_version='2026-10',\n    format='raw',\n    events=['checkout.created'],\n)\nprint(response)\n"
+            "source": "from polar.v2026_04 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.webhooks.create_webhook_endpoint(\n    url='https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0',\n    api_version='2026-04',\n    format='raw',\n    events=['checkout.created'],\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-04\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.webhooks.createWebhookEndpoint(\n  {\n    \"url\": \"https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0\",\n    \"api_version\": \"2026-10\",\n    \"format\": \"raw\",\n    \"events\": [\n      \"checkout.created\"\n    ]\n  },\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-04\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.webhooks.createWebhookEndpoint(\n  {\n    \"url\": \"https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0\",\n    \"api_version\": \"2026-04\",\n    \"format\": \"raw\",\n    \"events\": [\n      \"checkout.created\"\n    ]\n  },\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -80053,7 +80053,7 @@
             ],
             "title": "Api Version",
             "description": "The API version that'll be used in event payloads.",
-            "default": "2026-10"
+            "default": "2026-04"
           },
           "format": {
             "type": "string",

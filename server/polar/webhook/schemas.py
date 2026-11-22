@@ -147,6 +147,17 @@ class _AvailableAPIVersion:
 AvailableAPIVersion = Annotated[APIVersion, _AvailableAPIVersion()]
 
 
+def _default_api_version() -> APIVersion:
+    active_version = _ACTIVE_API_VERSION.get()
+    if active_version is None or active_version > CURRENT_API_VERSION:
+        return CURRENT_API_VERSION
+    return active_version
+
+
+def _set_default_api_version(json_schema: JsonSchemaValue) -> None:
+    json_schema["default"] = str(_default_api_version())
+
+
 class WebhookEndpoint(IDSchema, TimestampedSchema, ExternalIDOutputMixin):
     """
     A webhook endpoint.
@@ -197,7 +208,8 @@ class WebhookEndpointCreate(Schema):
         description="An optional name for the webhook endpoint to help organize and identify it.",
     )
     api_version: AvailableAPIVersion = Field(
-        default=str(CURRENT_API_VERSION),  # type: ignore
+        default_factory=_default_api_version,
+        json_schema_extra=_set_default_api_version,
         description="The API version that'll be used in event payloads.",
     )
     format: CreatableEndpointFormat

@@ -70,6 +70,9 @@ We also maintain SDKs for the following languages:
 
 ## Contributions
 
+> [!IMPORTANT]
+> We're not accepting contributions from outside collaborators at this time. See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for how to report bugs, request features or disclose security issues.
+
 Our [`DEVELOPMENT.md`](./DEVELOPMENT.md) file contains everything you need to know to configure your development environment.
 
 ### Contributors

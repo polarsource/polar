@@ -20,18 +20,18 @@ class MetadataMixin:
 
 
 MAXIMUM_KEYS = 50
-_MINIMUM_KEY_LENGTH = 1
-_MAXIMUM_KEY_LENGTH = 40
+MINIMUM_KEY_LENGTH = 1
+MAXIMUM_KEY_LENGTH = 40
 _MINIMUM_VALUE_LENGTH = 1
-_MAXIMUM_VALUE_LENGTH = 500
+MAXIMUM_VALUE_LENGTH = 500
 MetadataKey = Annotated[
     str,
-    StringConstraints(min_length=_MINIMUM_KEY_LENGTH, max_length=_MAXIMUM_KEY_LENGTH),
+    StringConstraints(min_length=MINIMUM_KEY_LENGTH, max_length=MAXIMUM_KEY_LENGTH),
 ]
 _MetadataValueString = Annotated[
     str,
     StringConstraints(
-        min_length=_MINIMUM_VALUE_LENGTH, max_length=_MAXIMUM_VALUE_LENGTH
+        min_length=_MINIMUM_VALUE_LENGTH, max_length=MAXIMUM_VALUE_LENGTH
     ),
 ]
 MetadataValue = _MetadataValueString | int | float | bool
@@ -52,10 +52,10 @@ METADATA_DESCRIPTION = inspect.cleandoc(
     f"""
     {{heading}}
 
-    The key must be a string with a maximum length of **{_MAXIMUM_KEY_LENGTH} characters**.
+    The key must be a string with a maximum length of **{MAXIMUM_KEY_LENGTH} characters**.
     The value must be either:
 
-    * A string with a maximum length of **{_MAXIMUM_VALUE_LENGTH} characters**
+    * A string with a maximum length of **{MAXIMUM_VALUE_LENGTH} characters**
     * An integer
     * A floating-point number
     * A boolean

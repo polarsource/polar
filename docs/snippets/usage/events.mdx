@@ -16,7 +16,9 @@ Metadata is a flat object: nested objects and arrays are not accepted. Each valu
 - An integer or a floating-point number, between -(2^53 - 1) and 2^53 - 1
 - A boolean
 
-Keys are strings of up to 40 characters, and an event can have up to 50 keys. The only exceptions are the reserved `_cost` and `_llm` keys, which take structured objects that Polar handles specially. See [Cost Insights](/features/cost-insights/cost-events) and the [LLM Strategy](/features/usage-based-billing/ingestion-strategies/llm-strategy).
+The reserved `_cost` and `_llm` keys are the only exceptions: they take structured objects that Polar handles specially. See [Cost Insights](/features/cost-insights/cost-events) and the [LLM Strategy](/features/usage-based-billing/ingestion-strategies/llm-strategy).
+
+Starting with [API version](/api-reference/versioning) 2027-01, keys must be strings of up to 40 characters, and an event can have up to 50 keys.
 
 Here is an example of an event:
 

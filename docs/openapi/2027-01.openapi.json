@@ -58182,7 +58182,7 @@
           },
           "metadata": {
             "$ref": "#/components/schemas/EventMetadataInput",
-            "description": "Key-value object allowing you to store additional information about the event. Some keys like `_llm` are structured data that are handled specially by Polar.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
+            "description": "Key-value object allowing you to store additional information about the event. Some keys like `_llm` are structured data that are handled specially by Polar.\n\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer or a floating-point number between **-(2^53 - 1)** and **2^53 - 1**\n* A boolean\n\nStarting with API version 2027-01, keys must have a maximum length of **40 characters**, and you can store up to **50 key-value pairs**."
           },
           "customer_id": {
             "type": "string",
@@ -58271,7 +58271,7 @@
           },
           "metadata": {
             "$ref": "#/components/schemas/EventMetadataInput",
-            "description": "Key-value object allowing you to store additional information about the event. Some keys like `_llm` are structured data that are handled specially by Polar.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
+            "description": "Key-value object allowing you to store additional information about the event. Some keys like `_llm` are structured data that are handled specially by Polar.\n\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer or a floating-point number between **-(2^53 - 1)** and **2^53 - 1**\n* A boolean\n\nStarting with API version 2027-01, keys must have a maximum length of **40 characters**, and you can store up to **50 key-value pairs**."
           },
           "external_customer_id": {
             "type": "string",
@@ -58329,7 +58329,13 @@
             }
           ]
         },
+        "propertyNames": {
+          "type": "string",
+          "maxLength": 40,
+          "minLength": 1
+        },
         "type": "object",
+        "maxProperties": 50,
         "title": "EventMetadataInput"
       },
       "EventMetadataOutput": {

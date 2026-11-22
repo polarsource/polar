@@ -12,6 +12,8 @@ from polar.event.schemas import (
 from polar.event.schemas import SystemEvent as SystemEventUnion
 from polar.event.system import SYSTEM_EVENT_LABELS
 from polar.event.system import SystemEvent as SystemEventEnum
+from polar.kit.versioning import api_version_context
+from polar.version import V2026_10, V2027_01
 
 
 @pytest.mark.parametrize(
@@ -252,3 +254,34 @@ class TestMeterCreditEvent:
         )
 
         assert event.metadata["reason"] == expected
+
+
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        pytest.param({"k" * 41: "value"}, id="key-too-long"),
+        pytest.param({f"key_{i}": i for i in range(51)}, id="too-many-keys"),
+    ],
+)
+class TestMetadataKeyLimits:
+    def test_rejected_from_2027_01(self, metadata: dict[str, Any]) -> None:
+        with api_version_context(V2027_01), pytest.raises(ValidationError):
+            EventCreateExternalCustomer.model_validate(
+                {
+                    "external_customer_id": "CUSTOMER",
+                    "name": "EVENT",
+                    "metadata": metadata,
+                }
+            )
+
+    def test_accepted_before_2027_01(self, metadata: dict[str, Any]) -> None:
+        with api_version_context(V2026_10):
+            event = EventCreateExternalCustomer.model_validate(
+                {
+                    "external_customer_id": "CUSTOMER",
+                    "name": "EVENT",
+                    "metadata": metadata,
+                }
+            )
+
+        assert event.metadata == metadata

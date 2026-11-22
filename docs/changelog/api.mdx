@@ -31,6 +31,8 @@ Removed the following obsolete fields, including fields that were already hidden
 - GitHub repository benefit properties: `repository_id`. Use `repository_owner` and `repository_name` instead.
 - Legacy recurring prices: the `LegacyRecurringProductPrice` schema is dropped from the price union, and the deprecated `type` and `recurring_interval` fields are removed from price responses. Earlier API versions retain them.
 
+Event ingestion now enforces the documented metadata key limits: keys must be 1 to 40 characters long, and an event can have up to 50 keys. Requests that exceed them are rejected with a validation error. Earlier API versions don't enforce these limits.
+
 </Update>
 
 <Update label="2026-10">

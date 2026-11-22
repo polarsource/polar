@@ -2,7 +2,7 @@ import re
 from collections.abc import Sequence
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
-from typing import Annotated, Literal, NotRequired, Self
+from typing import Annotated, Any, Literal, NotRequired, Self
 
 from annotated_types import Len, Predicate
 from fastapi import Path
@@ -13,12 +13,15 @@ from pydantic import (
     AwareDatetime,
     Discriminator,
     Field,
+    GetCoreSchemaHandler,
+    GetJsonSchemaHandler,
     Json,
     WithJsonSchema,
     model_validator,
 )
+from pydantic.json_schema import JsonSchemaValue
 from pydantic.type_adapter import TypeAdapter
-from pydantic_core import PydanticCustomError
+from pydantic_core import CoreSchema, PydanticCustomError, core_schema
 from pydantic_extra_types.timezone_name import TimeZoneName
 from typing_extensions import TypedDict
 
@@ -62,7 +65,10 @@ from polar.event.system import SystemEvent as SystemEventEnum
 from polar.event_type.schemas import EventTypeWithStats
 from polar.kit.metadata import (
     MAXIMUM_EVENT_NUMERIC_VALUE,
-    METADATA_DESCRIPTION,
+    MAXIMUM_KEY_LENGTH,
+    MAXIMUM_KEYS,
+    MAXIMUM_VALUE_LENGTH,
+    MINIMUM_KEY_LENGTH,
     EventMetadataValue,
 )
 from polar.kit.schemas import (
@@ -73,7 +79,12 @@ from polar.kit.schemas import (
     SetSchemaReference,
 )
 from polar.kit.time_queries import TimeInterval
-from polar.kit.versioning import QuerySchema, Version
+from polar.kit.versioning import (
+    _ACTIVE_API_VERSION,
+    QuerySchema,
+    Version,
+    VersionedJsonSchema,
+)
 from polar.meter.filter import Filter
 from polar.meter.schemas import MeterID
 from polar.models.event import EventSource
@@ -176,8 +187,76 @@ class EventMetadataInput(  # type: ignore[call-arg]
     _llm: LLMMetadata
 
 
+class _EventMetadataKeyLimits(VersionedJsonSchema):
+    def __init__(self) -> None:
+        super().__init__(self._add_key_limits, starting_from=V2027_01)
+
+    def __get_pydantic_core_schema__(
+        self, source_type: Any, handler: GetCoreSchemaHandler
+    ) -> CoreSchema:
+        return core_schema.no_info_after_validator_function(
+            self._validate, handler(source_type)
+        )
+
+    def __get_pydantic_json_schema__(
+        self, schema: CoreSchema, handler: GetJsonSchemaHandler
+    ) -> JsonSchemaValue:
+        json_schema = handler(schema)
+        version = _ACTIVE_API_VERSION.get()
+        if version is None or self.version_range.includes(version):
+            self.override(handler.resolve_ref_schema(json_schema))
+        return json_schema
+
+    def _validate(self, value: dict[str, Any]) -> dict[str, Any]:
+        version = _ACTIVE_API_VERSION.get()
+        if version is not None and not self.version_range.includes(version):
+            return value
+        if len(value) > MAXIMUM_KEYS:
+            raise PydanticCustomError(
+                "too_long",
+                "Metadata should have at most {max_keys} keys",
+                {"max_keys": MAXIMUM_KEYS},
+            )
+        for key in value:
+            if not MINIMUM_KEY_LENGTH <= len(key) <= MAXIMUM_KEY_LENGTH:
+                raise PydanticCustomError(
+                    "metadata_key_length",
+                    "Metadata keys should have between {min_length} "
+                    "and {max_length} characters",
+                    {
+                        "min_length": MINIMUM_KEY_LENGTH,
+                        "max_length": MAXIMUM_KEY_LENGTH,
+                    },
+                )
+        return value
+
+    @staticmethod
+    def _add_key_limits(json_schema: JsonSchemaValue) -> JsonSchemaValue:
+        json_schema["maxProperties"] = MAXIMUM_KEYS
+        json_schema["propertyNames"] = {
+            "type": "string",
+            "minLength": MINIMUM_KEY_LENGTH,
+            "maxLength": MAXIMUM_KEY_LENGTH,
+        }
+        return json_schema
+
+
 def metadata_default_factory() -> EventMetadataInput:
     return {}
+
+
+_EVENT_METADATA_DESCRIPTION = (
+    "Key-value object allowing you to store additional information about the event. "
+    "Some keys like `_llm` are structured data that are handled specially by Polar.\n\n"
+    "The value must be either:\n\n"
+    f"* A string with a maximum length of **{MAXIMUM_VALUE_LENGTH} characters**\n"
+    "* An integer or a floating-point number "
+    "between **-(2^53 - 1)** and **2^53 - 1**\n"
+    "* A boolean\n\n"
+    "Starting with API version 2027-01, keys must have a maximum length of "
+    f"**{MAXIMUM_KEY_LENGTH} characters**, "
+    f"and you can store up to **{MAXIMUM_KEYS} key-value pairs**."
+)
 
 
 class EventCreateBase(Schema):
@@ -210,13 +289,8 @@ class EventCreateBase(Schema):
             "Can be either a Polar event ID (UUID) or an external event ID."
         ),
     )
-    metadata: EventMetadataInput = Field(
-        description=METADATA_DESCRIPTION.format(
-            heading=(
-                "Key-value object allowing you to store additional information about the event. "
-                "Some keys like `_llm` are structured data that are handled specially by Polar."
-            )
-        ),
+    metadata: Annotated[EventMetadataInput, _EventMetadataKeyLimits()] = Field(
+        description=_EVENT_METADATA_DESCRIPTION,
         default_factory=metadata_default_factory,
         serialization_alias="user_metadata",
     )

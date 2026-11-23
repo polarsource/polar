@@ -237,6 +237,9 @@ export const useDeleteCustomerPaymentMethod = (api: Client) =>
       getQueryClient().invalidateQueries({
         queryKey: ['customer_payment_methods'],
       })
+      getQueryClient().invalidateQueries({
+        queryKey: ['customer-portal', 'customer'],
+      })
     },
   })
 

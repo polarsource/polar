@@ -20,6 +20,7 @@ import { useCallback, useState } from 'react'
 import ChangeEmailForm from './ChangeEmailForm'
 import { CustomerPortalTeamSection } from './CustomerPortalTeam'
 import EditBillingDetails from './EditBillingDetails'
+import { MissingBillingDetailsAlert } from './MissingBillingDetailsAlert'
 import PaymentMethod from './PaymentMethod'
 import {
   PortalCardList,
@@ -55,6 +56,7 @@ export const CustomerPortalSettings = ({
 
   const onPaymentMethodAdded = () => {
     queryClient.invalidateQueries({ queryKey: ['customer_payment_methods'] })
+    queryClient.invalidateQueries({ queryKey: ['customer-portal', 'customer'] })
     revalidate('customer_portal')
     router.refresh()
   }
@@ -117,6 +119,8 @@ export const CustomerPortalSettings = ({
         title="Billing"
         description="Payment methods, billing details and account settings"
       />
+
+      <MissingBillingDetailsAlert customer={customer} />
 
       <PortalSection
         title="Payment methods"

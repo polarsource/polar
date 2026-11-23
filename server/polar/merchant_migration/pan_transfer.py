@@ -95,6 +95,8 @@ _ACTOR_OWNERS: dict[PanStepActor, frozenset[PanStepOwner]] = {
 
 _ACTIONABLE = (PanStepStatus.pending, PanStepStatus.in_progress)
 
+STEP_REQUEST_COPY = "request_copy"
+STEP_START_COPY = "start_copy"
 STEP_STRIPE_COPY = "stripe_copy"
 STEP_VERIFY_CARDS = "verify_cards"
 STEP_RESOLVE_UNCOVERED = "resolve_uncovered"
@@ -232,7 +234,7 @@ PAN_COPY_TEMPLATES: tuple[PanStepTemplate, ...] = (
         auto_complete=True,
     ),
     PanStepTemplate(
-        key="start_copy",
+        key=STEP_START_COPY,
         owner=PanStepOwner.merchant,
         kind=PanStepKind.confirm,
         required_inputs=(STRIPE_MIGRATION_REQUEST_ID_INPUT,),
@@ -262,6 +264,20 @@ PAN_COPY_TEMPLATES: tuple[PanStepTemplate, ...] = (
         owner=PanStepOwner.polar_app,
         kind=PanStepKind.auto,
     ),
+)
+
+# A provider that copies from its own Stripe account, like Lemon Squeezy. The
+# merchant requests the copy there, and the provider shares the Stripe migration
+# ID only once it starts, sometimes days later. Asking for the request first
+# lets the merchant finish their part without the ID.
+PROVIDER_COPY_TEMPLATES: tuple[PanStepTemplate, ...] = (
+    PAN_COPY_TEMPLATES[0],
+    PanStepTemplate(
+        key=STEP_REQUEST_COPY,
+        owner=PanStepOwner.merchant,
+        kind=PanStepKind.confirm,
+    ),
+    *PAN_COPY_TEMPLATES[1:],
 )
 
 # Any other vault to Stripe.
@@ -327,12 +343,20 @@ _TEMPLATES: dict[PanTransferMethod, tuple[PanStepTemplate, ...]] = {
 }
 
 _TEMPLATES_BY_KEY: dict[PanTransferMethod, dict[str, PanStepTemplate]] = {
-    method: {template.key: template for template in templates}
-    for method, templates in _TEMPLATES.items()
+    PanTransferMethod.pan_copy: {
+        template.key: template for template in PROVIDER_COPY_TEMPLATES
+    },
+    PanTransferMethod.pan_import: {
+        template.key: template for template in PAN_IMPORT_TEMPLATES
+    },
 }
 
 
-def templates_for(method: PanTransferMethod) -> tuple[PanStepTemplate, ...]:
+def templates_for(
+    method: PanTransferMethod, *, provider_starts_copy: bool = False
+) -> tuple[PanStepTemplate, ...]:
+    if method == PanTransferMethod.pan_copy and provider_starts_copy:
+        return PROVIDER_COPY_TEMPLATES
     return _TEMPLATES[method]
 
 
@@ -343,7 +367,9 @@ def _template(method: PanTransferMethod, key: str) -> PanStepTemplate:
     return template
 
 
-def build(method: PanTransferMethod) -> list[PanTransferStep]:
+def build(
+    method: PanTransferMethod, *, provider_starts_copy: bool = False
+) -> list[PanTransferStep]:
     """Instantiate a fresh checklist with only its first step actionable."""
     # Every field is set explicitly: this model is also an API response, and
     # ADR-0007 keeps output schemas free of defaults so the generated clients
@@ -361,7 +387,7 @@ def build(method: PanTransferMethod) -> list[PanTransferStep]:
             completed_at=None,
             completed_by=None,
         )
-        for template in templates_for(method)
+        for template in templates_for(method, provider_starts_copy=provider_starts_copy)
     ]
     return advance(method, steps)
 

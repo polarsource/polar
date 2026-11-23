@@ -9,8 +9,6 @@ import { StepCopy } from './panTransferCopy'
 import { PanTransferStepForm } from './PanTransferStepForm'
 import { StartCopyStep } from './StartCopyStep'
 
-const START_COPY_STEP_KEY = 'start_copy'
-
 interface Props {
   step: schemas['PanTransferStep']
   copy: StepCopy
@@ -28,7 +26,11 @@ export function PanTransferStepBody({
   source,
   sourceStripeAccountId,
 }: Props) {
-  if (step.key === START_COPY_STEP_KEY) {
+  // The merchant starts a Stripe copy themselves, but asks Lemon Squeezy for
+  // one: there, the request carries the instructions and starting is a wait.
+  const copyInstructionsKey =
+    source === 'lemon_squeezy' ? 'request_copy' : 'start_copy'
+  if (step.key === copyInstructionsKey) {
     return (
       <StartCopyStep
         step={step}

@@ -109,11 +109,11 @@ describe('StartCopyStep', () => {
   })
 
   it('sends a Lemon Squeezy merchant to request the copy in Lemon Squeezy', () => {
-    const copy = stepCopy('start_copy', 'lemon_squeezy')
+    const copy = stepCopy('request_copy', 'lemon_squeezy')
     expect(copy).toBeDefined()
     render(
       <StartCopyStep
-        step={step}
+        step={{ ...step, key: 'request_copy', kind: 'confirm' }}
         copy={copy!}
         destinationAccountId="acct_polar"
         migrationId="mig_1"
@@ -121,7 +121,7 @@ describe('StartCopyStep', () => {
       />,
     )
 
-    const [settings, destination, returned] = screen.getAllByRole('listitem')
+    const [settings, destination] = screen.getAllByRole('listitem')
 
     expect(settings).toHaveTextContent(
       'Open Settings → Migration in Lemon Squeezy',
@@ -134,12 +134,10 @@ describe('StartCopyStep', () => {
       'Enter the Polar account ID as the destination Stripe account',
     )
     expect(screen.getByLabelText('Polar account ID')).toHaveValue('acct_polar')
-    expect(returned).toHaveTextContent(
-      'Lemon Squeezy shares it once they start the copy',
-    )
-    expect(screen.queryByText('Download CSV')).toBeNull()
+    expect(screen.queryByLabelText('Stripe migration ID')).toBeNull()
     expect(
-      screen.getByRole('button', { name: 'Mark copy requested' }),
+      screen.getByRole('button', { name: "I've requested the copy" }),
     ).toBeTruthy()
+    expect(screen.queryByText('Download CSV')).toBeNull()
   })
 })

@@ -52,11 +52,6 @@ export function LemonSqueezyCopyTasks({
           />
         )}
       </CopyTaskRow>
-
-      <CopyTaskRow
-        title="Come back and paste the migreq id"
-        description="Lemon Squeezy shares it once they start the copy, usually within a week."
-      />
     </>
   )
 }

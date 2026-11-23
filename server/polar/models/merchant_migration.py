@@ -124,6 +124,12 @@ class MerchantMigration(RecordModel):
         return PanTransferMethod.pan_import
 
     @property
+    def provider_starts_copy(self) -> bool:
+        """Whether the source provider, not the merchant, starts the Stripe copy
+        from its own Stripe account."""
+        return self.source_platform == MerchantMigrationSourcePlatform.lemon_squeezy
+
+    @property
     def exact_card_mapping(self) -> bool:
         """Whether Stripe's copy mapping says which copied card each subscription
         charges. Only a Stripe source stages the payment method a subscription

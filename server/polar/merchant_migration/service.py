@@ -1007,7 +1007,10 @@ class MerchantMigrationService:
         if not settings.MERCHANT_MIGRATION_DESTINATION_STRIPE_ACCOUNT_ID:
             raise PanTransferUnavailable()
 
-        steps = pan_transfer.build(migration.pan_transfer_method)
+        steps = pan_transfer.build(
+            migration.pan_transfer_method,
+            provider_starts_copy=migration.provider_starts_copy,
+        )
         step = MerchantMigrationStep.copy_cards
         if await self._cards_already_on_polar(session, migration):
             steps = pan_transfer.skip_to(

@@ -173,19 +173,25 @@ export function cardMovementSteps<T extends { key: string }>(steps: T[]): T[] {
 }
 
 // Lemon Squeezy starts the copy from its own Stripe account: the merchant
-// requests it in Lemon Squeezy, which then shares the migreq id.
+// requests it in Lemon Squeezy, which shares the migreq id once it starts.
 const LEMON_SQUEEZY_STEP_COPY: Record<string, StepCopy> = {
-  start_copy: {
+  request_copy: {
     title: 'Request the copy in Lemon Squeezy',
     description:
       "Lemon Squeezy copies your customers and their saved cards to Polar's Stripe account.",
+    action: "I've requested the copy",
+  },
+  start_copy: {
+    title: 'Lemon Squeezy starts the copy',
+    description:
+      'Lemon Squeezy starts the copy and shares its Stripe migration ID, usually within a week. Paste it here once you have it.',
     inputs: [
       {
         ...STRIPE_MIGRATION_ID_INPUT,
-        hint: 'Lemon Squeezy shares it once they start the copy. Starts with migreq_.',
+        hint: 'Starts with migreq_. If Lemon Squeezy sends it to Polar, we fill it in for you.',
       },
     ],
-    action: 'Mark copy requested',
+    action: 'Save migration ID',
   },
 }
 

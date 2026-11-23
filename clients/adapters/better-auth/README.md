@@ -403,15 +403,7 @@ const { data: subscriptions } = await authClient.customer.subscriptions.list({
 })
 ```
 
-This is metadata-based tracking, not Polar team-customer billing. The adapter checks the signed-in user against the `reference_id` before listing:
-
-| The `reference_id` is                                             | The user gets                                                     |
-| ----------------------------------------------------------------- | ----------------------------------------------------------------- |
-| A Better Auth organization where the user is an owner or admin    | Every subscription, with customer billing details                 |
-| A Better Auth organization where the user has another role        | Every subscription, without customer billing details              |
-| The user's own ID                                                 | Every subscription, without customer billing details              |
-| A Better Auth organization or user the user has no relation to    | Only the subscriptions the user purchased                         |
-| Any other ID, such as a workspace or project from your own tables | Every subscription, without customer billing details (deprecated) |
+This is metadata-based tracking, not Polar team-customer billing. The adapter checks the signed-in user against the `reference_id` before listing. Owners and admins of the Better Auth organization get customer billing details, other members get subscriptions without them, and users with no relation to the organization only get the subscriptions they purchased.
 
 Subscriptions the user purchased always include their billing details. Without billing details, a subscription has the fields of a customer portal subscription (`product_id`, `status`, `current_period_end`, `seats`, `prices`, `product`, and so on). The `customer`, `discount`, `custom_field_data` and cancellation reason fields are omitted, and `metadata` only contains `referenceId`.
 

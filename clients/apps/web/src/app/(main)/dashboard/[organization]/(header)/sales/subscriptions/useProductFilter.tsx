@@ -2,16 +2,18 @@ import { type Filter } from '@/components/Shared/FilterPopover'
 import { type ProductFilter } from '@/components/Products/ProductSelect'
 import {
   latestVersions,
-  useProducts,
+  useInfiniteProducts,
   useSelectedProducts,
 } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { Package } from '@polar-sh/orbit/icons'
 import { useState } from 'react'
 
-// Products are searched on the server, since a catalog can hold more than one
-// page of them. The selected ones are fetched on their own and stay at the
+// Products are searched on the server and load page by page, since a catalog
+// can hold more than one page of them. The selected ones are fetched on their own and stay at the
 // top, so they keep their names whatever the search shows.
+const PAGE_SIZE = 50
+
 export const useProductFilter = (
   organization: schemas['Organization'],
   product: ProductFilter,
@@ -26,11 +28,19 @@ export const useProductFilter = (
     (filterByExternalId ? product.external_product_id : product.product_id) ??
     []
 
-  const { data: queriedProducts, isPending } = useProducts(organization.id, {
+  const {
+    data,
+    isPending,
+    hasNextPage,
+    isFetching,
+    isFetchingNextPage,
+    isFetchNextPageError,
+    fetchNextPage,
+  } = useInfiniteProducts(organization.id, {
     is_recurring: true,
     ...(query ? { query, catalog_status: null } : {}),
     sorting: ['name'],
-    limit: 100,
+    limit: PAGE_SIZE,
   })
   const { data: selectedProducts } = useSelectedProducts(
     filterByExternalId
@@ -38,7 +48,7 @@ export const useProductFilter = (
       : { id: selectedValues },
     { includeArchived: true, includeAllVersions: true },
   )
-  const listedProducts = queriedProducts?.items ?? []
+  const listedProducts = (data?.pages ?? []).flatMap((page) => page.items)
   const products = [
     ...(selectedProducts ?? []),
     ...listedProducts.filter(
@@ -72,5 +82,9 @@ export const useProductFilter = (
     searchQuery: query,
     onSearchQueryChange: setQuery,
     loading: isPending,
+    loadingMore: isFetchingNextPage,
+    onEndReached: () => {
+      if (hasNextPage && !isFetching && !isFetchNextPageError) fetchNextPage()
+    },
   }
 }

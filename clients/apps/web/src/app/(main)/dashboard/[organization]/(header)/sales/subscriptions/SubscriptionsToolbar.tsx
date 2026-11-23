@@ -12,7 +12,6 @@ import {
 } from '@/components/Subscriptions/Gantt/scale'
 import { type SelectableSubscriptionStatus } from '@/components/Subscriptions/selectableStatuses'
 import { type ProductFilter } from '@/components/Products/ProductSelect'
-import { useDiscounts } from '@/hooks/queries'
 import { DataTableSortingState } from '@/utils/datatable'
 import { schemas } from '@polar-sh/client'
 import { SegmentedControl, Text } from '@polar-sh/orbit'
@@ -23,13 +22,13 @@ import {
   CircleDashed,
   MessageCircle,
   Rows3,
-  TicketPercent,
 } from '@polar-sh/orbit/icons'
 import { type ReactNode } from 'react'
 import { ToolbarActionsMenu, type ToolbarAction } from './ToolbarActionsMenu'
 import { ToolbarFilterChips } from './ToolbarFilterChips'
 import { ToolbarFilterMenu } from './ToolbarFilterMenu'
 import { useCustomerFilter } from './useCustomerFilter'
+import { useDiscountFilter } from './useDiscountFilter'
 import { useProductFilter } from './useProductFilter'
 import { type SubscriptionView } from './useSubscriptionsView'
 
@@ -132,7 +131,11 @@ export const SubscriptionsToolbar = ({
   actions,
 }: SubscriptionsToolbarProps) => {
   const productFilter = useProductFilter(organization, product, onProductSelect)
-  const { data: discounts } = useDiscounts(organization.id, { limit: 100 })
+  const discountFilter = useDiscountFilter(
+    organization.id,
+    discountId,
+    onDiscountSelect,
+  )
 
   const statusValue: StatusOption[] = cancelAtPeriodEnd
     ? ['canceling']
@@ -183,18 +186,7 @@ export const SubscriptionsToolbar = ({
     statusFilter,
     productFilter,
     customerFilter,
-    {
-      key: 'discount',
-      label: 'Discount',
-      icon: <TicketPercent className="size-4" />,
-      type: 'multi',
-      options: (discounts?.items ?? []).map(({ id, name }) => ({
-        value: id,
-        label: name,
-      })),
-      value: discountId ?? [],
-      onChange: (value) => onDiscountSelect(value.length > 0 ? value : null),
-    },
+    discountFilter,
     {
       key: 'cancellation_reason',
       label: 'Cancellation reason',

@@ -93,6 +93,13 @@ const isHeadingForOptions = (
   return sides.every((side) => side >= 0) || sides.every((side) => side <= 0)
 }
 
+// How close to the end of the options the next page is asked for.
+const END_THRESHOLD = 48
+
+const isNearEnd = (list: HTMLElement | null) =>
+  list !== null &&
+  list.scrollHeight - list.scrollTop - list.clientHeight < END_THRESHOLD
+
 const matches = (label: string, query: string) =>
   label.toLowerCase().includes(query.trim().toLowerCase())
 
@@ -116,6 +123,21 @@ const OptionsPanel = ({
   const options = isRemote
     ? filter.options
     : filter.options.filter(({ label }) => matches(label, query))
+  // Options that load page by page ask for the next one when the list is
+  // scrolled near its end. It is measured, not observed, so a page that has
+  // just arrived is not mistaken for an end that is still in view.
+  const listRef = useRef<HTMLDivElement>(null)
+  const { onEndReached, loadingMore = false } = filter
+  const loadMoreAtEnd = () => {
+    if (!loadingMore && isNearEnd(listRef.current)) onEndReached?.()
+  }
+  // A page can be too short to fill the list, which leaves nothing to scroll,
+  // so the end is also checked whenever the options change.
+  const optionCount = filter.options.length
+  useEffect(() => {
+    if (!loadingMore && isNearEnd(listRef.current)) onEndReached?.()
+  }, [optionCount, loadingMore, onEndReached])
+
   const pick = (option: FilterOption) => {
     if (filter.type === 'single') {
       filter.onChange(option.value)
@@ -141,7 +163,11 @@ const OptionsPanel = ({
           onChange={(event) => setQuery(event.target.value)}
         />
       )}
-      <div className="max-h-72 overflow-y-auto p-1.5">
+      <div
+        ref={listRef}
+        className="max-h-72 overflow-y-auto p-1.5"
+        onScroll={loadMoreAtEnd}
+      >
         {options.length === 0 && (
           <div className={EMPTY_CLASS}>
             {filter.loading ? 'Loading...' : 'No matches'}
@@ -175,6 +201,7 @@ const OptionsPanel = ({
             </button>
           )
         })}
+        {loadingMore && <div className={EMPTY_CLASS}>Loading...</div>}
       </div>
     </div>
   )

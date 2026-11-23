@@ -8,6 +8,7 @@ import {
 import { schemas } from '@polar-sh/client'
 import { Package } from '@polar-sh/orbit/icons'
 import { useState } from 'react'
+import { uniqueOptions } from './filterOptions'
 
 // Products are searched on the server and load page by page, since a catalog
 // can hold more than one page of them. The selected ones are fetched on their own and stay at the
@@ -65,13 +66,15 @@ export const useProductFilter = (
     label: 'Product',
     icon: <Package className="size-4" />,
     type: 'multi',
-    options: (filterByExternalId ? latestVersions(products) : products).flatMap(
-      ({ id, external_id: externalId, name, is_archived: isArchived }) => {
-        const value = filterByExternalId ? externalId : id
-        return value
-          ? [{ value, label: `${name}${isArchived ? ' (Archived)' : ''}` }]
-          : []
-      },
+    options: uniqueOptions(
+      (filterByExternalId ? latestVersions(products) : products).flatMap(
+        ({ id, external_id: externalId, name, is_archived: isArchived }) => {
+          const value = filterByExternalId ? externalId : id
+          return value
+            ? [{ value, label: `${name}${isArchived ? ' (Archived)' : ''}` }]
+            : []
+        },
+      ),
     ),
     value: selectedValues,
     onChange: (value) => {
@@ -87,8 +90,9 @@ export const useProductFilter = (
     onSearchQueryChange: setQuery,
     loading: isPending,
     loadingMore: isFetchingNextPage,
+    loadMoreFailed: isFetchNextPageError,
     onEndReached: () => {
-      if (hasNextPage && !isFetching && !isFetchNextPageError) fetchNextPage()
+      if (hasNextPage && !isFetching) fetchNextPage()
     },
   }
 }

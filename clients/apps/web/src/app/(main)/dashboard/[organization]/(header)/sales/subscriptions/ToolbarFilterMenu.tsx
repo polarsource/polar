@@ -127,16 +127,18 @@ const OptionsPanel = ({
   // scrolled near its end. It is measured, not observed, so a page that has
   // just arrived is not mistaken for an end that is still in view.
   const listRef = useRef<HTMLDivElement>(null)
-  const { onEndReached, loadingMore = false } = filter
+  const { onEndReached, loadingMore = false, loadMoreFailed = false } = filter
+  // A page that failed is only asked for again from the retry row.
+  const isWaiting = loadingMore || loadMoreFailed
   const loadMoreAtEnd = () => {
-    if (!loadingMore && isNearEnd(listRef.current)) onEndReached?.()
+    if (!isWaiting && isNearEnd(listRef.current)) onEndReached?.()
   }
   // A page can be too short to fill the list, which leaves nothing to scroll,
   // so the end is also checked whenever the options change.
   const optionCount = filter.options.length
   useEffect(() => {
-    if (!loadingMore && isNearEnd(listRef.current)) onEndReached?.()
-  }, [optionCount, loadingMore, onEndReached])
+    if (!isWaiting && isNearEnd(listRef.current)) onEndReached?.()
+  }, [optionCount, isWaiting, onEndReached])
 
   const pick = (option: FilterOption) => {
     if (filter.type === 'single') {
@@ -202,6 +204,18 @@ const OptionsPanel = ({
           )
         })}
         {loadingMore && <div className={EMPTY_CLASS}>Loading...</div>}
+        {loadMoreFailed && !loadingMore && (
+          <button
+            type="button"
+            className={twMerge(ITEM_CLASS, ITEM_HOVER_CLASS)}
+            onClick={() => onEndReached?.()}
+          >
+            <span className="dark:text-polar-500 text-gray-400">
+              Could not load more.
+            </span>
+            Try again
+          </button>
+        )}
       </div>
     </div>
   )

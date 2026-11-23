@@ -4,6 +4,7 @@ import { useDebouncedCallback } from '@/hooks/utils'
 import { schemas } from '@polar-sh/client'
 import { TicketPercent } from '@polar-sh/orbit/icons'
 import { useState } from 'react'
+import { uniqueOptions } from './filterOptions'
 
 const SEARCH_DELAY = 200
 const PAGE_SIZE = 50
@@ -47,12 +48,7 @@ export const useDiscountFilter = (
     label: 'Discount',
     icon: <TicketPercent className="size-4" />,
     type: 'multi',
-    options: [
-      ...selected,
-      ...found.filter(
-        (option) => !selected.some(({ value }) => value === option.value),
-      ),
-    ],
+    options: uniqueOptions([...selected, ...found]),
     value: value ?? [],
     onChange: (next) => onChange(next.length > 0 ? next : null),
     searchPlaceholder: 'Search discounts...',
@@ -63,8 +59,9 @@ export const useDiscountFilter = (
     },
     loading: isLoading,
     loadingMore: isFetchingNextPage,
+    loadMoreFailed: isFetchNextPageError,
     onEndReached: () => {
-      if (hasNextPage && !isFetching && !isFetchNextPageError) fetchNextPage()
+      if (hasNextPage && !isFetching) fetchNextPage()
     },
   }
 }

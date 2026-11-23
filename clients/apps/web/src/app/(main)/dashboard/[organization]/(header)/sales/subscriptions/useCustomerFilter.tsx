@@ -4,6 +4,7 @@ import { useDebouncedCallback } from '@/hooks/utils'
 import { schemas } from '@polar-sh/client'
 import { User } from '@polar-sh/orbit/icons'
 import { useState } from 'react'
+import { uniqueOptions } from './filterOptions'
 
 const SEARCH_DELAY = 200
 const PAGE_SIZE = 50
@@ -48,12 +49,7 @@ export const useCustomerFilter = (
     label: 'Customer',
     icon: <User className="size-4" />,
     type: 'multi',
-    options: [
-      ...selected,
-      ...found.filter(
-        (option) => !selected.some(({ value }) => value === option.value),
-      ),
-    ],
+    options: uniqueOptions([...selected, ...found]),
     value: value ?? [],
     onChange: (next) => onChange(next.length > 0 ? next : null),
     searchPlaceholder: 'Search customers...',
@@ -64,8 +60,9 @@ export const useCustomerFilter = (
     },
     loading: isLoading,
     loadingMore: isFetchingNextPage,
+    loadMoreFailed: isFetchNextPageError,
     onEndReached: () => {
-      if (hasNextPage && !isFetching && !isFetchNextPageError) fetchNextPage()
+      if (hasNextPage && !isFetching) fetchNextPage()
     },
   }
 }

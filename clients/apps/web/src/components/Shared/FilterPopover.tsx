@@ -42,6 +42,8 @@ interface FilterBase {
   // into view, and whether the next page is on its way.
   onEndReached?: () => void
   loadingMore?: boolean
+  // The next page failed. It is not asked for again until someone retries.
+  loadMoreFailed?: boolean
 }
 
 export interface SingleFilter extends FilterBase {

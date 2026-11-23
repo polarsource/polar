@@ -32,11 +32,13 @@ import {
 interface CustomerPortalSettingsProps {
   customerSessionToken?: string
   organization: schemas['CustomerOrganization']
+  subscriptions: schemas['CustomerSubscription'][]
 }
 
 export const CustomerPortalSettings = ({
   customerSessionToken,
   organization,
+  subscriptions,
 }: CustomerPortalSettingsProps) => {
   const api = createClientSideAPI(customerSessionToken)
   const router = useRouter()
@@ -120,7 +122,10 @@ export const CustomerPortalSettings = ({
         description="Payment methods, billing details and account settings"
       />
 
-      <MissingBillingDetailsAlert customer={customer} />
+      <MissingBillingDetailsAlert
+        customer={customer}
+        subscriptions={subscriptions}
+      />
 
       <PortalSection
         title="Payment methods"

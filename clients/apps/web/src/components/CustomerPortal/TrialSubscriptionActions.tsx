@@ -14,6 +14,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 import CustomerCancellationModal from './CustomerCancellationModal'
+import { hasCompleteBillingAddress } from './MissingBillingDetailsAlert'
 import { PortalConfirmDialog } from './PortalDialog'
 
 const useMissingBillingDetails = (
@@ -26,7 +27,8 @@ const useMissingBillingDetails = (
       !!customer &&
       !subscription.payment_method_id &&
       !customer.default_payment_method_id,
-    billingAddress: !!customer && !customer.billing_address?.country,
+    billingAddress:
+      !!customer && !hasCompleteBillingAddress(customer.billing_address),
   }
 }
 

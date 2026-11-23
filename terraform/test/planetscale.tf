@@ -6,14 +6,8 @@ module "planetscale" {
   app_database_name  = "polar_test"
   app_role_name      = "polar_test"
   region             = "aws-us-east-2"
-  cluster_size       = "PS_640_AWS_ARM"
+  cluster_size       = "M8_640_AWS_ARM_D_METAL_1875"
   deletion_protected = false
-
-  storage = {
-    storage_iops            = 3000
-    storage_throughput_mibs = 125
-    storage_autoscaling     = true
-  }
 
   parameters = {
     pgconf = {

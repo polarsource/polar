@@ -8,6 +8,10 @@ import type { models, PolarCore } from '@polar-sh/sdk/2026-10'
 import { APIError } from 'better-auth/api'
 import { createAuthEndpoint, sessionMiddleware } from 'better-auth/api'
 import * as z from 'zod/v4'
+import {
+  getBetterAuthCreatorRole,
+  getBetterAuthOrganizationPlugin,
+} from '../organization/roles'
 import { resolveBillingPrincipal } from '../principal'
 import type { PolarOptions } from '../types'
 
@@ -215,7 +219,7 @@ export const portal =
           query: z
             .object({
               organizationId: z.string().min(1).optional(),
-              reference_id: z.string().optional(),
+              reference_id: z.string().min(1).optional(),
               page: z.coerce.number().optional(),
               limit: z.coerce.number().optional(),
               active: z.coerce.boolean().optional(),
@@ -230,17 +234,6 @@ export const portal =
             })
           }
 
-          const principal = ctx.query?.organizationId
-            ? await resolveBillingPrincipal({
-                context: ctx.context,
-                session: ctx.context.session,
-                organizationId: ctx.query.organizationId,
-                organizationEnabled:
-                  rootOptions?.experimental_organizationSync?.enabled,
-                authorization: 'member',
-              })
-            : undefined
-
           if (ctx.query?.organizationId && ctx.query.reference_id) {
             throw new APIError('BAD_REQUEST', {
               message: 'organizationId cannot be combined with reference_id',
@@ -248,6 +241,22 @@ export const portal =
           }
 
           if (ctx.query?.reference_id) {
+            await resolveBillingPrincipal({
+              context: ctx.context,
+              session: ctx.context.session,
+              organizationId: ctx.query.reference_id,
+              organizationEnabled: Boolean(
+                getBetterAuthOrganizationPlugin(ctx.context),
+              ),
+              authorization: 'billing',
+              roleMapping: {
+                creatorRole: getBetterAuthCreatorRole(ctx.context),
+                mapBetterAuthRoleToPolarRole:
+                  rootOptions?.experimental_organizationSync
+                    ?.mapBetterAuthRoleToPolarRole,
+              },
+            })
+
             try {
               const subscriptions: models.ListResourceSubscription =
                 await listSubscriptions(polar)({
@@ -261,7 +270,6 @@ export const portal =
 
               return ctx.json(subscriptions)
             } catch (e: unknown) {
-              console.log(e)
               if (e instanceof Error) {
                 ctx.context.logger.error(
                   `Polar subscriptions list with reference_id failed. Error: ${e.message}`,
@@ -273,6 +281,17 @@ export const portal =
               })
             }
           }
+
+          const principal = ctx.query?.organizationId
+            ? await resolveBillingPrincipal({
+                context: ctx.context,
+                session: ctx.context.session,
+                organizationId: ctx.query.organizationId,
+                organizationEnabled:
+                  rootOptions?.experimental_organizationSync?.enabled,
+                authorization: 'member',
+              })
+            : undefined
 
           try {
             const customerSession = await createCustomerSessions(polar)({

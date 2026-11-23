@@ -37,6 +37,7 @@ from rich.text import Text
 from logo import print_banner
 from shared import (
     CLIENTS_DIR,
+    ROOT_DIR,
     SERVER_DIR,
     Context,
     check_env_file_exists,
@@ -379,6 +380,11 @@ def _exit_code(code: object) -> int:
 
 
 if __name__ == "__main__":
+    if sys.argv[1:2] != ["polar"] and not Path.cwd().is_relative_to(ROOT_DIR):
+        console.print(
+            f"[red]Outside the Polar repo only dev polar works. Run other commands inside {ROOT_DIR}[/red]"
+        )
+        sys.exit(1)
     started_at = time.monotonic()
     try:
         import analytics

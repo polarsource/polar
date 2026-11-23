@@ -1,6 +1,6 @@
 #!/bin/bash
 # Installs the 'dev' alias for easy access to the Polar development CLI
-# Usage: ./dev/cli/install
+# Usage: ./dev/cli/install [--repo-only]
 
 set -e
 
@@ -17,23 +17,52 @@ else
     SHELL_RC="$HOME/.profile"
 fi
 
-# The alias uses git to find the repo root, so it works from any subdirectory
-ALIAS_LINE='alias dev='\''$(git rev-parse --show-toplevel 2>/dev/null)/dev/cli/dev'\'''
+if [[ -t 1 ]]; then
+    BOLD=$'\033[1m' DIM=$'\033[2m' GREEN=$'\033[32m' YELLOW=$'\033[33m' CYAN=$'\033[36m' RESET=$'\033[0m'
+fi
 
-if grep -q 'alias dev=' "$SHELL_RC" 2>/dev/null; then
-    echo "The 'dev' alias already exists in $SHELL_RC"
-    echo "To update it, remove the existing alias and run this script again."
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+RC_NAME="~${SHELL_RC#"$HOME"}"
+POLAR_ALIAS='^alias dev=.*/dev/cli/dev'
+
+if [[ "$1" == "--repo-only" ]]; then
+    if ! grep -q "$POLAR_ALIAS" "$SHELL_RC" 2>/dev/null; then
+        echo "${DIM}No Polar dev alias in $RC_NAME, nothing to change${RESET}"
+        exit 0
+    fi
+    ALIAS_LINE='alias dev='\''$(git rev-parse --show-toplevel 2>/dev/null)/dev/cli/dev'\'''
+    RESULT="${BOLD}dev${RESET} then works inside the Polar repo only"
+else
+    # Inside a Polar repo the alias runs that copy, anywhere else it runs the one saved here
+    mkdir -p "$HOME/.config/polar"
+    printf '%s\n' "$SCRIPT_DIR/dev" > "$HOME/.config/polar/dev_cli_path"
+    ALIAS_LINE='alias dev='\''"$(d="$(git rev-parse --show-toplevel 2>/dev/null)/dev/cli/dev"; [ -x "$d" ] || d="$(cat ~/.config/polar/dev_cli_path 2>/dev/null)"; printf %s "$d")"'\'''
+    RESULT="${BOLD}dev polar${RESET} then works in any directory"
+fi
+
+if grep -qxF "$ALIAS_LINE" "$SHELL_RC" 2>/dev/null; then
+    echo "${GREEN}✓${RESET} The ${BOLD}dev${RESET} alias in $RC_NAME is already up to date"
     exit 0
+fi
+
+if grep -q "$POLAR_ALIAS" "$SHELL_RC" 2>/dev/null; then
+    OTHER_LINES="$(grep -v "$POLAR_ALIAS" "$SHELL_RC" || true)"
+    printf '%s\n' "$OTHER_LINES" > "$SHELL_RC"
+elif grep -q '^[[:space:]]*alias dev=' "$SHELL_RC" 2>/dev/null; then
+    echo "${YELLOW}A different dev alias already exists in $RC_NAME${RESET}"
+    echo "Remove it and run this again."
+    exit 1
+elif [[ -s "$SHELL_RC" && -n "$(tail -c 1 "$SHELL_RC")" ]]; then
+    echo >> "$SHELL_RC"
 fi
 
 echo "$ALIAS_LINE" >> "$SHELL_RC"
 
-echo "Added 'dev' alias to $SHELL_RC"
 echo ""
-echo "Restart your terminal or run:"
-echo "  source $SHELL_RC"
+echo "${GREEN}✓${RESET} Saved the ${BOLD}dev${RESET} alias to $RC_NAME"
 echo ""
-echo "Then you can use 'dev' from anywhere in the Polar repo:"
-echo "  dev up       # Start development environment"
-echo "  dev down     # Stop infrastructure"
-echo "  dev status   # Check status"
+echo "  Load it in this terminal:"
+echo "    ${BOLD}${CYAN}source $RC_NAME${RESET}"
+echo ""
+echo "  $RESULT"
+echo ""

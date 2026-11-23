@@ -35,6 +35,18 @@ The project uses `uv` for environment and dependency management. To run Python c
 uv run python <your_command_here>
 ```
 
+## Generated SDKs
+
+`sdk/python/` and `sdk/typescript/` are output only. `just release` runs the generator with `--clear`, which deletes each output directory and rebuilds it, so a change made there is lost on the next release.
+
+To change SDK code, including hand-written modules like `metering/` and `outpost/`, and their tests:
+
+1. Edit the file under `python/template/` or `typescript/template/`.
+2. A new file is only emitted if the emitter picks it up. Files in `src/metering/` and `src/outpost/` are globbed, but top-level files must be added with `render_file` in `typescript/emitter.py` (or the Python equivalent).
+3. Regenerate with `uv run -m cli generate openapi/*.json ../<language> --language <language> --version <current version> --clear` and commit the template and the generated output together.
+
+To check that a template change took effect, regenerate and confirm `git status` doesn't show the output reverting your edit.
+
 ## Conventions
 
 - Use absolute imports within the `generator` package (e.g., `from generator.emitter import EmitterBase`).

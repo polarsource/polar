@@ -1,0 +1,21 @@
+server/polar/customer_meter/repository.py
+  s_a5d4e12c8c5510::t_5bd057d188f6a1 19,133-136
+server/tests/customer_meter/test_repository.py
+  s_a5d4e12c8c5510::t_96f2f4f8d440a8 7,105-136
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7a89e87c83aec9994ca03bfeb56df049d2d527dd",
+  "prompts": {},
+  "sessions": {
+    "s_a5d4e12c8c5510": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cfff6c54-aee7-44b2-9849-ad8c8a4567df",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

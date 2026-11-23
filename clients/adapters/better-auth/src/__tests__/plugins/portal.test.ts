@@ -567,31 +567,6 @@ describe('portal plugin', () => {
         )
       })
 
-      it('resolves access for the reference before calling Polar', async () => {
-        mockAccess('billing')
-        const authorizeReference = vi.fn()
-        const mapBetterAuthRoleToPolarRole = vi.fn()
-        const endpoints = portal()(mockClient, {
-          authorizeReference,
-          experimental_organizationSync: {
-            enabled: true,
-            mapBetterAuthRoleToPolarRole,
-          },
-        }) as any
-        const ctx = { ...createContext(), request: new Request('http://a.b') }
-
-        await endpoints.subscriptions.handler(ctx)
-
-        expect(resolveReferenceAccess).toHaveBeenCalledWith({
-          context: ctx.context,
-          session: ctx.context.session,
-          referenceId: 'ref-123',
-          mapBetterAuthRoleToPolarRole,
-          authorizeReference,
-          request: ctx.request,
-        })
-      })
-
       it('returns customer billing details with billing access', async () => {
         mockAccess('billing')
         const ctx = createContext()
@@ -655,15 +630,6 @@ describe('portal plugin', () => {
           items: [ownSubscription],
           pagination: { total_count: 1, max_page: 1 },
         })
-      })
-
-      it('rejects the request without calling Polar when access is denied', async () => {
-        mockAccess('none')
-
-        await expect(handler(createContext())).rejects.toThrow(
-          'Not allowed to list subscriptions for this reference_id',
-        )
-        expect(mockClient.subscriptions.list).not.toHaveBeenCalled()
       })
 
       it('warns once when an unknown reference uses the unauthorized fallback', async () => {

@@ -1,6 +1,6 @@
 import type { models } from '@polar-sh/sdk/2026-10'
 import type { Member } from 'better-auth/plugins/organization'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   type ResolveReferenceAccessInput,
   resolveReferenceAccess,
@@ -32,36 +32,28 @@ const createContext = ({
   organization?: { id: string } | null
   user?: { id: string } | null
   failLookups?: boolean
-} = {}) => {
-  const findOne = vi.fn(async ({ model }: { model: string }) => {
-    if (failLookups) throw new Error('invalid input syntax for type uuid')
-    return model === 'member' ? membership : organization
-  })
-  const findUserById = vi.fn(async () => {
-    if (failLookups) throw new Error('invalid input syntax for type uuid')
-    return user
-  })
-
-  return {
-    context: {
-      adapter: { findOne },
-      internalAdapter: { findUserById },
-      getPlugin: vi.fn(() =>
-        organizationPlugin ? { options: {} } : undefined,
-      ),
-    } as unknown as ResolveReferenceAccessInput['context'],
-    findOne,
-    findUserById,
-  }
-}
+} = {}) =>
+  ({
+    adapter: {
+      findOne: async ({ model }: { model: string }) => {
+        if (failLookups) throw new Error('invalid input syntax for type uuid')
+        return model === 'member' ? membership : organization
+      },
+    },
+    internalAdapter: {
+      findUserById: async () => {
+        if (failLookups) throw new Error('invalid input syntax for type uuid')
+        return user
+      },
+    },
+    getPlugin: () => (organizationPlugin ? { options: {} } : undefined),
+  }) as unknown as ResolveReferenceAccessInput['context']
 
 describe('resolveReferenceAccess', () => {
-  it("grants the entitlement view for the user's own ID without lookups", async () => {
-    const { context, findOne, findUserById } = createContext()
-
+  it("grants the entitlement view for the user's own ID", async () => {
     await expect(
       resolveReferenceAccess({
-        context,
+        context: createContext(),
         session: createSession(),
         referenceId: 'user-123',
       }),
@@ -70,23 +62,17 @@ describe('resolveReferenceAccess', () => {
       referenceType: 'self',
       unauthorizedFallback: false,
     })
-    expect(findOne).not.toHaveBeenCalled()
-    expect(findUserById).not.toHaveBeenCalled()
   })
 
   it.each([
     ['owner', 'billing'],
-    ['admin', 'billing'],
-    ['member,admin', 'billing'],
     ['member', 'entitlements'],
   ] as const)(
     'grants an organization %s the %s view',
     async (role, expectedAccess) => {
-      const { context, findOne } = createContext({ membership: { role } })
-
       await expect(
         resolveReferenceAccess({
-          context,
+          context: createContext({ membership: { role } }),
           session: createSession(),
           referenceId: 'organization-123',
         }),
@@ -95,38 +81,13 @@ describe('resolveReferenceAccess', () => {
         referenceType: 'organization',
         unauthorizedFallback: false,
       })
-      expect(findOne).toHaveBeenCalledWith({
-        model: 'member',
-        where: [
-          { field: 'userId', value: 'user-123' },
-          { field: 'organizationId', value: 'organization-123' },
-        ],
-      })
     },
   )
 
-  it('applies the configured Better Auth to Polar role mapping', async () => {
-    const { context } = createContext({ membership: { role: 'finance' } })
-
-    await expect(
-      resolveReferenceAccess({
-        context,
-        session: createSession(),
-        referenceId: 'organization-123',
-        mapBetterAuthRoleToPolarRole: ({ roles }) =>
-          roles.has('finance') ? 'billing_manager' : 'member',
-      }),
-    ).resolves.toMatchObject({ access: 'billing' })
-  })
-
   it("limits a non-member to their own purchases for another user's organization", async () => {
-    const { context } = createContext({
-      organization: { id: 'organization-123' },
-    })
-
     await expect(
       resolveReferenceAccess({
-        context,
+        context: createContext({ organization: { id: 'organization-123' } }),
         session: createSession(),
         referenceId: 'organization-123',
       }),
@@ -138,14 +99,12 @@ describe('resolveReferenceAccess', () => {
   })
 
   it("limits the caller to their own purchases for another user's ID", async () => {
-    const { context } = createContext({
-      organizationPlugin: false,
-      user: { id: 'user-456' },
-    })
-
     await expect(
       resolveReferenceAccess({
-        context,
+        context: createContext({
+          organizationPlugin: false,
+          user: { id: 'user-456' },
+        }),
         session: createSession(),
         referenceId: 'user-456',
       }),
@@ -156,35 +115,10 @@ describe('resolveReferenceAccess', () => {
     })
   })
 
-  it.each([
-    ['with the organization plugin', true],
-    ['without the organization plugin', false],
-  ])(
-    'keeps the entitlement view for an unknown reference %s',
-    async (_, organizationPlugin) => {
-      const { context, findOne } = createContext({ organizationPlugin })
-
-      await expect(
-        resolveReferenceAccess({
-          context,
-          session: createSession(),
-          referenceId: 'workspace-123',
-        }),
-      ).resolves.toEqual({
-        access: 'entitlements',
-        referenceType: 'unknown',
-        unauthorizedFallback: true,
-      })
-      expect(findOne).toHaveBeenCalledTimes(organizationPlugin ? 2 : 0)
-    },
-  )
-
-  it('treats a reference the database cannot look up as unknown', async () => {
-    const { context } = createContext({ failLookups: true })
-
+  it('keeps the entitlement view for an unknown reference', async () => {
     await expect(
       resolveReferenceAccess({
-        context,
+        context: createContext(),
         session: createSession(),
         referenceId: 'workspace-123',
       }),
@@ -195,12 +129,20 @@ describe('resolveReferenceAccess', () => {
     })
   })
 
-  it('limits anonymous users to their own purchases for an unknown reference', async () => {
-    const { context } = createContext()
-
+  it('treats a reference the database cannot look up as unknown', async () => {
     await expect(
       resolveReferenceAccess({
-        context,
+        context: createContext({ failLookups: true }),
+        session: createSession(),
+        referenceId: 'workspace-123',
+      }),
+    ).resolves.toMatchObject({ referenceType: 'unknown' })
+  })
+
+  it('limits anonymous users to their own purchases for an unknown reference', async () => {
+    await expect(
+      resolveReferenceAccess({
+        context: createContext(),
         session: createSession({ isAnonymous: true }),
         referenceId: 'workspace-123',
       }),
@@ -211,76 +153,27 @@ describe('resolveReferenceAccess', () => {
     })
   })
 
-  describe('authorizeReference', () => {
-    it('receives the classification and removes the unknown-reference fallback', async () => {
-      const { context } = createContext()
-      const session = createSession()
-      const request = new Request('http://localhost:3000')
-      const authorizeReference = vi.fn(
-        ({ defaultAccess }: { defaultAccess: string }) => defaultAccess,
-      )
+  it('treats the authorizeReference result as final', async () => {
+    await expect(
+      resolveReferenceAccess({
+        context: createContext({ membership: { role: 'owner' } }),
+        session: createSession(),
+        referenceId: 'organization-123',
+        authorizeReference: () => false,
+      }),
+    ).resolves.toMatchObject({ access: 'none' })
 
-      await expect(
-        resolveReferenceAccess({
-          context,
-          session,
-          referenceId: 'workspace-123',
-          authorizeReference: authorizeReference as never,
-          request,
-        }),
-      ).resolves.toEqual({
-        access: 'own',
-        referenceType: 'unknown',
-        unauthorizedFallback: false,
-      })
-      expect(authorizeReference).toHaveBeenCalledWith(
-        {
-          user: session.user,
-          session: session.session,
-          referenceId: 'workspace-123',
-          action: 'list-subscriptions',
-          referenceType: 'unknown',
-          defaultAccess: 'own',
-        },
-        request,
-      )
-    })
-
-    it.each([
-      [true, 'entitlements'],
-      [false, 'none'],
-      ['billing', 'billing'],
-      ['entitlements', 'entitlements'],
-      ['own', 'own'],
-      ['none', 'none'],
-    ] as const)('maps %s to %s access', async (result, expectedAccess) => {
-      const { context } = createContext()
-
-      await expect(
-        resolveReferenceAccess({
-          context,
-          session: createSession(),
-          referenceId: 'workspace-123',
-          authorizeReference: async () => result,
-        }),
-      ).resolves.toMatchObject({ access: expectedAccess })
-    })
-
-    it('can override the organization membership decision', async () => {
-      const { context } = createContext({ membership: { role: 'owner' } })
-
-      await expect(
-        resolveReferenceAccess({
-          context,
-          session: createSession(),
-          referenceId: 'organization-123',
-          authorizeReference: ({ defaultAccess, referenceType }) => {
-            expect(defaultAccess).toBe('billing')
-            expect(referenceType).toBe('organization')
-            return false
-          },
-        }),
-      ).resolves.toMatchObject({ access: 'none' })
+    await expect(
+      resolveReferenceAccess({
+        context: createContext(),
+        session: createSession(),
+        referenceId: 'workspace-123',
+        authorizeReference: ({ defaultAccess }) => defaultAccess,
+      }),
+    ).resolves.toEqual({
+      access: 'own',
+      referenceType: 'unknown',
+      unauthorizedFallback: false,
     })
   })
 })

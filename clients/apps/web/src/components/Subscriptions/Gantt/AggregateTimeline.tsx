@@ -121,15 +121,22 @@ export const AggregateTimeline = ({
           now,
           groupOf,
         })
+        // The periods change with the zoom and the range, which can leave the
+        // hovered one behind.
+        const hovered = rows[0]?.buckets.some(
+          ({ start }) => start === hoveredStart,
+        )
+          ? hoveredStart
+          : null
         return {
           labels: rows.map((row) => (
             <AggregateRowLabel
               key={row.id}
               row={row}
               height={height}
-              bucket={row.buckets.find(({ start }) => start === hoveredStart)}
+              bucket={row.buckets.find(({ start }) => start === hovered)}
               periodLabel={
-                hoveredStart === null ? null : formatPeriod(hoveredStart, unit)
+                hovered === null ? null : formatPeriod(hovered, unit)
               }
               onSelect={
                 group === 'product'
@@ -146,7 +153,7 @@ export const AggregateTimeline = ({
                   row={row}
                   height={height}
                   scale={scale}
-                  hoveredStart={hoveredStart}
+                  hoveredStart={hovered}
                   onHover={setHoveredStart}
                   onSelect={(start) => onSelect({ groupKey: row.key, start })}
                 />

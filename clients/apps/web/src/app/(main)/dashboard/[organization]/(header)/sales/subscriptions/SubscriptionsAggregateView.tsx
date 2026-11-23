@@ -41,10 +41,8 @@ export const SubscriptionsAggregateView = ({
     footerLabel,
     onSelect,
   }
-  const { subscriptions, isLoading, isError, retry } = useAllSubscriptions(
-    organization.id,
-    filters,
-  )
+  const { subscriptions, totalCount, isLoading, isCapped, isError, retry } =
+    useAllSubscriptions(organization.id, filters)
 
   // Sums over part of the subscriptions would read as the whole.
   if (isError) {
@@ -64,9 +62,20 @@ export const SubscriptionsAggregateView = ({
     )
   }
 
-  // The frame stays up while pages load, so the layout does not jump.
-  if (!subscriptions || (isLoading && subscriptions.length === 0)) {
+  // Sums over the pages loaded so far would read as the whole, so the frame
+  // stays up empty until every page is in. It also keeps the layout still.
+  if (!subscriptions || isLoading) {
     return <AggregateTimeline {...timeline} subscriptions={[]} />
   }
-  return <AggregateTimeline {...timeline} subscriptions={subscriptions} />
+  return (
+    <AggregateTimeline
+      {...timeline}
+      subscriptions={subscriptions}
+      footerLabel={
+        isCapped && totalCount !== undefined
+          ? `First ${subscriptions.length.toLocaleString('en-US')} of ${totalCount.toLocaleString('en-US')} subscriptions`
+          : footerLabel
+      }
+    />
+  )
 }

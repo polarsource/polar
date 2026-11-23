@@ -85,11 +85,12 @@ export const useGanttLabelsResize = (
   }
 
   return {
-    // Capped so a width chosen on a wide screen cannot cover a narrow one.
+    // Capped against the frame, like a drag is, so a width kept from a wider
+    // frame cannot cover a narrower one. The frame is the query container.
     style:
       width === null
         ? undefined
-        : ({ [LABELS_WIDTH_VAR]: `min(${width}px, 60vw)` } as CSSProperties),
+        : ({ [LABELS_WIDTH_VAR]: `min(${width}px, 60cqw)` } as CSSProperties),
     handleProps: {
       onPointerDown,
       onPointerMove,

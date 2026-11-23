@@ -119,7 +119,7 @@ export const GanttFrame = ({
   return (
     <div
       ref={frameRef}
-      className="flex min-h-0 grow flex-col [--gantt-labels-width:160px] md:[--gantt-labels-width:272px]"
+      className="@container flex min-h-0 grow flex-col [--gantt-labels-width:160px] md:[--gantt-labels-width:272px]"
       style={labelsResize.style}
     >
       <div

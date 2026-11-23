@@ -69,12 +69,12 @@ export const SubscriptionsGantt = ({
   }, [isEndVisible, isLoadingMore, onEndReached])
 
   const subscriptions = loaded ?? []
-  const hasSelection = subscriptions.some(({ id }) => id === selectedId)
   const rowClassName = (id: string) =>
     id === selectedId ? ROW_SELECTED_CLASS : ROW_HOVERABLE_CLASS
 
   useEffect(() => {
-    if (!hasSelection) return
+    // The selected one can be a linked subscription that is not loaded here.
+    if (selectedId === null) return
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !isKeyHandledElsewhere(event)) {
         onSelect(null)
@@ -82,7 +82,7 @@ export const SubscriptionsGantt = ({
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [hasSelection, onSelect])
+  }, [selectedId, onSelect])
 
   return (
     <GanttFrame

@@ -51,7 +51,7 @@ export const AggregateRowLabel = ({
         )}
         {bucket && bucket.atRisk > 0 && (
           <Text color="muted" truncate tabularNums>
-            {bucket.atRisk.toLocaleString('en-US')} ending or past due ·{' '}
+            {bucket.atRisk.toLocaleString('en-US')} lost or at risk ·{' '}
             {format(bucket.atRiskAmount)}
           </Text>
         )}

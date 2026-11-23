@@ -55,6 +55,22 @@ describe('aggregateSubscriptions', () => {
     expect(row.buckets[2].renewingAmount).toBe(4000)
   })
 
+  it('does not count a renewal for a trial that ran out unpaid', () => {
+    const [row] = aggregate([
+      subscription({
+        status: 'trial_ended',
+        started_at: '2026-06-01T12:00:00Z',
+        trial_start: '2026-06-01T12:00:00Z',
+        trial_end: '2026-06-08T12:00:00Z',
+        current_period_start: '2026-06-01T12:00:00Z',
+        current_period_end: '2026-06-08T12:00:00Z',
+        ends_at: '2026-07-08T12:00:00Z',
+      }),
+    ])
+
+    expect(row.buckets.map(({ renewals }) => renewals)).toEqual([0, 0, 0, 0])
+  })
+
   it('keeps currencies in rows of their own', () => {
     const rows = aggregate([
       subscription(),

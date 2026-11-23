@@ -114,7 +114,9 @@ export const aggregateSubscriptions = (
     const isPastDue = subscription.status === 'past_due'
     const firstBilled = segments.findIndex(({ kind }) => BILLED_KINDS.has(kind))
     segments.forEach((segment, index) => {
+      // A trial that ran out without a payment method is not charged.
       const isRenewal =
+        subscription.status !== 'trial_ended' &&
         BILLED_KINDS.has(segment.kind) &&
         (index > firstBilled || segments[index - 1]?.kind === 'trial')
       const bucket = isRenewal ? byStart.get(floor(segment.start)) : undefined

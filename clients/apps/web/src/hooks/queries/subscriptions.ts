@@ -118,6 +118,8 @@ export const useAllSubscriptions = (
     subscriptions: data && uniqueSubscriptions(data.pages),
     totalCount: data?.pages[0]?.pagination.total_count,
     isLoading: !isError && (data === undefined || canLoadMore),
+    // There are more than the cap allows, so the rest is left out.
+    isCapped: hasNextPage && pageCount >= ALL_MAX_PAGES,
     // A page failed, so what is loaded is not everything.
     isError,
     // A failed page is fetched again. Any other failure reloads the list.

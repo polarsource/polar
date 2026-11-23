@@ -101,7 +101,11 @@ from polar.product.guard import (
     is_seat_price,
 )
 from polar.product.price_set import PriceSet
-from polar.product.schemas import ProductPriceFixedCreate, ProductPriceSeatBasedCreate
+from polar.product.schemas import (
+    ProductPriceFixedCreate,
+    ProductPriceMeteredUnitCreate,
+    ProductPriceSeatBasedCreate,
+)
 from polar.product.tiers import Tiers, TiersInput, TierType
 from polar.subscription.service import SubscriptionService
 from polar.tax.calculation import (
@@ -124,6 +128,7 @@ from tests.fixtures.random_objects import (
     create_discount,
     create_discount_redemption,
     create_member,
+    create_meter,
     create_order,
     create_payment,
     create_product,
@@ -2662,6 +2667,68 @@ class TestCreate:
         created_price_ids = [price.id for price in created_prices]
         assert is_fixed_price(created_prices[0])
         assert checkout.product_price == created_prices[0]
+
+        session.expunge_all()
+        repository = CheckoutRepository.from_session(session)
+        reloaded = await repository.get_by_id(
+            checkout.id, options=repository.get_eager_options()
+        )
+
+        assert reloaded is not None
+        reloaded_prices = reloaded.prices[product.id]
+        assert [price.id for price in reloaded_prices] == created_price_ids
+        assert (
+            PriceSet.from_prices(reloaded_prices, "usd").get_default_price().id
+            == created_price_ids[0]
+        )
+
+    @pytest.mark.auth
+    async def test_ad_hoc_metered_prices_default_matches_reload_on_timestamp_tie(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        mocker.patch(
+            "polar.checkout.service.utc_now",
+            return_value=datetime(2026, 1, 1, tzinfo=UTC),
+        )
+        price_ids = sorted((uuid.uuid4() for _ in range(3)), reverse=True)
+        mocker.patch("polar.checkout.service.generate_uuid", side_effect=price_ids)
+        meters = [
+            await create_meter(save_fixture, organization=organization, id=uuid.uuid4())
+            for _ in range(3)
+        ]
+
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductsCreate(
+                products=[product.id],
+                prices={
+                    product.id: [
+                        ProductPriceMeteredUnitCreate(
+                            amount_type=ProductPriceAmountType.metered_unit,
+                            price_currency=PresentmentCurrency.usd,
+                            meter_id=meter.id,
+                            unit_amount=Decimal(10),
+                        )
+                        for meter in meters
+                    ]
+                },
+            ),
+            auth_subject,
+        )
+
+        created_price_ids = [
+            price.id for price in checkout.checkout_products[0].ad_hoc_prices
+        ]
+        assert created_price_ids == sorted(price_ids)
+        assert checkout.product_price is not None
+        assert checkout.product_price.id == created_price_ids[0]
 
         session.expunge_all()
         repository = CheckoutRepository.from_session(session)

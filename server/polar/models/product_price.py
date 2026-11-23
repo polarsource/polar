@@ -1,3 +1,4 @@
+from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Literal
@@ -184,6 +185,11 @@ class ProductPrice(RecordModel):
             (cls.is_static, 1),
             else_=2,
         )
+
+    @property
+    def sort_key(self) -> tuple[int, datetime, UUID]:
+        """In-memory equivalent of `PRICES_ORDER_BY`."""
+        return (self.amount_type_rank, self.created_at, self.id)
 
     @property
     def legacy_type(self) -> ProductPriceType | None:

@@ -51,7 +51,7 @@ export const ToolbarSearch = ({
       ref={inputRef}
       type="search"
       aria-label="Search"
-      className="h-8 w-56 rounded-full pl-8.5"
+      className="dark:bg-polar-800 dark:focus:border-polar-500 dark:focus:bg-polar-800 h-8 w-56 rounded-full border-transparent bg-gray-50 pl-8.5 shadow-none focus:border-gray-300 focus:bg-white focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 dark:border-transparent"
       preSlot={<Search className="size-3.5" />}
       placeholder={placeholder}
       defaultValue={value ?? ''}

@@ -187,16 +187,17 @@ async def seed_reducers(
     save_fixture: SaveFixture,
     organization: Organization,
     reducers: int,
+    customers: int = 10,
 ) -> list[Reducer]:
     current = get_reducer_bucket_start(utc_now())
-    customers = [
+    seeded_customers = [
         await create_customer(
             save_fixture,
             organization=organization,
             email=f"customer-{index}@example.com",
             external_id=f"customer-{index}",
         )
-        for index in range(10)
+        for index in range(customers)
     ]
     seeded = []
     for _ in range(reducers):
@@ -219,7 +220,7 @@ async def seed_reducers(
                 max=Decimal(1),
                 sealed_at=None if slot < 100 else current,
             )
-            for customer in customers
+            for customer in seeded_customers
             for slot in range(110)
         )
         seeded.append(reducer)
@@ -254,6 +255,38 @@ def test_request_meter_usage_of_every_reducer(
     assert len(snapshots) == 3 * reducers
     # One identity per reducer holds the customer's usage.
     assert sum(1 for snapshot in snapshots if snapshot.count) == reducers
+    analyze(run, session)
+    benchmark(request)
+
+
+# A cold start asks for many customers of one reducer at once, up to a full batch.
+@pytest.mark.parametrize("customers", [1, 100, 500])
+def test_request_meter_usage_of_many_customers(
+    benchmark: BenchmarkFixture,
+    run: Run[typing.Any],
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    organization: Organization,
+    customers: int,
+) -> None:
+    [reducer] = run(
+        seed_reducers(session, save_fixture, organization, 1, customers=customers)
+    )
+    payloads = [
+        ExternalCustomerMeterUsageIdentity(
+            reducer_id=reducer.id, external_customer_id=f"customer-{index}"
+        )
+        for index in range(customers)
+    ]
+
+    def request() -> list[Snapshot]:
+        return run(
+            outpost_service.get_requested_meter_usage(session, organization, payloads)
+        )
+
+    snapshots = request()
+    assert len(snapshots) == 3 * customers
+    assert sum(1 for snapshot in snapshots if snapshot.count) == customers
     analyze(run, session)
     benchmark(request)
 

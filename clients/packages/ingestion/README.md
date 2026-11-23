@@ -103,6 +103,8 @@ Want to report events regarding Large Language Model usage, S3 file uploads or s
 
 Wrap any LLM model from the `@ai-sdk/*` library, to automatically fire prompt- & completion tokens used by every model call.
 
+Works with AI SDK 5, 6 and 7.
+
 ```
 pnpm add @polar-sh/ingestion ai @ai-sdk/openai
 ```

@@ -42,7 +42,11 @@
         "groups": [
           {
             "group": "Get Started",
-            "pages": ["introduction", "migrate", "migrate-lemon-squeezy"]
+            "pages": [
+              "introduction",
+              "merchant-of-record/introduction",
+              "merchant-of-record/fees"
+            ]
           },
           {
             "group": "Agent Toolkit",
@@ -96,19 +100,37 @@
             ]
           },
           {
-            "group": "Products & Pricing",
+            "group": "Customers & Usage",
             "pages": [
-              "features/products",
-              "features/unit-based-pricing",
-              "features/seat-based-pricing",
-              "features/usage-based-billing/billing",
-              "features/tax-inclusive-pricing",
-              "features/discounts",
               {
-                "group": "Benefits",
+                "group": "Customers",
+                "pages": [
+                  "features/customer-management",
+                  "integrate/customer-state"
+                ]
+              },
+              {
+                "group": "Events & Meters",
+                "pages": [
+                  "features/usage-based-billing/introduction",
+                  "features/usage-based-billing/event-ingestion",
+                  "features/usage-based-billing/meters",
+                  {
+                    "group": "Ingestion Strategies",
+                    "pages": [
+                      "features/usage-based-billing/ingestion-strategies/ingestion-strategy",
+                      "features/usage-based-billing/ingestion-strategies/llm-strategy",
+                      "features/usage-based-billing/ingestion-strategies/s3-strategy",
+                      "features/usage-based-billing/ingestion-strategies/stream-strategy",
+                      "features/usage-based-billing/ingestion-strategies/delta-time-strategy"
+                    ]
+                  }
+                ]
+              },
+              {
+                "group": "Entitlements",
                 "pages": [
                   "features/benefits/introduction",
-                  "integrate/customer-state",
                   "features/benefits/credits",
                   "features/benefits/custom",
                   "features/benefits/discord-access",
@@ -118,75 +140,9 @@
                   "features/benefits/license-keys",
                   "features/benefits/slack-shared-channel"
                 ]
-              }
-            ]
-          },
-          {
-            "group": "Checkout",
-            "pages": [
-              "features/checkout/links",
-              "features/checkout/session",
-              "features/checkout/payment-methods",
-              "features/checkout/localization",
-              "features/custom-fields",
-              {
-                "group": "Embeds",
-                "pages": [
-                  "features/checkout/embed",
-                  "features/checkout/embed-payment-method"
-                ]
-              }
-            ]
-          },
-          {
-            "group": "Subscriptions",
-            "pages": [
-              "features/subscriptions/introduction",
-              "features/subscriptions/manage",
-              "features/subscriptions/proration",
-              "features/subscriptions/trials",
-              "features/subscriptions/failed-payments"
-            ]
-          },
-          {
-            "group": "Metering",
-            "pages": [
-              "features/usage-based-billing/introduction",
-              "features/usage-based-billing/event-ingestion",
-              {
-                "group": "Ingestion Strategies",
-                "pages": [
-                  "features/usage-based-billing/ingestion-strategies/ingestion-strategy",
-                  "features/usage-based-billing/ingestion-strategies/llm-strategy",
-                  "features/usage-based-billing/ingestion-strategies/s3-strategy",
-                  "features/usage-based-billing/ingestion-strategies/stream-strategy",
-                  "features/usage-based-billing/ingestion-strategies/delta-time-strategy"
-                ]
               },
-              "features/usage-based-billing/meters",
-              "features/usage-based-billing/credits"
-            ]
-          },
-          {
-            "group": "Customer Management",
-            "pages": [
-              "features/customer-management",
               {
-                "group": "Customer Portal",
-                "pages": [
-                  "features/customer-portal/introduction",
-                  "features/customer-portal/navigate-customers",
-                  "features/customer-portal/settings"
-                ]
-              }
-            ]
-          },
-          {
-            "group": "Analytics",
-            "pages": [
-              "features/analytics",
-              {
-                "group": "Cost Insights",
+                "group": "Customer Cost Insights",
                 "tag": "Beta",
                 "pages": [
                   "features/cost-insights/introduction",
@@ -197,52 +153,99 @@
             ]
           },
           {
-            "group": "Payments",
+            "group": "Billing",
             "pages": [
+              "features/products",
+              {
+                "group": "Pricing Models",
+                "pages": [
+                  "features/unit-based-pricing",
+                  "features/seat-based-pricing",
+                  "features/usage-based-billing/billing",
+                  "features/usage-based-billing/credits",
+                  "features/tax-inclusive-pricing"
+                ]
+              },
+              "features/discounts",
               "features/orders",
-              "features/refunds"
+              {
+                "group": "Subscriptions",
+                "pages": [
+                  "features/subscriptions/introduction",
+                  "features/subscriptions/manage",
+                  "features/subscriptions/proration",
+                  "features/subscriptions/trials",
+                  "features/subscriptions/failed-payments"
+                ]
+              },
+              {
+                "group": "Checkout",
+                "pages": [
+                  "features/checkout/links",
+                  "features/checkout/session",
+                  "features/checkout/payment-methods",
+                  "features/checkout/localization",
+                  "features/custom-fields",
+                  {
+                    "group": "Embedded UI",
+                    "pages": [
+                      "features/checkout/embed",
+                      "features/checkout/embed-payment-method"
+                    ]
+                  }
+                ]
+              },
+              {
+                "group": "Customer Portal",
+                "pages": [
+                  "features/customer-portal/introduction",
+                  "features/customer-portal/navigate-customers",
+                  "features/customer-portal/settings"
+                ]
+              },
+              "features/refunds",
+              "features/analytics"
             ]
           },
           {
-            "group": "Payouts",
+            "group": "Organization",
             "pages": [
-              "features/finance/accounts",
-              "features/finance/balance",
-              "features/finance/payouts"
-            ]
-          },
-          {
-            "group": "Account Management",
-            "pages": [
+              {
+                "group": "Payouts",
+                "pages": [
+                  "features/finance/balance",
+                  "features/finance/payouts",
+                  "features/finance/accounts"
+                ]
+              },
               "features/team-management",
-              "features/sso"
+              "features/sso",
+              {
+                "group": "Integrations",
+                "pages": [
+                  "features/integrations/affonso",
+                  "features/integrations/fernand",
+                  "features/integrations/framer",
+                  "features/integrations/paritydeals",
+                  "features/integrations/raycast",
+                  "features/integrations/zapier"
+                ]
+              },
+              {
+                "group": "Migration",
+                "pages": ["migrate", "migrate-lemon-squeezy"]
+              }
             ]
           },
           {
-            "group": "Third-party Integrations",
+            "group": "Compliance & Security",
             "pages": [
-              "features/integrations/affonso",
-              "features/integrations/fernand",
-              "features/integrations/framer",
-              "features/integrations/paritydeals",
-              "features/integrations/raycast",
-              "features/integrations/zapier"
-            ]
-          },
-          {
-            "group": "Merchant of Record (MoR)",
-            "pages": [
-              "merchant-of-record/introduction",
-              "merchant-of-record/fees",
               "merchant-of-record/supported-countries",
-              "merchant-of-record/acceptable-use/introduction",
               "merchant-of-record/account-reviews",
-              "merchant-of-record/review-checklist"
+              "merchant-of-record/review-checklist",
+              "merchant-of-record/acceptable-use/introduction",
+              "security"
             ]
-          },
-          {
-            "group": "Help",
-            "pages": ["support", "security"]
           }
         ]
       },

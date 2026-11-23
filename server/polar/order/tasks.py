@@ -7,6 +7,7 @@ import structlog
 from dramatiq import Retry
 from sqlalchemy.orm import joinedload, selectinload
 
+from polar.config import settings
 from polar.exceptions import PolarTaskError
 from polar.kit.utils import utc_now
 from polar.logging import Logger
@@ -41,10 +42,6 @@ from .service import order as order_service
 log: Logger = structlog.get_logger()
 
 MAX_RETRIES = 10
-
-# Lets late usage events land and reducer buckets covering the period end
-# close and sync to Postgres before the order is billed.
-SUBSCRIPTION_ORDER_GRACE_PERIOD = timedelta(minutes=15)
 
 
 class OrderTaskError(PolarTaskError): ...
@@ -90,7 +87,9 @@ class WalletTransactionDoesNotExist(OrderTaskError):
 def _defer_until_grace_period_elapsed(
     cutoff: datetime, actor_name: str, /, *args: Any, **kwargs: Any
 ) -> bool:
-    remaining_grace_period = cutoff + SUBSCRIPTION_ORDER_GRACE_PERIOD - utc_now()
+    remaining_grace_period = (
+        cutoff + settings.SUBSCRIPTION_ORDER_GRACE_PERIOD - utc_now()
+    )
     if remaining_grace_period <= timedelta(0):
         return False
     log.info(

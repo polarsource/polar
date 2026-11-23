@@ -30,7 +30,6 @@ from polar.notifications.notification import NotificationType
 from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
 from polar.order.tasks import (
-    SUBSCRIPTION_ORDER_GRACE_PERIOD,
     OrderDoesNotExist,
     create_meter_cycle_order,
     create_subscription_order,
@@ -103,7 +102,9 @@ class TestCreateSubscriptionOrder:
             customer=customer,
             status=SubscriptionStatus.canceled,
         )
-        cutoff = utc_now() - SUBSCRIPTION_ORDER_GRACE_PERIOD - timedelta(minutes=1)
+        cutoff = (
+            utc_now() - settings.SUBSCRIPTION_ORDER_GRACE_PERIOD - timedelta(minutes=1)
+        )
         create_order_mock = mocker.patch.object(
             order_service, "create_subscription_order", new=AsyncMock()
         )
@@ -166,7 +167,7 @@ class TestCreateSubscriptionOrder:
             delay=ANY,
         )
         delay = enqueue_job_mock.call_args.kwargs["delay"]
-        expected = SUBSCRIPTION_ORDER_GRACE_PERIOD - timedelta(minutes=5)
+        expected = settings.SUBSCRIPTION_ORDER_GRACE_PERIOD - timedelta(minutes=5)
         assert 0 < delay <= expected.total_seconds() * 1000
 
 
@@ -214,7 +215,9 @@ class TestCreateMeterCycleOrder:
             status=SubscriptionStatus.active,
         )
         price_ids = [uuid.uuid4()]
-        cutoff = utc_now() - SUBSCRIPTION_ORDER_GRACE_PERIOD - timedelta(minutes=1)
+        cutoff = (
+            utc_now() - settings.SUBSCRIPTION_ORDER_GRACE_PERIOD - timedelta(minutes=1)
+        )
         settle_mock = mocker.patch.object(
             order_service, "settle_meter_cycle_order", new=AsyncMock()
         )

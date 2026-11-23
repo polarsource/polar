@@ -671,6 +671,10 @@ class Settings(BaseSettings):
         ".well-known",
     ]
 
+    # Lets late usage events land and reducer buckets covering the period end
+    # close and sync to Postgres before the order is billed.
+    SUBSCRIPTION_ORDER_GRACE_PERIOD: timedelta = timedelta(minutes=15)
+
     # Dunning Configuration
     DUNNING_RETRY_INTERVALS: list[timedelta] = [
         timedelta(days=2),  # First retry after 2 days

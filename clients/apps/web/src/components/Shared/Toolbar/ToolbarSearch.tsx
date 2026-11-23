@@ -1,6 +1,6 @@
 import { useDebouncedCallback } from '@/hooks/utils'
 import { Input } from '@polar-sh/orbit'
-import { SearchOutlined } from '@polar-sh/orbit/icons'
+import { Search } from '@polar-sh/orbit/icons'
 import { useEffect, useRef } from 'react'
 
 const SEARCH_DELAY = 300
@@ -53,7 +53,7 @@ export const ToolbarSearch = ({
       type="search"
       aria-label="Search"
       className="h-8 w-56 rounded-full"
-      preSlot={<SearchOutlined className="size-4!" />}
+      preSlot={<Search className="size-3.5" />}
       placeholder={placeholder}
       defaultValue={value ?? ''}
       onChange={(event) => commit(event.target.value)}

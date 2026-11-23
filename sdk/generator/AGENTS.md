@@ -45,7 +45,9 @@ To change SDK code, including hand-written modules like `metering/` and `outpost
 2. A new file is only emitted if the emitter picks it up, and the two languages differ:
    - **TypeScript:** every `.ts` file in `template/src/metering/` and `template/src/outpost/` is globbed. Any other new file needs a `render_file` call in `typescript/emitter.py`.
    - **Python:** nothing is globbed. Add every new file, including modules and tests under `metering/` and `outpost/`, to the file set in `PythonEmitter.emit` in `python/emitter.py`.
-3. Regenerate with `uv run -m cli generate openapi/*.json ../<language> --language <language> --version <current version> --clear` and commit the template and the generated output together.
+3. Run `just openapi` to export the specs into `openapi/`. That directory is gitignored, so it's empty in a fresh checkout. The specs come from the current server, so the output can also pick up API changes not yet released.
+4. Regenerate with `uv run -m cli generate openapi/*.json ../<language> --language <language> --version <current version> --clear`. Don't use `just generate`: it omits `--version`, which stamps the SDK as `0.0.0`.
+5. Commit the template and the generated output together.
 
 To check that a template change took effect, regenerate and confirm `git status` doesn't show the output reverting your edit.
 

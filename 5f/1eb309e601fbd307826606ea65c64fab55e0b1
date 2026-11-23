@@ -1,0 +1,21 @@
+server/polar/merchant_migration/pan_transfer.py
+  s_14d0af0f952d11::t_bedab4a66b46ef 353,384-388
+server/tests/models/test_merchant_migration.py
+  s_14d0af0f952d11::t_86177d2593380e 6-10,56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5f1eb309e601fbd307826606ea65c64fab55e0b1",
+  "prompts": {},
+  "sessions": {
+    "s_14d0af0f952d11": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "s_14d0af0f952d11",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

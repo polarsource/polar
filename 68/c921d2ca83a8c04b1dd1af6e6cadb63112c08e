@@ -1,0 +1,35 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/cards/LemonSqueezyRequestCopyStep.tsx
+  s_72a311f50b7a3e::t_11dc1984e7fb76 1-4,7-10,12-17,19-21,23-24,26-27,29-34,36-49,51-84
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/cards/PanTransferStepBody.tsx
+  s_72a311f50b7a3e::t_357178dbfa98e2 7,13-14,32-45
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/cards/StartCopyStep.test.tsx
+  s_72a311f50b7a3e::t_81361289461761 6
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/cards/StartCopyStep.tsx
+  s_72a311f50b7a3e::t_aff8f97cbf3a6c 8,41-56,58-81,83-98,113-157
+server/polar/merchant_migration/canonical.py
+  s_72a311f50b7a3e::t_b6d82427d3821d 132-141
+server/polar/merchant_migration/importer.py
+  s_72a311f50b7a3e::t_2171679854d6ae 984
+server/polar/merchant_migration/pan_transfer.py
+  s_72a311f50b7a3e::t_d0f6327987431b 235,274
+server/polar/merchant_migration/precheck.py
+  s_72a311f50b7a3e::t_163b66309aaf67 1708,1712
+server/tests/models/test_merchant_migration.py
+  s_72a311f50b7a3e::t_bcca40b9697694 5-6,37-59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "68c921d2ca83a8c04b1dd1af6e6cadb63112c08e",
+  "prompts": {},
+  "sessions": {
+    "s_72a311f50b7a3e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cdd635e7-53d1-405f-8635-3617a695254d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

@@ -62,7 +62,9 @@ export const SubscriptionDiscountField = ({
                 items={applicableDiscounts}
                 value={field.value || null}
                 selectedItem={selectedItem || null}
-                onChange={(value) => field.onChange(value)}
+                onChange={(value) => {
+                  if (value !== null) field.onChange(value)
+                }}
                 onQueryChange={setDiscountQuery}
                 getItemValue={(discount) => discount.id}
                 getItemLabel={(discount) => discount.name}

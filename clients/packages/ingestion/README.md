@@ -101,9 +101,9 @@ Want to report events regarding Large Language Model usage, S3 file uploads or s
 
 ### LLM Strategy
 
-Wrap any LLM model from the `@ai-sdk/*` library, to automatically fire prompt- & completion tokens used by every model call.
+Wrap any LLM model from the `@ai-sdk/*` library, or a TanStack AI text adapter, to automatically fire prompt- & completion tokens used by every model call.
 
-Works with AI SDK 5, 6 and 7.
+Works with AI SDK 5, 6 and 7, and TanStack AI 1.x.
 
 ```
 pnpm add @polar-sh/ingestion ai @ai-sdk/openai
@@ -142,6 +142,37 @@ export async function POST(req: Request) {
     system: 'You are a helpful assistant.',
     prompt,
   })
+
+  return Response.json({ text })
+}
+```
+
+#### TanStack AI
+
+Pass a TanStack AI text adapter instead of a model. `client()` returns the adapter, ready for `chat()`. Every model call in a tool loop, and structured output, is ingested as its own event.
+
+```
+pnpm add @polar-sh/ingestion @tanstack/ai @tanstack/ai-openai
+```
+
+```typescript
+import { Ingestion } from '@polar-sh/ingestion'
+import { LLMStrategy } from '@polar-sh/ingestion/strategies/LLM'
+import { chat } from '@tanstack/ai'
+import { openaiText } from '@tanstack/ai-openai'
+
+const llmIngestion = Ingestion({ accessToken: process.env.POLAR_ACCESS_TOKEN })
+  .strategy(new LLMStrategy(openaiText('gpt-4o')))
+  .ingest('openai-usage')
+
+export async function POST(req: Request) {
+  const { messages, threadId } = await req.json()
+
+  const adapter = llmIngestion.client({
+    customerId: req.headers.get('X-Polar-Customer-Id') ?? '',
+  })
+
+  const { text } = await chat({ adapter, threadId, messages, stream: false })
 
   return Response.json({ text })
 }

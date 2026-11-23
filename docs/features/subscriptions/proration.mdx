@@ -154,9 +154,12 @@ A refund also reduces any positive balance the customer has, by up to the refund
 3. The customer gets \$14.50 back on their card and their balance returns to zero. Their next renewal is charged the full \$5.
 
 <Warning>
-  Only a balance that already exists is reduced. A `prorate` credit that's still waiting for the
-  next invoice isn't affected by the refund, so the customer would get both. Use `invoice` for
-  downgrades you plan to refund, or `next_period` to avoid issuing a credit at all.
+  **A refund only takes back credit that's still on the customer's balance.** Any other proration
+  credit stays with the customer: a `prorate` credit waiting for or already deducted from the next
+  invoice, or a balance already used up by a later order. If you refund the original order in
+  those cases, the customer gets that amount twice. Before refunding, check the customer's
+  balance and their invoices since the change, and lower the refund by any credit that isn't on
+  the balance.
 </Warning>
 
 <Note>

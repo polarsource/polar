@@ -148,6 +148,7 @@ def all_api_versions() -> Generator[None]:
 class _VersionRange:
     starting_from: APIVersion | None = None
     up_to: APIVersion | None = None
+    required_in_response: bool = False
 
     def __post_init__(self) -> None:
         if self.starting_from is None and self.up_to is None:
@@ -190,7 +191,10 @@ def _versioned_field_is_required(
     | core_schema.TypedDictField,
     total: bool,
 ) -> bool:
-    if isinstance(field.get("serialization_exclude_if"), _VersionRange):
+    version_range = field.get("serialization_exclude_if")
+    if isinstance(version_range, _VersionRange):
+        if version_range.required_in_response and self.mode == "serialization":
+            return True
         field = field.copy()
         field.pop("serialization_exclude_if")
     return _original_field_is_required(self, field, total)
@@ -223,8 +227,18 @@ def Version(
     *,
     starting_from: APIVersion | None = None,
     up_to: APIVersion | None = None,
+    required_in_response: bool = False,
 ) -> FieldInfo:
-    version_range = _VersionRange(starting_from=starting_from, up_to=up_to)
+    """Limit a field to a range of API versions.
+
+    `required_in_response` marks an optional input field as always present in
+    responses, so the response schema lists it as required.
+    """
+    version_range = _VersionRange(
+        starting_from=starting_from,
+        up_to=up_to,
+        required_in_response=required_in_response,
+    )
 
     field_info = Field(exclude_if=version_range)
     field_info.metadata.append(version_range)

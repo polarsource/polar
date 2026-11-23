@@ -2583,7 +2583,7 @@ export interface components {
       /** Benefit Revocation Grace Period */
       benefit_revocation_grace_period: number
       /** Trial Ended Reactivation Period */
-      trial_ended_reactivation_period?: number
+      trial_ended_reactivation_period: number
       /** Prevent Trial Abuse */
       prevent_trial_abuse: boolean
       /** Allow Customer Updates */

@@ -18,8 +18,6 @@ import { ProrationBehavior } from './ProrationBehavior'
 import { Box } from '@polar-sh/orbit/Box'
 import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
-const DEFAULT_TRIAL_ENDED_REACTIVATION_PERIOD = 14
-
 interface OrganizationSubscriptionSettingsProps {
   organization: schemas['Organization']
   readOnly: boolean
@@ -28,17 +26,14 @@ interface OrganizationSubscriptionSettingsProps {
 const OrganizationSubscriptionSettings: React.FC<
   OrganizationSubscriptionSettingsProps
 > = ({ organization, readOnly }) => {
-  const form = useForm<schemas['OrganizationSubscriptionSettings']>({
-    defaultValues: {
-      trial_ended_reactivation_period: DEFAULT_TRIAL_ENDED_REACTIVATION_PERIOD,
-      ...organization.subscription_settings,
-    },
+  const form = useForm<schemas['OrganizationSubscriptionSettings-Output']>({
+    defaultValues: organization.subscription_settings,
   })
   const { control, setError } = form
 
   const updateOrganization = useUpdateOrganization()
   const onSave = async (
-    subscription_settings: schemas['OrganizationSubscriptionSettings'],
+    subscription_settings: schemas['OrganizationSubscriptionSettings-Output'],
   ) => {
     const { data, error } = await updateOrganization.mutateAsync({
       id: organization.id,
@@ -136,9 +131,7 @@ const OrganizationSubscriptionSettings: React.FC<
                   <FormItem>
                     <FormControl>
                       <BenefitRevocationGracePeriod
-                        value={
-                          field.value ?? DEFAULT_TRIAL_ENDED_REACTIVATION_PERIOD
-                        }
+                        value={field.value}
                         disabled={readOnly}
                         onValueChange={(value) => field.onChange(Number(value))}
                       />

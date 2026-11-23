@@ -68493,7 +68493,7 @@
             "description": "Organization feature settings"
           },
           "subscription_settings": {
-            "$ref": "#/components/schemas/OrganizationSubscriptionSettings",
+            "$ref": "#/components/schemas/OrganizationSubscriptionSettings-Output",
             "description": "Settings related to subscriptions management"
           },
           "customer_email_settings": {
@@ -70004,7 +70004,7 @@
           "subscription_settings": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/OrganizationSubscriptionSettings"
+                "$ref": "#/components/schemas/OrganizationSubscriptionSettings-Input"
               },
               {
                 "type": "null"
@@ -70516,7 +70516,7 @@
         ],
         "title": "OrganizationStatus"
       },
-      "OrganizationSubscriptionSettings": {
+      "OrganizationSubscriptionSettings-Input": {
         "properties": {
           "allow_multiple_subscriptions": {
             "type": "boolean",
@@ -70563,6 +70563,59 @@
           "allow_multiple_subscriptions",
           "proration_behavior",
           "benefit_revocation_grace_period",
+          "prevent_trial_abuse",
+          "allow_customer_updates"
+        ],
+        "title": "OrganizationSubscriptionSettings"
+      },
+      "OrganizationSubscriptionSettings-Output": {
+        "properties": {
+          "allow_multiple_subscriptions": {
+            "type": "boolean",
+            "title": "Allow Multiple Subscriptions"
+          },
+          "proration_behavior": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "invoice",
+                  "prorate",
+                  "next_period"
+                ],
+                "title": "PublicSubscriptionProrationBehavior"
+              },
+              {
+                "type": "string",
+                "const": "auto"
+              }
+            ],
+            "title": "Proration Behavior"
+          },
+          "benefit_revocation_grace_period": {
+            "type": "integer",
+            "title": "Benefit Revocation Grace Period"
+          },
+          "trial_ended_reactivation_period": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Trial Ended Reactivation Period"
+          },
+          "prevent_trial_abuse": {
+            "type": "boolean",
+            "title": "Prevent Trial Abuse"
+          },
+          "allow_customer_updates": {
+            "type": "boolean",
+            "title": "Allow Customer Updates"
+          }
+        },
+        "type": "object",
+        "required": [
+          "allow_multiple_subscriptions",
+          "proration_behavior",
+          "benefit_revocation_grace_period",
+          "trial_ended_reactivation_period",
           "prevent_trial_abuse",
           "allow_customer_updates"
         ],
@@ -71137,7 +71190,7 @@
             "$ref": "#/components/schemas/OrganizationFeatureSettingsUpdate"
           },
           "subscription_settings": {
-            "$ref": "#/components/schemas/OrganizationSubscriptionSettings"
+            "$ref": "#/components/schemas/OrganizationSubscriptionSettings-Input"
           },
           "customer_email_settings": {
             "$ref": "#/components/schemas/OrganizationCustomerEmailSettings"

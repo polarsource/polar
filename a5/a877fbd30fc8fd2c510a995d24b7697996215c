@@ -1,0 +1,23 @@
+docs/security.mdx
+  s_2f288bfb981e47::t_be9b6392287c49 17-18,40
+AGENTS.md
+  s_2f288bfb981e47::t_be9b6392287c49 182
+SECURITY.md
+  s_2f288bfb981e47::t_3f6578ee4ac12a 3,5-54
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a5a877fbd30fc8fd2c510a995d24b7697996215c",
+  "prompts": {},
+  "sessions": {
+    "s_2f288bfb981e47": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20756-fb2f-74a1-86e1-dc0c2ad48122",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

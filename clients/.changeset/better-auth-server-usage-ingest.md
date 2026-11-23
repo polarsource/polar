@@ -2,4 +2,4 @@
 '@polar-sh/better-auth': major
 ---
 
-We're recommending using the new server API for usage ingestion and removing the `ingest` method on the client API. Replace `authClient.usage.ingest(...)` with `auth.api.ingestUsage({ headers, body })` in your server code.
+We're removing the `usage` plugin. Customer meters are now listed by the `portal` plugin with `authClient.customer.meters.list()`, which replaces `authClient.usage.meters.list()`. The `ingest` method on the client API is removed: ingest usage events from your server with the Polar SDK instead. Remove `usage()` from the `use` array of `polar()`.

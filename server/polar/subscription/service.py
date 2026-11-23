@@ -859,7 +859,10 @@ class SubscriptionService:
             is_trial
             and product.organization.prevent_trial_abuse
             and await trial_redemption_service.check_trial_already_redeemed(
-                session, product.organization, customer_email=customer.email
+                session,
+                product.organization,
+                customer_email=customer.email,
+                customer_id=customer.id,
             )
         ):
             raise TrialAlreadyRedeemed()

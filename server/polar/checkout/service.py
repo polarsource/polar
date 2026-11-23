@@ -1369,17 +1369,14 @@ class CheckoutService:
                     ):
                         raise DiscountRedemptionLimitReached(checkout)
 
-                # Skip for team customers without email — no email to check against
                 if (
                     checkout.trial_end is not None
                     and checkout.organization.prevent_trial_abuse
-                    and not (
-                        customer.type == CustomerType.team and customer.email is None
-                    )
                     and await trial_redemption_service.check_trial_already_redeemed(
                         session,
                         checkout.organization,
                         customer_email=customer.email,
+                        customer_id=customer.id,
                         payment_method_fingerprint=payment_method_fingerprint,
                     )
                 ):
@@ -2941,15 +2938,16 @@ class CheckoutService:
         if checkout.trial_end is None or not checkout.organization.prevent_trial_abuse:
             return checkout
 
-        customer_email = (
-            checkout.customer.email
-            if checkout.customer is not None
-            else checkout.customer_email
-        )
+        customer = checkout.customer
         with session.no_autoflush:
             trial_already_redeemed = (
                 await trial_redemption_service.check_trial_already_redeemed(
-                    session, checkout.organization, customer_email=customer_email
+                    session,
+                    checkout.organization,
+                    customer_email=customer.email
+                    if customer
+                    else checkout.customer_email,
+                    customer_id=customer.id if customer else None,
                 )
             )
         if trial_already_redeemed:

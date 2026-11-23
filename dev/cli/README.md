@@ -99,7 +99,14 @@ Captures before/after screenshots across branches and generates a visual diff re
 ```bash
 dev polar auth login --local        # Any `polar` command, run from clients/packages/cli/src
 dev polar config plan               # Runs in your current directory, e.g. clients/apps/demo-app
+dev polar --link                    # Make `dev polar` work in any directory
+dev polar --unlink                  # Make `dev` work inside the Polar repo only
 ```
+
+`--link` updates the `dev` alias in your shell config so that `dev polar` runs this
+repo's CLI in projects outside it; every other `dev` command stops there.
+`--unlink` puts the repo-only alias back. The path to this repo is saved in
+`~/.config/polar/dev_cli_path`.
 
 Arguments pass straight through. Like the released binary, it ignores `.env` files in the
 current directory, so a `POLAR_ACCESS_TOKEN` in an app's `.env.local` doesn't override your

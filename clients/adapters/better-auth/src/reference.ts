@@ -158,25 +158,6 @@ type BillingOnlyKey =
   | 'customer_cancellation_reason'
   | 'customer_cancellation_comment'
 
-export type ReferenceSubscriptionBenefit = Pick<
-  models.Benefit,
-  (typeof BENEFIT_ENTITLEMENT_KEYS)[number]
->
-
-export type ReferenceSubscriptionProduct = Pick<
-  models.Product,
-  (typeof PRODUCT_ENTITLEMENT_KEYS)[number]
-> & {
-  benefits: ReferenceSubscriptionBenefit[]
-}
-
-export type ReferenceSubscriptionMeter = Pick<
-  models.SubscriptionMeter,
-  (typeof SUBSCRIPTION_METER_ENTITLEMENT_KEYS)[number]
-> & {
-  meter: Pick<models.Meter, (typeof METER_ENTITLEMENT_KEYS)[number]>
-}
-
 /**
  * A subscription listed by `reference_id`.
  *
@@ -189,8 +170,18 @@ export type ReferenceSubscription = Pick<
 > &
   Partial<Pick<models.Subscription, BillingOnlyKey>> & {
     metadata: models.Subscription['metadata']
-    product: ReferenceSubscriptionProduct
-    meters: ReferenceSubscriptionMeter[]
+    product: Pick<models.Product, (typeof PRODUCT_ENTITLEMENT_KEYS)[number]> & {
+      benefits: Pick<
+        models.Benefit,
+        (typeof BENEFIT_ENTITLEMENT_KEYS)[number]
+      >[]
+    }
+    meters: (Pick<
+      models.SubscriptionMeter,
+      (typeof SUBSCRIPTION_METER_ENTITLEMENT_KEYS)[number]
+    > & {
+      meter: Pick<models.Meter, (typeof METER_ENTITLEMENT_KEYS)[number]>
+    })[]
   }
 
 export interface ListResourceReferenceSubscription {
@@ -305,11 +296,7 @@ const classifyReference = async ({
     context.internalAdapter.findUserById(referenceId),
   )
 
-  if (referencedUser) {
-    return { referenceType: 'user', access: 'own' }
-  }
-
-  return { referenceType: 'unknown', access: 'own' }
+  return { referenceType: referencedUser ? 'user' : 'unknown', access: 'own' }
 }
 
 /**

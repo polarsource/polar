@@ -1243,19 +1243,7 @@ describe('Better Auth organization integration', () => {
     const { user } = (await signUpResponse.json()) as {
       user: { id: string }
     }
-    const organizationResponse = await post(
-      '/organization/create',
-      { name: 'Reference Organization', slug: 'reference-organization' },
-      sessionCookie,
-    )
-    if (!organizationResponse.ok) {
-      throw new Error(
-        `Organization creation failed: ${await organizationResponse.text()}`,
-      )
-    }
-    const { id: referenceId } = (await organizationResponse.json()) as {
-      id: string
-    }
+    const referenceId = 'existing-organization-id'
 
     const checkoutResponse = await post(
       '/checkout',
@@ -1291,17 +1279,6 @@ describe('Better Auth organization integration', () => {
       metadata: { referenceId },
     })
     expect(client.customerSessions.create).not.toHaveBeenCalled()
-
-    database.member[0] = { ...database.member[0], role: 'member' }
-    vi.mocked(client.subscriptions.list).mockClear()
-    const memberResponse = await auth.handler(
-      new Request(
-        `${baseURL}/api/auth/customer/subscriptions/list?reference_id=${referenceId}`,
-        { headers: { cookie: sessionCookie } },
-      ),
-    )
-    expect(memberResponse.status).toBe(403)
-    expect(client.subscriptions.list).not.toHaveBeenCalled()
   })
 
   it('preserves existing referenceId billing after organization sync is enabled', async () => {

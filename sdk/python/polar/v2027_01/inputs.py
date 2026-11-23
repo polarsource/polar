@@ -1951,6 +1951,11 @@ period end."""
     """Date at which the paused subscription should automatically resume. If not set, it stays paused until resumed. Must be after the current period end."""
 
 
+class CustomerSubscriptionReactivate(typing.TypedDict):
+    reactivate: typing.Literal[True]
+    """Reactivate a subscription whose trial ended."""
+
+
 class CustomerSubscriptionResume(typing.TypedDict):
     resume: typing.Literal[True]
     """Resume a paused subscription immediately, starting a new billing period and charging the customer."""
@@ -4249,6 +4254,7 @@ CustomerSubscriptionUpdate: typing.TypeAlias = (
     | CustomerSubscriptionCancel
     | CustomerSubscriptionPause
     | CustomerSubscriptionResume
+    | CustomerSubscriptionReactivate
     | CustomerSubscriptionUpdateClear
 )
 

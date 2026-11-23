@@ -184,9 +184,9 @@ export const updateSubscriptions = (client: ClientBase) => {
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {PaymentFailed} Payment required to apply the subscription update.
-   * @throws {CustomerPortalSubscriptionsUpdate403Error} Customer subscription is already canceled or will be at the end of the period, the user lacks billing permissions, or pausing/resuming is not enabled for the organization.
+   * @throws {CustomerPortalSubscriptionsUpdate403Error} Customer subscription is already canceled or will be at the end of the period, the user lacks billing permissions, pausing/resuming is not enabled for the organization, or the organization can't renew subscriptions.
    * @throws {ResourceNotFound} Customer subscription was not found.
-   * @throws {CustomerPortalSubscriptionsUpdate409Error} The subscription has no payment method to charge, or is not scheduled to be canceled.
+   * @throws {CustomerPortalSubscriptionsUpdate409Error} The subscription has no payment method to charge, is not scheduled to be canceled, or can't be reactivated: its trial hasn't ended without converting, or the customer has no payment method or complete billing address.
    * @throws {HTTPValidationError} Validation Error
    */
   return async (

@@ -946,7 +946,7 @@ export type PaymentTrigger =
   | "retry_admin"
   | "retry_payment_alert";
 /**
- * Permission
+ * The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role).
  */
 export type Permission = "pull" | "triage" | "push" | "maintain" | "admin";
 /**
@@ -13106,6 +13106,16 @@ export interface CustomerSubscriptionProduct {
 }
 
 /**
+ * CustomerSubscriptionReactivate
+ */
+export interface CustomerSubscriptionReactivate {
+  /**
+   * Reactivate a subscription whose trial ended.
+   */
+  reactivate: true;
+}
+
+/**
  * CustomerSubscriptionResume
  */
 export interface CustomerSubscriptionResume {
@@ -17826,6 +17836,20 @@ export interface MetricsTotals {
 }
 
 /**
+ * MissingBillingDetails
+ */
+export interface MissingBillingDetails {
+  /**
+   * error
+   */
+  error: "MissingBillingDetails";
+  /**
+   * detail
+   */
+  detail: string;
+}
+
+/**
  * MissingInvoiceBillingDetails
  */
 export interface MissingInvoiceBillingDetails {
@@ -17861,6 +17885,20 @@ export interface NotPermitted {
    * error
    */
   error: "NotPermitted";
+  /**
+   * detail
+   */
+  detail: string;
+}
+
+/**
+ * NotTrialEndedSubscription
+ */
+export interface NotTrialEndedSubscription {
+  /**
+   * error
+   */
+  error: "NotTrialEndedSubscription";
   /**
    * detail
    */
@@ -25017,6 +25055,7 @@ export type CustomerSubscriptionUpdate =
   | CustomerSubscriptionCancel
   | CustomerSubscriptionPause
   | CustomerSubscriptionResume
+  | CustomerSubscriptionReactivate
   | CustomerSubscriptionUpdateClear;
 /**
  * Discount

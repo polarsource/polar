@@ -20,6 +20,7 @@ from polar.v2027_01.errors import (
 from polar.v2027_01.inputs import (
     CustomerSubscriptionCancel,
     CustomerSubscriptionPause,
+    CustomerSubscriptionReactivate,
     CustomerSubscriptionResume,
     CustomerSubscriptionUpdateClear,
     CustomerSubscriptionUpdateProduct,
@@ -301,6 +302,16 @@ class SubscriptionsSync(SyncServiceBase):
         *,
         request_timeout: RequestTimeout | None = None,
         request_access_token: str | None = None,
+        **kwargs: typing.Unpack[CustomerSubscriptionReactivate],
+    ) -> CustomerSubscription: ...
+
+    @typing.overload
+    def update(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[CustomerSubscriptionUpdateClear],
     ) -> CustomerSubscription: ...
 
@@ -324,9 +335,9 @@ class SubscriptionsSync(SyncServiceBase):
 
         Raises:
             PaymentFailed: Payment required to apply the subscription update.
-            CustomerPortalSubscriptionsUpdate403Error: Customer subscription is already canceled or will be at the end of the period, the user lacks billing permissions, or pausing/resuming is not enabled for the organization.
+            CustomerPortalSubscriptionsUpdate403Error: Customer subscription is already canceled or will be at the end of the period, the user lacks billing permissions, pausing/resuming is not enabled for the organization, or the organization can't renew subscriptions.
             ResourceNotFound: Customer subscription was not found.
-            CustomerPortalSubscriptionsUpdate409Error: The subscription has no payment method to charge, or is not scheduled to be canceled.
+            CustomerPortalSubscriptionsUpdate409Error: The subscription has no payment method to charge, is not scheduled to be canceled, or can't be reactivated: its trial hasn't ended without converting, or the customer has no payment method or complete billing address.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -621,6 +632,16 @@ class SubscriptionsAsync(AsyncServiceBase):
         *,
         request_timeout: RequestTimeout | None = None,
         request_access_token: str | None = None,
+        **kwargs: typing.Unpack[CustomerSubscriptionReactivate],
+    ) -> CustomerSubscription: ...
+
+    @typing.overload
+    async def update(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
         **kwargs: typing.Unpack[CustomerSubscriptionUpdateClear],
     ) -> CustomerSubscription: ...
 
@@ -644,9 +665,9 @@ class SubscriptionsAsync(AsyncServiceBase):
 
         Raises:
             PaymentFailed: Payment required to apply the subscription update.
-            CustomerPortalSubscriptionsUpdate403Error: Customer subscription is already canceled or will be at the end of the period, the user lacks billing permissions, or pausing/resuming is not enabled for the organization.
+            CustomerPortalSubscriptionsUpdate403Error: Customer subscription is already canceled or will be at the end of the period, the user lacks billing permissions, pausing/resuming is not enabled for the organization, or the organization can't renew subscriptions.
             ResourceNotFound: Customer subscription was not found.
-            CustomerPortalSubscriptionsUpdate409Error: The subscription has no payment method to charge, or is not scheduled to be canceled.
+            CustomerPortalSubscriptionsUpdate409Error: The subscription has no payment method to charge, is not scheduled to be canceled, or can't be reactivated: its trial hasn't ended without converting, or the customer has no payment method or complete billing address.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.

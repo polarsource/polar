@@ -6950,6 +6950,44 @@
             "description": "Filter by customer email."
           },
           {
+            "name": "created_after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only include checkout sessions created after this date.",
+              "title": "Created After"
+            },
+            "description": "Only include checkout sessions created after this date."
+          },
+          {
+            "name": "created_before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only include checkout sessions created before this date.",
+              "title": "Created Before"
+            },
+            "description": "Only include checkout sessions created before this date."
+          },
+          {
             "name": "page",
             "in": "query",
             "required": false,

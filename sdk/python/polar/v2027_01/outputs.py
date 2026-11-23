@@ -8180,6 +8180,13 @@ class MetricsTotals:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class MissingBillingDetails:
+    error: typing.Literal["MissingBillingDetails"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class MissingInvoiceBillingDetails:
     error: typing.Literal["MissingInvoiceBillingDetails"]
 
@@ -8196,6 +8203,13 @@ class NotOpenCheckout:
 @dataclasses.dataclass(kw_only=True, slots=True)
 class NotPermitted:
     error: typing.Literal["NotPermitted"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class NotTrialEndedSubscription:
+    error: typing.Literal["NotTrialEndedSubscription"]
 
     detail: str
 

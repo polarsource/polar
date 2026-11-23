@@ -59,10 +59,16 @@ from polar.v2027_01.outputs import (
     InactiveSubscription as InactiveSubscriptionModel,
 )
 from polar.v2027_01.outputs import (
+    MissingBillingDetails as MissingBillingDetailsModel,
+)
+from polar.v2027_01.outputs import (
     MissingInvoiceBillingDetails as MissingInvoiceBillingDetailsModel,
 )
 from polar.v2027_01.outputs import (
     NotPermitted as NotPermittedModel,
+)
+from polar.v2027_01.outputs import (
+    NotTrialEndedSubscription as NotTrialEndedSubscriptionModel,
 )
 from polar.v2027_01.outputs import (
     OffSessionChargesNotEnabled as OffSessionChargesNotEnabledModel,
@@ -552,6 +558,7 @@ class CustomerPortalSubscriptionsUpdate403Error(PolarClientError):
         | UpdateSubscriptionPlanNotAllowedModel
         | UpdateSubscriptionSeatsNotAllowedModel
         | UpdateSubscriptionUnitsNotAllowedModel
+        | PaymentNotReadyModel
     )
     error: (
         AlreadyCanceledSubscriptionModel
@@ -559,6 +566,7 @@ class CustomerPortalSubscriptionsUpdate403Error(PolarClientError):
         | UpdateSubscriptionPlanNotAllowedModel
         | UpdateSubscriptionSeatsNotAllowedModel
         | UpdateSubscriptionUnitsNotAllowedModel
+        | PaymentNotReadyModel
     )
 
     def __init__(
@@ -568,20 +576,34 @@ class CustomerPortalSubscriptionsUpdate403Error(PolarClientError):
         | PauseResumeNotAllowedModel
         | UpdateSubscriptionPlanNotAllowedModel
         | UpdateSubscriptionSeatsNotAllowedModel
-        | UpdateSubscriptionUnitsNotAllowedModel,
+        | UpdateSubscriptionUnitsNotAllowedModel
+        | PaymentNotReadyModel,
     ) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
 class CustomerPortalSubscriptionsUpdate409Error(PolarClientError):
-    error_type = PaymentMethodRequiredModel | SubscriptionNotScheduledToCancelModel
-    error: PaymentMethodRequiredModel | SubscriptionNotScheduledToCancelModel
+    error_type = (
+        PaymentMethodRequiredModel
+        | SubscriptionNotScheduledToCancelModel
+        | NotTrialEndedSubscriptionModel
+        | MissingBillingDetailsModel
+    )
+    error: (
+        PaymentMethodRequiredModel
+        | SubscriptionNotScheduledToCancelModel
+        | NotTrialEndedSubscriptionModel
+        | MissingBillingDetailsModel
+    )
 
     def __init__(
         self,
         status_code: int,
-        error: PaymentMethodRequiredModel | SubscriptionNotScheduledToCancelModel,
+        error: PaymentMethodRequiredModel
+        | SubscriptionNotScheduledToCancelModel
+        | NotTrialEndedSubscriptionModel
+        | MissingBillingDetailsModel,
     ) -> None:
         self.error = error
         super().__init__(status_code, error)

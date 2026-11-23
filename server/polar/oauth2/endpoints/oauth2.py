@@ -196,13 +196,10 @@ async def authorize(
             if organization.id in accessible_org_ids
         ]
 
-    payload = grant.request.payload
-    assert payload is not None
-
     return authorize_response_adapter.validate_python(
         {
             "client": grant.client,
-            "scopes": payload.scope,
+            "scopes": grant.request.scope,
             "sub_type": grant.sub_type,
             "sub": grant.sub,
             "organizations": organizations,

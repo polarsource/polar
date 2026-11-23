@@ -525,14 +525,12 @@ class AuthorizationServer(_AuthorizationServer):
         assert grant.sub is not None
         assert grant.client is not None
         assert grant.organization_ids is not None
-        payload = request.payload
-        assert payload is not None
         oauth2_grant_service.create_or_update_grant(
             self.session,
             sub_type=grant.sub_type,
             sub_id=grant.sub.id,
             client_id=grant.client.client_id,
-            scope=payload.scope,
+            scope=request.scope,
             organization_ids=grant.organization_ids,
         )
 

@@ -45,7 +45,7 @@ import { organization } from 'better-auth/plugins'
 import { polar, checkout, portal, webhooks } from '@polar-sh/better-auth'
 import { createPolarCore } from '@polar-sh/sdk/2026-10'
 
-const polarClient = createPolarCore({
+export const polarClient = createPolarCore({
   accessToken: process.env.POLAR_ACCESS_TOKEN,
   // Use 'sandbox' if you're using the Polar Sandbox environment
   // Remember that access tokens, products, etc. are completely separated between environments.
@@ -53,7 +53,7 @@ const polarClient = createPolarCore({
   environment: 'sandbox',
 })
 
-const auth = betterAuth({
+export const auth = betterAuth({
   // ... Better Auth config
   plugins: [
     organization(),
@@ -583,6 +583,7 @@ Ingest events with the Polar SDK from the server code that performs the metered 
 ```typescript
 import { ingestEvents } from '@polar-sh/sdk/2026-10/services/events'
 import { headers } from 'next/headers'
+import { auth, polarClient } from '@/lib/auth'
 
 const session = await auth.api.getSession({ headers: await headers() })
 if (!session) throw new Error('Unauthorized')

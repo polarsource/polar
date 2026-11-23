@@ -519,6 +519,7 @@ describe('portal plugin', () => {
       const ctx = {
         context: {
           session: { user: { id: 'user-123' } },
+          getPlugin: vi.fn().mockReturnValue({ options: {} }),
         },
         query: { reference_id: 'ref-123', page: 1, limit: 10 },
         json: vi.fn(),
@@ -526,6 +527,14 @@ describe('portal plugin', () => {
 
       await handler(ctx)
 
+      expect(resolveBillingPrincipal).toHaveBeenCalledWith({
+        context: ctx.context,
+        session: ctx.context.session,
+        organizationId: 'ref-123',
+        organizationEnabled: true,
+        authorization: 'billing',
+        roleMapping: { creatorRole: 'owner' },
+      })
       expect(mockClient.subscriptions.list).toHaveBeenCalledWith({
         page: 1,
         limit: 10,
@@ -544,6 +553,7 @@ describe('portal plugin', () => {
       const ctx = {
         context: {
           session: { user: { id: 'user-123' } },
+          getPlugin: vi.fn().mockReturnValue({ options: {} }),
           logger: { error: vi.fn() },
         },
         query: { reference_id: 'ref-123' },

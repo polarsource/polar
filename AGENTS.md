@@ -51,6 +51,7 @@ polar/
 ├── sdk/                    # SDKs and generators
 │   ├── generator/              # Internal SDK code generator
 │   ├── python/                 # Generated Python SDK
+│   ├── typescript/             # Generated TypeScript SDK
 │   └── overlays/               # OpenAPI Overlay tweaks for Speakeasy-generated SDKs
 ├── .agents/                # Agent Skills (Cursor, Claude, Codex)
 └── .claude/                # Claude Code config (settings, hooks). skills/ → ../.agents/skills
@@ -58,6 +59,12 @@ polar/
 
 The TypeScript API client is generated from the backend's OpenAPI schema. After changing the
 API, run `pnpm run generate` in `clients/packages/client`.
+
+**Never edit `sdk/python/` or `sdk/typescript/` directly.** Every file in them is generated, and
+the SDK release deletes both directories and regenerates them. A direct edit, even to a
+hand-written-looking file like `src/metering/buffered.ts` or a new test, is silently reverted on
+the next release. Change the template in `sdk/generator/{python,typescript}/template/` (or the
+emitter), then regenerate. See `sdk/generator/AGENTS.md`.
 
 ## Setup
 

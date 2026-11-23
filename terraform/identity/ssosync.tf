@@ -1,16 +1,5 @@
 locals {
   ssosync_application_id = "arn:aws:serverlessrepo:us-east-2:004480582608:applications/SSOSync"
-
-  staff_group_emails = [
-    "awsadmins@polar.sh",
-    "awsengineers@polar.sh",
-    "engineering@polar.sh",
-    "awsaccess@polar.sh",
-    "finance@polar.sh",
-    "executive@polar.sh",
-    "merchant-ops@polar.sh",
-    "risk-compliance-ops@polar.sh",
-  ]
 }
 
 resource "aws_secretsmanager_secret" "google_credentials" {
@@ -78,7 +67,6 @@ resource "aws_serverlessapplicationrepository_cloudformation_stack" "ssosync" {
     SCIMEndpointUrl         = aws_secretsmanager_secret.scim_endpoint.arn
     SCIMEndpointAccessToken = aws_secretsmanager_secret.scim_access_token.arn
     SyncMethod              = "groups"
-    IncludeGroups           = join(",", local.staff_group_emails)
     LogLevel                = "info"
     LogFormat               = "json"
     ScheduleExpression      = var.ssosync_schedule_expression
@@ -91,6 +79,7 @@ resource "aws_serverlessapplicationrepository_cloudformation_stack" "ssosync" {
       parameters["SCIMEndpointAccessToken"],
       parameters["SyncMethod"],
       parameters["LogFormat"],
+      parameters["IncludeGroups"],
     ]
   }
 }

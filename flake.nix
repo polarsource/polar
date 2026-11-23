@@ -34,7 +34,9 @@
             paths = [ pkgs.pnpm_12 ];
             nativeBuildInputs = [ pkgs.makeWrapper ];
             postBuild = ''
-              wrapProgram $out/bin/pnpm --set pnpm_config_manage_package_manager_versions false
+              for bin in $out/bin/*; do
+                wrapProgram "$bin" --set pnpm_config_manage_package_manager_versions false
+              done
             '';
           };
 

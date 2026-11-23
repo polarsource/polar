@@ -1705,10 +1705,11 @@ def plan_customer_imports(
             )
         else:
             polar = existing.get(customer.email.lower())
-            stripe_customer_id = customer.stripe_customer_id or customer.source_id
+            stripe_customer_id = customer.copied_stripe_customer_id
             if (
                 polar is not None
                 and polar.stripe_customer_id is not None
+                and stripe_customer_id is not None
                 and polar.stripe_customer_id != stripe_customer_id
             ):
                 plans[customer.source_id] = stripe_id_conflict_reason(polar)

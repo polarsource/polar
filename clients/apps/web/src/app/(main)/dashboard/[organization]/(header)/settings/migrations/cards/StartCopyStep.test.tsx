@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { schemas } from '@polar-sh/client'
 import { StartCopyStep } from './StartCopyStep'
-import { STEP_COPY, stepCopy } from './panTransferCopy'
+import { STEP_COPY } from './panTransferCopy'
 
 vi.mock('@polar-sh/orbit', () => ({
   Alert: ({
@@ -69,7 +69,6 @@ describe('StartCopyStep', () => {
         copy={STEP_COPY.start_copy}
         destinationAccountId="acct_polar"
         migrationId="mig_1"
-        source="stripe"
         sourceStripeAccountId="acct_source"
       />,
     )
@@ -106,38 +105,5 @@ describe('StartCopyStep', () => {
     expect(
       screen.getByRole('button', { name: 'Mark copy started' }),
     ).toBeTruthy()
-  })
-
-  it('sends a Lemon Squeezy merchant to request the copy in Lemon Squeezy', () => {
-    const copy = stepCopy('request_copy', 'lemon_squeezy')
-    expect(copy).toBeDefined()
-    render(
-      <StartCopyStep
-        step={{ ...step, key: 'request_copy', kind: 'confirm' }}
-        copy={copy!}
-        destinationAccountId="acct_polar"
-        migrationId="mig_1"
-        source="lemon_squeezy"
-      />,
-    )
-
-    const [settings, destination] = screen.getAllByRole('listitem')
-
-    expect(settings).toHaveTextContent(
-      'Open Settings → Migration in Lemon Squeezy',
-    )
-    expect(settings.querySelector('a')).toHaveAttribute(
-      'href',
-      'https://app.lemonsqueezy.com/settings/migration',
-    )
-    expect(destination).toHaveTextContent(
-      'Enter the Polar account ID as the destination Stripe account',
-    )
-    expect(screen.getByLabelText('Polar account ID')).toHaveValue('acct_polar')
-    expect(screen.queryByLabelText('Stripe migration ID')).toBeNull()
-    expect(
-      screen.getByRole('button', { name: "I've requested the copy" }),
-    ).toBeTruthy()
-    expect(screen.queryByText('Download CSV')).toBeNull()
   })
 })

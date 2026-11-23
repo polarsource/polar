@@ -95,8 +95,6 @@ _ACTOR_OWNERS: dict[PanStepActor, frozenset[PanStepOwner]] = {
 
 _ACTIONABLE = (PanStepStatus.pending, PanStepStatus.in_progress)
 
-STEP_REQUEST_COPY = "request_copy"
-STEP_START_COPY = "start_copy"
 STEP_STRIPE_COPY = "stripe_copy"
 STEP_VERIFY_CARDS = "verify_cards"
 STEP_RESOLVE_UNCOVERED = "resolve_uncovered"
@@ -234,7 +232,7 @@ PAN_COPY_TEMPLATES: tuple[PanStepTemplate, ...] = (
         auto_complete=True,
     ),
     PanStepTemplate(
-        key=STEP_START_COPY,
+        key="start_copy",
         owner=PanStepOwner.merchant,
         kind=PanStepKind.confirm,
         required_inputs=(STRIPE_MIGRATION_REQUEST_ID_INPUT,),
@@ -273,7 +271,7 @@ PAN_COPY_TEMPLATES: tuple[PanStepTemplate, ...] = (
 PROVIDER_COPY_TEMPLATES: tuple[PanStepTemplate, ...] = (
     PAN_COPY_TEMPLATES[0],
     PanStepTemplate(
-        key=STEP_REQUEST_COPY,
+        key="request_copy",
         owner=PanStepOwner.merchant,
         kind=PanStepKind.confirm,
     ),

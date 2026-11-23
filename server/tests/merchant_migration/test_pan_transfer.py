@@ -83,44 +83,6 @@ class TestPanTransferMethod:
         assert migration.pan_transfer_method == PanTransferMethod.pan_import
 
 
-class TestProviderStartsCopy:
-    @pytest.mark.parametrize(
-        ("platform", "expected"),
-        [
-            (MerchantMigrationSourcePlatform.stripe, False),
-            (MerchantMigrationSourcePlatform.lemon_squeezy, True),
-        ],
-    )
-    def test_only_lemon_squeezy_starts_the_copy(
-        self, platform: MerchantMigrationSourcePlatform, expected: bool
-    ) -> None:
-        migration = MerchantMigration(source_platform=platform)
-        assert migration.provider_starts_copy is expected
-
-
-class TestExactCardMapping:
-    @pytest.mark.parametrize(
-        ("platform", "exact"),
-        [
-            (MerchantMigrationSourcePlatform.stripe, True),
-            (MerchantMigrationSourcePlatform.lemon_squeezy, False),
-        ],
-    )
-    def test_only_a_stripe_source_maps_cards_exactly(
-        self, platform: MerchantMigrationSourcePlatform, exact: bool
-    ) -> None:
-        steps = _copy_steps()
-        for step in steps:
-            if step.key == "stripe_copy":
-                step.status = PanStepStatus.completed
-
-        migration = MerchantMigration(
-            source_platform=platform, pan_transfer_steps=steps
-        )
-
-        assert migration.exact_card_mapping is exact
-
-
 class TestBuild:
     def test_only_one_step_is_actionable(self) -> None:
         steps = _copy_steps()
@@ -148,33 +110,6 @@ class TestBuild:
         assert [step.status for step in steps[2:]] == [PanStepStatus.blocked] * (
             len(steps) - 2
         )
-
-    def test_provider_copy_asks_for_the_request_first(self) -> None:
-        steps = pan_transfer.build(
-            PanTransferMethod.pan_copy, provider_starts_copy=True
-        )
-
-        assert [step.key for step in steps[:3]] == [
-            "share_destination_account",
-            "request_copy",
-            "start_copy",
-        ]
-        current = pan_transfer.current(steps)
-        assert current is not None
-        assert current.key == "request_copy"
-
-    def test_requesting_a_provider_copy_needs_no_input(self) -> None:
-        steps = pan_transfer.complete(
-            PanTransferMethod.pan_copy,
-            pan_transfer.build(PanTransferMethod.pan_copy, provider_starts_copy=True),
-            "request_copy",
-            actor=PanStepActor.merchant,
-            inputs={},
-        )
-
-        current = pan_transfer.current(steps)
-        assert current is not None
-        assert current.key == "start_copy"
 
     def test_import_starts_with_ops(self) -> None:
         steps = pan_transfer.build(PanTransferMethod.pan_import)

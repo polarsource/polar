@@ -129,6 +129,16 @@ class CanonicalCustomer:
 
     type = MerchantMigrationRecordType.customer
 
+    @property
+    def copied_stripe_customer_id(self) -> str | None:
+        """Stripe records staged before `stripe_customer_id` existed carry it as
+        their source id."""
+        if self.stripe_customer_id is not None:
+            return self.stripe_customer_id
+        if self.source_id.startswith("cus_"):
+            return self.source_id
+        return None
+
 
 @dataclass
 class CanonicalSubscriptionAddOn:

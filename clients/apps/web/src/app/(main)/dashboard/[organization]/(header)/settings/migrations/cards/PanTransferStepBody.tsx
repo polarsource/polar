@@ -4,10 +4,13 @@ import { schemas } from '@polar-sh/client'
 import { Alert, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import type { MigrationSource } from '../sources'
+import { LemonSqueezyRequestCopyStep } from './LemonSqueezyRequestCopyStep'
 import { OpsUpdate } from './OpsUpdate'
 import { StepCopy } from './panTransferCopy'
 import { PanTransferStepForm } from './PanTransferStepForm'
 import { StartCopyStep } from './StartCopyStep'
+
+const START_COPY_STEP_KEY = 'start_copy'
 
 interface Props {
   step: schemas['PanTransferStep']
@@ -26,18 +29,26 @@ export function PanTransferStepBody({
   source,
   sourceStripeAccountId,
 }: Props) {
-  // The merchant starts a Stripe copy themselves, but asks Lemon Squeezy for
-  // one: there, the request carries the instructions and starting is a wait.
-  const copyInstructionsKey =
-    source === 'lemon_squeezy' ? 'request_copy' : 'start_copy'
-  if (step.key === copyInstructionsKey) {
+  if (source === 'lemon_squeezy') {
+    // Lemon Squeezy starts the copy itself, so its start_copy step is only a
+    // wait for the migreq id and renders as a plain step.
+    if (step.key === 'request_copy') {
+      return (
+        <LemonSqueezyRequestCopyStep
+          step={step}
+          copy={copy}
+          destinationAccountId={destinationAccountId}
+          migrationId={migrationId}
+        />
+      )
+    }
+  } else if (step.key === START_COPY_STEP_KEY) {
     return (
       <StartCopyStep
         step={step}
         copy={copy}
         destinationAccountId={destinationAccountId}
         migrationId={migrationId}
-        source={source}
         sourceStripeAccountId={sourceStripeAccountId}
       />
     )

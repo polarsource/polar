@@ -172,8 +172,6 @@ export function cardMovementSteps<T extends { key: string }>(steps: T[]): T[] {
   return steps.filter((step) => !isSwitchChecklistKey(step.key))
 }
 
-// Lemon Squeezy starts the copy from its own Stripe account: the merchant
-// requests it in Lemon Squeezy, which shares the migreq id once it starts.
 const LEMON_SQUEEZY_STEP_COPY: Record<string, StepCopy> = {
   request_copy: {
     title: 'Request the copy in Lemon Squeezy',

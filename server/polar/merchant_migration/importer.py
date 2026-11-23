@@ -35,7 +35,6 @@ from polar.models import (
     User,
 )
 from polar.models.discount import DiscountDuration
-from polar.models.merchant_migration import MerchantMigrationSourcePlatform
 from polar.models.merchant_migration_record import (
     MerchantMigrationRecordStatus,
     MerchantMigrationRecordType,
@@ -982,7 +981,7 @@ class CatalogImporter:
     async def _create_or_reuse_customer(
         self, customer: CanonicalCustomer, country_fallback: str | None
     ) -> ImportedCustomer:
-        stripe_customer_id = self._stripe_customer_id(customer)
+        stripe_customer_id = customer.copied_stripe_customer_id
         existing = await self.customer_repository.get_by_email_and_organization(
             customer.email, self.organization.id
         )
@@ -1024,15 +1023,6 @@ class CatalogImporter:
             tax_id=customer.tax_id,
         )
         return ImportedCustomer(customer=polar_customer)
-
-    def _stripe_customer_id(self, customer: CanonicalCustomer) -> str | None:
-        """The card copy keeps the source's Stripe customer id. Stripe records
-        staged before the field existed carry it as their source id."""
-        if customer.stripe_customer_id is not None:
-            return customer.stripe_customer_id
-        if self.migration.source_platform == MerchantMigrationSourcePlatform.stripe:
-            return customer.source_id
-        return None
 
     def _billing_address(
         self, customer: CanonicalCustomer, country_fallback: str | None

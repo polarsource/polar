@@ -101,9 +101,9 @@ Want to report events regarding Large Language Model usage, S3 file uploads or s
 
 ### LLM Strategy
 
-Wrap any LLM model from the `@ai-sdk/*` library, or a TanStack AI text adapter, to automatically fire prompt- & completion tokens used by every model call.
+Wrap any LLM model from the `@ai-sdk/*` library, a TanStack AI text adapter, or an OpenAI client, to automatically fire prompt- & completion tokens used by every model call.
 
-Works with AI SDK 5, 6 and 7, and TanStack AI 1.x.
+Works with AI SDK 5, 6 and 7, TanStack AI 1.x, and the OpenAI SDK 7.x.
 
 ```
 pnpm add @polar-sh/ingestion ai @ai-sdk/openai
@@ -175,6 +175,57 @@ export async function POST(req: Request) {
   const { text } = await chat({ adapter, threadId, messages, stream: false })
 
   return Response.json({ text })
+}
+```
+
+#### OpenAI SDK
+
+Pass an `openai` client. `client()` returns a copy of it, and every Chat Completions or Responses call made with that copy is ingested, including `parse()`, `stream()` and `runTools()`. A streamed chat completion only reports usage with `stream_options: { include_usage: true }`.
+
+```
+pnpm add @polar-sh/ingestion openai
+```
+
+```typescript
+import { Ingestion } from '@polar-sh/ingestion'
+import { LLMStrategy } from '@polar-sh/ingestion/strategies/LLM'
+import OpenAI from 'openai'
+
+// Cents per million tokens
+const prices: Record<string, { input: number; output: number }> = {
+  'gpt-4o-2024-08-06': { input: 250, output: 1000 },
+  'gpt-4o-mini-2024-07-18': { input: 15, output: 60 },
+}
+
+const llmIngestion = Ingestion({ accessToken: process.env.POLAR_ACCESS_TOKEN })
+  .strategy(new LLMStrategy(new OpenAI()))
+  // The model is picked per call, and ctx.model is the dated name the API reports
+  .cost((ctx) => {
+    const price = prices[ctx.model]
+
+    return {
+      amount: price
+        ? (ctx.inputTokens * price.input + ctx.outputTokens * price.output) /
+          1_000_000
+        : 0,
+      currency: 'usd',
+    }
+  })
+  .ingest('openai-usage')
+
+export async function POST(req: Request) {
+  const { prompt } = await req.json()
+
+  const openai = llmIngestion.client({
+    customerId: req.headers.get('X-Polar-Customer-Id') ?? '',
+  })
+
+  const response = await openai.responses.create({
+    model: 'gpt-4o',
+    input: prompt,
+  })
+
+  return Response.json({ text: response.output_text })
 }
 ```
 

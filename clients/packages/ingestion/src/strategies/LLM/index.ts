@@ -7,6 +7,7 @@ import {
 } from '../../strategy'
 import type { models } from '@polar-sh/sdk/2027-01'
 import { aiSdkMethods, type LLMStrategyAISDK } from './aiSdk'
+import { isOpenAI, type LLMStrategyOpenAI, openAIClient } from './openai'
 import {
   isTanStackAI,
   type LLMStrategyTanStackAI,
@@ -15,6 +16,7 @@ import {
 import type { Identity, Usage } from './usage'
 
 export type { LLMStrategyAISDK } from './aiSdk'
+export type { LLMStrategyOpenAI } from './openai'
 export type { LLMStrategyTanStackAI } from './tanstack'
 
 export const LLMStrategyContext = Schema.toStandardSchemaV1(
@@ -55,7 +57,8 @@ const context = (identity: Identity, usage: Usage): LLMStrategyContext => {
 }
 
 export class LLMStrategy<
-  TModel extends LLMStrategyAISDK | LLMStrategyTanStackAI = LLMStrategyAISDK,
+  TModel extends LLMStrategyAISDK | LLMStrategyTanStackAI | LLMStrategyOpenAI =
+    LLMStrategyAISDK,
 > extends IngestionStrategy<LLMStrategyContext, TModel> {
   private model: TModel
 
@@ -75,7 +78,13 @@ export class LLMStrategy<
       }
     }
 
-    const model: LLMStrategyAISDK | LLMStrategyTanStackAI = this.model
+    const model: LLMStrategyAISDK | LLMStrategyTanStackAI | LLMStrategyOpenAI =
+      this.model
+
+    if (isOpenAI(model)) {
+      return openAIClient(model, ingest) as TModel
+    }
+
     const methods: Record<PropertyKey, unknown> = isTanStackAI(model)
       ? tanStackAIMethods(model, ingest)
       : aiSdkMethods(model, ingest)

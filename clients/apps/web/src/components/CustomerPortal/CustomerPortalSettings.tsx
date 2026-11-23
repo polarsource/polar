@@ -20,7 +20,6 @@ import { useCallback, useState } from 'react'
 import ChangeEmailForm from './ChangeEmailForm'
 import { CustomerPortalTeamSection } from './CustomerPortalTeam'
 import EditBillingDetails from './EditBillingDetails'
-import { MissingBillingDetailsAlert } from './MissingBillingDetailsAlert'
 import PaymentMethod from './PaymentMethod'
 import {
   PortalCardList,
@@ -32,13 +31,11 @@ import {
 interface CustomerPortalSettingsProps {
   customerSessionToken?: string
   organization: schemas['CustomerOrganization']
-  subscriptions: schemas['CustomerSubscription'][]
 }
 
 export const CustomerPortalSettings = ({
   customerSessionToken,
   organization,
-  subscriptions,
 }: CustomerPortalSettingsProps) => {
   const api = createClientSideAPI(customerSessionToken)
   const router = useRouter()
@@ -120,11 +117,6 @@ export const CustomerPortalSettings = ({
       <PortalPageHeader
         title="Billing"
         description="Payment methods, billing details and account settings"
-      />
-
-      <MissingBillingDetailsAlert
-        customer={customer}
-        subscriptions={subscriptions}
       />
 
       <PortalSection

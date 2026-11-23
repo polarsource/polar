@@ -67,15 +67,10 @@ export default async function Page(props: {
     searchParams,
   )
 
-  const [{ response: customerResponse }, { data: subscriptions }] =
-    await Promise.all([
-      api.GET('/v1/customer-portal/customers/me', { cache: 'no-store' }),
-      api.GET('/v1/customer-portal/subscriptions/', {
-        params: { query: { limit: 100 } },
-        cache: 'no-store',
-        next: { tags: ['customer_portal'] },
-      }),
-    ])
+  const { response: customerResponse } = await api.GET(
+    '/v1/customer-portal/customers/me',
+    { cache: 'no-store' },
+  )
 
   if (customerResponse.status === 401) {
     redirect(
@@ -91,7 +86,6 @@ export default async function Page(props: {
       <CustomerPortalSettings
         customerSessionToken={token}
         organization={organization}
-        subscriptions={subscriptions?.items ?? []}
       />
     </CustomerPortalPage>
   )

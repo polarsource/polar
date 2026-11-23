@@ -10,12 +10,18 @@ import {
 import { Client, schemas } from '@polar-sh/client'
 import { Alert, Button } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { getTaxAddressFields } from '@polar-sh/ui/lib/taxAddressFields'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 import CustomerCancellationModal from './CustomerCancellationModal'
-import { hasCompleteBillingAddress } from './MissingBillingDetailsAlert'
 import { PortalConfirmDialog } from './PortalDialog'
+
+const hasCompleteBillingAddress = (
+  address: schemas['CustomerPortalCustomer']['billing_address'],
+) =>
+  !!address &&
+  getTaxAddressFields(address.country).every((field) => !!address[field])
 
 const useMissingBillingDetails = (
   subscription: schemas['CustomerSubscription'],

@@ -95,6 +95,7 @@ from polar.models.catalog import CatalogStatus
 from polar.models.custom_field import CustomFieldText, CustomFieldType
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.product_price import ProductPriceAmountType
+from polar.models.reducer import ReducerKind
 from polar.models.subscription import SubscriptionStatus
 from polar.models.user_organization import OrganizationRole
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
@@ -104,6 +105,7 @@ from polar.product.guard import is_metered_price
 from polar.product.repository import ProductRepository
 from polar.product.tiers import Tiers
 from polar.redis import Redis
+from polar.reducer.repository import ReducerRepository
 from polar.version import CURRENT_API_VERSION, V2026_04
 from polar.webhook.repository import WebhookEndpointRepository
 from polar.webhook.service import webhook as webhook_service
@@ -122,6 +124,7 @@ from tests.fixtures.random_objects import (
     create_product,
     create_product_price_metered_tiers,
     create_product_price_unit_based,
+    create_reducer,
     create_subscription,
     create_webhook_endpoint,
     set_product_benefits,
@@ -915,6 +918,48 @@ class TestApply:
         assert version.filter.model_dump() == TOOL_CALLS_METER["filter"]
         assert version.user_metadata == {"team": "sdk"}
         assert version.catalog_id == result.catalog.after.id
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_update_syncs_reducer_filter(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            external_id="my-meter",
+        )
+        await create_reducer(save_fixture, organization=organization, meters=[meter])
+        mocker.patch("polar.meter.service.enqueue_job")
+        updated_filter = {
+            "conjunction": "and",
+            "clauses": [{"property": "name", "operator": "eq", "value": "other-event"}],
+        }
+
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {"meters": [{**FIXTURE_METER, "filter": updated_filter}]}
+            ),
+        )
+
+        updated = await MeterRepository.from_session(
+            session
+        ).get_by_external_id_and_organization("my-meter", organization.id)
+        assert updated is not None
+        assert updated.filter.model_dump() == updated_filter
+        reducer = await ReducerRepository.from_session(session).get_by_meter_and_kind(
+            updated.id, ReducerKind.usage
+        )
+        assert reducer is not None
+        assert reducer.filter == updated.filter
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_ignores_other_organization_meter(

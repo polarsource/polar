@@ -38,7 +38,11 @@ export const useProductFilter = (
     fetchNextPage,
   } = useInfiniteProducts(organization.id, {
     is_recurring: true,
-    ...(query ? { query, catalog_status: null } : {}),
+    // Subscriptions outlive their product being archived or leaving the live
+    // catalog, so those are listed as well.
+    is_archived: null,
+    catalog_status: null,
+    ...(query ? { query } : {}),
     sorting: ['name'],
     limit: PAGE_SIZE,
   })

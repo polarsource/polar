@@ -415,6 +415,115 @@ class TestUpdateOrganization:
 
         assert response.status_code == 404
 
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_trial_ended_reactivation_period(
+        self,
+        api_version: APIVersion,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        subscription_settings = {
+            "allow_multiple_subscriptions": False,
+            "allow_customer_updates": True,
+            "proration_behavior": "prorate",
+            "benefit_revocation_grace_period": 0,
+            "prevent_trial_abuse": False,
+        }
+        response = await client.get(f"/v1/organizations/{organization.id}")
+        assert (
+            response.json()["subscription_settings"]["trial_ended_reactivation_period"]
+            == 14
+        )
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "subscription_settings": {
+                    **subscription_settings,
+                    "trial_ended_reactivation_period": 0,
+                }
+            },
+        )
+        assert response.status_code == 200
+        assert (
+            response.json()["subscription_settings"]["trial_ended_reactivation_period"]
+            == 0
+        )
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "subscription_settings": {
+                    **subscription_settings,
+                    "benefit_revocation_grace_period": 7,
+                }
+            },
+        )
+        assert response.status_code == 200
+        json = response.json()["subscription_settings"]
+        assert json["benefit_revocation_grace_period"] == 7
+        assert json["trial_ended_reactivation_period"] == 0
+
+    @pytest.mark.api_version(V2026_10)
+    @pytest.mark.auth
+    async def test_trial_ended_reactivation_period_hidden_before_2027_01(
+        self,
+        api_version: APIVersion,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.subscription_settings = {
+            **organization.subscription_settings,
+            "trial_ended_reactivation_period": 0,
+        }
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "subscription_settings": {
+                    "allow_multiple_subscriptions": False,
+                    "allow_customer_updates": True,
+                    "proration_behavior": "prorate",
+                    "benefit_revocation_grace_period": 7,
+                    "prevent_trial_abuse": False,
+                }
+            },
+        )
+
+        assert response.status_code == 200
+        json = response.json()["subscription_settings"]
+        assert json["benefit_revocation_grace_period"] == 7
+        assert "trial_ended_reactivation_period" not in json
+        assert organization.trial_ended_reactivation_period == 0
+
+    @pytest.mark.auth
+    async def test_negative_trial_ended_reactivation_period(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "subscription_settings": {
+                    "allow_multiple_subscriptions": False,
+                    "allow_customer_updates": True,
+                    "proration_behavior": "prorate",
+                    "benefit_revocation_grace_period": 0,
+                    "prevent_trial_abuse": False,
+                    "trial_ended_reactivation_period": -1,
+                }
+            },
+        )
+
+        assert response.status_code == 422
+
     @pytest.mark.auth
     async def test_negative_revenue_validation(
         self,

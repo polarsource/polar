@@ -657,7 +657,12 @@ class OrganizationService:
                         }
                     ]
                 )
-            organization.subscription_settings = update_schema.subscription_settings
+            organization.subscription_settings = {
+                "trial_ended_reactivation_period": (
+                    organization.trial_ended_reactivation_period
+                ),
+                **update_schema.subscription_settings,
+            }
 
         if update_schema.dispute_settings is not MISSING:
             if (

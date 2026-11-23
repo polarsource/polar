@@ -15,6 +15,7 @@ from typing import (
 from urllib.parse import urlparse
 from uuid import UUID
 
+from pydantic import Field
 from pydantic.json_schema import WithJsonSchema
 from sqlalchemy import (
     TIMESTAMP,
@@ -49,6 +50,8 @@ from polar.exceptions import PolarError
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.db.models import RateLimitGroupMixin, RecordModel
 from polar.kit.extensions.sqlalchemy import StringEnum
+from polar.kit.versioning import Version
+from polar.version import V2027_01
 
 from .account import Account
 
@@ -87,6 +90,9 @@ class OrganizationDetails(TypedDict, total=False):
     previous_annual_revenue: int
 
 
+DEFAULT_TRIAL_ENDED_REACTIVATION_PERIOD = 14
+
+
 class OrganizationSubscriptionSettings(TypedDict):
     allow_multiple_subscriptions: bool
     proration_behavior: (
@@ -103,6 +109,9 @@ class OrganizationSubscriptionSettings(TypedDict):
         | AutoProrationBehavior
     )
     benefit_revocation_grace_period: int
+    trial_ended_reactivation_period: Annotated[
+        NotRequired[int], Field(ge=0), Version(starting_from=V2027_01)
+    ]
     prevent_trial_abuse: bool
     # Legacy - to be removed separately
     allow_customer_updates: bool
@@ -114,6 +123,7 @@ def _default_subscription_settings() -> OrganizationSubscriptionSettings:
         "allow_customer_updates": True,
         "proration_behavior": SubscriptionProrationBehavior.prorate,
         "benefit_revocation_grace_period": 0,
+        "trial_ended_reactivation_period": DEFAULT_TRIAL_ENDED_REACTIVATION_PERIOD,
         "prevent_trial_abuse": False,
     }
 
@@ -948,6 +958,12 @@ class Organization(RateLimitGroupMixin, RecordModel):
     @property
     def benefit_revocation_grace_period(self) -> int:
         return self.subscription_settings["benefit_revocation_grace_period"]
+
+    @property
+    def trial_ended_reactivation_period(self) -> int:
+        return self.subscription_settings.get(
+            "trial_ended_reactivation_period", DEFAULT_TRIAL_ENDED_REACTIVATION_PERIOD
+        )
 
     @property
     def prevent_trial_abuse(self) -> bool:

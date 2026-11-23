@@ -69,6 +69,7 @@ from polar.models.checkout import CheckoutStatus
 from polar.models.custom_field import CustomFieldType
 from polar.models.customer import CustomerType
 from polar.models.discount import DiscountDuration, DiscountType
+from polar.models.dispute import DisputeStatus
 from polar.models.merchant_migration_record import MerchantMigrationCutoverStatus
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.organization import Organization, OrganizationStatus
@@ -133,6 +134,7 @@ from tests.fixtures.random_objects import (
     create_custom_field,
     create_customer,
     create_discount,
+    create_dispute,
     create_event,
     create_meter,
     create_order,
@@ -6989,6 +6991,34 @@ class TestUpdateProductBenefitsGrants:
             status=refund_status,
             revoke_benefits=revoke_benefits,
         )
+
+        await order_service.update_product_benefits_grants(session, product)
+
+        assert enqueue_job_mock.called is expected_grant
+
+    @pytest.mark.parametrize(
+        ("dispute_status", "expected_grant"),
+        [
+            (DisputeStatus.lost, False),
+            (DisputeStatus.needs_response, True),
+        ],
+    )
+    async def test_disputed_orders(
+        self,
+        dispute_status: DisputeStatus,
+        expected_grant: bool,
+        enqueue_job_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        order = await create_order(
+            save_fixture, product=product, customer=customer, subscription=None
+        )
+        payment = await create_payment(save_fixture, organization, order=order)
+        await create_dispute(save_fixture, order, payment, status=dispute_status)
 
         await order_service.update_product_benefits_grants(session, product)
 

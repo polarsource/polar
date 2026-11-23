@@ -10,7 +10,7 @@ from urllib.parse import urlencode
 import stripe as stripe_lib
 import structlog
 from pydantic import MISSING
-from sqlalchemy import exists, func, select
+from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload
 
 from polar.account.repository import AccountRepository
@@ -77,7 +77,6 @@ from polar.models import (
     PaymentMethod,
     Product,
     ProductPrice,
-    Refund,
     Subscription,
     Transaction,
     User,
@@ -87,7 +86,6 @@ from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.payment import PaymentTrigger
 from polar.models.product import ProductBillingType
-from polar.models.refund import RefundStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import TransactionType
 from polar.models.webhook_endpoint import WebhookEventType
@@ -141,7 +139,7 @@ from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 
 from .amounts import apply_wallet_balance, calculate_tax, compute_order_amounts
-from .repository import OrderRepository
+from .repository import OrderRepository, order_benefits_revoked_clause
 from .schemas import OrderCreate, OrderInvoice, OrderReceipt, OrderUpdate
 from .sorting import OrderSortProperty
 
@@ -2768,11 +2766,7 @@ class OrderService:
                 Order.subscription_id.is_(None),
                 Order.seats.is_(None),
                 ~Customer.is_deleted,
-                ~exists().where(
-                    Refund.order_id == Order.id,
-                    Refund.revoke_benefits.is_(True),
-                    Refund.status.not_in((RefundStatus.failed, RefundStatus.canceled)),
-                ),
+                ~order_benefits_revoked_clause(Order.id),
             )
             .options(joinedload(Order.customer))
         )

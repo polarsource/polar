@@ -1,11 +1,10 @@
 """
-Revoke benefit grants that were re-granted on orders whose benefits were revoked
-by a refund.
+Revoke benefit grants that are active on orders whose benefits were revoked by a
+refund or a closed dispute.
 
 Updating a product's benefits used to enqueue grants for every one-time order of
-that product, including orders refunded with `revoke_benefits`. This finds active
-grants on such orders that were granted after the refund, and enqueues the same
-`benefit.revoke` job a refund would.
+that product, including those orders. This finds active, non-manual grants on
+such orders and enqueues the same `benefit.revoke` job a refund would.
 
 Dry-run by default; pass --execute to enqueue the revocations.
 """
@@ -21,11 +20,11 @@ import structlog
 import typer
 from rich import print
 from rich.table import Table
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, select
 
 from polar.kit.db.postgres import create_async_sessionmaker
-from polar.models import BenefitGrant, Order, Organization, Refund
-from polar.models.refund import RefundStatus
+from polar.models import BenefitGrant, Order, Organization
+from polar.order.repository import order_benefits_revoked_clause
 from polar.postgres import create_async_engine
 from polar.redis import create_redis
 from polar.worker import JobQueueManager, enqueue_job, make_bulk_job_delay_calculator
@@ -55,20 +54,6 @@ GrantRow = Select[
 
 
 def get_statement(organization_id: uuid.UUID | None) -> GrantRow:
-    revoking_refunds = (
-        select(
-            Refund.order_id.label("order_id"),
-            func.min(Refund.created_at).label("revoked_at"),
-        )
-        .where(
-            Refund.order_id.is_not(None),
-            Refund.revoke_benefits.is_(True),
-            Refund.status.not_in((RefundStatus.failed, RefundStatus.canceled)),
-        )
-        .group_by(Refund.order_id)
-        .subquery()
-    )
-
     statement = (
         select(
             BenefitGrant.id,
@@ -81,13 +66,12 @@ def get_statement(organization_id: uuid.UUID | None) -> GrantRow:
         )
         .join(Order, Order.id == BenefitGrant.order_id)
         .join(Organization, Organization.id == Order.organization_id)
-        .join(revoking_refunds, revoking_refunds.c.order_id == Order.id)
         .where(
             BenefitGrant.deleted_at.is_(None),
             BenefitGrant.granted_at.is_not(None),
             BenefitGrant.revoked_at.is_(None),
             BenefitGrant.manually_granted_at.is_(None),
-            BenefitGrant.granted_at > revoking_refunds.c.revoked_at,
+            order_benefits_revoked_clause(Order.id),
             Order.subscription_id.is_(None),
             Order.seats.is_(None),
         )

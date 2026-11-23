@@ -1,6 +1,7 @@
 import { useDebouncedCallback } from '@/hooks/utils'
 import { Input } from '@polar-sh/orbit'
-import { Search } from '@polar-sh/orbit/icons'
+import { SearchOutlined } from '@polar-sh/orbit/icons'
+import { useEffect, useRef } from 'react'
 
 const SEARCH_DELAY = 300
 
@@ -17,6 +18,30 @@ export const ToolbarSearch = ({
   onChange,
   placeholder,
 }: ToolbarSearchProps) => {
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  // "/" focuses the search, unless it is being typed into another field.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement
+      if (
+        event.key !== '/' ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.altKey ||
+        target.isContentEditable ||
+        ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)
+      ) {
+        return
+      }
+      event.preventDefault()
+      inputRef.current?.focus()
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [])
+
   const commit = useDebouncedCallback(
     (text: string) => onChange(text.trim() || null),
     SEARCH_DELAY,
@@ -24,10 +49,11 @@ export const ToolbarSearch = ({
 
   return (
     <Input
+      ref={inputRef}
       type="search"
       aria-label="Search"
       className="h-8 w-56 rounded-full"
-      preSlot={<Search className="size-4" />}
+      preSlot={<SearchOutlined className="size-4!" />}
       placeholder={placeholder}
       defaultValue={value ?? ''}
       onChange={(event) => commit(event.target.value)}

@@ -87,10 +87,9 @@ When this feature is enabled, Polar tracks trial redemptions using:
 
 - **Email addresses**: We automatically detect and normalize email aliases (e.g., `user+alias@example.com` is treated as `user@example.com`) to prevent abuse through simple email variations.
 - **Payment method fingerprints**: We track the unique fingerprint of payment methods (credit cards) used during checkout to identify returning customers even if they use a different email address.
+- **Customer IDs**: A redemption stays linked to the customer record when the customer changes their email address.
 
-A customer will be blocked from starting a new trial if they have previously redeemed a trial for any of your products and match either:
-- The same unaliased email address, OR
-- The same payment method fingerprint
+A customer who has already redeemed a trial for any of your products can't start another trial if any of these signals match.
 
 ### Enabling the feature
 

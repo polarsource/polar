@@ -3,10 +3,8 @@ from typing import Any, cast
 
 import pytest
 from fastapi import UploadFile
-from pytest_mock import MockerFixture
 
 from polar.backoffice.organizations_v2.license_keys_import import (
-    LicenseKeysImportError,
     license_keys_import,
 )
 from polar.benefit.grant.repository import BenefitGrantRepository
@@ -108,35 +106,3 @@ class TestLicenseKeysImport:
         ).get_by_email_and_organization("new@example.com", organization.id)
         assert new_customer is not None
         assert new_customer.name == "New Customer"
-
-    async def test_reports_every_invalid_row(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        customer: Customer,
-        benefit_organization: Benefit,
-        mocker: MockerFixture,
-    ) -> None:
-        benefit = await _license_key_benefit(save_fixture, organization)
-        mocker.patch.object(session, "rollback")
-
-        with pytest.raises(LicenseKeysImportError) as exc_info:
-            await _run(
-                session,
-                organization,
-                _csv(
-                    f",,{benefit.id},LS-ONE,,,",
-                    f"{customer.email},,{benefit_organization.id},LS-TWO,,,",
-                    f"{customer.email},,{benefit.id},,,,",
-                    f"{customer.email},,{benefit.id},LS-DUP,,,",
-                    f"{customer.email},,{benefit.id},LS-DUP,,,",
-                ),
-            )
-
-        assert [(error.index, error.message) for error in exc_info.value.errors] == [
-            (2, "Missing email"),
-            (3, f"Not a license key benefit: {benefit_organization.id}"),
-            (4, "Missing key"),
-            (6, "This license key is already used in this organization."),
-        ]

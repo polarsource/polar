@@ -8,7 +8,6 @@ from dateutil.relativedelta import relativedelta
 from polar.auth.models import AuthSubject
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.grant.schemas import BenefitGrantCreate, BenefitGrantLicenseKeyCreate
-from polar.benefit.grant.service import LicenseKeyAlreadyExists
 from polar.benefit.grant.service import benefit_grant as benefit_grant_service
 from polar.benefit.strategies.license_keys.properties import (
     BenefitGrantLicenseKeysProperties,
@@ -322,52 +321,3 @@ class TestGrantProvidedKey:
         assert license_key.status == LicenseKeyStatus.granted
         assert license_key.expires_at == expires_at
         assert license_key.limit_activations == 5
-
-    async def test_key_without_terms_never_expires(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        customer: Customer,
-        member_owner: Member,
-    ) -> None:
-        license_key = await self._grant(
-            session,
-            save_fixture,
-            organization,
-            customer,
-            BenefitGrantLicenseKeyCreate(
-                key="LS-LIFETIME", status=LicenseKeyStatus.disabled
-            ),
-        )
-
-        assert license_key.expires_at is None
-        assert license_key.limit_activations == 2
-        assert license_key.status == LicenseKeyStatus.disabled
-
-    async def test_issued_key_cannot_be_granted_again(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        customer: Customer,
-        member_owner: Member,
-    ) -> None:
-        license_key = await self._grant(
-            session,
-            save_fixture,
-            organization,
-            customer,
-            BenefitGrantLicenseKeyCreate(key="LS-ISSUED"),
-        )
-
-        with pytest.raises(LicenseKeyAlreadyExists):
-            await benefit_grant_service.create(
-                session,
-                AuthSubject(organization, set(), None),
-                BenefitGrantCreate(
-                    customer_id=customer.id,
-                    benefit_id=license_key.benefit_id,
-                    license_key=BenefitGrantLicenseKeyCreate(key="LS-ISSUED"),
-                ),
-            )

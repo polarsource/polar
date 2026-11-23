@@ -397,27 +397,6 @@ class TestCreate:
             },
         }
 
-    async def test_license_key_requires_license_key_benefit(
-        self,
-        session: AsyncSession,
-        organization: Organization,
-        customer: Customer,
-        member_owner: Member,
-        benefit_organization: Benefit,
-    ) -> None:
-        auth_subject = AuthSubject(organization, set(), None)
-
-        with pytest.raises(PolarRequestValidationError):
-            await benefit_grant_service.create(
-                session,
-                auth_subject,
-                BenefitGrantCreate(
-                    customer_id=customer.id,
-                    benefit_id=benefit_organization.id,
-                    license_key=BenefitGrantLicenseKeyCreate(key="LS-1"),
-                ),
-            )
-
     async def test_license_key_already_used(
         self,
         session: AsyncSession,

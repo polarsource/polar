@@ -1,10 +1,7 @@
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Literal
+from typing import Literal
 
 import stripe as stripe_lib
-
-if TYPE_CHECKING:
-    from polar.models import PaymentMethod
 
 PaymentMode = Literal["payment", "subscription", "setup"]
 
@@ -125,16 +122,6 @@ def get_payment_method_country(
     details = getattr(payment_method_preview, payment_method_type, None)
     return getattr(details, "country", None) or IMPLIED_COUNTRIES.get(
         payment_method_type
-    )
-
-
-def get_saved_payment_method_country(
-    payment_method: "PaymentMethod | None",
-) -> str | None:
-    if payment_method is None:
-        return None
-    return payment_method.method_metadata.get("country") or IMPLIED_COUNTRIES.get(
-        payment_method.type
     )
 
 

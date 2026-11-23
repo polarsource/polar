@@ -8,7 +8,6 @@ from pydantic import MISSING
 
 from polar.auth.models import AuthSubject, Customer, Member
 from polar.checkout import ip_geolocation
-from polar.checkout.payment_methods import get_saved_payment_method_country
 from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.integrations.stripe.service import stripe as stripe_service
@@ -21,6 +20,7 @@ from polar.order.service import order as order_service
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.postgres import AsyncSession
+from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
 from polar.tax.tax_id import (
     IncompatibleTaxIDFormat,
@@ -179,14 +179,6 @@ class CustomerService:
                     ]
                 ) from e
 
-        await self._log_unconfirmed_billing_country(
-            session,
-            customer,
-            previous_billing_country,
-            new_default_payment_method,
-            ip_country,
-        )
-
         repository = CustomerRepository.from_session(session)
         customer = await repository.update(
             customer,
@@ -231,6 +223,10 @@ class CustomerService:
                 session, customer, new_default_payment_method
             )
 
+        await self._log_unconfirmed_billing_country(
+            session, customer, previous_billing_country, ip_country
+        )
+
         return customer
 
     async def _log_unconfirmed_billing_country(
@@ -238,7 +234,6 @@ class CustomerService:
         session: AsyncSession,
         customer: CustomerModel,
         previous_billing_country: str | None,
-        default_payment_method: PaymentMethod | None,
         ip_country: str | None,
     ) -> None:
         billing_address = customer.billing_address
@@ -248,33 +243,54 @@ class CustomerService:
         ):
             return
 
-        billing_countries = ip_geolocation.get_billing_countries(
+        matching_countries = ip_geolocation.get_matching_countries(
             billing_address.country
         )
-        if ip_country in billing_countries:
+        if ip_country in matching_countries:
             return
 
-        if (
-            default_payment_method is None
-            and customer.default_payment_method_id is not None
-        ):
-            repository = PaymentMethodRepository.from_session(session)
-            default_payment_method = await repository.get_by_id_and_customer(
-                customer.default_payment_method_id, customer.id
-            )
-        payment_method_country = get_saved_payment_method_country(
-            default_payment_method
+        subscriptions = await SubscriptionRepository.from_session(
+            session
+        ).list_payable_by_customer(customer.id)
+        if not subscriptions:
+            return
+
+        charged_payment_method_ids = {
+            subscription.payment_method_id or customer.default_payment_method_id
+            for subscription in subscriptions
+        }
+        payment_methods = await PaymentMethodRepository.from_session(
+            session
+        ).list_by_customer(customer.id)
+        country_by_payment_method_id = {
+            payment_method.id: payment_method.country
+            for payment_method in payment_methods
+        }
+        # Every charged payment method must confirm: the new country taxes them all.
+        charged_countries = [
+            country_by_payment_method_id.get(payment_method_id)
+            if payment_method_id is not None
+            else None
+            for payment_method_id in charged_payment_method_ids
+        ]
+        if all(country in matching_countries for country in charged_countries):
+            return
+
+        payment_method_countries = sorted(
+            {country for country in charged_countries if country is not None}
         )
-        if payment_method_country in billing_countries:
-            return
-
         # Shadow mode: measure how often this triggers before blocking on it.
         log.info(
             "customer_portal.billing_country_mismatch"
-            if ip_country is not None or payment_method_country is not None
+            if ip_country is not None or payment_method_countries
             else "customer_portal.billing_country_unverified",
             customer_id=str(customer.id),
             organization_id=str(customer.organization_id),
+            payment_method_countries=payment_method_countries,
+            charged_payment_method_count=len(charged_payment_method_ids),
+            ip_country=ip_country,
+            billing_country=billing_address.country,
+            previous_billing_country=previous_billing_country,
         )
 
     async def list_payment_methods(

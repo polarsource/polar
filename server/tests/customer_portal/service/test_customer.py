@@ -19,12 +19,16 @@ from polar.event.system import SystemEvent
 from polar.exceptions import PolarRequestValidationError
 from polar.integrations.stripe.service import StripeService
 from polar.kit.address import Address, AddressInput, CountryAlpha2, CountryAlpha2Input
-from polar.models import Customer, Organization, PaymentMethod
+from polar.models import Customer, Organization, PaymentMethod, Product
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession
 from polar.tax.tax_id import TaxIDFormat
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_customer, create_payment_method
+from tests.fixtures.random_objects import (
+    create_active_subscription,
+    create_customer,
+    create_payment_method,
+)
 from tests.fixtures.stripe import build_stripe_payment_method
 
 
@@ -591,7 +595,6 @@ class TestUpdate:
                 None,
                 id="implied payment method country confirms",
             ),
-            pytest.param("GP", "FR", None, None, id="territory seen as parent"),
             pytest.param(
                 "UG",
                 "SE",
@@ -618,6 +621,7 @@ class TestUpdate:
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
+        product: Product,
     ) -> None:
         log_mock = mocker.patch("polar.customer_portal.service.customer.log")
         customer = await create_customer(
@@ -631,6 +635,9 @@ class TestUpdate:
                 save_fixture, customer, type=type, method_metadata=method_metadata
             )
             await save_fixture(customer)
+        await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
 
         updated_customer = await customer_service.update(
             session,
@@ -652,9 +659,16 @@ class TestUpdate:
                 expected_event,
                 customer_id=str(customer.id),
                 organization_id=str(organization.id),
+                payment_method_countries=[default_payment_method[1]["country"]]
+                if default_payment_method is not None
+                else [],
+                charged_payment_method_count=1,
+                ip_country=ip_country,
+                billing_country=billing_country,
+                previous_billing_country="SE",
             )
 
-    async def test_billing_country_confirmed_by_new_default_payment_method(
+    async def test_billing_country_not_checked_without_paid_subscription(
         self,
         mocker: MockerFixture,
         save_fixture: SaveFixture,
@@ -666,6 +680,40 @@ class TestUpdate:
             save_fixture,
             organization=organization,
             billing_address=Address(country=CountryAlpha2("SE")),
+        )
+
+        await customer_service.update(
+            session,
+            customer,
+            CustomerPortalCustomerUpdate(
+                billing_address=AddressInput(country=CountryAlpha2Input("UG"))
+            ),
+            ip_country="SE",
+        )
+
+        log_mock.info.assert_not_called()
+
+    async def test_billing_country_confirmed_by_new_default_payment_method(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        log_mock = mocker.patch("polar.customer_portal.service.customer.log")
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("SE")),
+        )
+        await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=await create_payment_method(
+                save_fixture, customer, method_metadata={"country": "SE"}
+            ),
         )
         payment_method = await create_payment_method(
             save_fixture, customer, method_metadata={"country": "UG"}
@@ -682,3 +730,43 @@ class TestUpdate:
         )
 
         log_mock.info.assert_not_called()
+
+    async def test_billing_country_not_confirmed_by_one_of_several_charged(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        log_mock = mocker.patch("polar.customer_portal.service.customer.log")
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("SE")),
+        )
+        for country in ("SE", "UG"):
+            await create_active_subscription(
+                save_fixture,
+                product=product,
+                customer=customer,
+                payment_method=await create_payment_method(
+                    save_fixture, customer, method_metadata={"country": country}
+                ),
+            )
+
+        await customer_service.update(
+            session,
+            customer,
+            CustomerPortalCustomerUpdate(
+                billing_address=AddressInput(country=CountryAlpha2Input("UG"))
+            ),
+            ip_country="SE",
+        )
+
+        log_mock.info.assert_called_once()
+        assert log_mock.info.call_args.kwargs["payment_method_countries"] == [
+            "SE",
+            "UG",
+        ]
+        assert log_mock.info.call_args.kwargs["charged_payment_method_count"] == 2

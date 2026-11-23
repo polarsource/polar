@@ -60,6 +60,14 @@ resource "aws_security_group" "this" {
   description = "Outbound access for Tailscale and package installation."
   vpc_id      = data.aws_subnet.this.vpc_id
 
+  ingress {
+    description = "Tailscale direct connections"
+    from_port   = 41641
+    to_port     = 41641
+    protocol    = "udp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0

@@ -1,5 +1,3 @@
-import { setTimeout as sleep } from "node:timers/promises";
-
 import type { EventInput } from "./event";
 
 import {
@@ -23,6 +21,21 @@ import {
 export type { DropReason } from "./errors";
 
 const RETRY_AFTER_BUDGET_MS = 300_000;
+
+function sleep(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) return reject(signal.reason);
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(signal.reason);
+    };
+    const timer = setTimeout(() => {
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
+}
 
 export interface MeteringClient {
   events: {
@@ -393,7 +406,7 @@ export class BufferedMeteringStrategy {
             delay = 2 ** attempt * 1000 * (1 + (Math.random() * 2 - 1) * 0.1);
             attempt++;
           }
-          await sleep(Math.min(delay, 2_147_483_647), undefined, { signal: this.abort.signal });
+          await sleep(Math.min(delay, 2_147_483_647), this.abort.signal);
         } else if (error instanceof PolarError) {
           return { reason: "permanent_error", cause: error };
         } else {

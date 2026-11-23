@@ -157,6 +157,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         }
         footerLabel={countLabel}
         isLoadingMore={isFetchingNextPage}
+        onRetry={isFetchNextPageError ? fetchNextPage : undefined}
         onEndReached={loadMore}
       />
       <ExportOrdersModal

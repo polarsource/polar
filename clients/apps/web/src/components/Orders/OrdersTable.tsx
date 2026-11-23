@@ -174,6 +174,7 @@ interface OrdersTableProps {
   footerLabel?: string
   isLoadingMore: boolean
   onEndReached: () => void
+  onRetry?: () => void
 }
 
 export const OrdersTable = ({
@@ -186,6 +187,7 @@ export const OrdersTable = ({
   footerLabel,
   isLoadingMore,
   onEndReached,
+  onRetry,
 }: OrdersTableProps) => {
   const table = useCondensedTable({
     columns: getColumns(organization, metadataKeys),
@@ -204,6 +206,7 @@ export const OrdersTable = ({
       footerLabel={footerLabel}
       isLoadingMore={isLoadingMore}
       onEndReached={onEndReached}
+      onRetry={onRetry}
     />
   )
 }

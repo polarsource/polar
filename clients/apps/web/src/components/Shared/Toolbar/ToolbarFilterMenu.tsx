@@ -164,7 +164,12 @@ const OptionsPanel = ({
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           onKeyDown={(event) => {
-            const [first] = options
+            // Selected options are pinned first, so a multi-select takes the
+            // first one that is not yet picked.
+            const first =
+              filter.type === 'multi'
+                ? options.find((option) => !isSelected(filter, option))
+                : options[0]
             if (event.key === 'Enter' && first) pick(first)
           }}
         />

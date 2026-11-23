@@ -146,6 +146,7 @@ interface CheckoutsTableProps {
   footerLabel?: string
   isLoadingMore: boolean
   onEndReached: () => void
+  onRetry?: () => void
 }
 
 export const CheckoutsTable = ({
@@ -157,6 +158,7 @@ export const CheckoutsTable = ({
   footerLabel,
   isLoadingMore,
   onEndReached,
+  onRetry,
 }: CheckoutsTableProps) => {
   const table = useCondensedTable({
     columns: getColumns(organization),
@@ -176,6 +178,7 @@ export const CheckoutsTable = ({
       footerLabel={footerLabel}
       isLoadingMore={isLoadingMore}
       onEndReached={onEndReached}
+      onRetry={onRetry}
     />
   )
 }

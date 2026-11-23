@@ -12,7 +12,7 @@ import { type ToolbarAction } from '@/components/Shared/Toolbar/ToolbarActionsMe
 import { useCustomerFilter } from '@/components/Shared/Toolbar/useCustomerFilter'
 import { useDateRangeFilter } from '@/components/Shared/Toolbar/useDateRangeFilter'
 import { useProductFilter } from '@/components/Shared/Toolbar/useProductFilter'
-import { checkoutStatusOptions } from '@/components/Checkout/CheckoutStatus'
+import { checkoutStatusOptions } from '@/components/Checkouts/CheckoutStatus'
 import { schemas } from '@polar-sh/client'
 import { CircleDashed, Mail } from '@polar-sh/orbit/icons'
 import { useState } from 'react'

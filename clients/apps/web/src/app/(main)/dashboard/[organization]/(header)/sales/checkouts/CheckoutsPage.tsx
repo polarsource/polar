@@ -1,6 +1,6 @@
 'use client'
 
-import { CheckoutsTable } from '@/components/Checkout/CheckoutsTable'
+import { CheckoutsTable } from '@/components/Checkouts/CheckoutsTable'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { type ProductFilter } from '@/components/Products/ProductSelect'
 import { type ToolbarAction } from '@/components/Shared/Toolbar/ToolbarActionsMenu'
@@ -158,6 +158,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         }
         footerLabel={countLabel}
         isLoadingMore={isFetchingNextPage}
+        onRetry={isFetchNextPageError ? fetchNextPage : undefined}
         onEndReached={loadMore}
       />
     </DashboardBody>

@@ -175,6 +175,7 @@ class TestList:
         assert len(json["items"]) == len(checkouts)
 
     @pytest.mark.auth
+    @pytest.mark.api_version(V2027_01)
     async def test_created_range(
         self,
         save_fixture: SaveFixture,

@@ -23,6 +23,8 @@ interface CondensedTableViewProps<T extends RowData> {
   footerLabel?: string
   isLoadingMore: boolean
   onEndReached: () => void
+  // Given when the next page failed to load, to ask for it again.
+  onRetry?: () => void
 }
 
 // A list page's table: the header stays, the rows scroll and load more at the
@@ -36,6 +38,7 @@ export const CondensedTableView = <T extends RowData>({
   footerLabel,
   isLoadingMore,
   onEndReached,
+  onRetry,
 }: CondensedTableViewProps<T>) => {
   const { ref: endRef, inViewport: isEndVisible } =
     useInViewport<HTMLDivElement>()
@@ -60,13 +63,21 @@ export const CondensedTableView = <T extends RowData>({
             table={table}
             selectedId={null}
             onSelect={onOpen}
-            onStep={ignore}
             onClose={ignore}
+            navigable={false}
             renderCompact={renderCompact}
             inset="l"
           />
         )}
         <div ref={endRef} />
+        {onRetry && !isLoadingMore && (
+          <Box alignItems="center" gap="s" padding="l">
+            <Text color="muted">Could not load more.</Text>
+            <button type="button" className="cursor-pointer" onClick={onRetry}>
+              <Text>Try again</Text>
+            </button>
+          </Box>
+        )}
         {isLoadingMore && (
           <Box justifyContent="center" paddingVertical="l">
             <Spinner />

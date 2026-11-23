@@ -55,7 +55,7 @@ describe('StreamStrategy', () => {
       expect(received.byteLength).toBe(200)
       expect(sentEvents(ingest)).toEqual([
         {
-          customerId: 'alice',
+          customer_id: 'alice',
           name: 'stream-bytes',
           metadata: { bytes: 200, strategy: 'Stream' },
         },
@@ -94,7 +94,7 @@ describe('StreamStrategy', () => {
 
     await vi.waitFor(() => expect(ingest).toHaveBeenCalled())
     expect(sentEvents(ingest)).toEqual([
-      expect.objectContaining({ customerId: 'alice' }),
+      expect.objectContaining({ customer_id: 'alice' }),
     ])
   })
 

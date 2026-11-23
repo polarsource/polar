@@ -5,29 +5,20 @@ import type {
 } from '@ai-sdk/provider'
 import { type LanguageModelMiddleware, wrapLanguageModel } from 'ai'
 import * as Schema from 'effect/Schema'
-import type { IngestionContext } from '../../ingestion'
+import { type IngestionContext, LLMUsage } from '../../ingestion'
 import {
   type IngestionExecutionHandler,
   IngestionStrategy,
   type IngestionStrategyCustomer,
   type IngestionStrategyExternalCustomer,
 } from '../../strategy'
-import type { CostMetadataInput } from '@polar-sh/sdk/models/components/costmetadatainput.js'
-
-const LLMUsage = {
-  inputTokens: Schema.Finite,
-  outputTokens: Schema.Finite,
-  totalTokens: Schema.Finite,
-  cachedInputTokens: Schema.Finite,
-  vendor: Schema.String,
-  model: Schema.String,
-}
+import type { models } from '@polar-sh/sdk/2027-01'
 
 export const LLMStrategyContext = Schema.toStandardSchemaV1(
   Schema.Struct({
-    ...LLMUsage,
+    ...LLMUsage.fields,
     strategy: Schema.Literal('LLM'),
-    _llm: Schema.Struct(LLMUsage),
+    _llm: LLMUsage,
     _cost: Schema.optionalKey(
       Schema.Struct({
         amount: Schema.Union([Schema.Finite, Schema.String]),
@@ -41,7 +32,9 @@ export type LLMStrategyContext = IngestionContext<
   typeof LLMStrategyContext.Type
 >
 
-export type CostResolver = (context: LLMStrategyContext) => CostMetadataInput
+export type CostResolver = (
+  context: LLMStrategyContext,
+) => models.CostMetadataInput
 
 export class LLMStrategy extends IngestionStrategy<
   LLMStrategyContext,

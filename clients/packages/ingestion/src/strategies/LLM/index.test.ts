@@ -4,18 +4,10 @@ import { LLMStrategy, LLMStrategyContext } from '.'
 const mockEventsIngest = vi.fn()
 
 // Mock the module before any imports
-vi.mock('@polar-sh/sdk', async (importOriginal) => {
-  class Polar {
-    events = {
-      ingest: mockEventsIngest,
-    }
-  }
-
-  return {
-    ...(await importOriginal()),
-    Polar,
-  }
-})
+vi.mock('@polar-sh/sdk/2027-01', async (importOriginal) => ({
+  ...(await importOriginal()),
+  createPolar: () => ({ events: { ingest: mockEventsIngest } }),
+}))
 
 import { Ingestion } from '../../ingestion'
 
@@ -126,7 +118,7 @@ describe('LLMStrategy', () => {
       events: [
         {
           name: 'prompt-tokens',
-          customerId,
+          customer_id: customerId,
           metadata: {
             inputTokens: 1,
             outputTokens: 1,
@@ -138,10 +130,10 @@ describe('LLMStrategy', () => {
             _llm: {
               vendor: 'test-provider',
               model: 'test-model',
-              inputTokens: 1,
-              outputTokens: 1,
-              cachedInputTokens: 0,
-              totalTokens: 2,
+              input_tokens: 1,
+              output_tokens: 1,
+              cached_input_tokens: 0,
+              total_tokens: 2,
             },
             _cost: {
               amount: 200,

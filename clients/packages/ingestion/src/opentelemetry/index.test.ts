@@ -10,18 +10,10 @@ import { ExportResultCode } from '@opentelemetry/core'
 const mockEventsIngest = vi.fn()
 
 // Mock the Polar SDK
-vi.mock('@polar-sh/sdk', async (importOriginal) => {
-  class Polar {
-    events = {
-      ingest: mockEventsIngest,
-    }
-  }
-
-  return {
-    ...(await importOriginal()),
-    Polar,
-  }
-})
+vi.mock('@polar-sh/sdk/2027-01', async (importOriginal) => ({
+  ...(await importOriginal()),
+  createPolar: () => ({ events: { ingest: mockEventsIngest } }),
+}))
 
 import { PolarTraceExporter } from './index'
 
@@ -78,7 +70,7 @@ describe('PolarTraceExporter', () => {
       expect(callArgs.events).toHaveLength(1)
       expect(callArgs.events[0]).toMatchObject({
         name: 'test-event',
-        customerId: 'customer-123',
+        customer_id: 'customer-123',
         metadata: expect.objectContaining({
           customerId: 'customer-123',
           key1: 'value1',
@@ -106,7 +98,7 @@ describe('PolarTraceExporter', () => {
       expect(callArgs.events).toHaveLength(1)
       expect(callArgs.events[0]).toMatchObject({
         name: 'test-event',
-        externalCustomerId: 'external-123',
+        external_customer_id: 'external-123',
         metadata: expect.objectContaining({
           externalCustomerId: 'external-123',
           key1: 'value1',
@@ -152,7 +144,7 @@ describe('PolarTraceExporter', () => {
       expect(call1.events).toHaveLength(1)
       expect(call1.events[0]).toMatchObject({
         name: 'event-with-customer',
-        customerId: 'customer-123',
+        customer_id: 'customer-123',
         metadata: expect.objectContaining({
           customerId: 'customer-123',
           key1: 'value1',
@@ -170,7 +162,7 @@ describe('PolarTraceExporter', () => {
       expect(call3.events).toHaveLength(1)
       expect(call3.events[0]).toMatchObject({
         name: 'event-with-external-customer',
-        externalCustomerId: 'external-456',
+        external_customer_id: 'external-456',
         metadata: expect.objectContaining({
           externalCustomerId: 'external-456',
           key3: 'value3',
@@ -199,7 +191,7 @@ describe('PolarTraceExporter', () => {
       expect(callArgs.events).toHaveLength(1)
       expect(callArgs.events[0]).toMatchObject({
         name: 'test-event',
-        customerId: 'customer-123',
+        customer_id: 'customer-123',
         metadata: expect.objectContaining({
           customerId: 'customer-123',
           stringValue: 'hello',
@@ -277,15 +269,15 @@ describe('PolarTraceExporter', () => {
       expect(callArgs.events).toHaveLength(1)
       expect(callArgs.events[0]).toMatchObject({
         name: 'test-event',
-        customerId: 'customer-123',
+        customer_id: 'customer-123',
         metadata: expect.objectContaining({
           customerId: 'customer-123',
           externalCustomerId: 'external-456',
           key1: 'value1',
         }),
       })
-      // Ensure externalCustomerId is NOT set at the top level
-      expect(callArgs.events[0]).not.toHaveProperty('externalCustomerId')
+      // Ensure external_customer_id is NOT set at the top level
+      expect(callArgs.events[0]).not.toHaveProperty('external_customer_id')
     })
 
     it('should filter out spans with non-string customerId', async () => {
@@ -323,7 +315,7 @@ describe('PolarTraceExporter', () => {
       expect(call1.events).toHaveLength(1)
       expect(call1.events[0]).toMatchObject({
         name: 'event-with-valid-customer',
-        customerId: 'customer-123',
+        customer_id: 'customer-123',
         metadata: expect.objectContaining({
           customerId: 'customer-123',
         }),
@@ -377,7 +369,7 @@ describe('PolarTraceExporter', () => {
       if (!call1) throw new Error('call1 undefined')
       expect(call1.events[0]).toMatchObject({
         name: 'event-1',
-        customerId: 'customer-1',
+        customer_id: 'customer-1',
         metadata: expect.objectContaining({
           customerId: 'customer-1',
           metric1: 100,
@@ -388,7 +380,7 @@ describe('PolarTraceExporter', () => {
       if (!call2) throw new Error('call2 undefined')
       expect(call2.events[0]).toMatchObject({
         name: 'event-2',
-        externalCustomerId: 'external-1',
+        external_customer_id: 'external-1',
         metadata: expect.objectContaining({
           externalCustomerId: 'external-1',
           metric2: 200,
@@ -399,7 +391,7 @@ describe('PolarTraceExporter', () => {
       if (!call3) throw new Error('call3 undefined')
       expect(call3.events[0]).toMatchObject({
         name: 'event-3',
-        customerId: 'customer-2',
+        customer_id: 'customer-2',
         metadata: expect.objectContaining({
           customerId: 'customer-2',
           metric3: 300,

@@ -78,6 +78,9 @@ class TestCycleMeterCredit:
             session, redis, customer, topup_benefit, order=topup_order
         )
 
+        subscription.current_period_start = utc_now()
+        await save_fixture(subscription)
+
         await benefit_grant_service.cycle_benefit_grant(
             session, redis, subscription_grant
         )

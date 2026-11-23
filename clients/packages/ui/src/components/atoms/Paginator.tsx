@@ -65,15 +65,16 @@ const Paginator = ({
         className={twMerge(currentPage === 1 ? 'cursor-default' : '')}
       >
         <Button
-          variant="secondary"
+          variant="ghost"
           size="sm"
           asChild
           disabled={currentPage === 1}
           className={twMerge(
+            'w-8 px-0',
             currentPage === 1 ? 'cursor-default opacity-50' : '',
           )}
         >
-          <ChevronLeft fontSize="small" />
+          <ChevronLeft fontSize="small" className="-translate-x-[0.75px]" />
         </Button>
       </a>
       {paginationRange?.map((pageNumber, idx) => {
@@ -121,15 +122,16 @@ const Paginator = ({
         className={twMerge(currentPage >= lastPage ? 'cursor-default' : '')}
       >
         <Button
-          variant="secondary"
+          variant="ghost"
           asChild
           size="sm"
           disabled={currentPage >= lastPage}
           className={twMerge(
+            'w-8 px-0',
             currentPage >= lastPage ? 'cursor-default opacity-50' : '',
           )}
         >
-          <ChevronRight fontSize="small" />
+          <ChevronRight fontSize="small" className="translate-x-[0.75px]" />
         </Button>
       </a>
     </div>

@@ -28,6 +28,16 @@ export default function Home() {
     })
   }
 
+  const onClickGenerate = async () => {
+    const response = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ prompt: 'Hello, Polar!' }),
+    })
+
+    console.log(await response.json())
+  }
+
   const onClickSubscriptions = async () => {
     const { data: subs } = await authClient.customer.subscriptions.list({
       query: {
@@ -56,6 +66,9 @@ export default function Home() {
         </button>
         <button onClick={onClickOrganization} type="button">
           Organization
+        </button>
+        <button onClick={onClickGenerate} type="button">
+          Generate
         </button>
         <button onClick={onClickSubscriptions} type="button">
           Subscriptions

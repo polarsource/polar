@@ -606,9 +606,107 @@
                 "pages": [
                   "integrate/webhooks/endpoints",
                   "integrate/webhooks/delivery",
-                  "integrate/webhooks/events",
                   {
-                    "group": "Endpoints API",
+                    "group": "Events",
+                    "pages": [
+                      "integrate/webhooks/events",
+                      {
+                        "group": "Customer Events",
+                        "pages": [
+                          "webhook customer.state_changed",
+                          "webhook customer.created",
+                          "webhook customer.updated",
+                          "webhook customer.deleted"
+                        ]
+                      },
+                      {
+                        "group": "Billing Events",
+                        "pages": [
+                          {
+                            "group": "Checkout",
+                            "pages": [
+                              "webhook checkout.created",
+                              "webhook checkout.updated",
+                              "webhook checkout.expired"
+                            ]
+                          },
+                          {
+                            "group": "Subscriptions",
+                            "pages": [
+                              "webhook subscription.created",
+                              "webhook subscription.active",
+                              "webhook subscription.updated",
+                              "webhook subscription.canceled",
+                              "webhook subscription.uncanceled",
+                              "webhook subscription.cycled",
+                              "webhook subscription.revoked",
+                              "webhook subscription.past_due",
+                              "webhook subscription.paused",
+                              "webhook subscription.resumed",
+                              "webhook subscription.migrated"
+                            ]
+                          },
+                          {
+                            "group": "Orders",
+                            "pages": [
+                              "webhook order.created",
+                              "webhook order.paid",
+                              "webhook order.updated",
+                              "webhook order.refunded"
+                            ]
+                          },
+                          {
+                            "group": "Customer Seats",
+                            "pages": [
+                              "webhook customer_seat.assigned",
+                              "webhook customer_seat.claimed",
+                              "webhook customer_seat.revoked"
+                            ]
+                          },
+                          {
+                            "group": "Refunds",
+                            "pages": ["webhook refund.created", "webhook refund.updated"]
+                          },
+                          {
+                            "group": "Benefit Grants",
+                            "pages": [
+                              "webhook benefit_grant.created",
+                              "webhook benefit_grant.cycled",
+                              "webhook benefit_grant.updated",
+                              "webhook benefit_grant.revoked"
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "group": "Organization Events",
+                        "pages": [
+                          {
+                            "group": "Benefits",
+                            "pages": ["webhook benefit.created", "webhook benefit.updated"]
+                          },
+                          {
+                            "group": "Products",
+                            "pages": ["webhook product.created", "webhook product.updated"]
+                          },
+                          {
+                            "group": "Discounts",
+                            "pages": [
+                              "webhook discount.created",
+                              "webhook discount.updated",
+                              "webhook discount.deleted"
+                            ]
+                          },
+                          {
+                            "group": "Organization",
+                            "pages": ["webhook organization.updated"]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "group": "API Endpoints",
                     "pages": [
                       "POST /v1/webhooks/endpoints",
                       "GET /v1/webhooks/endpoints/{id}",
@@ -623,111 +721,13 @@
                 ]
               },
               {
-                "group": "Webhook Events",
-                "pages": [
-                  {
-                    "group": "Customer Events",
-                    "pages": [
-                      "webhook customer.state_changed",
-                      "webhook customer.created",
-                      "webhook customer.updated",
-                      "webhook customer.deleted"
-                    ]
-                  },
-                  {
-                    "group": "Billing Events",
-                    "pages": [
-                      {
-                        "group": "Checkout",
-                        "pages": [
-                          "webhook checkout.created",
-                          "webhook checkout.updated",
-                          "webhook checkout.expired"
-                        ]
-                      },
-                      {
-                        "group": "Subscriptions",
-                        "pages": [
-                          "webhook subscription.created",
-                          "webhook subscription.active",
-                          "webhook subscription.updated",
-                          "webhook subscription.canceled",
-                          "webhook subscription.uncanceled",
-                          "webhook subscription.cycled",
-                          "webhook subscription.revoked",
-                          "webhook subscription.past_due",
-                          "webhook subscription.paused",
-                          "webhook subscription.resumed",
-                          "webhook subscription.migrated"
-                        ]
-                      },
-                      {
-                        "group": "Orders",
-                        "pages": [
-                          "webhook order.created",
-                          "webhook order.paid",
-                          "webhook order.updated",
-                          "webhook order.refunded"
-                        ]
-                      },
-                      {
-                        "group": "Customer Seats",
-                        "pages": [
-                          "webhook customer_seat.assigned",
-                          "webhook customer_seat.claimed",
-                          "webhook customer_seat.revoked"
-                        ]
-                      },
-                      {
-                        "group": "Refunds",
-                        "pages": ["webhook refund.created", "webhook refund.updated"]
-                      },
-                      {
-                        "group": "Benefit Grants",
-                        "pages": [
-                          "webhook benefit_grant.created",
-                          "webhook benefit_grant.cycled",
-                          "webhook benefit_grant.updated",
-                          "webhook benefit_grant.revoked"
-                        ]
-                      }
-                    ]
-                  },
-                  {
-                    "group": "Organization Events",
-                    "pages": [
-                      {
-                        "group": "Benefits",
-                        "pages": ["webhook benefit.created", "webhook benefit.updated"]
-                      },
-                      {
-                        "group": "Products",
-                        "pages": ["webhook product.created", "webhook product.updated"]
-                      },
-                      {
-                        "group": "Discounts",
-                        "pages": [
-                          "webhook discount.created",
-                          "webhook discount.updated",
-                          "webhook discount.deleted"
-                        ]
-                      },
-                      {
-                        "group": "Organization",
-                        "pages": ["webhook organization.updated"]
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
                 "group": "OAuth 2.0",
                 "pages": [
                   "integrate/oauth2/introduction",
                   "integrate/oauth2/setup",
                   "integrate/oauth2/connect",
                   {
-                    "group": "Endpoints",
+                    "group": "API Endpoints",
                     "pages": [
                       "GET /v1/oauth2/authorize",
                       "POST /v1/oauth2/token",
@@ -1102,9 +1102,107 @@
                 "pages": [
                   "integrate/webhooks/endpoints",
                   "integrate/webhooks/delivery",
-                  "integrate/webhooks/events",
                   {
-                    "group": "Endpoints API",
+                    "group": "Events",
+                    "pages": [
+                      "integrate/webhooks/events",
+                      {
+                        "group": "Customer Events",
+                        "pages": [
+                          "webhook customer.state_changed",
+                          "webhook customer.created",
+                          "webhook customer.updated",
+                          "webhook customer.deleted"
+                        ]
+                      },
+                      {
+                        "group": "Billing Events",
+                        "pages": [
+                          {
+                            "group": "Checkout",
+                            "pages": [
+                              "webhook checkout.created",
+                              "webhook checkout.updated",
+                              "webhook checkout.expired"
+                            ]
+                          },
+                          {
+                            "group": "Subscriptions",
+                            "pages": [
+                              "webhook subscription.created",
+                              "webhook subscription.active",
+                              "webhook subscription.updated",
+                              "webhook subscription.canceled",
+                              "webhook subscription.uncanceled",
+                              "webhook subscription.cycled",
+                              "webhook subscription.revoked",
+                              "webhook subscription.past_due",
+                              "webhook subscription.paused",
+                              "webhook subscription.resumed",
+                              "webhook subscription.migrated"
+                            ]
+                          },
+                          {
+                            "group": "Orders",
+                            "pages": [
+                              "webhook order.created",
+                              "webhook order.paid",
+                              "webhook order.updated",
+                              "webhook order.refunded"
+                            ]
+                          },
+                          {
+                            "group": "Customer Seats",
+                            "pages": [
+                              "webhook customer_seat.assigned",
+                              "webhook customer_seat.claimed",
+                              "webhook customer_seat.revoked"
+                            ]
+                          },
+                          {
+                            "group": "Refunds",
+                            "pages": ["webhook refund.created", "webhook refund.updated"]
+                          },
+                          {
+                            "group": "Benefit Grants",
+                            "pages": [
+                              "webhook benefit_grant.created",
+                              "webhook benefit_grant.cycled",
+                              "webhook benefit_grant.updated",
+                              "webhook benefit_grant.revoked"
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "group": "Organization Events",
+                        "pages": [
+                          {
+                            "group": "Benefits",
+                            "pages": ["webhook benefit.created", "webhook benefit.updated"]
+                          },
+                          {
+                            "group": "Products",
+                            "pages": ["webhook product.created", "webhook product.updated"]
+                          },
+                          {
+                            "group": "Discounts",
+                            "pages": [
+                              "webhook discount.created",
+                              "webhook discount.updated",
+                              "webhook discount.deleted"
+                            ]
+                          },
+                          {
+                            "group": "Organization",
+                            "pages": ["webhook organization.updated"]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "group": "API Endpoints",
                     "pages": [
                       "POST /v1/webhooks/endpoints",
                       "GET /v1/webhooks/endpoints/{id}",
@@ -1119,111 +1217,13 @@
                 ]
               },
               {
-                "group": "Webhook Events",
-                "pages": [
-                  {
-                    "group": "Customer Events",
-                    "pages": [
-                      "webhook customer.state_changed",
-                      "webhook customer.created",
-                      "webhook customer.updated",
-                      "webhook customer.deleted"
-                    ]
-                  },
-                  {
-                    "group": "Billing Events",
-                    "pages": [
-                      {
-                        "group": "Checkout",
-                        "pages": [
-                          "webhook checkout.created",
-                          "webhook checkout.updated",
-                          "webhook checkout.expired"
-                        ]
-                      },
-                      {
-                        "group": "Subscriptions",
-                        "pages": [
-                          "webhook subscription.created",
-                          "webhook subscription.active",
-                          "webhook subscription.updated",
-                          "webhook subscription.canceled",
-                          "webhook subscription.uncanceled",
-                          "webhook subscription.cycled",
-                          "webhook subscription.revoked",
-                          "webhook subscription.past_due",
-                          "webhook subscription.paused",
-                          "webhook subscription.resumed",
-                          "webhook subscription.migrated"
-                        ]
-                      },
-                      {
-                        "group": "Orders",
-                        "pages": [
-                          "webhook order.created",
-                          "webhook order.paid",
-                          "webhook order.updated",
-                          "webhook order.refunded"
-                        ]
-                      },
-                      {
-                        "group": "Customer Seats",
-                        "pages": [
-                          "webhook customer_seat.assigned",
-                          "webhook customer_seat.claimed",
-                          "webhook customer_seat.revoked"
-                        ]
-                      },
-                      {
-                        "group": "Refunds",
-                        "pages": ["webhook refund.created", "webhook refund.updated"]
-                      },
-                      {
-                        "group": "Benefit Grants",
-                        "pages": [
-                          "webhook benefit_grant.created",
-                          "webhook benefit_grant.cycled",
-                          "webhook benefit_grant.updated",
-                          "webhook benefit_grant.revoked"
-                        ]
-                      }
-                    ]
-                  },
-                  {
-                    "group": "Organization Events",
-                    "pages": [
-                      {
-                        "group": "Benefits",
-                        "pages": ["webhook benefit.created", "webhook benefit.updated"]
-                      },
-                      {
-                        "group": "Products",
-                        "pages": ["webhook product.created", "webhook product.updated"]
-                      },
-                      {
-                        "group": "Discounts",
-                        "pages": [
-                          "webhook discount.created",
-                          "webhook discount.updated",
-                          "webhook discount.deleted"
-                        ]
-                      },
-                      {
-                        "group": "Organization",
-                        "pages": ["webhook organization.updated"]
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
                 "group": "OAuth 2.0",
                 "pages": [
                   "integrate/oauth2/introduction",
                   "integrate/oauth2/setup",
                   "integrate/oauth2/connect",
                   {
-                    "group": "Endpoints",
+                    "group": "API Endpoints",
                     "pages": [
                       "GET /v1/oauth2/authorize",
                       "POST /v1/oauth2/token",
@@ -1606,9 +1606,107 @@
                 "pages": [
                   "integrate/webhooks/endpoints",
                   "integrate/webhooks/delivery",
-                  "integrate/webhooks/events",
                   {
-                    "group": "Endpoints API",
+                    "group": "Events",
+                    "pages": [
+                      "integrate/webhooks/events",
+                      {
+                        "group": "Customer Events",
+                        "pages": [
+                          "webhook customer.state_changed",
+                          "webhook customer.created",
+                          "webhook customer.updated",
+                          "webhook customer.deleted"
+                        ]
+                      },
+                      {
+                        "group": "Billing Events",
+                        "pages": [
+                          {
+                            "group": "Checkout",
+                            "pages": [
+                              "webhook checkout.created",
+                              "webhook checkout.updated",
+                              "webhook checkout.expired"
+                            ]
+                          },
+                          {
+                            "group": "Subscriptions",
+                            "pages": [
+                              "webhook subscription.created",
+                              "webhook subscription.active",
+                              "webhook subscription.updated",
+                              "webhook subscription.canceled",
+                              "webhook subscription.uncanceled",
+                              "webhook subscription.cycled",
+                              "webhook subscription.revoked",
+                              "webhook subscription.past_due",
+                              "webhook subscription.paused",
+                              "webhook subscription.resumed",
+                              "webhook subscription.migrated"
+                            ]
+                          },
+                          {
+                            "group": "Orders",
+                            "pages": [
+                              "webhook order.created",
+                              "webhook order.paid",
+                              "webhook order.updated",
+                              "webhook order.refunded"
+                            ]
+                          },
+                          {
+                            "group": "Customer Seats",
+                            "pages": [
+                              "webhook customer_seat.assigned",
+                              "webhook customer_seat.claimed",
+                              "webhook customer_seat.revoked"
+                            ]
+                          },
+                          {
+                            "group": "Refunds",
+                            "pages": ["webhook refund.created", "webhook refund.updated"]
+                          },
+                          {
+                            "group": "Benefit Grants",
+                            "pages": [
+                              "webhook benefit_grant.created",
+                              "webhook benefit_grant.cycled",
+                              "webhook benefit_grant.updated",
+                              "webhook benefit_grant.revoked"
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "group": "Organization Events",
+                        "pages": [
+                          {
+                            "group": "Benefits",
+                            "pages": ["webhook benefit.created", "webhook benefit.updated"]
+                          },
+                          {
+                            "group": "Products",
+                            "pages": ["webhook product.created", "webhook product.updated"]
+                          },
+                          {
+                            "group": "Discounts",
+                            "pages": [
+                              "webhook discount.created",
+                              "webhook discount.updated",
+                              "webhook discount.deleted"
+                            ]
+                          },
+                          {
+                            "group": "Organization",
+                            "pages": ["webhook organization.updated"]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "group": "API Endpoints",
                     "pages": [
                       "POST /v1/webhooks/endpoints",
                       "GET /v1/webhooks/endpoints/{id}",
@@ -1624,111 +1722,13 @@
                 ]
               },
               {
-                "group": "Webhook Events",
-                "pages": [
-                  {
-                    "group": "Customer Events",
-                    "pages": [
-                      "webhook customer.state_changed",
-                      "webhook customer.created",
-                      "webhook customer.updated",
-                      "webhook customer.deleted"
-                    ]
-                  },
-                  {
-                    "group": "Billing Events",
-                    "pages": [
-                      {
-                        "group": "Checkout",
-                        "pages": [
-                          "webhook checkout.created",
-                          "webhook checkout.updated",
-                          "webhook checkout.expired"
-                        ]
-                      },
-                      {
-                        "group": "Subscriptions",
-                        "pages": [
-                          "webhook subscription.created",
-                          "webhook subscription.active",
-                          "webhook subscription.updated",
-                          "webhook subscription.canceled",
-                          "webhook subscription.uncanceled",
-                          "webhook subscription.cycled",
-                          "webhook subscription.revoked",
-                          "webhook subscription.past_due",
-                          "webhook subscription.paused",
-                          "webhook subscription.resumed",
-                          "webhook subscription.migrated"
-                        ]
-                      },
-                      {
-                        "group": "Orders",
-                        "pages": [
-                          "webhook order.created",
-                          "webhook order.paid",
-                          "webhook order.updated",
-                          "webhook order.refunded"
-                        ]
-                      },
-                      {
-                        "group": "Customer Seats",
-                        "pages": [
-                          "webhook customer_seat.assigned",
-                          "webhook customer_seat.claimed",
-                          "webhook customer_seat.revoked"
-                        ]
-                      },
-                      {
-                        "group": "Refunds",
-                        "pages": ["webhook refund.created", "webhook refund.updated"]
-                      },
-                      {
-                        "group": "Benefit Grants",
-                        "pages": [
-                          "webhook benefit_grant.created",
-                          "webhook benefit_grant.cycled",
-                          "webhook benefit_grant.updated",
-                          "webhook benefit_grant.revoked"
-                        ]
-                      }
-                    ]
-                  },
-                  {
-                    "group": "Organization Events",
-                    "pages": [
-                      {
-                        "group": "Benefits",
-                        "pages": ["webhook benefit.created", "webhook benefit.updated"]
-                      },
-                      {
-                        "group": "Products",
-                        "pages": ["webhook product.created", "webhook product.updated"]
-                      },
-                      {
-                        "group": "Discounts",
-                        "pages": [
-                          "webhook discount.created",
-                          "webhook discount.updated",
-                          "webhook discount.deleted"
-                        ]
-                      },
-                      {
-                        "group": "Organization",
-                        "pages": ["webhook organization.updated"]
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
                 "group": "OAuth 2.0",
                 "pages": [
                   "integrate/oauth2/introduction",
                   "integrate/oauth2/setup",
                   "integrate/oauth2/connect",
                   {
-                    "group": "Endpoints",
+                    "group": "API Endpoints",
                     "pages": [
                       "GET /v1/oauth2/authorize",
                       "POST /v1/oauth2/token",

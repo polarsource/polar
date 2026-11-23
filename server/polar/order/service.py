@@ -10,7 +10,7 @@ from urllib.parse import urlencode
 import stripe as stripe_lib
 import structlog
 from pydantic import MISSING
-from sqlalchemy import func, select
+from sqlalchemy import exists, func, select
 from sqlalchemy.orm import joinedload
 
 from polar.account.repository import AccountRepository
@@ -77,6 +77,7 @@ from polar.models import (
     PaymentMethod,
     Product,
     ProductPrice,
+    Refund,
     Subscription,
     Transaction,
     User,
@@ -86,6 +87,7 @@ from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.payment import PaymentTrigger
 from polar.models.product import ProductBillingType
+from polar.models.refund import RefundStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import TransactionType
 from polar.models.webhook_endpoint import WebhookEventType
@@ -2766,6 +2768,11 @@ class OrderService:
                 Order.subscription_id.is_(None),
                 Order.seats.is_(None),
                 ~Customer.is_deleted,
+                ~exists().where(
+                    Refund.order_id == Order.id,
+                    Refund.revoke_benefits.is_(True),
+                    Refund.status.not_in((RefundStatus.failed, RefundStatus.canceled)),
+                ),
             )
             .options(joinedload(Order.customer))
         )

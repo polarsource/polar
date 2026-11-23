@@ -134,7 +134,33 @@ A customer subscribed to a \$20/month plan on a 30-day month (2,592,000 seconds 
 - New charge for the remaining 2,505,600 seconds on the $5 plan: `\$5 * 2,505,600 / 2,592,000 = \$4.83`
 - **Prorated difference: -$14.50** (credit to the customer)
 
-With `invoice`, a credit invoice for $14.50 is issued immediately. With `prorate`, the credit is applied on the next invoice.
+With `invoice`, a credit invoice for $14.50 is issued immediately and the amount is added to the customer's balance. With `prorate`, the credit is applied on the next invoice.
+
+## Downgrade credits and the customer balance
+
+A downgrade credit is **never paid back to the customer's card**. It goes to the customer's balance with Polar, and that balance is automatically applied to their next orders until it's used up.
+
+- With `invoice`, the credit invoice is added to the balance immediately.
+- With `prorate`, the credit is deducted from the next invoice. If it's larger than that invoice, the remainder goes to the balance.
+
+### Returning a downgrade credit to the card
+
+If you'd rather give the customer their money back, [refund](/features/refunds) the **order they paid before the downgrade**. You can still refund that order after the downgrade, for up to the amount the customer paid on it.
+
+A refund also reduces any positive balance the customer has, by up to the refunded amount. So refunding the credited amount moves the credit from the balance back to the customer's card, and they aren't credited twice. Using the downgrade example above:
+
+1. The customer downgrades with `invoice`, and \$14.50 is added to their balance.
+2. You refund \$14.50 on the original \$20 order. Enter the amount excluding tax; Polar adds the matching tax.
+3. The customer gets \$14.50 back on their card and their balance returns to zero. Their next renewal is charged the full \$5.
+
+<Warning>
+  **A refund only takes back credit that's still on the customer's balance.** Any other proration
+  credit stays with the customer: a `prorate` credit waiting for or already deducted from the next
+  invoice, or a balance already used up by a later order. If you refund the original order in
+  those cases, the customer gets that amount twice. Before refunding, check the customer's
+  balance and their invoices since the change, and lower the refund by any credit that isn't on
+  the balance.
+</Warning>
 
 <Note>
   Because proration is computed from the exact number of seconds remaining, the change time-of-day

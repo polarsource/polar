@@ -266,7 +266,7 @@ const auth = betterAuth({
 - `syncSeats` (optional): Size and assign seat-based subscriptions from the Better Auth roster. Requires the `webhooks` plugin and the `subscription.created` and `subscription.active` events.
 - `selectSeatProductsForMember` (optional): Choose which seat products each member receives when `syncSeats` is enabled
 
-Organization billing is always explicit. Pass `organization_id` to `authClient.checkout()`, `organizationId` to `auth.api.ingestUsage()`, and `query: { organizationId }` to the portal, state, benefits, subscriptions, orders and meters methods. The plugin verifies the user's membership before calling Polar, and checkout also requires a billing-capable role.
+Organization billing is always explicit. Pass `organization_id` to `authClient.checkout()` and `query: { organizationId }` to the portal, state, benefits, subscriptions, orders and meters methods. The plugin verifies the user's membership before calling Polar, and checkout also requires a billing-capable role.
 
 The access token needs the `customers:read`, `customers:write`, `members:read` and `members:write` scopes. See the [package README](https://github.com/polarsource/polar/tree/main/clients/adapters/better-auth#experimental-organization-synchronization) for the full role mapping and seat management behaviour.
 
@@ -398,15 +398,18 @@ Polar's Usage Based Billing builds entirely on event ingestion. Ingest events fr
   **Ingest events from your server, not from the browser.** Events drive billing, so the client must never be trusted to decide what is consumed. Always ingest from the same server-side handler that performs the metered action (e.g. the route that generated the AI video, processed the upload, etc.) so that the recorded usage cannot be forged or bypassed.
 </Warning>
 
-The `usage` plugin adds `auth.api.ingestUsage`, a server-only method that ingests an event for the user in the request's session. It is not exposed over HTTP or on the auth client. Call it from the handler that performs the metered work:
+Because `createCustomerOnSignUp: true` sets the Polar customer's external ID to the BetterAuth user ID, you can pass `external_customer_id: session.user.id` when ingesting — no extra lookup is needed.
+
+The example below calls the Polar SDK directly from a server route handler, reusing the `polarClient` you configured in `auth.ts`:
 
 ```typescript icon="square-js" app/api/ai/video/route.ts (Next.js App Router)
 import { auth } from "@/lib/auth";
+import { polarClient } from "@/lib/polar";
+import { ingestEvents } from "@polar-sh/sdk/2026-10/services/events";
 import { headers } from "next/headers";
 
 export async function POST(request: Request) {
-  const requestHeaders = await headers();
-  const session = await auth.api.getSession({ headers: requestHeaders });
+  const session = await auth.api.getSession({ headers: await headers() });
 
   if (!session) {
     return new Response("Unauthorized", { status: 401 });
@@ -416,27 +419,27 @@ export async function POST(request: Request) {
   const { video, tokensConsumed } = await makeNewVideo(request);
 
   // Ingest the resulting usage against the authenticated user
-  await auth.api.ingestUsage({
-    headers: requestHeaders,
-    body: {
-      event: "ai-video",
-      metadata: {
-        tokensConsumed,
+  await ingestEvents(polarClient)({
+    events: [
+      {
+        name: "ai-video",
+        external_customer_id: session.user.id,
+        metadata: {
+          tokensConsumed,
+        },
       },
-    },
+    ],
   });
 
   return Response.json({ video });
 }
 ```
 
-The body accepts:
+Each event accepts:
 
-- `event` (string): The name of the event to ingest. For example, `ai_usage`, `video_streamed` or `file_uploaded`.
+- `name` (string): The name of the event to ingest. For example, `ai_usage`, `video_streamed` or `file_uploaded`.
+- `external_customer_id` (string): The BetterAuth user ID. Pass `session.user.id` from the server-side session.
 - `metadata` (object): A record of key-value pairs that describe the event. Values can be strings, numbers, or booleans. Use this to store information that can be filtered on or used to compute usage — duration, token count, file size, etc.
-- `organizationId` (string, optional): Attribute the event to the organization's team customer and the current member. The plugin verifies the user's membership first.
-
-Requests without a session and anonymous users are rejected. To ingest outside a user request, for example from a background job, call the Polar SDK's `ingestEvents` with `external_customer_id` set to the Better Auth user ID.
 
 ### 2. Customer Meters
 

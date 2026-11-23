@@ -45,7 +45,11 @@
             "pages": [
               "introduction",
               "merchant-of-record/introduction",
-              "merchant-of-record/fees"
+              "merchant-of-record/fees",
+              {
+                "group": "Migrating to Polar",
+                "pages": ["migrate", "migrate-lemon-squeezy"]
+              }
             ]
           },
           {
@@ -208,16 +212,16 @@
             ]
           },
           {
-            "group": "Organization",
+            "group": "Finance & Payouts",
             "pages": [
-              {
-                "group": "Payouts",
-                "pages": [
-                  "features/finance/balance",
-                  "features/finance/payouts",
-                  "features/finance/accounts"
-                ]
-              },
+              "features/finance/balance",
+              "features/finance/payouts",
+              "features/finance/accounts"
+            ]
+          },
+          {
+            "group": "Account",
+            "pages": [
               "features/team-management",
               "features/sso",
               {
@@ -230,10 +234,6 @@
                   "features/integrations/raycast",
                   "features/integrations/zapier"
                 ]
-              },
-              {
-                "group": "Migration",
-                "pages": ["migrate", "migrate-lemon-squeezy"]
               }
             ]
           },
@@ -241,8 +241,13 @@
             "group": "Compliance & Security",
             "pages": [
               "merchant-of-record/supported-countries",
-              "merchant-of-record/account-reviews",
-              "merchant-of-record/review-checklist",
+              {
+                "group": "Account Reviews",
+                "pages": [
+                  "merchant-of-record/account-reviews",
+                  "merchant-of-record/review-checklist"
+                ]
+              },
               "merchant-of-record/acceptable-use/introduction",
               "security"
             ]

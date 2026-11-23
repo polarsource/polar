@@ -39,8 +39,32 @@ export const subscriptionStatusDisplayNames: {
   unpaid: 'Unpaid',
 }
 
-// A subscription that is still running but set to end or pause is named for
-// what is about to happen to it.
+const isRunning = (status: schemas['SubscriptionStatus']) =>
+  status === 'active' || status === 'trialing'
+
+// A subscription that is still running but set to end or pause.
+export const isSubscriptionWindingDown = ({
+  status,
+  ends_at: endsAt,
+  pause_at_period_end: pausesAtPeriodEnd,
+}: Pick<
+  schemas['Subscription'],
+  'status' | 'ends_at' | 'pause_at_period_end'
+>): boolean => isRunning(status) && (endsAt !== null || pausesAtPeriodEnd)
+
+// A subscription that is winding down is named for what is about to happen
+// to it.
+export const getScheduledStatusLabel = (
+  status: schemas['SubscriptionStatus'],
+  { isCanceling = false, isPausing = false },
+): string => {
+  if (isRunning(status)) {
+    if (isCanceling) return 'Canceling'
+    if (isPausing) return 'Pausing'
+  }
+  return subscriptionStatusDisplayNames[status]
+}
+
 export const getSubscriptionStatusLabel = ({
   status,
   ends_at: endsAt,
@@ -48,13 +72,11 @@ export const getSubscriptionStatusLabel = ({
 }: Pick<
   schemas['Subscription'],
   'status' | 'ends_at' | 'pause_at_period_end'
->): string => {
-  if (status === 'active' || status === 'trialing') {
-    if (endsAt) return 'Canceling'
-    if (pausesAtPeriodEnd) return 'Pausing'
-  }
-  return subscriptionStatusDisplayNames[status]
-}
+>): string =>
+  getScheduledStatusLabel(status, {
+    isCanceling: endsAt !== null,
+    isPausing: pausesAtPeriodEnd,
+  })
 
 export const SubscriptionStatusLabel = ({
   className,

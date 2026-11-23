@@ -34,7 +34,7 @@ export const getSubscriptionStatusIcon = (
     : STATUS_ICON[status]
 
 export const SubscriptionStatusIcon = ({
-  subscription: { status, ends_at, pause_at_period_end },
+  subscription,
 }: {
   subscription: Pick<
     schemas['Subscription'],
@@ -43,8 +43,8 @@ export const SubscriptionStatusIcon = ({
 }) => (
   <StatusIcon
     {...getSubscriptionStatusIcon(
-      status,
-      ends_at !== null || pause_at_period_end,
+      subscription.status,
+      subscription.ends_at !== null || subscription.pause_at_period_end,
     )}
   />
 )

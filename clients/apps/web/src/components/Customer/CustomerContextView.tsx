@@ -17,6 +17,10 @@ import { CustomerTimeline } from './CustomerTimeline'
 import { useSubscriptions } from '@/hooks/queries'
 import { StatusIcon } from '../Shared/StatusIcon'
 import { getSubscriptionStatusIcon } from '../Subscriptions/SubscriptionStatusIcon'
+import {
+  getSubscriptionStatusLabel,
+  isSubscriptionWindingDown,
+} from '../Subscriptions/utils'
 
 interface CustomerContextViewProps {
   organization: schemas['Organization']
@@ -164,18 +168,6 @@ export const CustomerContextView = ({
   )
 }
 
-const STATUS_DISPLAY_NAMES: Record<schemas['SubscriptionStatus'], string> = {
-  active: 'Active',
-  trialing: 'Trialing',
-  past_due: 'Past Due',
-  paused: 'Paused',
-  trial_ended: 'Trial Ended',
-  unpaid: 'Unpaid',
-  canceled: 'Canceled',
-  incomplete: 'Incomplete',
-  incomplete_expired: 'Expired',
-}
-
 const STATUS_ORDER: Record<schemas['SubscriptionStatus'], number> = {
   active: 0,
   trialing: 1,
@@ -219,6 +211,8 @@ const SubscriptionRow = ({
   subscription,
   organization,
 }: SubscriptionRowProps) => {
+  const isWindingDown = isSubscriptionWindingDown(subscription)
+
   const formattedPrice =
     subscription.amount === 0
       ? 'Free'
@@ -233,22 +227,16 @@ const SubscriptionRow = ({
     >
       <div className="flex flex-row items-center gap-4 overflow-hidden">
         <StatusIcon
-          {...getSubscriptionStatusIcon(
-            subscription.status,
-            subscription.cancel_at_period_end,
-          )}
+          {...getSubscriptionStatusIcon(subscription.status, isWindingDown)}
         />
         <span className="truncate text-sm">{subscription.product.name}</span>
         <span className="dark:text-polar-500 text-sm text-gray-500">
-          {subscription.status === 'active'
+          {subscription.status === 'active' && !isWindingDown
             ? formatInterval(
                 subscription.recurring_interval,
                 subscription.recurring_interval_count,
               )
-            : STATUS_DISPLAY_NAMES[subscription.status]}
-          {subscription.status === 'active' &&
-            subscription.cancel_at_period_end &&
-            ' · Canceling'}
+            : getSubscriptionStatusLabel(subscription)}
         </span>
       </div>
       {formattedPrice && (

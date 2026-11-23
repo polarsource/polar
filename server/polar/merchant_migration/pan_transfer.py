@@ -350,11 +350,7 @@ _TEMPLATES_BY_KEY: dict[PanTransferMethod, dict[str, PanStepTemplate]] = {
 }
 
 
-def templates_for(
-    method: PanTransferMethod, *, provider_starts_copy: bool = False
-) -> tuple[PanStepTemplate, ...]:
-    if method == PanTransferMethod.pan_copy and provider_starts_copy:
-        return PROVIDER_COPY_TEMPLATES
+def templates_for(method: PanTransferMethod) -> tuple[PanStepTemplate, ...]:
     return _TEMPLATES[method]
 
 
@@ -385,7 +381,11 @@ def build(
             completed_at=None,
             completed_by=None,
         )
-        for template in templates_for(method, provider_starts_copy=provider_starts_copy)
+        for template in (
+            PROVIDER_COPY_TEMPLATES
+            if method == PanTransferMethod.pan_copy and provider_starts_copy
+            else templates_for(method)
+        )
     ]
     return advance(method, steps)
 

@@ -3,7 +3,11 @@ from typing import Any
 import pytest
 
 from polar.merchant_migration import pan_transfer
-from polar.merchant_migration.pan_transfer import PanStepStatus, PanTransferMethod
+from polar.merchant_migration.pan_transfer import (
+    STEP_STRIPE_COPY,
+    PanStepStatus,
+    PanTransferMethod,
+)
 from polar.models import (
     MerchantMigration,
     MerchantMigrationSourcePlatform,
@@ -49,7 +53,7 @@ class TestExactCardMapping:
     ) -> None:
         steps = pan_transfer.build(PanTransferMethod.pan_copy)
         for step in steps:
-            if step.key == "stripe_copy":
+            if step.key == STEP_STRIPE_COPY:
                 step.status = PanStepStatus.completed
 
         migration = MerchantMigration(

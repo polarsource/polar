@@ -44,7 +44,7 @@ export interface ResolveBillingPrincipalInput {
   roleMapping?: PolarOrganizationRoleSyncOptions | undefined
 }
 
-const isBillingRole = async (
+export const isBillingRole = async (
   role: string,
   organizationId: string,
   user: BillingPrincipalSession['user'],

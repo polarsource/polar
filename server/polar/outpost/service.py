@@ -197,31 +197,46 @@ class OutpostService:
     ) -> list[Snapshot]:
         """The snapshots of every identity of the requested customers, reading the
         customers once for all reducers."""
-        reducers = await self._get_reducers(session, organization)
-        requested: dict[uuid.UUID, list[Identity]] = {}
-        for payload in payloads:
-            if payload.reducer_id not in reducers:
-                continue
-            requested.setdefault(payload.reducer_id, []).append(_get_identity(payload))
-        customers = await self._get_customers(
-            session,
-            organization,
-            [identity for identities in requested.values() for identity in identities],
-        )
-        return await self._get_meter_usage(
-            session,
-            {
-                reducers[reducer_id]: {
-                    known: customer
+        with logfire.span(
+            "outpost.meter_usage",
+            organization_id=str(organization.id),
+            requested=len(payloads),
+        ) as span:
+            reducers = await self._get_reducers(session, organization)
+            requested: dict[uuid.UUID, list[Identity]] = {}
+            for payload in payloads:
+                if payload.reducer_id not in reducers:
+                    continue
+                requested.setdefault(payload.reducer_id, []).append(
+                    _get_identity(payload)
+                )
+            customers = await self._get_customers(
+                session,
+                organization,
+                [
+                    identity
+                    for identities in requested.values()
                     for identity in identities
-                    for customer in (customers[identity],)
-                    for known in (
-                        get_customer_identities(customer) if customer else [identity]
-                    )
-                }
-                for reducer_id, identities in requested.items()
-            },
-        )
+                ],
+            )
+            snapshots = await self._get_meter_usage(
+                session,
+                {
+                    reducers[reducer_id]: {
+                        known: customer
+                        for identity in identities
+                        for customer in (customers[identity],)
+                        for known in (
+                            get_customer_identities(customer)
+                            if customer
+                            else [identity]
+                        )
+                    }
+                    for reducer_id, identities in requested.items()
+                },
+            )
+            span.set_attribute("snapshots", len(snapshots))
+            return snapshots
 
     async def confirm(
         self,

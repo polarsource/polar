@@ -405,7 +405,6 @@ export const useCustomerSubscriptionChangePreview = (
   api: Client,
   id: string,
   productId: string | undefined,
-  enabled = true,
 ) =>
   useQuery({
     queryKey: ['customer_subscription_change_preview', { id, productId }],
@@ -417,7 +416,7 @@ export const useCustomerSubscriptionChangePreview = (
         }),
       ),
     retry: defaultRetry,
-    enabled: enabled && !!productId,
+    enabled: !!productId,
   })
 
 export const useCustomerSubscriptionCancelPreview = (

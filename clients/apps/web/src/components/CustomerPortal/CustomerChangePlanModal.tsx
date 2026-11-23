@@ -6,11 +6,7 @@ import {
   useCustomerUpdateSubscription,
 } from '@/hooks/queries/customerPortal'
 import { isFreePrice } from '@/utils/product'
-import {
-  addInterval,
-  formatTrialEnd,
-  useTrialChangeOutcome,
-} from '@/utils/trial-change'
+import { formatTrialEnd, useTrialChangeOutcome } from '@/utils/trial-change'
 import { Client, schemas } from '@polar-sh/client'
 import { Alert, Button, Status } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -140,7 +136,7 @@ const BenefitChanges = ({
 )
 
 const getNextInvoiceType = (
-  preview: schemas['SubscriptionChargePreview'],
+  preview: schemas['CustomerSubscriptionChangePreview'],
 ): 'charge' | 'balance' | 'credit' => {
   if (preview.total_amount <= 0) return 'credit'
   if (preview.due_amount === 0) return 'balance'
@@ -225,42 +221,15 @@ const ChangePlanDialog = ({
     prorationBehavior,
   )
 
-  const isTrialing = subscription.status === 'trialing'
-
-  // `auto` applies a longer billing interval now and defers a shorter one.
-  const isLongerInterval =
-    !!selectedProduct?.recurring_interval &&
-    !!subscription.recurring_interval &&
-    addInterval(
-      subscription.current_period_start,
-      selectedProduct.recurring_interval,
-      selectedProduct.recurring_interval_count ?? 1,
-    ) >
-      addInterval(
-        subscription.current_period_start,
-        subscription.recurring_interval,
-        subscription.recurring_interval_count ?? 1,
-      )
-
-  const willTriggerImmediateCycle =
-    selectedProduct !== null &&
-    !isTrialing &&
-    prorationBehavior !== 'next_period' &&
-    (selectedProduct.recurring_interval !== subscription.recurring_interval ||
-      selectedProduct.recurring_interval_count !==
-        subscription.recurring_interval_count) &&
-    (prorationBehavior !== 'auto' || isLongerInterval)
-
   const changePreview = useCustomerSubscriptionChangePreview(
     api,
     subscription.id,
     selectedProduct?.id,
-    willTriggerImmediateCycle,
   )
 
-  const nextInvoiceType =
+  const preview =
     changePreview.data && !changePreview.isFetching && !changePreview.isError
-      ? getNextInvoiceType(changePreview.data)
+      ? changePreview.data
       : null
 
   const invoicingMessage = useMemo((): string | null => {
@@ -274,15 +243,20 @@ const ChangePlanDialog = ({
       return `This will end my trial and charge me immediately for ${selectedProduct.name}.`
     }
 
-    if (willTriggerImmediateCycle) {
-      if (nextInvoiceType === null) return null
+    if (preview === null) return null
 
+    const isIntervalChange =
+      selectedProduct.recurring_interval !== subscription.recurring_interval ||
+      selectedProduct.recurring_interval_count !==
+        subscription.recurring_interval_count
+
+    if (preview.proration_behavior === 'invoice' && isIntervalChange) {
       const interval = selectedProduct.recurring_interval ?? 'month'
       const count = selectedProduct.recurring_interval_count ?? 1
       const newPeriod =
         count > 1 ? `${count}-${interval}` : INTERVAL_ADJECTIVES[interval]
 
-      switch (nextInvoiceType) {
+      switch (getNextInvoiceType(preview)) {
         case 'charge':
           return `You'll be charged immediately for the new ${newPeriod} plan.`
         case 'balance':
@@ -292,7 +266,7 @@ const ChangePlanDialog = ({
       }
     }
 
-    switch (prorationBehavior) {
+    switch (preview.proration_behavior) {
       case 'invoice':
         return "You'll be charged immediately, with a proration for the current period."
       case 'prorate':
@@ -301,16 +275,8 @@ const ChangePlanDialog = ({
         return 'The new plan will be applied on your next billing cycle.'
       case 'reset':
         return "You'll be charged the full amount for the new plan immediately, and your billing period restarts today."
-      case 'auto':
-        return 'Upgrades are charged immediately, with a proration for the current period. Downgrades are applied on your next billing cycle.'
     }
-  }, [
-    selectedProduct,
-    prorationBehavior,
-    willTriggerImmediateCycle,
-    nextInvoiceType,
-    trialOutcome,
-  ])
+  }, [selectedProduct, subscription, preview, trialOutcome])
 
   const canChangePlan = useMemo(() => {
     if (!selectedProduct) return false

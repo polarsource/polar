@@ -30,6 +30,7 @@ import {
   parseAsArrayOf,
   parseAsBoolean,
   parseAsFloat,
+  parseAsIsoDateTime,
   parseAsString,
   parseAsStringLiteral,
   useQueryStates,
@@ -37,7 +38,7 @@ import {
 import React from 'react'
 import { SubscriptionsTimeline } from './SubscriptionsTimeline'
 import { SubscriptionsToolbar } from './SubscriptionsToolbar'
-import { type ToolbarAction } from './ToolbarActionsMenu'
+import { type ToolbarAction } from '@/components/Shared/Toolbar/ToolbarActionsMenu'
 import { useSelectedSubscription } from './useSelectedSubscription'
 import {
   subscriptionViewValues,
@@ -59,6 +60,8 @@ const filterParsers = {
     parseAsStringLiteral(CANCELLATION_REASONS),
   ),
   cancel_at_period_end: parseAsBoolean,
+  started_after: parseAsIsoDateTime,
+  started_before: parseAsIsoDateTime,
   subscription: parseAsString,
   zoom: parseAsFloat.withDefault(DEFAULT_PIXELS_PER_DAY),
   view: parseAsStringLiteral(subscriptionViewValues),
@@ -100,6 +103,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       customer_id: customerId,
       discount_id: discountId,
       customer_cancellation_reason: cancellationReason,
+      started_after: startedAfter,
+      started_before: startedBefore,
       subscription: selectedId,
       zoom: zoomParam,
       view: linkedView,
@@ -111,6 +116,11 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   // Only "set to end" is offered as a filter. Older links can carry false,
   // which no control shows, so it is left out.
   const cancelAtPeriodEnd = cancelAtPeriodEndParam ? true : null
+  // Half a range filters nothing.
+  const started =
+    startedAfter && startedBefore
+      ? { from: startedAfter, to: startedBefore }
+      : null
 
   const [view, selectView] = useSubscriptionsView(
     organization.id,
@@ -153,6 +163,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     customerId !== null ||
     discountId !== null ||
     cancellationReason !== null ||
+    started !== null ||
     (isTimeline &&
       (group !== DEFAULT_GANTT_GROUP ||
         sort?.id !== DEFAULT_SORTING[0].id ||
@@ -167,6 +178,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       customer_id: null,
       discount_id: null,
       customer_cancellation_reason: null,
+      started_after: null,
+      started_before: null,
     })
     if (isTimeline) {
       setFilters({ group: null })
@@ -183,6 +196,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     customer_id: customerId ?? undefined,
     discount_id: discountId ?? undefined,
     customer_cancellation_reason: cancellationReason ?? undefined,
+    started_after: started?.from.toISOString(),
+    started_before: started?.to.toISOString(),
   }
   const {
     data,
@@ -308,6 +323,13 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         cancellationReason={cancellationReason}
         onCancellationReasonSelect={(value) =>
           setFilters({ customer_cancellation_reason: value })
+        }
+        started={started}
+        onStartedSelect={(value) =>
+          setFilters({
+            started_after: value?.from ?? null,
+            started_before: value?.to ?? null,
+          })
         }
         sorting={sorting}
         onSortingChange={setSortingState}

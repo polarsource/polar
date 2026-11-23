@@ -5,7 +5,7 @@ import {
 import { useDebouncedCallback } from '@/hooks/utils'
 import { CalendarDays, RotateCcw } from '@polar-sh/orbit/icons'
 import { useRef, useState } from 'react'
-import { type ToolbarAction } from './ToolbarActionsMenu'
+import { type ToolbarAction } from '@/components/Shared/Toolbar/ToolbarActionsMenu'
 
 const ZOOM_COMMIT_DELAY = 150
 

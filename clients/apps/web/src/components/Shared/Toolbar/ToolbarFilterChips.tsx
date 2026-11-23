@@ -15,6 +15,7 @@ const REMOVE_CLASS =
   'dark:text-polar-500 flex h-full cursor-pointer items-center px-1.5 text-gray-400 transition-colors hover:text-black dark:hover:text-white'
 
 const getValueLabel = (filter: Filter): string => {
+  if (filter.valueLabel) return filter.valueLabel
   const values = filter.type === 'single' ? [filter.value] : filter.value
   const labels = values.map(
     (value) =>

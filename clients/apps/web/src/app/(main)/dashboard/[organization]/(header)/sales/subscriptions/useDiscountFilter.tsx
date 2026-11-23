@@ -4,7 +4,7 @@ import { useDebouncedCallback } from '@/hooks/utils'
 import { schemas } from '@polar-sh/client'
 import { TicketPercent } from '@polar-sh/orbit/icons'
 import { useState } from 'react'
-import { uniqueOptions } from './filterOptions'
+import { uniqueOptions } from '@/components/Shared/Toolbar/filterOptions'
 
 const SEARCH_DELAY = 200
 const PAGE_SIZE = 50

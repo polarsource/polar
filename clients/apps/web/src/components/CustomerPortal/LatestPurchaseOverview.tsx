@@ -33,7 +33,7 @@ export const LatestPurchaseOverview = ({
               })}
             </PortalText>
           </Box>
-          <OrderStatus status={order.status} size="small" />
+          <OrderStatus status={order.status} />
         </Box>
         <PortalDivider />
         <PortalRow

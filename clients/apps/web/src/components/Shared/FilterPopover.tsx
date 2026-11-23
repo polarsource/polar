@@ -27,6 +27,8 @@ import { twMerge } from 'tailwind-merge'
 export interface FilterOption {
   value: string
   label: string
+  // Shown ahead of the label in the toolbar's filter menu.
+  icon?: React.ReactNode
 }
 
 interface FilterBase {
@@ -35,6 +37,8 @@ interface FilterBase {
   icon?: React.ReactNode
   options: FilterOption[]
   searchPlaceholder?: string
+  // Said in place of the options when there are none.
+  emptyLabel?: string
   searchQuery?: string
   onSearchQueryChange?: (query: string) => void
   loading?: boolean
@@ -44,6 +48,10 @@ interface FilterBase {
   loadingMore?: boolean
   // The next page failed. It is not asked for again until someone retries.
   loadMoreFailed?: boolean
+  // Names a value that is not one of the options, where the value is shown.
+  valueLabel?: string
+  // Shown under the options in the toolbar's filter menu.
+  extra?: React.ReactNode
 }
 
 export interface SingleFilter extends FilterBase {

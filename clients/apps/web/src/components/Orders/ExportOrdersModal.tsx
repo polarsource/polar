@@ -56,7 +56,7 @@ interface ExportOrdersModalProps {
   organization: schemas['Organization']
   productId?: string[]
   externalProductId?: string[]
-  status?: schemas['OrderStatus'] | null
+  status?: schemas['OrderStatus'][] | null
   isShown: boolean
   hide: () => void
 }
@@ -88,8 +88,8 @@ const ExportOrdersModal: React.FC<ExportOrdersModalProps> = ({
           for (const id of externalProductId ?? []) {
             search.append('external_product_id', id)
           }
-          if (status) {
-            search.append('status', status)
+          for (const value of status ?? []) {
+            search.append('status', value)
           }
           search.set('created_after', dateRange.from.toISOString())
           search.set('created_before', dateRange.to.toISOString())

@@ -11,14 +11,15 @@ import { useState } from 'react'
 import { uniqueOptions } from './filterOptions'
 
 // Products are searched on the server and load page by page, since a catalog
-// can hold more than one page of them. The selected ones are fetched on their own and stay at the
-// top, so they keep their names whatever the search shows.
+// can hold more than one page of them. The selected ones are fetched on their
+// own and stay at the top, so they keep their names whatever the search shows.
 const PAGE_SIZE = 50
 
 export const useProductFilter = (
   organization: schemas['Organization'],
   product: ProductFilter,
   onProductSelect: (product: ProductFilter) => void,
+  { recurringOnly = false }: { recurringOnly?: boolean } = {},
 ): Filter => {
   const [query, setQuery] = useState('')
   // A product_id link keeps filtering by ID until the selection is cleared
@@ -38,9 +39,9 @@ export const useProductFilter = (
     isFetchNextPageError,
     fetchNextPage,
   } = useInfiniteProducts(organization.id, {
-    is_recurring: true,
-    // Subscriptions outlive their product being archived or leaving the live
-    // catalog, so those are listed as well.
+    ...(recurringOnly ? { is_recurring: true } : {}),
+    // Sales outlive their product being archived or leaving the live catalog,
+    // so those are listed as well.
     is_archived: null,
     catalog_status: null,
     ...(query ? { query } : {}),

@@ -5,6 +5,7 @@ import {
   type Polar,
 } from '@polar-sh/sdk/2027-01'
 import type { EventInput, Metering } from '@polar-sh/sdk/metering'
+import * as Option from 'effect/Option'
 import * as Schema from 'effect/Schema'
 import type {
   IngestionStrategy,
@@ -64,41 +65,39 @@ export const LLMUsage = Schema.Struct({
   model: Schema.String,
 })
 
-const isLLMUsage = Schema.is(LLMUsage)
-
-const snakeCustomer = (
-  customer: IngestionStrategyCustomer | IngestionStrategyExternalCustomer,
-): { customer_id: string } | { external_customer_id: string } => {
-  if ('customerId' in customer) return { customer_id: customer.customerId }
-
-  if ('externalCustomerId' in customer) {
-    return { external_customer_id: customer.externalCustomerId }
-  }
-
-  return customer
-}
-
 // The API reads _llm in snake_case, the LLM strategy builds it in camelCase
+const encodeLLMUsage = Schema.encodeUnknownOption(
+  LLMUsage.pipe(
+    Schema.encodeKeys({
+      inputTokens: 'input_tokens',
+      outputTokens: 'output_tokens',
+      totalTokens: 'total_tokens',
+      cachedInputTokens: 'cached_input_tokens',
+    }),
+  ),
+)
+
+const encodeCustomer = Schema.encodeSync(
+  Schema.Union([
+    Schema.Struct({ customerId: Schema.String }).pipe(
+      Schema.encodeKeys({ customerId: 'customer_id' }),
+    ),
+    Schema.Struct({ externalCustomerId: Schema.String }).pipe(
+      Schema.encodeKeys({ externalCustomerId: 'external_customer_id' }),
+    ),
+    Schema.Struct({ customer_id: Schema.String }),
+    Schema.Struct({ external_customer_id: Schema.String }),
+  ]),
+)
+
 const toEventMetadata = (
   metadata: Record<string, IngestionMetadataValue | models.CostMetadataInput>,
 ): EventInput['metadata'] => {
   // SAFETY: besides primitives, contexts only hold _cost and _llm objects, the two the API accepts
   const eventMetadata = metadata as EventInput['metadata']
-  const { _llm } = metadata
+  const _llm = Option.getOrUndefined(encodeLLMUsage(metadata._llm))
 
-  if (!isLLMUsage(_llm)) return eventMetadata
-
-  return {
-    ...eventMetadata,
-    _llm: {
-      vendor: _llm.vendor,
-      model: _llm.model,
-      input_tokens: _llm.inputTokens,
-      cached_input_tokens: _llm.cachedInputTokens,
-      output_tokens: _llm.outputTokens,
-      total_tokens: _llm.totalTokens,
-    },
-  }
+  return _llm ? { ...eventMetadata, _llm } : eventMetadata
 }
 
 export class PolarIngestion<TContext extends IngestionContext> {
@@ -131,7 +130,7 @@ export class PolarIngestion<TContext extends IngestionContext> {
   ) {
     return this.pipe(async (ctx, customer) => {
       const event: EventInput = {
-        ...snakeCustomer(customer),
+        ...encodeCustomer(customer),
         name: meter,
         metadata: toEventMetadata({
           ...(metadataResolver ? metadataResolver(ctx) : ctx),

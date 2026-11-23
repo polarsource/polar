@@ -1432,6 +1432,9 @@ importers:
       '@polar-sh/sdk':
         specifier: ^0.41.5
         version: 0.41.5
+      effect:
+        specifier: 'catalog:'
+        version: 4.0.1
     devDependencies:
       '@ai-sdk/provider':
         specifier: ^2.0.0

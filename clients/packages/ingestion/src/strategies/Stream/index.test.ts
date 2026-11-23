@@ -2,7 +2,7 @@ import { PassThrough, Readable } from 'node:stream'
 import { setImmediate } from 'node:timers/promises'
 import { describe, expect, it, vi } from 'vitest'
 
-import { StreamStrategy } from '.'
+import { StreamStrategy, StreamStrategyContext } from '.'
 import { Ingestion } from '../../ingestion'
 
 const trackStream = (stream: Readable) => {
@@ -31,6 +31,17 @@ const consumers: Record<string, (stream: Readable) => Promise<Buffer>> = {
 }
 
 describe('StreamStrategy', () => {
+  it('should send metadata that StreamStrategyContext accepts', async () => {
+    const { strategy, ingest } = trackStream(Readable.from([Buffer.alloc(5)]))
+
+    await strategy.client({ customerId: 'alice' }).toArray()
+
+    const [{ metadata }] = sentEvents(ingest)
+    expect(await StreamStrategyContext['~standard'].validate(metadata)).toEqual(
+      { value: metadata },
+    )
+  })
+
   it.each(Object.keys(consumers))(
     'should leave the data for a consumer that reads later with %s',
     async (consumer) => {

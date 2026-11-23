@@ -1,3 +1,4 @@
+import * as Schema from 'effect/Schema'
 import {
   IngestionStrategy,
   type IngestionStrategyContext,
@@ -5,10 +6,15 @@ import {
   type IngestionStrategyExternalCustomer,
 } from '../../strategy'
 
-export type DeltaTimeStrategyContext = IngestionStrategyContext & {
-  deltaTime: number
-  strategy: 'DeltaTime'
-}
+export const DeltaTimeStrategyContext = Schema.toStandardSchemaV1(
+  Schema.Struct({
+    deltaTime: Schema.Finite,
+    strategy: Schema.Literal('DeltaTime'),
+  }),
+)
+
+export type DeltaTimeStrategyContext = IngestionStrategyContext &
+  typeof DeltaTimeStrategyContext.Type
 
 type DeltaTimeStrategyNowResolver = () => number
 

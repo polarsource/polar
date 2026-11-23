@@ -12,7 +12,7 @@
   "types": "./dist/index.d.ts",
   "type": "module",
   "engines": {
-    "node": ">=18"
+    "node": ">=24"
   },
   "files": [
     "dist"
@@ -95,7 +95,8 @@
   "dependencies": {
     "@opentelemetry/core": "^2.2.0",
     "@opentelemetry/sdk-trace-base": "^2.2.0",
-    "@polar-sh/sdk": "^0.41.5"
+    "@polar-sh/sdk": "^0.41.5",
+    "effect": "catalog:"
   },
   "peerDependencies": {
     "@aws-sdk/client-s3": "^3.744.0",

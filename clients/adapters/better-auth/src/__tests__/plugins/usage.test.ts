@@ -17,11 +17,11 @@ vi.mock('better-auth/api', () => ({
       super(data.message)
     }
   },
-  createAuthEndpoint: vi.fn((path, config, handler) => ({
-    path,
-    config,
-    handler,
-  })),
+  createAuthEndpoint: vi.fn((...args: unknown[]) => {
+    const [path, config, handler] =
+      args.length === 2 ? [undefined, ...args] : args
+    return { path, config, handler }
+  }),
   sessionMiddleware: vi.fn(),
 }))
 
@@ -42,7 +42,7 @@ describe('usage plugin', () => {
       const endpoints = plugin(mockClient)
 
       expect(endpoints).toHaveProperty('meters')
-      expect(endpoints).toHaveProperty('ingestion')
+      expect(endpoints).toHaveProperty('ingestUsage')
     })
 
     it('should create plugin with custom options', () => {
@@ -54,7 +54,7 @@ describe('usage plugin', () => {
       const endpoints = plugin(mockClient)
 
       expect(endpoints).toHaveProperty('meters')
-      expect(endpoints).toHaveProperty('ingestion')
+      expect(endpoints).toHaveProperty('ingestUsage')
     })
 
     it('should configure endpoints with correct paths and middleware', () => {
@@ -72,7 +72,6 @@ describe('usage plugin', () => {
       )
 
       expect(createAuthEndpoint).toHaveBeenCalledWith(
-        '/usage/ingest',
         expect.objectContaining({
           method: 'POST',
           body: expect.any(Object),
@@ -222,13 +221,13 @@ describe('usage plugin', () => {
     })
   })
 
-  describe('ingestion endpoint', () => {
+  describe('ingestUsage endpoint', () => {
     let handler: Function
 
     beforeEach(() => {
       const plugin = usage()
       const endpoints = plugin(mockClient) as any
-      handler = endpoints.ingestion.handler
+      handler = endpoints.ingestUsage.handler
     })
 
     it('should ingest usage event', async () => {
@@ -491,7 +490,7 @@ describe('usage plugin', () => {
 
     it('attributes organization usage without changing caller metadata', async () => {
       const endpoints = usage()(mockClient) as any
-      const body = endpoints.ingestion.config.body.parse({
+      const body = endpoints.ingestUsage.config.body.parse({
         organizationId: 'organization-123',
         event: 'api_call',
         metadata: {
@@ -501,7 +500,7 @@ describe('usage plugin', () => {
       })
       vi.mocked(mockClient.events.ingest).mockResolvedValue({ success: true })
 
-      await endpoints.ingestion.handler({ context, body, json: vi.fn() })
+      await endpoints.ingestUsage.handler({ context, body, json: vi.fn() })
 
       expect(mockClient.events.ingest).toHaveBeenCalledWith({
         events: [
@@ -525,7 +524,7 @@ describe('usage plugin', () => {
       )
 
       await expect(
-        endpoints.ingestion.handler({
+        endpoints.ingestUsage.handler({
           context,
           body: {
             organizationId: 'organization-123',

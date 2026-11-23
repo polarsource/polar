@@ -37,7 +37,7 @@ The Polar plugin comes with a handful additional plugins which adds functionalit
 
 - Checkout - Enables a seamless checkout integration
 - Portal - Makes it possible for your customers to manage their orders, subscriptions & granted benefits
-- Usage - Simple extension for listing customer meters & ingesting events for Usage Based Billing
+- Usage - Simple extension for listing customer meters & ingesting events from your server for Usage Based Billing
 - Webhooks - Listen for relevant Polar webhooks
 
 ```typescript
@@ -265,7 +265,7 @@ Organization deletion in Better Auth does **not** delete the Polar team customer
 
 Organization billing is always selected explicitly; the active Better Auth organization is never used implicitly. Pass `organizationId` in:
 
-- the POST body for checkout (as `organization_id`) and usage ingestion (as `organizationId`);
+- the POST body for checkout (as `organization_id`) and the body of `auth.api.ingestUsage` (as `organizationId`);
 - the query for portal (GET or POST), customer state, benefits, subscriptions, orders, and usage meters.
 
 The adapter verifies the authenticated user's Better Auth membership before calling Polar. Organization checkout requires a billing-capable role. Team portal and meter requests create a member-scoped customer session with `externalCustomerId = organization.id` and `externalMemberId = user.id`; usage events carry both IDs. Omitting `organizationId` preserves personal-customer behavior.
@@ -587,18 +587,28 @@ Polar's Usage Based Billing builds entirely on event ingestion. Ingest events fr
 
 [Learn more about Usage Based Billing in the Polar Docs.](https://docs.polar.sh/features/usage-based-billing/introduction)
 
+Ingest from the server code that performs the metered work, so users can't forge their own usage. `auth.api.ingestUsage` is only available on the server; it is not exposed over HTTP or on the auth client.
+
 ```typescript
-const { data: ingested } = await authClient.usage.ingest({
-  event: 'file-uploads',
-  metadata: {
-    uploadedFiles: 12,
+import { headers } from 'next/headers'
+import { auth } from '@/lib/auth'
+
+const { uploadedFiles } = await processUploads(request)
+
+await auth.api.ingestUsage({
+  headers: await headers(),
+  body: {
+    event: 'file-uploads',
+    metadata: {
+      uploadedFiles,
+    },
+    // Optional: attributes the event to the team customer and this member.
+    organizationId,
   },
-  // Optional: attributes the event to the team customer and this member.
-  organizationId,
 })
 ```
 
-The authenticated user is automatically associated with the ingested event.
+The authenticated user from the request's session is automatically associated with the ingested event.
 
 ### Customer Meters
 

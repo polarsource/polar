@@ -86,8 +86,7 @@ export const usage =
           }
         },
       ),
-      ingestion: createAuthEndpoint(
-        '/usage/ingest',
+      ingestUsage: createAuthEndpoint(
         {
           method: 'POST',
           body: z.object({

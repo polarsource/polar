@@ -1,0 +1,19 @@
+terraform/identity/ssosync.tf
+  s_b13d4ad135c1fd::t_b90007ece25aa4 82
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "15ece8b6d7a069bbfe6916a55c86ba585be1c542",
+  "prompts": {},
+  "sessions": {
+    "s_b13d4ad135c1fd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5aaf6b0c-46da-4975-a57e-aae05d07a649",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

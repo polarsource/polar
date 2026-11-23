@@ -18,6 +18,8 @@ import { ProrationBehavior } from './ProrationBehavior'
 import { Box } from '@polar-sh/orbit/Box'
 import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
+const DEFAULT_TRIAL_ENDED_REACTIVATION_PERIOD = 14
+
 interface OrganizationSubscriptionSettingsProps {
   organization: schemas['Organization']
   readOnly: boolean
@@ -27,7 +29,10 @@ const OrganizationSubscriptionSettings: React.FC<
   OrganizationSubscriptionSettingsProps
 > = ({ organization, readOnly }) => {
   const form = useForm<schemas['OrganizationSubscriptionSettings']>({
-    defaultValues: organization.subscription_settings,
+    defaultValues: {
+      trial_ended_reactivation_period: DEFAULT_TRIAL_ENDED_REACTIVATION_PERIOD,
+      ...organization.subscription_settings,
+    },
   })
   const { control, setError } = form
 
@@ -113,6 +118,29 @@ const OrganizationSubscriptionSettings: React.FC<
                         checked={field.value}
                         disabled={readOnly}
                         onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </SettingsGroupItem>
+            <SettingsGroupItem
+              title="Reactivation period after trial end"
+              description="How long customers can add a payment method to reactivate their subscription after a trial ends without one, before it's canceled"
+            >
+              <FormField
+                control={control}
+                name="trial_ended_reactivation_period"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <BenefitRevocationGracePeriod
+                        value={
+                          field.value ?? DEFAULT_TRIAL_ENDED_REACTIVATION_PERIOD
+                        }
+                        disabled={readOnly}
+                        onValueChange={(value) => field.onChange(Number(value))}
                       />
                     </FormControl>
                     <FormMessage />

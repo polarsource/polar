@@ -328,8 +328,6 @@ export interface paths {
     /**
      * Export Customer Data
      * @description Export all data for the authenticated customer as a JSON file.
-     *
-     *     **Scopes**: `customer_portal:read` `customer_portal:write`
      */
     get: operations['customer_portal:customers:export']
     put?: never

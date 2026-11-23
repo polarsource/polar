@@ -1,4 +1,5 @@
 import typing
+from datetime import timedelta
 from typing import Any, cast
 from unittest.mock import MagicMock, call
 from uuid import uuid4
@@ -1970,6 +1971,8 @@ class TestCycleBenefitGrant:
             subscription=subscription,
             member=None,
         )
+        grant.granted_at = subscription.current_period_start - timedelta(days=1)
+        await save_fixture(grant)
 
         updated_grant = await benefit_grant_service.cycle_benefit_grant(
             session, redis, grant
@@ -1980,6 +1983,33 @@ class TestCycleBenefitGrant:
         assert updated_grant.id == grant.id
         assert updated_grant.is_granted
         assert cast(Any, updated_grant.properties) == {"external_id": "xyz"}
+
+    async def test_granted_during_current_period(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        benefit_organization: Benefit,
+        benefit_strategy_mock: MagicMock,
+    ) -> None:
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            properties={"external_id": "abc"},
+            subscription=subscription,
+            member=None,
+        )
+
+        updated_grant = await benefit_grant_service.cycle_benefit_grant(
+            session, redis, grant
+        )
+
+        benefit_strategy_mock.cycle.assert_not_called()
+        assert cast(Any, updated_grant.properties) == {"external_id": "abc"}
 
     async def test_action_required_error(
         self,
@@ -1999,6 +2029,8 @@ class TestCycleBenefitGrant:
             subscription=subscription,
             member=None,
         )
+        grant.granted_at = subscription.current_period_start - timedelta(days=1)
+        await save_fixture(grant)
 
         error_message = "Cycle action required error message"
         benefit_strategy_mock.cycle.side_effect = BenefitActionRequiredError(

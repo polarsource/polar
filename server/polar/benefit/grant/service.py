@@ -40,6 +40,7 @@ from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession
 from polar.redis import Redis
+from polar.subscription.repository import SubscriptionRepository
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import can_retry, enqueue_job
 
@@ -735,6 +736,18 @@ class BenefitGrantService:
             or (member is not None and member.is_deleted)
         ):
             return grant
+
+        # A grant made this period, e.g. by a product change at renewal, already covers it
+        if grant.subscription_id is not None and grant.granted_at is not None:
+            subscription_repository = SubscriptionRepository.from_session(session)
+            subscription = await subscription_repository.get_by_id(
+                grant.subscription_id
+            )
+            if subscription is not None and grant.granted_at >= (
+                subscription.current_meter_period_start
+                or subscription.current_period_start
+            ):
+                return grant
 
         previous_properties = grant.properties
         benefit_strategy = get_benefit_strategy(benefit.type, session, redis)

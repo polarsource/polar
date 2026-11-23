@@ -75,7 +75,7 @@ The plugin requires Better Auth 1.7 or later and Node.js 22 or later.
     import { polar, checkout, portal, webhooks } from "@polar-sh/better-auth"; // [!code ++]
     import { createPolarCore } from "@polar-sh/sdk/2026-10"; // [!code ++]
 
-    const polarClient = createPolarCore({ // [!code ++]
+    export const polarClient = createPolarCore({ // [!code ++]
         accessToken: process.env.POLAR_ACCESS_TOKEN!, // [!code ++]
         // Use 'sandbox' if you're using the Polar Sandbox environment
         // Remember that access tokens, products, etc. are completely separated between environments.
@@ -83,7 +83,7 @@ The plugin requires Better Auth 1.7 or later and Node.js 22 or later.
         environment: 'sandbox' // [!code ++]
     }); // [!code ++]
 
-    const auth = betterAuth({
+    export const auth = betterAuth({
         // ... Better Auth config
         plugins: [
             polar({ // [!code ++]
@@ -564,8 +564,7 @@ Because `createCustomerOnSignUp: true` sets the Polar customer's external ID to 
 The example below calls the Polar SDK directly from a server route handler, reusing the `polarClient` you configured in `auth.ts`:
 
 ```typescript icon="square-js" app/api/ai/video/route.ts (Next.js App Router)
-import { auth } from "@/lib/auth";
-import { polarClient } from "@/lib/polar";
+import { auth, polarClient } from "@/lib/auth";
 import { ingestEvents } from "@polar-sh/sdk/2026-10/services/events";
 import { headers } from "next/headers";
 

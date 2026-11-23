@@ -243,12 +243,6 @@ class CustomerService:
         ):
             return
 
-        matching_countries = ip_geolocation.get_matching_countries(
-            billing_address.country
-        )
-        if ip_country in matching_countries:
-            return
-
         subscriptions = await SubscriptionRepository.from_session(
             session
         ).list_payable_by_customer(customer.id)
@@ -266,7 +260,10 @@ class CustomerService:
             payment_method.id: payment_method.country
             for payment_method in payment_methods
         }
-        # Every charged payment method must confirm: the new country taxes them all.
+        # Not IP: merchants may call this from their own server.
+        matching_countries = ip_geolocation.get_matching_countries(
+            billing_address.country
+        )
         charged_countries = [
             country_by_payment_method_id.get(payment_method_id)
             if payment_method_id is not None
@@ -282,7 +279,7 @@ class CustomerService:
         # Shadow mode: measure how often this triggers before blocking on it.
         log.info(
             "customer_portal.billing_country_mismatch"
-            if ip_country is not None or payment_method_countries
+            if payment_method_countries
             else "customer_portal.billing_country_unverified",
             customer_id=str(customer.id),
             organization_id=str(customer.organization_id),

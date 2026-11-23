@@ -583,7 +583,11 @@ class TestUpdate:
         [
             pytest.param("SE", "UG", None, None, id="country unchanged"),
             pytest.param(
-                "UG", "UG", ("card", {"country": "SE"}), None, id="ip confirms"
+                "UG",
+                "UG",
+                ("card", {"country": "SE"}),
+                "customer_portal.billing_country_mismatch",
+                id="ip alone does not confirm",
             ),
             pytest.param(
                 "UG", "SE", ("card", {"country": "UG"}), None, id="card confirms"

@@ -93,7 +93,7 @@ export const CustomerPortalOrders = ({
               }
               meta={
                 <>
-                  <OrderStatus status={order.status} size="small" />
+                  <OrderStatus status={order.status} />
                   <Box
                     as="span"
                     color="text-primary"

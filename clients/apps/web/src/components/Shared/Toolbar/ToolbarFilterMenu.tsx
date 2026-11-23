@@ -154,7 +154,7 @@ const OptionsPanel = ({
   }
 
   return (
-    <div className={twMerge(PANEL_CLASS, 'w-64')}>
+    <div className={twMerge(PANEL_CLASS, filter.extra ? 'w-max' : 'w-64')}>
       {filter.searchPlaceholder && (
         <input
           autoFocus
@@ -163,6 +163,15 @@ const OptionsPanel = ({
           aria-label={`Filter ${filter.label.toLowerCase()} options`}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
+          onKeyDown={(event) => {
+            // Selected options are pinned first, so a multi-select takes the
+            // first one that is not yet picked.
+            const first =
+              filter.type === 'multi'
+                ? options.find((option) => !isSelected(filter, option))
+                : options[0]
+            if (event.key === 'Enter' && first) pick(first)
+          }}
         />
       )}
       <div
@@ -170,9 +179,11 @@ const OptionsPanel = ({
         className="max-h-72 overflow-y-auto p-1.5"
         onScroll={loadMoreAtEnd}
       >
-        {options.length === 0 && (
+        {options.length === 0 && !filter.extra && (
           <div className={EMPTY_CLASS}>
-            {filter.loading ? 'Loading...' : 'No matches'}
+            {filter.loading
+              ? 'Loading...'
+              : (filter.emptyLabel ?? 'No matches')}
           </div>
         )}
         {options.map((option) => {
@@ -199,6 +210,7 @@ const OptionsPanel = ({
                   {isOn && <Check className="size-3.5" />}
                 </span>
               )}
+              {option.icon}
               <span className="truncate">{option.label}</span>
             </button>
           )
@@ -217,6 +229,11 @@ const OptionsPanel = ({
           </button>
         )}
       </div>
+      {filter.extra && (
+        <div className="dark:border-polar-700 border-t border-gray-200">
+          {filter.extra}
+        </div>
+      )}
     </div>
   )
 }

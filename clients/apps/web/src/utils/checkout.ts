@@ -1,6 +1,5 @@
 import type { ProductCheckoutPublic } from '@polar-sh/checkout/guards'
 import { Client, schemas, unwrap } from '@polar-sh/client'
-import type { StatusColor } from '@polar-sh/orbit'
 import { notFound } from 'next/navigation'
 import { cache } from 'react'
 
@@ -34,17 +33,6 @@ export const CheckoutStatusDisplayTitle: Record<
   succeeded: 'Succeeded',
   expired: 'Expired',
   failed: 'Failed',
-}
-
-export const CheckoutStatusDisplayColor: Record<
-  schemas['CheckoutStatus'],
-  StatusColor
-> = {
-  open: 'blue',
-  confirmed: 'yellow',
-  succeeded: 'green',
-  expired: 'gray',
-  failed: 'red',
 }
 
 export const isOrderSummaryCollapsible = (

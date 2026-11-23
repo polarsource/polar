@@ -134,6 +134,8 @@ async def list(
         external_customer_id=filters.external_customer_id,
         status=filters.status,
         query=filters.query,
+        created_after=filters.created_after,
+        created_before=filters.created_before,
         pagination=pagination,
         sorting=sorting,
     )

@@ -38,6 +38,9 @@ interface CondensedTableProps<T extends RowData> {
   // Arrow keys move the selection. Defaults to onSelect.
   onStep?: (id: string) => void
   onClose: () => void
+  // Whether Escape and the arrow keys act on the selection. Off for a list
+  // whose rows open a page, where the keys should scroll as usual.
+  navigable?: boolean
   // A stacked layout for small screens, used in place of the columns.
   renderCompact?: (row: T) => ReactNode
   inset?: CondensedTableInset
@@ -49,6 +52,7 @@ export const CondensedTable = <T extends RowData>({
   onSelect,
   onStep = onSelect,
   onClose,
+  navigable = true,
   renderCompact,
   inset = 'm',
 }: CondensedTableProps<T>) => {
@@ -56,6 +60,7 @@ export const CondensedTable = <T extends RowData>({
   const ids = rows.map((row) => row.id)
 
   useEffect(() => {
+    if (!navigable) return
     const onKeyDown = (e: KeyboardEvent) => {
       if (isKeyHandledElsewhere(e) || e.metaKey || e.ctrlKey || e.altKey) return
       if (e.key === 'Escape' && selectedId) {
@@ -77,7 +82,7 @@ export const CondensedTable = <T extends RowData>({
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [ids, selectedId, onStep, onClose])
+  }, [navigable, ids, selectedId, onStep, onClose])
 
   const isSelectedLoaded = selectedId !== null && ids.includes(selectedId)
   useEffect(() => {

@@ -14,8 +14,7 @@ import { type SelectableSubscriptionStatus } from '@/components/Subscriptions/se
 import { type ProductFilter } from '@/components/Products/ProductSelect'
 import { DataTableSortingState } from '@/utils/datatable'
 import { schemas } from '@polar-sh/client'
-import { SegmentedControl, Text } from '@polar-sh/orbit'
-import { Box } from '@polar-sh/orbit/Box'
+import { SegmentedControl } from '@polar-sh/orbit'
 import {
   ChartNoAxesGantt,
   ChevronsUpDown,
@@ -24,12 +23,13 @@ import {
   Rows3,
 } from '@polar-sh/orbit/icons'
 import { type ReactNode } from 'react'
-import { ToolbarActionsMenu, type ToolbarAction } from './ToolbarActionsMenu'
-import { ToolbarFilterChips } from './ToolbarFilterChips'
-import { ToolbarFilterMenu } from './ToolbarFilterMenu'
-import { useCustomerFilter } from './useCustomerFilter'
+import { type DateRange } from '@/components/Metrics/DateRangePicker'
+import { Toolbar } from '@/components/Shared/Toolbar/Toolbar'
+import { type ToolbarAction } from '@/components/Shared/Toolbar/ToolbarActionsMenu'
+import { useDateRangeFilter } from '@/components/Shared/Toolbar/useDateRangeFilter'
+import { useProductFilter } from '@/components/Shared/Toolbar/useProductFilter'
+import { useCustomerFilter } from '@/components/Shared/Toolbar/useCustomerFilter'
 import { useDiscountFilter } from './useDiscountFilter'
-import { useProductFilter } from './useProductFilter'
 import { type SubscriptionView } from './useSubscriptionsView'
 
 type StatusOption = SelectableSubscriptionStatus | 'canceling'
@@ -95,6 +95,8 @@ interface SubscriptionsToolbarProps {
   onDiscountSelect: (value: string[] | null) => void
   cancellationReason: CancellationReason[] | null
   onCancellationReasonSelect: (value: CancellationReason[] | null) => void
+  started: DateRange | null
+  onStartedSelect: (value: DateRange | null) => void
   sorting: DataTableSortingState
   onSortingChange: (sorting: DataTableSortingState) => void
   view: SubscriptionView
@@ -120,6 +122,8 @@ export const SubscriptionsToolbar = ({
   onDiscountSelect,
   cancellationReason,
   onCancellationReasonSelect,
+  started,
+  onStartedSelect,
   sorting,
   onSortingChange,
   view,
@@ -130,7 +134,18 @@ export const SubscriptionsToolbar = ({
   onReset,
   actions,
 }: SubscriptionsToolbarProps) => {
-  const productFilter = useProductFilter(organization, product, onProductSelect)
+  const productFilter = useProductFilter(
+    organization,
+    product,
+    onProductSelect,
+    { recurringOnly: true },
+  )
+  const startedFilter = useDateRangeFilter(
+    organization,
+    started,
+    onStartedSelect,
+    { key: 'started', label: 'Started' },
+  )
   const discountFilter = useDiscountFilter(
     organization.id,
     discountId,
@@ -187,6 +202,7 @@ export const SubscriptionsToolbar = ({
     productFilter,
     customerFilter,
     discountFilter,
+    startedFilter,
     {
       key: 'cancellation_reason',
       label: 'Cancellation reason',
@@ -232,46 +248,18 @@ export const SubscriptionsToolbar = ({
   ]
 
   return (
-    <div className="@container">
-      <Box
-        alignItems="center"
-        justifyContent="between"
-        gap="l"
-        px="l"
-        py="m"
-        borderBottomWidth={1}
-        borderStyle="solid"
-        borderColor="border-primary"
-      >
-        <Box alignItems="center" columnGap="l" minWidth={0}>
-          <Text as="h1" variant="body" wrap="nowrap">
-            Subscriptions
-          </Text>
-          <ToolbarFilterChips
-            filters={filters}
-            trailing={
-              <ToolbarFilterMenu
-                filters={filters}
-                onReset={hasActiveFilters ? onReset : undefined}
-                variant="add"
-              />
-            }
-          />
-        </Box>
-        <Box alignItems="center" gap="s" flexShrink={0} minHeight={32}>
-          <SegmentedControl
-            size="sm"
-            options={VIEW_OPTIONS}
-            value={view}
-            onChange={onViewChange}
-          />
-          <ToolbarFilterMenu
-            filters={filters}
-            onReset={hasActiveFilters ? onReset : undefined}
-          />
-          <ToolbarActionsMenu groups={actions} />
-        </Box>
-      </Box>
-    </div>
+    <Toolbar
+      title="Subscriptions"
+      filters={filters}
+      onReset={hasActiveFilters ? onReset : undefined}
+      actions={actions}
+    >
+      <SegmentedControl
+        size="sm"
+        options={VIEW_OPTIONS}
+        value={view}
+        onChange={onViewChange}
+      />
+    </Toolbar>
   )
 }

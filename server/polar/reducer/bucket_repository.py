@@ -391,62 +391,70 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
 
     async def get_customer_meter_totals(
         self,
-        customer: Customer,
-        meter_id: UUID,
+        customer_meters: Sequence[tuple[Customer, UUID]],
         *,
         usage_closed_before: datetime,
-    ) -> Sequence[Row[*tuple[Any, ...]]]:
-        """The id, kind and aggregation of each of the meter's reducers, the
-        customer's latest meter reset, the identity of the buckets, whether one of
-        them starts at the reset, and their count, sum, min and max of every
-        generation starting from it: one row per identity of the customer's usage
-        buckets before `usage_closed_before`, and one of its credit buckets."""
-        reducers = (
-            await self.session.execute(
-                select(Reducer)
-                .join(MeterReducer, MeterReducer.reducer_id == Reducer.id)
-                .where(MeterReducer.meter_id == meter_id)
+    ) -> list[list[tuple[Any, ...]]]:
+        """For each customer and meter id: the id, kind and aggregation of each of
+        the meter's reducers, the customer's latest meter reset, the identity of the
+        buckets, whether one of them starts at the reset, and their count, sum, min
+        and max of every generation starting from it: one row per identity of the
+        customer's usage buckets before `usage_closed_before`, and one of its credit
+        buckets."""
+        rows: list[list[tuple[Any, ...]]] = [[] for _ in customer_meters]
+        reducer_by_meter: dict[UUID, dict[ReducerKind, Reducer]] = {}
+        for meter_id, reducer in await self.session.execute(
+            select(MeterReducer.meter_id, Reducer)
+            .join(MeterReducer, MeterReducer.reducer_id == Reducer.id)
+            .where(
+                MeterReducer.meter_id.in_({meter_id for _, meter_id in customer_meters})
             )
-        ).scalars()
-        reducer_by_kind = {reducer.kind: reducer for reducer in reducers}
-        usage_reducer = reducer_by_kind.get(ReducerKind.usage)
-        credit_reducer = reducer_by_kind.get(ReducerKind.credit)
-        if usage_reducer is None and credit_reducer is None:
-            return []
+        ):
+            reducer_by_meter.setdefault(meter_id, {})[reducer.kind] = reducer
 
-        reset = (
-            EventRepository.from_session(self.session)
-            .get_meter_resets_statement(customer, meter_id)
-            .with_only_columns(func.max(Event.timestamp).label("since"))
-            .cte("reset")
-        )
-        # A scalar subquery runs once before the scans, so its value can bound
-        # the bucket index scan; a join on the CTE can't.
-        since = select(reset.c.since).scalar_subquery()
+        event_repository = EventRepository.from_session(self.session)
         statements: list[Select[*tuple[Any, ...]]] = []
-        if usage_reducer is not None:
-            statements.extend(
-                self._get_meter_reducer_totals_statement(
-                    usage_reducer,
-                    since,
-                    (customer_id, external_customer_id),
-                    ReducerBucket.bucket_start < usage_closed_before,
-                )
-                for customer_id, external_customer_id in get_customer_identities(
-                    customer
-                )
+        for index, (customer, meter_id) in enumerate(customer_meters):
+            reducer_by_kind = reducer_by_meter.get(meter_id, {})
+            usage_reducer = reducer_by_kind.get(ReducerKind.usage)
+            credit_reducer = reducer_by_kind.get(ReducerKind.credit)
+            if usage_reducer is None and credit_reducer is None:
+                continue
+            reset = (
+                event_repository.get_meter_resets_statement(customer, meter_id)
+                .with_only_columns(func.max(Event.timestamp).label("since"))
+                .cte(f"reset_{index}")
             )
-        if credit_reducer is not None:
-            statements.append(
-                self._get_meter_reducer_totals_statement(
-                    credit_reducer, since, (customer.id, None)
+            # A scalar subquery runs once before the scans, so its value can bound
+            # the bucket index scan; a join on the CTE can't.
+            since = select(reset.c.since).scalar_subquery()
+            if usage_reducer is not None:
+                statements.extend(
+                    self._get_meter_reducer_totals_statement(
+                        index,
+                        usage_reducer,
+                        since,
+                        (customer_id, external_customer_id),
+                        ReducerBucket.bucket_start < usage_closed_before,
+                    )
+                    for customer_id, external_customer_id in get_customer_identities(
+                        customer
+                    )
                 )
-            )
-        result = await self.session.execute(union_all(*statements))
-        return result.all()
+            if credit_reducer is not None:
+                statements.append(
+                    self._get_meter_reducer_totals_statement(
+                        index, credit_reducer, since, (customer.id, None)
+                    )
+                )
+        if statements:
+            for index, *row in await self.session.execute(union_all(*statements)):
+                rows[index].append(tuple(row))
+        return rows
 
     def _get_meter_reducer_totals_statement(
         self,
+        index: int,
         reducer: Reducer,
         since: ScalarSelect[datetime | None],
         identity: tuple[UUID | None, str | None],
@@ -457,6 +465,7 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         customer_id, external_customer_id = identity
         return (
             select(
+                literal(index),
                 Reducer.id,
                 Reducer.kind,
                 Reducer.aggregation,

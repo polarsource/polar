@@ -19,6 +19,7 @@ from polar.authz.service import (
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.config import settings
 from polar.customer_meter.repository import CustomerMeterRepository
+from polar.customer_meter.service import customer_meter as customer_meter_service
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.exceptions import PolarRequestValidationError, ValidationError
 from polar.kit.address import Address
@@ -39,6 +40,7 @@ from polar.member_session.service import member_session as member_session_servic
 from polar.models import (
     BenefitGrant,
     Customer,
+    CustomerMeter,
     Order,
     Organization,
     PaymentMethod,
@@ -204,8 +206,10 @@ class CustomerService:
         org_ids = await get_accessible_org_ids(
             session, auth_subject, permission=OrganizationPermission.customers_read
         )
-        statement = repository.get_statement_by_org_ids(org_ids).where(
-            Customer.id == id
+        statement = (
+            repository.get_statement_by_org_ids(org_ids)
+            .where(Customer.id == id)
+            .options(joinedload(Customer.organization))
         )
         return await repository.get_one_or_none(statement)
 
@@ -219,8 +223,10 @@ class CustomerService:
         org_ids = await get_accessible_org_ids(
             session, auth_subject, permission=OrganizationPermission.customers_read
         )
-        statement = repository.get_statement_by_org_ids(org_ids).where(
-            Customer.external_id == external_id
+        statement = (
+            repository.get_statement_by_org_ids(org_ids)
+            .where(Customer.external_id == external_id)
+            .options(joinedload(Customer.organization))
         )
         return await repository.get_one_or_none(statement)
 
@@ -1003,8 +1009,10 @@ class CustomerService:
         # 👋 Whenever you change the state schema,
         # please also update the cache key with a version number.
         cache_key = f"polar:customer_state:v8:{customer.id}"
+        reducer_metering = customer.organization.is_reducer_billing_enabled
 
-        if cache:
+        # A cached state would freeze the live meter units.
+        if cache and not reducer_metering:
             raw_state = await redis.get(cache_key)
             if raw_state is not None:
                 return _CustomerStateAdapter.validate_json(raw_state)
@@ -1022,17 +1030,23 @@ class CustomerService:
         )
 
         customer_meter_repository = CustomerMeterRepository.from_session(session)
-        customer.active_meters = await customer_meter_repository.get_all_by_customer(
-            customer.id
+        active_meters = await customer_meter_repository.get_all_by_customer(
+            customer.id, options=(joinedload(CustomerMeter.customer),)
         )
+        if reducer_metering:
+            await customer_meter_service.apply_reducer_units(
+                session, redis, active_meters
+            )
+        customer.active_meters = active_meters
 
         state = _CustomerStateAdapter.validate_python(customer, from_attributes=True)
 
-        await redis.set(
-            cache_key,
-            state.model_dump_json(),
-            ex=int(timedelta(hours=1).total_seconds()),
-        )
+        if not reducer_metering:
+            await redis.set(
+                cache_key,
+                state.model_dump_json(),
+                ex=int(timedelta(hours=1).total_seconds()),
+            )
 
         return state
 

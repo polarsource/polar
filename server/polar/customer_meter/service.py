@@ -10,6 +10,7 @@ from redis import RedisError
 from sqlalchemy import ColumnElement, Float, Select, and_, func, or_, select, union_all
 from sqlalchemy.exc import DBAPIError, IntegrityError, MultipleResultsFound
 from sqlalchemy.orm import joinedload
+from sqlalchemy.orm.attributes import set_committed_value
 from sqlalchemy.orm.strategy_options import contains_eager
 
 from polar.auth.models import AuthSubject, Organization, User
@@ -70,6 +71,7 @@ class CustomerMeterService:
     async def list(
         self,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[User | Organization],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
@@ -111,13 +113,16 @@ class CustomerMeterService:
 
         statement = repository.apply_sorting(statement, sorting)
 
-        return await repository.paginate(
+        results, count = await repository.paginate(
             statement, limit=pagination.limit, page=pagination.page
         )
+        await self.apply_reducer_units(session, redis, results)
+        return results, count
 
     async def get(
         self,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> CustomerMeter | None:
@@ -128,7 +133,57 @@ class CustomerMeterService:
             .where(CustomerMeter.id == id)
             .options(joinedload(CustomerMeter.meter))
         )
-        return await repository.get_one_or_none(statement)
+        customer_meter = await repository.get_one_or_none(statement)
+        if customer_meter is not None:
+            await self.apply_reducer_units(session, redis, [customer_meter])
+        return customer_meter
+
+    async def apply_reducer_units(
+        self,
+        session: AsyncReadSession,
+        redis: Redis,
+        customer_meters: Sequence[CustomerMeter],
+    ) -> None:
+        """Read the units of organizations billing from the reducers live from the
+        reducer, instead of waiting for the debounced customer meter update. The
+        override isn't persisted. Expects the customers' organizations loaded."""
+        live_customer_meters = [
+            customer_meter
+            for customer_meter in customer_meters
+            if customer_meter.customer.organization.is_reducer_billing_enabled
+        ]
+        if not live_customer_meters:
+            return
+        try:
+            units = await reducer_service.get_customer_meter_units(
+                session,
+                redis,
+                [
+                    (customer_meter.customer, customer_meter.meter_id)
+                    for customer_meter in live_customer_meters
+                ],
+            )
+        except RedisError:
+            logfire.warn(
+                "Could not read customer meter units from the reducer",
+                customer_meter_ids=[
+                    str(customer_meter.id) for customer_meter in live_customer_meters
+                ],
+            )
+            return
+        for customer_meter, (consumed_units, credited_units) in zip(
+            live_customer_meters, units, strict=True
+        ):
+            if consumed_units is None:
+                consumed_units = customer_meter.consumed_units
+            credited = (
+                customer_meter.credited_units
+                if credited_units is None
+                else int(credited_units)
+            )
+            set_committed_value(customer_meter, "consumed_units", consumed_units)
+            set_committed_value(customer_meter, "credited_units", credited)
+            set_committed_value(customer_meter, "balance", credited - consumed_units)
 
     async def update_customer(
         self, session: AsyncSession, redis: Redis, customer: Customer
@@ -709,8 +764,8 @@ class CustomerMeterService:
         otherwise or when the reducer can't answer."""
         if settings.CUSTOMER_METER_UNITS_FROM_REDUCER or reducer_billing:
             try:
-                consumed_units, _ = await reducer_service.get_customer_meter_units(
-                    session, redis, customer, meter.id
+                [(consumed_units, _)] = await reducer_service.get_customer_meter_units(
+                    session, redis, [(customer, meter.id)]
                 )
             except RedisError:
                 logfire.warn(

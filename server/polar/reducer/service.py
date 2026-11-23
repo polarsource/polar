@@ -774,105 +774,155 @@ class ReducerService:
         self,
         session: AsyncReadSession,
         redis: Redis,
-        customer: Customer,
-        meter_id: UUID,
-    ) -> tuple[Decimal | None, Decimal | None]:
-        """The customer's consumed and credited units since the meter's latest reset."""
-        usage, credited_units = await self._get_customer_meter_usage(
-            session, redis, customer, meter_id
-        )
-        if usage is None:
-            return None, credited_units
-        function, summary = usage
-        return finalize_quantity(summary, function), credited_units
+        customer_meters: Sequence[tuple[Customer, UUID]],
+    ) -> list[tuple[Decimal | None, Decimal | None]]:
+        """Each customer's consumed and credited units since the meter's latest
+        reset, in the order of `customer_meters`."""
+        return [
+            (
+                None if usage is None else finalize_quantity(usage[1], usage[0]),
+                credited_units,
+            )
+            for usage, credited_units in await self._get_customer_meter_usage(
+                session, redis, customer_meters
+            )
+        ]
 
     async def _get_customer_meter_usage(
         self,
         session: AsyncReadSession,
         redis: Redis,
-        customer: Customer,
-        meter_id: UUID,
-    ) -> tuple[tuple[AggregationFunction, UsageSummary] | None, Decimal | None]:
-        """The aggregation function and summary of the customer's usage since the
-        meter's latest reset, and its credited units."""
-        identities = get_customer_identities(customer)
+        customer_meters: Sequence[tuple[Customer, UUID]],
+    ) -> list[tuple[tuple[AggregationFunction, UsageSummary] | None, Decimal | None]]:
+        """The aggregation function and summary of each customer's usage since the
+        meter's latest reset, and its credited units, in one query and one Redis
+        round trip."""
         now = utc_now()
         current_bucket_start = get_reducer_bucket_start(now)
         previous_bucket_start = current_bucket_start - REDUCER_BUCKET_SIZE
-        rows = await ReducerBucketRepository.from_session(
+        rows_by_customer_meter = await ReducerBucketRepository.from_session(
             session
         ).get_customer_meter_totals(
-            customer, meter_id, usage_closed_before=previous_bucket_start
+            customer_meters, usage_closed_before=previous_bucket_start
         )
-        usage: tuple[UUID, Aggregation, datetime | None] | None = None
-        usage_cold_agg_values: list[tuple[Any, ...]] = []
-        unsplit_identities: list[tuple[UUID | None, str | None]] = []
-        credited_units: Decimal | None = None
-        for (
-            reducer_id,
-            kind,
-            aggregation,
-            since,
-            customer_id,
-            external_customer_id,
-            split_at_reset,
-            *cold_agg_values,
-        ) in rows:
-            match kind:
-                case ReducerKind.credit:
-                    # credits are always sums and never rolled up in redis
-                    credited_units = Decimal(cold_agg_values[1])
-                case ReducerKind.usage:
-                    usage = (reducer_id, aggregation, since)
-                    usage_cold_agg_values.append(tuple(cold_agg_values))
-                    if not split_at_reset:
-                        unsplit_identities.append((customer_id, external_customer_id))
 
-        if usage is None or isinstance(usage[1], UniqueAggregation):
-            return None, credited_units
-
-        reducer_id, aggregation, since = usage
-        active_bucket_starts = [
-            bucket_start
-            for bucket_start in (previous_bucket_start, current_bucket_start)
-            if since is None or bucket_start >= since
-        ]
-        hot_agg_values = (
-            await redis_store.get_bucket_totals(
-                redis, reducer_id, aggregation.func, active_bucket_starts, identities
+        parsed: list[
+            tuple[
+                tuple[UUID, Aggregation, datetime | None] | None,
+                list[tuple[Any, ...]],
+                list[tuple[UUID | None, str | None]],
+                Decimal | None,
+            ]
+        ] = []
+        hot_requests: list[
+            tuple[
+                UUID,
+                AggregationFunction,
+                list[datetime],
+                list[tuple[UUID | None, str | None]],
+            ]
+        ] = []
+        for (customer, _), rows in zip(
+            customer_meters, rows_by_customer_meter, strict=True
+        ):
+            usage: tuple[UUID, Aggregation, datetime | None] | None = None
+            usage_cold_agg_values: list[tuple[Any, ...]] = []
+            unsplit_identities: list[tuple[UUID | None, str | None]] = []
+            credited_units: Decimal | None = None
+            for (
+                reducer_id,
+                kind,
+                aggregation,
+                since,
+                customer_id,
+                external_customer_id,
+                split_at_reset,
+                *cold_agg_values,
+            ) in rows:
+                match kind:
+                    case ReducerKind.credit:
+                        # credits are always sums and never rolled up in redis
+                        credited_units = Decimal(cold_agg_values[1])
+                    case ReducerKind.usage:
+                        usage = (reducer_id, aggregation, since)
+                        usage_cold_agg_values.append(tuple(cold_agg_values))
+                        if not split_at_reset:
+                            unsplit_identities.append(
+                                (customer_id, external_customer_id)
+                            )
+            if usage is not None and isinstance(usage[1], UniqueAggregation):
+                usage = None
+            if usage is not None:
+                reducer_id, aggregation, since = usage
+                hot_requests.append(
+                    (
+                        reducer_id,
+                        aggregation.func,
+                        [
+                            bucket_start
+                            for bucket_start in (
+                                previous_bucket_start,
+                                current_bucket_start,
+                            )
+                            if since is None or bucket_start >= since
+                        ],
+                        get_customer_identities(customer),
+                    )
+                )
+            parsed.append(
+                (usage, usage_cold_agg_values, unsplit_identities, credited_units)
             )
-            if active_bucket_starts
+
+        hot_agg_values_by_request = iter(
+            await redis_store.get_many_bucket_totals(redis, hot_requests)
+            if hot_requests
             else []
         )
-        # The buckets of the slot a reset falls within start before it until a seal
-        # splits the slot, so the usage after the reset is read from its events.
-        post_reset_usage: list[UsageSummary] = []
-        if (
-            since is not None
-            and since != get_reducer_bucket_start(since)
-            and unsplit_identities
-        ):
-            if now < since + POST_RESET_EVENTS_READ_LIMIT:
-                post_reset_usage = await self._get_post_reset_usage(
-                    session, meter_id, unsplit_identities, since
-                )
-            else:
-                log.warning(
-                    "Reducer slot of the latest meter reset isn't split",
-                    customer_id=customer.id,
-                    meter_id=meter_id,
-                    since=since.isoformat(),
-                )
-        summary = merge_summaries(
-            [
-                *(
-                    UsageSummary(*agg_values)
-                    for agg_values in [*usage_cold_agg_values, *hot_agg_values]
-                ),
-                *post_reset_usage,
-            ]
-        )
-        return (aggregation.func, summary), credited_units
+        results: list[
+            tuple[tuple[AggregationFunction, UsageSummary] | None, Decimal | None]
+        ] = []
+        for (customer, meter_id), (
+            usage,
+            usage_cold_agg_values,
+            unsplit_identities,
+            credited_units,
+        ) in zip(customer_meters, parsed, strict=True):
+            if usage is None:
+                results.append((None, credited_units))
+                continue
+            _, aggregation, since = usage
+            hot_agg_values = next(hot_agg_values_by_request)
+            # The buckets of the slot a reset falls within start before it until a
+            # seal splits the slot, so the usage after the reset is read from its
+            # events.
+            post_reset_usage: list[UsageSummary] = []
+            if (
+                since is not None
+                and since != get_reducer_bucket_start(since)
+                and unsplit_identities
+            ):
+                if now < since + POST_RESET_EVENTS_READ_LIMIT:
+                    post_reset_usage = await self._get_post_reset_usage(
+                        session, meter_id, unsplit_identities, since
+                    )
+                else:
+                    log.warning(
+                        "Reducer slot of the latest meter reset isn't split",
+                        customer_id=customer.id,
+                        meter_id=meter_id,
+                        since=since.isoformat(),
+                    )
+            summary = merge_summaries(
+                [
+                    *(
+                        UsageSummary(*agg_values)
+                        for agg_values in [*usage_cold_agg_values, *hot_agg_values]
+                    ),
+                    *post_reset_usage,
+                ]
+            )
+            results.append(((aggregation.func, summary), credited_units))
+        return results
 
     async def _get_post_reset_usage(
         self,
@@ -929,8 +979,8 @@ class ReducerService:
             consumed_units_with_pre_reducer_usage: Decimal | None = None
             try:
                 async with session.begin_nested():
-                    usage, credited_units = await self._get_customer_meter_usage(
-                        session, redis, customer, customer_meter.meter_id
+                    [(usage, credited_units)] = await self._get_customer_meter_usage(
+                        session, redis, [(customer, customer_meter.meter_id)]
                     )
                     if usage is not None:
                         function, summary = usage

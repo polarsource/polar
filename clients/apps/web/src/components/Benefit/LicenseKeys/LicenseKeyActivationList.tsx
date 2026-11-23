@@ -52,7 +52,8 @@ export const LicenseKeyActivationList = ({
         <Text as="h2">Activations</Text>
         {licenseKey.limit_activations && (
           <Text color="muted" tabularNums>
-            {licenseKey.activations.length} of {licenseKey.limit_activations} used
+            {licenseKey.activations.length} of {licenseKey.limit_activations}{' '}
+            used
           </Text>
         )}
       </Box>

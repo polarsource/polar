@@ -1,4 +1,4 @@
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any
@@ -78,6 +78,36 @@ def _is_any_customer(
         *(
             _is_customer(ReducerBucket, customer_id, external_customer_id)
             for customer_id, external_customer_id in identities
+        )
+    )
+
+
+def _is_among_customers(
+    identities: Iterable[tuple[UUID | None, str | None]],
+) -> ColumnElement[bool]:
+    """One IN list per identity shape (customer id, external id or both), which the
+    identity index can use, where one condition per identity would be checked on
+    every bucket. A bucket pairing one identity's customer id with another's
+    external id matches too, so the caller keeps only the identities it asked for."""
+    shapes: dict[tuple[bool, bool], list[tuple[UUID | None, str | None]]] = {}
+    for customer_id, external_customer_id in identities:
+        shape = (customer_id is not None, external_customer_id is not None)
+        shapes.setdefault(shape, []).append((customer_id, external_customer_id))
+    return or_(
+        *(
+            and_(
+                ReducerBucket.customer_id.in_(
+                    {customer_id for customer_id, _ in shaped}
+                )
+                if by_customer_id
+                else ReducerBucket.customer_id.is_(None),
+                ReducerBucket.external_customer_id.in_(
+                    {external_customer_id for _, external_customer_id in shaped}
+                )
+                if by_external_id
+                else ReducerBucket.external_customer_id.is_(None),
+            )
+            for (by_customer_id, by_external_id), shaped in shapes.items()
         )
     )
 
@@ -317,9 +347,28 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         for (reducer_id, identity), end in before.items():
             start = since.get((reducer_id, identity))
             reducers_by_bound.setdefault((identity, start, end), set()).add(reducer_id)
-        all_reducers = {reducer_id for reducer_id, _ in before}
-        statement = (
+        # Identities that share their reducers and bounds share one condition too.
+        identities_by_bound: dict[
+            tuple[datetime | None, datetime | None, frozenset[UUID]],
+            list[CustomerIdentity],
+        ] = {}
+        for (identity, start, end), reducer_ids in reducers_by_bound.items():
+            identities_by_bound.setdefault(
+                (start, end, frozenset(reducer_ids)), []
+            ).append(identity)
+        # One statement per group, which carries its index: a group may also match a
+        # bucket pairing two of its identities, counted only by the group that asked
+        # for that pair, within its own bounds.
+        groups = list(identities_by_bound.items())
+        group_of = {
+            (reducer_id, identity): index
+            for index, ((_, _, reducer_ids), identities) in enumerate(groups)
+            for identity in identities
+            for reducer_id in reducer_ids
+        }
+        statements = [
             select(
+                literal(index),
                 ReducerBucket.reducer_id,
                 ReducerBucket.customer_id,
                 ReducerBucket.external_customer_id,
@@ -330,52 +379,26 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             )
             .where(
                 ReducerBucket.organization_id == organization_id,
-                # A request on a single reducer filters it here, once: repeated in
-                # each customer's condition below, it slows requests for many
-                # customers.
-                ReducerBucket.reducer_id.in_(all_reducers)
-                if len(all_reducers) == 1
-                else true(),
+                ReducerBucket.reducer_id.in_(reducer_ids),
                 ReducerBucket.sealed_at.is_(None),
-                or_(
-                    *(
-                        and_(
-                            ReducerBucket.reducer_id.in_(reducer_ids)
-                            if len(all_reducers) > 1
-                            else true(),
-                            _is_customer(
-                                ReducerBucket, customer_id, external_customer_id
-                            ),
-                            ReducerBucket.bucket_start >= start
-                            if start is not None
-                            else true(),
-                            ReducerBucket.bucket_start < end
-                            if end is not None
-                            else true(),
-                        )
-                        for (
-                            (customer_id, external_customer_id),
-                            start,
-                            end,
-                        ), reducer_ids in reducers_by_bound.items()
-                    )
-                ),
+                _is_among_customers(identities),
+                ReducerBucket.bucket_start >= start if start is not None else true(),
+                ReducerBucket.bucket_start < end if end is not None else true(),
             )
             .group_by(
                 ReducerBucket.reducer_id,
                 ReducerBucket.customer_id,
                 ReducerBucket.external_customer_id,
             )
+            for index, ((start, end, reducer_ids), identities) in enumerate(groups)
+        ]
+        result = await self.session.execute(
+            statements[0] if len(statements) == 1 else union_all(*statements)
         )
-        result = await self.session.execute(statement)
         totals = {
-            (reducer_id, (customer_id, external_customer_id)): (
-                count,
-                total,
-                minimum,
-                maximum,
-            )
+            key: (count, total, minimum, maximum)
             for (
+                index,
                 reducer_id,
                 customer_id,
                 external_customer_id,
@@ -384,6 +407,8 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
                 minimum,
                 maximum,
             ) in result
+            for key in ((reducer_id, (customer_id, external_customer_id)),)
+            if group_of.get(key) == index
         }
         return {
             identity: totals.get(identity, (0, 0, None, None)) for identity in before
@@ -517,7 +542,7 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
                 ReducerBucket.reducer_id.in_(
                     {reducer_id for reducer_id, _ in identities}
                 ),
-                _is_any_customer(list({identity for _, identity in identities})),
+                _is_among_customers({identity for _, identity in identities}),
                 ReducerBucket.bucket_start >= since,
                 ReducerBucket.synced_at.is_not(None),
             )

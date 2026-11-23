@@ -1,10 +1,11 @@
 import uuid
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 
 import pytest
 
 from polar.event.system import SystemEvent
-from polar.models import Customer, Meter, Organization, StagedEvent
+from polar.models import Customer, Meter, Organization, ReducerBucket, StagedEvent
 from polar.models.event import EventSource
 from polar.models.reducer import ReducerKind
 from polar.postgres import AsyncSession
@@ -139,3 +140,91 @@ class TestGetIdentitiesWithEvents:
         assert sorted(identities, key=str) == sorted(
             [(customer.id, None), (None, "external"), (None, "staged")], key=str
         )
+
+
+@pytest.mark.anyio
+class TestGetUnsealedTotalsByIdentity:
+    async def test_leaves_out_a_bucket_pairing_two_customers_identities(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        customer_second: Customer,
+        meter: Meter,
+    ) -> None:
+        reducer = await reducer_service.sync_meter(session, meter)
+        for customer_id, external_customer_id, count in (
+            (customer.id, "first", 1),
+            (customer_second.id, "second", 2),
+            (customer.id, "second", 100),
+        ):
+            await save_fixture(
+                ReducerBucket(
+                    organization=organization,
+                    reducer=reducer,
+                    customer_id=customer_id,
+                    external_customer_id=external_customer_id,
+                    bucket_start=BUCKET_START,
+                    bucket_end=BUCKET_END,
+                    count=count,
+                    sum=Decimal(count),
+                    min=Decimal(1),
+                    max=Decimal(1),
+                )
+            )
+
+        totals = await ReducerBucketRepository.from_session(
+            session
+        ).get_unsealed_totals_by_identity(
+            organization.id,
+            {
+                (reducer.id, (customer.id, "first")): None,
+                (reducer.id, (customer_second.id, "second")): None,
+            },
+        )
+
+        assert [count for count, *_ in totals.values()] == [1, 2]
+
+    async def test_bounds_a_bucket_pairing_two_customers_identities_by_its_own(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        customer_second: Customer,
+        meter: Meter,
+    ) -> None:
+        reducer = await reducer_service.sync_meter(session, meter)
+        for customer_id, external_customer_id, bucket_start in (
+            (customer.id, "second", BUCKET_START),
+            (customer.id, "second", BUCKET_END),
+        ):
+            await save_fixture(
+                ReducerBucket(
+                    organization=organization,
+                    reducer=reducer,
+                    customer_id=customer_id,
+                    external_customer_id=external_customer_id,
+                    bucket_start=bucket_start,
+                    bucket_end=bucket_start + timedelta(minutes=5),
+                    count=1,
+                    sum=Decimal(1),
+                    min=Decimal(1),
+                    max=Decimal(1),
+                )
+            )
+
+        totals = await ReducerBucketRepository.from_session(
+            session
+        ).get_unsealed_totals_by_identity(
+            organization.id,
+            {
+                (reducer.id, (customer.id, "first")): None,
+                (reducer.id, (customer_second.id, "second")): None,
+                (reducer.id, (customer.id, "second")): BUCKET_END,
+            },
+        )
+
+        count, *_ = totals[(reducer.id, (customer.id, "second"))]
+        assert count == 1

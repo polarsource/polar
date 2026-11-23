@@ -22,6 +22,7 @@ from polar.benefit.strategies.base.properties import BenefitGrantProperties
 from polar.benefit.strategies.base.service import BenefitRetriableError
 from polar.benefit.tasks import benefit_grant, benefit_revoke
 from polar.config import settings
+from polar.customer.repository import CustomerRepository
 from polar.exceptions import NotPermitted, PolarRequestValidationError, ResourceNotFound
 from polar.kit.utils import utc_now
 from polar.models import (
@@ -2047,6 +2048,37 @@ class TestCycleBenefitGrant:
         assert updated_grant.error["message"] == error_message
         assert updated_grant.error["type"] == "BenefitActionRequiredError"
         assert "timestamp" in updated_grant.error
+
+    async def test_soft_deleted_customer(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        benefit_organization: Benefit,
+        benefit_strategy_mock: MagicMock,
+    ) -> None:
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            subscription=subscription,
+            member=None,
+        )
+        grant.granted_at = subscription.current_period_start - timedelta(days=1)
+
+        customer_repository = CustomerRepository.from_session(session)
+        await customer_repository.soft_delete(customer)
+        await session.flush()
+
+        updated_grant = await benefit_grant_service.cycle_benefit_grant(
+            session, redis, grant
+        )
+
+        assert updated_grant.id == grant.id
+        benefit_strategy_mock.cycle.assert_not_called()
 
 
 @pytest.mark.anyio

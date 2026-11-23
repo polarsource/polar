@@ -36,14 +36,13 @@ If you previously passed a client created with `createPolar`, switch that call t
 The Polar plugin comes with a handful additional plugins which adds functionality to your stack.
 
 - Checkout - Enables a seamless checkout integration
-- Portal - Makes it possible for your customers to manage their orders, subscriptions & granted benefits
-- Usage - Simple extension for listing customer meters for Usage Based Billing
+- Portal - Makes it possible for your customers to manage their orders, subscriptions & granted benefits, and see their usage meters
 - Webhooks - Listen for relevant Polar webhooks
 
 ```typescript
 import { betterAuth } from 'better-auth'
 import { organization } from 'better-auth/plugins'
-import { polar, checkout, portal, usage, webhooks } from '@polar-sh/better-auth'
+import { polar, checkout, portal, webhooks } from '@polar-sh/better-auth'
 import { createPolarCore } from '@polar-sh/sdk/2026-10'
 
 const polarClient = createPolarCore({
@@ -87,7 +86,6 @@ const auth = betterAuth({
         portal({
           returnUrl: 'https://myapp.com', // Optional Return URL, which renders a Back-button in the Customer Portal
         }),
-        usage(),
         webhooks({
           secret: process.env.POLAR_WEBHOOK_SECRET!,
           // Triggered when anything regarding a customer changes
@@ -124,7 +122,7 @@ export const authClient = createAuthClient({
 
 ```typescript
 import { betterAuth } from 'better-auth'
-import { polar, checkout, portal, usage, webhooks } from '@polar-sh/better-auth'
+import { polar, checkout, portal, webhooks } from '@polar-sh/better-auth'
 import { createPolarCore } from '@polar-sh/sdk/2026-10'
 import { organization } from 'better-auth/plugins'
 
@@ -172,7 +170,7 @@ The SDK v1 models returned by the state, benefits, subscriptions, orders, and me
 ### Required Options
 
 - `client`: Polar SDK core client instance, created with `createPolarCore`
-- `use`: Array of Polar plugins (checkout, portal, usage, webhooks). Pass at least one plugin.
+- `use`: Array of Polar plugins (checkout, portal, webhooks). Pass at least one plugin.
 
 ### Optional Options
 
@@ -559,29 +557,22 @@ const { data: subscriptions } = await authClient.customer.subscriptions.list({
 })
 ```
 
-## Usage Plugin
+### Customer Meters
 
-A simple plugin for Usage Based Billing.
+Lists the authenticated user's Customer Meters, with their consumed units, credited units and balance for each of your meters.
 
 ```typescript
-import { polar, checkout, portal, usage } from "@polar-sh/better-auth";
-
-const auth = betterAuth({
-    // ... Better Auth config
-    plugins: [
-        polar({
-            ...
-            use: [
-                checkout(...),
-                portal(),
-                usage()
-            ],
-        })
-    ]
-});
+const { data: customerMeters } = await authClient.customer.meters.list({
+  query: {
+    page: 1,
+    limit: 10,
+    // Optional: creates a member-scoped team customer session.
+    organizationId,
+  },
+})
 ```
 
-### Event Ingestion
+## Usage Based Billing
 
 Polar's Usage Based Billing builds entirely on event ingestion. Ingest events from your application, create Meters to represent that usage, and add metered prices to Products to charge for it.
 
@@ -612,30 +603,6 @@ await ingestEvents(polarClient)({
 ```
 
 For organization billing, set `external_customer_id` to the Better Auth organization ID and `external_member_id` to the user ID, after checking that the user is a member of the organization.
-
-### Customer Meters
-
-A simple method for listing the authenticated user's Usage Meters, or as we call them, Customer Meters.
-
-Customer Meter's contains all information about their consumtion on your defined meters.
-
-- Customer Information
-- Meter Information
-- Customer Meter Information
-  - Consumed Units
-  - Credited Units
-  - Balance
-
-```typescript
-const { data: customerMeters } = await authClient.usage.meters.list({
-  query: {
-    page: 1,
-    limit: 10,
-    // Optional: creates a member-scoped team customer session.
-    organizationId,
-  },
-})
-```
 
 ## Webhooks Plugin
 

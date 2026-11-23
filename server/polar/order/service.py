@@ -3373,7 +3373,7 @@ class OrderService:
             )
             or order.is_void
         ):
-            # No more retries, mark subscription as unpaid and clear retry date
+            # No more retries: clear retry date and revoke the subscription
             order = await repository.update(
                 order, update_dict={"next_payment_attempt_at": None}
             )

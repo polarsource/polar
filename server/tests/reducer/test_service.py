@@ -2132,11 +2132,51 @@ class TestGetCustomerMeterUnits:
             save_fixture, organization=organization, external_id="external"
         )
 
-        consumed_units, credited_units = await reducer_service.get_customer_meter_units(
-            session, redis, customer, meter.id
+        [
+            (consumed_units, credited_units)
+        ] = await reducer_service.get_customer_meter_units(
+            session, redis, [(customer, meter.id)]
         )
 
         assert consumed_units == expected
+
+    async def test_many_customer_meters(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        organization: Organization,
+    ) -> None:
+        meter = await rollup_tokens(
+            save_fixture, session, redis, organization, SUM_TOKENS
+        )
+        meter_without_reducer = await create_meter(
+            save_fixture,
+            id=uuid.uuid4(),
+            organization=organization,
+            aggregation=SUM_TOKENS,
+        )
+        customer = await create_customer(
+            save_fixture, organization=organization, external_id="external"
+        )
+        other_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="other@example.com",
+            external_id="other",
+        )
+
+        units = await reducer_service.get_customer_meter_units(
+            session,
+            redis,
+            [
+                (customer, meter.id),
+                (customer, meter_without_reducer.id),
+                (other_customer, meter.id),
+            ],
+        )
+
+        assert [consumed_units for consumed_units, _ in units] == [9, None, 0]
 
     @pytest.mark.parametrize(
         ("since", "expected"),
@@ -2174,8 +2214,10 @@ class TestGetCustomerMeterUnits:
                 metadata={"meter_id": str(meter.id)},
             )
 
-        consumed_units, credited_units = await reducer_service.get_customer_meter_units(
-            session, redis, customer, meter.id
+        [
+            (consumed_units, credited_units)
+        ] = await reducer_service.get_customer_meter_units(
+            session, redis, [(customer, meter.id)]
         )
 
         assert consumed_units == expected
@@ -2253,8 +2295,10 @@ class TestGetCustomerMeterUnits:
                 )
             )
 
-        consumed_units, credited_units = await reducer_service.get_customer_meter_units(
-            session, redis, customer, meter.id
+        [
+            (consumed_units, credited_units)
+        ] = await reducer_service.get_customer_meter_units(
+            session, redis, [(customer, meter.id)]
         )
 
         assert consumed_units == expected
@@ -2273,8 +2317,10 @@ class TestGetCustomerMeterUnits:
             save_fixture, organization=organization, external_id="other"
         )
 
-        consumed_units, credited_units = await reducer_service.get_customer_meter_units(
-            session, redis, customer, meter.id
+        [
+            (consumed_units, credited_units)
+        ] = await reducer_service.get_customer_meter_units(
+            session, redis, [(customer, meter.id)]
         )
 
         assert consumed_units == 0
@@ -2294,8 +2340,10 @@ class TestGetCustomerMeterUnits:
         )
         await create_reducer(save_fixture, organization=organization, meters=[meter])
 
-        consumed_units, credited_units = await reducer_service.get_customer_meter_units(
-            session, redis, customer, meter.id
+        [
+            (consumed_units, credited_units)
+        ] = await reducer_service.get_customer_meter_units(
+            session, redis, [(customer, meter.id)]
         )
 
         assert consumed_units is None
@@ -2343,8 +2391,10 @@ class TestGetCustomerMeterUnits:
                 )
             )
 
-        consumed_units, credited_units = await reducer_service.get_customer_meter_units(
-            session, redis, customer, meter.id
+        [
+            (consumed_units, credited_units)
+        ] = await reducer_service.get_customer_meter_units(
+            session, redis, [(customer, meter.id)]
         )
 
         assert consumed_units is None

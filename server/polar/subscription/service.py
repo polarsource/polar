@@ -859,7 +859,10 @@ class SubscriptionService:
             is_trial
             and product.organization.prevent_trial_abuse
             and await trial_redemption_service.check_trial_already_redeemed(
-                session, product.organization, customer_email=customer.email
+                session,
+                product.organization,
+                customer_email=customer.email,
+                customer_id=customer.id,
             )
         ):
             raise TrialAlreadyRedeemed()
@@ -2352,7 +2355,9 @@ class SubscriptionService:
                         subscription, subscription_update.applies_at
                     )
 
-                interval_changed = subscription_update.is_interval_changed()
+                effective_proration_behavior = (
+                    subscription_update.get_effective_proration_behavior()
+                )
                 ctx.set_previous_product(previous_product)
                 subscription = subscription_update.apply_update()
                 if was_trialing:
@@ -2382,7 +2387,7 @@ class SubscriptionService:
                         effective_at=subscription_update.applies_at
                     )
                     if (
-                        (proration_behavior.is_immediate() or interval_changed)
+                        effective_proration_behavior.is_immediate()
                         and not was_trialing
                         and billing_entries
                     ):
@@ -3748,6 +3753,9 @@ class SubscriptionService:
             discount=new_discount,
         )
         discount_after_update = subscription_update.after_update_discount
+        effective_proration_behavior = (
+            subscription_update.get_effective_proration_behavior()
+        )
 
         applies_now = proration_behavior != SubscriptionProrationBehavior.next_period
 
@@ -3799,7 +3807,7 @@ class SubscriptionService:
             proration_amount=proration_amount,
         )
         return SubscriptionChangePreview(
-            **preview.model_dump(), proration_behavior=proration_behavior
+            **preview.model_dump(), proration_behavior=effective_proration_behavior
         )
 
     def _promote_seats_for_seat_transition(

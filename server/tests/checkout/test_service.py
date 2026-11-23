@@ -15,6 +15,7 @@ from sqlalchemy.orm import joinedload
 from polar.auth.models import Anonymous, AuthSubject
 from polar.checkout import legacy_schemas
 from polar.checkout.guard import has_product_checkout
+from polar.checkout.repository import CheckoutRepository
 from polar.checkout.schemas import (
     CheckoutConfirm,
     CheckoutConfirmSharedPaymentToken,
@@ -99,8 +100,13 @@ from polar.product.guard import (
     is_metered_price,
     is_seat_price,
 )
-from polar.product.schemas import ProductPriceFixedCreate
-from polar.product.tiers import Tiers, TierType
+from polar.product.price_set import PriceSet
+from polar.product.schemas import (
+    ProductPriceFixedCreate,
+    ProductPriceMeteredUnitCreate,
+    ProductPriceSeatBasedCreate,
+)
+from polar.product.tiers import Tiers, TiersInput, TierType
 from polar.subscription.service import SubscriptionService
 from polar.tax.calculation import (
     TaxabilityReason,
@@ -122,6 +128,7 @@ from tests.fixtures.random_objects import (
     create_discount,
     create_discount_redemption,
     create_member,
+    create_meter,
     create_order,
     create_payment,
     create_product,
@@ -1707,6 +1714,7 @@ class TestCreate:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
+    @pytest.mark.parametrize("email_changed", [False, True])
     async def test_customer_trial_already_redeemed(
         self,
         save_fixture: SaveFixture,
@@ -1717,6 +1725,7 @@ class TestCreate:
         organization: Organization,
         product_recurring_trial: Product,
         customer: Customer,
+        email_changed: bool,
     ) -> None:
         organization.subscription_settings["prevent_trial_abuse"] = True
         await save_fixture(organization)
@@ -1724,6 +1733,9 @@ class TestCreate:
         await create_trial_redemption(
             save_fixture, customer=customer, customer_email=customer.email
         )
+        if email_changed:
+            customer.email = "updated@example.com"
+            await save_fixture(customer)
         stripe_service_mock.create_customer_session.return_value = SimpleNamespace(
             client_secret="STRIPE_CUSTOMER_SESSION_SECRET",
         )
@@ -2620,6 +2632,122 @@ class TestCreate:
         assert checkout.products == [product]
         assert checkout.product_price == ad_hoc_price
         assert checkout.currency == ad_hoc_price.price_currency
+
+    @pytest.mark.auth
+    async def test_ad_hoc_prices_default_matches_reload(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductsCreate(
+                products=[product.id],
+                prices={
+                    product.id: [
+                        ProductPriceSeatBasedCreate(
+                            amount_type=ProductPriceAmountType.seat_based,
+                            price_currency=PresentmentCurrency.usd,
+                            tiers=TiersInput.model_validate(
+                                {
+                                    "type": TierType.volume,
+                                    "tiers": [{"bound": None, "unit_amount": "1000"}],
+                                }
+                            ),
+                        ),
+                        ProductPriceFixedCreate(
+                            amount_type=ProductPriceAmountType.fixed,
+                            price_amount=100_00,
+                            price_currency=PresentmentCurrency.usd,
+                        ),
+                    ]
+                },
+            ),
+            auth_subject,
+        )
+
+        created_prices = checkout.checkout_products[0].ad_hoc_prices
+        created_price_ids = [price.id for price in created_prices]
+        assert is_fixed_price(created_prices[0])
+        assert checkout.product_price == created_prices[0]
+
+        session.expunge_all()
+        repository = CheckoutRepository.from_session(session)
+        reloaded = await repository.get_by_id(
+            checkout.id, options=repository.get_eager_options()
+        )
+
+        assert reloaded is not None
+        reloaded_prices = reloaded.prices[product.id]
+        assert [price.id for price in reloaded_prices] == created_price_ids
+        assert (
+            PriceSet.from_prices(reloaded_prices, "usd").get_default_price().id
+            == created_price_ids[0]
+        )
+
+    @pytest.mark.auth
+    async def test_ad_hoc_metered_prices_default_matches_reload_on_timestamp_tie(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        mocker.patch(
+            "polar.checkout.service.utc_now",
+            return_value=datetime(2026, 1, 1, tzinfo=UTC),
+        )
+        price_ids = sorted((uuid.uuid4() for _ in range(3)), reverse=True)
+        mocker.patch("polar.checkout.service.generate_uuid", side_effect=price_ids)
+        meters = [
+            await create_meter(save_fixture, organization=organization, id=uuid.uuid4())
+            for _ in range(3)
+        ]
+
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductsCreate(
+                products=[product.id],
+                prices={
+                    product.id: [
+                        ProductPriceMeteredUnitCreate(
+                            amount_type=ProductPriceAmountType.metered_unit,
+                            price_currency=PresentmentCurrency.usd,
+                            meter_id=meter.id,
+                            unit_amount=Decimal(10),
+                        )
+                        for meter in meters
+                    ]
+                },
+            ),
+            auth_subject,
+        )
+
+        created_price_ids = [
+            price.id for price in checkout.checkout_products[0].ad_hoc_prices
+        ]
+        assert created_price_ids == sorted(price_ids)
+        assert checkout.product_price is not None
+        assert checkout.product_price.id == created_price_ids[0]
+
+        session.expunge_all()
+        repository = CheckoutRepository.from_session(session)
+        reloaded = await repository.get_by_id(
+            checkout.id, options=repository.get_eager_options()
+        )
+
+        assert reloaded is not None
+        reloaded_prices = reloaded.prices[product.id]
+        assert [price.id for price in reloaded_prices] == created_price_ids
+        assert (
+            PriceSet.from_prices(reloaded_prices, "usd").get_default_price().id
+            == created_price_ids[0]
+        )
 
 
 @pytest.mark.anyio
@@ -6584,6 +6712,7 @@ class TestConfirm:
             "checkout.handle_free_success", checkout_id=checkout.id
         )
 
+    @pytest.mark.parametrize("email", ["customer@example.com", "updated@example.com"])
     async def test_trial_without_payment_method_already_redeemed(
         self,
         save_fixture: SaveFixture,
@@ -6593,6 +6722,7 @@ class TestConfirm:
         organization: Organization,
         product: Product,
         checkout_recurring_fixed: Checkout,
+        email: str,
     ) -> None:
         organization.subscription_settings["prevent_trial_abuse"] = True
         await save_fixture(organization)
@@ -6605,13 +6735,12 @@ class TestConfirm:
         await save_fixture(checkout_recurring_fixed)
 
         existing_customer = await create_customer(
-            save_fixture, organization=organization, email="customer@example.com"
+            save_fixture, organization=organization, email=email
         )
-        assert existing_customer.email is not None
         await create_trial_redemption(
             save_fixture,
             customer=existing_customer,
-            customer_email=existing_customer.email,
+            customer_email="customer@example.com",
         )
 
         stripe_service_mock.create_customer.return_value = SimpleNamespace(
@@ -6626,7 +6755,7 @@ class TestConfirm:
                 CheckoutConfirmStripe.model_validate(
                     {
                         "customer_name": "Customer Name",
-                        "customer_email": "customer@example.com",
+                        "customer_email": email,
                     }
                 ),
             )

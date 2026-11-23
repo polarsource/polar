@@ -210,7 +210,9 @@ await authClient.checkout({
 });
 ```
 
-List the subscriptions for that organization with the same `reference_id`:
+List the subscriptions for that organization with the same `reference_id`. This
+requires a Better Auth organization billing role because the response includes
+customer billing details.
 
 ```typescript icon="square-js" List Organization Subscriptions Example
 const { data: subscriptions } = await authClient.customer.subscriptions.list({
@@ -219,18 +221,10 @@ const { data: subscriptions } = await authClient.customer.subscriptions.list({
     active: true,
   },
 });
-
-const userShouldHaveAccess = subscriptions?.items.some(
-  (subscription) => subscription.product_id === "123-456-789",
-);
 ```
 
-<Warning>
-  The plugin doesn't check that the user belongs to the organization passed as
-  `reference_id`, and the list includes every subscription in your Polar
-  organization with that `metadata.referenceId`. Verify membership in your
-  application before using the result to grant access.
-</Warning>
+For member-facing entitlements or other reference types, authorize access on your
+server and return only the fields your application needs.
 
 ### Team customers with `experimental_organizationSync`
 

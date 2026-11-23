@@ -66,7 +66,7 @@ from polar.kit.email import EmailNotValidError, validate_email_syntax
 from polar.kit.operator import attrgetter
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
-from polar.kit.utils import utc_now
+from polar.kit.utils import generate_uuid, utc_now
 from polar.kit.visibility import Visibility
 from polar.logging import Logger
 from polar.member.service import member_service
@@ -1369,17 +1369,14 @@ class CheckoutService:
                     ):
                         raise DiscountRedemptionLimitReached(checkout)
 
-                # Skip for team customers without email — no email to check against
                 if (
                     checkout.trial_end is not None
                     and checkout.organization.prevent_trial_abuse
-                    and not (
-                        customer.type == CustomerType.team and customer.email is None
-                    )
                     and await trial_redemption_service.check_trial_already_redeemed(
                         session,
                         checkout.organization,
                         customer_email=customer.email,
+                        customer_id=customer.id,
                         payment_method_fingerprint=payment_method_fingerprint,
                     )
                 ):
@@ -2229,7 +2226,14 @@ class CheckoutService:
                 ),
             )
             errors = [*errors, *price_errors]
-            validated_prices[product] = validated_product_prices
+            # Set the tie-breakers now so the default price chosen at creation
+            # matches the order `CheckoutProduct.ad_hoc_prices` reloads them in
+            for price in validated_product_prices:
+                price.id = generate_uuid()
+                price.created_at = utc_now()
+            validated_prices[product] = sorted(
+                validated_product_prices, key=lambda price: price.sort_key
+            )
 
         if len(errors) > 0:
             raise PolarRequestValidationError(errors)
@@ -2941,15 +2945,16 @@ class CheckoutService:
         if checkout.trial_end is None or not checkout.organization.prevent_trial_abuse:
             return checkout
 
-        customer_email = (
-            checkout.customer.email
-            if checkout.customer is not None
-            else checkout.customer_email
-        )
+        customer = checkout.customer
         with session.no_autoflush:
             trial_already_redeemed = (
                 await trial_redemption_service.check_trial_already_redeemed(
-                    session, checkout.organization, customer_email=customer_email
+                    session,
+                    checkout.organization,
+                    customer_email=customer.email
+                    if customer
+                    else checkout.customer_email,
+                    customer_id=customer.id if customer else None,
                 )
             )
         if trial_already_redeemed:

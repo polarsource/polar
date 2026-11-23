@@ -85,15 +85,18 @@ The Customer Portal isn't just a convenience feature — it's a critical piece o
     If you need a branded experience, you can build your own portal on top of
     the [Customer Portal API](/api-reference/current/customer_portal/get-customer),
     which covers the day-to-day actions: viewing subscriptions and orders,
-    downloading invoices and receipts, managing benefits and seats, and reading
-    meter usage.
+    downloading invoices and receipts, managing payment methods, managing
+    benefits and seats, and reading meter usage.
 
     <Note>
-      Not every action is exposed through the Customer Portal API. Most
-      notably, **updating a default payment method** is only available from the
-      hosted Customer Portal — this is what keeps you PCI-compliant, since card
-      details never touch your servers. Customers you send into a custom portal
-      will still need the hosted one to recover from failed payments.
+      Customers can recover from failed payments in a custom portal too. The
+      [Embedded Payment Method](/features/checkout/embed-payment-method) flow
+      adds a card without card details touching your servers, and makes it the
+      default unless you pass `setAsDefault: false`. To switch the default to a
+      card the customer already saved, call
+      [`PATCH /v1/customer-portal/customers/me`](/api-reference/current/customer_portal/update-customer)
+      with `default_payment_method_id`. Either way, Polar retries past-due
+      orders as soon as the default payment method changes.
     </Note>
   </Accordion>
   <Accordion title="How do customers sign in to the portal?">

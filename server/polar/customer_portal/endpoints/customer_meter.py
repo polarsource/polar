@@ -8,6 +8,7 @@ from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import CustomerMeter
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
+from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
 from .. import auth
@@ -41,10 +42,12 @@ async def list(
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
     session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis),
 ) -> ListResource[CustomerMeterSchema]:
     """List meters of the authenticated customer."""
     results, count = await customer_meter_service.list(
         session,
+        redis,
         auth_subject,
         meter_id=filters.meter_id,
         query=filters.query,
@@ -69,9 +72,10 @@ async def get(
     id: CustomerMeterID,
     auth_subject: auth.CustomerPortalUnionRead,
     session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis),
 ) -> CustomerMeter:
     """Get a meter by ID for the authenticated customer."""
-    customer_meter = await customer_meter_service.get(session, auth_subject, id)
+    customer_meter = await customer_meter_service.get(session, redis, auth_subject, id)
 
     if customer_meter is None:
         raise ResourceNotFound()

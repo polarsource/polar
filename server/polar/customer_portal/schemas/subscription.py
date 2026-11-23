@@ -12,6 +12,7 @@ from pydantic import (
 )
 from pydantic.json_schema import SkipJsonSchema
 
+from polar.enums import SubscriptionProrationBehavior
 from polar.kit.schemas import (
     IDSchema,
     Int32,
@@ -34,6 +35,7 @@ from polar.product.schemas import (
 from polar.subscription.schemas import (
     PendingSubscriptionUpdate,
     SubscriptionBase,
+    SubscriptionChargePreview,
     SubscriptionMeterBase,
 )
 from polar.version import V2026_10, V2027_01
@@ -151,6 +153,14 @@ CustomerSubscriptionChange = Annotated[
     | CustomerSubscriptionChangeUnits,
     SetSchemaReference("CustomerSubscriptionChange"),
 ]
+
+
+class CustomerSubscriptionChangePreview(SubscriptionChargePreview):
+    """Preview of what a subscription change would cost, without applying it."""
+
+    proration_behavior: Annotated[
+        SubscriptionProrationBehavior, Version(starting_from=V2027_01)
+    ] = Field(description="How the change would be billed.")
 
 
 class CustomerSubscriptionCancel(Schema):

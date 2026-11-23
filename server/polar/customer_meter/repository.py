@@ -152,7 +152,9 @@ class CustomerMeterRepository(
             self.get_base_statement()
             .join(CustomerMeter.customer)
             .options(
-                contains_eager(CustomerMeter.customer),
+                contains_eager(CustomerMeter.customer).joinedload(
+                    Customer.organization
+                ),
             )
             .where(Customer.organization_id.in_(org_ids))
         )

@@ -179,6 +179,7 @@ directory. Invoke as `/name` in Cursor and Claude Code, or `$name` in Codex.
 
 ## Documentation
 
+- Keep the security policy in `docs/security.mdx` and `SECURITY.md` in sync. Apply policy edits to both files in the same change.
 - **Handbook**: [Engineering Handbook](https://linear.app/polarsh/document/engineering-handbook-438113df8882)
 - **Design docs**: [Design documents](https://linear.app/polarsh/document/design-documents-1b03e0f6e82b) — write one only when
   Polar stores or processes new data, changes login or permissions, adds a

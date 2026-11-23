@@ -9,9 +9,11 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.merchant_migration.pan_transfer import (
+    STEP_STRIPE_COPY,
     PanTransferMethod,
     PanTransferStep,
     PanTransferStepsType,
+    stripe_mapping_applied,
 )
 
 from .merchant_migration_operation import (
@@ -51,6 +53,12 @@ class MerchantMigrationStep(StrEnum):
     # Closed by Polar after the retention period without activity.
     closed = "closed"
 
+
+# Sources whose saved cards sit in a Stripe account and can be copied to Polar's.
+COPIED_CARD_SOURCES = (
+    MerchantMigrationSourcePlatform.stripe,
+    MerchantMigrationSourcePlatform.lemon_squeezy,
+)
 
 MERCHANT_MIGRATION_FINISHED_STEPS = (
     MerchantMigrationStep.completed,
@@ -103,11 +111,29 @@ class MerchantMigration(RecordModel):
 
     @property
     def pan_transfer_method(self) -> PanTransferMethod:
-        """Stripe sources copy account to account; every other vault goes through
-        a Stripe-coordinated import."""
-        if self.source_platform == MerchantMigrationSourcePlatform.stripe:
+        """Stripe and Lemon Squeezy cards are copied Stripe account to Stripe
+        account; every other vault goes through a Stripe-coordinated import. A
+        checklist already started keeps the method it was built with."""
+        started = {step.key for step in self.pan_transfer_steps or []}
+        if started:
+            if STEP_STRIPE_COPY in started:
+                return PanTransferMethod.pan_copy
+            return PanTransferMethod.pan_import
+        if self.source_platform in COPIED_CARD_SOURCES:
             return PanTransferMethod.pan_copy
         return PanTransferMethod.pan_import
+
+    @property
+    def exact_card_mapping(self) -> bool:
+        """Whether Stripe's copy mapping says which copied card each subscription
+        charges. Only a Stripe source stages the payment method a subscription
+        charges; other sources match copied cards on brand and last four."""
+        return (
+            self.source_platform == MerchantMigrationSourcePlatform.stripe
+            and stripe_mapping_applied(
+                self.pan_transfer_method, self.pan_transfer_steps
+            )
+        )
 
     @property
     def source_connected(self) -> bool:

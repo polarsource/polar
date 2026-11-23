@@ -418,6 +418,7 @@ class LemonSqueezyAdapter:
             email=attributes["email"],
             name=attributes.get("name") or None,
             country=attributes.get("country") or None,
+            stripe_customer_id=attributes.get("stripe_customer_id") or None,
         )
 
     async def _extract_subscriptions(

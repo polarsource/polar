@@ -44,7 +44,6 @@ from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
 from polar.worker import JobQueueManager
 
-from . import pan_transfer
 from .adapters import SourceAdapter
 from .canonical import (
     CanonicalProduct,
@@ -879,9 +878,7 @@ class SubscriptionCutover:
         source: CanonicalSubscription,
     ) -> PaymentMethod | None:
         repository = PaymentMethodRepository.from_session(self.session)
-        if pan_transfer.stripe_mapping_applied(
-            self.migration.pan_transfer_method, self.migration.pan_transfer_steps
-        ):
+        if self.migration.exact_card_mapping:
             try:
                 staged = deserialize(record.type, record.canonical)
             except KeyError, TypeError, ValueError:

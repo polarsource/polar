@@ -3,6 +3,7 @@
 import { schemas } from '@polar-sh/client'
 import { Alert, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import type { MigrationSource } from '../sources'
 import { OpsUpdate } from './OpsUpdate'
 import { StepCopy } from './panTransferCopy'
 import { PanTransferStepForm } from './PanTransferStepForm'
@@ -15,6 +16,7 @@ interface Props {
   copy: StepCopy
   destinationAccountId: string | null
   migrationId: string
+  source: MigrationSource
   sourceStripeAccountId?: string
 }
 
@@ -23,6 +25,7 @@ export function PanTransferStepBody({
   copy,
   destinationAccountId,
   migrationId,
+  source,
   sourceStripeAccountId,
 }: Props) {
   if (step.key === START_COPY_STEP_KEY) {
@@ -32,6 +35,7 @@ export function PanTransferStepBody({
         copy={copy}
         destinationAccountId={destinationAccountId}
         migrationId={migrationId}
+        source={source}
         sourceStripeAccountId={sourceStripeAccountId}
       />
     )

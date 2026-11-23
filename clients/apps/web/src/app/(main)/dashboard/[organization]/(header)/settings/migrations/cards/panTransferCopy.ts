@@ -1,6 +1,8 @@
 // The backend checklist stores state only. All wording lives here, keyed by
 // step key, so we can reword a step without a data migration.
 
+import type { MigrationSource } from '../sources'
+
 export interface StepInputField {
   name: string
   label: string
@@ -168,4 +170,30 @@ export function isSwitchChecklistKey(key: string | null | undefined): boolean {
 
 export function cardMovementSteps<T extends { key: string }>(steps: T[]): T[] {
   return steps.filter((step) => !isSwitchChecklistKey(step.key))
+}
+
+// Lemon Squeezy starts the copy from its own Stripe account: the merchant
+// requests it in Lemon Squeezy, which then shares the migreq id.
+const LEMON_SQUEEZY_STEP_COPY: Record<string, StepCopy> = {
+  start_copy: {
+    title: 'Request the copy in Lemon Squeezy',
+    description:
+      "Lemon Squeezy copies your customers and their saved cards to Polar's Stripe account.",
+    inputs: [
+      {
+        ...STRIPE_MIGRATION_ID_INPUT,
+        hint: 'Lemon Squeezy shares it once they start the copy. Starts with migreq_.',
+      },
+    ],
+    action: 'Mark copy requested',
+  },
+}
+
+export function stepCopy(
+  key: string,
+  source: MigrationSource,
+): StepCopy | undefined {
+  const sourceCopy =
+    source === 'lemon_squeezy' ? LEMON_SQUEEZY_STEP_COPY[key] : undefined
+  return sourceCopy ?? STEP_COPY[key]
 }

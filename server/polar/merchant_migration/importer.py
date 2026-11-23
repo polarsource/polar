@@ -1026,8 +1026,10 @@ class CatalogImporter:
         return ImportedCustomer(customer=polar_customer)
 
     def _stripe_customer_id(self, customer: CanonicalCustomer) -> str | None:
-        # PAN copy preserves the Stripe `cus_…` id; other providers have no
-        # such concept.
+        """The card copy keeps the source's Stripe customer id. Stripe records
+        staged before the field existed carry it as their source id."""
+        if customer.stripe_customer_id is not None:
+            return customer.stripe_customer_id
         if self.migration.source_platform == MerchantMigrationSourcePlatform.stripe:
             return customer.source_id
         return None

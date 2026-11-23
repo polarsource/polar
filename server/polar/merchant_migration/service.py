@@ -28,6 +28,7 @@ from polar.models import (
     PaymentMethod,
 )
 from polar.models.merchant_migration import (
+    COPIED_CARD_SOURCES,
     MERCHANT_MIGRATION_FINISHED_STEPS,
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
@@ -1031,7 +1032,10 @@ class MerchantMigrationService:
         Polar, typically moved by an earlier migration of the same account. The
         switch moves a subscription without a card, so one missing card keeps
         the checklist."""
-        if migration.pan_transfer_method != pan_transfer.PanTransferMethod.pan_copy:
+        if (
+            migration.source_platform != MerchantMigrationSourcePlatform.stripe
+            or migration.pan_transfer_method != pan_transfer.PanTransferMethod.pan_copy
+        ):
             return False
         return await MerchantMigrationRecordRepository.from_session(
             session
@@ -1177,12 +1181,9 @@ class MerchantMigrationService:
         customer_repository = CustomerRepository.from_session(session)
         payment_methods: MappedPaymentMethods = {}
         for mapping in mappings:
-            customer_record = await record_repository.get_imported_customer_dependency(
-                migration.organization_id, mapping.customer_id
+            customer = await self._mapped_customer(
+                record_repository, customer_repository, migration, mapping.customer_id
             )
-            if customer_record is None or customer_record.target_id is None:
-                continue
-            customer = await customer_repository.get_by_id(customer_record.target_id)
             if customer is None:
                 continue
             payment_method = await link_mapped_payment_method(
@@ -1196,6 +1197,27 @@ class MerchantMigrationService:
                 payment_method
             )
         return payment_methods
+
+    async def _mapped_customer(
+        self,
+        record_repository: MerchantMigrationRecordRepository,
+        customer_repository: CustomerRepository,
+        migration: MerchantMigration,
+        stripe_customer_id: str,
+    ) -> Customer | None:
+        """The Polar customer a mapping row's Stripe customer moved into. A Stripe
+        source's customer is staged under that id; any other source's customer
+        took it as its Stripe customer at import."""
+        customer_record = await record_repository.get_imported_customer_dependency(
+            migration.organization_id, stripe_customer_id
+        )
+        if customer_record is not None and customer_record.target_id is not None:
+            return await customer_repository.get_by_id(customer_record.target_id)
+        if migration.source_platform == MerchantMigrationSourcePlatform.stripe:
+            return None
+        return await customer_repository.get_by_stripe_customer_id_and_organization(
+            stripe_customer_id, migration.organization_id
+        )
 
     async def _rewrite_staged_payment_methods(
         self,
@@ -1230,9 +1252,7 @@ class MerchantMigrationService:
                 "merchant_migration.missing", merchant_migration_id=migration_id
             )
             return
-        if pan_transfer.stripe_mapping_applied(
-            migration.pan_transfer_method, migration.pan_transfer_steps
-        ):
+        if migration.exact_card_mapping:
             await repository.refresh_for_update(migration)
             await self._complete_step(session, migration, STEP_VERIFY_CARDS)
             return
@@ -1954,9 +1974,7 @@ class MerchantMigrationService:
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         covered = await record_repository.payment_method_coverage(
             migration.id,
-            exact=pan_transfer.stripe_mapping_applied(
-                migration.pan_transfer_method, migration.pan_transfer_steps
-            ),
+            exact=migration.exact_card_mapping,
         )
         for item in items:
             if item.entity != PrecheckEntity.subscriptions or item.record_id is None:
@@ -2066,7 +2084,7 @@ class MerchantMigrationService:
     async def _existing_polar_customers(
         self, session: AsyncReadSession, migration: MerchantMigration
     ) -> dict[str, CustomerStripeIdentity]:
-        if migration.source_platform != MerchantMigrationSourcePlatform.stripe:
+        if migration.source_platform not in COPIED_CARD_SOURCES:
             return {}
         return await CustomerRepository.from_session(
             session

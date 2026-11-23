@@ -3942,6 +3942,48 @@ async def _imported_subscription(
 
 @pytest.mark.anyio
 class TestImportPaymentMethodMappings:
+    async def test_reaches_a_lemon_squeezy_customer_by_its_stripe_customer(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        migration = MerchantMigration(
+            organization=organization,
+            source_platform=MerchantMigrationSourcePlatform.lemon_squeezy,
+            step=MerchantMigrationStep.copy_cards,
+        )
+        await save_fixture(migration)
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="ls@example.com",
+            stripe_customer_id="cus_ls_1",
+        )
+        stripe_payment_method = build_stripe_payment_method(customer="cus_ls_1")
+        stripe_payment_method.id = "pm_new"
+        mocker.patch(
+            "polar.merchant_migration.cards.stripe_service.get_payment_method",
+            new=mocker.AsyncMock(return_value=stripe_payment_method),
+        )
+
+        await service.import_payment_method_mappings(
+            session,
+            migration,
+            (
+                b"customer_id_old,source_id_old,customer_id_new,source_id_new\n"
+                b"cus_ls_1,pm_old,cus_ls_1,pm_new\n"
+            ),
+        )
+
+        payment_method = await PaymentMethodRepository.from_session(
+            session
+        ).get_by_customer_and_processor_id(
+            customer.id, PaymentProcessor.stripe, "pm_new"
+        )
+        assert payment_method is not None
+
     async def test_imports_and_assigns_the_exact_payment_method(
         self,
         mocker: MockerFixture,

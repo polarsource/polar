@@ -56,24 +56,54 @@ def _advance_to(
 
 
 class TestPanTransferMethod:
-    def test_stripe_source_copies(self) -> None:
-        migration = MerchantMigration(
-            source_platform=MerchantMigrationSourcePlatform.stripe
-        )
-        assert migration.pan_transfer_method == PanTransferMethod.pan_copy
-
     @pytest.mark.parametrize(
         "platform",
         [
-            MerchantMigrationSourcePlatform.paddle,
+            MerchantMigrationSourcePlatform.stripe,
             MerchantMigrationSourcePlatform.lemon_squeezy,
         ],
     )
-    def test_other_vaults_import(
+    def test_stripe_held_cards_copy(
         self, platform: MerchantMigrationSourcePlatform
     ) -> None:
         migration = MerchantMigration(source_platform=platform)
+        assert migration.pan_transfer_method == PanTransferMethod.pan_copy
+
+    def test_other_vaults_import(self) -> None:
+        migration = MerchantMigration(
+            source_platform=MerchantMigrationSourcePlatform.paddle
+        )
         assert migration.pan_transfer_method == PanTransferMethod.pan_import
+
+    def test_started_checklist_keeps_its_method(self) -> None:
+        migration = MerchantMigration(
+            source_platform=MerchantMigrationSourcePlatform.lemon_squeezy,
+            pan_transfer_steps=pan_transfer.build(PanTransferMethod.pan_import),
+        )
+        assert migration.pan_transfer_method == PanTransferMethod.pan_import
+
+
+class TestExactCardMapping:
+    @pytest.mark.parametrize(
+        ("platform", "exact"),
+        [
+            (MerchantMigrationSourcePlatform.stripe, True),
+            (MerchantMigrationSourcePlatform.lemon_squeezy, False),
+        ],
+    )
+    def test_only_a_stripe_source_maps_cards_exactly(
+        self, platform: MerchantMigrationSourcePlatform, exact: bool
+    ) -> None:
+        steps = _copy_steps()
+        for step in steps:
+            if step.key == "stripe_copy":
+                step.status = PanStepStatus.completed
+
+        migration = MerchantMigration(
+            source_platform=platform, pan_transfer_steps=steps
+        )
+
+        assert migration.exact_card_mapping is exact
 
 
 class TestBuild:

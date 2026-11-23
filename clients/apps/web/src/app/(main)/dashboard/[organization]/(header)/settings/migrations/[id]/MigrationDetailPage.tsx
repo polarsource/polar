@@ -146,6 +146,7 @@ function StepContent({
           <StepHeading def={def} />
           <PanTransferPanel
             migrationId={migration.id}
+            source={migration.source_platform}
             sourceStripeAccountId={
               migration.source?.stripe_user_id as string | undefined
             }

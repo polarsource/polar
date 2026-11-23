@@ -15,7 +15,12 @@ from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.tax.tax_id import TaxIDFormat
 from polar.version import V2026_04, V2026_10, V2027_01
-from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT, MEMBER_AUTH_SUBJECT
+from tests.fixtures.auth import (
+    CUSTOMER_AUTH_SUBJECT,
+    MEMBER_AUTH_SUBJECT,
+    MEMBER_BILLING_MANAGER_AUTH_SUBJECT,
+    MEMBER_OWNER_AUTH_SUBJECT,
+)
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
@@ -23,6 +28,26 @@ from tests.fixtures.random_objects import (
     create_payment_method,
     create_subscription,
 )
+
+
+@pytest.mark.anyio
+class TestExport:
+    @pytest.mark.auth(MEMBER_AUTH_SUBJECT)
+    async def test_regular_member_forbidden(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/customer-portal/customers/me/export")
+        assert response.status_code == 403
+
+    @pytest.mark.auth(
+        CUSTOMER_AUTH_SUBJECT,
+        MEMBER_OWNER_AUTH_SUBJECT,
+        MEMBER_BILLING_MANAGER_AUTH_SUBJECT,
+    )
+    async def test_billing_access(
+        self, client: AsyncClient, customer: Customer
+    ) -> None:
+        response = await client.get("/v1/customer-portal/customers/me/export")
+        assert response.status_code == 200
+        assert response.json()["customer"]["id"] == str(customer.id)
 
 
 @pytest.mark.anyio

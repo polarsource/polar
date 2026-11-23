@@ -4,7 +4,7 @@ from datetime import timedelta
 import pytest
 from httpx2 import AsyncClient
 
-from polar.enums import SubscriptionRecurringInterval
+from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
@@ -1005,7 +1005,7 @@ class TestPreviewChange:
     ) -> None:
         organization.subscription_settings = {
             **organization.subscription_settings,
-            "proration_behavior": "prorate",
+            "proration_behavior": SubscriptionProrationBehavior.prorate,
         }
         await save_fixture(organization)
         subscription = await create_active_subscription(

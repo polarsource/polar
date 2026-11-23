@@ -23,7 +23,7 @@ from polar.worker import (
     get_retries,
 )
 
-from .grant.scope import resolve_member, resolve_scope, resolve_selector
+from .grant.scope import resolve_member, resolve_scope, resolve_selector, scope_to_args
 from .grant.service import benefit_grant as benefit_grant_service
 from .strategies import BenefitRetriableError
 
@@ -149,10 +149,6 @@ async def benefit_grant(
         selector = await resolve_selector(
             session, scope, customer_id=customer_id, benefit_id=benefit_id
         )
-        if (grant := selector.get("grant")) is not None and grant.scope:
-            repository = BenefitGrantRepository.from_session(session)
-            if not await repository.is_scope_active(grant):
-                return
         member = await resolve_member(
             session,
             customer_id=customer_id,
@@ -160,6 +156,16 @@ async def benefit_grant(
             member_id=member_id,
             selector=selector,
         )
+        grant = selector.get("grant")
+        scope_args = grant.scope if grant is not None else scope_to_args(selector)
+        repository = BenefitGrantRepository.from_session(session)
+        if scope_args and not await repository.is_scope_active(
+            customer_id=customer.id,
+            benefit_id=benefit.id,
+            member_id=member.id if member else None,
+            **scope_args,
+        ):
+            return
 
         try:
             await benefit_grant_service.grant_benefit(

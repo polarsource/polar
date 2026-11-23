@@ -226,10 +226,32 @@ describe('usage plugin', () => {
     let handler: Function
 
     beforeEach(() => {
-      const plugin = usage()
+      const plugin = usage({
+        clientEvents: [
+          'api_call',
+          'document_processed',
+          'mixed_event',
+          'invalid_event',
+          'network_test',
+        ],
+      })
       const endpoints = plugin(mockClient) as any
       handler = endpoints.ingestion.handler
     })
+
+    it.each([undefined, { clientEvents: ['client_event'] }])(
+      'rejects events without explicit permission before calling Polar',
+      async (options) => {
+        const endpoints = usage(options)(mockClient) as any
+        await expect(
+          endpoints.ingestion.handler({
+            context: { session: { user: { id: 'user-123' } } },
+            body: { event: 'server_event', metadata: {} },
+          }),
+        ).rejects.toMatchObject({ code: 'FORBIDDEN' })
+        expect(mockClient.events.ingest).not.toHaveBeenCalled()
+      },
+    )
 
     it('should ingest usage event', async () => {
       const mockIngestion = {
@@ -490,7 +512,7 @@ describe('usage plugin', () => {
     })
 
     it('attributes organization usage without changing caller metadata', async () => {
-      const endpoints = usage()(mockClient) as any
+      const endpoints = usage({ clientEvents: ['api_call'] })(mockClient) as any
       const body = endpoints.ingestion.config.body.parse({
         organizationId: 'organization-123',
         event: 'api_call',
@@ -519,7 +541,7 @@ describe('usage plugin', () => {
     })
 
     it('rejects unauthorized organization usage before calling Polar', async () => {
-      const endpoints = usage()(mockClient) as any
+      const endpoints = usage({ clientEvents: ['api_call'] })(mockClient) as any
       vi.mocked(resolveBillingPrincipal).mockRejectedValue(
         new APIError('FORBIDDEN', { message: 'Not a member' }),
       )

@@ -15,6 +15,8 @@ class TrialRedemptionRepository(RepositoryBase[TrialRedemption]):
         customer_email: str | None = None,
         payment_method_fingerprint: str | None = None,
         product: UUID | None = None,
+        *,
+        customer_id: UUID | None = None,
     ) -> TrialRedemption | None:
         statement = (
             select(TrialRedemption)
@@ -27,6 +29,9 @@ class TrialRedemptionRepository(RepositoryBase[TrialRedemption]):
 
         clauses: list[ColumnExpressionArgument[bool]] = []
 
+        if customer_id is not None:
+            clauses.append(TrialRedemption.customer_id == customer_id)
+
         if customer_email is not None:
             clauses.append(
                 func.lower(TrialRedemption.customer_email) == customer_email.lower()
@@ -37,7 +42,7 @@ class TrialRedemptionRepository(RepositoryBase[TrialRedemption]):
                 TrialRedemption.payment_method_fingerprint == payment_method_fingerprint
             )
 
-        if clauses:
-            statement = statement.where(or_(*clauses))
+        if not clauses:
+            return None
 
-        return await self.get_one_or_none(statement.limit(1))
+        return await self.get_one_or_none(statement.where(or_(*clauses)).limit(1))

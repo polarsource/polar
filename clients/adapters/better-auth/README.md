@@ -404,7 +404,7 @@ const { data: subscriptions } = await authClient.customer.subscriptions.list({
 })
 ```
 
-This is metadata-based tracking, not Polar team-customer billing. The adapter does not authorize Better Auth organization membership for `reference_id`, so your application must verify membership before using the result to grant access.
+Listing subscriptions by `reference_id` requires a Better Auth organization billing role because the response includes customer billing details. For member-facing entitlements or other reference types, authorize access on your server and return only the fields your application needs.
 
 If this is already how your application handles organization billing, keep using it and do not enable `experimental_organizationSync`. Existing billing objects are not migrated to the team customer, so mixing an established `referenceId` setup with experimental team-customer billing can produce an inconsistent billing state. Only applications with an explicit, reviewed cutover plan should enable `experimental_organizationSync` and use `organization_id` for checkout:
 
@@ -533,7 +533,7 @@ const { data: subscriptions } = await authClient.customer.subscriptions.list({
 
 **Metadata-based organization filtering**
 
-When Polar organization synchronization is not enabled, pass the Better Auth organization ID as `reference_id`. This filters on the existing `metadata.referenceId` key and does not authorize Better Auth organization membership.
+For metadata-based organization billing, pass the Better Auth organization ID as `reference_id`. The adapter checks the user's billing role and filters subscriptions by `metadata.referenceId`.
 
 ```typescript
 const { data: subscriptions } = await authClient.customer.subscriptions.list({
@@ -587,11 +587,13 @@ Polar's Usage Based Billing builds entirely on event ingestion. Ingest events fr
 
 [Learn more about Usage Based Billing in the Polar Docs.](https://docs.polar.sh/features/usage-based-billing/introduction)
 
+Record billable events on your server with the Polar SDK. `usage()` disables client ingestion by default. To keep accepting client events, configure the allowed names, for example `usage({ clientEvents: ['page-view'] })`. Exclude those names from billing meters.
+
 ```typescript
 const { data: ingested } = await authClient.usage.ingest({
-  event: 'file-uploads',
+  event: 'page-view',
   metadata: {
-    uploadedFiles: 12,
+    path: '/dashboard',
   },
   // Optional: attributes the event to the team customer and this member.
   organizationId,

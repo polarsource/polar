@@ -29,7 +29,6 @@ from polar.models import (
     User,
 )
 from polar.models.customer_seat import SeatStatus
-from polar.models.order import OrderStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession
@@ -251,16 +250,6 @@ class SeatService:
 
         repository = CustomerSeatRepository.from_session(session)
 
-        if isinstance(container, Order):
-            if container.status == OrderStatus.pending:
-                raise SeatNotAvailable(
-                    source_id, "Order must be paid before assigning seats"
-                )
-            if await repository.are_order_benefits_revoked(container.id):
-                raise SeatNotAvailable(
-                    source_id, "Order benefits were revoked by a refund or dispute"
-                )
-
         # Lock the container's `seats` row and re-read it before checking
         # availability. A concurrent subscription seat update (customer-portal
         # PATCH /subscriptions/{id}) locks the same subscription row with
@@ -272,8 +261,9 @@ class SeatService:
         # same row (same pattern as payout/service.py:cancel and
         # organization_review/tasks).
         await session.refresh(
-            container, attribute_names=["seats"], with_for_update=True
+            container, attribute_names=["seats", "status"], with_for_update=True
         )
+        await self._validate_seat_container(repository, container)
 
         available_seats = await repository.get_available_seats_count_for_container(
             container
@@ -382,6 +372,22 @@ class SeatService:
 
         return seat
 
+    async def _validate_seat_container(
+        self, repository: CustomerSeatRepository, container: SeatContainer
+    ) -> None:
+        if isinstance(container, Subscription):
+            if not container.active:
+                raise SeatNotAvailable(container.id, "Subscription must be active")
+        else:
+            if not container.paid:
+                raise SeatNotAvailable(
+                    container.id, "Order must be paid before assigning seats"
+                )
+            if await repository.are_order_benefits_revoked(container.id):
+                raise SeatNotAvailable(
+                    container.id, "Order benefits were revoked by a refund or dispute"
+                )
+
     async def get_seat_by_token(
         self,
         session: AsyncReadSession,
@@ -429,15 +435,16 @@ class SeatService:
         if seat.is_claimed():
             raise InvalidInvitationToken(invitation_token)
 
-        # Get product and organization from either subscription or order
-        if seat.subscription_id and seat.subscription:
-            product = seat.subscription.product
-            organization = product.organization
-        elif seat.order_id and seat.order:
-            assert seat.order.product is not None
-            product = seat.order.product
-            organization = seat.order.organization
-        else:
+        container = seat.subscription or seat.order
+        if container is None or container.is_deleted:
+            raise InvalidInvitationToken(invitation_token)
+        try:
+            await self._validate_seat_container(repository, container)
+        except SeatNotAvailable as e:
+            raise InvalidInvitationToken(invitation_token) from e
+
+        product = container.product
+        if product is None:
             raise InvalidInvitationToken(invitation_token)
 
         organization_id = product.organization_id

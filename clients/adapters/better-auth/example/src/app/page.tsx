@@ -30,9 +30,9 @@ export default function Home() {
 
   const onClickIngest = async () => {
     const { data: ingestion } = await authClient.usage.ingest({
-      event: 'user.created',
+      event: 'page-view',
       metadata: {
-        email: 'test@test.com',
+        path: '/',
       },
     })
 

@@ -859,7 +859,10 @@ class SubscriptionService:
             is_trial
             and product.organization.prevent_trial_abuse
             and await trial_redemption_service.check_trial_already_redeemed(
-                session, product.organization, customer_email=customer.email
+                session,
+                product.organization,
+                customer_email=customer.email,
+                customer_id=customer.id,
             )
         ):
             raise TrialAlreadyRedeemed()
@@ -2395,12 +2398,13 @@ class SubscriptionService:
                     await customer_service.upgrade_to_team(
                         session, subscription.customer
                     )
-                    await seat_service.assign_seat(
-                        session,
-                        subscription,
-                        customer_id=subscription.customer_id,
-                        immediate_claim=True,
-                    )
+                    if subscription.active:
+                        await seat_service.assign_seat(
+                            session,
+                            subscription,
+                            customer_id=subscription.customer_id,
+                            immediate_claim=True,
+                        )
 
                 await self.enqueue_benefits_grants(session, subscription)
 

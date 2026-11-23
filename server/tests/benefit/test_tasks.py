@@ -27,16 +27,24 @@ from polar.models import (
     Customer,
     Member,
     Organization,
+    Product,
     Subscription,
 )
+from polar.models.order import OrderStatus
+from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.subscription.service import SubscriptionService
 from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_active_subscription,
     create_benefit_grant,
     create_order,
+    create_payment,
     create_product_fixed_and_seat,
+    create_refund,
+    create_subscription,
+    set_product_benefits,
 )
 
 
@@ -83,6 +91,15 @@ async def test_manual_benefit_task_accepts_serialized_ids(
 
 @pytest.mark.anyio
 class TestBenefitGrant:
+    @pytest.mark.parametrize(
+        ("status", "revoke_benefits", "eligible"),
+        [
+            (OrderStatus.paid, False, True),
+            (OrderStatus.pending, False, False),
+            (OrderStatus.refunded, False, True),
+            (OrderStatus.refunded, True, False),
+        ],
+    )
     async def test_grant_and_revoke_for_order_without_purchased_seats(
         self,
         session: AsyncSession,
@@ -91,17 +108,34 @@ class TestBenefitGrant:
         customer: Customer,
         member_owner: Member,
         benefit_organization: Benefit,
+        status: OrderStatus,
+        revoke_benefits: bool,
+        eligible: bool,
     ) -> None:
         product = await create_product_fixed_and_seat(
             save_fixture, organization=organization, recurring_interval=None
         )
-        order = await create_order(save_fixture, customer=customer, product=product)
+        await set_product_benefits(
+            save_fixture, product=product, benefits=[benefit_organization]
+        )
+        order = await create_order(
+            save_fixture, customer=customer, product=product, status=status
+        )
+        if status == OrderStatus.refunded:
+            payment = await create_payment(save_fixture, organization, order=order)
+            refund = await create_refund(save_fixture, order, payment)
+            refund.revoke_benefits = revoke_benefits
+            await save_fixture(refund)
 
         await benefit_grant(customer.id, benefit_organization.id, order_id=order.id)
 
         grant = await session.scalar(
             select(BenefitGrant).where(BenefitGrant.order_id == order.id)
         )
+        if not eligible:
+            assert grant is None
+            return
+
         assert grant is not None
         assert grant.is_granted
         assert grant.member_id == member_owner.id
@@ -143,13 +177,25 @@ class TestBenefitGrant:
                 customer.id, uuid.uuid4(), subscription_id=subscription.id
             )
 
-    async def test_existing_benefit(
+    @pytest.mark.parametrize(
+        "status",
+        [
+            SubscriptionStatus.active,
+            SubscriptionStatus.trialing,
+            SubscriptionStatus.paused,
+            SubscriptionStatus.canceled,
+            SubscriptionStatus.past_due,
+        ],
+    )
+    async def test_subscription_benefit_eligibility(
         self,
         mocker: MockerFixture,
-        subscription: Subscription,
         customer: Customer,
         benefit_organization: Benefit,
+        product: Product,
         session: AsyncSession,
+        save_fixture: SaveFixture,
+        status: SubscriptionStatus,
     ) -> None:
         grant_benefit_mock = mocker.patch.object(
             benefit_grant_service,
@@ -157,7 +203,12 @@ class TestBenefitGrant:
             spec=BenefitGrantService.grant_benefit,
         )
 
-        # then
+        subscription = await create_subscription(
+            save_fixture, product=product, customer=customer, status=status
+        )
+        await set_product_benefits(
+            save_fixture, product=product, benefits=[benefit_organization]
+        )
         session.expunge_all()
 
         await benefit_grant(
@@ -166,15 +217,18 @@ class TestBenefitGrant:
             subscription_id=subscription.id,
         )
 
-        grant_benefit_mock.assert_called_once()
+        assert grant_benefit_mock.call_count == int(
+            SubscriptionStatus.is_active(status)
+        )
 
     async def test_retry(
         self,
         mocker: MockerFixture,
-        subscription: Subscription,
         customer: Customer,
         benefit_organization: Benefit,
+        product: Product,
         session: AsyncSession,
+        save_fixture: SaveFixture,
     ) -> None:
         grant_benefit_mock = mocker.patch.object(
             benefit_grant_service,
@@ -183,7 +237,12 @@ class TestBenefitGrant:
         )
         grant_benefit_mock.side_effect = BenefitRetriableError(10)
 
-        # then
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        await set_product_benefits(
+            save_fixture, product=product, benefits=[benefit_organization]
+        )
         session.expunge_all()
 
         with pytest.raises(Retry):

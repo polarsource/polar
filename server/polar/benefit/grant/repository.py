@@ -26,7 +26,7 @@ from polar.models import (
     Subscription,
 )
 from polar.models.benefit import BenefitType
-from polar.models.benefit_grant import BenefitGrantScope
+from polar.models.benefit_grant import BenefitGrantScope, BenefitGrantScopeArgs
 from polar.models.customer_seat import SeatStatus
 from polar.order.repository import order_benefits_revoked_clause
 
@@ -99,17 +99,22 @@ class BenefitGrantRepository(
         )
         return await self.get_one_or_none(statement)
 
-    async def is_scope_active(self, grant: BenefitGrant) -> bool:
+    async def is_scope_active(
+        self,
+        *,
+        customer_id: UUID,
+        benefit_id: UUID,
+        member_id: UUID | None,
+        **scope: Unpack[BenefitGrantScopeArgs],
+    ) -> bool:
         purchase: type[Subscription | Order]
         eligible_purchase: SQLColumnExpression[bool]
-        if grant.subscription_id is not None:
+        if (purchase_id := scope.get("subscription_id")) is not None:
             purchase = Subscription
-            purchase_id = grant.subscription_id
             eligible_purchase = Subscription.active
             seat_scope = CustomerSeat.subscription_id == purchase_id
-        elif grant.order_id is not None:
+        elif (purchase_id := scope.get("order_id")) is not None:
             purchase = Order
-            purchase_id = grant.order_id
             eligible_purchase = Order.paid & ~order_benefits_revoked_clause(purchase_id)
             seat_scope = CustomerSeat.order_id == purchase_id
         else:
@@ -117,8 +122,8 @@ class BenefitGrantRepository(
 
         claimed_seat = exists().where(
             seat_scope,
-            CustomerSeat.customer_id == grant.customer_id,
-            CustomerSeat.member_id == grant.member_id,
+            CustomerSeat.customer_id == customer_id,
+            CustomerSeat.member_id == member_id,
             CustomerSeat.status == SeatStatus.claimed,
             ~CustomerSeat.is_deleted,
         )
@@ -129,7 +134,7 @@ class BenefitGrantRepository(
                 purchase.id == purchase_id,
                 ~purchase.is_deleted,
                 eligible_purchase,
-                ProductBenefit.benefit_id == grant.benefit_id,
+                ProductBenefit.benefit_id == benefit_id,
                 or_(purchase.seats.is_(None), claimed_seat),
             )
         )

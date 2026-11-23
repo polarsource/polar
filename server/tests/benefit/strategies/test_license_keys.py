@@ -24,9 +24,11 @@ from polar.redis import Redis
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.license_key import TestLicenseKey
 from tests.fixtures.random_objects import (
+    create_active_subscription,
     create_benefit,
     create_order,
     create_subscription,
+    set_product_benefits,
 )
 
 EXPIRING_PROPERTIES = BenefitLicenseKeysCreateProperties(
@@ -223,7 +225,8 @@ class TestRevokeRegrant:
             organization=organization,
             properties=EXPIRING_PROPERTIES,
         )
-        subscription = await create_subscription(
+        await set_product_benefits(save_fixture, product=product, benefits=[benefit])
+        subscription = await create_active_subscription(
             save_fixture, product=product, customer=customer
         )
 

@@ -1707,6 +1707,7 @@ class TestCreate:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
+    @pytest.mark.parametrize("email_changed", [False, True])
     async def test_customer_trial_already_redeemed(
         self,
         save_fixture: SaveFixture,
@@ -1717,6 +1718,7 @@ class TestCreate:
         organization: Organization,
         product_recurring_trial: Product,
         customer: Customer,
+        email_changed: bool,
     ) -> None:
         organization.subscription_settings["prevent_trial_abuse"] = True
         await save_fixture(organization)
@@ -1724,6 +1726,9 @@ class TestCreate:
         await create_trial_redemption(
             save_fixture, customer=customer, customer_email=customer.email
         )
+        if email_changed:
+            customer.email = "updated@example.com"
+            await save_fixture(customer)
         stripe_service_mock.create_customer_session.return_value = SimpleNamespace(
             client_secret="STRIPE_CUSTOMER_SESSION_SECRET",
         )
@@ -6584,6 +6589,7 @@ class TestConfirm:
             "checkout.handle_free_success", checkout_id=checkout.id
         )
 
+    @pytest.mark.parametrize("email", ["customer@example.com", "updated@example.com"])
     async def test_trial_without_payment_method_already_redeemed(
         self,
         save_fixture: SaveFixture,
@@ -6593,6 +6599,7 @@ class TestConfirm:
         organization: Organization,
         product: Product,
         checkout_recurring_fixed: Checkout,
+        email: str,
     ) -> None:
         organization.subscription_settings["prevent_trial_abuse"] = True
         await save_fixture(organization)
@@ -6605,13 +6612,12 @@ class TestConfirm:
         await save_fixture(checkout_recurring_fixed)
 
         existing_customer = await create_customer(
-            save_fixture, organization=organization, email="customer@example.com"
+            save_fixture, organization=organization, email=email
         )
-        assert existing_customer.email is not None
         await create_trial_redemption(
             save_fixture,
             customer=existing_customer,
-            customer_email=existing_customer.email,
+            customer_email="customer@example.com",
         )
 
         stripe_service_mock.create_customer.return_value = SimpleNamespace(
@@ -6626,7 +6632,7 @@ class TestConfirm:
                 CheckoutConfirmStripe.model_validate(
                     {
                         "customer_name": "Customer Name",
-                        "customer_email": "customer@example.com",
+                        "customer_email": email,
                     }
                 ),
             )

@@ -242,7 +242,12 @@ class BenefitGrantService:
         if grant.is_granted:
             return grant
 
-        if not grant.scope or await repository.is_scope_active(grant):
+        if not grant.scope or await repository.is_scope_active(
+            customer_id=grant.customer_id,
+            benefit_id=grant.benefit_id,
+            member_id=grant.member_id,
+            **grant.scope,
+        ):
             enqueue_job(
                 "benefit.grant",
                 customer_id=grant.customer_id,

@@ -2,8 +2,16 @@ import { extractApiErrorMessage } from '@/utils/api/errors'
 import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { operations, schemas, unwrap } from '@polar-sh/client'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+} from '@tanstack/react-query'
 import { defaultRetry } from './retry'
+
+// The lists that load page by page, which mutations refetch.
+const INFINITE_SUBSCRIPTIONS_KEY = ['subscriptions', 'infinite']
 
 export const useSubscriptions = (
   organizationId?: string,
@@ -27,6 +35,40 @@ export const useSubscriptions = (
       ),
     retry: defaultRetry,
     enabled: !!organizationId,
+  })
+
+export const useInfiniteSubscriptions = (
+  organizationId: string,
+  parameters?: Omit<
+    NonNullable<operations['subscriptions:list']['parameters']['query']>,
+    'organization_id' | 'page'
+  >,
+) =>
+  useInfiniteQuery({
+    queryKey: [
+      ...INFINITE_SUBSCRIPTIONS_KEY,
+      { organizationId, ...(parameters || {}) },
+    ],
+    queryFn: ({ pageParam }) =>
+      unwrap(
+        api.GET('/v1/subscriptions/', {
+          params: {
+            query: {
+              organization_id: organizationId,
+              ...parameters,
+              page: pageParam,
+            },
+          },
+        }),
+      ),
+    placeholderData: keepPreviousData,
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, _allPages, lastPageParam) =>
+      lastPage.items.length === 0 ||
+      lastPageParam >= lastPage.pagination.max_page
+        ? null
+        : lastPageParam + 1,
+    retry: defaultRetry,
   })
 
 export const useSubscription = (
@@ -129,6 +171,7 @@ export const useUpdateSubscription = (id: string) =>
         },
         data,
       )
+      queryClient.invalidateQueries({ queryKey: INFINITE_SUBSCRIPTIONS_KEY })
       queryClient.setQueriesData<schemas['ListResource_Subscription_']>(
         {
           queryKey: [
@@ -203,6 +246,7 @@ export const useUncancelSubscription = (id: string) =>
         },
         data,
       )
+      queryClient.invalidateQueries({ queryKey: INFINITE_SUBSCRIPTIONS_KEY })
       queryClient.setQueriesData<schemas['ListResource_Subscription_']>(
         {
           queryKey: [
@@ -257,6 +301,7 @@ const applySubscriptionUpdateToCache = (
     },
     data,
   )
+  queryClient.invalidateQueries({ queryKey: INFINITE_SUBSCRIPTIONS_KEY })
   queryClient.setQueriesData<schemas['ListResource_Subscription_']>(
     {
       queryKey: [
@@ -400,6 +445,7 @@ export const useClearPendingSubscriptionUpdate = (id: string) =>
         },
         data,
       )
+      queryClient.invalidateQueries({ queryKey: INFINITE_SUBSCRIPTIONS_KEY })
       queryClient.setQueriesData<schemas['ListResource_Subscription_']>(
         {
           queryKey: [

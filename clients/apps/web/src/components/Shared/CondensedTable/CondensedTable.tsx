@@ -16,6 +16,11 @@ export const isTyping = (target: EventTarget | null) =>
   (target.isContentEditable ||
     ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
 
+// A popover, menu or dialog that holds the focus owns the keys pressed in it.
+const isInOverlay = (target: EventTarget | null) =>
+  target instanceof Element &&
+  target.closest('[role="dialog"], [role="menu"], [role="listbox"]') !== null
+
 const scrollToRow = (id: string | null) =>
   document
     .querySelector(`[data-condensed-row="${id}"]`)
@@ -47,7 +52,16 @@ export const CondensedTable = <T extends RowData>({
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (isTyping(e.target) || e.metaKey || e.ctrlKey || e.altKey) return
+      if (
+        e.defaultPrevented ||
+        isTyping(e.target) ||
+        isInOverlay(e.target) ||
+        e.metaKey ||
+        e.ctrlKey ||
+        e.altKey
+      ) {
+        return
+      }
       if (e.key === 'Escape' && selectedId) {
         onClose()
         return

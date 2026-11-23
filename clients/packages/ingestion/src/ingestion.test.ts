@@ -109,4 +109,26 @@ describe('Ingestion({ accessToken })', () => {
     })
     fetch.mockRestore()
   })
+
+  it('should fall back to POLAR_ACCESS_TOKEN like the 0.4 SDK', async () => {
+    vi.stubEnv('POLAR_ACCESS_TOKEN', 'polar_oat_env')
+    const fetch = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(Response.json({ inserted: 1, duplicates: 0 }))
+
+    await Ingestion({ serverURL: 'http://polar.test' })
+      .strategy(new DeltaTimeStrategy(() => 0))
+      .ingest('elapsed')
+      .execute(
+        { deltaTime: 5, strategy: 'DeltaTime' },
+        { externalCustomerId: 'ext_1' },
+      )
+
+    const [, init] = fetch.mock.calls[0]
+    expect(new Headers(init?.headers).get('authorization')).toBe(
+      'Bearer polar_oat_env',
+    )
+    fetch.mockRestore()
+    vi.unstubAllEnvs()
+  })
 })

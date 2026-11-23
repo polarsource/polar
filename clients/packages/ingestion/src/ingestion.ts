@@ -50,7 +50,7 @@ export type IngestionTokenConfig = {
 
 export const createTokenClient = (config?: IngestionTokenConfig): Polar =>
   createPolar({
-    accessToken: config?.accessToken ?? '',
+    accessToken: config?.accessToken ?? process.env.POLAR_ACCESS_TOKEN ?? '',
     environment: config?.server,
     baseUrl: config?.serverURL,
   })

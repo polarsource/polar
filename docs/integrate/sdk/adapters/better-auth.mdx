@@ -449,19 +449,22 @@ Each event accepts:
 
 #### Client-side ingestion endpoint
 
-The `usage` plugin also registers a BetterAuth endpoint that is callable from the client as `authClient.usage.ingest(...)`. It forwards to Polar from the BetterAuth server and attaches the authenticated user automatically. Anonymous users are rejected:
+`usage()` disables client ingestion by default. To accept specific client events,
+configure their names with `usage({ clientEvents: ["page-view"] })`. The endpoint
+attaches the authenticated user before forwarding to Polar.
 
 ```typescript icon="square-js" auth-client.ts
 const { data: ingested } = await authClient.usage.ingest({
-  event: "file-uploads",
+  event: "page-view",
   metadata: {
-    uploadedFiles: 12,
+    path: "/dashboard",
   },
 });
 ```
 
 <Warning>
-  This endpoint trusts whatever the client sends it, so a user can call it from their browser and claim any usage they want. Only use it for events that genuinely originate on the client and that you are comfortable not being authoritative (e.g. analytics-like signals). For billable usage, stick to server-side ingestion as shown above.
+  Metadata for approved client events is supplied by the client. Exclude those
+  events from billing meters and record billable usage on your server.
 </Warning>
 
 ### 2. Customer Meters

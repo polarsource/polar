@@ -587,11 +587,13 @@ Polar's Usage Based Billing builds entirely on event ingestion. Ingest events fr
 
 [Learn more about Usage Based Billing in the Polar Docs.](https://docs.polar.sh/features/usage-based-billing/introduction)
 
+Record billable events on your server with the Polar SDK. `usage()` disables client ingestion by default. To keep accepting client events, configure the allowed names, for example `usage({ clientEvents: ['page-view'] })`. Exclude those names from billing meters.
+
 ```typescript
 const { data: ingested } = await authClient.usage.ingest({
-  event: 'file-uploads',
+  event: 'page-view',
   metadata: {
-    uploadedFiles: 12,
+    path: '/dashboard',
   },
   // Optional: attributes the event to the team customer and this member.
   organizationId,

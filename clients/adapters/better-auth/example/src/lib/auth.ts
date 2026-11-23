@@ -43,7 +43,7 @@ export const auth = betterAuth({
           ],
           returnUrl: 'https://myapp.com',
         }),
-        usage(),
+        usage({ clientEvents: ['page-view'] }),
         portal({
           returnUrl: 'https://myapp.com',
         }),

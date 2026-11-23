@@ -16,10 +16,14 @@ export interface UsageOptions {
    * Products to use for topping up credits
    */
   creditProducts?: Product[] | (() => Promise<Product[]>)
+  /**
+   * Event names accepted from clients. Keep these separate from billing meters.
+   */
+  clientEvents?: readonly string[]
 }
 
 export const usage =
-  (_usageOptions?: UsageOptions) =>
+  ({ clientEvents }: UsageOptions = {}) =>
   (
     polar: PolarCore,
     rootOptions?: Pick<PolarOptions, 'experimental_organizationSync'>,
@@ -110,6 +114,12 @@ export const usage =
           if (ctx.context.session.user['isAnonymous']) {
             throw new APIError('UNAUTHORIZED', {
               message: 'Anonymous users cannot ingest usage events',
+            })
+          }
+
+          if (!clientEvents?.includes(ctx.body.event)) {
+            throw new APIError('FORBIDDEN', {
+              message: 'This event is not enabled for client ingestion',
             })
           }
 

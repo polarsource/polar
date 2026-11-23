@@ -36,7 +36,6 @@ Removed the following obsolete fields, including fields that were already hidden
 - Seat-based prices: `seat_tiers` is replaced by `tiers`, with the purchasable seat range in `minimum_units` and `maximum_units`. Create requests accept `tiers` and an optional `minimum_units`.
 - Organizations: `bio`, `company`, `blog`, `location`, `twitter_username`, `pledge_minimum_amount`, `pledge_badge_show_amount`, `default_upfront_split_to_contributors`, and `notification_settings`.
 - Organizations embedded in other resources: `email`, `website`, `socials`, `status`, `details_submitted_at`, `feature_settings`, `subscription_settings`, and `customer_email_settings`.
-- Organization `feature_settings`: `member_model_enabled`, `meter_cycling_enabled`, and `compass_enabled`. Customer portal organizations also lose `feature_settings.member_model_enabled`.
 - Custom and Slack shared channel benefits: `is_tax_applicable`.
 - Discord benefit properties: `guild_token`. Use `guild_id` instead.
 - GitHub repository benefit properties: `repository_id`. Use `repository_owner` and `repository_name` instead.

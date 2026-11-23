@@ -27,13 +27,13 @@ const getValueLabel = (filter: Filter): string => {
 }
 
 // One chip per filter that is away from its default, each removable. They sit
-// in the toolbar, and the row clips what does not fit.
+// in the toolbar, and the row scrolls sideways when they do not fit.
 export const ToolbarFilterChips = ({
   filters,
   trailing,
 }: {
   filters: Filter[]
-  // Follows the last chip, and is never clipped.
+  // Follows the last chip, and never scrolls away.
   trailing?: ReactNode
 }) => {
   const applied = filters.filter(
@@ -43,7 +43,7 @@ export const ToolbarFilterChips = ({
 
   return (
     <Box alignItems="center" gap="s" minWidth={0}>
-      <Box alignItems="center" gap="s" minWidth={0} overflow="hidden">
+      <div className="flex min-w-0 [scrollbar-width:none] items-center gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden">
         {applied.map((filter) => (
           <Box
             key={filter.key}
@@ -72,7 +72,7 @@ export const ToolbarFilterChips = ({
             </button>
           </Box>
         ))}
-      </Box>
+      </div>
       {trailing}
     </Box>
   )

@@ -1,0 +1,59 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/[id]/MigrationDetailPage.tsx
+  s_72a311f50b7a3e::t_f7cd5d1f7b533e 149
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/cards/CopyTaskRow.tsx
+  s_72a311f50b7a3e::t_b0af0a55aef45c 1-48
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/cards/LemonSqueezyCopyTasks.tsx
+  s_72a311f50b7a3e::t_76463e0ab7865f 1-62
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/cards/PanTransferPanel.tsx
+  s_72a311f50b7a3e::t_d235ced34dd793 6,12,16,69
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/cards/PanTransferStepBody.tsx
+  s_72a311f50b7a3e::t_a073f3c0011cd5 6,19,28,38
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/cards/PanTransferStepItem.tsx
+  s_72a311f50b7a3e::t_1a167cce8979e4 8-9,18,27,30,64
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/cards/StartCopyStep.test.tsx
+  s_72a311f50b7a3e::t_916e7a20acfcf7 6,72,110-144
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/cards/StartCopyStep.tsx
+  s_72a311f50b7a3e::t_6c9f70a091e105 8-10,20,29,45-64,66-89,91-108
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/cards/panTransferCopy.ts
+  s_72a311f50b7a3e::t_e10077ebf5d661 4-5,174-199
+server/polar/merchant_migration/adapters/lemon_squeezy.py
+  s_72a311f50b7a3e::t_199d6bc8c1fabd 421
+server/polar/merchant_migration/adapters/stripe.py
+  s_72a311f50b7a3e::t_41d5cb2f8539a4 1363
+server/polar/merchant_migration/canonical.py
+  s_72a311f50b7a3e::t_f7a41c28367c9c 126-128,551
+server/polar/merchant_migration/cutover.py
+  s_72a311f50b7a3e::t_0345cfedb5bf1f 881
+server/polar/merchant_migration/importer.py
+  s_72a311f50b7a3e::t_a93150e3cddd73 1029-1032
+server/polar/merchant_migration/precheck.py
+  s_72a311f50b7a3e::t_143a4831830e5f 1708,1712
+server/polar/merchant_migration/service.py
+  s_72a311f50b7a3e::t_4e6102b4b30833 31,1035-1038,1184-1185,1201-1221,1255,1977,2087
+server/polar/models/merchant_migration.py
+  s_72a311f50b7a3e::t_98cab31c1b965b 12,16,57-62,114-122,126-137
+server/tests/merchant_migration/test_canonical.py
+  s_72a311f50b7a3e::t_44da6bda6e5dbf 134
+server/tests/merchant_migration/test_lemon_squeezy_adapter.py
+  s_72a311f50b7a3e::t_8101ac427b6ed2 166,242
+server/tests/merchant_migration/test_pan_transfer.py
+  s_72a311f50b7a3e::t_2f249807c7ce47 62,66,70-82,86-108
+server/tests/merchant_migration/test_service.py
+  s_72a311f50b7a3e::t_b5e416bbc9bc40 3945-3986
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "dcd1238179ef43bb858faf8cf6a032c1ebb5c1dc",
+  "prompts": {},
+  "sessions": {
+    "s_72a311f50b7a3e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cdd635e7-53d1-405f-8635-3617a695254d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

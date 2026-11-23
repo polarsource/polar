@@ -1,0 +1,29 @@
+server/tests/backoffice/files/test_endpoints.py
+  s_db8088c68b6041::t_aa36ceb9702dbf 1-5,7-112
+  s_db8088c68b6041::t_789a395956dd4f 6
+server/polar/backoffice/files/endpoints.py
+  s_db8088c68b6041::t_67ebf804780179 1-14,16-64,66-72,74-81,83-144,149-166,168-232,236-299,306-337
+  s_db8088c68b6041::t_e55b034a1bcb08 145-148,233-235,300-305
+  s_db8088c68b6041::t_7fd7cd6f292c90 15,65,73,167
+  s_db8088c68b6041::t_5bea61824d8c9b 82
+server/polar/backoffice/navigation.py
+  s_db8088c68b6041::t_48c6f91e3dec18 19
+server/polar/backoffice/app.py
+  s_db8088c68b6041::t_789a395956dd4f 18,65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7da9c49b72d21944da4520fc92ac6337ef777642",
+  "prompts": {},
+  "sessions": {
+    "s_db8088c68b6041": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7b4c1659-1822-416d-8afc-01019efddde5",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

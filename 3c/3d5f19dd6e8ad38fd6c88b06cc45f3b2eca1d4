@@ -1,0 +1,22 @@
+server/polar/payout_account/service.py
+  s_77862eafa16590::t_3aeb46d663e49b 9-10,139-143
+  s_77862eafa16590::t_67bd45310f5bd1 144
+server/tests/payout_account/test_endpoints.py
+  s_77862eafa16590::t_3aeb46d663e49b 98-115
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3c3d5f19dd6e8ad38fd6c88b06cc45f3b2eca1d4",
+  "prompts": {},
+  "sessions": {
+    "s_77862eafa16590": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "950691b9-a3d4-46a6-97c9-f679f3ba405e",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

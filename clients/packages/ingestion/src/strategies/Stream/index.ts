@@ -17,6 +17,9 @@ export class StreamStrategy<TStream extends Stream> extends IngestionStrategy<
   TStream
 > {
   private stream: Stream
+  private customer?:
+    | IngestionStrategyCustomer
+    | IngestionStrategyExternalCustomer
 
   constructor(stream: Stream) {
     super()
@@ -27,17 +30,26 @@ export class StreamStrategy<TStream extends Stream> extends IngestionStrategy<
   private wrapStream({
     stream,
     execute,
-    customer,
   }: {
     stream: TStream
     execute: IngestionExecutionHandler<StreamStrategyContext>
-    customer: IngestionStrategyCustomer | IngestionStrategyExternalCustomer
   }) {
     let bytes = 0
+    const emit = stream.emit
 
-    stream.on('data', (chunk) => {
-      bytes += chunk.length
-    })
+    // A 'data' listener would start the stream and drain it before the caller reads it
+    stream.emit = (event: string | symbol, ...args: unknown[]) => {
+      if (event === 'data') {
+        const [chunk] = args
+        if (typeof chunk === 'string') {
+          bytes += Buffer.byteLength(chunk)
+        } else if (chunk instanceof Uint8Array) {
+          bytes += chunk.byteLength
+        }
+      }
+
+      return emit.call(stream, event, ...args)
+    }
 
     stream.on('end', () => {
       const payload: StreamStrategyContext = {
@@ -45,7 +57,9 @@ export class StreamStrategy<TStream extends Stream> extends IngestionStrategy<
         strategy: 'Stream',
       }
 
-      execute(payload, customer)
+      if (this.customer) {
+        execute(payload, this.customer)
+      }
     })
 
     return stream
@@ -54,12 +68,14 @@ export class StreamStrategy<TStream extends Stream> extends IngestionStrategy<
   public client(
     customer: IngestionStrategyCustomer | IngestionStrategyExternalCustomer,
   ): TStream {
-    const execute = this.createExecutionHandler()
+    const stream = this.stream as TStream
 
-    return this.wrapStream({
-      stream: this.stream as TStream,
-      execute,
-      customer,
-    })
+    // A stream is read once, so it stays with the first customer it was tracked for
+    if (!this.customer) {
+      this.customer = customer
+      this.wrapStream({ stream, execute: this.createExecutionHandler() })
+    }
+
+    return stream
   }
 }

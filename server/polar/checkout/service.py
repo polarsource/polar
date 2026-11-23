@@ -9,7 +9,7 @@ import stripe as stripe_lib
 import structlog
 from pydantic import MISSING, UUID4
 from pydantic import ValidationError as PydanticValidationError
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
@@ -344,7 +344,12 @@ class CheckoutService:
             statement = statement.where(Checkout.status.in_(status))
 
         if query is not None:
-            statement = statement.where(Checkout.customer_email.ilike(f"%{query}%"))
+            statement = statement.where(
+                or_(
+                    Checkout.customer_email.icontains(query, autoescape=True),
+                    Checkout.customer_name.icontains(query, autoescape=True),
+                )
+            )
 
         if created_after is not None:
             statement = statement.where(Checkout.created_at > created_after)

@@ -297,6 +297,14 @@ class CustomerRepository(
             migration_import_exists,
         )
 
+    def get_search_clause(self, query: str) -> ColumnElement[bool]:
+        return or_(
+            Customer.email.icontains(query, autoescape=True),
+            Customer.name.icontains(query, autoescape=True),
+            Customer._billing_name.icontains(query, autoescape=True),
+            Customer.external_id.istartswith(query, autoescape=True),
+        )
+
     async def get_ids_by_email(self, email: str) -> Sequence[UUID]:
         statement = (
             self.get_base_statement()

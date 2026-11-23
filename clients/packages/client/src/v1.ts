@@ -51001,7 +51001,7 @@ export interface operations {
           | components['schemas']['CheckoutStatus']
           | components['schemas']['CheckoutStatus'][]
           | null
-        /** @description Filter by customer email. */
+        /** @description Filter by customer name or email. */
         query?: string | null
         /** @description Only include checkout sessions created after this date. */
         created_after?: string | null
@@ -51488,6 +51488,8 @@ export interface operations {
         started_after?: string | null
         /** @description Only include subscriptions started before this date. */
         started_before?: string | null
+        /** @description Filter by customer name, email or external ID, or product name. */
+        query?: string | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */
@@ -53151,6 +53153,8 @@ export interface operations {
           | components['schemas']['OrderStatus']
           | components['schemas']['OrderStatus'][]
           | null
+        /** @description Filter by customer name, email or external ID, invoice number or product name. */
+        query?: string | null
         /** @description Only include orders created after this date */
         created_after?: string | null
         /** @description Only include orders created before this date */

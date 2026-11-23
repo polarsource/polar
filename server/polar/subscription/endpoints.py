@@ -106,6 +106,7 @@ async def list(
         canceled_at_before=filters.canceled_at_before,
         started_after=filters.started_after,
         started_before=filters.started_before,
+        query=filters.query,
         metadata=metadata,
         pagination=pagination,
         sorting=sorting,

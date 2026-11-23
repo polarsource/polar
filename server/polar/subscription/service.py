@@ -10,7 +10,7 @@ from urllib.parse import urlencode
 
 import structlog
 from pydantic import MISSING
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import (
     contains_eager,
     joinedload,
@@ -649,6 +649,7 @@ class SubscriptionService:
         canceled_at_before: datetime | None = None,
         started_after: datetime | None = None,
         started_before: datetime | None = None,
+        query: str | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
         sorting: Sequence[Sorting[SubscriptionSortProperty]] = (
@@ -715,6 +716,14 @@ class SubscriptionService:
 
         if started_before is not None:
             statement = statement.where(Subscription.started_at < started_before)
+
+        if query is not None:
+            statement = statement.where(
+                or_(
+                    CustomerRepository.from_session(session).get_search_clause(query),
+                    Product.name.icontains(query, autoescape=True),
+                )
+            )
 
         if metadata is not None:
             statement = apply_metadata_clause(Subscription, statement, metadata)

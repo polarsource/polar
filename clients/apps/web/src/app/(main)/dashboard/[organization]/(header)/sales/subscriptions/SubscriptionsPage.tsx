@@ -62,6 +62,7 @@ const filterParsers = {
   cancel_at_period_end: parseAsBoolean,
   started_after: parseAsIsoDateTime,
   started_before: parseAsIsoDateTime,
+  query: parseAsString,
   subscription: parseAsString,
   zoom: parseAsFloat.withDefault(DEFAULT_PIXELS_PER_DAY),
   view: parseAsStringLiteral(subscriptionViewValues),
@@ -105,6 +106,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       customer_cancellation_reason: cancellationReason,
       started_after: startedAfter,
       started_before: startedBefore,
+      query,
       subscription: selectedId,
       zoom: zoomParam,
       view: linkedView,
@@ -164,6 +166,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     discountId !== null ||
     cancellationReason !== null ||
     started !== null ||
+    query !== null ||
     (isTimeline &&
       (group !== DEFAULT_GANTT_GROUP ||
         sort?.id !== DEFAULT_SORTING[0].id ||
@@ -180,6 +183,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       customer_cancellation_reason: null,
       started_after: null,
       started_before: null,
+      query: null,
     })
     if (isTimeline) {
       setFilters({ group: null })
@@ -198,6 +202,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     customer_cancellation_reason: cancellationReason ?? undefined,
     started_after: started?.from.toISOString(),
     started_before: started?.to.toISOString(),
+    query: query ?? undefined,
   }
   const {
     data,
@@ -331,6 +336,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
             started_before: value?.to ?? null,
           })
         }
+        query={query}
+        onQuerySelect={(value) => setFilters({ query: value })}
         sorting={sorting}
         onSortingChange={setSortingState}
         view={view}

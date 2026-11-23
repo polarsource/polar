@@ -10,7 +10,7 @@ from urllib.parse import urlencode
 import stripe as stripe_lib
 import structlog
 from pydantic import MISSING
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import joinedload
 
 from polar.account.repository import AccountRepository
@@ -390,6 +390,7 @@ class OrderService:
         checkout_id: Sequence[uuid.UUID] | None = None,
         subscription_id: Sequence[uuid.UUID] | None = None,
         status: Sequence[OrderStatus] | None = None,
+        query: str | None = None,
         created_after: datetime | None = None,
         created_before: datetime | None = None,
         metadata: MetadataQuery | None = None,
@@ -449,6 +450,15 @@ class OrderService:
 
         if status is not None:
             statement = statement.where(Order.status.in_(status))
+
+        if query is not None:
+            statement = statement.where(
+                or_(
+                    CustomerRepository.from_session(session).get_search_clause(query),
+                    Order.invoice_number.istartswith(query, autoescape=True),
+                    Product.name.icontains(query, autoescape=True),
+                )
+            )
 
         if created_after is not None:
             statement = statement.where(Order.created_at > created_after)

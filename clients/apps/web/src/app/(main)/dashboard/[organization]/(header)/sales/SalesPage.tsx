@@ -32,6 +32,7 @@ const filterParsers = {
   external_product_id: parseAsArrayOf(parseAsString),
   status: parseAsArrayOf(parseAsStringLiteral(enums.orderStatusValues)),
   metadata: parseAsArrayOf(parseAsString),
+  query: parseAsString,
 }
 
 interface ClientPageProps {
@@ -52,6 +53,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       external_product_id: externalProductId,
       status,
       metadata,
+      query,
     },
     setFilters,
   ] = useQueryStates(filterParsers)
@@ -78,6 +80,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     product_id: productId ?? undefined,
     external_product_id: externalProductId ?? undefined,
     status: status ?? undefined,
+    query: query ?? undefined,
     created_after: startDate.toISOString(),
     created_before: endDate.toISOString(),
   })
@@ -139,6 +142,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         onProductSelect={setFilters}
         status={status}
         onStatusSelect={(value) => setFilters({ status: value })}
+        query={query}
+        onQuerySelect={(value) => setFilters({ query: value })}
         dateRange={{ from: startDate, to: endDate }}
         onDateRangeSelect={(range) => {
           setStartDate(range?.from ?? null)

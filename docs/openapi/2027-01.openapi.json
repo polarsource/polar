@@ -6944,10 +6944,48 @@
                   "type": "null"
                 }
               ],
-              "description": "Filter by customer email.",
+              "description": "Filter by customer name or email.",
               "title": "Query"
             },
-            "description": "Filter by customer email."
+            "description": "Filter by customer name or email."
+          },
+          {
+            "name": "created_after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only include checkout sessions created after this date.",
+              "title": "Created After"
+            },
+            "description": "Only include checkout sessions created after this date."
+          },
+          {
+            "name": "created_before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only include checkout sessions created before this date.",
+              "title": "Created Before"
+            },
+            "description": "Only include checkout sessions created before this date."
           },
           {
             "name": "page",
@@ -8045,6 +8083,24 @@
               "title": "Started Before"
             },
             "description": "Only include subscriptions started before this date."
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by customer name, email or external ID, or product name.",
+              "title": "Query"
+            },
+            "description": "Filter by customer name, email or external ID, or product name."
           },
           {
             "name": "page",
@@ -10933,6 +10989,24 @@
               "description": "Filter by order status."
             },
             "description": "Filter by order status."
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by customer name, email or external ID, invoice number or product name.",
+              "title": "Query"
+            },
+            "description": "Filter by customer name, email or external ID, invoice number or product name."
           },
           {
             "name": "created_after",

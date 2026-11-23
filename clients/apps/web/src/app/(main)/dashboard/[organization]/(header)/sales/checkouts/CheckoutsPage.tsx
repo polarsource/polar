@@ -137,8 +137,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         onStatusSelect={(value) => setFilters({ status: value })}
         customerId={customerId}
         onCustomerSelect={(value) => setFilters({ customer_id: value })}
-        email={query}
-        onEmailSelect={(value) => setFilters({ query: value })}
+        query={query}
+        onQuerySelect={(value) => setFilters({ query: value })}
         created={created}
         onCreatedSelect={(range) =>
           setFilters({

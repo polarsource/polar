@@ -29,6 +29,7 @@ import { type ToolbarAction } from '@/components/Shared/Toolbar/ToolbarActionsMe
 import { useDateRangeFilter } from '@/components/Shared/Toolbar/useDateRangeFilter'
 import { useProductFilter } from '@/components/Shared/Toolbar/useProductFilter'
 import { useCustomerFilter } from '@/components/Shared/Toolbar/useCustomerFilter'
+import { useSearchFilter } from '@/components/Shared/Toolbar/useSearchFilter'
 import { useDiscountFilter } from './useDiscountFilter'
 import { type SubscriptionView } from './useSubscriptionsView'
 
@@ -97,6 +98,8 @@ interface SubscriptionsToolbarProps {
   onCancellationReasonSelect: (value: CancellationReason[] | null) => void
   started: DateRange | null
   onStartedSelect: (value: DateRange | null) => void
+  query: string | null
+  onQuerySelect: (value: string | null) => void
   sorting: DataTableSortingState
   onSortingChange: (sorting: DataTableSortingState) => void
   view: SubscriptionView
@@ -124,6 +127,8 @@ export const SubscriptionsToolbar = ({
   onCancellationReasonSelect,
   started,
   onStartedSelect,
+  query,
+  onQuerySelect,
   sorting,
   onSortingChange,
   view,
@@ -186,6 +191,11 @@ export const SubscriptionsToolbar = ({
     customerId,
     onCustomerSelect,
   )
+  const searchFilter = useSearchFilter(
+    query,
+    onQuerySelect,
+    'Customer or product...',
+  )
   const statusFilter: Filter = {
     key: 'status',
     label: 'Status',
@@ -201,6 +211,7 @@ export const SubscriptionsToolbar = ({
     statusFilter,
     productFilter,
     customerFilter,
+    searchFilter,
     discountFilter,
     startedFilter,
     {

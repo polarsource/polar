@@ -17,8 +17,9 @@ export const GanttRowLabel = ({
 }: GanttRowLabelProps) => {
   const { customer, product } = subscription
   return (
-    <div
-      className={twMerge('cursor-pointer', className)}
+    <button
+      type="button"
+      className={twMerge('block w-full cursor-pointer text-left', className)}
       data-row={subscription.id}
       onClick={() => onSelect(subscription.id)}
     >
@@ -32,6 +33,6 @@ export const GanttRowLabel = ({
           </Text>
         </Box>
       </Box>
-    </div>
+    </button>
   )
 }

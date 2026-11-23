@@ -3,6 +3,7 @@
 import {
   aggregateSubscriptions,
   type AggregateGroup,
+  type AggregateRow,
   type AggregateUnit,
 } from '@/utils/subscriptionAggregate'
 import { getTimelineStart } from '@/utils/subscriptionTimeline'
@@ -49,6 +50,29 @@ const GROUPINGS: Record<
   },
 }
 
+// Hovering a period renders the frame again. The sums only change with what
+// they are computed from, so the last result is kept.
+let lastAggregate: { inputs: unknown[]; rows: AggregateRow[] } | null = null
+const aggregate = (
+  ...[subscriptions, options]: Parameters<typeof aggregateSubscriptions>
+): AggregateRow[] => {
+  const inputs = [
+    subscriptions,
+    options.unit,
+    options.range.start,
+    options.range.end,
+    options.now,
+    options.groupOf,
+  ]
+  if (!lastAggregate?.inputs.every((input, index) => input === inputs[index])) {
+    lastAggregate = {
+      inputs,
+      rows: aggregateSubscriptions(subscriptions, options),
+    }
+  }
+  return lastAggregate.rows
+}
+
 const formatPeriod = (start: number, unit: AggregateUnit) =>
   unit === 'week'
     ? `Week of ${format(start, 'MMM d')}`
@@ -91,7 +115,7 @@ export const AggregateTimeline = ({
       footerLabel={footerLabel}
     >
       {({ scale, rendered, now }) => {
-        const rows = aggregateSubscriptions(subscriptions, {
+        const rows = aggregate(subscriptions, {
           unit,
           range: rendered,
           now,
@@ -100,7 +124,7 @@ export const AggregateTimeline = ({
         return {
           labels: rows.map((row) => (
             <AggregateRowLabel
-              key={row.key}
+              key={row.id}
               row={row}
               height={height}
               bucket={row.buckets.find(({ start }) => start === hoveredStart)}
@@ -118,7 +142,7 @@ export const AggregateTimeline = ({
             <div onMouseLeave={() => setHoveredStart(null)}>
               {rows.map((row) => (
                 <AggregateCells
-                  key={row.key}
+                  key={row.id}
                   row={row}
                   height={height}
                   scale={scale}

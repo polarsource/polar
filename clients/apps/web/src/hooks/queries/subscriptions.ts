@@ -92,11 +92,18 @@ export const useAllSubscriptions = (
     'organization_id' | 'page' | 'limit'
   >,
 ) => {
-  const { data, hasNextPage, isFetching, isFetchNextPageError, fetchNextPage } =
-    useInfiniteSubscriptions(organizationId, {
-      ...parameters,
-      limit: ALL_PAGE_SIZE,
-    })
+  const {
+    data,
+    hasNextPage,
+    isFetching,
+    isError,
+    isFetchNextPageError,
+    fetchNextPage,
+    refetch,
+  } = useInfiniteSubscriptions(organizationId, {
+    ...parameters,
+    limit: ALL_PAGE_SIZE,
+  })
   const pageCount = data?.pages.length ?? 0
   const canLoadMore =
     hasNextPage && pageCount < ALL_MAX_PAGES && !isFetchNextPageError
@@ -110,7 +117,10 @@ export const useAllSubscriptions = (
   return {
     subscriptions: data && uniqueSubscriptions(data.pages),
     totalCount: data?.pages[0]?.pagination.total_count,
-    isLoading: data === undefined || canLoadMore,
+    isLoading: !isError && (data === undefined || canLoadMore),
+    // A page failed, so what is loaded is not everything.
+    isError,
+    retry: () => (data ? fetchNextPage() : refetch()),
   }
 }
 

@@ -6,6 +6,8 @@ import {
 } from '@/components/Subscriptions/Gantt/AggregateTimeline'
 import { useAllSubscriptions } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
+import { Button, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { type Ref } from 'react'
 import { type GanttZoomHandle } from '@/components/Subscriptions/Gantt/scale'
 
@@ -39,10 +41,28 @@ export const SubscriptionsAggregateView = ({
     footerLabel,
     onSelect,
   }
-  const { subscriptions, isLoading } = useAllSubscriptions(
+  const { subscriptions, isLoading, isError, retry } = useAllSubscriptions(
     organization.id,
     filters,
   )
+
+  // Sums over part of the subscriptions would read as the whole.
+  if (isError) {
+    return (
+      <Box
+        flexGrow={1}
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="center"
+        gap="m"
+      >
+        <Text color="muted">Could not load all subscriptions</Text>
+        <Button size="sm" variant="secondary" onClick={() => retry()}>
+          Try again
+        </Button>
+      </Box>
+    )
+  }
 
   // The frame stays up while pages load, so the layout does not jump.
   if (!subscriptions || (isLoading && subscriptions.length === 0)) {

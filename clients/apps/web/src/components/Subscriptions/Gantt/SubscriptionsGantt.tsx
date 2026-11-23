@@ -9,7 +9,7 @@ import {
 import { schemas } from '@polar-sh/client'
 import { Spinner, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { isTyping } from '@/components/Shared/CondensedTable/CondensedTable'
+import { isKeyHandledElsewhere } from '@/components/Shared/CondensedTable/CondensedTable'
 import { useEffect, type Ref } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { GanttBar } from './GanttBar'
@@ -76,7 +76,7 @@ export const SubscriptionsGantt = ({
   useEffect(() => {
     if (!hasSelection) return
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !isTyping(event.target)) {
+      if (event.key === 'Escape' && !isKeyHandledElsewhere(event)) {
         onSelect(null)
       }
     }

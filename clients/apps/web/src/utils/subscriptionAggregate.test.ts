@@ -55,6 +55,27 @@ describe('aggregateSubscriptions', () => {
     expect(row.buckets[2].renewingAmount).toBe(4000)
   })
 
+  it('keeps currencies in rows of their own', () => {
+    const rows = aggregate([
+      subscription(),
+      subscription({ currency: 'eur', amount: 1500 }),
+      subscription({ currency: 'eur', amount: 1500 }),
+    ])
+
+    expect(
+      rows.map(({ label, currency, monthlyAmount }) => [
+        label,
+        currency,
+        monthlyAmount,
+      ]),
+    ).toEqual([
+      ['Pro · EUR', 'eur', 3000],
+      ['Pro · USD', 'usd', 2000],
+    ])
+    expect(new Set(rows.map(({ id }) => id)).size).toBe(2)
+    expect(rows.every(({ key }) => key === 'pro')).toBe(true)
+  })
+
   it('does not count the first charge as a renewal', () => {
     const [row] = aggregate([
       subscription({

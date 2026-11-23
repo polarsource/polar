@@ -24,7 +24,7 @@ import { useGanttViewport } from './useGanttViewport'
 
 // Straddles the label column's right border, and draws over it while pointed at.
 const RESIZER_CLASS =
-  'absolute inset-y-0 -right-1 z-30 w-[9px] cursor-col-resize touch-none after:absolute after:inset-y-0 after:left-1 after:w-px hover:after:bg-gray-300 active:after:bg-gray-300 dark:hover:after:bg-polar-600 dark:active:after:bg-polar-600'
+  'absolute inset-y-0 -right-1 z-30 w-[9px] cursor-col-resize touch-none outline-none after:absolute after:inset-y-0 after:left-1 after:w-px hover:after:bg-gray-300 focus-visible:after:bg-gray-400 active:after:bg-gray-300 dark:hover:after:bg-polar-600 dark:focus-visible:after:bg-polar-500 dark:active:after:bg-polar-600'
 
 export interface GanttContext {
   scale: GanttScale
@@ -165,7 +165,7 @@ export const GanttFrame = ({
             <div
               role="separator"
               aria-orientation="vertical"
-              aria-label="Resize column"
+              aria-label="Resize column. Arrow keys resize, Enter resets."
               className={RESIZER_CLASS}
               {...labelsResize.handleProps}
             />

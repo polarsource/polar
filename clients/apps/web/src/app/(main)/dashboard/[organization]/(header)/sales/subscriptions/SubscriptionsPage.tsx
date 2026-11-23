@@ -10,6 +10,8 @@ import {
   DEFAULT_GANTT_GROUP,
   DEFAULT_PIXELS_PER_DAY,
   ganttGroupValues,
+  MAX_PIXELS_PER_DAY,
+  type GanttGroup,
 } from '@/components/Subscriptions/Gantt/scale'
 import { SubscriptionDetailPanel } from '@/components/Subscriptions/SubscriptionDetailPanel'
 import { SELECTABLE_STATUSES } from '@/components/Subscriptions/selectableStatuses'
@@ -40,6 +42,7 @@ import { useSelectedSubscription } from './useSelectedSubscription'
 import {
   subscriptionViewValues,
   useSubscriptionsView,
+  type SubscriptionView,
 } from './useSubscriptionsView'
 import { useTimelineControls } from './useTimelineControls'
 
@@ -98,7 +101,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       discount_id: discountId,
       customer_cancellation_reason: cancellationReason,
       subscription: selectedId,
-      zoom,
+      zoom: zoomParam,
       view: linkedView,
       group,
     },
@@ -115,6 +118,11 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     () => setFilters({ view: null }),
   )
   const isTimeline = view === 'timeline'
+  // A link can carry any number. Only a usable zoom is passed on.
+  const zoom =
+    zoomParam > 0
+      ? Math.min(zoomParam, MAX_PIXELS_PER_DAY)
+      : DEFAULT_PIXELS_PER_DAY
   const timeline = useTimelineControls((value) => setFilters({ zoom: value }))
 
   const {
@@ -134,7 +142,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     external_product_id: externalProductId,
   }
 
-  // On the timeline the sort is a menu option, so it resets with the filters.
+  // On the timeline the group and the sort are menu options, so they reset
+  // with the filters.
   const [sort] = sorting
   const hasActiveFilters =
     productId !== null ||
@@ -145,7 +154,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     discountId !== null ||
     cancellationReason !== null ||
     (isTimeline &&
-      (sort?.id !== DEFAULT_SORTING[0].id ||
+      (group !== DEFAULT_GANTT_GROUP ||
+        sort?.id !== DEFAULT_SORTING[0].id ||
         sort.desc !== DEFAULT_SORTING[0].desc))
 
   const resetFilters = () => {
@@ -158,7 +168,11 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       discount_id: null,
       customer_cancellation_reason: null,
     })
-    if (isTimeline) setSortingState(DEFAULT_SORTING)
+    if (isTimeline) {
+      setFilters({ group: null })
+      setSortingState(DEFAULT_SORTING)
+      timeline.setFocus(undefined)
+    }
   }
 
   const listFilters = {
@@ -229,6 +243,15 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     ],
     isTimeline ? timeline.actions : [],
   ]
+  // The picked time only applies to the list that opening a group leads to.
+  const changeView = (value: SubscriptionView) => {
+    timeline.setFocus(undefined)
+    selectView(value)
+  }
+  const changeGroup = (value: GanttGroup) => {
+    timeline.setFocus(undefined)
+    setFilters({ group: value })
+  }
   // Opening a group lists its subscriptions, at the time that was picked.
   const drillDown = ({
     groupKey,
@@ -289,9 +312,9 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         sorting={sorting}
         onSortingChange={setSortingState}
         view={view}
-        onViewChange={selectView}
+        onViewChange={changeView}
         group={group}
-        onGroupChange={(value) => setFilters({ group: value })}
+        onGroupChange={changeGroup}
         hasActiveFilters={hasActiveFilters}
         onReset={resetFilters}
         actions={actions}

@@ -2,6 +2,7 @@ import { useLocalStorage } from '@/hooks/useLocalStorage'
 import {
   useRef,
   type CSSProperties,
+  type KeyboardEvent,
   type PointerEvent,
   type RefObject,
 } from 'react'
@@ -9,6 +10,7 @@ import { LABELS_WIDTH_VAR } from './scale'
 
 const MIN_WIDTH = 120
 const MAX_WIDTH = 560
+const KEY_STEP = 16
 const STORAGE_KEY = 'gantt_labels_width'
 
 const isStoredWidth = (value: unknown): value is number | null =>
@@ -41,16 +43,36 @@ export const useGanttLabelsResize = (
     const drag = dragRef.current
     const scroller = scrollerRef.current
     if (!drag || !scroller) return
-    // Always leaves some of the timeline in view.
-    const max = Math.min(MAX_WIDTH, scroller.clientWidth * 0.6)
-    const next = Math.round(
-      Math.max(
-        MIN_WIDTH,
-        Math.min(max, drag.width + event.clientX - drag.pointerX),
-      ),
+    const next = clampWidth(
+      drag.width + event.clientX - drag.pointerX,
+      scroller,
     )
     liveWidthRef.current = next
     scroller.style.setProperty(LABELS_WIDTH_VAR, `${next}px`)
+  }
+
+  // Always leaves some of the timeline in view.
+  const clampWidth = (value: number, scroller: HTMLElement) =>
+    Math.round(
+      Math.max(
+        MIN_WIDTH,
+        Math.min(MAX_WIDTH, scroller.clientWidth * 0.6, value),
+      ),
+    )
+
+  const onKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    const scroller = scrollerRef.current
+    const labels = labelsRef.current
+    if (!scroller || !labels) return
+    if (event.key === 'Enter') {
+      setWidth(null)
+    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+      const step = event.key === 'ArrowLeft' ? -KEY_STEP : KEY_STEP
+      setWidth(clampWidth(labels.offsetWidth + step, scroller))
+    } else {
+      return
+    }
+    event.preventDefault()
   }
 
   const endDrag = () => {
@@ -74,6 +96,8 @@ export const useGanttLabelsResize = (
       onPointerUp: endDrag,
       onPointerCancel: endDrag,
       onDoubleClick: () => setWidth(null),
+      onKeyDown,
+      tabIndex: 0,
     },
   }
 }

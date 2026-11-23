@@ -44,7 +44,10 @@ export interface AggregateGroup {
   label: string
 }
 
+// A group holds one currency. With several in use, each gets a row of its
+// own, since amounts in different currencies cannot be added up.
 export interface AggregateRow extends AggregateGroup {
+  id: string
   subscriptions: number
   monthlyAmount: number
   currency: string
@@ -76,7 +79,8 @@ export const aggregateSubscriptions = (
 
   for (const subscription of subscriptions) {
     const group = groupOf(subscription)
-    let entry = rows.get(group.key)
+    const id = `${group.key}:${subscription.currency}`
+    let entry = rows.get(id)
     if (!entry) {
       const buckets = starts.map<AggregateBucket>((start) => ({
         start,
@@ -89,6 +93,7 @@ export const aggregateSubscriptions = (
       entry = {
         row: {
           ...group,
+          id,
           subscriptions: 0,
           monthlyAmount: 0,
           currency: subscription.currency,
@@ -96,7 +101,7 @@ export const aggregateSubscriptions = (
         },
         byStart: new Map(buckets.map((bucket) => [bucket.start, bucket])),
       }
-      rows.set(group.key, entry)
+      rows.set(id, entry)
     }
     const { row, byStart } = entry
     row.subscriptions += 1
@@ -133,7 +138,14 @@ export const aggregateSubscriptions = (
     }
   }
 
-  return [...rows.values()]
+  const sorted = [...rows.values()]
     .map(({ row }) => row)
     .sort((a, b) => b.monthlyAmount - a.monthlyAmount)
+  const currencies = new Set(sorted.map(({ currency }) => currency))
+  return currencies.size > 1
+    ? sorted.map((row) => ({
+        ...row,
+        label: `${row.label} · ${row.currency.toUpperCase()}`,
+      }))
+    : sorted
 }

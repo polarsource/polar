@@ -154,7 +154,11 @@ export const SubscriptionsToolbar = ({
   // grouping and the sort option only apply to the timeline.
   const isTimeline = view === 'timeline'
   const [sort] = sorting
-  const sortValue = sort ? `${sort.desc ? '-' : ''}${sort.id}` : ''
+  // The table can sort by columns this menu does not list. Those read as unset.
+  const sortId = sort ? `${sort.desc ? '-' : ''}${sort.id}` : null
+  const sortValue = SORT_OPTIONS.some(({ value }) => value === sortId)
+    ? sortId
+    : null
   const selectSort = (value: string) =>
     onSortingChange([
       { id: value.replace(/^-/, ''), desc: value.startsWith('-') },

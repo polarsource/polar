@@ -19,6 +19,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.auth.scope import Scope
+from polar.config import settings
 from polar.kit.db.postgres import AsyncSession
 from polar.models import Organization, User, UserOrganization
 from polar.redis import Redis
@@ -100,7 +101,7 @@ def _patch_worker_middlewares(
 @pytest.fixture(autouse=True)
 def _disable_subscription_order_grace_period(mocker: MockerFixture) -> None:
     # The task drain never runs delayed messages, so a deferred order would be lost.
-    mocker.patch("polar.order.tasks.SUBSCRIPTION_ORDER_GRACE_PERIOD", timedelta(0))
+    mocker.patch.object(settings, "SUBSCRIPTION_ORDER_GRACE_PERIOD", timedelta(0))
 
 
 @pytest.fixture(autouse=True)

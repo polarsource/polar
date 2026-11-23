@@ -7,7 +7,6 @@ import {
   useCustomerPortalCustomer,
   useCustomerReactivateSubscription,
 } from '@/hooks/queries/customerPortal'
-import { extractApiErrorMessage } from '@/utils/api/errors'
 import { Client, schemas } from '@polar-sh/client'
 import { Alert, Button } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -173,7 +172,10 @@ export const TrialEndedSubscriptionActions = ({
     } catch (error) {
       toast({
         title: 'Error',
-        description: `Failed to reactivate the subscription: ${extractApiErrorMessage(error as Record<string, unknown>)}`,
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Failed to reactivate the subscription.',
       })
     }
   }

@@ -54,12 +54,14 @@ from tests.fixtures.random_objects import (
 
 @pytest.mark.anyio
 class TestCreateSubscriptionOrder:
+    @pytest.mark.parametrize("force", [False, True])
     async def test_uses_cutoff_from_job_payload(
         self,
         save_fixture: SaveFixture,
         product: Product,
         organization: Organization,
         mocker: MockerFixture,
+        force: bool,
     ) -> None:
         customer = await create_customer(save_fixture, organization=organization)
         subscription = await create_subscription(
@@ -68,7 +70,11 @@ class TestCreateSubscriptionOrder:
             customer=customer,
             status=SubscriptionStatus.active,
         )
-        cutoff = subscription.current_period_start - timedelta(days=1)
+        cutoff = (
+            utc_now() + timedelta(days=1)
+            if force
+            else subscription.current_period_start - timedelta(days=1)
+        )
         create_order_mock = mocker.patch.object(
             order_service, "create_subscription_order", new=AsyncMock()
         )
@@ -77,6 +83,7 @@ class TestCreateSubscriptionOrder:
             subscription.id,
             OrderBillingReasonInternal.subscription_cycle,
             cutoff.isoformat(),
+            force=force,
         )
 
         create_order_mock.assert_awaited_once_with(

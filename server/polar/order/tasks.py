@@ -181,6 +181,8 @@ async def create_subscription_order(
     order_reason: Annotated[OrderBillingReasonInternal, LoggableField],
     cutoff: Annotated[str | None, LoggableField] = None,
     period_start: Annotated[str | None, LoggableField] = None,
+    *,
+    force: Annotated[bool, LoggableField] = False,
 ) -> None:
     async with AsyncSessionMaker() as session:
         repository = SubscriptionRepository.from_session(session)
@@ -201,7 +203,7 @@ async def create_subscription_order(
                 if cutoff is not None
                 else subscription.current_period_start
             )
-            if _defer_until_grace_period_elapsed(
+            if not force and _defer_until_grace_period_elapsed(
                 billing_cutoff,
                 "order.create_subscription_order",
                 subscription_id,

@@ -1,0 +1,23 @@
+server/polar/mcp_event/catalog.py
+  s_ef0ee0cf80beae::t_748cc105ab0a54 20
+  s_ef0ee0cf80beae::t_060a0bd32e8123 24-25
+  s_ef0ee0cf80beae::t_0ae9ae5262957e 30-31,34
+server/polar/mcp_event/endpoints.py
+  s_ef0ee0cf80beae::t_0ae9ae5262957e 50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "bd6a32207d8e3a2c26c8501853a899c8b85e80a7",
+  "prompts": {},
+  "sessions": {
+    "s_ef0ee0cf80beae": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4b47a0c6-3289-4f71-9ec0-b36ac82332d3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

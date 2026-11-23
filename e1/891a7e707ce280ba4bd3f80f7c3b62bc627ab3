@@ -1,0 +1,32 @@
+server/polar/tax/calculation/numeral.py
+  s_2719051262cd49::t_181aaa566e5fca 238-240
+server/tests/tax/calculation/test_numeral.py
+  s_2719051262cd49::t_181aaa566e5fca 416,418,426,430-431,434-436
+server/polar/tax/tax_id.py
+  s_2719051262cd49::t_181aaa566e5fca 117,129
+  s_e16282ad654d93::t_370f4064e22e5f 130-131
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e1891a7e707ce280ba4bd3f80f7c3b62bc627ab3",
+  "prompts": {},
+  "sessions": {
+    "s_2719051262cd49": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a2075a-9e45-7011-8759-32825a1bc0e9",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    },
+    "s_e16282ad654d93": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20762-855d-7ac0-addf-f0c98415986a",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

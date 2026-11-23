@@ -87,6 +87,7 @@ async def test_get_users_me_embeds_finance_permissions(
     organization = response.json()["organizations"][0]
     assert organization["role"] == OrganizationRole.finance
     assert set(organization["permissions"]) == {
+        OrganizationPermission.members_read,
         OrganizationPermission.sales_read,
         OrganizationPermission.sales_manage,
         OrganizationPermission.finance_read,

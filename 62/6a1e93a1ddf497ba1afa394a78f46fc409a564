@@ -1,0 +1,90 @@
+server/tests/benefit/strategies/test_license_keys.py
+  s_e16282ad654d93::t_1045f0769ced30 27,31,228-229
+server/tests/subscription/test_service.py
+  s_e16282ad654d93::t_4ee08233a050fb 19,7913-7915,7924,7972-7981
+  s_e16282ad654d93::t_3ee4bff1db4460 7929-7934
+clients/adapters/better-auth/example/src/lib/auth.ts
+  s_e16282ad654d93::t_c927879505c1b2 46
+server/polar/customer_seat/service.py
+  s_e16282ad654d93::t_438c5ca00e6aa1 264,266,375-390,438-444
+  s_e16282ad654d93::t_d38f1f073a3a04 446-447
+  s_e16282ad654d93::t_770395dc61a48f 445
+clients/adapters/better-auth/src/__tests__/organization/integration.test.ts
+  s_e16282ad654d93::t_80ccdd5c0cee66 1246-1258,1294,1296,1298-1302,1304
+  s_e16282ad654d93::t_93a975079b0aca 1295,1297,1303
+server/polar/benefit/tasks.py
+  s_e16282ad654d93::t_438c5ca00e6aa1 26,159-168
+clients/adapters/better-auth/example/src/app/page.tsx
+  s_e16282ad654d93::t_c927879505c1b2 33,35
+clients/adapters/better-auth/src/__tests__/plugins/usage.test.ts
+  s_e16282ad654d93::t_80ccdd5c0cee66 229-237,242-255,515,544
+server/polar/trial_redemption/service.py
+  s_e16282ad654d93::t_f461adaa842f02 1-2,16,20,26-29
+server/polar/checkout/service.py
+  s_e16282ad654d93::t_f461adaa842f02 1379,2941,2945-2946,2950
+  s_e16282ad654d93::t_db88bc3fd35de9 2947-2949
+docs/features/subscriptions/trials.mdx
+  s_e16282ad654d93::t_6912e0d86ec06d 90,92
+server/tests/checkout/test_service.py
+  s_e16282ad654d93::t_db88bc3fd35de9 6592
+  s_e16282ad654d93::t_6912e0d86ec06d 1710,1721,1729-1731,6602,6635
+  s_e16282ad654d93::t_2be9b70af6694f 6615,6620
+clients/adapters/better-auth/src/plugins/usage.ts
+  s_e16282ad654d93::t_3e8d089d2dadd1 19-22,26,120-122
+  s_e16282ad654d93::t_4a56056c9c3ceb 123-125
+server/polar/trial_redemption/repository.py
+  s_e16282ad654d93::t_f461adaa842f02 18-19,32-34,45-46,48
+server/polar/customer_portal/endpoints/customer.py
+  s_e16282ad654d93::t_69337f394efe83 109
+server/tests/benefit/test_tasks.py
+  s_e16282ad654d93::t_3ee4bff1db4460 40,46,206-208,240-242
+  s_e16282ad654d93::t_2d0c9ab11e2e8e 30,33-34,47,94,102,111,118-123,136-138,180-190,195,197-198,209-211,220-222,229,231,243-245
+  s_e16282ad654d93::t_a810b5bd08ff70 43,45,95-101,112-113,124-128,135
+server/tests/customer_portal/endpoints/test_customer.py
+  s_e16282ad654d93::t_69337f394efe83 18-23,33-44,48-50
+  s_e16282ad654d93::t_6345a48ee8c25c 45-47
+  s_e16282ad654d93::t_c40f528e7608ec 51-52
+server/polar/benefit/grant/repository.py
+  s_e16282ad654d93::t_438c5ca00e6aa1 29,102-109,112,116,125-126,137
+clients/adapters/better-auth/README.md
+  s_e16282ad654d93::t_93a975079b0aca 407,536
+  s_e16282ad654d93::t_c927879505c1b2 590-591,594,596
+docs/integrate/sdk/adapters/better-auth.mdx
+  s_e16282ad654d93::t_c927879505c1b2 446-448,452,454,460-461
+  s_e16282ad654d93::t_93a975079b0aca 213-215,226-227
+server/tests/customer_seat/test_service.py
+  s_e16282ad654d93::t_2d0c9ab11e2e8e 41,100-119,1440-1455
+clients/adapters/better-auth/src/__tests__/plugins/portal.test.ts
+  s_e16282ad654d93::t_93a975079b0aca 522,535-536,556
+  s_e16282ad654d93::t_80ccdd5c0cee66 530-534,537
+server/polar/benefit/grant/service.py
+  s_e16282ad654d93::t_438c5ca00e6aa1 245-250
+clients/.changeset/better-auth-portal-and-usage.md
+  s_e16282ad654d93::t_b9137b9119ae94 1-4
+  s_e16282ad654d93::t_93a975079b0aca 5
+server/polar/subscription/service.py
+  s_e16282ad654d93::t_f461adaa842f02 862-865
+  s_e16282ad654d93::t_438c5ca00e6aa1 2401-2407
+clients/apps/web/src/components/CustomerPortal/CustomerPortalSettings.tsx
+  s_e16282ad654d93::t_8a4c3a6cfcb40b 8,12,46,209-224
+clients/adapters/better-auth/src/plugins/portal.ts
+  s_e16282ad654d93::t_3e8d089d2dadd1 222,244-250,258-259,285-294
+  s_e16282ad654d93::t_93a975079b0aca 11-14,251-257
+  s_e16282ad654d93::t_53a361dfc913f7 295
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "626a1e93a1ddf497ba1afa394a78f46fc409a564",
+  "prompts": {},
+  "sessions": {
+    "s_e16282ad654d93": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20762-855d-7ac0-addf-f0c98415986a",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

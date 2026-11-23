@@ -574,7 +574,7 @@ const auth = betterAuth({
             use: [
                 checkout(...),
                 portal(),
-                usage()
+                usage({ clientEvents: ['page-view'] })
             ],
         })
     ]
@@ -587,7 +587,7 @@ Polar's Usage Based Billing builds entirely on event ingestion. Ingest events fr
 
 [Learn more about Usage Based Billing in the Polar Docs.](https://docs.polar.sh/features/usage-based-billing/introduction)
 
-Record billable events on your server with the Polar SDK. `usage()` disables client ingestion by default, so the client call below is rejected with `FORBIDDEN` unless the event name is allowed. To accept it, configure the allowed names in the plugin setup, for example `usage({ clientEvents: ['page-view'] })`. Exclude those names from billing meters.
+Record billable events on your server with the Polar SDK. `usage()` disables client ingestion by default. The setup above allows `page-view` through `clientEvents`, and the client rejects any other event name with `FORBIDDEN`. Exclude those names from billing meters.
 
 ```typescript
 const { data: ingested } = await authClient.usage.ingest({

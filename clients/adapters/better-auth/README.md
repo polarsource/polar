@@ -8,7 +8,7 @@ A [Better Auth](https://github.com/better-auth/better-auth) plugin for integrati
 - Customer Portal
 - Automatic personal customer creation on signup
 - Explicit Better Auth organization → Polar team-customer synchronization
-- Event Ingestion & Customer Meters for flexible Usage Based Billing
+- Customer Meters for flexible Usage Based Billing
 - Handle Polar Webhooks securely with signature verification, including member events
 - Generic `referenceId` metadata for legacy checkout/subscription filtering
 
@@ -37,7 +37,7 @@ The Polar plugin comes with a handful additional plugins which adds functionalit
 
 - Checkout - Enables a seamless checkout integration
 - Portal - Makes it possible for your customers to manage their orders, subscriptions & granted benefits
-- Usage - Simple extension for listing customer meters & ingesting events from your server for Usage Based Billing
+- Usage - Simple extension for listing customer meters for Usage Based Billing
 - Webhooks - Listen for relevant Polar webhooks
 
 ```typescript
@@ -265,10 +265,10 @@ Organization deletion in Better Auth does **not** delete the Polar team customer
 
 Organization billing is always selected explicitly; the active Better Auth organization is never used implicitly. Pass `organizationId` in:
 
-- the POST body for checkout (as `organization_id`) and the body of `auth.api.ingestUsage` (as `organizationId`);
+- the POST body for checkout (as `organization_id`);
 - the query for portal (GET or POST), customer state, benefits, subscriptions, orders, and usage meters.
 
-The adapter verifies the authenticated user's Better Auth membership before calling Polar. Organization checkout requires a billing-capable role. Team portal and meter requests create a member-scoped customer session with `externalCustomerId = organization.id` and `externalMemberId = user.id`; usage events carry both IDs. Omitting `organizationId` preserves personal-customer behavior.
+The adapter verifies the authenticated user's Better Auth membership before calling Polar. Organization checkout requires a billing-capable role. Team portal and meter requests create a member-scoped customer session with `externalCustomerId = organization.id` and `externalMemberId = user.id`. Omitting `organizationId` preserves personal-customer behavior.
 
 ## Checkout Plugin
 
@@ -587,28 +587,31 @@ Polar's Usage Based Billing builds entirely on event ingestion. Ingest events fr
 
 [Learn more about Usage Based Billing in the Polar Docs.](https://docs.polar.sh/features/usage-based-billing/introduction)
 
-Ingest from the server code that performs the metered work, so users can't forge their own usage. `auth.api.ingestUsage` is only available on the server; it is not exposed over HTTP or on the auth client.
+Ingest events with the Polar SDK from the server code that performs the metered work. With `createCustomerOnSignUp: true`, the Polar customer's external ID is the Better Auth user ID:
 
 ```typescript
+import { ingestEvents } from '@polar-sh/sdk/2026-10/services/events'
 import { headers } from 'next/headers'
-import { auth } from '@/lib/auth'
+
+const session = await auth.api.getSession({ headers: await headers() })
+if (!session) throw new Error('Unauthorized')
 
 const { uploadedFiles } = await processUploads(request)
 
-await auth.api.ingestUsage({
-  headers: await headers(),
-  body: {
-    event: 'file-uploads',
-    metadata: {
-      uploadedFiles,
+await ingestEvents(polarClient)({
+  events: [
+    {
+      name: 'file-uploads',
+      external_customer_id: session.user.id,
+      metadata: {
+        uploadedFiles,
+      },
     },
-    // Optional: attributes the event to the team customer and this member.
-    organizationId,
-  },
+  ],
 })
 ```
 
-The authenticated user from the request's session is automatically associated with the ingested event.
+For organization billing, set `external_customer_id` to the Better Auth organization ID and `external_member_id` to the user ID, after checking that the user is a member of the organization.
 
 ### Customer Meters
 

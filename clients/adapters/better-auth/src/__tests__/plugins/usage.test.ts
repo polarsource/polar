@@ -17,16 +17,17 @@ vi.mock('better-auth/api', () => ({
       super(data.message)
     }
   },
-  createAuthEndpoint: vi.fn((...args: unknown[]) => {
-    const [path, config, handler] =
-      args.length === 2 ? [undefined, ...args] : args
-    return { path, config, handler }
-  }),
+  createAuthEndpoint: vi.fn((path, config, handler) => ({
+    path,
+    config,
+    handler,
+  })),
   sessionMiddleware: vi.fn(),
 }))
 
-const { APIError, createAuthEndpoint, sessionMiddleware } =
-  (await vi.importMock('better-auth/api')) as any
+const { createAuthEndpoint, sessionMiddleware } = (await vi.importMock(
+  'better-auth/api',
+)) as any
 
 describe('usage plugin', () => {
   let mockClient: ReturnType<typeof createMockPolarClient>
@@ -41,8 +42,7 @@ describe('usage plugin', () => {
       const plugin = usage()
       const endpoints = plugin(mockClient)
 
-      expect(endpoints).toHaveProperty('meters')
-      expect(endpoints).toHaveProperty('ingestUsage')
+      expect(Object.keys(endpoints)).toEqual(['meters'])
     })
 
     it('should create plugin with custom options', () => {
@@ -54,7 +54,6 @@ describe('usage plugin', () => {
       const endpoints = plugin(mockClient)
 
       expect(endpoints).toHaveProperty('meters')
-      expect(endpoints).toHaveProperty('ingestUsage')
     })
 
     it('should configure endpoints with correct paths and middleware', () => {
@@ -67,15 +66,6 @@ describe('usage plugin', () => {
           method: 'GET',
           use: [sessionMiddleware],
           query: expect.any(Object),
-        }),
-        expect.any(Function),
-      )
-
-      expect(createAuthEndpoint).toHaveBeenCalledWith(
-        expect.objectContaining({
-          method: 'POST',
-          body: expect.any(Object),
-          use: [sessionMiddleware],
         }),
         expect.any(Function),
       )
@@ -221,235 +211,6 @@ describe('usage plugin', () => {
     })
   })
 
-  describe('ingestUsage endpoint', () => {
-    let handler: Function
-
-    beforeEach(() => {
-      const plugin = usage()
-      const endpoints = plugin(mockClient) as any
-      handler = endpoints.ingestUsage.handler
-    })
-
-    it('should ingest usage event', async () => {
-      const mockIngestion = {
-        success: true,
-        events: [
-          {
-            id: 'event-123',
-            name: 'api_call',
-            processed: true,
-          },
-        ],
-      }
-
-      vi.mocked(mockClient.events.ingest).mockResolvedValue(mockIngestion)
-
-      const ctx = {
-        context: {
-          session: { user: { id: 'user-123' } },
-        },
-        body: {
-          event: 'api_call',
-          metadata: {
-            endpoint: '/api/users',
-            method: 'GET',
-            responseTime: 150,
-          },
-        },
-        json: vi.fn(),
-      }
-
-      await handler(ctx)
-
-      expect(mockClient.events.ingest).toHaveBeenCalledWith({
-        events: [
-          {
-            name: 'api_call',
-            metadata: {
-              endpoint: '/api/users',
-              method: 'GET',
-              responseTime: 150,
-            },
-            external_customer_id: 'user-123',
-          },
-        ],
-      })
-
-      expect(ctx.json).toHaveBeenCalledWith(mockIngestion)
-    })
-
-    it('should handle string metadata values', async () => {
-      const mockIngestion = { success: true, events: [] }
-      vi.mocked(mockClient.events.ingest).mockResolvedValue(mockIngestion)
-
-      const ctx = {
-        context: {
-          session: { user: { id: 'user-123' } },
-        },
-        body: {
-          event: 'document_processed',
-          metadata: {
-            documentId: 'doc-456',
-            fileName: 'report.pdf',
-            size: 1024,
-            processed: true,
-          },
-        },
-        json: vi.fn(),
-      }
-
-      await handler(ctx)
-
-      expect(mockClient.events.ingest).toHaveBeenCalledWith({
-        events: [
-          {
-            name: 'document_processed',
-            metadata: {
-              documentId: 'doc-456',
-              fileName: 'report.pdf',
-              size: 1024,
-              processed: true,
-            },
-            external_customer_id: 'user-123',
-          },
-        ],
-      })
-    })
-
-    it('should handle mixed metadata types', async () => {
-      const mockIngestion = { success: true, events: [] }
-      vi.mocked(mockClient.events.ingest).mockResolvedValue(mockIngestion)
-
-      const ctx = {
-        context: {
-          session: { user: { id: 'user-123' } },
-        },
-        body: {
-          event: 'mixed_event',
-          metadata: {
-            stringValue: 'test',
-            numberValue: 42,
-            booleanValue: false,
-          },
-        },
-        json: vi.fn(),
-      }
-
-      await handler(ctx)
-
-      expect(mockClient.events.ingest).toHaveBeenCalledWith({
-        events: [
-          {
-            name: 'mixed_event',
-            metadata: {
-              stringValue: 'test',
-              numberValue: 42,
-              booleanValue: false,
-            },
-            external_customer_id: 'user-123',
-          },
-        ],
-      })
-    })
-
-    it('should throw error when user not found', async () => {
-      const ctx = {
-        context: {
-          session: { user: { id: null } },
-        },
-        body: {
-          event: 'test_event',
-          metadata: {},
-        },
-      }
-
-      await expect(handler(ctx)).rejects.toThrow('User not found')
-    })
-
-    it('rejects an anonymous user before calling Polar', async () => {
-      const ctx = {
-        context: {
-          session: { user: { id: 'anon-uuid-123', isAnonymous: true } },
-        },
-        body: {
-          event: 'api_call',
-          metadata: { path: '/api/users' },
-        },
-      }
-
-      await expect(handler(ctx)).rejects.toMatchObject({
-        code: 'UNAUTHORIZED',
-        message: 'Anonymous users cannot ingest usage events',
-      })
-      expect(resolveBillingPrincipal).not.toHaveBeenCalled()
-      expect(mockClient.events.ingest).not.toHaveBeenCalled()
-    })
-
-    it('rejects an anonymous organization request before resolving the principal', async () => {
-      const ctx = {
-        context: {
-          session: { user: { id: 'anon-uuid-123', isAnonymous: true } },
-        },
-        body: {
-          organizationId: 'organization-123',
-          event: 'api_call',
-          metadata: {},
-        },
-      }
-
-      await expect(handler(ctx)).rejects.toMatchObject({
-        code: 'UNAUTHORIZED',
-        message: 'Anonymous users cannot ingest usage events',
-      })
-      expect(resolveBillingPrincipal).not.toHaveBeenCalled()
-      expect(mockClient.events.ingest).not.toHaveBeenCalled()
-    })
-
-    it('should handle ingestion API failure', async () => {
-      vi.mocked(mockClient.events.ingest).mockRejectedValue(
-        mockApiError(400, 'Invalid event data'),
-      )
-
-      const ctx = {
-        context: {
-          session: { user: { id: 'user-123' } },
-          logger: { error: vi.fn() },
-        },
-        body: {
-          event: 'invalid_event',
-          metadata: { test: 'data' },
-        },
-      }
-
-      await expect(handler(ctx)).rejects.toThrow('Ingestion failed')
-      expect(ctx.context.logger.error).toHaveBeenCalledWith(
-        expect.stringContaining('Polar ingestion failed'),
-      )
-    })
-
-    it('should handle network errors', async () => {
-      vi.mocked(mockClient.events.ingest).mockRejectedValue(
-        new Error('Network timeout'),
-      )
-
-      const ctx = {
-        context: {
-          session: { user: { id: 'user-123' } },
-          logger: { error: vi.fn() },
-        },
-        body: {
-          event: 'network_test',
-          metadata: { test: 'data' },
-        },
-      }
-
-      await expect(handler(ctx)).rejects.toThrow('Ingestion failed')
-      expect(ctx.context.logger.error).toHaveBeenCalledWith(
-        'Polar ingestion failed. Error: Network timeout',
-      )
-    })
-  })
-
   describe('organization billing', () => {
     const teamPrincipal = {
       kind: 'team' as const,
@@ -486,54 +247,6 @@ describe('usage plugin', () => {
         external_customer_id: 'organization-123',
         external_member_id: 'user-123',
       })
-    })
-
-    it('attributes organization usage without changing caller metadata', async () => {
-      const endpoints = usage()(mockClient) as any
-      const body = endpoints.ingestUsage.config.body.parse({
-        organizationId: 'organization-123',
-        event: 'api_call',
-        metadata: {
-          externalCustomerId: 'metadata-value',
-          externalMemberId: 'metadata-member',
-        },
-      })
-      vi.mocked(mockClient.events.ingest).mockResolvedValue({ success: true })
-
-      await endpoints.ingestUsage.handler({ context, body, json: vi.fn() })
-
-      expect(mockClient.events.ingest).toHaveBeenCalledWith({
-        events: [
-          {
-            name: 'api_call',
-            metadata: {
-              externalCustomerId: 'metadata-value',
-              externalMemberId: 'metadata-member',
-            },
-            external_customer_id: 'organization-123',
-            external_member_id: 'user-123',
-          },
-        ],
-      })
-    })
-
-    it('rejects unauthorized organization usage before calling Polar', async () => {
-      const endpoints = usage()(mockClient) as any
-      vi.mocked(resolveBillingPrincipal).mockRejectedValue(
-        new APIError('FORBIDDEN', { message: 'Not a member' }),
-      )
-
-      await expect(
-        endpoints.ingestUsage.handler({
-          context,
-          body: {
-            organizationId: 'organization-123',
-            event: 'api_call',
-            metadata: {},
-          },
-        }),
-      ).rejects.toThrow('Not a member')
-      expect(mockClient.events.ingest).not.toHaveBeenCalled()
     })
   })
 })

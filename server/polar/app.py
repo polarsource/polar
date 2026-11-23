@@ -253,8 +253,6 @@ def create_app(
     if not settings.is_testing():
         app.add_middleware(HttpMetricsMiddleware)
 
-    configure_cors(app)
-
     add_exception_handlers(app)
     app.add_exception_handler(OAuth2Error, oauth2_error_exception_handler)
     app.add_exception_handler(
@@ -287,6 +285,7 @@ def create_app(
         VERSIONS,
         CURRENT_API_VERSION,
     )
+    configure_cors(app)
 
     return app
 

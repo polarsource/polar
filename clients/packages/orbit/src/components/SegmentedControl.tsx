@@ -1,4 +1,5 @@
 import { cva, type VariantProps } from 'class-variance-authority'
+import { type ReactNode } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const segmentedControlVariants = cva('flex items-center gap-x-1 p-1', {
@@ -62,7 +63,7 @@ const segmentedControlItemVariants = cva(
 
 interface SegmentedControlOption<T extends string> {
   value: T
-  label: string
+  label: ReactNode
 }
 
 export interface SegmentedControlProps<T extends string> {

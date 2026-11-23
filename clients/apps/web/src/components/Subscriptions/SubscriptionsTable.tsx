@@ -15,6 +15,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import { type OnChangeFn } from '@tanstack/react-table'
 import { format } from 'date-fns'
 import { useEffect } from 'react'
+import { FOOTER_HEIGHT } from './Gantt/scale'
 import { twMerge } from 'tailwind-merge'
 import {
   formatSubscriptionPrice,
@@ -23,8 +24,6 @@ import {
 } from './utils'
 
 type Subscription = schemas['Subscription']
-
-const FOOTER_HEIGHT = 44
 
 const formatDate = (date: string) => format(new Date(date), 'MMM d, yyyy')
 

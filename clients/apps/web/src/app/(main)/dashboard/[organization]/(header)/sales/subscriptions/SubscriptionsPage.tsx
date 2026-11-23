@@ -3,33 +3,48 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { CANCELLATION_REASONS } from '@/components/Metrics/cancellations/constants'
 import { useModal } from '@/components/Modal/useModal'
+import { toast } from '@/components/Toast/use-toast'
 import { type ProductFilter } from '@/components/Products/ProductSelect'
 import ExportSubscriptionsModal from '@/components/Subscriptions/ExportSubscriptionsModal'
+import {
+  DEFAULT_GANTT_GROUP,
+  DEFAULT_PIXELS_PER_DAY,
+  ganttGroupValues,
+} from '@/components/Subscriptions/Gantt/scale'
 import { SubscriptionDetailPanel } from '@/components/Subscriptions/SubscriptionDetailPanel'
 import { SELECTABLE_STATUSES } from '@/components/Subscriptions/selectableStatuses'
 import { SubscriptionsTable } from '@/components/Subscriptions/SubscriptionsTable'
-import { useInfiniteSubscriptions } from '@/hooks/queries'
+import { useSafeCopy } from '@/hooks/clipboard'
+import { uniqueSubscriptions, useInfiniteSubscriptions } from '@/hooks/queries'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import {
   DataTableSortingState,
   sortingStateToQueryParam,
 } from '@/utils/datatable'
 import { schemas } from '@polar-sh/client'
-import { Download } from '@polar-sh/orbit/icons'
+import { Copy, Download } from '@polar-sh/orbit/icons'
 import { functionalUpdate, OnChangeFn } from '@tanstack/react-table'
 import {
   parseAsArrayOf,
   parseAsBoolean,
+  parseAsFloat,
   parseAsString,
   parseAsStringLiteral,
   useQueryStates,
 } from 'nuqs'
 import React from 'react'
+import { SubscriptionsTimeline } from './SubscriptionsTimeline'
 import { SubscriptionsToolbar } from './SubscriptionsToolbar'
 import { type ToolbarAction } from './ToolbarActionsMenu'
 import { useSelectedSubscription } from './useSelectedSubscription'
+import {
+  subscriptionViewValues,
+  useSubscriptionsView,
+} from './useSubscriptionsView'
+import { useTimelineControls } from './useTimelineControls'
 
 const PAGE_SIZE = 50
+const DEFAULT_SORTING = [{ id: 'started_at', desc: true }]
 
 const filterParsers = {
   product_id: parseAsArrayOf(parseAsString),
@@ -42,6 +57,10 @@ const filterParsers = {
   ),
   cancel_at_period_end: parseAsBoolean,
   subscription: parseAsString,
+  zoom: parseAsFloat.withDefault(DEFAULT_PIXELS_PER_DAY),
+  view: parseAsStringLiteral(subscriptionViewValues),
+  group:
+    parseAsStringLiteral(ganttGroupValues).withDefault(DEFAULT_GANTT_GROUP),
 }
 
 // Secondary sort on ends_at when sorting by status
@@ -65,7 +84,7 @@ interface ClientPageProps {
 
 const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const { sorting, setSorting: setSortingState } = useDataTableQueryState({
-    defaultSorting: [{ id: 'started_at', desc: true }],
+    defaultSorting: DEFAULT_SORTING,
     defaultPageSize: PAGE_SIZE,
   })
 
@@ -79,6 +98,9 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       discount_id: discountId,
       customer_cancellation_reason: cancellationReason,
       subscription: selectedId,
+      zoom,
+      view: linkedView,
+      group,
     },
     setFilters,
   ] = useQueryStates(filterParsers)
@@ -86,6 +108,14 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   // Only "set to end" is offered as a filter. Older links can carry false,
   // which no control shows, so it is left out.
   const cancelAtPeriodEnd = cancelAtPeriodEndParam ? true : null
+
+  const [view, selectView] = useSubscriptionsView(
+    organization.id,
+    linkedView,
+    () => setFilters({ view: null }),
+  )
+  const isTimeline = view === 'timeline'
+  const timeline = useTimelineControls((value) => setFilters({ zoom: value }))
 
   const {
     isShown: isExportModalShown,
@@ -104,6 +134,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     external_product_id: externalProductId,
   }
 
+  // On the timeline the sort is a menu option, so it resets with the filters.
+  const [sort] = sorting
   const hasActiveFilters =
     productId !== null ||
     externalProductId !== null ||
@@ -111,9 +143,12 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     cancelAtPeriodEnd !== null ||
     customerId !== null ||
     discountId !== null ||
-    cancellationReason !== null
+    cancellationReason !== null ||
+    (isTimeline &&
+      (sort?.id !== DEFAULT_SORTING[0].id ||
+        sort.desc !== DEFAULT_SORTING[0].desc))
 
-  const resetFilters = () =>
+  const resetFilters = () => {
     setFilters({
       product_id: null,
       external_product_id: null,
@@ -123,7 +158,18 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       discount_id: null,
       customer_cancellation_reason: null,
     })
+    if (isTimeline) setSortingState(DEFAULT_SORTING)
+  }
 
+  const listFilters = {
+    product_id: productId ?? undefined,
+    external_product_id: externalProductId ?? undefined,
+    status: status ?? undefined,
+    cancel_at_period_end: cancelAtPeriodEnd ?? undefined,
+    customer_id: customerId ?? undefined,
+    discount_id: discountId ?? undefined,
+    customer_cancellation_reason: cancellationReason ?? undefined,
+  }
   const {
     data,
     hasNextPage,
@@ -132,24 +178,12 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     isFetchNextPageError,
     fetchNextPage,
   } = useInfiniteSubscriptions(organization.id, {
+    ...listFilters,
     limit: PAGE_SIZE,
     sorting: sortingStateToQueryParam(sorting),
-    product_id: productId ?? undefined,
-    external_product_id: externalProductId ?? undefined,
-    status: status ?? undefined,
-    cancel_at_period_end: cancelAtPeriodEnd ?? undefined,
-    customer_id: customerId ?? undefined,
-    discount_id: discountId ?? undefined,
-    customer_cancellation_reason: cancellationReason ?? undefined,
   })
 
-  // Rows that tie on the sorted value have no fixed order between requests, so
-  // one can come back on two pages.
-  const subscriptions = data && [
-    ...new Map(
-      data.pages.flatMap((page) => page.items.map((item) => [item.id, item])),
-    ).values(),
-  ]
+  const subscriptions = data && uniqueSubscriptions(data.pages)
   // Not while the first page for new filters is loading, and not again after a
   // page failed, or the visible end of the list would retry it without pause.
   const loadMore = () => {
@@ -170,6 +204,14 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       ? undefined
       : `${totalCount.toLocaleString('en-US')} ${totalCount === 1 ? 'subscription' : 'subscriptions'}`
 
+  const safeCopy = useSafeCopy(toast)
+  // The view is not in the address unless a link put it there, so it is added.
+  const copyLink = async () => {
+    const url = new URL(window.location.href)
+    url.searchParams.set('view', view)
+    await safeCopy(url.toString())
+    toast({ title: 'Link copied' })
+  }
   const actions: ToolbarAction[][] = [
     [
       {
@@ -178,8 +220,34 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         icon: <Download />,
         onSelect: showExportModal,
       },
+      {
+        key: 'copy-link',
+        label: 'Copy link to this view',
+        icon: <Copy />,
+        onSelect: copyLink,
+      },
     ],
+    isTimeline ? timeline.actions : [],
   ]
+  // Opening a group lists its subscriptions, at the time that was picked.
+  const drillDown = ({
+    groupKey,
+    start,
+  }: {
+    groupKey: string
+    start?: number
+  }) => {
+    setFilters({
+      group: 'customer',
+      ...(group === 'product'
+        ? { product_id: [groupKey], external_product_id: null }
+        : {}),
+    })
+    if (start !== undefined) {
+      setSortingState([{ id: 'current_period_end', desc: false }])
+    }
+    timeline.setFocus(start)
+  }
 
   return (
     <DashboardBody
@@ -218,20 +286,45 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         onCancellationReasonSelect={(value) =>
           setFilters({ customer_cancellation_reason: value })
         }
+        sorting={sorting}
+        onSortingChange={setSortingState}
+        view={view}
+        onViewChange={selectView}
+        group={group}
+        onGroupChange={(value) => setFilters({ group: value })}
         hasActiveFilters={hasActiveFilters}
         onReset={resetFilters}
         actions={actions}
       />
-      <SubscriptionsTable
-        subscriptions={subscriptions}
-        sorting={sorting}
-        onSortingChange={setSorting}
-        selectedId={selectedId}
-        onSelect={select}
-        footerLabel={countLabel}
-        isLoadingMore={isFetchingNextPage}
-        onEndReached={loadMore}
-      />
+      {isTimeline ? (
+        <SubscriptionsTimeline
+          organization={organization}
+          group={group}
+          subscriptions={subscriptions}
+          filters={listFilters}
+          zoom={zoom}
+          zoomRef={timeline.zoomRef}
+          onZoomChange={timeline.onZoomChange}
+          focus={timeline.focus}
+          footerLabel={countLabel}
+          selectedId={selectedId}
+          onSelect={select}
+          isLoadingMore={isFetchingNextPage}
+          onEndReached={loadMore}
+          onDrillDown={drillDown}
+        />
+      ) : (
+        <SubscriptionsTable
+          subscriptions={subscriptions}
+          sorting={sorting}
+          onSortingChange={setSorting}
+          selectedId={selectedId}
+          onSelect={select}
+          footerLabel={countLabel}
+          isLoadingMore={isFetchingNextPage}
+          onEndReached={loadMore}
+        />
+      )}
       <ExportSubscriptionsModal
         organization={organization}
         product={product}

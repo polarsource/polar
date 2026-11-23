@@ -47,10 +47,12 @@ export const InlineModal: FunctionComponent<InlineModalProps> = ({
   )
 
   useEffect(() => {
-    // oxlint-disable-next-line typescript/no-unused-expressions
-    isShown
-      ? (document.body.style.overflow = 'hidden')
-      : (document.body.style.overflow = 'unset')
+    if (!isShown) return
+    const previous = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previous
+    }
   }, [isShown])
 
   const modal = (

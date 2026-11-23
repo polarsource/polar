@@ -5,6 +5,7 @@ from uuid import UUID
 import stripe as stripe_lib
 import structlog
 from pydantic import MISSING
+from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Customer, Member
 from polar.checkout import ip_geolocation
@@ -15,7 +16,7 @@ from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.http import add_query_parameters
 from polar.kit.pagination import PaginationParams
 from polar.models import Customer as CustomerModel
-from polar.models import PaymentMethod
+from polar.models import PaymentMethod, Subscription
 from polar.order.service import order as order_service
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.payment_method.service import payment_method as payment_method_service
@@ -75,8 +76,6 @@ class CustomerService:
         session: AsyncSession,
         customer: CustomerModel,
         customer_update: CustomerPortalCustomerUpdate,
-        *,
-        ip_country: str | None = None,
     ) -> CustomerModel:
         previous_billing_country = (
             customer.billing_address.country
@@ -224,7 +223,7 @@ class CustomerService:
             )
 
         await self._log_unconfirmed_billing_country(
-            session, customer, previous_billing_country, ip_country
+            session, customer, previous_billing_country
         )
 
         return customer
@@ -234,7 +233,6 @@ class CustomerService:
         session: AsyncSession,
         customer: CustomerModel,
         previous_billing_country: str | None,
-        ip_country: str | None,
     ) -> None:
         billing_address = customer.billing_address
         if (
@@ -245,46 +243,57 @@ class CustomerService:
 
         subscriptions = await SubscriptionRepository.from_session(
             session
-        ).list_payable_by_customer(customer.id)
+        ).list_payable_by_customer(
+            customer.id, options=(joinedload(Subscription.checkout),)
+        )
         if not subscriptions:
             return
 
-        charged_payment_method_ids = {
-            subscription.payment_method_id or customer.default_payment_method_id
-            for subscription in subscriptions
-        }
         payment_methods = await PaymentMethodRepository.from_session(
             session
         ).list_by_customer(customer.id)
-        country_by_payment_method_id = {
+        country_by_payment_method_id: dict[UUID | None, str | None] = {
             payment_method.id: payment_method.country
             for payment_method in payment_methods
         }
+        countries_by_subscription = [
+            (
+                (subscription.checkout.customer_signals or {}).get("ip_country")
+                if subscription.checkout is not None
+                else None,
+                country_by_payment_method_id.get(
+                    subscription.payment_method_id or customer.default_payment_method_id
+                ),
+            )
+            for subscription in subscriptions
+        ]
         matching_countries = ip_geolocation.get_matching_countries(
             billing_address.country
         )
-        charged_countries = [
-            country_by_payment_method_id.get(payment_method_id)
-            if payment_method_id is not None
-            else None
-            for payment_method_id in charged_payment_method_ids
+        unconfirmed_countries = [
+            countries
+            for countries in countries_by_subscription
+            if matching_countries.isdisjoint(countries)
         ]
-        if all(country in matching_countries for country in charged_countries):
+        if not unconfirmed_countries:
             return
 
+        checkout_ip_countries = sorted(
+            {ip_country for ip_country, _ in unconfirmed_countries if ip_country}
+        )
         payment_method_countries = sorted(
-            {country for country in charged_countries if country is not None}
+            {country for _, country in unconfirmed_countries if country}
         )
         # Shadow mode: measure how often this triggers before blocking on it.
         log.info(
             "customer_portal.billing_country_mismatch"
-            if payment_method_countries
+            if checkout_ip_countries or payment_method_countries
             else "customer_portal.billing_country_unverified",
             customer_id=str(customer.id),
             organization_id=str(customer.organization_id),
+            checkout_ip_countries=checkout_ip_countries,
             payment_method_countries=payment_method_countries,
-            charged_payment_method_count=len(charged_payment_method_ids),
-            ip_country=ip_country,
+            unconfirmed_subscription_count=len(unconfirmed_countries),
             billing_country=billing_address.country,
             previous_billing_country=previous_billing_country,
         )

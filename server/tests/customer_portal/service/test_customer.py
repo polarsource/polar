@@ -20,12 +20,14 @@ from polar.exceptions import PolarRequestValidationError
 from polar.integrations.stripe.service import StripeService
 from polar.kit.address import Address, AddressInput, CountryAlpha2, CountryAlpha2Input
 from polar.models import Customer, Organization, PaymentMethod, Product
+from polar.models.checkout import CheckoutStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession
 from polar.tax.tax_id import TaxIDFormat
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
+    create_checkout,
     create_customer,
     create_payment_method,
 )
@@ -579,15 +581,20 @@ class TestUpdate:
         assert updated_customer.tax_id[0] == "FR61954506077"
 
     @pytest.mark.parametrize(
-        ("billing_country", "ip_country", "default_payment_method", "expected_event"),
+        (
+            "billing_country",
+            "checkout_ip_country",
+            "default_payment_method",
+            "expected_event",
+        ),
         [
             pytest.param("SE", "UG", None, None, id="country unchanged"),
             pytest.param(
                 "UG",
                 "UG",
                 ("card", {"country": "SE"}),
-                "customer_portal.billing_country_mismatch",
-                id="ip alone does not confirm",
+                None,
+                id="checkout ip confirms",
             ),
             pytest.param(
                 "UG", "SE", ("card", {"country": "UG"}), None, id="card confirms"
@@ -618,7 +625,7 @@ class TestUpdate:
     async def test_billing_country_mismatch_is_only_logged(
         self,
         billing_country: str,
-        ip_country: str | None,
+        checkout_ip_country: str | None,
         default_payment_method: tuple[str, dict[str, str]] | None,
         expected_event: str | None,
         mocker: MockerFixture,
@@ -639,9 +646,17 @@ class TestUpdate:
                 save_fixture, customer, type=type, method_metadata=method_metadata
             )
             await save_fixture(customer)
-        await create_active_subscription(
+        subscription = await create_active_subscription(
             save_fixture, product=product, customer=customer
         )
+        if checkout_ip_country is not None:
+            checkout = await create_checkout(
+                save_fixture, products=[product], status=CheckoutStatus.succeeded
+            )
+            checkout.customer_signals = {"ip_country": checkout_ip_country}
+            await save_fixture(checkout)
+            subscription.checkout = checkout
+            await save_fixture(subscription)
 
         updated_customer = await customer_service.update(
             session,
@@ -651,7 +666,6 @@ class TestUpdate:
                     country=CountryAlpha2Input(billing_country)
                 )
             ),
-            ip_country=ip_country,
         )
 
         assert updated_customer.billing_address is not None
@@ -663,11 +677,13 @@ class TestUpdate:
                 expected_event,
                 customer_id=str(customer.id),
                 organization_id=str(organization.id),
+                checkout_ip_countries=[checkout_ip_country]
+                if checkout_ip_country is not None
+                else [],
                 payment_method_countries=[default_payment_method[1]["country"]]
                 if default_payment_method is not None
                 else [],
-                charged_payment_method_count=1,
-                ip_country=ip_country,
+                unconfirmed_subscription_count=1,
                 billing_country=billing_country,
                 previous_billing_country="SE",
             )
@@ -692,7 +708,6 @@ class TestUpdate:
             CustomerPortalCustomerUpdate(
                 billing_address=AddressInput(country=CountryAlpha2Input("UG"))
             ),
-            ip_country="SE",
         )
 
         log_mock.info.assert_not_called()
@@ -730,12 +745,11 @@ class TestUpdate:
                 billing_address=AddressInput(country=CountryAlpha2Input("UG")),
                 default_payment_method_id=payment_method.id,
             ),
-            ip_country="SE",
         )
 
         log_mock.info.assert_not_called()
 
-    async def test_billing_country_not_confirmed_by_one_of_several_charged(
+    async def test_billing_country_not_confirmed_by_one_of_several_subscriptions(
         self,
         mocker: MockerFixture,
         save_fixture: SaveFixture,
@@ -765,12 +779,8 @@ class TestUpdate:
             CustomerPortalCustomerUpdate(
                 billing_address=AddressInput(country=CountryAlpha2Input("UG"))
             ),
-            ip_country="SE",
         )
 
         log_mock.info.assert_called_once()
-        assert log_mock.info.call_args.kwargs["payment_method_countries"] == [
-            "SE",
-            "UG",
-        ]
-        assert log_mock.info.call_args.kwargs["charged_payment_method_count"] == 2
+        assert log_mock.info.call_args.kwargs["payment_method_countries"] == ["SE"]
+        assert log_mock.info.call_args.kwargs["unconfirmed_subscription_count"] == 1

@@ -7,12 +7,11 @@ from fastapi.responses import Response
 from pydantic import UUID4
 from sse_starlette import EventSourceResponse
 
-from polar.checkout import ip_geolocation
 from polar.customer.service import customer as main_customer_service
 from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
 from polar.exceptions import ResourceNotFound
-from polar.kit.http import get_content_disposition, get_ip_address
+from polar.kit.http import get_content_disposition
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import Customer
 from polar.openapi import APITag
@@ -130,21 +129,13 @@ async def export(
     response_model=CustomerPortalCustomer,
 )
 async def update(
-    request: Request,
     customer_update: CustomerPortalCustomerUpdate,
     auth_subject: auth.CustomerPortalUnionBillingWrite,
-    ip_geolocation_client: ip_geolocation.IPGeolocationClient,
     session: AsyncSession = Depends(get_db_session),
 ) -> Customer:
     """Update authenticated customer."""
-    ip_address = get_ip_address(request)
-    ip_country = (
-        ip_geolocation.get_ip_country(ip_geolocation_client, ip_address)
-        if ip_geolocation_client is not None and ip_address is not None
-        else None
-    )
     return await customer_service.update(
-        session, get_customer(auth_subject), customer_update, ip_country=ip_country
+        session, get_customer(auth_subject), customer_update
     )
 
 

@@ -38,6 +38,7 @@ from polar.models.customer_seat import CustomerSeat, SeatStatus
 from polar.models.dispute import DisputeStatus
 from polar.models.order import OrderStatus
 from polar.models.organization import OrganizationStatus
+from polar.models.subscription import SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.order.repository import OrderRepository
 from polar.postgres import AsyncSession
@@ -96,6 +97,26 @@ class TestGetAvailableSeatsCount:
 
 
 class TestAssignSeat:
+    @pytest.mark.anyio
+    @pytest.mark.parametrize(
+        "status", [SubscriptionStatus.paused, SubscriptionStatus.canceled]
+    )
+    async def test_inactive_subscription_cannot_assign_seats(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_with_seats: Subscription,
+        customer: Customer,
+        status: SubscriptionStatus,
+    ) -> None:
+        subscription_with_seats.status = status
+        await save_fixture(subscription_with_seats)
+
+        with pytest.raises(SeatNotAvailable, match="Subscription must be active"):
+            await seat_service.assign_seat(
+                session, subscription_with_seats, customer_id=customer.id
+            )
+
     @pytest.mark.anyio
     async def test_assign_seat_with_customer_id(
         self,
@@ -1416,6 +1437,22 @@ class TestGetSeatByToken:
 
 
 class TestClaimSeat:
+    @pytest.mark.anyio
+    async def test_inactive_subscription_cannot_claim_seats(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_with_seats: Subscription,
+        customer_seat_pending: CustomerSeat,
+    ) -> None:
+        subscription_with_seats.status = SubscriptionStatus.paused
+        await save_fixture(subscription_with_seats)
+
+        token = customer_seat_pending.invitation_token
+        assert token is not None
+        with pytest.raises(InvalidInvitationToken):
+            await seat_service.claim_seat(session, token)
+
     @pytest.mark.anyio
     async def test_claim_seat_success(
         self,

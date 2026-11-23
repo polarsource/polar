@@ -16,6 +16,7 @@ from polar.auth.models import AuthSubject
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.checkout.eventstream import CheckoutEvent
 from polar.customer_seat.repository import CustomerSeatRepository
+from polar.customer_seat.service import seat_service
 from polar.email.schemas import (
     SubscriptionRenewalReminderEmail,
     SubscriptionRevokedEmail,
@@ -7909,6 +7910,9 @@ class TestUpdateProduct:
         assert pending.product_id == product_b.id
         assert pending.seats == 8
 
+    @pytest.mark.parametrize(
+        "status", [SubscriptionStatus.active, SubscriptionStatus.paused]
+    )
     async def test_non_seat_to_seat_upgrade_succeeds(
         self,
         session: AsyncSession,
@@ -7917,12 +7921,17 @@ class TestUpdateProduct:
         customer: Customer,
         organization: Organization,
         product: Product,
+        status: SubscriptionStatus,
     ) -> None:
         mocker.patch.object(
             subscription_service, "_create_subscription_update_order", new=AsyncMock()
         )
-        subscription = await create_active_subscription(
-            save_fixture, product=product, customer=customer
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=status,
+            started_at=utc_now(),
         )
 
         seat_product = await create_product(
@@ -7960,6 +7969,16 @@ class TestUpdateProduct:
 
         seat_repository = CustomerSeatRepository.from_session(session)
         seats = await seat_repository.list_by_subscription_id(updated.id)
+        if status == SubscriptionStatus.paused:
+            assert not seats
+            async with SubscriptionUpdateContext(
+                session, updated, subscription_service
+            ) as ctx:
+                updated = await subscription_service.resume(session, ctx, updated)
+            await seat_service.assign_seat(
+                session, updated, customer_id=customer.id, immediate_claim=True
+            )
+            seats = await seat_repository.list_by_subscription_id(updated.id)
         claimed = [s for s in seats if s.status == SeatStatus.claimed]
         assert len(claimed) == 1
         assert claimed[0].customer_id == customer.id

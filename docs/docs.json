@@ -606,7 +606,20 @@
                 "pages": [
                   "integrate/webhooks/endpoints",
                   "integrate/webhooks/delivery",
-                  "integrate/webhooks/events"
+                  "integrate/webhooks/events",
+                  {
+                    "group": "Endpoints API",
+                    "pages": [
+                      "POST /v1/webhooks/endpoints",
+                      "GET /v1/webhooks/endpoints/{id}",
+                      "GET /v1/webhooks/endpoints",
+                      "PATCH /v1/webhooks/endpoints/{id}",
+                      "DELETE /v1/webhooks/endpoints/{id}",
+                      "PATCH /v1/webhooks/endpoints/{id}/secret",
+                      "GET /v1/webhooks/deliveries",
+                      "POST /v1/webhooks/events/{id}/redeliver"
+                    ]
+                  }
                 ]
               },
               {
@@ -708,10 +721,13 @@
                 ]
               },
               {
-                "group": "Integrations",
+                "group": "OAuth 2.0",
                 "pages": [
+                  "integrate/oauth2/introduction",
+                  "integrate/oauth2/setup",
+                  "integrate/oauth2/connect",
                   {
-                    "group": "OpenID Connect",
+                    "group": "Endpoints",
                     "pages": [
                       "GET /v1/oauth2/authorize",
                       "POST /v1/oauth2/token",
@@ -723,28 +739,7 @@
                       "PUT /v1/oauth2/register/{client_id}",
                       "DELETE /v1/oauth2/register/{client_id}"
                     ]
-                  },
-                  {
-                    "group": "Webhooks",
-                    "pages": [
-                      "POST /v1/webhooks/endpoints",
-                      "GET /v1/webhooks/endpoints/{id}",
-                      "GET /v1/webhooks/endpoints",
-                      "PATCH /v1/webhooks/endpoints/{id}",
-                      "DELETE /v1/webhooks/endpoints/{id}",
-                      "PATCH /v1/webhooks/endpoints/{id}/secret",
-                      "GET /v1/webhooks/deliveries",
-                      "POST /v1/webhooks/events/{id}/redeliver"
-                    ]
                   }
-                ]
-              },
-              {
-                "group": "OAuth 2",
-                "pages": [
-                  "integrate/oauth2/introduction",
-                  "integrate/oauth2/setup",
-                  "integrate/oauth2/connect"
                 ]
               }
             ]
@@ -1107,7 +1102,20 @@
                 "pages": [
                   "integrate/webhooks/endpoints",
                   "integrate/webhooks/delivery",
-                  "integrate/webhooks/events"
+                  "integrate/webhooks/events",
+                  {
+                    "group": "Endpoints API",
+                    "pages": [
+                      "POST /v1/webhooks/endpoints",
+                      "GET /v1/webhooks/endpoints/{id}",
+                      "GET /v1/webhooks/endpoints",
+                      "PATCH /v1/webhooks/endpoints/{id}",
+                      "DELETE /v1/webhooks/endpoints/{id}",
+                      "PATCH /v1/webhooks/endpoints/{id}/secret",
+                      "GET /v1/webhooks/deliveries",
+                      "POST /v1/webhooks/events/{id}/redeliver"
+                    ]
+                  }
                 ]
               },
               {
@@ -1209,10 +1217,13 @@
                 ]
               },
               {
-                "group": "Integrations",
+                "group": "OAuth 2.0",
                 "pages": [
+                  "integrate/oauth2/introduction",
+                  "integrate/oauth2/setup",
+                  "integrate/oauth2/connect",
                   {
-                    "group": "OpenID Connect",
+                    "group": "Endpoints",
                     "pages": [
                       "GET /v1/oauth2/authorize",
                       "POST /v1/oauth2/token",
@@ -1224,28 +1235,7 @@
                       "PUT /v1/oauth2/register/{client_id}",
                       "DELETE /v1/oauth2/register/{client_id}"
                     ]
-                  },
-                  {
-                    "group": "Webhooks",
-                    "pages": [
-                      "POST /v1/webhooks/endpoints",
-                      "GET /v1/webhooks/endpoints/{id}",
-                      "GET /v1/webhooks/endpoints",
-                      "PATCH /v1/webhooks/endpoints/{id}",
-                      "DELETE /v1/webhooks/endpoints/{id}",
-                      "PATCH /v1/webhooks/endpoints/{id}/secret",
-                      "GET /v1/webhooks/deliveries",
-                      "POST /v1/webhooks/events/{id}/redeliver"
-                    ]
                   }
-                ]
-              },
-              {
-                "group": "OAuth 2",
-                "pages": [
-                  "integrate/oauth2/introduction",
-                  "integrate/oauth2/setup",
-                  "integrate/oauth2/connect"
                 ]
               }
             ]
@@ -1616,7 +1606,21 @@
                 "pages": [
                   "integrate/webhooks/endpoints",
                   "integrate/webhooks/delivery",
-                  "integrate/webhooks/events"
+                  "integrate/webhooks/events",
+                  {
+                    "group": "Endpoints API",
+                    "pages": [
+                      "POST /v1/webhooks/endpoints",
+                      "GET /v1/webhooks/endpoints/{id}",
+                      "GET /v1/webhooks/endpoints",
+                      "PATCH /v1/webhooks/endpoints/{id}",
+                      "DELETE /v1/webhooks/endpoints/{id}",
+                      "GET /v1/webhooks/endpoints/external/{external_id}",
+                      "PATCH /v1/webhooks/endpoints/{id}/secret",
+                      "GET /v1/webhooks/deliveries",
+                      "POST /v1/webhooks/events/{id}/redeliver"
+                    ]
+                  }
                 ]
               },
               {
@@ -1718,10 +1722,13 @@
                 ]
               },
               {
-                "group": "Integrations",
+                "group": "OAuth 2.0",
                 "pages": [
+                  "integrate/oauth2/introduction",
+                  "integrate/oauth2/setup",
+                  "integrate/oauth2/connect",
                   {
-                    "group": "OpenID Connect",
+                    "group": "Endpoints",
                     "pages": [
                       "GET /v1/oauth2/authorize",
                       "POST /v1/oauth2/token",
@@ -1733,29 +1740,7 @@
                       "PUT /v1/oauth2/register/{client_id}",
                       "DELETE /v1/oauth2/register/{client_id}"
                     ]
-                  },
-                  {
-                    "group": "Webhooks",
-                    "pages": [
-                      "POST /v1/webhooks/endpoints",
-                      "GET /v1/webhooks/endpoints/{id}",
-                      "GET /v1/webhooks/endpoints",
-                      "PATCH /v1/webhooks/endpoints/{id}",
-                      "DELETE /v1/webhooks/endpoints/{id}",
-                      "GET /v1/webhooks/endpoints/external/{external_id}",
-                      "PATCH /v1/webhooks/endpoints/{id}/secret",
-                      "GET /v1/webhooks/deliveries",
-                      "POST /v1/webhooks/events/{id}/redeliver"
-                    ]
                   }
-                ]
-              },
-              {
-                "group": "OAuth 2",
-                "pages": [
-                  "integrate/oauth2/introduction",
-                  "integrate/oauth2/setup",
-                  "integrate/oauth2/connect"
                 ]
               }
             ]

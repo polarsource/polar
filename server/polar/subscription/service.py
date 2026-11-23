@@ -2417,12 +2417,13 @@ class SubscriptionService:
                     await customer_service.upgrade_to_team(
                         session, subscription.customer
                     )
-                    await seat_service.assign_seat(
-                        session,
-                        subscription,
-                        customer_id=subscription.customer_id,
-                        immediate_claim=True,
-                    )
+                    if subscription.active:
+                        await seat_service.assign_seat(
+                            session,
+                            subscription,
+                            customer_id=subscription.customer_id,
+                            immediate_claim=True,
+                        )
 
                 await self.enqueue_benefits_grants(session, subscription)
 

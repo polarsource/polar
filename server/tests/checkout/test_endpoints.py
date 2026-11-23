@@ -175,6 +175,30 @@ class TestList:
         assert len(json["items"]) == len(checkouts)
 
     @pytest.mark.auth
+    async def test_created_range(
+        self,
+        save_fixture: SaveFixture,
+        api_prefix: str,
+        user_organization: UserOrganization,
+        client: AsyncClient,
+        product: Product,
+    ) -> None:
+        checkout = await create_checkout(save_fixture, products=[product])
+        before = (checkout.created_at - timedelta(days=1)).isoformat()
+        after = (checkout.created_at + timedelta(days=1)).isoformat()
+
+        response = await client.get(
+            f"{api_prefix}/",
+            params={"created_after": before, "created_before": after},
+        )
+        assert response.status_code == 200
+        assert len(response.json()["items"]) == 1
+
+        response = await client.get(f"{api_prefix}/", params={"created_after": after})
+        assert response.status_code == 200
+        assert response.json()["items"] == []
+
+    @pytest.mark.auth
     @pytest.mark.api_version(V2027_01)
     async def test_external_product_id(
         self,

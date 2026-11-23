@@ -944,3 +944,11 @@ class CheckoutListParams(QuerySchema):
         description="Filter by checkout session status.",
     )
     query: str | None = Field(None, description="Filter by customer email.")
+    created_after: datetime | None = Field(
+        None,
+        description="Only include checkout sessions created after this date.",
+    )
+    created_before: datetime | None = Field(
+        None,
+        description="Only include checkout sessions created before this date.",
+    )

@@ -51003,6 +51003,10 @@ export interface operations {
           | null
         /** @description Filter by customer email. */
         query?: string | null
+        /** @description Only include checkout sessions created after this date. */
+        created_after?: string | null
+        /** @description Only include checkout sessions created before this date. */
+        created_before?: string | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */

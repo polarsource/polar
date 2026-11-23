@@ -157,6 +157,10 @@ def _build_symmetric(pairs: list[tuple[str, str]]) -> dict[str, frozenset[str]]:
 IP_COUNTRY_ALIASES = _build_symmetric(_IP_COUNTRY_ALIAS_PAIRS)
 
 
+def get_matching_countries(country: str) -> set[str]:
+    return {country, *IP_COUNTRY_ALIASES.get(country, frozenset())}
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Download the IP to Country ASN database."
@@ -172,4 +176,5 @@ __all__ = [
     "IPGeolocationClient",
     "get_client",
     "get_ip_country",
+    "get_matching_countries",
 ]

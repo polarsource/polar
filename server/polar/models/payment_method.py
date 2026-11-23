@@ -6,6 +6,7 @@ from sqlalchemy import ForeignKey, String, UniqueConstraint, Uuid
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
+from polar.checkout.payment_methods import IMPLIED_COUNTRIES
 from polar.enums import PaymentProcessor
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
@@ -51,6 +52,10 @@ class PaymentMethod(RecordModel):
     @property
     def fingerprint(self) -> str | None:
         return self.method_metadata.get("fingerprint")
+
+    @property
+    def country(self) -> str | None:
+        return self.method_metadata.get("country") or IMPLIED_COUNTRIES.get(self.type)
 
     @property
     def expires_at(self) -> datetime | None:

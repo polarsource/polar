@@ -1192,19 +1192,14 @@ class CheckoutService:
                 raise PaymentNotReady()
 
         billing_address = checkout.customer_billing_address
-        billing_countries = (
-            {
-                billing_address.country,
-                *ip_geolocation.IP_COUNTRY_ALIASES.get(
-                    billing_address.country, frozenset()
-                ),
-            }
+        matching_countries = (
+            ip_geolocation.get_matching_countries(billing_address.country)
             if billing_address is not None
             else set()
         )
         ip_country = (checkout.customer_signals or {}).get("ip_country")
         is_billing_country_confirmed = (
-            billing_address is None or ip_country in billing_countries
+            billing_address is None or ip_country in matching_countries
         )
         # The payment method country costs a Stripe round trip:
         # only ask for it when the IP country doesn't confirm the billing country.
@@ -1244,7 +1239,7 @@ class CheckoutService:
                     and confirmation_token.payment_method_preview is not None
                     else None
                 )
-                if payment_method_country not in billing_countries:
+                if payment_method_country not in matching_countries:
                     # Shadow mode: measure how often this triggers before blocking on it.
                     log.info(
                         "checkout.billing_country_mismatch"

@@ -1,0 +1,24 @@
+server/tests/customer_meter/test_service.py
+  s_82e71224b65bbf::t_c8b2faeabebcbe 11,1928-1959
+server/polar/customer/service.py
+  s_82e71224b65bbf::t_d03c19b9342749 1050,1054,1056
+  s_82e71224b65bbf::t_08959f4f750cd4 1053,1061
+  s_82e71224b65bbf::t_66ae368bc8f73a 22,1051,1055,1060,1062-1066
+  s_82e71224b65bbf::t_965fb7755c27d1 43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "decf016f36e3a1b9b5658490c872a6270dae1645",
+  "prompts": {},
+  "sessions": {
+    "s_82e71224b65bbf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "acf63c68-f848-4401-9d67-6f72c5587477",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

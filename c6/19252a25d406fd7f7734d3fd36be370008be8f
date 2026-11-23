@@ -1,0 +1,46 @@
+server/tests/customer_meter/test_service.py
+  s_82e71224b65bbf::t_2625b6dea3098c 9,16,30-31
+  s_82e71224b65bbf::t_09829575776cb8 1840-1850,1853-1880,1883-1899,1901-1917,1919-1924
+  s_82e71224b65bbf::t_13c575a60adf55 1851-1852,1881-1882,1900,1925
+  s_82e71224b65bbf::t_37982836f06c90 1926
+  s_82e71224b65bbf::t_e0433ef77e0188 1678,1918
+server/tests/reducer/test_service.py
+  s_82e71224b65bbf::t_3dd270afe2d9b8 2143-2153,2158-2180
+  s_82e71224b65bbf::t_eb482cab601f4b 2154-2157
+  s_82e71224b65bbf::t_578f28860444c2 2135-2137,2217-2219,2298-2300,2320-2322,2343-2345,2394-2396
+  s_82e71224b65bbf::t_e0433ef77e0188 2138,2220,2301,2323,2346,2397
+server/polar/reducer/service.py
+  s_82e71224b65bbf::t_083920a60757fe 895-897,983
+  s_82e71224b65bbf::t_578f28860444c2 982
+  s_82e71224b65bbf::t_e88e6cedabe8a7 777-789,795-799,803,806,808-826,828-870,872-879,881-894,898-925
+server/polar/customer_meter/endpoints.py
+  s_82e71224b65bbf::t_dc27cfb8698a92 51,56,83,86
+server/polar/reducer/bucket_repository.py
+  s_82e71224b65bbf::t_e88e6cedabe8a7 410
+  s_82e71224b65bbf::t_b40522657c824b 394,397-409,412-413,415,417-426,428-442,444-453,457,468
+server/polar/reducer/redis_store.py
+  s_82e71224b65bbf::t_75b25f2971b75f 79-81,85-136
+  s_82e71224b65bbf::t_9c73467337232b 137-138
+server/polar/customer_meter/service.py
+  s_82e71224b65bbf::t_dc27cfb8698a92 13,74,116,120,125,136-137,139-140,142-145,147-148,150-152,157-158,186-194
+  s_82e71224b65bbf::t_dbbed691145ba5 153-156,195
+  s_82e71224b65bbf::t_e0433ef77e0188 159-185,196
+  s_82e71224b65bbf::t_71406530c1b3e7 141,146,149
+  s_82e71224b65bbf::t_083920a60757fe 119,138,777-778
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c619252a25d406fd7f7734d3fd36be370008be8f",
+  "prompts": {},
+  "sessions": {
+    "s_82e71224b65bbf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "acf63c68-f848-4401-9d67-6f72c5587477",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

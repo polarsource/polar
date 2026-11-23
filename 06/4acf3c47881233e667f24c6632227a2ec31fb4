@@ -1,0 +1,49 @@
+server/tests/backoffice/subscriptions/test_endpoints.py
+  s_bf12bde4fa22c0::t_30ed86e744ed1c 8
+server/tests/backoffice/users/test_endpoints.py
+  s_bf12bde4fa22c0::t_30ed86e744ed1c 8
+server/tests/backoffice/auth/test_endpoints.py
+  s_bf12bde4fa22c0::t_30ed86e744ed1c 15
+server/tests/backoffice/test_layout.py
+  s_bf12bde4fa22c0::t_30ed86e744ed1c 6
+server/tests/backoffice/impersonation/test_endpoints.py
+  s_bf12bde4fa22c0::t_30ed86e744ed1c 8
+server/tests/backoffice/merchant_migrations/test_endpoints.py
+  s_bf12bde4fa22c0::t_30ed86e744ed1c 9
+server/tests/backoffice/webhooks/test_endpoints.py
+  s_bf12bde4fa22c0::t_30ed86e744ed1c 7
+server/tests/backoffice/payout_accounts/test_endpoints.py
+  s_bf12bde4fa22c0::t_30ed86e744ed1c 8
+server/tests/backoffice/organizations_v2/test_endpoints.py
+  s_bf12bde4fa22c0::t_30ed86e744ed1c 10
+server/tests/backoffice/customers/test_endpoints.py
+  s_bf12bde4fa22c0::t_30ed86e744ed1c 10
+server/tests/backoffice/test_versioned_static.py
+  s_bf12bde4fa22c0::t_30ed86e744ed1c 7
+server/polar/app.py
+  s_bf12bde4fa22c0::t_30ed86e744ed1c 21
+server/tests/backoffice/email_logs/test_endpoints.py
+  s_bf12bde4fa22c0::t_30ed86e744ed1c 7
+server/tests/backoffice/orders/test_endpoints.py
+  s_bf12bde4fa22c0::t_30ed86e744ed1c 8
+server/tests/backoffice/payouts/test_endpoints.py
+  s_bf12bde4fa22c0::t_30ed86e744ed1c 8
+server/polar/backoffice/app.py
+  s_bf12bde4fa22c0::t_237a0338f15fa7 1-95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "064acf3c47881233e667f24c6632227a2ec31fb4",
+  "prompts": {},
+  "sessions": {
+    "s_bf12bde4fa22c0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "275b8dcf-e987-4178-b1f1-cd9c57e79848",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

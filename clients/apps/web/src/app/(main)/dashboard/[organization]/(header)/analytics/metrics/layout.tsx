@@ -20,7 +20,6 @@ export default async function Layout(props: {
 
   return (
     <DashboardBody
-      wide
       title="Metrics"
       titleActions={
         <DashboardViewActions

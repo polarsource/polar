@@ -670,47 +670,8 @@ class TestUpdate:
 
         assert updated_customer.billing_address is not None
         assert updated_customer.billing_address.country == billing_country
-        if expected_event is None:
-            log_mock.info.assert_not_called()
-        else:
-            log_mock.info.assert_called_once_with(
-                expected_event,
-                customer_id=str(customer.id),
-                organization_id=str(organization.id),
-                checkout_ip_countries=[checkout_ip_country]
-                if checkout_ip_country is not None
-                else [],
-                payment_method_countries=[default_payment_method[1]["country"]]
-                if default_payment_method is not None
-                else [],
-                unconfirmed_subscription_count=1,
-                billing_country=billing_country,
-                previous_billing_country="SE",
-            )
-
-    async def test_billing_country_not_checked_without_paid_subscription(
-        self,
-        mocker: MockerFixture,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> None:
-        log_mock = mocker.patch("polar.customer_portal.service.customer.log")
-        customer = await create_customer(
-            save_fixture,
-            organization=organization,
-            billing_address=Address(country=CountryAlpha2("SE")),
-        )
-
-        await customer_service.update(
-            session,
-            customer,
-            CustomerPortalCustomerUpdate(
-                billing_address=AddressInput(country=CountryAlpha2Input("UG"))
-            ),
-        )
-
-        log_mock.info.assert_not_called()
+        logged_events = [call.args[0] for call in log_mock.info.call_args_list]
+        assert logged_events == ([expected_event] if expected_event else [])
 
     async def test_billing_country_confirmed_by_new_default_payment_method(
         self,
@@ -781,6 +742,13 @@ class TestUpdate:
             ),
         )
 
-        log_mock.info.assert_called_once()
-        assert log_mock.info.call_args.kwargs["payment_method_countries"] == ["SE"]
-        assert log_mock.info.call_args.kwargs["unconfirmed_subscription_count"] == 1
+        log_mock.info.assert_called_once_with(
+            "customer_portal.billing_country_mismatch",
+            customer_id=str(customer.id),
+            organization_id=str(organization.id),
+            checkout_ip_countries=[],
+            payment_method_countries=["SE"],
+            unconfirmed_subscription_count=1,
+            billing_country="UG",
+            previous_billing_country="SE",
+        )

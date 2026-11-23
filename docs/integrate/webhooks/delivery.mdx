@@ -108,7 +108,7 @@ def webhook():
 </CodeGroup>
 
 Both examples above expect an environment variable named `POLAR_WEBHOOK_SECRET`
-to be set to the secret you configured during the endpoint setup.
+to be set to the secret shown on the endpoint page in the dashboard.
 
 ### Custom validation
 
@@ -179,7 +179,7 @@ deliveries aren't blocked when we start using it:
 
 ### Delivery Retries
 
-If we hit an error while trying to reach your endpoint, whether it is a temporary network error or a bug, we'll retry to send the event up to **10 times** with an exponential backoff.
+If we hit an error while trying to reach your endpoint, whether it is a temporary network error or a bug, we'll retry it up to **9 times** with exponential backoff, for **10 delivery attempts** in total.
 
 ### Delivery Timeouts
 
@@ -189,7 +189,9 @@ payload asynchronously.
 
 ### Endpoint Disabling
 
-Webhook endpoints are automatically disabled after **10 consecutive failed deliveries** (non-2xx responses). When this happens:
+An event fails when all 10 of its delivery attempts fail. A delivery that fails and then succeeds on retry doesn't count as a failed event.
+
+Webhook endpoints are automatically disabled after **10 consecutive failed events**. When this happens:
 
 - The endpoint is marked as disabled and will no longer receive new events.
 - All organization members will receive an email notification.

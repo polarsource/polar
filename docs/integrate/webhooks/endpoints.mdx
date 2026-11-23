@@ -48,15 +48,13 @@ formatting. Making it a breeze to setup in-chat notifications for your team.
 
     If you paste a Discord or Slack Webhook URL, the format will be automatically selected.
   </Step>
-  <Step title="Set a secret">
-    We cryptographically sign the requests using this secret. So you can easily
-    verify them using our SDKs to ensure they are legitimate webhook payloads
-    from Polar.
+  <Step title="Copy the secret">
+    Polar generates the secret when it creates the endpoint. You can't set your
+    own. Open the endpoint in **Settings → Webhooks** and click **Copy Secret**.
+    We sign every request with it, so you can verify payloads come from Polar.
 
-    You can set your own or generate a random one.
-
-    <img className="block dark:hidden" src="/assets/integrate/webhooks/secret.light.png" />
-    <img className="hidden dark:block" src="/assets/integrate/webhooks/secret.dark.png" />
+    To rotate it, click **Reset Secret**. The old secret stops working
+    immediately.
   </Step>
   <Step title="Subscribe to events">
     Finally, select all the events you want to be notified about and you're done 🎉

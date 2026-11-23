@@ -82,7 +82,7 @@ export const SalesToolbar = ({
       <ToolbarSearch
         value={query}
         onChange={onQuerySelect}
-        placeholder="Customer, invoice or product"
+        placeholder="Search orders"
       />
     </Toolbar>
   )

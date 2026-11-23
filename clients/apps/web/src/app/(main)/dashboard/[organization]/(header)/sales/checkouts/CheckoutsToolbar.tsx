@@ -92,7 +92,7 @@ export const CheckoutsToolbar = ({
       <ToolbarSearch
         value={query}
         onChange={onQuerySelect}
-        placeholder="Name or email"
+        placeholder="Search checkouts"
       />
     </Toolbar>
   )

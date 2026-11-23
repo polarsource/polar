@@ -11,8 +11,7 @@ interface ToolbarSearchProps {
   placeholder: string
 }
 
-// Free text applied as the list's `query`. What it matches is up to each list
-// endpoint, so the placeholder says.
+// Free text applied as the list's `query`. Each list endpoint decides what it matches.
 export const ToolbarSearch = ({
   value,
   onChange,

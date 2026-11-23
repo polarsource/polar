@@ -262,7 +262,7 @@ export const SubscriptionsToolbar = ({
       <ToolbarSearch
         value={query}
         onChange={onQuerySelect}
-        placeholder="Customer or product"
+        placeholder="Search subscriptions"
       />
       <SegmentedControl
         size="sm"

@@ -6,22 +6,31 @@ import {
   type CancellationReason,
 } from '@/components/Metrics/cancellations/constants'
 import { type Filter } from '@/components/Shared/FilterPopover'
+import {
+  DEFAULT_GANTT_GROUP,
+  type GanttGroup,
+} from '@/components/Subscriptions/Gantt/scale'
 import { type SelectableSubscriptionStatus } from '@/components/Subscriptions/selectableStatuses'
 import { type ProductFilter } from '@/components/Products/ProductSelect'
-import { useDiscounts } from '@/hooks/queries'
+import { DataTableSortingState } from '@/utils/datatable'
 import { schemas } from '@polar-sh/client'
-import { Text } from '@polar-sh/orbit'
+import { SegmentedControl, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import {
+  ChartNoAxesGantt,
+  ChevronsUpDown,
   CircleDashed,
   MessageCircle,
-  TicketPercent,
+  Rows3,
 } from '@polar-sh/orbit/icons'
+import { type ReactNode } from 'react'
 import { ToolbarActionsMenu, type ToolbarAction } from './ToolbarActionsMenu'
 import { ToolbarFilterChips } from './ToolbarFilterChips'
 import { ToolbarFilterMenu } from './ToolbarFilterMenu'
 import { useCustomerFilter } from './useCustomerFilter'
+import { useDiscountFilter } from './useDiscountFilter'
 import { useProductFilter } from './useProductFilter'
+import { type SubscriptionView } from './useSubscriptionsView'
 
 type StatusOption = SelectableSubscriptionStatus | 'canceling'
 
@@ -46,6 +55,30 @@ const REASON_OPTIONS = CANCELLATION_REASONS.map((reason) => ({
   label: REASON_LABELS[reason],
 }))
 
+const GROUP_OPTIONS: { value: GanttGroup; label: string }[] = [
+  { value: 'customer', label: 'By customer' },
+  { value: 'total', label: 'Totals' },
+  { value: 'product', label: 'By product' },
+  { value: 'interval', label: 'By interval' },
+]
+
+const VIEW_OPTIONS: { value: SubscriptionView; label: ReactNode }[] = [
+  {
+    value: 'timeline',
+    label: <ChartNoAxesGantt className="size-4" aria-label="Timeline" />,
+  },
+  { value: 'table', label: <Rows3 className="size-4" aria-label="Table" /> },
+]
+
+const SORT_OPTIONS = [
+  { value: '-started_at', label: 'Newest' },
+  { value: 'started_at', label: 'Oldest' },
+  { value: 'current_period_end', label: 'Next renewal' },
+  { value: 'customer', label: 'Customer' },
+  { value: 'product', label: 'Product' },
+  { value: '-amount', label: 'Highest amount' },
+]
+
 interface SubscriptionsToolbarProps {
   organization: schemas['Organization']
   product: ProductFilter
@@ -62,6 +95,12 @@ interface SubscriptionsToolbarProps {
   onDiscountSelect: (value: string[] | null) => void
   cancellationReason: CancellationReason[] | null
   onCancellationReasonSelect: (value: CancellationReason[] | null) => void
+  sorting: DataTableSortingState
+  onSortingChange: (sorting: DataTableSortingState) => void
+  view: SubscriptionView
+  onViewChange: (view: SubscriptionView) => void
+  group: GanttGroup
+  onGroupChange: (group: GanttGroup) => void
   hasActiveFilters: boolean
   onReset: () => void
   // Shown in the more menu, one list per group.
@@ -81,12 +120,22 @@ export const SubscriptionsToolbar = ({
   onDiscountSelect,
   cancellationReason,
   onCancellationReasonSelect,
+  sorting,
+  onSortingChange,
+  view,
+  onViewChange,
+  group,
+  onGroupChange,
   hasActiveFilters,
   onReset,
   actions,
 }: SubscriptionsToolbarProps) => {
   const productFilter = useProductFilter(organization, product, onProductSelect)
-  const { data: discounts } = useDiscounts(organization.id, { limit: 100 })
+  const discountFilter = useDiscountFilter(
+    organization.id,
+    discountId,
+    onDiscountSelect,
+  )
 
   const statusValue: StatusOption[] = cancelAtPeriodEnd
     ? ['canceling']
@@ -104,6 +153,19 @@ export const SubscriptionsToolbar = ({
     )
     onStatusSelect(statuses.length > 0 ? statuses : null, null)
   }
+  // The table sorts from its headers and always lists subscriptions, so
+  // grouping and the sort option only apply to the timeline.
+  const isTimeline = view === 'timeline'
+  const [sort] = sorting
+  // The table can sort by columns this menu does not list. Those read as unset.
+  const sortId = sort ? `${sort.desc ? '-' : ''}${sort.id}` : null
+  const sortValue = SORT_OPTIONS.some(({ value }) => value === sortId)
+    ? sortId
+    : null
+  const selectSort = (value: string) =>
+    onSortingChange([
+      { id: value.replace(/^-/, ''), desc: value.startsWith('-') },
+    ])
   const customerFilter = useCustomerFilter(
     organization.id,
     customerId,
@@ -124,18 +186,7 @@ export const SubscriptionsToolbar = ({
     statusFilter,
     productFilter,
     customerFilter,
-    {
-      key: 'discount',
-      label: 'Discount',
-      icon: <TicketPercent className="size-4" />,
-      type: 'multi',
-      options: (discounts?.items ?? []).map(({ id, name }) => ({
-        value: id,
-        label: name,
-      })),
-      value: discountId ?? [],
-      onChange: (value) => onDiscountSelect(value.length > 0 ? value : null),
-    },
+    discountFilter,
     {
       key: 'cancellation_reason',
       label: 'Cancellation reason',
@@ -148,6 +199,36 @@ export const SubscriptionsToolbar = ({
           value.length > 0 ? (value as CancellationReason[]) : null,
         ),
     },
+    ...(isTimeline
+      ? [
+          {
+            key: 'group',
+            label: 'Group',
+            icon: <Rows3 className="size-4" />,
+            type: 'single' as const,
+            options: GROUP_OPTIONS,
+            value: group,
+            defaultValue: DEFAULT_GANTT_GROUP,
+            onChange: (value: string | null) =>
+              onGroupChange((value ?? DEFAULT_GANTT_GROUP) as GanttGroup),
+          },
+        ]
+      : []),
+    ...(isTimeline && group === 'customer'
+      ? [
+          {
+            key: 'sort',
+            label: 'Sort',
+            icon: <ChevronsUpDown className="size-4" />,
+            type: 'single' as const,
+            options: SORT_OPTIONS,
+            value: sortValue,
+            defaultValue: SORT_OPTIONS[0].value,
+            onChange: (value: string | null) =>
+              selectSort(value ?? SORT_OPTIONS[0].value),
+          },
+        ]
+      : []),
   ]
 
   return (
@@ -178,6 +259,12 @@ export const SubscriptionsToolbar = ({
           />
         </Box>
         <Box alignItems="center" gap="s" flexShrink={0} minHeight={32}>
+          <SegmentedControl
+            size="sm"
+            options={VIEW_OPTIONS}
+            value={view}
+            onChange={onViewChange}
+          />
           <ToolbarFilterMenu
             filters={filters}
             onReset={hasActiveFilters ? onReset : undefined}

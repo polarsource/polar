@@ -12,7 +12,7 @@ import Link from 'next/link'
 import { ScheduledUpdateSection } from './ScheduledUpdateSection'
 import { SubscriptionStatus } from './SubscriptionStatus'
 
-const formatRecurringSchedule = (
+export const formatRecurringSchedule = (
   interval: schemas['RecurringInterval'],
   intervalCount: number | null,
 ): string => {

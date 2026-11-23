@@ -11,7 +11,7 @@ import {
 } from './columns'
 import { type CondensedTableInstance } from './table'
 
-export const isTyping = (target: EventTarget | null) =>
+const isTyping = (target: EventTarget | null) =>
   target instanceof HTMLElement &&
   (target.isContentEditable ||
     ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
@@ -20,6 +20,11 @@ export const isTyping = (target: EventTarget | null) =>
 const isInOverlay = (target: EventTarget | null) =>
   target instanceof Element &&
   target.closest('[role="dialog"], [role="menu"], [role="listbox"]') !== null
+
+// Whether a key press belongs to something else: it was already handled, the
+// focus is in a field, or it is inside a popover, menu or dialog.
+export const isKeyHandledElsewhere = (event: KeyboardEvent) =>
+  event.defaultPrevented || isTyping(event.target) || isInOverlay(event.target)
 
 const scrollToRow = (id: string | null) =>
   document
@@ -52,16 +57,7 @@ export const CondensedTable = <T extends RowData>({
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (
-        e.defaultPrevented ||
-        isTyping(e.target) ||
-        isInOverlay(e.target) ||
-        e.metaKey ||
-        e.ctrlKey ||
-        e.altKey
-      ) {
-        return
-      }
+      if (isKeyHandledElsewhere(e) || e.metaKey || e.ctrlKey || e.altKey) return
       if (e.key === 'Escape' && selectedId) {
         onClose()
         return

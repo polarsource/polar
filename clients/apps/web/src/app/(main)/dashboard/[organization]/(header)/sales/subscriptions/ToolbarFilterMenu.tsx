@@ -19,7 +19,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@polar-sh/ui/components/ui/popover'
-import { useState } from 'react'
+import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 // Filled while the menu is open or anything is applied, in place of a badge.
@@ -41,6 +41,64 @@ const CHECKBOX_CLASS =
 const CHECKBOX_ON_CLASS =
   'border-black bg-black text-white dark:border-white dark:bg-white dark:text-black'
 const EMPTY_CLASS = 'dark:text-polar-500 px-2 py-1.5 text-gray-400'
+
+// How long the pointer can stay on another property, while it looks to be on
+// its way to the open options, before that property takes over.
+const LINGER_DELAY = 300
+// How long a property has to be open before a path towards its options is
+// held. A pointer passing through on its way down the list has not stopped to
+// look at the options, so it is not aiming for them.
+const SETTLE_DELAY = 200
+// Slack above and below the options, so a path that skims a corner still counts.
+const SAFE_AREA_SLACK = 8
+// The pointer's heading is read from where it was this far back, which evens
+// out the jitter between two neighbouring events.
+const HEADING_DISTANCE = 8
+const TRAIL_LENGTH = 12
+
+interface Point {
+  x: number
+  y: number
+}
+
+const cross = (a: Point, b: Point, c: Point) =>
+  (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)
+
+// Where the pointer was a short distance ago.
+const getOrigin = (trail: Point[], point: Point): Point | undefined =>
+  trail.findLast(
+    ({ x, y }) => Math.hypot(point.x - x, point.y - y) >= HEADING_DISTANCE,
+  ) ?? trail[0]
+
+// Whether the pointer is heading for the open options: it lies inside the
+// triangle between where it just was and the near edge of the options. Moving
+// straight along the list falls outside it, moving across towards the options
+// falls inside.
+const isHeadingForOptions = (
+  point: Point,
+  origin: Point,
+  options: DOMRect,
+  opensRight: boolean,
+) => {
+  const x = opensRight ? options.left : options.right
+  // Already level with the options' edge, so there is no path left to hold.
+  if (opensRight ? origin.x >= x : origin.x <= x) return false
+  const top = { x, y: options.top - SAFE_AREA_SLACK }
+  const bottom = { x, y: options.bottom + SAFE_AREA_SLACK }
+  const sides = [
+    cross(origin, top, point),
+    cross(top, bottom, point),
+    cross(bottom, origin, point),
+  ]
+  return sides.every((side) => side >= 0) || sides.every((side) => side <= 0)
+}
+
+// How close to the end of the options the next page is asked for.
+const END_THRESHOLD = 48
+
+const isNearEnd = (list: HTMLElement | null) =>
+  list !== null &&
+  list.scrollHeight - list.scrollTop - list.clientHeight < END_THRESHOLD
 
 const matches = (label: string, query: string) =>
   label.toLowerCase().includes(query.trim().toLowerCase())
@@ -65,6 +123,23 @@ const OptionsPanel = ({
   const options = isRemote
     ? filter.options
     : filter.options.filter(({ label }) => matches(label, query))
+  // Options that load page by page ask for the next one when the list is
+  // scrolled near its end. It is measured, not observed, so a page that has
+  // just arrived is not mistaken for an end that is still in view.
+  const listRef = useRef<HTMLDivElement>(null)
+  const { onEndReached, loadingMore = false, loadMoreFailed = false } = filter
+  // A page that failed is only asked for again from the retry row.
+  const isWaiting = loadingMore || loadMoreFailed
+  const loadMoreAtEnd = () => {
+    if (!isWaiting && isNearEnd(listRef.current)) onEndReached?.()
+  }
+  // A page can be too short to fill the list, which leaves nothing to scroll,
+  // so the end is also checked whenever the options change.
+  const optionCount = filter.options.length
+  useEffect(() => {
+    if (!isWaiting && isNearEnd(listRef.current)) onEndReached?.()
+  }, [optionCount, isWaiting, onEndReached])
+
   const pick = (option: FilterOption) => {
     if (filter.type === 'single') {
       filter.onChange(option.value)
@@ -90,7 +165,11 @@ const OptionsPanel = ({
           onChange={(event) => setQuery(event.target.value)}
         />
       )}
-      <div className="max-h-72 overflow-y-auto p-1.5">
+      <div
+        ref={listRef}
+        className="max-h-72 overflow-y-auto p-1.5"
+        onScroll={loadMoreAtEnd}
+      >
         {options.length === 0 && (
           <div className={EMPTY_CLASS}>
             {filter.loading ? 'Loading...' : 'No matches'}
@@ -124,6 +203,19 @@ const OptionsPanel = ({
             </button>
           )
         })}
+        {loadingMore && <div className={EMPTY_CLASS}>Loading...</div>}
+        {loadMoreFailed && !loadingMore && (
+          <button
+            type="button"
+            className={twMerge(ITEM_CLASS, ITEM_HOVER_CLASS)}
+            onClick={() => onEndReached?.()}
+          >
+            <span className="dark:text-polar-500 text-gray-400">
+              Could not load more.
+            </span>
+            Try again
+          </button>
+        )}
       </div>
     </div>
   )
@@ -158,7 +250,59 @@ export const ToolbarFilterMenu = ({
       ?.onSearchQueryChange?.('')
     setActiveKey(key)
   }
+  const optionsRef = useRef<HTMLDivElement>(null)
+  const trailRef = useRef<Point[]>([])
+  const openedAtRef = useRef(0)
+  const pendingRef = useRef<{
+    key: string | null
+    timer: ReturnType<typeof setTimeout>
+  } | null>(null)
+  const clearPending = () => {
+    clearTimeout(pendingRef.current?.timer)
+    pendingRef.current = null
+  }
+  useEffect(() => () => clearTimeout(pendingRef.current?.timer), [])
+
+  // Moving diagonally from a property to its options crosses the properties
+  // below it. Those do not take over while the pointer is heading for the
+  // options, unless it lingers on one of them.
+  const hover = (key: string | null, event: MouseEvent) => {
+    const point = { x: event.clientX, y: event.clientY }
+    const trail = trailRef.current
+    const origin = getOrigin(trail, point)
+    trailRef.current = [...trail.slice(1 - TRAIL_LENGTH), point]
+    if (key === activeKey) {
+      clearPending()
+      return
+    }
+    const open = (next: string | null) => {
+      openedAtRef.current = event.timeStamp
+      activate(next)
+    }
+    const options = optionsRef.current
+    if (
+      options &&
+      origin &&
+      event.timeStamp - openedAtRef.current >= SETTLE_DELAY &&
+      isHeadingForOptions(point, origin, options.getBoundingClientRect(), isAdd)
+    ) {
+      if (pendingRef.current?.key === key) return
+      clearPending()
+      pendingRef.current = {
+        key,
+        timer: setTimeout(() => {
+          pendingRef.current = null
+          open(key)
+        }, LINGER_DELAY),
+      }
+      return
+    }
+    clearPending()
+    open(key)
+  }
   const onOpenChange = (value: boolean) => {
+    clearPending()
+    trailRef.current = []
     setOpen(value)
     activate(null)
   }
@@ -197,17 +341,13 @@ export const ToolbarFilterMenu = ({
               <div
                 key={filter.key}
                 className="relative"
-                onMouseEnter={() => activate(filter.key)}
+                onMouseMove={(event) => hover(filter.key, event)}
               >
                 <button
                   type="button"
                   aria-haspopup="menu"
                   aria-expanded={isActive}
-                  className={twMerge(
-                    ITEM_CLASS,
-                    ITEM_HOVER_CLASS,
-                    isActive && ITEM_ACTIVE_CLASS,
-                  )}
+                  className={twMerge(ITEM_CLASS, isActive && ITEM_ACTIVE_CLASS)}
                   onClick={() => activate(filter.key)}
                 >
                   <span className={ICON_CLASS}>{filter.icon}</span>
@@ -217,6 +357,7 @@ export const ToolbarFilterMenu = ({
                 {isActive && (
                   // Padded, not offset, so the pointer can cross the gap.
                   <div
+                    ref={optionsRef}
                     className={twMerge(
                       'absolute top-0 -mt-[7px]',
                       isAdd ? 'left-full pl-3' : 'right-full pr-3',
@@ -235,7 +376,7 @@ export const ToolbarFilterMenu = ({
         {onReset && (
           <div
             className="dark:border-polar-700 border-t border-gray-200 p-1.5"
-            onMouseEnter={() => activate(null)}
+            onMouseMove={(event) => hover(null, event)}
           >
             <button
               type="button"

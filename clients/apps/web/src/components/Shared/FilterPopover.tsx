@@ -38,6 +38,12 @@ interface FilterBase {
   searchQuery?: string
   onSearchQueryChange?: (query: string) => void
   loading?: boolean
+  // For options that load page by page: called when the end of the list comes
+  // into view, and whether the next page is on its way.
+  onEndReached?: () => void
+  loadingMore?: boolean
+  // The next page failed. It is not asked for again until someone retries.
+  loadMoreFailed?: boolean
 }
 
 export interface SingleFilter extends FilterBase {

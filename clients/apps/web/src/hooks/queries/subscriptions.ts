@@ -8,7 +8,17 @@ import {
   useMutation,
   useQuery,
 } from '@tanstack/react-query'
+import { useEffect } from 'react'
 import { defaultRetry } from './retry'
+
+// Rows can shift between pages while they load, so one can come back twice.
+export const uniqueSubscriptions = (
+  pages: schemas['ListResource_Subscription_'][],
+): schemas['Subscription'][] => [
+  ...new Map(
+    pages.flatMap((page) => page.items.map((item) => [item.id, item])),
+  ).values(),
+]
 
 // The lists that load page by page, which mutations refetch.
 const INFINITE_SUBSCRIPTIONS_KEY = ['subscriptions', 'infinite']
@@ -70,6 +80,52 @@ export const useInfiniteSubscriptions = (
         : lastPageParam + 1,
     retry: defaultRetry,
   })
+
+const ALL_PAGE_SIZE = 100
+const ALL_MAX_PAGES = 20
+
+// Loads every page up to a cap, for views that sum over all subscriptions.
+export const useAllSubscriptions = (
+  organizationId: string,
+  parameters?: Omit<
+    NonNullable<operations['subscriptions:list']['parameters']['query']>,
+    'organization_id' | 'page' | 'limit'
+  >,
+) => {
+  const {
+    data,
+    hasNextPage,
+    isFetching,
+    isError,
+    isFetchNextPageError,
+    fetchNextPage,
+    refetch,
+  } = useInfiniteSubscriptions(organizationId, {
+    ...parameters,
+    limit: ALL_PAGE_SIZE,
+  })
+  const pageCount = data?.pages.length ?? 0
+  const canLoadMore =
+    hasNextPage && pageCount < ALL_MAX_PAGES && !isFetchNextPageError
+
+  useEffect(() => {
+    if (canLoadMore && !isFetching) {
+      fetchNextPage()
+    }
+  }, [canLoadMore, isFetching, fetchNextPage])
+
+  return {
+    subscriptions: data && uniqueSubscriptions(data.pages),
+    totalCount: data?.pages[0]?.pagination.total_count,
+    isLoading: !isError && (data === undefined || canLoadMore),
+    // There are more than the cap allows, so the rest is left out.
+    isCapped: hasNextPage && pageCount >= ALL_MAX_PAGES,
+    // A page failed, so what is loaded is not everything.
+    isError,
+    // A failed page is fetched again. Any other failure reloads the list.
+    retry: () => (isFetchNextPageError ? fetchNextPage() : refetch()),
+  }
+}
 
 export const useSubscription = (
   id: string,

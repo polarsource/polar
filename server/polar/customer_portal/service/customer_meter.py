@@ -36,7 +36,7 @@ class CustomerMeterService:
             .join(CustomerMeter.meter)
             .options(
                 contains_eager(CustomerMeter.meter),
-                joinedload(CustomerMeter.customer),
+                joinedload(CustomerMeter.customer).joinedload(Customer.organization),
             )
         )
 
@@ -66,7 +66,8 @@ class CustomerMeterService:
             repository.get_readable_statement(auth_subject)
             .where(CustomerMeter.id == id)
             .options(
-                joinedload(CustomerMeter.meter), joinedload(CustomerMeter.customer)
+                joinedload(CustomerMeter.meter),
+                joinedload(CustomerMeter.customer).joinedload(Customer.organization),
             )
         )
         customer_meter = await repository.get_one_or_none(statement)

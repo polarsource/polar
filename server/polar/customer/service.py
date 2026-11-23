@@ -206,8 +206,10 @@ class CustomerService:
         org_ids = await get_accessible_org_ids(
             session, auth_subject, permission=OrganizationPermission.customers_read
         )
-        statement = repository.get_statement_by_org_ids(org_ids).where(
-            Customer.id == id
+        statement = (
+            repository.get_statement_by_org_ids(org_ids)
+            .where(Customer.id == id)
+            .options(joinedload(Customer.organization))
         )
         return await repository.get_one_or_none(statement)
 
@@ -221,8 +223,10 @@ class CustomerService:
         org_ids = await get_accessible_org_ids(
             session, auth_subject, permission=OrganizationPermission.customers_read
         )
-        statement = repository.get_statement_by_org_ids(org_ids).where(
-            Customer.external_id == external_id
+        statement = (
+            repository.get_statement_by_org_ids(org_ids)
+            .where(Customer.external_id == external_id)
+            .options(joinedload(Customer.organization))
         )
         return await repository.get_one_or_none(statement)
 
@@ -1028,8 +1032,10 @@ class CustomerService:
         # 👋 Whenever you change the state schema,
         # please also update the cache key with a version number.
         cache_key = f"polar:customer_state:v8:{customer.id}"
+        reducer_metering = customer.organization.is_reducer_billing_enabled
 
-        if cache:
+        # A cached state would freeze the live meter units.
+        if cache and not reducer_metering:
             raw_state = await redis.get(cache_key)
             if raw_state is not None:
                 return _CustomerStateAdapter.validate_json(raw_state)
@@ -1050,15 +1056,15 @@ class CustomerService:
         active_meters = await customer_meter_repository.get_all_by_customer(
             customer.id, options=(joinedload(CustomerMeter.customer),)
         )
-        has_live_units = await customer_meter_service.apply_reducer_units(
-            session, redis, active_meters
-        )
+        if reducer_metering:
+            await customer_meter_service.apply_reducer_units(
+                session, redis, active_meters
+            )
         customer.active_meters = active_meters
 
         state = _CustomerStateAdapter.validate_python(customer, from_attributes=True)
 
-        # A cached state would freeze the live meter units for an hour.
-        if not has_live_units:
+        if not reducer_metering:
             await redis.set(
                 cache_key,
                 state.model_dump_json(),

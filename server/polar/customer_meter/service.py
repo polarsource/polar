@@ -143,26 +143,17 @@ class CustomerMeterService:
         session: AsyncReadSession,
         redis: Redis,
         customer_meters: Sequence[CustomerMeter],
-    ) -> bool:
+    ) -> None:
         """Read the units of organizations billing from the reducers live from the
         reducer, instead of waiting for the debounced customer meter update. The
-        override isn't persisted. Whether any customer meter is read live."""
-        organization_ids = await OrganizationRepository.from_session(
-            session
-        ).get_ids_with_feature(
-            {
-                customer_meter.customer.organization_id
-                for customer_meter in customer_meters
-            },
-            "reducer_billing_enabled",
-        )
+        override isn't persisted. Expects the customers' organizations loaded."""
         live_customer_meters = [
             customer_meter
             for customer_meter in customer_meters
-            if customer_meter.customer.organization_id in organization_ids
+            if customer_meter.customer.organization.is_reducer_billing_enabled
         ]
         if not live_customer_meters:
-            return False
+            return
         try:
             units = await reducer_service.get_customer_meter_units(
                 session,
@@ -179,7 +170,7 @@ class CustomerMeterService:
                     str(customer_meter.id) for customer_meter in live_customer_meters
                 ],
             )
-            return True
+            return
         for customer_meter, (consumed_units, credited_units) in zip(
             live_customer_meters, units, strict=True
         ):
@@ -193,7 +184,6 @@ class CustomerMeterService:
             set_committed_value(customer_meter, "consumed_units", consumed_units)
             set_committed_value(customer_meter, "credited_units", credited)
             set_committed_value(customer_meter, "balance", credited - consumed_units)
-        return True
 
     async def update_customer(
         self, session: AsyncSession, redis: Redis, customer: Customer

@@ -1957,3 +1957,20 @@ class TestCustomerStateReducerUnits:
 
         assert [meter.consumed_units for meter in state.active_meters] == [0]
         assert await redis.get(f"polar:customer_state:v8:{customer.id}") is not None
+
+    async def test_skips_a_state_cached_before_reducer_billing(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        stale_customer_meter: CustomerMeter,
+    ) -> None:
+        customer = stale_customer_meter.customer
+        await customer_service.get_state(session, redis, customer)
+        organization = customer.organization
+        organization.feature_settings = {"reducer_billing_enabled": True}
+        await save_fixture(organization)
+
+        state = await customer_service.get_state(session, redis, customer)
+
+        assert [meter.consumed_units for meter in state.active_meters] == [3]

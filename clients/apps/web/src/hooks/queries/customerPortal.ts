@@ -237,6 +237,9 @@ export const useDeleteCustomerPaymentMethod = (api: Client) =>
       getQueryClient().invalidateQueries({
         queryKey: ['customer_payment_methods'],
       })
+      getQueryClient().invalidateQueries({
+        queryKey: ['customer-portal', 'customer'],
+      })
     },
   })
 
@@ -626,6 +629,39 @@ export const useCustomerResumeSubscription = (api: Client) =>
       })
       queryClient.invalidateQueries({
         queryKey: ['customer_subscription_change_preview'],
+      })
+    },
+  })
+
+export const useCustomerReactivateSubscription = (api: Client) =>
+  useMutation({
+    mutationFn: async (variables: { id: string }) => {
+      const result = await api.PATCH('/v1/customer-portal/subscriptions/{id}', {
+        params: { path: { id: variables.id } },
+        body: {
+          reactivate: true,
+        },
+      })
+      if (result.error) {
+        throw new Error(
+          extractApiErrorMessage(
+            result.error,
+            'Failed to reactivate subscription',
+          ),
+        )
+      }
+      return result
+    },
+    onSuccess: () => {
+      const queryClient = getQueryClient()
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscriptions'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_orders'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_benefit_grants'],
       })
     },
   })

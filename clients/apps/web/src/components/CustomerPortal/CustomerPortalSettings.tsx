@@ -55,6 +55,7 @@ export const CustomerPortalSettings = ({
 
   const onPaymentMethodAdded = () => {
     queryClient.invalidateQueries({ queryKey: ['customer_payment_methods'] })
+    queryClient.invalidateQueries({ queryKey: ['customer-portal', 'customer'] })
     revalidate('customer_portal')
     router.refresh()
   }

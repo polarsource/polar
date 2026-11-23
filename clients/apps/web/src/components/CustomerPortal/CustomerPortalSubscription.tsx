@@ -39,6 +39,7 @@ import {
 } from './PortalPrimitives'
 import { PendingUpdateRows, SubscriptionDateRows } from './SubscriptionDateRows'
 import { SeatManagementTable } from './SeatManagementTable'
+import { TrialEndedSubscriptionActions } from './TrialSubscriptionActions'
 
 const CustomerPortalSubscription = ({
   api,
@@ -119,7 +120,9 @@ const CustomerPortalSubscription = ({
 
   const pauseAction = getPauseAction(subscription)
 
-  const showCancelAction = !isCancelled && canManageBilling
+  const isTrialEnded = subscription.status === 'trial_ended'
+  const showReactivateAction = isTrialEnded && canManageBilling
+  const showCancelAction = !isCancelled && !isTrialEnded && canManageBilling
   const showPauseAction =
     showPauseResume && canManageBilling && pauseAction !== null
 
@@ -179,8 +182,14 @@ const CustomerPortalSubscription = ({
           <SubscriptionDateRows subscription={subscription} />
         </PortalRows>
 
-        {(showCancelAction || showPauseAction) && (
+        {(showCancelAction || showPauseAction || showReactivateAction) && (
           <Box columnGap="s" rowGap="s" flexWrap="wrap" justifyContent="end">
+            {showReactivateAction && (
+              <TrialEndedSubscriptionActions
+                api={api}
+                subscription={subscription}
+              />
+            )}
             {showCancelAction && (
               <Button variant="secondary" onClick={showCancelModal}>
                 Cancel subscription

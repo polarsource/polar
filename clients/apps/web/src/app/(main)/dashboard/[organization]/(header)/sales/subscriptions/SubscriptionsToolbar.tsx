@@ -5,7 +5,16 @@ import {
   REASON_LABELS,
   type CancellationReason,
 } from '@/components/Metrics/cancellations/constants'
-import { type Filter } from '@/components/Shared/FilterPopover'
+import {
+  type Filter,
+  type FilterOption,
+} from '@/components/Shared/FilterPopover'
+import { StatusIcon } from '@/components/Shared/StatusIcon'
+import {
+  getSubscriptionStatusIcon,
+  WINDING_DOWN_ICON,
+} from '@/components/Subscriptions/SubscriptionStatusIcon'
+import { subscriptionStatusDisplayNames } from '@/components/Subscriptions/utils'
 import {
   DEFAULT_GANTT_GROUP,
   type GanttGroup,
@@ -34,16 +43,29 @@ import { type SubscriptionView } from './useSubscriptionsView'
 
 type StatusOption = SelectableSubscriptionStatus | 'canceling'
 
-const STATUS_OPTIONS: { value: StatusOption; label: string }[] = [
-  { value: 'active', label: 'Active' },
-  { value: 'trialing', label: 'Trialing' },
-  { value: 'past_due', label: 'Past due' },
-  { value: 'canceling', label: 'Canceling' },
-  { value: 'paused', label: 'Paused' },
-  { value: 'trial_ended', label: 'Trial ended' },
-  { value: 'canceled', label: 'Canceled' },
-  { value: 'unpaid', label: 'Unpaid' },
-]
+const STATUS_OPTIONS: FilterOption[] = (
+  [
+    'active',
+    'trialing',
+    'past_due',
+    'canceling',
+    'paused',
+    'trial_ended',
+    'canceled',
+    'unpaid',
+  ] satisfies StatusOption[]
+).map((value) => ({
+  value,
+  label:
+    value === 'canceling' ? 'Canceling' : subscriptionStatusDisplayNames[value],
+  icon: (
+    <StatusIcon
+      {...(value === 'canceling'
+        ? WINDING_DOWN_ICON
+        : getSubscriptionStatusIcon(value))}
+    />
+  ),
+}))
 
 const CANCELING_STATUSES: SelectableSubscriptionStatus[] = [
   'active',

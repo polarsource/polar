@@ -16,12 +16,8 @@ import { type OnChangeFn } from '@tanstack/react-table'
 import { format } from 'date-fns'
 import { useEffect } from 'react'
 import { FOOTER_HEIGHT } from './Gantt/scale'
-import { twMerge } from 'tailwind-merge'
-import {
-  formatSubscriptionPrice,
-  getSubscriptionStatusBorderColor,
-  subscriptionStatusDisplayNames,
-} from './utils'
+import { SubscriptionStatusIcon } from './SubscriptionStatusIcon'
+import { formatSubscriptionPrice, getSubscriptionStatusLabel } from './utils'
 
 type Subscription = schemas['Subscription']
 
@@ -46,16 +42,8 @@ const getNextStep = (subscription: Subscription): string => {
 
 const StatusCell = ({ subscription }: { subscription: Subscription }) => (
   <>
-    <span
-      className={twMerge(
-        'size-2 shrink-0 rounded-full border-2',
-        getSubscriptionStatusBorderColor(
-          subscription.status,
-          subscription.ends_at !== null || subscription.pause_at_period_end,
-        ),
-      )}
-    />
-    <Text truncate>{subscriptionStatusDisplayNames[subscription.status]}</Text>
+    <SubscriptionStatusIcon subscription={subscription} />
+    <Text truncate>{getSubscriptionStatusLabel(subscription)}</Text>
   </>
 )
 
@@ -147,8 +135,7 @@ const CompactRow = ({ subscription }: { subscription: Subscription }) => (
       </Box>
     </Box>
     <Text variant="caption" color="muted" truncate>
-      {subscription.product.name} ·{' '}
-      {subscriptionStatusDisplayNames[subscription.status]} ·{' '}
+      {subscription.product.name} · {getSubscriptionStatusLabel(subscription)} ·{' '}
       {getNextStep(subscription)}
     </Text>
   </>

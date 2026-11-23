@@ -1,9 +1,7 @@
-import {
-  getSubscriptionStatusColor,
-  subscriptionStatusDisplayNames,
-} from '@/components/Subscriptions/utils'
+import { StatusLabel } from '@/components/Shared/StatusIcon'
+import { getSubscriptionStatusIcon } from '@/components/Subscriptions/SubscriptionStatusIcon'
+import { subscriptionStatusDisplayNames } from '@/components/Subscriptions/utils'
 import { schemas } from '@polar-sh/client'
-import { Status } from '@polar-sh/orbit'
 
 export const SubscriptionStatusPill = ({
   subscription,
@@ -22,10 +20,9 @@ export const SubscriptionStatusPill = ({
         : subscriptionStatusDisplayNames[subscription.status]
 
   return (
-    <Status
-      size="small"
-      status={label}
-      color={getSubscriptionStatusColor(subscription.status, isEnding)}
+    <StatusLabel
+      {...getSubscriptionStatusIcon(subscription.status, isEnding)}
+      label={label}
     />
   )
 }

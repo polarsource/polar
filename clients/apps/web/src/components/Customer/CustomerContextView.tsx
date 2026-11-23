@@ -15,7 +15,8 @@ import { ContextCard } from '../Shared/ContextCard'
 import { DetailRow } from '../Shared/DetailRow'
 import { CustomerTimeline } from './CustomerTimeline'
 import { useSubscriptions } from '@/hooks/queries'
-import { getSubscriptionStatusBorderColor } from '../Subscriptions/utils'
+import { StatusIcon } from '../Shared/StatusIcon'
+import { getSubscriptionStatusIcon } from '../Subscriptions/SubscriptionStatusIcon'
 
 interface CustomerContextViewProps {
   organization: schemas['Organization']
@@ -218,11 +219,6 @@ const SubscriptionRow = ({
   subscription,
   organization,
 }: SubscriptionRowProps) => {
-  const statusColor = getSubscriptionStatusBorderColor(
-    subscription.status,
-    subscription.cancel_at_period_end,
-  )
-
   const formattedPrice =
     subscription.amount === 0
       ? 'Free'
@@ -236,13 +232,11 @@ const SubscriptionRow = ({
       className="dark:hover:bg-polar-800 -mx-4 flex flex-row items-center justify-between gap-3 rounded-lg px-4 py-2 hover:bg-gray-100"
     >
       <div className="flex flex-row items-center gap-4 overflow-hidden">
-        <span
-          className={`size-2 shrink-0 rounded-full ${statusColor} border-2`}
-          title={
-            subscription.cancel_at_period_end
-              ? 'Canceling at period end'
-              : subscription.status
-          }
+        <StatusIcon
+          {...getSubscriptionStatusIcon(
+            subscription.status,
+            subscription.cancel_at_period_end,
+          )}
         />
         <span className="truncate text-sm">{subscription.product.name}</span>
         <span className="dark:text-polar-500 text-sm text-gray-500">
@@ -252,6 +246,9 @@ const SubscriptionRow = ({
                 subscription.recurring_interval_count,
               )
             : STATUS_DISPLAY_NAMES[subscription.status]}
+          {subscription.status === 'active' &&
+            subscription.cancel_at_period_end &&
+            ' · Canceling'}
         </span>
       </div>
       {formattedPrice && (

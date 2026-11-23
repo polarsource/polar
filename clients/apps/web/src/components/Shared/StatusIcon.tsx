@@ -4,7 +4,8 @@ import { useId } from 'react'
 
 // A ring that fills up as something moves along: an outline for not started,
 // a level rising from the bottom for under way, and a filled disc with a mark
-// cut out of it once it has settled one way or another.
+// cut out of it once it has settled one way or another. The same mark inside
+// an outline says it is on its way there but has not settled yet.
 export type StatusIconShape =
   | 'dashed'
   | 'empty'
@@ -14,8 +15,18 @@ export type StatusIconShape =
   | 'cross'
   | 'minus'
   | 'returned'
+  | 'alert'
+  | 'paused'
+  | 'cross-pending'
+  | 'striped'
 
-export type StatusIconTone = 'neutral' | 'yellow' | 'green' | 'red' | 'purple'
+export type StatusIconTone =
+  | 'neutral'
+  | 'yellow'
+  | 'green'
+  | 'red'
+  | 'purple'
+  | 'blue'
 
 export interface StatusIconProps {
   shape: StatusIconShape
@@ -28,6 +39,7 @@ const TONE_CLASS: Record<StatusIconTone, string> = {
   green: 'text-emerald-500',
   red: 'text-red-500',
   purple: 'text-indigo-400',
+  blue: 'text-blue-500',
 }
 
 // How much of the ring's inside is filled, from the bottom.
@@ -42,7 +54,17 @@ const CUTOUT: Partial<Record<StatusIconShape, string>> = {
   cross: 'M5 5l4 4M9 5 5 9',
   minus: 'M4.6 7h4.8',
   returned: 'M6.2 4.5 4.3 6.4 6.2 8.3M4.5 6.4H8.3A1.6 1.6 0 0 1 8.3 9.6H7.3',
+  alert: 'M7 4.2v3.2M7 9.7v.1',
+  paused: 'M5.6 5v4M8.4 5v4',
 }
+
+// Drawn inside the outline, a little smaller than the cut-out marks.
+const PENDING_MARK: Partial<Record<StatusIconShape, string>> = {
+  'cross-pending': 'M5.4 5.4l3.2 3.2M8.6 5.4 5.4 8.6',
+}
+
+// Diagonal stripes inside the ring, the way a trial is drawn on a timeline.
+const STRIPES = 'M10.6 0 0 10.6M14 0 0 14M14 3.4 3.4 14'
 
 const INSIDE_RADIUS = 3.6
 
@@ -52,6 +74,7 @@ export const StatusIcon = ({ shape, tone = 'neutral' }: StatusIconProps) => {
   const clipId = `${id}-clip`
   const level = LEVEL[shape]
   const cutout = CUTOUT[shape]
+  const pendingMark = PENDING_MARK[shape]
   return (
     <svg
       viewBox="0 0 14 14"
@@ -90,6 +113,28 @@ export const StatusIcon = ({ shape, tone = 'neutral' }: StatusIconProps) => {
             strokeDasharray={shape === 'dashed' ? '1.6 2' : undefined}
             strokeLinecap={shape === 'dashed' ? 'round' : undefined}
           />
+          {shape === 'striped' && (
+            <>
+              <clipPath id={clipId}>
+                <circle cx="7" cy="7" r={INSIDE_RADIUS} />
+              </clipPath>
+              <path
+                d={STRIPES}
+                stroke="currentColor"
+                strokeWidth="1"
+                clipPath={`url(#${clipId})`}
+              />
+            </>
+          )}
+          {pendingMark && (
+            <path
+              d={pendingMark}
+              stroke="currentColor"
+              strokeWidth="1.3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          )}
           {level !== undefined && (
             <>
               <clipPath id={clipId}>

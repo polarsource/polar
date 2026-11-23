@@ -7,7 +7,7 @@ import {
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { X } from '@polar-sh/orbit/icons'
-import { type ReactNode } from 'react'
+import { Fragment, type ReactNode } from 'react'
 
 const CHIP_HEIGHT = 26
 const MAX_NAMED_VALUES = 2
@@ -24,6 +24,15 @@ const getValueLabel = (filter: Filter): string => {
   return labels.length > MAX_NAMED_VALUES
     ? `${labels.length} selected`
     : labels.join(', ')
+}
+
+// The icons of what is selected, for options that have one.
+const getValueIcons = (filter: Filter): ReactNode[] => {
+  const values = filter.type === 'single' ? [filter.value] : filter.value
+  return values.flatMap((value) => {
+    const icon = filter.options.find((option) => option.value === value)?.icon
+    return icon ? [<Fragment key={value}>{icon}</Fragment>] : []
+  })
 }
 
 // One chip per filter that is away from its default, each removable. They sit
@@ -58,6 +67,7 @@ export const ToolbarFilterChips = ({
               <Text variant="caption" color="muted" wrap="nowrap">
                 {filter.label}
               </Text>
+              {getValueIcons(filter)}
               <Text variant="caption" truncate>
                 {getValueLabel(filter)}
               </Text>

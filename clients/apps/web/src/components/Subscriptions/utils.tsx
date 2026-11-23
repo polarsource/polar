@@ -1,8 +1,8 @@
+import { StatusIcon } from '@/components/Shared/StatusIcon'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
-import type { PillColor } from '@polar-sh/orbit'
-import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { getSubscriptionStatusIcon } from './SubscriptionStatusIcon'
 
 export const subscriptionUpdateValidationDiscriminators = [
   'SubscriptionUpdateBase',
@@ -39,39 +39,44 @@ export const subscriptionStatusDisplayNames: {
   unpaid: 'Unpaid',
 }
 
-export const getSubscriptionStatusColor = (
+const isRunning = (status: schemas['SubscriptionStatus']) =>
+  status === 'active' || status === 'trialing'
+
+// A subscription that is still running but set to end or pause.
+export const isSubscriptionWindingDown = ({
+  status,
+  ends_at: endsAt,
+  pause_at_period_end: pausesAtPeriodEnd,
+}: Pick<
+  schemas['Subscription'],
+  'status' | 'ends_at' | 'pause_at_period_end'
+>): boolean => isRunning(status) && (endsAt !== null || pausesAtPeriodEnd)
+
+// A subscription that is winding down is named for what is about to happen
+// to it.
+export const getScheduledStatusLabel = (
   status: schemas['SubscriptionStatus'],
-  isEnding = false,
-): PillColor => {
-  switch (status) {
-    case 'active':
-      return isEnding ? 'yellow' : 'green'
-    case 'trialing':
-      return 'blue'
-    case 'past_due':
-    case 'trial_ended':
-      return 'yellow'
-    case 'unpaid':
-    case 'canceled':
-      return 'red'
-    default:
-      return 'gray'
+  { isCanceling = false, isPausing = false },
+): string => {
+  if (isRunning(status)) {
+    if (isCanceling) return 'Canceling'
+    if (isPausing) return 'Pausing'
   }
+  return subscriptionStatusDisplayNames[status]
 }
 
-const STATUS_BORDER_COLOR: Record<PillColor, string> = {
-  green: 'border-emerald-500',
-  yellow: 'border-yellow-500',
-  red: 'border-red-500',
-  blue: 'border-blue-500',
-  gray: 'dark:border-polar-500 border-gray-500',
-  purple: 'border-purple-500',
-}
-
-export const getSubscriptionStatusBorderColor = (
-  status: schemas['SubscriptionStatus'],
-  isEnding = false,
-): string => STATUS_BORDER_COLOR[getSubscriptionStatusColor(status, isEnding)]
+export const getSubscriptionStatusLabel = ({
+  status,
+  ends_at: endsAt,
+  pause_at_period_end: pausesAtPeriodEnd,
+}: Pick<
+  schemas['Subscription'],
+  'status' | 'ends_at' | 'pause_at_period_end'
+>): string =>
+  getScheduledStatusLabel(status, {
+    isCanceling: endsAt !== null,
+    isPausing: pausesAtPeriodEnd,
+  })
 
 export const SubscriptionStatusLabel = ({
   className,
@@ -80,34 +85,17 @@ export const SubscriptionStatusLabel = ({
   className?: string
   subscription: schemas['Subscription'] | schemas['CustomerSubscription']
 }) => {
-  const label = useMemo(() => {
-    switch (subscription.status) {
-      case 'active':
-        if (subscription.ends_at) return 'To be cancelled'
-        if (subscription.pause_at_period_end) return 'To be paused'
-        return 'Active'
-      default:
-        return subscription.status.split('_').join(' ')
-    }
-  }, [subscription])
-
-  const statusColor = useMemo(
-    () =>
-      getSubscriptionStatusBorderColor(
-        subscription.status,
-        subscription.cancel_at_period_end || subscription.pause_at_period_end,
-      ),
-    [
-      subscription.status,
-      subscription.cancel_at_period_end,
-      subscription.pause_at_period_end,
-    ],
-  )
+  const label = getSubscriptionStatusLabel(subscription)
 
   return (
     <div className={twMerge('flex flex-row items-center gap-x-2', className)}>
-      <span className={twMerge('h-2 w-2 rounded-full border-2', statusColor)} />
-      <span className="capitalize">{label}</span>
+      <StatusIcon
+        {...getSubscriptionStatusIcon(
+          subscription.status,
+          subscription.cancel_at_period_end || subscription.pause_at_period_end,
+        )}
+      />
+      <span>{label}</span>
     </div>
   )
 }

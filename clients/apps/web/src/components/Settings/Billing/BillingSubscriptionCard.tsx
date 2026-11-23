@@ -7,19 +7,11 @@ import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { Pill } from '@polar-sh/orbit'
-import { getSubscriptionStatusColor } from '@/components/Subscriptions/utils'
+import { StatusLabel } from '@/components/Shared/StatusIcon'
+import { getSubscriptionStatusIcon } from '@/components/Subscriptions/SubscriptionStatusIcon'
+import { getScheduledStatusLabel } from '@/components/Subscriptions/utils'
 
 const formatPrice = formatCurrency('standard', 'en-US')
-
-const STATUS_LABEL: Record<string, string> = {
-  active: 'Active',
-  past_due: 'Past due',
-  canceled: 'Canceled',
-  trialing: 'Trial',
-  unpaid: 'Unpaid',
-  incomplete: 'Incomplete',
-  incomplete_expired: 'Expired',
-}
 
 const Detail = ({
   label,
@@ -107,9 +99,15 @@ export const BillingSubscriptionCard = ({
             <Text variant="heading-xxs" as="h3">
               {plan.name}
             </Text>
-            <Pill color={getSubscriptionStatusColor(status)}>
-              {STATUS_LABEL[status] ?? status}
-            </Pill>
+            <StatusLabel
+              {...getSubscriptionStatusIcon(
+                status,
+                subscription.cancel_at_period_end,
+              )}
+              label={getScheduledStatusLabel(status, {
+                isCanceling: subscription.cancel_at_period_end,
+              })}
+            />
             {scheduledPlan && (
               <Pill color="yellow">Switches to {scheduledPlan.name}</Pill>
             )}

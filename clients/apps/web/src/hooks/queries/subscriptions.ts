@@ -120,7 +120,8 @@ export const useAllSubscriptions = (
     isLoading: !isError && (data === undefined || canLoadMore),
     // A page failed, so what is loaded is not everything.
     isError,
-    retry: () => (data ? fetchNextPage() : refetch()),
+    // A failed page is fetched again. Any other failure reloads the list.
+    retry: () => (isFetchNextPageError ? fetchNextPage() : refetch()),
   }
 }
 

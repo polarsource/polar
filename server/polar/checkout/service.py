@@ -66,7 +66,7 @@ from polar.kit.email import EmailNotValidError, validate_email_syntax
 from polar.kit.operator import attrgetter
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
-from polar.kit.utils import utc_now
+from polar.kit.utils import generate_uuid, utc_now
 from polar.kit.visibility import Visibility
 from polar.logging import Logger
 from polar.member.service import member_service
@@ -2226,7 +2226,14 @@ class CheckoutService:
                 ),
             )
             errors = [*errors, *price_errors]
-            validated_prices[product] = validated_product_prices
+            # Set the tie-breakers now so the default price chosen at creation
+            # matches the order `CheckoutProduct.ad_hoc_prices` reloads them in
+            for price in validated_product_prices:
+                price.id = generate_uuid()
+                price.created_at = utc_now()
+            validated_prices[product] = sorted(
+                validated_product_prices, key=lambda price: price.sort_key
+            )
 
         if len(errors) > 0:
             raise PolarRequestValidationError(errors)

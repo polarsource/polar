@@ -5,9 +5,11 @@ import { toast } from '@/components/Toast/use-toast'
 import {
   useCustomerPaymentMethods,
   useCustomerPortalCustomer,
+  usePortalAuthenticatedUser,
 } from '@/hooks/queries/customerPortal'
 import { usePaymentMethodEmbed } from '@/hooks/usePaymentMethodEmbed'
 import { createClientSideAPI } from '@/utils/client'
+import { hasBillingPermission } from '@/utils/customerPortal'
 import { usePaymentMethodRedirectResult } from '@polar-sh/checkout/react/payment-method'
 import { schemas } from '@polar-sh/client'
 import { Button, SpinnerNoMargin } from '@polar-sh/orbit'
@@ -41,6 +43,7 @@ export const CustomerPortalSettings = ({
   const queryClient = useQueryClient()
 
   const { data: customer } = useCustomerPortalCustomer()
+  const { data: authenticatedUser } = usePortalAuthenticatedUser(api)
   const {
     data: paymentMethods,
     isPending: isPaymentMethodsPending,
@@ -203,20 +206,22 @@ export const CustomerPortalSettings = ({
         </PortalSection>
       )}
 
-      <PortalSection
-        title="Privacy"
-        description="Download a copy of all your personal data"
-        actions={
-          <Button
-            onClick={handleExportData}
-            loading={isExporting}
-            variant="secondary"
-            size="sm"
-          >
-            Export data
-          </Button>
-        }
-      />
+      {hasBillingPermission(authenticatedUser) && (
+        <PortalSection
+          title="Privacy"
+          description="Download a copy of all your personal data"
+          actions={
+            <Button
+              onClick={handleExportData}
+              loading={isExporting}
+              variant="secondary"
+              size="sm"
+            >
+              Export data
+            </Button>
+          }
+        />
+      )}
     </>
   )
 }

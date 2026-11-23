@@ -27,26 +27,14 @@
             exec ${pkgs.runtimeShell} "$root/dev/cli/dev" "$@"
           '';
 
-          # pnpm 12 ships as a generic-linux binary that NixOS can't run, so corepack's
-          # download fails there. Patch the official binary instead; keep in sync with
-          # packageManager in clients/package.json.
-          pnpmVersion = "12.8.0";
-          pnpmLinux = {
-            x86_64-linux = { arch = "x64"; hash = "sha256-xwEBMvujPSv6ApKDVdGsgpGHOqsvTISaNPU4YsS3Qrs="; };
-            aarch64-linux = { arch = "arm64"; hash = "sha256-VJHwSZxAB2dUM+RMfdhn0VJ1RjuLzKBTsSNbbj4gNyA="; };
-          }.${pkgs.stdenv.hostPlatform.system} or null;
-          pnpm = pkgs.stdenv.mkDerivation {
-            pname = "pnpm";
-            version = pnpmVersion;
-            src = pkgs.fetchurl {
-              url = "https://registry.npmjs.org/@pnpm/exe.linux-${pnpmLinux.arch}/-/exe.linux-${pnpmLinux.arch}-${pnpmVersion}.tgz";
-              inherit (pnpmLinux) hash;
-            };
-            nativeBuildInputs = [ pkgs.autoPatchelfHook ];
-            buildInputs = [ pkgs.stdenv.cc.cc.lib ];
-            installPhase = ''
-              install -Dm755 pnpm $out/bin/pnpm
-              ln -s pnpm $out/bin/pn
+          # packageManager pins a pnpm version that pnpm would otherwise download, which
+          # NixOS can't run. Set in a wrapper since turbo strips env vars from tasks.
+          pnpm = pkgs.symlinkJoin {
+            name = "pnpm-${pkgs.pnpm_12.version}";
+            paths = [ pkgs.pnpm_12 ];
+            nativeBuildInputs = [ pkgs.makeWrapper ];
+            postBuild = ''
+              wrapProgram $out/bin/pnpm --set pnpm_config_manage_package_manager_versions false
             '';
           };
 
@@ -70,7 +58,7 @@
           default = pkgs.mkShell {
             nativeBuildInputs = with pkgs; [
               nodejs_24
-              (if pnpmLinux != null then pnpm else corepack_24)
+              pnpm
 
               # server/ requires Python 3.14 and runs everything through uv
               python314

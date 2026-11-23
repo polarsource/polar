@@ -1786,8 +1786,7 @@
   "footer": {
     "socials": {
       "x": "https://x.com/polar_sh",
-      "github": "https://github.com/polarsource/polar",
-      "discord": "https://dub.sh/polar-discord"
+      "github": "https://github.com/polarsource/polar"
     }
   },
   "redirects": [

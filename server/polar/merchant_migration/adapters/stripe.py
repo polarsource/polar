@@ -1360,6 +1360,7 @@ class StripeAdapter:
         tax_id = self._map_tax_id(customer, country)
         return CanonicalCustomer(
             source_id=customer.id,
+            stripe_customer_id=customer.id,
             email=customer.email or "",
             name=customer.name,
             country=country,

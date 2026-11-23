@@ -123,8 +123,21 @@ class CanonicalCustomer:
     tax_id: TaxID | None = None
     tax_id_dropped: bool = False
     tax_exempt: bool = False
+    # The Stripe customer holding the source's saved cards. A card copy keeps
+    # this id, so the Polar customer takes it to reach the copied cards.
+    stripe_customer_id: str | None = None
 
     type = MerchantMigrationRecordType.customer
+
+    @property
+    def copied_stripe_customer_id(self) -> str | None:
+        """Stripe records staged before `stripe_customer_id` existed carry it as
+        their source id."""
+        if self.stripe_customer_id is not None:
+            return self.stripe_customer_id
+        if self.source_id.startswith("cus_"):
+            return self.source_id
+        return None
 
 
 @dataclass
@@ -545,6 +558,7 @@ def deserialize(
                 ),
                 tax_id_dropped=data.get("tax_id_dropped", False),
                 tax_exempt=data.get("tax_exempt", False),
+                stripe_customer_id=data.get("stripe_customer_id"),
             )
         case MerchantMigrationRecordType.subscription:
             payment_method = data["payment_method"]

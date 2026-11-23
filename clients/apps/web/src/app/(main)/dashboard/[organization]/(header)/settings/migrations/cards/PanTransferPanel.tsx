@@ -3,14 +3,17 @@
 import { usePanTransfer } from '@/hooks/queries/merchantMigrations'
 import { Alert, Spinner, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import type { MigrationSource } from '../sources'
 import { cardMovementSteps } from './panTransferCopy'
 import { PanTransferStepItem } from './PanTransferStepItem'
 
 export function PanTransferPanel({
   migrationId,
+  source,
   sourceStripeAccountId,
 }: {
   migrationId: string
+  source: MigrationSource
   sourceStripeAccountId?: string
 }) {
   const { data: checklist, isLoading, isError } = usePanTransfer(migrationId)
@@ -63,6 +66,7 @@ export function PanTransferPanel({
             current={step.key === checklist.current_step_key}
             destinationAccountId={checklist.destination_account_id}
             migrationId={migrationId}
+            source={source}
             sourceStripeAccountId={sourceStripeAccountId}
           />
         ))}

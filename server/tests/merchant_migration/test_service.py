@@ -3942,6 +3942,48 @@ async def _imported_subscription(
 
 @pytest.mark.anyio
 class TestImportPaymentMethodMappings:
+    async def test_reaches_a_lemon_squeezy_customer_by_its_stripe_customer(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        migration = MerchantMigration(
+            organization=organization,
+            source_platform=MerchantMigrationSourcePlatform.lemon_squeezy,
+            step=MerchantMigrationStep.copy_cards,
+        )
+        await save_fixture(migration)
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="ls@example.com",
+            stripe_customer_id="cus_ls_1",
+        )
+        stripe_payment_method = build_stripe_payment_method(customer="cus_ls_1")
+        stripe_payment_method.id = "pm_new"
+        mocker.patch(
+            "polar.merchant_migration.cards.stripe_service.get_payment_method",
+            new=mocker.AsyncMock(return_value=stripe_payment_method),
+        )
+
+        await service.import_payment_method_mappings(
+            session,
+            migration,
+            (
+                b"customer_id_old,source_id_old,customer_id_new,source_id_new\n"
+                b"cus_ls_1,pm_old,cus_ls_1,pm_new\n"
+            ),
+        )
+
+        payment_method = await PaymentMethodRepository.from_session(
+            session
+        ).get_by_customer_and_processor_id(
+            customer.id, PaymentProcessor.stripe, "pm_new"
+        )
+        assert payment_method is not None
+
     async def test_imports_and_assigns_the_exact_payment_method(
         self,
         mocker: MockerFixture,
@@ -4816,6 +4858,35 @@ class TestStartPanTransfer:
         )
         # No one is asked to authorize a transfer that isn't happening.
         enqueue.assert_not_called()
+
+    @pytest.mark.auth
+    async def test_lemon_squeezy_starts_on_requesting_the_copy(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        migration = await self._prepared(
+            mocker,
+            session,
+            save_fixture,
+            organization,
+            product,
+            cards_on_polar=set(),
+        )
+        migration.source_platform = MerchantMigrationSourcePlatform.lemon_squeezy
+        await save_fixture(migration)
+
+        checklist = await service.start_pan_transfer(
+            session, auth_subject, migration.id
+        )
+
+        assert checklist.current_step_key == "request_copy"
 
     @pytest.mark.auth
     @pytest.mark.parametrize("stalled", [False, True])

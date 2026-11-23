@@ -111,7 +111,7 @@ export function StartCopyStep({
   )
 }
 
-function TaskRow({
+export function TaskRow({
   title,
   description,
   children,

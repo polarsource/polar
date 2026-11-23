@@ -67,6 +67,7 @@ OWNER_LABELS: dict[PanStepOwner, str] = {
 # operator does about it.
 PAN_STEP_LABELS: dict[str, str] = {
     "share_destination_account": "Share Polar's Stripe account",
+    "request_copy": "Merchant requests the copy from their provider",
     "start_copy": "Merchant starts the copy in Stripe",
     "authorize_copy": "Accept the incoming copy",
     "stripe_copy": "Stripe copies the cards",

@@ -56,23 +56,30 @@ def _advance_to(
 
 
 class TestPanTransferMethod:
-    def test_stripe_source_copies(self) -> None:
-        migration = MerchantMigration(
-            source_platform=MerchantMigrationSourcePlatform.stripe
-        )
-        assert migration.pan_transfer_method == PanTransferMethod.pan_copy
-
     @pytest.mark.parametrize(
         "platform",
         [
-            MerchantMigrationSourcePlatform.paddle,
+            MerchantMigrationSourcePlatform.stripe,
             MerchantMigrationSourcePlatform.lemon_squeezy,
         ],
     )
-    def test_other_vaults_import(
+    def test_stripe_held_cards_copy(
         self, platform: MerchantMigrationSourcePlatform
     ) -> None:
         migration = MerchantMigration(source_platform=platform)
+        assert migration.pan_transfer_method == PanTransferMethod.pan_copy
+
+    def test_other_vaults_import(self) -> None:
+        migration = MerchantMigration(
+            source_platform=MerchantMigrationSourcePlatform.paddle
+        )
+        assert migration.pan_transfer_method == PanTransferMethod.pan_import
+
+    def test_started_checklist_keeps_its_method(self) -> None:
+        migration = MerchantMigration(
+            source_platform=MerchantMigrationSourcePlatform.lemon_squeezy,
+            pan_transfer_steps=pan_transfer.build(PanTransferMethod.pan_import),
+        )
         assert migration.pan_transfer_method == PanTransferMethod.pan_import
 
 

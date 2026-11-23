@@ -163,6 +163,7 @@ ROUTES: dict[str, dict[str, Any]] = {
                     "name": "Ada",
                     "email": "ada@example.com",
                     "country": "FR",
+                    "stripe_customer_id": "cus_ls_ada",
                 },
             }
         ]
@@ -238,6 +239,7 @@ class TestExtract:
         [customer] = [r for r in records if isinstance(r, CanonicalCustomer)]
         assert customer.email == "ada@example.com"
         assert customer.country == "FR"
+        assert customer.stripe_customer_id == "cus_ls_ada"
 
         [subscription] = [r for r in records if isinstance(r, CanonicalSubscription)]
         assert subscription.status == CanonicalSubscriptionStatus.active

@@ -264,6 +264,20 @@ PAN_COPY_TEMPLATES: tuple[PanStepTemplate, ...] = (
     ),
 )
 
+# A provider that copies from its own Stripe account, like Lemon Squeezy. The
+# merchant requests the copy there, and the provider shares the Stripe migration
+# ID only once it starts, sometimes days later. Asking for the request first
+# lets the merchant finish their part without the ID.
+PROVIDER_COPY_TEMPLATES: tuple[PanStepTemplate, ...] = (
+    PAN_COPY_TEMPLATES[0],
+    PanStepTemplate(
+        key="request_copy",
+        owner=PanStepOwner.merchant,
+        kind=PanStepKind.confirm,
+    ),
+    *PAN_COPY_TEMPLATES[1:],
+)
+
 # Any other vault to Stripe.
 PAN_IMPORT_TEMPLATES: tuple[PanStepTemplate, ...] = (
     PanStepTemplate(
@@ -327,8 +341,12 @@ _TEMPLATES: dict[PanTransferMethod, tuple[PanStepTemplate, ...]] = {
 }
 
 _TEMPLATES_BY_KEY: dict[PanTransferMethod, dict[str, PanStepTemplate]] = {
-    method: {template.key: template for template in templates}
-    for method, templates in _TEMPLATES.items()
+    PanTransferMethod.pan_copy: {
+        template.key: template for template in PROVIDER_COPY_TEMPLATES
+    },
+    PanTransferMethod.pan_import: {
+        template.key: template for template in PAN_IMPORT_TEMPLATES
+    },
 }
 
 
@@ -343,7 +361,9 @@ def _template(method: PanTransferMethod, key: str) -> PanStepTemplate:
     return template
 
 
-def build(method: PanTransferMethod) -> list[PanTransferStep]:
+def build(
+    method: PanTransferMethod, *, provider_starts_copy: bool = False
+) -> list[PanTransferStep]:
     """Instantiate a fresh checklist with only its first step actionable."""
     # Every field is set explicitly: this model is also an API response, and
     # ADR-0007 keeps output schemas free of defaults so the generated clients
@@ -361,7 +381,11 @@ def build(method: PanTransferMethod) -> list[PanTransferStep]:
             completed_at=None,
             completed_by=None,
         )
-        for template in templates_for(method)
+        for template in (
+            PROVIDER_COPY_TEMPLATES
+            if method == PanTransferMethod.pan_copy and provider_starts_copy
+            else templates_for(method)
+        )
     ]
     return advance(method, steps)
 

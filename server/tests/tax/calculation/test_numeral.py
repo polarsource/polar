@@ -413,9 +413,9 @@ class TestNumeralCalculateTax:
             )
 
     async def test_unsupported_country(
-        self, sample_address: Address, http_mocks: dict[tuple[str, str], Mock]
+        self, http_mocks: dict[tuple[str, str], Mock]
     ) -> None:
-        http_mocks["POST", "https://api.numeralhq.com/tax/calculations"] = Mock(
+        route = http_mocks["POST", "https://api.numeralhq.com/tax/calculations"] = Mock(
             return_value=httpx2.Response(
                 400,
                 json={"code": 400, "type": "INVALID_COUNTRY_CODE", "message": "Error"},
@@ -423,14 +423,17 @@ class TestNumeralCalculateTax:
         )
         result = await numeral_tax_service.calculate(
             identifier=uuid.uuid4(),
-            currency="usd",
+            currency="mur",
             amount=100_00,
             tax_behavior=TaxBehavior.exclusive,
             tax_code=TaxCode.general_electronically_supplied_services,
-            address=sample_address,
-            tax_ids=[],
+            address=Address(country=CountryAlpha2("MU")),
+            tax_ids=[("28392339", TaxIDFormat.mu_tan)],
             customer_exempt=False,
         )
+        payload = json.loads(route.call_args.args[0].content)
+        assert payload["customer"]["tax_ids"] == []
+        assert payload["customer"]["type"] == "BUSINESS"
         assert result["processor_id"] is None
         assert result["amount"] == 0
         assert (

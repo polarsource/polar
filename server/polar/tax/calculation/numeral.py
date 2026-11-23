@@ -235,7 +235,9 @@ class NumeralTaxService(TaxServiceProtocol):
                 "address": payload_address,
                 "type": customer_type,
                 "tax_ids": [
-                    {"type": format, "value": value} for value, format in tax_ids
+                    {"type": format, "value": value}
+                    for value, format in tax_ids
+                    if format.is_numeral_supported()
                 ],
             },
             "order_details": {

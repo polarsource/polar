@@ -42,7 +42,9 @@ uv run python <your_command_here>
 To change SDK code, including hand-written modules like `metering/` and `outpost/`, and their tests:
 
 1. Edit the file under `python/template/` or `typescript/template/`.
-2. A new file is only emitted if the emitter picks it up. Files in `src/metering/` and `src/outpost/` are globbed, but top-level files must be added with `render_file` in `typescript/emitter.py` (or the Python equivalent).
+2. A new file is only emitted if the emitter picks it up, and the two languages differ:
+   - **TypeScript:** every `.ts` file in `template/src/metering/` and `template/src/outpost/` is globbed. Any other new file needs a `render_file` call in `typescript/emitter.py`.
+   - **Python:** nothing is globbed. Add every new file, including modules and tests under `metering/` and `outpost/`, to the file set in `PythonEmitter.emit` in `python/emitter.py`.
 3. Regenerate with `uv run -m cli generate openapi/*.json ../<language> --language <language> --version <current version> --clear` and commit the template and the generated output together.
 
 To check that a template change took effect, regenerate and confirm `git status` doesn't show the output reverting your edit.

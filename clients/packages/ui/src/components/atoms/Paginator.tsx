@@ -101,6 +101,7 @@ const Paginator = ({
               asChild
               variant={pageNumber === currentPage ? 'default' : 'secondary'}
               size="sm"
+              className="min-w-8 px-2"
             >
               {pageNumber}
             </Button>

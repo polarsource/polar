@@ -12,7 +12,7 @@ import { type ToolbarAction } from '@/components/Shared/Toolbar/ToolbarActionsMe
 import { useCustomerFilter } from '@/components/Shared/Toolbar/useCustomerFilter'
 import { useDateRangeFilter } from '@/components/Shared/Toolbar/useDateRangeFilter'
 import { useProductFilter } from '@/components/Shared/Toolbar/useProductFilter'
-import { useSearchFilter } from '@/components/Shared/Toolbar/useSearchFilter'
+import { ToolbarSearch } from '@/components/Shared/Toolbar/ToolbarSearch'
 import { checkoutStatusOptions } from '@/components/Checkouts/CheckoutStatus'
 import { schemas } from '@polar-sh/client'
 import { CircleDashed } from '@polar-sh/orbit/icons'
@@ -55,13 +55,6 @@ export const CheckoutsToolbar = ({
     onCustomerSelect,
   )
   const dateFilter = useDateRangeFilter(organization, created, onCreatedSelect)
-  // A checkout can have a name and email before it has a customer, so this
-  // finds the ones the customer filter cannot.
-  const searchFilter = useSearchFilter(
-    query,
-    onQuerySelect,
-    'Name or email contains...',
-  )
   const filters: Filter[] = [
     {
       key: 'status',
@@ -75,7 +68,6 @@ export const CheckoutsToolbar = ({
     },
     productFilter,
     customerFilter,
-    searchFilter,
     dateFilter,
   ]
   const hasActiveFilters = filters.some(
@@ -85,7 +77,6 @@ export const CheckoutsToolbar = ({
     onStatusSelect(null)
     onProductSelect({ product_id: null, external_product_id: null })
     onCustomerSelect(null)
-    onQuerySelect(null)
     onCreatedSelect(null)
   }
 
@@ -95,6 +86,14 @@ export const CheckoutsToolbar = ({
       filters={filters}
       onReset={hasActiveFilters ? reset : undefined}
       actions={actions}
-    />
+    >
+      {/* A checkout can have a name and email before it has a customer, so
+          this finds the ones the customer filter cannot. */}
+      <ToolbarSearch
+        value={query}
+        onChange={onQuerySelect}
+        placeholder="Name or email"
+      />
+    </Toolbar>
   )
 }

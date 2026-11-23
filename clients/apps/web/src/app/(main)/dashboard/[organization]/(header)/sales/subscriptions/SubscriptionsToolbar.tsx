@@ -29,7 +29,7 @@ import { type ToolbarAction } from '@/components/Shared/Toolbar/ToolbarActionsMe
 import { useDateRangeFilter } from '@/components/Shared/Toolbar/useDateRangeFilter'
 import { useProductFilter } from '@/components/Shared/Toolbar/useProductFilter'
 import { useCustomerFilter } from '@/components/Shared/Toolbar/useCustomerFilter'
-import { useSearchFilter } from '@/components/Shared/Toolbar/useSearchFilter'
+import { ToolbarSearch } from '@/components/Shared/Toolbar/ToolbarSearch'
 import { useDiscountFilter } from './useDiscountFilter'
 import { type SubscriptionView } from './useSubscriptionsView'
 
@@ -191,11 +191,6 @@ export const SubscriptionsToolbar = ({
     customerId,
     onCustomerSelect,
   )
-  const searchFilter = useSearchFilter(
-    query,
-    onQuerySelect,
-    'Customer or product...',
-  )
   const statusFilter: Filter = {
     key: 'status',
     label: 'Status',
@@ -211,7 +206,6 @@ export const SubscriptionsToolbar = ({
     statusFilter,
     productFilter,
     customerFilter,
-    searchFilter,
     discountFilter,
     startedFilter,
     {
@@ -265,6 +259,11 @@ export const SubscriptionsToolbar = ({
       onReset={hasActiveFilters ? onReset : undefined}
       actions={actions}
     >
+      <ToolbarSearch
+        value={query}
+        onChange={onQuerySelect}
+        placeholder="Customer or product"
+      />
       <SegmentedControl
         size="sm"
         options={VIEW_OPTIONS}

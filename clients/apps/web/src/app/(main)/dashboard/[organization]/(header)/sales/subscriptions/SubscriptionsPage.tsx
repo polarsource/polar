@@ -166,7 +166,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     discountId !== null ||
     cancellationReason !== null ||
     started !== null ||
-    query !== null ||
     (isTimeline &&
       (group !== DEFAULT_GANTT_GROUP ||
         sort?.id !== DEFAULT_SORTING[0].id ||
@@ -183,7 +182,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       customer_cancellation_reason: null,
       started_after: null,
       started_before: null,
-      query: null,
     })
     if (isTimeline) {
       setFilters({ group: null })

@@ -12,7 +12,7 @@ import { Toolbar } from '@/components/Shared/Toolbar/Toolbar'
 import { type ToolbarAction } from '@/components/Shared/Toolbar/ToolbarActionsMenu'
 import { useDateRangeFilter } from '@/components/Shared/Toolbar/useDateRangeFilter'
 import { useProductFilter } from '@/components/Shared/Toolbar/useProductFilter'
-import { useSearchFilter } from '@/components/Shared/Toolbar/useSearchFilter'
+import { ToolbarSearch } from '@/components/Shared/Toolbar/ToolbarSearch'
 import { schemas } from '@polar-sh/client'
 import { CircleDashed } from '@polar-sh/orbit/icons'
 
@@ -49,11 +49,6 @@ export const SalesToolbar = ({
     dateRange,
     onDateRangeSelect,
   )
-  const searchFilter = useSearchFilter(
-    query,
-    onQuerySelect,
-    'Customer, invoice or product...',
-  )
   const filters: Filter[] = [
     {
       key: 'status',
@@ -66,7 +61,6 @@ export const SalesToolbar = ({
         onStatusSelect(value.length > 0 ? (value as OrderStatus[]) : null),
     },
     productFilter,
-    searchFilter,
     dateFilter,
   ]
   const hasActiveFilters = filters.some(
@@ -75,7 +69,6 @@ export const SalesToolbar = ({
   const reset = () => {
     onStatusSelect(null)
     onProductSelect({ product_id: null, external_product_id: null })
-    onQuerySelect(null)
     onDateRangeSelect(null)
   }
 
@@ -85,6 +78,12 @@ export const SalesToolbar = ({
       filters={filters}
       onReset={hasActiveFilters ? reset : undefined}
       actions={actions}
-    />
+    >
+      <ToolbarSearch
+        value={query}
+        onChange={onQuerySelect}
+        placeholder="Customer, invoice or product"
+      />
+    </Toolbar>
   )
 }

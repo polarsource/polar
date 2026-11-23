@@ -6962,6 +6962,7 @@ class TestUpdateProductBenefitsGrants:
             (RefundStatus.succeeded, True, False),
             (RefundStatus.pending, True, False),
             (RefundStatus.failed, True, True),
+            (RefundStatus.canceled, True, True),
             (RefundStatus.succeeded, False, True),
         ],
     )

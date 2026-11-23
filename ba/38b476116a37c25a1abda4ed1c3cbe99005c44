@@ -1,0 +1,21 @@
+server/polar/order/tasks.py
+  s_a70183d62491e9::t_421140b349d2fb 184-185,206
+server/tests/order/test_tasks.py
+  s_a70183d62491e9::t_421140b349d2fb 57,64,73-77,86
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ba38b476116a37c25a1abda4ed1c3cbe99005c44",
+  "prompts": {},
+  "sessions": {
+    "s_a70183d62491e9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a208d1-4069-7e43-9033-96fbd9722e03",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

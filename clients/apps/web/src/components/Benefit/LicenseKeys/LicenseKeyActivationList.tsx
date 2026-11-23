@@ -22,7 +22,9 @@ export const LicenseKeyActivationList = ({
     if (!activationToDeactivate) {
       return
     }
-    const { error } = await deactivate.mutateAsync(activationToDeactivate.id)
+    const { error } = await deactivate
+      .mutateAsync(activationToDeactivate.id)
+      .catch(() => ({ error: {} }))
     if (error) {
       toast({
         title: 'Deactivation failed',

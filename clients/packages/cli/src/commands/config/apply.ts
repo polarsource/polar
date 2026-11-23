@@ -27,7 +27,7 @@ import {
 } from '@/schemas/BillingConfig'
 import { BillingConfig } from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
-import { withProgress } from '@/utils/progress'
+import { type Progress, withProgress } from '@/utils/progress'
 import { interactive, keypress } from '@/utils/prompt'
 import * as ui from '@/utils/ui'
 
@@ -53,12 +53,17 @@ const render = (
   config: LoadedConfig,
   organization: ActiveOrganization,
   result: ApplyResult,
+  revertedDraft: boolean,
 ) =>
   result.status === 'rejected'
     ? [ui.blank]
     : [
         ...(unchanged(result.entries) ? [ui.blank] : []),
-        applied(config, organization, result.entries),
+        revertedDraft
+          ? ui.success(
+              `Changes that are no longer in ${config.file} were removed from the draft of ${target(organization)}`,
+            )
+          : applied(config, organization, result.entries),
         ...(result.draft
           ? next(
               `${ui.INDENT}Products, benefits, meters and settings are saved to the draft catalog.\n${ui.INDENT}Run ${ui.command('polar config publish')} to make it live.`,
@@ -102,6 +107,119 @@ const approve = (
     ).pipe(Effect.catch(() => say([ui.blank]).pipe(Effect.as(false))))
   })
 
+const milliseconds = (elapsed: Duration.Duration) =>
+  `${Math.round(Duration.toMillis(elapsed))}ms`
+
+const compare = (
+  config: LoadedConfig,
+  org: string | undefined,
+  name: string | undefined,
+) =>
+  Effect.gen(function* () {
+    const billing = yield* BillingConfig
+    const organization = yield* (yield* Organizations).resolve(org)
+    const againstLive = yield* billing.plan(config, organization, { name })
+    if (!unchanged(againstLive.entries) || errors(againstLive.issues) > 0) {
+      return { organization, plan: againstLive }
+    }
+    const { draft } = yield* billing.catalogs(organization)
+    if (draft === null) return { organization, plan: againstLive }
+    const againstDraft = yield* billing.plan(config, organization, {
+      name,
+      catalogId: draft.id,
+    })
+    return { organization, plan: againstDraft }
+  })
+
+const preflight = (
+  progress: Progress,
+  file: string | undefined,
+  org: string | undefined,
+  name: string | undefined,
+) =>
+  Effect.gen(function* () {
+    yield* progress.open('Preflight')
+    yield* progress.start('Reading')
+    const config = yield* (yield* BillingConfig).load(file)
+    yield* progress.finish(config.file)
+    yield* progress.start('Found')
+    yield* progress.finish(found(config))
+    yield* progress.start('Comparing')
+    const [elapsed, compared] = yield* Effect.timed(compare(config, org, name))
+    yield* progress.finish(milliseconds(elapsed))
+    yield* progress.close
+    return { config, ...compared }
+  })
+
+const save = (
+  progress: Progress,
+  config: LoadedConfig,
+  organization: ActiveOrganization,
+  plan: PlanResult,
+  name: string | undefined,
+) =>
+  Effect.gen(function* () {
+    yield* progress.open('Apply')
+    yield* progress.start(
+      `Applying ${plural(changeCount(plan.entries), 'change')}`,
+    )
+    const [elapsed, result] = yield* Effect.timed(
+      (yield* BillingConfig).apply(config, organization, { name }),
+    )
+    yield* progress.finish(`(${milliseconds(elapsed)})`)
+    return result
+  })
+
+const execute = (
+  progress: Progress,
+  file: string | undefined,
+  org: string | undefined,
+  name: string | undefined,
+  confirmed: boolean,
+  say: Say['say'],
+) =>
+  Effect.gen(function* () {
+    const { json } = yield* Output
+    const { config, organization, plan } = yield* preflight(
+      progress,
+      file,
+      org,
+      name,
+    )
+    const outcome = (result: ApplyResult, revertedDraft = false) => ({
+      config,
+      organization,
+      result,
+      revertedDraft,
+    })
+    if (errors(plan.issues) > 0) {
+      yield* say([
+        ...sections(config, plan),
+        ...overview(config, organization, plan),
+        ...next(fixErrors(plan.issues)),
+      ])
+      return outcome({ status: 'rejected', issues: plan.issues })
+    }
+    if (unchanged(plan.entries)) {
+      if (plan.issues.length > 0) yield* say(sections(config, plan))
+      return outcome({
+        status: 'applied',
+        entries: plan.entries,
+        issues: plan.issues,
+      })
+    }
+    yield* say(sections(config, plan))
+    if (!(yield* approve(config, organization, plan, json, confirmed, say))) {
+      return yield* new BillingConfigError({
+        message: 'Apply cancelled, nothing changed',
+      })
+    }
+    const result = yield* save(progress, config, organization, plan, name)
+    return result.status === 'applied'
+      ? outcome({ ...result, issues: plan.issues }, unchanged(result.entries))
+      : outcome(result)
+  })
+
 export const apply = Command.make('apply', { file, org, confirmed, name }).pipe(
   Command.withDescription(
     'Apply a billing config file to your organization. Products, benefits, meters and settings are saved as a draft until you publish them',
@@ -136,100 +254,20 @@ export const apply = Command.make('apply', { file, org, confirmed, name }).pipe(
   output({
     result: ApplyOutput,
     run: ({ file, org, confirmed, name }, { say }) =>
-      Effect.gen(function* () {
-        const billing = yield* BillingConfig
-        const { json } = yield* Output
-        const catalog = { name: Option.getOrUndefined(name) }
-        const milliseconds = (elapsed: Duration.Duration) =>
-          `${Math.round(Duration.toMillis(elapsed))}ms`
-        return yield* withProgress(
-          (progress) =>
-            Effect.gen(function* () {
-              yield* progress.open('Preflight')
-              yield* progress.start('Reading')
-              const config = yield* billing.load(Option.getOrUndefined(file))
-              yield* progress.finish(config.file)
-              yield* progress.start('Found')
-              yield* progress.finish(found(config))
-              yield* progress.start('Comparing')
-              const [planned, { organization, plan }] = yield* Effect.timed(
-                Effect.gen(function* () {
-                  const organization = yield* (yield* Organizations).resolve(
-                    Option.getOrUndefined(org),
-                  )
-                  const plan = yield* billing.plan(
-                    config,
-                    organization,
-                    catalog,
-                  )
-                  return { organization, plan }
-                }),
-              )
-              yield* progress.finish(milliseconds(planned))
-              yield* progress.close
-              if (errors(plan.issues) > 0) {
-                yield* say([
-                  ...sections(config, plan),
-                  ...overview(config, organization, plan),
-                  ...next(fixErrors(plan.issues)),
-                ])
-                return {
-                  config,
-                  organization,
-                  result: { status: 'rejected', issues: plan.issues } as const,
-                }
-              }
-              if (unchanged(plan.entries)) {
-                if (plan.issues.length > 0) {
-                  yield* say(sections(config, plan))
-                }
-                return {
-                  config,
-                  organization,
-                  result: {
-                    status: 'applied',
-                    entries: plan.entries,
-                    issues: plan.issues,
-                  } as const,
-                }
-              }
-              yield* say(sections(config, plan))
-              if (
-                !(yield* approve(
-                  config,
-                  organization,
-                  plan,
-                  json,
-                  confirmed,
-                  say,
-                ))
-              ) {
-                return yield* new BillingConfigError({
-                  message: 'Apply cancelled, nothing changed',
-                })
-              }
-              yield* progress.open('Apply')
-              yield* progress.start(
-                `Applying ${plural(changeCount(plan.entries), 'change')}`,
-              )
-              const [elapsed, result] = yield* Effect.timed(
-                billing.apply(config, organization, catalog),
-              )
-              yield* progress.finish(`(${milliseconds(elapsed)})`)
-              return {
-                config,
-                organization,
-                result:
-                  result.status === 'applied'
-                    ? { ...result, issues: plan.issues }
-                    : result,
-              }
-            }),
-          'columns',
-        )
-      }),
-    render: ({ config, organization, result }) =>
-      render(config, organization, result),
+      withProgress(
+        (progress) =>
+          execute(
+            progress,
+            Option.getOrUndefined(file),
+            Option.getOrUndefined(org),
+            Option.getOrUndefined(name),
+            confirmed,
+            say,
+          ),
+        'columns',
+      ),
+    render: ({ config, organization, result, revertedDraft }) =>
+      render(config, organization, result, revertedDraft),
     json: ({ config, result }) => ({ file: config.file, ...result }),
     failed: ({ config, result }) =>
       result.status === 'rejected'

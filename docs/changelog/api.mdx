@@ -12,45 +12,13 @@ as `2026-10`, and apply to API requests, responses, webhook payloads, and SDK ty
 
 **This will become the Current version on January 1, 2027.**
 
-### New endpoints
+### Breaking changes
 
-- Benefit grants: `POST /v1/benefit-grants/` grants a benefit manually to a customer or one of their members, using either Polar IDs or external IDs. `DELETE /v1/benefit-grants/{id}` revokes a grant manually, including grants from purchases. `PATCH /v1/benefit-grants/{id}` undoes a manual revocation by setting `manually_revoked_at` to `null`.
-- Customer meter credits: `POST /v1/customer-meters/credits` grants credits on a customer meter manually and returns the `meter.credited` event. `POST /v1/customer-meters/credits/{id}/reverse` reverses a manual credit, once per credit, within 7 days and in the current billing period.
-- `GET /v1/meters/external/{external_id}` and `GET /v1/webhooks/endpoints/external/{external_id}` get a meter or webhook endpoint by external ID.
+These changes only apply once you upgrade to `2027-01`. Earlier API versions keep the previous behavior.
 
-### External IDs
+#### Removed fields
 
-- Products, benefits, discounts, meters, and webhook endpoints have an `external_id` field. Set it on create and update requests; it must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
-- New `external_id` filter on the list products, benefits, discounts, and meters endpoints.
-- New `external_product_id` filter on the list checkouts, orders, order export, subscriptions, and metrics endpoints, and `external_meter_id` on the list customer meters endpoint.
-- New `external_benefit_id`, `member_id`, and `external_member_id` filters on the list benefit grants endpoint.
-- Checkout sessions can be created from `external_products`, a list of product external IDs, instead of `products`.
-
-### Other additions
-
-- Webhook payloads include an `event_id`. Use it to discard duplicate deliveries.
-- New `format` filter on the list webhook endpoints endpoint. `2027-01` can be selected as a webhook endpoint `api_version`.
-- Benefit grants (including customer portal grants and benefit grant webhook payloads) include `manually_granted_at` and `manually_revoked_at`. The events list can return the new `benefit.manually_granted`, `benefit.manually_revoked`, and `benefit.unrevoked` system events, and `meter.credited` event metadata includes a `reason` (`benefit` or `manual`).
-- Products, benefits, meters, and custom fields include `catalog_id` and `is_current`, and their list endpoints accept `catalog_id` and `catalog_status` filters.
-- Recurring products have a `trial_payment_setup_required` setting, available on create, update, and responses (including checkout links). When `false`, customers can start a trial without setting up a payment method.
-- Creating a subscription accepts a `currency`.
-- Subscription `pending_update` includes `discount_id` and `discount_unset`.
-- License keys include `order_id`, `order`, `subscription_id`, and `subscription` when they were granted from a purchase.
-- Public checkout responses include `payment_method_types`.
-- Confirming a checkout session from the client accepts a Stripe `shared_payment_token_id` granted by an agent, for one-time payments only.
-- New `created_after` and `created_before` filters on the list checkouts endpoint.
-- Subscription `proration_behavior` settings and update requests accept `auto`, which applies upgrades immediately and schedules downgrades. [Read more](/features/subscriptions/proration)
-- Customer portal: subscriptions include `payment_method_id`, and a subscription whose trial ended without converting can be reactivated with `{"reactivate": true}`.
-
-### Behavior changes
-
-- Update requests reject `null` for fields that can't be cleared. Earlier versions treat an explicit `null` on those fields as if the field were omitted. Omit the field instead to keep its current value.
-- Ingesting events requires an organization access token or an OAuth token scoped to a single organization.
-- Subscription `started_at` is no longer documented as nullable.
-
-### Removed fields
-
-Removed the following obsolete fields, including fields that were already hidden from the API documentation and SDKs. Response field removals also apply to webhook payloads. Earlier API versions retain these fields.
+Removed the following obsolete fields, including fields that were already hidden from the API documentation and SDKs. Response field removals also apply to webhook payloads.
 
 - Fixed discounts: removed `amount` and `currency` from create and update requests, responses, and webhook payloads. Use `amounts` instead; it is required when creating a fixed discount. Removed input fields are ignored.
 - Organization onboarding details: removed `about`, `intended_use`, `customer_acquisition`, `future_annual_revenue`, and `previous_annual_revenue` from create/update requests and KYC responses. Removed input fields are ignored. Updating details replaces stored values with the remaining supported fields.
@@ -73,6 +41,49 @@ Removed the following obsolete fields, including fields that were already hidden
 - Discord benefit properties: `guild_token`. Use `guild_id` instead.
 - GitHub repository benefit properties: `repository_id`. Use `repository_owner` and `repository_name` instead.
 - Legacy recurring prices: the `LegacyRecurringProductPrice` schema is dropped from the price union, and the deprecated `type` and `recurring_interval` fields are removed from price responses. Earlier API versions retain them.
+
+#### Stricter requests
+
+- Update requests reject `null` for fields that can't be cleared, with a `422` error. Earlier versions treat an explicit `null` on those fields as if the field were omitted. Omit the field instead to keep its current value.
+- Ingesting events requires an organization access token or an OAuth token scoped to a single organization. Other tokens get a `403` error.
+
+#### New values in responses
+
+Clients that only accept a fixed set of values should handle these:
+
+- Organization `proration_behavior` and subscription settings `proration_behavior` can return `auto`.
+- The events list can return the new `benefit.manually_granted`, `benefit.manually_revoked`, and `benefit.unrevoked` system events.
+- `meter.credited` event metadata includes a `reason` (`benefit` or `manual`).
+
+### New endpoints
+
+- Benefit grants: `POST /v1/benefit-grants/` grants a benefit manually to a customer or one of their members, using either Polar IDs or external IDs. `DELETE /v1/benefit-grants/{id}` revokes a grant manually, including grants from purchases. `PATCH /v1/benefit-grants/{id}` undoes a manual revocation by setting `manually_revoked_at` to `null`.
+- Customer meter credits: `POST /v1/customer-meters/credits` grants credits on a customer meter manually and returns the `meter.credited` event. `POST /v1/customer-meters/credits/{id}/reverse` reverses a manual credit, once per credit, within 7 days and in the current billing period.
+- `GET /v1/meters/external/{external_id}` and `GET /v1/webhooks/endpoints/external/{external_id}` get a meter or webhook endpoint by external ID.
+
+### External IDs
+
+- Products, benefits, discounts, meters, and webhook endpoints have an `external_id` field. Set it on create and update requests; it must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
+- New `external_id` filter on the list products, benefits, discounts, and meters endpoints.
+- New `external_product_id` filter on the list checkouts, orders, order export, subscriptions, and metrics endpoints, and `external_meter_id` on the list customer meters endpoint.
+- New `external_benefit_id`, `member_id`, and `external_member_id` filters on the list benefit grants endpoint.
+- Checkout sessions can be created from `external_products`, a list of product external IDs, instead of `products`.
+
+### Other additions
+
+- Webhook payloads include an `event_id`. Use it to discard duplicate deliveries.
+- New `format` filter on the list webhook endpoints endpoint. `2027-01` can be selected as a webhook endpoint `api_version`.
+- Benefit grants (including customer portal grants and benefit grant webhook payloads) include `manually_granted_at` and `manually_revoked_at`.
+- Products, benefits, meters, and custom fields include `catalog_id` and `is_current`, and their list endpoints accept `catalog_id` and `catalog_status` filters.
+- Recurring products have a `trial_payment_setup_required` setting, available on create, update, and responses (including checkout links). When `false`, customers can start a trial without setting up a payment method.
+- Creating a subscription accepts a `currency`.
+- Subscription `pending_update` includes `discount_id` and `discount_unset`.
+- License keys include `order_id`, `order`, `subscription_id`, and `subscription` when they were granted from a purchase.
+- Public checkout responses include `payment_method_types`.
+- New `created_after` and `created_before` filters on the list checkouts endpoint.
+- Customer portal: subscriptions include `payment_method_id`, and a subscription whose trial ended without converting can be reactivated with `{"reactivate": true}`.
+- Subscription update requests accept `auto` as `proration_behavior`, which applies upgrades immediately and schedules downgrades. [Read more](/features/subscriptions/proration)
+- Subscription `started_at` is no longer nullable.
 
 </Update>
 

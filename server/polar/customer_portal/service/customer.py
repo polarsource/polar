@@ -260,7 +260,6 @@ class CustomerService:
             payment_method.id: payment_method.country
             for payment_method in payment_methods
         }
-        # Not IP: merchants may call this from their own server.
         matching_countries = ip_geolocation.get_matching_countries(
             billing_address.country
         )

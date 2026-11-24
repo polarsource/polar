@@ -32,6 +32,15 @@
   "integrations": {
     "ga4": {
       "measurementId": "G-MBYW1QZFHE"
+    },
+    "posthog": {
+      "apiKey": "phc_H2ajVAY4cy0uQpcgN5fzpv8JC3yP8VZOjx2EXiFBbgz",
+      "apiHost": "https://polar.sh/ingest",
+      "sessionRecording": false
+    },
+    "cookies": {
+      "key": "polar_docs_analytics",
+      "value": "yes"
     }
   },
   "navigation": {

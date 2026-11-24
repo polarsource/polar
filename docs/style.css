@@ -249,3 +249,84 @@
     display: none;
   }
 }
+
+.polar-cookie-banner {
+  position: fixed;
+  right: 2rem;
+  bottom: 2rem;
+  left: 2rem;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  row-gap: 1rem;
+  padding: 1rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: oklch(0.551 0.027 264.364);
+  background: oklch(0.985 0.002 247.839);
+  border: 1px solid oklch(0.928 0.006 264.531);
+  border-radius: 1rem;
+  box-shadow:
+    0 0 50px rgba(0 0 0 / 0.02),
+    0 0 50px rgba(0 0 0 / 0.04);
+}
+
+@media (min-width: 768px) {
+  .polar-cookie-banner {
+    left: auto;
+    max-width: 24rem;
+  }
+}
+
+.polar-cookie-banner p {
+  margin: 0;
+}
+
+.polar-cookie-banner__actions {
+  display: flex;
+  align-items: center;
+  column-gap: 1rem;
+}
+
+.polar-cookie-banner button {
+  padding: 0;
+  font: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 150ms;
+}
+
+.polar-cookie-banner__accept {
+  color: oklch(0.623 0.214 259.815);
+}
+
+.polar-cookie-banner__accept:hover {
+  color: oklch(0.546 0.245 262.881);
+}
+
+.polar-cookie-banner__decline {
+  color: oklch(0.551 0.027 264.364);
+}
+
+.polar-cookie-banner__decline:hover {
+  color: oklch(0.446 0.03 256.802);
+}
+
+.dark .polar-cookie-banner {
+  color: hsl(0, 0%, 46%);
+  background: hsl(0, 0%, 3.5%);
+  border-color: hsl(0, 0%, 13%);
+}
+
+.dark .polar-cookie-banner__accept {
+  color: #fff;
+}
+
+.dark .polar-cookie-banner__accept:hover {
+  color: oklch(0.928 0.006 264.531);
+}
+
+.dark .polar-cookie-banner__decline:hover {
+  color: oklch(0.446 0.03 256.802);
+}

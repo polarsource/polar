@@ -163,6 +163,24 @@ Detailed, review-enforced patterns live next to the code — read the relevant f
 **i18n:** add new translatable strings only to `clients/packages/i18n/src/locales/en.ts` — a CI
 job auto-translates the rest. Don't edit other locale files. (More in `clients/AGENTS.md`.)
 
+**Effect** (`clients/apps/mcp`, `clients/packages/{cli,polar,ingestion}`, `sdk/cli-commands`,
+`sdk/generator/cli_commands/template`): don't write Effect from memory. Before writing or changing
+Effect code, search the Effect and opencode sources for the established pattern (errors, services
+and layers, schemas, CLI, HTTP, testing). For errors that means tagged error classes,
+`Effect.catchTag`/`catchTags`, `Match` on tags, not hand-rolled `{ _tag }` unions with `switch`
+or sniffing error message strings. Clone them if missing (`git -C <dir> pull` refreshes them):
+
+```bash
+mkdir -p ~/.local/share/effect-solutions
+[ -d ~/.local/share/effect-solutions/effect ] || git clone --depth 1 https://github.com/effect-ts/effect ~/.local/share/effect-solutions/effect
+[ -d ~/.local/share/effect-solutions/opencode ] || git clone --depth 1 https://github.com/anomalyco/opencode ~/.local/share/effect-solutions/opencode
+```
+
+Start with Effect's `LLMS.md` and `ai-docs/src/` (e.g. `01_effect/04_errors`), and
+`packages/core/src/` in opencode. The Effect checkout tracks `main` (Effect 4) and may be newer
+than the version pinned here: confirm every API against the package's installed
+`node_modules/effect` before using it.
+
 ## Architecture Decisions (ADRs)
 
 Significant, cross-cutting, or hard-to-reverse decisions are recorded as short ADRs in

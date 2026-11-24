@@ -22,6 +22,7 @@ from rich import print
 from rich.table import Table
 from sqlalchemy import Select, select
 
+from polar import tasks  # noqa: F401
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import BenefitGrant, Order, Organization
 from polar.order.repository import order_benefits_revoked_clause

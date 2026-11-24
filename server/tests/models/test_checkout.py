@@ -21,7 +21,11 @@ from polar.models.product_price import (
 from polar.postgres import AsyncSession
 from polar.product.price_set import PriceSet
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_checkout, create_product
+from tests.fixtures.random_objects import (
+    create_checkout,
+    create_product,
+    create_product_price_seat_unit,
+)
 
 
 @pytest.mark.anyio
@@ -410,6 +414,62 @@ class TestHasMeteredPrices:
         checkout.net_amount = 0
 
         assert checkout.has_metered_prices is expected_metered
+
+
+@pytest.mark.anyio
+class TestHasFutureCharges:
+    async def test_pay_what_you_want_zero(
+        self, save_fixture: SaveFixture, organization: Organization
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(0, None, None, "usd")],
+        )
+        checkout = await create_checkout(save_fixture, products=[product])
+        checkout.amount = 0
+
+        assert checkout.has_future_charges is False
+
+    async def test_metered_with_zero_amount(
+        self, save_fixture: SaveFixture, organization: Organization, meter: Meter
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(0, "usd"), (meter, Decimal("0.01"), None, "usd")],
+        )
+        checkout = await create_checkout(save_fixture, products=[product])
+
+        assert checkout.amount == 0
+        assert checkout.has_future_charges is True
+
+    async def test_seat_price_with_free_first_tier(
+        self, save_fixture: SaveFixture, organization: Organization
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[],
+        )
+        price = await create_product_price_seat_unit(
+            save_fixture,
+            product=product,
+            tiers=[
+                {"min_seats": 1, "max_seats": 1, "price_per_seat": 0},
+                {"min_seats": 2, "max_seats": None, "price_per_seat": 1000},
+            ],
+        )
+        product.prices.append(price)
+        product.all_prices.append(price)
+        checkout = await create_checkout(save_fixture, products=[product], seats=1)
+
+        assert checkout.amount == 0
+        assert checkout.has_future_charges is True
+        assert checkout.is_payment_setup_required is True
 
 
 @pytest.mark.anyio

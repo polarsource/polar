@@ -41,6 +41,7 @@ from polar.kit.metadata import MetadataColumn, MetadataMixin
 from polar.kit.trial import TrialConfigurationMixin, TrialInterval
 from polar.kit.utils import utc_now
 from polar.product.guard import (
+    is_custom_price,
     is_discount_applicable,
     is_metered_price,
 )
@@ -424,9 +425,17 @@ class Checkout(
         if self.is_free_product_price:
             return False
 
-        # PWYW set to `0`, with an extra guard for metered prices
-        # (those will still require a payment on next cycle)
-        if self.amount == 0 and not self.has_metered_prices:
+        # PWYW set to `0` stays free on every cycle. Other prices can still charge
+        # later even when the first amount is `0`: metered usage, or seats/units
+        # added beyond a free first tier.
+        if (
+            self.amount == 0
+            and self.product_prices_currency is not None
+            and all(
+                is_custom_price(price) or price.is_free
+                for price in self.product_prices_currency
+            )
+        ):
             return False
 
         # A 100% forever percentage discount makes the subscription entirely free

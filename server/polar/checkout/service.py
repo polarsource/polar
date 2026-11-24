@@ -34,6 +34,7 @@ from polar.checkout.schemas import (
 from polar.config import settings
 from polar.custom_field.data import validate_custom_field_data
 from polar.customer.repository import CustomerRepository
+from polar.customer_meter.repository import CustomerMeterRepository
 from polar.customer_seat.repository import CustomerSeatRepository
 from polar.customer_seat.service import seat_service
 from polar.customer_session.service import customer_session as customer_session_service
@@ -441,6 +442,7 @@ class CheckoutService:
                 customer is not None
                 and subscription is None
                 and not checkout_create.prices
+                and products[0].organization.is_config_as_code_enabled
             ):
                 products = await self._resolve_meter_versions(
                     session, products, customer, products_field
@@ -3087,9 +3089,13 @@ class CheckoutService:
     ) -> Checkout:
         """Swap the checkout's product for its version on the meter versions of
         the customer, once we know who the customer is."""
-        # Upgrading a subscription moves it to the current version, like a
-        # product change. Ad-hoc prices keep the product the merchant passed.
-        if not has_product_checkout(checkout) or checkout.subscription is not None:
+        # Only config as code creates meter versions. Upgrading a subscription
+        # moves it to the current version, like a product change.
+        if (
+            not has_product_checkout(checkout)
+            or not checkout.organization.is_config_as_code_enabled
+            or checkout.subscription is not None
+        ):
             return checkout
         checkout_product = next(
             checkout_product
@@ -3109,7 +3115,16 @@ class CheckoutService:
                 requested = versions[0]
 
         customer_id = checkout.customer_id
-        if customer_id is None and checkout.customer_email is not None:
+        if (
+            customer_id is None
+            and checkout.customer_email is not None
+            and await CustomerMeterRepository.from_session(
+                session
+            ).has_previous_meter_versions(
+                email=checkout.customer_email,
+                organization_id=checkout.organization.id,
+            )
+        ):
             customer = await CustomerRepository.from_session(
                 session
             ).get_by_email_and_organization(

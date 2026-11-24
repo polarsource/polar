@@ -7582,6 +7582,11 @@ class TestCreateDraftOrder:
         off_session_organization: Organization,
         customer: Customer,
     ) -> None:
+        off_session_organization.feature_settings = {
+            **off_session_organization.feature_settings,
+            "config_as_code_enabled": True,
+        }
+        await save_fixture(off_session_organization)
         previous, current = [
             await create_meter(
                 save_fixture,

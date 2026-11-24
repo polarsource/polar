@@ -533,6 +533,10 @@ async def pro_versions(
 ) -> tuple[Product, Product]:
     """`pro` on a previous and the current meter version, with the customer on
     the previous one."""
+    organization.feature_settings = {
+        **organization.feature_settings,
+        "config_as_code_enabled": True,
+    }
     previous, current = [
         await create_meter(
             save_fixture,
@@ -4523,6 +4527,25 @@ class TestUpdate:
             session, checkout, CheckoutUpdate(customer_email="someone@example.com")
         )
         assert (checkout.product, checkout.amount) == (pro_v2, 1500)
+
+    async def test_without_config_as_code_keeps_the_product(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        pro_versions: tuple[Product, Product],
+    ) -> None:
+        _, pro_v2 = pro_versions
+        organization.feature_settings = {}
+        await save_fixture(organization)
+        checkout = await create_checkout(save_fixture, products=[pro_v2])
+
+        checkout = await checkout_service.update(
+            session, checkout, CheckoutUpdate(customer_email=customer.email)
+        )
+
+        assert checkout.product == pro_v2
 
     @pytest.mark.parametrize(
         "subscription_status",

@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import cast
 from uuid import UUID
 
-from sqlalchemy import Select, select, update
+from sqlalchemy import Select, exists, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import contains_eager
 
@@ -43,6 +43,34 @@ class CustomerMeterRepository(
             )
         )
         return await self.get_all(statement)
+
+    async def has_previous_meter_versions(
+        self,
+        customer_id: UUID | None = None,
+        *,
+        email: str | None = None,
+        organization_id: UUID | None = None,
+    ) -> bool:
+        """Whether the customer, by ID or by email in the organization, has a
+        customer meter on a meter that isn't current."""
+        clause = exists().where(
+            CustomerMeter.meter_id == Meter.id,
+            ~CustomerMeter.is_deleted,
+            Meter.is_current.is_(False),
+            Meter.external_id.is_not(None),
+        )
+        if customer_id is not None:
+            clause = clause.where(CustomerMeter.customer_id == customer_id)
+        else:
+            assert email is not None
+            assert organization_id is not None
+            clause = clause.where(
+                CustomerMeter.customer_id == Customer.id,
+                func.lower(Customer.email) == email.lower(),
+                Customer.organization_id == organization_id,
+                ~Customer.is_deleted,
+            )
+        return bool(await self.session.scalar(select(clause)))
 
     async def get_meter_versions(
         self, customer_id: UUID, external_ids: Collection[str]

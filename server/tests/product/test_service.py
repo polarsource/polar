@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, call
 import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy import delete
+from sqlalchemy import event as sqlalchemy_event
 
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
@@ -3311,3 +3312,38 @@ class TestResolveMeterVersions:
             await product_service.resolve_meter_versions(session, product, customer.id)
             is None
         )
+
+    async def test_current_product_takes_one_query(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        ai_credits: tuple[Meter, Meter],
+    ) -> None:
+        _, current = ai_credits
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+            prices=[(1000, "usd"), (current, Decimal(100), None, "usd")],
+        )
+        await save_fixture(CustomerMeter(customer=customer, meter=current))
+        queries = 0
+
+        def count_query(*args: Any) -> None:
+            nonlocal queries
+            queries += 1
+
+        bind = session.sync_session.bind
+        assert bind is not None
+        sqlalchemy_event.listen(bind, "before_cursor_execute", count_query)
+        try:
+            resolved = await product_service.resolve_meter_versions(
+                session, product, customer.id
+            )
+        finally:
+            sqlalchemy_event.remove(bind, "before_cursor_execute", count_query)
+
+        assert (resolved, queries) == (product, 1)

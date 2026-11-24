@@ -1074,11 +1074,15 @@ class OrderService:
                 ]
             )
 
-        resolved = await product_service.resolve_meter_versions(
-            session,
-            product,
-            customer.id,
-            options=product_repository.get_eager_options(),
+        resolved = (
+            await product_service.resolve_meter_versions(
+                session,
+                product,
+                customer.id,
+                options=product_repository.get_eager_options(),
+            )
+            if organization.is_config_as_code_enabled
+            else product
         )
         if resolved is None:
             raise PolarRequestValidationError(

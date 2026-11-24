@@ -241,11 +241,26 @@ class ProductService:
         *,
         options: Options = (),
     ) -> Product | None:
-        """The version of `product` on the same meter versions as the customer's
-        customer meters: `product` itself if it is, else the latest published
-        version that is, archived or not. `None` if no version is."""
+        """Return the version of `product` to sell to the customer.
+
+        A version is compatible when, for each meter it bills or credits, the
+        customer has no customer meter with that meter's `external_id`, or has
+        one on that exact meter version.
+
+        Return `product` if it's compatible. Otherwise return the latest
+        published compatible version, archived or not, or `None` if there's none.
+        """
         repository = ProductRepository.from_session(session)
         customer_meter_repository = CustomerMeterRepository.from_session(session)
+
+        # A current product only uses current meters.
+        if (
+            product.is_current
+            and not await customer_meter_repository.has_previous_meter_versions(
+                customer_id
+            )
+        ):
+            return product
 
         async def get_compatible(products: Sequence[Product]) -> Product | None:
             meters = await repository.get_meters([product.id for product in products])

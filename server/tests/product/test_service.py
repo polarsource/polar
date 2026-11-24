@@ -1,5 +1,6 @@
 import asyncio
 import uuid
+from collections.abc import Callable
 from decimal import Decimal
 from typing import Any
 from unittest.mock import AsyncMock, call
@@ -56,6 +57,7 @@ from polar.product.schemas import (
     ProductCreate,
     ProductCreateOneTime,
     ProductCreateRecurring,
+    ProductPriceCreate,
     ProductPriceCustomCreate,
     ProductPriceFixedCreate,
     ProductPriceMeteredTiersCreate,
@@ -1325,6 +1327,7 @@ def _tiered_metered_price_create() -> ProductPriceMeteredTiersCreate:
 def _seat_price_create(
     *,
     price_per_seat: int = 2000,
+    minimum_units: int | None = None,
     currency: PresentmentCurrency = PresentmentCurrency.usd,
     tax_behavior: TaxBehaviorOption | None = None,
 ) -> ProductPriceSeatBasedCreate:
@@ -1332,6 +1335,7 @@ def _seat_price_create(
         amount_type=ProductPriceAmountType.seat_based,
         price_currency=currency,
         tax_behavior=tax_behavior,
+        minimum_units=minimum_units,
         tiers=TiersInput.model_validate(
             {
                 "type": TierType.volume,
@@ -1525,6 +1529,73 @@ class TestCreateUnitBasedPrice:
 
         assert len(product.prices) == 3
         assert len([p for p in product.prices if is_unit_price(p)]) == 1
+
+
+@pytest.mark.anyio
+class TestCreateZeroMinimumQuantity:
+    @pytest.mark.auth
+    @pytest.mark.parametrize("quantity_price", [_seat_price_create, _unit_price_create])
+    async def test_with_base_fee(
+        self,
+        quantity_price: Callable[..., ProductPriceCreate],
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        product = await product_service.create(
+            session,
+            ProductCreateRecurring(
+                name="Product",
+                recurring_interval=SubscriptionRecurringInterval.month,
+                prices=[
+                    _fixed_price_create(amount=5000),
+                    quantity_price(minimum_units=0),
+                ],
+                organization_id=organization.id,
+            ),
+            auth_subject,
+        )
+
+        price = next(p for p in product.prices if is_seat_price(p) or is_unit_price(p))
+        assert price.minimum_units == 0
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize("quantity_price", [_seat_price_create, _unit_price_create])
+    @pytest.mark.parametrize(
+        "other_prices",
+        [
+            pytest.param([], id="no fixed price"),
+            pytest.param([_fixed_price_create(amount=0)], id="free fixed price"),
+        ],
+    )
+    async def test_without_base_fee(
+        self,
+        quantity_price: Callable[..., ProductPriceCreate],
+        other_prices: list[ProductPriceCreate],
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError) as e:
+            await product_service.create(
+                session,
+                ProductCreateRecurring(
+                    name="Product",
+                    recurring_interval=SubscriptionRecurringInterval.month,
+                    prices=[*other_prices, quantity_price(minimum_units=0)],
+                    organization_id=organization.id,
+                ),
+                auth_subject,
+            )
+
+        assert e.value.errors()[0]["loc"] == (
+            "body",
+            "prices",
+            len(other_prices),
+            "minimum_units",
+        )
 
 
 @pytest.mark.anyio

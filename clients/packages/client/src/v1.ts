@@ -37122,7 +37122,7 @@ export interface components {
       tiers: components['schemas']['TiersInput']
       /**
        * Minimum Units
-       * @description The minimum purchasable seat quantity (inclusive). Defaults to 1 when not set.
+       * @description The minimum purchasable seat quantity (inclusive). Defaults to 1 when not set. Can be 0 only when the product also has a fixed price above 0.
        */
       minimum_units?: number | null
     }
@@ -37224,7 +37224,7 @@ export interface components {
       tiers: components['schemas']['TiersInput']
       /**
        * Minimum Units
-       * @description The minimum purchasable quantity (inclusive). Defaults to 1 when not set.
+       * @description The minimum purchasable quantity (inclusive). Defaults to 1 when not set. Can be 0 only when the product also has a fixed price above 0.
        */
       minimum_units?: number | null
       /**

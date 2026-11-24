@@ -216,7 +216,7 @@ class ConfigProductPriceSeatBased(ProductPriceSeatBasedCreate):
 
     minimum_units: int = Field(
         default=1,
-        ge=1,
+        ge=0,
         description="The minimum purchasable seat quantity (inclusive).",
     )
 
@@ -226,7 +226,7 @@ class ConfigProductPriceUnitBased(ProductPriceUnitBasedCreate):
 
     minimum_units: int = Field(
         default=1,
-        ge=1,
+        ge=0,
         description="The minimum purchasable unit quantity (inclusive).",
     )
 

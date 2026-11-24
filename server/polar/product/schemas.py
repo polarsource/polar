@@ -431,10 +431,11 @@ class ProductPriceSeatBasedCreate(ProductPriceCreateBase):
     )
     minimum_units: int | None = Field(
         default=None,
-        ge=1,
+        ge=0,
         description=(
             "The minimum purchasable seat quantity (inclusive). "
-            "Defaults to 1 when not set."
+            "Defaults to 1 when not set. "
+            "Can be 0 only when the product also has a fixed price above 0."
         ),
     )
 
@@ -522,9 +523,10 @@ class ProductPriceUnitBasedCreate(ProductPriceCreateBase):
     )
     minimum_units: int | None = Field(
         default=None,
-        ge=1,
+        ge=0,
         description=(
-            "The minimum purchasable quantity (inclusive). Defaults to 1 when not set."
+            "The minimum purchasable quantity (inclusive). Defaults to 1 when not set. "
+            "Can be 0 only when the product also has a fixed price above 0."
         ),
     )
     unit_label: UnitLabel | None = Field(

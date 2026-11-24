@@ -108,7 +108,7 @@ class CustomerSubscriptionUpdateSeats(Schema):
 
     seats: Int32 = Field(
         description="Update the number of seats for this subscription.",
-        ge=1,
+        ge=0,
     )
 
 
@@ -117,7 +117,7 @@ class CustomerSubscriptionUpdateUnits(Schema):
 
     units: Int32 = Field(
         description="Update the number of units for this subscription.",
-        ge=1,
+        ge=0,
     )
 
 
@@ -134,7 +134,7 @@ class CustomerSubscriptionChangeSeats(Schema):
 
     seats: Int32 = Field(
         description="Preview a change of the subscription to this number of seats.",
-        ge=1,
+        ge=0,
     )
 
 
@@ -143,7 +143,7 @@ class CustomerSubscriptionChangeUnits(Schema):
 
     units: Int32 = Field(
         description="Preview a change of the subscription to this number of units.",
-        ge=1,
+        ge=0,
     )
 
 

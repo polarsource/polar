@@ -9912,6 +9912,47 @@ class TestUpdateSeats:
         assert entry.amount is not None
         assert entry.amount > 0
 
+    async def test_seat_increase_from_zero_with_base_fee(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        frozen_time: datetime,
+        enqueue_job_mock: MagicMock,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(5000, "usd"), ("seat", 1000, "usd")],
+        )
+        seat_price = next(p for p in product.prices if is_seat_price(p))
+        seat_price.minimum_units = 0
+        await save_fixture(seat_price)
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=0,
+        )
+        assert subscription.amount == 5000
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_seats(
+                session,
+                ctx,
+                subscription,
+                seats=1,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
+        await session.flush()
+
+        assert updated.seats == 1
+        assert updated.amount == 6000
+
     async def test_seat_increase_tier_change(
         self,
         session: AsyncSession,

@@ -56,7 +56,7 @@ const CheckoutSeatSelector = ({
   const isFixedSeats = hasMaximumLimit && minimumSeats === maximumSeats
 
   // Display seats clamped to at least the minimum
-  const displaySeats = Math.max(checkout.seats || minimumSeats, minimumSeats)
+  const displaySeats = Math.max(checkout.seats ?? minimumSeats, minimumSeats)
   // Track whether the checkout needs to be corrected
   const needsSeatCorrection =
     checkout.seats !== null &&

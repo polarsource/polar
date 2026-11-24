@@ -22,7 +22,7 @@ interface CustomerUnitQuantityManagerProps {
 const getUnitBounds = (
   unitPrice: schemas['ProductPriceUnitBased'],
 ): { min: number; max: number | null } => {
-  const min = Math.max(1, unitPrice.minimum_units ?? 0)
+  const min = unitPrice.minimum_units ?? 1
   if (unitPrice.maximum_units != null) {
     return { min, max: unitPrice.maximum_units }
   }

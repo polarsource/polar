@@ -2788,7 +2788,7 @@ class SubscriptionService:
             seats=seats,
         )
 
-        old_seats = subscription.seats or 1
+        old_seats = subscription.seats if subscription.seats is not None else 1
         old_amount = subscription.amount
 
         subscription_update_repository = SubscriptionUpdateRepository.from_session(
@@ -2910,7 +2910,7 @@ class SubscriptionService:
             units=units,
         )
 
-        old_units = subscription.units or 1
+        old_units = subscription.units if subscription.units is not None else 1
         old_amount = subscription.amount
 
         subscription_update_repository = SubscriptionUpdateRepository.from_session(
@@ -3829,7 +3829,9 @@ class SubscriptionService:
                 organization=subscription.organization,
                 metadata={
                     "subscription_id": str(subscription.id),
-                    "old_seats": subscription.seats or 1,
+                    "old_seats": subscription.seats
+                    if subscription.seats is not None
+                    else 1,
                     "new_seats": seats,
                     "proration_behavior": proration_behavior.value,
                 },
@@ -3843,7 +3845,9 @@ class SubscriptionService:
                 organization=subscription.organization,
                 metadata={
                     "subscription_id": str(subscription.id),
-                    "old_units": subscription.units or 1,
+                    "old_units": subscription.units
+                    if subscription.units is not None
+                    else 1,
                     "new_units": units,
                     "proration_behavior": proration_behavior.value,
                 },

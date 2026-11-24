@@ -36873,7 +36873,7 @@
               {
                 "type": "integer",
                 "maximum": 10000.0,
-                "minimum": 1.0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -36887,7 +36887,7 @@
               {
                 "type": "integer",
                 "maximum": 2147483647.0,
-                "minimum": 1.0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -38880,7 +38880,7 @@
               {
                 "type": "integer",
                 "maximum": 10000.0,
-                "minimum": 1.0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -38894,7 +38894,7 @@
               {
                 "type": "integer",
                 "maximum": 10000.0,
-                "minimum": 1.0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -38922,7 +38922,7 @@
               {
                 "type": "integer",
                 "maximum": 2147483647.0,
-                "minimum": 1.0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -38936,7 +38936,7 @@
               {
                 "type": "integer",
                 "maximum": 2147483647.0,
-                "minimum": 1.0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -39508,7 +39508,7 @@
               {
                 "type": "integer",
                 "maximum": 10000.0,
-                "minimum": 1.0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -39522,7 +39522,7 @@
               {
                 "type": "integer",
                 "maximum": 10000.0,
-                "minimum": 1.0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -39550,7 +39550,7 @@
               {
                 "type": "integer",
                 "maximum": 2147483647.0,
-                "minimum": 1.0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -39564,7 +39564,7 @@
               {
                 "type": "integer",
                 "maximum": 2147483647.0,
-                "minimum": 1.0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -39952,7 +39952,7 @@
               {
                 "type": "integer",
                 "maximum": 10000.0,
-                "minimum": 1.0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -39966,7 +39966,7 @@
               {
                 "type": "integer",
                 "maximum": 10000.0,
-                "minimum": 1.0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -39994,7 +39994,7 @@
               {
                 "type": "integer",
                 "maximum": 2147483647.0,
-                "minimum": 1.0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -40008,7 +40008,7 @@
               {
                 "type": "integer",
                 "maximum": 2147483647.0,
-                "minimum": 1.0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -41742,7 +41742,7 @@
               {
                 "type": "integer",
                 "maximum": 10000.0,
-                "minimum": 1.0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -41756,7 +41756,7 @@
               {
                 "type": "integer",
                 "maximum": 2147483647.0,
-                "minimum": 1.0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -42141,7 +42141,7 @@
               {
                 "type": "integer",
                 "maximum": 10000.0,
-                "minimum": 1.0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -42155,7 +42155,7 @@
               {
                 "type": "integer",
                 "maximum": 2147483647.0,
-                "minimum": 1.0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -64210,7 +64210,7 @@
               {
                 "type": "integer",
                 "maximum": 2147483647.0,
-                "minimum": 1.0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -71940,14 +71940,14 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 1.0
+                "minimum": 0.0
               },
               {
                 "type": "null"
               }
             ],
             "title": "Minimum Units",
-            "description": "The minimum purchasable quantity (inclusive). Defaults to 1 when not set."
+            "description": "The minimum purchasable quantity (inclusive). Defaults to 1 when not set. Can be 0 only when the product also has a fixed price above 0."
           },
           "unit_label": {
             "anyOf": [

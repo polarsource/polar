@@ -246,9 +246,13 @@ def resolve_proration_behavior(
     if product is not None:
         is_upgrade = _is_product_upgrade(subscription, product)
     elif seats is not None:
-        is_upgrade = seats > (subscription.seats or 1)
+        is_upgrade = seats > (
+            subscription.seats if subscription.seats is not None else 1
+        )
     elif units is not None:
-        is_upgrade = units > (subscription.units or 1)
+        is_upgrade = units > (
+            subscription.units if subscription.units is not None else 1
+        )
     else:
         raise NotImplementedError("Only product, seats and units updates are supported")
 

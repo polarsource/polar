@@ -38,7 +38,10 @@ export const UpdateSubscriptionSeatsForm = ({
   })
   const assignedSeats =
     (seatsData?.total_seats ?? 0) - (seatsData?.available_seats ?? 0)
-  const minimumSeats = Math.max(assignedSeats, 1)
+  const seatPrice = subscription.prices.find(
+    (price) => price.amount_type === 'seat_based',
+  )
+  const minimumSeats = Math.max(assignedSeats, seatPrice?.minimum_units ?? 1)
 
   const defaultProrationBehavior =
     organization.subscription_settings.proration_behavior
@@ -102,7 +105,7 @@ export const UpdateSubscriptionSeatsForm = ({
                 message:
                   assignedSeats > 0
                     ? `Cannot be fewer than the ${assignedSeats} assigned seats`
-                    : 'Must be at least 1 seat',
+                    : `Must be at least ${minimumSeats} ${minimumSeats === 1 ? 'seat' : 'seats'}`,
               },
               validate: (value) =>
                 Number.isInteger(value) || 'Must be a whole number',

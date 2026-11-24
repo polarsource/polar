@@ -1046,6 +1046,25 @@ class ProductService:
                     }
                 )
 
+            has_base_fee = any(p.price_amount > 0 for p in fixed_prices)
+            for quantity_price, index in currency_prices:
+                if (
+                    (is_seat_price(quantity_price) or is_unit_price(quantity_price))
+                    and quantity_price.minimum_units == 0
+                    and not has_base_fee
+                ):
+                    errors.append(
+                        {
+                            "type": "value_error",
+                            "loc": (*error_prefix, index, "minimum_units"),
+                            "msg": (
+                                "A minimum of 0 is only allowed when the product "
+                                "also has a fixed price above 0."
+                            ),
+                            "input": quantity_price.minimum_units,
+                        }
+                    )
+
             # Check that a meter appears only once per currency
             currency_meters: set[uuid.UUID] = set()
             for metered_price, index in (

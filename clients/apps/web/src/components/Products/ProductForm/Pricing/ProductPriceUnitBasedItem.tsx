@@ -51,6 +51,17 @@ export const ProductPriceUnitBasedItem: React.FC<
   const { unitLabel: singularNoun, unitLabelPlural: pluralNoun } =
     nouns ?? getUnitLabels({ unit_label: unitLabel ?? null })
 
+  const hasBaseFee = () => {
+    const priceCurrency = getValues(`prices.${index}.price_currency`)
+    return (getValues('prices') ?? []).some(
+      (price) =>
+        !('amount_type' in price) ||
+        (price.amount_type === 'fixed' &&
+          price.price_currency === priceCurrency &&
+          (price.price_amount ?? 0) > 0),
+    )
+  }
+
   const deriveTieringModel = (): TieringModel => {
     if (currentTierType === 'graduated') {
       return 'graduated'
@@ -168,13 +179,16 @@ export const ProductPriceUnitBasedItem: React.FC<
         control={control}
         name={`prices.${index}.minimum_units` as const}
         rules={{
-          min: { value: 1, message: 'Must be at least 1' },
+          min: { value: 0, message: 'Must be at least 0' },
           validate: (value) => {
             if (value == null) {
               return true
             }
             if (!Number.isInteger(Number(value))) {
               return 'Must be a whole number of units'
+            }
+            if (Number(value) === 0 && !hasBaseFee()) {
+              return 'A minimum of 0 requires a fixed price above 0'
             }
             return true
           },
@@ -186,7 +200,7 @@ export const ProductPriceUnitBasedItem: React.FC<
               <Input
                 {...field}
                 type="number"
-                min={1}
+                min={0}
                 step={1}
                 value={field.value ?? ''}
                 placeholder="1"

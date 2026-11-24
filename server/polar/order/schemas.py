@@ -359,7 +359,7 @@ class OrderCreate(MetadataInputMixin, CustomFieldDataInputMixin):
     )
     units: Int32 | None = Field(
         None,
-        ge=1,
+        ge=0,
         description=(
             "The number of units to charge for. Required when the product has "
             "unit-based pricing, and rejected otherwise. The amount comes from "

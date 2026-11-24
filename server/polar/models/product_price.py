@@ -493,8 +493,7 @@ class ProductPriceUnit(TieredPrice, ProductPrice):
         return int(amount)
 
     def get_minimum_purchasable_units(self) -> int:
-        """The smallest purchasable quantity, never below one unit."""
-        return max(1, self.get_minimum_units())
+        return self.minimum_units if self.minimum_units is not None else 1
 
     __mapper_args__ = {
         "polymorphic_identity": ProductPriceAmountType.unit_based,

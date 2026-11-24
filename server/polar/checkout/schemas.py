@@ -220,13 +220,13 @@ class CheckoutCreateBase(
     amount: Amount | None = None
     seats: Int32 | None = Field(
         default=None,
-        ge=1,
+        ge=0,
         le=10000,
         description="Predefined number of seats (works with seat-based pricing only)",
     )
     min_seats: Int32 | None = Field(
         default=None,
-        ge=1,
+        ge=0,
         le=10000,
         description=("Minimum number of seats (works with seat-based pricing only)"),
     )
@@ -239,12 +239,12 @@ class CheckoutCreateBase(
 
     units: Int32 | None = Field(
         default=None,
-        ge=1,
+        ge=0,
         description="Predefined number of units (works with unit-based pricing only)",
     )
     min_units: Int32 | None = Field(
         default=None,
-        ge=1,
+        ge=0,
         description=("Minimum number of units (works with unit-based pricing only)"),
     )
     max_units: Int32 | None = Field(
@@ -472,13 +472,13 @@ class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
     amount: Omissible[Amount] = MISSING
     seats: Omissible[Int32] = Field(
         default=MISSING,
-        ge=1,
+        ge=0,
         le=10000,
         description="Number of seats for seat-based pricing.",
     )
     units: Omissible[Int32] = Field(
         default=MISSING,
-        ge=1,
+        ge=0,
         description="Number of units for unit-based pricing.",
     )
     is_business_customer: Omissible[bool] = MISSING

@@ -2835,7 +2835,11 @@ class CheckoutService:
                 if maximum_seats is not None:
                     seats = min(seats, maximum_seats)
             else:
-                seats = previous_seats or seat_price.get_minimum_seats()
+                seats = (
+                    previous_seats
+                    if previous_seats is not None
+                    else seat_price.get_minimum_seats()
+                )
             self._validate_seat_limits(
                 seat_price,
                 seats,
@@ -2861,7 +2865,11 @@ class CheckoutService:
                 if maximum_units is not None:
                     units = min(units, maximum_units)
             else:
-                units = previous_units or unit_price.get_minimum_purchasable_units()
+                units = (
+                    previous_units
+                    if previous_units is not None
+                    else unit_price.get_minimum_purchasable_units()
+                )
             validate_unit_limits(
                 unit_price,
                 units,

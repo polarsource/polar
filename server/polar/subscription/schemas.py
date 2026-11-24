@@ -434,7 +434,7 @@ class SubscriptionUpdateSeats(Schema):
 
     seats: Int32 = Field(
         description="Update the number of seats for this subscription.",
-        ge=1,
+        ge=0,
     )
     proration_behavior: Omissible[ProrationBehaviorSetting] = Field(
         default=MISSING,
@@ -450,7 +450,7 @@ class SubscriptionUpdateUnits(Schema):
 
     units: Int32 = Field(
         description="Update the number of units for this subscription.",
-        ge=1,
+        ge=0,
     )
     proration_behavior: Omissible[ProrationBehaviorSetting] = Field(
         default=MISSING,
@@ -734,7 +734,7 @@ class SubscriptionChangeSeats(Schema):
 
     seats: Int32 = Field(
         description="Preview a change of the subscription to this number of seats.",
-        ge=1,
+        ge=0,
     )
     proration_behavior: ProrationBehaviorSetting | None = Field(
         default=None,
@@ -750,7 +750,7 @@ class SubscriptionChangeUnits(Schema):
 
     units: Int32 = Field(
         description="Preview a change of the subscription to this number of units.",
-        ge=1,
+        ge=0,
     )
     proration_behavior: ProrationBehaviorSetting | None = Field(
         default=None,

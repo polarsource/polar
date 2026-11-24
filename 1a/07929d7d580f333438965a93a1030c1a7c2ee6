@@ -1,0 +1,27 @@
+server/polar/payment/repository.py
+  s_8606a0a4dff6d2::t_206381d1e9beda 64,72
+server/polar/refund/repository.py
+  s_8606a0a4dff6d2::t_11d348f3db35cf 50-54
+server/tests/dispute/test_service.py
+  s_8606a0a4dff6d2::t_bbefb8023f5b0c 1694-1699
+server/tests/fixtures/random_objects.py
+  s_8606a0a4dff6d2::t_42b99213f090ee 2078,2097
+server/polar/dispute/service.py
+  s_8606a0a4dff6d2::t_c6adf210aaa45e 431,441-458,479-490,516
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1a07929d7d580f333438965a93a1030c1a7c2ee6",
+  "prompts": {},
+  "sessions": {
+    "s_8606a0a4dff6d2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "27928f2b-2ca8-4471-b046-7f4aaf11b62a",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

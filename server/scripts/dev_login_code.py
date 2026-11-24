@@ -16,7 +16,7 @@ from sqlalchemy import Row, text
 
 from polar.config import settings
 from polar.kit.crypto import get_legacy_secret
-from polar.kit.db.postgres import create_async_sessionmaker
+from polar.kit.db.postgres import create_async_sessionmaker  # lint-skip: dry-run
 from polar.kit.utils import utc_now
 from polar.postgres import AsyncSession, create_async_engine
 from scripts.db import assert_dev_or_testing

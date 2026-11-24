@@ -2075,6 +2075,7 @@ async def create_refund(
     processor_balance_transaction_id: str = "STRIPE_BALANCE_TRANSACTION_ID",
     dispute: Dispute | None = None,
     revoke_benefits: bool = False,
+    destination_details: dict[str, Any] | None = None,
 ) -> Refund:
     refund = Refund(
         status=status,
@@ -2093,6 +2094,7 @@ async def create_refund(
         processor_reason=processor_reason,
         processor_balance_transaction_id=processor_balance_transaction_id,
         revoke_benefits=revoke_benefits,
+        destination_details=destination_details or {},
     )
     await save_fixture(refund)
     return refund

@@ -418,16 +418,6 @@ class DisputeService:
     ) -> Dispute:
         repository = DisputeRepository.from_session(session)
 
-        # ChargebackStop uses PaymentIntent ID, but we use Charge ID
-        payment_intent_id = alert["integration_transaction_id"]
-        if payment_intent_id is None:
-            charge_id = await self._get_unlinked_alert_charge_id(session, alert)
-        else:
-            payment_intent = await stripe_service.get_payment_intent(payment_intent_id)
-            latest_charge = payment_intent.latest_charge
-            assert latest_charge is not None
-            charge_id = get_expandable_id(latest_charge)
-
         # First try to find by alert processor ID. Locked so concurrent alert
         # deliveries can't both see a non-prevented dispute and revoke twice.
         dispute = await repository.get_by_alert_processor_id(
@@ -438,6 +428,7 @@ class DisputeService:
         )
         # Then try to find by matching payment info, in case Stripe already pinged us about the dispute
         if dispute is None:
+            charge_id = await self._get_alert_charge_id(session, alert)
             dispute = await repository.get_matching_by_dispute_alert(
                 PaymentProcessor.stripe,
                 charge_id,
@@ -447,25 +438,25 @@ class DisputeService:
                 for_update=True,
             )
 
-        if dispute is None:
-            payment, order = await self._get_payment_and_order_from_processor_id(
-                session, PaymentProcessor.stripe, charge_id
-            )
-            amount, tax_amount = order.calculate_refunded_tax_from_total(
-                alert["transaction_amount_in_cents"]
-            )
-            dispute = await repository.create(
-                Dispute(
-                    amount=amount,
-                    tax_amount=tax_amount,
-                    currency=alert["transaction_currency_code"].lower(),
-                    payment_processor=PaymentProcessor.stripe,
-                    payment_processor_id=None,  # We don't know the dispute ID yet
-                    order=order,
-                    payment=payment,
-                    status=DisputeStatus.early_warning,
+            if dispute is None:
+                payment, order = await self._get_payment_and_order_from_processor_id(
+                    session, PaymentProcessor.stripe, charge_id
                 )
-            )
+                amount, tax_amount = order.calculate_refunded_tax_from_total(
+                    alert["transaction_amount_in_cents"]
+                )
+                dispute = await repository.create(
+                    Dispute(
+                        amount=amount,
+                        tax_amount=tax_amount,
+                        currency=alert["transaction_currency_code"].lower(),
+                        payment_processor=PaymentProcessor.stripe,
+                        payment_processor_id=None,  # We don't know the dispute ID yet
+                        order=order,
+                        payment=payment,
+                        status=DisputeStatus.early_warning,
+                    )
+                )
 
         dispute.dispute_alert_processor = DisputeAlertProcessor.chargeback_stop
         dispute.dispute_alert_processor_id = alert["id"]
@@ -484,6 +475,18 @@ class DisputeService:
                 await dispute_case_service.prevent(session, case)
 
         return await repository.update(dispute)
+
+    async def _get_alert_charge_id(
+        self, session: AsyncSession, alert: ChargebackStopAlert
+    ) -> str:
+        # ChargebackStop uses PaymentIntent ID, but we use Charge ID
+        payment_intent_id = alert["integration_transaction_id"]
+        if payment_intent_id is None:
+            return await self._get_unlinked_alert_charge_id(session, alert)
+        payment_intent = await stripe_service.get_payment_intent(payment_intent_id)
+        latest_charge = payment_intent.latest_charge
+        assert latest_charge is not None
+        return get_expandable_id(latest_charge)
 
     async def _get_unlinked_alert_charge_id(
         self, session: AsyncSession, alert: ChargebackStopAlert
@@ -510,7 +513,7 @@ class DisputeService:
                 PaymentProcessor.stripe,
                 authorization_code,
                 currency=alert["transaction_currency_code"].lower(),
-                min_amount=alert["transaction_amount_in_cents"],
+                amount=alert["transaction_amount_in_cents"],
                 created_after=authorized_day - ALERT_AUTHORIZATION_WINDOW_BEFORE,
                 created_before=authorized_day + ALERT_AUTHORIZATION_WINDOW_AFTER,
             )

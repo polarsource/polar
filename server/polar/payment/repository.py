@@ -61,7 +61,7 @@ class PaymentRepository(
         authorization_code: str,
         *,
         currency: str,
-        min_amount: int,
+        amount: int,
         created_after: datetime,
         created_before: datetime,
     ) -> Sequence[Payment]:
@@ -69,7 +69,7 @@ class PaymentRepository(
             Payment.processor == processor,
             Payment.status == PaymentStatus.succeeded,
             Payment.currency == currency,
-            Payment.amount >= min_amount,
+            Payment.amount == amount,
             Payment.created_at >= created_after,
             Payment.created_at < created_before,
             Payment.method_metadata["authorization_code"].astext == authorization_code,

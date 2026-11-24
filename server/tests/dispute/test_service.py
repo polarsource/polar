@@ -1691,9 +1691,12 @@ class TestUpsertFromChargebackStop:
     ) -> None:
         order = await create_order(save_fixture, customer=customer)
         payment = await create_payment(save_fixture, organization, order=order)
-        refund = await create_refund(save_fixture, order, payment)
-        refund.destination_details = {"card": {"reference": "REFUND_ARN"}}
-        await save_fixture(refund)
+        refund = await create_refund(
+            save_fixture,
+            order,
+            payment,
+            destination_details={"card": {"reference": "REFUND_ARN"}},
+        )
         alert = build_chargeback_stop_alert(
             integration_transaction_id=None,
             transaction_acquirer_reference_number="REFUND_ARN",

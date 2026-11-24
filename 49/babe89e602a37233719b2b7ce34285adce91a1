@@ -1,0 +1,19 @@
+server/tests/test_redis.py
+  s_7eddc639c6d8c2::t_c176e426b1fb3e 3,24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "49babe89e602a37233719b2b7ce34285adce91a1",
+  "prompts": {},
+  "sessions": {
+    "s_7eddc639c6d8c2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f2e4eaa7-7ee3-4559-b250-e0291ca1b824",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

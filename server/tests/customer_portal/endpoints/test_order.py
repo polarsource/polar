@@ -8,10 +8,7 @@ from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.integrations.stripe.payment import handle_success
-from polar.integrations.stripe.service import (
-    STRIPE_METADATA_ORDER_RECOVERY,
-    StripeService,
-)
+from polar.integrations.stripe.service import StripeService
 from polar.kit.address import Address
 from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
@@ -20,8 +17,9 @@ from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.payment import PaymentStatus
 from polar.models.subscription import SubscriptionStatus
+from polar.order.tasks import order_paid
 from polar.postgres import AsyncSession
-from polar.version import NEXT_API_VERSION
+from polar.version import V2027_01
 from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -43,7 +41,7 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
 
 @pytest.mark.anyio
 @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
-@pytest.mark.api_version(NEXT_API_VERSION)
+@pytest.mark.api_version(V2027_01)
 class TestOrderRecovery:
     async def test_trial_authentication_and_settlement(
         self,
@@ -53,6 +51,7 @@ class TestOrderRecovery:
         product: Product,
         customer: Customer,
         stripe_service_mock: MagicMock,
+        mocker: MockerFixture,
     ) -> None:
         customer.stripe_customer_id = "cus_recovery"
         product.is_tax_applicable = False
@@ -88,13 +87,13 @@ class TestOrderRecovery:
             None,
         )
         stripe_service_mock.create_payment_intent.return_value = intent
-        stripe_service_mock.confirm_payment_intent.return_value = intent
         response = await client.patch(
             f"{url}/pay", json={"confirmation_token_id": "ctoken_recovery"}
         )
         assert response.status_code == 202, response.text
         assert response.json()["payment_processor_metadata"] == {
             "intent_id": intent.id,
+            "intent_status": intent.status,
             "intent_client_secret": intent.client_secret,
         }
         assert (
@@ -111,7 +110,8 @@ class TestOrderRecovery:
                 f"{url}/pay", json={"confirmation_token_id": "ctoken_recovery"}
             )
         ).status_code == 202
-        stripe_service_mock.confirm_payment_intent.assert_awaited_once()
+        stripe_service_mock.create_payment_intent.assert_awaited_once()
+        stripe_service_mock.get_payment_intent.assert_not_awaited()
 
         charge = stripe_lib.Charge.construct_from(
             {
@@ -120,31 +120,27 @@ class TestOrderRecovery:
                 "amount": draft["due_amount"],
                 "currency": "usd",
                 "payment_intent": intent.id,
-                "payment_method": {
-                    "object": "payment_method",
-                    "id": "pm_recovery",
-                    "type": "card",
-                    "card": {"last4": "4242"},
-                },
                 "billing_details": {"email": customer.email},
                 "payment_method_details": {"type": "card", "card": {"last4": "4242"}},
                 "outcome": None,
                 "metadata": {
                     "organization_id": str(product.organization_id),
-                    STRIPE_METADATA_ORDER_RECOVERY: draft["id"],
+                    "order_id": draft["id"],
                 },
             },
             None,
         )
+        enqueue_job = mocker.patch("polar.integrations.stripe.payment.enqueue_job")
         await handle_success(session, charge)
         await session.flush()
+        assert enqueue_job.call_args.args == ("order.paid",)
+        await order_paid(**enqueue_job.call_args.kwargs)
         stored_customer = await session.get(Customer, customer.id)
         stored_subscription = await session.get(Subscription, subscription.id)
         assert stored_customer is not None
         assert stored_customer.billing_name == "New billing name"
         assert stored_subscription is not None
         assert stored_subscription.status == SubscriptionStatus.active
-        assert stored_subscription.payment_method_id is not None
 
         response = await client.get(url)
         assert response.status_code == 200
@@ -155,10 +151,12 @@ class TestOrderRecovery:
     async def test_zero_due_draft_setup_decline_allows_edit_and_retry(
         self,
         client: AsyncClient,
+        session: AsyncSession,
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
         stripe_service_mock: MagicMock,
+        mocker: MockerFixture,
     ) -> None:
         customer.stripe_customer_id = "cus_recovery"
         product.is_tax_applicable = False
@@ -189,10 +187,7 @@ class TestOrderRecovery:
         assert response.status_code == 200, response.text
         assert response.json()["due_amount"] == 0
 
-        stripe_service_mock.create_setup_intent.return_value = (
-            stripe_lib.SetupIntent.construct_from({"id": "seti_declined"}, None)
-        )
-        stripe_service_mock.confirm_setup_intent.side_effect = stripe_lib.CardError(
+        stripe_service_mock.create_setup_intent.side_effect = stripe_lib.CardError(
             "Declined", None, "card_declined"
         )
         response = await client.patch(
@@ -200,10 +195,6 @@ class TestOrderRecovery:
         )
         assert response.status_code == 402, response.text
         assert response.json()["error"] == "CustomerOrderPaymentDeclined"
-        stripe_service_mock.cancel_setup_intent.assert_awaited_once_with(
-            "seti_declined"
-        )
-
         response = await client.patch(
             url, json={"billing_name": "Edited after decline"}
         )
@@ -211,28 +202,48 @@ class TestOrderRecovery:
         assert response.json()["status"] == OrderStatus.draft
         assert response.json()["due_amount"] == 0
 
-        stripe_service_mock.confirm_setup_intent.side_effect = None
-        stripe_service_mock.confirm_setup_intent.return_value = (
-            stripe_lib.SetupIntent.construct_from(
-                {
-                    "id": "seti_declined",
-                    "status": "succeeded",
-                    "payment_method": {
-                        "object": "payment_method",
-                        "id": "pm_recovery",
-                        "type": "card",
-                        "card": {"last4": "4242"},
-                    },
+        intent = stripe_lib.SetupIntent.construct_from(
+            {
+                "id": "seti_succeeded",
+                "status": "succeeded",
+                "client_secret": "seti_succeeded_secret",
+                "payment_method": {
+                    "object": "payment_method",
+                    "id": "pm_recovery",
+                    "type": "card",
+                    "card": {"last4": "4242"},
                 },
-                None,
-            )
+                "metadata": {
+                    "organization_id": str(product.organization_id),
+                    "order_id": url.rsplit("/", 1)[-1],
+                },
+            },
+            None,
         )
+        stripe_service_mock.create_setup_intent.side_effect = None
+        stripe_service_mock.create_setup_intent.return_value = intent
         response = await client.patch(
-            f"{url}/pay", json={"confirmation_token_id": "ctoken_retry"}
+            f"{url}/pay",
+            json={
+                "confirmation_token_id": "ctoken_retry",
+                "payment_processor": "stripe",
+            },
         )
-        assert response.status_code == 200, response.text
+        assert response.status_code == 202, response.text
+        assert response.json()["status"] == OrderStatus.pending
+
+        enqueue_job = mocker.patch("polar.integrations.stripe.payment.enqueue_job")
+        await handle_success(session, intent)
+        await session.flush()
+        assert enqueue_job.call_args.args == ("order.paid",)
+        await order_paid(**enqueue_job.call_args.kwargs)
+
+        response = await client.get(url)
         assert response.json()["status"] == OrderStatus.paid
         assert response.json()["subscription"]["status"] == SubscriptionStatus.active
+        stored_subscription = await session.get(Subscription, subscription.id)
+        assert stored_subscription is not None
+        assert stored_subscription.payment_method_id is not None
 
     async def test_pending_order_preserves_tax_and_rejects_mixed_credentials(
         self,

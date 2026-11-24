@@ -151,7 +151,9 @@ class CustomerOrderService:
         if subscription is None:
             raise ResourceNotFound()
 
-        order = await order_service.create_trial_recovery_order(session, subscription)
+        order = await order_service.create_subscription_reactivation_order(
+            session, subscription
+        )
         result = await self.get_by_id(session, auth_subject, order.id)
         assert result is not None
         return result

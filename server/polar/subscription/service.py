@@ -275,7 +275,7 @@ class NotTrialEndedSubscription(SubscriptionError):
         super().__init__(message, 409)
 
 
-class TrialRecoveryInProgress(SubscriptionError):
+class SubscriptionReactivationInProgress(SubscriptionError):
     def __init__(self) -> None:
         super().__init__("Payment for this subscription is already in progress.", 409)
 
@@ -1539,17 +1539,21 @@ class SubscriptionService:
     async def revoke_trial_ended(
         self, session: AsyncSession, subscription: Subscription
     ) -> Subscription:
-        if await self._has_trial_recovery_in_progress(session, subscription):
+        if await self._has_pending_subscription_reactivation_order(
+            session, subscription
+        ):
             return subscription
         async with SubscriptionUpdateContext(
             session, subscription, self, notify_customer=False
         ) as ctx:
             return await self.revoke(session, ctx, subscription)
 
-    async def _has_trial_recovery_in_progress(
+    async def _has_pending_subscription_reactivation_order(
         self, session: AsyncSession, subscription: Subscription
     ) -> bool:
-        order = await OrderRepository.from_session(session).get_trial_recovery_order(
+        order = await OrderRepository.from_session(
+            session
+        ).get_subscription_reactivation_order(
             subscription.id, statuses=(OrderStatus.pending,)
         )
         return order is not None
@@ -1605,7 +1609,7 @@ class SubscriptionService:
         session: AsyncSession,
         subscription: Subscription,
         *,
-        recovery_order: Order | None = None,
+        reactivation_order: Order | None = None,
     ) -> None:
         event = await event_service.create_event(
             session,
@@ -1626,8 +1630,8 @@ class SubscriptionService:
         # Add a billing entry for a new period
         billing_entry_repository = BillingEntryRepository.from_session(session)
         recovery_items = (
-            {item.product_price_id: item for item in recovery_order.items}
-            if recovery_order is not None
+            {item.product_price_id: item for item in reactivation_order.items}
+            if reactivation_order is not None
             else {}
         )
         for subscription_product_price in subscription.subscription_product_prices:
@@ -3282,8 +3286,10 @@ class SubscriptionService:
         if subscription.status != SubscriptionStatus.trial_ended:
             raise NotTrialEndedSubscription(subscription)
 
-        if await self._has_trial_recovery_in_progress(session, subscription):
-            raise TrialRecoveryInProgress()
+        if await self._has_pending_subscription_reactivation_order(
+            session, subscription
+        ):
+            raise SubscriptionReactivationInProgress()
 
         if not subscription.organization.can_renew_subscriptions:
             raise PaymentNotReady("Organization is not ready to renew subscriptions")
@@ -3320,7 +3326,7 @@ class SubscriptionService:
                 )
             subscription.update_net_amount_from(order)
             return await self._start_trial_paid_period(
-                session, ctx, subscription, now, recovery_order=order
+                session, ctx, subscription, now, reactivation_order=order
             )
 
     async def _start_trial_paid_period(
@@ -3330,12 +3336,12 @@ class SubscriptionService:
         subscription: Subscription,
         now: datetime,
         *,
-        recovery_order: Order | None = None,
+        reactivation_order: Order | None = None,
     ) -> Subscription:
         subscription.status = SubscriptionStatus.active
         subscription.ends_at = None
         subscription = await self._start_fresh_period(
-            session, ctx, subscription, now, recovery_order=recovery_order
+            session, ctx, subscription, now, reactivation_order=reactivation_order
         )
         await billing_interval_service.record_subscription(
             session, subscription, effective_at=now
@@ -3349,7 +3355,7 @@ class SubscriptionService:
         subscription: Subscription,
         now: datetime,
         *,
-        recovery_order: Order | None = None,
+        reactivation_order: Order | None = None,
     ) -> Subscription:
         subscription.current_period_start = now
         subscription.anchor_day = now.day
@@ -3365,13 +3371,13 @@ class SubscriptionService:
         if subscription.pending_update is not None:
             subscription = await self.clear_pending_update(session, ctx, subscription)
 
-        if recovery_order is None:
+        if reactivation_order is None:
             self._clear_expired_discount(subscription)
 
         await self.reset_meters(session, subscription, reset_at=now)
         await self.enqueue_benefits_grants(session, subscription)
         await self._create_cycle_billing_entries(
-            session, subscription, recovery_order=recovery_order
+            session, subscription, reactivation_order=reactivation_order
         )
 
         repository = SubscriptionRepository.from_session(session)
@@ -3483,9 +3489,11 @@ class SubscriptionService:
             await session.refresh(subscription, {"status"}, with_for_update=True)
             if (
                 subscription.status == SubscriptionStatus.trial_ended
-                and await self._has_trial_recovery_in_progress(session, subscription)
+                and await self._has_pending_subscription_reactivation_order(
+                    session, subscription
+                )
             ):
-                raise TrialRecoveryInProgress()
+                raise SubscriptionReactivationInProgress()
 
         now = utc_now()
         subscription.canceled_at = now

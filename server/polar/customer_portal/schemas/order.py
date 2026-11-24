@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import (
     MISSING,
@@ -12,9 +12,13 @@ from pydantic import (
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.enums import PaymentProcessor
-from polar.kit.address import AddressInput
-from polar.kit.schemas import MultipleQueryFilter, Schema, SetSchemaReference
-from polar.kit.versioning import Omissible, QuerySchema, Version, VersionedJsonSchema
+from polar.kit.schemas import (
+    EmptyStrToNoneValidator,
+    MultipleQueryFilter,
+    Schema,
+    SetSchemaReference,
+)
+from polar.kit.versioning import Omissible, QuerySchema, Version
 from polar.models.product import ProductBillingType
 from polar.order.schemas import OrderBase, OrderItemSchema, OrderUpdateBase
 from polar.product.schemas import (
@@ -27,7 +31,7 @@ from polar.product.schemas import (
 )
 from polar.subscription.schemas import SubscriptionBase, SubscriptionID
 from polar.tax.tax_id import TaxID
-from polar.version import NEXT_API_VERSION, V2026_10
+from polar.version import V2026_10, V2027_01
 
 from .organization import CustomerOrganization
 
@@ -43,13 +47,7 @@ class CustomerOrderSubscription(SubscriptionBase): ...
 
 
 class CustomerOrder(OrderBase):
-    tax_id: Annotated[TaxID | None, Version(starting_from=NEXT_API_VERSION)]
-    payment_processor_metadata: Annotated[
-        dict[str, str], Version(starting_from=NEXT_API_VERSION)
-    ] = Field(
-        validation_alias="payment_authentication",
-        description="Stripe intent information required to authenticate a payment.",
-    )
+    tax_id: Annotated[TaxID | None, Version(starting_from=V2027_01)]
     user_id: Annotated[SkipJsonSchema[UUID4], Version(up_to=V2026_10)] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
@@ -76,6 +74,12 @@ class CustomerOrder(OrderBase):
     description: str = Field(
         description="A summary description of the order.", examples=["Pro Plan"]
     )
+    payment_processor_metadata: Annotated[
+        dict[str, str], Version(starting_from=V2027_01)
+    ] = Field(
+        validation_alias="payment_authentication",
+        description="Stripe intent information required to authenticate a payment.",
+    )
 
 
 class CustomerOrderInvoice(Schema):
@@ -93,48 +97,43 @@ class CustomerOrderReceipt(Schema):
 class CustomerOrderUpdate(OrderUpdateBase):
     """Schema to update an order."""
 
-    billing_address: Annotated[
-        Omissible[AddressInput],
-        VersionedJsonSchema(
-            lambda schema: {
-                **schema,
-                "description": (
-                    "The address of the customer that should appear on the invoice. "
-                    "Address fields used for tax calculation cannot be updated."
-                ),
-            },
-            up_to=V2026_10,
-        ),
-        VersionedJsonSchema(
-            lambda schema: {
-                **schema,
-                "description": "Billing address. Drafts recalculate tax. Pending orders require the same tax address.",
-            },
-            starting_from=NEXT_API_VERSION,
-        ),
-    ] = MISSING
     tax_id: Annotated[
-        Omissible[str | None], Version(starting_from=NEXT_API_VERSION)
-    ] = MISSING
+        Omissible[str | None], EmptyStrToNoneValidator, Version(starting_from=V2027_01)
+    ] = Field(
+        MISSING, description="Tax ID for the billing address. Set to null to remove it."
+    )
     discount_code: Annotated[
-        Omissible[str | None], Version(starting_from=NEXT_API_VERSION)
-    ] = MISSING
+        Omissible[str | None], EmptyStrToNoneValidator, Version(starting_from=V2027_01)
+    ] = Field(
+        MISSING,
+        description="Discount code to apply to the draft order. Set to null to remove it.",
+    )
 
 
 class CustomerOrderCreate(Schema):
-    subscription_id: SubscriptionID
+    subscription_id: SubscriptionID = Field(
+        description="ID of the subscription whose ended trial will be reactivated."
+    )
 
 
 class CustomerOrderPayWithPaymentMethod(Schema):
     model_config = ConfigDict(extra="forbid")
 
-    payment_method_id: UUID4
+    payment_method_id: UUID4 = Field(
+        description="ID of a payment method saved by the customer."
+    )
 
 
 class CustomerOrderPayWithConfirmationToken(Schema):
     model_config = ConfigDict(extra="forbid")
 
-    confirmation_token_id: str
+    payment_processor: Literal[PaymentProcessor.stripe] = Field(
+        PaymentProcessor.stripe,
+        description="Payment processor that issued the confirmation token.",
+    )
+    confirmation_token_id: str = Field(
+        description="ID of a Stripe confirmation token for the payment."
+    )
 
 
 CustomerOrderPay = Annotated[

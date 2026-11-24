@@ -1,4 +1,5 @@
 import uuid
+from typing import Any
 
 import stripe as stripe_lib
 import structlog
@@ -10,10 +11,7 @@ from polar.exceptions import PolarError
 from polar.integrations.payment_retry_alert.service import (
     payment_retry_alert as payment_retry_alert_service,
 )
-from polar.integrations.stripe.service import (
-    STRIPE_METADATA_ORDER_RECOVERY,
-    STRIPE_METADATA_PAYMENT_TRIGGER,
-)
+from polar.integrations.stripe.service import STRIPE_METADATA_PAYMENT_TRIGGER
 from polar.integrations.stripe.service import (
     stripe as stripe_service,
 )
@@ -148,9 +146,7 @@ async def resolve_order(
     checkout: Checkout | None,
 ) -> Order | None:
     order_repository = OrderRepository.from_session(session)
-    metadata = object.metadata or {}
-    order_id = metadata.get(STRIPE_METADATA_ORDER_RECOVERY) or metadata.get("order_id")
-    if order_id is not None:
+    if object.metadata and (order_id := object.metadata.get("order_id")) is not None:
         order = await order_repository.get_by_id(
             uuid.UUID(order_id),
             options=order_repository.get_eager_options(),
@@ -211,7 +207,6 @@ async def handle_success(
     organization = await resolve_organization(session, object)
     checkout = await resolve_checkout(session, object)
     wallet, wallet_transaction = await resolve_wallet(session, object)
-    recovery = STRIPE_METADATA_ORDER_RECOVERY in (object.metadata or {})
     order = await resolve_order(session, object, checkout)
 
     trigger = _resolve_trigger(object)
@@ -257,23 +252,32 @@ async def handle_success(
         )
 
     if order is not None:
-        if recovery:
+        order_paid_kwargs: dict[str, Any] = {}
+        if (
+            current_intent_id := order.payment_processor_metadata.get("intent_id")
+        ) is not None:
             intent_id = (
                 get_expandable_id(object.payment_intent)
                 if isinstance(object, stripe_lib.Charge)
                 and object.payment_intent is not None
                 else object.id
             )
-            if order.payment_processor_metadata.get("intent_id") == intent_id:
-                await order_service.complete_customer_order_payment(
-                    session, order, object, payment
+            if intent_id != current_intent_id:
+                return
+            if isinstance(object, stripe_lib.SetupIntent):
+                stripe_method = await payment_method_service.resolve_from_stripe_intent(
+                    object
                 )
-        else:
-            enqueue_job(
-                "order.paid",
-                order_id=order.id,
-                payment_id=payment.id if payment is not None else None,
-            )
+                method = await payment_method_service.upsert_from_stripe(
+                    session, order.customer, stripe_method
+                )
+                order_paid_kwargs["payment_method_id"] = method.id
+        enqueue_job(
+            "order.paid",
+            order_id=order.id,
+            payment_id=payment.id if payment is not None else None,
+            **order_paid_kwargs,
+        )
 
     if wallet_transaction is not None:
         enqueue_job(
@@ -324,18 +328,6 @@ async def handle_failure(
             await checkout_service.handle_failure(session, checkout, payment=payment)
 
     if order is not None:
-        if STRIPE_METADATA_ORDER_RECOVERY in (object.metadata or {}):
-            if (
-                intent_id is not None
-                and order.payment_processor_metadata.get("intent_id") == intent_id
-            ):
-                await order_service.reconcile_customer_order_payment(
-                    session, order, expire=True
-                )
-            return
-        if "intent_id" in order.payment_processor_metadata:
-            return
-
         # Failures from triggers that don't count toward the dunning ceiling
         # also shouldn't progress the dunning state machine — otherwise a
         # one-shot recovery attempt (manual portal retry, post-card-update
@@ -344,7 +336,7 @@ async def handle_failure(
         # call site) is treated as countable, so it follows the normal flow.
         skip_dunning = trigger is not None and trigger not in DUNNING_COUNTING_TRIGGERS
         await order_service.handle_payment_failure(
-            session, order, skip_dunning=skip_dunning
+            session, order, skip_dunning=skip_dunning, intent_id=intent_id
         )
 
 

@@ -394,7 +394,7 @@ class OrderUpdateBase(Schema):
         MISSING,
         description=(
             "The address of the customer that should appear on the invoice. "
-            "Address fields used for tax calculation cannot be updated."
+            "Address fields used for tax calculation can only be updated if the order is draft."
         ),
     )
 

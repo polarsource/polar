@@ -93,7 +93,7 @@ class OrderRepository(
 ):
     model = Order
 
-    async def get_trial_recovery_order(
+    async def get_subscription_reactivation_order(
         self, subscription_id: UUID, *, statuses: Sequence[OrderStatus]
     ) -> Order | None:
         statement = self.get_base_statement().where(

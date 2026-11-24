@@ -4367,7 +4367,7 @@
           "public"
         ],
         "summary": "Update Order",
-        "description": "Update billing details. Tax and discount changes are available on trial recovery drafts.",
+        "description": "Update billing details. Tax and discount changes are available on subscription reactivation drafts.",
         "operationId": "customer_portal:orders:update",
         "security": [
           {
@@ -4530,7 +4530,7 @@
             }
           },
           "202": {
-            "description": "Payment is processing or requires authentication.",
+            "description": "Payment was submitted for settlement and may require authentication.",
             "content": {
               "application/json": {
                 "schema": {
@@ -4543,7 +4543,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CustomerOrderPaymentDeclined"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/CustomerOrderPaymentDeclined"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PaymentFailed"
+                    }
+                  ],
+                  "title": "Response 402 Customer Portal:Orders:Pay"
                 }
               }
             },
@@ -50065,14 +50073,6 @@
             ],
             "title": "Tax Id"
           },
-          "payment_processor_metadata": {
-            "additionalProperties": {
-              "type": "string"
-            },
-            "type": "object",
-            "title": "Payment Processor Metadata",
-            "description": "Stripe intent information required to authenticate a payment."
-          },
           "product": {
             "anyOf": [
               {
@@ -50108,6 +50108,14 @@
             "examples": [
               "Pro Plan"
             ]
+          },
+          "payment_processor_metadata": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Payment Processor Metadata",
+            "description": "Stripe intent information required to authenticate a payment."
           },
           "refundable_amount": {
             "type": "integer",
@@ -50158,11 +50166,11 @@
           "subscription_id",
           "checkout_id",
           "tax_id",
-          "payment_processor_metadata",
           "product",
           "subscription",
           "items",
           "description",
+          "payment_processor_metadata",
           "refundable_amount",
           "refundable_tax_amount"
         ],
@@ -50196,7 +50204,7 @@
             "type": "string",
             "format": "uuid4",
             "title": "Subscription Id",
-            "description": "The subscription ID."
+            "description": "ID of the subscription whose ended trial will be reactivated."
           }
         },
         "type": "object",
@@ -50232,9 +50240,17 @@
       },
       "CustomerOrderPayWithConfirmationToken": {
         "properties": {
+          "payment_processor": {
+            "type": "string",
+            "const": "stripe",
+            "title": "Payment Processor",
+            "description": "Payment processor that issued the confirmation token.",
+            "default": "stripe"
+          },
           "confirmation_token_id": {
             "type": "string",
-            "title": "Confirmation Token Id"
+            "title": "Confirmation Token Id",
+            "description": "ID of a Stripe confirmation token for the payment."
           }
         },
         "additionalProperties": false,
@@ -50249,7 +50265,8 @@
           "payment_method_id": {
             "type": "string",
             "format": "uuid4",
-            "title": "Payment Method Id"
+            "title": "Payment Method Id",
+            "description": "ID of a payment method saved by the customer."
           }
         },
         "additionalProperties": false,
@@ -50906,7 +50923,7 @@
           },
           "billing_address": {
             "$ref": "#/components/schemas/AddressInput",
-            "description": "Billing address. Drafts recalculate tax. Pending orders require the same tax address."
+            "description": "The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated if the order is draft."
           },
           "tax_id": {
             "anyOf": [
@@ -50917,7 +50934,8 @@
                 "type": "null"
               }
             ],
-            "title": "Tax Id"
+            "title": "Tax Id",
+            "description": "Tax ID for the billing address. Set to null to remove it."
           },
           "discount_code": {
             "anyOf": [
@@ -50928,7 +50946,8 @@
                 "type": "null"
               }
             ],
-            "title": "Discount Code"
+            "title": "Discount Code",
+            "description": "Discount code to apply to the draft order. Set to null to remove it."
           }
         },
         "type": "object",
@@ -68596,7 +68615,7 @@
           },
           "billing_address": {
             "$ref": "#/components/schemas/AddressInput",
-            "description": "The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated."
+            "description": "The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated if the order is draft."
           }
         },
         "type": "object",

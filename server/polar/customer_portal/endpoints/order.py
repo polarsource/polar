@@ -2,11 +2,9 @@ from textwrap import dedent
 from typing import Annotated
 
 from fastapi import Depends, Query, Response
-from fastapi.responses import JSONResponse
 
-from polar.auth.scope import Scope
 from polar.exceptions import PaymentNotReady, ResourceNotFound
-from polar.kit.db.postgres import AsyncSession, AsyncSessionMaker
+from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.kit.versioning import version
@@ -19,13 +17,14 @@ from polar.order.service import (
     MissingInvoiceBillingDetails,
     OrderNotEligibleForInvoice,
     PaymentAlreadyInProgress,
+    PaymentFailed,
 )
 from polar.order.service import order as order_service
 from polar.payment.repository import PaymentRepository
-from polar.postgres import get_db_session, get_db_sessionmaker
+from polar.postgres import get_db_session
 from polar.routing import APIRouter
 from polar.subscription.service import NotTrialEndedSubscription
-from polar.version import NEXT_API_VERSION, V2026_10
+from polar.version import V2026_10, V2027_01
 
 from .. import auth
 from ..schemas.order import (
@@ -104,12 +103,7 @@ async def list(
     )
 
     return ListResource.from_paginated_results(
-        [
-            CustomerOrder.model_validate(result).model_copy(
-                update={"payment_processor_metadata": {}}
-            )
-            for result in results
-        ],
+        [CustomerOrder.model_validate(result) for result in results],
         count,
         pagination,
     )
@@ -128,7 +122,7 @@ async def list(
         409: {"model": NotTrialEndedSubscription.schema()},
     },
 )
-@version(starting_from=NEXT_API_VERSION)
+@version(starting_from=V2027_01)
 async def create(
     order_create: CustomerOrderCreate,
     auth_subject: auth.CustomerPortalUnionBillingWrite,
@@ -150,17 +144,13 @@ async def get(
     id: OrderID,
     auth_subject: auth.CustomerPortalUnionBillingRead,
     session: AsyncSession = Depends(get_db_session),
-) -> Order | CustomerOrder:
+) -> Order:
     """Get an order by ID for the authenticated customer."""
     order = await customer_order_service.get_by_id(session, auth_subject, id)
 
     if order is None:
         raise ResourceNotFound()
 
-    if Scope.customer_portal_write not in auth_subject.scopes:
-        return CustomerOrder.model_validate(order).model_copy(
-            update={"payment_processor_metadata": {}}
-        )
     return order
 
 
@@ -200,14 +190,14 @@ async def update(
         },
     },
 )
-@version(starting_from=NEXT_API_VERSION)
+@version(starting_from=V2027_01)
 async def update_v2027_01(
     id: OrderID,
     order_update: CustomerOrderUpdate,
     auth_subject: auth.CustomerPortalUnionBillingWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> Order:
-    """Update billing details. Tax and discount changes are available on trial recovery drafts."""
+    """Update billing details. Tax and discount changes are available on subscription reactivation drafts."""
     return await update(id, order_update, auth_subject, session)
 
 
@@ -219,9 +209,9 @@ async def update_v2027_01(
     responses={
         202: {
             "model": CustomerOrder,
-            "description": "Payment is processing or requires authentication.",
+            "description": "Payment was submitted for settlement and may require authentication.",
         },
-        402: {"model": CustomerOrderPaymentDeclined.schema()},
+        402: {"model": CustomerOrderPaymentDeclined.schema() | PaymentFailed.schema()},
         403: {"model": PaymentNotReady.schema()},
         404: OrderNotFound,
         409: {
@@ -232,49 +222,21 @@ async def update_v2027_01(
         429: {"model": ManualRetryLimitExceeded.schema()},
     },
 )
-@version(starting_from=NEXT_API_VERSION)
+@version(starting_from=V2027_01)
 async def pay(
     id: OrderID,
-    credential: CustomerOrderPay,
+    order_pay: CustomerOrderPay,
     auth_subject: auth.CustomerPortalUnionBillingWrite,
     response: Response,
-    sessionmaker: AsyncSessionMaker = Depends(get_db_sessionmaker),
-) -> Order | JSONResponse:
+    session: AsyncSession = Depends(get_db_session),
+) -> Order:
     """Pay an outstanding subscription order or start the paid period of an ended trial."""
-    # Persist the locked snapshot before Stripe can emit a settlement webhook.
-    async with sessionmaker.begin() as preparation:
-        order = await customer_order_service.get_by_id(
-            preparation, auth_subject, id, for_update=True
-        )
-        if order is None:
-            raise ResourceNotFound()
-        stripe_credential = await order_service.prepare_customer_order_payment(
-            preparation, order, credential
-        )
-
-    if (
-        intent_id := order.payment_processor_metadata.get("intent_id")
-    ) is not None and not order.payment_authentication:
-        async with sessionmaker.begin() as settlement:
-            order = await customer_order_service.get_by_id(
-                settlement, auth_subject, id, for_update=True
-            )
-            if order is None:
-                raise ResourceNotFound()
-            try:
-                if stripe_credential is not None:
-                    order = await order_service.confirm_customer_order_payment(
-                        settlement, order, intent_id, stripe_credential
-                    )
-                elif order.payment_processor_metadata.get("intent_id") == intent_id:
-                    order = await order_service.reconcile_customer_order_payment(
-                        settlement, order
-                    )
-            except CustomerOrderPaymentDeclined as e:
-                return JSONResponse(
-                    status_code=e.status_code,
-                    content={"error": type(e).__name__, "detail": e.detail},
-                )
+    order = await customer_order_service.get_by_id(
+        session, auth_subject, id, for_update=True
+    )
+    if order is None:
+        raise ResourceNotFound()
+    order = await order_service.pay_customer_order(session, order, order_pay)
     if not order.paid:
         response.status_code = 202
     return order

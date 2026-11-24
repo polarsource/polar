@@ -122,6 +122,7 @@ async def order_created(order_id: Annotated[uuid.UUID, LoggableField]) -> None:
 async def order_paid(
     order_id: Annotated[uuid.UUID, LoggableField],
     payment_id: Annotated[uuid.UUID | None, LoggableField] = None,
+    payment_method_id: Annotated[uuid.UUID | None, LoggableField] = None,
 ) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrderRepository.from_session(session)
@@ -139,7 +140,16 @@ async def order_paid(
             if payment is None:
                 raise PaymentDoesNotExist(payment_id)
 
-        await order_service.handle_payment(session, order, payment)
+        payment_method = (
+            await PaymentMethodRepository.from_session(session).get_by_id(
+                payment_method_id
+            )
+            if payment_method_id is not None
+            else None
+        )
+        await order_service.handle_payment(
+            session, order, payment, payment_method=payment_method
+        )
 
 
 @actor(actor_name="order.wallet_order", priority=TaskPriority.HIGH)
@@ -558,12 +568,6 @@ async def process_stale_payment_lock(
             log.info("Order payment lock is not stale, skipping", order_id=order.id)
             return
 
-        if "intent_id" in order.payment_processor_metadata:
-            await order_service.reconcile_customer_order_payment(
-                session, order, expire=True
-            )
-            return
-
         payment_repository = PaymentRepository.from_session(session)
         if await payment_repository.get_succeeded_by_order(order.id) is not None:
             log.info(
@@ -586,7 +590,12 @@ async def process_stale_payment_lock(
 
         # Treat stale payment locks as manual retry payment failures,
         # so the lock is released, but the dunning sequence is untouched.
-        await order_service.handle_payment_failure(session, order, skip_dunning=True)
+        await order_service.handle_payment_failure(
+            session,
+            order,
+            skip_dunning=True,
+            intent_id=order.payment_processor_metadata.get("intent_id"),
+        )
 
 
 @actor(

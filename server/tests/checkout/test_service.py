@@ -4528,6 +4528,43 @@ class TestUpdate:
         )
         assert (checkout.product, checkout.amount) == (pro_v2, 1500)
 
+    async def test_switching_version_keeps_the_custom_amount(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        organization.feature_settings = {"config_as_code_enabled": True}
+        await save_fixture(organization)
+        meters = [
+            await create_meter(save_fixture, organization=organization, id=uuid.uuid4())
+            for _ in range(2)
+        ]
+        meters[0].external_id, meters[0].is_current = "credits", False
+        meters[1].external_id = "credits"
+        pwyw_v1, pwyw_v2 = [
+            await create_product(
+                save_fixture,
+                organization=organization,
+                recurring_interval=None,
+                external_id="pwyw",
+                is_current=meter.is_current,
+                prices=[(50, None, None, "usd"), (meter, Decimal(1), None, "usd")],
+            )
+            for meter in meters
+        ]
+        await save_fixture(CustomerMeter(customer=customer, meter=meters[0]))
+        checkout = await create_checkout(save_fixture, products=[pwyw_v2])
+
+        checkout = await checkout_service.update(
+            session,
+            checkout,
+            CheckoutUpdate(customer_email=customer.email, amount=2000),
+        )
+
+        assert (checkout.product, checkout.amount) == (pwyw_v1, 2000)
+
     async def test_without_config_as_code_keeps_the_product(
         self,
         save_fixture: SaveFixture,

@@ -3184,9 +3184,16 @@ class CheckoutService:
                     }
                 ]
             ) from e
+        custom_amount = (
+            checkout.amount if is_custom_price(checkout.product_price) else None
+        )
         checkout_product.product = version
         checkout.product = version
         checkout = await self._update_price(checkout, checkout_update, currency_prices)
+        custom_price = currency_prices.get_custom_price()
+        if custom_price is not None and custom_amount is not None:
+            validate_custom_price_amount(custom_price, custom_amount, checkout.currency)
+            checkout.amount = custom_amount
         if checkout.discount is not None and not checkout.discount.is_applicable(
             version, checkout.currency
         ):

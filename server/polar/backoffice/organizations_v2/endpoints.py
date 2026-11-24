@@ -4039,15 +4039,13 @@ async def edit_features(
                 **organization.feature_settings,
                 **feature_flags,
             }
-            if (
-                organization.is_config_as_code_enabled
-                and not updated_feature_settings.get("config_as_code_enabled")
-                and await CatalogRepository.from_session(session).count_by_organization(
-                    organization.id
-                )
-                > 1
+            if organization.is_config_as_code_enabled and not (
+                updated_feature_settings.get("config_as_code_enabled")
             ):
-                raise ConfigCatalogPublished()
+                catalog_repository = CatalogRepository.from_session(session)
+                await catalog_repository.lock(organization.id)
+                if await catalog_repository.count_by_organization(organization.id) > 1:
+                    raise ConfigCatalogPublished()
 
             update_dict: dict[str, Any] = {"feature_settings": updated_feature_settings}
             # Enforcement outliving SSO would strand the organization: no SSO

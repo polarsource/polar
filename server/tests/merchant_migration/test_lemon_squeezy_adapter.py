@@ -669,6 +669,7 @@ class TestListBenefits:
         assert limited.product_source_ids == ["10", "11"]
         assert limited.license_keys is not None
         assert limited.license_keys.activation_limit == 3
+        assert (limited.for_subscriptions, limited.for_one_time) == (True, False)
         assert (
             limited.license_keys.expires_ttl,
             limited.license_keys.expires_timeframe,

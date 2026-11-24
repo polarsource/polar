@@ -531,6 +531,10 @@ class MerchantMigrationBenefit(Schema):
         description="Imported products that get this benefit."
     )
     benefit_id: UUID4 | None = Field(description="The Polar benefit, once created.")
+    for_subscriptions: bool = Field(description="Subscribers have it on the source.")
+    for_one_time: bool = Field(
+        description="Buyers of one-time products have it on the source."
+    )
 
 
 class MerchantMigrationBenefits(Schema):

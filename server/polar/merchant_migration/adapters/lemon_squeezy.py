@@ -556,6 +556,7 @@ class LemonSqueezyAdapter:
             page += 1
 
         files_by_variant = await self._load_files({v["id"] for v, _ in variants})
+        await self._load_all_prices()
         groups: dict[str, CanonicalBenefit] = {}
 
         def add(
@@ -566,7 +567,7 @@ class LemonSqueezyAdapter:
             **payload: Any,
         ) -> None:
             source_id = f"{self.store_id}:{type}:{key}"
-            groups.setdefault(
+            benefit = groups.setdefault(
                 source_id,
                 CanonicalBenefit(
                     source_id=source_id,
@@ -575,7 +576,12 @@ class LemonSqueezyAdapter:
                     product_source_ids=[],
                     **payload,
                 ),
-            ).product_source_ids.append(variant_id)
+            )
+            benefit.product_source_ids.append(variant_id)
+            if self._is_subscription_variant(variant_id):
+                benefit.for_subscriptions = True
+            elif self._prices_by_variant.get(variant_id):
+                benefit.for_one_time = True
 
         for variant, product_name in variants:
             attributes = variant["attributes"]

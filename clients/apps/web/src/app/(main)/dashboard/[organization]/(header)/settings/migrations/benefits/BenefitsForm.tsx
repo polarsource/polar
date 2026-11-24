@@ -2,15 +2,12 @@
 
 import { useSetUpMigrationBenefits } from '@/hooks/queries/merchantMigrations'
 import { schemas } from '@polar-sh/client'
-import { Button, Checkbox, Text } from '@polar-sh/orbit'
+import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useState } from 'react'
-import {
-  benefitDetail,
-  NOT_MOVED,
-  productsText,
-  TYPE_LABELS,
-} from './benefitCopy'
+import { plural } from '../review/importSummary'
+import { NOT_MOVED, productsText } from './benefitCopy'
+import { BenefitRow, BenefitSection } from './BenefitRows'
 
 interface Props {
   migrationId: string
@@ -19,6 +16,8 @@ interface Props {
   onDone: () => void
 }
 
+// Split by who gets the benefit: subscribers pick per benefit, past one-time
+// buyers are one switch, since they either get their access back or don't.
 export function BenefitsForm({
   migrationId,
   benefits,
@@ -28,16 +27,20 @@ export function BenefitsForm({
   const [excluded, setExcluded] = useState<Set<string>>(new Set())
   const [grantPastPurchases, setGrantPastPurchases] = useState(true)
   const setUp = useSetUpMigrationBenefits(migrationId)
-  const selected = benefits.filter((benefit) => !excluded.has(benefit.id))
-  // A created benefit stays: unticking it can't remove it, so it can't be unticked.
-  const toCreate = selected.filter((benefit) => !benefit.benefit_id)
+
+  const forSubscriptions = benefits.filter((b) => b.for_subscriptions)
+  const forOneTime = benefits.filter((b) => b.for_one_time)
+  const selected = benefits.filter(
+    (b) =>
+      (b.for_subscriptions && !excluded.has(b.id)) ||
+      (b.for_one_time && grantPastPurchases),
+  )
+  const toCreate = selected.filter((b) => !b.benefit_id)
 
   const toggle = (id: string) =>
     setExcluded((current) => {
       const next = new Set(current)
-      if (next.has(id)) {
-        next.delete(id)
-      } else {
+      if (!next.delete(id)) {
         next.add(id)
       }
       return next
@@ -45,62 +48,44 @@ export function BenefitsForm({
 
   const submit = (benefitIds: string[]) =>
     setUp.mutate(
-      { benefit_ids: benefitIds, grant_past_purchases: grantPastPurchases },
+      {
+        benefit_ids: benefitIds,
+        grant_past_purchases: grantPastPurchases && forOneTime.length > 0,
+      },
       { onSuccess: onDone },
     )
 
   return (
-    <Box flexDirection="column" rowGap="l">
-      <Box
-        as="ul"
-        flexDirection="column"
-        borderTopWidth={1}
-        borderStyle="solid"
-        borderColor="border-primary"
-      >
-        {benefits.map((benefit) => (
-          <Box
-            as="li"
-            key={benefit.id}
-            display="flex"
-            columnGap="m"
-            alignItems="start"
-            paddingVertical="m"
-            borderBottomWidth={1}
-            borderStyle="solid"
-            borderColor="border-primary"
-          >
-            <Box paddingTop="xs">
-              <Checkbox
-                checked={!excluded.has(benefit.id)}
-                disabled={!!benefit.benefit_id}
-                aria-label={`Create ${benefit.description}`}
-                onCheckedChange={() => toggle(benefit.id)}
-              />
-            </Box>
-            <Box flex={1} minWidth={0} flexDirection="column" rowGap="xs">
-              <Text>
-                {benefit.description}{' '}
-                <Text as="span" color="muted">
-                  · {TYPE_LABELS[benefit.type]}
-                </Text>
-              </Text>
-              <Text variant="caption" color="muted">
-                {benefitDetail(benefit)}
-              </Text>
-            </Box>
-            <Text variant="caption" color="muted">
-              {benefit.benefit_id ? 'Created' : productsText(benefit)}
-            </Text>
-          </Box>
-        ))}
-      </Box>
+    <Box flexDirection="column" rowGap="2xl">
+      {forSubscriptions.length > 0 && (
+        <BenefitSection
+          title="Subscriptions"
+          description="Added to your imported products. Subscribers get them, with the same license key, when you switch billing."
+        >
+          {forSubscriptions.map((benefit) => (
+            <BenefitRow
+              key={benefit.id}
+              benefit={benefit}
+              aside={productsText(benefit)}
+              selected={!excluded.has(benefit.id)}
+              onToggle={() => toggle(benefit.id)}
+            />
+          ))}
+        </BenefitSection>
+      )}
 
-      <Checkbox
-        checked={grantPastPurchases}
-        onCheckedChange={(checked) => setGrantPastPurchases(checked === true)}
-        label="Give past one-time buyers the same license key and files, without a new order"
-      />
+      {forOneTime.length > 0 && (
+        <BenefitSection
+          title="Past one-time purchases"
+          description="Buyers get the same license key and files in their customer portal. No new order is created."
+          enabled={grantPastPurchases}
+          onEnabledChange={setGrantPastPurchases}
+        >
+          {forOneTime.map((benefit) => (
+            <BenefitRow key={benefit.id} benefit={benefit} />
+          ))}
+        </BenefitSection>
+      )}
 
       <Box flexDirection="column" rowGap="xs">
         <Text variant="label">Not moved</Text>
@@ -132,10 +117,12 @@ export function BenefitsForm({
         <Button
           size="sm"
           loading={setUp.isPending}
-          disabled={setUp.isPending || toCreate.length === 0}
-          onClick={() => submit(selected.map((benefit) => benefit.id))}
+          disabled={setUp.isPending || selected.length === 0}
+          onClick={() => submit(selected.map((b) => b.id))}
         >
-          {`Create ${toCreate.length} ${toCreate.length === 1 ? 'benefit' : 'benefits'}`}
+          {toCreate.length
+            ? `Create ${plural(toCreate.length, 'benefit')}`
+            : 'Save'}
         </Button>
       </Box>
     </Box>

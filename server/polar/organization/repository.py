@@ -115,15 +115,6 @@ class OrganizationRepository(
 ):
     model = Organization
 
-    async def is_config_as_code_enabled(self, organization_id: UUID) -> bool:
-        """Read the flag from the database, not from a loaded organization."""
-        feature_settings = await self.session.scalar(
-            select(Organization.feature_settings).where(
-                Organization.id == organization_id
-            )
-        )
-        return bool((feature_settings or {}).get("config_as_code_enabled", False))
-
     @typing.overload
     async def get_by_id(
         self,

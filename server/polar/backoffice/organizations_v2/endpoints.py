@@ -29,9 +29,7 @@ from polar.account.repository import AccountRepository
 from polar.account_credit.repository import AccountCreditRepository
 from polar.account_credit.service import account_credit_service
 from polar.backoffice.routing import BackofficeRouter
-from polar.catalog.repository import CatalogRepository
 from polar.config import settings
-from polar.declarative_config.service import ConfigCatalogPublished
 from polar.enums import PayoutAccountType
 from polar.exceptions import PolarRequestValidationError
 from polar.file.repository import FileRepository
@@ -4039,13 +4037,6 @@ async def edit_features(
                 **organization.feature_settings,
                 **feature_flags,
             }
-            if organization.is_config_as_code_enabled and not (
-                updated_feature_settings.get("config_as_code_enabled")
-            ):
-                catalog_repository = CatalogRepository.from_session(session)
-                await catalog_repository.lock(organization.id)
-                if await catalog_repository.count_by_organization(organization.id) > 1:
-                    raise ConfigCatalogPublished()
 
             update_dict: dict[str, Any] = {"feature_settings": updated_feature_settings}
             # Enforcement outliving SSO would strand the organization: no SSO

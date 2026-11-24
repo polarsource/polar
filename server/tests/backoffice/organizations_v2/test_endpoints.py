@@ -13,13 +13,11 @@ from polar.backoffice.organizations_v2.endpoints import _stripe_reject_reason_fo
 from polar.kit.utils import utc_now
 from polar.models import (
     BackofficeUser,
-    Catalog,
     OrganizationDomain,
     OrganizationEmail,
     PayoutAccount,
 )
 from polar.models.backoffice_user_session import BackofficeUserSession
-from polar.models.catalog import CatalogStatus
 from polar.models.organization import Organization, OrganizationStatus
 from polar.models.organization_risk_signal import OrganizationRiskSignal
 from polar.models.user import User
@@ -625,24 +623,6 @@ class TestEditFeatures:
         assert response.status_code == 303
         assert organization.feature_settings["sso_enabled"] is True
         assert organization.sso_enforced is True
-
-    async def test_keeps_config_as_code_once_catalogs_are_published(
-        self,
-        backoffice_client: httpx2.AsyncClient,
-        save_fixture: SaveFixture,
-        organization: Organization,
-    ) -> None:
-        organization.feature_settings = {"config_as_code_enabled": True}
-        await save_fixture(organization)
-        for status in (CatalogStatus.archived, CatalogStatus.live):
-            await save_fixture(Catalog(organization=organization, status=status))
-
-        response = await backoffice_client.post(
-            f"/organizations/{organization.id}/edit-features", data={}
-        )
-
-        assert response.status_code == 409
-        assert organization.feature_settings["config_as_code_enabled"] is True
 
 
 @pytest.mark.anyio

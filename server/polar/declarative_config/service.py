@@ -433,11 +433,6 @@ class DeclarativeConfigService:
         )
         catalog_repository = CatalogRepository.from_session(session)
         await catalog_repository.lock(organization.id)
-        # Config could have been disabled while waiting for the lock.
-        if not await OrganizationRepository.from_session(
-            session
-        ).is_config_as_code_enabled(organization.id):
-            raise ConfigAsCodeNotEnabled()
         draft = await catalog_repository.get_draft(organization.id)
         changes, issues = await validation.check(
             session, organization, config, for_update=True

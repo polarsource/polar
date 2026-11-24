@@ -7,12 +7,12 @@ description: "Read a customer's balance from your own Redis, right after you tra
 
 Outpost runs inside the Polar SDK. It keeps a copy of each customer's meter usage in a Redis you own, updates that copy when you track an event, and answers balance reads from it. It also delivers your events to Polar. Polar stays the source of truth: it sends its totals back, and they replace the local copy.
 
-Use it when your application has to check a balance on every request, and a round trip to Polar on each one is too slow.
+Use it when your application has to check a balance on every request, and a round trip to Polar on each one is too slow. A read answers in about 1.5 ms, and under 20 ms at p99 up to 10,000 events/s on one Redis: see [Performance and sizing](#performance-and-sizing).
 
 ## What it promises
 
 - A read sees every event `track()` has returned for, on every instance that shares the Redis.
-- A read costs one Redis command. It never calls Polar once the customer is known.
+- A read is a few Redis commands. It never calls Polar once the customer is known.
 - An event counts locally until Polar has stored it. Polar's totals then replace the local count, bucket by bucket. A local balance is never higher than Polar's.
 - A credit reaches local reads at the next pull, within 30 seconds of the grant.
 
@@ -147,83 +147,18 @@ With Outpost, `flush()` does not fail when a delivery does: the events stay queu
 
 `onDelivered` and `onDropped` run on the instance that delivered the batch. A batch mixes events from every instance, so it does not map to one request.
 
-## Run it on Vercel
+## Performance and sizing
 
-On Vercel, each request can land on a different function instance. Pin each customer to one instance instead: the customer's reads stay warm there, and your Redis sees one set of connections per pinned instance, not one per instance Vercel starts. The SDK spreads your customers over 128 shards by default, one pinned instance each, and moves each shard to a fresh instance before Vercel retires the old one.
+Our measurements show, with 1,000 customers and one event per request on Vercel:
 
-Install the optional `@vercel/oidc` peer dependency, then wire three pieces:
+| Load            | SDK        | Read p50 | p95    | p99   |
+| --------------- | ---------- | -------- | ------ | ----- |
+| 2,000 events/s  | TypeScript | 1.4 ms   | 2.3 ms | 8 ms  |
+| 2,000 events/s  | Python     | 1.5 ms   | 2.7 ms | 9 ms  |
+| 10,000 events/s | TypeScript | 1.5 ms   | 9 ms   | 15 ms |
+| 10,000 events/s | Python     | 1.7 ms   | 11 ms  | 16 ms |
 
-<Steps>
-  <Step title="Turn on strict affinity for the routes that use Outpost">
-    List each route that tracks or reads through Outpost:
-
-    <Tabs>
-      <Tab title="vercel.json">
-        ```json vercel.json
-        {
-          "functions": {
-            "app/api/usage/route.ts": {
-              "affinity": { "mode": "strict" },
-              "maxDuration": 300
-            }
-          }
-        }
-        ```
-      </Tab>
-      <Tab title="vercel.ts">
-        ```typescript vercel.ts
-        import type { VercelConfig } from "@vercel/config/v1";
-        import { withOutpostAffinity } from "@polar-sh/sdk/outpost/vercel";
-
-        export const config: VercelConfig = withOutpostAffinity(
-          { functions: { "app/api/usage/route.ts": { maxDuration: 300 } } },
-          ["app/api/usage/route.ts"],
-        );
-        ```
-
-        `withOutpostAffinity` adds `"affinity": { "mode": "strict" }` to each route you list.
-      </Tab>
-    </Tabs>
-  </Step>
-  <Step title="Pin each request to its customer's shard in your middleware">
-    ```typescript
-    import { vercelAffinity } from "@polar-sh/sdk/outpost/vercel";
-    import { type NextRequest, NextResponse } from "next/server";
-
-    // The same maxDuration as the pinned route, in seconds.
-    const pin = vercelAffinity({ maxDurationSeconds: 300 });
-
-    export async function middleware(request: NextRequest) {
-      const customer = request.headers.get("x-customer-id");
-      if (!customer) return NextResponse.next();
-      const headers = await pin(request, { externalCustomerId: customer });
-      return NextResponse.next({ request: { headers } });
-    }
-    ```
-
-    From Next.js 16, the middleware is `proxy.ts` and its function is named `proxy`. A request without a customer, or outside Vercel, goes on unpinned.
-  </Step>
-  <Step title="Answer warm-ups in the pinned route">
-    Before a shard moves, the SDK sends its next instance one warm-up request, so the customers it moves find Outpost started. The warm-up is a `POST` to the pinned route, whatever method your requests use.
-
-    ```typescript
-    import { isVercelAffinityWarmup, warmNextVercelInstance } from "@polar-sh/sdk/outpost/vercel";
-    import { after } from "next/server";
-
-    export async function POST(request: Request) {
-      if (isVercelAffinityWarmup(request)) {
-        await metering.actor({ external_customer_id: request.headers.get("x-customer-id")! });
-        return new Response(null, { status: 204 });
-      }
-      warmNextVercelInstance(request, after);
-      // ... track and read as usual, then flush after the response.
-      after(() => metering.flush());
-    }
-    ```
-  </Step>
-</Steps>
-
-Each customer moves to the next instance at its own moment, within a short window around its shard's move. Vercel answers `503` to a fresh pinned instance that takes a whole shard at once, and the spread works around it while Vercel fixes it.
+These numbers come from one Redis Cloud database on the 2.5 GB plan, running Redis 8. Latency follows how busy Redis is, because one Redis core runs every command: at 10,000 events/s it is busy about half the time. Past that the slowest reads grow fast, and near 16,000 events/s one Redis no longer keeps up. If you need more, [contact support](/support).
 
 ## When something is down
 

@@ -3,7 +3,8 @@
 Legacy floors the running credit total at zero and the credit reducer doesn't, so
 they disagree by the overshoot. A credit of the overshoot right before the event
 that first drove the total negative makes it land on zero instead: legacy is
-unchanged and the reducer catches up.
+unchanged and the reducer catches up. It offsets a benefit clawback, so its reason
+is `benefit`: merchants can only reverse `manual` credits.
 """
 
 import uuid
@@ -83,7 +84,7 @@ async def compensate(
             "meter_id": str(meter.id),
             "units": -lowest,
             "rollover": first_negative.user_metadata["rollover"],
-            "reason": "manual",
+            "reason": "benefit",
         },
         timestamp=first_negative.timestamp - timedelta(microseconds=1),
     )

@@ -16,6 +16,7 @@ from polar.kit.repository import (
 )
 from polar.kit.repository.base import Options
 from polar.kit.utils import utc_now
+from polar.meter.repository import MeterRepository
 from polar.models import Customer, CustomerMeter, Meter
 
 from .sorting import CustomerMeterSortProperty
@@ -129,7 +130,10 @@ class CustomerMeterRepository(
             )
         )
         result = await self.session.execute(
-            select(Meter).where(Meter.id.in_(unactivated_meter_ids))
+            select(Meter).where(
+                Meter.id.in_(unactivated_meter_ids),
+                MeterRepository.get_active_clause(),
+            )
         )
         return result.scalars().all()
 

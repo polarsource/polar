@@ -148,6 +148,7 @@ The plugin requires Better Auth 1.7 or later and Node.js 22 or later.
     - `createCustomerOnSignUp` (optional): Automatically create a Polar customer when a user signs up
     - `getCustomerCreateParams` (optional): Async function that returns additional metadata for new customers
     - `experimental_organizationSync` (optional): Mirror Better Auth organizations to Polar team customers. See [Organization billing](#organization-billing).
+    - `authorizeReference` (optional): Decide who can list the subscriptions of a `reference_id`. See [Who can list a reference's subscriptions](#who-can-list-a-references-subscriptions).
 
     The core client has no service properties such as `customers` or `events`. To call the Polar API yourself, import the operation you need and pass the client to it:
 
@@ -225,12 +226,57 @@ const userShouldHaveAccess = subscriptions?.items.some(
 );
 ```
 
-<Warning>
-  The plugin doesn't check that the user belongs to the organization passed as
-  `reference_id`, and the list includes every subscription in your Polar
-  organization with that `metadata.referenceId`. Verify membership in your
-  application before using the result to grant access.
-</Warning>
+#### Who can list a reference's subscriptions
+
+The plugin checks the signed-in user against the `reference_id` and decides what to return:
+
+| The `reference_id` is                                           | The user gets                                                       |
+| --------------------------------------------------------------- | ------------------------------------------------------------------- |
+| A Better Auth organization where the user is an owner or admin, or has a role mapped to `billing_manager` | Every subscription, with customer billing details |
+| A Better Auth organization where the user has another role       | Every subscription, without customer billing details                |
+| The user's own ID                                                | Every subscription, without customer billing details                |
+| A Better Auth organization or user the user has no relation to   | Only the subscriptions the user purchased                           |
+| Any other ID, such as a workspace or project from your own tables | Every subscription, without customer billing details (deprecated); anonymous users get only the subscriptions they purchased |
+
+Subscriptions the user purchased always include their billing details.
+
+Without customer billing details, a subscription has the same fields as the [customer portal subscription](/api-reference/current/customer_portal/list-subscriptions), such as `product_id`, `status`, `current_period_end`, `seats`, `prices` and `product`. The `customer`, `discount`, `custom_field_data` and cancellation reason fields are omitted, and `metadata` only contains `referenceId`. Check that `customer` is present before reading it:
+
+```typescript icon="square-js"
+const billingEmail = subscriptions?.items
+  .map((subscription) => ("customer" in subscription ? subscription.customer?.email : undefined))
+  .find(Boolean);
+```
+
+The plugin can't verify IDs that are neither a Better Auth organization nor a user. To keep existing integrations working, it still lists their subscriptions without billing details to signed-in users and logs a warning. Anonymous users only get the subscriptions they purchased. The next major version will only return the subscriptions the user purchased. Set `authorizeReference` to authorize these IDs yourself:
+
+```typescript icon="square-js" auth.ts
+polar({
+  client: polarClient,
+  authorizeReference: async ({ user, referenceId, referenceType, defaultAccess }) => {
+    if (referenceType !== "unknown") {
+      return defaultAccess;
+    }
+
+    const member = await db.workspaceMember.findFirst({
+      where: { workspaceId: referenceId, userId: user.id },
+    });
+    if (!member) {
+      return false;
+    }
+
+    return member.role === "admin" ? "full" : "redacted";
+  },
+  use: [checkout(), portal()],
+});
+```
+
+`authorizeReference` runs for every non-empty `reference_id` and its result is final. An empty `reference_id` is treated as omitted and lists the user's own subscriptions. It receives `user`, `session`, `referenceId`, `action`, `referenceType` (`self`, `organization`, `user` or `unknown`) and `defaultAccess`, the access the plugin grants on its own. Return one of:
+
+- `"full"`: every subscription, with customer billing details
+- `"redacted"` or `true`: every subscription, without customer billing details
+- `"purchased"`: only the subscriptions the user purchased
+- `"none"` or `false`: reject the request with a `403`
 
 ### Team customers with `experimental_organizationSync`
 

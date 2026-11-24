@@ -1,0 +1,66 @@
+server/polar/customer_portal/endpoints/order.py
+  s_9d4fcc69d80fc5::t_a9968ea8b15055 7,24,27,106,125,147,193,200,212,225,228,231-232,237-239
+  s_9d4fcc69d80fc5::t_4f879aae3b81da 234-236
+  s_9d4fcc69d80fc5::t_5f84b7e20414ff 20,214
+server/polar/order/repository.py
+  s_9d4fcc69d80fc5::t_99110a4e660b79 96
+server/polar/customer_portal/service/order.py
+  s_9d4fcc69d80fc5::t_4f879aae3b81da 154-156
+server/polar/models/order.py
+  s_9d4fcc69d80fc5::t_99110a4e660b79 357
+  s_9d4fcc69d80fc5::t_db8b0d3adb68a6 369-371
+server/polar/order/tasks.py
+  s_9d4fcc69d80fc5::t_4f879aae3b81da 144-146,150-152,594-597
+  s_9d4fcc69d80fc5::t_5f84b7e20414ff 125,143,147-149,593,598
+server/tests/customer_portal/endpoints/test_order.py
+  s_9d4fcc69d80fc5::t_4f879aae3b81da 226-230
+  s_9d4fcc69d80fc5::t_c19a3f7ba6bf1d 11,20,22,44,54,96,113-114,128,133,136-137,154,159,190,205-214,216-221,223-224,232-241,244-246
+server/tests/openapi.2026-04.json
+  s_9d4fcc69d80fc5::t_4f879aae3b81da 1
+server/polar/integrations/stripe/payment.py
+  s_9d4fcc69d80fc5::t_2d2900ddea2c14 2,255
+  s_9d4fcc69d80fc5::t_5f84b7e20414ff 14,149,265-267,274-280,339
+  s_9d4fcc69d80fc5::t_4f879aae3b81da 256-258,268-269,271-273
+server/polar/customer_portal/schemas/order.py
+  s_9d4fcc69d80fc5::t_4915ea69133606 1,15-21,34,50,77-82,101,106,130,136
+  s_9d4fcc69d80fc5::t_4f879aae3b81da 102-104,107-110,114-116,122-124,131-135
+server/tests/openapi.2026-10.json
+  s_9d4fcc69d80fc5::t_4f879aae3b81da 1
+server/polar/order/schemas.py
+  s_9d4fcc69d80fc5::t_4915ea69133606 397
+server/polar/subscription/service.py
+  s_9d4fcc69d80fc5::t_4f879aae3b81da 1542-1544,1554-1556,3289-3291,3492-3494
+  s_9d4fcc69d80fc5::t_99110a4e660b79 278,1551,1612,1633-1634,3292,3329,3339,3344,3358,3374,3380,3496
+server/polar/order/service.py
+  s_9d4fcc69d80fc5::t_db8b0d3adb68a6 7,62,526,529,667,670,2758-2764,2772-2779,3749,3771,3780-3782,3786-3790,3831-3843
+  s_9d4fcc69d80fc5::t_2d2900ddea2c14 2453-2455,3593
+  s_9d4fcc69d80fc5::t_99110a4e660b79 562,569,619,622,679,696,741,762,806,832
+  s_9d4fcc69d80fc5::t_4f879aae3b81da 519-523,527-528,668-669,673-676,1529-1532,2321-2324,2339-2341,2354-2356,2367-2369,2371-2374,2386,2390-2392,2399-2400,2402-2403,2432-2434,2441-2442,2466,2491-2495,2738-2743,2765-2771,3744-3748,3764-3770,3772-3779,3783-3785
+  s_9d4fcc69d80fc5::t_71fcdc1a5d22fc 2311-2315,2319-2320,2325-2326,2330,2338,2365-2366,2370,2387-2388,2393-2396,2406-2431,2436-2440,2444,2446-2452,2456-2462,2464,2469-2470,2476,2482,2484,2486-2487,2489,2496,2511,2516
+  s_9d4fcc69d80fc5::t_06af196a38fa01 2389
+  s_9d4fcc69d80fc5::t_c62e6b8461d6c9 2397
+  s_9d4fcc69d80fc5::t_bb2cc8034575ee 2780
+  s_9d4fcc69d80fc5::t_bcb9d4cba72cbd 3844
+docs/openapi/2026-04.openapi.json
+  s_9d4fcc69d80fc5::t_d0c758b8e84997 48149,65898
+docs/openapi/2026-10.openapi.json
+  s_9d4fcc69d80fc5::t_5782b7327e50c5 48149,66010
+docs/openapi/2027-01.openapi.json
+  s_9d4fcc69d80fc5::t_f7cb8fe01cf0c9 4370,4533,4546-4554,50112-50119,50173,50207,50243-50249,50252-50253,50268-50269,50926,50937-50938,50949-50950,68618
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9d28ff31b515f28048c34e42c3c7cd34fd0d381c",
+  "prompts": {},
+  "sessions": {
+    "s_9d4fcc69d80fc5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20ccd-705d-7a61-9a99-612697cae1a1",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

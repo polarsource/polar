@@ -1,0 +1,19 @@
+server/scripts/compensate_meter_credit_clawbacks.py
+  s_ca32a95695eef6::t_43cc6d5a9e296d 6-7,87
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1c3a8e8b1b207674cc87d9638b337b2b01038971",
+  "prompts": {},
+  "sessions": {
+    "s_ca32a95695eef6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bc5936ea-be43-41c7-ad4c-5d6c6d11ab13",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

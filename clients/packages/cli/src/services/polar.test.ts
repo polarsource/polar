@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from 'vitest'
-import { Effect, Redacted } from 'effect'
+import { Effect, Logger, Redacted, References } from 'effect'
 import type { Polar as PolarSDK } from '@polar-sh/sdk/2026-10'
 import { AuthError, type PolarEnvironment } from '@/schemas/Auth'
 import { UsedEnvironments } from '@/services/api'
@@ -255,19 +255,12 @@ test.each([
   {
     name: 'a body without detail',
     rejection: { statusCode: 422, error: 'Unprocessable Entity' },
-    message: 'The Polar API rejected the request (422).',
+    message: 'The Polar API rejected the request (422): Unprocessable Entity.',
   },
   {
-    name: 'a server error',
-    rejection: { statusCode: 503 },
-    message:
-      'The Polar API returned an error (503). It may be having issues, try again shortly.',
-  },
-  {
-    name: 'a network failure',
+    name: 'an error outside the SDK',
     rejection: new TypeError('fetch failed'),
-    message:
-      'Polar API request failed (TypeError). Check your connection and try again.',
+    message: 'The Polar API request failed: TypeError: fetch failed.',
   },
 ])('surfaces the API message for $name', async ({ rejection, message }) => {
   const polar = await polarWith(() => Effect.succeed(overrideCredential()))
@@ -278,6 +271,127 @@ test.each([
   await expect(Effect.runPromise(polar.use(request))).rejects.toMatchObject({
     message,
   })
+})
+
+test.each([
+  {
+    name: 'a server error with a plain-text body',
+    response: () =>
+      Promise.resolve(new Response('Internal Server Error', { status: 500 })),
+    message:
+      'The Polar API returned an error (500): Internal Server Error. It may be having issues, try again shortly.',
+    statusCode: 500,
+  },
+  {
+    name: 'a server error with an HTML body',
+    response: () =>
+      Promise.resolve(
+        new Response(
+          '<html><head><title>502 Bad Gateway</title></head><body><h1>502 Bad Gateway</h1></body></html>',
+          { status: 502 },
+        ),
+      ),
+    message:
+      'The Polar API returned an error (502): 502 Bad Gateway. It may be having issues, try again shortly.',
+    statusCode: 502,
+  },
+  {
+    name: 'a server error with a JSON detail',
+    response: () =>
+      Promise.resolve(
+        Response.json({ detail: 'Database unavailable' }, { status: 500 }),
+      ),
+    message:
+      'The Polar API returned an error (500): Database unavailable. It may be having issues, try again shortly.',
+    statusCode: 500,
+  },
+  {
+    name: 'a client error with a JSON detail',
+    response: () =>
+      Promise.resolve(
+        Response.json({ detail: 'Invalid limit.' }, { status: 400 }),
+      ),
+    message: 'Invalid limit.',
+    statusCode: 400,
+  },
+  {
+    name: 'a refused connection',
+    response: () =>
+      Promise.reject(
+        new TypeError(
+          'Unable to connect. Is the computer able to access the url?',
+        ),
+      ),
+    message:
+      'Could not connect to the Polar API at sandbox-api.polar.sh. Check your connection and try again.',
+    statusCode: undefined,
+  },
+  {
+    name: 'a timeout',
+    response: () =>
+      Promise.reject(
+        new DOMException('The operation timed out.', 'TimeoutError'),
+      ),
+    message:
+      'The request to the Polar API at sandbox-api.polar.sh timed out after 5s. It may be under heavy load, try again shortly.',
+    statusCode: undefined,
+  },
+])('reports $name from the SDK', async ({ response, message, statusCode }) => {
+  vi.stubGlobal('fetch', vi.fn(response))
+  const polar = await polarWith(() => Effect.succeed(overrideCredential()))
+
+  const error = await Effect.runPromise(
+    polar.use((client) => client.organizations.list()).pipe(Effect.flip),
+  )
+  expect([error.message, error.statusCode]).toEqual([message, statusCode])
+})
+
+test('logs the failed response at debug level without the token', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi
+      .fn<typeof globalThis.fetch>()
+      .mockResolvedValue(
+        new Response('Internal Server Error', { status: 500 }),
+      ),
+  )
+  const polar = await polarWith(() =>
+    Effect.succeed(overrideCredential('secret-token')),
+  )
+  const logs: Array<{
+    message: unknown
+    annotations: Record<string, unknown>
+  }> = []
+  const logger = Logger.make(({ message, fiber }) => {
+    logs.push({
+      message,
+      annotations: fiber.getRef(References.CurrentLogAnnotations),
+    })
+  })
+
+  await Effect.runPromise(
+    polar
+      .use((client) => client.organizations.list())
+      .pipe(
+        Effect.flip,
+        Effect.provide(Logger.layer([logger])),
+        Effect.provideService(References.MinimumLogLevel, 'Debug'),
+      ),
+  )
+  expect(logs).toEqual([
+    {
+      message: ['Polar API request failed'],
+      annotations: {
+        environment: 'sandbox',
+        api: 'https://sandbox-api.polar.sh',
+        failure: 'Status',
+        timeout: '5s',
+        status: 500,
+        body: 'Internal Server Error',
+      },
+    },
+  ])
+  expect(JSON.stringify(logs)).not.toContain('secret-token')
 })
 
 const notAccessible = {

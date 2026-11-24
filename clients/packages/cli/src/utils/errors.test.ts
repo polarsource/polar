@@ -19,6 +19,17 @@ describe('reportedError', () => {
       message: 'boom',
     })
   })
+
+  test('includes the HTTP status of a failed API request', () => {
+    expect(
+      JSON.parse(
+        reportedError(
+          ['--json'],
+          new AuthError({ message: 'Server error', statusCode: 500 }),
+        ),
+      ),
+    ).toEqual({ error: 'AuthError', message: 'Server error', status: 500 })
+  })
 })
 
 describe('describeError', () => {

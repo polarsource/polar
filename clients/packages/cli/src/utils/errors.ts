@@ -63,11 +63,20 @@ const isCommandError = (error: unknown): error is CommandError =>
     'PullRequestCommentError',
   ].includes(String(error._tag))
 
+const statusOf = (error: unknown) =>
+  isCommandError(error) &&
+  'statusCode' in error &&
+  typeof error.statusCode === 'number'
+    ? error.statusCode
+    : undefined
+
 const errorJson = (error: unknown) => {
   const { title, hint } = describeError(error)
+  const status = statusOf(error)
   return JSON.stringify({
     error: isCommandError(error) ? error._tag : 'UnexpectedError',
     message: title,
+    ...(status === undefined ? {} : { status }),
     ...(hint ? { hint } : {}),
   })
 }

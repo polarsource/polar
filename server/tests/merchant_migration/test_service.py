@@ -38,6 +38,7 @@ from polar.merchant_migration.canonical import (
     CanonicalRecord,
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
+    PaymentMethodAssessment,
     deserialize,
     serialize,
 )
@@ -2229,6 +2230,9 @@ class TestImportCatalog:
         )
         assert subscriptions.selectable == 0
         assert subscriptions.ready == 1
+        assert [
+            (entry.assessment, entry.count) for entry in summary.payment_methods
+        ] == [(PaymentMethodAssessment.missing, 1)]
 
         report = await _import_catalog(session, auth_subject, later.id, record_ids=[])
 

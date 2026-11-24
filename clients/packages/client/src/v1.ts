@@ -14324,6 +14324,7 @@ export interface components {
       | 'sepa_debit'
       | 'bacs_debit'
       | 'link'
+      | 'paypal'
       | 'other'
     /**
      * CardPayment
@@ -28580,6 +28581,16 @@ export interface components {
      * @enum {string}
      */
     MerchantMigrationOperationStatus: 'pending' | 'running' | 'done' | 'failed'
+    /** MerchantMigrationPaymentMethodCount */
+    MerchantMigrationPaymentMethodCount: {
+      /** @description What the source says about charging the method on Polar. */
+      assessment: components['schemas']['PaymentMethodAssessment']
+      /**
+       * Count
+       * @description How many moving subscriptions it applies to.
+       */
+      count: number
+    }
     /** MerchantMigrationRecordBillingAddressUpdate */
     MerchantMigrationRecordBillingAddressUpdate: {
       /** @description Billing address Polar will store on the imported customer. */
@@ -28729,6 +28740,10 @@ export interface components {
       payment_method_type:
         | components['schemas']['CanonicalPaymentMethodType']
         | null
+      /** @description Whether the source's payment method can be charged on Polar once copied, as far as the source can tell before the copy. Null for non-subscription rows. */
+      payment_method_assessment:
+        | components['schemas']['PaymentMethodAssessment']
+        | null
       /**
        * Dependencies Imported
        * @description Whether this subscription's customer and product are already in Polar, so it can be created at cutover. Null for non-subscription rows.
@@ -28771,6 +28786,11 @@ export interface components {
        * @description How many records the pre-check flagged for the merchant to fix, across entities. Classification only, so a flagged record that has since been imported still counts.
        */
       action_required: number
+      /**
+       * Payment Methods
+       * @description How the subscriptions that will move split by payment method assessment. Assessments with no subscriptions are left out.
+       */
+      payment_methods: components['schemas']['MerchantMigrationPaymentMethodCount'][]
     }
     /**
      * MerchantMigrationRecordSummaryEntity
@@ -34888,6 +34908,18 @@ export interface components {
       | components['schemas']['CustomerPaymentMethodCard']
       | components['schemas']['CustomerPaymentMethodKrCard']
       | components['schemas']['CustomerPaymentMethodGeneric']
+    /**
+     * PaymentMethodAssessment
+     * @description What the source says about charging a subscription's method on Polar,
+     *     before any card has been copied.
+     * @enum {string}
+     */
+    PaymentMethodAssessment:
+      | 'copyable'
+      | 'india_card'
+      | 'paypal'
+      | 'not_copyable'
+      | 'missing'
     /** PaymentMethodCard */
     PaymentMethodCard: {
       /**
@@ -74571,6 +74603,7 @@ export const canonicalPaymentMethodTypeValues: ReadonlyArray<
   'sepa_debit',
   'bacs_debit',
   'link',
+  'paypal',
   'other',
 ]
 export const catalogStatusValues: ReadonlyArray<
@@ -77190,6 +77223,9 @@ export const panStepStatusValues: ReadonlyArray<
 export const panTransferMethodValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PanTransferMethod']
 > = ['pan_copy', 'pan_import']
+export const paymentMethodAssessmentValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['PaymentMethodAssessment']
+> = ['copyable', 'india_card', 'paypal', 'not_copyable', 'missing']
 export const paymentProcessorValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PaymentProcessor']
 > = ['stripe']

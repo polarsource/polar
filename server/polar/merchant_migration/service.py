@@ -1,3 +1,4 @@
+from collections import Counter
 from collections.abc import AsyncGenerator, AsyncIterator, Sequence
 from dataclasses import replace
 from datetime import datetime
@@ -57,6 +58,7 @@ from .canonical import (
     CanonicalProduct,
     CanonicalRecord,
     CanonicalSubscription,
+    PaymentMethodAssessment,
     deserialize,
     serialize,
 )
@@ -99,6 +101,7 @@ from .schemas import (
     MerchantMigrationCutoverReport,
     MerchantMigrationImportReport,
     MerchantMigrationLemonSqueezyCreate,
+    MerchantMigrationPaymentMethodCount,
     MerchantMigrationRecordItem,
     MerchantMigrationRecordSummary,
     MerchantMigrationRecordSummaryEntity,
@@ -387,6 +390,24 @@ def _staged_payment_method(
     when a customer has more than one."""
     staged = _staged_subscription(record)
     return staged.payment_method if staged is not None else None
+
+
+def _count_payment_methods(
+    items: Sequence[MerchantMigrationRecordItem],
+) -> list[MerchantMigrationPaymentMethodCount]:
+    counts = Counter(
+        item.payment_method_assessment
+        for item in items
+        if item.payment_method_assessment is not None
+        and item.status == PrecheckRecordStatus.importable
+    )
+    return [
+        MerchantMigrationPaymentMethodCount(
+            assessment=assessment, count=counts[assessment]
+        )
+        for assessment in PaymentMethodAssessment
+        if counts[assessment]
+    ]
 
 
 def _summarize_entities(
@@ -2111,6 +2132,7 @@ class MerchantMigrationService:
                 for item in items
                 if item.reason_level == PrecheckReasonLevel.action_required
             ),
+            payment_methods=_count_payment_methods(items),
         )
 
     def _attach_record_ids(

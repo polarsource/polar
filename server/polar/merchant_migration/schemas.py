@@ -23,7 +23,7 @@ from polar.models.merchant_migration_record import (
 )
 from polar.organization.schemas import OrganizationID
 
-from .canonical import CanonicalPaymentMethodType
+from .canonical import CanonicalPaymentMethodType, PaymentMethodAssessment
 from .pan_transfer import PanTransferMethod, PanTransferStep
 
 
@@ -283,6 +283,13 @@ class MerchantMigrationRecordItem(Schema):
             "source. Null for non-subscription rows, or when the source has none."
         ),
     )
+    payment_method_assessment: PaymentMethodAssessment | None = Field(
+        description=(
+            "Whether the source's payment method can be charged on Polar once "
+            "copied, as far as the source can tell before the copy. Null for "
+            "non-subscription rows."
+        ),
+    )
     dependencies_imported: bool | None = Field(
         description=(
             "Whether this subscription's customer and product are already in Polar, "
@@ -353,6 +360,13 @@ class MerchantMigrationRecordSummaryEntity(PrecheckEntitySummary):
     )
 
 
+class MerchantMigrationPaymentMethodCount(Schema):
+    assessment: PaymentMethodAssessment = Field(
+        description="What the source says about charging the method on Polar."
+    )
+    count: int = Field(description="How many moving subscriptions it applies to.")
+
+
 class MerchantMigrationRecordSummary(Schema):
     """Every count the review UI needs, from one classification pass."""
 
@@ -364,6 +378,12 @@ class MerchantMigrationRecordSummary(Schema):
             "How many records the pre-check flagged for the merchant to fix, "
             "across entities. Classification only, so a flagged record that has "
             "since been imported still counts."
+        )
+    )
+    payment_methods: list[MerchantMigrationPaymentMethodCount] = Field(
+        description=(
+            "How the subscriptions that will move split by payment method "
+            "assessment. Assessments with no subscriptions are left out."
         )
     )
 

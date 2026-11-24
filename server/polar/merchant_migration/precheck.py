@@ -48,8 +48,10 @@ from .canonical import (
     CanonicalSubscription,
     CanonicalSubscriptionAddOn,
     CanonicalSubscriptionStatus,
+    PaymentMethodAssessment,
     PriceKey,
     SubscriptionDiscountBlock,
+    assess_payment_method,
     canonical_price_key,
     customer_country_fallbacks,
     discount_started_at_for,
@@ -212,6 +214,12 @@ _PAYMENT_METHOD_MISSING_REASON = (
     "The source has no payment method for this subscription. It still moves "
     "to Polar, but its next renewal fails and goes to dunning unless the "
     "customer adds one first."
+)
+_PAYMENT_INDIA_CARD_REASON = (
+    "This looks like an India-issued card. India requires a mandate for "
+    "recurring charges, and it doesn't move with the card. The subscription "
+    "still moves to Polar, but its next renewal is likely to fail and go to "
+    "dunning unless the customer adds another payment method first."
 )
 _SUBSCRIPTION_DISCOUNT_REASON = (
     "This subscription's coupon isn't one Polar can import, so it stays on the "
@@ -999,11 +1007,15 @@ def payment_method_reason(
 
     Never a reason to skip: the switch moves it either way, and a first renewal
     that can't be charged goes to dunning like any other."""
-    if payment_method is None:
-        return Reason("payment_method_missing", _PAYMENT_METHOD_MISSING_REASON)
-    if payment_method.type.requires_reentry:
-        return Reason("payment_method_requires_reentry", _PAYMENT_REENTRY_REASON)
-    return None
+    match assess_payment_method(payment_method):
+        case PaymentMethodAssessment.missing:
+            return Reason("payment_method_missing", _PAYMENT_METHOD_MISSING_REASON)
+        case PaymentMethodAssessment.paypal | PaymentMethodAssessment.not_copyable:
+            return Reason("payment_method_requires_reentry", _PAYMENT_REENTRY_REASON)
+        case PaymentMethodAssessment.india_card:
+            return Reason("payment_method_india_card", _PAYMENT_INDIA_CARD_REASON)
+        case PaymentMethodAssessment.copyable:
+            return None
 
 
 def _drop_reason(issues: Iterable[PrecheckIssue], codes: set[str]) -> Reason | None:
@@ -1046,6 +1058,7 @@ def _item(
     discount_code: str | None = None,
     cancels_at_period_end: bool | None = None,
     payment_method_type: CanonicalPaymentMethodType | None = None,
+    payment_method_assessment: PaymentMethodAssessment | None = None,
 ) -> MerchantMigrationRecordItem:
     """One review row. ``skip`` means it won't import; ``note`` only annotates a
     row that will."""
@@ -1088,6 +1101,7 @@ def _item(
         discount_code=discount_code,
         has_payment_method=None,
         payment_method_type=payment_method_type,
+        payment_method_assessment=payment_method_assessment,
         dependencies_imported=None,
         cancels_at_period_end=cancels_at_period_end,
     )
@@ -1407,6 +1421,9 @@ def _subscription_items(
                     subscription.payment_method.type
                     if subscription.payment_method is not None
                     else None
+                ),
+                payment_method_assessment=assess_payment_method(
+                    subscription.payment_method
                 ),
             )
         )

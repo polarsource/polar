@@ -469,8 +469,46 @@ class TestGetSubscription:
 
         assert subscription is not None
         assert subscription.payment_method is not None
-        assert subscription.payment_method.type == CanonicalPaymentMethodType.other
+        assert subscription.payment_method.type == CanonicalPaymentMethodType.paypal
         assert subscription.payment_method.last4 is None
+
+    async def test_non_card_on_stripe_must_be_reentered(self) -> None:
+        adapter, _ = _adapter(
+            {
+                "/v1/subscriptions/100": {
+                    "data": _subscription(card_brand="", card_last_four="")
+                }
+            }
+        )
+
+        subscription = await adapter.get_subscription("100")
+
+        assert subscription is not None
+        assert subscription.payment_method is not None
+        assert subscription.payment_method.type == CanonicalPaymentMethodType.other
+
+    async def test_card_carries_the_customer_country(self) -> None:
+        adapter, requests = _adapter(
+            {
+                "/v1/subscriptions/100": {
+                    "data": _subscription(),
+                    "included": [
+                        {
+                            "type": "customers",
+                            "id": "50",
+                            "attributes": {"country": "IN"},
+                        }
+                    ],
+                }
+            }
+        )
+
+        subscription = await adapter.get_subscription("100")
+
+        assert subscription is not None
+        assert subscription.payment_method is not None
+        assert subscription.payment_method.billing_country == "IN"
+        assert requests[0].url.params["include"] == "customer"
 
     async def test_missing(self) -> None:
         adapter, _ = _adapter()

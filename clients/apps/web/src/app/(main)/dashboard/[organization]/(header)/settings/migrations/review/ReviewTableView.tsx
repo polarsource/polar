@@ -6,6 +6,10 @@ import { OnChangeFn, PaginationState } from '@tanstack/react-table'
 import { useMemo, useState } from 'react'
 import { CatalogEmptyPanel } from './CatalogEmptyPanel'
 import { ReviewAlerts } from './ReviewAlerts'
+import {
+  PaymentMethodCount,
+  paymentMethodSummaryText,
+} from './paymentMethodSummary'
 import { ReviewRecordModal } from './ReviewRecordModal'
 import { ReviewToolbarActions } from './ReviewToolbarActions'
 import {
@@ -53,6 +57,7 @@ interface Props {
   refreshError?: string
   attentionCount: number
   hasConnectedAccounts: boolean
+  paymentMethods: PaymentMethodCount[]
 }
 
 export function ReviewTableView({
@@ -80,6 +85,7 @@ export function ReviewTableView({
   refreshError,
   attentionCount,
   hasConnectedAccounts,
+  paymentMethods,
 }: Props) {
   const refreshing = rerunning && !stalled
   const rowTotal = remainingSubscriptionCount(
@@ -146,6 +152,7 @@ export function ReviewTableView({
         stalled={stalled}
         refreshError={refreshError}
         importError={importError}
+        paymentMethodSummary={paymentMethodSummaryText(paymentMethods)}
       />
 
       <Box flexDirection="column" rowGap="m">

@@ -16,6 +16,12 @@ from shared import (
 
 NAME = "Running database migrations"
 
+KNOWN_FAILURES = (
+    ("Multiple head revisions", "multiple_heads"),
+    ("Connection refused", "database_unreachable"),
+    ("Connect call failed", "database_unreachable"),
+)
+
 GENERIC_HINTS = (
     "Is PostgreSQL up? [bold]dev status[/bold] shows it; [bold]docker compose logs db[/bold] in server/ shows why not",
     "Run [bold]uv run task db_migrate[/bold] in server/ to retry with the full log",
@@ -70,6 +76,8 @@ def run(ctx: Context) -> bool:
 
         revision = unknown_revision(result)
         drift = find_drift(revision) if revision else None
+        if drift:
+            ctx.failure_reason = "revision_from_other_branch"
         if drift and drift.target:
             report_drift(drift)
         elif drift:
@@ -85,6 +93,10 @@ def run(ctx: Context) -> bool:
                 lines=1,
             )
         else:
+            output = f"{result.stdout}\n{result.stderr}" if result else ""
+            ctx.failure_reason = next(
+                (reason for marker, reason in KNOWN_FAILURES if marker in output), None
+            )
             step_failed(
                 "Database migrations", "failed", result, hints=GENERIC_HINTS, lines=40
             )

@@ -34,6 +34,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
+import shared
 from logo import print_banner
 from shared import (
     CLIENTS_DIR,
@@ -145,7 +146,13 @@ def register_commands() -> None:
             module.register(app, prompt_setup_if_needed)
 
 
-def _track_up_step(step: str, started_at: float, success: bool, clean: bool) -> None:
+def _track_up_step(
+    step: str,
+    started_at: float,
+    success: bool,
+    clean: bool,
+    failure_reason: str | None,
+) -> None:
     try:
         import analytics
 
@@ -155,6 +162,7 @@ def _track_up_step(step: str, started_at: float, success: bool, clean: bool) -> 
             duration_ms=round((time.monotonic() - started_at) * 1000),
             success=success,
             clean=clean,
+            failure_reason=failure_reason,
         )
     except Exception:
         pass
@@ -196,8 +204,18 @@ def up(
     for i, (name, module) in enumerate(steps, 1):
         console.print(f"[bold blue][{i}/{total}][/bold blue] [bold]{name}[/bold]")
         step_started_at = time.monotonic()
+        shared.last_command_interrupted = False
         success = module.run(ctx)
-        _track_up_step(module.__name__, step_started_at, success, clean)
+        failure_reason = None
+        if not success:
+            failure_reason = (
+                "interrupted"
+                if shared.last_command_interrupted
+                else ctx.failure_reason or "unknown"
+            )
+        _track_up_step(
+            module.__name__, step_started_at, success, clean, failure_reason
+        )
         if not success:
             console.print(f"\n[red]Setup failed at step {i}/{total}: {name}[/red]")
             console.print("Fix the issue above and run [bold]dev up[/bold] again.")

@@ -3093,8 +3093,8 @@ class CheckoutService:
     async def _get_customer_id_on_previous_meter_versions(
         self, session: AsyncSession, organization_id: uuid.UUID, email: str
     ) -> uuid.UUID | None:
-        """The ID of the customer with this email, if they have a customer meter
-        on a meter that isn't current."""
+        """`None` unless that customer has a customer meter on a meter that
+        isn't current."""
         if not await CustomerMeterRepository.from_session(
             session
         ).has_previous_meter_versions(email=email, organization_id=organization_id):

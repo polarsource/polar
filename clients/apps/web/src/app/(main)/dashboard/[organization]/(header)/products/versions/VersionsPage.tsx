@@ -77,8 +77,9 @@ export const VersionsPage = ({
     'tab',
     parseAsStringLiteral(tabs).withDefault('versions'),
   )
-  const { data: removed } = useRemovedCatalogItems(organization.id)
-  const hasRemoved = !!removed?.length
+  const { data: removed, isError } = useRemovedCatalogItems(organization.id)
+  // On error, keep the tabs so the Removed tab can show its alert and retry
+  const hasRemoved = !!removed?.length || isError
 
   return (
     <DashboardBody title="Versions">

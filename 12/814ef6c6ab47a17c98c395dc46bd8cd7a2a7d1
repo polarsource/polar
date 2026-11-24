@@ -1,0 +1,19 @@
+server/scripts/seeds_load.py
+  s_5e79ba7adad4ae::t_cd892e72a22691 51,113-115,3123-3126,3128,3130-3134,3136,3140,3146,3188
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "12814ef6c6ab47a17c98c395dc46bd8cd7a2a7d1",
+  "prompts": {},
+  "sessions": {
+    "s_5e79ba7adad4ae": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "agent-a69eee5635d95f577",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

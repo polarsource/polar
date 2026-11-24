@@ -133,7 +133,10 @@ IMPORTABLE_STEPS = {
 
 _IMPORT_TASK = "merchant_migration.import_catalog"
 _BENEFITS_TASK = "merchant_migration.set_up_benefits"
-_BENEFITS_FAILURE = "We couldn't set up these benefits. Please try again."
+_BENEFITS_FAILURE = (
+    "Some benefits may already exist. Try again to finish the rest, "
+    "or contact support if it keeps failing."
+)
 # None is a pre-check started before operations recorded their kind.
 _PRECHECK_KINDS = {None, MerchantMigrationOperationKind.precheck}
 _IMPORT_FAILURE = "We couldn't prepare these subscriptions. Please try again."

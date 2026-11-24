@@ -291,6 +291,11 @@ class MigrationBenefits:
         if member is None:
             return
         for benefit in benefits:
+            if (
+                benefit.type == BenefitType.license_keys
+                and purchase.license_key_disabled
+            ):
+                continue
             properties = (
                 await kept_key_properties(
                     self.session, self.organization.id, purchase.license_key

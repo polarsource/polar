@@ -119,7 +119,7 @@ class LemonSqueezyAdapter:
         self._redemptions_by_order: dict[str, list[dict[str, Any]]] | None = None
         self._redemption_counts: dict[str, int] = {}
         self._order_tax_behaviors: dict[str, TaxBehavior] | None = None
-        self._license_keys: dict[str, str] | None = None
+        self._license_keys: dict[str, str | None] | None = None
 
     async def _request(
         self, method: str, path: str, params: dict[str, Any] | None = None
@@ -506,12 +506,12 @@ class LemonSqueezyAdapter:
         self._redemptions_by_order = by_order
         return by_order
 
-    async def _load_license_keys(self) -> dict[str, str]:
-        """Usable keys per order item: a one-time purchase's key belongs to
-        its only item."""
+    async def _load_license_keys(self) -> dict[str, str | None]:
+        """Keys per order item: a one-time purchase's key belongs to its only
+        item. None marks an item whose key the merchant disabled."""
         if self._license_keys is not None:
             return self._license_keys
-        keys: dict[str, str] = {}
+        keys: dict[str, str | None] = {}
         page = 1
         while True:
             license_keys, has_more, _ = await self._list(
@@ -520,9 +520,11 @@ class LemonSqueezyAdapter:
             for license_key in license_keys:
                 order_item_id = license_key["attributes"]["order_item_id"]
                 if _usable_key_for(license_key, order_item_id):
-                    keys.setdefault(
-                        str(order_item_id), license_key["attributes"]["key"]
+                    keys[str(order_item_id)] = keys.get(str(order_item_id)) or str(
+                        license_key["attributes"]["key"]
                     )
+                else:
+                    keys.setdefault(str(order_item_id), None)
             if not has_more:
                 break
             page += 1
@@ -679,6 +681,8 @@ class LemonSqueezyAdapter:
                     email=attributes["user_email"],
                     name=attributes.get("user_name"),
                     license_key=license_keys.get(str(item["id"])),
+                    license_key_disabled=str(item["id"]) in license_keys
+                    and license_keys[str(item["id"])] is None,
                 )
             )
         return purchases, has_more
@@ -955,5 +959,8 @@ def _digest(value: str) -> str:
 
 
 def _description(product_name: str, suffix: str) -> str:
+    # "Icon Links" stays as it is, not "Icon Links links".
+    if product_name.lower().rstrip("s").endswith(suffix.rstrip("s")):
+        return product_name[:BENEFIT_DESCRIPTION_MAX_LENGTH].strip()
     room = BENEFIT_DESCRIPTION_MAX_LENGTH - len(suffix) - 1
     return f"{product_name[:room].strip()} {suffix}"

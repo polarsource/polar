@@ -2,12 +2,13 @@
 
 import { useSetUpMigrationBenefits } from '@/hooks/queries/merchantMigrations'
 import { schemas } from '@polar-sh/client'
-import { Button, Text } from '@polar-sh/orbit'
+import { Alert, ButtonGroup, Checkbox, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useState } from 'react'
 import { plural } from '../review/importSummary'
-import { NOT_MOVED, productsText } from './benefitCopy'
 import { BenefitRow, BenefitSection } from './BenefitRows'
+
+const LICENSE_KEY_DOCS = 'https://polar.sh/docs/features/benefits/license-keys'
 
 interface Props {
   migrationId: string
@@ -16,8 +17,8 @@ interface Props {
   onDone: () => void
 }
 
-// Split by who gets the benefit: subscribers pick per benefit, past one-time
-// buyers are one switch, since they either get their access back or don't.
+// Each benefit shows once: with subscribers when it's on an imported product,
+// otherwise with past one-time buyers. One nobody would get isn't offered.
 export function BenefitsForm({
   migrationId,
   benefits,
@@ -25,17 +26,19 @@ export function BenefitsForm({
   onDone,
 }: Props) {
   const [excluded, setExcluded] = useState<Set<string>>(new Set())
-  const [grantPastPurchases, setGrantPastPurchases] = useState(true)
+  const [grantPastBuyers, setGrantPastBuyers] = useState(true)
   const setUp = useSetUpMigrationBenefits(migrationId)
 
-  const forSubscriptions = benefits.filter((b) => b.for_subscriptions)
-  const forOneTime = benefits.filter((b) => b.for_one_time)
-  const selected = benefits.filter(
-    (b) =>
-      (b.for_subscriptions && !excluded.has(b.id)) ||
-      (b.for_one_time && grantPastPurchases),
+  const forSubscribers = benefits.filter((b) => b.products.length > 0)
+  const forPastBuyers = benefits.filter(
+    (b) => b.products.length === 0 && b.for_one_time,
   )
+  const selected = [
+    ...forSubscribers.filter((b) => !excluded.has(b.id)),
+    ...(grantPastBuyers ? forPastBuyers : []),
+  ]
   const toCreate = selected.filter((b) => !b.benefit_id)
+  const hasLicenseKeys = selected.some((b) => b.type === 'license_keys')
 
   const toggle = (id: string) =>
     setExcluded((current) => {
@@ -50,23 +53,40 @@ export function BenefitsForm({
     setUp.mutate(
       {
         benefit_ids: benefitIds,
-        grant_past_purchases: grantPastPurchases && forOneTime.length > 0,
+        grant_past_purchases:
+          grantPastBuyers && benefits.some((b) => b.for_one_time),
       },
       { onSuccess: onDone },
     )
 
+  if (forSubscribers.length === 0 && forPastBuyers.length === 0) {
+    return (
+      <Box flexDirection="column" rowGap="l">
+        <Text color="muted">
+          No license keys, files or links to bring over.
+        </Text>
+        <ButtonGroup
+          size="sm"
+          actions={[
+            {
+              text: setUp.isPending ? 'Continuing…' : 'Continue',
+              disabled: setUp.isPending,
+              onClick: () => submit([]),
+            },
+          ]}
+        />
+      </Box>
+    )
+  }
+
   return (
-    <Box flexDirection="column" rowGap="2xl">
-      {forSubscriptions.length > 0 && (
-        <BenefitSection
-          title="Subscriptions"
-          description="Added to your imported products. Subscribers get them, with the same license key, when you switch billing."
-        >
-          {forSubscriptions.map((benefit) => (
+    <Box flexDirection="column" rowGap="xl">
+      {forSubscribers.length > 0 && (
+        <BenefitSection title="Subscribers">
+          {forSubscribers.map((benefit) => (
             <BenefitRow
               key={benefit.id}
               benefit={benefit}
-              aside={productsText(benefit)}
               selected={!excluded.has(benefit.id)}
               onToggle={() => toggle(benefit.id)}
             />
@@ -74,57 +94,67 @@ export function BenefitsForm({
         </BenefitSection>
       )}
 
-      {forOneTime.length > 0 && (
-        <BenefitSection
-          title="Past one-time purchases"
-          description="Buyers get the same license key and files in their customer portal. No new order is created."
-          enabled={grantPastPurchases}
-          onEnabledChange={setGrantPastPurchases}
-        >
-          {forOneTime.map((benefit) => (
+      {forPastBuyers.length > 0 && (
+        <BenefitSection title="Past one-time buyers">
+          {forPastBuyers.map((benefit) => (
             <BenefitRow key={benefit.id} benefit={benefit} />
           ))}
         </BenefitSection>
       )}
 
-      <Box flexDirection="column" rowGap="xs">
-        <Text variant="label">Not moved</Text>
-        {NOT_MOVED.map((line) => (
-          <Text key={line} variant="caption" color="muted">
-            {line}
-          </Text>
-        ))}
+      <Box flexDirection="column" rowGap="s">
+        {forPastBuyers.length > 0 && (
+          <Checkbox
+            checked={grantPastBuyers}
+            onCheckedChange={(checked) => setGrantPastBuyers(checked === true)}
+            label="Give past buyers their license keys and files. Polar doesn't email them. They find everything in the customer portal."
+          />
+        )}
         <Text variant="caption" color="muted">
-          Need one of these? Contact us and we&apos;ll add it.
+          {hasLicenseKeys && (
+            <>
+              Your app must{' '}
+              <a
+                href={LICENSE_KEY_DOCS}
+                target="_blank"
+                rel="noreferrer"
+                className="underline"
+              >
+                check license keys with Polar
+              </a>
+              . Used activations and expiry dates start fresh.{' '}
+            </>
+          )}
+          Need anything else moved? Contact us.
         </Text>
       </Box>
 
       {(setUp.error || failure) && (
-        <Text variant="caption" color="danger" role="alert">
-          {setUp.error?.message ?? failure}
-        </Text>
+        <Alert
+          variant="danger"
+          title="We couldn't set up these benefits"
+          description={setUp.error?.message ?? failure ?? undefined}
+        />
       )}
 
-      <Box justifyContent="end" columnGap="s">
-        <Button
-          size="sm"
-          variant="secondary"
-          disabled={setUp.isPending}
-          onClick={() => submit([])}
-        >
-          Skip
-        </Button>
-        <Button
-          size="sm"
-          loading={setUp.isPending}
-          disabled={setUp.isPending || selected.length === 0}
-          onClick={() => submit(selected.map((b) => b.id))}
-        >
-          {toCreate.length
-            ? `Create ${plural(toCreate.length, 'benefit')}`
-            : 'Save'}
-        </Button>
-      </Box>
+      <ButtonGroup
+        size="sm"
+        actions={[
+          {
+            text: setUp.isPending
+              ? 'Creating…'
+              : toCreate.length
+                ? `Create ${plural(toCreate.length, 'benefit')}`
+                : 'Continue',
+            disabled: setUp.isPending,
+            onClick: () => submit(selected.map((b) => b.id)),
+          },
+          {
+            text: 'Skip',
+            onClick: () => submit([]),
+          },
+        ]}
+      />
     </Box>
   )
 }

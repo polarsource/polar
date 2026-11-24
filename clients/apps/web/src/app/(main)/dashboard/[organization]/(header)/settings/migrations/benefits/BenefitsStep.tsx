@@ -49,7 +49,9 @@ export function BenefitsStep({
         <Text variant="title" as="h3">
           {BENEFITS_STEP.title}
         </Text>
-        <Text color="muted">{BENEFITS_STEP.description}</Text>
+        {(showForm || running) && (
+          <Text color="muted">{BENEFITS_STEP.description}</Text>
+        )}
       </Box>
       {running ? (
         <Alert
@@ -77,7 +79,7 @@ export function BenefitsStep({
       ) : (
         <BenefitsReady
           migrationId={migration.id}
-          created={(benefits.data?.items ?? []).filter((b) => b.benefit_id)}
+          benefits={benefits.data?.items ?? []}
           pastPurchasesGranted={!!benefits.data?.past_purchases_granted}
           onEdit={() => setEditing(true)}
         />
@@ -88,16 +90,26 @@ export function BenefitsStep({
 
 function BenefitsReady({
   migrationId,
-  created,
+  benefits,
   pastPurchasesGranted,
   onEdit,
 }: {
   migrationId: string
-  created: schemas['MerchantMigrationBenefit'][]
+  benefits: schemas['MerchantMigrationBenefit'][]
   pastPurchasesGranted: boolean
   onEdit: () => void
 }) {
   const start = useStartPanTransfer(migrationId)
+  const created = benefits.filter((b) => b.benefit_id)
+  const offered = benefits.filter(
+    (b) => b.products.length > 0 || b.for_one_time,
+  )
+  const left = offered.length - created.length
+  const startAction = {
+    text: start.isPending ? 'Starting…' : 'Start moving cards',
+    disabled: start.isPending,
+    onClick: () => start.mutate(),
+  }
   return (
     <Box
       flexDirection="column"
@@ -113,30 +125,15 @@ function BenefitsReady({
         <Text variant="title" as="h3">
           {created.length ? 'Benefits created' : 'Benefits skipped'}
         </Text>
-        {created.length ? (
-          <>
-            <Text color="muted">
-              {plural(created.length, 'benefit')}{' '}
-              {created.length === 1 ? 'is' : 'are'} on Polar. You can edit them
-              from Benefits.
-            </Text>
-            {created.some((benefit) => benefit.type === 'license_keys') && (
-              <Text color="muted">
-                Subscribers keep their license key when you switch billing.
-              </Text>
-            )}
-            {pastPurchasesGranted && (
-              <Text color="muted">
-                Past one-time buyers already have their license keys and files.
-                They find them in their customer portal.
-              </Text>
-            )}
-          </>
-        ) : (
-          <Text color="muted">
-            No benefits were created. You can add them later from each product.
-          </Text>
-        )}
+        <Text color="muted">
+          {created.length
+            ? `${plural(created.length, 'benefit')} created.${
+                pastPurchasesGranted
+                  ? ' Past buyers find their keys and files in the customer portal.'
+                  : ''
+              }`
+            : 'No benefits were created. You can add them later from each product.'}
+        </Text>
       </Box>
       <Box
         borderTopWidth={1}
@@ -154,20 +151,19 @@ function BenefitsReady({
         </Text>
       </Box>
       {start.error && (
-        <Text variant="caption" color="danger" role="alert">
-          {start.error.message}
-        </Text>
+        <Alert
+          variant="danger"
+          title="We couldn't start moving cards"
+          description={start.error.message}
+        />
       )}
       <ButtonGroup
         size="sm"
-        actions={[
-          {
-            text: start.isPending ? 'Starting…' : 'Start moving cards',
-            disabled: start.isPending,
-            onClick: () => start.mutate(),
-          },
-          { text: 'Edit benefits', onClick: onEdit },
-        ]}
+        actions={
+          left > 0
+            ? [startAction, { text: 'Add more benefits', onClick: onEdit }]
+            : [startAction]
+        }
       />
     </Box>
   )

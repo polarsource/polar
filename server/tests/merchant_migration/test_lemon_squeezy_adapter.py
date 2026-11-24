@@ -733,7 +733,16 @@ class TestListPurchases:
                             "type": "license-keys",
                             "id": "60",
                             "attributes": {"order_item_id": 84, "key": "KEY-LIFETIME"},
-                        }
+                        },
+                        {
+                            "type": "license-keys",
+                            "id": "61",
+                            "attributes": {
+                                "order_item_id": 81,
+                                "key": "KEY-REVOKED",
+                                "disabled": True,
+                            },
+                        },
                     ]
                 ),
             },
@@ -743,7 +752,9 @@ class TestListPurchases:
         purchases, has_more = await adapter.list_purchases(1)
 
         assert not has_more
-        assert [(p.source_id, p.license_key) for p in purchases] == [
-            ("71", None),
-            ("74", "KEY-LIFETIME"),
+        assert [
+            (p.source_id, p.license_key, p.license_key_disabled) for p in purchases
+        ] == [
+            ("71", None, True),
+            ("74", "KEY-LIFETIME", False),
         ]

@@ -31,8 +31,7 @@ const MAYBE_ON_POLAR =
   "cards are already on Polar, you'll go straight to the switch. Otherwise " +
   "you'll get a checklist to move them."
 const SET_UP_BENEFITS =
-  'Bring your license keys and files over as Polar benefits, so customers ' +
-  'keep their keys and downloads.'
+  'Bring your license keys, files and links over, so customers keep access.'
 const NOTHING_TO_MOVE =
   'There is nothing to move yet. Prepare your subscriptions first, then come ' +
   "back to move your customers' saved cards."

@@ -70,7 +70,7 @@ export const BENEFITS_STEP: MigrationStepDef = {
   owner: 'you',
   title: 'Set up benefits',
   description:
-    'We found these in Lemon Squeezy. Polar creates them with the same settings and adds them to your products. You can edit them later from Benefits.',
+    'Polar copies your license keys, files and links from Lemon Squeezy, with the same settings. You can edit them later from Benefits.',
   steps: ['create_catalog', 'set_up_benefits'],
 }
 

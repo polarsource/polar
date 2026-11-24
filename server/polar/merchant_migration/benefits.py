@@ -23,6 +23,10 @@ from polar.benefit.grant.service import BenefitGrantAlreadyExists
 from polar.benefit.grant.service import benefit_grant as benefit_grant_service
 from polar.benefit.repository import BenefitRepository
 from polar.benefit.service import benefit as benefit_service
+from polar.benefit.strategies.custom.schemas import (
+    BenefitCustomCreate,
+    BenefitCustomCreateProperties,
+)
 from polar.benefit.strategies.downloadables.schemas import (
     BenefitDownloadablesCreate,
     BenefitDownloadablesCreateProperties,
@@ -163,8 +167,21 @@ class MigrationBenefits:
         return has_more
 
     async def _create(self, source: CanonicalBenefit) -> Benefit:
-        create: BenefitLicenseKeysCreate | BenefitDownloadablesCreate
-        if source.license_keys is not None:
+        create: (
+            BenefitLicenseKeysCreate | BenefitDownloadablesCreate | BenefitCustomCreate
+        )
+        if source.links:
+            create = BenefitCustomCreate(
+                type=BenefitType.custom,
+                description=source.description,
+                external_id=benefit_external_id(source),
+                properties=BenefitCustomCreateProperties(
+                    note="\n".join(
+                        f"- [{link.title}]({link.url})" for link in source.links
+                    )
+                ),
+            )
+        elif source.license_keys is not None:
             settings = source.license_keys
             create = BenefitLicenseKeysCreate(
                 type=BenefitType.license_keys,

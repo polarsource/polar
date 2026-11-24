@@ -24,6 +24,7 @@ from ..canonical import (
     CanonicalAccount,
     CanonicalBenefit,
     CanonicalBenefitFile,
+    CanonicalBenefitLink,
     CanonicalCollectionMethod,
     CanonicalCustomer,
     CanonicalDiscount,
@@ -556,6 +557,7 @@ class LemonSqueezyAdapter:
         files_by_variant = await self._load_files({v["id"] for v, _ in variants})
         license_benefits: dict[str, CanonicalBenefit] = {}
         file_benefits: dict[str, CanonicalBenefit] = {}
+        link_benefits: dict[str, CanonicalBenefit] = {}
         for variant, product_name in variants:
             attributes = variant["attributes"]
             if attributes.get("has_license_keys"):
@@ -589,7 +591,31 @@ class LemonSqueezyAdapter:
                     ),
                 )
                 benefit.product_source_ids.append(variant["id"])
-        return [*license_benefits.values(), *file_benefits.values()]
+            links = [
+                CanonicalBenefitLink(
+                    title=link.get("title") or link["url"], url=link["url"]
+                )
+                for link in attributes.get("links") or []
+                if link.get("url")
+            ]
+            if links:
+                urls = ",".join(f"{link.title}|{link.url}" for link in links)
+                key = "links:" + hashlib.sha256(urls.encode()).hexdigest()[:16]
+                benefit = link_benefits.setdefault(
+                    key,
+                    CanonicalBenefit(
+                        source_id=key,
+                        description=_description(product_name, "links"),
+                        product_source_ids=[],
+                        links=links,
+                    ),
+                )
+                benefit.product_source_ids.append(variant["id"])
+        return [
+            *license_benefits.values(),
+            *file_benefits.values(),
+            *link_benefits.values(),
+        ]
 
     async def _load_files(
         self, variant_ids: set[str]

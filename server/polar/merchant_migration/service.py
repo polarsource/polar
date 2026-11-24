@@ -1016,7 +1016,9 @@ class MerchantMigrationService:
             items=[
                 MerchantMigrationBenefit(
                     id=proposal.source.source_id,
-                    type="license_keys"
+                    type="custom"
+                    if proposal.source.links
+                    else "license_keys"
                     if proposal.source.license_keys is not None
                     else "downloadables",
                     description=proposal.source.description,
@@ -1033,6 +1035,7 @@ class MerchantMigrationService:
                         MerchantMigrationBenefitFile(name=file.name, size=file.size)
                         for file in proposal.source.files
                     ],
+                    links=[link.title for link in proposal.source.links],
                     products=[
                         MerchantMigrationBenefitProduct(
                             id=product_id, name=names[product_id]

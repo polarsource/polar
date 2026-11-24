@@ -605,7 +605,12 @@ class TestListBenefits:
                 "/v1/variants": _page(
                     [
                         _variant("10", 5, **license),
-                        _variant("11", 5, **license),
+                        _variant(
+                            "11",
+                            5,
+                            links=[{"title": "Docs", "url": "https://example.com"}],
+                            **license,
+                        ),
                         _variant(
                             "12",
                             5,
@@ -642,7 +647,7 @@ class TestListBenefits:
 
         benefits = await adapter.list_benefits()
 
-        limited, unlimited, files = benefits
+        limited, unlimited, files, links = benefits
         assert limited.product_source_ids == ["10", "11"]
         assert limited.license_keys is not None
         assert limited.license_keys.activation_limit == 3
@@ -656,6 +661,10 @@ class TestListBenefits:
         assert unlimited.license_keys.expires_ttl is None
         assert files.product_source_ids == ["10", "11"]
         assert [file.name for file in files.files] == ["1.zip"]
+        assert links.product_source_ids == ["11"]
+        assert [(link.title, link.url) for link in links.links] == [
+            ("Docs", "https://example.com")
+        ]
 
 
 @pytest.mark.anyio

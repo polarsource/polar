@@ -28478,7 +28478,7 @@ export interface components {
        * @description The Polar benefit type it becomes.
        * @enum {string}
        */
-      type: 'license_keys' | 'downloadables'
+      type: 'license_keys' | 'downloadables' | 'custom'
       /**
        * Description
        * @description The name the benefit gets on Polar.
@@ -28504,6 +28504,11 @@ export interface components {
        * @description File downloads only: the files Polar copies.
        */
       files: components['schemas']['MerchantMigrationBenefitFile'][]
+      /**
+       * Links
+       * @description Custom only: the links buyers get, shown in a note.
+       */
+      links: string[]
       /**
        * Products
        * @description Imported products that get this benefit.
@@ -75921,7 +75926,7 @@ export const memberSortPropertyValues: ReadonlyArray<
 > = ['created_at', '-created_at']
 export const merchantMigrationBenefitTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationBenefit']['type']
-> = ['license_keys', 'downloadables']
+> = ['license_keys', 'downloadables', 'custom']
 export const merchantMigrationBenefitExpires_timeframeAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationBenefit']['expires_timeframe']
 > = ['day', 'month', 'year']

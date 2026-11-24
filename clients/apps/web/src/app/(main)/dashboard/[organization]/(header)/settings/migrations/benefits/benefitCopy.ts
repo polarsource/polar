@@ -5,9 +5,13 @@ type Benefit = schemas['MerchantMigrationBenefit']
 export const TYPE_LABELS: Record<Benefit['type'], string> = {
   license_keys: 'License keys',
   downloadables: 'File downloads',
+  custom: 'Links',
 }
 
 export function benefitDetail(benefit: Benefit): string {
+  if (benefit.type === 'custom') {
+    return benefit.links.join(', ')
+  }
   if (benefit.type === 'downloadables') {
     return benefit.files
       .map((file) => `${file.name} (${formatSize(file.size)})`)

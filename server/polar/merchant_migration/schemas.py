@@ -506,7 +506,7 @@ class MerchantMigrationBenefit(Schema):
     id: str = Field(
         description="Stable key for this source benefit. Send it back to create it."
     )
-    type: Literal["license_keys", "downloadables"] = Field(
+    type: Literal["license_keys", "downloadables", "custom"] = Field(
         description="The Polar benefit type it becomes."
     )
     description: str = Field(description="The name the benefit gets on Polar.")
@@ -521,6 +521,9 @@ class MerchantMigrationBenefit(Schema):
     )
     files: Sequence[MerchantMigrationBenefitFile] = Field(
         description="File downloads only: the files Polar copies."
+    )
+    links: Sequence[str] = Field(
+        description="Custom only: the links buyers get, shown in a note."
     )
     products: Sequence[MerchantMigrationBenefitProduct] = Field(
         description="Imported products that get this benefit."

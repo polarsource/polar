@@ -348,6 +348,12 @@ class CanonicalBenefitFile:
 
 
 @dataclass
+class CanonicalBenefitLink:
+    title: str
+    url: str
+
+
+@dataclass
 class CanonicalLicenseKeySettings:
     activation_limit: int | None
     # Both None when keys never expire.
@@ -368,6 +374,7 @@ class CanonicalBenefit:
     product_source_ids: list[str]
     license_keys: CanonicalLicenseKeySettings | None = None
     files: list[CanonicalBenefitFile] = field(default_factory=list)
+    links: list[CanonicalBenefitLink] = field(default_factory=list)
 
 
 @dataclass

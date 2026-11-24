@@ -103,7 +103,8 @@ export const layer = Layer.effect(
         const available = yield* auth.environments
         if (available.length === 0) {
           return yield* new AuthError({
-            message: 'Not logged in. Run polar auth login.',
+            message:
+              'Not logged in. Run polar auth login or set POLAR_ACCESS_TOKEN.',
           })
         }
         if (available.length === 1)

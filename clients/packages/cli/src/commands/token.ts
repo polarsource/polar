@@ -29,7 +29,7 @@ const announceTokenPage = (page: URL) =>
 
 export const token = Command.make('token', { scope, org }).pipe(
   Command.withDescription(
-    'Create an organization access token for your app and print it',
+    'Give your app its own organization access token: a human approves it in the browser, with any --scope preselected, and the CLI prints it',
   ),
   Command.withExamples([
     {
@@ -41,6 +41,12 @@ export const token = Command.make('token', { scope, org }).pipe(
         'polar auth token --scope products:read --scope checkouts:write | gh secret set POLAR_ACCESS_TOKEN',
       description:
         'Preselect scopes and store the token as a GitHub Actions secret without writing it to disk',
+    },
+    {
+      command:
+        'POLAR_ACCESS_TOKEN=<your access token> polar auth token --scope events:write',
+      description:
+        'As an agent without a saved session, use your own access token; a human still approves the app token',
     },
     {
       command: 'polar auth token --org acme --scope events:write',

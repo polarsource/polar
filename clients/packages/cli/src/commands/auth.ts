@@ -14,6 +14,7 @@ import { Organizations } from '@/services/organizations'
 import { token } from '@/commands/token'
 import { output } from '@/utils/command'
 import { local, production, sandbox } from '@/utils/flags'
+import { type EnvironmentVariable, EnvironmentVariables } from '@/utils/help'
 import { note } from '@/utils/progress'
 import { interactive } from '@/utils/prompt'
 import * as ui from '@/utils/ui'
@@ -37,10 +38,26 @@ const organizationRows = (
   ['ID', ui.dim(organization.id)],
 ]
 
+export const tokenVariables: ReadonlyArray<EnvironmentVariable> = [
+  {
+    name: 'POLAR_ACCESS_TOKEN',
+    description:
+      'Use this token instead of polar auth login: an organization access token, or an OAuth or agent access token',
+  },
+  {
+    name: 'POLAR_ENVIRONMENT',
+    description:
+      'Environment of POLAR_ACCESS_TOKEN: sandbox or production. Defaults to production',
+  },
+]
+
 const notLoggedIn = [
   ui.warning('Not logged in'),
   ui.step(
     `Run ${ui.command(loginCommand('sandbox'))} or ${ui.command(loginCommand('production'))}`,
+  ),
+  ui.step(
+    `Or set ${ui.command('POLAR_ACCESS_TOKEN')} to use an access token without logging in`,
   ),
   ui.blank,
 ]
@@ -210,6 +227,11 @@ const login = Command.make('login', {
     {
       command: 'polar auth login --production --new-session',
       description: 'Sign in to production again, replacing the saved session',
+    },
+    {
+      command: 'export POLAR_ACCESS_TOKEN=<token> POLAR_ENVIRONMENT=sandbox',
+      description:
+        'Without a browser, e.g. in CI or as an agent, skip login and use an access token',
     },
   ]),
   output({
@@ -486,5 +508,6 @@ const logout = Command.make('logout', {
 
 export const auth = Command.make('auth').pipe(
   Command.withDescription('Manage your Polar sessions and active organization'),
+  Command.annotate(EnvironmentVariables, tokenVariables),
   Command.withSubcommands([login, whoami, list, org, token, logout]),
 )

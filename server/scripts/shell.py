@@ -119,7 +119,7 @@ def start_shell() -> None:
         try:
             loop.run_until_complete(session.close())
             loop.run_until_complete(engine.dispose())
-            loop.run_until_complete(redis.close())
+            loop.run_until_complete(redis.aclose())
             loop.close()
         except Exception as e:
             print(f"cleanup failed: {e!r}")

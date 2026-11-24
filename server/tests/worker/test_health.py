@@ -301,7 +301,7 @@ class TestCreateApp:
         mocker.patch.object(
             async_redis.Redis,
             "from_url",
-            return_value=MagicMock(ping=AsyncMock(), close=AsyncMock()),
+            return_value=MagicMock(ping=AsyncMock(), aclose=AsyncMock()),
         )
         with TestClient(create_app(database=False)) as client:
             return dict(client.get("/").headers)
@@ -326,7 +326,7 @@ class TestLifespan:
         mocker.patch.object(
             async_redis.Redis,
             "from_url",
-            return_value=MagicMock(close=AsyncMock()),
+            return_value=MagicMock(aclose=AsyncMock()),
         )
 
         async with _create_lifespan(database=False)(MagicMock()) as state:
@@ -348,7 +348,7 @@ class TestLifespan:
         mocker.patch.object(
             async_redis.Redis,
             "from_url",
-            return_value=MagicMock(close=AsyncMock()),
+            return_value=MagicMock(aclose=AsyncMock()),
         )
 
         async with _create_lifespan(database=True)(MagicMock()) as state:

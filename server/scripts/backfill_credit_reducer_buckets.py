@@ -93,7 +93,7 @@ async def backfill(
                 after = last
                 typer.echo(f"Rebuilt up to customer meter {last}")
     finally:
-        await redis.close()
+        await redis.aclose()
         await engine.dispose()
 
 

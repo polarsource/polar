@@ -253,7 +253,7 @@ def _run_push_loop(
                     shutdown_event.wait(sleep_time)
     finally:
         if loop and redis:
-            loop.run_until_complete(redis.close())
+            loop.run_until_complete(redis.aclose())
             loop.close()
 
 

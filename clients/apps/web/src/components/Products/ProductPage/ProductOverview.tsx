@@ -3,6 +3,7 @@ import { schemas } from '@polar-sh/client'
 import { Grid } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { ProductBenefits } from './ProductBenefits'
+import { ProductCustomFields } from './ProductCustomFields'
 import { ProductDiscounts } from './ProductDiscounts'
 import { ProductMeters } from './ProductMeters'
 import { ProductOrders } from './ProductOrders'
@@ -71,6 +72,7 @@ export const ProductOverview = ({
         <>
           <ProductBenefits organization={organization} product={product} />
           <ProductMeters organization={organization} product={product} />
+          <ProductCustomFields organization={organization} product={product} />
         </>
       ) : (
         <Grid
@@ -81,6 +83,7 @@ export const ProductOverview = ({
           <ProductBenefits organization={organization} product={product} />
           <ProductDiscounts organization={organization} product={product} />
           <ProductMeters organization={organization} product={product} />
+          <ProductCustomFields organization={organization} product={product} />
         </Grid>
       )}
     </Box>

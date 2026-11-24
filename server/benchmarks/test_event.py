@@ -158,12 +158,12 @@ def test_ingest_late_events(
     benchmark(ingest_batch)
 
 
-async def seed_staged_ingest(
+async def seed_reducer_billed_organization(
     session: AsyncSession, save_fixture: SaveFixture, organization: Organization
 ) -> None:
     organization.feature_settings = {
         **organization.feature_settings,
-        "staged_events_ingest_enabled": True,
+        "reducer_billing_enabled": True,
     }
     await save_fixture(organization)
     await create_metered_reducer(session, save_fixture, organization)
@@ -192,7 +192,7 @@ def test_ingest_staged_events(
     organization: Organization,
     size: int,
 ) -> None:
-    run(seed_staged_ingest(session, save_fixture, organization))
+    run(seed_reducer_billed_organization(session, save_fixture, organization))
     auth_subject = AuthSubject(organization, {Scope.events_write}, None)
     ingest = EventsIngest.model_validate({"events": staged_events(size, 0)})
     batches = itertools.count(1)
@@ -228,7 +228,7 @@ def test_ingest_staged_events_http(
     token = f"{TOKEN_PREFIX}benchmark"
 
     async def seed() -> None:
-        await seed_staged_ingest(session, save_fixture, organization)
+        await seed_reducer_billed_organization(session, save_fixture, organization)
         await save_fixture(
             OrganizationAccessToken(
                 comment="benchmark",

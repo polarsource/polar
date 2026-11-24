@@ -770,10 +770,6 @@ class Organization(RateLimitGroupMixin, RecordModel):
         return self.feature_settings.get("config_as_code_enabled", False)
 
     @property
-    def is_staged_events_ingest_enabled(self) -> bool:
-        return self.feature_settings.get("staged_events_ingest_enabled", False)
-
-    @property
     def is_reducer_billing_enabled(self) -> bool:
         return self.feature_settings.get("reducer_billing_enabled", False)
 

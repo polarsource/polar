@@ -1118,21 +1118,16 @@ class EventService:
 
         repository = EventRepository.from_session(session)
         organization_ids = {event["organization_id"] for event in events}
-        org_ids_with_staged_events_enabled = await self._get_org_ids_with_feature(
-            session, organization_ids, "staged_events_ingest_enabled", auth_subject
-        )
         org_ids_with_reducer_billing = await self._get_org_ids_with_feature(
             session, organization_ids, "reducer_billing_enabled", auth_subject
         )
         staged_events = [
-            e
-            for e in events
-            if e["organization_id"] in org_ids_with_staged_events_enabled
+            e for e in events if e["organization_id"] in org_ids_with_reducer_billing
         ]
         direct_events = [
             e
             for e in events
-            if e["organization_id"] not in org_ids_with_staged_events_enabled
+            if e["organization_id"] not in org_ids_with_reducer_billing
         ]
 
         event_ids: list[uuid.UUID] = []
@@ -1151,24 +1146,17 @@ class EventService:
             event_ids.extend(direct_event_ids)
             duplicates_count += direct_duplicates_count
 
-            if direct_event_ids and org_ids_with_reducer_billing != organization_ids:
-                meter_event_ids = [
-                    event["id"]
-                    for event in direct_events
-                    if event["organization_id"] not in org_ids_with_reducer_billing
-                ]
-
-                # Temporarily: fetch inserted events and create meter_events
-                if meter_event_ids:
-                    with logfire.span(
-                        "create_meter_events", event_count=len(meter_event_ids)
-                    ):
-                        inserted_events = await repository.get_all(
-                            repository.get_base_statement().where(
-                                Event.id.in_(meter_event_ids)
-                            )
+            # Temporarily: fetch inserted events and create meter_events
+            if direct_event_ids:
+                with logfire.span(
+                    "create_meter_events", event_count=len(direct_event_ids)
+                ):
+                    inserted_events = await repository.get_all(
+                        repository.get_base_statement().where(
+                            Event.id.in_(direct_event_ids)
                         )
-                        await self._create_meter_events(session, inserted_events)
+                    )
+                    await self._create_meter_events(session, inserted_events)
 
             # Parent resolution and root_id propagation run out-of-band in the
             # `event.ingested` task — they're not needed on the request path and

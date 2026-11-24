@@ -11,6 +11,7 @@ from polar.integrations.payment_retry_alert.service import (
     payment_retry_alert as payment_retry_alert_service,
 )
 from polar.integrations.stripe.service import (
+    STRIPE_METADATA_ORDER_RECOVERY,
     STRIPE_METADATA_PAYMENT_TRIGGER,
 )
 from polar.integrations.stripe.service import (
@@ -147,12 +148,13 @@ async def resolve_order(
     checkout: Checkout | None,
 ) -> Order | None:
     order_repository = OrderRepository.from_session(session)
-    if (
-        object.metadata is not None
-        and (order_id := object.metadata.get("order_id")) is not None
-    ):
+    metadata = object.metadata or {}
+    order_id = metadata.get(STRIPE_METADATA_ORDER_RECOVERY) or metadata.get("order_id")
+    if order_id is not None:
         order = await order_repository.get_by_id(
-            uuid.UUID(order_id), options=order_repository.get_eager_options()
+            uuid.UUID(order_id),
+            options=order_repository.get_eager_options(),
+            for_update=True,
         )
         if order is None:
             payment_intent_id: str | None = None
@@ -209,6 +211,7 @@ async def handle_success(
     organization = await resolve_organization(session, object)
     checkout = await resolve_checkout(session, object)
     wallet, wallet_transaction = await resolve_wallet(session, object)
+    recovery = STRIPE_METADATA_ORDER_RECOVERY in (object.metadata or {})
     order = await resolve_order(session, object, checkout)
 
     trigger = _resolve_trigger(object)
@@ -254,11 +257,23 @@ async def handle_success(
         )
 
     if order is not None:
-        enqueue_job(
-            "order.paid",
-            order_id=order.id,
-            payment_id=payment.id if payment is not None else None,
-        )
+        if recovery:
+            intent_id = (
+                get_expandable_id(object.payment_intent)
+                if isinstance(object, stripe_lib.Charge)
+                and object.payment_intent is not None
+                else object.id
+            )
+            if order.payment_processor_metadata.get("intent_id") == intent_id:
+                await order_service.complete_customer_order_payment(
+                    session, order, object, payment
+                )
+        else:
+            enqueue_job(
+                "order.paid",
+                order_id=order.id,
+                payment_id=payment.id if payment is not None else None,
+            )
 
     if wallet_transaction is not None:
         enqueue_job(
@@ -309,6 +324,18 @@ async def handle_failure(
             await checkout_service.handle_failure(session, checkout, payment=payment)
 
     if order is not None:
+        if STRIPE_METADATA_ORDER_RECOVERY in (object.metadata or {}):
+            if (
+                intent_id is not None
+                and order.payment_processor_metadata.get("intent_id") == intent_id
+            ):
+                await order_service.reconcile_customer_order_payment(
+                    session, order, expire=True
+                )
+            return
+        if "intent_id" in order.payment_processor_metadata:
+            return
+
         # Failures from triggers that don't count toward the dunning ceiling
         # also shouldn't progress the dunning state machine — otherwise a
         # one-shot recovery attempt (manual portal retry, post-card-update

@@ -558,6 +558,12 @@ async def process_stale_payment_lock(
             log.info("Order payment lock is not stale, skipping", order_id=order.id)
             return
 
+        if "intent_id" in order.payment_processor_metadata:
+            await order_service.reconcile_customer_order_payment(
+                session, order, expire=True
+            )
+            return
+
         payment_repository = PaymentRepository.from_session(session)
         if await payment_repository.get_succeeded_by_order(order.id) is not None:
             log.info(

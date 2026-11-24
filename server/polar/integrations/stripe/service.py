@@ -10,6 +10,7 @@ from stripe.params._customer_create_params import (
     CustomerCreateParamsTaxIdDatum,
 )
 from stripe.params._customer_modify_params import CustomerModifyParams
+from stripe.params._payment_intent_confirm_params import PaymentIntentConfirmParams
 from stripe.params._payment_intent_create_params import (
     PaymentIntentCreateParams,
     PaymentIntentCreateParamsPaymentMethodData,
@@ -46,6 +47,7 @@ if TYPE_CHECKING:
 #: ``polar.order.service``) and the consumer in ``polar.integrations.stripe.payment``
 #: must agree on this string.
 STRIPE_METADATA_PAYMENT_TRIGGER = "payment_trigger"
+STRIPE_METADATA_ORDER_RECOVERY = "order_recovery"
 SEPA_PAYMENT_METHOD_TYPES: Final = ("bancontact", "ideal", "sepa_debit", "sofort")
 
 
@@ -376,6 +378,11 @@ class StripeService:
 
     async def get_payment_intent(self, id: str) -> stripe_lib.PaymentIntent:
         return await stripe_lib.PaymentIntent.retrieve_async(id)
+
+    async def confirm_payment_intent(
+        self, id: str, **params: Unpack[PaymentIntentConfirmParams]
+    ) -> stripe_lib.PaymentIntent:
+        return await stripe_lib.PaymentIntent.confirm_async(id, **params)
 
     async def cancel_payment_intent(self, id: str) -> stripe_lib.PaymentIntent:
         log.info("stripe.payment_intent.cancel", payment_intent_id=id)

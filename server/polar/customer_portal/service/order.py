@@ -9,7 +9,7 @@ from sqlalchemy.sql.elements import OrderByList
 
 from polar.auth.models import AuthSubject, Customer, Member
 from polar.enums import PaymentProcessor
-from polar.exceptions import PolarError
+from polar.exceptions import PolarError, ResourceNotFound
 from polar.invoice.service import invoice as invoice_service
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
@@ -19,6 +19,7 @@ from polar.models.product import ProductBillingType
 from polar.order.service import InvoiceDoesNotExist, ReceiptNotAllocated
 from polar.order.service import order as order_service
 from polar.receipt.service import receipt as receipt_service
+from polar.subscription.repository import SubscriptionRepository
 
 from ..repository.order import CustomerOrderRepository
 from ..schemas.order import (
@@ -126,19 +127,39 @@ class CustomerOrderService:
         session: AsyncSession,
         auth_subject: AuthSubject[Customer | Member],
         id: uuid.UUID,
+        *,
+        for_update: bool = False,
     ) -> Order | None:
         repository = CustomerOrderRepository.from_session(session)
-        statement = (
-            repository.get_readable_statement(auth_subject)
-            .where(Order.id == id)
-            .options(*repository.get_eager_options())
+        return await repository.get_readable_by_id(
+            auth_subject, id, for_update=for_update
         )
-        return await repository.get_one_or_none(statement)
+
+    async def create(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Customer | Member],
+        subscription_id: uuid.UUID,
+    ) -> Order:
+        repository = SubscriptionRepository.from_session(session)
+        subscription = await repository.get_one_or_none(
+            repository.get_readable_statement(auth_subject)
+            .where(repository.model.id == subscription_id)
+            .options(*repository.get_eager_options())
+            .with_for_update(of=repository.model)
+        )
+        if subscription is None:
+            raise ResourceNotFound()
+
+        order = await order_service.create_trial_recovery_order(session, subscription)
+        result = await self.get_by_id(session, auth_subject, order.id)
+        assert result is not None
+        return result
 
     async def update(
         self, session: AsyncSession, order: Order, order_update: CustomerOrderUpdate
     ) -> Order:
-        return await order_service.update(session, order, order_update)
+        return await order_service.update_customer_order(session, order, order_update)
 
     async def trigger_invoice_generation(
         self, session: AsyncSession, order: Order

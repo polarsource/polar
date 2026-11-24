@@ -354,6 +354,26 @@ class Order(
         return func.greatest(0, cls.total_amount + cls.applied_balance_amount)
 
     @property
+    def is_trial_recovery(self) -> bool:
+        return (
+            self.billing_reason
+            == OrderBillingReasonInternal.subscription_cycle_after_trial
+            and self.invoice_number is None
+            and self.checkout_id is None
+            and self.subscription_id is not None
+        )
+
+    @property
+    def payment_authentication(self) -> dict[str, str]:
+        metadata = self.payment_processor_metadata
+        if "intent_client_secret" not in metadata:
+            return {}
+        return {
+            "intent_id": metadata["intent_id"],
+            "intent_client_secret": metadata["intent_client_secret"],
+        }
+
+    @property
     def taxed(self) -> int:
         return self.tax_amount > 0
 

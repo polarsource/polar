@@ -80,7 +80,7 @@ class DiscountRedemptionRepository(
         self,
         discount_id: UUID,
         *,
-        exclude_checkout_id: UUID,
+        exclude_checkout_id: UUID | None,
         customer_id: UUID | None = None,
         customer_email: str | None = None,
         payment_method_fingerprint: str | None = None,
@@ -157,7 +157,15 @@ class DiscountRedemptionRepository(
             .where(
                 DiscountRedemption.discount_id == discount_id,
                 # NULL-safe: subscription-only redemptions have no checkout.
-                DiscountRedemption.checkout_id.is_distinct_from(exclude_checkout_id),
+                *(
+                    (
+                        DiscountRedemption.checkout_id.is_distinct_from(
+                            exclude_checkout_id
+                        ),
+                    )
+                    if exclude_checkout_id is not None
+                    else ()
+                ),
                 or_(*clauses),
                 or_(
                     ~redemption_orders.exists(),

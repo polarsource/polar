@@ -93,6 +93,19 @@ class OrderRepository(
 ):
     model = Order
 
+    async def get_trial_recovery_order(
+        self, subscription_id: UUID, *, statuses: Sequence[OrderStatus]
+    ) -> Order | None:
+        statement = self.get_base_statement().where(
+            Order.subscription_id == subscription_id,
+            Order.billing_reason
+            == OrderBillingReasonInternal.subscription_cycle_after_trial,
+            Order.invoice_number.is_(None),
+            Order.checkout_id.is_(None),
+            Order.status.in_(statuses),
+        )
+        return await self.get_one_or_none(statement.options(*self.get_eager_options()))
+
     async def get_revenue_by_customer(
         self,
         organization_id: UUID,
@@ -435,7 +448,9 @@ class OrderRepository(
         )
         return await self.get_all(statement)
 
-    async def acquire_payment_lock_by_id(self, order_id: UUID) -> bool:
+    async def acquire_payment_lock_by_id(
+        self, order_id: UUID, *, status: OrderStatus
+    ) -> bool:
         """
         Internal method to acquire a payment lock by order ID.
         This is the original acquire_payment_lock logic.
@@ -445,7 +460,11 @@ class OrderRepository(
         """
         statement = (
             update(Order)
-            .where(Order.id == order_id, Order.payment_lock_acquired_at.is_(None))
+            .where(
+                Order.id == order_id,
+                Order.status == status,
+                Order.payment_lock_acquired_at.is_(None),
+            )
             .values(payment_lock_acquired_at=utc_now())
         )
 

@@ -2,28 +2,38 @@ from textwrap import dedent
 from typing import Annotated
 
 from fastapi import Depends, Query, Response
+from fastapi.responses import JSONResponse
 
-from polar.exceptions import ResourceNotFound
-from polar.kit.db.postgres import AsyncSession
+from polar.auth.scope import Scope
+from polar.exceptions import PaymentNotReady, ResourceNotFound
+from polar.kit.db.postgres import AsyncSession, AsyncSessionMaker
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter
+from polar.kit.versioning import version
 from polar.models import Order
-from polar.openapi import APITag
+from polar.openapi import APITag, destructive
 from polar.order.schemas import OrderID
 from polar.order.service import (
+    CustomerOrderConflict,
+    CustomerOrderPaymentDeclined,
     MissingInvoiceBillingDetails,
     OrderNotEligibleForInvoice,
     PaymentAlreadyInProgress,
 )
+from polar.order.service import order as order_service
 from polar.payment.repository import PaymentRepository
-from polar.postgres import get_db_session
+from polar.postgres import get_db_session, get_db_sessionmaker
 from polar.routing import APIRouter
+from polar.subscription.service import NotTrialEndedSubscription
+from polar.version import NEXT_API_VERSION, V2026_10
 
 from .. import auth
 from ..schemas.order import (
     CustomerOrder,
     CustomerOrderConfirmPayment,
+    CustomerOrderCreate,
     CustomerOrderInvoice,
+    CustomerOrderPay,
     CustomerOrderPaymentConfirmation,
     CustomerOrderPaymentStatus,
     CustomerOrderReceipt,
@@ -94,9 +104,39 @@ async def list(
     )
 
     return ListResource.from_paginated_results(
-        [CustomerOrder.model_validate(result) for result in results],
+        [
+            CustomerOrder.model_validate(result).model_copy(
+                update={"payment_processor_metadata": {}}
+            )
+            for result in results
+        ],
         count,
         pagination,
+    )
+
+
+@router.post(
+    "/",
+    status_code=201,
+    summary="Create Order",
+    response_model=CustomerOrder,
+    responses={
+        404: {
+            "description": "Subscription not found.",
+            "model": ResourceNotFound.schema(),
+        },
+        409: {"model": NotTrialEndedSubscription.schema()},
+    },
+)
+@version(starting_from=NEXT_API_VERSION)
+async def create(
+    order_create: CustomerOrderCreate,
+    auth_subject: auth.CustomerPortalUnionBillingWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Order:
+    """Prepare a draft order for the first paid period of an ended trial."""
+    return await customer_order_service.create(
+        session, auth_subject, order_create.subscription_id
     )
 
 
@@ -110,13 +150,17 @@ async def get(
     id: OrderID,
     auth_subject: auth.CustomerPortalUnionBillingRead,
     session: AsyncSession = Depends(get_db_session),
-) -> Order:
+) -> Order | CustomerOrder:
     """Get an order by ID for the authenticated customer."""
     order = await customer_order_service.get_by_id(session, auth_subject, id)
 
     if order is None:
         raise ResourceNotFound()
 
+    if Scope.customer_portal_write not in auth_subject.scopes:
+        return CustomerOrder.model_validate(order).model_copy(
+            update={"payment_processor_metadata": {}}
+        )
     return order
 
 
@@ -126,6 +170,7 @@ async def get(
     response_model=CustomerOrder,
     responses={404: OrderNotFound},
 )
+@version(up_to=V2026_10)
 async def update(
     id: OrderID,
     order_update: CustomerOrderUpdate,
@@ -133,12 +178,106 @@ async def update(
     session: AsyncSession = Depends(get_db_session),
 ) -> Order:
     """Update an order for the authenticated customer."""
-    order = await customer_order_service.get_by_id(session, auth_subject, id)
-
+    order = await customer_order_service.get_by_id(
+        session, auth_subject, id, for_update=True
+    )
     if order is None:
         raise ResourceNotFound()
-
     return await customer_order_service.update(session, order, order_update)
+
+
+@router.patch(
+    "/{id}",
+    name="update",
+    summary="Update Order",
+    response_model=CustomerOrder,
+    responses={
+        404: OrderNotFound,
+        409: {
+            "model": CustomerOrderConflict.schema()
+            | PaymentAlreadyInProgress.schema()
+            | NotTrialEndedSubscription.schema()
+        },
+    },
+)
+@version(starting_from=NEXT_API_VERSION)
+async def update_v2027_01(
+    id: OrderID,
+    order_update: CustomerOrderUpdate,
+    auth_subject: auth.CustomerPortalUnionBillingWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Order:
+    """Update billing details. Tax and discount changes are available on trial recovery drafts."""
+    return await update(id, order_update, auth_subject, session)
+
+
+@router.patch(
+    "/{id}/pay",
+    summary="Pay Order",
+    response_model=CustomerOrder,
+    openapi_extra=destructive(),
+    responses={
+        202: {
+            "model": CustomerOrder,
+            "description": "Payment is processing or requires authentication.",
+        },
+        402: {"model": CustomerOrderPaymentDeclined.schema()},
+        403: {"model": PaymentNotReady.schema()},
+        404: OrderNotFound,
+        409: {
+            "model": CustomerOrderConflict.schema()
+            | PaymentAlreadyInProgress.schema()
+            | NotTrialEndedSubscription.schema()
+        },
+        429: {"model": ManualRetryLimitExceeded.schema()},
+    },
+)
+@version(starting_from=NEXT_API_VERSION)
+async def pay(
+    id: OrderID,
+    credential: CustomerOrderPay,
+    auth_subject: auth.CustomerPortalUnionBillingWrite,
+    response: Response,
+    sessionmaker: AsyncSessionMaker = Depends(get_db_sessionmaker),
+) -> Order | JSONResponse:
+    """Pay an outstanding subscription order or start the paid period of an ended trial."""
+    # Persist the locked snapshot before Stripe can emit a settlement webhook.
+    async with sessionmaker.begin() as preparation:
+        order = await customer_order_service.get_by_id(
+            preparation, auth_subject, id, for_update=True
+        )
+        if order is None:
+            raise ResourceNotFound()
+        stripe_credential = await order_service.prepare_customer_order_payment(
+            preparation, order, credential
+        )
+
+    if (
+        intent_id := order.payment_processor_metadata.get("intent_id")
+    ) is not None and not order.payment_authentication:
+        async with sessionmaker.begin() as settlement:
+            order = await customer_order_service.get_by_id(
+                settlement, auth_subject, id, for_update=True
+            )
+            if order is None:
+                raise ResourceNotFound()
+            try:
+                if stripe_credential is not None:
+                    order = await order_service.confirm_customer_order_payment(
+                        settlement, order, intent_id, stripe_credential
+                    )
+                elif order.payment_processor_metadata.get("intent_id") == intent_id:
+                    order = await order_service.reconcile_customer_order_payment(
+                        settlement, order
+                    )
+            except CustomerOrderPaymentDeclined as e:
+                return JSONResponse(
+                    status_code=e.status_code,
+                    content={"error": type(e).__name__, "detail": e.detail},
+                )
+    if not order.paid:
+        response.status_code = 202
+    return order
 
 
 @router.post(

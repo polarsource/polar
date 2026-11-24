@@ -39,6 +39,22 @@ class CustomerOrderRepository(
             Order.customer_id == get_customer_id(auth_subject)
         )
 
+    async def get_readable_by_id(
+        self,
+        auth_subject: AuthSubject[Customer | Member],
+        id: UUID,
+        *,
+        for_update: bool,
+    ) -> Order | None:
+        statement = (
+            self.get_readable_statement(auth_subject)
+            .where(Order.id == id)
+            .options(*self.get_eager_options())
+        )
+        if for_update:
+            statement = statement.with_for_update(of=Order)
+        return await self.get_one_or_none(statement)
+
     def get_eager_options(
         self, *, product_load: "_AbstractLoad | None" = None
     ) -> Options:

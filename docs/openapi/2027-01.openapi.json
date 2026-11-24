@@ -4189,6 +4189,92 @@
             "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.customerPortal.orders.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"-created_at\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
+      },
+      "post": {
+        "tags": [
+          "customer_portal",
+          "orders",
+          "public"
+        ],
+        "summary": "Create Order",
+        "description": "Prepare a draft order for the first paid period of an ended trial.",
+        "operationId": "customer_portal:orders:create",
+        "security": [
+          {
+            "customer_session": [
+              "customer_portal:write"
+            ]
+          },
+          {
+            "member_session": [
+              "customer_portal:write"
+            ]
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerOrderCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerOrder"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Subscription not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotTrialEndedSubscription"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-speakeasy-group": "orders",
+        "x-speakeasy-name-override": "create",
+        "x-codeSamples": [
+          {
+            "lang": "python",
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.orders.create(\n    subscription_id='00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
+          },
+          {
+            "lang": "typescript",
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.orders.create(\n  {\n    \"subscription_id\": \"00000000-0000-4000-8000-000000000000\"\n  },\n);\nconsole.log(response);\n"
+          }
+        ]
       }
     },
     "/v1/customer-portal/orders/{id}": {
@@ -4281,7 +4367,7 @@
           "public"
         ],
         "summary": "Update Order",
-        "description": "Update an order for the authenticated customer.",
+        "description": "Update billing details. Tax and discount changes are available on trial recovery drafts.",
         "operationId": "customer_portal:orders:update",
         "security": [
           {
@@ -4340,6 +4426,27 @@
               }
             }
           },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/CustomerOrderConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PaymentAlreadyInProgress"
+                    },
+                    {
+                      "$ref": "#/components/schemas/NotTrialEndedSubscription"
+                    }
+                  ],
+                  "title": "Response 409 Customer Portal:Orders:Update"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -4361,6 +4468,159 @@
           {
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.orders.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {},\n);\nconsole.log(response);\n"
+          }
+        ]
+      }
+    },
+    "/v1/customer-portal/orders/{id}/pay": {
+      "patch": {
+        "tags": [
+          "customer_portal",
+          "orders",
+          "public"
+        ],
+        "summary": "Pay Order",
+        "description": "Pay an outstanding subscription order or start the paid period of an ended trial.",
+        "operationId": "customer_portal:orders:pay",
+        "security": [
+          {
+            "customer_session": [
+              "customer_portal:write"
+            ]
+          },
+          {
+            "member_session": [
+              "customer_portal:write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid4",
+              "description": "The order ID.",
+              "title": "Id"
+            },
+            "description": "The order ID."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerOrderPay"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerOrder"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Payment is processing or requires authentication.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerOrder"
+                }
+              }
+            }
+          },
+          "402": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerOrderPaymentDeclined"
+                }
+              }
+            },
+            "description": "Payment Required"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentNotReady"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Order not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/CustomerOrderConflict"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PaymentAlreadyInProgress"
+                    },
+                    {
+                      "$ref": "#/components/schemas/NotTrialEndedSubscription"
+                    }
+                  ],
+                  "title": "Response 409 Customer Portal:Orders:Pay"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManualRetryLimitExceeded"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-speakeasy-group": "orders",
+        "x-speakeasy-name-override": "pay",
+        "x-codeSamples": [
+          {
+            "lang": "python",
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.orders.pay(\n    '00000000-0000-4000-8000-000000000000',\n    payment_method_id='00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
+          },
+          {
+            "lang": "typescript",
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.orders.pay(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"payment_method_id\": \"00000000-0000-4000-8000-000000000000\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -49774,6 +50034,45 @@
             "title": "Next Payment Attempt At",
             "description": "When the next automatic payment retry is scheduled. `null` if the order is not in dunning or all retries have been exhausted."
           },
+          "tax_id": {
+            "anyOf": [
+              {
+                "prefixItems": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "$ref": "#/components/schemas/TaxIDFormat"
+                  }
+                ],
+                "type": "array",
+                "maxItems": 2,
+                "minItems": 2,
+                "examples": [
+                  [
+                    "911144442",
+                    "us_ein"
+                  ],
+                  [
+                    "FR61954506077",
+                    "eu_vat"
+                  ]
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Id"
+          },
+          "payment_processor_metadata": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Payment Processor Metadata",
+            "description": "Stripe intent information required to authenticate a payment."
+          },
           "product": {
             "anyOf": [
               {
@@ -49858,6 +50157,8 @@
           "discount_id",
           "subscription_id",
           "checkout_id",
+          "tax_id",
+          "payment_processor_metadata",
           "product",
           "subscription",
           "items",
@@ -49866,6 +50167,43 @@
           "refundable_tax_amount"
         ],
         "title": "CustomerOrder"
+      },
+      "CustomerOrderConflict": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "CustomerOrderConflict",
+            "title": "Error",
+            "examples": [
+              "CustomerOrderConflict"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "CustomerOrderConflict"
+      },
+      "CustomerOrderCreate": {
+        "properties": {
+          "subscription_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Subscription Id",
+            "description": "The subscription ID."
+          }
+        },
+        "type": "object",
+        "required": [
+          "subscription_id"
+        ],
+        "title": "CustomerOrderCreate"
       },
       "CustomerOrderInvoice": {
         "properties": {
@@ -49881,6 +50219,67 @@
         ],
         "title": "CustomerOrderInvoice",
         "description": "Order's invoice data."
+      },
+      "CustomerOrderPay": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/CustomerOrderPayWithPaymentMethod"
+          },
+          {
+            "$ref": "#/components/schemas/CustomerOrderPayWithConfirmationToken"
+          }
+        ]
+      },
+      "CustomerOrderPayWithConfirmationToken": {
+        "properties": {
+          "confirmation_token_id": {
+            "type": "string",
+            "title": "Confirmation Token Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "confirmation_token_id"
+        ],
+        "title": "CustomerOrderPayWithConfirmationToken"
+      },
+      "CustomerOrderPayWithPaymentMethod": {
+        "properties": {
+          "payment_method_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Payment Method Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "payment_method_id"
+        ],
+        "title": "CustomerOrderPayWithPaymentMethod"
+      },
+      "CustomerOrderPaymentDeclined": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "CustomerOrderPaymentDeclined",
+            "title": "Error",
+            "examples": [
+              "CustomerOrderPaymentDeclined"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "CustomerOrderPaymentDeclined"
       },
       "CustomerOrderProduct": {
         "properties": {
@@ -50507,7 +50906,29 @@
           },
           "billing_address": {
             "$ref": "#/components/schemas/AddressInput",
-            "description": "The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated."
+            "description": "Billing address. Drafts recalculate tax. Pending orders require the same tax address."
+          },
+          "tax_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Id"
+          },
+          "discount_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discount Code"
           }
         },
         "type": "object",
@@ -62023,6 +62444,28 @@
         ],
         "title": "ListResource[WebhookEndpoint]"
       },
+      "ManualRetryLimitExceeded": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "ManualRetryLimitExceeded",
+            "title": "Error",
+            "examples": [
+              "ManualRetryLimitExceeded"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "ManualRetryLimitExceeded"
+      },
       "Member": {
         "properties": {
           "id": {
@@ -71254,6 +71697,28 @@
           "detail"
         ],
         "title": "PaymentActionRequired"
+      },
+      "PaymentAlreadyInProgress": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "PaymentAlreadyInProgress",
+            "title": "Error",
+            "examples": [
+              "PaymentAlreadyInProgress"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "PaymentAlreadyInProgress"
       },
       "PaymentError": {
         "properties": {

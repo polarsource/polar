@@ -536,7 +536,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         session: AsyncSession,
         discount: Discount,
         *,
-        checkout: Checkout,
+        checkout: Checkout | None = None,
         customer: Customer | None = None,
         payment_method_fingerprint: str | None = None,
     ) -> bool:
@@ -553,11 +553,15 @@ class DiscountService(ResourceServiceReader[Discount]):
         if discount.max_redemptions_per_customer is None:
             return False
 
-        customer_id = customer.id if customer is not None else checkout.customer_id
+        customer_id = customer.id if customer is not None else None
+        if checkout is not None and customer_id is None:
+            customer_id = checkout.customer_id
         email = (
             customer.email
             if customer is not None and customer.email
             else checkout.customer_email
+            if checkout is not None
+            else None
         )
 
         try:
@@ -568,7 +572,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         repository = DiscountRedemptionRepository.from_session(session)
         count = await repository.count_redemptions_by_customer(
             discount.id,
-            exclude_checkout_id=checkout.id,
+            exclude_checkout_id=checkout.id if checkout is not None else None,
             customer_id=customer_id,
             customer_email=customer_email,
             payment_method_fingerprint=payment_method_fingerprint,

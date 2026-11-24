@@ -1545,6 +1545,8 @@
                       "GET /v1/customer-portal/orders/{id}",
                       "PATCH /v1/customer-portal/orders/{id}",
                       "GET /v1/customer-portal/orders/",
+                      "POST /v1/customer-portal/orders/",
+                      "PATCH /v1/customer-portal/orders/{id}/pay",
                       "POST /v1/customer-portal/orders/{id}/invoice",
                       "GET /v1/customer-portal/orders/{id}/invoice",
                       "GET /v1/customer-portal/orders/{id}/receipt"

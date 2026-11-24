@@ -7,17 +7,26 @@ import stripe as stripe_lib
 from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
 
-from polar.integrations.stripe.service import StripeService
+from polar.integrations.stripe.payment import handle_success
+from polar.integrations.stripe.service import (
+    STRIPE_METADATA_ORDER_RECOVERY,
+    StripeService,
+)
+from polar.kit.address import Address
 from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
-from polar.models import Customer, Organization, Product
-from polar.models.order import OrderStatus
+from polar.models import Customer, Organization, Product, Subscription
+from polar.models.discount import DiscountDuration, DiscountType
+from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.payment import PaymentStatus
+from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
+from polar.version import NEXT_API_VERSION
 from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_benefit,
+    create_discount,
     create_order,
     create_payment,
     create_subscription,
@@ -30,6 +39,245 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
     mocker.patch("polar.order.service.stripe_service", new=mock)
     return mock
+
+
+@pytest.mark.anyio
+@pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+@pytest.mark.api_version(NEXT_API_VERSION)
+class TestOrderRecovery:
+    async def test_trial_authentication_and_settlement(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        customer.stripe_customer_id = "cus_recovery"
+        product.is_tax_applicable = False
+        await save_fixture(customer)
+        await save_fixture(product)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.trial_ended,
+        )
+        response = await client.post(
+            "/v1/customer-portal/orders/",
+            json={"subscription_id": str(subscription.id)},
+        )
+        assert response.status_code == 201, response.text
+        draft = response.json()
+        assert draft["status"] == OrderStatus.draft
+        assert draft["invoice_number"] is None
+        assert draft["applied_balance_amount"] == 0
+        assert draft["due_amount"] == subscription.amount
+        url = f"/v1/customer-portal/orders/{draft['id']}"
+
+        response = await client.patch(url, json={"billing_name": "New billing name"})
+        assert response.status_code == 200, response.text
+
+        intent = stripe_lib.PaymentIntent.construct_from(
+            {
+                "id": "pi_recovery",
+                "status": "requires_action",
+                "client_secret": "pi_recovery_secret",
+            },
+            None,
+        )
+        stripe_service_mock.create_payment_intent.return_value = intent
+        stripe_service_mock.confirm_payment_intent.return_value = intent
+        response = await client.patch(
+            f"{url}/pay", json={"confirmation_token_id": "ctoken_recovery"}
+        )
+        assert response.status_code == 202, response.text
+        assert response.json()["payment_processor_metadata"] == {
+            "intent_id": intent.id,
+            "intent_client_secret": intent.client_secret,
+        }
+        assert (
+            response.json()["subscription"]["status"] == SubscriptionStatus.trial_ended
+        )
+        stored_customer = await session.get(Customer, customer.id)
+        assert stored_customer is not None
+        assert stored_customer.billing_name != "New billing name"
+        assert (
+            await client.patch(url, json={"billing_name": "Unexpected edit"})
+        ).status_code == 409
+        assert (
+            await client.patch(
+                f"{url}/pay", json={"confirmation_token_id": "ctoken_recovery"}
+            )
+        ).status_code == 202
+        stripe_service_mock.confirm_payment_intent.assert_awaited_once()
+
+        charge = stripe_lib.Charge.construct_from(
+            {
+                "id": "ch_recovery",
+                "status": "succeeded",
+                "amount": draft["due_amount"],
+                "currency": "usd",
+                "payment_intent": intent.id,
+                "payment_method": {
+                    "object": "payment_method",
+                    "id": "pm_recovery",
+                    "type": "card",
+                    "card": {"last4": "4242"},
+                },
+                "billing_details": {"email": customer.email},
+                "payment_method_details": {"type": "card", "card": {"last4": "4242"}},
+                "outcome": None,
+                "metadata": {
+                    "organization_id": str(product.organization_id),
+                    STRIPE_METADATA_ORDER_RECOVERY: draft["id"],
+                },
+            },
+            None,
+        )
+        await handle_success(session, charge)
+        await session.flush()
+        stored_customer = await session.get(Customer, customer.id)
+        stored_subscription = await session.get(Subscription, subscription.id)
+        assert stored_customer is not None
+        assert stored_customer.billing_name == "New billing name"
+        assert stored_subscription is not None
+        assert stored_subscription.status == SubscriptionStatus.active
+        assert stored_subscription.payment_method_id is not None
+
+        response = await client.get(url)
+        assert response.status_code == 200
+        assert response.json()["status"] == OrderStatus.paid
+        assert response.json()["invoice_number"] is not None
+        assert response.json()["payment_processor_metadata"] == {}
+
+    async def test_zero_due_draft_setup_decline_allows_edit_and_retry(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        customer.stripe_customer_id = "cus_recovery"
+        product.is_tax_applicable = False
+        await save_fixture(customer)
+        await save_fixture(product)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.trial_ended,
+        )
+        await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            duration=DiscountDuration.once,
+            basis_points=10_000,
+            organization=product.organization,
+            code="FIRSTFREE",
+            max_redemptions=1,
+        )
+        response = await client.post(
+            "/v1/customer-portal/orders/",
+            json={"subscription_id": str(subscription.id)},
+        )
+        assert response.status_code == 201, response.text
+        url = f"/v1/customer-portal/orders/{response.json()['id']}"
+        response = await client.patch(url, json={"discount_code": "FIRSTFREE"})
+        assert response.status_code == 200, response.text
+        assert response.json()["due_amount"] == 0
+
+        stripe_service_mock.create_setup_intent.return_value = (
+            stripe_lib.SetupIntent.construct_from({"id": "seti_declined"}, None)
+        )
+        stripe_service_mock.confirm_setup_intent.side_effect = stripe_lib.CardError(
+            "Declined", None, "card_declined"
+        )
+        response = await client.patch(
+            f"{url}/pay", json={"confirmation_token_id": "ctoken_declined"}
+        )
+        assert response.status_code == 402, response.text
+        assert response.json()["error"] == "CustomerOrderPaymentDeclined"
+        stripe_service_mock.cancel_setup_intent.assert_awaited_once_with(
+            "seti_declined"
+        )
+
+        response = await client.patch(
+            url, json={"billing_name": "Edited after decline"}
+        )
+        assert response.status_code == 200, response.text
+        assert response.json()["status"] == OrderStatus.draft
+        assert response.json()["due_amount"] == 0
+
+        stripe_service_mock.confirm_setup_intent.side_effect = None
+        stripe_service_mock.confirm_setup_intent.return_value = (
+            stripe_lib.SetupIntent.construct_from(
+                {
+                    "id": "seti_declined",
+                    "status": "succeeded",
+                    "payment_method": {
+                        "object": "payment_method",
+                        "id": "pm_recovery",
+                        "type": "card",
+                        "card": {"last4": "4242"},
+                    },
+                },
+                None,
+            )
+        )
+        response = await client.patch(
+            f"{url}/pay", json={"confirmation_token_id": "ctoken_retry"}
+        )
+        assert response.status_code == 200, response.text
+        assert response.json()["status"] == OrderStatus.paid
+        assert response.json()["subscription"]["status"] == SubscriptionStatus.active
+
+    async def test_pending_order_preserves_tax_and_rejects_mixed_credentials(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.past_due,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            billing_reason=OrderBillingReasonInternal.subscription_cycle,
+        )
+        order.status = OrderStatus.pending
+        order.billing_address = Address.model_validate({"country": "FR"})
+        await save_fixture(order)
+        url = f"/v1/customer-portal/orders/{order.id}"
+
+        response = await client.patch(
+            url, json={"billing_address": {"country": "FR", "line1": "10 Rue de Paris"}}
+        )
+        assert response.status_code == 200, response.text
+        assert response.json()["due_amount"] == order.due_amount
+        assert response.json()["tax_amount"] == order.tax_amount
+        assert (
+            await client.patch(url, json={"billing_address": {"country": "US"}})
+        ).status_code == 422
+        assert (await client.patch(url, json={"tax_id": "FR123"})).status_code == 409
+
+        response = await client.patch(
+            f"{url}/pay",
+            json={
+                "confirmation_token_id": "ctoken_test",
+                "payment_method_id": str(uuid.uuid4()),
+            },
+        )
+        assert response.status_code == 422
 
 
 @pytest.mark.anyio

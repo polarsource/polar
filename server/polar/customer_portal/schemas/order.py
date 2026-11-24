@@ -1,11 +1,20 @@
 from typing import Annotated
 
-from pydantic import UUID4, AliasChoices, AliasPath, Field, model_validator
+from pydantic import (
+    MISSING,
+    UUID4,
+    AliasChoices,
+    AliasPath,
+    ConfigDict,
+    Field,
+    model_validator,
+)
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.enums import PaymentProcessor
-from polar.kit.schemas import MultipleQueryFilter, Schema
-from polar.kit.versioning import QuerySchema, Version
+from polar.kit.address import AddressInput
+from polar.kit.schemas import MultipleQueryFilter, Schema, SetSchemaReference
+from polar.kit.versioning import Omissible, QuerySchema, Version, VersionedJsonSchema
 from polar.models.product import ProductBillingType
 from polar.order.schemas import OrderBase, OrderItemSchema, OrderUpdateBase
 from polar.product.schemas import (
@@ -17,7 +26,8 @@ from polar.product.schemas import (
     ProductPriceList,
 )
 from polar.subscription.schemas import SubscriptionBase, SubscriptionID
-from polar.version import V2026_10
+from polar.tax.tax_id import TaxID
+from polar.version import NEXT_API_VERSION, V2026_10
 
 from .organization import CustomerOrganization
 
@@ -33,6 +43,13 @@ class CustomerOrderSubscription(SubscriptionBase): ...
 
 
 class CustomerOrder(OrderBase):
+    tax_id: Annotated[TaxID | None, Version(starting_from=NEXT_API_VERSION)]
+    payment_processor_metadata: Annotated[
+        dict[str, str], Version(starting_from=NEXT_API_VERSION)
+    ] = Field(
+        validation_alias="payment_authentication",
+        description="Stripe intent information required to authenticate a payment.",
+    )
     user_id: Annotated[SkipJsonSchema[UUID4], Version(up_to=V2026_10)] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
@@ -75,6 +92,55 @@ class CustomerOrderReceipt(Schema):
 
 class CustomerOrderUpdate(OrderUpdateBase):
     """Schema to update an order."""
+
+    billing_address: Annotated[
+        Omissible[AddressInput],
+        VersionedJsonSchema(
+            lambda schema: {
+                **schema,
+                "description": (
+                    "The address of the customer that should appear on the invoice. "
+                    "Address fields used for tax calculation cannot be updated."
+                ),
+            },
+            up_to=V2026_10,
+        ),
+        VersionedJsonSchema(
+            lambda schema: {
+                **schema,
+                "description": "Billing address. Drafts recalculate tax. Pending orders require the same tax address.",
+            },
+            starting_from=NEXT_API_VERSION,
+        ),
+    ] = MISSING
+    tax_id: Annotated[
+        Omissible[str | None], Version(starting_from=NEXT_API_VERSION)
+    ] = MISSING
+    discount_code: Annotated[
+        Omissible[str | None], Version(starting_from=NEXT_API_VERSION)
+    ] = MISSING
+
+
+class CustomerOrderCreate(Schema):
+    subscription_id: SubscriptionID
+
+
+class CustomerOrderPayWithPaymentMethod(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    payment_method_id: UUID4
+
+
+class CustomerOrderPayWithConfirmationToken(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    confirmation_token_id: str
+
+
+CustomerOrderPay = Annotated[
+    CustomerOrderPayWithPaymentMethod | CustomerOrderPayWithConfirmationToken,
+    SetSchemaReference("CustomerOrderPay"),
+]
 
 
 class CustomerOrderPaymentStatus(Schema):

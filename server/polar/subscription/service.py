@@ -1563,9 +1563,6 @@ class SubscriptionService:
 
     def _charges_after_trial(self, subscription: Subscription) -> bool:
         # Same rule checkout uses to decide whether to ask for a card.
-        has_metered_prices = any(
-            is_metered_price(price) for price in subscription.prices
-        )
         discount = subscription.discount
         renews_at = subscription.current_period_end
         if discount is not None and discount.is_repetition_expired(
@@ -1577,7 +1574,9 @@ class SubscriptionService:
             if discount is not None
             else sum(spp.amount for spp in subscription.subscription_product_prices)
         )
-        if amount == 0 and not has_metered_prices:
+        if amount == 0 and all(
+            is_custom_price(price) or price.is_free for price in subscription.prices
+        ):
             return False
         return not (
             isinstance(discount, DiscountPercentage)

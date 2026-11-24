@@ -690,9 +690,10 @@ class TestListPurchases:
                     [
                         order("70", 10, 80),
                         order("71", 12, 81),
-                        order("72", 12, 82, refunded=True),
+                        order("72", 12, 82, status="refunded"),
                         order("73", 12, 83, status="pending"),
                         order("74", 12, 84),
+                        order("75", 12, 85, status="partial_refund"),
                     ]
                 ),
                 "/v1/license-keys": _page(
@@ -707,8 +708,8 @@ class TestListPurchases:
                             "id": "61",
                             "attributes": {
                                 "order_item_id": 81,
-                                "key": "KEY-REVOKED",
-                                "disabled": True,
+                                "key": "KEY-EXPIRED",
+                                "status": "expired",
                             },
                         },
                     ]
@@ -725,4 +726,5 @@ class TestListPurchases:
         ] == [
             ("71", None, True),
             ("74", "KEY-LIFETIME", False),
+            ("75", None, False),
         ]

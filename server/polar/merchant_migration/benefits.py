@@ -16,6 +16,7 @@ from typing import IO
 from uuid import UUID
 
 import httpx2
+import structlog
 
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
@@ -23,6 +24,7 @@ from polar.benefit.grant.service import BenefitGrantAlreadyExists
 from polar.benefit.grant.service import benefit_grant as benefit_grant_service
 from polar.benefit.repository import BenefitRepository
 from polar.benefit.service import benefit as benefit_service
+from polar.benefit.strategies import BenefitGrantProperties
 from polar.benefit.strategies.custom.schemas import (
     BenefitCustomCreate,
     BenefitCustomCreateProperties,
@@ -30,6 +32,9 @@ from polar.benefit.strategies.custom.schemas import (
 from polar.benefit.strategies.downloadables.schemas import (
     BenefitDownloadablesCreate,
     BenefitDownloadablesCreateProperties,
+)
+from polar.benefit.strategies.license_keys.properties import (
+    BenefitGrantLicenseKeysProperties,
 )
 from polar.benefit.strategies.license_keys.schemas import (
     BenefitLicenseKeyActivationCreateProperties,
@@ -56,7 +61,11 @@ from .adapters.lemon_squeezy import LemonSqueezyAdapter
 from .canonical import CanonicalBenefit, CanonicalBenefitFile, CanonicalPurchase
 from .repository import MerchantMigrationRecordRepository
 
+log = structlog.get_logger()
+
 EXTERNAL_ID_PREFIX = "lemon_squeezy:"
+# Order pages granted per run, each read once with the store's keys.
+PURCHASE_PAGES_PER_RUN = 10
 DOWNLOAD_CHUNK_SIZE = 1024 * 1024
 
 
@@ -155,26 +164,29 @@ class MigrationBenefits:
                 return True
         return False
 
-    async def grant_purchases(self, selected: Collection[str]) -> None:
+    async def grant_purchases(
+        self, selected: Collection[str], first_page: int
+    ) -> int | None:
         """Give one-time buyers the benefits of what they bought, keeping their
-        license key. Every page in one run, so the store's keys and prices are
-        read once. A rerun is safe: an existing grant is skipped."""
+        license key, a few order pages from ``first_page`` on. Returns the page to go
+        on from, None once done. The store's keys are read once per run, so a
+        run covers several pages. A rerun is safe: an existing grant is
+        skipped."""
         benefits_by_variant: dict[str, list[Benefit]] = {}
         for proposal in await self.proposals():
             if proposal.created is None or proposal.source.source_id not in selected:
                 continue
             for variant_id in proposal.source.product_source_ids:
                 benefits_by_variant.setdefault(variant_id, []).append(proposal.created)
-        page = 1
-        while True:
+        for page in range(first_page, first_page + PURCHASE_PAGES_PER_RUN):
             purchases, has_more = await self.adapter.list_purchases(page)
             for purchase in purchases:
                 benefits = benefits_by_variant.get(purchase.product_source_id)
                 if benefits:
                     await self._grant_purchase(purchase, benefits)
             if not has_more:
-                return
-            page += 1
+                return None
+        return page + 1
 
     async def _create(self, source: CanonicalBenefit) -> Benefit:
         create: (
@@ -296,7 +308,7 @@ class MigrationBenefits:
                 and purchase.license_key_disabled
             ):
                 continue
-            properties = (
+            properties: BenefitGrantProperties = (
                 await kept_key_properties(
                     self.session, self.organization.id, purchase.license_key
                 )
@@ -313,7 +325,14 @@ class MigrationBenefits:
                     properties=properties,
                 )
             except BenefitGrantAlreadyExists:
-                continue
+                # One manual grant per buyer and benefit: a second purchase of
+                # the same product doesn't get its own key.
+                log.info(
+                    "merchant_migration.purchase_already_granted",
+                    organization_id=self.organization.id,
+                    benefit_id=benefit.id,
+                    order_source_id=purchase.source_id,
+                )
 
     async def _buyer(self, purchase: CanonicalPurchase) -> Customer:
         existing = await CustomerRepository.from_session(
@@ -330,8 +349,8 @@ class MigrationBenefits:
 
 
 async def kept_key_properties(
-    session: AsyncSession, organization_id: UUID, key: str | None
-) -> dict[str, str]:
+    session: AsyncReadSession, organization_id: UUID, key: str | None
+) -> BenefitGrantLicenseKeysProperties:
     """Grant properties that make the license key grant reuse ``key``. Empty
     when there's none or the organization already has it: keys are unique per
     organization, so the grant then makes a new one."""

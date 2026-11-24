@@ -508,7 +508,7 @@ class LemonSqueezyAdapter:
 
     async def _load_license_keys(self) -> dict[str, str | None]:
         """Keys per order item: a one-time purchase's key belongs to its only
-        item. None marks an item whose key the merchant disabled."""
+        item. None marks an item whose key was disabled or has expired."""
         if self._license_keys is not None:
             return self._license_keys
         keys: dict[str, str | None] = {}
@@ -519,7 +519,7 @@ class LemonSqueezyAdapter:
             )
             for license_key in license_keys:
                 order_item_id = license_key["attributes"]["order_item_id"]
-                if _usable_key_for(license_key, order_item_id):
+                if _usable_key(license_key):
                     keys[str(order_item_id)] = keys.get(str(order_item_id)) or str(
                         license_key["attributes"]["key"]
                     )
@@ -659,8 +659,8 @@ class LemonSqueezyAdapter:
         return response.json()["data"]["attributes"]["download_url"]
 
     async def list_purchases(self, page: int) -> tuple[list[CanonicalPurchase], bool]:
-        """One page of paid, unrefunded orders. The caller keeps those of
-        one-time variants: an order that started a subscription moves with it."""
+        """One page of paid one-time orders, a partly refunded one included.
+        An order that started a subscription moves with the subscription."""
         orders, has_more, _ = await self._list("/orders", page, self._store_filter)
         license_keys = await self._load_license_keys()
         await self._load_all_prices()
@@ -668,7 +668,7 @@ class LemonSqueezyAdapter:
         for order in orders:
             attributes = order["attributes"]
             item = attributes.get("first_order_item") or {}
-            if attributes.get("status") != "paid" or attributes.get("refunded"):
+            if attributes.get("status") not in ("paid", "partial_refund"):
                 continue
             if not item or not attributes.get("user_email"):
                 continue
@@ -922,12 +922,12 @@ def _renews(price: dict[str, Any]) -> bool:
     return price["attributes"].get("category") == "subscription"
 
 
-def _usable_key_for(license_key: dict[str, Any], order_item_id: Any) -> bool:
+def _usable_key(license_key: dict[str, Any]) -> bool:
+    # An expired key isn't revived: Polar would restart its term from today.
     attributes = license_key["attributes"]
-    return (
-        str(attributes.get("order_item_id")) == str(order_item_id)
-        and not attributes.get("disabled")
-        and attributes.get("status") != "disabled"
+    return not attributes.get("disabled") and attributes.get("status") not in (
+        "disabled",
+        "expired",
     )
 
 

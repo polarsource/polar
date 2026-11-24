@@ -389,7 +389,7 @@ class CanonicalPurchase:
     email: str
     name: str | None
     license_key: str | None
-    # The merchant disabled this buyer's key: they don't get one on Polar.
+    # The buyer's key was disabled or has expired: they don't get one on Polar.
     license_key_disabled: bool = False
 
 

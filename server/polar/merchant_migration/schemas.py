@@ -542,8 +542,8 @@ class MerchantMigrationBenefits(Schema):
     )
     past_purchases_granted: bool = Field(
         description=(
-            "Whether the last set-up run gave past one-time buyers their "
-            "license keys and files."
+            "Whether the latest set-up run gave past one-time buyers their "
+            "license keys and files. False again once a later step runs."
         )
     )
 

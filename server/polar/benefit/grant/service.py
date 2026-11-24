@@ -168,7 +168,7 @@ class BenefitGrantService:
         benefit: Benefit,
         member: Member,
         *,
-        properties: dict[str, str] | None = None,
+        properties: BenefitGrantProperties | None = None,
     ) -> BenefitGrant:
         """``properties`` seed the grant, like ``user_provided_key`` to keep a
         license key a customer already has."""

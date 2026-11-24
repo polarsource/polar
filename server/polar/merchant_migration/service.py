@@ -1145,9 +1145,14 @@ class MerchantMigrationService:
                 )
                 more = await benefits.create_next(selected)
                 if not more and cursor.get("grant_past_purchases"):
-                    await benefits.grant_purchases(selected)
-                    cursor["grant_past_purchases"] = False
-                    cursor["past_purchases_granted"] = True
+                    next_page = await benefits.grant_purchases(
+                        selected, int(cursor.get("purchases_page", 1))
+                    )
+                    if next_page is None:
+                        cursor["grant_past_purchases"] = False
+                        cursor["past_purchases_granted"] = True
+                    else:
+                        cursor["purchases_page"] = next_page
         except PolarError as error:
             log.warning(
                 "merchant_migration.benefits_failed",

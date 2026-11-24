@@ -44,7 +44,7 @@ export const token = Command.make('token', { scope, org }).pipe(
     },
     {
       command:
-        'POLAR_ACCESS_TOKEN=<your access token> polar auth token --scope events:write',
+        'POLAR_ACCESS_TOKEN=<your access token> polar auth token --org <org id> --scope events:write',
       description:
         'As an agent without a saved session, use your own access token; a human still approves the app token',
     },

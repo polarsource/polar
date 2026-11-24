@@ -125,8 +125,17 @@ export const settingsFields = ({ payments }: Settings) => ({
   default_tax_behavior: taxBehaviorOptionDisplayNames[payments.tax],
 })
 
+const listFieldLabels: Record<string, string> = {
+  prices: 'Price',
+  benefits: 'Benefit',
+  custom_fields: 'Custom field',
+  options: 'Option',
+}
+
+export const isListField = (field: string) => field in listFieldLabels
+
 export const fieldLabel = (field: string) =>
-  field === 'prices' ? 'Price' : humanize(field)
+  listFieldLabels[field] ?? humanize(field)
 
 const enumFields = new Set(['visibility', 'type', 'unit'])
 

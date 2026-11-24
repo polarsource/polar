@@ -2,6 +2,7 @@ import uuid
 from unittest.mock import MagicMock
 
 import pytest
+from dramatiq.middleware import SkipMessage
 from fakeredis import FakeAsyncRedis, FakeRedis
 from pytest_mock import MockerFixture
 from redis import ConnectionPool
@@ -9,6 +10,7 @@ from redis import ConnectionPool
 from polar.worker._debounce import (
     DebounceContext,
     DebounceMiddleware,
+    DebounceReschedule,
     check_debounce,
     finalize_debounce,
     now_timestamp,
@@ -38,7 +40,7 @@ class TestSetDebounceKey:
         result = set_debounce_key(pipeline, actor, "msg-1", (), {})
 
         assert result is None
-        pipeline.hset.assert_not_called()
+        pipeline.eval.assert_not_called()
 
     def test_factory_returns_none_skips_debounce(self) -> None:
         """When the debounce_key factory returns None, skip debouncing entirely."""
@@ -55,7 +57,7 @@ class TestSetDebounceKey:
         result = set_debounce_key(pipeline, actor, "msg-1", ("other_kind", item_id), {})
 
         assert result is None
-        pipeline.hset.assert_not_called()
+        pipeline.eval.assert_not_called()
 
     def test_factory_returns_key_sets_debounce(self) -> None:
         """When the factory returns a key, Redis state is set and delay is returned."""
@@ -77,7 +79,7 @@ class TestSetDebounceKey:
         key, delay = result
         assert key == f"debounce:test:debounce_me:{item_id}"
         assert delay == 2000  # 2 seconds * 1000ms
-        pipeline.hset.assert_any_call(key, "message_id", "msg-1")
+        pipeline.eval.assert_called_once()
 
 
 @pytest.mark.anyio
@@ -92,7 +94,7 @@ class TestCheckDebounce:
         )
 
     async def test_executed_skips(self, fake_redis: FakeAsyncRedis) -> None:
-        actor = make_actor(debounce_key=lambda: "test:key")
+        actor = make_actor(debounce_key=lambda: "test:key", debounce_min_threshold=0)
         async with fake_redis.pipeline() as pipeline:
             debounce = set_debounce_key(pipeline, actor, "owner", (), {})
             await pipeline.execute()
@@ -103,7 +105,7 @@ class TestCheckDebounce:
         assert await check_debounce(fake_redis, actor, "owner", key) is None
 
     async def test_owner_runs(self, fake_redis: FakeAsyncRedis) -> None:
-        actor = make_actor(debounce_key=lambda: "test:key")
+        actor = make_actor(debounce_key=lambda: "test:key", debounce_min_threshold=0)
         async with fake_redis.pipeline() as pipeline:
             debounce = set_debounce_key(pipeline, actor, "owner", (), {})
             await pipeline.execute()
@@ -112,12 +114,12 @@ class TestCheckDebounce:
 
         context = await check_debounce(fake_redis, actor, "owner", key)
 
-        assert context is not None
+        assert isinstance(context, DebounceContext)
         assert context.enqueue_timestamp is not None
-        assert not context.max_threshold_execution
+        assert await fake_redis.hget(key, "started") == "owner"
 
     async def test_non_owner_skips(self, fake_redis: FakeAsyncRedis) -> None:
-        actor = make_actor(debounce_key=lambda: "test:key")
+        actor = make_actor(debounce_key=lambda: "test:key", debounce_min_threshold=0)
         async with fake_redis.pipeline() as pipeline:
             debounce = set_debounce_key(pipeline, actor, "owner", (), {})
             await pipeline.execute()
@@ -126,10 +128,50 @@ class TestCheckDebounce:
 
         assert await check_debounce(fake_redis, actor, "other", key) is None
 
-    async def test_non_owner_past_max_threshold_runs(
+    async def test_owner_reschedules_while_enqueues_continue(
         self, fake_redis: FakeAsyncRedis
     ) -> None:
-        actor = make_actor(debounce_key=lambda: "test:key", debounce_max_threshold=5)
+        actor = make_actor(debounce_key=lambda: "test:key", debounce_min_threshold=10)
+        async with fake_redis.pipeline() as pipeline:
+            debounce = set_debounce_key(pipeline, actor, "owner", (), {})
+            await pipeline.execute()
+        assert debounce is not None
+        key, _ = debounce
+
+        reschedule = await check_debounce(fake_redis, actor, "owner", key)
+
+        assert isinstance(reschedule, DebounceReschedule)
+        assert 9000 <= reschedule.delay <= 10000
+        assert await fake_redis.hget(key, "message_id") == reschedule.message_id
+
+    async def test_reschedule_is_capped_by_max_threshold(
+        self, fake_redis: FakeAsyncRedis
+    ) -> None:
+        actor = make_actor(
+            debounce_key=lambda: "test:key",
+            debounce_min_threshold=10,
+            debounce_max_threshold=10,
+        )
+        async with fake_redis.pipeline() as pipeline:
+            debounce = set_debounce_key(pipeline, actor, "owner", (), {})
+            await pipeline.execute()
+        assert debounce is not None
+        key, _ = debounce
+        await fake_redis.hset(key, "enqueue_timestamp", now_timestamp() - 8)
+
+        reschedule = await check_debounce(fake_redis, actor, "owner", key)
+
+        assert isinstance(reschedule, DebounceReschedule)
+        assert reschedule.delay <= 2000
+
+    async def test_owner_past_max_threshold_runs(
+        self, fake_redis: FakeAsyncRedis
+    ) -> None:
+        actor = make_actor(
+            debounce_key=lambda: "test:key",
+            debounce_min_threshold=10,
+            debounce_max_threshold=5,
+        )
         async with fake_redis.pipeline() as pipeline:
             debounce = set_debounce_key(pipeline, actor, "owner", (), {})
             await pipeline.execute()
@@ -137,23 +179,78 @@ class TestCheckDebounce:
         key, _ = debounce
         await fake_redis.hset(key, "enqueue_timestamp", now_timestamp() - 10)
 
-        context = await check_debounce(fake_redis, actor, "other", key)
+        context = await check_debounce(fake_redis, actor, "owner", key)
 
-        assert context is not None
-        assert context.max_threshold_execution
+        assert isinstance(context, DebounceContext)
+
+    async def test_retry_of_started_owner_runs(
+        self, fake_redis: FakeAsyncRedis
+    ) -> None:
+        actor = make_actor(debounce_key=lambda: "test:key", debounce_min_threshold=0)
+        async with fake_redis.pipeline() as pipeline:
+            debounce = set_debounce_key(pipeline, actor, "owner", (), {})
+            await pipeline.execute()
+        assert debounce is not None
+        key, _ = debounce
+        await check_debounce(fake_redis, actor, "owner", key)
+
+        context = await check_debounce(fake_redis, actor, "owner", key)
+
+        assert isinstance(context, DebounceContext)
+
+
+@pytest.mark.anyio
+class TestSetDebounceKeyClaim:
+    async def test_waiting_message_is_not_sent(
+        self, fake_redis: FakeAsyncRedis
+    ) -> None:
+        actor = make_actor(debounce_key=lambda: "test:key")
+        async with fake_redis.pipeline() as pipeline:
+            set_debounce_key(pipeline, actor, "first", (), {})
+            set_debounce_key(pipeline, actor, "second", (), {})
+            claims = await pipeline.execute()
+
+        assert claims == [1, 0]
+        assert await fake_redis.hget("debounce:test:key", "message_id") == "first"
+
+    async def test_skip_does_not_refresh_ttl(self, fake_redis: FakeAsyncRedis) -> None:
+        actor = make_actor(debounce_key=lambda: "test:key")
+        async with fake_redis.pipeline() as pipeline:
+            set_debounce_key(pipeline, actor, "first", (), {})
+            pipeline.expire("debounce:test:key", 100)
+            set_debounce_key(pipeline, actor, "second", (), {})
+            await pipeline.execute()
+
+        assert await fake_redis.ttl("debounce:test:key") <= 100
+
+    async def test_started_message_gets_one_successor(
+        self, fake_redis: FakeAsyncRedis
+    ) -> None:
+        actor = make_actor(debounce_key=lambda: "test:key", debounce_min_threshold=0)
+        async with fake_redis.pipeline() as pipeline:
+            set_debounce_key(pipeline, actor, "first", (), {})
+            await pipeline.execute()
+        await check_debounce(fake_redis, actor, "first", "debounce:test:key")
+
+        async with fake_redis.pipeline() as pipeline:
+            set_debounce_key(pipeline, actor, "second", (), {})
+            set_debounce_key(pipeline, actor, "third", (), {})
+            claims = await pipeline.execute()
+
+        assert claims == [1, 0]
 
 
 @pytest.mark.anyio
 class TestFinalizeDebounce:
     async def test_success_marks_executed(self, fake_redis: FakeAsyncRedis) -> None:
-        actor = make_actor(debounce_key=lambda: "test:key")
+        actor = make_actor(debounce_key=lambda: "test:key", debounce_min_threshold=0)
         async with fake_redis.pipeline() as pipeline:
             debounce = set_debounce_key(pipeline, actor, "owner", (), {})
             await pipeline.execute()
         assert debounce is not None
         key, _ = debounce
         context = await check_debounce(fake_redis, actor, "owner", key)
-        assert context is not None
+        assert isinstance(context, DebounceContext)
 
         await finalize_debounce(fake_redis, actor, context, None)
 
@@ -164,53 +261,30 @@ class TestFinalizeDebounce:
     async def test_exception_does_not_mark_executed(
         self, fake_redis: FakeAsyncRedis
     ) -> None:
-        actor = make_actor(debounce_key=lambda: "test:key")
+        actor = make_actor(debounce_key=lambda: "test:key", debounce_min_threshold=0)
         async with fake_redis.pipeline() as pipeline:
             debounce = set_debounce_key(pipeline, actor, "owner", (), {})
             await pipeline.execute()
         assert debounce is not None
         key, _ = debounce
         context = await check_debounce(fake_redis, actor, "owner", key)
-        assert context is not None
+        assert isinstance(context, DebounceContext)
 
         await finalize_debounce(fake_redis, actor, context, ValueError("boom"))
 
         assert await fake_redis.hget(key, "executed") == "0"
-        assert await fake_redis.hexists(key, "enqueue_timestamp")
-
-    async def test_max_threshold_execution_bumps_window_even_on_failure(
-        self, fake_redis: FakeAsyncRedis
-    ) -> None:
-        actor = make_actor(debounce_key=lambda: "test:key", debounce_max_threshold=5)
-        async with fake_redis.pipeline() as pipeline:
-            debounce = set_debounce_key(pipeline, actor, "owner", (), {})
-            await pipeline.execute()
-        assert debounce is not None
-        key, _ = debounce
-        old_timestamp = now_timestamp() - 10
-        await fake_redis.hset(key, "enqueue_timestamp", old_timestamp)
-        context = await check_debounce(fake_redis, actor, "other", key)
-        assert context is not None
-
-        await finalize_debounce(fake_redis, actor, context, ValueError("boom"))
-
-        bumped_timestamp = await fake_redis.hget(key, "enqueue_timestamp")
-        assert bumped_timestamp is not None
-        assert int(bumped_timestamp) > old_timestamp
-        assert await fake_redis.hget(key, "executed") == "0"
-        assert await fake_redis.ttl(key) > 0
 
     async def test_newer_enqueue_during_run_still_executes(
         self, fake_redis: FakeAsyncRedis
     ) -> None:
-        actor = make_actor(debounce_key=lambda: "test:key")
+        actor = make_actor(debounce_key=lambda: "test:key", debounce_min_threshold=0)
         async with fake_redis.pipeline() as pipeline:
             debounce = set_debounce_key(pipeline, actor, "first", (), {})
             await pipeline.execute()
         assert debounce is not None
         key, _ = debounce
         context = await check_debounce(fake_redis, actor, "first", key)
-        assert context is not None
+        assert isinstance(context, DebounceContext)
 
         async with fake_redis.pipeline() as pipeline:
             set_debounce_key(pipeline, actor, "second", (), {})
@@ -228,6 +302,34 @@ class TestFinalizeDebounce:
         await finalize_debounce(fake_redis, actor, context, None)
 
         assert await fake_redis.exists("debounce:test:key") == 0
+
+
+class TestDebounceMiddlewareBeforeProcessMessage:
+    def test_reschedules_while_enqueues_continue(self, mocker: MockerFixture) -> None:
+        sync_redis = FakeRedis()
+        middleware = DebounceMiddleware(ConnectionPool())
+        mocker.patch.object(middleware, "_redis", sync_redis)
+        key = "debounce:test:key"
+        sync_redis.hset(
+            key,
+            mapping={
+                "message_id": "owner",
+                "executed": 0,
+                "enqueue_timestamp": now_timestamp(),
+                "last_enqueue_timestamp": now_timestamp(),
+            },
+        )
+        broker = MagicMock()
+        broker.get_actor.return_value = make_actor(debounce_min_threshold=10)
+        message = MagicMock(message_id="owner", options={"debounce_key": key})
+
+        with pytest.raises(SkipMessage):
+            middleware.before_process_message(broker, message)
+
+        rescheduled_message_id = sync_redis.hget(key, "message_id")
+        assert rescheduled_message_id is not None
+        message.copy.assert_called_once_with(message_id=rescheduled_message_id.decode())
+        assert 9000 <= broker.enqueue.call_args.kwargs["delay"] <= 10000
 
 
 class TestDebounceMiddlewareAfterProcessMessage:

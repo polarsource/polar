@@ -317,3 +317,31 @@ class TestRunTaskDebounce:
             await run_task("dummy", message_id="owner", debounce_key=self.DEBOUNCE_KEY)
 
         assert await fake_redis.hget(self.DEBOUNCE_KEY, "executed") == "0"
+
+    async def test_owner_reschedules_while_enqueues_continue(
+        self, fake_redis: FakeAsyncRedis, task_fn: AsyncMock, mocker: MockerFixture
+    ) -> None:
+        send_jobs = mocker.patch("polar.worker._runner._sqs.send_jobs")
+        await fake_redis.hset(
+            self.DEBOUNCE_KEY,
+            mapping={
+                "enqueue_timestamp": now_timestamp(),
+                "last_enqueue_timestamp": now_timestamp(),
+                "message_id": "owner",
+                "executed": 0,
+            },
+        )
+
+        await run_task(
+            "dummy", ("arg",), message_id="owner", debounce_key=self.DEBOUNCE_KEY
+        )
+
+        task_fn.assert_not_awaited()
+        assert send_jobs.await_args is not None
+        [job] = send_jobs.await_args.args[0]
+        assert job.actor == "dummy"
+        assert job.args == ("arg",)
+        assert job.debounce_key == self.DEBOUNCE_KEY
+        assert job.message_id == await fake_redis.hget(self.DEBOUNCE_KEY, "message_id")
+        assert job.delay is not None
+        assert job.delay > 0

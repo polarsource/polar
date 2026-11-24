@@ -62,6 +62,14 @@ def should_route_to_sqs(actor_name: str) -> bool:
     return actors == {SQS_ACTORS_WILDCARD} or actor_name in actors
 
 
+def _skipped(debounced_message_ids: list[str], claims: list[int]) -> set[str]:
+    return {
+        message_id
+        for message_id, must_send in zip(debounced_message_ids, claims, strict=True)
+        if not must_send
+    }
+
+
 class JobQueueManager:
     __slots__ = ("_appended", "_enqueued_jobs", "_ingested_events")
 
@@ -122,6 +130,8 @@ class JobQueueManager:
         all_messages: list[tuple[str, str]] = []
 
         debounce_pipeline = redis.pipeline(transaction=True)
+        debounced_message_ids: list[str] = []
+        redis_messages: list[tuple[str, dramatiq.Message[Any]]] = []
         for actor_name, args, kwargs, delay in redis_jobs:
             fn: dramatiq.Actor[Any, Any] = broker.get_actor(actor_name)
             redis_message_id = str(uuid.uuid4())
@@ -142,6 +152,7 @@ class JobQueueManager:
             )
             if debounce is not None:
                 key, debounce_delay = debounce
+                debounced_message_ids.append(message.message_id)
                 message = message.copy(options={**message.options, "debounce_key": key})
                 if delay is not None:
                     delay = max(delay, debounce_delay)
@@ -158,12 +169,16 @@ class JobQueueManager:
                     options={**message.options, "eta": eta},
                 )
 
-            encoded_message = message.encode()
+            redis_messages.append((redis_message_id, message))
+
+        skipped = _skipped(debounced_message_ids, await debounce_pipeline.execute())
+        for redis_message_id, message in redis_messages:
+            if message.message_id in skipped:
+                continue
             queue_messages[message.queue_name].append(
-                (redis_message_id, encoded_message)
+                (redis_message_id, message.encode())
             )
-            all_messages.append((fn.actor_name, message.message_id))
-        await debounce_pipeline.execute()
+            all_messages.append((message.actor_name, message.message_id))
 
         for queue_name, messages in queue_messages.items():
             for batch in itertools.batched(messages, FLUSH_BATCH_SIZE):
@@ -182,6 +197,7 @@ class JobQueueManager:
             correlation_id = CorrelationID.get()
             prepared_sqs_jobs: list[_sqs.Job] = []
             debounce_pipeline = redis.pipeline(transaction=True)
+            debounced_message_ids = []
             for actor_name, args, kwargs, delay in sqs_jobs:
                 fn = broker.get_actor(actor_name)
                 message_id = str(uuid.uuid4())
@@ -192,6 +208,7 @@ class JobQueueManager:
                 )
                 if debounce is not None:
                     debounce_key, debounce_delay = debounce
+                    debounced_message_ids.append(message_id)
                     delay = max(delay or 0, debounce_delay)
 
                 prepared_sqs_jobs.append(
@@ -205,8 +222,10 @@ class JobQueueManager:
                         debounce_key,
                     )
                 )
-            await debounce_pipeline.execute()
-            await _sqs.send_jobs(prepared_sqs_jobs)
+            skipped = _skipped(debounced_message_ids, await debounce_pipeline.execute())
+            await _sqs.send_jobs(
+                [job for job in prepared_sqs_jobs if job.message_id not in skipped]
+            )
 
     async def _publish(self, redis: Redis) -> None:
         """Publish last and never raise: a lost entry must not drop or replay the

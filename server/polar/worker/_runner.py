@@ -24,7 +24,12 @@ from polar.observability.task_logging import set_sentry_task_context, task_log_c
 
 from . import _sqs
 from ._broker import TASK_TIME_LIMIT_DEFAULT_MS
-from ._debounce import DebounceContext, check_debounce, finalize_debounce
+from ._debounce import (
+    DebounceContext,
+    DebounceReschedule,
+    check_debounce,
+    finalize_debounce,
+)
 from ._enqueue import resolve_sqs_actors
 from ._httpx import _close_client, setup_httpx
 from ._redis import RedisMiddleware, _close_redis, setup_redis
@@ -245,11 +250,28 @@ async def run_task(
     try:
         debounce_context: DebounceContext | None = None
         if message_id is not None and debounce_key is not None:
-            debounce_context = await check_debounce(
+            debounce = await check_debounce(
                 RedisMiddleware.get(), actor_obj, message_id, debounce_key
             )
-            if debounce_context is None:
+            if isinstance(debounce, DebounceReschedule):
+                await _sqs.send_jobs(
+                    [
+                        _sqs.Job(
+                            actor_name,
+                            tuple(args),
+                            kwargs,
+                            debounce.delay,
+                            source_correlation_id,
+                            debounce.message_id,
+                            debounce_key,
+                            dict(message_options or {}),
+                        )
+                    ]
+                )
                 return
+            if debounce is None:
+                return
+            debounce_context = debounce
 
         # Retries are expected: re-raise outside the span so Logfire doesn't record an error
         retry: Retry | None = None

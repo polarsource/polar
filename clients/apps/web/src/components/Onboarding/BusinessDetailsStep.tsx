@@ -246,7 +246,10 @@ export function BusinessDetailsStep() {
       name: data.orgName || '',
       slug: data.orgSlug || '',
       default_presentment_currency: data.defaultCurrency || 'usd',
-      country: data.businessCountry || '',
+      country:
+        data.businessCountry ||
+        (data.organizationType === 'company' ? data.country : '') ||
+        '',
       legal_entity: {
         registered_name: data.registeredBusinessName || '',
       },
@@ -256,7 +259,7 @@ export function BusinessDetailsStep() {
     control: form.control,
   })
 
-  const { handleSubmit, setValue } = form
+  const { handleSubmit, setValue, getValues } = form
 
   const onSubmit = (formData: FormSchema) => {
     updateData({
@@ -307,6 +310,8 @@ export function BusinessDetailsStep() {
                       if (value === 'individual') {
                         setValue('country', '')
                         setValue('legal_entity.registered_name', '')
+                      } else if (!getValues('country') && data.country) {
+                        setValue('country', data.country)
                       }
                     }}
                   >

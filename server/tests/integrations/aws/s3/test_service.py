@@ -10,6 +10,21 @@ from polar.integrations.aws.s3.service import S3Service
 
 
 class TestCompleteMultipartUpload:
+    def test_completion_retry_after_abort_is_forbidden(self) -> None:
+        client = MagicMock()
+        client.complete_multipart_upload.side_effect = ClientError(
+            {"Error": {"Code": "NoSuchUpload"}}, "CompleteMultipartUpload"
+        )
+        service = S3Service(bucket="bucket", client=client)
+        completion = S3FileUploadCompleted(id="upload", path="file.pdf", parts=[])
+
+        with pytest.raises(
+            NotPermitted, match="Multipart upload is no longer available"
+        ):
+            service.complete_multipart_upload(completion, path="file.pdf", size=1)
+
+        client.abort_multipart_upload.assert_not_called()
+
     @pytest.mark.parametrize("abort_fails", [False, True])
     def test_invalid_completion_aborts_upload(self, abort_fails: bool) -> None:
         client = MagicMock()

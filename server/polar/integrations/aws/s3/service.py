@@ -227,13 +227,16 @@ class S3Service:
                 Bucket=self.bucket, Key=path, MpuObjectSize=size, **boto_arguments
             )
         except ClientError as exc:
-            if exc.response.get("Error", {}).get("Code") != "InvalidRequest":
+            error_code = exc.response.get("Error", {}).get("Code")
+            if error_code == "NoSuchUpload":
+                raise NotPermitted("Multipart upload is no longer available") from exc
+            if error_code != "InvalidRequest":
                 raise
             log.warning(
                 "aws.s3",
                 operation="complete_multipart_upload",
                 bucket=self.bucket,
-                error_code="InvalidRequest",
+                error_code=error_code,
                 request_id=exc.response.get("ResponseMetadata", {}).get("RequestId"),
             )
             try:

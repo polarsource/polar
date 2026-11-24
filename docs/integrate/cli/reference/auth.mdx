@@ -135,7 +135,7 @@ polar auth token --scope products:read --scope checkouts:write | gh secret set P
 
 As an agent without a saved session, use your own access token; a human still approves the app token
 ```bash
-POLAR_ACCESS_TOKEN=<your access token> polar auth token --scope events:write
+POLAR_ACCESS_TOKEN=<your access token> polar auth token --org <org id> --scope events:write
 ```
 
 Create a token for a specific organization

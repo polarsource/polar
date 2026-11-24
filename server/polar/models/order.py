@@ -47,6 +47,7 @@ if TYPE_CHECKING:
         ProductPrice,
         Subscription,
     )
+    from polar.order.amounts import OrderAmounts
 
 
 class OrderBillingReason(StrEnum):
@@ -476,6 +477,16 @@ class Order(
         ratio = self.tax_amount / self.net_amount
         tax_amount = round(refund_amount * ratio)
         return min(tax_amount, self.refundable_tax_amount)
+
+    def update_amounts(self, amounts: "OrderAmounts") -> None:
+        self.subtotal_amount = amounts.subtotal_amount
+        self.discount_amount = amounts.discount_amount
+        self.tax_amount = amounts.tax_amount
+        self.net_amount = amounts.net_amount
+        self.tax_processor = amounts.tax_processor
+        self.tax_behavior = amounts.tax_behavior
+        self.tax_calculation_processor_id = amounts.tax_calculation_processor_id
+        self.tax_breakdown = list(amounts.tax_breakdown)
 
 
 orders_search_vector_update_function = PGFunction(

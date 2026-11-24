@@ -126,6 +126,8 @@ class CustomerOrderService:
         session: AsyncSession,
         auth_subject: AuthSubject[Customer | Member],
         id: uuid.UUID,
+        *,
+        for_update: bool = False,
     ) -> Order | None:
         repository = CustomerOrderRepository.from_session(session)
         statement = (
@@ -133,6 +135,8 @@ class CustomerOrderService:
             .where(Order.id == id)
             .options(*repository.get_eager_options())
         )
+        if for_update:
+            statement = statement.with_for_update(of=Order)
         return await repository.get_one_or_none(statement)
 
     async def update(

@@ -17,7 +17,8 @@ from polar.product.schemas import (
     ProductPriceList,
 )
 from polar.subscription.schemas import SubscriptionBase, SubscriptionID
-from polar.version import V2026_10
+from polar.tax.tax_id import TaxID
+from polar.version import V2026_10, V2027_01
 
 from .organization import CustomerOrganization
 
@@ -33,6 +34,7 @@ class CustomerOrderSubscription(SubscriptionBase): ...
 
 
 class CustomerOrder(OrderBase):
+    tax_id: Annotated[TaxID | None, Version(starting_from=V2027_01)]
     user_id: Annotated[SkipJsonSchema[UUID4], Version(up_to=V2026_10)] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload

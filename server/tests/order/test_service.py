@@ -679,6 +679,88 @@ class TestUpdate:
         assert updated_order.billing_address.country == "FR"
         assert updated_order.billing_address.line1 == "Rue de la Paix"
 
+    async def test_draft_recalculates_tax_and_discount(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        calculate_tax_mock: AsyncMock,
+    ) -> None:
+        product.is_tax_applicable = True
+        product.organization.default_tax_behavior = TaxBehaviorOption.exclusive
+        await save_fixture(product.organization)
+        await save_fixture(product)
+        await create_discount(
+            save_fixture,
+            organization=product.organization,
+            type=DiscountType.percentage,
+            duration=DiscountDuration.once,
+            basis_points=2500,
+            code="DRAFT25",
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.draft,
+            billing_address=Address(country=CountryAlpha2("US")),
+        )
+
+        updated = await order_service.update(
+            session,
+            order,
+            OrderUpdate(
+                billing_address=AddressInput(country=CountryAlpha2Input("FR")),
+                tax_id="FR61954506077",
+                discount_code="DRAFT25",
+            ),
+        )
+        await session.flush()
+        await session.refresh(updated)
+
+        assert updated.tax_id == ("FR61954506077", "eu_vat")
+        assert updated.discount_amount == 250
+        assert updated.tax_amount == 150
+        assert updated.due_amount == 900
+        calculate_tax_mock.assert_awaited_once_with(
+            str(order.id),
+            order.currency,
+            750,
+            TaxBehaviorOption.exclusive,
+            product.tax_code,
+            Address(country=CountryAlpha2("FR")),
+            [updated.tax_id],
+            False,
+        )
+
+    async def test_draft_rejects_invalid_tax_id_and_discount_code(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.draft,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await order_service.update(
+                session,
+                order,
+                OrderUpdate(tax_id="GB980780684", discount_code="UNKNOWN"),
+            )
+
+        assert [error["loc"] for error in exc_info.value.errors()] == [
+            ("body", "tax_id"),
+            ("body", "discount_code"),
+        ]
+
 
 @pytest.mark.anyio
 class TestCreateOrderFromCheckout:

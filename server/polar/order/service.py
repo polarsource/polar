@@ -28,6 +28,7 @@ from polar.customer_portal.schemas.order import (
     CustomerOrderPaymentConfirmation,
     CustomerOrderUpdate,
 )
+from polar.discount.service import discount as discount_service
 from polar.email.billing_migration import previous_billing_provider_for_notice
 from polar.email.schemas import EmailAdapter, EmailTemplate
 from polar.email.sender import Attachment, enqueue_email_template
@@ -55,6 +56,7 @@ from polar.integrations.stripe.service import (
     stripe as stripe_service,
 )
 from polar.invoice.service import invoice as invoice_service
+from polar.kit.address import Address, CountryAlpha2, CountryAlpha2Input
 from polar.kit.currency import (
     format_currency,
     get_maximum_currency_amount,
@@ -127,6 +129,7 @@ from polar.tax.calculation import (
 )
 from polar.tax.calculation import tax_calculation as tax_calculation_service
 from polar.tax.calculation.base import UnsupportedCountryError
+from polar.tax.tax_id import InvalidTaxID, validate_tax_id
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
 from polar.transaction.service.balance import (
     balance_transaction as balance_transaction_service,
@@ -141,7 +144,12 @@ from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 
 from .amounts import apply_wallet_balance, calculate_tax, compute_order_amounts
 from .repository import OrderRepository, order_benefits_revoked_clause
-from .schemas import OrderCreate, OrderInvoice, OrderReceipt, OrderUpdate
+from .schemas import (
+    OrderCreate,
+    OrderInvoice,
+    OrderReceipt,
+    OrderUpdate,
+)
 from .sorting import OrderSortProperty
 
 log: Logger = structlog.get_logger()
@@ -516,33 +524,144 @@ class OrderService:
         order: Order,
         order_update: OrderUpdate | CustomerOrderUpdate,
     ) -> Order:
+        if order.payment_lock_acquired_at is not None:
+            raise PaymentAlreadyInProgress(order)
+
         repository = OrderRepository.from_session(session)
-
         errors: list[ValidationError] = []
+        update_dict = order_update.model_dump(
+            exclude_unset=True, exclude={"billing_address", "tax_id", "discount_code"}
+        )
+        if order_update.billing_address is not MISSING:
+            update_dict["billing_address"] = Address.model_validate(
+                order_update.billing_address.model_dump()
+            )
 
-        billing_address = order_update.billing_address
-        if billing_address is not MISSING and order.billing_address is not None:
-            for field in order.billing_address.get_tax_fields():
-                value = getattr(billing_address, field)
-                if value != getattr(order.billing_address, field):
-                    errors.append(
-                        {
-                            "loc": ("body", "billing_address", field),
-                            "msg": (
-                                f"{field.replace('_', ' ').capitalize()} "
-                                "cannot be changed"
-                            ),
-                            "type": "value_error",
-                            "input": value,
-                        }
+        draft = order.status == OrderStatus.draft
+        # Draft allows changes that can affect the order amounts
+        if draft:
+            country: CountryAlpha2Input | CountryAlpha2 | None = (
+                order.billing_address.country if order.billing_address else None
+            )
+            if order_update.billing_address is not MISSING:
+                country = order_update.billing_address.country
+
+            tax_id = order.tax_id[0] if order.tax_id is not None else None
+            if order_update.tax_id is not MISSING:
+                tax_id = order_update.tax_id
+                update_dict["tax_id"] = None
+
+            if tax_id is not None:
+                try:
+                    update_dict["tax_id"] = validate_tax_id(
+                        tax_id, str(country) if country is not None else ""
                     )
+                except InvalidTaxID:
+                    errors.append(
+                        ValidationError(
+                            type="value_error",
+                            loc=("body", "tax_id"),
+                            msg="The tax ID is invalid for the billing country.",
+                            input=tax_id,
+                        )
+                    )
+
+            if order_update.discount_code is not MISSING:
+                discount = None
+                if order_update.discount_code is not None:
+                    if order.product is None:
+                        errors.append(
+                            ValidationError(
+                                type="value_error",
+                                loc=("body", "discount_code"),
+                                msg="Discounts are not applicable to this product.",
+                                input=order_update.discount_code,
+                            )
+                        )
+                    else:
+                        discount = await discount_service.get_by_code_and_product(
+                            session,
+                            order_update.discount_code,
+                            order.organization,
+                            order.product,
+                            order.currency,
+                        )
+                        if discount is None:
+                            errors.append(
+                                ValidationError(
+                                    type="value_error",
+                                    loc=("body", "discount_code"),
+                                    msg="Discount does not exist.",
+                                    input=order_update.discount_code,
+                                )
+                            )
+                update_dict["discount"] = discount
+        else:
+            if order_update.tax_id is not MISSING:
+                errors.append(
+                    ValidationError(
+                        type="value_error",
+                        loc=("body", "tax_id"),
+                        msg="Tax IDs can only be changed on drafts.",
+                        input=order_update.tax_id,
+                    )
+                )
+            if order_update.discount_code is not MISSING:
+                errors.append(
+                    ValidationError(
+                        type="value_error",
+                        loc=("body", "discount_code"),
+                        msg="Discounts can only be changed on drafts.",
+                        input=order_update.discount_code,
+                    )
+                )
+
+            billing_address = order_update.billing_address
+            if billing_address is not MISSING and order.billing_address is not None:
+                for field in order.billing_address.get_tax_fields():
+                    value = getattr(billing_address, field)
+                    if value != getattr(order.billing_address, field):
+                        errors.append(
+                            {
+                                "loc": ("body", "billing_address", field),
+                                "msg": (
+                                    f"{field.replace('_', ' ').capitalize()} "
+                                    "cannot be changed"
+                                ),
+                                "type": "value_error",
+                                "input": value,
+                            }
+                        )
 
         if errors:
             raise PolarRequestValidationError(errors)
 
-        order = await repository.update(
-            order, update_dict=order_update.model_dump(exclude_unset=True)
-        )
+        order = await repository.update(order, update_dict=update_dict)
+
+        if draft:
+            assert order.product is not None
+            subscription = order.subscription
+            amounts = await compute_order_amounts(
+                order.items,
+                reference=str(order.id),
+                currency=order.currency,
+                discount=order.discount,
+                product=order.product,
+                billing_address=order.billing_address,
+                tax_id=order.tax_id,
+                tax_behavior_option=(
+                    subscription.tax_behavior.to_option()
+                    if subscription is not None
+                    and subscription.tax_behavior is not None
+                    else order.organization.default_tax_behavior
+                ),
+                tax_exempted=subscription.tax_exempted
+                if subscription is not None
+                else False,
+                allow_silent_failure=True,
+            )
+            order.update_amounts(amounts)
+            order = await repository.update(order)
 
         await self.send_webhook(session, order, WebhookEventType.order_updated)
 
@@ -1232,7 +1351,8 @@ class OrderService:
                 taxable_amount=subtotal_amount - discount_amount,
                 tax_behavior_option=organization.default_tax_behavior,
                 currency=currency,
-                customer=customer,
+                billing_address=customer.billing_address,
+                tax_id=customer.tax_id,
                 product=product,
                 tax_exempted=False,
                 allow_silent_failure=False,
@@ -1553,11 +1673,19 @@ class OrderService:
             discount = None
 
         amounts = await compute_order_amounts(
-            subscription,
             items,
             reference=reference or str(order_id),
+            currency=subscription.currency,
             discount=discount,
             product=product,
+            billing_address=customer.billing_address,
+            tax_id=customer.tax_id,
+            tax_behavior_option=(
+                subscription.tax_behavior.to_option()
+                if subscription.tax_behavior is not None
+                else subscription.organization.default_tax_behavior
+            ),
+            tax_exempted=subscription.tax_exempted,
         )
         total_amount = amounts.total_amount
 
@@ -2427,7 +2555,8 @@ class OrderService:
             reference=str(order.id),
             taxable_amount=order.net_amount,
             currency=order.currency,
-            customer=order.customer,
+            billing_address=order.billing_address,
+            tax_id=order.tax_id,
             product=order.product,
             tax_behavior_option=order.tax_behavior.to_option(),
             tax_exempted=order.subscription.tax_exempted

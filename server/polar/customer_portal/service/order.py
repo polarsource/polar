@@ -16,7 +16,7 @@ from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.models import Order, Product
 from polar.models.product import ProductBillingType
-from polar.order.service import InvoiceDoesNotExist, ReceiptNotAllocated
+from polar.order.service import InvoiceDoesNotExist, PaymentError, ReceiptNotAllocated
 from polar.order.service import order as order_service
 from polar.receipt.service import receipt as receipt_service
 
@@ -174,8 +174,30 @@ class CustomerOrderService:
         payment_processor: PaymentProcessor,
         payment_method_id: uuid.UUID | None = None,
     ) -> CustomerOrderPaymentConfirmation:
-        return await order_service.process_retry_payment(
-            session, order, confirmation_token_id, payment_processor, payment_method_id
+        try:
+            order = await order_service.handle_on_session_payment(
+                session,
+                order,
+                confirmation_token_id,
+                payment_processor,
+                payment_method_id,
+            )
+        except PaymentError as e:
+            return CustomerOrderPaymentConfirmation(
+                status="failed", error=e.error or "Payment failed. Please try again."
+            )
+
+        metadata = order.payment_processor_metadata
+        status = metadata.get("intent_status")
+        if status == "succeeded":
+            return CustomerOrderPaymentConfirmation(status="succeeded")
+        if status == "requires_action":
+            return CustomerOrderPaymentConfirmation(
+                status="requires_action",
+                client_secret=metadata.get("intent_client_secret"),
+            )
+        return CustomerOrderPaymentConfirmation(
+            status="failed", error=metadata.get("intent_error") or "Payment failed"
         )
 
 

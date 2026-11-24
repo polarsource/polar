@@ -25,7 +25,6 @@ from polar.custom_field.data import validate_custom_field_data
 from polar.customer.repository import CustomerRepository
 from polar.customer.service import customer as customer_service
 from polar.customer_portal.schemas.order import (
-    CustomerOrderPaymentConfirmation,
     CustomerOrderUpdate,
 )
 from polar.discount.service import discount as discount_service
@@ -281,6 +280,18 @@ class PaymentFailed(OrderError):
         self.reason = reason
         message = f"Payment failed with reason: {reason}."
         super().__init__(message, 402)
+
+
+class PaymentError(OrderError):
+    def __init__(self, order: Order, error_type: str | None, error: str | None) -> None:
+        self.order = order
+        self.error_type = error_type
+        self.error = error
+        message = (
+            f"The payment failed{f': {error}' if error else '.'} "
+            "Please try again with a different payment method."
+        )
+        super().__init__(message, 400)
 
 
 class PaymentActionRequired(OrderError):
@@ -2221,19 +2232,15 @@ class OrderService:
                 payment_intent.id, metadata=intent_metadata
             )
 
-    async def process_retry_payment(
+    async def handle_on_session_payment(
         self,
         session: AsyncSession,
         order: Order,
         confirmation_token_id: str | None,
         payment_processor: PaymentProcessor,
         payment_method_id: uuid.UUID | None = None,
-    ) -> CustomerOrderPaymentConfirmation:
-        """
-        Process retry payment with direct confirmation (confirm=True).
-        Follows checkout flow pattern - creates PaymentIntent and lets webhooks handle everything else.
-        """
-
+    ) -> Order:
+        """Submit payment on-session and let the processor webhook settle the order."""
         if order.status != OrderStatus.pending:
             log.warning("Order is not pending", order_id=order.id, status=order.status)
             raise OrderNotEligibleForRetry(order)
@@ -2354,87 +2361,31 @@ class OrderService:
                         metadata=metadata,
                     )
 
-                if payment_intent.status == "succeeded":
-                    log.info(
-                        "Retry payment succeeded immediately",
-                        order_id=order.id,
-                        payment_intent_id=payment_intent.id,
+                processor_metadata = {
+                    key: value
+                    for key, value in order.payment_processor_metadata.items()
+                    if key not in {"intent_client_secret", "intent_error"}
+                }
+                processor_metadata["intent_id"] = payment_intent.id
+                processor_metadata["intent_status"] = payment_intent.status
+                if payment_intent.client_secret is not None:
+                    processor_metadata["intent_client_secret"] = (
+                        payment_intent.client_secret
                     )
+                if payment_intent.status not in ("succeeded", "requires_action"):
+                    error = getattr(payment_intent, "last_payment_error", None)
+                    if error is not None and error.message:
+                        processor_metadata["intent_error"] = error.message
+                order.payment_processor_metadata = processor_metadata
 
-                    return CustomerOrderPaymentConfirmation(
-                        status="succeeded",
-                        client_secret=None,
-                        error=None,
-                    )
-
-                elif payment_intent.status == "requires_action":
-                    log.info(
-                        "Retry payment requires additional action",
-                        order_id=order.id,
-                        payment_intent_id=payment_intent.id,
-                        status=payment_intent.status,
-                    )
-
-                    return CustomerOrderPaymentConfirmation(
-                        status="requires_action",
-                        client_secret=payment_intent.client_secret,
-                        error=None,
-                    )
-
-                else:
-                    error_message = "Payment failed"
-                    if (
-                        payment_intent.last_payment_error
-                        and payment_intent.last_payment_error.message
-                    ):
-                        error_message = payment_intent.last_payment_error.message
-
-                    log.warning(
-                        "Retry payment failed",
-                        order_id=order.id,
-                        payment_intent_id=payment_intent.id,
-                        status=payment_intent.status,
-                        error=error_message,
-                    )
-
-                    return CustomerOrderPaymentConfirmation(
-                        status="failed",
-                        client_secret=None,
-                        error=error_message,
-                    )
+                repository = OrderRepository.from_session(session)
+                return await repository.update(order)
 
         except stripe_lib.StripeError as stripe_exc:
-            log.warning(
-                "Stripe error during retry payment",
-                order_id=order.id,
-                stripe_error_code=stripe_exc.code,
-                stripe_error_message=str(stripe_exc),
-            )
-
-            error_message = (
-                stripe_exc.error.message
-                if stripe_exc.error and stripe_exc.error.message
-                else "Payment failed. Please try again."
-            )
-
-            return CustomerOrderPaymentConfirmation(
-                status="failed",
-                client_secret=None,
-                error=error_message,
-            )
-
-        except Exception as exc:
-            log.exception(
-                "Exception during retry payment",
-                order_id=order.id,
-                error=str(exc),
-            )
-
-            return CustomerOrderPaymentConfirmation(
-                status="failed",
-                client_secret=None,
-                error="Payment failed. Please try again.",
-            )
+            error = stripe_exc.error
+            error_type = error.type if error is not None else None
+            error_message = error.message if error is not None else None
+            raise PaymentError(order, error_type, error_message) from stripe_exc
 
     async def handle_payment(
         self, session: AsyncSession, order: Order, payment: Payment | None

@@ -50,7 +50,7 @@ from polar.integrations.tinybird.service import DATASOURCE_EVENTS
 from polar.integrations.tinybird.service import ingest_events as tinybird_ingest_events
 from polar.kit.crypto import generate_token, generate_token_hash_pair
 from polar.kit.currency import PresentmentCurrency
-from polar.kit.db.postgres import create_async_sessionmaker
+from polar.kit.db.postgres import create_async_sessionmaker  # lint-skip: dry-run
 from polar.kit.trial import TrialInterval
 from polar.kit.utils import generate_uuid, utc_now
 from polar.kit.visibility import Visibility

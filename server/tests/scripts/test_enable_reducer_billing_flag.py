@@ -6,7 +6,7 @@ import pytest
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.postgres import AsyncSession
 from polar.models import User
-from scripts.enable_reducer_billing_flag import enable_statement
+from scripts.enable_reducer_billing_flag import count_candidates, enable_statement
 from scripts.helper import run_batched_update
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -90,6 +90,8 @@ async def test_enables_flag_only_without_running_metered_subscriptions(
             save_fixture, organization=organizations["running_metered_subscription"]
         ),
     )
+
+    assert await count_candidates(session) == 3
 
     updated = await run_batched_update(
         enable_statement(), batch_size=1, sleep_seconds=0, session=session

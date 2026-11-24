@@ -4,14 +4,15 @@ import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { PublishDraftButton } from './PublishDraftButton'
 
 export const DraftVersionBanner = ({
   organization,
+  resource,
   draftId,
   currentHref,
 }: {
   organization: schemas['Organization']
+  resource: 'product' | 'meter' | 'benefit'
   draftId: string
   currentHref: string | null
 }) => {
@@ -35,7 +36,7 @@ export const DraftVersionBanner = ({
       <Box flexDirection="column" rowGap="xs" minWidth={0}>
         <Text variant="title">You&apos;re viewing a draft</Text>
         <Text color="muted">
-          This version isn&apos;t published yet. New checkouts use{' '}
+          This {resource} version isn&apos;t published yet. New checkouts use{' '}
           {liveCatalog ? (
             <Link
               href={`/dashboard/${organization.slug}/products/versions/${liveCatalog.id}`}
@@ -73,10 +74,6 @@ export const DraftVersionBanner = ({
             View current version
           </Button>
         ) : null}
-        <PublishDraftButton
-          organizationId={organization.id}
-          catalogId={draftId}
-        />
       </Box>
     </Box>
   )

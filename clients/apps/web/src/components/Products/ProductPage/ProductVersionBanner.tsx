@@ -95,6 +95,7 @@ const DraftProductBanner = ({
   return (
     <DraftVersionBanner
       organization={organization}
+      resource="product"
       draftId={draftId}
       currentHref={
         current

@@ -737,15 +737,17 @@ class MerchantMigrationService:
             update_dict={"operation": running_operation},
         )
         record_repository = MerchantMigrationRecordRepository.from_session(session)
+        customer_repository = CustomerRepository.from_session(session)
         preserved_tax = current_operation.subscription_tax_behavior
         for record in page.records:
-            await record_repository.upsert(
+            staged = await record_repository.upsert(
                 migration,
                 organization,
                 record,
                 merge_product_prices=True,
                 preserved_tax_behavior=preserved_tax,
             )
+            await self._bind_copied_stripe_customer(customer_repository, staged, record)
         if page.next_cursor is not None:
             await repository.update(
                 migration,
@@ -793,11 +795,8 @@ class MerchantMigrationService:
         existing_product_names = await ProductRepository.from_session(
             session
         ).get_active_names_by_organization(organization.id)
-        record_repository = MerchantMigrationRecordRepository.from_session(session)
         report = await precheck_engine.run(
-            self._stage_records(
-                record_repository, migration, organization, adapter.extract()
-            ),
+            self._stage_records(session, migration, organization, adapter.extract()),
             organization,
             source_account,
             existing_product_names,
@@ -2205,21 +2204,52 @@ class MerchantMigrationService:
 
     async def _stage_records(
         self,
-        record_repository: MerchantMigrationRecordRepository,
+        session: AsyncSession,
         migration: MerchantMigration,
         organization: Organization,
         records: AsyncIterator[CanonicalRecord],
     ) -> AsyncIterator[CanonicalRecord]:
         """Stage each record as it streams past, so we persist the catalog in
         the same single pass the precheck reads (extraction stays incremental)."""
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        customer_repository = CustomerRepository.from_session(session)
         async for record in records:
-            await record_repository.upsert(
+            staged = await record_repository.upsert(
                 migration,
                 organization,
                 record,
                 merge_product_prices=True,
             )
+            await self._bind_copied_stripe_customer(customer_repository, staged, record)
             yield record
+
+    async def _bind_copied_stripe_customer(
+        self,
+        customer_repository: CustomerRepository,
+        staged: MerchantMigrationRecord,
+        record: CanonicalRecord,
+    ) -> None:
+        """Staging keeps a customer row an earlier migration imported as it is,
+        so a Stripe customer id the source only reports now never reaches the
+        import. Move the Polar customer onto it here, on the import's terms:
+        only while its own Stripe id holds no card or subscription."""
+        if (
+            not isinstance(record, CanonicalCustomer)
+            or record.stripe_customer_id is None
+            or staged.status != MerchantMigrationRecordStatus.imported
+            or staged.target_id is None
+            or staged.canonical.get("stripe_customer_id") == record.stripe_customer_id
+        ):
+            return
+        customer = await customer_repository.get_by_id(staged.target_id)
+        if customer is None or customer.stripe_customer_id == record.stripe_customer_id:
+            return
+        identity = await customer_repository.get_bound_stripe_identity(customer.id)
+        if identity.stripe_customer_id is not None:
+            return
+        await customer_repository.update(
+            customer, update_dict={"stripe_customer_id": record.stripe_customer_id}
+        )
 
     async def _build_adapter(
         self, migration: MerchantMigration

@@ -2205,6 +2205,72 @@ class TestImportCatalog:
         assert await _products(session, organization) == []
 
     @pytest.mark.auth
+    @pytest.mark.parametrize(
+        ("own_card", "expected_stripe_customer_id"),
+        [(False, "cus_copied"), (True, "cus_own")],
+    )
+    async def test_later_migration_binds_customer_an_earlier_one_imported(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        own_card: bool,
+        expected_stripe_customer_id: str,
+    ) -> None:
+        def catalog(stripe_customer_id: str | None) -> list[CanonicalRecord]:
+            records = _catalog_with_subscription()
+            for record in records:
+                if isinstance(record, CanonicalCustomer):
+                    record.source_id = "1"
+                    record.stripe_customer_id = stripe_customer_id
+                elif isinstance(record, CanonicalSubscription):
+                    record.customer_source_id = "1"
+            return records
+
+        earlier = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=catalog(None),
+        )
+        await _import_catalog(session, auth_subject, earlier.id)
+        customer = await CustomerRepository.from_session(
+            session
+        ).get_by_email_and_organization("alice@example.com", organization.id)
+        assert customer is not None
+        assert customer.stripe_customer_id is None
+        if own_card:
+            customer.stripe_customer_id = "cus_own"
+            await save_fixture(customer)
+            await create_payment_method(save_fixture, customer)
+
+        await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=catalog("cus_copied"),
+        )
+
+        assert customer.stripe_customer_id == expected_stripe_customer_id
+        record = await MerchantMigrationRecordRepository.from_session(
+            session
+        ).get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.customer,
+            source_id="1",
+        )
+        assert record is not None
+        assert record.status == MerchantMigrationRecordStatus.imported
+        assert record.merchant_migration_id == earlier.id
+
+    @pytest.mark.auth
     async def test_continues_subscriptions_an_earlier_migration_prepared(
         self,
         mocker: MockerFixture,

@@ -48,7 +48,11 @@ from polar.event_type.repository import EventTypeRepository
 from polar.integrations.tinybird.client import client as tinybird_client
 from polar.integrations.tinybird.service import DATASOURCE_EVENTS
 from polar.integrations.tinybird.service import ingest_events as tinybird_ingest_events
-from polar.kit.crypto import generate_token, generate_token_hash_pair
+from polar.kit.crypto import (
+    generate_token,
+    generate_token_hash_pair,
+    get_token_hash_candidates,
+)
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.db.postgres import create_async_sessionmaker  # lint-skip: dry-run
 from polar.kit.trial import TrialInterval
@@ -3102,7 +3106,8 @@ def polar_self_env() -> None:
             if scale_product is None:
                 raise typer.Exit(1)
 
-            # Delete any existing dev seed token
+            # Keep the token already in .env when it is still valid, so a
+            # running API and worker don't start failing with 401.
             existing = (
                 (
                     await session.execute(
@@ -3115,17 +3120,37 @@ def polar_self_env() -> None:
                 .scalars()
                 .all()
             )
-            for t in existing:
-                await session.delete(t)
-
-            token, token_hash = generate_token_hash_pair(prefix="polar_oat_")
-            oat = OrganizationAccessToken(
-                organization_id=org.id,
-                token=token_hash,
-                scope=TOKEN_SCOPES,
-                comment=TOKEN_COMMENT,
+            current_token = settings.POLAR_ACCESS_TOKEN
+            current_token_hashes = (
+                set(get_token_hash_candidates(current_token).values())
+                if current_token
+                else set()
             )
-            session.add(oat)
+            kept_oat: OrganizationAccessToken | None = None
+            for t in existing:
+                if (
+                    kept_oat is None
+                    and t.token in current_token_hashes
+                    and t.deleted_at is None
+                    and (t.expires_at is None or t.expires_at > utc_now())
+                ):
+                    t.scope = TOKEN_SCOPES
+                    kept_oat = t
+                else:
+                    await session.delete(t)
+
+            if kept_oat is not None:
+                token = current_token
+            else:
+                token, token_hash = generate_token_hash_pair(prefix="polar_oat_")
+                session.add(
+                    OrganizationAccessToken(
+                        organization_id=org.id,
+                        token=token_hash,
+                        scope=TOKEN_SCOPES,
+                        comment=TOKEN_COMMENT,
+                    )
+                )
 
             existing_webhooks = (
                 (
@@ -3139,21 +3164,39 @@ def polar_self_env() -> None:
                 .scalars()
                 .all()
             )
+            current_webhook_secret = settings.POLAR_WEBHOOK_SECRET
+            kept_webhook: WebhookEndpoint | None = None
             for w in existing_webhooks:
-                await session.delete(w)
+                if (
+                    kept_webhook is None
+                    and current_webhook_secret
+                    and w.secret == current_webhook_secret
+                    and w.deleted_at is None
+                ):
+                    w.url = WEBHOOK_URL
+                    w.format = WebhookFormat.raw
+                    w.events = WEBHOOK_EVENTS
+                    w.enabled = True
+                    kept_webhook = w
+                else:
+                    await session.delete(w)
 
-            webhook_secret = generate_webhook_secret()
-            webhook = WebhookEndpoint(
-                organization_id=org.id,
-                url=WEBHOOK_URL,
-                name=WEBHOOK_NAME,
-                format=WebhookFormat.raw,
-                secret=webhook_secret,
-                secret_generated_at=utc_now(),
-                events=WEBHOOK_EVENTS,
-                enabled=True,
-            )
-            session.add(webhook)
+            if kept_webhook is not None:
+                webhook_secret = current_webhook_secret
+            else:
+                webhook_secret = generate_webhook_secret()
+                session.add(
+                    WebhookEndpoint(
+                        organization_id=org.id,
+                        url=WEBHOOK_URL,
+                        name=WEBHOOK_NAME,
+                        format=WebhookFormat.raw,
+                        secret=webhook_secret,
+                        secret_generated_at=utc_now(),
+                        events=WEBHOOK_EVENTS,
+                        enabled=True,
+                    )
+                )
 
             await session.commit()
 

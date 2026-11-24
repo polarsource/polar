@@ -55,6 +55,27 @@ class PaymentRepository(
         result = await self.session.execute(statement)
         return result.scalars().all()
 
+    async def get_all_succeeded_by_authorization_code(
+        self,
+        processor: PaymentProcessor,
+        authorization_code: str,
+        *,
+        currency: str,
+        min_amount: int,
+        created_after: datetime,
+        created_before: datetime,
+    ) -> Sequence[Payment]:
+        statement = self.get_base_statement().where(
+            Payment.processor == processor,
+            Payment.status == PaymentStatus.succeeded,
+            Payment.currency == currency,
+            Payment.amount >= min_amount,
+            Payment.created_at >= created_after,
+            Payment.created_at < created_before,
+            Payment.method_metadata["authorization_code"].astext == authorization_code,
+        )
+        return await self.get_all(statement)
+
     async def get_all_by_customer(
         self, customer_id: UUID, *, status: PaymentStatus | None = None
     ) -> Sequence[Payment]:

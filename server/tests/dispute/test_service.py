@@ -9,6 +9,7 @@ from polar.benefit.grant.service import BenefitGrantService
 from polar.customer_seat.service import SeatService
 from polar.dispute.dispute_case import dispute_case as dispute_case_service
 from polar.dispute.service import (
+    DisputeAlertTargetsRefundError,
     DisputeAlertTransactionNotLinkedError,
     DisputeNotOpenError,
     DisputePaymentNotFoundError,
@@ -16,6 +17,7 @@ from polar.dispute.service import (
 from polar.dispute.service import dispute as dispute_service
 from polar.enums import PaymentProcessor, TaxProcessor
 from polar.integrations.chargeback_stop.types import ChargebackStopAlert
+from polar.kit.utils import utc_now
 from polar.models import Customer, Dispute, Organization, Product, User
 from polar.models.dispute import DisputeAlertProcessor, DisputeStatus
 from polar.models.support_case import (
@@ -85,6 +87,9 @@ def build_chargeback_stop_alert(
     transaction_refund_outcome: Literal["REFUNDED", "NOT_REFUNDED"] = "NOT_REFUNDED",
     transaction_amount_in_cents: int = 1000,
     transaction_currency_code: str = "USD",
+    transaction_authorised_at: str | None = None,
+    transaction_authorisation_code: str | None = None,
+    transaction_acquirer_reference_number: str | None = None,
 ) -> ChargebackStopAlert:
     return ChargebackStopAlert(
         id=id,
@@ -95,6 +100,9 @@ def build_chargeback_stop_alert(
         transaction_refund_outcome=transaction_refund_outcome,
         transaction_amount_in_cents=transaction_amount_in_cents,
         transaction_currency_code=transaction_currency_code.upper(),
+        transaction_authorised_at=transaction_authorised_at,
+        transaction_authorisation_code=transaction_authorisation_code,
+        transaction_acquirer_reference_number=transaction_acquirer_reference_number,
     )
 
 
@@ -1625,6 +1633,76 @@ class TestUpsertFromChargebackStop:
             await dispute_service.upsert_from_chargeback_stop(session, alert)
 
         get_payment_intent_mock.assert_not_called()
+
+    async def test_unlinked_matched_by_authorization_code(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer)
+        payment = await create_payment(
+            save_fixture,
+            organization,
+            order=order,
+            processor_id="STRIPE_CHARGE_ID",
+            method_metadata={"authorization_code": "AUTH01"},
+        )
+        alert = build_chargeback_stop_alert(
+            integration_transaction_id=None,
+            transaction_authorised_at=utc_now().isoformat(),
+            transaction_authorisation_code="AUTH01",
+        )
+
+        dispute = await dispute_service.upsert_from_chargeback_stop(session, alert)
+
+        assert dispute.payment == payment
+        assert dispute.dispute_alert_processor_id == alert["id"]
+
+    async def test_unlinked_ambiguous_authorization_code(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        for charge_id in ("STRIPE_CHARGE_ID_1", "STRIPE_CHARGE_ID_2"):
+            await create_payment(
+                save_fixture,
+                organization,
+                processor_id=charge_id,
+                method_metadata={"authorization_code": "AUTH01"},
+            )
+        alert = build_chargeback_stop_alert(
+            integration_transaction_id=None,
+            transaction_authorised_at=utc_now().isoformat(),
+            transaction_authorisation_code="AUTH01",
+        )
+
+        with pytest.raises(DisputeAlertTransactionNotLinkedError):
+            await dispute_service.upsert_from_chargeback_stop(session, alert)
+
+    async def test_unlinked_about_refund(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer)
+        payment = await create_payment(save_fixture, organization, order=order)
+        refund = await create_refund(save_fixture, order, payment)
+        refund.destination_details = {"card": {"reference": "REFUND_ARN"}}
+        await save_fixture(refund)
+        alert = build_chargeback_stop_alert(
+            integration_transaction_id=None,
+            transaction_acquirer_reference_number="REFUND_ARN",
+        )
+
+        with pytest.raises(DisputeAlertTargetsRefundError) as exc_info:
+            await dispute_service.upsert_from_chargeback_stop(session, alert)
+
+        assert exc_info.value.refund_id == refund.id
 
 
 @pytest.mark.anyio

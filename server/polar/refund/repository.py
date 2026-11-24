@@ -46,6 +46,12 @@ class RefundRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def get_by_card_reference(self, reference: str) -> Refund | None:
+        statement = self.get_base_statement().where(
+            Refund.destination_details["card"]["reference"].astext == reference
+        )
+        return await self.get_one_or_none(statement)
+
     async def get_succeeded_by_order(self, order_id: UUID) -> Sequence[Refund]:
         statement = (
             self.get_base_statement()

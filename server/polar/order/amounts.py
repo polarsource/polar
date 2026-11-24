@@ -3,15 +3,19 @@ from dataclasses import dataclass
 
 import structlog
 
+from polar.checkout.repository import CheckoutRepository
 from polar.enums import TaxBehavior, TaxBehaviorOption, TaxProcessor
+from polar.kit.address import Address
 from polar.logging import Logger
 from polar.models import Customer, Discount, OrderItem, Product, Subscription
+from polar.postgres import AsyncReadSession
 from polar.tax.calculation import (
     TaxBreakdownItem,
     TaxCalculation,
     TaxCalculationLogicalError,
 )
 from polar.tax.calculation import tax_calculation as tax_calculation_service
+from polar.tax.tax_id import TaxID
 
 log: Logger = structlog.get_logger()
 
@@ -31,6 +35,30 @@ class OrderAmounts:
     tax_breakdown: Sequence[TaxBreakdownItem]
 
 
+async def get_subscription_billing_details(
+    session: AsyncReadSession, subscription: Subscription
+) -> tuple[str | None, Address | None, TaxID | None]:
+    customer = subscription.customer
+    billing_address = customer.billing_address
+    if subscription.checkout_id is not None and (
+        billing_address is None or not billing_address.has_tax_fields()
+    ):
+        repository = CheckoutRepository.from_session(session)
+        checkout = await repository.get_by_id(subscription.checkout_id)
+        if checkout is not None and (
+            (checkout_address := checkout.customer_billing_address) is not None
+            and checkout_address.has_tax_fields()
+        ):
+            return (
+                checkout.customer_billing_name
+                or customer.billing_name
+                or checkout.customer_name,
+                checkout_address,
+                checkout.customer_tax_id,
+            )
+    return customer.billing_name, billing_address, customer.tax_id
+
+
 async def calculate_tax(
     *,
     reference: str,
@@ -38,6 +66,8 @@ async def calculate_tax(
     tax_behavior_option: TaxBehaviorOption,
     currency: str,
     customer: Customer,
+    billing_address: Address | None,
+    tax_id: TaxID | None,
     product: Product,
     tax_exempted: bool,
     allow_silent_failure: bool = True,
@@ -48,9 +78,6 @@ async def calculate_tax(
     int,
     Sequence[TaxBreakdownItem],
 ]:
-    billing_address = customer.billing_address
-    tax_id = customer.tax_id
-
     tax_processor: TaxProcessor | None = None
     tax_behavior: TaxBehavior | None = None
     tax_calculation: TaxCalculation | None = None
@@ -130,6 +157,8 @@ async def compute_order_amounts(
     reference: str,
     discount: Discount | None,
     product: Product,
+    billing_address: Address | None,
+    tax_id: TaxID | None,
 ) -> OrderAmounts:
     customer = subscription.customer
 
@@ -162,6 +191,8 @@ async def compute_order_amounts(
         tax_behavior_option=tax_behavior_option,
         currency=subscription.currency,
         customer=customer,
+        billing_address=billing_address,
+        tax_id=tax_id,
         product=product,
         tax_exempted=subscription.tax_exempted,
     )

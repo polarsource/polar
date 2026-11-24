@@ -6398,7 +6398,8 @@ class TestConfirm:
         await session.refresh(owner)
         assert owner.name == "John Smith"
 
-    async def test_valid_stripe_existing_customer_email(
+    @pytest.mark.parametrize("stripe_customer_id", ["EXISTING_CUSTOMER", None])
+    async def test_email_match_does_not_update_customer_profile(
         self,
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
@@ -6406,12 +6407,20 @@ class TestConfirm:
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
         customer: Customer,
+        stripe_customer_id: str | None,
     ) -> None:
+        saved_address = Address(country=CountryAlpha2("DE"))
+        customer.billing_address = saved_address
+        customer.locale = "de"
+        customer.stripe_customer_id = stripe_customer_id
         customer.user_metadata = {"key": "value"}
         await save_fixture(customer)
 
         checkout_one_time_fixed.customer_metadata = {"key": "updated", "key2": "value2"}
 
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="NEW_CUSTOMER"
+        )
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
             id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
         )
@@ -6431,10 +6440,22 @@ class TestConfirm:
         )
 
         assert checkout.status == CheckoutStatus.confirmed
-        assert checkout.customer is not None
         assert checkout.customer == customer
-        assert checkout.customer.user_metadata == {"key": "updated", "key2": "value2"}
-        stripe_service_mock.update_customer.assert_called_once()
+        assert checkout.customer_session_token is None
+        await session.refresh(customer)
+        assert customer.billing_address == saved_address
+        assert customer.locale == "de"
+        assert customer.user_metadata == {"key": "value"}
+        assert customer.stripe_customer_id == (stripe_customer_id or "NEW_CUSTOMER")
+        stripe_service_mock.update_customer.assert_not_called()
+        if stripe_customer_id is None:
+            stripe_service_mock.create_customer.assert_called_once_with(
+                email=customer.email,
+                name=customer.name,
+                address=saved_address.to_dict(),
+            )
+        else:
+            stripe_service_mock.create_customer.assert_not_called()
 
     async def test_valid_stripe_new_customer_external_id(
         self,

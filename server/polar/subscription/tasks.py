@@ -104,7 +104,9 @@ async def subscription_cycle(
             ) as ctx:
                 if (
                     subscription.organization.can_renew_subscriptions
-                    and subscription_service.should_expire_trial(subscription)
+                    and await subscription_service.should_expire_trial(
+                        session, subscription
+                    )
                 ):
                     await subscription_service.expire_trial(session, ctx, subscription)
                 else:

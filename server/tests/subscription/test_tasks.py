@@ -44,6 +44,7 @@ from tests.fixtures.random_objects import (
     create_active_subscription,
     create_benefit,
     create_benefit_grant,
+    create_checkout,
     create_discount,
     create_subscription,
     create_trialing_subscription,
@@ -509,7 +510,13 @@ class TestSubscriptionCycle:
 
     @pytest.mark.parametrize(
         "conversion_reason",
-        ["subscription_payment_method", "customer_payment_method", "free", "discount"],
+        [
+            "subscription_payment_method",
+            "customer_payment_method",
+            "checkout_billing_address",
+            "free",
+            "discount",
+        ],
     )
     async def test_trial_converts(
         self,
@@ -524,7 +531,9 @@ class TestSubscriptionCycle:
         conversion_reason: str,
     ) -> None:
         enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
-        customer.billing_address = Address(country=CountryAlpha2("FR"))
+        billing_address = Address(country=CountryAlpha2("FR"))
+        if conversion_reason != "checkout_billing_address":
+            customer.billing_address = billing_address
         await save_fixture(customer)
         discount = None
         if conversion_reason == "customer_payment_method":
@@ -547,11 +556,23 @@ class TestSubscriptionCycle:
             discount=discount,
             payment_method=(
                 payment_method
-                if conversion_reason == "subscription_payment_method"
+                if conversion_reason
+                in (
+                    "subscription_payment_method",
+                    "checkout_billing_address",
+                )
                 else None
             ),
             scheduler_locked_at=utc_now(),
         )
+        if conversion_reason == "checkout_billing_address":
+            subscription.checkout = await create_checkout(
+                save_fixture,
+                products=[product],
+                customer=customer,
+                customer_billing_address=billing_address,
+            )
+            await save_fixture(subscription)
         trial_start = subscription.current_period_start
         previous_period_end = subscription.current_period_end
         assert previous_period_end is not None

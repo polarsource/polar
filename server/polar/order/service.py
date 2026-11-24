@@ -138,7 +138,12 @@ from polar.wallet.service import wallet as wallet_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 
-from .amounts import apply_wallet_balance, calculate_tax, compute_order_amounts
+from .amounts import (
+    apply_wallet_balance,
+    calculate_tax,
+    compute_order_amounts,
+    get_subscription_billing_details,
+)
 from .repository import OrderRepository
 from .schemas import OrderCreate, OrderInvoice, OrderReceipt, OrderUpdate
 from .sorting import OrderSortProperty
@@ -884,9 +889,16 @@ class OrderService:
                 net_amount=checkout.net_amount,
                 currency=checkout.currency,
                 billing_reason=billing_reason,
-                billing_name=customer.billing_name,
-                billing_address=customer.billing_address,
-                tax_id=customer.tax_id,
+                billing_name=(
+                    checkout.customer_billing_name
+                    or customer.billing_name
+                    or checkout.customer_name
+                ),
+                billing_address=checkout.customer_billing_address
+                or customer.billing_address,
+                tax_id=checkout.customer_tax_id
+                if checkout.customer_billing_address is not None
+                else customer.tax_id,
                 tax_behavior=checkout.tax_behavior,
                 tax_breakdown=checkout.tax_breakdown,
                 invoice_number=invoice_number,
@@ -1177,6 +1189,8 @@ class OrderService:
                 tax_behavior_option=organization.default_tax_behavior,
                 currency=currency,
                 customer=customer,
+                billing_address=customer.billing_address,
+                tax_id=customer.tax_id,
                 product=product,
                 tax_exempted=False,
                 allow_silent_failure=False,
@@ -1485,6 +1499,9 @@ class OrderService:
         order_id = uuid.uuid4()
         customer = subscription.customer
         product = product or subscription.product
+        billing_name, billing_address, tax_id = await get_subscription_billing_details(
+            session, subscription
+        )
 
         # Fixed discounts are per-order, so applying one per meter-cycle settlement
         # multiplies the giveaway by cadence; percentage discounts are
@@ -1502,6 +1519,8 @@ class OrderService:
             reference=reference or str(order_id),
             discount=discount,
             product=product,
+            billing_address=billing_address,
+            tax_id=tax_id,
         )
         total_amount = amounts.total_amount
 
@@ -1520,10 +1539,10 @@ class OrderService:
             applied_balance_amount=applied_balance_amount,
             currency=subscription.currency,
             billing_reason=billing_reason,
-            billing_name=customer.billing_name,
-            billing_address=customer.billing_address,
+            billing_name=billing_name,
+            billing_address=billing_address,
             tax_behavior=amounts.tax_behavior,
-            tax_id=customer.tax_id,
+            tax_id=tax_id,
             tax_breakdown=amounts.tax_breakdown or None,
             tax_processor=amounts.tax_processor,
             tax_calculation_processor_id=amounts.tax_calculation_processor_id,
@@ -1686,6 +1705,16 @@ class OrderService:
 
         product = subscription.product
         customer = subscription.customer
+        billing_name = customer.billing_name
+        billing_address = customer.billing_address
+        tax_id = customer.tax_id
+        if checkout is not None:
+            billing_name = (
+                checkout.customer_billing_name or billing_name or checkout.customer_name
+            )
+            if checkout.customer_billing_address is not None:
+                billing_address = checkout.customer_billing_address
+                tax_id = checkout.customer_tax_id
 
         items: list[OrderItem] = [
             OrderItem.from_trial(
@@ -1708,9 +1737,9 @@ class OrderService:
                 net_amount=0,
                 currency=subscription.currency,
                 billing_reason=billing_reason,
-                billing_name=customer.billing_name,
-                billing_address=customer.billing_address,
-                tax_id=customer.tax_id,
+                billing_name=billing_name,
+                billing_address=billing_address,
+                tax_id=tax_id,
                 tax_breakdown=None,
                 invoice_number=invoice_number,
                 organization=organization,
@@ -2372,6 +2401,8 @@ class OrderService:
             taxable_amount=order.net_amount,
             currency=order.currency,
             customer=order.customer,
+            billing_address=order.billing_address,
+            tax_id=order.tax_id,
             product=order.product,
             tax_behavior_option=order.tax_behavior.to_option(),
             tax_exempted=order.subscription.tax_exempted

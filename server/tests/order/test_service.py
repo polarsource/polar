@@ -644,8 +644,9 @@ class TestCreateOrderFromCheckout:
         recurring: bool,
         charged_tax_amount: int,
     ) -> None:
-        customer.billing_address = Address(country=CountryAlpha2("MX"))
+        customer.billing_address = Address(country=CountryAlpha2("FR"))
         await save_fixture(customer)
+        checkout_billing_address = Address(country=CountryAlpha2("MX"))
         checkout = await create_checkout(
             save_fixture,
             products=[product if recurring else product_one_time],
@@ -653,6 +654,7 @@ class TestCreateOrderFromCheckout:
             customer=customer,
             tax_amount=charged_tax_amount,
             tax_behavior=TaxBehavior.exclusive,
+            customer_billing_address=checkout_billing_address,
         )
         checkout.tax_processor_id = "stripe_calculation"
         checkout.tax_breakdown = [
@@ -691,7 +693,12 @@ class TestCreateOrderFromCheckout:
         assert order.tax_breakdown == checkout.tax_breakdown
         assert order.tax_processor is None
         assert order.tax_transaction_processor_id is None
+        assert order.billing_address == checkout_billing_address
         tax_service_mock.record.assert_awaited_once()
+        assert (
+            tax_service_mock.record.call_args.kwargs["address"]
+            == checkout_billing_address
+        )
         assert (
             tax_service_mock.record.call_args.kwargs["tax_amount"] == charged_tax_amount
         )
@@ -1297,6 +1304,7 @@ class TestCreateSubscriptionOrder:
                 session, subscription, OrderBillingReasonInternal.subscription_cycle
             )
 
+    @pytest.mark.parametrize("use_checkout_billing_address", [False, True])
     @pytest.mark.parametrize(
         ("tax_behavior", "amount", "tax_amount", "expected_net_amount"),
         [
@@ -1317,6 +1325,7 @@ class TestCreateSubscriptionOrder:
         product: Product,
         organization: Organization,
         payment_method: PaymentMethod,
+        use_checkout_billing_address: bool,
     ) -> None:
         calculate_tax_mock.return_value = (
             {
@@ -1339,10 +1348,11 @@ class TestCreateSubscriptionOrder:
             },
             TaxProcessor.numeral,
         )
+        billing_address = Address(country=CountryAlpha2("FR"))
         customer = await create_customer(
             save_fixture,
             organization=organization,
-            billing_address=Address(country=CountryAlpha2("FR")),
+            billing_address=None if use_checkout_billing_address else billing_address,
         )
         subscription = await create_active_subscription(
             save_fixture,
@@ -1351,6 +1361,18 @@ class TestCreateSubscriptionOrder:
             payment_method=payment_method,
             tax_behavior=tax_behavior,
         )
+        subscription.checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.succeeded,
+            customer=customer,
+            customer_billing_address=(
+                billing_address
+                if use_checkout_billing_address
+                else Address(country=CountryAlpha2("DE"))
+            ),
+        )
+        await save_fixture(subscription)
         price = product.prices[0]
         assert is_fixed_price(price)
         billing_entry = await create_billing_entry(
@@ -1380,6 +1402,7 @@ class TestCreateSubscriptionOrder:
         assert order.status == OrderStatus.pending
         assert order.billing_reason == OrderBillingReasonInternal.subscription_cycle
         assert order.subscription == subscription
+        assert order.billing_address == billing_address
 
         if tax_behavior == TaxBehavior.inclusive:
             assert subscription.net_amount == round(
@@ -1396,7 +1419,7 @@ class TestCreateSubscriptionOrder:
             order.subtotal_amount - order.discount_amount,
             tax_behavior.to_option(),
             product.tax_code,
-            customer.billing_address,
+            billing_address,
             [],
             False,
         )
@@ -3084,19 +3107,34 @@ class TestCreateTrialOrder:
                 session, subscription, OrderBillingReasonInternal.subscription_create
             )
 
+    @pytest.mark.parametrize("with_checkout", [False, True])
     async def test_valid(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         product: Product,
         customer: Customer,
+        with_checkout: bool,
     ) -> None:
         subscription = await create_trialing_subscription(
             save_fixture, product=product, customer=customer
         )
+        checkout = None
+        if with_checkout:
+            checkout = await create_checkout(
+                save_fixture,
+                products=[product],
+                customer=customer,
+                customer_billing_address=Address(country=CountryAlpha2("FR")),
+            )
+            checkout.customer_billing_name = "Trial Company"
+            await save_fixture(checkout)
 
         order = await order_service.create_trial_order(
-            session, subscription, OrderBillingReasonInternal.subscription_create
+            session,
+            subscription,
+            OrderBillingReasonInternal.subscription_create,
+            checkout,
         )
 
         assert order.total_amount == 0
@@ -3109,6 +3147,12 @@ class TestCreateTrialOrder:
         assert len(order.items) == 1
         assert order.items[0].start_timestamp == subscription.trial_start
         assert order.items[0].end_timestamp == subscription.trial_end
+        if checkout is not None:
+            assert order.billing_name == checkout.customer_billing_name
+            assert order.billing_address == checkout.customer_billing_address
+        else:
+            assert order.billing_name == customer.billing_name
+            assert order.billing_address == customer.billing_address
 
 
 @pytest.mark.anyio

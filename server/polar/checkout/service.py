@@ -3218,7 +3218,7 @@ class CheckoutService:
 
         created = False
         customer = checkout.customer
-        generate_customer_session = True
+        matched_by_email = False
 
         if customer is not None and customer.is_deleted:
             raise CheckoutCustomerDeleted(checkout)
@@ -3246,84 +3246,87 @@ class CheckoutService:
                 )
                 created = True
             else:
-                # Don't automatically create a session for customer associated by email.
-                # Could be a malicious user trying to take over an existing customer's account by using their email
-                generate_customer_session = False
+                matched_by_email = True
 
         stripe_customer_id = customer.stripe_customer_id
-        customer_name = checkout.customer_billing_name or checkout.customer_name
+        # Matching an existing customer by email only allows order attribution.
+        customer_name = (
+            customer.billing_name
+            if matched_by_email
+            else checkout.customer_billing_name or checkout.customer_name
+        )
+        billing_address = (
+            customer.billing_address
+            if matched_by_email
+            else checkout.customer_billing_address
+        )
+        customer_tax_id = (
+            customer.tax_id if matched_by_email else checkout.customer_tax_id
+        )
         if stripe_customer_id is None:
             create_params: CustomerCreateParams = {}
             if customer.email is not None:
                 create_params["email"] = customer.email
             if customer_name is not None:
                 create_params["name"] = customer_name
-            if checkout.customer_billing_address is not None:
-                create_params["address"] = checkout.customer_billing_address.to_dict()  # type: ignore
-            if checkout.customer_tax_id is not None:
+            if billing_address is not None:
+                create_params["address"] = billing_address.to_dict()  # type: ignore
+            if customer_tax_id is not None:
                 try:
-                    create_params["tax_id_data"] = [
-                        to_stripe_tax_id(checkout.customer_tax_id)
-                    ]
+                    create_params["tax_id_data"] = [to_stripe_tax_id(customer_tax_id)]
                 except IncompatibleTaxIDFormat:
                     pass
             stripe_customer = await stripe_service.create_customer(**create_params)
             stripe_customer_id = stripe_customer.id
-        else:
+        elif not matched_by_email:
             update_params: CustomerModifyParams = {}
             if customer.email is not None:
                 update_params["email"] = customer.email
             if customer_name is not None:
                 update_params["name"] = customer_name
-            if checkout.customer_billing_address is not None:
-                update_params["address"] = checkout.customer_billing_address.to_dict()  # type: ignore
+            if billing_address is not None:
+                update_params["address"] = billing_address.to_dict()  # type: ignore
             tax_id: CustomerCreateParamsTaxIdDatum | None = None
-            if checkout.customer_tax_id is not None:
+            if customer_tax_id is not None:
                 try:
-                    tax_id = to_stripe_tax_id(checkout.customer_tax_id)
+                    tax_id = to_stripe_tax_id(customer_tax_id)
                 except IncompatibleTaxIDFormat:
                     pass
             await stripe_service.update_customer(
                 stripe_customer_id, tax_id=tax_id, **update_params
             )
 
-        # Populate customer.name when it's not already set, even for existing
-        # customers (linked via customer_id or matched by email). We only avoid
-        # *overwriting* an existing name: checkout.customer_name may be the
-        # cardholder name on a wallet/payment method — e.g. a CFO or office
-        # manager paying on behalf of a company customer — and must not clobber
-        # the company's name. But an existing customer with no name at all
-        # (e.g. created through the API without one) should still get an initial
-        # value so invoices can be generated.
-        name_populated = customer.name is None and customer_name is not None
-        if name_populated:
-            customer.name = customer_name
-        if checkout.customer_billing_name is not None:
-            customer.billing_name = checkout.customer_billing_name
-        if checkout.customer_billing_address is not None:
-            customer.billing_address = checkout.customer_billing_address
-        if checkout.customer_tax_id is not None:
-            customer.tax_id = checkout.customer_tax_id
-        if checkout.locale is not None:
-            customer.locale = checkout.locale
-
         customer.stripe_customer_id = stripe_customer_id
-        customer.user_metadata = {
-            **customer.user_metadata,
-            **checkout.customer_metadata,
-        }
+        name_populated = False
+        if not matched_by_email:
+            # The cardholder name can differ from the customer's saved name.
+            name_populated = customer.name is None and customer_name is not None
+            if name_populated:
+                customer.name = customer_name
+            if checkout.customer_billing_name is not None:
+                customer.billing_name = checkout.customer_billing_name
+            if billing_address is not None:
+                customer.billing_address = billing_address
+            if customer_tax_id is not None:
+                customer.tax_id = customer_tax_id
+            if checkout.locale is not None:
+                customer.locale = checkout.locale
+            customer.user_metadata = {
+                **customer.user_metadata,
+                **checkout.customer_metadata,
+            }
 
         if created:
             async with repository.create_context(customer, flush=True) as customer:
                 await member_service.create_owner_member(
                     session, customer, checkout.organization
                 )
-                yield customer, generate_customer_session
+                yield customer, True
         else:
             customer = await repository.update(customer, flush=True)
             if name_populated:
                 await member_service.sync_owner(session, customer)
-            yield customer, generate_customer_session
+            yield customer, not matched_by_email
 
     async def _after_checkout_created(
         self, session: AsyncSession, checkout: Checkout

@@ -123,6 +123,7 @@ from polar.notifications.notification import (
 )
 from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
+from polar.order.amounts import get_subscription_billing_details
 from polar.order.repository import OrderRepository
 from polar.organization.repository import (
     SUBSCRIPTION_CANCELLATION_STATUSES,
@@ -1495,7 +1496,9 @@ class SubscriptionService:
 
         return subscription
 
-    def should_expire_trial(self, subscription: Subscription) -> bool:
+    async def should_expire_trial(
+        self, session: AsyncReadSession, subscription: Subscription
+    ) -> bool:
         if not subscription.trialing or subscription.cancel_at_period_end:
             return False
         # A change the merchant scheduled for the trial end is applied as is.
@@ -1505,7 +1508,7 @@ class SubscriptionService:
             return False
         return not self._has_payment_method(
             subscription
-        ) or not self._has_complete_billing_address(subscription)
+        ) or not await self._has_complete_billing_address(session, subscription)
 
     async def expire_trial(
         self,
@@ -3237,7 +3240,7 @@ class SubscriptionService:
 
         if not self._has_payment_method(
             subscription
-        ) or not self._has_complete_billing_address(subscription):
+        ) or not await self._has_complete_billing_address(session, subscription):
             raise MissingBillingDetails(subscription)
 
         now = utc_now()
@@ -4900,7 +4903,9 @@ class SubscriptionService:
         if not self._charges_after_trial(subscription):
             return
         payment_method_required = not self._has_payment_method(subscription)
-        billing_address_required = not self._has_complete_billing_address(subscription)
+        billing_address_required = not await self._has_complete_billing_address(
+            session, subscription
+        )
         if payment_method_required or billing_address_required:
             if not billing_address_required:
                 subject_template = (
@@ -4947,8 +4952,12 @@ class SubscriptionService:
             or subscription.customer.default_payment_method_id is not None
         )
 
-    def _has_complete_billing_address(self, subscription: Subscription) -> bool:
-        billing_address = subscription.customer.billing_address
+    async def _has_complete_billing_address(
+        self, session: AsyncReadSession, subscription: Subscription
+    ) -> bool:
+        _, billing_address, _ = await get_subscription_billing_details(
+            session, subscription
+        )
         return billing_address is not None and billing_address.has_tax_fields()
 
     async def _send_customer_email(

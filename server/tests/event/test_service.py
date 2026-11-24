@@ -630,13 +630,13 @@ class TestListNames:
 @pytest.mark.anyio
 class TestIngest:
     @pytest.fixture(autouse=True, params=[False, True], ids=["events", "staged_events"])
-    async def staged_events_ingest(
+    async def reducer_billing(
         self,
         request: pytest.FixtureRequest,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> bool:
-        organization.feature_settings = {"staged_events_ingest_enabled": request.param}
+        organization.feature_settings = {"reducer_billing_enabled": request.param}
         await save_fixture(organization)
         return request.param
 

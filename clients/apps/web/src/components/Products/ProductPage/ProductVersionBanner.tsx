@@ -1,10 +1,15 @@
 import { useIsManagedAsCode } from '@/hooks/permissions'
-import { useCatalog, useLiveCatalog } from '@/hooks/queries/catalogs'
+import {
+  useCatalog,
+  useLiveCatalog,
+  useRemovedCatalogItems,
+} from '@/hooks/queries/catalogs'
 import { useProducts } from '@/hooks/queries/products'
 import { useSubscriptions } from '@/hooks/queries/subscriptions'
 import { schemas } from '@polar-sh/client'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { DraftVersionBanner } from '../DraftVersionBanner'
 
@@ -115,6 +120,7 @@ const OlderVersionBanner = ({
   const { data: liveCatalog } = useLiveCatalog(organization.id, true)
   const { data: currentProducts } = useProducts(organization.id, {
     external_id: externalId,
+    catalog_status: 'live',
     limit: 1,
   })
   const { data: subscriptions } = useSubscriptions(organization.id, {
@@ -123,25 +129,22 @@ const OlderVersionBanner = ({
     limit: 1,
   })
   const current = currentProducts?.items[0]
+  const { data: removedItems } = useRemovedCatalogItems(
+    organization.id,
+    currentProducts !== undefined && !current,
+  )
 
   if (!current) {
-    return null
+    const removed = removedItems?.find(
+      (item) => item.resource === 'product' && item.external_id === externalId,
+    )
+    return removed ? (
+      <RemovedProductBanner organization={organization} item={removed} />
+    ) : null
   }
 
   return (
-    <Box
-      flexDirection={{ base: 'column', md: 'row' }}
-      alignItems={{ base: 'start', md: 'center' }}
-      justifyContent="between"
-      columnGap="2xl"
-      rowGap="l"
-      paddingVertical="l"
-      paddingHorizontal="xl"
-      borderRadius="l"
-      borderWidth={1}
-      borderStyle="solid"
-      borderColor="border-primary"
-    >
+    <BannerFrame>
       <Box flexDirection="column" rowGap="xs" minWidth={0}>
         <Text variant="title">You&apos;re viewing an older version</Text>
         <Text color="muted">
@@ -175,6 +178,77 @@ const OlderVersionBanner = ({
           View current version
         </Button>
       </Box>
-    </Box>
+    </BannerFrame>
   )
 }
+
+const RemovedProductBanner = ({
+  organization,
+  item,
+}: {
+  organization: schemas['Organization']
+  item: schemas['RemovedCatalogItem']
+}) => {
+  const router = useRouter()
+  const removedIn = item.removed_in_catalog
+  return (
+    <BannerFrame>
+      <Box flexDirection="column" rowGap="xs" minWidth={0}>
+        <Text variant="title">This product has been removed</Text>
+        <Text color="muted">
+          Removed in{' '}
+          <Text as="span" color="default">
+            <Link
+              href={`/dashboard/${organization.slug}/products/versions/${removedIn.id}`}
+              className="hover:underline hover:decoration-current/30 hover:underline-offset-4"
+            >
+              {removedIn.name ?? 'Untitled'}
+            </Link>
+          </Text>
+          . New customers can&apos;t buy it.
+        </Text>
+      </Box>
+      <Box
+        alignItems="center"
+        flexWrap="wrap"
+        columnGap="2xl"
+        rowGap="l"
+        flexShrink={0}
+      >
+        <Stat
+          label="Removed"
+          value={formatPublishedAt(removedIn.published_at)}
+        />
+        <Stat label="Customers" value={item.customers_count.toLocaleString()} />
+        <Button
+          variant="secondary"
+          onClick={() =>
+            router.push(
+              `/dashboard/${organization.slug}/products/versions?tab=removed`,
+            )
+          }
+        >
+          View removed products
+        </Button>
+      </Box>
+    </BannerFrame>
+  )
+}
+
+const BannerFrame = ({ children }: { children: React.ReactNode }) => (
+  <Box
+    flexDirection={{ base: 'column', md: 'row' }}
+    alignItems={{ base: 'start', md: 'center' }}
+    justifyContent="between"
+    columnGap="2xl"
+    rowGap="l"
+    paddingVertical="l"
+    paddingHorizontal="xl"
+    borderRadius="l"
+    borderWidth={1}
+    borderStyle="solid"
+    borderColor="border-primary"
+  >
+    {children}
+  </Box>
+)

@@ -85,7 +85,10 @@ export const SubscriptionDetailPanel = ({
         </Box>
       </Box>
 
-      <SubscriptionSummary subscription={subscription} />
+      <SubscriptionSummary
+        subscription={subscription}
+        organization={organization}
+      />
 
       <Box flexDirection="column" paddingHorizontal="l" paddingVertical="m">
         <Field label="Customer">

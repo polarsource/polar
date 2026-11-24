@@ -360,6 +360,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         />
       ) : (
         <SubscriptionsTable
+          organization={organization}
           subscriptions={subscriptions}
           sorting={sorting}
           onSortingChange={setSorting}

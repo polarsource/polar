@@ -1,5 +1,6 @@
 'use client'
 
+import { CatalogVersionLabel } from '@/components/Products/CatalogVersionLabel'
 import {
   CondensedTable,
   CondensedTableHeader,
@@ -47,10 +48,30 @@ const StatusCell = ({ subscription }: { subscription: Subscription }) => (
   </>
 )
 
+const ProductCell = ({
+  subscription,
+  organization,
+}: {
+  subscription: Subscription
+  organization: schemas['Organization']
+}) => (
+  <>
+    <Text color="muted" truncate>
+      {subscription.product.name}
+    </Text>
+    <CatalogVersionLabel
+      organization={organization}
+      version={subscription.product}
+    />
+  </>
+)
+
 const EMPTY: Subscription[] = []
 
 // Each id is the key the list endpoint sorts by.
-const columns: CondensedTableColumn<Subscription>[] = [
+const getColumns = (
+  organization: schemas['Organization'],
+): CondensedTableColumn<Subscription>[] => [
   {
     id: 'customer',
     accessorFn: getCustomerLabel,
@@ -74,9 +95,7 @@ const columns: CondensedTableColumn<Subscription>[] = [
     header: 'Product',
     meta: { minWidth: 72, skeleton: [90, 70, 100, 80, 60] },
     cell: ({ row }) => (
-      <Text color="muted" truncate>
-        {row.original.product.name}
-      </Text>
+      <ProductCell subscription={row.original} organization={organization} />
     ),
   },
   {
@@ -142,6 +161,7 @@ const CompactRow = ({ subscription }: { subscription: Subscription }) => (
 )
 
 interface SubscriptionsTableProps {
+  organization: schemas['Organization']
   subscriptions: Subscription[] | undefined
   sorting: DataTableSortingState
   onSortingChange: OnChangeFn<DataTableSortingState>
@@ -153,6 +173,7 @@ interface SubscriptionsTableProps {
 }
 
 export const SubscriptionsTable = ({
+  organization,
   subscriptions,
   sorting,
   onSortingChange,
@@ -163,7 +184,7 @@ export const SubscriptionsTable = ({
   onEndReached,
 }: SubscriptionsTableProps) => {
   const table = useCondensedTable({
-    columns,
+    columns: getColumns(organization),
     rows: subscriptions ?? EMPTY,
     getRowId: (subscription) => subscription.id,
     sorting,

@@ -1,0 +1,81 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/ImportedHandoff.tsx
+  s_37bf03e3cd4b2d::t_2ce78ffd79bd04 21-22,33-34,76,86-111,142,144,156
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/ImportedStep.tsx
+  s_37bf03e3cd4b2d::t_52a28361cc83f5 12-18,37
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationRow.tsx
+  s_37bf03e3cd4b2d::t_cb5b039510a645 9,22-24
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationStepper.tsx
+  s_37bf03e3cd4b2d::t_fa4dd401226e8a 5,21,24,28
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/[id]/MigrationDetailPage.tsx
+  s_37bf03e3cd4b2d::t_df18244ef3fff4 11,143-149
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/BenefitRows.tsx
+  s_37bf03e3cd4b2d::t_51abf03f55f58d 1-85
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/benefitCopy.ts
+  s_37bf03e3cd4b2d::t_a48d856438c283 1-25
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/steps.test.ts
+  s_37bf03e3cd4b2d::t_233eefd357ffdb 43-57
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/steps.ts
+  s_37bf03e3cd4b2d::t_fdb54acd478614 65-88,117,131-133,142-144
+clients/apps/web/src/hooks/queries/merchantMigrations.ts
+  s_37bf03e3cd4b2d::t_cef07f1ba97091 180-222
+server/polar/backoffice/merchant_migrations/status.py
+  s_37bf03e3cd4b2d::t_1eeb42372e2aea 41,324
+server/polar/merchant_migration/endpoints.py
+  s_37bf03e3cd4b2d::t_bf8df4e4c2e69a 36-37,55-56,280-339
+server/polar/merchant_migration/repository.py
+  s_37bf03e3cd4b2d::t_378372720d544d 1,235-258
+server/polar/merchant_migration/tasks.py
+  s_37bf03e3cd4b2d::t_7bc58a0c0932ce 52-67
+server/polar/models/merchant_migration.py
+  s_37bf03e3cd4b2d::t_d06fa48de99b8a 48-49
+server/polar/models/merchant_migration_operation.py
+  s_37bf03e3cd4b2d::t_0f196d79672623 40
+server/polar/product/repository.py
+  s_37bf03e3cd4b2d::t_f33d7cfa3526c3 1,162-172
+server/tests/backoffice/merchant_migrations/test_endpoints.py
+  s_37bf03e3cd4b2d::t_e795edfb08d7bf 214
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/BenefitsForm.tsx
+  s_d4a843b33596ce::t_b53f50e2d654cf 1-125
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/BenefitsStep.tsx
+  s_d4a843b33596ce::t_0ec1efd3c3f674 1-161
+clients/packages/client/src/v1.ts
+  s_d4a843b33596ce::t_2bb46d85666081 6103-6126,14285-14306,28469-28565,28721-28725,29006,65063-65185,75921-75926,75935,75951
+server/polar/merchant_migration/adapters/lemon_squeezy.py
+  s_d4a843b33596ce::t_2b3619da719cca 11,16,20,26-29,35,59-64,269,507-627,823-866
+server/polar/merchant_migration/benefits.py
+  s_d4a843b33596ce::t_14f375b180b5ff 1-271
+server/polar/merchant_migration/canonical.py
+  s_d4a843b33596ce::t_4b554d46d282f3 340-380
+server/polar/merchant_migration/schemas.py
+  s_d4a843b33596ce::t_3c6a46d7c6e1e5 26-30,499-547
+server/polar/merchant_migration/service.py
+  s_d4a843b33596ce::t_e5c7dacdf8368d 51,56,102-106,135-139,288-303,1001-1195,1242-1245
+server/tests/merchant_migration/test_lemon_squeezy_adapter.py
+  s_d4a843b33596ce::t_3efe795dc20e93 545-656
+server/tests/merchant_migration/test_service.py
+  s_d4a843b33596ce::t_d06a74f11ebf77 17,28-31,34,38,69,78,104,132,5748-5897
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6583d415be67e3065039308977f77173c906f107",
+  "prompts": {},
+  "sessions": {
+    "s_37bf03e3cd4b2d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b8575e47-be3f-4ef4-80ee-520d51c8c6ba",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_d4a843b33596ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "12adddd7-b520-4f67-a19e-0f92eb2e092a",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

@@ -71,7 +71,7 @@ class TestCompensate:
             customer,
             meter,
             [-1200, 360000, -360000, 40000],
-            40000,
+            0,
         )
 
         [(_, reducer_before)] = await reducer_service.get_customer_meter_units(

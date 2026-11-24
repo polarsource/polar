@@ -1,6 +1,7 @@
 import { schemas } from '@polar-sh/client'
-import { Text } from '@polar-sh/orbit'
+import { Alert, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { cardStatusSummaryText } from './cardStatus'
 import { SWITCH_INTRO } from './switchCopy'
 
 const numberFormat = new Intl.NumberFormat('en-US')
@@ -20,6 +21,7 @@ export function SwitchSummary({
   if (left > 0) {
     parts.push(`${numberFormat.format(left)} not switched`)
   }
+  const cardSummary = cardStatusSummaryText(report.card_statuses ?? [])
 
   return (
     <Box flexDirection="column" rowGap="xs">
@@ -27,6 +29,15 @@ export function SwitchSummary({
       <Text variant="caption" tabularNums>
         {parts.join('  ·  ')}
       </Text>
+      {cardSummary && (
+        <Box paddingTop="s">
+          <Alert
+            variant="warning"
+            title="Some copied cards can't be charged"
+            description={cardSummary}
+          />
+        </Box>
+      )}
     </Box>
   )
 }

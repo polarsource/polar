@@ -33,6 +33,7 @@ from polar.models import (
 )
 from polar.models.discount import DiscountDuration
 from polar.models.merchant_migration_record import (
+    MerchantMigrationCardStatus,
     MerchantMigrationCutoverStatus,
     MerchantMigrationRecordStatus,
 )
@@ -53,7 +54,7 @@ from .canonical import (
     deserialize,
     discount_started_at_for,
 )
-from .cards import CARD_TYPE, AmbiguousCopiedCard, link_payment_method
+from .cards import CARD_TYPE, AmbiguousCopiedCard, card_status, link_payment_method
 from .importer import (
     _CUSTOMER_ALREADY_SUBSCRIBED,
     create_imported_subscription,
@@ -129,6 +130,11 @@ _NOT_PAUSED = "It isn't paused in Polar any more, so it was left alone."
 _CARD_EXPIRED = (
     "The copied card has expired, so the first Polar renewal will fail and go to "
     "dunning. The customer needs to enter a new one."
+)
+_INDIA_CARD = (
+    "The copied card is India-issued. India requires a mandate for recurring "
+    "charges, and it didn't move with the card, so the first Polar renewal will "
+    "fail and go to dunning. The customer needs to add another payment method."
 )
 _UNREADABLE = (
     "We can't read what was imported for this subscription, so we can't tell "
@@ -930,10 +936,13 @@ class SubscriptionCutover:
             ):
                 return _NOT_COPYABLE
             return _NO_PAYMENT_METHOD
-        expires_at = payment_method.expires_at
-        if expires_at is None or expires_at > utc_now():
-            return None
-        return _CARD_EXPIRED
+        match card_status(payment_method):
+            case MerchantMigrationCardStatus.india_card:
+                return _INDIA_CARD
+            case MerchantMigrationCardStatus.expired_card:
+                return _CARD_EXPIRED
+            case _:
+                return None
 
     def _period(
         self, source: CanonicalSubscription, subscription: Subscription

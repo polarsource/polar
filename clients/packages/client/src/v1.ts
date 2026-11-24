@@ -28420,6 +28420,28 @@ export interface components {
       /** @description Background work for the current step, if any. None until a run starts. */
       operation: components['schemas']['MerchantMigrationOperation'] | null
     }
+    /**
+     * MerchantMigrationCardStatus
+     * @description What the card copy left on Polar for an imported subscription to charge.
+     * @enum {string}
+     */
+    MerchantMigrationCardStatus:
+      | 'ready'
+      | 'india_card'
+      | 'expired_card'
+      | 'non_card_only'
+      | 'nothing_copied'
+      | 'ambiguous'
+    /** MerchantMigrationCardStatusCount */
+    MerchantMigrationCardStatusCount: {
+      /** @description What the card copy left on Polar to charge. */
+      status: components['schemas']['MerchantMigrationCardStatus']
+      /**
+       * Count
+       * @description How many subscriptions it applies to.
+       */
+      count: number
+    }
     MerchantMigrationCreate:
       | components['schemas']['MerchantMigrationStripeCreate']
       | components['schemas']['MerchantMigrationLemonSqueezyCreate']
@@ -28468,6 +28490,11 @@ export interface components {
        * @description Hit an unexpected error.
        */
       failed: number
+      /**
+       * Card Statuses
+       * @description How the subscriptions not switched yet split by what the card verification found. Statuses with no subscriptions are left out.
+       */
+      card_statuses: components['schemas']['MerchantMigrationCardStatusCount'][]
     }
     /** MerchantMigrationCutoverRequest */
     MerchantMigrationCutoverRequest: {
@@ -28726,6 +28753,8 @@ export interface components {
        * @description Why the switch skipped or failed this subscription.
        */
       cutover_error: string | null
+      /** @description What the card copy left on Polar for this subscription to charge. None until the card verification has looked at it, and for non-subscription rows. */
+      card_status: components['schemas']['MerchantMigrationCardStatus'] | null
       /**
        * Renews At
        * @description When the subscription next renews on the source, as staged at import. Null for non-subscription rows or when the source reported none.
@@ -75647,6 +75676,16 @@ export const memberRoleValues: ReadonlyArray<
 export const memberSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MemberSortProperty']
 > = ['created_at', '-created_at']
+export const merchantMigrationCardStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MerchantMigrationCardStatus']
+> = [
+  'ready',
+  'india_card',
+  'expired_card',
+  'non_card_only',
+  'nothing_copied',
+  'ambiguous',
+]
 export const merchantMigrationCutoverStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationCutoverStatus']
 > = ['moved', 'skipped', 'failed']

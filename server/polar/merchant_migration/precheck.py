@@ -1094,6 +1094,7 @@ def _item(
         conflicting_customer_id=reason.polar_customer_id if reason else None,
         cutover_status=None,
         cutover_error=None,
+        card_status=None,
         renews_at=renews_at,
         automatic_tax=automatic_tax,
         tax_behavior=tax_behavior,

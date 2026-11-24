@@ -42,9 +42,7 @@ from polar.merchant_migration.canonical import (
     deserialize,
     serialize,
 )
-from polar.merchant_migration.cards import (
-    AmbiguousCopiedCard,
-)
+from polar.merchant_migration.cards import AmbiguousCopiedCard, CopiedCard
 from polar.merchant_migration.cutover import CutoverOutcome, SubscriptionCutover
 from polar.merchant_migration.errors import MerchantMigrationError
 from polar.merchant_migration.importer import CatalogImporter
@@ -110,6 +108,7 @@ from polar.models.merchant_migration_operation import (
     MerchantMigrationOperationStatus,
 )
 from polar.models.merchant_migration_record import (
+    MerchantMigrationCardStatus,
     MerchantMigrationCutoverStatus,
     MerchantMigrationRecordStatus,
     MerchantMigrationRecordType,
@@ -4287,8 +4286,12 @@ class TestRunCardVerification:
             save_fixture, customer, processor_id="pm_pending"
         )
         link = mocker.patch(
-            "polar.merchant_migration.service.link_payment_method",
-            new=mocker.AsyncMock(return_value=payment_method),
+            "polar.merchant_migration.service.resolve_copied_card",
+            new=mocker.AsyncMock(
+                return_value=CopiedCard(
+                    payment_method, MerchantMigrationCardStatus.ready
+                )
+            ),
         )
 
         await service.run_card_verification(session, migration.id)
@@ -4338,15 +4341,25 @@ class TestRunCardVerification:
             save_fixture, covered_customer, processor_id="pm_copied"
         )
         mocker.patch(
-            "polar.merchant_migration.service.link_payment_method",
+            "polar.merchant_migration.service.resolve_copied_card",
             new=mocker.AsyncMock(
                 side_effect=lambda _session, customer, **_kwargs: (
-                    payment_method if customer.id == covered_customer.id else None
+                    CopiedCard(payment_method, MerchantMigrationCardStatus.ready)
+                    if customer.id == covered_customer.id
+                    else CopiedCard(None, MerchantMigrationCardStatus.nothing_copied)
                 )
             ),
         )
 
         await service.run_card_verification(session, migration.id)
+
+        records = await MerchantMigrationRecordRepository.from_session(
+            session
+        ).list_imported_subscriptions(migration.id, offset=0, limit=10)
+        assert {record.source_id: record.card_status for record in records} == {
+            "sub_covered": MerchantMigrationCardStatus.ready,
+            "sub_uncovered": MerchantMigrationCardStatus.nothing_copied,
+        }
 
         checklist = service._checklist(migration)
         assert checklist.current_step_key == STEP_CUTOVER
@@ -4398,11 +4411,17 @@ class TestRunCardVerification:
 
         async def _link(
             _session: AsyncSession, customer: Customer, **_kwargs: object
-        ) -> PaymentMethod | None:
-            return landed.get(customer.id)
+        ) -> CopiedCard:
+            payment_method = landed.get(customer.id)
+            return CopiedCard(
+                payment_method,
+                MerchantMigrationCardStatus.ready
+                if payment_method is not None
+                else MerchantMigrationCardStatus.nothing_copied,
+            )
 
         link = mocker.patch(
-            "polar.merchant_migration.service.link_payment_method",
+            "polar.merchant_migration.service.resolve_copied_card",
             new=mocker.AsyncMock(side_effect=_link),
         )
 
@@ -4462,8 +4481,10 @@ class TestRunCardVerification:
             save_fixture, customer, processor_id="pm_charged"
         )
         link = mocker.patch(
-            "polar.merchant_migration.service.link_payment_method",
-            new=mocker.AsyncMock(return_value=linked),
+            "polar.merchant_migration.service.resolve_copied_card",
+            new=mocker.AsyncMock(
+                return_value=CopiedCard(linked, MerchantMigrationCardStatus.ready)
+            ),
         )
 
         await service.run_card_verification(session, migration.id)
@@ -4518,18 +4539,25 @@ class TestRunCardVerification:
 
         async def _link(
             _session: AsyncSession, customer: Customer, **_kwargs: object
-        ) -> PaymentMethod | None:
+        ) -> CopiedCard:
             if customer.id == ambiguous_customer.id:
                 raise AmbiguousCopiedCard(customer.id, 2)
-            return linked
+            return CopiedCard(linked, MerchantMigrationCardStatus.ready)
 
         mocker.patch(
-            "polar.merchant_migration.service.link_payment_method",
+            "polar.merchant_migration.service.resolve_copied_card",
             new=mocker.AsyncMock(side_effect=_link),
         )
 
         await service.run_card_verification(session, migration.id)
 
+        records = await MerchantMigrationRecordRepository.from_session(
+            session
+        ).list_imported_subscriptions(migration.id, offset=0, limit=10)
+        assert {record.source_id: record.card_status for record in records} == {
+            "sub_ambiguous": MerchantMigrationCardStatus.ambiguous,
+            "sub_clear": MerchantMigrationCardStatus.ready,
+        }
         checklist = service._checklist(migration)
         assert checklist.current_step_key == STEP_CUTOVER
 
@@ -4574,8 +4602,10 @@ class TestRunCardVerification:
             save_fixture, customer, processor_id="pm_shared"
         )
         link = mocker.patch(
-            "polar.merchant_migration.service.link_payment_method",
-            new=mocker.AsyncMock(return_value=linked),
+            "polar.merchant_migration.service.resolve_copied_card",
+            new=mocker.AsyncMock(
+                return_value=CopiedCard(linked, MerchantMigrationCardStatus.ready)
+            ),
         )
 
         await service.run_card_verification(session, migration.id)
@@ -5566,6 +5596,52 @@ class TestGetCutoverReport:
         assert report.started is False
 
     @pytest.mark.auth
+    async def test_counts_card_statuses_of_what_has_not_switched(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        for source_id, card_status, cutover_status in [
+            ("sub_ready", MerchantMigrationCardStatus.ready, None),
+            ("sub_india", MerchantMigrationCardStatus.india_card, None),
+            (
+                "sub_moved",
+                MerchantMigrationCardStatus.india_card,
+                MerchantMigrationCutoverStatus.moved,
+            ),
+            ("sub_unverified", None, None),
+        ]:
+            record = await _imported_subscription(
+                save_fixture,
+                migration,
+                organization,
+                product,
+                source_id=source_id,
+                email=f"{source_id}@example.com",
+            )
+            await record_repository.update(
+                record,
+                update_dict={
+                    "card_status": card_status,
+                    "cutover_status": cutover_status,
+                },
+                flush=True,
+            )
+
+        report = await service.get_cutover_report(session, auth_subject, migration.id)
+
+        assert {entry.status: entry.count for entry in report.card_statuses} == {
+            MerchantMigrationCardStatus.ready: 1,
+            MerchantMigrationCardStatus.india_card: 1,
+        }
+
+    @pytest.mark.auth
     async def test_counts_all_imports_even_with_a_selection(
         self,
         session: AsyncSession,
@@ -5687,6 +5763,48 @@ class TestListRecordsCutover:
         assert item.cutover_error == "Renews too soon."
         assert item.has_payment_method is True
         assert item.renews_at is not None
+
+    @pytest.mark.auth
+    async def test_copied_india_card_is_not_a_payment_method(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        record = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_1",
+            email="a@example.com",
+        )
+        customer = await CustomerRepository.from_session(
+            session
+        ).get_by_email_and_organization("a@example.com", organization.id)
+        assert customer is not None
+        await create_payment_method(save_fixture, customer, processor_id="pm_1")
+        await MerchantMigrationRecordRepository.from_session(session).update(
+            record,
+            update_dict={"card_status": MerchantMigrationCardStatus.india_card},
+            flush=True,
+        )
+
+        items, _ = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.subscriptions,
+            status=None,
+            pagination=PaginationParams(page=1, limit=50),
+        )
+
+        assert items[0].card_status == MerchantMigrationCardStatus.india_card
+        assert items[0].has_payment_method is False
 
     @pytest.mark.auth
     async def test_filters_on_cutover_status(

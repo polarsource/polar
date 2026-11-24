@@ -18,6 +18,7 @@ from polar.models.merchant_migration_operation import (
     MerchantMigrationOperationStatus,
 )
 from polar.models.merchant_migration_record import (
+    MerchantMigrationCardStatus,
     MerchantMigrationCutoverStatus,
     MerchantMigrationRecordStatus,
 )
@@ -265,6 +266,13 @@ class MerchantMigrationRecordItem(Schema):
     cutover_error: str | None = Field(
         description="Why the switch skipped or failed this subscription.",
     )
+    card_status: MerchantMigrationCardStatus | None = Field(
+        description=(
+            "What the card copy left on Polar for this subscription to charge. "
+            "None until the card verification has looked at it, and for "
+            "non-subscription rows."
+        ),
+    )
     renews_at: datetime | None = Field(
         description=(
             "When the subscription next renews on the source, as staged at import. "
@@ -443,6 +451,13 @@ class MerchantMigrationCutoverRequest(Schema):
     )
 
 
+class MerchantMigrationCardStatusCount(Schema):
+    status: MerchantMigrationCardStatus = Field(
+        description="What the card copy left on Polar to charge."
+    )
+    count: int = Field(description="How many subscriptions it applies to.")
+
+
 class MerchantMigrationCutoverReport(Schema):
     """Where the switch has got to, for the imported subscriptions."""
 
@@ -456,6 +471,12 @@ class MerchantMigrationCutoverReport(Schema):
     moved: int = Field(description="Now billed by Polar.")
     skipped: int = Field(description="Left on the source.")
     failed: int = Field(description="Hit an unexpected error.")
+    card_statuses: list[MerchantMigrationCardStatusCount] = Field(
+        description=(
+            "How the subscriptions not switched yet split by what the card "
+            "verification found. Statuses with no subscriptions are left out."
+        )
+    )
 
 
 class PanTransferStepComplete(Schema):

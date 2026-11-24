@@ -44,6 +44,7 @@ from polar.models.merchant_migration_operation import (
     MerchantMigrationOperationSelection,
 )
 from polar.models.merchant_migration_record import (
+    MerchantMigrationCardStatus,
     MerchantMigrationCutoverStatus,
     MerchantMigrationRecordStatus,
     MerchantMigrationRecordType,
@@ -819,6 +820,27 @@ class MerchantMigrationRecordRepository(
         )
         result = await self.session.execute(statement)
         return {status: count for status, count in result.all()}
+
+    async def count_pending_card_statuses(
+        self, migration_id: UUID
+    ) -> dict[MerchantMigrationCardStatus, int]:
+        """What the card verification found for the imported subscriptions the
+        cutover hasn't settled yet."""
+        statement = (
+            self._switchable_subscriptions_statement(migration_id)
+            .where(
+                MerchantMigrationRecord.cutover_status.is_(None),
+                MerchantMigrationRecord.card_status.is_not(None),
+            )
+            .with_only_columns(
+                MerchantMigrationRecord.card_status,
+                func.count(MerchantMigrationRecord.id),
+            )
+            .order_by(None)
+            .group_by(MerchantMigrationRecord.card_status)
+        )
+        result = await self.session.execute(statement)
+        return {status: count for status, count in result.all() if status is not None}
 
     async def payment_method_coverage(
         self, migration_id: UUID, *, exact: bool = False

@@ -1,0 +1,19 @@
+server/polar/backoffice/components/_confirmation_dialog.py
+  s_d4a843b33596ce::t_c94dfbbc9df8d7 83
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "24635bfc936aedc005638d0ed488352d2ed4bd1f",
+  "prompts": {},
+  "sessions": {
+    "s_d4a843b33596ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "12adddd7-b520-4f67-a19e-0f92eb2e092a",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

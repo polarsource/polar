@@ -130,7 +130,7 @@ const DownloadInvoice = ({
   const form = useForm<schemas['OrderUpdate'] | schemas['CustomerOrderUpdate']>(
     {
       defaultValues: {
-        ...order,
+        billing_name: order.billing_name,
         billing_address: (order.billing_address ?? undefined) as
           | schemas['AddressInput']
           | undefined,

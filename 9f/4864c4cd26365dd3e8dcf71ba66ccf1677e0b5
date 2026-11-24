@@ -1,0 +1,55 @@
+server/polar/backoffice/merchant_migrations/status.py
+  s_d4a843b33596ce::t_90e5a3667f23b4 41,324
+server/polar/benefit/grant/service.py
+  s_d4a843b33596ce::t_2c505cc36ca486 159-174,184
+server/polar/benefit/repository.py
+  s_d4a843b33596ce::t_82782dd8393c01 77-90
+server/polar/merchant_migration/adapters/lemon_squeezy.py
+  s_d4a843b33596ce::t_a703addf21becd 11,16,25-26,32,38,57-63,120,449,458,511-661,718,777,859-882
+server/polar/merchant_migration/benefits.py
+  s_d4a843b33596ce::t_cb2bcbd1046613 1-320
+server/polar/merchant_migration/canonical.py
+  s_d4a843b33596ce::t_3cf816a52dcaf6 281-283,343-383,711
+server/polar/merchant_migration/cutover.py
+  s_d4a843b33596ce::t_e515087ec79c21 19-20,25,27,29,39,677,690-727
+server/polar/merchant_migration/endpoints.py
+  s_d4a843b33596ce::t_b26ac120046c35 36-37,55-56,280-339
+server/polar/merchant_migration/repository.py
+  s_d4a843b33596ce::t_1c0b4aef17da4f 1,235-258
+server/polar/merchant_migration/schemas.py
+  s_d4a843b33596ce::t_afd74c4af76b34 495-549
+server/polar/merchant_migration/service.py
+  s_d4a843b33596ce::t_8439cdef713695 51,56,102-106,135-136,285-300,998-1176,1223-1226
+server/polar/merchant_migration/tasks.py
+  s_d4a843b33596ce::t_82cee2c1cd77bb 52-67
+server/polar/models/merchant_migration.py
+  s_d4a843b33596ce::t_5e6c11d49516a5 48-49
+server/polar/models/merchant_migration_operation.py
+  s_d4a843b33596ce::t_98a605112eb127 40
+server/polar/product/repository.py
+  s_d4a843b33596ce::t_a9a6ccda297c44 1,162-172
+server/tests/merchant_migration/test_lemon_squeezy_adapter.py
+  s_d4a843b33596ce::t_84ad8b894161b2 86,189-206,274,565-718
+server/tests/backoffice/merchant_migrations/test_endpoints.py
+  s_d4a843b33596ce::t_94378c9ebd478a 214
+server/tests/merchant_migration/test_cutover.py
+  s_d4a843b33596ce::t_d6da074e44517b 2,13,42,57,63,363-402
+server/tests/merchant_migration/test_service.py
+  s_d4a843b33596ce::t_7488489a04a54b 17,28-31,34,38,44,70,79,97,110,134,5750-5934
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9f4864c4cd26365dd3e8dcf71ba66ccf1677e0b5",
+  "prompts": {},
+  "sessions": {
+    "s_d4a843b33596ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "12adddd7-b520-4f67-a19e-0f92eb2e092a",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

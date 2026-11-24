@@ -106,7 +106,6 @@ from polar.models import (
     User,
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
-from polar.models.discount import DiscountDuration, DiscountPercentage
 from polar.models.order import OrderBillingReasonInternal
 from polar.models.product_price import (
     ProductPriceFixed,
@@ -1521,7 +1520,7 @@ class SubscriptionService:
         # A change the merchant scheduled for the trial end is applied as is.
         if subscription.pending_update is not None:
             return False
-        if not self._charges_after_trial(subscription):
+        if not subscription.has_future_charges:
             return False
         return not self._has_payment_method(
             subscription
@@ -1560,30 +1559,6 @@ class SubscriptionService:
             session, subscription, self, notify_customer=False
         ) as ctx:
             return await self.revoke(session, ctx, subscription)
-
-    def _charges_after_trial(self, subscription: Subscription) -> bool:
-        # Same rule checkout uses to decide whether to ask for a card.
-        has_metered_prices = any(
-            is_metered_price(price) for price in subscription.prices
-        )
-        discount = subscription.discount
-        renews_at = subscription.current_period_end
-        if discount is not None and discount.is_repetition_expired(
-            subscription.discount_applied_at or renews_at, renews_at
-        ):
-            discount = None
-        amount = (
-            subscription.amount
-            if discount is not None
-            else sum(spp.amount for spp in subscription.subscription_product_prices)
-        )
-        if amount == 0 and not has_metered_prices:
-            return False
-        return not (
-            isinstance(discount, DiscountPercentage)
-            and discount.duration == DiscountDuration.forever
-            and discount.basis_points == 10_000
-        )
 
     def _clear_expired_discount(
         self,
@@ -4935,7 +4910,7 @@ class SubscriptionService:
     ) -> None:
         if subscription.trial_end is None:
             return
-        if not self._charges_after_trial(subscription):
+        if not subscription.has_future_charges:
             return
         payment_method_required = not self._has_payment_method(subscription)
         billing_address_required = not self._has_complete_billing_address(subscription)

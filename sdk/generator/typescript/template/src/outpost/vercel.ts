@@ -1,9 +1,9 @@
 /**
- * Outpost on Vercel: each customer's requests land on one instance, so its state stays warm there
- * and the merchant's Redis sees one set of connections per shard, not one per instance.
+ * Outpost on Vercel: each request lands on one of a fixed set of shards, so the merchant's Redis
+ * sees one set of connections per shard, not one per instance. Outpost's state lives in Redis, so
+ * any shard serves any customer: each request draws its own, and a busy customer spreads over all
+ * of them.
  */
-
-import { digestOf, jump } from "./jump-hash";
 
 const AFFINITY_HEADER = "x-vercel-affinity-id";
 const TRUSTED_TOKEN_HEADER = "x-vercel-trusted-oidc-idp-token";
@@ -16,7 +16,7 @@ const HANDOFF_MS = 60_000;
 // The shard's next instance starts this long before the shard moves to it.
 const WARM_MS = 30_000;
 // Temporary, while Vercel answers 503 to a fresh pinned instance that takes a whole shard at once:
-// each customer moves at its own moment within this window around its shard's move. The last
+// each request moves at its own moment within this window around its shard's move. The last
 // leave 15 s before Vercel retires the instance, which started with its warm-up.
 const SPREAD_MS = 30_000;
 
@@ -27,14 +27,8 @@ export interface VercelAffinityOptions {
    * a minute before, one shard at a time, and its next instance gets one request first.
    */
   maxDurationSeconds?: number;
-  /** How many shards, so how many pinned instances, the customers spread over. Defaults to 128. */
+  /** How many shards, so how many pinned instances, the requests spread over. Defaults to 128. */
   shards?: number;
-}
-
-/** The customer a request is for, by Polar's id or by yours; without one it is not pinned. */
-export interface VercelAffinityCustomer {
-  customerId?: string | null;
-  externalCustomerId?: string | null;
 }
 
 /** The pinned route's request: its URL, and the headers the middleware passed on. */
@@ -71,31 +65,24 @@ const oidcToken = async (headers: Headers): Promise<string | null> => {
 };
 
 /**
- * Pins each customer to one of `shards` shards: the middleware passes on the headers it returns. A
- * request without a customer, or outside Vercel, goes on unpinned. The route answers a warm-up
- * before anything else, then warms the shard's next instance:
+ * Pins each request to one of `shards` shards, at random: the middleware passes on the headers it
+ * returns, for the routes that read Outpost. A request outside Vercel goes on unpinned. The route
+ * answers a warm-up before anything else, then warms the shard's next instance:
  * `if (isVercelAffinityWarmup(request))`, then `warmNextVercelInstance(request, after)`.
  */
 export const vercelAffinity =
   ({ maxDurationSeconds, shards = DEFAULT_SHARDS }: VercelAffinityOptions = {}) =>
-  async (
-    request: { headers: Headers },
-    { customerId, externalCustomerId }: VercelAffinityCustomer,
-  ): Promise<Headers> => {
+  async (request: { headers: Headers }): Promise<Headers> => {
     const headers = new Headers(request.headers);
     // A warm-up already names the shard's next instance: re-pinning it would send it to the current one.
     if (isVercelAffinityWarmup({ headers })) return headers;
     for (const name of [AFFINITY_HEADER, TRUSTED_TOKEN_HEADER, NEXT_HEADER]) headers.delete(name);
-    const customer = externalCustomerId ?? customerId;
-    if (!customer) return headers;
     const token = await oidcToken(headers);
     if (!token) return headers;
     const now = Date.now();
-    const digest = await digestOf(customer);
-    const shard = jump(digest.getBigUint64(0), shards);
+    const shard = Math.floor(Math.random() * shards);
     const current = affinityId(shard, shards, maxDurationSeconds, now);
-    // Where in the spread the customer moves: other bits of its digest than the ones of its shard.
-    const skew = (Number(digest.getBigUint64(8) >> 11n) / 2 ** 53 - 0.5) * SPREAD_MS;
+    const skew = (Math.random() - 0.5) * SPREAD_MS;
     headers.set(AFFINITY_HEADER, affinityId(shard, shards, maxDurationSeconds, now - skew));
     headers.set(TRUSTED_TOKEN_HEADER, token);
     const next = affinityId(shard, shards, maxDurationSeconds, now + WARM_MS);

@@ -93,18 +93,32 @@ class OrderRepository(
 ):
     model = Order
 
-    async def get_subscription_reactivation_order(
-        self, subscription_id: UUID, *, statuses: Sequence[OrderStatus]
+    async def get_draft_for_subscription(
+        self, subscription_id: UUID, *, options: Options = ()
     ) -> Order | None:
-        statement = self.get_base_statement().where(
-            Order.subscription_id == subscription_id,
-            Order.billing_reason
-            == OrderBillingReasonInternal.subscription_cycle_after_trial,
-            Order.invoice_number.is_(None),
-            Order.checkout_id.is_(None),
-            Order.status.in_(statuses),
+        statement = (
+            self.get_base_statement()
+            .where(
+                Order.subscription_id == subscription_id,
+                Order.status == OrderStatus.draft,
+            )
+            .order_by(Order.created_at.desc())
+            .limit(1)
+            .options(*options)
         )
-        return await self.get_one_or_none(statement.options(*self.get_eager_options()))
+        return await self.get_one_or_none(statement)
+
+    async def has_locked_order_for_subscription(self, subscription_id: UUID) -> bool:
+        statement = select(
+            self.get_base_statement()
+            .where(
+                Order.subscription_id == subscription_id,
+                Order.payment_lock_acquired_at.is_not(None),
+                Order.status.in_((OrderStatus.draft, OrderStatus.pending)),
+            )
+            .exists()
+        )
+        return bool(await self.session.scalar(statement))
 
     async def get_revenue_by_customer(
         self,
@@ -496,7 +510,11 @@ class OrderRepository(
         """
         statement = (
             update(Order)
-            .where(Order.id == order_id, Order.status == OrderStatus.draft)
+            .where(
+                Order.id == order_id,
+                Order.status == OrderStatus.draft,
+                Order.payment_lock_acquired_at.is_(None),
+            )
             .values(status=OrderStatus.pending)
         )
         result = cast(CursorResult[Order], await self.session.execute(statement))

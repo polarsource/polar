@@ -20,7 +20,7 @@ from polar.models.subscription import SubscriptionStatus
 from polar.order.tasks import order_paid
 from polar.postgres import AsyncSession
 from polar.version import V2027_01
-from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT
+from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT, MEMBER_AUTH_SUBJECT
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_benefit,
@@ -36,6 +36,7 @@ from tests.fixtures.random_objects import (
 def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
     mocker.patch("polar.order.service.stripe_service", new=mock)
+    mocker.patch("polar.customer_portal.service.order.stripe_service", new=mock)
     return mock
 
 
@@ -109,7 +110,7 @@ class TestOrderRecovery:
             await client.patch(
                 f"{url}/pay", json={"confirmation_token_id": "ctoken_recovery"}
             )
-        ).status_code == 202
+        ).status_code == 409
         stripe_service_mock.create_payment_intent.assert_awaited_once()
         stripe_service_mock.get_payment_intent.assert_not_awaited()
 
@@ -230,7 +231,7 @@ class TestOrderRecovery:
             },
         )
         assert response.status_code == 202, response.text
-        assert response.json()["status"] == OrderStatus.pending
+        assert response.json()["status"] == OrderStatus.draft
 
         enqueue_job = mocker.patch("polar.integrations.stripe.payment.enqueue_job")
         await handle_success(session, intent)
@@ -289,6 +290,48 @@ class TestOrderRecovery:
             },
         )
         assert response.status_code == 422
+
+    async def test_can_pay_a_draft_without_a_subscription(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        customer.stripe_customer_id = "cus_draft"
+        product.is_tax_applicable = False
+        await save_fixture(customer)
+        await save_fixture(product)
+        order = await create_order(
+            save_fixture, product=product, customer=customer, status=OrderStatus.draft
+        )
+        stripe_service_mock.create_payment_intent.return_value = (
+            stripe_lib.PaymentIntent.construct_from(
+                {"id": "pi_draft", "status": "succeeded"}, None
+            )
+        )
+        response = await client.patch(
+            f"/v1/customer-portal/orders/{order.id}/pay",
+            json={"confirmation_token_id": "ctoken_draft"},
+        )
+        assert response.status_code == 202, response.text
+        assert response.json()["status"] == OrderStatus.draft
+        assert response.json()["payment_processor_metadata"]["intent_id"] == "pi_draft"
+
+    @pytest.mark.auth(MEMBER_AUTH_SUBJECT)
+    async def test_non_billing_member_cannot_create_or_pay(
+        self, client: AsyncClient
+    ) -> None:
+        response = await client.post(
+            "/v1/customer-portal/orders/", json={"subscription_id": str(uuid.uuid4())}
+        )
+        assert response.status_code == 403
+        response = await client.patch(
+            f"/v1/customer-portal/orders/{uuid.uuid4()}/pay",
+            json={"confirmation_token_id": "ctoken_test"},
+        )
+        assert response.status_code == 403
 
 
 @pytest.mark.anyio

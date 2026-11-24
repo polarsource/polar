@@ -19,7 +19,6 @@ from polar.order.service import (
     PaymentAlreadyInProgress,
     PaymentFailed,
 )
-from polar.order.service import order as order_service
 from polar.payment.repository import PaymentRepository
 from polar.postgres import get_db_session
 from polar.routing import APIRouter
@@ -43,6 +42,7 @@ from ..service.order import (
     CustomerOrderSortProperty,
     ManualRetryLimitExceeded,
     OrderNotEligibleForRetry,
+    OrderNotPayable,
 )
 from ..service.order import customer_order as customer_order_service
 
@@ -197,12 +197,13 @@ async def update_v2027_01(
     auth_subject: auth.CustomerPortalUnionBillingWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> Order:
-    """Update billing details. Tax and discount changes are available on subscription reactivation drafts."""
+    """Update billing details. Tax and discount changes are available on draft orders."""
     return await update(id, order_update, auth_subject, session)
 
 
 @router.patch(
     "/{id}/pay",
+    status_code=202,
     summary="Pay Order",
     response_model=CustomerOrder,
     openapi_extra=destructive(),
@@ -217,7 +218,7 @@ async def update_v2027_01(
         409: {
             "model": CustomerOrderConflict.schema()
             | PaymentAlreadyInProgress.schema()
-            | NotTrialEndedSubscription.schema()
+            | OrderNotPayable.schema()
         },
         429: {"model": ManualRetryLimitExceeded.schema()},
     },
@@ -227,19 +228,10 @@ async def pay(
     id: OrderID,
     order_pay: CustomerOrderPay,
     auth_subject: auth.CustomerPortalUnionBillingWrite,
-    response: Response,
     session: AsyncSession = Depends(get_db_session),
 ) -> Order:
-    """Pay an outstanding subscription order or start the paid period of an ended trial."""
-    order = await customer_order_service.get_by_id(
-        session, auth_subject, id, for_update=True
-    )
-    if order is None:
-        raise ResourceNotFound()
-    order = await order_service.pay_customer_order(session, order, order_pay)
-    if not order.paid:
-        response.status_code = 202
-    return order
+    """Submit payment for a draft or pending order."""
+    return await customer_order_service.pay(session, auth_subject, id, order_pay)
 
 
 @router.post(

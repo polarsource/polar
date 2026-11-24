@@ -4367,7 +4367,7 @@
           "public"
         ],
         "summary": "Update Order",
-        "description": "Update billing details. Tax and discount changes are available on subscription reactivation drafts.",
+        "description": "Update billing details. Tax and discount changes are available on draft orders.",
         "operationId": "customer_portal:orders:update",
         "security": [
           {
@@ -4480,7 +4480,7 @@
           "public"
         ],
         "summary": "Pay Order",
-        "description": "Pay an outstanding subscription order or start the paid period of an ended trial.",
+        "description": "Submit payment for a draft or pending order.",
         "operationId": "customer_portal:orders:pay",
         "security": [
           {
@@ -4519,16 +4519,6 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CustomerOrder"
-                }
-              }
-            }
-          },
           "202": {
             "description": "Payment was submitted for settlement and may require authentication.",
             "content": {
@@ -4589,7 +4579,7 @@
                       "$ref": "#/components/schemas/PaymentAlreadyInProgress"
                     },
                     {
-                      "$ref": "#/components/schemas/NotTrialEndedSubscription"
+                      "$ref": "#/components/schemas/OrderNotPayable"
                     }
                   ],
                   "title": "Response 409 Customer Portal:Orders:Pay"
@@ -67436,6 +67426,28 @@
           "detail"
         ],
         "title": "OrderNotEligibleForInvoice"
+      },
+      "OrderNotPayable": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "OrderNotPayable",
+            "title": "Error",
+            "examples": [
+              "OrderNotPayable"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "OrderNotPayable"
       },
       "OrderPaidEvent": {
         "properties": {

@@ -12,7 +12,6 @@ import structlog
 from pydantic import MISSING
 from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload
-from stripe.params._customer_create_params import CustomerCreateParams
 
 from polar.account.repository import AccountRepository
 from polar.auth.models import AuthSubject
@@ -26,13 +25,10 @@ from polar.custom_field.data import validate_custom_field_data
 from polar.customer.repository import CustomerRepository
 from polar.customer.service import customer as customer_service
 from polar.customer_portal.schemas.order import (
-    CustomerOrderPay,
     CustomerOrderPaymentConfirmation,
-    CustomerOrderPayWithPaymentMethod,
     CustomerOrderUpdate,
 )
 from polar.discount.repository import DiscountRedemptionRepository
-from polar.discount.service import DiscountNotRedeemableError
 from polar.discount.service import discount as discount_service
 from polar.email.billing_migration import previous_billing_provider_for_notice
 from polar.email.schemas import EmailAdapter, EmailTemplate
@@ -53,7 +49,6 @@ from polar.event.system import (
 )
 from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import (
-    PaymentNotReady,
     PolarError,
     PolarRequestValidationError,
     ValidationError,
@@ -91,7 +86,7 @@ from polar.models import (
     User,
     WalletTransaction,
 )
-from polar.models.discount import DiscountDuration, DiscountPercentage, DiscountType
+from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.payment import PaymentTrigger
 from polar.models.product import ProductBillingType
@@ -115,7 +110,6 @@ from polar.product.guard import (
     UnitPrice,
     is_custom_price,
     is_fixed_price,
-    is_metered_price,
     is_static_price,
     is_unit_price,
 )
@@ -128,7 +122,6 @@ from polar.product.unit_price import validate_unit_limits
 from polar.receipt.service import receipt as receipt_service
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import (
-    NotTrialEndedSubscription,
     SubscriptionUpdateContext,
 )
 from polar.subscription.service import subscription as subscription_service
@@ -516,17 +509,10 @@ class OrderService:
 
         await session.refresh(
             order,
-            {
-                "billing_address",
-                "payment_processor_metadata",
-                "payment_lock_acquired_at",
-            },
+            {"billing_address", "payment_lock_acquired_at"},
             with_for_update=True,
         )
-        if "intent_id" in order.payment_processor_metadata or (
-            order.is_subscription_reactivation_order
-            and order.payment_lock_acquired_at is not None
-        ):
+        if order.payment_lock_acquired_at is not None:
             raise PaymentAlreadyInProgress(order)
 
         errors: list[ValidationError] = []
@@ -562,16 +548,7 @@ class OrderService:
     async def create_subscription_reactivation_order(
         self, session: AsyncSession, subscription: Subscription
     ) -> Order:
-        if subscription.status != SubscriptionStatus.trial_ended:
-            raise NotTrialEndedSubscription(subscription)
-
         repository = OrderRepository.from_session(session)
-        existing = await repository.get_subscription_reactivation_order(
-            subscription.id, statuses=(OrderStatus.draft, OrderStatus.pending)
-        )
-        if existing is not None:
-            return existing
-
         customer = subscription.customer
         discount = subscription.discount
         now = utc_now()
@@ -616,22 +593,36 @@ class OrderService:
             user_metadata=subscription.user_metadata,
             custom_field_data=subscription.custom_field_data,
         )
-        await self._price_subscription_reactivation_order(order, subscription)
-        return await repository.create(order, flush=True)
+        await self.price_draft_order(order)
+        order = await repository.create(order, flush=True)
+        await self._on_order_created(session, order)
+        return order
 
-    async def _price_subscription_reactivation_order(
-        self, order: Order, subscription: Subscription, *, strict: bool = False
-    ) -> None:
-        product = subscription.product
+    async def price_draft_order(self, order: Order, *, strict: bool = False) -> None:
+        product = order.product
+        if product is None:
+            raise CustomerOrderConflict(
+                "An order needs a product to calculate its price."
+            )
+        subscription = order.subscription
         try:
             amounts = await compute_order_amounts(
-                subscription,
                 order.items,
                 reference=str(order.id),
+                currency=order.currency,
                 discount=order.discount,
                 product=product,
                 billing_address=order.billing_address,
                 tax_id=order.tax_id,
+                tax_behavior_option=(
+                    subscription.tax_behavior.to_option()
+                    if subscription is not None
+                    and subscription.tax_behavior is not None
+                    else order.organization.default_tax_behavior
+                ),
+                tax_exempted=subscription.tax_exempted
+                if subscription is not None
+                else False,
                 allow_silent_failure=not strict,
             )
         except TaxCalculationLogicalError as e:
@@ -664,19 +655,13 @@ class OrderService:
     async def update_customer_order(
         self, session: AsyncSession, order: Order, update: CustomerOrderUpdate
     ) -> Order:
-        if "intent_id" in order.payment_processor_metadata or (
-            order.is_subscription_reactivation_order
-            and order.payment_lock_acquired_at is not None
-        ):
+        if order.payment_lock_acquired_at is not None:
             raise PaymentAlreadyInProgress(order)
 
-        if (
-            order.status != OrderStatus.draft
-            or not order.is_subscription_reactivation_order
-        ):
+        if order.status != OrderStatus.draft:
             if update.tax_id is not MISSING or update.discount_code is not MISSING:
                 raise CustomerOrderConflict(
-                    "Tax IDs and discounts can only be changed on subscription reactivation drafts."
+                    "Tax IDs and discounts can only be changed on drafts."
                 )
             if (
                 order.status == OrderStatus.pending
@@ -686,14 +671,8 @@ class OrderService:
                 raise CustomerOrderConflict(
                     "The billing address cannot change the order's tax treatment."
                 )
-            if (
-                order.status == OrderStatus.pending
-                and order.subscription_id is not None
-            ):
-                self._track_customer_order_billing_edits(order, update)
             return await self.update(session, order, update)
 
-        subscription = await self._lock_subscription_for_reactivation(session, order)
         if "billing_name" in update.model_fields_set:
             order.billing_name = update.billing_name
         if update.billing_address is not MISSING:
@@ -720,11 +699,15 @@ class OrderService:
         if update.discount_code is not MISSING:
             discount = None
             if update.discount_code is not None:
+                if order.product is None:
+                    raise CustomerOrderConflict(
+                        "The discount code is unavailable for this order."
+                    )
                 discount = await discount_service.get_by_code_and_product(
                     session,
                     update.discount_code,
                     order.organization,
-                    subscription.product,
+                    order.product,
                     order.currency,
                 )
                 if discount is None:
@@ -738,44 +721,8 @@ class OrderService:
             or update.tax_id is not MISSING
             or update.discount_code is not MISSING
         ):
-            await self._price_subscription_reactivation_order(order, subscription)
-        self._track_customer_order_billing_edits(order, update)
+            await self.price_draft_order(order)
         return await OrderRepository.from_session(session).update(order, flush=True)
-
-    def _track_customer_order_billing_edits(
-        self, order: Order, update: CustomerOrderUpdate
-    ) -> None:
-        billing_fields = update.model_fields_set & {
-            "billing_name",
-            "billing_address",
-            "tax_id",
-        }
-        order.payment_processor_metadata = {
-            **order.payment_processor_metadata,
-            "billing_fields": sorted(
-                billing_fields.union(
-                    order.payment_processor_metadata.get("billing_fields", ())
-                )
-            ),
-        }
-
-    async def _lock_subscription_for_reactivation(
-        self, session: AsyncSession, order: Order
-    ) -> Subscription:
-        assert order.subscription_id is not None
-        repository = SubscriptionRepository.from_session(session)
-        subscription = await repository.get_one_or_none(
-            repository.get_base_statement()
-            .where(Subscription.id == order.subscription_id)
-            .options(*repository.get_eager_options())
-            .with_for_update(of=Subscription)
-            .execution_options(populate_existing=True)
-        )
-        if subscription is None:
-            raise CustomerOrderConflict("The subscription is unavailable.")
-        if subscription.status != SubscriptionStatus.trial_ended:
-            raise NotTrialEndedSubscription(subscription)
-        return subscription
 
     async def set_refunds_blocked(
         self,
@@ -801,10 +748,7 @@ class OrderService:
     async def trigger_invoice_generation(
         self, session: AsyncSession, order: Order, *, force: bool = False
     ) -> None:
-        if (
-            order.status in (OrderStatus.draft, OrderStatus.void)
-            or order.is_subscription_reactivation_order
-        ):
+        if order.status in (OrderStatus.draft, OrderStatus.void):
             raise OrderNotEligibleForInvoice(order)
 
         if order.billing_name is None or order.billing_address is None:
@@ -829,9 +773,6 @@ class OrderService:
     async def generate_invoice(
         self, session: AsyncSession, order: Order, *, force: bool = False
     ) -> Order:
-        if order.is_subscription_reactivation_order:
-            return order
-
         if (
             not force
             and order.invoice_path is not None
@@ -1526,10 +1467,7 @@ class OrderService:
         order ID. The invoice number is assigned only on success, so failed
         attempts don't burn invoice numbers.
         """
-        if (
-            order.status != OrderStatus.draft
-            or order.is_subscription_reactivation_order
-        ):
+        if order.status != OrderStatus.draft:
             raise OrderNotDraft(order)
 
         organization = order.organization
@@ -1543,7 +1481,7 @@ class OrderService:
             raise OrganizationNotReadyForPayments(organization.id)
 
         customer = order.customer
-        payment_method = await self._resolve_payment_method(
+        payment_method = await self.resolve_payment_method(
             session, customer, payment_method_id
         )
 
@@ -1593,19 +1531,20 @@ class OrderService:
             )
             order = await self.handle_payment(session, order, payment)
 
-        if order.paid:
-            # Draft orders reject seat-based and recurring products, so benefits
-            # are granted as soon as the order is paid, like a one-time checkout.
-            enqueue_job(
-                "benefit.enqueue_benefits_grants",
-                task="grant",
-                customer_id=order.customer_id,
-                product_id=order.product_id,
-                order_id=order.id,
-            )
-            enqueue_job("order.admin_notification", order.id)
+        if order.paid and order.subscription_id is None:
+            self._enqueue_draft_order_paid_jobs(order)
 
         return order
+
+    def _enqueue_draft_order_paid_jobs(self, order: Order) -> None:
+        enqueue_job(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=order.customer_id,
+            product_id=order.product_id,
+            order_id=order.id,
+        )
+        enqueue_job("order.admin_notification", order.id)
 
     def _get_intent_charge(
         self, payment_intent: stripe_lib.PaymentIntent
@@ -1639,7 +1578,7 @@ class OrderService:
             order, update_dict={"invoice_number": invoice_number}
         )
 
-    async def _resolve_payment_method(
+    async def resolve_payment_method(
         self,
         session: AsyncSession,
         customer: Customer,
@@ -1766,13 +1705,19 @@ class OrderService:
             discount = None
 
         amounts = await compute_order_amounts(
-            subscription,
             items,
             reference=reference or str(order_id),
+            currency=subscription.currency,
             discount=discount,
             product=product,
             billing_address=customer.billing_address,
             tax_id=customer.tax_id,
+            tax_behavior_option=(
+                subscription.tax_behavior.to_option()
+                if subscription.tax_behavior is not None
+                else subscription.organization.default_tax_behavior
+            ),
+            tax_exempted=subscription.tax_exempted,
         )
         total_amount = amounts.total_amount
 
@@ -2308,217 +2253,6 @@ class OrderService:
                 payment_intent.id, metadata=intent_metadata
             )
 
-    async def pay_customer_order(
-        self, session: AsyncSession, order: Order, order_pay: CustomerOrderPay
-    ) -> Order:
-        subscription = order.subscription
-        if subscription is None:
-            raise CustomerOrderConflict(
-                "This order is not payable in the customer portal."
-            )
-
-        reactivation = order.is_subscription_reactivation_order
-        if (
-            order.paid
-            or "intent_id" in order.payment_processor_metadata
-            or (reactivation and order.status == OrderStatus.pending)
-        ):
-            return order
-        if order.payment_lock_acquired_at is not None:
-            raise PaymentAlreadyInProgress(order)
-        if order.stripe_invoice_id is not None or order.status != (
-            OrderStatus.draft if reactivation else OrderStatus.pending
-        ):
-            raise CustomerOrderConflict(
-                "This order is not payable in the customer portal."
-            )
-        if not order.organization.can_renew_subscriptions:
-            raise PaymentNotReady("Organization is not ready to renew subscriptions")
-
-        if reactivation:
-            subscription = await self._lock_subscription_for_reactivation(
-                session, order
-            )
-            if subscription_service.is_trial_ended_expired(subscription):
-                raise CustomerOrderConflict("The trial reactivation window has ended.")
-            now = utc_now()
-            if (
-                order.discount is not None
-                and order.discount.id == subscription.discount_id
-                and order.discount.is_repetition_expired(
-                    subscription.discount_applied_at or now, now
-                )
-            ):
-                raise CustomerOrderConflict("The discount on this order has expired.")
-            if order.tax_calculation_processor_id is None:
-                await self._price_subscription_reactivation_order(
-                    order, subscription, strict=True
-                )
-
-        payment_repository = PaymentRepository.from_session(session)
-        if (
-            await payment_repository.count_customer_retry_payments_for_order(order.id)
-            >= settings.CUSTOMER_RETRY_MAX_ATTEMPTS
-        ):
-            raise ManualRetryLimitExceeded(order)
-
-        async with (
-            self.acquire_payment_lock(session, order),
-            self._redeem_subscription_reactivation_discount(
-                session, order, subscription
-            ),
-        ):
-            if (
-                reactivation
-                and order.due_amount == 0
-                and (
-                    (
-                        order.subtotal_amount == 0
-                        and not any(
-                            is_metered_price(price) for price in subscription.prices
-                        )
-                    )
-                    or (
-                        isinstance(order.discount, DiscountPercentage)
-                        and order.discount.duration == DiscountDuration.forever
-                        and order.discount.basis_points == 10_000
-                    )
-                )
-            ):
-                enqueue_job("order.paid", order_id=order.id)
-            else:
-                intent = await self._create_customer_order_intent(
-                    session, order, order_pay
-                )
-                order.payment_processor_metadata = {
-                    **order.payment_processor_metadata,
-                    "intent_id": intent.id,
-                    "intent_status": intent.status,
-                }
-                if (
-                    intent.status == "requires_action"
-                    and intent.client_secret is not None
-                ):
-                    order.payment_processor_metadata["intent_client_secret"] = (
-                        intent.client_secret
-                    )
-
-            order.status = OrderStatus.pending
-
-        return order
-
-    async def _create_customer_order_intent(
-        self, session: AsyncSession, order: Order, order_pay: CustomerOrderPay
-    ) -> stripe_lib.PaymentIntent | stripe_lib.SetupIntent:
-        customer = order.customer
-        params: dict[str, Any] = {
-            "confirm": True,
-            "automatic_payment_methods": {"enabled": True, "allow_redirects": "never"},
-        }
-        if isinstance(order_pay, CustomerOrderPayWithPaymentMethod):
-            payment_method = await self._resolve_payment_method(
-                session, customer, order_pay.payment_method_id
-            )
-            if payment_method.processor != PaymentProcessor.stripe:
-                raise PaymentFailed(PaymentFailedReason.missing_payment_method)
-            params["payment_method"] = payment_method.processor_id
-            if payment_method.type == "sepa_debit":
-                del params["automatic_payment_methods"]
-                params["payment_method_types"] = ["sepa_debit"]
-        else:
-            params["confirmation_token"] = order_pay.confirmation_token_id
-
-        if customer.stripe_customer_id is None:
-            await session.refresh(
-                customer, {"stripe_customer_id"}, with_for_update=True
-            )
-            if customer.stripe_customer_id is None:
-                customer_params: CustomerCreateParams = {
-                    "idempotency_key": f"order-recovery-customer:{customer.id}"
-                }
-                if customer.email is not None:
-                    customer_params["email"] = customer.email
-                stripe_customer = await stripe_service.create_customer(
-                    **customer_params
-                )
-                customer.stripe_customer_id = stripe_customer.id
-
-        metadata = {
-            "organization_id": str(order.organization_id),
-            "order_id": str(order.id),
-            STRIPE_METADATA_PAYMENT_TRIGGER: PaymentTrigger.retry_customer,
-        }
-        if order.tax_breakdown:
-            metadata["tax_amount"] = str(order.tax_amount)
-            tax_country = order.tax_breakdown[0]["country"]
-            if tax_country is not None:
-                metadata["tax_country"] = tax_country
-            tax_state = order.tax_breakdown[0]["state"]
-            if tax_state is not None:
-                metadata["tax_state"] = tax_state
-
-        params["customer"] = customer.stripe_customer_id
-        params["metadata"] = metadata
-        try:
-            intent: stripe_lib.PaymentIntent | stripe_lib.SetupIntent
-            if order.due_amount == 0:
-                intent = await stripe_service.create_setup_intent(
-                    usage="off_session", **params
-                )
-            else:
-                if "confirmation_token" in params:
-                    params["setup_future_usage"] = "off_session"
-                intent = await stripe_service.create_payment_intent(
-                    amount=order.due_amount,
-                    currency=order.currency,
-                    statement_descriptor_suffix=order.statement_descriptor_suffix,
-                    description=f"{order.organization.name} — {order.description}",
-                    **params,
-                )
-        except (stripe_lib.CardError, stripe_lib.InvalidRequestError) as e:
-            raise CustomerOrderPaymentDeclined(
-                e.user_message or "Payment declined."
-            ) from e
-        if intent.status not in ("succeeded", "processing", "requires_action"):
-            raise CustomerOrderPaymentDeclined()
-        return intent
-
-    @asynccontextmanager
-    async def _redeem_subscription_reactivation_discount(
-        self, session: AsyncSession, order: Order, subscription: Subscription
-    ) -> AsyncIterator[None]:
-        discount = order.discount
-        if (
-            not order.is_subscription_reactivation_order
-            or discount is None
-            or discount.id == subscription.discount_id
-        ):
-            yield
-            return
-        if discount.max_redemptions_per_customer is not None:
-            await session.refresh(order.customer, {"id"}, with_for_update=True)
-            if await discount_service.check_per_customer_limit_reached(
-                session, discount, customer=order.customer
-            ):
-                raise CustomerOrderConflict(
-                    "The discount code is unavailable for this order."
-                )
-        try:
-            async with discount_service.redeem_discount(
-                session, discount
-            ) as redemption:
-                redemption.subscription = subscription
-                yield
-        except DiscountNotRedeemableError as e:
-            raise CustomerOrderConflict(
-                "The discount code is unavailable for this order."
-            ) from e
-
-        order.payment_processor_metadata = {
-            **order.payment_processor_metadata,
-            "discount_redemption_id": str(redemption.id),
-        }
-
     async def process_retry_payment(
         self,
         session: AsyncSession,
@@ -2748,37 +2482,31 @@ class OrderService:
         if order.stripe_invoice_id is None and order.status == OrderStatus.paid:
             return order
 
+        draft = (
+            order.status == OrderStatus.draft
+            and order.payment_lock_acquired_at is not None
+        )
         # Stripe invoices may already have been marked as paid, so ignore the check
-        if order.stripe_invoice_id is None and order.status != OrderStatus.pending:
+        if (
+            order.stripe_invoice_id is None
+            and order.status != OrderStatus.pending
+            and not draft
+        ):
             raise OrderNotPending(order)
 
         previous_status = order.status
         update_dict: dict[str, Any] = {}
 
-        reactivation = order.is_subscription_reactivation_order
-        if reactivation or "intent_id" in order.payment_processor_metadata:
-            for field in order.payment_processor_metadata.get("billing_fields", ()):
-                setattr(order.customer, field, getattr(order, field))
+        if draft or "intent_id" in order.payment_processor_metadata:
+            order.customer.billing_name = order.billing_name
+            order.customer.billing_address = order.billing_address
+            order.customer.tax_id = order.tax_id
             update_dict["payment_processor_metadata"] = {}
 
-        if reactivation:
-            subscription = await self._lock_subscription_for_reactivation(
-                session, order
-            )
-            order.subscription = (
-                await subscription_service.reactivate_ended_trial_from_order(
-                    session, subscription, order
-                )
-            )
+        if draft:
             await self._assign_invoice_number(session, order)
-            await self._on_order_created(session, order)
 
-        if payment_method is not None and order.subscription is not None:
-            await subscription_service.update_payment_method_from_retry(
-                session, order.subscription, payment_method
-            )
-
-        if order.status == OrderStatus.pending:
+        if draft or order.status == OrderStatus.pending:
             update_dict["status"] = OrderStatus.paid
 
         # Clear retry attempt date on successful payment
@@ -2808,15 +2536,37 @@ class OrderService:
         repository = OrderRepository.from_session(session)
         order = await repository.update(order, update_dict=update_dict, flush=True)
 
-        # If this was a subscription retry success, reactivate the subscription
-        if previous_status == OrderStatus.pending and order.subscription is not None:
+        if (
+            draft or previous_status == OrderStatus.pending
+        ) and order.subscription is not None:
+            after_trial = (
+                order.billing_reason
+                == OrderBillingReasonInternal.subscription_cycle_after_trial
+            )
             subscription_repository = SubscriptionRepository.from_session(session)
             locked_subscription = await subscription_repository.get_by_id(
-                order.subscription.id, for_update=True
+                order.subscription.id,
+                options=subscription_repository.get_eager_options()
+                if after_trial
+                else (),
+                for_update=True,
             )
             assert locked_subscription is not None
-            # Make sure there are no other dunning orders for this subscription, otherwise we might reactivate it too early
+            await session.refresh(locked_subscription, {"status"})
+            if payment_method is not None:
+                await subscription_service.update_payment_method_from_retry(
+                    session, locked_subscription, payment_method
+                )
             if (
+                after_trial
+                and locked_subscription.status == SubscriptionStatus.trial_ended
+            ):
+                order.subscription = (
+                    await subscription_service.reactivate_ended_trial_from_order(
+                        session, locked_subscription, order
+                    )
+                )
+            elif (
                 locked_subscription.status == SubscriptionStatus.past_due
                 and await repository.count_dunning_by_subscription(
                     locked_subscription.id
@@ -2829,6 +2579,9 @@ class OrderService:
 
         if update_dict:
             await self._on_order_updated(session, order, previous_status)
+
+        if draft and order.subscription_id is None:
+            self._enqueue_draft_order_paid_jobs(order)
 
         return order
 
@@ -3779,15 +3532,9 @@ class OrderService:
                 ).get_by_id(uuid.UUID(redemption_id))
                 if redemption is not None:
                     await session.delete(redemption)
-            order.payment_processor_metadata = {
-                "billing_fields": order.payment_processor_metadata.get(
-                    "billing_fields", []
-                )
-            }
-            if order.is_subscription_reactivation_order:
-                order.status = OrderStatus.draft
+            order.payment_processor_metadata = {}
             skip_dunning = True
-        elif order.is_subscription_reactivation_order:
+        elif order.status == OrderStatus.draft:
             return order
 
         # Clear payment lock on failure

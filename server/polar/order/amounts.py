@@ -6,7 +6,7 @@ import structlog
 from polar.enums import TaxBehavior, TaxBehaviorOption, TaxProcessor
 from polar.kit.address import Address
 from polar.logging import Logger
-from polar.models import Discount, OrderItem, Product, Subscription
+from polar.models import Discount, OrderItem, Product
 from polar.tax.calculation import (
     TaxBreakdownItem,
     TaxCalculation,
@@ -123,14 +123,16 @@ async def calculate_tax(
 
 
 async def compute_order_amounts(
-    subscription: Subscription,
     items: Sequence[OrderItem],
     *,
     reference: str,
+    currency: str,
     discount: Discount | None,
     product: Product,
     billing_address: Address | None,
     tax_id: TaxID | None,
+    tax_behavior_option: TaxBehaviorOption,
+    tax_exempted: bool,
     allow_silent_failure: bool = True,
 ) -> OrderAmounts:
     subtotal_amount = sum(item.amount for item in items)
@@ -141,15 +143,8 @@ async def compute_order_amounts(
         # use "last month's" discount and so this month's discount
         # shouldn't apply to those.
         discountable_amount = sum(item.amount for item in items if item.discountable)
-        discount_amount = discount.get_discount_amount(
-            discountable_amount, subscription.currency
-        )
+        discount_amount = discount.get_discount_amount(discountable_amount, currency)
 
-    tax_behavior_option = (
-        subscription.tax_behavior.to_option()
-        if subscription.tax_behavior is not None
-        else subscription.organization.default_tax_behavior
-    )
     (
         tax_processor,
         tax_behavior,
@@ -160,11 +155,11 @@ async def compute_order_amounts(
         reference=reference,
         taxable_amount=subtotal_amount - discount_amount,
         tax_behavior_option=tax_behavior_option,
-        currency=subscription.currency,
+        currency=currency,
         billing_address=billing_address,
         tax_id=tax_id,
         product=product,
-        tax_exempted=subscription.tax_exempted,
+        tax_exempted=tax_exempted,
         allow_silent_failure=allow_silent_failure,
     )
 

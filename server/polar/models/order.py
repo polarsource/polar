@@ -354,24 +354,6 @@ class Order(
         return func.greatest(0, cls.total_amount + cls.applied_balance_amount)
 
     @property
-    def is_subscription_reactivation_order(self) -> bool:
-        return (
-            self.billing_reason
-            == OrderBillingReasonInternal.subscription_cycle_after_trial
-            and self.invoice_number is None
-            and self.checkout_id is None
-            and self.subscription_id is not None
-        )
-
-    @property
-    def payment_authentication(self) -> dict[str, str]:
-        return {
-            key: value
-            for key in ("intent_id", "intent_status", "intent_client_secret")
-            if (value := self.payment_processor_metadata.get(key)) is not None
-        }
-
-    @property
     def taxed(self) -> int:
         return self.tax_amount > 0
 

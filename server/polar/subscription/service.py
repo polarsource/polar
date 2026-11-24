@@ -107,7 +107,7 @@ from polar.models import (
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.discount import DiscountDuration, DiscountPercentage
-from polar.models.order import OrderBillingReasonInternal, OrderStatus
+from polar.models.order import OrderBillingReasonInternal
 from polar.models.product_price import (
     ProductPriceFixed,
     ProductPriceSeatUnit,
@@ -1539,24 +1539,14 @@ class SubscriptionService:
     async def revoke_trial_ended(
         self, session: AsyncSession, subscription: Subscription
     ) -> Subscription:
-        if await self._has_pending_subscription_reactivation_order(
-            session, subscription
-        ):
+        if await OrderRepository.from_session(
+            session
+        ).has_locked_order_for_subscription(subscription.id):
             return subscription
         async with SubscriptionUpdateContext(
             session, subscription, self, notify_customer=False
         ) as ctx:
             return await self.revoke(session, ctx, subscription)
-
-    async def _has_pending_subscription_reactivation_order(
-        self, session: AsyncSession, subscription: Subscription
-    ) -> bool:
-        order = await OrderRepository.from_session(
-            session
-        ).get_subscription_reactivation_order(
-            subscription.id, statuses=(OrderStatus.pending,)
-        )
-        return order is not None
 
     def _charges_after_trial(self, subscription: Subscription) -> bool:
         # Same rule checkout uses to decide whether to ask for a card.
@@ -1608,9 +1598,7 @@ class SubscriptionService:
         self,
         session: AsyncSession,
         subscription: Subscription,
-        *,
-        reactivation_order: Order | None = None,
-    ) -> None:
+    ) -> Sequence[BillingEntry]:
         event = await event_service.create_event(
             session,
             build_system_event(
@@ -1629,46 +1617,36 @@ class SubscriptionService:
         )
         # Add a billing entry for a new period
         billing_entry_repository = BillingEntryRepository.from_session(session)
-        recovery_items = (
-            {item.product_price_id: item for item in reactivation_order.items}
-            if reactivation_order is not None
-            else {}
-        )
+        entries: list[BillingEntry] = []
         for subscription_product_price in subscription.subscription_product_prices:
             product_price = subscription_product_price.product_price
             if is_static_price(product_price):
-                order_item = recovery_items.get(product_price.id)
-                amount = (
-                    order_item.amount
-                    if order_item is not None
-                    else subscription_product_price.amount
-                )
-                if order_item is not None:
-                    order_item.start_timestamp = subscription.current_period_start
-                    order_item.end_timestamp = subscription.current_period_end
+                amount = subscription_product_price.amount
                 discount_amount = 0
                 if subscription.discount:
                     discount_amount = subscription.discount.get_discount_amount(
                         amount, subscription.currency
                     )
 
-                await billing_entry_repository.create(
-                    BillingEntry(
-                        start_timestamp=subscription.current_period_start,
-                        end_timestamp=subscription.current_period_end,
-                        type=BillingEntryType.cycle,
-                        direction=BillingEntryDirection.debit,
-                        amount=amount,
-                        currency=subscription.currency,
-                        customer=subscription.customer,
-                        product_price=product_price,
-                        discount=subscription.discount,
-                        discount_amount=discount_amount,
-                        subscription=subscription,
-                        order_item=order_item,
-                        event=event,
-                    ),
+                entries.append(
+                    await billing_entry_repository.create(
+                        BillingEntry(
+                            start_timestamp=subscription.current_period_start,
+                            end_timestamp=subscription.current_period_end,
+                            type=BillingEntryType.cycle,
+                            direction=BillingEntryDirection.debit,
+                            amount=amount,
+                            currency=subscription.currency,
+                            customer=subscription.customer,
+                            product_price=product_price,
+                            discount=subscription.discount,
+                            discount_amount=discount_amount,
+                            subscription=subscription,
+                            event=event,
+                        ),
+                    )
                 )
+        return entries
 
     async def reset_meters(
         self,
@@ -3256,7 +3234,9 @@ class SubscriptionService:
         ctx.record_billing_state(effective_at=now)
         await repository.release_scheduler_lock(subscription)
 
-        subscription = await self._start_fresh_period(session, ctx, subscription, now)
+        subscription, _ = await self._start_fresh_period(
+            session, ctx, subscription, now
+        )
 
         enqueue_job(
             "order.create_subscription_order",
@@ -3286,9 +3266,9 @@ class SubscriptionService:
         if subscription.status != SubscriptionStatus.trial_ended:
             raise NotTrialEndedSubscription(subscription)
 
-        if await self._has_pending_subscription_reactivation_order(
-            session, subscription
-        ):
+        if await OrderRepository.from_session(
+            session
+        ).has_locked_order_for_subscription(subscription.id):
             raise SubscriptionReactivationInProgress()
 
         if not subscription.organization.can_renew_subscriptions:
@@ -3300,7 +3280,7 @@ class SubscriptionService:
             raise MissingBillingDetails(subscription)
 
         now = utc_now()
-        subscription = await self._start_trial_paid_period(
+        subscription, _ = await self._start_trial_paid_period(
             session, ctx, subscription, now
         )
 
@@ -3319,15 +3299,33 @@ class SubscriptionService:
     ) -> Subscription:
         now = utc_now()
         async with SubscriptionUpdateContext(session, subscription, self) as ctx:
-            if subscription.discount_id != order.discount_id:
+            if subscription.discount_id != order.discount_id or (
+                order.discount is not None
+                and order.discount.is_repetition_expired(
+                    subscription.discount_applied_at or now, now
+                )
+            ):
                 subscription.discount = order.discount
                 subscription.discount_applied_at = (
                     now if order.discount is not None else None
                 )
             subscription.update_net_amount_from(order)
-            return await self._start_trial_paid_period(
-                session, ctx, subscription, now, reactivation_order=order
+            subscription, entries = await self._start_trial_paid_period(
+                session, ctx, subscription, now
             )
+            items_by_price = {item.product_price_id: item for item in order.items}
+            for entry in entries:
+                if (item := items_by_price.get(entry.product_price_id)) is not None:
+                    item.start_timestamp = entry.start_timestamp
+                    item.end_timestamp = entry.end_timestamp
+                    entry.amount = item.amount
+                    entry.discount_amount = (
+                        order.discount.get_discount_amount(item.amount, order.currency)
+                        if order.discount is not None
+                        else 0
+                    )
+                    entry.order_item = item
+            return subscription
 
     async def _start_trial_paid_period(
         self,
@@ -3335,18 +3333,16 @@ class SubscriptionService:
         ctx: SubscriptionUpdateContext,
         subscription: Subscription,
         now: datetime,
-        *,
-        reactivation_order: Order | None = None,
-    ) -> Subscription:
+    ) -> tuple[Subscription, Sequence[BillingEntry]]:
         subscription.status = SubscriptionStatus.active
         subscription.ends_at = None
-        subscription = await self._start_fresh_period(
-            session, ctx, subscription, now, reactivation_order=reactivation_order
+        subscription, entries = await self._start_fresh_period(
+            session, ctx, subscription, now
         )
         await billing_interval_service.record_subscription(
             session, subscription, effective_at=now
         )
-        return subscription
+        return subscription, entries
 
     async def _start_fresh_period(
         self,
@@ -3354,9 +3350,7 @@ class SubscriptionService:
         ctx: SubscriptionUpdateContext,
         subscription: Subscription,
         now: datetime,
-        *,
-        reactivation_order: Order | None = None,
-    ) -> Subscription:
+    ) -> tuple[Subscription, Sequence[BillingEntry]]:
         subscription.current_period_start = now
         subscription.anchor_day = now.day
         subscription.current_period_end = (
@@ -3371,17 +3365,14 @@ class SubscriptionService:
         if subscription.pending_update is not None:
             subscription = await self.clear_pending_update(session, ctx, subscription)
 
-        if reactivation_order is None:
-            self._clear_expired_discount(subscription)
+        self._clear_expired_discount(subscription)
 
         await self.reset_meters(session, subscription, reset_at=now)
         await self.enqueue_benefits_grants(session, subscription)
-        await self._create_cycle_billing_entries(
-            session, subscription, reactivation_order=reactivation_order
-        )
+        entries = await self._create_cycle_billing_entries(session, subscription)
 
         repository = SubscriptionRepository.from_session(session)
-        return await repository.update(subscription)
+        return await repository.update(subscription), entries
 
     async def cancel_customer(
         self, session: AsyncSession, customer_id: uuid.UUID
@@ -3489,9 +3480,9 @@ class SubscriptionService:
             await session.refresh(subscription, {"status"}, with_for_update=True)
             if (
                 subscription.status == SubscriptionStatus.trial_ended
-                and await self._has_pending_subscription_reactivation_order(
-                    session, subscription
-                )
+                and await OrderRepository.from_session(
+                    session
+                ).has_locked_order_for_subscription(subscription.id)
             ):
                 raise SubscriptionReactivationInProgress()
 

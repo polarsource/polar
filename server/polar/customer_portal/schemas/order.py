@@ -77,7 +77,6 @@ class CustomerOrder(OrderBase):
     payment_processor_metadata: Annotated[
         dict[str, str], Version(starting_from=V2027_01)
     ] = Field(
-        validation_alias="payment_authentication",
         description="Stripe intent information required to authenticate a payment.",
     )
 

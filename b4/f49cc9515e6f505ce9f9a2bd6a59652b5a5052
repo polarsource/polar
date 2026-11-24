@@ -1,0 +1,49 @@
+clients/apps/web/src/hooks/queries/merchantMigrations.ts
+  s_d4a843b33596ce::t_c1c8566a444ec6 180-214
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/steps.ts
+  s_d4a843b33596ce::t_11d0270699cb2b 65-89,118,132-134,143-145
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/steps.test.ts
+  s_d4a843b33596ce::t_26733572802e46 43-57
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/benefitCopy.ts
+  s_d4a843b33596ce::t_ad59f1722f37e9 1-46
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/ImportedStep.tsx
+  s_d4a843b33596ce::t_532b463e7f3671 12-18,37
+clients/packages/client/src/v1.ts
+  s_587ceda2630946::t_a610befefd1f3b 6103-6126,14285-14306,28469-28566,28722-28726,29007,65064-65186,75922-75927,75936,75952
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationStepper.tsx
+  s_d4a843b33596ce::t_c13b7d49eb3fba 5,21,24,28
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationRow.tsx
+  s_d4a843b33596ce::t_b4764716637191 9,22-24
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/BenefitsStep.tsx
+  s_d4a843b33596ce::t_9e30bd3b2f09f7 1-157
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/[id]/MigrationDetailPage.tsx
+  s_d4a843b33596ce::t_fef24293072527 11,143-149
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/ImportedHandoff.tsx
+  s_d4a843b33596ce::t_b6720d31235b8c 21-22,33-35,77,117-121,126-130,143-160
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/BenefitsForm.tsx
+  s_d4a843b33596ce::t_84f844d87123f1 1-140
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b4f49cc9515e6f505ce9f9a2bd6a59652b5a5052",
+  "prompts": {},
+  "sessions": {
+    "s_587ceda2630946": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "857c022f-2249-4a02-a91e-cde99fa20ae3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_d4a843b33596ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "12adddd7-b520-4f67-a19e-0f92eb2e092a",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

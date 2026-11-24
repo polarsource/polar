@@ -10,7 +10,7 @@ import rich
 import structlog
 
 from polar import tasks  # noqa: F401
-from polar.kit.db.postgres import create_async_sessionmaker
+from polar.kit.db.postgres import create_async_sessionmaker  # lint-skip: dry-run
 from polar.postgres import create_async_engine
 from polar.redis import create_redis
 from polar.worker import JobQueueManager

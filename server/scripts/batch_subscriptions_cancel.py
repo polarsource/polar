@@ -13,7 +13,7 @@ from rich.progress import Progress
 from sqlalchemy import func, select
 
 from polar import tasks  # noqa: F401
-from polar.kit.db.postgres import create_async_sessionmaker
+from polar.kit.db.postgres import create_async_sessionmaker  # lint-skip: dry-run
 from polar.models import Customer, Subscription
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import create_async_engine

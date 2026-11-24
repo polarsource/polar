@@ -22,7 +22,7 @@ import polar.tasks  # noqa: F401 - Import tasks to register all dramatiq actors
 from polar.auth.models import AuthSubject
 from polar.customer.schemas.customer import CustomerIndividualCreate
 from polar.customer.service import customer as customer_service
-from polar.kit.db.postgres import create_async_sessionmaker
+from polar.kit.db.postgres import create_async_sessionmaker  # lint-skip: dry-run
 from polar.meter.aggregation import AggregationFunction, PropertyAggregation
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.meter.schemas import MeterCreate

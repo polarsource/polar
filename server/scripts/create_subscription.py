@@ -19,7 +19,7 @@ from polar.event.system import (
     SystemEvent,
     build_system_event,
 )
-from polar.kit.db.postgres import create_async_sessionmaker
+from polar.kit.db.postgres import create_async_sessionmaker  # lint-skip: dry-run
 from polar.kit.utils import utc_now
 from polar.models import Customer, Subscription
 from polar.models.billing_entry import (

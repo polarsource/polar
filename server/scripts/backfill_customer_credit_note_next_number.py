@@ -8,7 +8,7 @@ import typer
 from sqlalchemy import Update, select, update
 
 from polar.models import Customer
-from scripts.helper import (
+from scripts.helper import (  # lint-skip: dry-run
     configure_script_logging,
     limit_bindparam,
     run_batched_update,

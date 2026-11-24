@@ -1,0 +1,53 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/ImportedHandoff.tsx
+  s_587ceda2630946::t_7fe9d38d0b45d1 87-112,143,145,157
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/[id]/MigrationDetailPage.tsx
+  s_587ceda2630946::t_75fcd57edad93f 143-147
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/BenefitsStep.tsx
+  s_587ceda2630946::t_b53483f903338c 13,29,49,51,72
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/steps.ts
+  s_587ceda2630946::t_11d100f98424b2 67,77-82,86
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/benefitCopy.ts
+  s_d4a843b33596ce::t_616e1b59078053 1,3,19,25,29
+server/polar/merchant_migration/adapters/lemon_squeezy.py
+  s_d4a843b33596ce::t_8d1d645ef95332 20,29,271,510-511,521-525,559-579,584-586,590-592,594-600,610-615,617,682-684,694,701-723,925-946
+server/polar/merchant_migration/benefits.py
+  s_d4a843b33596ce::t_c948788263594d 48,132,135-140,150,153-155,183,194-195,288-289,294-300,326-338
+server/polar/merchant_migration/canonical.py
+  s_d4a843b33596ce::t_9c6e80612d4d2e 282,343-345,376
+server/polar/merchant_migration/cutover.py
+  s_d4a843b33596ce::t_1dc84a3a36978f 53,677,692,699-702,719
+server/polar/merchant_migration/schemas.py
+  s_d4a843b33596ce::t_3259e7254dca97 26-30,513
+server/polar/merchant_migration/service.py
+  s_d4a843b33596ce::t_16a1c31a04fca4 1019,1021-1023,1039,1075-1076,1085-1087,1089-1096
+server/tests/merchant_migration/test_cutover.py
+  s_d4a843b33596ce::t_d22bdc3882fd21 387-389
+server/tests/merchant_migration/test_lemon_squeezy_adapter.py
+  s_d4a843b33596ce::t_872190c30c3792 274,420-431
+server/tests/merchant_migration/test_service.py
+  s_d4a843b33596ce::t_c3ead0bbbd9f15 5755
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "716fd45e5dbc0bbb1c3ccf8ec6e458c985838ab3",
+  "prompts": {},
+  "sessions": {
+    "s_587ceda2630946": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "857c022f-2249-4a02-a91e-cde99fa20ae3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_d4a843b33596ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "12adddd7-b520-4f67-a19e-0f92eb2e092a",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

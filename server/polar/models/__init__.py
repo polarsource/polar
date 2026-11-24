@@ -3,6 +3,7 @@ from polar.kit.db.models import Model, TimestampedModel
 from .account import Account
 from .account_credit import AccountCredit
 from .agent import Agent
+from .agent_setup_run import AgentSetupRun
 from .authentication_session import AuthenticationSession
 from .backoffice_authentication_session import BackofficeAuthenticationSession
 from .backoffice_user import BackofficeUser
@@ -154,6 +155,7 @@ __all__ = [
     "Account",
     "AccountCredit",
     "Agent",
+    "AgentSetupRun",
     "AuthenticationSession",
     "BackofficeAuthenticationSession",
     "BackofficeUser",

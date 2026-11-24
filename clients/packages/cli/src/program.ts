@@ -6,13 +6,16 @@ import { agent } from '@/commands/agent'
 import { auth } from '@/commands/auth'
 import { config } from '@/commands/config'
 import { polar } from '@/commands/home'
+import { setup } from '@/commands/setup'
 import { update } from '@/commands/update'
 import { webhook } from '@/commands/webhook'
 
-// Add new preview commands in this array, e.g [config, newFeature]
-const previews = [config].map((command) =>
-  command.pipe(Command.withDescription(`${command.description} (preview)`)),
-)
+const asPreview = <Name extends string, Input, ContextInput, E, R>(
+  command: Command.Command<Name, Input, ContextInput, E, R>,
+) => command.pipe(Command.withDescription(`${command.description} (preview)`))
+
+// Add new preview commands in this array, e.g [asPreview(config), asPreview(newFeature)]
+const previews = [asPreview(config), asPreview(setup)]
 
 interface ProgramOptions {
   readonly preview: boolean

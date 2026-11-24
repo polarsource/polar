@@ -6,6 +6,7 @@ import { Auth } from '@/services/auth'
 import { Organizations } from '@/services/organizations'
 import { TokenHandoff } from '@/services/token-handoff'
 import { keys, runCli, type RunCliOptions } from '@/utils/test-utils/cli'
+import { fakeHttp } from '@/utils/test-utils/http'
 import {
   fakeAuth,
   fakeOrganizations,
@@ -32,6 +33,7 @@ const run = (args: string[], options?: RunCliOptions) => {
   const cli = runCli(authCommand, args, options)
   const promise = Effect.runPromise(
     cli.effect.pipe(
+      Effect.provide(fakeHttp().layer),
       Effect.provideService(Auth, auth.auth),
       Effect.provideService(Organizations, organizations.organizations),
       Effect.provideService(

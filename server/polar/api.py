@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from polar.account.endpoints import router as accounts_router
 from polar.agent.endpoints import router as agent_router
+from polar.agent_setup_run.endpoints import router as agent_setup_run_router
 from polar.auth.endpoints import router as auth_router
 from polar.benefit.endpoints import router as benefits_router
 from polar.benefit.grant.endpoints import router as benefit_grants_router
@@ -199,6 +200,8 @@ router.include_router(catalog_router)
 router.include_router(declarative_config_router)
 # /agent
 router.include_router(agent_router)
+# /agent-setup-runs
+router.include_router(agent_setup_run_router)
 # /integrations/slack
 router.include_router(slack_router)
 # /organizations/{id}/sso-connections

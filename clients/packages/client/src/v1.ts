@@ -6957,6 +6957,76 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/agent-setup-runs/organization/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Latest Agent Setup Run
+     * @description Get the latest setup run of an organization.
+     *
+     *     **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['agent_setup_runs:get_latest']
+    put?: never
+    /**
+     * Create Agent Setup Run
+     * @description Start a setup run and get the code a coding agent reports its progress with.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    post: operations['agent_setup_runs:create']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/agent-setup-runs/organization/{id}/approve': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Approve Agent Setup Drafts
+     * @description Approve what the agent drafted, with the user's edits.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    post: operations['agent_setup_runs:approve']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/agent-setup-runs/report': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Report Agent Setup Progress
+     * @description Report a stage or drafts with the run code, and read what the user approved.
+     */
+    post: operations['agent_setup_runs:report']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/integrations/slack': {
     parameters: {
       query?: never
@@ -9040,6 +9110,158 @@ export interface components {
       /** Prices */
       prices: components['schemas']['ProductPrice'][]
     }
+    /** AgentSetupDrafts */
+    AgentSetupDrafts: {
+      /** Products */
+      products?: components['schemas']['AgentSetupProductDraft'][]
+      /**
+       * Product Description
+       * @description What the organization sells.
+       */
+      product_description?: string | null
+      /** Website */
+      website?: string | null
+      /** Support Email */
+      support_email?: string | null
+      /** Socials */
+      socials?: components['schemas']['OrganizationSocialLink'][]
+    }
+    /** AgentSetupProductDraft */
+    AgentSetupProductDraft: {
+      /**
+       * Name
+       * @description The name of the product.
+       */
+      name: string
+      /** Description */
+      description?: string | null
+      /**
+       * Price Amount
+       * @description The price in cents. `0` for a free product.
+       */
+      price_amount: number
+      /** @description `null` for a one-time purchase. */
+      recurring_interval?: components['schemas']['RecurringInterval'] | null
+    }
+    /** AgentSetupReport */
+    AgentSetupReport: {
+      /** Code */
+      code: string
+      /** @description Leave out to only read the state of the run. */
+      stage?: components['schemas']['AgentSetupStage'] | null
+      /** @default done */
+      status: components['schemas']['AgentSetupStageStatus']
+      /** Note */
+      note?: string | null
+      /**
+       * Url
+       * @description A page of the Polar dashboard the user should open for this stage, e.g. to approve an access token. Other origins are rejected.
+       */
+      url?: string | null
+      /** @description Merged into the drafts already reported, field by field. Ignored once the user has approved the drafts. */
+      drafts?: components['schemas']['AgentSetupDrafts'] | null
+    }
+    /** AgentSetupRun */
+    AgentSetupRun: {
+      /** @description The drafts as they stand. Once `approved_at` is set these are the values the user approved. */
+      drafts: components['schemas']['AgentSetupDrafts'] | null
+      /** Approved At */
+      approved_at: string | null
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       */
+      organization_id: string
+      /** Stages */
+      stages: {
+        [key: string]: components['schemas']['AgentSetupStageState']
+      }
+    }
+    /** AgentSetupRunCreated */
+    AgentSetupRunCreated: {
+      /** @description The drafts as they stand. Once `approved_at` is set these are the values the user approved. */
+      drafts: components['schemas']['AgentSetupDrafts'] | null
+      /** Approved At */
+      approved_at: string | null
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       */
+      organization_id: string
+      /** Stages */
+      stages: {
+        [key: string]: components['schemas']['AgentSetupStageState']
+      }
+      /**
+       * Code
+       * @description The code the agent reports with. It is only returned here.
+       */
+      code: string
+    }
+    /** AgentSetupRunState */
+    AgentSetupRunState: {
+      /** @description The drafts as they stand. Once `approved_at` is set these are the values the user approved. */
+      drafts: components['schemas']['AgentSetupDrafts'] | null
+      /** Approved At */
+      approved_at: string | null
+    }
+    /**
+     * AgentSetupStage
+     * @enum {string}
+     */
+    AgentSetupStage: 'connect' | 'analyze' | 'checkout' | 'products'
+    /** AgentSetupStageState */
+    AgentSetupStageState: {
+      status: components['schemas']['AgentSetupStageStatus']
+      /** Note */
+      note?: string | null
+      /**
+       * Url
+       * @description A dashboard page where the user does what is asked.
+       */
+      url?: string | null
+    }
+    /**
+     * AgentSetupStageStatus
+     * @enum {string}
+     */
+    AgentSetupStageStatus: 'in_progress' | 'waiting' | 'done' | 'failed'
     AggregateField: string
     /**
      * AggregationFunction
@@ -66860,6 +67082,172 @@ export interface operations {
       }
     }
   }
+  'agent_setup_runs:get_latest': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentSetupRun']
+        }
+      }
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'agent_setup_runs:create': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentSetupRunCreated']
+        }
+      }
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'agent_setup_runs:approve': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AgentSetupDrafts']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentSetupRun']
+        }
+      }
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'agent_setup_runs:report': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AgentSetupReport']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentSetupRunState']
+        }
+      }
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'integrations_slack:list_integrations': {
     parameters: {
       query: {
@@ -74320,6 +74708,12 @@ export const addressInputCountryValues: ReadonlyArray<
   'ZM',
   'ZW',
 ]
+export const agentSetupStageValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['AgentSetupStage']
+> = ['connect', 'analyze', 'checkout', 'products']
+export const agentSetupStageStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['AgentSetupStageStatus']
+> = ['in_progress', 'waiting', 'done', 'failed']
 export const aggregationFunctionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['AggregationFunction']
 > = ['count', 'sum', 'max', 'min', 'avg', 'unique']

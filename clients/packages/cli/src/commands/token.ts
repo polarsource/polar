@@ -1,6 +1,7 @@
-import { Effect, Path, Redacted } from 'effect'
+import { Effect, Option, Path, Redacted } from 'effect'
 import { Command, Flag } from 'effect/cli'
 import { Organizations } from '@/services/organizations'
+import { parseRun, tokenApproval } from '@/services/setup-run'
 import { sdkHint, TokenHandoff } from '@/services/token-handoff'
 import { textOnly } from '@/utils/command'
 import { noteToStderr } from '@/utils/progress'
@@ -11,6 +12,14 @@ const scope = Flag.String('scope').pipe(
     'Scope to preselect on the token page, e.g. products:read. Repeatable',
   ),
   Flag.atLeast(0),
+)
+
+const setupRun = Flag.String('setup-run').pipe(
+  Flag.optional,
+  Flag.withDescription(
+    'Setup run from the Polar dashboard, as <organization>#<code>. Shows the approval link on its setup page instead of opening your browser',
+  ),
+  Flag.withHidden,
 )
 
 const announceTokenPage = (page: URL) =>
@@ -26,7 +35,7 @@ const announceTokenPage = (page: URL) =>
     ].join('\n'),
   )
 
-export const token = Command.make('token', { scope }).pipe(
+export const token = Command.make('token', { scope, setupRun }).pipe(
   Command.withDescription(
     'Create an organization access token for your app and print it',
   ),
@@ -48,14 +57,22 @@ export const token = Command.make('token', { scope }).pipe(
       Effect.gen(function* () {
         const path = yield* Path.Path
         const { slug, environment } = yield* (yield* Organizations).resolve()
+        const approval = Option.isSome(flags.setupRun)
+          ? yield* tokenApproval(
+              environment,
+              (yield* parseRun(flags.setupRun.value)).code,
+            )
+          : undefined
         const created = yield* (yield* TokenHandoff).receive(
           {
             organization: { slug, environment },
             name: path.basename(process.cwd()),
             scopes: flags.scope,
+            ...(approval ? { openBrowser: false } : {}),
           },
-          announceTokenPage,
+          approval?.announce ?? announceTokenPage,
         )
+        if (approval) yield* approval.approved
         const hint = yield* sdkHint(environment)
         if (hint) yield* noteToStderr(ui.step(hint))
         return Redacted.value(created)

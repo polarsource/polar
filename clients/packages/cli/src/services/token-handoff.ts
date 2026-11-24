@@ -33,6 +33,7 @@ export interface TokenRequest {
   organization: Pick<ActiveOrganization, 'slug' | 'environment'>
   name: string
   scopes: ReadonlyArray<string>
+  openBrowser?: boolean
 }
 
 export type AnnounceTokenPage = (page: URL) => Effect.Effect<void>
@@ -121,6 +122,7 @@ const receive = (request: TokenRequest, announce: AnnounceTokenPage) =>
       parse: (url) => parseHandoff(url, privateKey),
       copy: tokenCopy,
       browserError: 'Could not open the browser to create the token.',
+      openBrowser: request.openBrowser ?? true,
       timeoutError: 'Token creation timed out. Try again.',
     })
   })

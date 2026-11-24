@@ -24,6 +24,8 @@ import { findWebsiteDomain, websiteHost } from './sections/websiteDomain'
 interface Props {
   step?: schemas['OrganizationReviewCheck']
   isLoading: boolean
+  label?: string
+  description?: string | null
 }
 
 const collapsedActionLabel = (
@@ -43,7 +45,12 @@ const collapsedActionLabel = (
   }
 }
 
-export const ChecklistRow = ({ step, isLoading }: Props) => {
+export const ChecklistRow = ({
+  step,
+  isLoading,
+  label: labelOverride,
+  description,
+}: Props) => {
   const { organization } = useContext(OrganizationContext)
   const { targetStepKey, setTargetStepKey } = useAccountSetup()
   const searchParams = useSearchParams()
@@ -99,7 +106,7 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
   const renderSection = stepConfig?.render
   const label = isDomainUnverified
     ? 'Verify your product website'
-    : (stepConfig?.label ?? step.key)
+    : (labelOverride ?? stepConfig?.label ?? step.key)
   const isOptional = OPTIONAL_STEP_KEYS.has(step.key) || isDomainUnverified
   const reasonItems = (step.reasons ?? [])
     .map(
@@ -116,7 +123,8 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
   const subtitle =
     step.status === 'passed'
       ? undefined
-      : (reasonText ?? STEP_DESCRIPTIONS[step.key])
+      : (reasonText ??
+        (description === undefined ? STEP_DESCRIPTIONS[step.key] : description))
   const isActionable = !!renderSection
   const showExpanded = isExpanded && !!renderSection
 

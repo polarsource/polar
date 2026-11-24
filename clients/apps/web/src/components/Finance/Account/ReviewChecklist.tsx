@@ -14,17 +14,11 @@ interface Props {
   rowDuration: number
 }
 
-export const ReviewChecklist = ({
-  steps,
-  isLoading,
-  isExiting,
-  rowStagger,
-  rowDuration,
-}: Props) => {
+export const useChecklistCardStyles = (): BoxProps => {
   const { resolvedTheme: theme } = useTheme()
   const isDark = theme === 'dark'
 
-  const cardStyles: BoxProps = {
+  return {
     borderRadius: 'm',
     padding: 'l',
     borderWidth: isDark ? 0 : 1,
@@ -32,6 +26,16 @@ export const ReviewChecklist = ({
     borderColor: 'border-primary',
     backgroundColor: isDark ? 'background-card' : undefined,
   }
+}
+
+export const ReviewChecklist = ({
+  steps,
+  isLoading,
+  isExiting,
+  rowStagger,
+  rowDuration,
+}: Props) => {
+  const cardStyles = useChecklistCardStyles()
 
   return (
     <Box

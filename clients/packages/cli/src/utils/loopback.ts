@@ -27,6 +27,7 @@ interface CallbackOptions<A> {
   copy: CallbackCopy
   browserError: string
   timeoutError: string
+  openBrowser?: boolean
 }
 
 export const awaitCallback = <A>({
@@ -37,6 +38,7 @@ export const awaitCallback = <A>({
   copy,
   browserError,
   timeoutError,
+  openBrowser = true,
 }: CallbackOptions<A>) => {
   const server = createServer()
   return Effect.callback<A, AuthError>((resume) => {
@@ -75,6 +77,7 @@ export const awaitCallback = <A>({
       ),
     )
     server.listen(3333, '127.0.0.1', () => {
+      if (!openBrowser) return
       void open(target.toString())
         .then((child) => {
           child.on('error', () => fail(browserError))

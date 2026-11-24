@@ -5,6 +5,7 @@ import { AUPBlocker } from '@/components/Onboarding/AUPBlocker'
 import { toast } from '@/components/Toast/use-toast'
 import { usePostHog } from '@/hooks/posthog'
 import { useUpdateOrganization } from '@/hooks/queries'
+import { useAgentSetupRun } from '@/hooks/queries/agentSetupRuns'
 import { useOrganizationKYC } from '@/hooks/queries/org'
 import { useAupValidation } from '@/hooks/useAupValidation'
 import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
@@ -56,6 +57,9 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
   const sellingCategories = useWatch({ control, name: 'selling_categories' })
   const pricingModels = useWatch({ control, name: 'pricing_models' })
 
+  const { data: setupRun } = useAgentSetupRun(organization.id)
+  const draftDescription = setupRun?.drafts?.product_description
+
   const aup = useAupValidation()
   const [submitting, setSubmitting] = useState<SubmittingState>(null)
 
@@ -66,8 +70,11 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
         selling_categories: kycData.details.selling_categories ?? [],
         pricing_models: kycData.details.pricing_models ?? [],
       })
+      if (!kycData.details.product_description && draftDescription) {
+        setValue('product_description', draftDescription, { shouldDirty: true })
+      }
     }
-  }, [kycData, reset])
+  }, [kycData, reset, setValue, draftDescription])
 
   const blockedSelected = useMemo(
     () =>

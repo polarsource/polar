@@ -6,6 +6,7 @@ import type { ActiveOrganization } from '@/schemas/Auth'
 import { Organizations } from '@/services/organizations'
 import { type TokenRequest, TokenHandoff } from '@/services/token-handoff'
 import { runCli } from '@/utils/test-utils/cli'
+import { fakeHttp } from '@/utils/test-utils/http'
 import { fakeOrganizations } from '@/utils/test-utils/services'
 
 const acme: ActiveOrganization = {
@@ -19,10 +20,11 @@ let requests: TokenRequest[]
 
 let organizations: ReturnType<typeof fakeOrganizations>
 
-const run = (args: string[]) => {
+const run = (args: string[], http = fakeHttp()) => {
   const cli = runCli(tokenCommand, args)
   const promise = Effect.runPromise(
     cli.effect.pipe(
+      Effect.provide(http.layer),
       Effect.provideService(Organizations, organizations.organizations),
       Effect.provideService(
         TokenHandoff,
@@ -63,5 +65,32 @@ test('prints only the token', async () => {
       name: basename(process.cwd()),
       scopes: ['products:read', 'checkouts:write'],
     },
+  ])
+})
+
+test('shows the approval link on the setup page instead of opening the browser', async () => {
+  const reports: unknown[] = []
+  const http = fakeHttp({
+    'POST https://sandbox-api.polar.sh/v1/agent-setup-runs/report': async (
+      request,
+    ) => {
+      reports.push(await request.json())
+      return Response.json({ drafts: null, approved_at: null })
+    },
+  })
+  const { promise, output } = run(['--setup-run', 'acme#K7Q2M9XD'], http)
+  await promise
+
+  expect(output()).toBe('polar_oat_secret')
+  expect(requests[0]?.openBrowser).toBe(false)
+  expect(reports).toEqual([
+    {
+      code: 'K7Q2M9XD',
+      stage: 'checkout',
+      status: 'waiting',
+      note: 'Approve the access token',
+      url: 'https://polar.sh/dashboard/acme/cli/token',
+    },
+    { code: 'K7Q2M9XD', stage: 'checkout', status: 'in_progress' },
   ])
 })

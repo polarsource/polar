@@ -148,16 +148,12 @@ class JobQueueManager:
 
             # Set debounce key if any
             debounce = set_debounce_key(
-                debounce_pipeline, fn, message.message_id, args, kwargs
+                debounce_pipeline, fn, message.message_id, args, kwargs, delay
             )
             if debounce is not None:
-                key, debounce_delay = debounce
+                key, delay = debounce
                 debounced_message_ids.append(message.message_id)
                 message = message.copy(options={**message.options, "debounce_key": key})
-                if delay is not None:
-                    delay = max(delay, debounce_delay)
-                else:
-                    delay = debounce_delay
 
             # Handle delay: convert to eta and use delayed queue
             # See https://github.com/Bogdanp/dramatiq/blob/aa91cdfcfa6d8ad957ca0afe900266617f2661f8/dramatiq/brokers/stub.py#L107-L116
@@ -204,12 +200,11 @@ class JobQueueManager:
                 debounce_key: str | None = None
 
                 debounce = set_debounce_key(
-                    debounce_pipeline, fn, message_id, args, kwargs
+                    debounce_pipeline, fn, message_id, args, kwargs, delay
                 )
                 if debounce is not None:
-                    debounce_key, debounce_delay = debounce
+                    debounce_key, delay = debounce
                     debounced_message_ids.append(message_id)
-                    delay = max(delay or 0, debounce_delay)
 
                 prepared_sqs_jobs.append(
                     _sqs.Job(

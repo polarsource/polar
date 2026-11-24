@@ -236,6 +236,21 @@ class TestSetDebounceKeyClaim:
         assert claims == [1]
         assert await fake_redis.hget("debounce:test:key", "message_id") == "second"
 
+    async def test_explicit_delay_sets_due_time(
+        self, fake_redis: FakeAsyncRedis
+    ) -> None:
+        actor = make_actor(debounce_key=lambda: "test:key")
+        async with fake_redis.pipeline() as pipeline:
+            debounce = set_debounce_key(
+                pipeline, actor, "first", (), {}, delay=3600 * 1000
+            )
+            await pipeline.execute()
+
+        assert debounce == ("debounce:test:key", 3600 * 1000)
+        due_timestamp = await fake_redis.hget("debounce:test:key", "due_timestamp")
+        assert due_timestamp is not None
+        assert int(due_timestamp) >= now_timestamp() + 3599
+
     async def test_started_message_gets_one_successor(
         self, fake_redis: FakeAsyncRedis
     ) -> None:

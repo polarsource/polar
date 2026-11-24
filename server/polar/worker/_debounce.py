@@ -163,9 +163,10 @@ def set_debounce_key(
     message_id: str,
     args: tuple["JSONSerializable", ...],
     kwargs: dict[str, "JSONSerializable"],
+    delay: int | None = None,
 ) -> tuple[str, int] | None:
-    """Queue the claim of the debounce key; its pipeline result is 0 when the
-    message must not be sent.
+    """Queue the claim of the debounce key and return it with the job's delay in
+    milliseconds; its pipeline result is 0 when the message must not be sent.
 
     The job runs with the arguments of the first enqueue of its debounce window, so
     jobs sharing a key must be interchangeable.
@@ -181,7 +182,7 @@ def set_debounce_key(
         return None
 
     key = f"{DEBOUNCE_KEY_PREFIX}{debounce_key}"
-    delay = get_min_threshold(actor.options) * 1000
+    delay = max(delay or 0, get_min_threshold(actor.options) * 1000)
 
     pipeline.eval(
         CLAIM_DEBOUNCE_KEY_SCRIPT,
@@ -189,7 +190,7 @@ def set_debounce_key(
         key,
         message_id,
         now_timestamp(),
-        get_min_threshold(actor.options),
+        delay // 1000,
         int(DEBOUNCE_LOST_AFTER.total_seconds()),
         int(DEBOUNCE_KEY_TTL.total_seconds()),
     )

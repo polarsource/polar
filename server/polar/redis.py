@@ -104,9 +104,8 @@ REDIS_RETRY_ON_ERRROR: list[type[RedisError]] = [
 ]
 REDIS_RETRY = Retry(default_backoff(), retries=50)
 
-# RESP2 keeps Lua booleans as 1/nil for our and dramatiq's scripts; the pool is
-# unbounded because each eventstream subscriber holds a connection.
-REDIS_CONNECTION_OPTIONS: dict[str, Any] = {"protocol": 2, "max_connections": 2**31}
+# Unbounded: each eventstream subscriber holds a connection.
+REDIS_CONNECTION_OPTIONS: dict[str, Any] = {"max_connections": 2**31}
 
 # TCP_KEEPIDLE is Linux, TCP_KEEPALIVE its macOS equivalent
 REDIS_KEEPALIVE_OPTIONS: dict[int, int] = {

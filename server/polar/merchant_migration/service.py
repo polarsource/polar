@@ -1017,7 +1017,11 @@ class MerchantMigrationService:
         names = await ProductRepository.from_session(session).get_names_by_ids(
             migration.organization_id, product_ids
         )
+        operation = migration.operation
         return MerchantMigrationBenefits(
+            past_purchases_granted=operation is not None
+            and operation.kind == MerchantMigrationOperationKind.benefits
+            and bool((operation.cursor or {}).get("past_purchases_granted")),
             items=[
                 MerchantMigrationBenefit(
                     id=proposal.source.source_id,
@@ -1039,6 +1043,7 @@ class MerchantMigrationService:
                         if product_id in names
                     ],
                     benefit_id=proposal.created.id if proposal.created else None,
+                    for_one_time=proposal.source.for_one_time,
                 )
                 for proposal in proposals
                 for settings in [proposal.source.license_keys]
@@ -1084,7 +1089,11 @@ class MerchantMigrationService:
             MerchantMigrationOperation(
                 status=MerchantMigrationOperationStatus.pending,
                 kind=MerchantMigrationOperationKind.benefits,
-                cursor={"benefit_ids": benefits_create.ids, "run": str(uuid4())},
+                cursor={
+                    "benefit_ids": benefits_create.ids,
+                    "grant_past_purchases": benefits_create.grant_past_purchases,
+                    "run": str(uuid4()),
+                },
                 last_progress_at=utc_now(),
             )
             if benefits_create.ids
@@ -1135,6 +1144,10 @@ class MerchantMigrationService:
                     await self._benefits_adapter(migration),
                 )
                 more = await benefits.create_next(selected)
+                if not more and cursor.get("grant_past_purchases"):
+                    await benefits.grant_purchases(selected)
+                    cursor["grant_past_purchases"] = False
+                    cursor["past_purchases_granted"] = True
         except PolarError as error:
             log.warning(
                 "merchant_migration.benefits_failed",
@@ -1167,7 +1180,7 @@ class MerchantMigrationService:
             return
         operation = migration.operation
         assert operation is not None
-        if more:
+        if more or cursor.get("grant_past_purchases"):
             await repository.update(
                 migration,
                 update_dict={

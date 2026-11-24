@@ -376,6 +376,21 @@ class CanonicalBenefit:
     license_keys: CanonicalLicenseKeySettings | None = None
     files: list[CanonicalBenefitFile] = field(default_factory=list)
     links: list[CanonicalBenefitLink] = field(default_factory=list)
+    # Buyers of a one-time product have it on the source.
+    for_one_time: bool = False
+
+
+@dataclass
+class CanonicalPurchase:
+    """A paid one-time purchase whose buyer keeps the product's benefits."""
+
+    source_id: str
+    product_source_id: str
+    email: str
+    name: str | None
+    license_key: str | None
+    # The merchant disabled this buyer's key: they don't get one on Polar.
+    license_key_disabled: bool = False
 
 
 @dataclass

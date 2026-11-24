@@ -637,6 +637,7 @@ class TestListBenefits:
         assert limited.product_source_ids == ["10", "11"]
         assert limited.license_keys is not None
         assert limited.license_keys.activation_limit == 3
+        assert not limited.for_one_time
         assert (
             limited.license_keys.expires_ttl,
             limited.license_keys.expires_timeframe,
@@ -653,4 +654,75 @@ class TestListBenefits:
         assert links.product_source_ids == ["11"]
         assert [(link.title, link.url) for link in links.links] == [
             ("Docs", "https://example.com")
+        ]
+
+
+@pytest.mark.anyio
+class TestListPurchases:
+    async def test_keeps_paid_one_time_orders(self) -> None:
+        def order(
+            order_id: str, variant_id: int, item_id: int, **attributes: Any
+        ) -> dict[str, Any]:
+            return {
+                "type": "orders",
+                "id": order_id,
+                "attributes": {
+                    "status": "paid",
+                    "refunded": False,
+                    "user_email": "ada@example.com",
+                    "user_name": "Ada",
+                    "first_order_item": {"id": item_id, "variant_id": variant_id},
+                    **attributes,
+                },
+            }
+
+        adapter, _ = _adapter(
+            {
+                "/v1/prices": _page(
+                    [
+                        _price("21", 10, 1200, "2026-01-01T00:00:00Z"),
+                        _price(
+                            "22", 12, 1900, "2026-01-01T00:00:00Z", category="one_time"
+                        ),
+                    ]
+                ),
+                "/v1/orders": _page(
+                    [
+                        order("70", 10, 80),
+                        order("71", 12, 81),
+                        order("72", 12, 82, refunded=True),
+                        order("73", 12, 83, status="pending"),
+                        order("74", 12, 84),
+                    ]
+                ),
+                "/v1/license-keys": _page(
+                    [
+                        {
+                            "type": "license-keys",
+                            "id": "60",
+                            "attributes": {"order_item_id": 84, "key": "KEY-LIFETIME"},
+                        },
+                        {
+                            "type": "license-keys",
+                            "id": "61",
+                            "attributes": {
+                                "order_item_id": 81,
+                                "key": "KEY-REVOKED",
+                                "disabled": True,
+                            },
+                        },
+                    ]
+                ),
+            },
+            store_id="1",
+        )
+
+        purchases, has_more = await adapter.list_purchases(1)
+
+        assert not has_more
+        assert [
+            (p.source_id, p.license_key, p.license_key_disabled) for p in purchases
+        ] == [
+            ("71", None, True),
+            ("74", "KEY-LIFETIME", False),
         ]

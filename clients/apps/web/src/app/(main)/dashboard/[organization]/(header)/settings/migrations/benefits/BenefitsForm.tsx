@@ -17,7 +17,9 @@ interface Props {
   onDone: () => void
 }
 
-// Benefits on imported products. One nobody would get isn't offered.
+// Each benefit shows once: with subscribers when it's on an imported product,
+// otherwise with past one-time buyers. One nobody would get isn't offered.
+// Past buyers get only the benefits that stay ticked.
 export function BenefitsForm({
   migrationId,
   benefits,
@@ -28,7 +30,12 @@ export function BenefitsForm({
   const setUp = useSetUpMigrationBenefits(migrationId)
 
   const forSubscribers = benefits.filter((b) => b.products.length > 0)
-  const selected = forSubscribers.filter((b) => !excluded.has(b.id))
+  const forPastBuyers = benefits.filter(
+    (b) => b.products.length === 0 && b.for_one_time,
+  )
+  const selected = [...forSubscribers, ...forPastBuyers].filter(
+    (b) => !excluded.has(b.id),
+  )
   const toCreate = selected.filter((b) => !b.benefit_id)
   const hasLicenseKeys = selected.some((b) => b.type === 'license_keys')
 
@@ -42,9 +49,15 @@ export function BenefitsForm({
     })
 
   const submit = (benefitIds: string[]) =>
-    setUp.mutate({ ids: benefitIds }, { onSuccess: onDone })
+    setUp.mutate(
+      {
+        ids: benefitIds,
+        grant_past_purchases: selected.some((b) => b.for_one_time),
+      },
+      { onSuccess: onDone },
+    )
 
-  if (forSubscribers.length === 0) {
+  if (forSubscribers.length === 0 && forPastBuyers.length === 0) {
     return (
       <Box flexDirection="column" rowGap="l">
         <Text color="muted">
@@ -69,6 +82,22 @@ export function BenefitsForm({
       {forSubscribers.length > 0 && (
         <BenefitSection title="Subscribers">
           {forSubscribers.map((benefit) => (
+            <BenefitRow
+              key={benefit.id}
+              benefit={benefit}
+              selected={!excluded.has(benefit.id)}
+              onToggle={() => toggle(benefit.id)}
+            />
+          ))}
+        </BenefitSection>
+      )}
+
+      {forPastBuyers.length > 0 && (
+        <BenefitSection
+          title="Past one-time buyers"
+          description="Polar doesn't email them. They find everything in the customer portal."
+        >
+          {forPastBuyers.map((benefit) => (
             <BenefitRow
               key={benefit.id}
               benefit={benefit}

@@ -10,7 +10,7 @@ import asyncio
 import hashlib
 import mimetypes
 import tempfile
-from collections.abc import Collection
+from collections.abc import Collection, Sequence
 from dataclasses import dataclass
 from typing import IO
 from uuid import UUID
@@ -19,6 +19,8 @@ import httpx2
 
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
+from polar.benefit.grant.service import BenefitGrantAlreadyExists
+from polar.benefit.grant.service import benefit_grant as benefit_grant_service
 from polar.benefit.repository import BenefitRepository
 from polar.benefit.service import benefit as benefit_service
 from polar.benefit.strategies.custom.schemas import (
@@ -35,11 +37,15 @@ from polar.benefit.strategies.license_keys.schemas import (
     BenefitLicenseKeysCreate,
     BenefitLicenseKeysCreateProperties,
 )
+from polar.customer.repository import CustomerRepository
+from polar.customer.service import customer as customer_service
 from polar.file.repository import FileRepository
 from polar.file.s3 import S3_SERVICES
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.utils import generate_uuid
-from polar.models import Benefit, File, Organization
+from polar.license_key.repository import LicenseKeyRepository
+from polar.member.service import member_service
+from polar.models import Benefit, Customer, File, Organization
 from polar.models.benefit import BenefitType
 from polar.models.file import FileServiceTypes
 from polar.models.merchant_migration_record import MerchantMigrationRecordType
@@ -47,7 +53,7 @@ from polar.product.service import product as product_service
 from polar.redis import Redis
 
 from .adapters.lemon_squeezy import LemonSqueezyAdapter
-from .canonical import CanonicalBenefit, CanonicalBenefitFile
+from .canonical import CanonicalBenefit, CanonicalBenefitFile, CanonicalPurchase
 from .repository import MerchantMigrationRecordRepository
 
 EXTERNAL_ID_PREFIX = "lemon_squeezy:"
@@ -120,7 +126,7 @@ class MigrationBenefits:
         self.adapter = adapter
         self.auth_subject = AuthSubject(
             organization,
-            {Scope.products_write, Scope.benefits_write},
+            {Scope.products_write, Scope.benefits_write, Scope.customers_write},
             None,
         )
         self._proposals: list[BenefitProposal] | None = None
@@ -148,6 +154,27 @@ class MigrationBenefits:
                 self._proposals = None
                 return True
         return False
+
+    async def grant_purchases(self, selected: Collection[str]) -> None:
+        """Give one-time buyers the benefits of what they bought, keeping their
+        license key. Every page in one run, so the store's keys and prices are
+        read once. A rerun is safe: an existing grant is skipped."""
+        benefits_by_variant: dict[str, list[Benefit]] = {}
+        for proposal in await self.proposals():
+            if proposal.created is None or proposal.source.source_id not in selected:
+                continue
+            for variant_id in proposal.source.product_source_ids:
+                benefits_by_variant.setdefault(variant_id, []).append(proposal.created)
+        page = 1
+        while True:
+            purchases, has_more = await self.adapter.list_purchases(page)
+            for purchase in purchases:
+                benefits = benefits_by_variant.get(purchase.product_source_id)
+                if benefits:
+                    await self._grant_purchase(purchase, benefits)
+            if not has_more:
+                return
+            page += 1
 
     async def _create(self, source: CanonicalBenefit) -> Benefit:
         create: (
@@ -253,6 +280,67 @@ class MigrationBenefits:
             ),
             flush=True,
         )
+
+    async def _grant_purchase(
+        self, purchase: CanonicalPurchase, benefits: Sequence[Benefit]
+    ) -> None:
+        customer = await self._buyer(purchase)
+        member = await member_service.create_owner_member(
+            self.session, customer, self.organization
+        )
+        if member is None:
+            return
+        for benefit in benefits:
+            if (
+                benefit.type == BenefitType.license_keys
+                and purchase.license_key_disabled
+            ):
+                continue
+            properties = (
+                await kept_key_properties(
+                    self.session, self.organization.id, purchase.license_key
+                )
+                if benefit.type == BenefitType.license_keys
+                else {}
+            )
+            try:
+                await benefit_grant_service.grant_manually(
+                    self.session,
+                    self.organization,
+                    customer,
+                    benefit,
+                    member,
+                    properties=properties,
+                )
+            except BenefitGrantAlreadyExists:
+                continue
+
+    async def _buyer(self, purchase: CanonicalPurchase) -> Customer:
+        existing = await CustomerRepository.from_session(
+            self.session
+        ).get_by_email_and_organization(purchase.email, self.organization.id)
+        if existing is not None:
+            return existing
+        return await customer_service.create_for_organization(
+            self.session,
+            self.organization,
+            email=purchase.email,
+            name=purchase.name,
+        )
+
+
+async def kept_key_properties(
+    session: AsyncSession, organization_id: UUID, key: str | None
+) -> dict[str, str]:
+    """Grant properties that make the license key grant reuse ``key``. Empty
+    when there's none or the organization already has it: keys are unique per
+    organization, so the grant then makes a new one."""
+    if key is None:
+        return {}
+    taken = await LicenseKeyRepository.from_session(
+        session
+    ).get_by_organization_and_key(organization_id, key)
+    return {} if taken is not None else {"user_provided_key": key}
 
 
 class FileCopyFailed(Exception):

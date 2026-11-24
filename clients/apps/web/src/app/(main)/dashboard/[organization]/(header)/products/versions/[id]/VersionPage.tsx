@@ -238,7 +238,8 @@ export default function VersionPage({
       title={null}
       header={
         <>
-          <Box alignItems="center" columnGap="l" minWidth={0}>
+          {/* Matches the Publish button height so drafts don't shift the header */}
+          <Box alignItems="center" columnGap="l" minWidth={0} minHeight={40}>
             <Link
               href={versionsPath}
               aria-label="Back to versions"

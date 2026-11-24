@@ -124,9 +124,13 @@ const entryLines = (
   ]
 }
 
-const pendingDraft = (catalogs: PlanCatalogs | undefined) =>
+const pendingDraft = (
+  config: LoadedConfig,
+  { entries }: PlanResult,
+  catalogs: PlanCatalogs | undefined,
+) =>
   catalogs?.draft
-    ? `\n>\n> ${escape(draftNote(catalogs.live, catalogs.draft).join(' '))}`
+    ? `\n>\n> ${escape(draftNote(config.file, catalogs.live, catalogs.draft, entries).join(' '))}`
     : ''
 
 const callout = (
@@ -139,7 +143,7 @@ const callout = (
   if (errors(result.issues) > 0) {
     return `> [!CAUTION]\n> \`${config.file}\` can't be applied to ${where}. Fix the errors below first.`
   }
-  return `> [!NOTE]\n> Applying the config in this pull request changes billing for ${where}. Review every change below before it's applied.${pendingDraft(catalogs)}`
+  return `> [!NOTE]\n> Applying the config in this pull request changes billing for ${where}. Review every change below before it's applied.${pendingDraft(config, result, catalogs)}`
 }
 
 const metadata = (

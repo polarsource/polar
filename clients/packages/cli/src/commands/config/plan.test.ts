@@ -20,7 +20,8 @@ const source = [
   '{',
   '  "meters": [',
   '    { "external_id": "tool-calls", "unit": 7 }',
-  '  ]',
+  '  ],',
+  '  "catalog_name": "v1"',
   '}',
 ].join('\n')
 
@@ -65,11 +66,15 @@ const run = async (
   result: PlanResult,
   args: string[] = [],
   catalogs: Catalogs | null = { live: null, draft: null },
-  againstDraft: PlanResult = { entries: [], issues: [] },
+  againstDraft: PlanResult | BillingConfigError = { entries: [], issues: [] },
 ) => {
   const planned = vi.fn(
     (_config: unknown, _organization: unknown, options?: CatalogOptions) =>
-      Effect.succeed(options?.catalogId === undefined ? result : againstDraft),
+      options?.catalogId === undefined
+        ? Effect.succeed(result)
+        : againstDraft instanceof BillingConfigError
+          ? Effect.fail(againstDraft)
+          : Effect.succeed(againstDraft),
   )
   const cli = runCli(plan, ['polar.json', ...args])
   const exit = await Effect.runPromiseExit(
@@ -183,20 +188,30 @@ describe('polar config plan', () => {
     expect(output).toContain('Catalog       no live catalog → v1 (draft)')
   })
 
-  test('points out a draft that already has the changes', async () => {
+  test('points out a draft that already has the changes, apart from webhooks', async () => {
+    const webhook = {
+      section: 'webhooks',
+      id: 'orders',
+      action: 'updated' as const,
+      diff: [],
+    }
     const { output, failed, planned } = await run(
-      { entries, catalog: { before: null, name: 'v1' }, issues: [] },
+      {
+        entries: [...entries, webhook],
+        catalog: { before: null, name: 'v1' },
+        issues: [],
+      },
       [],
       { live: null, draft },
       {
-        entries: [{ ...entries[0]!, action: 'unchanged' as const }],
+        entries: [{ ...entries[0]!, action: 'unchanged' as const }, webhook],
         issues: [],
       },
     )
     expect(failed).toBe(false)
     expect(planned).toEqual([undefined, 'cat-draft'])
     expect(output).toMatch(
-      /Next\n {2}╭─+╮\n *│ {2}Compared with the live catalog \(none yet\)\. *│\n *│ {2}A previous apply saved these changes in draft v1, which isn't live yet\. *│\n *│ {2}Run polar config publish to make it live\. *│\n {2}╰─+╯\n$/,
+      /Next\n {2}╭─+╮\n *│ {2}Compared with the live catalog \(none yet\)\. *│\n *│ {2}A previous apply saved these changes in draft v1, which isn't live yet\. *│\n *│ {2}Webhook changes don't go into the draft: apply makes them right away\. *│\n *│ {2}Run polar config publish to make it live\. *│\n {2}╰─+╯\n$/,
     )
   })
 
@@ -208,24 +223,73 @@ describe('polar config plan', () => {
       { entries, issues: [] },
     )
     expect(output.replace(/ *│\n *│ +/g, ' ')).toContain(
-      "Compared with the live catalog (v3). A previous apply saved draft v1, which isn't live yet and is missing some of these changes. Run polar config apply to update it, then polar config publish to make it live.",
+      "Compared with the live catalog (v3). A previous apply saved draft v1, which isn't live yet and is missing some of these changes. Run polar config apply to update the draft, then polar config publish to make it live.",
     )
   })
 
-  test('prints the live catalog and the draft as JSON', async () => {
+  test('asks to discard a draft with changes the file no longer has', async () => {
     const { output } = await run(
+      {
+        entries: [{ ...entries[0]!, action: 'unchanged' as const }],
+        issues: [],
+      },
+      [],
+      { live: { id: 'cat-live', name: 'v3' }, draft },
       { entries, issues: [] },
+    )
+    expect(output).not.toContain('up to date')
+    expect(output.replace(/ *│\n *│ +/g, ' ')).toContain(
+      "Compared with the live catalog (v3). A previous apply saved draft v1, which isn't live yet and has changes polar.json doesn't. Run polar config apply to discard the draft.",
+    )
+  })
+
+  test('prints the live catalog and the draft as JSON, counting a renamed catalog as drift', async () => {
+    const { output } = await run(
+      { entries, catalog: { before: null, name: 'v1' }, issues: [] },
       ['--json'],
-      { live: null, draft },
+      { live: null, draft: { id: 'cat-draft', name: null } },
       { entries, issues: [] },
     )
     expect(JSON.parse(output)).toEqual({
       file: 'polar.json',
       entries,
+      catalog: { before: null, name: 'v1' },
       issues: [],
       live: null,
-      draft: { ...draft, drift: entries },
+      draft: {
+        id: 'cat-draft',
+        name: null,
+        drift: [
+          ...entries,
+          {
+            section: 'catalog',
+            id: 'name',
+            action: 'updated',
+            diff: [{ field: 'name', before: null, after: 'v1' }],
+          },
+        ],
+      },
     })
+  })
+
+  test('claims nothing about a draft it cannot compare', async () => {
+    const failing = new BillingConfigError({ message: 'Unexpected' })
+    const human = await run(
+      { entries, issues: [] },
+      [],
+      { live: null, draft },
+      failing,
+    )
+    const json = await run(
+      { entries, issues: [] },
+      ['--json'],
+      { live: null, draft },
+      failing,
+    )
+    expect(human.output.replace(/ *│\n *│ +/g, ' ')).toContain(
+      "A previous apply saved draft v1, which isn't live yet and could not be compared with polar.json. Run polar config apply to update the draft, then polar config publish to make it live.",
+    )
+    expect(JSON.parse(json.output).draft).toEqual({ ...draft, drift: null })
   })
 
   test('leaves the catalogs out when they cannot be read', async () => {

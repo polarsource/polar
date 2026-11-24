@@ -2,7 +2,9 @@ import { Duration, Effect, Option } from 'effect'
 import { Command } from 'effect/cli'
 import type { ActiveOrganization } from '@/schemas/Auth'
 import {
+  type AppliedEntry,
   BillingConfigError,
+  type Catalog,
   type LoadedConfig,
   type PlanCatalogs,
   type PlanResult,
@@ -11,14 +13,17 @@ import {
 import { BillingConfig } from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
 import { commentOnPullRequest } from '@/services/pull-request-comment'
+import { record } from '@/utils/billing-config/describe'
 import { planMarkdown } from '@/utils/billing-config/markdown'
 import {
-  applyOrPublish,
+  draftedChanges,
+  draftNext,
   errors,
   fixErrors,
   found,
   next,
   overview,
+  runApply,
   sections,
   target,
   unchanged,
@@ -28,6 +33,25 @@ import { configFile as file, org } from '@/utils/flags'
 import { withProgress } from '@/utils/progress'
 import { commented, prComment } from '@/utils/pull-request-comment'
 import * as ui from '@/utils/ui'
+
+// A plan against the draft never reports the catalog, so a name the file sets is compared here
+const renamed = (
+  config: LoadedConfig,
+  { catalog }: PlanResult,
+  draft: Catalog,
+): ReadonlyArray<AppliedEntry> =>
+  catalog !== undefined &&
+  record(config.input)?.['catalog_name'] !== undefined &&
+  catalog.name !== draft.name
+    ? [
+        {
+          section: 'catalog',
+          id: 'name',
+          action: 'updated',
+          diff: [{ field: 'name', before: draft.name, after: catalog.name }],
+        },
+      ]
+    : []
 
 // Plan compares with the live catalog: an unpublished draft is compared separately
 const readCatalogs = (
@@ -48,9 +72,10 @@ const readCatalogs = (
               Effect.map((plan) =>
                 errors(plan.issues) > 0
                   ? null
-                  : plan.entries.filter(
-                      (entry) => entry.action !== 'unchanged',
-                    ),
+                  : [
+                      ...draftedChanges(plan.entries),
+                      ...renamed(config, result, draft),
+                    ],
               ),
               Effect.orElseSucceed(() => null),
             )
@@ -67,12 +92,22 @@ const render = (
   ...overview(config, organization, result),
   ...(errors(result.issues) > 0
     ? next(fixErrors(result.issues))
-    : unchanged(result.entries)
-      ? [
-          ui.blank,
-          ui.success(`${target(organization)} is up to date, nothing to apply`),
-        ]
-      : next(applyOrPublish(catalogs))),
+    : catalogs?.draft
+      ? next(
+          draftNext(
+            config.file,
+            { live: catalogs.live, draft: catalogs.draft },
+            result.entries,
+          ),
+        )
+      : unchanged(result.entries)
+        ? [
+            ui.blank,
+            ui.success(
+              `${target(organization)} is up to date, nothing to apply`,
+            ),
+          ]
+        : next(runApply)),
   ui.blank,
 ]
 

@@ -13,6 +13,7 @@ import {
 import { BillingConfig } from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
 import {
+  draftedChanges,
   errors,
   next,
   nextOpen,
@@ -48,19 +49,6 @@ interface Drift {
   readonly config: LoadedConfig
   readonly entries: ReadonlyArray<AppliedEntry>
 }
-
-const DRAFTED = new Set([
-  'products',
-  'benefits',
-  'meters',
-  'custom_fields',
-  'settings',
-])
-
-const drifted = (entries: ReadonlyArray<AppliedEntry>) =>
-  entries.filter(
-    (entry) => DRAFTED.has(entry.section) && entry.action !== 'unchanged',
-  )
 
 const report = (drift: Drift | null) =>
   drift === null || drift.entries.length === 0
@@ -196,7 +184,7 @@ export const publish = Command.make('publish', { file, org, confirmed }).pipe(
                               })
                             : Effect.succeed<Drift>({
                                 config,
-                                entries: drifted(plan.entries),
+                                entries: draftedChanges(plan.entries),
                               }),
                         ),
                       ),

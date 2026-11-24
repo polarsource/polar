@@ -1,0 +1,71 @@
+server/polar/worker/_health.py
+  s_7eddc639c6d8c2::t_d8b0dd6de8a058 155
+  s_7eddc639c6d8c2::t_8b97de00542654 32,144
+server/scripts/backfill_generated_sepa.py
+  s_7eddc639c6d8c2::t_d8b0dd6de8a058 274
+server/tests/test_redis.py
+  s_7eddc639c6d8c2::t_32e7577c5fb0f8 1-2,17-21,23,49,58,60,94,96,110
+  s_7eddc639c6d8c2::t_30d1dd853f5bf0 7-8,24-29,50,59,75,85-86,95,111
+  s_7eddc639c6d8c2::t_1df7390545b49c 30,32-34,37,39-41,47-48,53-54,56,62,65,69,78,83-84,89-90,92,98,101,105,114
+  s_7eddc639c6d8c2::t_4bd5566f52e1bb 57,97,113
+server/polar/worker/_redis.py
+  s_7eddc639c6d8c2::t_d8b0dd6de8a058 17
+server/scripts/backfill_credit_reducer_buckets.py
+  s_7eddc639c6d8c2::t_d8b0dd6de8a058 96
+server/scripts/enqueue_dummy_tasks.py
+  s_7eddc639c6d8c2::t_d8b0dd6de8a058 23
+server/polar/worker/_broker.py
+  s_7eddc639c6d8c2::t_8b97de00542654 24-28,226,238,250
+server/tests/outpost/test_stream.py
+  s_7eddc639c6d8c2::t_7cb010ce5cd91f 37-39
+server/polar/worker/_debounce.py
+  s_7eddc639c6d8c2::t_4fa4f1ade49724 4
+  s_7eddc639c6d8c2::t_7e8a5a2e100886 19-20
+  s_7eddc639c6d8c2::t_b8ba4341851701 217
+server/tests/reducer/test_service.py
+  s_7eddc639c6d8c2::t_7cb010ce5cd91f 2663-2667
+server/scripts/backfill_resend_id.py
+  s_7eddc639c6d8c2::t_d8b0dd6de8a058 115
+server/polar/redis.py
+  s_7eddc639c6d8c2::t_b384e27707d305 2,13-16,25-32,35-37,41-49,51-53,57,64-71,74-76,80-88,90,94
+  s_7eddc639c6d8c2::t_6bec68e2cede73 107-110
+  s_7eddc639c6d8c2::t_8b97de00542654 138,147
+server/polar/observability/remote_write.py
+  s_7eddc639c6d8c2::t_d8b0dd6de8a058 256
+server/tests/worker/test_dummy_tasks.py
+  s_7eddc639c6d8c2::t_b8ba4341851701 30
+  s_7eddc639c6d8c2::t_7cb010ce5cd91f 3
+server/polar/app.py
+  s_7eddc639c6d8c2::t_d8b0dd6de8a058 208,211
+server/scripts/compensate_meter_credit_clawbacks.py
+  s_7eddc639c6d8c2::t_d8b0dd6de8a058 162
+server/tests/worker/test_health.py
+  s_7eddc639c6d8c2::t_5fb8ae46928d3a 304,329,351
+server/scripts/shell.py
+  s_7eddc639c6d8c2::t_d8b0dd6de8a058 122
+server/scripts/reingest_missing_events.py
+  s_7eddc639c6d8c2::t_d8b0dd6de8a058 258
+server/polar/worker/_enqueue.py
+  s_7eddc639c6d8c2::t_1623f0f24ccf0a 9,15
+  s_7eddc639c6d8c2::t_684c100f897b4f 222-226
+server/tests/e2e/infra/task_drain.py
+  s_7eddc639c6d8c2::t_b8ba4341851701 254
+server/uv.lock
+  s_7eddc639c6d8c2::t_c22c732e870db2 3938,3940,3942
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bbfaf5bf663c2d6c55569182382f1ce8563f8d8c",
+  "prompts": {},
+  "sessions": {
+    "s_7eddc639c6d8c2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f2e4eaa7-7ee3-4559-b250-e0291ca1b824",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

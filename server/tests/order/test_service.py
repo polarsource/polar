@@ -69,11 +69,13 @@ from polar.models.checkout import CheckoutStatus
 from polar.models.custom_field import CustomFieldType
 from polar.models.customer import CustomerType
 from polar.models.discount import DiscountDuration, DiscountType
+from polar.models.dispute import DisputeStatus
 from polar.models.merchant_migration_record import MerchantMigrationCutoverStatus
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.organization import Organization, OrganizationStatus
 from polar.models.payment import PaymentStatus, PaymentTrigger
 from polar.models.product import ProductBillingType
+from polar.models.refund import RefundStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import PlatformFeeType, TransactionType
 from polar.models.wallet import WalletType
@@ -132,6 +134,7 @@ from tests.fixtures.random_objects import (
     create_custom_field,
     create_customer,
     create_discount,
+    create_dispute,
     create_event,
     create_meter,
     create_order,
@@ -140,6 +143,7 @@ from tests.fixtures.random_objects import (
     create_product,
     create_product_fixed_and_seat,
     create_product_unit_based,
+    create_refund,
     create_subscription,
     create_trialing_subscription,
     create_wallet,
@@ -6953,6 +6957,72 @@ class TestUpdateProductBenefitsGrants:
             order_id=ANY,
             delay=ANY,
         )
+
+    @pytest.mark.parametrize(
+        ("refund_status", "revoke_benefits", "expected_grant"),
+        [
+            (RefundStatus.succeeded, True, False),
+            (RefundStatus.pending, True, False),
+            (RefundStatus.failed, True, True),
+            (RefundStatus.canceled, True, True),
+            (RefundStatus.succeeded, False, True),
+        ],
+    )
+    async def test_refunded_orders_with_revoked_benefits(
+        self,
+        refund_status: RefundStatus,
+        revoke_benefits: bool,
+        expected_grant: bool,
+        enqueue_job_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        order = await create_order(
+            save_fixture, product=product, customer=customer, subscription=None
+        )
+        payment = await create_payment(save_fixture, organization, order=order)
+        await create_refund(
+            save_fixture,
+            order,
+            payment,
+            status=refund_status,
+            revoke_benefits=revoke_benefits,
+        )
+
+        await order_service.update_product_benefits_grants(session, product)
+
+        assert enqueue_job_mock.called is expected_grant
+
+    @pytest.mark.parametrize(
+        ("dispute_status", "expected_grant"),
+        [
+            (DisputeStatus.lost, False),
+            (DisputeStatus.needs_response, True),
+        ],
+    )
+    async def test_disputed_orders(
+        self,
+        dispute_status: DisputeStatus,
+        expected_grant: bool,
+        enqueue_job_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        order = await create_order(
+            save_fixture, product=product, customer=customer, subscription=None
+        )
+        payment = await create_payment(save_fixture, organization, order=order)
+        await create_dispute(save_fixture, order, payment, status=dispute_status)
+
+        await order_service.update_product_benefits_grants(session, product)
+
+        assert enqueue_job_mock.called is expected_grant
 
 
 class TestVoidOrder:

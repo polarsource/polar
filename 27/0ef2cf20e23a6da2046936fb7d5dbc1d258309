@@ -1,0 +1,22 @@
+server/tests/integrations/aws/s3/test_service.py
+  s_e16282ad654d93::t_c7f2867fb87ef4 21-23
+  s_e16282ad654d93::t_7fc0ba7f6a83bb 13-20,24-27
+server/polar/integrations/aws/s3/service.py
+  s_e16282ad654d93::t_7fc0ba7f6a83bb 230-233,239
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "270ef2cf20e23a6da2046936fb7d5dbc1d258309",
+  "prompts": {},
+  "sessions": {
+    "s_e16282ad654d93": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20762-855d-7ac0-addf-f0c98415986a",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

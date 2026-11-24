@@ -110,15 +110,11 @@ const REQUEST_TIMEOUT_SECONDS = 5
 // to abort the fetch our timeout abandons.
 const SDK_ABORT_GRACE_SECONDS = 1
 const MESSAGE_LENGTH = 200
-const DEBUG_BODY_LENGTH = 1000
 
 const truncate = (text: string, length: number) =>
   text.length > length ? `${text.slice(0, length - 1)}…` : text
 
 const sentence = (text: string) => (/[.!?]$/.test(text) ? text : `${text}.`)
-
-const bodyText = (body: unknown) =>
-  typeof body === 'string' ? body : (JSON.stringify(body) ?? '')
 
 const serverMessage = (body: unknown) => {
   if (typeof body !== 'string') return undefined
@@ -165,7 +161,7 @@ class ApiTimeoutError extends Data.TaggedError('ApiTimeoutError')<{
 
 class ApiUnreachableError extends Data.TaggedError('ApiUnreachableError')<{
   readonly host: string
-  readonly cause: PolarNetworkError
+  readonly description: string
 }> {
   override get message() {
     return `Could not connect to the Polar API at ${this.host}. Check your connection and try again.`
@@ -173,15 +169,10 @@ class ApiUnreachableError extends Data.TaggedError('ApiUnreachableError')<{
 }
 
 class ApiUnexpectedError extends Data.TaggedError('ApiUnexpectedError')<{
-  readonly cause: unknown
+  readonly description: string
 }> {
   override get message() {
-    const { cause } = this
-    const description =
-      cause instanceof Error
-        ? [cause.name, cause.message].filter(Boolean).join(': ')
-        : String(cause)
-    return `The Polar API request failed: ${sentence(description)}`
+    return `The Polar API request failed: ${sentence(this.description)}`
   }
 }
 
@@ -208,27 +199,40 @@ const statusError = (statusCode: number, body: unknown) =>
     body: emptyBodyPlaceholders.has(body) ? undefined : body,
   })
 
+// Runtimes echo an invalid Authorization header, token included, in the error.
+const describeCause = (error: unknown, accessToken: string) => {
+  const description =
+    error instanceof Error
+      ? [error.name, error.message].filter(Boolean).join(': ')
+      : String(error)
+  return accessToken
+    ? description.replaceAll(accessToken, '[redacted]')
+    : description
+}
+
 const fromSdkError =
-  (host: string) =>
+  (host: string, accessToken: string) =>
   (error: unknown): ApiRequestError => {
     if (error instanceof PolarServerError)
       return statusError(error.statusCode, serverErrorBody(error))
     if (error instanceof PolarClientError)
       return statusError(error.statusCode, error.error)
+    const description = describeCause(error, accessToken)
     if (error instanceof PolarNetworkError)
-      return new ApiUnreachableError({ host, cause: error })
-    return new ApiUnexpectedError({ cause: error })
+      return new ApiUnreachableError({ host, description })
+    return new ApiUnexpectedError({ description })
   }
 
 const debugAnnotations = (error: ApiRequestError) =>
   Match.valueTags(error, {
-    ApiStatusError: ({ statusCode, body }) => ({
+    ApiStatusError: ({ statusCode, apiError, message }) => ({
       status: statusCode,
-      body: truncate(bodyText(body), DEBUG_BODY_LENGTH),
+      ...(apiError ? { apiError } : {}),
+      message,
     }),
     ApiTimeoutError: () => ({}),
-    ApiUnreachableError: ({ cause }) => ({ cause: cause.message }),
-    ApiUnexpectedError: ({ cause }) => ({ cause: String(cause) }),
+    ApiUnreachableError: ({ description }) => ({ cause: description }),
+    ApiUnexpectedError: ({ description }) => ({ cause: description }),
   })
 
 interface PolarImpl {
@@ -280,12 +284,13 @@ export const make = Effect.gen(function* () {
         ? yield* auth.resolve(environment)
         : undefined
 
-      const request = (accessToken?: Redacted.Redacted<string>) =>
-        Effect.tryPromise({
+      const request = (accessToken?: Redacted.Redacted<string>) => {
+        const token = accessToken ? Redacted.value(accessToken) : ''
+        return Effect.tryPromise({
           try: () => {
             const clientOptions = {
               baseUrl,
-              accessToken: accessToken ? Redacted.value(accessToken) : '',
+              accessToken: token,
               timeout: timeout + SDK_ABORT_GRACE_SECONDS,
               ...requestOptions,
             }
@@ -294,7 +299,7 @@ export const make = Effect.gen(function* () {
               sdk.createPolarCore(clientOptions),
             )
           },
-          catch: fromSdkError(host),
+          catch: fromSdkError(host, token),
         }).pipe(
           Effect.timeoutOrElse({
             duration: Duration.seconds(timeout),
@@ -312,6 +317,7 @@ export const make = Effect.gen(function* () {
             ),
           ),
         )
+      }
 
       const rejection = (error: ApiStatusError) =>
         new AuthError({

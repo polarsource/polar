@@ -261,6 +261,14 @@ test.each([
     rejection: new TypeError('fetch failed'),
     message: 'The Polar API request failed: TypeError: fetch failed.',
   },
+  {
+    name: 'an error that echoes the token',
+    rejection: new TypeError(
+      "Header 'Authorization' has invalid value: 'Bearer ci-token'",
+    ),
+    message:
+      "The Polar API request failed: TypeError: Header 'Authorization' has invalid value: 'Bearer [redacted]'.",
+  },
 ])('surfaces the API message for $name', async ({ rejection, message }) => {
   const polar = await polarWith(() => Effect.succeed(overrideCredential()))
   const request = vi
@@ -341,14 +349,25 @@ test.each([
   expect([error.message, error.statusCode]).toEqual([message, statusCode])
 })
 
-test('logs the failed response at debug level without the token', async () => {
+test('logs the failed response at debug level without the token or submitted values', async () => {
   vi.stubGlobal(
     'fetch',
-    vi
-      .fn<typeof globalThis.fetch>()
-      .mockResolvedValue(
-        new Response('Internal Server Error', { status: 500 }),
+    vi.fn<typeof globalThis.fetch>().mockResolvedValue(
+      Response.json(
+        {
+          error: 'RequestValidationError',
+          detail: [
+            {
+              loc: ['body', 'email'],
+              msg: 'value is not a valid email address',
+              type: 'value_error',
+              input: 'fake-submitted-secret',
+            },
+          ],
+        },
+        { status: 422 },
       ),
+    ),
   )
   const polar = await polarWith(() =>
     Effect.succeed(overrideCredential('secret-token')),
@@ -381,12 +400,15 @@ test('logs the failed response at debug level without the token', async () => {
         api: 'https://sandbox-api.polar.sh',
         failure: 'ApiStatusError',
         timeout: '5s',
-        status: 500,
-        body: 'Internal Server Error',
+        status: 422,
+        apiError: 'RequestValidationError',
+        message:
+          'The request is invalid:\n    email: value is not a valid email address',
       },
     },
   ])
   expect(JSON.stringify(logs)).not.toContain('secret-token')
+  expect(JSON.stringify(logs)).not.toContain('fake-submitted-secret')
 })
 
 const notAccessible = {

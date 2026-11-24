@@ -41,7 +41,7 @@ from polar.kit.metadata import MetadataColumn, MetadataMixin
 from polar.kit.trial import TrialConfigurationMixin, TrialInterval
 from polar.kit.utils import utc_now
 from polar.product.guard import (
-    is_custom_price,
+    has_future_charges,
     is_discount_applicable,
     is_metered_price,
 )
@@ -49,7 +49,7 @@ from polar.tax.calculation import TaxBreakdownItem
 from polar.tax.tax_id import TaxID, TaxIDType
 
 from .customer import Customer
-from .discount import Discount, DiscountDuration, DiscountPercentage
+from .discount import Discount
 from .organization import Organization
 from .product import Product
 from .product_price import ProductPrice
@@ -419,36 +419,11 @@ class Checkout(
 
     @property
     def has_future_charges(self) -> bool:
-        if self.product is None:
+        if self.product is None or not self.product.is_recurring:
             return False
-
-        if self.is_free_product_price:
-            return False
-
-        # PWYW set to `0` stays free on every cycle. Other prices can still charge
-        # later even when the first amount is `0`: metered usage, or seats/units
-        # added beyond a free first tier.
-        if (
-            self.amount == 0
-            and self.product_prices_currency is not None
-            and all(
-                is_custom_price(price) or price.is_free
-                for price in self.product_prices_currency
-            )
-        ):
-            return False
-
-        # A 100% forever percentage discount makes the subscription entirely free
-        # (including metered usage), so no payment setup is needed.
-        if (
-            self.discount is not None
-            and self.discount.duration == DiscountDuration.forever
-            and isinstance(self.discount, DiscountPercentage)
-            and self.discount.basis_points == 10_000
-        ):
-            return False
-
-        return self.product.is_recurring
+        return has_future_charges(
+            self.product_prices_currency or [], self.amount, self.discount
+        )
 
     @property
     def is_payment_setup_required(self) -> bool:

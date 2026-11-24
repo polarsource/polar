@@ -18,6 +18,8 @@ interface Props {
   migrationId: string
   outcome: ImportOutcome
   onReviewRecords: () => void
+  // Lemon Squeezy sets benefits up before moving cards.
+  onSetUpBenefits?: () => void
 }
 
 const UNCOUNTED = 'Your catalog is now in Polar.'
@@ -28,6 +30,9 @@ const MAYBE_ON_POLAR =
   'These subscriptions were prepared in an earlier migration. If their ' +
   "cards are already on Polar, you'll go straight to the switch. Otherwise " +
   "you'll get a checklist to move them."
+const SET_UP_BENEFITS =
+  'Bring your license keys and files over as Polar benefits, so customers ' +
+  'keep their keys and downloads.'
 const NOTHING_TO_MOVE =
   'There is nothing to move yet. Prepare your subscriptions first, then come ' +
   "back to move your customers' saved cards."
@@ -69,6 +74,7 @@ export function ImportedHandoff({
   migrationId,
   outcome,
   onReviewRecords,
+  onSetUpBenefits,
 }: Props) {
   const start = useStartPanTransfer(migrationId)
   const remaining = plural(outcome.selectableTotal, 'subscription')
@@ -108,14 +114,20 @@ export function ImportedHandoff({
 
       <Box flexDirection="column" rowGap="xs">
         <Text variant="title" as="h3">
-          {earlier ? 'Next: check saved cards' : 'Next: move saved cards'}
+          {onSetUpBenefits
+            ? 'Next: set up benefits'
+            : earlier
+              ? 'Next: check saved cards'
+              : 'Next: move saved cards'}
         </Text>
         <Text color="muted">
           {nothingLanded
             ? NOTHING_TO_MOVE
-            : earlier
-              ? MAYBE_ON_POLAR
-              : CARDS_AT_STRIPE}
+            : onSetUpBenefits
+              ? SET_UP_BENEFITS
+              : earlier
+                ? MAYBE_ON_POLAR
+                : CARDS_AT_STRIPE}
         </Text>
       </Box>
 
@@ -128,18 +140,24 @@ export function ImportedHandoff({
       <ButtonGroup
         size="sm"
         actions={[
-          {
-            text: start.isPending
-              ? 'Starting…'
-              : earlier
-                ? 'Continue'
-                : 'Start moving cards',
-            // Not disabled on success: that would strand the merchant if the
-            // refetch which unmounts this card never arrives, and a second
-            // click is merely a recoverable "already started".
-            disabled: start.isPending || nothingLanded,
-            onClick: () => start.mutate(),
-          },
+          onSetUpBenefits
+            ? {
+                text: 'Set up benefits',
+                disabled: nothingLanded,
+                onClick: onSetUpBenefits,
+              }
+            : {
+                text: start.isPending
+                  ? 'Starting…'
+                  : earlier
+                    ? 'Continue'
+                    : 'Start moving cards',
+                // Not disabled on success: that would strand the merchant if the
+                // refetch which unmounts this card never arrives, and a second
+                // click is merely a recoverable "already started".
+                disabled: start.isPending || nothingLanded,
+                onClick: () => start.mutate(),
+              },
           { text: 'Review records', onClick: onReviewRecords },
         ]}
       />

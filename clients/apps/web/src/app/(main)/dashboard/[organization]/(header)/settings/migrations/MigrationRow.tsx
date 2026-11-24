@@ -6,7 +6,7 @@ import { ChevronRight } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { SourceMark } from './SourceMark'
 import { SOURCE_LABELS, sourceAccountLabel } from './sources'
-import { currentPosition, MIGRATION_STEPS } from './steps'
+import { currentPosition, migrationSteps } from './steps'
 
 function summary(migration: schemas['MerchantMigration']): string {
   if (!migration.source_connected) {
@@ -19,8 +19,9 @@ function summary(migration: schemas['MerchantMigration']): string {
   if (position.kind === 'completed') {
     return 'Completed'
   }
-  const def = MIGRATION_STEPS[position.index]
-  return `Step ${position.index + 1} of ${MIGRATION_STEPS.length} · ${def.title}`
+  const steps = migrationSteps(migration.source_platform)
+  const def = steps[position.index]
+  return `Step ${position.index + 1} of ${steps.length} · ${def.title}`
 }
 
 export function MigrationRow({

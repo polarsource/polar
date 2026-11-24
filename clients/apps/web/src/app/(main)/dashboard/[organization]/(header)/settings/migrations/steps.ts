@@ -62,6 +62,31 @@ export const MIGRATION_STEPS: MigrationStepDef[] = [
   },
 ]
 
+// Lemon Squeezy sells license keys and files, which become Polar benefits
+// between the import and the card move.
+const BENEFITS_STEP: MigrationStepDef = {
+  key: 'benefits',
+  short: 'Benefits',
+  owner: 'you',
+  title: 'Set up benefits',
+  description:
+    'We found these in Lemon Squeezy. Polar creates them with the same settings and adds them to your products. You can edit them later from Benefits.',
+  steps: ['create_catalog', 'set_up_benefits'],
+}
+
+export function migrationSteps(
+  source: schemas['MerchantMigration']['source_platform'],
+): MigrationStepDef[] {
+  if (source !== 'lemon_squeezy') {
+    return MIGRATION_STEPS
+  }
+  return MIGRATION_STEPS.flatMap((def) =>
+    def.key === 'cards'
+      ? [BENEFITS_STEP, { ...def, steps: ['copy_cards'] }]
+      : [def],
+  )
+}
+
 export const OWNER_LABELS: Record<StepOwner, string | null> = {
   you: null,
   varies: null,
@@ -90,7 +115,7 @@ export function visibleMigrationStep(
   return migration.step
 }
 
-// Backend steps map to a visible step through `MIGRATION_STEPS`, with two
+// Backend steps map to a visible step through `migrationSteps`, with two
 // exceptions: `source_setup`, where connecting completes Connect even though
 // the backend still reads it, so once connected we surface Assessment; and the
 // trailing steps that no visible step covers, which fall through to `completed`
@@ -104,7 +129,9 @@ export function currentPosition(
   }
   const visible = visibleMigrationStep(migration, panCurrentStepKey)
   const step = visible === 'source_setup' ? 'pre_check' : visible
-  const index = MIGRATION_STEPS.findIndex((def) => def.steps.includes(step))
+  const index = migrationSteps(migration.source_platform).findIndex((def) =>
+    def.steps.includes(step),
+  )
   return index === -1 ? { kind: 'completed' } : { kind: 'step', index }
 }
 
@@ -113,5 +140,7 @@ export function currentStepDef(
   panCurrentStepKey?: string | null,
 ): MigrationStepDef | null {
   const position = currentPosition(migration, panCurrentStepKey)
-  return position.kind === 'completed' ? null : MIGRATION_STEPS[position.index]
+  return position.kind === 'completed'
+    ? null
+    : migrationSteps(migration.source_platform)[position.index]
 }

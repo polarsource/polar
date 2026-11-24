@@ -177,6 +177,41 @@ const panTransferHandlers = (id: string) => ({
   },
 })
 
+// Keyed on the operation status too: the list says which benefits exist, and
+// that only changes when a set-up run moves on.
+export const useMigrationBenefits = (
+  id: string,
+  operationStatus: string | undefined,
+  enabled: boolean,
+) =>
+  useQuery({
+    queryKey: ['merchantMigrationBenefits', { id, operationStatus }],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/merchant-migrations/{id}/benefits', {
+          params: { path: { id } },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: enabled && !!id,
+  })
+
+export const useSetUpMigrationBenefits = (id: string) =>
+  useMutation({
+    mutationFn: (body: schemas['MerchantMigrationBenefitsCreate']) =>
+      dataOrThrow(
+        api.POST('/v1/merchant-migrations/{id}/benefits', {
+          params: { path: { id } },
+          body,
+        }),
+        "We couldn't set up these benefits. Please try again.",
+      ),
+    onSuccess: (migration) => {
+      getQueryClient().setQueryData(['merchantMigration', { id }], migration)
+      invalidateMigration(id)
+    },
+  })
+
 export const useStartPanTransfer = (id: string) =>
   useMutation({
     mutationFn: () =>

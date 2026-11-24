@@ -8,10 +8,14 @@ from pytest_mock import MockerFixture
 from sqlalchemy import update
 
 from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
-from polar.integrations.stripe.service import StripeService
+from polar.integrations.stripe.service import (
+    STRIPE_METADATA_SHARED_PAYMENT_TOKEN,
+    StripeService,
+)
 from polar.kit.utils import utc_now
 from polar.models import Checkout, Customer, Order, Organization, PaymentMethod, Product
 from polar.models.organization import OrganizationCustomerEmailSettings
+from polar.models.payment_method import SHARED_PAYMENT_TOKEN_TYPE
 from polar.models.subscription import SubscriptionStatus
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.payment_method.service import (
@@ -348,6 +352,76 @@ class TestUpsertFromStripeIntent:
 
 
 @pytest.mark.anyio
+class TestSharedPaymentToken:
+    async def test_upsert_from_stripe_intent(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        mocker: MockerFixture,
+    ) -> None:
+        resolve = mocker.patch.object(
+            payment_method_service, "resolve_from_stripe_intent"
+        )
+        charge = stripe_lib.Charge.construct_from(
+            {
+                "id": "ch_test",
+                "payment_method": "pm_cloned",
+                "metadata": {STRIPE_METADATA_SHARED_PAYMENT_TOKEN: "spt_123"},
+            },
+            None,
+        )
+
+        saved = await payment_method_service.upsert_from_stripe_intent(
+            session, charge, Checkout(customer=customer)
+        )
+
+        resolve.assert_not_called()
+        assert saved.processor_id == "spt_123"
+        assert saved.is_shared_payment_token
+        assert saved.method_metadata == {}
+
+    async def test_order_payment_intent_keeps_token(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+    ) -> None:
+        payment_intent = stripe_lib.PaymentIntent.construct_from(
+            {
+                "id": "pi_test",
+                "payment_method": "pm_cloned",
+                "metadata": {STRIPE_METADATA_SHARED_PAYMENT_TOKEN: "spt_123"},
+            },
+            None,
+        )
+
+        saved = (
+            await payment_method_service.upsert_from_stripe_payment_intent_for_order(
+                session, payment_intent, Order(customer_id=customer.id, product=None)
+            )
+        )
+
+        assert saved is None
+
+    async def test_not_a_customer_fallback(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+    ) -> None:
+        await create_payment_method(
+            save_fixture,
+            customer,
+            processor_id="spt_123",
+            type=SHARED_PAYMENT_TOKEN_TYPE,
+        )
+
+        assert (
+            await payment_method_service.get_customer_payment_method(session, customer)
+            is None
+        )
+
+
+@pytest.mark.anyio
 class TestDelete:
     @pytest.fixture(autouse=True)
     def stripe_service_mock(self, mocker: MockerFixture) -> MagicMock:
@@ -626,6 +700,50 @@ class TestDelete:
         # Subscription should be reassigned to the alternative payment method
         await session.refresh(subscription)
         assert subscription.payment_method_id == payment_method_2.id
+
+    async def test_delete_payment_method_ignores_shared_payment_token_alternative(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        card = await create_payment_method(save_fixture, customer)
+        await create_payment_method(
+            save_fixture,
+            customer,
+            processor_id="spt_123",
+            type=SHARED_PAYMENT_TOKEN_TYPE,
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.payment_method = card
+        await save_fixture(subscription)
+
+        with pytest.raises(PaymentMethodInUseByActiveSubscription):
+            await payment_method_service.delete(session, card)
+
+    async def test_delete_shared_payment_token(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        payment_method = await create_payment_method(
+            save_fixture,
+            customer,
+            processor_id="spt_123",
+            type=SHARED_PAYMENT_TOKEN_TYPE,
+        )
+
+        await payment_method_service.delete(session, payment_method)
+
+        stripe_service_mock.delete_payment_method.assert_not_called()
+        await session.flush()
+        await session.refresh(payment_method)
+        assert payment_method.deleted_at is not None
 
     async def test_delete_payment_method_prefers_default_payment_method(
         self,

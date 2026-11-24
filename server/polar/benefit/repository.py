@@ -74,6 +74,20 @@ class BenefitRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def get_by_product_and_type(
+        self, product_id: UUID, benefit_type: BenefitType
+    ) -> Benefit | None:
+        statement = (
+            self.get_base_statement()
+            .join(ProductBenefit, onclause=ProductBenefit.benefit_id == Benefit.id)
+            .where(
+                ProductBenefit.product_id == product_id, Benefit.type == benefit_type
+            )
+            .order_by(ProductBenefit.order)
+            .limit(1)
+        )
+        return await self.get_one_or_none(statement)
+
     async def list_by_slack_integration_id(
         self,
         organization_id: UUID,

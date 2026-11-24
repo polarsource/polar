@@ -701,12 +701,35 @@ class LemonSqueezyAdapter:
         ):
             return None
         await self._load_all_prices()
-        return self._map_subscription(
+        subscription = self._map_subscription(
             body["data"],
             await self._load_redemptions(),
             await self._load_order_tax_behaviors(),
             await self._currency(),
             _customer_countries(body.get("included", [])),
+        )
+        subscription.license_key = await self._license_key(
+            body["data"]["attributes"].get("order_item_id")
+        )
+        return subscription
+
+    async def _license_key(self, order_item_id: Any) -> str | None:
+        """The usable key of the order item that started a subscription, read
+        one at a time so the cutover never pages every key of the store."""
+        if order_item_id is None:
+            return None
+        license_keys, _, _ = await self._list(
+            "/license-keys",
+            1,
+            {**self._store_filter, "filter[order_item_id]": order_item_id},
+        )
+        return next(
+            (
+                license_key["attributes"]["key"]
+                for license_key in license_keys
+                if _usable_key_for(license_key, order_item_id)
+            ),
+            None,
         )
 
     async def stop_source_subscription(

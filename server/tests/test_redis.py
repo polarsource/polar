@@ -1,6 +1,6 @@
 import time
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, Mock
 
 import pytest
 from redis import ConnectionError, ReadOnlyError
@@ -21,7 +21,7 @@ FAILURE: dict[str, Any] = {
 }
 
 
-def create_connection(mock: type[MagicMock]) -> MagicMock:
+def create_connection(mock: type[Mock]) -> Mock:
     connection = mock()
     connection.retry = Retry(NoBackoff(), retries=3)
     return connection

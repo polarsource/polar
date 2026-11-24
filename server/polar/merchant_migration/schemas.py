@@ -23,7 +23,11 @@ from polar.models.merchant_migration_record import (
 )
 from polar.organization.schemas import OrganizationID
 
-from .canonical import CanonicalPaymentMethodType, PaymentMethodAssessment
+from .canonical import (
+    CanonicalBenefitType,
+    CanonicalPaymentMethodType,
+    PaymentMethodAssessment,
+)
 from .pan_transfer import PanTransferMethod, PanTransferStep
 
 
@@ -506,9 +510,7 @@ class MerchantMigrationBenefit(Schema):
     id: str = Field(
         description="Stable key for this source benefit. Send it back to create it."
     )
-    type: Literal["license_keys", "downloadables", "custom"] = Field(
-        description="The Polar benefit type it becomes."
-    )
+    type: CanonicalBenefitType = Field(description="The Polar benefit type it becomes.")
     description: str = Field(description="The name the benefit gets on Polar.")
     activation_limit: int | None = Field(
         description="License keys only: how many devices a key activates. Null is no limit."

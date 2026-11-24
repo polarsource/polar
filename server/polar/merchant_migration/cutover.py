@@ -22,7 +22,6 @@ from polar.customer.repository import CustomerRepository
 from polar.discount.repository import DiscountRepository
 from polar.enums import PaymentProcessor
 from polar.kit.utils import utc_now
-from polar.license_key.repository import LicenseKeyRepository
 from polar.logging import Logger
 from polar.member.repository import MemberRepository
 from polar.models import (
@@ -51,6 +50,7 @@ from polar.subscription.service import subscription as subscription_service
 from polar.worker import JobQueueManager
 
 from .adapters import SourceAdapter
+from .benefits import kept_key_properties
 from .canonical import (
     CanonicalProduct,
     CanonicalSubscription,
@@ -674,7 +674,7 @@ class SubscriptionCutover:
             },
             flush=True,
         )
-        await self._keep_license_key(staged, customer, product, subscription)
+        await self._keep_license_key(source, customer, product, subscription)
 
         # Read before the source stop: an immediate cancel clears the flag.
         scheduled_end = _scheduled_end(source, staged)
@@ -689,26 +689,22 @@ class SubscriptionCutover:
 
     async def _keep_license_key(
         self,
-        staged: CanonicalSubscription,
+        source: CanonicalSubscription,
         customer: Customer,
         product: Product,
         subscription: Subscription,
     ) -> None:
         """Seed the subscription's license key grant with the key the customer
         already has. Activating it then grants that key instead of a new one."""
-        if staged.license_key is None:
+        properties = await kept_key_properties(
+            self.session, product.organization_id, source.license_key
+        )
+        if not properties:
             return
         benefit = await BenefitRepository.from_session(
             self.session
         ).get_by_product_and_type(product.id, BenefitType.license_keys)
         if benefit is None:
-            return
-        if (
-            await LicenseKeyRepository.from_session(
-                self.session
-            ).get_by_organization_and_key(product.organization_id, staged.license_key)
-            is not None
-        ):
             return
         # The grant task looks the grant up by the customer's owner member.
         member = await MemberRepository.from_session(
@@ -720,7 +716,7 @@ class SubscriptionCutover:
                 benefit=benefit,
                 member=member,
                 subscription=subscription,
-                properties={"user_provided_key": staged.license_key},
+                properties=properties,
             ),
             flush=True,
         )

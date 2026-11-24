@@ -271,7 +271,7 @@ class TestExtract:
         assert subscription.payment_method.last4 == "4242"
         assert subscription.price_tax_behavior == TaxBehavior.exclusive
         assert subscription.import_tax_behavior() == TaxBehavior.exclusive
-        assert subscription.license_key == "KEY-SUB"
+        assert subscription.license_key is None
 
     async def test_usage_price_reads_decimal_cents(self) -> None:
         usage = {"usage_aggregation": "sum"}
@@ -417,6 +417,18 @@ class TestGetSourceAccount:
 
 @pytest.mark.anyio
 class TestGetSubscription:
+    async def test_reads_the_subscriptions_license_key(self) -> None:
+        adapter, requests = _adapter(
+            {"/v1/subscriptions/100": {"data": _subscription()}}
+        )
+
+        subscription = await adapter.get_subscription("100")
+
+        assert subscription is not None
+        assert subscription.license_key == "KEY-SUB"
+        [lookup] = [r for r in requests if r.url.path == "/v1/license-keys"]
+        assert lookup.url.params["filter[order_item_id]"] == "80"
+
     async def test_period_start_keeps_month_end_anchor(self) -> None:
         adapter, _ = _adapter(
             {

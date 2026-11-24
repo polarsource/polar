@@ -279,7 +279,7 @@ class CanonicalSubscription:
     # ``price_source_id`` and the fields above then describe the plan.
     add_on: CanonicalSubscriptionAddOn | None = None
     # The source's license key for this subscription, kept on Polar so the
-    # customer's apps keep working.
+    # customer's apps keep working. Read at cutover only, never staged.
     license_key: str | None = None
 
     type = MerchantMigrationRecordType.subscription
@@ -340,6 +340,9 @@ class CanonicalDiscount:
     type = MerchantMigrationRecordType.discount
 
 
+CanonicalBenefitType = Literal["license_keys", "downloadables", "custom"]
+
+
 @dataclass
 class CanonicalBenefitFile:
     source_id: str
@@ -370,6 +373,7 @@ class CanonicalBenefit:
     benefit it already created."""
 
     source_id: str
+    type: CanonicalBenefitType
     description: str
     product_source_ids: list[str]
     license_keys: CanonicalLicenseKeySettings | None = None

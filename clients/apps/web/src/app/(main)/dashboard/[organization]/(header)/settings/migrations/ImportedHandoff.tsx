@@ -84,6 +84,32 @@ export function ImportedHandoff({
   }
   const nothingLanded = nothingImported(landed)
   const earlier = preparedEarlier(landed)
+  const next = onSetUpBenefits
+    ? {
+        title: 'Next: set up benefits',
+        body: SET_UP_BENEFITS,
+        action: {
+          text: 'Set up benefits',
+          disabled: nothingLanded,
+          onClick: onSetUpBenefits,
+        },
+      }
+    : {
+        title: earlier ? 'Next: check saved cards' : 'Next: move saved cards',
+        body: earlier ? MAYBE_ON_POLAR : CARDS_AT_STRIPE,
+        action: {
+          text: start.isPending
+            ? 'Starting…'
+            : earlier
+              ? 'Continue'
+              : 'Start moving cards',
+          // Not disabled on success: that would strand the merchant if the
+          // refetch which unmounts this card never arrives, and a second
+          // click is merely a recoverable "already started".
+          disabled: start.isPending || nothingLanded,
+          onClick: () => start.mutate(),
+        },
+      }
 
   return (
     <Box
@@ -114,21 +140,9 @@ export function ImportedHandoff({
 
       <Box flexDirection="column" rowGap="xs">
         <Text variant="title" as="h3">
-          {onSetUpBenefits
-            ? 'Next: set up benefits'
-            : earlier
-              ? 'Next: check saved cards'
-              : 'Next: move saved cards'}
+          {next.title}
         </Text>
-        <Text color="muted">
-          {nothingLanded
-            ? NOTHING_TO_MOVE
-            : onSetUpBenefits
-              ? SET_UP_BENEFITS
-              : earlier
-                ? MAYBE_ON_POLAR
-                : CARDS_AT_STRIPE}
-        </Text>
+        <Text color="muted">{nothingLanded ? NOTHING_TO_MOVE : next.body}</Text>
       </Box>
 
       {start.error && (
@@ -140,24 +154,7 @@ export function ImportedHandoff({
       <ButtonGroup
         size="sm"
         actions={[
-          onSetUpBenefits
-            ? {
-                text: 'Set up benefits',
-                disabled: nothingLanded,
-                onClick: onSetUpBenefits,
-              }
-            : {
-                text: start.isPending
-                  ? 'Starting…'
-                  : earlier
-                    ? 'Continue'
-                    : 'Start moving cards',
-                // Not disabled on success: that would strand the merchant if the
-                // refetch which unmounts this card never arrives, and a second
-                // click is merely a recoverable "already started".
-                disabled: start.isPending || nothingLanded,
-                onClick: () => start.mutate(),
-              },
+          next.action,
           { text: 'Review records', onClick: onReviewRecords },
         ]}
       />

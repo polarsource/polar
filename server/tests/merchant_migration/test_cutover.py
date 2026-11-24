@@ -382,13 +382,11 @@ class TestRun:
             },
         )
         await set_product_benefits(save_fixture, product=product, benefits=[benefit])
-        pending_record.canonical = serialize(
-            replace(canonical_subscription(), license_key="KEY-1")
-        )
-        await save_fixture(pending_record)
         copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
 
-        outcome = await cutover(_source())
+        outcome = await cutover(
+            _FakeSourceAdapter(replace(canonical_subscription(), license_key="KEY-1"))
+        )
 
         assert outcome.status == MerchantMigrationCutoverStatus.moved
         subscription = await _created(session, pending_record)

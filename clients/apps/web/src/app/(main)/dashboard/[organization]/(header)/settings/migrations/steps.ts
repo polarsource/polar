@@ -64,7 +64,7 @@ export const MIGRATION_STEPS: MigrationStepDef[] = [
 
 // Lemon Squeezy sells license keys and files, which become Polar benefits
 // between the import and the card move.
-const BENEFITS_STEP: MigrationStepDef = {
+export const BENEFITS_STEP: MigrationStepDef = {
   key: 'benefits',
   short: 'Benefits',
   owner: 'you',
@@ -74,17 +74,16 @@ const BENEFITS_STEP: MigrationStepDef = {
   steps: ['create_catalog', 'set_up_benefits'],
 }
 
+const LEMON_SQUEEZY_STEPS: MigrationStepDef[] = MIGRATION_STEPS.flatMap((def) =>
+  def.key === 'cards'
+    ? [BENEFITS_STEP, { ...def, steps: ['copy_cards'] }]
+    : [def],
+)
+
 export function migrationSteps(
   source: schemas['MerchantMigration']['source_platform'],
 ): MigrationStepDef[] {
-  if (source !== 'lemon_squeezy') {
-    return MIGRATION_STEPS
-  }
-  return MIGRATION_STEPS.flatMap((def) =>
-    def.key === 'cards'
-      ? [BENEFITS_STEP, { ...def, steps: ['copy_cards'] }]
-      : [def],
-  )
+  return source === 'lemon_squeezy' ? LEMON_SQUEEZY_STEPS : MIGRATION_STEPS
 }
 
 export const OWNER_LABELS: Record<StepOwner, string | null> = {

@@ -44,9 +44,8 @@ from polar.file.s3 import S3_SERVICES
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.utils import generate_uuid
 from polar.license_key.repository import LicenseKeyRepository
-from polar.member.repository import MemberRepository
 from polar.member.service import member_service
-from polar.models import Benefit, Customer, File, MerchantMigration, Organization
+from polar.models import Benefit, Customer, File, Organization
 from polar.models.benefit import BenefitType
 from polar.models.file import FileServiceTypes
 from polar.models.merchant_migration_record import MerchantMigrationRecordType
@@ -118,13 +117,11 @@ class MigrationBenefits:
         self,
         session: AsyncSession,
         redis: Redis,
-        migration: MerchantMigration,
         organization: Organization,
         adapter: LemonSqueezyAdapter,
     ) -> None:
         self.session = session
         self.redis = redis
-        self.migration = migration
         self.organization = organization
         self.adapter = adapter
         self.auth_subject = AuthSubject(
@@ -132,9 +129,15 @@ class MigrationBenefits:
             {Scope.products_write, Scope.benefits_write, Scope.customers_write},
             None,
         )
+        self._proposals: list[BenefitProposal] | None = None
 
     async def proposals(self) -> list[BenefitProposal]:
-        return await list_proposals(self.session, self.organization.id, self.adapter)
+        """Read once per run. Creating a benefit refreshes it."""
+        if self._proposals is None:
+            self._proposals = await list_proposals(
+                self.session, self.organization.id, self.adapter
+            )
+        return self._proposals
 
     async def create_next(self, selected: Collection[str]) -> bool:
         """Create one selected benefit not created yet, with its files, and add
@@ -144,14 +147,12 @@ class MigrationBenefits:
         for proposal in await self.proposals():
             if proposal.source.source_id not in selected:
                 continue
-            if proposal.created is not None:
-                for product_id in proposal.product_ids:
-                    await self._attach(product_id, proposal.created)
-                continue
-            benefit = await self._create(proposal.source)
+            benefit = proposal.created or await self._create(proposal.source)
             for product_id in proposal.product_ids:
                 await self._attach(product_id, benefit)
-            return True
+            if proposal.created is None:
+                self._proposals = None
+                return True
         return False
 
     async def grant_purchases(self, selected: Collection[str]) -> None:
@@ -179,7 +180,7 @@ class MigrationBenefits:
         create: (
             BenefitLicenseKeysCreate | BenefitDownloadablesCreate | BenefitCustomCreate
         )
-        if source.links:
+        if source.type == BenefitType.custom:
             create = BenefitCustomCreate(
                 type=BenefitType.custom,
                 description=source.description,
@@ -190,7 +191,8 @@ class MigrationBenefits:
                     )
                 ),
             )
-        elif source.license_keys is not None:
+        elif source.type == BenefitType.license_keys:
+            assert source.license_keys is not None
             settings = source.license_keys
             create = BenefitLicenseKeysCreate(
                 type=BenefitType.license_keys,
@@ -283,23 +285,19 @@ class MigrationBenefits:
         self, purchase: CanonicalPurchase, benefits: Sequence[Benefit]
     ) -> None:
         customer = await self._buyer(purchase)
-        member = await MemberRepository.from_session(
-            self.session
-        ).get_owner_by_customer_id(customer.id) or (
-            await member_service.create_owner_member(
-                self.session, customer, self.organization
-            )
+        member = await member_service.create_owner_member(
+            self.session, customer, self.organization
         )
         if member is None:
             return
         for benefit in benefits:
-            properties: dict[str, str] = {}
-            if (
-                benefit.type == BenefitType.license_keys
-                and purchase.license_key is not None
-                and not await self._key_taken(purchase.license_key)
-            ):
-                properties["user_provided_key"] = purchase.license_key
+            properties = (
+                await kept_key_properties(
+                    self.session, self.organization.id, purchase.license_key
+                )
+                if benefit.type == BenefitType.license_keys
+                else {}
+            )
             try:
                 await benefit_grant_service.grant_manually(
                     self.session,
@@ -325,12 +323,19 @@ class MigrationBenefits:
             name=purchase.name,
         )
 
-    async def _key_taken(self, key: str) -> bool:
-        repository = LicenseKeyRepository.from_session(self.session)
-        return (
-            await repository.get_by_organization_and_key(self.organization.id, key)
-            is not None
-        )
+
+async def kept_key_properties(
+    session: AsyncSession, organization_id: UUID, key: str | None
+) -> dict[str, str]:
+    """Grant properties that make the license key grant reuse ``key``. Empty
+    when there's none or the organization already has it: keys are unique per
+    organization, so the grant then makes a new one."""
+    if key is None:
+        return {}
+    taken = await LicenseKeyRepository.from_session(
+        session
+    ).get_by_organization_and_key(organization_id, key)
+    return {} if taken is not None else {"user_provided_key": key}
 
 
 async def _download(url: str, buffer: IO[bytes]) -> tuple[int, "hashlib._Hash"]:

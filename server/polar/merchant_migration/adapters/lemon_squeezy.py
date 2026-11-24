@@ -17,6 +17,7 @@ from typing import Any, Literal
 
 import httpx2
 
+from polar.benefit.strategies.base.schemas import BENEFIT_DESCRIPTION_MAX_LENGTH
 from polar.enums import RecurringInterval, TaxBehavior
 from polar.kit.schemas import Schema
 
@@ -25,6 +26,7 @@ from ..canonical import (
     CanonicalBenefit,
     CanonicalBenefitFile,
     CanonicalBenefitLink,
+    CanonicalBenefitType,
     CanonicalCollectionMethod,
     CanonicalCustomer,
     CanonicalDiscount,
@@ -60,7 +62,6 @@ LICENSE_LENGTH_UNITS: dict[str, Literal["day", "month", "year"]] = {
     "months": "month",
     "years": "year",
 }
-BENEFIT_DESCRIPTION_MAX_LENGTH = 42
 
 
 class LemonSqueezyStoreRequired(MerchantMigrationError):
@@ -267,9 +268,7 @@ class LemonSqueezyAdapter:
             return None
         latest = prices[-1]
         latest_attributes = latest["attributes"]
-        # One-time prices carry a renewal interval too; only the category says
-        # whether the price renews.
-        recurring = latest_attributes.get("category") == "subscription"
+        recurring = _renews(latest)
         recurring_interval = (
             latest_attributes.get("renewal_interval_unit") if recurring else None
         )
@@ -447,7 +446,6 @@ class LemonSqueezyAdapter:
         await self._load_all_prices()
         discounts_by_order = await self._load_redemptions()
         tax_behaviors = await self._load_order_tax_behaviors()
-        license_keys = await self._load_license_keys()
         currency = await self._currency()
         records: list[CanonicalRecord] = [
             self._map_subscription(
@@ -456,7 +454,6 @@ class LemonSqueezyAdapter:
                 tax_behaviors,
                 currency,
                 customer_countries,
-                license_keys,
             )
             for subscription in subscriptions
             if subscription["attributes"]["status"] not in SKIPPED_SUBSCRIPTION_STATUSES
@@ -510,8 +507,8 @@ class LemonSqueezyAdapter:
         return by_order
 
     async def _load_license_keys(self) -> dict[str, str]:
-        """Usable keys per order item. A subscription's key belongs to the order
-        item that started it, and a one-time purchase's to its only item."""
+        """Usable keys per order item: a one-time purchase's key belongs to
+        its only item."""
         if self._license_keys is not None:
             return self._license_keys
         keys: dict[str, str] = {}
@@ -521,10 +518,11 @@ class LemonSqueezyAdapter:
                 "/license-keys", page, self._store_filter
             )
             for license_key in license_keys:
-                attributes = license_key["attributes"]
-                if attributes.get("disabled") or attributes.get("status") == "disabled":
-                    continue
-                keys.setdefault(str(attributes["order_item_id"]), attributes["key"])
+                order_item_id = license_key["attributes"]["order_item_id"]
+                if _usable_key_for(license_key, order_item_id):
+                    keys.setdefault(
+                        str(order_item_id), license_key["attributes"]["key"]
+                    )
             if not has_more:
                 break
             page += 1
@@ -558,44 +556,49 @@ class LemonSqueezyAdapter:
             page += 1
 
         files_by_variant = await self._load_files({v["id"] for v, _ in variants})
-        license_benefits: dict[str, CanonicalBenefit] = {}
-        file_benefits: dict[str, CanonicalBenefit] = {}
-        link_benefits: dict[str, CanonicalBenefit] = {}
+        groups: dict[str, CanonicalBenefit] = {}
+
+        def add(
+            variant_id: str,
+            type: CanonicalBenefitType,
+            key: str,
+            description: str,
+            **payload: Any,
+        ) -> None:
+            source_id = f"{self.store_id}:{type}:{key}"
+            groups.setdefault(
+                source_id,
+                CanonicalBenefit(
+                    source_id=source_id,
+                    type=type,
+                    description=description,
+                    product_source_ids=[],
+                    **payload,
+                ),
+            ).product_source_ids.append(variant_id)
+
         for variant, product_name in variants:
             attributes = variant["attributes"]
             if attributes.get("has_license_keys"):
                 settings = _license_key_settings(attributes)
-                key = (
-                    f"{self.store_id}:license_keys:"
+                add(
+                    variant["id"],
+                    "license_keys",
                     f"{attributes['product_id']}:"
                     f"{settings.activation_limit or 'unlimited'}:"
                     f"{settings.expires_ttl or 'never'}:"
-                    f"{settings.expires_timeframe or 'never'}"
+                    f"{settings.expires_timeframe or 'never'}",
+                    _description(product_name, "license key"),
+                    license_keys=settings,
                 )
-                benefit = license_benefits.setdefault(
-                    key,
-                    CanonicalBenefit(
-                        source_id=key,
-                        description=_description(product_name, "license key"),
-                        product_source_ids=[],
-                        license_keys=settings,
-                    ),
+            if files := files_by_variant.get(variant["id"]):
+                add(
+                    variant["id"],
+                    "downloadables",
+                    _digest(",".join(sorted(file.source_id for file in files))),
+                    _description(product_name, "files"),
+                    files=files,
                 )
-                benefit.product_source_ids.append(variant["id"])
-            files = files_by_variant.get(variant["id"])
-            if files:
-                file_ids = ",".join(sorted(file.source_id for file in files))
-                key = f"{self.store_id}:files:" + _digest(file_ids)
-                benefit = file_benefits.setdefault(
-                    key,
-                    CanonicalBenefit(
-                        source_id=key,
-                        description=_description(product_name, "files"),
-                        product_source_ids=[],
-                        files=files,
-                    ),
-                )
-                benefit.product_source_ids.append(variant["id"])
             links = [
                 CanonicalBenefitLink(
                     title=link.get("title") or link["url"], url=link["url"]
@@ -604,23 +607,14 @@ class LemonSqueezyAdapter:
                 if link.get("url")
             ]
             if links:
-                urls = ",".join(f"{link.title}|{link.url}" for link in links)
-                key = f"{self.store_id}:links:" + _digest(urls)
-                benefit = link_benefits.setdefault(
-                    key,
-                    CanonicalBenefit(
-                        source_id=key,
-                        description=_description(product_name, "links"),
-                        product_source_ids=[],
-                        links=links,
-                    ),
+                add(
+                    variant["id"],
+                    "custom",
+                    _digest(",".join(f"{link.title}|{link.url}" for link in links)),
+                    _description(product_name, "links"),
+                    links=links,
                 )
-                benefit.product_source_ids.append(variant["id"])
-        return [
-            *license_benefits.values(),
-            *file_benefits.values(),
-            *link_benefits.values(),
-        ]
+        return sorted(groups.values(), key=lambda benefit: _TYPE_ORDER[benefit.type])
 
     async def _load_files(
         self, variant_ids: set[str]
@@ -685,10 +679,9 @@ class LemonSqueezyAdapter:
 
     def _is_subscription_variant(self, variant_id: str) -> bool:
         prices = self._prices_by_variant.get(variant_id, [])
-        if not prices:
-            return False
-        latest = max(prices, key=lambda price: price["attributes"]["created_at"])
-        return latest["attributes"].get("category") == "subscription"
+        return bool(prices) and _renews(
+            max(prices, key=lambda price: price["attributes"]["created_at"])
+        )
 
     async def get_subscription(self, source_id: str) -> CanonicalSubscription | None:
         body = await self._retrieve_subscription(source_id)
@@ -698,12 +691,35 @@ class LemonSqueezyAdapter:
         ):
             return None
         await self._load_all_prices()
-        return self._map_subscription(
+        subscription = self._map_subscription(
             body["data"],
             await self._load_redemptions(),
             await self._load_order_tax_behaviors(),
             await self._currency(),
             _customer_countries(body.get("included", [])),
+        )
+        subscription.license_key = await self._license_key(
+            body["data"]["attributes"].get("order_item_id")
+        )
+        return subscription
+
+    async def _license_key(self, order_item_id: Any) -> str | None:
+        """The usable key of the order item that started a subscription, read
+        one at a time so the cutover never pages every key of the store."""
+        if order_item_id is None:
+            return None
+        license_keys, _, _ = await self._list(
+            "/license-keys",
+            1,
+            {**self._store_filter, "filter[order_item_id]": order_item_id},
+        )
+        return next(
+            (
+                license_key["attributes"]["key"]
+                for license_key in license_keys
+                if _usable_key_for(license_key, order_item_id)
+            ),
+            None,
         )
 
     async def stop_source_subscription(
@@ -746,7 +762,6 @@ class LemonSqueezyAdapter:
         tax_behaviors: dict[str, TaxBehavior],
         currency: str,
         customer_countries: dict[str, str],
-        license_keys: dict[str, str] | None = None,
     ) -> CanonicalSubscription:
         attributes = subscription["attributes"]
         status = attributes["status"]
@@ -805,7 +820,6 @@ class LemonSqueezyAdapter:
             # Lemon Squeezy is the merchant of record and always computes tax.
             automatic_tax=True,
             price_tax_behavior=tax_behaviors.get(str(attributes["order_id"])),
-            license_key=(license_keys or {}).get(str(attributes.get("order_item_id"))),
         )
 
     def _price_id(self, item: dict[str, Any], variant_id: Any) -> str:
@@ -905,6 +919,28 @@ def _license_key_settings(attributes: dict[str, Any]) -> CanonicalLicenseKeySett
         else int(attributes["license_activation_limit"]),
         expires_ttl=None if never_expires else int(attributes["license_length_value"]),
         expires_timeframe=None if never_expires else timeframe,
+    )
+
+
+_TYPE_ORDER: dict[CanonicalBenefitType, int] = {
+    "license_keys": 0,
+    "downloadables": 1,
+    "custom": 2,
+}
+
+
+def _renews(price: dict[str, Any]) -> bool:
+    # One-time prices carry a renewal interval too; only the category says
+    # whether the price renews.
+    return price["attributes"].get("category") == "subscription"
+
+
+def _usable_key_for(license_key: dict[str, Any], order_item_id: Any) -> bool:
+    attributes = license_key["attributes"]
+    return (
+        str(attributes.get("order_item_id")) == str(order_item_id)
+        and not attributes.get("disabled")
+        and attributes.get("status") != "disabled"
     )
 
 

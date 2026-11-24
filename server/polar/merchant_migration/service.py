@@ -1016,21 +1016,11 @@ class MerchantMigrationService:
             items=[
                 MerchantMigrationBenefit(
                     id=proposal.source.source_id,
-                    type="custom"
-                    if proposal.source.links
-                    else "license_keys"
-                    if proposal.source.license_keys is not None
-                    else "downloadables",
+                    type=proposal.source.type,
                     description=proposal.source.description,
-                    activation_limit=proposal.source.license_keys.activation_limit
-                    if proposal.source.license_keys
-                    else None,
-                    expires_ttl=proposal.source.license_keys.expires_ttl
-                    if proposal.source.license_keys
-                    else None,
-                    expires_timeframe=proposal.source.license_keys.expires_timeframe
-                    if proposal.source.license_keys
-                    else None,
+                    activation_limit=settings.activation_limit if settings else None,
+                    expires_ttl=settings.expires_ttl if settings else None,
+                    expires_timeframe=settings.expires_timeframe if settings else None,
                     files=[
                         MerchantMigrationBenefitFile(name=file.name, size=file.size)
                         for file in proposal.source.files
@@ -1046,6 +1036,7 @@ class MerchantMigrationService:
                     benefit_id=proposal.created.id if proposal.created else None,
                 )
                 for proposal in proposals
+                for settings in [proposal.source.license_keys]
             ]
         )
 
@@ -1081,12 +1072,8 @@ class MerchantMigrationService:
             raise BenefitsNotReady()
 
         # Skipping clears a failed run, so the step reads as done.
-        update_dict: dict[str, object] = {
-            "step": MerchantMigrationStep.set_up_benefits,
-            "operation": None,
-        }
-        if benefits_create.benefit_ids:
-            update_dict["operation"] = MerchantMigrationOperation(
+        new_operation = (
+            MerchantMigrationOperation(
                 status=MerchantMigrationOperationStatus.pending,
                 kind=MerchantMigrationOperationKind.benefits,
                 cursor={
@@ -1095,9 +1082,18 @@ class MerchantMigrationService:
                 },
                 last_progress_at=utc_now(),
             )
+            if benefits_create.benefit_ids
+            else None
+        )
         repository = MerchantMigrationRepository.from_session(session)
-        await repository.update(migration, update_dict=update_dict)
-        if benefits_create.benefit_ids:
+        await repository.update(
+            migration,
+            update_dict={
+                "step": MerchantMigrationStep.set_up_benefits,
+                "operation": new_operation,
+            },
+        )
+        if new_operation is not None:
             enqueue_job(_BENEFITS_TASK, merchant_migration_id=migration.id)
         return migration
 
@@ -1129,7 +1125,6 @@ class MerchantMigrationService:
                 benefits = MigrationBenefits(
                     session,
                     redis,
-                    migration,
                     organization,
                     await self._benefits_adapter(migration),
                 )

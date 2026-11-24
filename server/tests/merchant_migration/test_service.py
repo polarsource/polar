@@ -5752,6 +5752,7 @@ class TestListRecordsCutover:
 def _license_benefit() -> CanonicalBenefit:
     return CanonicalBenefit(
         source_id="license_keys:3:1:year",
+        type="license_keys",
         description="Pro license key",
         product_source_ids=["prod_1:month:1", "variant_lifetime"],
         license_keys=CanonicalLicenseKeySettings(

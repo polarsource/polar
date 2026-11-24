@@ -10,6 +10,7 @@ import { Alert, ButtonGroup, Spinner, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useState } from 'react'
 import { ImportedStep } from '../ImportedStep'
+import { BENEFITS_STEP } from '../steps'
 import { BenefitsForm } from './BenefitsForm'
 
 // Lemon Squeezy only. The catalog receipt hands off to this step instead of
@@ -25,8 +26,7 @@ export function BenefitsStep({
   const running =
     operation?.kind === 'benefits' && isActiveMigrationOperation(operation)
   const failed = operation?.kind === 'benefits' && operation.status === 'failed'
-  const settled = migration.step === 'set_up_benefits' && !running && !failed
-  const showForm = editing || failed || (!settled && !running)
+  const showForm = editing || failed
   const benefits = useMigrationBenefits(
     migration.id,
     operation,
@@ -46,13 +46,9 @@ export function BenefitsStep({
     <Box flexDirection="column" rowGap="l">
       <Box flexDirection="column" rowGap="xs">
         <Text variant="title" as="h3">
-          Set up benefits
+          {BENEFITS_STEP.title}
         </Text>
-        <Text color="muted">
-          We found these in Lemon Squeezy. Polar creates them with the same
-          settings and adds them to your products. You can edit them later from
-          Benefits.
-        </Text>
+        <Text color="muted">{BENEFITS_STEP.description}</Text>
       </Box>
       {running ? (
         <Alert
@@ -73,7 +69,7 @@ export function BenefitsStep({
       ) : showForm ? (
         <BenefitsForm
           migrationId={migration.id}
-          benefits={[...(benefits.data?.items ?? [])]}
+          benefits={benefits.data?.items ?? []}
           failure={failed ? operation?.error : null}
           onDone={() => setEditing(false)}
         />

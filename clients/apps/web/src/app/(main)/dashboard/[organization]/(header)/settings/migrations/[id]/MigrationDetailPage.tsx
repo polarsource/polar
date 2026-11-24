@@ -140,11 +140,11 @@ function StepContent({
       return <ReviewTable migrationId={migration.id} />
     // No `StepHeading`: the handoff panel is its own heading.
     case 'create_catalog':
-      return migration.source_platform === 'lemon_squeezy' ? (
-        <BenefitsStep migration={migration} />
-      ) : (
-        <ImportedStep migrationId={migration.id} />
-      )
+      if (migration.source_platform !== 'lemon_squeezy') {
+        return <ImportedStep migrationId={migration.id} />
+      }
+    // Lemon Squeezy sets benefits up before moving cards.
+    // falls through
     case 'set_up_benefits':
       return <BenefitsStep migration={migration} />
     case 'copy_cards':

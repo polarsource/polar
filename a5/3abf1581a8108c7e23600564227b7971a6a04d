@@ -1,0 +1,25 @@
+server/scripts/compensate_meter_credit_clawbacks.py
+  s_ca32a95695eef6::t_eb69e5e9a19156 123,141,148
+  s_ca32a95695eef6::t_1a4bacb5eb0cdf 138,146
+  s_ca32a95695eef6::t_eda910bc403f44 1-122,124-137,139-140,142-145,147,149-156
+server/tests/scripts/test_compensate_meter_credit_clawbacks.py
+  s_ca32a95695eef6::t_68f696cc58f82f 1-15,17-27,29-76,82-83,85-86,88-104
+  s_ca32a95695eef6::t_6df4540c66e76d 77-81,84,87
+  s_ca32a95695eef6::t_56a73d934b1569 16,28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a53abf1581a8108c7e23600564227b7971a6a04d",
+  "prompts": {},
+  "sessions": {
+    "s_ca32a95695eef6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bc5936ea-be43-41c7-ad4c-5d6c6d11ab13",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

@@ -10,6 +10,7 @@ import { Alert, ButtonGroup, Spinner, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useState } from 'react'
 import { ImportedStep } from '../ImportedStep'
+import { plural } from '../review/importSummary'
 import { BENEFITS_STEP } from '../steps'
 import { BenefitsForm } from './BenefitsForm'
 
@@ -77,6 +78,7 @@ export function BenefitsStep({
         <BenefitsReady
           migrationId={migration.id}
           created={(benefits.data?.items ?? []).filter((b) => b.benefit_id)}
+          pastPurchasesGranted={!!benefits.data?.past_purchases_granted}
           onEdit={() => setEditing(true)}
         />
       )}
@@ -87,10 +89,12 @@ export function BenefitsStep({
 function BenefitsReady({
   migrationId,
   created,
+  pastPurchasesGranted,
   onEdit,
 }: {
   migrationId: string
   created: schemas['MerchantMigrationBenefit'][]
+  pastPurchasesGranted: boolean
   onEdit: () => void
 }) {
   const start = useStartPanTransfer(migrationId)
@@ -109,13 +113,30 @@ function BenefitsReady({
         <Text variant="title" as="h3">
           {created.length ? 'Benefits created' : 'Benefits skipped'}
         </Text>
-        <Text color="muted">
-          {created.length
-            ? `${created.map((b) => b.description).join(', ')} ${
-                created.length === 1 ? 'is' : 'are'
-              } on your products. Subscribers keep their license key when you switch billing.`
-            : 'No benefits were created. You can add them later from each product.'}
-        </Text>
+        {created.length ? (
+          <>
+            <Text color="muted">
+              {plural(created.length, 'benefit')}{' '}
+              {created.length === 1 ? 'is' : 'are'} on Polar. You can edit them
+              from Benefits.
+            </Text>
+            {created.some((benefit) => benefit.type === 'license_keys') && (
+              <Text color="muted">
+                Subscribers keep their license key when you switch billing.
+              </Text>
+            )}
+            {pastPurchasesGranted && (
+              <Text color="muted">
+                Past one-time buyers already have their license keys and files.
+                They find them in their customer portal.
+              </Text>
+            )}
+          </>
+        ) : (
+          <Text color="muted">
+            No benefits were created. You can add them later from each product.
+          </Text>
+        )}
       </Box>
       <Box
         borderTopWidth={1}

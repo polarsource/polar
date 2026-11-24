@@ -5902,6 +5902,8 @@ class TestExecuteBenefits:
 
         assert migration.operation is not None
         assert migration.operation.status == MerchantMigrationOperationStatus.done
+        listed = await service.get_benefits(session, auth_subject, migration.id)
+        assert listed.past_purchases_granted
         benefit_repository = BenefitRepository.from_session(session)
         benefit = await benefit_repository.get_by_external_id_and_organization(
             "lemon_squeezy:license_keys:3:1:year", organization.id

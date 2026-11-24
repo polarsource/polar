@@ -1012,7 +1012,11 @@ class MerchantMigrationService:
         names = await ProductRepository.from_session(session).get_names_by_ids(
             migration.organization_id, product_ids
         )
+        operation = migration.operation
         return MerchantMigrationBenefits(
+            past_purchases_granted=operation is not None
+            and operation.kind == MerchantMigrationOperationKind.benefits
+            and bool((operation.cursor or {}).get("past_purchases_granted")),
             items=[
                 MerchantMigrationBenefit(
                     id=proposal.source.source_id,
@@ -1037,7 +1041,7 @@ class MerchantMigrationService:
                 )
                 for proposal in proposals
                 for settings in [proposal.source.license_keys]
-            ]
+            ],
         )
 
     async def set_up_benefits(
@@ -1132,6 +1136,7 @@ class MerchantMigrationService:
                 if not more and cursor.get("grant_past_purchases"):
                     await benefits.grant_purchases(selected)
                     cursor["grant_past_purchases"] = False
+                    cursor["past_purchases_granted"] = True
         except PolarError as error:
             log.warning(
                 "merchant_migration.benefits_failed",
@@ -1179,7 +1184,11 @@ class MerchantMigrationService:
             return
         await repository.update(
             migration,
-            update_dict={"operation": self._done_operation(migration)},
+            update_dict={
+                "operation": self._done_operation(migration).model_copy(
+                    update={"cursor": cursor}
+                )
+            },
             flush=True,
         )
 

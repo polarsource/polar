@@ -28554,6 +28554,11 @@ export interface components {
        * @description What the source gives buyers, as Polar benefits.
        */
       items: components['schemas']['MerchantMigrationBenefit'][]
+      /**
+       * Past Purchases Granted
+       * @description Whether the last set-up run gave past one-time buyers their license keys and files.
+       */
+      past_purchases_granted: boolean
     }
     /** MerchantMigrationBenefitsCreate */
     MerchantMigrationBenefitsCreate: {

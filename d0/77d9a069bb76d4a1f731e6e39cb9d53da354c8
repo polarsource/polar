@@ -1,0 +1,24 @@
+server/polar/worker/_enqueue.py
+  s_bee25fb0c87445::t_4be148e1e40cd9 151,154,203,206
+server/tests/worker/test_debounce.py
+  s_bee25fb0c87445::t_65bf71360a0447 239-253
+server/polar/worker/_debounce.py
+  s_bee25fb0c87445::t_664fee1074cc0f 166
+  s_bee25fb0c87445::t_4be148e1e40cd9 168-169,185,193
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d077d9a069bb76d4a1f731e6e39cb9d53da354c8",
+  "prompts": {},
+  "sessions": {
+    "s_bee25fb0c87445": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "631f92da-a28b-4bfb-b2cb-9e281ac4e731",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

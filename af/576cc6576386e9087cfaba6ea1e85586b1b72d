@@ -1,0 +1,53 @@
+server/polar/customer_portal/auth/__init__.py
+  s_9d4fcc69d80fc5::t_bb1ae460479671 82,94-105,110,115
+server/tests/customer_portal/endpoints/test_order.py
+  s_9d4fcc69d80fc5::t_f4273e6c80462b 23,294-322,326-334
+  s_9d4fcc69d80fc5::t_d78115ce8b58b3 39,113,234
+  s_9d4fcc69d80fc5::t_0820160d4c9fe6 323-325
+  s_9d4fcc69d80fc5::t_b841a037b8faa4 335
+server/polar/order/service.py
+  s_9d4fcc69d80fc5::t_f4273e6c80462b 1534
+  s_9d4fcc69d80fc5::t_0eeb10ccb3e227 1484,1581
+  s_9d4fcc69d80fc5::t_81bf32204c99bc 89,604-606,619-620,623-625,703-705,2485-2488,2490-2494,2539-2545,2549-2551,2557-2559,2561-2567
+  s_9d4fcc69d80fc5::t_1ec82aabff4b7c 512,515,596-599,601-603,607,612,617-618,621-622,658,661,664,702,710,724,751,1470,1710,1715-1720
+  s_9d4fcc69d80fc5::t_a880b23768962e 1535,1539-1548,2500-2503,2506,2509,2548,2552,2555-2556,2568-2569,2583-2585,3535,3537
+server/polar/customer_portal/endpoints/order.py
+  s_9d4fcc69d80fc5::t_0eeb10ccb3e227 45,200,206,221,233-234
+server/polar/order/repository.py
+  s_9d4fcc69d80fc5::t_bb1ae460479671 96-97,99-100,105-107,109-121,513-517
+  s_9d4fcc69d80fc5::t_81bf32204c99bc 101-104
+server/polar/subscription/service.py
+  s_9d4fcc69d80fc5::t_3b0c48c82957ec 1620,1624,1649,3283,3313-3320,3327-3328,3339-3340,3345,3368,3372,3375
+  s_9d4fcc69d80fc5::t_0820160d4c9fe6 3324-3325
+  s_9d4fcc69d80fc5::t_777d39c519fcbd 1601,3302-3307,3321-3323,3326,3336,3353
+  s_9d4fcc69d80fc5::t_81bf32204c99bc 110,1542-1544,1631-1647,3237-3239,3269-3271,3483-3485
+server/polar/customer_portal/service/order.py
+  s_9d4fcc69d80fc5::t_777d39c519fcbd 229,379
+  s_9d4fcc69d80fc5::t_81bf32204c99bc 54,189-193,197,217-220,231-235,239-241,250-253,259-264,272-274,279-285
+  s_9d4fcc69d80fc5::t_d74f93825040e6 206-213,215-216,221-223,230,236-238,242-249,254-258,265-269,271,275-278,286-378,383-405
+  s_9d4fcc69d80fc5::t_7fb0630ee9e2db 2-3,7,11,14-16,18-20,26-28,30-39,41-42,45-46,48,52,63-67,176,186-187,195-196,214,270
+  s_9d4fcc69d80fc5::t_0820160d4c9fe6 224-228,380-382
+  s_9d4fcc69d80fc5::t_5cc615296a3c53 194
+server/polar/order/amounts.py
+  s_9d4fcc69d80fc5::t_81bf32204c99bc 146
+  s_9d4fcc69d80fc5::t_1eeb1158e4f44b 9,129,134-135,158,162
+  s_9d4fcc69d80fc5::t_4da2068ba8dce4 147
+docs/openapi/2027-01.openapi.json
+  s_9d4fcc69d80fc5::t_3d5b65dda82749 4370,4483,4582,67430-67451
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "af576cc6576386e9087cfaba6ea1e85586b1b72d",
+  "prompts": {},
+  "sessions": {
+    "s_9d4fcc69d80fc5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20ccd-705d-7a61-9a99-612697cae1a1",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

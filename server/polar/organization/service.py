@@ -500,6 +500,7 @@ class OrganizationService:
             # Meter cycling is GA, but API versions up to 2026-10 still expose the
             # flag. Drop this once those versions no longer read it.
             "meter_cycling_enabled": True,
+            "reducer_billing_enabled": True,
         }
         if "subscription_settings" in create_data:
             create_data["subscription_settings"] = {

@@ -177,15 +177,18 @@ const panTransferHandlers = (id: string) => ({
   },
 })
 
-// Keyed on the operation status too: the list says which benefits exist, and
-// that only changes when a set-up run moves on.
+// Keyed on the operation too: the list says which benefits exist, and that only
+// changes when a set-up run moves on.
 export const useMigrationBenefits = (
   id: string,
-  operationStatus: string | undefined,
+  operation: schemas['MerchantMigrationOperation'] | null | undefined,
   enabled: boolean,
 ) =>
   useQuery({
-    queryKey: ['merchantMigrationBenefits', { id, operationStatus }],
+    queryKey: [
+      'merchantMigrationBenefits',
+      { id, operation: `${operation?.kind}:${operation?.status}` },
+    ],
     queryFn: () =>
       unwrap(
         api.GET('/v1/merchant-migrations/{id}/benefits', {
@@ -208,6 +211,11 @@ export const useSetUpMigrationBenefits = (id: string) =>
       ),
     onSuccess: (migration) => {
       getQueryClient().setQueryData(['merchantMigration', { id }], migration)
+      // The run ends on `done` like the import before it, so the list read
+      // before it would otherwise be reused.
+      getQueryClient().invalidateQueries({
+        queryKey: ['merchantMigrationBenefits', { id }],
+      })
       invalidateMigration(id)
     },
   })

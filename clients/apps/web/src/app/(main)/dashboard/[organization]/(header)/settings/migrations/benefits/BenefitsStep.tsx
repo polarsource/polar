@@ -29,7 +29,7 @@ export function BenefitsStep({
   const showForm = editing || failed || (!settled && !running)
   const benefits = useMigrationBenefits(
     migration.id,
-    operation?.status,
+    operation,
     migration.step === 'set_up_benefits' || editing,
   )
 

@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 import pytest
 
 from polar.enums import RecurringInterval
+from polar.kit.billing_period import get_next_anchor
 
 
 def dt(year: int, month: int, day: int, hour: int = 12) -> datetime:
@@ -11,10 +12,10 @@ def dt(year: int, month: int, day: int, hour: int = 12) -> datetime:
 
 class TestGetNextAnchor:
     def test_day(self) -> None:
-        assert RecurringInterval.day.get_next_anchor(dt(2024, 2, 28), 15) == dt(
+        assert get_next_anchor(RecurringInterval.day, dt(2024, 2, 28), 15) == dt(
             2024, 2, 29
         )
-        assert RecurringInterval.day.get_next_anchor(dt(2024, 12, 31), 15) == dt(
+        assert get_next_anchor(RecurringInterval.day, dt(2024, 12, 31), 15) == dt(
             2025, 1, 1
         )
 
@@ -28,7 +29,7 @@ class TestGetNextAnchor:
         ],
     )
     def test_week(self, after: datetime, anchor_day: int, expected: datetime) -> None:
-        assert RecurringInterval.week.get_next_anchor(after, anchor_day) == expected
+        assert get_next_anchor(RecurringInterval.week, after, anchor_day) == expected
 
     @pytest.mark.parametrize(
         ("after", "anchor_day", "expected"),
@@ -50,7 +51,7 @@ class TestGetNextAnchor:
         ],
     )
     def test_month(self, after: datetime, anchor_day: int, expected: datetime) -> None:
-        assert RecurringInterval.month.get_next_anchor(after, anchor_day) == expected
+        assert get_next_anchor(RecurringInterval.month, after, anchor_day) == expected
 
     @pytest.mark.parametrize(
         ("after", "expected"),
@@ -61,11 +62,11 @@ class TestGetNextAnchor:
         ],
     )
     def test_month_strictly_after(self, after: datetime, expected: datetime) -> None:
-        assert RecurringInterval.month.get_next_anchor(after, 15) == expected
+        assert get_next_anchor(RecurringInterval.month, after, 15) == expected
 
     def test_preserves_time_and_timezone(self) -> None:
         after = datetime(2026, 3, 10, 8, 30, 15, 123, tzinfo=UTC)
-        assert RecurringInterval.month.get_next_anchor(after, 31) == datetime(
+        assert get_next_anchor(RecurringInterval.month, after, 31) == datetime(
             2026, 3, 31, 8, 30, 15, 123, tzinfo=UTC
         )
 
@@ -92,7 +93,7 @@ class TestGetNextAnchor:
         expected: datetime,
     ) -> None:
         assert (
-            RecurringInterval.year.get_next_anchor(after, anchor_day, anchor_month)
+            get_next_anchor(RecurringInterval.year, after, anchor_day, anchor_month)
             == expected
         )
 
@@ -116,7 +117,7 @@ class TestGetNextAnchor:
         anchor_month: int | None,
     ) -> None:
         with pytest.raises(ValueError, match="Invalid"):
-            interval.get_next_anchor(dt(2026, 1, 1), anchor_day, anchor_month)
+            get_next_anchor(interval, dt(2026, 1, 1), anchor_day, anchor_month)
 
     @pytest.mark.parametrize(
         ("after", "anchor_day", "interval_count", "expected"),
@@ -149,7 +150,7 @@ class TestGetNextAnchor:
         expected: list[datetime],
     ) -> None:
         interval = RecurringInterval.month
-        periods = [interval.get_next_anchor(after, anchor_day)]
+        periods = [get_next_anchor(interval, after, anchor_day)]
         while len(periods) < len(expected):
             periods.append(
                 interval.get_next_period(periods[-1], anchor_day, interval_count)
@@ -158,7 +159,7 @@ class TestGetNextAnchor:
 
     def test_year_with_interval_count(self) -> None:
         interval = RecurringInterval.year
-        first = interval.get_next_anchor(dt(2023, 6, 1), 29, 2)
+        first = get_next_anchor(interval, dt(2023, 6, 1), 29, 2)
         assert first == dt(2024, 2, 29)
         second = interval.get_next_period(first, 29, 2)
         assert second == dt(2026, 2, 28)

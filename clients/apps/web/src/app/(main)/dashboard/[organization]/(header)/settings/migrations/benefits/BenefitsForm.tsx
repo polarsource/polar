@@ -108,23 +108,20 @@ export function BenefitsForm({
         </BenefitSection>
       )}
 
-      <Text variant="caption" color="muted">
-        {hasLicenseKeys && (
-          <>
-            Your app must{' '}
-            <a
-              href={LICENSE_KEY_DOCS}
-              target="_blank"
-              rel="noreferrer"
-              className="underline"
-            >
-              check license keys with Polar
-            </a>
-            . Used activations and expiry dates start fresh.{' '}
-          </>
-        )}
-        Need anything else moved? Contact us.
-      </Text>
+      {hasLicenseKeys && (
+        <Text variant="caption" color="muted">
+          Your app must{' '}
+          <a
+            href={LICENSE_KEY_DOCS}
+            target="_blank"
+            rel="noreferrer"
+            className="underline"
+          >
+            check license keys with Polar
+          </a>
+          . Used activations and expiry dates start fresh.
+        </Text>
+      )}
 
       {(setUp.error || failure) && (
         <Alert

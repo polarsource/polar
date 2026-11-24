@@ -26,5 +26,5 @@ export function paymentMethodSummaryText(
       NEEDS_NEW_METHOD[assessment] ? sum + count : sum,
     0,
   )
-  return `${plural(affected, 'subscription')} will need a new payment method on Polar: ${joinList(parts)}. They still move, but their first renewal fails and goes to dunning until the customer adds a card.`
+  return `${plural(affected, 'subscription')} may need a new payment method on Polar: ${joinList(parts)}. They still move, but a renewal may fail and go to dunning unless another usable card is already on Polar or the customer adds one before renewal.`
 }

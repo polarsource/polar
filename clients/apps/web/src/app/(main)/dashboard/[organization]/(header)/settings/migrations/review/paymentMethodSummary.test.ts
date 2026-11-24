@@ -16,7 +16,7 @@ describe('paymentMethodSummaryText', () => {
       { assessment: 'paypal', count: 6 },
       { assessment: 'missing', count: 1 },
     ])
-    expect(text).toContain('9 subscriptions will need a new payment method')
+    expect(text).toContain('9 subscriptions may need a new payment method')
     expect(text).toContain(
       '2 on a likely India-issued card, 6 on PayPal and 1 with no payment method',
     )
@@ -26,7 +26,7 @@ describe('paymentMethodSummaryText', () => {
     expect(
       paymentMethodSummaryText([{ assessment: 'not_copyable', count: 1 }]),
     ).toContain(
-      "1 subscription will need a new payment method on Polar: 1 on a method that can't be copied.",
+      "1 subscription may need a new payment method on Polar: 1 on a method that can't be copied.",
     )
   })
 })

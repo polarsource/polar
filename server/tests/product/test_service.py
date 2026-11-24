@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, call
 import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy import delete
+from sqlalchemy import event as sqlalchemy_event
 
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
@@ -22,6 +23,7 @@ from polar.models import (
     Account,
     Benefit,
     Customer,
+    CustomerMeter,
     File,
     Meter,
     Organization,
@@ -3222,3 +3224,126 @@ class TestProductProperties:
 
         assert product_with_seats.has_seat_based_price is True
         assert product_without_seats.has_seat_based_price is False
+
+
+@pytest.fixture
+async def ai_credits(
+    save_fixture: SaveFixture, organization: Organization
+) -> tuple[Meter, Meter]:
+    return (
+        await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="ai_credits",
+            is_current=False,
+        ),
+        await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="ai_credits",
+        ),
+    )
+
+
+@pytest.mark.anyio
+class TestResolveMeterVersions:
+    @pytest.mark.parametrize("meter_changed", [False, True])
+    async def test_customer_on_previous_meter_version(
+        self,
+        meter_changed: bool,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        ai_credits: tuple[Meter, Meter],
+    ) -> None:
+        previous, current = ai_credits
+        top_up_v1, top_up_v2 = [
+            await create_product(
+                save_fixture,
+                organization=organization,
+                recurring_interval=None,
+                external_id="top_up",
+                is_current=is_current,
+                is_archived=not is_current,
+            )
+            for is_current in (False, True)
+        ]
+        for top_up, meter in (
+            (top_up_v1, previous),
+            (top_up_v2, current if meter_changed else previous),
+        ):
+            credits = await create_benefit(
+                save_fixture,
+                organization=organization,
+                type=BenefitType.meter_credit,
+                properties={"meter_id": str(meter.id), "units": 100, "rollover": False},
+            )
+            await set_product_benefits(save_fixture, product=top_up, benefits=[credits])
+        await save_fixture(CustomerMeter(customer=customer, meter=previous))
+
+        resolved = await product_service.resolve_meter_versions(
+            session, top_up_v2, customer.id
+        )
+
+        assert resolved == (top_up_v1 if meter_changed else top_up_v2)
+
+    async def test_no_compatible_version(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        ai_credits: tuple[Meter, Meter],
+    ) -> None:
+        previous, current = ai_credits
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+            prices=[(1000, "usd"), (current, Decimal(100), None, "usd")],
+        )
+        await save_fixture(CustomerMeter(customer=customer, meter=previous))
+
+        assert (
+            await product_service.resolve_meter_versions(session, product, customer.id)
+            is None
+        )
+
+    async def test_current_product_takes_one_query(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        ai_credits: tuple[Meter, Meter],
+    ) -> None:
+        _, current = ai_credits
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+            prices=[(1000, "usd"), (current, Decimal(100), None, "usd")],
+        )
+        await save_fixture(CustomerMeter(customer=customer, meter=current))
+        queries = 0
+
+        def count_query(*args: Any) -> None:
+            nonlocal queries
+            queries += 1
+
+        bind = session.sync_session.bind
+        assert bind is not None
+        sqlalchemy_event.listen(bind, "before_cursor_execute", count_query)
+        try:
+            resolved = await product_service.resolve_meter_versions(
+                session, product, customer.id
+            )
+        finally:
+            sqlalchemy_event.remove(bind, "before_cursor_execute", count_query)
+
+        assert (resolved, queries) == (product, 1)

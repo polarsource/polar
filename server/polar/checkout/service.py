@@ -11,7 +11,7 @@ from pydantic import MISSING, UUID4
 from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy import func, select
 from sqlalchemy.exc import DBAPIError
-from sqlalchemy.orm import contains_eager, joinedload, selectinload
+from sqlalchemy.orm import contains_eager, joinedload, selectinload, undefer
 
 from polar.auth.models import Agent, Anonymous, AuthSubject
 from polar.auth.permission import OrganizationPermission
@@ -34,6 +34,7 @@ from polar.checkout.schemas import (
 from polar.config import settings
 from polar.custom_field.data import validate_custom_field_data
 from polar.customer.repository import CustomerRepository
+from polar.customer_meter.repository import CustomerMeterRepository
 from polar.customer_seat.repository import CustomerSeatRepository
 from polar.customer_seat.service import seat_service
 from polar.customer_session.service import customer_session as customer_session_service
@@ -409,6 +410,9 @@ class CheckoutService:
             products, product, price_set, currency = await self._get_validated_price(
                 session, auth_subject, checkout_create.product_price_id
             )
+            subscription, customer = await self._get_validated_customer(
+                session, checkout_create, product.organization_id
+            )
         elif isinstance(checkout_create, CheckoutProductCreate):
             products, product, price_set, currency = await self._get_validated_product(
                 session,
@@ -416,6 +420,9 @@ class CheckoutService:
                 checkout_create.product_id,
                 checkout_create.currency,
                 ip_country,
+            )
+            subscription, customer = await self._get_validated_customer(
+                session, checkout_create, product.organization_id
             )
         else:
             if isinstance(checkout_create, CheckoutProductsExternalCreate):
@@ -427,6 +434,18 @@ class CheckoutService:
                 products_field = "products"
                 products = await self._get_validated_products(
                     session, auth_subject, checkout_create.products
+                )
+            subscription, customer = await self._get_validated_customer(
+                session, checkout_create, products[0].organization_id
+            )
+            if (
+                customer is not None
+                and subscription is None
+                and not checkout_create.prices
+                and products[0].organization.is_config_as_code_enabled
+            ):
+                products = await self._resolve_meter_versions(
+                    session, products, customer, products_field
                 )
             product = products[0]
             if checkout_create.prices:
@@ -583,35 +602,6 @@ class CheckoutService:
             )
 
         product = await self._eager_load_product(session, product)
-
-        subscription: Subscription | None = None
-        customer: Customer | None = None
-        customer_repository = CustomerRepository.from_session(session)
-        if checkout_create.subscription_id is not None:
-            subscription, customer = await self._get_validated_subscription(
-                session, checkout_create.subscription_id, product.organization_id
-            )
-        elif checkout_create.customer_id is not None:
-            customer = await customer_repository.get_by_id_and_organization(
-                checkout_create.customer_id, product.organization_id
-            )
-            if customer is None:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "customer_id"),
-                            "msg": "Customer does not exist.",
-                            "input": checkout_create.customer_id,
-                        }
-                    ]
-                )
-        elif checkout_create.external_customer_id is not None:
-            # Link customer by external ID, if it exists.
-            # It not, that's fine': we'll create a new customer on confirm.
-            customer = await customer_repository.get_by_external_id_and_organization(
-                checkout_create.external_customer_id, product.organization_id
-            )
 
         amount = calculate_upfront_amount(
             price_set.get_static_prices(),
@@ -2097,6 +2087,48 @@ class CheckoutService:
             products, external_product_ids, "external_products"
         )
 
+    async def _resolve_meter_versions(
+        self,
+        session: AsyncSession,
+        products: Sequence[Product],
+        customer: Customer,
+        field: str,
+    ) -> Sequence[Product]:
+        """Swap each product for its version on the same meter versions as the
+        customer: a customer on an older catalog buys from that catalog."""
+        repository = ProductRepository.from_session(session)
+
+        resolved: list[Product] = []
+        errors: list[ValidationError] = []
+        for index, product in enumerate(products):
+            version = await product_service.resolve_meter_versions(
+                session,
+                product,
+                customer.id,
+                options=(undefer(Product.external_id), *repository.get_eager_options()),
+            )
+            if version is None:
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": ("body", field, index),
+                        "msg": (
+                            "No version of this product uses the meter versions "
+                            "of the customer."
+                        ),
+                        "input": product.external_id
+                        if field == "external_products"
+                        else product.id,
+                    }
+                )
+                continue
+            resolved.append(version)
+
+        if len(errors) > 0:
+            raise PolarRequestValidationError(errors)
+
+        return resolved
+
     def _validate_products(
         self,
         products: Sequence[Product | None],
@@ -2311,6 +2343,43 @@ class CheckoutService:
             )
 
         return discount
+
+    async def _get_validated_customer(
+        self,
+        session: AsyncSession,
+        checkout_create: CheckoutCreate | CheckoutProductCreate | CheckoutPriceCreate,
+        organization_id: uuid.UUID,
+    ) -> tuple[Subscription | None, Customer | None]:
+        subscription: Subscription | None = None
+        customer: Customer | None = None
+        customer_repository = CustomerRepository.from_session(session)
+        if checkout_create.subscription_id is not None:
+            subscription, customer = await self._get_validated_subscription(
+                session, checkout_create.subscription_id, organization_id
+            )
+        elif checkout_create.customer_id is not None:
+            customer = await customer_repository.get_by_id_and_organization(
+                checkout_create.customer_id, organization_id
+            )
+            if customer is None:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "customer_id"),
+                            "msg": "Customer does not exist.",
+                            "input": checkout_create.customer_id,
+                        }
+                    ]
+                )
+        elif checkout_create.external_customer_id is not None:
+            # Link customer by external ID, if it exists.
+            # It not, that's fine': we'll create a new customer on confirm.
+            customer = await customer_repository.get_by_external_id_and_organization(
+                checkout_create.external_customer_id, organization_id
+            )
+
+        return subscription, customer
 
     async def _get_validated_subscription(
         self,
@@ -2724,6 +2793,9 @@ class CheckoutService:
             raise DiscountRedemptionLimitReached(checkout)
 
         await self._validate_subscription_uniqueness(session, checkout)
+        checkout = await self._resolve_meter_versions_on_update(
+            session, checkout, checkout_update
+        )
 
         return checkout
 
@@ -3008,6 +3080,125 @@ class CheckoutService:
 
         if len(existing_subscriptions) > 0:
             raise AlreadyActiveSubscriptionError()
+
+    async def _resolve_meter_versions_on_update(
+        self,
+        session: AsyncSession,
+        checkout: Checkout,
+        checkout_update: CheckoutUpdate | CheckoutUpdatePublic | CheckoutConfirm,
+    ) -> Checkout:
+        """Swap the checkout's product for its version on the meter versions of
+        the customer, once we know who the customer is."""
+        # Only config as code creates meter versions. Upgrading a subscription
+        # moves it to the current version, like a product change.
+        if (
+            not has_product_checkout(checkout)
+            or not checkout.organization.is_config_as_code_enabled
+            or checkout.subscription is not None
+        ):
+            return checkout
+        checkout_product = next(
+            checkout_product
+            for checkout_product in checkout.checkout_products
+            if checkout_product.product_id == checkout.product_id
+        )
+        if checkout_product.ad_hoc_prices:
+            return checkout
+
+        repository = ProductRepository.from_session(session)
+        requested = checkout.product
+        if not requested.is_current:
+            versions = await repository.get_other_published_versions(
+                requested, options=repository.get_eager_options()
+            )
+            if versions and versions[0].is_current:
+                requested = versions[0]
+
+        customer_id = checkout.customer_id
+        if (
+            customer_id is None
+            and checkout.customer_email is not None
+            and await CustomerMeterRepository.from_session(
+                session
+            ).has_previous_meter_versions(
+                email=checkout.customer_email,
+                organization_id=checkout.organization.id,
+            )
+        ):
+            customer = await CustomerRepository.from_session(
+                session
+            ).get_by_email_and_organization(
+                checkout.customer_email, checkout.organization.id
+            )
+            customer_id = customer.id if customer is not None else None
+        version: Product | None = requested
+        if customer_id is not None:
+            version = await product_service.resolve_meter_versions(
+                session,
+                requested,
+                customer_id,
+                options=repository.get_eager_options(),
+            )
+        if version is None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": (
+                            "No version of this product uses the meter versions "
+                            "of the customer."
+                        ),
+                        "input": checkout.product.id,
+                    }
+                ]
+            )
+        if version.id == checkout.product.id:
+            return checkout
+        # The customer must see the price of the version they pay for.
+        if isinstance(checkout_update, CheckoutConfirmBase):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "customer_email"),
+                        "msg": (
+                            "The price changed for this customer. "
+                            "Review the checkout before paying."
+                        ),
+                        "input": checkout.customer_email,
+                    }
+                ]
+            )
+
+        try:
+            currency_prices = PriceSet.from_product(version, checkout.currency)
+        except NoPricesForCurrencies as e:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": "Product is not available in the checkout currency.",
+                        "input": checkout.product.id,
+                    }
+                ]
+            ) from e
+        custom_amount = (
+            checkout.amount if is_custom_price(checkout.product_price) else None
+        )
+        checkout_product.product = version
+        checkout.product = version
+        checkout = await self._update_price(checkout, checkout_update, currency_prices)
+        custom_price = currency_prices.get_custom_price()
+        if custom_price is not None and custom_amount is not None:
+            validate_custom_price_amount(custom_price, custom_amount, checkout.currency)
+            checkout.amount = custom_amount
+        if checkout.discount is not None and not checkout.discount.is_applicable(
+            version, checkout.currency
+        ):
+            checkout.discount = None
+        return checkout
 
     def _validate_seat_limits(
         self,

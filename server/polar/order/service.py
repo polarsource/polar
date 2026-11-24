@@ -114,6 +114,7 @@ from polar.product.price_set import (
     PriceSet,
 )
 from polar.product.repository import ProductRepository
+from polar.product.service import product as product_service
 from polar.product.unit_price import validate_unit_limits
 from polar.receipt.service import receipt as receipt_service
 from polar.subscription.repository import SubscriptionRepository
@@ -1101,6 +1102,32 @@ class OrderService:
                     }
                 ]
             )
+
+        resolved = (
+            await product_service.resolve_meter_versions(
+                session,
+                product,
+                customer.id,
+                options=product_repository.get_eager_options(),
+            )
+            if organization.is_config_as_code_enabled
+            else product
+        )
+        if resolved is None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": (
+                            "No version of this product uses the meter versions "
+                            "of the customer."
+                        ),
+                        "input": payload.product_id,
+                    }
+                ]
+            )
+        product = resolved
 
         # Resolve the charge currency: use the one the merchant requested, else
         # fall back to the organization's default presentment currency (matching

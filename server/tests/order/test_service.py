@@ -54,6 +54,7 @@ from polar.models import (
     Account,
     BillingEntry,
     Customer,
+    CustomerMeter,
     Discount,
     Order,
     PaymentMethod,
@@ -64,6 +65,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.benefit import BenefitType
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.checkout import CheckoutStatus
 from polar.models.custom_field import CustomFieldType
@@ -7618,6 +7620,58 @@ class TestCreateDraftOrder:
         assert order.checkout_id is None
         assert order.subtotal_amount > 0
         assert len(order.items) >= 1
+
+    async def test_customer_on_previous_meter_version(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        customer: Customer,
+    ) -> None:
+        off_session_organization.feature_settings = {
+            **off_session_organization.feature_settings,
+            "config_as_code_enabled": True,
+        }
+        await save_fixture(off_session_organization)
+        previous, current = [
+            await create_meter(
+                save_fixture,
+                organization=off_session_organization,
+                id=uuid.uuid4(),
+                external_id="ai_credits",
+                is_current=is_current,
+            )
+            for is_current in (False, True)
+        ]
+        top_ups = []
+        for meter in (previous, current):
+            top_up = await create_product(
+                save_fixture,
+                organization=off_session_organization,
+                recurring_interval=None,
+                external_id="top_up",
+                is_current=meter.is_current,
+            )
+            credits = await create_benefit(
+                save_fixture,
+                organization=off_session_organization,
+                type=BenefitType.meter_credit,
+                properties={"meter_id": str(meter.id), "units": 100, "rollover": False},
+            )
+            top_ups.append(
+                await set_product_benefits(
+                    save_fixture, product=top_up, benefits=[credits]
+                )
+            )
+        await save_fixture(CustomerMeter(customer=customer, meter=previous))
+
+        order = await order_service.create_draft_order(
+            session,
+            off_session_organization,
+            OrderCreate(customer_id=customer.id, product_id=top_ups[1].id),
+        )
+
+        assert order.product_id == top_ups[0].id
 
     async def test_fires_order_created_webhook(
         self,

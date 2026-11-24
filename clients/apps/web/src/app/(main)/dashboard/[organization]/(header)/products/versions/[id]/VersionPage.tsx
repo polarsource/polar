@@ -6,7 +6,14 @@ import { useCatalog, useCatalogConfig } from '@/hooks/queries/catalogs'
 import { schemas } from '@polar-sh/client'
 import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ArrowBackOutlined } from '@polar-sh/orbit/icons'
+import {
+  Archive,
+  ArrowBackOutlined,
+  CalendarDays,
+  CircleCheck,
+  History,
+  Pencil,
+} from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Fragment } from 'react'
@@ -26,10 +33,12 @@ const statusLabel = {
 
 const Field = ({
   label,
+  icon: Icon,
   first = false,
   children,
 }: {
   label: string
+  icon?: React.ComponentType<{ size?: number }>
   first?: boolean
   children: React.ReactNode
 }) => (
@@ -42,7 +51,14 @@ const Field = ({
     borderColor="border-primary"
   >
     <Text color="muted">{label}</Text>
-    <Text>{children}</Text>
+    <Box alignItems="center" columnGap="xs">
+      {Icon ? (
+        <Box as="span" display="flex" width={16} color="text-secondary">
+          <Icon size={14} />
+        </Box>
+      ) : null}
+      <Text>{children}</Text>
+    </Box>
   </Box>
 )
 
@@ -79,22 +95,43 @@ const SettingsChanges = ({ changes }: { changes: SettingChange[] }) => (
   </Box>
 )
 
+const statusIcon = {
+  live: CircleCheck,
+  archived: Archive,
+  draft: Pencil,
+} as const
+
+const PanelSection = ({
+  title,
+  children,
+}: {
+  title: string
+  children: React.ReactNode
+}) => (
+  <Box as="section" flexDirection="column" rowGap="m">
+    <Text variant="heading-xxs" as="h2">
+      {title}
+    </Text>
+    <Box flexDirection="column" rowGap="l">
+      {children}
+    </Box>
+  </Box>
+)
+
 const VersionDetails = ({
   catalog,
   parent,
   versionsPath,
-  settings,
 }: {
   catalog: Catalog
   parent?: Catalog
   versionsPath: string
-  settings?: Record<string, string>
 }) => (
-  <Box as="aside" flexDirection="column" rowGap="l">
-    <Field label="Status" first>
+  <PanelSection title="Details">
+    <Field label="Status" icon={statusIcon[catalog.status]} first>
       {statusLabel[catalog.status]}
     </Field>
-    <Field label="Published">
+    <Field label="Published" icon={CalendarDays}>
       {catalog.published_at ? (
         <PublishedAt catalog={catalog} />
       ) : (
@@ -102,20 +139,34 @@ const VersionDetails = ({
       )}
     </Field>
     {parent ? (
-      <Field label="Based on">
+      <Field label="Previous version" icon={History}>
         <Link href={`${versionsPath}/${parent.id}`}>
-          {parent.name ?? 'Untitled'}
+          <Box
+            as="span"
+            color={{ base: 'text-primary', hover: 'text-secondary' }}
+            transitionProperty="colors"
+            transitionDuration="fast"
+          >
+            {parent.name ?? 'Untitled'}
+          </Box>
         </Link>
       </Field>
     ) : null}
-    {settings
-      ? Object.entries(settings).map(([field, value]) => (
-          <Field key={field} label={fieldLabel(field)}>
-            {value}
-          </Field>
-        ))
-      : null}
-  </Box>
+  </PanelSection>
+)
+
+const VersionSettings = ({
+  settings,
+}: {
+  settings: Record<string, string>
+}) => (
+  <PanelSection title="Settings">
+    {Object.entries(settings).map(([field, value], index) => (
+      <Field key={field} label={fieldLabel(field)} first={index === 0}>
+        {value}
+      </Field>
+    ))}
+  </PanelSection>
 )
 
 export default function VersionPage({
@@ -250,13 +301,24 @@ export default function VersionPage({
             />
           ) : null}
         </Box>
-        <Box flexDirection="column" flex={1} minWidth={0} width="100%">
+        <Box
+          as="aside"
+          flexDirection="column"
+          rowGap="2xl"
+          flex={1}
+          minWidth={0}
+          width="100%"
+        >
           <VersionDetails
             catalog={catalog}
             parent={parent}
             versionsPath={versionsPath}
-            settings={settings}
           />
+          {settings ? (
+            <div className="animate-in fade-in duration-200 ease-out">
+              <VersionSettings settings={settings} />
+            </div>
+          ) : null}
         </Box>
       </Box>
     </DashboardBody>

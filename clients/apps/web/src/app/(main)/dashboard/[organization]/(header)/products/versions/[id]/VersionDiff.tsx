@@ -1,13 +1,20 @@
 import { schemas } from '@polar-sh/client'
-import { Grid, Text } from '@polar-sh/orbit'
+import { Grid, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Circle, KeyboardArrowDown } from '@polar-sh/orbit/icons'
+import { ChevronDown } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { useId, useState } from 'react'
-import { Change, diffItems, Line } from './diff'
+import {
+  Change,
+  CollapsedLine,
+  collapseUnchanged,
+  diffItems,
+  Line,
+} from './diff'
 import {
   customFieldFields,
   fieldLabel,
+  isListField,
   meterFields,
   plural,
   productFields,
@@ -21,37 +28,38 @@ type Format = Record<
   (field: string, value: unknown) => string
 >
 
-const signs = {
+const signs: Partial<Record<string, { glyph: string; color: string }>> = {
   added: { glyph: '+', color: 'text-emerald-500' },
   removed: { glyph: '−', color: 'text-red-500' },
   changed: { glyph: '~', color: 'text-amber-500' },
-} as const
+}
 
 const changeStatus = {
-  added: { label: 'New', color: 'text-success' },
-  changed: { label: 'Changed', color: 'text-warning' },
-  removed: { label: 'Removed', color: 'text-danger' },
+  added: { status: 'Added', color: 'green' },
+  changed: { status: 'Changed', color: 'yellow' },
+  removed: { status: 'Removed', color: 'red' },
 } as const
 
 const ChangeStatus = ({ change }: { change: Change }) => (
-  <Box alignItems="center" columnGap="s" flexShrink={0}>
-    <Box as="span" display="flex" color={changeStatus[change].color}>
-      <Circle size={8} fill="currentColor" strokeWidth={0} />
-    </Box>
-    <Text>{changeStatus[change].label}</Text>
+  <Box flexShrink={0}>
+    <Status {...changeStatus[change]} />
   </Box>
 )
 
 const DiffLine = ({
   line,
-  showLabel,
-  showSign,
+  startsField,
+  first = false,
   format,
+  expanded = false,
+  onToggle,
 }: {
-  line: Line
-  showLabel: boolean
-  showSign: boolean
+  line: Line | CollapsedLine
+  startsField: boolean
+  first?: boolean
   format: Format
+  expanded?: boolean
+  onToggle?: () => void
 }) => {
   const sign = signs[line.change]
   return (
@@ -61,32 +69,135 @@ const DiffLine = ({
       alignItems="baseline"
       px="xl"
       py="xs"
+      borderTopWidth={startsField ? 1 : 0}
+      borderStyle="solid"
+      borderColor={first ? 'border-primary' : 'border-secondary'}
     >
-      <span className={`font-mono font-semibold ${sign.color}`}>
-        {showSign ? sign.glyph : null}
+      <span className={`font-mono font-semibold ${sign?.color ?? ''}`}>
+        {sign?.glyph}
       </span>
       <Text color="muted" truncate>
-        {showLabel ? fieldLabel(line.field) : null}
+        {line.change !== 'collapsed' || startsField
+          ? fieldLabel(line.field)
+          : null}
       </Text>
-      {line.change === 'changed' ? (
+      {line.change === 'collapsed' ? (
+        <button
+          type="button"
+          aria-expanded={expanded}
+          onClick={onToggle}
+          className="w-fit cursor-pointer text-left"
+        >
+          <Box
+            as="span"
+            color={{ base: 'text-secondary', hover: 'text-primary' }}
+            transitionProperty="colors"
+            transitionDuration="fast"
+          >
+            <Text as="span" color="inherit">
+              {expanded ? 'Hide' : 'Show'}{' '}
+              {plural(
+                line.lines.length,
+                `unchanged ${fieldLabel(line.field).toLowerCase()}`,
+              )}
+              <ToggleChevron expanded={expanded} />
+            </Text>
+          </Box>
+        </button>
+      ) : line.change === 'changed' ? (
         <Box alignItems="baseline" columnGap="s" minWidth={0} flexWrap="wrap">
-          <Text color="muted" lineThrough>
-            {format.before(line.field, line.before)}
-          </Text>
+          <Text color="muted">{format.before(line.field, line.before)}</Text>
           <Text color="muted">→</Text>
           <Text>{format.after(line.field, line.after)}</Text>
         </Box>
       ) : (
-        <Text
-          color={line.change === 'removed' ? 'muted' : 'default'}
-          lineThrough={line.change === 'removed' && showSign}
-        >
+        <Text color={line.change === 'added' ? 'default' : 'muted'}>
           {line.change === 'removed'
             ? format.before(line.field, line.before)
             : format.after(line.field, line.after)}
         </Text>
       )}
     </Grid>
+  )
+}
+
+const ToggleChevron = ({ expanded }: { expanded: boolean }) => (
+  <span className="ml-1 inline-block align-middle">
+    <Box
+      as="span"
+      display="block"
+      color="text-tertiary"
+      transform={expanded ? 'rotate(180deg)' : 'none'}
+      transitionProperty="transform"
+      transitionDuration="fast"
+      ease="standard"
+    >
+      <ChevronDown size={14} strokeWidth={1.5} aria-hidden className="block" />
+    </Box>
+  </span>
+)
+
+const Expandable = ({
+  expanded,
+  id,
+  children,
+}: {
+  expanded: boolean
+  id?: string
+  children: React.ReactNode
+}) => (
+  <div
+    id={id}
+    inert={!expanded}
+    className={`grid transition-[grid-template-rows] duration-[120ms] ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none ${expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
+  >
+    <Box
+      flexDirection="column"
+      minHeight={0}
+      overflow="hidden"
+      opacity={expanded ? 1 : 0}
+      transitionProperty="opacity"
+      transitionDuration="fast"
+      ease="decelerate"
+    >
+      {children}
+    </Box>
+  </div>
+)
+
+const CollapsedLines = ({
+  line,
+  startsField,
+  first,
+  format,
+}: {
+  line: CollapsedLine
+  startsField: boolean
+  first: boolean
+  format: Format
+}) => {
+  const [expanded, setExpanded] = useState(false)
+  return (
+    <>
+      <DiffLine
+        line={line}
+        startsField={startsField}
+        first={first}
+        format={format}
+        expanded={expanded}
+        onToggle={() => setExpanded((open) => !open)}
+      />
+      <Expandable expanded={expanded}>
+        {line.lines.map((unchanged, index) => (
+          <DiffLine
+            key={index}
+            line={unchanged}
+            startsField={false}
+            format={format}
+          />
+        ))}
+      </Expandable>
+    </>
   )
 }
 
@@ -180,41 +291,27 @@ const UnchangedItems = <T extends { external_id: string }>({
           transitionProperty="colors"
           transitionDuration="fast"
         >
-          <Text color="inherit">
+          <Text as="span" color="inherit">
             {plural(items.length, `unchanged ${noun}`)}
+            <ToggleChevron expanded={expanded} />
           </Text>
-          <Box
-            as="span"
-            display="flex"
-            transform={expanded ? 'rotate(180deg)' : 'none'}
-            transitionProperty="transform"
-            transitionDuration="base"
-            ease="standard"
-          >
-            <KeyboardArrowDown fontSize="small" />
-          </Box>
         </Box>
       </button>
-      {expanded ? (
-        <div
-          id={panelId}
-          className="animate-in fade-in flex flex-col duration-150 ease-out"
-        >
-          {items.map((item) => (
-            <Box
-              key={item.external_id}
-              flexDirection="column"
-              borderTopWidth={1}
-              borderStyle="solid"
-              borderColor="border-primary"
-            >
-              <ItemRow href={href?.(item.external_id)}>
-                <ItemName name={String(item[nameField])} muted />
-              </ItemRow>
-            </Box>
-          ))}
-        </div>
-      ) : null}
+      <Expandable expanded={expanded} id={panelId}>
+        {items.map((item) => (
+          <Box
+            key={item.external_id}
+            flexDirection="column"
+            borderTopWidth={1}
+            borderStyle="solid"
+            borderColor="border-secondary"
+          >
+            <ItemRow href={href?.(item.external_id)}>
+              <ItemName name={String(item[nameField])} muted />
+            </ItemRow>
+          </Box>
+        ))}
+      </Expandable>
     </Box>
   )
 }
@@ -244,21 +341,16 @@ const DiffSection = <T extends { external_id: string }>({
       <Text variant="heading-xxs" as="h2">
         {title}
       </Text>
-      <Box
-        flexDirection="column"
-        borderRadius="l"
-        borderWidth={1}
-        borderStyle="solid"
-        borderColor="border-primary"
-        overflow="hidden"
-      >
-        {entries.map(({ key, item, change, lines }, entryIndex) => (
+      <Box flexDirection="column" rowGap="m">
+        {entries.map(({ key, item, change, lines }) => (
           <Box
             key={key}
             flexDirection="column"
-            borderTopWidth={entryIndex ? 1 : 0}
+            borderRadius="l"
+            borderWidth={1}
             borderStyle="solid"
             borderColor="border-primary"
+            overflow="hidden"
           >
             <ItemRow href={href?.(key)}>
               <ItemName
@@ -268,31 +360,50 @@ const DiffSection = <T extends { external_id: string }>({
               <ChangeStatus change={change} />
             </ItemRow>
             {lines.length ? (
-              <Box flexDirection="column" pb="m">
-                {lines.map((line, index) => {
-                  const showLabel = lines[index - 1]?.field !== line.field
-                  return (
-                    <DiffLine
-                      key={index}
-                      line={line}
-                      showLabel={showLabel}
-                      showSign={change === 'changed'}
-                      format={format}
-                    />
-                  )
-                })}
+              <Box flexDirection="column" pb="xs">
+                {collapseUnchanged(lines, isListField).map(
+                  (line, index, rows) => {
+                    const startsField = rows[index - 1]?.field !== line.field
+                    return line.change === 'collapsed' ? (
+                      <CollapsedLines
+                        key={index}
+                        line={line}
+                        startsField={startsField}
+                        first={index === 0}
+                        format={format}
+                      />
+                    ) : (
+                      <DiffLine
+                        key={index}
+                        line={line}
+                        startsField={startsField}
+                        first={index === 0}
+                        format={format}
+                      />
+                    )
+                  },
+                )}
               </Box>
             ) : null}
           </Box>
         ))}
         {unchanged.length ? (
-          <UnchangedItems
-            items={unchanged}
-            noun={noun}
-            nameField={nameField}
-            href={href}
-            bordered={entries.length > 0}
-          />
+          <Box
+            flexDirection="column"
+            borderRadius="l"
+            borderWidth={1}
+            borderStyle="solid"
+            borderColor="border-primary"
+            overflow="hidden"
+          >
+            <UnchangedItems
+              items={unchanged}
+              noun={noun}
+              nameField={nameField}
+              href={href}
+              bordered={false}
+            />
+          </Box>
         ) : null}
       </Box>
     </Box>

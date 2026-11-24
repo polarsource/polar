@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { diffItems, diffValue } from './diff'
+import { collapseUnchanged, diffItems, diffValue, Line } from './diff'
 
 type Row = { external_id: string; deprecated?: boolean } & Record<
   string,
@@ -68,6 +68,58 @@ describe('diff', () => {
     ])
     expect(entries[1].lines).toEqual([
       { change: 'added', field: 'price', after: 5 },
+    ])
+  })
+  it('keeps the unchanged fields of a changed item, but not its name', () => {
+    const { entries } = diffItems<Row>(
+      [
+        {
+          external_id: 'p',
+          name: 'Pro',
+          visibility: 'public',
+          benefits: ['a', 'b'],
+        },
+      ],
+      [
+        {
+          external_id: 'p',
+          name: 'Pro',
+          visibility: 'public',
+          benefits: ['a', 'c'],
+        },
+      ],
+      'name',
+    )
+    expect(entries[0].lines).toEqual([
+      {
+        change: 'unchanged',
+        field: 'visibility',
+        before: 'public',
+        after: 'public',
+      },
+      { change: 'unchanged', field: 'benefits', before: 'a', after: 'a' },
+      { change: 'removed', field: 'benefits', before: 'b' },
+      { change: 'added', field: 'benefits', after: 'c' },
+    ])
+  })
+  it('folds the unchanged items of a list field into one count', () => {
+    const lines: Line[] = [
+      {
+        change: 'unchanged',
+        field: 'visibility',
+        before: 'public',
+        after: 'public',
+      },
+      { change: 'unchanged', field: 'benefits', before: 'a', after: 'a' },
+      { change: 'removed', field: 'benefits', before: 'b' },
+      { change: 'unchanged', field: 'benefits', before: 'c', after: 'c' },
+      { change: 'added', field: 'benefits', after: 'd' },
+    ]
+    expect(collapseUnchanged(lines, (field) => field === 'benefits')).toEqual([
+      lines[0],
+      lines[2],
+      lines[4],
+      { change: 'collapsed', field: 'benefits', lines: [lines[1], lines[3]] },
     ])
   })
 })

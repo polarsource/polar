@@ -48,10 +48,12 @@ from polar.models.merchant_migration_record import (
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession
 from polar.product.repository import ProductRepository
+from polar.redis import Redis
 from polar.worker import can_retry, enqueue_job
 
 from . import pan_transfer
 from .adapters import LemonSqueezyAdapter, PaginatedSourceAdapter, StripeAdapter
+from .benefits import MigrationBenefits, list_proposals
 from .canonical import (
     CanonicalCustomer,
     CanonicalPaymentMethod,
@@ -97,6 +99,11 @@ from .repository import (
     MerchantMigrationRepository,
 )
 from .schemas import (
+    MerchantMigrationBenefit,
+    MerchantMigrationBenefitFile,
+    MerchantMigrationBenefitProduct,
+    MerchantMigrationBenefits,
+    MerchantMigrationBenefitsCreate,
     MerchantMigrationCreate,
     MerchantMigrationCutoverReport,
     MerchantMigrationImportReport,
@@ -125,6 +132,8 @@ IMPORTABLE_STEPS = {
 }
 
 _IMPORT_TASK = "merchant_migration.import_catalog"
+_BENEFITS_TASK = "merchant_migration.set_up_benefits"
+_BENEFITS_FAILURE = "We couldn't set up these benefits. Please try again."
 # None is a pre-check started before operations recorded their kind.
 _PRECHECK_KINDS = {None, MerchantMigrationOperationKind.precheck}
 _IMPORT_FAILURE = "We couldn't prepare these subscriptions. Please try again."
@@ -269,6 +278,22 @@ class SourceAccountAlreadyMigrated(MerchantMigrationError):
         super().__init__(
             "This account is already used by another organization's "
             "merchant migration.",
+            409,
+        )
+
+
+class BenefitsUnavailable(MerchantMigrationError):
+    def __init__(self) -> None:
+        super().__init__(
+            "Only Lemon Squeezy migrations bring license keys and files over.", 409
+        )
+
+
+class BenefitsNotReady(MerchantMigrationError):
+    def __init__(self) -> None:
+        super().__init__(
+            "Import your catalog before setting up benefits, and set them up "
+            "before moving cards.",
             409,
         )
 
@@ -970,6 +995,185 @@ class MerchantMigrationService:
         await repository.update(migration, update_dict=update_dict, flush=True)
         return report
 
+    async def get_benefits(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        migration_id: UUID,
+    ) -> MerchantMigrationBenefits:
+        """What the source gives buyers, read live from the source."""
+        migration = await self._get_manageable(session, auth_subject, migration_id)
+        proposals = await list_proposals(
+            session, migration.organization_id, await self._benefits_adapter(migration)
+        )
+        product_ids = {
+            product_id for proposal in proposals for product_id in proposal.product_ids
+        }
+        names = await ProductRepository.from_session(session).get_names_by_ids(
+            migration.organization_id, product_ids
+        )
+        return MerchantMigrationBenefits(
+            items=[
+                MerchantMigrationBenefit(
+                    id=proposal.source.source_id,
+                    type="license_keys"
+                    if proposal.source.license_keys is not None
+                    else "downloadables",
+                    description=proposal.source.description,
+                    activation_limit=proposal.source.license_keys.activation_limit
+                    if proposal.source.license_keys
+                    else None,
+                    expires_ttl=proposal.source.license_keys.expires_ttl
+                    if proposal.source.license_keys
+                    else None,
+                    expires_timeframe=proposal.source.license_keys.expires_timeframe
+                    if proposal.source.license_keys
+                    else None,
+                    files=[
+                        MerchantMigrationBenefitFile(name=file.name, size=file.size)
+                        for file in proposal.source.files
+                    ],
+                    products=[
+                        MerchantMigrationBenefitProduct(
+                            id=product_id, name=names[product_id]
+                        )
+                        for product_id in proposal.product_ids
+                        if product_id in names
+                    ],
+                    benefit_id=proposal.created.id if proposal.created else None,
+                )
+                for proposal in proposals
+            ]
+        )
+
+    async def set_up_benefits(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        migration_id: UUID,
+        benefits_create: MerchantMigrationBenefitsCreate,
+    ) -> MerchantMigration:
+        """Queue creating the selected benefits. An empty selection skips the
+        step. Safe to repeat: created benefits are found by their source key."""
+        migration = await self._get_manageable(
+            session, auth_subject, migration_id, for_update=True
+        )
+        await self._benefits_adapter(migration)
+        if self._operation_blocks_new_work(migration):
+            raise MigrationOperationInProgress()
+        if migration.step not in (
+            MerchantMigrationStep.create_catalog,
+            MerchantMigrationStep.set_up_benefits,
+        ):
+            raise BenefitsNotReady()
+
+        update_dict: dict[str, object] = {"step": MerchantMigrationStep.set_up_benefits}
+        if benefits_create.benefit_ids:
+            update_dict["operation"] = MerchantMigrationOperation(
+                status=MerchantMigrationOperationStatus.pending,
+                kind=MerchantMigrationOperationKind.benefits,
+                cursor={
+                    "benefit_ids": benefits_create.benefit_ids,
+                    "grant_past_purchases": benefits_create.grant_past_purchases,
+                    "purchases_page": 1,
+                },
+                last_progress_at=utc_now(),
+            )
+        repository = MerchantMigrationRepository.from_session(session)
+        await repository.update(migration, update_dict=update_dict)
+        if benefits_create.benefit_ids:
+            enqueue_job(_BENEFITS_TASK, merchant_migration_id=migration.id)
+        return migration
+
+    async def execute_benefits(
+        self, session: AsyncSession, redis: Redis, migration_id: UUID
+    ) -> None:
+        """One unit of work per run: create one benefit, then grant one page of
+        past purchases. Re-enqueues until both are done."""
+        migration = await self._load(session, migration_id)
+        if migration is None:
+            return
+        repository = MerchantMigrationRepository.from_session(session)
+        await repository.refresh_for_update(migration)
+        operation = migration.operation
+        if (
+            operation is None
+            or not operation.is_active
+            or operation.kind != MerchantMigrationOperationKind.benefits
+        ):
+            return
+
+        cursor = dict(operation.cursor or {})
+        selected = set(cursor.get("benefit_ids", []))
+        try:
+            async with session.begin_nested():
+                organization = await self._get_organization(session, migration)
+                benefits = MigrationBenefits(
+                    session,
+                    redis,
+                    migration,
+                    organization,
+                    await self._benefits_adapter(migration),
+                )
+                more = await benefits.create_next(selected)
+                if not more and cursor.get("grant_past_purchases"):
+                    page = int(cursor.get("purchases_page", 1))
+                    more = await benefits.grant_purchases(page, selected)
+                    cursor["purchases_page"] = page + 1
+                    if not more:
+                        cursor["grant_past_purchases"] = False
+        except PolarError as error:
+            log.warning(
+                "merchant_migration.benefits_failed",
+                merchant_migration_id=migration_id,
+                error_type=type(error).__name__,
+            )
+            await repository.refresh_for_update(migration)
+            await self._fail_operation(session, migration, error.message, flush=True)
+            return
+        except Exception:
+            log.exception(
+                "merchant_migration.benefits_failed",
+                merchant_migration_id=migration_id,
+            )
+            if can_retry():
+                raise RuntimeError("merchant_migration.benefits_failed") from None
+            await repository.refresh_for_update(migration)
+            await self._fail_operation(
+                session, migration, _BENEFITS_FAILURE, flush=True
+            )
+            return
+
+        if more or cursor.get("grant_past_purchases"):
+            await repository.update(
+                migration,
+                update_dict={
+                    "operation": operation.model_copy(
+                        update={
+                            "status": MerchantMigrationOperationStatus.running,
+                            "cursor": cursor,
+                            "last_progress_at": utc_now(),
+                        }
+                    )
+                },
+            )
+            enqueue_job(_BENEFITS_TASK, merchant_migration_id=migration.id)
+            return
+        await repository.update(
+            migration,
+            update_dict={"operation": self._done_operation(migration)},
+            flush=True,
+        )
+
+    async def _benefits_adapter(
+        self, migration: MerchantMigration
+    ) -> LemonSqueezyAdapter:
+        if migration.source_platform != MerchantMigrationSourcePlatform.lemon_squeezy:
+            raise BenefitsUnavailable()
+        adapter = await self._build_adapter(migration)
+        assert isinstance(adapter, LemonSqueezyAdapter)
+        return adapter
+
     async def get_pan_transfer(
         self,
         session: AsyncReadSession,
@@ -1016,7 +1220,10 @@ class MerchantMigrationService:
         )
         if migration.pan_transfer_steps:
             raise PanTransferAlreadyStarted()
-        if migration.step != MerchantMigrationStep.create_catalog:
+        if migration.step not in (
+            MerchantMigrationStep.create_catalog,
+            MerchantMigrationStep.set_up_benefits,
+        ):
             raise PanTransferNotReady()
         # Stalled counts too: once this leaves `create_catalog` the import can't
         # be retried, and whatever it hadn't prepared would never be switched.

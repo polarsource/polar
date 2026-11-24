@@ -83,6 +83,7 @@ def _subscription(**overrides: Any) -> dict[str, Any]:
             "billing_anchor": 15,
             "renews_at": "2026-12-15T00:00:00.000000Z",
             "ends_at": None,
+            "order_item_id": 80,
             "first_subscription_item": {"id": 1, "price_id": 21, "quantity": 1},
             "created_at": "2026-11-01T00:00:00.000000Z",
             **overrides,
@@ -185,6 +186,24 @@ ROUTES: dict[str, dict[str, Any]] = {
     "/v1/orders": _page(
         [{"type": "orders", "id": "70", "attributes": {"tax_inclusive": False}}]
     ),
+    "/v1/license-keys": _page(
+        [
+            {
+                "type": "license-keys",
+                "id": "60",
+                "attributes": {
+                    "order_item_id": 80,
+                    "key": "KEY-SUB",
+                    "status": "active",
+                },
+            },
+            {
+                "type": "license-keys",
+                "id": "61",
+                "attributes": {"order_item_id": 81, "key": "KEY-OFF", "disabled": True},
+            },
+        ]
+    ),
 }
 
 
@@ -252,6 +271,7 @@ class TestExtract:
         assert subscription.payment_method.last4 == "4242"
         assert subscription.price_tax_behavior == TaxBehavior.exclusive
         assert subscription.import_tax_behavior() == TaxBehavior.exclusive
+        assert subscription.license_key == "KEY-SUB"
 
     async def test_usage_price_reads_decimal_cents(self) -> None:
         usage = {"usage_aggregation": "sum"}
@@ -542,3 +562,157 @@ class TestStopSourceSubscription:
         await adapter.stop_source_subscription("100", reference="mig")
 
         assert [request.method for request in requests] == ["GET"]
+
+
+def _variant(variant_id: str, product_id: int, **attributes: Any) -> dict[str, Any]:
+    return {
+        "type": "variants",
+        "id": variant_id,
+        "attributes": {
+            "product_id": product_id,
+            "name": variant_id,
+            "status": "published",
+            **attributes,
+        },
+    }
+
+
+def _file(file_id: str, variant_id: int, **attributes: Any) -> dict[str, Any]:
+    return {
+        "type": "files",
+        "id": file_id,
+        "attributes": {
+            "variant_id": variant_id,
+            "name": f"{file_id}.zip",
+            "size": 1024,
+            "status": "published",
+            **attributes,
+        },
+    }
+
+
+@pytest.mark.anyio
+class TestListBenefits:
+    async def test_variants_giving_the_same_access_share_a_benefit(self) -> None:
+        license = {
+            "has_license_keys": True,
+            "license_activation_limit": 3,
+            "license_length_value": 1,
+            "license_length_unit": "years",
+        }
+        adapter, _ = _adapter(
+            {
+                "/v1/variants": _page(
+                    [
+                        _variant("10", 5, **license),
+                        _variant("11", 5, **license),
+                        _variant(
+                            "12",
+                            5,
+                            has_license_keys=True,
+                            is_license_limit_unlimited=True,
+                            is_license_length_unlimited=True,
+                        ),
+                        _variant("999", 6, **license),
+                    ],
+                    included=[
+                        {
+                            "type": "products",
+                            "id": "5",
+                            "attributes": {"store_id": 1, "name": "App"},
+                        },
+                        {
+                            "type": "products",
+                            "id": "6",
+                            "attributes": {"store_id": 2, "name": "Other"},
+                        },
+                    ],
+                ),
+                "/v1/files": _page(
+                    [
+                        _file("1", 10),
+                        _file("1", 11),
+                        _file("2", 12, status="draft"),
+                        _file("3", 999),
+                    ]
+                ),
+            },
+            store_id="1",
+        )
+
+        benefits = await adapter.list_benefits()
+
+        limited, unlimited, files = benefits
+        assert limited.product_source_ids == ["10", "11"]
+        assert limited.license_keys is not None
+        assert limited.license_keys.activation_limit == 3
+        assert (
+            limited.license_keys.expires_ttl,
+            limited.license_keys.expires_timeframe,
+        ) == (1, "year")
+        assert unlimited.product_source_ids == ["12"]
+        assert unlimited.license_keys is not None
+        assert unlimited.license_keys.activation_limit is None
+        assert unlimited.license_keys.expires_ttl is None
+        assert files.product_source_ids == ["10", "11"]
+        assert [file.name for file in files.files] == ["1.zip"]
+
+
+@pytest.mark.anyio
+class TestListPurchases:
+    async def test_keeps_paid_one_time_orders(self) -> None:
+        def order(
+            order_id: str, variant_id: int, item_id: int, **attributes: Any
+        ) -> dict[str, Any]:
+            return {
+                "type": "orders",
+                "id": order_id,
+                "attributes": {
+                    "status": "paid",
+                    "refunded": False,
+                    "user_email": "ada@example.com",
+                    "user_name": "Ada",
+                    "first_order_item": {"id": item_id, "variant_id": variant_id},
+                    **attributes,
+                },
+            }
+
+        adapter, _ = _adapter(
+            {
+                "/v1/prices": _page(
+                    [
+                        _price("21", 10, 1200, "2026-01-01T00:00:00Z"),
+                        _price(
+                            "22", 12, 1900, "2026-01-01T00:00:00Z", category="one_time"
+                        ),
+                    ]
+                ),
+                "/v1/orders": _page(
+                    [
+                        order("70", 10, 80),
+                        order("71", 12, 81),
+                        order("72", 12, 82, refunded=True),
+                        order("73", 12, 83, status="pending"),
+                        order("74", 12, 84),
+                    ]
+                ),
+                "/v1/license-keys": _page(
+                    [
+                        {
+                            "type": "license-keys",
+                            "id": "60",
+                            "attributes": {"order_item_id": 84, "key": "KEY-LIFETIME"},
+                        }
+                    ]
+                ),
+            },
+            store_id="1",
+        )
+
+        purchases, has_more = await adapter.list_purchases(1)
+
+        assert not has_more
+        assert [(p.source_id, p.license_key) for p in purchases] == [
+            ("71", None),
+            ("74", "KEY-LIFETIME"),
+        ]

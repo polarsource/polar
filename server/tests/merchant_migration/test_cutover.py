@@ -1,4 +1,5 @@
 from collections.abc import AsyncIterator, Awaitable, Callable
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID, uuid4
@@ -9,6 +10,7 @@ from freezegun import freeze_time
 from pytest_mock import MockerFixture
 from sqlalchemy.exc import OperationalError
 
+from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.enums import RecurringInterval, TaxBehavior
 from polar.kit.utils import utc_now
 from polar.merchant_migration.canonical import (
@@ -37,6 +39,7 @@ from polar.models import (
     ProductPriceFixed,
     Subscription,
 )
+from polar.models.benefit import BenefitType
 from polar.models.discount import Discount, DiscountDuration, DiscountType
 from polar.models.merchant_migration_record import (
     MerchantMigrationCutoverStatus,
@@ -51,11 +54,13 @@ from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_benefit,
     create_customer,
     create_discount,
     create_payment_method,
     create_product_price_fixed,
     create_subscription,
+    set_product_benefits,
 )
 from tests.fixtures.stripe import build_stripe_payment_method
 from tests.merchant_migration._helpers import (
@@ -354,6 +359,46 @@ class TestRun:
         assert subscription.user_metadata["provider_subscription_id"] == "sub_1"
         assert subscription.tax_behavior == tax
         assert subscription.tax_exempted is False
+
+    async def test_keeps_the_customers_license_key(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.license_keys,
+            properties={
+                "prefix": None,
+                "expires": None,
+                "activations": None,
+                "limit_usage": None,
+            },
+        )
+        await set_product_benefits(save_fixture, product=product, benefits=[benefit])
+        pending_record.canonical = serialize(
+            replace(canonical_subscription(), license_key="KEY-1")
+        )
+        await save_fixture(pending_record)
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+
+        outcome = await cutover(_source())
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        grant = await BenefitGrantRepository.from_session(
+            session
+        ).get_by_benefit_and_scope(
+            subscription.customer, benefit, subscription=subscription
+        )
+        assert grant is not None
+        assert dict(grant.properties) == {"user_provided_key": "KEY-1"}
 
     async def test_price_on_a_later_imported_product_moves_onto_the_first(
         self,

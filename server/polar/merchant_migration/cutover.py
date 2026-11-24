@@ -16,12 +16,17 @@ from dateutil.relativedelta import relativedelta
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import joinedload, noload, selectinload
 
+from polar.benefit.grant.repository import BenefitGrantRepository
+from polar.benefit.repository import BenefitRepository
 from polar.customer.repository import CustomerRepository
 from polar.discount.repository import DiscountRepository
 from polar.enums import PaymentProcessor
 from polar.kit.utils import utc_now
+from polar.license_key.repository import LicenseKeyRepository
 from polar.logging import Logger
+from polar.member.repository import MemberRepository
 from polar.models import (
+    BenefitGrant,
     Customer,
     Discount,
     MerchantMigration,
@@ -31,6 +36,7 @@ from polar.models import (
     ProductPriceUnit,
     Subscription,
 )
+from polar.models.benefit import BenefitType
 from polar.models.discount import DiscountDuration
 from polar.models.merchant_migration_record import (
     MerchantMigrationCutoverStatus,
@@ -668,6 +674,7 @@ class SubscriptionCutover:
             },
             flush=True,
         )
+        await self._keep_license_key(staged, customer, product, subscription)
 
         # Read before the source stop: an immediate cancel clears the flag.
         scheduled_end = _scheduled_end(source, staged)
@@ -678,6 +685,44 @@ class SubscriptionCutover:
             payment_method,
             already_stopped=already_stopped,
             scheduled_end=scheduled_end,
+        )
+
+    async def _keep_license_key(
+        self,
+        staged: CanonicalSubscription,
+        customer: Customer,
+        product: Product,
+        subscription: Subscription,
+    ) -> None:
+        """Seed the subscription's license key grant with the key the customer
+        already has. Activating it then grants that key instead of a new one."""
+        if staged.license_key is None:
+            return
+        benefit = await BenefitRepository.from_session(
+            self.session
+        ).get_by_product_and_type(product.id, BenefitType.license_keys)
+        if benefit is None:
+            return
+        if (
+            await LicenseKeyRepository.from_session(
+                self.session
+            ).get_by_organization_and_key(product.organization_id, staged.license_key)
+            is not None
+        ):
+            return
+        # The grant task looks the grant up by the customer's owner member.
+        member = await MemberRepository.from_session(
+            self.session
+        ).get_owner_by_customer_id(customer.id)
+        await BenefitGrantRepository.from_session(self.session).create(
+            BenefitGrant(
+                customer=customer,
+                benefit=benefit,
+                member=member,
+                subscription=subscription,
+                properties={"user_provided_key": staged.license_key},
+            ),
+            flush=True,
         )
 
     async def _staged_add_on_product(

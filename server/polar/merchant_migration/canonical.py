@@ -278,6 +278,9 @@ class CanonicalSubscription:
     # Set on a two-item subscription when the second item reads as an add-on.
     # ``price_source_id`` and the fields above then describe the plan.
     add_on: CanonicalSubscriptionAddOn | None = None
+    # The source's license key for this subscription, kept on Polar so the
+    # customer's apps keep working.
+    license_key: str | None = None
 
     type = MerchantMigrationRecordType.subscription
 
@@ -335,6 +338,47 @@ class CanonicalDiscount:
     product_source_ids: list[str] = field(default_factory=list)
 
     type = MerchantMigrationRecordType.discount
+
+
+@dataclass
+class CanonicalBenefitFile:
+    source_id: str
+    name: str
+    size: int
+
+
+@dataclass
+class CanonicalLicenseKeySettings:
+    activation_limit: int | None
+    # Both None when keys never expire.
+    expires_ttl: int | None
+    expires_timeframe: Literal["day", "month", "year"] | None
+
+
+@dataclass
+class CanonicalBenefit:
+    """Access a source product gives, offered to become a Polar benefit.
+
+    Not staged on the ledger: it's read from the source when the merchant sets
+    benefits up. ``source_id`` is stable across reads, so a retry finds the
+    benefit it already created."""
+
+    source_id: str
+    description: str
+    product_source_ids: list[str]
+    license_keys: CanonicalLicenseKeySettings | None = None
+    files: list[CanonicalBenefitFile] = field(default_factory=list)
+
+
+@dataclass
+class CanonicalPurchase:
+    """A paid one-time purchase whose buyer keeps the product's benefits."""
+
+    source_id: str
+    product_source_id: str
+    email: str
+    name: str | None
+    license_key: str | None
 
 
 @dataclass
@@ -664,6 +708,7 @@ def deserialize(
                 )
                 if add_on is not None
                 else None,
+                license_key=data.get("license_key"),
             )
         case MerchantMigrationRecordType.discount:
             return CanonicalDiscount(

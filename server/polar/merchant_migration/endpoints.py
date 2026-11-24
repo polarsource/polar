@@ -33,6 +33,8 @@ from .pan_transfer import (
 )
 from .schemas import MerchantMigration as MerchantMigrationSchema
 from .schemas import (
+    MerchantMigrationBenefits,
+    MerchantMigrationBenefitsCreate,
     MerchantMigrationCreate,
     MerchantMigrationCutoverReport,
     MerchantMigrationCutoverRequest,
@@ -50,6 +52,8 @@ from .schemas import (
     PrecheckRecordStatus,
 )
 from .service import (
+    BenefitsNotReady,
+    BenefitsUnavailable,
     CatalogImportBlocked,
     CatalogImportNotReady,
     CutoverNotStarted,
@@ -271,6 +275,66 @@ async def export_customer_ids(
             yield csv_writer.getrow((source_id,))
 
     return CSVStreamingResponse(create_csv(), "stripe-customer-ids.csv")
+
+
+@router.get(
+    "/{id}/benefits",
+    response_model=MerchantMigrationBenefits,
+    summary="List Merchant Migration Benefits",
+    responses={
+        403: {
+            "description": "Not allowed to manage this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "Merchant migration not found.",
+            "model": MerchantMigrationNotFound.schema(),
+        },
+        409: {
+            "description": "The source has no benefits to bring over.",
+            "model": BenefitsUnavailable.schema(),
+        },
+    },
+)
+async def benefits(
+    id: UUID4,
+    auth_subject: MerchantMigrationRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> MerchantMigrationBenefits:
+    return await merchant_migration_service.get_benefits(session, auth_subject, id)
+
+
+@router.post(
+    "/{id}/benefits",
+    response_model=MerchantMigrationSchema,
+    summary="Set Up Merchant Migration Benefits",
+    responses={
+        403: {
+            "description": "Not allowed to manage this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "Merchant migration not found.",
+            "model": MerchantMigrationNotFound.schema(),
+        },
+        409: {
+            "description": "The source has no benefits, the catalog isn't "
+            "imported yet, or another operation is still running.",
+            "model": BenefitsUnavailable.schema()
+            | BenefitsNotReady.schema()
+            | MigrationOperationInProgress.schema(),
+        },
+    },
+)
+async def set_up_benefits(
+    id: UUID4,
+    benefits_create: MerchantMigrationBenefitsCreate,
+    auth_subject: MerchantMigrationWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> MerchantMigration:
+    return await merchant_migration_service.set_up_benefits(
+        session, auth_subject, id, benefits_create
+    )
 
 
 @router.get(

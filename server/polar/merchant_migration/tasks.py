@@ -52,6 +52,22 @@ async def merchant_migration_import_catalog(
 
 
 @actor(
+    actor_name="merchant_migration.set_up_benefits",
+    priority=TaskPriority.LOW,
+    # A benefit's files are copied in one run, and they can be large.
+    time_limit=3_600_000,
+    max_retries=3,
+)
+async def merchant_migration_set_up_benefits(
+    merchant_migration_id: Annotated[UUID, LoggableField],
+) -> None:
+    async with AsyncSessionMaker() as session:
+        await merchant_migration_service.execute_benefits(
+            session, RedisMiddleware.get(), merchant_migration_id
+        )
+
+
+@actor(
     actor_name="merchant_migration.verify_cards",
     priority=TaskPriority.LOW,
 )

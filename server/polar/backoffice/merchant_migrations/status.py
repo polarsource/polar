@@ -38,6 +38,7 @@ STEP_LABELS: dict[MerchantMigrationStep, str] = {
     MerchantMigrationStep.source_setup: "Source connected",
     MerchantMigrationStep.pre_check: "Pre-check run",
     MerchantMigrationStep.create_catalog: "Catalog imported",
+    MerchantMigrationStep.set_up_benefits: "Setting up benefits",
     MerchantMigrationStep.copy_cards: "Moving cards",
     MerchantMigrationStep.activate_subscriptions: "Activating subscriptions",
     MerchantMigrationStep.completed: "Completed",
@@ -320,6 +321,7 @@ def attention(migration: MerchantMigration, failed_records: int) -> Attention:
             MerchantMigrationStep.source_setup
             | MerchantMigrationStep.pre_check
             | MerchantMigrationStep.create_catalog
+            | MerchantMigrationStep.set_up_benefits
         ):
             return Attention(
                 AttentionLevel.waiting_merchant,

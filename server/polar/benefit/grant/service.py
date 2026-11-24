@@ -156,6 +156,22 @@ class BenefitGrantService:
         if member is None:
             raise invalid_reference("member_id", "Member not found.")
 
+        return await self.grant_manually(
+            session, organization, customer, benefit, member
+        )
+
+    async def grant_manually(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        benefit: Benefit,
+        member: Member,
+        *,
+        properties: dict[str, str] | None = None,
+    ) -> BenefitGrant:
+        """``properties`` seed the grant, like ``user_provided_key`` to keep a
+        license key a customer already has."""
         repository = BenefitGrantRepository.from_session(session)
         try:
             async with session.begin_nested():
@@ -165,7 +181,7 @@ class BenefitGrantService:
                         benefit=benefit,
                         member=member,
                         manually_granted_at=utc_now(),
-                        properties={},
+                        properties=properties or {},
                     ),
                     flush=True,
                 )

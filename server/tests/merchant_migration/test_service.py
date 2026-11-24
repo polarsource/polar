@@ -14,6 +14,7 @@ from sqlalchemy import select, update
 from sqlalchemy.orm import selectinload
 
 from polar.auth.models import AuthSubject
+from polar.benefit.repository import BenefitRepository
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer.service import customer as customer_service
@@ -24,17 +25,23 @@ from polar.kit.encryption import LocalKeyProvider
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
 from polar.merchant_migration.adapters.base import ExtractionPage
-from polar.merchant_migration.adapters.lemon_squeezy import LemonSqueezyStoreRequired
+from polar.merchant_migration.adapters.lemon_squeezy import (
+    LemonSqueezyAdapter,
+    LemonSqueezyStoreRequired,
+)
 from polar.merchant_migration.canonical import (
     CanonicalAccount,
+    CanonicalBenefit,
     CanonicalCollectionMethod,
     CanonicalCustomer,
     CanonicalDiscountDuration,
+    CanonicalLicenseKeySettings,
     CanonicalPaymentMethod,
     CanonicalPaymentMethodType,
     CanonicalPrice,
     CanonicalPricingScheme,
     CanonicalProduct,
+    CanonicalPurchase,
     CanonicalRecord,
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
@@ -60,6 +67,7 @@ from polar.merchant_migration.repository import (
     MerchantMigrationRepository,
 )
 from polar.merchant_migration.schemas import (
+    MerchantMigrationBenefitsCreate,
     MerchantMigrationImportReport,
     MerchantMigrationLemonSqueezyCreate,
     MerchantMigrationStripeCreate,
@@ -68,6 +76,7 @@ from polar.merchant_migration.schemas import (
     PrecheckRecordStatus,
 )
 from polar.merchant_migration.service import (
+    BenefitsUnavailable,
     CatalogImportBlocked,
     CatalogImportNotReady,
     CutoverNotStarted,
@@ -85,6 +94,7 @@ from polar.merchant_migration.service import (
 )
 from polar.merchant_migration.service import merchant_migration as service
 from polar.models import (
+    BenefitGrant,
     Customer,
     Discount,
     DiscountProduct,
@@ -97,6 +107,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.benefit import BenefitType
 from polar.models.discount import DiscountDuration
 from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
@@ -120,6 +131,7 @@ from polar.models.subscription import SubscriptionStatus
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.postgres import AsyncSession
 from polar.product.service import product as product_service
+from polar.redis import Redis
 from polar.subscription.repository import SubscriptionRepository
 from polar.tax.tax_id import TaxIDFormat
 from tests.fixtures.database import SaveFixture
@@ -5735,3 +5747,188 @@ class TestListRecordsCutover:
 
         assert count == 1
         assert items[0].source_id == "sub_skipped"
+
+
+def _license_benefit() -> CanonicalBenefit:
+    return CanonicalBenefit(
+        source_id="license_keys:3:1:year",
+        description="Pro license key",
+        product_source_ids=["prod_1:month:1", "variant_lifetime"],
+        license_keys=CanonicalLicenseKeySettings(
+            activation_limit=3, expires_ttl=1, expires_timeframe="year"
+        ),
+    )
+
+
+async def _lemon_squeezy_imported_migration(
+    mocker: MockerFixture,
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    auth_subject: AuthSubject[User],
+    organization: Organization,
+) -> MerchantMigration:
+    migration = await _staged_migration(
+        mocker, session, save_fixture, auth_subject, organization
+    )
+    await _import_catalog(session, auth_subject, migration.id)
+    migration.source_platform = MerchantMigrationSourcePlatform.lemon_squeezy
+    await save_fixture(migration)
+    return migration
+
+
+def _benefits_adapter(
+    mocker: MockerFixture, purchases: list[CanonicalPurchase] | None = None
+) -> Mock:
+    adapter = mocker.Mock(spec=LemonSqueezyAdapter)
+    adapter.list_benefits = mocker.AsyncMock(return_value=[_license_benefit()])
+    adapter.list_purchases = mocker.AsyncMock(return_value=(purchases or [], False))
+    mocker.patch.object(
+        service, "_benefits_adapter", new=mocker.AsyncMock(return_value=adapter)
+    )
+    return adapter
+
+
+@pytest.mark.anyio
+class TestSetUpBenefits:
+    @pytest.mark.auth
+    async def test_stripe_migration_has_none(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+
+        with pytest.raises(BenefitsUnavailable):
+            await service.set_up_benefits(
+                session,
+                auth_subject,
+                migration.id,
+                MerchantMigrationBenefitsCreate(benefit_ids=[]),
+            )
+
+    @pytest.mark.auth
+    async def test_queues_the_selection_or_skips_an_empty_one(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _lemon_squeezy_imported_migration(
+            mocker, session, save_fixture, auth_subject, organization
+        )
+        _benefits_adapter(mocker)
+        enqueue_job = mocker.patch("polar.merchant_migration.service.enqueue_job")
+
+        await service.set_up_benefits(
+            session,
+            auth_subject,
+            migration.id,
+            MerchantMigrationBenefitsCreate(benefit_ids=[]),
+        )
+        assert migration.step == MerchantMigrationStep.set_up_benefits
+        enqueue_job.assert_not_called()
+
+        await service.set_up_benefits(
+            session,
+            auth_subject,
+            migration.id,
+            MerchantMigrationBenefitsCreate(
+                benefit_ids=["license_keys:3:1:year"], grant_past_purchases=True
+            ),
+        )
+        assert migration.operation is not None
+        assert migration.operation.kind == MerchantMigrationOperationKind.benefits
+        enqueue_job.assert_called_once_with(
+            "merchant_migration.set_up_benefits", merchant_migration_id=migration.id
+        )
+
+
+@pytest.mark.anyio
+class TestExecuteBenefits:
+    @pytest.mark.auth
+    async def test_creates_benefits_and_grants_past_buyers_their_key(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        redis: Redis,
+    ) -> None:
+        migration = await _lemon_squeezy_imported_migration(
+            mocker, session, save_fixture, auth_subject, organization
+        )
+        _benefits_adapter(
+            mocker,
+            purchases=[
+                CanonicalPurchase(
+                    source_id="order_1",
+                    product_source_id="variant_lifetime",
+                    email="bob@example.com",
+                    name="Bob",
+                    license_key="KEY-LIFETIME",
+                ),
+                CanonicalPurchase(
+                    source_id="order_2",
+                    product_source_id="variant_without_benefits",
+                    email="carol@example.com",
+                    name="Carol",
+                    license_key=None,
+                ),
+            ],
+        )
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        mocker.patch("polar.benefit.grant.service.enqueue_job")
+        await service.set_up_benefits(
+            session,
+            auth_subject,
+            migration.id,
+            MerchantMigrationBenefitsCreate(
+                benefit_ids=["license_keys:3:1:year"], grant_past_purchases=True
+            ),
+        )
+
+        for _ in range(5):
+            await service.execute_benefits(session, redis, migration.id)
+
+        assert migration.operation is not None
+        assert migration.operation.status == MerchantMigrationOperationStatus.done
+        benefit_repository = BenefitRepository.from_session(session)
+        benefit = await benefit_repository.get_by_external_id_and_organization(
+            "lemon_squeezy:license_keys:3:1:year", organization.id
+        )
+        assert benefit is not None
+        assert dict(benefit.properties).get("activations") == {
+            "limit": 3,
+            "enable_customer_admin": True,
+        }
+        [product] = [
+            product
+            for product in await _products(session, organization)
+            if product.is_recurring
+        ]
+        attached = await benefit_repository.get_by_product_and_type(
+            product.id, BenefitType.license_keys
+        )
+        assert attached is not None
+        assert attached.id == benefit.id
+        result = await session.execute(
+            select(BenefitGrant).where(BenefitGrant.benefit_id == benefit.id)
+        )
+        assert [dict(grant.properties) for grant in result.scalars().all()] == [
+            {"user_provided_key": "KEY-LIFETIME"}
+        ]
+        customer_repository = CustomerRepository.from_session(session)
+        assert (
+            await customer_repository.get_by_email_and_organization(
+                "carol@example.com", organization.id
+            )
+            is None
+        )

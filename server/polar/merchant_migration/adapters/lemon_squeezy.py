@@ -8,11 +8,12 @@ up here beyond brand and last four: moving them is a PAN import.
 """
 
 import asyncio
+import hashlib
 from collections.abc import AsyncIterator
 from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
 import httpx2
 
@@ -21,16 +22,20 @@ from polar.kit.schemas import Schema
 
 from ..canonical import (
     CanonicalAccount,
+    CanonicalBenefit,
+    CanonicalBenefitFile,
     CanonicalCollectionMethod,
     CanonicalCustomer,
     CanonicalDiscount,
     CanonicalDiscountDuration,
     CanonicalDiscountType,
+    CanonicalLicenseKeySettings,
     CanonicalPaymentMethod,
     CanonicalPaymentMethodType,
     CanonicalPrice,
     CanonicalPricingScheme,
     CanonicalProduct,
+    CanonicalPurchase,
     CanonicalRecord,
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
@@ -48,6 +53,13 @@ RATE_LIMIT_RETRY_DELAYS = (2, 5, 15, 30, 60)
 # `expired` is over; `cancelled` still runs until `ends_at` and is taken over
 # as a pending cancellation.
 SKIPPED_SUBSCRIPTION_STATUSES = frozenset({"expired"})
+
+LICENSE_LENGTH_UNITS: dict[str, Literal["day", "month", "year"]] = {
+    "days": "day",
+    "months": "month",
+    "years": "year",
+}
+BENEFIT_DESCRIPTION_MAX_LENGTH = 42
 
 
 class LemonSqueezyStoreRequired(MerchantMigrationError):
@@ -105,6 +117,7 @@ class LemonSqueezyAdapter:
         self._redemptions_by_order: dict[str, list[dict[str, Any]]] | None = None
         self._redemption_counts: dict[str, int] = {}
         self._order_tax_behaviors: dict[str, TaxBehavior] | None = None
+        self._license_keys: dict[str, str] | None = None
 
     async def _request(
         self, method: str, path: str, params: dict[str, Any] | None = None
@@ -433,6 +446,7 @@ class LemonSqueezyAdapter:
         await self._load_all_prices()
         discounts_by_order = await self._load_redemptions()
         tax_behaviors = await self._load_order_tax_behaviors()
+        license_keys = await self._load_license_keys()
         currency = await self._currency()
         records: list[CanonicalRecord] = [
             self._map_subscription(
@@ -441,6 +455,7 @@ class LemonSqueezyAdapter:
                 tax_behaviors,
                 currency,
                 customer_countries,
+                license_keys,
             )
             for subscription in subscriptions
             if subscription["attributes"]["status"] not in SKIPPED_SUBSCRIPTION_STATUSES
@@ -492,6 +507,157 @@ class LemonSqueezyAdapter:
             page += 1
         self._redemptions_by_order = by_order
         return by_order
+
+    async def _load_license_keys(self) -> dict[str, str]:
+        """Usable keys per order item. A subscription's key belongs to the order
+        item that started it, and a one-time purchase's to its only item."""
+        if self._license_keys is not None:
+            return self._license_keys
+        keys: dict[str, str] = {}
+        page = 1
+        while True:
+            license_keys, has_more, _ = await self._list(
+                "/license-keys", page, self._store_filter
+            )
+            for license_key in license_keys:
+                attributes = license_key["attributes"]
+                if attributes.get("disabled") or attributes.get("status") == "disabled":
+                    continue
+                keys.setdefault(str(attributes["order_item_id"]), attributes["key"])
+            if not has_more:
+                break
+            page += 1
+        self._license_keys = keys
+        return keys
+
+    async def list_benefits(self) -> list[CanonicalBenefit]:
+        """License key settings and files per variant, grouped so variants that
+        give the same thing share one benefit."""
+        await self.resolve_store()
+        variants: list[tuple[dict[str, Any], str]] = []
+        page = 1
+        while True:
+            batch, has_more, included = await self._list(
+                "/variants", page, {"include": "product"}
+            )
+            products = {
+                item["id"]: item for item in included if item["type"] == "products"
+            }
+            for variant in batch:
+                product = products.get(str(variant["attributes"]["product_id"]))
+                if product is not None and str(
+                    product["attributes"]["store_id"]
+                ) == str(self.store_id):
+                    variants.append((variant, product["attributes"]["name"]))
+            if not has_more:
+                break
+            page += 1
+
+        files_by_variant = await self._load_files({v["id"] for v, _ in variants})
+        license_benefits: dict[str, CanonicalBenefit] = {}
+        file_benefits: dict[str, CanonicalBenefit] = {}
+        for variant, product_name in variants:
+            attributes = variant["attributes"]
+            if attributes.get("has_license_keys"):
+                settings = _license_key_settings(attributes)
+                key = (
+                    f"license_keys:{settings.activation_limit or 'unlimited'}:"
+                    f"{settings.expires_ttl or 'never'}:"
+                    f"{settings.expires_timeframe or 'never'}"
+                )
+                benefit = license_benefits.setdefault(
+                    key,
+                    CanonicalBenefit(
+                        source_id=key,
+                        description=_description(product_name, "license key"),
+                        product_source_ids=[],
+                        license_keys=settings,
+                    ),
+                )
+                benefit.product_source_ids.append(variant["id"])
+            files = files_by_variant.get(variant["id"])
+            if files:
+                file_ids = ",".join(sorted(file.source_id for file in files))
+                key = "files:" + hashlib.sha256(file_ids.encode()).hexdigest()[:16]
+                benefit = file_benefits.setdefault(
+                    key,
+                    CanonicalBenefit(
+                        source_id=key,
+                        description=_description(product_name, "files"),
+                        product_source_ids=[],
+                        files=files,
+                    ),
+                )
+                benefit.product_source_ids.append(variant["id"])
+        return [*license_benefits.values(), *file_benefits.values()]
+
+    async def _load_files(
+        self, variant_ids: set[str]
+    ) -> dict[str, list[CanonicalBenefitFile]]:
+        """Published files of this store's variants. `/files` has no store
+        filter; other stores' files are left out by their variant."""
+        files: dict[str, list[CanonicalBenefitFile]] = {}
+        page = 1
+        while True:
+            batch, has_more, _ = await self._list("/files", page)
+            for file in batch:
+                attributes = file["attributes"]
+                variant_id = str(attributes["variant_id"])
+                if (
+                    variant_id not in variant_ids
+                    or attributes.get("status") != "published"
+                ):
+                    continue
+                files.setdefault(variant_id, []).append(
+                    CanonicalBenefitFile(
+                        source_id=file["id"],
+                        name=attributes["name"],
+                        size=int(attributes.get("size") or 0),
+                    )
+                )
+            if not has_more:
+                return files
+            page += 1
+
+    async def file_download_url(self, file_source_id: str) -> str:
+        """A fresh signed link: Lemon Squeezy's expire after an hour."""
+        response = await self._request("GET", f"/files/{file_source_id}")
+        response.raise_for_status()
+        return response.json()["data"]["attributes"]["download_url"]
+
+    async def list_purchases(self, page: int) -> tuple[list[CanonicalPurchase], bool]:
+        """One page of paid, unrefunded orders. The caller keeps those of
+        one-time variants: an order that started a subscription moves with it."""
+        orders, has_more, _ = await self._list("/orders", page, self._store_filter)
+        license_keys = await self._load_license_keys()
+        await self._load_all_prices()
+        purchases: list[CanonicalPurchase] = []
+        for order in orders:
+            attributes = order["attributes"]
+            item = attributes.get("first_order_item") or {}
+            if attributes.get("status") != "paid" or attributes.get("refunded"):
+                continue
+            if not item or not attributes.get("user_email"):
+                continue
+            if self._is_subscription_variant(str(item["variant_id"])):
+                continue
+            purchases.append(
+                CanonicalPurchase(
+                    source_id=order["id"],
+                    product_source_id=str(item["variant_id"]),
+                    email=attributes["user_email"],
+                    name=attributes.get("user_name"),
+                    license_key=license_keys.get(str(item["id"])),
+                )
+            )
+        return purchases, has_more
+
+    def _is_subscription_variant(self, variant_id: str) -> bool:
+        prices = self._prices_by_variant.get(variant_id, [])
+        if not prices:
+            return False
+        latest = max(prices, key=lambda price: price["attributes"]["created_at"])
+        return latest["attributes"].get("category") == "subscription"
 
     async def get_subscription(self, source_id: str) -> CanonicalSubscription | None:
         body = await self._retrieve_subscription(source_id)
@@ -549,6 +715,7 @@ class LemonSqueezyAdapter:
         tax_behaviors: dict[str, TaxBehavior],
         currency: str,
         customer_countries: dict[str, str],
+        license_keys: dict[str, str] | None = None,
     ) -> CanonicalSubscription:
         attributes = subscription["attributes"]
         status = attributes["status"]
@@ -607,6 +774,7 @@ class LemonSqueezyAdapter:
             # Lemon Squeezy is the merchant of record and always computes tax.
             automatic_tax=True,
             price_tax_behavior=tax_behaviors.get(str(attributes["order_id"])),
+            license_key=(license_keys or {}).get(str(attributes.get("order_item_id"))),
         )
 
     def _price_id(self, item: dict[str, Any], variant_id: Any) -> str:
@@ -688,3 +856,27 @@ def _customer_countries(included: list[dict[str, Any]]) -> dict[str, str]:
         for item in included
         if item["type"] == "customers" and item["attributes"].get("country")
     }
+
+
+def _license_key_settings(attributes: dict[str, Any]) -> CanonicalLicenseKeySettings:
+    unlimited_activations = attributes.get("is_license_limit_unlimited") or not (
+        attributes.get("license_activation_limit")
+    )
+    timeframe = LICENSE_LENGTH_UNITS.get(attributes.get("license_length_unit") or "")
+    never_expires = (
+        attributes.get("is_license_length_unlimited")
+        or not attributes.get("license_length_value")
+        or timeframe is None
+    )
+    return CanonicalLicenseKeySettings(
+        activation_limit=None
+        if unlimited_activations
+        else int(attributes["license_activation_limit"]),
+        expires_ttl=None if never_expires else int(attributes["license_length_value"]),
+        expires_timeframe=None if never_expires else timeframe,
+    )
+
+
+def _description(product_name: str, suffix: str) -> str:
+    room = BENEFIT_DESCRIPTION_MAX_LENGTH - len(suffix) - 1
+    return f"{product_name[:room].strip()} {suffix}"

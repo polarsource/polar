@@ -492,6 +492,61 @@ class PanTransferChecklist(Schema):
     )
 
 
+class MerchantMigrationBenefitFile(Schema):
+    name: str = Field(description="The file name.")
+    size: int = Field(description="Size in bytes.")
+
+
+class MerchantMigrationBenefitProduct(Schema):
+    id: UUID4 = Field(description="The imported Polar product.")
+    name: str = Field(description="The product name.")
+
+
+class MerchantMigrationBenefit(Schema):
+    id: str = Field(
+        description="Stable key for this source benefit. Send it back to create it."
+    )
+    type: Literal["license_keys", "downloadables"] = Field(
+        description="The Polar benefit type it becomes."
+    )
+    description: str = Field(description="The name the benefit gets on Polar.")
+    activation_limit: int | None = Field(
+        description="License keys only: how many devices a key activates. Null is no limit."
+    )
+    expires_ttl: int | None = Field(
+        description="License keys only: how long a key lasts. Null when it never expires."
+    )
+    expires_timeframe: Literal["day", "month", "year"] | None = Field(
+        description="License keys only: the unit of `expires_ttl`."
+    )
+    files: Sequence[MerchantMigrationBenefitFile] = Field(
+        description="File downloads only: the files Polar copies."
+    )
+    products: Sequence[MerchantMigrationBenefitProduct] = Field(
+        description="Imported products that get this benefit."
+    )
+    benefit_id: UUID4 | None = Field(description="The Polar benefit, once created.")
+
+
+class MerchantMigrationBenefits(Schema):
+    items: Sequence[MerchantMigrationBenefit] = Field(
+        description="What the source gives buyers, as Polar benefits."
+    )
+
+
+class MerchantMigrationBenefitsCreate(Schema):
+    benefit_ids: list[str] = Field(
+        description="Keys of the benefits to create. Empty skips this step."
+    )
+    grant_past_purchases: bool = Field(
+        default=False,
+        description=(
+            "Also give one-time buyers the benefits of what they bought, "
+            "keeping their license keys."
+        ),
+    )
+
+
 class MerchantMigrationOperation(Schema):
     """Background work for the current migration step."""
 

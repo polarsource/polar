@@ -45,6 +45,21 @@ class MerchantMigrationCutoverStatus(StrEnum):
     failed = "failed"
 
 
+class MerchantMigrationCardStatus(StrEnum):
+    """What the card copy left on Polar for an imported subscription to charge."""
+
+    ready = "ready"
+    # The card landed, but India requires an issuer mandate for recurring
+    # charges and it stays with the source account: renewals decline.
+    india_card = "india_card"
+    expired_card = "expired_card"
+    # Only methods Polar doesn't charge after a copy landed, such as Link.
+    non_card_only = "non_card_only"
+    nothing_copied = "nothing_copied"
+    # Several copied cards look like the one the source was charging.
+    ambiguous = "ambiguous"
+
+
 class MerchantMigrationRecord(RecordModel):
     """One imported thing, mapping a source object to its Polar counterpart.
 
@@ -103,6 +118,12 @@ class MerchantMigrationRecord(RecordModel):
     )
     # Why the cutover skipped or failed this subscription.
     cutover_error: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
+    # Null until the card verification has looked at an imported subscription.
+    card_status: Mapped[MerchantMigrationCardStatus | None] = mapped_column(
+        StringEnum(MerchantMigrationCardStatus, length=32),
+        nullable=True,
+        default=None,
+    )
 
     @declared_attr
     def merchant_migration(cls) -> Mapped["MerchantMigration"]:

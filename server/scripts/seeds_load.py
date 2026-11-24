@@ -129,6 +129,7 @@ from polar.redis import Redis, create_redis
 from polar.support_case.service import support_case as support_case_service
 from polar.user.repository import UserRepository
 from polar.user.service import user as user_service
+from polar.version import CURRENT_API_VERSION
 from polar.webhook.service import generate_webhook_secret
 from polar.worker import JobQueueManager
 from scripts.db import assert_dev_or_testing
@@ -3174,7 +3175,9 @@ def polar_self_env() -> None:
                     w.url = WEBHOOK_URL
                     w.format = WebhookFormat.raw
                     w.events = WEBHOOK_EVENTS
+                    w.api_version = CURRENT_API_VERSION
                     w.enabled = True
+                    w.expires_at = None
                     kept_webhook = w
                 else:
                     await session.delete(w)

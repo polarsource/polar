@@ -18,8 +18,10 @@ import type {
   ExpiredCheckoutError as ExpiredCheckoutErrorModel,
   HTTPValidationError as HTTPValidationErrorModel,
   InactiveSubscription as InactiveSubscriptionModel,
+  MissingBillingDetails as MissingBillingDetailsModel,
   MissingInvoiceBillingDetails as MissingInvoiceBillingDetailsModel,
   NotPermitted as NotPermittedModel,
+  NotTrialEndedSubscription as NotTrialEndedSubscriptionModel,
   OffSessionChargesNotEnabled as OffSessionChargesNotEnabledModel,
   OrderNotDraft as OrderNotDraftModel,
   OrderNotEligibleForInvoice as OrderNotEligibleForInvoiceModel,
@@ -577,7 +579,7 @@ export class PaymentFailed extends PolarClientError<PaymentFailedModel> {
   }
 }
 /**
- * Customer subscription is already canceled or will be at the end of the period, the user lacks billing permissions, or pausing/resuming is not enabled for the organization.
+ * Customer subscription is already canceled or will be at the end of the period, the user lacks billing permissions, pausing/resuming is not enabled for the organization, or the organization can't renew subscriptions.
  */
 export class CustomerPortalSubscriptionsUpdate403Error extends PolarClientError<
   | AlreadyCanceledSubscriptionModel
@@ -585,6 +587,7 @@ export class CustomerPortalSubscriptionsUpdate403Error extends PolarClientError<
   | UpdateSubscriptionPlanNotAllowedModel
   | UpdateSubscriptionSeatsNotAllowedModel
   | UpdateSubscriptionUnitsNotAllowedModel
+  | PaymentNotReadyModel
 > {
   constructor(
     public readonly statusCode: 403,
@@ -593,21 +596,29 @@ export class CustomerPortalSubscriptionsUpdate403Error extends PolarClientError<
       | PauseResumeNotAllowedModel
       | UpdateSubscriptionPlanNotAllowedModel
       | UpdateSubscriptionSeatsNotAllowedModel
-      | UpdateSubscriptionUnitsNotAllowedModel,
+      | UpdateSubscriptionUnitsNotAllowedModel
+      | PaymentNotReadyModel,
   ) {
     super(statusCode, error);
     this.name = "CustomerPortalSubscriptionsUpdate403Error";
   }
 }
 /**
- * The subscription has no payment method to charge, or is not scheduled to be canceled.
+ * The subscription has no payment method to charge, is not scheduled to be canceled, or can't be reactivated: its trial hasn't ended without converting, or the customer has no payment method or complete billing address.
  */
 export class CustomerPortalSubscriptionsUpdate409Error extends PolarClientError<
-  PaymentMethodRequiredModel | SubscriptionNotScheduledToCancelModel
+  | PaymentMethodRequiredModel
+  | SubscriptionNotScheduledToCancelModel
+  | NotTrialEndedSubscriptionModel
+  | MissingBillingDetailsModel
 > {
   constructor(
     public readonly statusCode: 409,
-    public readonly error: PaymentMethodRequiredModel | SubscriptionNotScheduledToCancelModel,
+    public readonly error:
+      | PaymentMethodRequiredModel
+      | SubscriptionNotScheduledToCancelModel
+      | NotTrialEndedSubscriptionModel
+      | MissingBillingDetailsModel,
   ) {
     super(statusCode, error);
     this.name = "CustomerPortalSubscriptionsUpdate409Error";

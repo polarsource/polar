@@ -51,6 +51,8 @@ class CheckoutsSync(SyncServiceBase):
         external_customer_id: str | builtins.list[str] | None = None,
         status: CheckoutStatus | builtins.list[CheckoutStatus] | None = None,
         query: str | None = None,
+        created_after: str | None = None,
+        created_before: str | None = None,
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CheckoutSortProperty] | None = ["-created_at"],
@@ -70,6 +72,8 @@ class CheckoutsSync(SyncServiceBase):
             external_customer_id: Filter by customer external ID.
             status: Filter by checkout session status.
             query: Filter by customer email.
+            created_after: Only include checkout sessions created after this date.
+            created_before: Only include checkout sessions created before this date.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
@@ -95,6 +99,8 @@ class CheckoutsSync(SyncServiceBase):
                 "external_customer_id": external_customer_id,
                 "status": status,
                 "query": query,
+                "created_after": created_after,
+                "created_before": created_before,
                 "page": page,
                 "limit": limit,
                 "sorting": sorting,
@@ -118,6 +124,8 @@ class CheckoutsSync(SyncServiceBase):
         external_customer_id: str | builtins.list[str] | None = None,
         status: CheckoutStatus | builtins.list[CheckoutStatus] | None = None,
         query: str | None = None,
+        created_after: str | None = None,
+        created_before: str | None = None,
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CheckoutSortProperty] | None = ["-created_at"],
@@ -137,6 +145,8 @@ class CheckoutsSync(SyncServiceBase):
             external_customer_id: Filter by customer external ID.
             status: Filter by checkout session status.
             query: Filter by customer email.
+            created_after: Only include checkout sessions created after this date.
+            created_before: Only include checkout sessions created before this date.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
@@ -162,6 +172,8 @@ class CheckoutsSync(SyncServiceBase):
                 external_customer_id=external_customer_id,
                 status=status,
                 query=query,
+                created_after=created_after,
+                created_before=created_before,
                 page=page,
                 limit=limit,
                 sorting=sorting,
@@ -497,6 +509,8 @@ class CheckoutsAsync(AsyncServiceBase):
         external_customer_id: str | builtins.list[str] | None = None,
         status: CheckoutStatus | builtins.list[CheckoutStatus] | None = None,
         query: str | None = None,
+        created_after: str | None = None,
+        created_before: str | None = None,
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CheckoutSortProperty] | None = ["-created_at"],
@@ -516,6 +530,8 @@ class CheckoutsAsync(AsyncServiceBase):
             external_customer_id: Filter by customer external ID.
             status: Filter by checkout session status.
             query: Filter by customer email.
+            created_after: Only include checkout sessions created after this date.
+            created_before: Only include checkout sessions created before this date.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
@@ -541,6 +557,8 @@ class CheckoutsAsync(AsyncServiceBase):
                 "external_customer_id": external_customer_id,
                 "status": status,
                 "query": query,
+                "created_after": created_after,
+                "created_before": created_before,
                 "page": page,
                 "limit": limit,
                 "sorting": sorting,
@@ -564,6 +582,8 @@ class CheckoutsAsync(AsyncServiceBase):
         external_customer_id: str | builtins.list[str] | None = None,
         status: CheckoutStatus | builtins.list[CheckoutStatus] | None = None,
         query: str | None = None,
+        created_after: str | None = None,
+        created_before: str | None = None,
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CheckoutSortProperty] | None = ["-created_at"],
@@ -583,6 +603,8 @@ class CheckoutsAsync(AsyncServiceBase):
             external_customer_id: Filter by customer external ID.
             status: Filter by checkout session status.
             query: Filter by customer email.
+            created_after: Only include checkout sessions created after this date.
+            created_before: Only include checkout sessions created before this date.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
@@ -608,6 +630,8 @@ class CheckoutsAsync(AsyncServiceBase):
                 external_customer_id=external_customer_id,
                 status=status,
                 query=query,
+                created_after=created_after,
+                created_before=created_before,
                 page=page,
                 limit=limit,
                 sorting=sorting,

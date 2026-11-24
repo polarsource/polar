@@ -47,6 +47,8 @@ export const listCheckouts = (client: ClientBase) => {
       external_customer_id?: string | string[] | null;
       status?: CheckoutStatus | CheckoutStatus[] | null;
       query?: string | null;
+      created_after?: string | null;
+      created_before?: string | null;
       page?: number;
       limit?: number;
       sorting?: CheckoutSortProperty[] | null;
@@ -62,6 +64,8 @@ export const listCheckouts = (client: ClientBase) => {
       external_customer_id: query?.external_customer_id,
       status: query?.status,
       query: query?.query,
+      created_after: query?.created_after,
+      created_before: query?.created_before,
       page: query?.page ?? 1,
       limit: query?.limit ?? 10,
       sorting: query?.sorting ?? ["-created_at"],
@@ -102,6 +106,8 @@ export const iterListCheckouts = (client: ClientBase) => {
       external_customer_id?: string | string[] | null;
       status?: CheckoutStatus | CheckoutStatus[] | null;
       query?: string | null;
+      created_after?: string | null;
+      created_before?: string | null;
       page?: number;
       limit?: number;
       sorting?: CheckoutSortProperty[] | null;

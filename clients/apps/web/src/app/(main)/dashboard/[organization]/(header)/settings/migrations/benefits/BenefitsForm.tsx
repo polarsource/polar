@@ -29,6 +29,8 @@ export function BenefitsForm({
   const [grantPastPurchases, setGrantPastPurchases] = useState(true)
   const setUp = useSetUpMigrationBenefits(migrationId)
   const selected = benefits.filter((benefit) => !excluded.has(benefit.id))
+  // A created benefit stays: unticking it can't remove it, so it can't be unticked.
+  const toCreate = selected.filter((benefit) => !benefit.benefit_id)
 
   const toggle = (id: string) =>
     setExcluded((current) => {
@@ -71,6 +73,7 @@ export function BenefitsForm({
             <Box paddingTop="xs">
               <Checkbox
                 checked={!excluded.has(benefit.id)}
+                disabled={!!benefit.benefit_id}
                 aria-label={`Create ${benefit.description}`}
                 onCheckedChange={() => toggle(benefit.id)}
               />
@@ -87,7 +90,7 @@ export function BenefitsForm({
               </Text>
             </Box>
             <Text variant="caption" color="muted">
-              {productsText(benefit)}
+              {benefit.benefit_id ? 'Created' : productsText(benefit)}
             </Text>
           </Box>
         ))}
@@ -129,10 +132,10 @@ export function BenefitsForm({
         <Button
           size="sm"
           loading={setUp.isPending}
-          disabled={setUp.isPending || selected.length === 0}
+          disabled={setUp.isPending || toCreate.length === 0}
           onClick={() => submit(selected.map((benefit) => benefit.id))}
         >
-          {`Create ${selected.length} ${selected.length === 1 ? 'benefit' : 'benefits'}`}
+          {`Create ${toCreate.length} ${toCreate.length === 1 ? 'benefit' : 'benefits'}`}
         </Button>
       </Box>
     </Box>

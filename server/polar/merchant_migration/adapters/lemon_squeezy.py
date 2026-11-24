@@ -532,8 +532,11 @@ class LemonSqueezyAdapter:
         return keys
 
     async def list_benefits(self) -> list[CanonicalBenefit]:
-        """License key settings and files per variant, grouped so variants that
-        give the same thing share one benefit."""
+        """License key settings, files and links per variant, grouped so
+        variants that give the same thing share one benefit. Keys are never
+        shared across products: a key validates against its benefit, so it
+        would unlock every product in the group. Every source id carries the
+        store, so a second store's benefits never pass for this one's."""
         await self.resolve_store()
         variants: list[tuple[dict[str, Any], str]] = []
         page = 1
@@ -563,7 +566,9 @@ class LemonSqueezyAdapter:
             if attributes.get("has_license_keys"):
                 settings = _license_key_settings(attributes)
                 key = (
-                    f"license_keys:{settings.activation_limit or 'unlimited'}:"
+                    f"{self.store_id}:license_keys:"
+                    f"{attributes['product_id']}:"
+                    f"{settings.activation_limit or 'unlimited'}:"
                     f"{settings.expires_ttl or 'never'}:"
                     f"{settings.expires_timeframe or 'never'}"
                 )
@@ -580,7 +585,7 @@ class LemonSqueezyAdapter:
             files = files_by_variant.get(variant["id"])
             if files:
                 file_ids = ",".join(sorted(file.source_id for file in files))
-                key = "files:" + hashlib.sha256(file_ids.encode()).hexdigest()[:16]
+                key = f"{self.store_id}:files:" + _digest(file_ids)
                 benefit = file_benefits.setdefault(
                     key,
                     CanonicalBenefit(
@@ -600,7 +605,7 @@ class LemonSqueezyAdapter:
             ]
             if links:
                 urls = ",".join(f"{link.title}|{link.url}" for link in links)
-                key = "links:" + hashlib.sha256(urls.encode()).hexdigest()[:16]
+                key = f"{self.store_id}:links:" + _digest(urls)
                 benefit = link_benefits.setdefault(
                     key,
                     CanonicalBenefit(
@@ -901,6 +906,10 @@ def _license_key_settings(attributes: dict[str, Any]) -> CanonicalLicenseKeySett
         expires_ttl=None if never_expires else int(attributes["license_length_value"]),
         expires_timeframe=None if never_expires else timeframe,
     )
+
+
+def _digest(value: str) -> str:
+    return hashlib.sha256(value.encode()).hexdigest()[:16]
 
 
 def _description(product_name: str, suffix: str) -> str:

@@ -1062,7 +1062,17 @@ class MerchantMigrationService:
             session, auth_subject, migration_id, for_update=True
         )
         await self._benefits_adapter(migration)
-        if self._operation_blocks_new_work(migration):
+        # A stalled import still counts: once this leaves `create_catalog` the
+        # import can't be retried. Only a stalled set-up run can be replaced.
+        operation = migration.operation
+        if (
+            operation is not None
+            and operation.is_active
+            and (
+                operation.kind != MerchantMigrationOperationKind.benefits
+                or not operation.is_stalled()
+            )
+        ):
             raise MigrationOperationInProgress()
         if migration.step not in (
             MerchantMigrationStep.create_catalog,
@@ -1070,7 +1080,11 @@ class MerchantMigrationService:
         ):
             raise BenefitsNotReady()
 
-        update_dict: dict[str, object] = {"step": MerchantMigrationStep.set_up_benefits}
+        # Skipping clears a failed run, so the step reads as done.
+        update_dict: dict[str, object] = {
+            "step": MerchantMigrationStep.set_up_benefits,
+            "operation": None,
+        }
         if benefits_create.benefit_ids:
             update_dict["operation"] = MerchantMigrationOperation(
                 status=MerchantMigrationOperationStatus.pending,
@@ -1078,7 +1092,6 @@ class MerchantMigrationService:
                 cursor={
                     "benefit_ids": benefits_create.benefit_ids,
                     "grant_past_purchases": benefits_create.grant_past_purchases,
-                    "purchases_page": 1,
                 },
                 last_progress_at=utc_now(),
             )
@@ -1091,13 +1104,15 @@ class MerchantMigrationService:
     async def execute_benefits(
         self, session: AsyncSession, redis: Redis, migration_id: UUID
     ) -> None:
-        """One unit of work per run: create one benefit, then grant one page of
-        past purchases. Re-enqueues until both are done."""
+        """Create one benefit per run, then grant past purchases in a last run.
+        Re-enqueues until both are done.
+
+        The migration row is locked only at the end: copying a benefit's files
+        can take long, and the dashboard reads and writes the row meanwhile."""
         migration = await self._load(session, migration_id)
         if migration is None:
             return
         repository = MerchantMigrationRepository.from_session(session)
-        await repository.refresh_for_update(migration)
         operation = migration.operation
         if (
             operation is None
@@ -1120,11 +1135,8 @@ class MerchantMigrationService:
                 )
                 more = await benefits.create_next(selected)
                 if not more and cursor.get("grant_past_purchases"):
-                    page = int(cursor.get("purchases_page", 1))
-                    more = await benefits.grant_purchases(page, selected)
-                    cursor["purchases_page"] = page + 1
-                    if not more:
-                        cursor["grant_past_purchases"] = False
+                    await benefits.grant_purchases(selected)
+                    cursor["grant_past_purchases"] = False
         except PolarError as error:
             log.warning(
                 "merchant_migration.benefits_failed",
@@ -1147,6 +1159,14 @@ class MerchantMigrationService:
             )
             return
 
+        await repository.refresh_for_update(migration)
+        operation = migration.operation
+        if (
+            operation is None
+            or not operation.is_active
+            or operation.kind != MerchantMigrationOperationKind.benefits
+        ):
+            return
         if more or cursor.get("grant_past_purchases"):
             await repository.update(
                 migration,

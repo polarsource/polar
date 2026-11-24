@@ -618,6 +618,7 @@ class TestListBenefits:
                             is_license_limit_unlimited=True,
                             is_license_length_unlimited=True,
                         ),
+                        _variant("14", 8, **license),
                         _variant("999", 6, **license),
                     ],
                     included=[
@@ -630,6 +631,11 @@ class TestListBenefits:
                             "type": "products",
                             "id": "6",
                             "attributes": {"store_id": 2, "name": "Other"},
+                        },
+                        {
+                            "type": "products",
+                            "id": "8",
+                            "attributes": {"store_id": 1, "name": "Plugin"},
                         },
                     ],
                 ),
@@ -647,7 +653,7 @@ class TestListBenefits:
 
         benefits = await adapter.list_benefits()
 
-        limited, unlimited, files, links = benefits
+        limited, unlimited, other_product, files, links = benefits
         assert limited.product_source_ids == ["10", "11"]
         assert limited.license_keys is not None
         assert limited.license_keys.activation_limit == 3
@@ -655,6 +661,9 @@ class TestListBenefits:
             limited.license_keys.expires_ttl,
             limited.license_keys.expires_timeframe,
         ) == (1, "year")
+        assert other_product.product_source_ids == ["14"]
+        assert other_product.source_id != limited.source_id
+        assert limited.source_id.startswith("1:")
         assert unlimited.product_source_ids == ["12"]
         assert unlimited.license_keys is not None
         assert unlimited.license_keys.activation_limit is None

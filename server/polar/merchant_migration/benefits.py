@@ -138,11 +138,15 @@ class MigrationBenefits:
 
     async def create_next(self, selected: Collection[str]) -> bool:
         """Create one selected benefit not created yet, with its files, and add
-        it to its products. False once every selected benefit exists."""
+        it to its products. Selected benefits that already exist are added to
+        any product still missing them, like one imported later. False once
+        every selected benefit exists."""
         for proposal in await self.proposals():
-            if proposal.created is not None or proposal.source.source_id not in (
-                selected
-            ):
+            if proposal.source.source_id not in selected:
+                continue
+            if proposal.created is not None:
+                for product_id in proposal.product_ids:
+                    await self._attach(product_id, proposal.created)
                 continue
             benefit = await self._create(proposal.source)
             for product_id in proposal.product_ids:
@@ -150,21 +154,26 @@ class MigrationBenefits:
             return True
         return False
 
-    async def grant_purchases(self, page: int, selected: Collection[str]) -> bool:
-        """Give one page of one-time buyers the benefits of what they bought,
-        keeping their license key. Returns whether more pages remain."""
+    async def grant_purchases(self, selected: Collection[str]) -> None:
+        """Give one-time buyers the benefits of what they bought, keeping their
+        license key. Every page in one run, so the store's keys and prices are
+        read once. A rerun is safe: an existing grant is skipped."""
         benefits_by_variant: dict[str, list[Benefit]] = {}
         for proposal in await self.proposals():
             if proposal.created is None or proposal.source.source_id not in selected:
                 continue
             for variant_id in proposal.source.product_source_ids:
                 benefits_by_variant.setdefault(variant_id, []).append(proposal.created)
-        purchases, has_more = await self.adapter.list_purchases(page)
-        for purchase in purchases:
-            benefits = benefits_by_variant.get(purchase.product_source_id)
-            if benefits:
-                await self._grant_purchase(purchase, benefits)
-        return has_more
+        page = 1
+        while True:
+            purchases, has_more = await self.adapter.list_purchases(page)
+            for purchase in purchases:
+                benefits = benefits_by_variant.get(purchase.product_source_id)
+                if benefits:
+                    await self._grant_purchase(purchase, benefits)
+            if not has_more:
+                return
+            page += 1
 
     async def _create(self, source: CanonicalBenefit) -> Benefit:
         create: (

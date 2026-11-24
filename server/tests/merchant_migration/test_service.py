@@ -5832,6 +5832,7 @@ class TestSetUpBenefits:
             MerchantMigrationBenefitsCreate(benefit_ids=[]),
         )
         assert migration.step == MerchantMigrationStep.set_up_benefits
+        assert migration.operation is None
         enqueue_job.assert_not_called()
 
         await service.set_up_benefits(

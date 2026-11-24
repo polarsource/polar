@@ -1,0 +1,42 @@
+server/tests/worker/test_aws_lambda.py
+  s_bee25fb0c87445::t_4914179ccdea7d 103
+  s_bee25fb0c87445::t_6bdc9c86f1e06a 14
+server/polar/worker/_debounce.py
+  s_bee25fb0c87445::t_f5492229dfc3c1 59-60,62,65,113,116
+  s_bee25fb0c87445::t_ff51466c511be7 2-3,41-47,51,54-55,57-58,63,66-112,114-115,127-138,150-153,186-191,199,202,204-212,214-216,220,224-228,245,279-280,282-291,293-296,300-307,338,353
+  s_bee25fb0c87445::t_b9b503fa78b7fa 48-50,52-53,56,61,64
+  s_bee25fb0c87445::t_09ec80e9cb982d 148-149,165-173
+  s_bee25fb0c87445::t_0b96b6b52703d4 5,203,281
+  s_bee25fb0c87445::t_7029ed25aae48f 139-140
+server/polar/worker/_runner.py
+  s_bee25fb0c87445::t_066bb311b522f5 27-32,253,256-272,274
+server/polar/worker/_enqueue.py
+  s_bee25fb0c87445::t_4addff5dae1ecd 65-72,133-134,155,172-177,179,181,200,211,225-228
+server/tests/worker/test_runner.py
+  s_bee25fb0c87445::t_0b96b6b52703d4 340,346-347
+  s_bee25fb0c87445::t_a0a6ace1c3dc80 320-339,341-345
+server/tests/worker/test_debounce.py
+  s_bee25fb0c87445::t_67fa31dfa10775 253,271,287
+  s_bee25fb0c87445::t_545a7300a6f938 5,13,43,60,82,97,108,117,119,122,131,134,141-160,162,164-165,167-174,180-181,184-189,195-196,199,202-204,208-216,218-246,255,257-259,261,264,270,280,307-332
+  s_bee25fb0c87445::t_1e5e616e99b7e5 175-179,182,217
+  s_bee25fb0c87445::t_c3138cdff2f286 183,333-334
+server/tests/worker/test_enqueue_gate.py
+  s_bee25fb0c87445::t_d1cc546c72aa4f 132-168,170-171
+  s_bee25fb0c87445::t_79dba03f640431 169
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "efbfb1c981ad3701d37729545980542893759ad5",
+  "prompts": {},
+  "sessions": {
+    "s_bee25fb0c87445": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "631f92da-a28b-4bfb-b2cb-9e281ac4e731",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

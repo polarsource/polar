@@ -5,7 +5,7 @@ import {
   MockLanguageModelV4,
 } from 'ai/test'
 import { describe, expect, it, vi } from 'vitest'
-import { LLMStrategy, type LLMStrategyModel } from '.'
+import { LLMStrategy, type LLMStrategyAISDK } from '.'
 
 const customerId = 'test-customer-id'
 const prompt = 'Hello'
@@ -69,7 +69,7 @@ const v4 = () =>
     },
   })
 
-const track = <TModel extends LLMStrategyModel>(model: TModel) => {
+const track = <TModel extends LLMStrategyAISDK>(model: TModel) => {
   const llm = new LLMStrategy(model)
   const execute = vi.spyOn(llm, 'execute').mockResolvedValue()
 

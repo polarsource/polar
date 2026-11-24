@@ -93,7 +93,6 @@ const encodeCustomer = Schema.encodeSync(
 const toEventMetadata = (
   metadata: Record<string, IngestionMetadataValue | models.CostMetadataInput>,
 ): EventInput['metadata'] => {
-  // SAFETY: besides primitives, contexts only hold _cost and _llm objects, the two the API accepts
   const eventMetadata = metadata as EventInput['metadata']
   const _llm = Option.getOrUndefined(encodeLLMUsage(metadata._llm))
 

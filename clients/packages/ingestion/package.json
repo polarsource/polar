@@ -107,6 +107,7 @@
     "@opentelemetry/sdk-trace-node": "^2.2.0",
     "@polar-sh/sdk": "1.3.1",
     "@polar-sh/typescript-config": "workspace:*",
+    "@tanstack/ai": "1.8.0",
     "@types/node": "catalog:",
     "@typescript/native": "catalog:",
     "ai": "catalog:",

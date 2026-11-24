@@ -18,7 +18,6 @@ from sqlalchemy.orm import joinedload, noload, selectinload
 
 from polar.customer.repository import CustomerRepository
 from polar.discount.repository import DiscountRepository
-from polar.enums import PaymentProcessor
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import (
@@ -38,7 +37,6 @@ from polar.models.merchant_migration_record import (
     MerchantMigrationRecordStatus,
 )
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
-from polar.payment_method.repository import PaymentMethodRepository
 from polar.postgres import AsyncSession
 from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
@@ -54,7 +52,12 @@ from .canonical import (
     deserialize,
     discount_started_at_for,
 )
-from .cards import CARD_TYPE, AmbiguousCopiedCard, card_status, link_payment_method
+from .cards import (
+    AmbiguousCopiedCard,
+    card_status,
+    link_payment_method,
+    mapped_payment_method,
+)
 from .importer import (
     _CUSTOMER_ALREADY_SUBSCRIBED,
     create_imported_subscription,
@@ -883,38 +886,18 @@ class SubscriptionCutover:
         customer: Customer,
         source: CanonicalSubscription,
     ) -> PaymentMethod | None:
-        repository = PaymentMethodRepository.from_session(self.session)
         if self.migration.exact_card_mapping:
             try:
                 staged = deserialize(record.type, record.canonical)
             except KeyError, TypeError, ValueError:
                 return None
-            if (
-                isinstance(staged, CanonicalSubscription)
-                and staged.payment_method is not None
-            ):
-                payment_method = await repository.get_by_customer_and_processor_id(
-                    customer.id,
-                    PaymentProcessor.stripe,
-                    staged.payment_method.source_id,
-                )
-                if payment_method is not None and payment_method.type == CARD_TYPE:
-                    return payment_method
-            if customer.default_payment_method_id is not None:
-                default = await repository.get_by_id_and_customer(
-                    customer.default_payment_method_id, customer.id
-                )
-                if default is not None and default.type == CARD_TYPE:
-                    return default
-            if (
-                isinstance(staged, CanonicalSubscription)
-                and staged.payment_method is not None
-                and staged.payment_method.type.requires_reentry
-            ):
-                for payment_method in await repository.list_by_customer(customer.id):
-                    if payment_method.type == CARD_TYPE:
-                        return payment_method
-            return None
+            return await mapped_payment_method(
+                self.session,
+                customer,
+                staged.payment_method
+                if isinstance(staged, CanonicalSubscription)
+                else None,
+            )
         return await link_payment_method(
             self.session, customer, source_method=source.payment_method
         )

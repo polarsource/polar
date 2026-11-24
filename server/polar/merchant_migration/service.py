@@ -66,7 +66,9 @@ from .canonical import (
 from .cards import (
     AmbiguousCopiedCard,
     PaymentMethodMapping,
+    card_status,
     link_mapped_payment_method,
+    mapped_payment_method,
     parse_payment_method_mapping_csv,
     resolve_copied_card,
 )
@@ -1278,10 +1280,6 @@ class MerchantMigrationService:
                 "merchant_migration.missing", merchant_migration_id=migration_id
             )
             return
-        if migration.exact_card_mapping:
-            await repository.refresh_for_update(migration)
-            await self._complete_step(session, migration, STEP_VERIFY_CARDS)
-            return
 
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         records = await record_repository.list_imported_subscriptions(
@@ -1305,7 +1303,7 @@ class MerchantMigrationService:
                 record,
                 update_dict={
                     "card_status": await self._resolve_card(
-                        session, record, customer, resolved
+                        session, migration, record, customer, resolved
                     )
                 },
             )
@@ -1324,6 +1322,7 @@ class MerchantMigrationService:
     async def _resolve_card(
         self,
         session: AsyncSession,
+        migration: MerchantMigration,
         record: MerchantMigrationRecord,
         customer: Customer,
         resolved: ResolvedCards,
@@ -1335,7 +1334,17 @@ class MerchantMigrationService:
             customer_id=customer.id,
             source_method_id=source_method.source_id if source_method else None,
         )
-        if key not in resolved:
+        if key in resolved:
+            return resolved[key]
+        if migration.exact_card_mapping:
+            # The mapping already stored each copy: nothing to read from Stripe.
+            mapped = await mapped_payment_method(session, customer, source_method)
+            resolved[key] = (
+                card_status(mapped)
+                if mapped is not None
+                else MerchantMigrationCardStatus.nothing_copied
+            )
+        else:
             try:
                 copied = await resolve_copied_card(
                     session, customer, source_method=source_method

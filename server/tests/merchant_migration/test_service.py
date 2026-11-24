@@ -4441,6 +4441,64 @@ class TestRunCardVerification:
             late_customer.id,
         }
 
+    async def test_classifies_mapped_cards_without_reading_stripe(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        resolve = mocker.patch("polar.merchant_migration.service.resolve_copied_card")
+        migration = await build_connected_migration(save_fixture, organization)
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, STEP_VERIFY_CARDS
+        )
+        await save_fixture(migration)
+        assert migration.exact_card_mapping is True
+        await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_india",
+            email="india@example.com",
+            payment_method=CanonicalPaymentMethod(
+                source_id="pm_india", type=CanonicalPaymentMethodType.card
+            ),
+        )
+        await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_uncovered",
+            email="uncovered@example.com",
+        )
+        india_customer = await CustomerRepository.from_session(
+            session
+        ).get_by_email_and_organization("india@example.com", organization.id)
+        assert india_customer is not None
+        await create_payment_method(
+            save_fixture,
+            india_customer,
+            processor_id="pm_india",
+            method_metadata={"country": "IN"},
+        )
+
+        await service.run_card_verification(session, migration.id)
+
+        resolve.assert_not_called()
+        records = await MerchantMigrationRecordRepository.from_session(
+            session
+        ).list_imported_subscriptions(migration.id, offset=0, limit=10)
+        assert {record.source_id: record.card_status for record in records} == {
+            "sub_india": MerchantMigrationCardStatus.india_card,
+            "sub_uncovered": MerchantMigrationCardStatus.nothing_copied,
+        }
+        assert service._checklist(migration).current_step_key == STEP_CUTOVER
+
     async def test_links_the_card_the_source_was_charging(
         self,
         mocker: MockerFixture,

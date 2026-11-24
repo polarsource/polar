@@ -33,7 +33,7 @@ export function SwitchSummary({
         <Box paddingTop="s">
           <Alert
             variant="warning"
-            title="Some copied cards can't be charged"
+            title="Some subscriptions can't be charged"
             description={cardSummary}
           />
         </Box>

@@ -13,11 +13,13 @@ from uuid import UUID
 import stripe as stripe_lib
 
 from polar.customer.repository import CustomerRepository
+from polar.enums import PaymentProcessor
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.utils import utc_now
 from polar.models import Customer, PaymentMethod
 from polar.models.merchant_migration_record import MerchantMigrationCardStatus
+from polar.payment_method.repository import PaymentMethodRepository
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.postgres import AsyncSession
 
@@ -194,6 +196,34 @@ async def resolve_copied_card(
             customer, update_dict={"default_payment_method_id": preferred.id}
         )
     return CopiedCard(preferred, card_status(preferred))
+
+
+async def mapped_payment_method(
+    session: AsyncSession,
+    customer: Customer,
+    source_method: CanonicalPaymentMethod | None,
+) -> PaymentMethod | None:
+    """The card to charge once Stripe's mapping has rewritten each staged
+    method to its copy: that copy, else the customer's default card, else any
+    card of theirs when the source method couldn't be copied at all."""
+    repository = PaymentMethodRepository.from_session(session)
+    if source_method is not None:
+        payment_method = await repository.get_by_customer_and_processor_id(
+            customer.id, PaymentProcessor.stripe, source_method.source_id
+        )
+        if payment_method is not None and payment_method.type == CARD_TYPE:
+            return payment_method
+    if customer.default_payment_method_id is not None:
+        default = await repository.get_by_id_and_customer(
+            customer.default_payment_method_id, customer.id
+        )
+        if default is not None and default.type == CARD_TYPE:
+            return default
+    if source_method is not None and source_method.type.requires_reentry:
+        for payment_method in await repository.list_by_customer(customer.id):
+            if payment_method.type == CARD_TYPE:
+                return payment_method
+    return None
 
 
 async def link_mapped_payment_method(

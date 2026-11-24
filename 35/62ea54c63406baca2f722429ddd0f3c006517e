@@ -1,0 +1,43 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/BenefitsStep.tsx
+  s_6d161b2d3fb15f::t_b2036d29f0688d 13,81,92,97,116-139
+clients/packages/client/src/v1.ts
+  s_587ceda2630946::t_5787a7b6003d01 28557-28561
+server/polar/merchant_migration/service.py
+  s_587ceda2630946::t_60cf3047ef54bb 1015,1017-1019,1044,1139,1187-1191
+server/tests/merchant_migration/test_service.py
+  s_587ceda2630946::t_a95ffc7a97c74b 5905-5906
+server/polar/merchant_migration/schemas.py
+  s_d4a843b33596ce::t_4e45e6d791d571 540-545
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3562ea54c63406baca2f722429ddd0f3c006517e",
+  "prompts": {},
+  "sessions": {
+    "s_587ceda2630946": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "857c022f-2249-4a02-a91e-cde99fa20ae3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_6d161b2d3fb15f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bb61745e-ee0b-4159-b550-930158497705",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_d4a843b33596ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "12adddd7-b520-4f67-a19e-0f92eb2e092a",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

@@ -439,14 +439,23 @@ class CheckoutService:
                 session, checkout_create, products[0].organization_id
             )
             if (
-                customer is not None
-                and subscription is None
+                subscription is None
                 and not checkout_create.prices
                 and products[0].organization.is_config_as_code_enabled
             ):
-                products = await self._resolve_meter_versions(
-                    session, products, customer, products_field
-                )
+                customer_id = customer.id if customer is not None else None
+                if customer_id is None and checkout_create.customer_email is not None:
+                    customer_id = (
+                        await self._get_customer_id_on_previous_meter_versions(
+                            session,
+                            products[0].organization_id,
+                            checkout_create.customer_email,
+                        )
+                    )
+                if customer_id is not None:
+                    products = await self._resolve_meter_versions(
+                        session, products, customer_id, products_field
+                    )
             product = products[0]
             if checkout_create.prices:
                 ad_hoc_prices = await self._get_validated_prices(
@@ -2091,7 +2100,7 @@ class CheckoutService:
         self,
         session: AsyncSession,
         products: Sequence[Product],
-        customer: Customer,
+        customer_id: uuid.UUID,
         field: str,
     ) -> Sequence[Product]:
         """Swap each product for its version on the same meter versions as the
@@ -2104,7 +2113,7 @@ class CheckoutService:
             version = await product_service.resolve_meter_versions(
                 session,
                 product,
-                customer.id,
+                customer_id,
                 options=(undefer(Product.external_id), *repository.get_eager_options()),
             )
             if version is None:
@@ -3081,6 +3090,20 @@ class CheckoutService:
         if len(existing_subscriptions) > 0:
             raise AlreadyActiveSubscriptionError()
 
+    async def _get_customer_id_on_previous_meter_versions(
+        self, session: AsyncSession, organization_id: uuid.UUID, email: str
+    ) -> uuid.UUID | None:
+        """The ID of the customer with this email, if they have a customer meter
+        on a meter that isn't current."""
+        if not await CustomerMeterRepository.from_session(
+            session
+        ).has_previous_meter_versions(email=email, organization_id=organization_id):
+            return None
+        customer = await CustomerRepository.from_session(
+            session
+        ).get_by_email_and_organization(email, organization_id)
+        return customer.id if customer is not None else None
+
     async def _resolve_meter_versions_on_update(
         self,
         session: AsyncSession,
@@ -3115,22 +3138,10 @@ class CheckoutService:
                 requested = versions[0]
 
         customer_id = checkout.customer_id
-        if (
-            customer_id is None
-            and checkout.customer_email is not None
-            and await CustomerMeterRepository.from_session(
-                session
-            ).has_previous_meter_versions(
-                email=checkout.customer_email,
-                organization_id=checkout.organization.id,
+        if customer_id is None and checkout.customer_email is not None:
+            customer_id = await self._get_customer_id_on_previous_meter_versions(
+                session, checkout.organization.id, checkout.customer_email
             )
-        ):
-            customer = await CustomerRepository.from_session(
-                session
-            ).get_by_email_and_organization(
-                checkout.customer_email, checkout.organization.id
-            )
-            customer_id = customer.id if customer is not None else None
         version: Product | None = requested
         if customer_id is not None:
             version = await product_service.resolve_meter_versions(

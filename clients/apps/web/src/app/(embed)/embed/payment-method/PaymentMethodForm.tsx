@@ -282,7 +282,7 @@ export const PaymentMethodForm = ({
         {({ stripe, elements }) => (
           <form
             onSubmit={(e) => handleSubmit(e, stripe, elements)}
-            className="flex flex-col gap-6"
+            className="flex flex-1 flex-col gap-6"
           >
             <PaymentElement
               options={{
@@ -304,7 +304,7 @@ export const PaymentMethodForm = ({
             )}
             <Button
               type="submit"
-              className="self-end"
+              className="mt-auto self-end"
               disabled={!stripe || loading}
               loading={loading}
             >

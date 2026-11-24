@@ -1,4 +1,7 @@
+import { createSpinner, spinnerStyles } from './utils/spinner'
+
 const POLAR_PAYMENT_METHOD_EVENT = 'POLAR_PAYMENT_METHOD'
+const BACKDROP_COLOR = 'rgba(0, 0, 0, 0.5)'
 const EMBED_PATH = '/embed/payment-method'
 
 const REDIRECT_STATUS_PARAM = 'polar_payment_method_status'
@@ -257,17 +260,31 @@ class EmbedPaymentMethod {
 
     const styleSheet = document.createElement('style')
     styleSheet.innerText = `
-      .polar-loader-spinner {
-        width: 20px;
-        aspect-ratio: 1;
-        border-radius: 50%;
-        background: ${theme === 'dark' ? '#000' : '#fff'};
-        box-shadow: 0 0 0 0 ${theme === 'dark' ? '#fff' : '#000'};
-        animation: polar-loader-spinner-animation 1s infinite;
+      .polar-loader {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483647;
+        background: ${BACKDROP_COLOR};
       }
-      @keyframes polar-loader-spinner-animation {
-        100% {box-shadow: 0 0 0 30px #0000}
+      .polar-payment-method-loader-card {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: ${theme === 'dark' ? '#111' : '#fff'};
+        color: ${theme === 'dark' ? '#fff' : '#000'};
       }
+      @media (min-width: 768px) {
+        .polar-payment-method-loader-card {
+          inset: 48px 48px auto;
+          max-width: 512px;
+          height: 434px;
+          margin: 0 auto;
+          border-radius: 16px;
+        }
+      }
+      ${spinnerStyles}
       body.polar-no-scroll {
         overflow: hidden;
       }
@@ -275,16 +292,13 @@ class EmbedPaymentMethod {
     document.head.appendChild(styleSheet)
 
     const loader = document.createElement('div')
-    loader.style.position = 'absolute'
-    loader.style.top = '50%'
-    loader.style.left = '50%'
-    loader.style.transform = 'translate(-50%, -50%)'
-    loader.style.zIndex = '2147483647'
+    loader.className = 'polar-loader'
     loader.style.colorScheme = 'auto'
 
-    const spinner = document.createElement('div')
-    spinner.className = 'polar-loader-spinner'
-    loader.appendChild(spinner)
+    const card = document.createElement('div')
+    card.className = 'polar-payment-method-loader-card'
+    card.appendChild(createSpinner())
+    loader.appendChild(card)
 
     document.body.classList.add('polar-no-scroll')
     document.body.appendChild(loader)
@@ -317,7 +331,6 @@ class EmbedPaymentMethod {
     iframe.style.height = '100%'
     iframe.style.border = 'none'
     iframe.style.zIndex = '2147483647'
-    iframe.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
     iframe.style.colorScheme = theme === 'dark' ? 'dark' : 'light'
 
     // Opt the overlay out of smooth-scroll libraries (Lenis) on the embedding
@@ -435,6 +448,7 @@ class EmbedPaymentMethod {
   public close(): void {
     window.removeEventListener('message', this.windowMessageListener)
     this.iframe.remove()
+    this.loader?.remove()
     if (this.mode === 'modal') {
       document.body.classList.remove('polar-no-scroll')
     }
@@ -540,8 +554,9 @@ class EmbedPaymentMethod {
       return
     }
     // Inline embeds have no loader overlay; only the modal does.
-    if (this.loader && document.body.contains(this.loader)) {
-      document.body.removeChild(this.loader)
+    if (this.loader) {
+      this.iframe.style.backgroundColor = BACKDROP_COLOR
+      this.loader.remove()
     }
     this.loaded = true
   }

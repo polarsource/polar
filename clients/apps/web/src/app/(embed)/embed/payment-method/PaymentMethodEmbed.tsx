@@ -168,7 +168,7 @@ export const PaymentMethodEmbed = ({
     >
       <div className="flex h-full w-full items-center justify-center p-0 md:p-12 dark:text-white">
         <div
-          className="dark:bg-polar-900 h-full w-full max-w-lg overflow-y-auto rounded-none bg-white p-8 md:h-auto md:rounded-2xl"
+          className="dark:bg-polar-900 flex min-h-dvh w-full max-w-lg flex-col overflow-y-auto rounded-none bg-white p-8 md:min-h-[434px] md:rounded-2xl"
           id="polar-embed-content"
         >
           <div className="mb-6 flex items-center justify-between">

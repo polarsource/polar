@@ -52,6 +52,8 @@ dev worker              # Start background job worker
 dev switch my-branch    # Stop web, checkout branch, wipe .next, relaunch web
 dev switch -b my-branch # ...creating the branch (git checkout -b)
 dev switch -i my-branch # ...and reinstall JS deps (skips package prebuilds)
+dev otp                 # Print a login code for the sign-in waiting in the browser
+dev otp me@example.com  # ...for a specific email
 ```
 
 ### Database

@@ -36,20 +36,27 @@ export const DraftVersionBanner = ({
       <Box flexDirection="column" rowGap="xs" minWidth={0}>
         <Text variant="title">You&apos;re viewing a draft</Text>
         <Text color="muted">
-          This {resource} version isn&apos;t published yet. New checkouts use{' '}
-          {liveCatalog ? (
-            <Link
-              href={`/dashboard/${organization.slug}/products/versions/${liveCatalog.id}`}
-              className="hover:underline"
-            >
-              <Text as="span" color="default">
-                {liveCatalog.name ?? 'the current version'}
-              </Text>
-            </Link>
+          This {resource} version isn&apos;t published yet.{' '}
+          {liveCatalog === null ? (
+            'New checkouts can’t use it until it is.'
           ) : (
-            'the current version'
-          )}{' '}
-          until it is.
+            <>
+              New checkouts use{' '}
+              {liveCatalog ? (
+                <Link
+                  href={`/dashboard/${organization.slug}/products/versions/${liveCatalog.id}`}
+                  className="hover:underline"
+                >
+                  <Text as="span" color="default">
+                    {liveCatalog.name ?? 'the current version'}
+                  </Text>
+                </Link>
+              ) : (
+                'the current version'
+              )}{' '}
+              until it is.
+            </>
+          )}
         </Text>
       </Box>
       <Box

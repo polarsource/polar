@@ -20,7 +20,9 @@ export function benefitDetail(benefit: Benefit): string {
   const activations =
     benefit.activation_limit === null
       ? 'No activation limit'
-      : `${benefit.activation_limit} activations`
+      : `${benefit.activation_limit} ${
+          benefit.activation_limit === 1 ? 'activation' : 'activations'
+        }`
   const expiry =
     benefit.expires_ttl === null || benefit.expires_timeframe === null
       ? 'never expires'
@@ -33,7 +35,7 @@ export function benefitDetail(benefit: Benefit): string {
 export function productsText(benefit: Benefit): string {
   return benefit.products.length
     ? benefit.products.map((product) => product.name).join(', ')
-    : 'One-time purchases only'
+    : 'No imported product'
 }
 
 function formatSize(bytes: number): string {

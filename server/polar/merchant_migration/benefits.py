@@ -327,7 +327,10 @@ class MigrationBenefits:
 async def _download(url: str, buffer: IO[bytes]) -> tuple[int, "hashlib._Hash"]:
     sha256 = hashlib.sha256()
     size = 0
-    async with httpx2.AsyncClient(timeout=httpx2.Timeout(60.0)) as client:
+    # The download link redirects to the file's storage.
+    async with httpx2.AsyncClient(
+        timeout=httpx2.Timeout(60.0), follow_redirects=True
+    ) as client:
         async with client.stream("GET", url) as response:
             response.raise_for_status()
             async for chunk in response.aiter_bytes(DOWNLOAD_CHUNK_SIZE):

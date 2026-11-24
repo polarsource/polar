@@ -38,29 +38,43 @@ end
 The TTL for debounce keys, a fail-safe to avoid keys being stuck in Redis.
 """
 
+DEBOUNCE_LOST_AFTER = timedelta(minutes=5)
+"""
+How long past its due time a waiting message is considered lost, e.g. after a failed
+send, so the next enqueue sends a new one.
+"""
+
 # While a message is waiting, an enqueue only records its time: the waiting message
 # reschedules itself until the enqueues stop. Once it started, it may have read the
 # state before the new enqueue, so a new message is sent.
 # Returns 1 when the message must be sent.
-#
-# Skipping doesn't refresh the TTL: a waiting message that got lost stops holding the
-# key once it expires.
 CLAIM_DEBOUNCE_KEY_SCRIPT = """
 local key = KEYS[1]
 local message_id = ARGV[1]
-local now = ARGV[2]
-local ttl = ARGV[3]
+local now = tonumber(ARGV[2])
+local delay = tonumber(ARGV[3])
+local lost_after = tonumber(ARGV[4])
+local ttl = ARGV[5]
 
-local waiting = redis.call("HGET", key, "message_id")
+local waiting, executed, started, due_timestamp = unpack(
+    redis.call("HMGET", key, "message_id", "executed", "started", "due_timestamp")
+)
 if waiting
-    and redis.call("HGET", key, "executed") == "0"
-    and redis.call("HGET", key, "started") ~= waiting then
+    and executed == "0"
+    and started ~= waiting
+    and now <= (tonumber(due_timestamp) or 0) + lost_after then
     redis.call("HSET", key, "last_enqueue_timestamp", now)
     return 0
 end
 
 redis.call("HSETNX", key, "enqueue_timestamp", now)
-redis.call("HSET", key, "message_id", message_id, "executed", 0, "last_enqueue_timestamp", now)
+redis.call(
+    "HSET", key,
+    "message_id", message_id,
+    "executed", 0,
+    "last_enqueue_timestamp", now,
+    "due_timestamp", now + delay
+)
 redis.call("EXPIRE", key, ttl)
 return 1
 """
@@ -112,8 +126,8 @@ return {1, first_enqueue}
 # original message, which is retried.
 HAND_OVER_DEBOUNCE_SCRIPT = """
 if redis.call("HGET", KEYS[1], "message_id") == ARGV[1] then
-    redis.call("HSET", KEYS[1], "message_id", ARGV[2])
-    redis.call("EXPIRE", KEYS[1], ARGV[3])
+    redis.call("HSET", KEYS[1], "message_id", ARGV[2], "due_timestamp", ARGV[3])
+    redis.call("EXPIRE", KEYS[1], ARGV[4])
 end
 """
 
@@ -175,6 +189,8 @@ def set_debounce_key(
         key,
         message_id,
         now_timestamp(),
+        get_min_threshold(actor.options),
+        int(DEBOUNCE_LOST_AFTER.total_seconds()),
         int(DEBOUNCE_KEY_TTL.total_seconds()),
     )
 
@@ -240,6 +256,7 @@ def _hand_over_args(
         debounce_key,
         message_id,
         reschedule.message_id,
+        now_timestamp() + reschedule.delay // 1000,
         int(DEBOUNCE_KEY_TTL.total_seconds()),
     )
 

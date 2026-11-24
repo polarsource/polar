@@ -218,15 +218,23 @@ class TestSetDebounceKeyClaim:
         assert claims == [1, 0]
         assert await fake_redis.hget("debounce:test:key", "message_id") == "first"
 
-    async def test_skip_does_not_refresh_ttl(self, fake_redis: FakeAsyncRedis) -> None:
+    async def test_lost_waiting_message_gets_successor(
+        self, fake_redis: FakeAsyncRedis
+    ) -> None:
         actor = make_actor(debounce_key=lambda: "test:key")
         async with fake_redis.pipeline() as pipeline:
             set_debounce_key(pipeline, actor, "first", (), {})
-            pipeline.expire("debounce:test:key", 100)
-            set_debounce_key(pipeline, actor, "second", (), {})
             await pipeline.execute()
+        await fake_redis.hset(
+            "debounce:test:key", "due_timestamp", now_timestamp() - 3600
+        )
 
-        assert await fake_redis.ttl("debounce:test:key") <= 100
+        async with fake_redis.pipeline() as pipeline:
+            set_debounce_key(pipeline, actor, "second", (), {})
+            claims = await pipeline.execute()
+
+        assert claims == [1]
+        assert await fake_redis.hget("debounce:test:key", "message_id") == "second"
 
     async def test_started_message_gets_one_successor(
         self, fake_redis: FakeAsyncRedis

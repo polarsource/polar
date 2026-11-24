@@ -58,8 +58,9 @@ server or CLI.
 
 Call the API with `Authorization: Bearer <access_token>`. Before the claim you can create one
 organization and set up its products, benefits, discounts, files, meters, events, checkouts and
-checkout links. You can't touch customers, orders, subscriptions, refunds, payouts, members,
-webhooks or organization access tokens until a human claims you.
+checkout links. You can't touch customers, orders, subscriptions, refunds, payouts, members or
+webhooks until a human claims you. You can't create organization access tokens even then: see
+Step 5 to get the app a token.
 
 ## Step 4: Hand over to a human (claim)
 
@@ -133,6 +134,16 @@ POLAR_ACCESS_TOKEN=<access_token> polar auth token --scope events:write --scope 
 Give the human the link it prints; they must open it on the machine you run on. Once they
 approve, the CLI prints the token. Store it in the app's secrets (e.g. `.env`), never in the
 repo or the chat.
+
+If you can't run the CLI on the human's machine, send them this link instead, with only the
+scopes the app needs:
+
+```
+${dashboard_url}/<organization slug>/cli/token?name=<token name>&scopes=<scope>,<scope>
+```
+
+They create the token and put it in the app's secrets themselves. Don't ask them to paste it
+into the chat.
 
 ## Errors
 

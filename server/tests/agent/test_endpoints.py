@@ -452,3 +452,7 @@ class TestAuthMd:
         assert "POST http://test/v1/agent/identity\n" in response.text
         assert "POST http://test/v1/agent/identity/claim\n" in response.text
         assert "POST http://test/v1/oauth2/token\n" in response.text
+        assert (
+            f"{settings.FRONTEND_BASE_URL}/dashboard/<organization slug>/cli/token?"
+            in response.text
+        )

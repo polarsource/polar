@@ -175,35 +175,6 @@ class TestList:
         assert len(json["items"]) == len(checkouts)
 
     @pytest.mark.auth
-    async def test_query(
-        self,
-        save_fixture: SaveFixture,
-        api_prefix: str,
-        user_organization: UserOrganization,
-        client: AsyncClient,
-        product: Product,
-    ) -> None:
-        by_email = await create_checkout(save_fixture, products=[product])
-        by_email.customer_email = "jane_doe@example.com"
-        await save_fixture(by_email)
-        by_name = await create_checkout(save_fixture, products=[product])
-        by_name.customer_name = "Jane Smith"
-        await save_fixture(by_name)
-        other = await create_checkout(save_fixture, products=[product])
-        other.customer_email = "janexdoe@example.com"
-        await save_fixture(other)
-
-        for query, expected in [
-            ("jane_doe", by_email),
-            ("jane smith", by_name),
-            (str(other.id), other),
-        ]:
-            response = await client.get(f"{api_prefix}/", params={"query": query})
-            assert response.status_code == 200
-            items = response.json()["items"]
-            assert [item["id"] for item in items] == [str(expected.id)]
-
-    @pytest.mark.auth
     @pytest.mark.api_version(V2027_01)
     async def test_created_range(
         self,

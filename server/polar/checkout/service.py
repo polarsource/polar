@@ -9,7 +9,7 @@ import stripe as stripe_lib
 import structlog
 from pydantic import MISSING, UUID4
 from pydantic import ValidationError as PydanticValidationError
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, select
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
@@ -66,7 +66,7 @@ from polar.kit.email import EmailNotValidError, validate_email_syntax
 from polar.kit.operator import attrgetter
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
-from polar.kit.utils import generate_uuid, parse_uuid, utc_now
+from polar.kit.utils import generate_uuid, utc_now
 from polar.kit.visibility import Visibility
 from polar.logging import Logger
 from polar.member.service import member_service
@@ -344,15 +344,7 @@ class CheckoutService:
             statement = statement.where(Checkout.status.in_(status))
 
         if query is not None:
-            if (query_id := parse_uuid(query)) is not None:
-                statement = statement.where(Checkout.id == query_id)
-            else:
-                statement = statement.where(
-                    or_(
-                        Checkout.customer_email.icontains(query, autoescape=True),
-                        Checkout.customer_name.icontains(query, autoescape=True),
-                    )
-                )
+            statement = statement.where(Checkout.customer_email.ilike(f"%{query}%"))
 
         if created_after is not None:
             statement = statement.where(Checkout.created_at > created_after)

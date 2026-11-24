@@ -51001,7 +51001,7 @@ export interface operations {
           | components['schemas']['CheckoutStatus']
           | components['schemas']['CheckoutStatus'][]
           | null
-        /** @description Filter by customer name or email, or a checkout ID. */
+        /** @description Filter by customer email. */
         query?: string | null
         /** @description Only include checkout sessions created after this date. */
         created_after?: string | null

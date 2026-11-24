@@ -200,7 +200,7 @@ def up(
         _track_up_step(module.__name__, step_started_at, success, clean)
         if not success:
             console.print(f"\n[red]Setup failed at step {i}/{total}: {name}[/red]")
-            console.print("Fix the issue above and run [bold]dev up[/bold] again. Finished steps are skipped.")
+            console.print("Fix the issue above and run [bold]dev up[/bold] again.")
             raise typer.Exit(1)
         console.print()
 

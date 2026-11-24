@@ -566,6 +566,58 @@ class TestGetMetersMatchingCustomers:
 
         assert all(matches[meter.id] == (set(), set()) for meter in meters)
 
+    async def test_more_meters_than_the_chunk_size(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr("polar.event.repository._METER_MATCH_CHUNK_SIZE", 2)
+        customer = await create_customer(save_fixture, organization=organization)
+        event = await _create_event(
+            save_fixture,
+            organization=organization,
+            ingested_at=utc_now(),
+            customer_id=customer.id,
+        )
+        never_matching_filter = Filter(
+            conjunction=FilterConjunction.and_,
+            clauses=[
+                FilterClause(property="name", operator=FilterOperator.eq, value=True)
+            ],
+        )
+        always_matching_filter = Filter(conjunction=FilterConjunction.and_, clauses=[])
+        # Matching and non-matching meters interleaved, spread over 3 chunks
+        filters = [
+            always_matching_filter,
+            never_matching_filter,
+            never_matching_filter,
+            always_matching_filter,
+            always_matching_filter,
+        ]
+        meters = [
+            await create_meter(
+                save_fixture,
+                organization=organization,
+                id=uuid.uuid4(),
+                filter=filter,
+            )
+            for filter in filters
+        ]
+
+        repository = EventRepository.from_session(session)
+        matches = await repository.get_meters_matching_customers(
+            [event.id], meters, {customer.id}, set()
+        )
+
+        for meter, filter in zip(meters, filters):
+            assert matches[meter.id] == (
+                ({customer.id}, set())
+                if filter is always_matching_filter
+                else (set(), set())
+            )
+
 
 @pytest.mark.anyio
 class TestGetStagedEventsBacklog:

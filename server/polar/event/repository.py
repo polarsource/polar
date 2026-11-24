@@ -1,5 +1,6 @@
 from collections.abc import Collection, Mapping, Sequence
 from datetime import datetime, timedelta
+from itertools import batched
 from typing import Any
 from uuid import UUID
 from zoneinfo import ZoneInfo
@@ -59,6 +60,10 @@ from .system import SystemEvent
 # (A.parent_id → B → A) ever sneaks into the data, instead of spinning until
 # statement_timeout kills the worker.
 _MAX_RESOLVE_DEPTH = 100
+
+# Postgres rejects statements with more than 1664 target list entries, so the
+# meters of an organization are matched in chunks well below that limit.
+_METER_MATCH_CHUNK_SIZE = 500
 
 _INSERT_STAGED_EVENTS = text(
     """
@@ -662,39 +667,40 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             meters_by_organization.setdefault(meter.organization_id, []).append(meter)
 
         for organization_id, organization_meters in meters_by_organization.items():
-            clauses = [self.get_meter_clause(meter) for meter in organization_meters]
-            statement = (
-                select(
-                    Event.customer_id,
-                    Event.external_customer_id,
-                    # Label each clause: identical constant clauses (`true()` or
-                    # `false()`) would otherwise be merged into a single column
-                    *(
-                        and_(clause).label(f"meter_{index}")
-                        for index, clause in enumerate(clauses)
-                    ),
+            for chunk in batched(organization_meters, _METER_MATCH_CHUNK_SIZE):
+                clauses = [self.get_meter_clause(meter) for meter in chunk]
+                statement = (
+                    select(
+                        Event.customer_id,
+                        Event.external_customer_id,
+                        # Label each clause: identical constant clauses (`true()` or
+                        # `false()`) would otherwise be merged into a single column
+                        *(
+                            and_(clause).label(f"meter_{index}")
+                            for index, clause in enumerate(clauses)
+                        ),
+                    )
+                    .where(
+                        Event.id.in_(event_ids),
+                        Event.organization_id == organization_id,
+                        or_(
+                            Event.customer_id.in_(customer_ids),
+                            Event.external_customer_id.in_(external_customer_ids),
+                        ),
+                        or_(*clauses),
+                    )
+                    .distinct()
                 )
-                .where(
-                    Event.id.in_(event_ids),
-                    Event.organization_id == organization_id,
-                    or_(
-                        Event.customer_id.in_(customer_ids),
-                        Event.external_customer_id.in_(external_customer_ids),
-                    ),
-                    or_(*clauses),
-                )
-                .distinct()
-            )
-            for row in await self.session.execute(statement):
-                customer_id, external_customer_id = row[0], row[1]
-                for index, meter in enumerate(organization_meters, start=2):
-                    if not row[index]:
-                        continue
-                    matched_customer_ids, matched_external_ids = matches[meter.id]
-                    if customer_id is not None:
-                        matched_customer_ids.add(customer_id)
-                    if external_customer_id is not None:
-                        matched_external_ids.add(external_customer_id)
+                for row in await self.session.execute(statement):
+                    customer_id, external_customer_id = row[0], row[1]
+                    for index, meter in enumerate(chunk, start=2):
+                        if not row[index]:
+                            continue
+                        matched_customer_ids, matched_external_ids = matches[meter.id]
+                        if customer_id is not None:
+                            matched_customer_ids.add(customer_id)
+                        if external_customer_id is not None:
+                            matched_external_ids.add(external_customer_id)
         return matches
 
     async def get_meter_billing_page(

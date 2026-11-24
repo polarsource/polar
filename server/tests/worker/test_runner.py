@@ -349,7 +349,7 @@ class TestRunTaskDebounce:
         assert job.message_id == await fake_redis.hget(self.DEBOUNCE_KEY, "message_id")
         assert job.message_timestamp == 1234567890000
         assert job.delay is not None
-        assert job.delay > 0
+        assert 14000 <= job.delay <= 15000
 
     async def test_failed_reschedule_send_keeps_original_owner(
         self, fake_redis: FakeAsyncRedis, task_fn: AsyncMock, mocker: MockerFixture

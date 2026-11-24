@@ -5,6 +5,10 @@ they disagree by the overshoot. A credit of the overshoot right before the event
 that first drove the total negative makes it land on zero instead: legacy is
 unchanged and the reducer catches up. It offsets a benefit clawback, so its reason
 is `benefit`: merchants can only reverse `manual` credits.
+
+Legacy billing orders credits by ingestion, so the credit is ingested right before
+the clawback too. That puts it behind the meter's billing cursor: it never gets a
+billing entry, and the pending entries that legacy bills from are unchanged.
 """
 
 import uuid
@@ -22,7 +26,7 @@ from polar.event.service import event as event_service
 from polar.event.system import SystemEvent, build_system_event
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
 from polar.kit.math import non_negative_running_sum
-from polar.models import Customer, CustomerMeter
+from polar.models import Customer, CustomerMeter, Meter
 from polar.postgres import create_async_engine
 from polar.redis import Redis, create_redis
 from polar.reducer.service import reducer as reducer_service
@@ -41,15 +45,15 @@ async def compensate(
     session: AsyncSession, redis: Redis, customer_meter_id: uuid.UUID
 ) -> int:
     """Creates the compensating credit and returns its units, 0 if none is needed.
-    Raises if legacy credits or rollover units change, or the reducer doesn't
-    match legacy afterwards."""
+    Raises if the meter's billing cursor isn't past it, legacy credits or rollover
+    units change, or the reducer doesn't match legacy afterwards."""
     customer_meter = (
         await session.scalars(
             select(CustomerMeter)
             .where(CustomerMeter.id == customer_meter_id)
             .options(
                 joinedload(CustomerMeter.customer).joinedload(Customer.organization),
-                joinedload(CustomerMeter.meter),
+                joinedload(CustomerMeter.meter).joinedload(Meter.last_billed_event),
             )
         )
     ).one()
@@ -88,14 +92,20 @@ async def compensate(
         },
         timestamp=first_negative.timestamp - timedelta(microseconds=1),
     )
+    event.ingested_at = first_negative.ingested_at - timedelta(microseconds=1)
     event.parent_id = first_negative.id
     event.root_id = first_negative.root_id
+    last_billed = meter.last_billed_event
+    if last_billed is None or last_billed.ingested_at <= event.ingested_at:
+        raise CompensationMismatch("the meter's billing cursor isn't past the credit")
     await event_service.create_event(session, event)
 
-    updated, _ = await customer_meter_service.update_customer_meter(
-        session, redis, customer, meter
+    legacy_after = non_negative_running_sum(
+        credit.user_metadata["units"]
+        for credit in await customer_meter_service._get_credit_events(
+            customer, meter, event_repository
+        )
     )
-    assert updated is not None
     rollover_after = await customer_meter_service.get_rollover_units(
         session, customer, meter
     )
@@ -103,12 +113,12 @@ async def compensate(
         session, redis, [(customer, meter.id)]
     )
     if (
-        updated.credited_units != legacy_before
+        legacy_after != legacy_before
         or rollover_after != rollover_before
         or reducer_after != legacy_before
     ):
         raise CompensationMismatch(
-            f"legacy {legacy_before} -> {updated.credited_units}, "
+            f"legacy {legacy_before} -> {legacy_after}, "
             f"rollover {rollover_before} -> {rollover_after}, "
             f"reducer {reducer_after}"
         )

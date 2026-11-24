@@ -25,24 +25,24 @@ const createContext = ({
   membership = null,
   organization = null,
   user = null,
-  failLookups = false,
+  lookupError = null,
 }: {
   organizationPlugin?: boolean
   membership?: Pick<Member, 'role'> | null
   organization?: { id: string } | null
   user?: { id: string } | null
-  failLookups?: boolean
+  lookupError?: Error | null
 } = {}) =>
   ({
     adapter: {
       findOne: async ({ model }: { model: string }) => {
-        if (failLookups) throw new Error('invalid input syntax for type uuid')
+        if (lookupError) throw lookupError
         return model === 'member' ? membership : organization
       },
     },
     internalAdapter: {
       findUserById: async () => {
-        if (failLookups) throw new Error('invalid input syntax for type uuid')
+        if (lookupError) throw lookupError
         return user
       },
     },
@@ -83,6 +83,18 @@ describe('resolveReferenceAccess', () => {
       })
     },
   )
+
+  it('grants the full view to a custom role mapped to billing_manager', async () => {
+    await expect(
+      resolveReferenceAccess({
+        context: createContext({ membership: { role: 'finance' } }),
+        session: createSession(),
+        referenceId: 'organization-123',
+        mapBetterAuthRoleToPolarRole: ({ role }) =>
+          role === 'finance' ? 'billing_manager' : 'member',
+      }),
+    ).resolves.toMatchObject({ access: 'full' })
+  })
 
   it("limits a non-member to their own purchases for another user's organization", async () => {
     await expect(
@@ -129,14 +141,31 @@ describe('resolveReferenceAccess', () => {
     })
   })
 
-  it('treats a reference the database cannot look up as unknown', async () => {
+  it("treats a reference that doesn't fit the ID column as unknown", async () => {
+    const invalidId = Object.assign(
+      new Error('invalid input syntax for type uuid'),
+      { code: '22P02' },
+    )
+
     await expect(
       resolveReferenceAccess({
-        context: createContext({ failLookups: true }),
+        context: createContext({ lookupError: invalidId }),
         session: createSession(),
         referenceId: 'workspace-123',
       }),
     ).resolves.toMatchObject({ referenceType: 'unknown' })
+  })
+
+  it('fails instead of falling back when a lookup errors for another reason', async () => {
+    await expect(
+      resolveReferenceAccess({
+        context: createContext({
+          lookupError: new Error('connection terminated'),
+        }),
+        session: createSession(),
+        referenceId: 'organization-123',
+      }),
+    ).rejects.toThrow('connection terminated')
   })
 
   it('limits anonymous users to their own purchases for an unknown reference', async () => {

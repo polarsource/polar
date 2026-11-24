@@ -232,11 +232,11 @@ The plugin checks the signed-in user against the `reference_id` and decides what
 
 | The `reference_id` is                                           | The user gets                                                       |
 | --------------------------------------------------------------- | ------------------------------------------------------------------- |
-| A Better Auth organization where the user is an owner or admin   | Every subscription, with customer billing details                   |
+| A Better Auth organization where the user is an owner or admin, or has a role mapped to `billing_manager` | Every subscription, with customer billing details |
 | A Better Auth organization where the user has another role       | Every subscription, without customer billing details                |
 | The user's own ID                                                | Every subscription, without customer billing details                |
 | A Better Auth organization or user the user has no relation to   | Only the subscriptions the user purchased                           |
-| Any other ID, such as a workspace or project from your own tables | Every subscription, without customer billing details (deprecated)   |
+| Any other ID, such as a workspace or project from your own tables | Every subscription, without customer billing details (deprecated); anonymous users get only the subscriptions they purchased |
 
 Subscriptions the user purchased always include their billing details.
 
@@ -248,7 +248,7 @@ const billingEmail = subscriptions?.items
   .find(Boolean);
 ```
 
-The plugin can't verify IDs that are neither a Better Auth organization nor a user. To keep existing integrations working, it still lists their subscriptions without billing details and logs a warning. The next major version will only return the subscriptions the user purchased. Set `authorizeReference` to authorize these IDs yourself:
+The plugin can't verify IDs that are neither a Better Auth organization nor a user. To keep existing integrations working, it still lists their subscriptions without billing details to signed-in users and logs a warning. Anonymous users only get the subscriptions they purchased. The next major version will only return the subscriptions the user purchased. Set `authorizeReference` to authorize these IDs yourself:
 
 ```typescript icon="square-js" auth.ts
 polar({
@@ -271,7 +271,7 @@ polar({
 });
 ```
 
-`authorizeReference` runs for every `reference_id` and its result is final. It receives `user`, `session`, `referenceId`, `action`, `referenceType` (`self`, `organization`, `user` or `unknown`) and `defaultAccess`, the access the plugin grants on its own. Return one of:
+`authorizeReference` runs for every non-empty `reference_id` and its result is final. An empty `reference_id` is treated as omitted and lists the user's own subscriptions. It receives `user`, `session`, `referenceId`, `action`, `referenceType` (`self`, `organization`, `user` or `unknown`) and `defaultAccess`, the access the plugin grants on its own. Return one of:
 
 - `"full"`: every subscription, with customer billing details
 - `"redacted"` or `true`: every subscription, without customer billing details

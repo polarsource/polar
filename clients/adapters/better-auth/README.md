@@ -403,11 +403,11 @@ const { data: subscriptions } = await authClient.customer.subscriptions.list({
 })
 ```
 
-This is metadata-based tracking, not Polar team-customer billing. The adapter checks the signed-in user against the `reference_id` before listing. Owners and admins of the Better Auth organization get customer billing details, other members get subscriptions without them, and users with no relation to the organization only get the subscriptions they purchased.
+This is metadata-based tracking, not Polar team-customer billing. The adapter checks the signed-in user against the `reference_id` before listing. Owners and admins of the Better Auth organization (and roles your `mapBetterAuthRoleToPolarRole` maps to `billing_manager`) get customer billing details, other members get subscriptions without them, and users with no relation to the organization only get the subscriptions they purchased.
 
 Subscriptions the user purchased always include their billing details. Without billing details, a subscription has the fields of a customer portal subscription (`product_id`, `status`, `current_period_end`, `seats`, `prices`, `product`, and so on). The `customer`, `discount`, `custom_field_data` and cancellation reason fields are omitted, and `metadata` only contains `referenceId`.
 
-The adapter can't verify IDs that are neither a Better Auth organization nor a user. It still lists their subscriptions without billing details and logs a warning; the next major version will only return the subscriptions the user purchased. Set `authorizeReference` on `polar()` to authorize these IDs yourself:
+The adapter can't verify IDs that are neither a Better Auth organization nor a user. It still lists their subscriptions without billing details to signed-in users (anonymous users only get the subscriptions they purchased) and logs a warning; the next major version will only return the subscriptions the user purchased. Set `authorizeReference` on `polar()` to authorize these IDs yourself:
 
 ```typescript
 polar({
@@ -435,7 +435,7 @@ polar({
 })
 ```
 
-`authorizeReference` runs for every `reference_id` and its result is final. Return `'full'` (customer billing details included), `'redacted'` (or `true`, billing details removed), `'purchased'` (only the user's own purchases), or `'none'` (or `false`, which rejects the request with a `403`). `referenceType` is `self`, `organization`, `user` or `unknown`, and `defaultAccess` is the access the adapter grants on its own.
+`authorizeReference` runs for every non-empty `reference_id` and its result is final. An empty `reference_id` is treated as omitted. Return `'full'` (customer billing details included), `'redacted'` (or `true`, billing details removed), `'purchased'` (only the user's own purchases), or `'none'` (or `false`, which rejects the request with a `403`). `referenceType` is `self`, `organization`, `user` or `unknown`, and `defaultAccess` is the access the adapter grants on its own.
 
 If this is already how your application handles organization billing, keep using it and do not enable `experimental_organizationSync`. Existing billing objects are not migrated to the team customer, so mixing an established `referenceId` setup with experimental team-customer billing can produce an inconsistent billing state. Only applications with an explicit, reviewed cutover plan should enable `experimental_organizationSync` and use `organization_id` for checkout:
 

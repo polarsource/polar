@@ -234,13 +234,38 @@ const normalizeReferenceAccess = (
   return access
 }
 
+// Postgres `invalid_text_representation` (uuid/integer columns) and Prisma's
+// equivalent. MongoDB raises a BSONError for IDs that aren't ObjectIds.
+const INVALID_ID_ERROR_CODES = new Set(['22P02', 'P2023'])
+
+const isInvalidIdError = (error: unknown): boolean => {
+  let current = error
+  for (let depth = 0; current instanceof Object && depth < 5; depth++) {
+    const { code, name, cause } = current as {
+      code?: unknown
+      name?: unknown
+      cause?: unknown
+    }
+    if (
+      (typeof code === 'string' && INVALID_ID_ERROR_CODES.has(code)) ||
+      name === 'BSONError'
+    ) {
+      return true
+    }
+    current = cause
+  }
+  return false
+}
+
 const findOrNull = async <T>(lookup: () => Promise<T | null>) => {
   try {
     return await lookup()
-  } catch {
-    // Reference IDs are opaque. An ID that doesn't fit the database's ID
-    // column type is not a Better Auth organization or user.
-    return null
+  } catch (error) {
+    // Reference IDs are opaque: one that doesn't fit the ID column's type is
+    // not a Better Auth organization or user. Any other failure must not
+    // downgrade a real organization to an unknown reference.
+    if (isInvalidIdError(error)) return null
+    throw error
   }
 }
 

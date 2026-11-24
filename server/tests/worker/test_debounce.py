@@ -13,6 +13,7 @@ from polar.worker._debounce import (
     DebounceReschedule,
     check_debounce,
     finalize_debounce,
+    hand_over_debounce,
     now_timestamp,
     set_debounce_key,
 )
@@ -142,6 +143,10 @@ class TestCheckDebounce:
 
         assert isinstance(reschedule, DebounceReschedule)
         assert 9000 <= reschedule.delay <= 10000
+        assert await fake_redis.hget(key, "message_id") == "owner"
+
+        await hand_over_debounce(fake_redis, key, "owner", reschedule)
+
         assert await fake_redis.hget(key, "message_id") == reschedule.message_id
 
     async def test_reschedule_is_capped_by_max_threshold(

@@ -350,3 +350,24 @@ class TestRunTaskDebounce:
         assert job.message_timestamp == 1234567890000
         assert job.delay is not None
         assert job.delay > 0
+
+    async def test_failed_reschedule_send_keeps_original_owner(
+        self, fake_redis: FakeAsyncRedis, task_fn: AsyncMock, mocker: MockerFixture
+    ) -> None:
+        mocker.patch(
+            "polar.worker._runner._sqs.send_jobs", side_effect=RuntimeError("boom")
+        )
+        await fake_redis.hset(
+            self.DEBOUNCE_KEY,
+            mapping={
+                "enqueue_timestamp": now_timestamp(),
+                "last_enqueue_timestamp": now_timestamp(),
+                "message_id": "owner",
+                "executed": 0,
+            },
+        )
+
+        with pytest.raises(RuntimeError, match="boom"):
+            await run_task("dummy", message_id="owner", debounce_key=self.DEBOUNCE_KEY)
+
+        assert await fake_redis.hget(self.DEBOUNCE_KEY, "message_id") == "owner"

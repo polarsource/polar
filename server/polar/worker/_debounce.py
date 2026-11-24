@@ -66,17 +66,15 @@ return 1
 """
 
 # Runs the waiting message once no enqueue came in for the min threshold, or once the
-# first enqueue is older than the max threshold. Before that, hands the key over to a
-# new message rescheduled for when it's due.
+# first enqueue is older than the max threshold. Before that, the message must be
+# rescheduled for when it's due.
 # Returns {SKIP}, {RUN, first enqueue timestamp or -1} or {RESCHEDULE, delay}.
 CHECK_DEBOUNCE_SCRIPT = """
 local key = KEYS[1]
 local message_id = ARGV[1]
-local rescheduled_message_id = ARGV[2]
-local now = tonumber(ARGV[3])
-local min_threshold = tonumber(ARGV[4])
-local max_threshold = tonumber(ARGV[5])
-local ttl = ARGV[6]
+local now = tonumber(ARGV[2])
+local min_threshold = tonumber(ARGV[3])
+local max_threshold = tonumber(ARGV[4])
 
 local owner, executed, started, enqueue_timestamp, last_enqueue_timestamp = unpack(
     redis.call(
@@ -102,14 +100,21 @@ local due = math.min(
     first_enqueue + max_threshold
 )
 if due > now then
-    redis.call("HSET", key, "message_id", rescheduled_message_id)
-    redis.call("EXPIRE", key, ttl)
     return {2, due - now}
 end
 
 redis.call("HSET", key, "started", message_id)
 redis.call("HDEL", key, "enqueue_timestamp")
 return {1, first_enqueue}
+"""
+
+# Called once the rescheduled message is sent, so a failed send leaves the key to the
+# original message, which is retried.
+HAND_OVER_DEBOUNCE_SCRIPT = """
+if redis.call("HGET", KEYS[1], "message_id") == ARGV[1] then
+    redis.call("HSET", KEYS[1], "message_id", ARGV[2])
+    redis.call("EXPIRE", KEYS[1], ARGV[3])
+end
 """
 
 SKIP, RUN, RESCHEDULE = 0, 1, 2
@@ -199,17 +204,14 @@ async def check_debounce(
 ) -> DebounceContext | DebounceReschedule | None:
     log.debug("Checking debounce key", debounce_key=debounce_key)
 
-    rescheduled_message_id = str(uuid.uuid4())
     action, *value = await redis.eval(
         CHECK_DEBOUNCE_SCRIPT,
         1,
         debounce_key,
         message_id,
-        rescheduled_message_id,
         now_timestamp(),
         get_min_threshold(actor.options),
         get_max_threshold(actor.options),
-        int(DEBOUNCE_KEY_TTL.total_seconds()),
     )
 
     if action == RUN:
@@ -223,10 +225,32 @@ async def check_debounce(
     TASK_DEBOUNCED.labels(queue=actor.queue_name, task_name=actor.actor_name).inc()
     if action == RESCHEDULE:
         log.debug("Debounce not due yet, rescheduling", debounce_key=debounce_key)
-        return DebounceReschedule(rescheduled_message_id, value[0] * 1000)
+        return DebounceReschedule(str(uuid.uuid4()), value[0] * 1000)
 
     log.debug("Debounce owned by another message, skipping", debounce_key=debounce_key)
     return None
+
+
+def _hand_over_args(
+    debounce_key: str, message_id: str, reschedule: DebounceReschedule
+) -> tuple[Any, ...]:
+    return (
+        HAND_OVER_DEBOUNCE_SCRIPT,
+        1,
+        debounce_key,
+        message_id,
+        reschedule.message_id,
+        int(DEBOUNCE_KEY_TTL.total_seconds()),
+    )
+
+
+async def hand_over_debounce(
+    redis: RedisAsyncIO,
+    debounce_key: str,
+    message_id: str,
+    reschedule: DebounceReschedule,
+) -> None:
+    await redis.eval(*_hand_over_args(debounce_key, message_id, reschedule))
 
 
 async def finalize_debounce(
@@ -277,17 +301,14 @@ class DebounceMiddleware(dramatiq.Middleware):
         log.debug("Checking debounce key", debounce_key=debounce_key)
 
         actor = broker.get_actor(message.actor_name)
-        rescheduled_message_id = str(uuid.uuid4())
         action, *value = self._redis.eval(
             CHECK_DEBOUNCE_SCRIPT,
             1,
             debounce_key,
             message.message_id,
-            rescheduled_message_id,
             now_timestamp(),
             get_min_threshold(actor.options),
             get_max_threshold(actor.options),
-            int(DEBOUNCE_KEY_TTL.total_seconds()),
         )
 
         if action == RUN:
@@ -299,8 +320,12 @@ class DebounceMiddleware(dramatiq.Middleware):
 
         if action == RESCHEDULE:
             log.debug("Debounce not due yet, rescheduling", debounce_key=debounce_key)
+            reschedule = DebounceReschedule(str(uuid.uuid4()), value[0] * 1000)
             broker.enqueue(
-                message.copy(message_id=rescheduled_message_id), delay=value[0] * 1000
+                message.copy(message_id=reschedule.message_id), delay=reschedule.delay
+            )
+            self._redis.eval(
+                *_hand_over_args(debounce_key, message.message_id, reschedule)
             )
         else:
             log.debug(
@@ -353,5 +378,6 @@ __all__ = [
     "DebounceReschedule",
     "check_debounce",
     "finalize_debounce",
+    "hand_over_debounce",
     "set_debounce_key",
 ]

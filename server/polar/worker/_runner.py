@@ -29,6 +29,7 @@ from ._debounce import (
     DebounceReschedule,
     check_debounce,
     finalize_debounce,
+    hand_over_debounce,
 )
 from ._enqueue import resolve_sqs_actors
 from ._httpx import _close_client, setup_httpx
@@ -250,9 +251,8 @@ async def run_task(
     try:
         debounce_context: DebounceContext | None = None
         if message_id is not None and debounce_key is not None:
-            debounce = await check_debounce(
-                RedisMiddleware.get(), actor_obj, message_id, debounce_key
-            )
+            redis = RedisMiddleware.get()
+            debounce = await check_debounce(redis, actor_obj, message_id, debounce_key)
             if isinstance(debounce, DebounceReschedule):
                 await _sqs.send_jobs(
                     [
@@ -269,6 +269,7 @@ async def run_task(
                         )
                     ]
                 )
+                await hand_over_debounce(redis, debounce_key, message_id, debounce)
                 return
             if debounce is None:
                 return

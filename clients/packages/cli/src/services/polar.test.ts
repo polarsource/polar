@@ -1,5 +1,7 @@
 import { afterEach, expect, test, vi } from 'vitest'
-import { Effect, Logger, Redacted, References } from 'effect'
+import { Effect, Fiber, Logger, Redacted, References } from 'effect'
+import { TestClock } from 'effect/testing'
+import { PolarClientError } from '@polar-sh/sdk'
 import type { Polar as PolarSDK } from '@polar-sh/sdk/2026-10'
 import { AuthError, type PolarEnvironment } from '@/schemas/Auth'
 import { UsedEnvironments } from '@/services/api'
@@ -110,7 +112,7 @@ test.each([
     const polar = await polarWith(resolve)
     const request = vi
       .fn<(client: PolarSDK) => Promise<string>>()
-      .mockRejectedValue({ statusCode: status })
+      .mockRejectedValue(new PolarClientError(status, undefined))
 
     await expect(Effect.runPromise(polar.use(request))).rejects.toMatchObject({
       message: expect.stringContaining(message),
@@ -121,19 +123,25 @@ test.each([
   },
 )
 
-test('passes the one-second request timeout to the SDK', async () => {
-  const timeout = vi.spyOn(AbortSignal, 'timeout')
+test('times out a request that gets no response', async () => {
   vi.stubGlobal(
     'fetch',
-    vi.fn().mockResolvedValue(Response.json({ id: 'customer-1' })),
+    vi.fn(() => new Promise<Response>(() => {})),
   )
   const polar = await polarWith(() => Effect.succeed(overrideCredential()))
-  await Effect.runPromise(
-    polar.use((client) => client.customers.get('customer-1'), 'sandbox', {
-      timeout: 1,
-    }),
+  const error = await Effect.runPromise(
+    Effect.gen(function* () {
+      const fiber = yield* Effect.forkChild(
+        Effect.flip(polar.use((client) => client.organizations.list())),
+      )
+      yield* TestClock.adjust('5 seconds')
+      return yield* Fiber.join(fiber)
+    }).pipe(Effect.provide(TestClock.layer())),
   )
-  expect(timeout).toHaveBeenCalledWith(1000)
+  expect([error.message, error.statusCode]).toEqual([
+    'The request to the Polar API at sandbox-api.polar.sh timed out after 5s. It may be under heavy load, try again shortly.',
+    undefined,
+  ])
 })
 
 test('preserves refresh failures without retrying the API request', async () => {
@@ -143,7 +151,7 @@ test('preserves refresh failures without retrying the API request', async () => 
   )
   const request = vi
     .fn<(client: PolarSDK) => Promise<string>>()
-    .mockRejectedValue({ statusCode: 401 })
+    .mockRejectedValue(new PolarClientError(401, undefined))
 
   expect(await Effect.runPromise(polar.use(request).pipe(Effect.flip))).toBe(
     error,
@@ -176,85 +184,76 @@ test.each([
 test.each([
   {
     name: 'a parsed error body',
-    rejection: {
-      statusCode: 409,
-      error: { error: 'ProductNotDeletable', detail: 'Archive it instead.' },
-    },
+    rejection: new PolarClientError(409, {
+      error: 'ProductNotDeletable',
+      detail: 'Archive it instead.',
+    }),
     message: 'Archive it instead.',
   },
   {
     name: 'a raw error body',
-    rejection: {
-      statusCode: 409,
-      error: '{"error":"ProductNotDeletable","detail":"Archive it instead."}',
-    },
+    rejection: new PolarClientError(
+      409,
+      '{"error":"ProductNotDeletable","detail":"Archive it instead."}',
+    ),
     message: 'Archive it instead.',
   },
   {
     name: 'validation errors',
-    rejection: {
-      statusCode: 422,
-      error: {
-        detail: [
-          { loc: ['body', 'prices'], msg: 'Field required', type: 'missing' },
-          {
-            loc: ['body', 'config', 'body'],
-            msg: 'Too long',
-            type: 'too_long',
-          },
-          {
-            loc: ['body', 'prices', 0, 'price_amount'],
-            msg: 'Input should be a valid integer',
-            type: 'int_type',
-          },
-        ],
-      },
-    },
+    rejection: new PolarClientError(422, {
+      detail: [
+        { loc: ['body', 'prices'], msg: 'Field required', type: 'missing' },
+        {
+          loc: ['body', 'config', 'body'],
+          msg: 'Too long',
+          type: 'too_long',
+        },
+        {
+          loc: ['body', 'prices', 0, 'price_amount'],
+          msg: 'Input should be a valid integer',
+          type: 'int_type',
+        },
+      ],
+    }),
     message:
       'The request is invalid:\n    prices: Field required\n    config.body: Too long\n    prices.0.price_amount: Input should be a valid integer',
   },
   {
     name: 'a JSON list passed to a repeatable ID flag',
-    rejection: {
-      statusCode: 422,
-      error: {
-        detail: [
-          {
-            loc: ['body', 'benefits', 0],
-            msg: 'Input should be a valid UUID, invalid character: found `[` at 1',
-            type: 'uuid_parsing',
-          },
-          {
-            loc: ['body', 'percentage', 'custom_products', 0],
-            msg: 'Input should be a valid UUID, invalid character: found `[` at 1',
-            type: 'uuid_parsing',
-          },
-          {
-            loc: ['body', 'products', 0],
-            msg: 'Input should be a valid UUID, invalid length',
-            type: 'uuid_parsing',
-          },
-        ],
-      },
-    },
+    rejection: new PolarClientError(422, {
+      detail: [
+        {
+          loc: ['body', 'benefits', 0],
+          msg: 'Input should be a valid UUID, invalid character: found `[` at 1',
+          type: 'uuid_parsing',
+        },
+        {
+          loc: ['body', 'percentage', 'custom_products', 0],
+          msg: 'Input should be a valid UUID, invalid character: found `[` at 1',
+          type: 'uuid_parsing',
+        },
+        {
+          loc: ['body', 'products', 0],
+          msg: 'Input should be a valid UUID, invalid length',
+          type: 'uuid_parsing',
+        },
+      ],
+    }),
     message:
       'The request is invalid:\n    benefits.0: Input should be a valid UUID, invalid character: found `[` at 1. Repeat --benefits once per ID instead of passing a list, e.g. --benefits <id> --benefits <id>\n    percentage.custom_products.0: Input should be a valid UUID, invalid character: found `[` at 1. Repeat --custom-products once per ID instead of passing a list, e.g. --custom-products <id> --custom-products <id>\n    products.0: Input should be a valid UUID, invalid length',
   },
   {
     name: 'an invoice that was never generated',
-    rejection: {
-      statusCode: 404,
-      error: {
-        error: 'InvoiceDoesNotExist',
-        detail: 'No invoice exists for order order-1.',
-      },
-    },
+    rejection: new PolarClientError(404, {
+      error: 'InvoiceDoesNotExist',
+      detail: 'No invoice exists for order order-1.',
+    }),
     message:
       'No invoice exists for order order-1. Run polar orders generate_invoice <id> to create it, then run polar orders invoice <id> again after a few seconds.',
   },
   {
     name: 'a body without detail',
-    rejection: { statusCode: 422, error: 'Unprocessable Entity' },
+    rejection: new PolarClientError(422, 'Unprocessable Entity'),
     message: 'The Polar API rejected the request (422): Unprocessable Entity.',
   },
   {
@@ -332,16 +331,6 @@ test.each([
       'Could not connect to the Polar API at sandbox-api.polar.sh. Check your connection and try again.',
     statusCode: undefined,
   },
-  {
-    name: 'a timeout',
-    response: () =>
-      Promise.reject(
-        new DOMException('The operation timed out.', 'TimeoutError'),
-      ),
-    message:
-      'The request to the Polar API at sandbox-api.polar.sh timed out after 5s. It may be under heavy load, try again shortly.',
-    statusCode: undefined,
-  },
 ])('reports $name from the SDK', async ({ response, message, statusCode }) => {
   vi.stubGlobal('fetch', vi.fn(response))
   const polar = await polarWith(() => Effect.succeed(overrideCredential()))
@@ -390,7 +379,7 @@ test('logs the failed response at debug level without the token', async () => {
       annotations: {
         environment: 'sandbox',
         api: 'https://sandbox-api.polar.sh',
-        failure: 'Status',
+        failure: 'ApiStatusError',
         timeout: '5s',
         status: 500,
         body: 'Internal Server Error',
@@ -409,7 +398,7 @@ test('explains an inaccessible organization in a parsed error body', async () =>
   const polar = await polarWith(() => Effect.succeed(overrideCredential()))
   const request = vi
     .fn<(client: PolarSDK) => Promise<string>>()
-    .mockRejectedValue({ statusCode: 403, error: notAccessible })
+    .mockRejectedValue(new PolarClientError(403, notAccessible))
 
   await expect(
     Effect.runPromise(

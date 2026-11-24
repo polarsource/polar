@@ -234,6 +234,7 @@ describe('auth whoami', () => {
     expect(output()).toContain('Not logged in')
     expect(output()).toContain('polar auth login --sandbox')
     expect(output()).toContain('polar auth login --production')
+    expect(output()).toContain('Or set POLAR_ACCESS_TOKEN')
   })
 
   test('shows the only organization of a token override', async () => {

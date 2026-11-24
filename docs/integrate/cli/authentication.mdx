@@ -89,8 +89,9 @@ belonged to that environment.
 
 ## CI and headless use
 
-On machines without a browser or keychain, authenticate with an
-[organization access token](/integrate/oat) instead of a session:
+On machines without a browser or keychain, and for coding agents, authenticate
+with an access token instead of a session: an
+[organization access token](/integrate/oat), or an OAuth or agent access token.
 
 ```bash Terminal
 export POLAR_ACCESS_TOKEN=polar_oat_...

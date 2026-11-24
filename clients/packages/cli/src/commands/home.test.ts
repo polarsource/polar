@@ -40,6 +40,7 @@ describe('home', () => {
     expect(output).toMatch(/^ {2}▄▄▄▄▄████ {2}██ {5}Polar CLI /m)
     expect(output).toContain('Not logged in')
     expect(output).toContain('polar auth login --sandbox')
+    expect(output).toContain('Or set POLAR_ACCESS_TOKEN')
     expect(output).not.toContain('Try next')
     expect(output).toContain('polar --help')
   })

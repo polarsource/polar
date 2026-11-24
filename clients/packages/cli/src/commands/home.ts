@@ -8,7 +8,9 @@ import {
 } from '@/schemas/Auth'
 import { Auth } from '@/services/auth'
 import { Organizations } from '@/services/organizations'
+import { tokenVariables } from '@/commands/auth'
 import { output } from '@/utils/command'
+import { EnvironmentVariables } from '@/utils/help'
 import { banner } from '@/utils/logo'
 import * as ui from '@/utils/ui'
 import { VERSION } from '@/version'
@@ -91,6 +93,9 @@ const sessionLines = (session: Session) => {
     return [
       ui.warning('Not logged in'),
       ui.step(`Run ${ui.command(loginCommand('sandbox'))} to get started`),
+      ui.step(
+        `Or set ${ui.command('POLAR_ACCESS_TOKEN')} to use an access token without logging in`,
+      ),
     ]
   }
   const { override, environments, organization } = session
@@ -126,6 +131,14 @@ const sessionLines = (session: Session) => {
 
 export const polar = Command.make('polar', {}).pipe(
   Command.withDescription('Polar from your terminal'),
+  Command.annotate(EnvironmentVariables, [
+    ...tokenVariables,
+    {
+      name: 'POLAR_CLI_TELEMETRY_OPTOUT',
+      description:
+        'Set to 1 to turn off anonymous telemetry. DO_NOT_TRACK=1 works too',
+    },
+  ]),
   output({
     result: Home,
     run: () =>

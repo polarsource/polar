@@ -79,7 +79,7 @@ export const make = (
         const session = yield* store.read(environment)
         if (!session)
           return yield* new AuthError({
-            message: `Not logged in to ${environment}. Run ${loginCommand(environment)}.`,
+            message: `Not logged in to ${environment}. Run ${loginCommand(environment)} or set POLAR_ACCESS_TOKEN.`,
           })
         return session
       })

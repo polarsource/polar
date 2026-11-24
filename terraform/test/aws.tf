@@ -219,6 +219,7 @@ data "aws_iam_policy_document" "s3_access" {
       "s3:GetObjectVersionAttributes",
       "s3:DeleteObject",
       "s3:DeleteObjectVersion",
+      "s3:AbortMultipartUpload",
     ]
     resources = [
       "arn:aws:s3:::${local.files_bucket_name}/*",

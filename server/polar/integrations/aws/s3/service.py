@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, cast
 import botocore
 import structlog
 from botocore.client import ClientError
+from botocore.exceptions import BotoCoreError
 
 from polar.config import settings
 from polar.exceptions import NotPermitted
@@ -226,9 +227,31 @@ class S3Service:
                 Bucket=self.bucket, Key=path, MpuObjectSize=size, **boto_arguments
             )
         except ClientError as exc:
-            if exc.response.get("Error", {}).get("Code") == "InvalidRequest":
-                raise NotPermitted("Invalid multipart upload for this file") from exc
-            raise
+            if exc.response.get("Error", {}).get("Code") != "InvalidRequest":
+                raise
+            log.warning(
+                "aws.s3",
+                operation="complete_multipart_upload",
+                bucket=self.bucket,
+                error_code="InvalidRequest",
+                request_id=exc.response.get("ResponseMetadata", {}).get("RequestId"),
+            )
+            try:
+                self.client.abort_multipart_upload(
+                    Bucket=self.bucket, Key=path, UploadId=data.id
+                )
+            except (BotoCoreError, ClientError) as abort_exc:
+                log.warning(
+                    "aws.s3",
+                    operation="abort_multipart_upload",
+                    bucket=self.bucket,
+                    error_code=(
+                        abort_exc.response.get("Error", {}).get("Code")
+                        if isinstance(abort_exc, ClientError)
+                        else type(abort_exc).__name__
+                    ),
+                )
+            raise NotPermitted("Invalid multipart upload for this file") from exc
         if not response:
             raise S3FileError("No response from S3")
 

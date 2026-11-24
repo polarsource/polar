@@ -86,6 +86,7 @@ data "aws_iam_policy_document" "files" {
       "s3:GetObjectVersionAttributes",
       "s3:DeleteObject",
       "s3:DeleteObjectVersion",
+      "s3:AbortMultipartUpload",
     ]
     resources = ["arn:aws:s3:::${var.buckets.files.name}/*"]
   }
@@ -102,6 +103,7 @@ data "aws_iam_policy_document" "public_files" {
       "s3:GetObjectVersionAttributes",
       "s3:DeleteObject",
       "s3:DeleteObjectVersion",
+      "s3:AbortMultipartUpload",
     ]
     resources = ["arn:aws:s3:::${var.buckets.public_files.name}/*"]
   }

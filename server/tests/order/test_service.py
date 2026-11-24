@@ -436,6 +436,52 @@ class TestList:
         assert len(orders) == 1
         assert orders[0].id == order2.id
 
+    @pytest.mark.auth
+    async def test_query_filter(
+        self,
+        auth_subject: AuthSubject[User],
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+        customer_second: Customer,
+        organization: Organization,
+    ) -> None:
+        external_id = str(uuid.uuid4())
+        by_external_id = await create_order(
+            save_fixture,
+            product=product,
+            customer=await create_customer(
+                save_fixture,
+                organization=organization,
+                external_id=external_id,
+                email="external@example.com",
+            ),
+        )
+        by_customer = await create_order(
+            save_fixture, product=product, customer=customer_second
+        )
+        by_invoice = await create_order(
+            save_fixture, product=product, customer=customer, invoice_number="ACME-0042"
+        )
+
+        for query, expected in [
+            ("customer.second", by_customer),
+            ("acme-00", by_invoice),
+            (str(by_invoice.id), by_invoice),
+            (str(customer_second.id), by_customer),
+            (external_id, by_external_id),
+        ]:
+            orders, count = await order_service.list(
+                session,
+                auth_subject,
+                query=query,
+                pagination=PaginationParams(1, 10),
+            )
+            assert count == 1
+            assert orders[0].id == expected.id
+
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
     )

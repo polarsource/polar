@@ -10,7 +10,7 @@ from urllib.parse import urlencode
 import stripe as stripe_lib
 import structlog
 from pydantic import MISSING
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import joinedload
 
 from polar.account.repository import AccountRepository
@@ -350,6 +350,13 @@ class SubscriptionNotTrialing(OrderError):
         super().__init__(message)
 
 
+def _parse_uuid(value: str) -> uuid.UUID | None:
+    try:
+        return uuid.UUID(value)
+    except ValueError:
+        return None
+
+
 class OrderService:
     @asynccontextmanager
     async def acquire_payment_lock(
@@ -390,6 +397,7 @@ class OrderService:
         checkout_id: Sequence[uuid.UUID] | None = None,
         subscription_id: Sequence[uuid.UUID] | None = None,
         status: Sequence[OrderStatus] | None = None,
+        query: str | None = None,
         created_after: datetime | None = None,
         created_before: datetime | None = None,
         metadata: MetadataQuery | None = None,
@@ -449,6 +457,27 @@ class OrderService:
 
         if status is not None:
             statement = statement.where(Order.status.in_(status))
+
+        if query is not None:
+            if (query_id := _parse_uuid(query)) is not None:
+                statement = statement.where(
+                    or_(
+                        Order.id == query_id,
+                        Order.customer_id == query_id,
+                        Order.subscription_id == query_id,
+                        Order.checkout_id == query_id,
+                        Customer.external_id == query,
+                    )
+                )
+            else:
+                statement = statement.where(
+                    or_(
+                        CustomerRepository.from_session(session).get_search_clause(
+                            query
+                        ),
+                        Order.invoice_number.istartswith(query, autoescape=True),
+                    )
+                )
 
         if created_after is not None:
             statement = statement.where(Order.created_at > created_after)

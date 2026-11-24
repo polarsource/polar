@@ -5779,6 +5779,51 @@ class TestList:
         assert count == 1
 
     @pytest.mark.auth
+    async def test_query_filter(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+        customer_second: Customer,
+        organization: Organization,
+    ) -> None:
+        external_id = str(uuid.uuid4())
+        by_external_id = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=await create_customer(
+                save_fixture,
+                organization=organization,
+                external_id=external_id,
+                email="external@example.com",
+            ),
+        )
+        by_customer = await create_active_subscription(
+            save_fixture, product=product, customer=customer_second
+        )
+        by_id = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        for query, expected in [
+            ("customer.second", by_customer),
+            (str(by_id.id), by_id),
+            (str(customer_second.id), by_customer),
+            (external_id, by_external_id),
+        ]:
+            results, count = await subscription_service.list(
+                session,
+                auth_subject,
+                query=query,
+                pagination=PaginationParams(1, 10),
+            )
+            assert count == 1
+            assert results[0].id == expected.id
+
+    @pytest.mark.auth
     async def test_metadata_filter(
         self,
         auth_subject: AuthSubject[Organization],

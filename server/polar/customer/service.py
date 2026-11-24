@@ -5,7 +5,7 @@ from typing import Any
 
 import structlog
 from pydantic import MISSING, TypeAdapter
-from sqlalchemy import UnaryExpression, asc, desc, func, or_
+from sqlalchemy import UnaryExpression, asc, desc, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.elements import OrderByList
@@ -111,14 +111,7 @@ class CustomerService:
             statement = apply_metadata_clause(Customer, statement, metadata)
 
         if query is not None:
-            statement = statement.where(
-                or_(
-                    Customer.email.icontains(query, autoescape=True),
-                    Customer.name.icontains(query, autoescape=True),
-                    Customer._billing_name.icontains(query, autoescape=True),
-                    Customer.external_id.istartswith(query, autoescape=True),
-                )
-            )
+            statement = statement.where(repository.get_search_clause(query))
 
         if active is not None:
             statement = statement.where(repository.get_active_clause(active))

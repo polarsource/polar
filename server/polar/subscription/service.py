@@ -10,7 +10,7 @@ from urllib.parse import urlencode
 
 import structlog
 from pydantic import MISSING
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import (
     contains_eager,
     joinedload,
@@ -626,6 +626,13 @@ class SubscriptionUpdateContext:
         self._event_metadata.update(metadata)
 
 
+def _parse_uuid(value: str) -> uuid.UUID | None:
+    try:
+        return uuid.UUID(value)
+    except ValueError:
+        return None
+
+
 class SubscriptionService:
     async def list(
         self,
@@ -647,6 +654,7 @@ class SubscriptionService:
         canceled_at_before: datetime | None = None,
         started_after: datetime | None = None,
         started_before: datetime | None = None,
+        query: str | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
         sorting: Sequence[Sorting[SubscriptionSortProperty]] = (
@@ -713,6 +721,20 @@ class SubscriptionService:
 
         if started_before is not None:
             statement = statement.where(Subscription.started_at < started_before)
+
+        if query is not None:
+            if (query_id := _parse_uuid(query)) is not None:
+                statement = statement.where(
+                    or_(
+                        Subscription.id == query_id,
+                        Subscription.customer_id == query_id,
+                        Customer.external_id == query,
+                    )
+                )
+            else:
+                statement = statement.where(
+                    CustomerRepository.from_session(session).get_search_clause(query)
+                )
 
         if metadata is not None:
             statement = apply_metadata_clause(Subscription, statement, metadata)

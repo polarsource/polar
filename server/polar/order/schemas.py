@@ -472,6 +472,10 @@ class OrderListParams(QuerySchema):
     status: MultipleQueryFilter[OrderStatus] | None = Field(
         None, title="Status Filter", description="Filter by order status."
     )
+    query: Annotated[str | None, Version(starting_from=V2027_01)] = Field(
+        None,
+        description="Filter by customer name, email or external ID, invoice number, or an order, customer, subscription or checkout ID.",
+    )
     created_after: datetime | None = Field(
         None,
         description="Only include orders created after this date",

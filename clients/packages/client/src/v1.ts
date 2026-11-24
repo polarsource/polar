@@ -51516,6 +51516,8 @@ export interface operations {
         started_after?: string | null
         /** @description Only include subscriptions started before this date. */
         started_before?: string | null
+        /** @description Filter by customer name, email or external ID, or a subscription or customer ID. */
+        query?: string | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */
@@ -53179,6 +53181,8 @@ export interface operations {
           | components['schemas']['OrderStatus']
           | components['schemas']['OrderStatus'][]
           | null
+        /** @description Filter by customer name, email or external ID, invoice number, or an order, customer, subscription or checkout ID. */
+        query?: string | null
         /** @description Only include orders created after this date */
         created_after?: string | null
         /** @description Only include orders created before this date */

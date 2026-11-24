@@ -8085,6 +8085,24 @@
             "description": "Only include subscriptions started before this date."
           },
           {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by customer name, email or external ID, or a subscription or customer ID.",
+              "title": "Query"
+            },
+            "description": "Filter by customer name, email or external ID, or a subscription or customer ID."
+          },
+          {
             "name": "page",
             "in": "query",
             "required": false,
@@ -10971,6 +10989,24 @@
               "description": "Filter by order status."
             },
             "description": "Filter by order status."
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by customer name, email or external ID, invoice number, or an order, customer, subscription or checkout ID.",
+              "title": "Query"
+            },
+            "description": "Filter by customer name, email or external ID, invoice number, or an order, customer, subscription or checkout ID."
           },
           {
             "name": "created_after",

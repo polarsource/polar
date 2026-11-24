@@ -12,6 +12,7 @@ import { uniqueOrders, useInfiniteOrders } from '@/hooks/queries/orders'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { sortingStateToQueryParam } from '@/utils/datatable'
 import { useDateRange } from '@/utils/date'
+import useDebounce from '@/utils/useDebounce'
 import { enums, schemas } from '@polar-sh/client'
 import { Copy, Download } from '@polar-sh/orbit/icons'
 import { useRouter } from 'next/navigation'
@@ -32,6 +33,7 @@ const filterParsers = {
   external_product_id: parseAsArrayOf(parseAsString),
   status: parseAsArrayOf(parseAsStringLiteral(enums.orderStatusValues)),
   metadata: parseAsArrayOf(parseAsString),
+  query: parseAsString,
 }
 
 interface ClientPageProps {
@@ -52,9 +54,11 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       external_product_id: externalProductId,
       status,
       metadata,
+      query,
     },
     setFilters,
   ] = useQueryStates(filterParsers)
+  const debouncedQuery = useDebounce(query, 300)
 
   // Without dates in the address, the range runs from the organization's first
   // day until today.
@@ -78,6 +82,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     product_id: productId ?? undefined,
     external_product_id: externalProductId ?? undefined,
     status: status ?? undefined,
+    query: debouncedQuery?.trim() || undefined,
     created_after: startDate.toISOString(),
     created_before: endDate.toISOString(),
   })
@@ -139,6 +144,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         onProductSelect={setFilters}
         status={status}
         onStatusSelect={(value) => setFilters({ status: value })}
+        query={query}
+        onQuerySelect={(value) => setFilters({ query: value })}
         dateRange={{ from: startDate, to: endDate }}
         onDateRangeSelect={(range) => {
           setStartDate(range?.from ?? null)

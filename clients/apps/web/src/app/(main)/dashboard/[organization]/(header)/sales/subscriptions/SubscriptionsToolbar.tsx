@@ -38,6 +38,7 @@ import { type ToolbarAction } from '@/components/Shared/Toolbar/ToolbarActionsMe
 import { useDateRangeFilter } from '@/components/Shared/Toolbar/useDateRangeFilter'
 import { useProductFilter } from '@/components/Shared/Toolbar/useProductFilter'
 import { useCustomerFilter } from '@/components/Shared/Toolbar/useCustomerFilter'
+import { ToolbarSearch } from '@/components/Shared/Toolbar/ToolbarSearch'
 import { useDiscountFilter } from './useDiscountFilter'
 import { type SubscriptionView } from './useSubscriptionsView'
 
@@ -119,6 +120,8 @@ interface SubscriptionsToolbarProps {
   onCancellationReasonSelect: (value: CancellationReason[] | null) => void
   started: DateRange | null
   onStartedSelect: (value: DateRange | null) => void
+  query: string | null
+  onQuerySelect: (value: string | null) => void
   sorting: DataTableSortingState
   onSortingChange: (sorting: DataTableSortingState) => void
   view: SubscriptionView
@@ -146,6 +149,8 @@ export const SubscriptionsToolbar = ({
   onCancellationReasonSelect,
   started,
   onStartedSelect,
+  query,
+  onQuerySelect,
   sorting,
   onSortingChange,
   view,
@@ -276,6 +281,11 @@ export const SubscriptionsToolbar = ({
       onReset={hasActiveFilters ? onReset : undefined}
       actions={actions}
     >
+      <ToolbarSearch
+        value={query}
+        onChange={onQuerySelect}
+        placeholder="Search subscriptions"
+      />
       <SegmentedControl
         size="sm"
         options={VIEW_OPTIONS}

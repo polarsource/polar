@@ -12,10 +12,10 @@ import { type ToolbarAction } from '@/components/Shared/Toolbar/ToolbarActionsMe
 import { useCustomerFilter } from '@/components/Shared/Toolbar/useCustomerFilter'
 import { useDateRangeFilter } from '@/components/Shared/Toolbar/useDateRangeFilter'
 import { useProductFilter } from '@/components/Shared/Toolbar/useProductFilter'
+import { ToolbarSearch } from '@/components/Shared/Toolbar/ToolbarSearch'
 import { checkoutStatusOptions } from '@/components/Checkouts/CheckoutStatus'
 import { schemas } from '@polar-sh/client'
-import { CircleDashed, Mail } from '@polar-sh/orbit/icons'
-import { useState } from 'react'
+import { CircleDashed } from '@polar-sh/orbit/icons'
 
 type CheckoutStatus = schemas['CheckoutStatus']
 
@@ -27,8 +27,8 @@ interface CheckoutsToolbarProps {
   onStatusSelect: (status: CheckoutStatus[] | null) => void
   customerId: string[] | null
   onCustomerSelect: (value: string[] | null) => void
-  email: string | null
-  onEmailSelect: (value: string | null) => void
+  query: string | null
+  onQuerySelect: (value: string | null) => void
   created: DateRange | null
   onCreatedSelect: (range: DateRange | null) => void
   actions: ToolbarAction[][]
@@ -42,8 +42,8 @@ export const CheckoutsToolbar = ({
   onStatusSelect,
   customerId,
   onCustomerSelect,
-  email,
-  onEmailSelect,
+  query,
+  onQuerySelect,
   created,
   onCreatedSelect,
   actions,
@@ -55,23 +55,6 @@ export const CheckoutsToolbar = ({
     onCustomerSelect,
   )
   const dateFilter = useDateRangeFilter(organization, created, onCreatedSelect)
-  // Any part of an email, typed in. A checkout can have one before it has a
-  // customer, so this finds the ones the customer filter cannot.
-  const [emailDraft, setEmailDraft] = useState('')
-  const emailText = emailDraft.trim() || email
-  const emailFilter: Filter = {
-    key: 'email',
-    label: 'Email',
-    icon: <Mail className="size-4" />,
-    type: 'single',
-    options: emailText ? [{ value: emailText, label: emailText }] : [],
-    value: email,
-    onChange: onEmailSelect,
-    searchPlaceholder: 'Email contains...',
-    searchQuery: emailDraft,
-    onSearchQueryChange: setEmailDraft,
-    emptyLabel: 'Type part of an email',
-  }
   const filters: Filter[] = [
     {
       key: 'status',
@@ -85,7 +68,6 @@ export const CheckoutsToolbar = ({
     },
     productFilter,
     customerFilter,
-    emailFilter,
     dateFilter,
   ]
   const hasActiveFilters = filters.some(
@@ -95,7 +77,6 @@ export const CheckoutsToolbar = ({
     onStatusSelect(null)
     onProductSelect({ product_id: null, external_product_id: null })
     onCustomerSelect(null)
-    onEmailSelect(null)
     onCreatedSelect(null)
   }
 
@@ -105,6 +86,12 @@ export const CheckoutsToolbar = ({
       filters={filters}
       onReset={hasActiveFilters ? reset : undefined}
       actions={actions}
-    />
+    >
+      <ToolbarSearch
+        value={query}
+        onChange={onQuerySelect}
+        placeholder="Search checkouts"
+      />
+    </Toolbar>
   )
 }

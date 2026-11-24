@@ -35,6 +35,7 @@ import {
   parseAsStringLiteral,
   useQueryStates,
 } from 'nuqs'
+import useDebounce from '@/utils/useDebounce'
 import React from 'react'
 import { SubscriptionsTimeline } from './SubscriptionsTimeline'
 import { SubscriptionsToolbar } from './SubscriptionsToolbar'
@@ -62,6 +63,7 @@ const filterParsers = {
   cancel_at_period_end: parseAsBoolean,
   started_after: parseAsIsoDateTime,
   started_before: parseAsIsoDateTime,
+  query: parseAsString,
   subscription: parseAsString,
   zoom: parseAsFloat.withDefault(DEFAULT_PIXELS_PER_DAY),
   view: parseAsStringLiteral(subscriptionViewValues),
@@ -105,6 +107,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       customer_cancellation_reason: cancellationReason,
       started_after: startedAfter,
       started_before: startedBefore,
+      query,
       subscription: selectedId,
       zoom: zoomParam,
       view: linkedView,
@@ -112,6 +115,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     },
     setFilters,
   ] = useQueryStates(filterParsers)
+  const debouncedQuery = useDebounce(query, 300)
 
   // Only "set to end" is offered as a filter. Older links can carry false,
   // which no control shows, so it is left out.
@@ -198,6 +202,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     customer_cancellation_reason: cancellationReason ?? undefined,
     started_after: started?.from.toISOString(),
     started_before: started?.to.toISOString(),
+    query: debouncedQuery?.trim() || undefined,
   }
   const {
     data,
@@ -331,6 +336,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
             started_before: value?.to ?? null,
           })
         }
+        query={query}
+        onQuerySelect={(value) => setFilters({ query: value })}
         sorting={sorting}
         onSortingChange={setSortingState}
         view={view}

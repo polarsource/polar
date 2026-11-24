@@ -110,6 +110,7 @@ async def list(
         checkout_id=filters.checkout_id,
         subscription_id=filters.subscription_id,
         status=filters.status,
+        query=filters.query,
         created_after=filters.created_after,
         created_before=filters.created_before,
         metadata=metadata,

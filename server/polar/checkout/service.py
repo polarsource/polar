@@ -2583,7 +2583,9 @@ class CheckoutService:
             validate_custom_price_amount(
                 custom_price, checkout_update.amount, checkout.currency
             )
-            checkout.amount = checkout_update.amount
+            self._set_upfront_amount(
+                checkout, static_prices, custom_amount=checkout_update.amount
+            )
 
         # Handle seat updates for seat-based pricing
         if seat_price is not None and checkout_update.seats is not MISSING:
@@ -2594,11 +2596,7 @@ class CheckoutService:
                 checkout_max_seats=checkout.max_seats,
             )
             checkout.seats = checkout_update.seats
-            checkout.amount = calculate_upfront_amount(
-                static_prices,
-                custom_amount=None,
-                seats=checkout_update.seats,
-            )
+            self._set_upfront_amount(checkout, static_prices)
         elif checkout_update.seats is not MISSING:
             # Seats provided for non-seat-based pricing
             raise PolarRequestValidationError(
@@ -2621,12 +2619,7 @@ class CheckoutService:
                 max_units=checkout.max_units,
             )
             checkout.units = checkout_update.units
-            checkout.amount = calculate_upfront_amount(
-                static_prices,
-                custom_amount=None,
-                seats=checkout.seats,
-                units=checkout_update.units,
-            )
+            self._set_upfront_amount(checkout, static_prices)
         elif checkout_update.units is not MISSING:
             # Units provided for non-unit-based pricing
             raise PolarRequestValidationError(
@@ -2869,11 +2862,23 @@ class CheckoutService:
                 max_units=checkout.max_units,
             )
             checkout.units = units
-        checkout.amount = calculate_upfront_amount(
-            price_set.get_static_prices(), custom_amount=None, seats=seats, units=units
-        )
+        self._set_upfront_amount(checkout, price_set.get_static_prices())
 
         return checkout
+
+    def _set_upfront_amount(
+        self,
+        checkout: Checkout,
+        static_prices: Sequence[ProductPrice],
+        *,
+        custom_amount: int | None = None,
+    ) -> None:
+        checkout.amount = calculate_upfront_amount(
+            static_prices,
+            custom_amount=custom_amount,
+            seats=checkout.seats,
+            units=checkout.units,
+        )
 
     async def _update_checkout_tax(
         self, session: AsyncSession, checkout: Checkout
@@ -3193,7 +3198,11 @@ class CheckoutService:
         custom_price = currency_prices.get_custom_price()
         if custom_price is not None and custom_amount is not None:
             validate_custom_price_amount(custom_price, custom_amount, checkout.currency)
-            checkout.amount = custom_amount
+            self._set_upfront_amount(
+                checkout,
+                currency_prices.get_static_prices(),
+                custom_amount=custom_amount,
+            )
         if checkout.discount is not None and not checkout.discount.is_applicable(
             version, checkout.currency
         ):

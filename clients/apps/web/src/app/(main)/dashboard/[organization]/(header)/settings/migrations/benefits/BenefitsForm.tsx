@@ -2,7 +2,7 @@
 
 import { useSetUpMigrationBenefits } from '@/hooks/queries/merchantMigrations'
 import { schemas } from '@polar-sh/client'
-import { Alert, ButtonGroup, Checkbox, Text } from '@polar-sh/orbit'
+import { Alert, ButtonGroup, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useState } from 'react'
 import { plural } from '../review/importSummary'
@@ -19,6 +19,7 @@ interface Props {
 
 // Each benefit shows once: with subscribers when it's on an imported product,
 // otherwise with past one-time buyers. One nobody would get isn't offered.
+// Past buyers get only the benefits that stay ticked.
 export function BenefitsForm({
   migrationId,
   benefits,
@@ -26,17 +27,15 @@ export function BenefitsForm({
   onDone,
 }: Props) {
   const [excluded, setExcluded] = useState<Set<string>>(new Set())
-  const [grantPastBuyers, setGrantPastBuyers] = useState(true)
   const setUp = useSetUpMigrationBenefits(migrationId)
 
   const forSubscribers = benefits.filter((b) => b.products.length > 0)
   const forPastBuyers = benefits.filter(
     (b) => b.products.length === 0 && b.for_one_time,
   )
-  const selected = [
-    ...forSubscribers.filter((b) => !excluded.has(b.id)),
-    ...(grantPastBuyers ? forPastBuyers : []),
-  ]
+  const selected = [...forSubscribers, ...forPastBuyers].filter(
+    (b) => !excluded.has(b.id),
+  )
   const toCreate = selected.filter((b) => !b.benefit_id)
   const hasLicenseKeys = selected.some((b) => b.type === 'license_keys')
 
@@ -53,8 +52,7 @@ export function BenefitsForm({
     setUp.mutate(
       {
         benefit_ids: benefitIds,
-        grant_past_purchases:
-          grantPastBuyers && benefits.some((b) => b.for_one_time),
+        grant_past_purchases: selected.some((b) => b.for_one_time),
       },
       { onSuccess: onDone },
     )
@@ -95,39 +93,38 @@ export function BenefitsForm({
       )}
 
       {forPastBuyers.length > 0 && (
-        <BenefitSection title="Past one-time buyers">
+        <BenefitSection
+          title="Past one-time buyers"
+          description="Polar doesn't email them. They find everything in the customer portal."
+        >
           {forPastBuyers.map((benefit) => (
-            <BenefitRow key={benefit.id} benefit={benefit} />
+            <BenefitRow
+              key={benefit.id}
+              benefit={benefit}
+              selected={!excluded.has(benefit.id)}
+              onToggle={() => toggle(benefit.id)}
+            />
           ))}
         </BenefitSection>
       )}
 
-      <Box flexDirection="column" rowGap="s">
-        {forPastBuyers.length > 0 && (
-          <Checkbox
-            checked={grantPastBuyers}
-            onCheckedChange={(checked) => setGrantPastBuyers(checked === true)}
-            label="Give past buyers their license keys and files. Polar doesn't email them. They find everything in the customer portal."
-          />
+      <Text variant="caption" color="muted">
+        {hasLicenseKeys && (
+          <>
+            Your app must{' '}
+            <a
+              href={LICENSE_KEY_DOCS}
+              target="_blank"
+              rel="noreferrer"
+              className="underline"
+            >
+              check license keys with Polar
+            </a>
+            . Used activations and expiry dates start fresh.{' '}
+          </>
         )}
-        <Text variant="caption" color="muted">
-          {hasLicenseKeys && (
-            <>
-              Your app must{' '}
-              <a
-                href={LICENSE_KEY_DOCS}
-                target="_blank"
-                rel="noreferrer"
-                className="underline"
-              >
-                check license keys with Polar
-              </a>
-              . Used activations and expiry dates start fresh.{' '}
-            </>
-          )}
-          Need anything else moved? Contact us.
-        </Text>
-      </Box>
+        Need anything else moved? Contact us.
+      </Text>
 
       {(setUp.error || failure) && (
         <Alert

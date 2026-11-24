@@ -8,16 +8,25 @@ type Benefit = schemas['MerchantMigrationBenefit']
 
 export function BenefitSection({
   title,
+  description,
   children,
 }: {
   title: string
+  description?: string
   children: ReactNode
 }) {
   return (
     <Box as="section" flexDirection="column" rowGap="s">
-      <Text variant="label" as="h4">
-        {title}
-      </Text>
+      <Box flexDirection="column" rowGap="xs">
+        <Text variant="label" as="h4">
+          {title}
+        </Text>
+        {description && (
+          <Text variant="caption" color="muted">
+            {description}
+          </Text>
+        )}
+      </Box>
       <Box
         as="ul"
         flexDirection="column"

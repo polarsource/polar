@@ -511,7 +511,7 @@ async def close_migration(
     enqueue_job("merchant_migration.close", merchant_migration_id=migration.id)
     await add_toast(
         request,
-        "Closing the migration. Refresh in a moment to see it closed.",
+        "Closing the migration. If a precheck or import is running, it closes once that finishes.",
         "success",
     )
     return _detail_redirect(request, migration.id)

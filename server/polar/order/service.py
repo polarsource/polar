@@ -64,7 +64,7 @@ from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
-from polar.kit.utils import parse_uuid, utc_now
+from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import (
     Checkout,
@@ -350,6 +350,13 @@ class SubscriptionNotTrialing(OrderError):
         super().__init__(message)
 
 
+def _parse_uuid(value: str) -> uuid.UUID | None:
+    try:
+        return uuid.UUID(value)
+    except ValueError:
+        return None
+
+
 class OrderService:
     @asynccontextmanager
     async def acquire_payment_lock(
@@ -452,7 +459,7 @@ class OrderService:
             statement = statement.where(Order.status.in_(status))
 
         if query is not None:
-            if (query_id := parse_uuid(query)) is not None:
+            if (query_id := _parse_uuid(query)) is not None:
                 statement = statement.where(
                     or_(
                         Order.id == query_id,

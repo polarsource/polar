@@ -82,7 +82,7 @@ from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
-from polar.kit.utils import parse_uuid, utc_now
+from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
 from polar.logging import Logger
 from polar.meter.repository import MeterRepository
@@ -628,6 +628,13 @@ class SubscriptionUpdateContext:
         self._event_metadata.update(metadata)
 
 
+def _parse_uuid(value: str) -> uuid.UUID | None:
+    try:
+        return uuid.UUID(value)
+    except ValueError:
+        return None
+
+
 class SubscriptionService:
     async def list(
         self,
@@ -718,7 +725,7 @@ class SubscriptionService:
             statement = statement.where(Subscription.started_at < started_before)
 
         if query is not None:
-            if (query_id := parse_uuid(query)) is not None:
+            if (query_id := _parse_uuid(query)) is not None:
                 statement = statement.where(
                     or_(
                         Subscription.id == query_id,

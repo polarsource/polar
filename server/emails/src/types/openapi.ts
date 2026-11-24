@@ -2588,6 +2588,8 @@ export interface components {
       proration_behavior: ('invoice' | 'prorate' | 'next_period') | 'auto'
       /** Benefit Revocation Grace Period */
       benefit_revocation_grace_period: number
+      /** Trial Ended Reactivation Period */
+      trial_ended_reactivation_period?: number
       /** Prevent Trial Abuse */
       prevent_trial_abuse: boolean
       /** Allow Customer Updates */

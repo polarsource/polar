@@ -10,7 +10,6 @@ from polar.exceptions import PolarTaskError
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import Subscription, SubscriptionMeter
-from polar.models.subscription import SubscriptionStatus
 from polar.observability.task_logging import LoggableField
 from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
@@ -109,6 +108,10 @@ async def subscription_cycle(
                     await subscription_service.expire_trial(session, ctx, subscription)
                 else:
                     await subscription_service.cycle(session, ctx, subscription)
+
+            # A zero-day reactivation period ends the trial and revokes it right away
+            if subscription_service.is_trial_ended_expired(subscription):
+                await subscription_service.revoke_trial_ended(session, subscription)
         else:
             # cycle_meters raises SubscriptionMeterCycleLag on a multi-period lag; we
             # let it propagate — the subscription stays halted (lock set) for a human.
@@ -380,11 +383,7 @@ async def cancel_expired_trial_ended(
         if subscription is None:
             raise SubscriptionDoesNotExist(subscription_id)
 
-        if (
-            subscription.status != SubscriptionStatus.trial_ended
-            or subscription.ends_at is None
-            or subscription.ends_at > utc_now()
-        ):
+        if not subscription_service.is_trial_ended_expired(subscription):
             log.info(
                 "Subscription is no longer an expired trial_ended, skipping cancel",
                 subscription_id=subscription_id,
@@ -392,10 +391,7 @@ async def cancel_expired_trial_ended(
             await repository.release_scheduler_lock(subscription)
             return
 
-        async with SubscriptionUpdateContext(
-            session, subscription, subscription_service, notify_customer=False
-        ) as ctx:
-            await subscription_service.revoke(session, ctx, subscription)
+        await subscription_service.revoke_trial_ended(session, subscription)
         await repository.release_scheduler_lock(subscription)
 
 

@@ -70512,6 +70512,11 @@
             "type": "integer",
             "title": "Benefit Revocation Grace Period"
           },
+          "trial_ended_reactivation_period": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Trial Ended Reactivation Period"
+          },
           "prevent_trial_abuse": {
             "type": "boolean",
             "title": "Prevent Trial Abuse"

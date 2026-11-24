@@ -229,6 +229,31 @@ class TestCreate:
         )
 
     @pytest.mark.auth
+    async def test_subscription_settings_without_trial_ended_reactivation_period(
+        self, auth_subject: AuthSubject[User], session: AsyncSession
+    ) -> None:
+        organization = await organization_service.create(
+            session,
+            OrganizationCreate(
+                name="My New Organization",
+                slug="my-new-organization",
+                subscription_settings=OrganizationSubscriptionSettings(
+                    allow_multiple_subscriptions=True,
+                    proration_behavior=SubscriptionProrationBehavior.invoice,
+                    benefit_revocation_grace_period=0,
+                    prevent_trial_abuse=False,
+                    allow_customer_updates=True,
+                ),
+            ),
+            auth_subject,
+        )
+
+        assert organization.allow_multiple_subscriptions is True
+        assert (
+            organization.subscription_settings["trial_ended_reactivation_period"] == 14
+        )
+
+    @pytest.mark.auth
     async def test_enqueues_polar_self_customer_with_owner(
         self,
         mocker: MockerFixture,

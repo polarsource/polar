@@ -61,6 +61,7 @@ from polar.models import (
 from polar.models.benefit import BenefitType
 from polar.models.member import MemberRole
 from polar.models.organization import (
+    DEFAULT_TRIAL_ENDED_REACTIVATION_PERIOD,
     FIRST_REVIEW_THRESHOLD_CENTS,
     STATUS_CAPABILITIES,
     CapabilityName,
@@ -500,6 +501,13 @@ class OrganizationService:
             # flag. Drop this once those versions no longer read it.
             "meter_cycling_enabled": True,
         }
+        if "subscription_settings" in create_data:
+            create_data["subscription_settings"] = {
+                "trial_ended_reactivation_period": (
+                    DEFAULT_TRIAL_ENDED_REACTIVATION_PERIOD
+                ),
+                **create_data["subscription_settings"],
+            }
         if settings.is_sandbox():
             create_data["status"] = OrganizationStatus.ACTIVE
             create_data["capabilities"] = {
@@ -657,7 +665,12 @@ class OrganizationService:
                         }
                     ]
                 )
-            organization.subscription_settings = update_schema.subscription_settings
+            organization.subscription_settings = {
+                "trial_ended_reactivation_period": (
+                    organization.trial_ended_reactivation_period
+                ),
+                **update_schema.subscription_settings,
+            }
 
         if update_schema.dispute_settings is not MISSING:
             if (

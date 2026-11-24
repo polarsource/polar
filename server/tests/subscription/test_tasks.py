@@ -355,6 +355,100 @@ class TestSubscriptionCycle:
                 is None
             )
 
+    async def test_trial_end_with_custom_reactivation_period(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        mocker.patch("polar.subscription.service.enqueue_job")
+        organization = product.organization
+        organization.subscription_settings = {
+            **organization.subscription_settings,
+            "trial_ended_reactivation_period": 7,
+        }
+        await save_fixture(organization)
+        subscription = await create_trialing_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        previous_period_end = subscription.current_period_end
+        session.expunge_all()
+
+        with freeze_time(previous_period_end):
+            await subscription_cycle(subscription.id)
+
+        updated_subscription = await session.get(Subscription, subscription.id)
+        assert updated_subscription is not None
+        assert updated_subscription.status == SubscriptionStatus.trial_ended
+        assert updated_subscription.ends_at == previous_period_end + timedelta(days=7)
+        assert updated_subscription.ended_at is None
+
+    async def test_trial_end_with_zero_reactivation_period_revokes(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_recurring_metered: Product,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
+        enqueue_email_mock = mocker.patch(
+            "polar.subscription.service.enqueue_email_template"
+        )
+        webhook_send_mock = mocker.patch(
+            "polar.subscription.service.webhook_service.send"
+        )
+        organization = product_recurring_metered.organization
+        organization.subscription_settings = {
+            **organization.subscription_settings,
+            "trial_ended_reactivation_period": 0,
+        }
+        await save_fixture(organization)
+        subscription = await create_trialing_subscription(
+            save_fixture,
+            product=product_recurring_metered,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        previous_period_end = subscription.current_period_end
+        session.expunge_all()
+
+        with freeze_time(previous_period_end):
+            await subscription_cycle(subscription.id)
+
+        updated_subscription = await session.get(Subscription, subscription.id)
+        assert updated_subscription is not None
+        assert updated_subscription.status == SubscriptionStatus.canceled
+        assert updated_subscription.ended_at == previous_period_end
+        assert updated_subscription.ends_at == previous_period_end
+        assert updated_subscription.canceled_at == previous_period_end
+        assert updated_subscription.current_period_end == previous_period_end
+        assert updated_subscription.scheduler_locked_at is None
+        webhook_events = [call.args[2] for call in webhook_send_mock.call_args_list]
+        assert webhook_events == [
+            WebhookEventType.subscription_updated,
+            WebhookEventType.subscription_updated,
+            WebhookEventType.subscription_canceled,
+            WebhookEventType.subscription_revoked,
+        ]
+        enqueue_email_mock.assert_not_called()
+        assert all(
+            call.args[0] != "order.create_subscription_order"
+            for call in enqueue_job_mock.call_args_list
+        )
+        order_repository = OrderRepository.from_session(session)
+        assert await order_repository.get_all_by_subscription(subscription.id) == []
+        event_repository = EventRepository.from_session(session)
+        meter_reset = await event_repository.get_latest_meter_reset(customer, meter.id)
+        assert meter_reset is not None
+        assert meter_reset.timestamp == previous_period_end
+
     async def test_trial_end_with_pending_update_converts(
         self,
         mocker: MockerFixture,

@@ -178,8 +178,6 @@ SUBSCRIPTION_CANCELLATION_BATCH_SIZE = 50
 merchant winds down across several short jobs that each stay under the worker's
 60s time limit."""
 
-TRIAL_ENDED_CANCELLATION_DELAY = timedelta(days=14)
-
 
 class SubscriptionError(PolarError): ...
 
@@ -1514,14 +1512,32 @@ class SubscriptionService:
         subscription: Subscription,
     ) -> Subscription:
         trial_end = subscription.current_period_end
+        reactivation_period = timedelta(
+            days=subscription.organization.trial_ended_reactivation_period
+        )
         subscription.status = SubscriptionStatus.trial_ended
-        subscription.ends_at = trial_end + TRIAL_ENDED_CANCELLATION_DELAY
+        subscription.ends_at = trial_end + reactivation_period
         subscription.pause_at_period_end = False
         subscription.resumes_at = None
         ctx.record_billing_state(effective_at=trial_end)
         await self.enqueue_benefits_grants(session, subscription)
         repository = SubscriptionRepository.from_session(session)
         return await repository.release_scheduler_lock(subscription)
+
+    def is_trial_ended_expired(self, subscription: Subscription) -> bool:
+        return (
+            subscription.status == SubscriptionStatus.trial_ended
+            and subscription.ends_at is not None
+            and subscription.ends_at <= utc_now()
+        )
+
+    async def revoke_trial_ended(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> Subscription:
+        async with SubscriptionUpdateContext(
+            session, subscription, self, notify_customer=False
+        ) as ctx:
+            return await self.revoke(session, ctx, subscription)
 
     def _charges_after_trial(self, subscription: Subscription) -> bool:
         # Same rule checkout uses to decide whether to ask for a card.

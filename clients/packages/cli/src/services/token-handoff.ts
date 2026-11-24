@@ -23,9 +23,9 @@ export const sdkHint = (environment: PolarEnvironment) =>
       case 'production':
         return undefined
       case 'sandbox':
-        return "This is a sandbox token. Pass server: 'sandbox' to your Polar SDK."
+        return "This is a sandbox token. Pass environment: 'sandbox' to your Polar SDK."
       case 'local':
-        return `This is a local token. Pass serverURL: '${yield* apiOrigin('local')}' to your Polar SDK.`
+        return `This is a local token. Pass baseUrl: '${yield* apiOrigin('local')}' to your Polar SDK.`
     }
   })
 

@@ -1,12 +1,18 @@
 import uuid
 from unittest.mock import MagicMock
 
+import dramatiq
 import pytest
 from dramatiq.middleware import SkipMessage
 from fakeredis import FakeAsyncRedis, FakeRedis
 from pytest_mock import MockerFixture
 from redis import ConnectionPool
 
+import polar.tasks  # noqa: F401  (registers actors with the broker)
+from polar.config import settings
+from polar.logging import CorrelationID
+from polar.models.webhook_endpoint import WebhookEventType
+from polar.worker import JobQueueManager
 from polar.worker._debounce import (
     DebounceContext,
     DebounceMiddleware,
@@ -17,6 +23,8 @@ from polar.worker._debounce import (
     now_timestamp,
     set_debounce_key,
 )
+from polar.worker._runner import run_task
+from polar.worker._sqs import Job
 
 
 def make_actor(**options: object) -> MagicMock:
@@ -240,6 +248,7 @@ class TestSetDebounceKeyClaim:
         self, fake_redis: FakeAsyncRedis
     ) -> None:
         actor = make_actor(debounce_key=lambda: "test:key")
+        before = now_timestamp()
         async with fake_redis.pipeline() as pipeline:
             debounce = set_debounce_key(
                 pipeline, actor, "first", (), {}, delay=3600 * 1000
@@ -249,7 +258,7 @@ class TestSetDebounceKeyClaim:
         assert debounce == ("debounce:test:key", 3600 * 1000)
         due_timestamp = await fake_redis.hget("debounce:test:key", "due_timestamp")
         assert due_timestamp is not None
-        assert int(due_timestamp) >= now_timestamp() + 3599
+        assert int(due_timestamp) >= before + 3600
 
     async def test_started_message_gets_one_successor(
         self, fake_redis: FakeAsyncRedis
@@ -384,3 +393,116 @@ class TestDebounceMiddlewareAfterProcessMessage:
         middleware.after_process_message(MagicMock(), message, exception=None)
 
         assert sync_redis.hget(key, "executed") == b"0"
+
+
+class FakeSQS:
+    """Delivers the jobs sent by enqueues and reschedules once their delay passed, on
+    a fake clock that also drives the debounce timestamps."""
+
+    def __init__(self, mocker: MockerFixture, redis: FakeAsyncRedis) -> None:
+        self.redis = redis
+        self.now = 1_000_000
+        self.queue: list[tuple[int, Job]] = []
+        self.sent = 0
+        self.runs: list[int] = []
+        mocker.patch.object(settings, "WORKER_SQS_ENABLED", True)
+        mocker.patch.object(settings, "WORKER_SQS_ACTORS", {"customer.webhook"})
+        mocker.patch(
+            "polar.worker._debounce.now_timestamp", side_effect=lambda: self.now
+        )
+        mocker.patch("polar.worker._runner.RedisMiddleware.get", return_value=redis)
+        mocker.patch("polar.worker._enqueue._sqs.send_jobs", self.send_jobs)
+        mocker.patch("polar.worker._runner._sqs.send_jobs", self.send_jobs)
+        mocker.patch(
+            "polar.worker._runner.build_registry",
+            return_value={"customer.webhook": self.task},
+        )
+
+    async def send_jobs(self, jobs: list[Job]) -> None:
+        self.sent += len(jobs)
+        self.queue += [(self.now + (job.delay or 0) // 1000, job) for job in jobs]
+
+    async def task(self, *args: object) -> None:
+        self.runs.append(self.now)
+
+    async def enqueue(self, customer_id: uuid.UUID) -> None:
+        jqm = JobQueueManager()
+        jqm.enqueue_job(
+            "customer.webhook", WebhookEventType.customer_state_changed, customer_id
+        )
+        await jqm.flush(dramatiq.get_broker(), self.redis)
+
+    async def advance_to(self, now: int) -> None:
+        self.now = now
+        due = [job for due_at, job in self.queue if due_at <= now]
+        self.queue = [(due_at, job) for due_at, job in self.queue if due_at > now]
+        for job in due:
+            await run_task(
+                job.actor,
+                job.args,
+                job.kwargs,
+                message_id=job.message_id,
+                debounce_key=job.debounce_key,
+            )
+
+
+@pytest.mark.anyio
+class TestEndToEnd:
+    """customer.webhook debounces with a 1s min and a 5s max threshold."""
+
+    @pytest.fixture
+    def sqs(self, mocker: MockerFixture, fake_redis: FakeAsyncRedis) -> FakeSQS:
+        CorrelationID.set()
+        return FakeSQS(mocker, fake_redis)
+
+    async def test_burst_runs_once_after_quiet_period(self, sqs: FakeSQS) -> None:
+        customer_id = uuid.uuid4()
+        start = sqs.now
+        await sqs.enqueue(customer_id)
+        await sqs.enqueue(customer_id)
+        sqs.now = start + 1
+        await sqs.enqueue(customer_id)
+        for second in range(1, 10):
+            await sqs.advance_to(start + second)
+
+        assert sqs.runs == [start + 2]
+        assert sqs.sent == 2
+
+    async def test_steady_stream_runs_at_max_threshold(self, sqs: FakeSQS) -> None:
+        customer_id = uuid.uuid4()
+        start = sqs.now
+        for second in range(12):
+            sqs.now = start + second
+            await sqs.enqueue(customer_id)
+            await sqs.advance_to(start + second)
+        await sqs.advance_to(start + 20)
+
+        assert sqs.runs == [start + 5, start + 11]
+        assert sqs.sent == 10
+
+    async def test_enqueue_after_run_starts_new_window(self, sqs: FakeSQS) -> None:
+        customer_id = uuid.uuid4()
+        start = sqs.now
+        await sqs.enqueue(customer_id)
+        await sqs.advance_to(start + 1)
+        await sqs.enqueue(customer_id)
+        await sqs.advance_to(start + 2)
+
+        assert sqs.runs == [start + 1, start + 2]
+
+    async def test_lost_message_recovers_on_next_enqueue(self, sqs: FakeSQS) -> None:
+        customer_id = uuid.uuid4()
+        start = sqs.now
+        await sqs.enqueue(customer_id)
+        sqs.queue.clear()
+        await sqs.advance_to(start + 60)
+        await sqs.enqueue(customer_id)
+        await sqs.advance_to(start + 61)
+
+        assert sqs.runs == []
+
+        await sqs.advance_to(start + 400)
+        await sqs.enqueue(customer_id)
+        await sqs.advance_to(start + 401)
+
+        assert sqs.runs == [start + 401]

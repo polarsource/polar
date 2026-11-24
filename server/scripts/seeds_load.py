@@ -48,11 +48,7 @@ from polar.event_type.repository import EventTypeRepository
 from polar.integrations.tinybird.client import client as tinybird_client
 from polar.integrations.tinybird.service import DATASOURCE_EVENTS
 from polar.integrations.tinybird.service import ingest_events as tinybird_ingest_events
-from polar.kit.crypto import (
-    generate_token,
-    generate_token_hash_pair,
-    get_token_hash_candidates,
-)
+from polar.kit.crypto import generate_token, generate_token_hash_pair
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.db.postgres import create_async_sessionmaker  # lint-skip: dry-run
 from polar.kit.trial import TrialInterval
@@ -114,6 +110,9 @@ from polar.models.webhook_endpoint import (
 )
 from polar.organization.schemas import OrganizationCreate
 from polar.organization.service import organization as organization_service
+from polar.organization_access_token.repository import (
+    OrganizationAccessTokenRepository,
+)
 from polar.organization_review.appeal_case import appeal_case as appeal_case_service
 from polar.postgres import AsyncSession, create_async_engine
 from polar.product.schemas import (
@@ -3121,31 +3120,30 @@ def polar_self_env() -> None:
                 .all()
             )
             current_token = settings.POLAR_ACCESS_TOKEN
-            current_token_hashes = (
-                set(get_token_hash_candidates(current_token).values())
+            kept_oat = (
+                await OrganizationAccessTokenRepository.from_session(
+                    session
+                ).get_by_token(current_token)
                 if current_token
-                else set()
+                else None
             )
-            kept_oat: OrganizationAccessToken | None = None
+            if kept_oat is not None and (
+                kept_oat.organization_id != org.id or kept_oat.comment != TOKEN_COMMENT
+            ):
+                kept_oat = None
+
             for t in existing:
-                if (
-                    kept_oat is None
-                    and t.token in current_token_hashes
-                    and t.deleted_at is None
-                    and (t.expires_at is None or t.expires_at > utc_now())
-                ):
-                    t.scope = TOKEN_SCOPES
-                    kept_oat = t
-                else:
+                if kept_oat is None or t.id != kept_oat.id:
                     await session.delete(t)
 
             if kept_oat is not None:
+                kept_oat.scope = TOKEN_SCOPES
                 token = current_token
             else:
                 token, token_hash = generate_token_hash_pair(prefix="polar_oat_")
                 session.add(
                     OrganizationAccessToken(
-                        organization_id=org.id,
+                        organization=org,
                         token=token_hash,
                         scope=TOKEN_SCOPES,
                         comment=TOKEN_COMMENT,
@@ -3187,7 +3185,7 @@ def polar_self_env() -> None:
                 webhook_secret = generate_webhook_secret()
                 session.add(
                     WebhookEndpoint(
-                        organization_id=org.id,
+                        organization=org,
                         url=WEBHOOK_URL,
                         name=WEBHOOK_NAME,
                         format=WebhookFormat.raw,

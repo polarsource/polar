@@ -1,0 +1,21 @@
+server/tests/fixtures/redis.py
+  s_7eddc639c6d8c2::t_42688c04e26ee0 10
+server/polar/redis.py
+  s_7eddc639c6d8c2::t_cc4c46c5a336e5 107-108
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d38b16b6e0ab482225acf373380628ddd5d3f52a",
+  "prompts": {},
+  "sessions": {
+    "s_7eddc639c6d8c2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f2e4eaa7-7ee3-4559-b250-e0291ca1b824",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

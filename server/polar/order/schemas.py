@@ -401,6 +401,7 @@ class OrderUpdateBase(Schema):
     tax_id: Annotated[
         Omissible[str | None],
         EmptyStrToNoneValidator,
+        Version(starting_from=V2027_01),
     ] = Field(
         MISSING,
         description="Tax ID for the billing address on a subscription draft. Set to null to remove it.",

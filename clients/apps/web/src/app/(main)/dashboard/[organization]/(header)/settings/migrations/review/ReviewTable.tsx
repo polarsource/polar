@@ -65,6 +65,7 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
   const {
     counts,
     attentionCount,
+    paymentMethods,
     isLoading: countsLoading,
     isError: countsError,
   } = useRecordSummary(migrationId, pollMs)
@@ -165,6 +166,7 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
       onFilterChange={onFilterChange}
       counts={counts}
       attentionCount={attentionCount}
+      paymentMethods={paymentMethods}
       hasConnectedAccounts={migration?.source?.has_connected_accounts === true}
       rows={records.data?.items ?? []}
       page={page}

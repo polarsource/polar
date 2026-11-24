@@ -9,6 +9,9 @@ const PAYMENT_METHOD_COPY = {
   notCopiedTitle: "Payment method can't be copied",
   notCopied: (label: string) =>
     `${label} can't be copied to Polar. The subscription still moves, and renews with another card copied for this customer if there is one. Otherwise its first renewal on Polar fails and goes to dunning until the customer adds a card.`,
+  indiaCardTitle: 'Likely an India-issued card',
+  indiaCard:
+    "This looks like an India-issued card. India requires a mandate for recurring charges, and it doesn't move with the card. The subscription still moves, but its first renewal on Polar is likely to fail and go to dunning until the customer adds another payment method.",
   none: `This customer has no saved payment method at your current provider. ${NO_CARD_CONSEQUENCE}`,
 }
 
@@ -17,6 +20,7 @@ const PAYMENT_METHOD_COPY = {
 const PAYMENT_REASON_CODES = new Set([
   'payment_method_missing',
   'payment_method_requires_reentry',
+  'payment_method_india_card',
 ])
 
 export function isPaymentMethodReason(code: string | null): boolean {
@@ -49,6 +53,16 @@ export function rowPaymentMethod(row: ReviewRow): RowPaymentMethod | null {
   const type = row.payment_method_type
   // An API that predates the field omits it; that isn't "no payment method".
   if (type === undefined) return null
+  if (row.payment_method_assessment === 'india_card') {
+    return {
+      label: 'India card',
+      kind: 'no_card',
+      note: {
+        title: PAYMENT_METHOD_COPY.indiaCardTitle,
+        body: PAYMENT_METHOD_COPY.indiaCard,
+      },
+    }
+  }
   if (type === 'card') {
     return { label: getPaymentMethodTypeLabel(type), kind: 'card', note: null }
   }

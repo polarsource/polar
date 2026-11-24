@@ -47,6 +47,7 @@ class CanonicalPaymentMethodType(StrEnum):
     sepa_debit = "sepa_debit"
     bacs_debit = "bacs_debit"
     link = "link"
+    paypal = "paypal"
     other = "other"
 
     @property
@@ -57,6 +58,7 @@ class CanonicalPaymentMethodType(StrEnum):
             CanonicalPaymentMethodType.sepa_debit,
             CanonicalPaymentMethodType.bacs_debit,
             CanonicalPaymentMethodType.link,
+            CanonicalPaymentMethodType.paypal,
             CanonicalPaymentMethodType.other,
         }
 
@@ -74,6 +76,35 @@ class CanonicalPaymentMethod:
     billing_country: str | None = None
     # Card issuer country (`card.country`). Weaker than billing_country; hint only.
     card_country: str | None = None
+
+
+class PaymentMethodAssessment(StrEnum):
+    """What the source says about charging a subscription's method on Polar,
+    before any card has been copied."""
+
+    copyable = "copyable"
+    # India requires an issuer mandate for recurring charges, and it stays
+    # with the source account: the card copies but its renewals decline.
+    india_card = "india_card"
+    paypal = "paypal"
+    not_copyable = "not_copyable"
+    missing = "missing"
+
+
+def assess_payment_method(
+    payment_method: CanonicalPaymentMethod | None,
+) -> PaymentMethodAssessment:
+    if payment_method is None:
+        return PaymentMethodAssessment.missing
+    if payment_method.type == CanonicalPaymentMethodType.paypal:
+        return PaymentMethodAssessment.paypal
+    if payment_method.type.requires_reentry:
+        return PaymentMethodAssessment.not_copyable
+    # The issuer country decides; sources that don't expose it leave the
+    # cardholder's country as the closest signal.
+    if (payment_method.card_country or payment_method.billing_country) == "IN":
+        return PaymentMethodAssessment.india_card
+    return PaymentMethodAssessment.copyable
 
 
 @dataclass

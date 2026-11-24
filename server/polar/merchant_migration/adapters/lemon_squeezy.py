@@ -424,16 +424,23 @@ class LemonSqueezyAdapter:
     async def _extract_subscriptions(
         self, cursor: LemonSqueezyExtractionCursor
     ) -> tuple[list[CanonicalRecord], bool]:
-        subscriptions, has_more, _ = await self._list(
-            "/subscriptions", cursor.page, self._store_filter
+        subscriptions, has_more, included = await self._list(
+            "/subscriptions",
+            cursor.page,
+            {**self._store_filter, "include": "customer"},
         )
+        customer_countries = _customer_countries(included)
         await self._load_all_prices()
         discounts_by_order = await self._load_redemptions()
         tax_behaviors = await self._load_order_tax_behaviors()
         currency = await self._currency()
         records: list[CanonicalRecord] = [
             self._map_subscription(
-                subscription, discounts_by_order, tax_behaviors, currency
+                subscription,
+                discounts_by_order,
+                tax_behaviors,
+                currency,
+                customer_countries,
             )
             for subscription in subscriptions
             if subscription["attributes"]["status"] not in SKIPPED_SUBSCRIPTION_STATUSES
@@ -487,18 +494,19 @@ class LemonSqueezyAdapter:
         return by_order
 
     async def get_subscription(self, source_id: str) -> CanonicalSubscription | None:
-        subscription = await self._retrieve_subscription(source_id)
+        body = await self._retrieve_subscription(source_id)
         if (
-            subscription is None
-            or subscription["attributes"]["status"] in SKIPPED_SUBSCRIPTION_STATUSES
+            body is None
+            or body["data"]["attributes"]["status"] in SKIPPED_SUBSCRIPTION_STATUSES
         ):
             return None
         await self._load_all_prices()
         return self._map_subscription(
-            subscription,
+            body["data"],
             await self._load_redemptions(),
             await self._load_order_tax_behaviors(),
             await self._currency(),
+            _customer_countries(body.get("included", [])),
         )
 
     async def stop_source_subscription(
@@ -514,8 +522,8 @@ class LemonSqueezyAdapter:
         Lemon Squeezy has nowhere to record ``reference``: a cancelled
         subscription reads the same whether we or the customer stopped it.
         """
-        subscription = await self._retrieve_subscription(source_id)
-        if subscription is None or subscription["attributes"]["status"] in (
+        body = await self._retrieve_subscription(source_id)
+        if body is None or body["data"]["attributes"]["status"] in (
             "cancelled",
             "expired",
         ):
@@ -526,11 +534,13 @@ class LemonSqueezyAdapter:
         response.raise_for_status()
 
     async def _retrieve_subscription(self, source_id: str) -> dict[str, Any] | None:
-        response = await self._request("GET", f"/subscriptions/{source_id}")
+        response = await self._request(
+            "GET", f"/subscriptions/{source_id}", {"include": "customer"}
+        )
         if response.status_code == 404:
             return None
         response.raise_for_status()
-        return response.json()["data"]
+        return response.json()
 
     def _map_subscription(
         self,
@@ -538,6 +548,7 @@ class LemonSqueezyAdapter:
         discounts_by_order: dict[str, list[dict[str, Any]]],
         tax_behaviors: dict[str, TaxBehavior],
         currency: str,
+        customer_countries: dict[str, str],
     ) -> CanonicalSubscription:
         attributes = subscription["attributes"]
         status = attributes["status"]
@@ -577,7 +588,9 @@ class LemonSqueezyAdapter:
             paused_collection=attributes.get("pause") is not None,
             line_item_count=1,
             quantity=int(item.get("quantity") or 1),
-            payment_method=self._map_payment_method(subscription),
+            payment_method=self._map_payment_method(
+                subscription, customer_countries.get(str(attributes["customer_id"]))
+            ),
             has_discount=bool(discount_ids),
             discount_source_ids=discount_ids,
             discount_started_at=discount_started_at,
@@ -642,7 +655,7 @@ class LemonSqueezyAdapter:
                 return CanonicalSubscriptionStatus.other
 
     def _map_payment_method(
-        self, subscription: dict[str, Any]
+        self, subscription: dict[str, Any], customer_country: str | None
     ) -> CanonicalPaymentMethod | None:
         attributes = subscription["attributes"]
         processor = attributes.get("payment_processor")
@@ -652,12 +665,26 @@ class LemonSqueezyAdapter:
             return None
         # No payment method id: the subscription is the only handle on its
         # card, and the PAN export has to key cards the same way.
-        is_card = processor == "stripe" and brand is not None
+        if processor == "paypal":
+            type = CanonicalPaymentMethodType.paypal
+        elif processor == "stripe" and brand is not None:
+            type = CanonicalPaymentMethodType.card
+        else:
+            type = CanonicalPaymentMethodType.other
         return CanonicalPaymentMethod(
             source_id=f"lsq_sub_{subscription['id']}",
-            type=CanonicalPaymentMethodType.card
-            if is_card
-            else CanonicalPaymentMethodType.other,
+            type=type,
             last4=attributes.get("card_last_four") or None,
             brand=brand,
+            # No issuer country in the API: the customer's is what's left to
+            # tell an India-issued card by.
+            billing_country=customer_country,
         )
+
+
+def _customer_countries(included: list[dict[str, Any]]) -> dict[str, str]:
+    return {
+        item["id"]: item["attributes"]["country"]
+        for item in included
+        if item["type"] == "customers" and item["attributes"].get("country")
+    }

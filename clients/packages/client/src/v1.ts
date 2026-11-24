@@ -28740,7 +28740,7 @@ export interface components {
       payment_method_type:
         | components['schemas']['CanonicalPaymentMethodType']
         | null
-      /** @description Whether the source's payment method can be charged on Polar once copied, as far as the source can tell before the copy. Null for non-subscription rows. */
+      /** @description Whether the source's payment method can be charged on Polar once copied, as far as the source can tell before the copy. None for non-subscription rows. */
       payment_method_assessment:
         | components['schemas']['PaymentMethodAssessment']
         | null

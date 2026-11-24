@@ -1,5 +1,5 @@
 import { schemas } from '@polar-sh/client'
-import { plural } from './importSummary'
+import { joinList, plural } from './importSummary'
 
 export type PaymentMethodCount = schemas['MerchantMigrationPaymentMethodCount']
 
@@ -13,14 +13,12 @@ const NEEDS_NEW_METHOD: Partial<Record<Assessment, (count: number) => string>> =
     missing: (count) => `${count} with no payment method`,
   }
 
-// Null when every moving subscription has a card that copies: there is
-// nothing for the merchant to chase.
 export function paymentMethodSummaryText(
   counts: PaymentMethodCount[],
 ): string | null {
   const parts = counts.flatMap(({ assessment, count }) => {
     const describe = NEEDS_NEW_METHOD[assessment]
-    return describe && count > 0 ? [describe(count)] : []
+    return describe ? [describe(count)] : []
   })
   if (parts.length === 0) return null
   const affected = counts.reduce(
@@ -28,9 +26,5 @@ export function paymentMethodSummaryText(
       NEEDS_NEW_METHOD[assessment] ? sum + count : sum,
     0,
   )
-  const breakdown =
-    parts.length === 1
-      ? parts[0]
-      : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`
-  return `${plural(affected, 'subscription')} will need a new payment method on Polar: ${breakdown}. They still move, but their first renewal fails and goes to dunning until the customer adds a card.`
+  return `${plural(affected, 'subscription')} will need a new payment method on Polar: ${joinList(parts)}. They still move, but their first renewal fails and goes to dunning until the customer adds a card.`
 }

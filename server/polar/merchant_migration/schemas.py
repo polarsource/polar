@@ -286,7 +286,7 @@ class MerchantMigrationRecordItem(Schema):
     payment_method_assessment: PaymentMethodAssessment | None = Field(
         description=(
             "Whether the source's payment method can be charged on Polar once "
-            "copied, as far as the source can tell before the copy. Null for "
+            "copied, as far as the source can tell before the copy. None for "
             "non-subscription rows."
         ),
     )

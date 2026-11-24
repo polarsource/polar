@@ -2230,9 +2230,6 @@ class TestImportCatalog:
         )
         assert subscriptions.selectable == 0
         assert subscriptions.ready == 1
-        assert [
-            (entry.assessment, entry.count) for entry in summary.payment_methods
-        ] == [(PaymentMethodAssessment.missing, 1)]
 
         report = await _import_catalog(session, auth_subject, later.id, record_ids=[])
 
@@ -3838,6 +3835,65 @@ class TestSummarizeRecords:
         subscriptions = by_entity[PrecheckEntity.subscriptions]
         assert subscriptions.ready == 0
         assert subscriptions.selectable == 1
+
+    @pytest.mark.auth
+    async def test_summary_counts_moving_subscriptions_per_payment_method(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        def subscription(
+            source_id: str,
+            payment_method: CanonicalPaymentMethod | None,
+            price_source_id: str = "price_1",
+        ) -> CanonicalSubscription:
+            return _canonical_subscription(
+                source_id=source_id,
+                payment_method=payment_method,
+                customer_source_id="cus_1",
+                price_source_id=price_source_id,
+            )
+
+        def card(source_id: str, country: str) -> CanonicalPaymentMethod:
+            return CanonicalPaymentMethod(
+                source_id=source_id,
+                type=CanonicalPaymentMethodType.card,
+                card_country=country,
+            )
+
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=[
+                *_importable_catalog(),
+                subscription("sub_card", card("pm_us", "US")),
+                subscription("sub_india", card("pm_in", "IN")),
+                subscription(
+                    "sub_paypal",
+                    CanonicalPaymentMethod(
+                        source_id="pm_paypal", type=CanonicalPaymentMethodType.paypal
+                    ),
+                ),
+                subscription("sub_none", None),
+                subscription("sub_skipped", card("pm_skipped", "IN"), "price_missing"),
+            ],
+        )
+
+        summary = await service.summarize_records(session, auth_subject, migration.id)
+
+        assert {entry.assessment: entry.count for entry in summary.payment_methods} == {
+            PaymentMethodAssessment.copyable: 1,
+            PaymentMethodAssessment.india_card: 1,
+            PaymentMethodAssessment.paypal: 1,
+            PaymentMethodAssessment.missing: 1,
+        }
 
 
 def _canonical_subscription(

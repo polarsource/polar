@@ -71,9 +71,7 @@ export function rowPaymentMethod(row: ReviewRow): RowPaymentMethod | null {
       ? 'No method'
       : type === 'other'
         ? 'Other method'
-        : type === 'paypal'
-          ? 'PayPal'
-          : getPaymentMethodTypeLabel(type)
+        : getPaymentMethodTypeLabel(type)
   return {
     label,
     kind: 'no_card',

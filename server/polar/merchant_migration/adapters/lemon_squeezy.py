@@ -540,8 +540,7 @@ class LemonSqueezyAdapter:
         if response.status_code == 404:
             return None
         response.raise_for_status()
-        body: dict[str, Any] = response.json()
-        return body
+        return response.json()
 
     def _map_subscription(
         self,

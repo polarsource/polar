@@ -7,6 +7,7 @@ from polar.exceptions import ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter
+from polar.kit.versioning import version
 from polar.models import Order
 from polar.openapi import APITag
 from polar.order.schemas import OrderID
@@ -18,11 +19,13 @@ from polar.order.service import (
 from polar.payment.repository import PaymentRepository
 from polar.postgres import get_db_session
 from polar.routing import APIRouter
+from polar.version import V2027_01
 
 from .. import auth
 from ..schemas.order import (
     CustomerOrder,
     CustomerOrderConfirmPayment,
+    CustomerOrderCreate,
     CustomerOrderInvoice,
     CustomerOrderPaymentConfirmation,
     CustomerOrderPaymentStatus,
@@ -97,6 +100,24 @@ async def list(
         [CustomerOrder.model_validate(result) for result in results],
         count,
         pagination,
+    )
+
+
+@router.post(
+    "/",
+    status_code=201,
+    summary="Create Order",
+    response_model=CustomerOrder,
+)
+@version(starting_from=V2027_01)
+async def create(
+    order_create: CustomerOrderCreate,
+    auth_subject: auth.CustomerPortalUnionBillingWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Order:
+    """Prepare a draft order for the first paid period of an ended trial."""
+    return await customer_order_service.create(
+        session, auth_subject, order_create.subscription_id
     )
 
 

@@ -513,12 +513,15 @@ class SubscriptionRepository(
         id: UUID,
         *,
         options: Options = (),
+        for_update: bool = False,
     ) -> Subscription | None:
         statement = (
             self.get_readable_statement(auth_subject)
             .where(Subscription.id == id)
             .options(*options)
         )
+        if for_update:
+            statement = statement.with_for_update(of=Subscription)
         return await self.get_one_or_none(statement)
 
     async def get_readable_by_checkout_id(

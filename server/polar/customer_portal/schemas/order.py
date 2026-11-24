@@ -75,6 +75,12 @@ class CustomerOrderReceipt(Schema):
     url: str = Field(..., description="The URL to the receipt PDF.")
 
 
+class CustomerOrderCreate(Schema):
+    subscription_id: SubscriptionID = Field(
+        description="ID of the subscription whose trial ended."
+    )
+
+
 class CustomerOrderUpdate(OrderUpdateBase):
     """Schema to update an order."""
 

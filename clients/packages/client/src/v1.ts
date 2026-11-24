@@ -979,7 +979,11 @@ export interface paths {
      */
     get: operations['customer_portal:orders:list']
     put?: never
-    post?: never
+    /**
+     * Create Order
+     * @description Prepare a draft order for the first paid period of an ended trial.
+     */
+    post: operations['customer_portal:orders:create']
     delete?: never
     options?: never
     head?: never
@@ -21569,6 +21573,15 @@ export interface components {
        * @default stripe
        */
       payment_processor: components['schemas']['PaymentProcessor']
+    }
+    /** CustomerOrderCreate */
+    CustomerOrderCreate: {
+      /**
+       * Subscription Id
+       * Format: uuid4
+       * @description ID of the subscription whose trial ended.
+       */
+      subscription_id: string
     }
     /**
      * CustomerOrderInvoice
@@ -49718,6 +49731,39 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ListResource_CustomerOrder_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_portal:orders:create': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CustomerOrderCreate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerOrder']
         }
       }
       /** @description Validation Error */

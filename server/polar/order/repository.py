@@ -93,6 +93,17 @@ class OrderRepository(
 ):
     model = Order
 
+    async def has_draft_for_subscription(self, subscription_id: UUID) -> bool:
+        statement = select(
+            self.get_base_statement()
+            .where(
+                Order.subscription_id == subscription_id,
+                Order.status == OrderStatus.draft,
+            )
+            .exists()
+        )
+        return bool(await self.session.scalar(statement))
+
     async def get_revenue_by_customer(
         self,
         organization_id: UUID,

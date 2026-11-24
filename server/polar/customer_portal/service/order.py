@@ -9,16 +9,19 @@ from sqlalchemy.sql.elements import OrderByList
 
 from polar.auth.models import AuthSubject, Customer, Member
 from polar.enums import PaymentProcessor
-from polar.exceptions import PolarError
+from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.invoice.service import invoice as invoice_service
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.models import Order, Product
 from polar.models.product import ProductBillingType
+from polar.models.subscription import SubscriptionStatus
+from polar.order.repository import OrderRepository
 from polar.order.service import InvoiceDoesNotExist, PaymentError, ReceiptNotAllocated
 from polar.order.service import order as order_service
 from polar.receipt.service import receipt as receipt_service
+from polar.subscription.repository import SubscriptionRepository
 
 from ..repository.order import CustomerOrderRepository
 from ..schemas.order import (
@@ -138,6 +141,43 @@ class CustomerOrderService:
         if for_update:
             statement = statement.with_for_update(of=Order)
         return await repository.get_one_or_none(statement)
+
+    async def create(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Customer | Member],
+        subscription_id: uuid.UUID,
+    ) -> Order:
+        repository = SubscriptionRepository.from_session(session)
+        subscription = await repository.get_readable_by_id(
+            auth_subject,
+            subscription_id,
+            options=repository.get_eager_options(),
+            for_update=True,
+        )
+        if subscription is None:
+            message = "Subscription not found."
+        elif subscription.status != SubscriptionStatus.trial_ended:
+            message = "This subscription's trial has not ended without converting."
+        elif await OrderRepository.from_session(session).has_draft_for_subscription(
+            subscription.id
+        ):
+            message = "A draft order already exists for this subscription."
+        else:
+            return await order_service.create_subscription_reactivation_order(
+                session, subscription
+            )
+
+        raise PolarRequestValidationError(
+            [
+                ValidationError(
+                    type="value_error",
+                    loc=("body", "subscription_id"),
+                    msg=message,
+                    input=subscription_id,
+                )
+            ]
+        )
 
     async def update(
         self, session: AsyncSession, order: Order, order_update: CustomerOrderUpdate

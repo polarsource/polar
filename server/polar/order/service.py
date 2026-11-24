@@ -678,6 +678,74 @@ class OrderService:
 
         return order
 
+    async def create_subscription_reactivation_order(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> Order:
+        repository = OrderRepository.from_session(session)
+        customer = subscription.customer
+        discount = subscription.discount
+        now = utc_now()
+        if discount is not None and discount.is_repetition_expired(
+            subscription.discount_applied_at or now, now
+        ):
+            discount = None
+
+        items = [
+            OrderItem(
+                label=OrderItem.format_price_label(
+                    subscription.product,
+                    price.product_price,
+                    seats=subscription.seats,
+                    units=subscription.units,
+                ),
+                amount=price.amount,
+                net_amount=price.amount,
+                tax_amount=0,
+                product_price=price.product_price,
+            )
+            for price in subscription.subscription_product_prices
+            if is_static_price(price.product_price)
+        ]
+        order = Order(
+            id=uuid.uuid4(),
+            status=OrderStatus.draft,
+            billing_reason=OrderBillingReasonInternal.subscription_cycle_after_trial,
+            currency=subscription.currency,
+            billing_name=customer.billing_name,
+            billing_address=customer.billing_address,
+            tax_id=customer.tax_id,
+            organization=subscription.organization,
+            customer=customer,
+            product=subscription.product,
+            discount=discount,
+            subscription=subscription,
+            checkout=None,
+            items=items,
+            seats=subscription.seats,
+            units=subscription.units,
+            user_metadata=subscription.user_metadata,
+            custom_field_data=subscription.custom_field_data,
+        )
+        amounts = await compute_order_amounts(
+            order.items,
+            reference=str(order.id),
+            currency=order.currency,
+            discount=order.discount,
+            product=subscription.product,
+            billing_address=order.billing_address,
+            tax_id=order.tax_id,
+            tax_behavior_option=(
+                subscription.tax_behavior.to_option()
+                if subscription.tax_behavior is not None
+                else order.organization.default_tax_behavior
+            ),
+            tax_exempted=subscription.tax_exempted,
+        )
+        order.update_amounts(amounts)
+        order = await repository.create(order, flush=True)
+        await self._on_order_created(session, order)
+        return order
+
     async def set_refunds_blocked(
         self,
         session: AsyncSession,

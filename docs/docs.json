@@ -44,6 +44,29 @@
             "group": "Get Started",
             "pages": [
               "introduction",
+              {
+                "group": "Concepts",
+                "pages": [
+                  "concepts/overview",
+                  "concepts/products",
+                  "concepts/benefits",
+                  "concepts/customers",
+                  "concepts/checkout",
+                  "concepts/orders-and-subscriptions",
+                  "concepts/usage",
+                  "concepts/money-flow"
+                ]
+              },
+              {
+                "group": "Quickstart",
+                "pages": [
+                  "quickstart/overview",
+                  "quickstart/track-usage",
+                  "quickstart/catalog",
+                  "quickstart/checkout",
+                  "quickstart/webhooks"
+                ]
+              },
               "merchant-of-record/introduction",
               "merchant-of-record/fees",
               {
@@ -132,7 +155,7 @@
                 ]
               },
               {
-                "group": "Entitlements",
+                "group": "Benefits",
                 "pages": [
                   "features/benefits/introduction",
                   "features/benefits/credits",

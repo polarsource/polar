@@ -1,0 +1,136 @@
+---
+title: "2. Set up your catalog"
+description: "Create a plan with a base fee, metered usage and included credits."
+---
+
+<Info>
+  **Why now?** With usage flowing, you can price against real numbers. A product holds both what customers pay (prices) and what they get (benefits). See [Products & prices](/concepts/products).
+</Info>
+
+In this step you'll create a **Pro** plan: $20 a month, including 100,000 tokens, with usage beyond that billed per token.
+
+## Create the credits benefit
+
+A [Credits benefit](/features/benefits/credits) adds units to a customer's meter balance at the start of every billing cycle. Usage draws the balance down before anything is billed.
+
+<CodeGroup>
+```typescript TypeScript
+const credits = await polar.benefits.create({
+  type: "meter_credit",
+  description: "100,000 AI tokens per month",
+  properties: {
+    meter_id: meter.id,
+    units: 100_000,
+    rollover: false,
+  },
+});
+```
+
+```python Python
+credits = polar.benefits.create(
+    type="meter_credit",
+    description="100,000 AI tokens per month",
+    properties={
+        "meter_id": meter.id,
+        "units": 100_000,
+        "rollover": False,
+    },
+)
+```
+
+```bash cURL
+curl -X POST https://sandbox-api.polar.sh/v1/benefits/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "meter_credit",
+    "description": "100,000 AI tokens per month",
+    "properties": {
+      "meter_id": "'"$METER_ID"'",
+      "units": 100000,
+      "rollover": false
+    }
+  }'
+```
+</CodeGroup>
+
+## Create the product
+
+Create a monthly product with two prices: a fixed base fee and a metered price on the **AI tokens** meter, then attach the credits benefit. Amounts are in cents. With cURL, export the benefit's `id` as `BENEFIT_ID` and the product's `id` as `PRODUCT_ID` before the request that uses them.
+
+<CodeGroup>
+```typescript TypeScript
+const product = await polar.products.create({
+  name: "Pro",
+  recurring_interval: "month",
+  prices: [
+    { amount_type: "fixed", price_amount: 2000 },
+    { amount_type: "metered_unit", meter_id: meter.id, unit_amount: "0.002" },
+  ],
+});
+
+await polar.products.updateBenefits(product.id, {
+  benefits: [credits.id],
+});
+```
+
+```python Python
+product = polar.products.create(
+    name="Pro",
+    recurring_interval="month",
+    prices=[
+        {"amount_type": "fixed", "price_amount": 2000},
+        {"amount_type": "metered_unit", "meter_id": meter.id, "unit_amount": "0.002"},
+    ],
+)
+
+polar.products.update_benefits(product.id, benefits=[credits.id])
+```
+
+```bash cURL
+curl -X POST https://sandbox-api.polar.sh/v1/products/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Pro",
+    "recurring_interval": "month",
+    "prices": [
+      { "amount_type": "fixed", "price_amount": 2000 },
+      { "amount_type": "metered_unit", "meter_id": "'"$METER_ID"'", "unit_amount": "0.002" }
+    ]
+  }'
+
+curl -X POST "https://sandbox-api.polar.sh/v1/products/$PRODUCT_ID/benefits" \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{ "benefits": ["'"$BENEFIT_ID"'"] }'
+```
+</CodeGroup>
+
+Customers now pay $20 a month. The first 100,000 tokens each month are covered by credits, and every token after that costs $0.00002.
+
+<Tip>
+  To protect customers from surprise bills, set a `cap_amount` on the metered price. To never bill for usage at all, leave out the metered price and sell credits only. See [Usage-based pricing](/features/usage-based-billing/billing).
+</Tip>
+
+You can build the same plan in the dashboard under **Products → New Product**, or with `polar products create` in the [CLI](/integrate/cli/reference/products).
+
+## Check it worked
+
+Open **Products** in your sandbox dashboard. **Pro** is listed with a $20 monthly price, a metered price on **AI tokens**, and the credits benefit.
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Products](/features/products) | Billing cycles, currencies, trials and archiving |
+| [Usage-based pricing](/features/usage-based-billing/billing) | Unit, volume and graduated rates, caps and meter cycles |
+| [Credits](/features/usage-based-billing/credits) | Credits-only spending and manual grants |
+| [Benefits](/concepts/benefits) | License keys, feature flags, file downloads and more |
+
+<Card title="Next: Integrate checkout & customers" icon="arrow-right" href="/quickstart/checkout" horizontal>
+  Link customers to your users and let them buy Pro.
+</Card>

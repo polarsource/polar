@@ -1,0 +1,104 @@
+---
+title: "Quickstart"
+sidebarTitle: "Overview"
+description: "Track usage, sell a usage-based plan, and keep your application in sync with Polar."
+---
+
+In this quickstart you'll build a complete usage-based billing integration. You'll follow the same path as data through Polar: usage first, then pricing, then customers buying and your application reacting.
+
+## What you'll build
+
+- Usage events flowing from your application into a meter
+- A subscription product with a base fee, metered usage and included credits
+- A checkout that links each purchase to the user in your application
+- A webhook handler that keeps your application in sync with each customer's access
+
+## Prerequisites
+
+- **A sandbox organization.** Sign up at [sandbox.polar.sh](https://sandbox.polar.sh/start). The [sandbox](/integrate/sandbox) is fully isolated from production, so nothing here moves real money.
+- **An organization access token** from the sandbox, created under **Settings → Access Tokens**. See [Organization access tokens](/integrate/oat).
+- **The [TypeScript SDK](/integrate/sdk/typescript), the [Python SDK](/integrate/sdk/python) or any HTTP client.** Every example has a tab for each.
+
+<CodeGroup>
+```bash TypeScript
+npm install @polar-sh/sdk
+```
+
+```bash Python
+pip install polar-sdk
+```
+
+```bash cURL
+export POLAR_ACCESS_TOKEN="polar_oat_..."
+```
+</CodeGroup>
+
+Every example uses this client:
+
+<CodeGroup>
+```typescript TypeScript
+import { createPolar } from "@polar-sh/sdk/2026-10";
+
+export const polar = createPolar({
+  accessToken: process.env.POLAR_ACCESS_TOKEN!,
+  environment: "sandbox",
+});
+```
+
+```python Python
+import os
+
+from polar.v2026_10 import Polar
+
+polar = Polar(
+    os.environ["POLAR_ACCESS_TOKEN"],
+    environment="sandbox",
+)
+```
+
+```bash cURL
+# Every request goes to the sandbox API, pinned to API version 2026-10
+curl https://sandbox-api.polar.sh/v1/... \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10"
+```
+</CodeGroup>
+
+<Tip>
+  Prefer to let your agent do it? Run `polar agent setup` to connect Claude Code, Codex or Cursor to Polar, then ask it to follow this quickstart. See [MCP](/integrate/mcp).
+</Tip>
+
+## The path
+
+<Steps>
+  <Step title="Track usage">
+    Send events from your application and aggregate them with a meter. Start here, even before you've decided on pricing.
+    [Track usage →](/quickstart/track-usage)
+  </Step>
+  <Step title="Set up your catalog">
+    Create a product that bills a base fee and metered usage, and includes credits.
+    [Set up your catalog →](/quickstart/catalog)
+  </Step>
+  <Step title="Integrate checkout & customers">
+    Link Polar customers to your users and send them to checkout.
+    [Integrate checkout →](/quickstart/checkout)
+  </Step>
+  <Step title="Sync customer state">
+    Listen to webhooks and read the customer state to grant access in your application.
+    [Sync customer state →](/quickstart/webhooks)
+  </Step>
+</Steps>
+
+## Why usage comes first
+
+Events are raw facts about what customers do in your product. Polar stores every event and computes usage from them when you ask, so:
+
+- You can start sending events **before** you've settled on pricing, and decide what to charge for later.
+- Events sent with your own user ID are linked to the customer as soon as a customer with that external ID exists, even if the events came first.
+- New meters work on events you've already sent, so you see real usage the moment you create them.
+
+The sooner events flow, the more real data you have when you set your prices.
+
+<Card title="Start with usage" icon="arrow-right" href="/quickstart/track-usage" horizontal>
+  Send your first event and create a meter.
+</Card>

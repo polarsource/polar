@@ -1,0 +1,137 @@
+---
+title: "1. Track usage"
+description: "Send usage events from your application and aggregate them with a meter."
+---
+
+<Info>
+  **Why start here?** Events are the raw record of what customers do. Send them early and you'll have real usage data by the time you decide what to charge for. See [Usage](/concepts/usage).
+</Info>
+
+In this step you'll send events for an AI feature and create a meter that sums the tokens each customer uses.
+
+## Send your first event
+
+Send an event whenever a customer does something you might want to bill for or limit. Identify the customer with your own user ID as `external_customer_id`:
+
+<CodeGroup>
+```typescript TypeScript
+import { polar } from "./polar";
+
+await polar.events.ingest({
+  events: [
+    {
+      name: "ai_usage",
+      external_customer_id: "user_123",
+      metadata: {
+        model: "gpt-4.1-nano",
+        total_tokens: 77,
+      },
+    },
+  ],
+});
+```
+
+```python Python
+polar.events.ingest(
+    events=[
+        {
+            "name": "ai_usage",
+            "external_customer_id": "user_123",
+            "metadata": {
+                "model": "gpt-4.1-nano",
+                "total_tokens": 77,
+            },
+        }
+    ]
+)
+```
+
+```bash cURL
+curl -X POST https://sandbox-api.polar.sh/v1/events/ingest \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "events": [
+      {
+        "name": "ai_usage",
+        "external_customer_id": "user_123",
+        "metadata": { "model": "gpt-4.1-nano", "total_tokens": 77 }
+      }
+    ]
+  }'
+```
+</CodeGroup>
+
+You don't need to create the customer first. Polar accepts the event now, and links it to the customer once one exists with `external_id` set to `user_123`. You'll do that in [step 3](/quickstart/checkout).
+
+<Tip>
+  Send raw facts, like the tokens used by one request, not running totals. Polar does the aggregation, so the same events can feed several meters later.
+</Tip>
+
+For LLM calls, streams and S3 uploads, an [ingestion strategy](/features/usage-based-billing/ingestion-strategies/ingestion-strategy) can send these events for you.
+
+## Create a meter
+
+A meter selects events with a filter and aggregates them into usage. Create one that sums `total_tokens` across `ai_usage` events:
+
+<CodeGroup>
+```typescript TypeScript
+const meter = await polar.meters.create({
+  name: "AI tokens",
+  filter: {
+    conjunction: "and",
+    clauses: [{ property: "name", operator: "eq", value: "ai_usage" }],
+  },
+  aggregation: { func: "sum", property: "total_tokens" },
+});
+```
+
+```python Python
+meter = polar.meters.create(
+    name="AI tokens",
+    filter={
+        "conjunction": "and",
+        "clauses": [{"property": "name", "operator": "eq", "value": "ai_usage"}],
+    },
+    aggregation={"func": "sum", "property": "total_tokens"},
+)
+```
+
+```bash cURL
+curl -X POST https://sandbox-api.polar.sh/v1/meters/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "AI tokens",
+    "filter": {
+      "conjunction": "and",
+      "clauses": [{ "property": "name", "operator": "eq", "value": "ai_usage" }]
+    },
+    "aggregation": { "func": "sum", "property": "total_tokens" }
+  }'
+```
+</CodeGroup>
+
+Metadata keys are used directly as properties, without a `metadata.` prefix.
+
+You can also create it under **Products → Meters** in the dashboard, where you can preview the matching events as you build the filter. Polar backfills a new meter from events you've already sent, so your first event counts.
+
+Keep the meter's `id`. You'll use it in the next step. With cURL, save it with `export METER_ID=...`.
+
+## Check it worked
+
+Open **Products → Meters** in your sandbox dashboard and select **AI tokens**. You'll see the usage from the event you sent.
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Event ingestion](/features/usage-based-billing/event-ingestion) | Batching, backdated events and immutability |
+| [Meters](/features/usage-based-billing/meters) | Filters, aggregations and units |
+| [Cost insights](/features/cost-insights/introduction) | Track what each customer costs you on the same events |
+
+<Card title="Next: Set up your catalog" icon="arrow-right" href="/quickstart/catalog" horizontal>
+  Turn this meter into a price, and include credits in a plan.
+</Card>

@@ -1,0 +1,65 @@
+---
+title: "Orders & subscriptions"
+description: "Every charge is an order. A subscription is the recurring relationship behind it."
+---
+
+An **order** is the record of a single charge: the amount, the tax, the invoice, and the product and customer it belongs to.
+
+A **subscription** is the ongoing relationship created when a customer buys a recurring product. It renews on every billing cycle, and each renewal creates a new order.
+
+```mermaid
+flowchart LR
+  CS[Checkout] --> S[Subscription]
+  S -->|subscription_create| O1[Order]
+  S -->|subscription_cycle| O2[Order]
+  S -->|subscription_cycle| O3[Order]
+  CS2[Checkout] -->|purchase| O4[Order]
+```
+
+## Orders
+
+Polar creates an order whenever it charges a customer. The order's `billing_reason` tells you why:
+
+| `billing_reason` | When |
+| --- | --- |
+| `purchase` | A one-time product is bought |
+| `subscription_create` | A subscription starts |
+| `subscription_cycle` | A subscription renews |
+| `subscription_update` | A plan or seat change is charged right away |
+| `subscription_meter_cycle` | Usage is billed at the end of a meter period |
+
+An order is `pending` while Polar collects the payment, then `paid`. A paid order can later be `refunded` or `partially_refunded`. Every paid order has a receipt, and you or the customer can generate an invoice for it.
+
+You can also charge an existing customer outside of checkout by creating a draft order and finalizing it. See [Arbitrary charges](/features/orders#arbitrary-charges).
+
+## Subscriptions
+
+A subscription follows the billing interval of its product. At the end of each period, Polar starts a new one, creates an order, and charges the customer's saved payment method. By default, metered usage from the period that just ended is billed on the same order.
+
+| Status | Meaning | Benefits |
+| --- | --- | --- |
+| `trialing` | In a free [trial](/features/subscriptions/trials) | Granted |
+| `active` | Paid and renewing | Granted |
+| `past_due` | A renewal payment failed and Polar is [retrying it](/features/subscriptions/failed-payments) | Revoked, unless you set a grace period |
+| `paused` | [Paused](/features/subscriptions/manage#pause-and-resume), no orders are created | Revoked |
+| `trial_ended` | The trial ended without a payment method on file | Revoked |
+| `canceled` | Ended, including after payment retries run out | Revoked |
+| `incomplete` | Being created, the first payment isn't confirmed yet | Not granted |
+
+Treat the less common `incomplete_expired` and `unpaid` statuses as ended subscriptions.
+
+A subscription that's canceled **at period end** stays `active` until `current_period_end`, and can be uncanceled until then. A **revoked** subscription ends immediately.
+
+## Changing a subscription
+
+You and your customers can switch a subscription to another product, change its seats or units, apply a discount or move its billing date. Charges for a change mid-period are [prorated](/features/subscriptions/proration): either added to the next order or invoiced right away.
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Orders](/features/orders) | Order statuses, invoices, receipts and arbitrary charges |
+| [Subscriptions](/features/subscriptions/introduction) | How subscriptions renew and end |
+| [Managing subscriptions](/features/subscriptions/manage) | Change, pause, cancel and revoke |
+| [Refunds](/features/refunds) | Full and partial refunds |
+| [Orders API](/api-reference/current/orders/list-orders) · [Subscriptions API](/api-reference/current/subscriptions/list-subscriptions) | API reference |

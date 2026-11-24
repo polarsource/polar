@@ -139,7 +139,7 @@ class AuthorizationCodeGrant(
             code=get_token_hash(code),
             client_id=payload.client_id,
             sub_type=self.sub_type,
-            scope=payload.scope,
+            scope=request.scope,
             redirect_uri=payload.redirect_uri,
             nonce=nonce,
             code_challenge=code_challenge,
@@ -317,7 +317,7 @@ class ValidateSubAndPrompt:
                 sub_type=grant.sub_type,
                 sub_id=grant.sub.id,
                 client_id=grant.client.client_id,
-                scope=payload.scope,
+                scope=grant.request.scope,
             )
 
         # If the prompt is "none", the sub must be authenticated and have granted the requested scope

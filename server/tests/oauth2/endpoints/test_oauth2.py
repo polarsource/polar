@@ -699,6 +699,65 @@ class TestOAuth2Authorize:
         assert set(json["scopes"]) == {"openid", "profile", "email"}
 
     @pytest.mark.auth
+    async def test_requested_scope_outside_client_scope(
+        self,
+        client: AsyncClient,
+        user: User,
+        oauth2_client: OAuth2Client,
+        sync_session: Session,
+    ) -> None:
+        params = {
+            "client_id": oauth2_client.client_id,
+            "response_type": "code",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+            "scope": "openid profile email user:read",
+            "sub_type": "user",
+        }
+        response = await client.get("/v1/oauth2/authorize", params=params)
+
+        assert response.status_code == 200
+        assert set(response.json()["scopes"]) == {"openid", "profile", "email"}
+
+        consent = await client.post(
+            "/v1/oauth2/consent", params=params, data={"action": "allow"}
+        )
+        assert consent.status_code == 302
+        code = parse_qs(urlparse(consent.headers["location"]).query)["code"][0]
+
+        grant = oauth2_grant_service.get_by_sub_and_client_id(
+            sync_session,
+            sub_type=SubType.user,
+            sub_id=user.id,
+            client_id=oauth2_client.client_id,
+        )
+        assert grant is not None
+        assert grant.scope == "openid profile email"
+
+        authorization_code = (
+            sync_session.execute(
+                select(OAuth2AuthorizationCode).where(
+                    OAuth2AuthorizationCode.code == get_token_hash(code)
+                )
+            )
+            .unique()
+            .scalar_one()
+        )
+        assert authorization_code.scope == "openid profile email"
+
+        token_response = await client.post(
+            "/v1/oauth2/token",
+            data={
+                "grant_type": "authorization_code",
+                "code": code,
+                "client_id": oauth2_client.client_id,
+                "client_secret": "polar_cs_123",
+                "redirect_uri": params["redirect_uri"],
+            },
+        )
+        assert token_response.status_code == 200
+        assert token_response.json()["scope"] == "openid profile email"
+
+    @pytest.mark.auth
     @pytest.mark.parametrize("prompt", [None, "none", "consent"])
     async def test_new_scope_first_party_client(
         self,

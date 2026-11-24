@@ -73,6 +73,7 @@ export function Combobox<T>({
 }: ComboboxProps<T>) {
   const [open, setOpen] = React.useState(false)
   const [query, setQuery] = React.useState('')
+  const inputRef = React.useRef<HTMLInputElement>(null)
 
   const handleQueryChange = React.useCallback(
     (newQuery: string) => {
@@ -91,6 +92,33 @@ export function Combobox<T>({
     [onChange, value],
   )
 
+  const handleTriggerKeyDown = React.useCallback(
+    (event: React.KeyboardEvent<HTMLButtonElement>) => {
+      if (disabled || event.ctrlKey || event.metaKey || event.altKey) return
+
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault()
+        setOpen(true)
+        return
+      }
+
+      if (event.key.length === 1 && event.key !== ' ') {
+        event.preventDefault()
+        handleQueryChange(event.key)
+        setOpen(true)
+      }
+    },
+    [disabled, handleQueryChange],
+  )
+
+  const handleOpenAutoFocus = React.useCallback((event: Event) => {
+    const input = inputRef.current
+    if (!input) return
+    event.preventDefault()
+    input.focus()
+    input.setSelectionRange(input.value.length, input.value.length)
+  }, [])
+
   const selectedLabel = React.useMemo(() => {
     if (!value || !selectedItem) return null
     return getItemLabel(selectedItem)
@@ -105,6 +133,7 @@ export function Combobox<T>({
             role="combobox"
             aria-expanded={open}
             disabled={disabled}
+            onKeyDown={handleTriggerKeyDown}
             className={cn(
               'dark:bg-polar-800 dark:hover:bg-polar-700 dark:hover:border-polar-700 dark:border-polar-700 flex w-full flex-row justify-between gap-x-2 rounded-lg border border-gray-200 bg-white px-3 shadow-xs transition-colors hover:bg-gray-50 hover:text-black dark:hover:text-white',
               className,
@@ -117,6 +146,7 @@ export function Combobox<T>({
       </span>
       <PopoverContent
         align={popoverAlign}
+        onOpenAutoFocus={handleOpenAutoFocus}
         className={cn(
           'w-(--radix-popover-trigger-width) rounded-xl p-0',
           popoverClassName,
@@ -124,6 +154,7 @@ export function Combobox<T>({
       >
         <Command shouldFilter={false} className="rounded-xl">
           <CommandInput
+            ref={inputRef}
             placeholder={searchPlaceholder}
             className="h-9 border-0 focus:ring-0 focus:outline-0"
             value={query}

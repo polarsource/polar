@@ -70,7 +70,9 @@ const renderStaticPrice = (
   return null
 }
 
-const renderMeteredPrice = (meteredPrice: MeteredPrice): React.ReactNode => {
+export const renderMeteredPrice = (
+  meteredPrice: MeteredPrice,
+): React.ReactNode => {
   const { scale, label } = getMeterUnitFormat(
     meteredPrice.meter.unit ?? 'scalar',
     {

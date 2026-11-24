@@ -53,6 +53,7 @@ from polar.models import (
     Discount,
     Event,
     Meter,
+    OrderItem,
     Organization,
     PaymentMethod,
     Product,
@@ -4774,6 +4775,81 @@ class TestReactivateEndedTrial:
         )
         events = await get_all_by_name(session, SystemEvent.subscription_reactivated)
         assert len(events) == 1
+
+    @pytest.mark.parametrize("keep_discount", [True, False], ids=["renew", "remove"])
+    async def test_reuses_paid_order(
+        self,
+        frozen_time: datetime,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        keep_discount: bool,
+    ) -> None:
+        customer.billing_address = None
+        customer.default_payment_method = None
+        await save_fixture(customer)
+        discount = await create_discount(
+            save_fixture,
+            organization=product.organization,
+            type=DiscountType.percentage,
+            duration=DiscountDuration.once
+            if keep_discount
+            else DiscountDuration.forever,
+            basis_points=2500,
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.trial_ended,
+            current_period_start=frozen_time - timedelta(days=40),
+            discount=discount,
+        )
+        paid_order = await create_order(
+            save_fixture,
+            customer=customer,
+            product=product,
+            subscription=subscription,
+            billing_reason=OrderBillingReasonInternal.subscription_cycle_after_trial,
+            discount=discount if keep_discount else None,
+            discount_amount=250 if keep_discount else 0,
+            order_items=[
+                OrderItem(
+                    label=product.name,
+                    amount=1000,
+                    net_amount=1000,
+                    tax_amount=0,
+                    product_price=subscription.prices[0],
+                )
+            ],
+        )
+        create_order_mock = mocker.patch.object(
+            subscription_service,
+            "_create_subscription_update_order",
+            new_callable=AsyncMock,
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.reactivate_ended_trial(
+                session, ctx, subscription, order=paid_order
+            )
+        await session.flush()
+
+        create_order_mock.assert_not_awaited()
+        assert updated.status == SubscriptionStatus.active
+        assert updated.current_period_start == frozen_time
+        assert updated.discount_id == (discount.id if keep_discount else None)
+        assert updated.discount_applied_at == (frozen_time if keep_discount else None)
+
+        events = await get_all_by_name(session, SystemEvent.subscription_cycled)
+        assert len(events) == 1
+        assert events[0].user_metadata["amount"] == (
+            paid_order.subtotal_amount - paid_order.discount_amount
+        )
 
     async def test_payment_failure_keeps_trial_ended(
         self,

@@ -12,6 +12,7 @@ from pytest_mock import MockerFixture
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
+from polar.billing_entry.repository import BillingEntryRepository
 from polar.checkout.eventstream import CheckoutEvent
 from polar.checkout.repository import CheckoutRepository
 from polar.config import settings
@@ -82,6 +83,7 @@ from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import PlatformFeeType, TransactionType
 from polar.models.wallet import WalletType
 from polar.models.webhook_endpoint import WebhookEventType
+from polar.order.repository import OrderRepository
 from polar.order.schemas import OrderCreate, OrderUpdate
 from polar.order.service import (
     ManualRetryLimitExceeded,
@@ -4422,6 +4424,79 @@ class TestHandlePayment:
         assert result is order
         assert result.status == OrderStatus.paid
         assert subscription.status == SubscriptionStatus.active
+
+    @freeze_time("2026-11-24 12:00:00")
+    async def test_reactivates_ended_trial_using_settled_order(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        frozen_time = utc_now()
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.trial_ended,
+            current_period_start=frozen_time - timedelta(days=7),
+            ends_at=frozen_time + timedelta(days=7),
+        )
+        discount = await create_discount(
+            save_fixture,
+            organization=product.organization,
+            type=DiscountType.percentage,
+            duration=DiscountDuration.once,
+            basis_points=2500,
+            code="RECOVER25",
+        )
+        order = await order_service.create_subscription_reactivation_order(
+            session, subscription
+        )
+        await order_service.update(
+            session, order, OrderUpdate(discount_code=discount.code)
+        )
+        order.status = OrderStatus.pending
+        await session.flush()
+        payment = await create_payment(
+            save_fixture, product.organization, order=order, amount=order.due_amount
+        )
+
+        result = await order_service.handle_payment(session, order, payment)
+        await order_service.handle_payment(session, order, payment)
+        await session.flush()
+
+        assert result.status == OrderStatus.paid
+        assert subscription.status == SubscriptionStatus.active
+        assert subscription.ends_at is None
+        assert subscription.current_period_start == frozen_time
+        assert (
+            subscription.current_period_end
+            == subscription.recurring_interval.get_next_period(
+                frozen_time, frozen_time.day, subscription.recurring_interval_count
+            )
+        )
+        assert subscription.discount_id == discount.id
+        assert subscription.discount_applied_at == frozen_time
+
+        orders = await OrderRepository.from_session(session).get_all_by_subscription(
+            subscription.id
+        )
+        assert [stored_order.id for stored_order in orders] == [order.id]
+        entries = await BillingEntryRepository.from_session(
+            session
+        ).get_all_by_subscription(subscription.id)
+        assert {entry.order_item_id for entry in entries} == {
+            item.id for item in order.items
+        }
+        assert len(entries) == len(order.items)
+        assert (
+            sum(entry.discount_amount or 0 for entry in entries)
+            == order.discount_amount
+        )
+        for item in order.items:
+            assert item.start_timestamp == subscription.current_period_start
+            assert item.end_timestamp == subscription.current_period_end
 
     async def test_past_due_subscription_other_dunning(
         self,

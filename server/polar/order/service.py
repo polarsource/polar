@@ -2501,15 +2501,33 @@ class OrderService:
         repository = OrderRepository.from_session(session)
         order = await repository.update(order, update_dict=update_dict, flush=True)
 
-        # If this was a subscription retry success, reactivate the subscription
         if previous_status == OrderStatus.pending and order.subscription is not None:
             subscription_repository = SubscriptionRepository.from_session(session)
+            after_trial = (
+                order.billing_reason
+                == OrderBillingReasonInternal.subscription_cycle_after_trial
+            )
             locked_subscription = await subscription_repository.get_by_id(
-                order.subscription.id, for_update=True
+                order.subscription.id,
+                options=subscription_repository.get_eager_options()
+                if after_trial
+                else (),
+                for_update=True,
             )
             assert locked_subscription is not None
-            # Make sure there are no other dunning orders for this subscription, otherwise we might reactivate it too early
             if (
+                after_trial
+                and locked_subscription.status == SubscriptionStatus.trial_ended
+            ):
+                async with SubscriptionUpdateContext(
+                    session, locked_subscription, subscription_service
+                ) as ctx:
+                    order.subscription = (
+                        await subscription_service.reactivate_ended_trial(
+                            session, ctx, locked_subscription, order=order
+                        )
+                    )
+            elif (
                 locked_subscription.status == SubscriptionStatus.past_due
                 and await repository.count_dunning_by_subscription(
                     locked_subscription.id

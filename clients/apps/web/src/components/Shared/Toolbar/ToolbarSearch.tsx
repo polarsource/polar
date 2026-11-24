@@ -1,10 +1,8 @@
-import { useDebouncedCallback } from '@/hooks/utils'
+import { isKeyHandledElsewhere } from '@/components/Shared/CondensedTable/CondensedTable'
 import { Input } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Search, X } from '@polar-sh/orbit/icons'
 import { useEffect, useRef, useState } from 'react'
-
-const SEARCH_DELAY = 300
 
 interface ToolbarSearchProps {
   value: string | null
@@ -18,19 +16,16 @@ export const ToolbarSearch = ({
   placeholder,
 }: ToolbarSearchProps) => {
   const inputRef = useRef<HTMLInputElement>(null)
-  const [text, setText] = useState(value ?? '')
   const [focused, setFocused] = useState(false)
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement
       if (
         event.key !== '/' ||
         event.metaKey ||
         event.ctrlKey ||
         event.altKey ||
-        target.isContentEditable ||
-        ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)
+        isKeyHandledElsewhere(event)
       ) {
         return
       }
@@ -42,16 +37,8 @@ export const ToolbarSearch = ({
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [])
 
-  const commit = useDebouncedCallback(
-    (text: string) => onChange(text.trim() || null),
-    SEARCH_DELAY,
-  )
-
   const clear = () => {
-    setText('')
     onChange(null)
-    // Supersedes a commit still pending from typing.
-    commit('')
     inputRef.current?.focus()
   }
 
@@ -64,11 +51,8 @@ export const ToolbarSearch = ({
         className="dark:focus:border-polar-500 h-8 w-76 rounded-full pr-8 pl-8.5 shadow-none focus:border-gray-400 focus:shadow-xs focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 [&::-webkit-search-cancel-button]:appearance-none"
         preSlot={<Search className="size-3.5" />}
         placeholder={placeholder}
-        value={text}
-        onChange={(event) => {
-          setText(event.target.value)
-          commit(event.target.value)
-        }}
+        value={value ?? ''}
+        onChange={(event) => onChange(event.target.value || null)}
         onKeyDown={(event) => {
           if (event.key === 'Escape') {
             // Stops the native search input from also clearing the text.
@@ -87,7 +71,7 @@ export const ToolbarSearch = ({
         alignItems="center"
         zIndex={20}
       >
-        {text ? (
+        {value ? (
           <button
             type="button"
             aria-label="Clear search"

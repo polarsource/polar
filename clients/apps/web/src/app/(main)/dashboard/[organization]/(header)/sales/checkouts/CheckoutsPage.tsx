@@ -12,6 +12,7 @@ import {
 } from '@/hooks/queries/checkouts'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { sortingStateToQueryParam } from '@/utils/datatable'
+import useDebounce from '@/utils/useDebounce'
 import { enums, schemas } from '@polar-sh/client'
 import { Copy } from '@polar-sh/orbit/icons'
 import { useRouter } from 'next/navigation'
@@ -60,6 +61,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     },
     setFilters,
   ] = useQueryStates(filterParsers)
+  const debouncedQuery = useDebounce(query, 300)
 
   const product: ProductFilter = {
     product_id: productId,
@@ -85,7 +87,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     external_product_id: externalProductId ?? undefined,
     customer_id: customerId ?? undefined,
     status: status ?? undefined,
-    query: query ?? undefined,
+    query: debouncedQuery?.trim() || undefined,
     created_after: created?.from.toISOString(),
     created_before: created?.to.toISOString(),
   })

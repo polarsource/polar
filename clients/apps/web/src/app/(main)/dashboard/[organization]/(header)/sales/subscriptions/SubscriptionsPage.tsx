@@ -35,6 +35,7 @@ import {
   parseAsStringLiteral,
   useQueryStates,
 } from 'nuqs'
+import useDebounce from '@/utils/useDebounce'
 import React from 'react'
 import { SubscriptionsTimeline } from './SubscriptionsTimeline'
 import { SubscriptionsToolbar } from './SubscriptionsToolbar'
@@ -114,6 +115,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     },
     setFilters,
   ] = useQueryStates(filterParsers)
+  const debouncedQuery = useDebounce(query, 300)
 
   // Only "set to end" is offered as a filter. Older links can carry false,
   // which no control shows, so it is left out.
@@ -200,7 +202,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     customer_cancellation_reason: cancellationReason ?? undefined,
     started_after: started?.from.toISOString(),
     started_before: started?.to.toISOString(),
-    query: query ?? undefined,
+    query: debouncedQuery?.trim() || undefined,
   }
   const {
     data,

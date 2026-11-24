@@ -70,9 +70,9 @@ export interface PolarOptions {
    * authorize other reference IDs, such as workspaces or projects from your own
    * tables, or to change the default.
    *
-   * Return `true` or `'entitlements'` to list the subscriptions without
-   * customer billing details, `'billing'` to include them, `'own'` to list only
-   * the subscriptions the user purchased, and `false` or `'none'` to reject the
+   * Return `true` or `'redacted'` to list the subscriptions without
+   * customer billing details, `'full'` to include them, `'purchased'` to list
+   * only the subscriptions the user purchased, and `false` or `'none'` to reject the
    * request.
    */
   authorizeReference?: AuthorizeReference

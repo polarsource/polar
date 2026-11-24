@@ -295,11 +295,13 @@ export const portal =
                   metadata: {
                     referenceId,
                   },
-                  ...(access === 'own' ? { external_customer_id: userId } : {}),
+                  ...(access === 'purchased'
+                    ? { external_customer_id: userId }
+                    : {}),
                 })
 
               const response: ListResourceReferenceSubscription =
-                access === 'entitlements'
+                access === 'redacted'
                   ? {
                       ...subscriptions,
                       items: subscriptions.items.map((subscription) =>

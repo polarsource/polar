@@ -552,7 +552,7 @@ describe('portal plugin', () => {
         json: vi.fn(),
       })
       const mockAccess = (
-        access: 'billing' | 'entitlements' | 'own' | 'none',
+        access: 'full' | 'redacted' | 'purchased' | 'none',
         unauthorizedFallback = false,
       ) =>
         vi.mocked(resolveReferenceAccess).mockResolvedValue({
@@ -568,7 +568,7 @@ describe('portal plugin', () => {
       })
 
       it('returns customer billing details with billing access', async () => {
-        mockAccess('billing')
+        mockAccess('full')
         const ctx = createContext()
 
         await handler(ctx)
@@ -583,7 +583,7 @@ describe('portal plugin', () => {
       })
 
       it('removes billing details from subscriptions the user did not purchase', async () => {
-        mockAccess('entitlements')
+        mockAccess('redacted')
         const ctx = createContext()
 
         await handler(ctx)
@@ -610,7 +610,7 @@ describe('portal plugin', () => {
       })
 
       it('asks Polar only for the subscriptions the user purchased with own access', async () => {
-        mockAccess('own')
+        mockAccess('purchased')
         vi.mocked(mockClient.subscriptions.list).mockResolvedValue({
           items: [ownSubscription],
           pagination: { total_count: 1, max_page: 1 },
@@ -633,7 +633,7 @@ describe('portal plugin', () => {
       })
 
       it('warns once when an unknown reference uses the unauthorized fallback', async () => {
-        mockAccess('entitlements', true)
+        mockAccess('redacted', true)
         const ctx = createContext()
 
         await handler(ctx)
@@ -670,7 +670,7 @@ describe('portal plugin', () => {
       })
 
       it('should handle API errors for reference ID lookup', async () => {
-        mockAccess('billing')
+        mockAccess('full')
         vi.mocked(mockClient.subscriptions.list).mockRejectedValue(
           mockApiError(400, 'Subscription lookup failed'),
         )

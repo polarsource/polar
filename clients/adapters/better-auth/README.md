@@ -429,13 +429,13 @@ polar({
       return false
     }
 
-    return member.role === 'admin' ? 'billing' : 'entitlements'
+    return member.role === 'admin' ? 'full' : 'redacted'
   },
   use: [checkout(), portal()],
 })
 ```
 
-`authorizeReference` runs for every `reference_id` and its result is final. Return `'billing'`, `'entitlements'` (or `true`), `'own'`, or `'none'` (or `false`, which rejects the request with a `403`). `referenceType` is `self`, `organization`, `user` or `unknown`, and `defaultAccess` is the access the adapter grants on its own.
+`authorizeReference` runs for every `reference_id` and its result is final. Return `'full'` (customer billing details included), `'redacted'` (or `true`, billing details removed), `'purchased'` (only the user's own purchases), or `'none'` (or `false`, which rejects the request with a `403`). `referenceType` is `self`, `organization`, `user` or `unknown`, and `defaultAccess` is the access the adapter grants on its own.
 
 If this is already how your application handles organization billing, keep using it and do not enable `experimental_organizationSync`. Existing billing objects are not migrated to the team customer, so mixing an established `referenceId` setup with experimental team-customer billing can produce an inconsistent billing state. Only applications with an explicit, reviewed cutover plan should enable `experimental_organizationSync` and use `organization_id` for checkout:
 

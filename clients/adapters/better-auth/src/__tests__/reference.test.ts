@@ -50,7 +50,7 @@ const createContext = ({
   }) as unknown as ResolveReferenceAccessInput['context']
 
 describe('resolveReferenceAccess', () => {
-  it("grants the entitlement view for the user's own ID", async () => {
+  it("grants the redacted view for the user's own ID", async () => {
     await expect(
       resolveReferenceAccess({
         context: createContext(),
@@ -58,15 +58,15 @@ describe('resolveReferenceAccess', () => {
         referenceId: 'user-123',
       }),
     ).resolves.toEqual({
-      access: 'entitlements',
+      access: 'redacted',
       referenceType: 'self',
       unauthorizedFallback: false,
     })
   })
 
   it.each([
-    ['owner', 'billing'],
-    ['member', 'entitlements'],
+    ['owner', 'full'],
+    ['member', 'redacted'],
   ] as const)(
     'grants an organization %s the %s view',
     async (role, expectedAccess) => {
@@ -92,7 +92,7 @@ describe('resolveReferenceAccess', () => {
         referenceId: 'organization-123',
       }),
     ).resolves.toEqual({
-      access: 'own',
+      access: 'purchased',
       referenceType: 'organization',
       unauthorizedFallback: false,
     })
@@ -109,13 +109,13 @@ describe('resolveReferenceAccess', () => {
         referenceId: 'user-456',
       }),
     ).resolves.toEqual({
-      access: 'own',
+      access: 'purchased',
       referenceType: 'user',
       unauthorizedFallback: false,
     })
   })
 
-  it('keeps the entitlement view for an unknown reference', async () => {
+  it('keeps the redacted view for an unknown reference', async () => {
     await expect(
       resolveReferenceAccess({
         context: createContext(),
@@ -123,7 +123,7 @@ describe('resolveReferenceAccess', () => {
         referenceId: 'workspace-123',
       }),
     ).resolves.toEqual({
-      access: 'entitlements',
+      access: 'redacted',
       referenceType: 'unknown',
       unauthorizedFallback: true,
     })
@@ -147,7 +147,7 @@ describe('resolveReferenceAccess', () => {
         referenceId: 'workspace-123',
       }),
     ).resolves.toEqual({
-      access: 'own',
+      access: 'purchased',
       referenceType: 'unknown',
       unauthorizedFallback: false,
     })
@@ -171,7 +171,7 @@ describe('resolveReferenceAccess', () => {
         authorizeReference: ({ defaultAccess }) => defaultAccess,
       }),
     ).resolves.toEqual({
-      access: 'own',
+      access: 'purchased',
       referenceType: 'unknown',
       unauthorizedFallback: false,
     })

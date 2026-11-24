@@ -265,7 +265,7 @@ polar({
       return false;
     }
 
-    return member.role === "admin" ? "billing" : "entitlements";
+    return member.role === "admin" ? "full" : "redacted";
   },
   use: [checkout(), portal()],
 });
@@ -273,9 +273,9 @@ polar({
 
 `authorizeReference` runs for every `reference_id` and its result is final. It receives `user`, `session`, `referenceId`, `action`, `referenceType` (`self`, `organization`, `user` or `unknown`) and `defaultAccess`, the access the plugin grants on its own. Return one of:
 
-- `"billing"`: every subscription, with customer billing details
-- `"entitlements"` or `true`: every subscription, without customer billing details
-- `"own"`: only the subscriptions the user purchased
+- `"full"`: every subscription, with customer billing details
+- `"redacted"` or `true`: every subscription, without customer billing details
+- `"purchased"`: only the subscriptions the user purchased
 - `"none"` or `false`: reject the request with a `403`
 
 ### Team customers with `experimental_organizationSync`

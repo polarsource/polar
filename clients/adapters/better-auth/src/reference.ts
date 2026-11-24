@@ -11,13 +11,13 @@ import { type BillingPrincipalSession, isBillingRole } from './principal'
 /**
  * What a caller may read about the subscriptions tagged with a reference ID.
  *
- * - `billing`: every subscription, including customer billing details.
- * - `entitlements`: every subscription, without customer billing details.
+ * - `full`: every subscription, including customer billing details.
+ * - `redacted`: every subscription, without customer billing details.
  *   Subscriptions the caller purchased keep their billing details.
- * - `own`: only the subscriptions the caller purchased.
+ * - `purchased`: only the subscriptions the caller purchased.
  * - `none`: the request is rejected.
  */
-export type ReferenceAccess = 'billing' | 'entitlements' | 'own' | 'none'
+export type ReferenceAccess = 'full' | 'redacted' | 'purchased' | 'none'
 
 /**
  * How the adapter classified the reference ID.
@@ -229,7 +229,7 @@ export const toEntitlementSubscription = (
 const normalizeReferenceAccess = (
   access: boolean | ReferenceAccess,
 ): ReferenceAccess => {
-  if (access === true) return 'entitlements'
+  if (access === true) return 'redacted'
   if (access === false) return 'none'
   return access
 }
@@ -255,7 +255,7 @@ const classifyReference = async ({
   const { user } = session
 
   if (referenceId === user.id) {
-    return { referenceType: 'self', access: 'entitlements' }
+    return { referenceType: 'self', access: 'redacted' }
   }
 
   if (getBetterAuthOrganizationPlugin(context)) {
@@ -276,7 +276,7 @@ const classifyReference = async ({
       })
       return {
         referenceType: 'organization',
-        access: billing ? 'billing' : 'entitlements',
+        access: billing ? 'full' : 'redacted',
       }
     }
 
@@ -288,7 +288,7 @@ const classifyReference = async ({
     )
 
     if (organization) {
-      return { referenceType: 'organization', access: 'own' }
+      return { referenceType: 'organization', access: 'purchased' }
     }
   }
 
@@ -296,14 +296,17 @@ const classifyReference = async ({
     context.internalAdapter.findUserById(referenceId),
   )
 
-  return { referenceType: referencedUser ? 'user' : 'unknown', access: 'own' }
+  return {
+    referenceType: referencedUser ? 'user' : 'unknown',
+    access: 'purchased',
+  }
 }
 
 /**
  * Decide what the signed-in user may read for a `reference_id`.
  *
  * Without `authorizeReference`, a reference the adapter cannot resolve keeps
- * returning the entitlement view to signed-in users. That fallback is
+ * returning the redacted view to signed-in users. That fallback is
  * deprecated: it is reported through `unauthorizedFallback` so the caller can
  * warn, and the next major version removes it.
  */
@@ -334,7 +337,7 @@ export const resolveReferenceAccess = async (
   }
 
   if (referenceType === 'unknown' && session.user.isAnonymous !== true) {
-    return { access: 'entitlements', referenceType, unauthorizedFallback: true }
+    return { access: 'redacted', referenceType, unauthorizedFallback: true }
   }
 
   return { access: defaultAccess, referenceType, unauthorizedFallback: false }

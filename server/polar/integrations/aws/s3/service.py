@@ -6,8 +6,10 @@ from typing import TYPE_CHECKING, Any, cast
 import botocore
 import structlog
 from botocore.client import ClientError
+from botocore.exceptions import BotoCoreError
 
 from polar.config import settings
+from polar.exceptions import NotPermitted
 from polar.kit.http import get_content_disposition
 from polar.kit.utils import generate_uuid, utc_now
 
@@ -216,18 +218,52 @@ class S3Service:
 
         return cast(dict[str, Any], head)
 
-    def complete_multipart_upload(self, data: S3FileUploadCompleted) -> S3File:
+    def complete_multipart_upload(
+        self, data: S3FileUploadCompleted, *, path: str, size: int
+    ) -> S3File:
         boto_arguments = data.get_boto3_arguments()
-        response = self.client.complete_multipart_upload(
-            Bucket=self.bucket, Key=data.path, **boto_arguments
-        )
+        try:
+            response = self.client.complete_multipart_upload(
+                Bucket=self.bucket, Key=path, MpuObjectSize=size, **boto_arguments
+            )
+        except ClientError as exc:
+            error_code = exc.response.get("Error", {}).get("Code")
+            if error_code == "NoSuchUpload":
+                raise NotPermitted("Multipart upload is no longer available") from exc
+            if error_code != "InvalidRequest":
+                raise
+            log.warning(
+                "aws.s3",
+                operation="complete_multipart_upload",
+                bucket=self.bucket,
+                error_code=error_code,
+                request_id=exc.response.get("ResponseMetadata", {}).get("RequestId"),
+            )
+            try:
+                self.client.abort_multipart_upload(
+                    Bucket=self.bucket, Key=path, UploadId=data.id
+                )
+            except (BotoCoreError, ClientError) as abort_exc:
+                log.warning(
+                    "aws.s3",
+                    operation="abort_multipart_upload",
+                    bucket=self.bucket,
+                    error_code=(
+                        abort_exc.response.get("Error", {}).get("Code")
+                        if isinstance(abort_exc, ClientError)
+                        else type(abort_exc).__name__
+                    ),
+                )
+            raise NotPermitted("Invalid multipart upload for this file") from exc
         if not response:
             raise S3FileError("No response from S3")
 
         version_id = response.get("VersionId", "")
-        head = self.get_head_or_raise(data.path, s3_version_id=version_id)
-        file = S3File.from_head(data.path, head)
-        return file
+        head = self.get_head_or_raise(path, s3_version_id=version_id)
+        if head["ContentLength"] != size:
+            self.delete_file(path, s3_version_id=version_id)
+            raise NotPermitted("Uploaded file size does not match its declared size")
+        return S3File.from_head(path, head)
 
     def replace_object(self, file: S3File, data: bytes) -> S3File:
         digest = hashlib.sha256(data).digest()
@@ -282,6 +318,11 @@ class S3Service:
             "get_object", ExpiresIn=0, Params={"Bucket": self.bucket, "Key": path}
         )
 
-    def delete_file(self, path: str) -> bool:
-        deleted = self.client.delete_object(Bucket=self.bucket, Key=path)
+    def delete_file(self, path: str, *, s3_version_id: str = "") -> bool:
+        if s3_version_id:
+            deleted = self.client.delete_object(
+                Bucket=self.bucket, Key=path, VersionId=s3_version_id
+            )
+        else:
+            deleted = self.client.delete_object(Bucket=self.bucket, Key=path)
         return deleted.get("DeleteMarker", False)

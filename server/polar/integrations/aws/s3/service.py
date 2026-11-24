@@ -8,6 +8,7 @@ import structlog
 from botocore.client import ClientError
 
 from polar.config import settings
+from polar.exceptions import NotPermitted
 from polar.kit.http import get_content_disposition
 from polar.kit.utils import generate_uuid, utc_now
 
@@ -216,18 +217,27 @@ class S3Service:
 
         return cast(dict[str, Any], head)
 
-    def complete_multipart_upload(self, data: S3FileUploadCompleted) -> S3File:
+    def complete_multipart_upload(
+        self, data: S3FileUploadCompleted, *, path: str, size: int
+    ) -> S3File:
         boto_arguments = data.get_boto3_arguments()
-        response = self.client.complete_multipart_upload(
-            Bucket=self.bucket, Key=data.path, **boto_arguments
-        )
+        try:
+            response = self.client.complete_multipart_upload(
+                Bucket=self.bucket, Key=path, MpuObjectSize=size, **boto_arguments
+            )
+        except ClientError as exc:
+            if exc.response.get("Error", {}).get("Code") == "InvalidRequest":
+                raise NotPermitted("Invalid multipart upload for this file") from exc
+            raise
         if not response:
             raise S3FileError("No response from S3")
 
         version_id = response.get("VersionId", "")
-        head = self.get_head_or_raise(data.path, s3_version_id=version_id)
-        file = S3File.from_head(data.path, head)
-        return file
+        head = self.get_head_or_raise(path, s3_version_id=version_id)
+        if head["ContentLength"] != size:
+            self.delete_file(path, s3_version_id=version_id)
+            raise NotPermitted("Uploaded file size does not match its declared size")
+        return S3File.from_head(path, head)
 
     def replace_object(self, file: S3File, data: bytes) -> S3File:
         digest = hashlib.sha256(data).digest()
@@ -282,6 +292,11 @@ class S3Service:
             "get_object", ExpiresIn=0, Params={"Bucket": self.bucket, "Key": path}
         )
 
-    def delete_file(self, path: str) -> bool:
-        deleted = self.client.delete_object(Bucket=self.bucket, Key=path)
+    def delete_file(self, path: str, *, s3_version_id: str = "") -> bool:
+        if s3_version_id:
+            deleted = self.client.delete_object(
+                Bucket=self.bucket, Key=path, VersionId=s3_version_id
+            )
+        else:
+            deleted = self.client.delete_object(Bucket=self.bucket, Key=path)
         return deleted.get("DeleteMarker", False)

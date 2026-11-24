@@ -192,6 +192,8 @@ class TestFile:
         s3_stub: Stubber,
         created: FileUpload,
         parts: list[S3FileUploadCompletedPart],
+        *,
+        content_length: int | None = None,
     ) -> dict[str, Any]:
         checksum = hashlib.sha256(
             b"".join(
@@ -209,6 +211,7 @@ class TestFile:
             {
                 **object_params,
                 "UploadId": created.upload.id,
+                "MpuObjectSize": created.size,
                 "MultipartUpload": {
                     "Parts": [
                         {
@@ -224,7 +227,7 @@ class TestFile:
         )
         head = {
             "ContentType": self.mime_type,
-            "ContentLength": self.size,
+            "ContentLength": self.size if content_length is None else content_length,
             "ETag": '"completed-upload"',
             "LastModified": utc_now(),
             "VersionId": "uploaded-version",

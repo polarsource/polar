@@ -10,7 +10,7 @@ from pydantic import MISSING
 from polar.auth.models import Agent, AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
-from polar.exceptions import BadRequest
+from polar.exceptions import BadRequest, NotPermitted
 from polar.integrations.aws.s3 import S3Service
 from polar.integrations.aws.s3.schemas import S3File
 from polar.kit.pagination import PaginationParams
@@ -148,8 +148,13 @@ class FileService:
         file: File,
         completed_schema: FileUploadCompleted,
     ) -> File:
+        if completed_schema.path != file.path:
+            raise NotPermitted("Upload path does not match the file")
+
         s3_service = S3_SERVICES[file.service]
-        s3file = s3_service.complete_multipart_upload(completed_schema)
+        s3file = s3_service.complete_multipart_upload(
+            completed_schema, path=file.path, size=file.size
+        )
 
         if file.mime_type == SVG_MIME_TYPE and file.service in SVG_SANITIZED_SERVICES:
             s3file = self._sanitize_svg(s3_service, s3file)
@@ -177,9 +182,6 @@ class FileService:
 
     def _sanitize_svg(self, s3_service: S3Service, s3file: S3File) -> S3File:
         s3_object = s3_service.get_object_or_raise(s3file.path)
-        if s3_object["ContentLength"] > s3file.size:
-            s3_service.delete_file(s3file.path)
-            raise BadRequest("Uploaded file is larger than its declared size")
         try:
             sanitized = filter_svg(s3_object["Body"].read(), SVG_DATA_URL_MIME_TYPES)
         except ValueError as e:

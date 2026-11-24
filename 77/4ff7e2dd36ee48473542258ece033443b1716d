@@ -1,0 +1,41 @@
+server/tests/subscription/test_tasks.py
+  s_e16282ad654d93::t_e1cdd23d2939fb 47,513-519,534-536,561-563,568-575
+  s_e16282ad654d93::t_fbf8bd934b2784 559-560
+server/tests/checkout/test_service.py
+  s_e16282ad654d93::t_8e088b2c0fd67a 6401-6402,6410,6412-6415,6421-6423,6444-6452,6456-6458
+  s_e16282ad654d93::t_b32ada95d97d17 6453-6455
+server/polar/subscription/tasks.py
+  s_e16282ad654d93::t_82f3978a4ab73c 107-109
+server/polar/subscription/service.py
+  s_e16282ad654d93::t_b44157f36cc468 126,1499-1501,1511,3243,4906-4908,4955-4960
+server/tests/order/test_service.py
+  s_e16282ad654d93::t_5a00b7f7ca9f2e 647,649,657,696,3110,3117,3122-3131,3150-3155
+  s_e16282ad654d93::t_4faf9ab6ea4cd9 1307,1328,1351,1355,1364-1375,1405,1422
+  s_e16282ad654d93::t_b32ada95d97d17 699-701,3134-3137
+  s_e16282ad654d93::t_765133769d0958 698
+server/polar/checkout/service.py
+  s_e16282ad654d93::t_b32ada95d97d17 3263-3265
+  s_e16282ad654d93::t_29aaa398a19d7d 3221,3249,3252-3262,3272-3274,3276,3281,3287-3288,3290,3292,3300-3317,3324,3329
+server/polar/order/service.py
+  s_e16282ad654d93::t_95e444f234b02b 141-146,1192-1193,1502-1504,1522-1523,1542-1543,1545,2404-2405
+  s_e16282ad654d93::t_2a2dfae4009504 892-901,1708-1717,1740-1742
+server/polar/order/amounts.py
+  s_e16282ad654d93::t_15659e6521ed64 6,8,11,18,38-52,56-61,69-70,160-161,194-195
+  s_e16282ad654d93::t_fbf8bd934b2784 53-55
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "774ff7e2dd36ee48473542258ece033443b1716d",
+  "prompts": {},
+  "sessions": {
+    "s_e16282ad654d93": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20762-855d-7ac0-addf-f0c98415986a",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

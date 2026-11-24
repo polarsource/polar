@@ -1,0 +1,33 @@
+server/tests/integrations/aws/s3/test_service.py
+  s_e16282ad654d93::t_e2e9898c67a8c4 6,8,12-15,19-36,40-48
+  s_e16282ad654d93::t_deae64bd3dd906 16-18,37-39
+  s_e16282ad654d93::t_cf92503810cdaa 49-50
+server/polar/integrations/aws/s3/service.py
+  s_e16282ad654d93::t_5c784340109442 9,230-254
+terraform/test/aws.tf
+  s_e16282ad654d93::t_5c784340109442 222
+terraform/modules/application_access/main.tf
+  s_e16282ad654d93::t_5c784340109442 89,106
+terraform/sandbox/aws.tf
+  s_e16282ad654d93::t_5c784340109442 229
+terraform/modules/s3_buckets/main.tf
+  s_e16282ad654d93::t_5c784340109442 126
+terraform/production/aws.tf
+  s_e16282ad654d93::t_5c784340109442 208
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c251b977401b056d8696d39eb5616f5526a7bafa",
+  "prompts": {},
+  "sessions": {
+    "s_e16282ad654d93": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20762-855d-7ac0-addf-f0c98415986a",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

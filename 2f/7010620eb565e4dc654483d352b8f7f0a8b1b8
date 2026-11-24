@@ -1,0 +1,26 @@
+server/tests/event/test_service.py
+  s_02cc4278029d2a::t_ad524cdd2df662 633,639
+server/polar/event/service.py
+  s_02cc4278029d2a::t_ad524cdd2df662 1125,1130,1149-1156,1158-1159
+server/benchmarks/test_event.py
+  s_02cc4278029d2a::t_2a06a8056fd6ce 161,195,231
+  s_02cc4278029d2a::t_ad524cdd2df662 166
+server/tests/event/test_ancestors.py
+  s_02cc4278029d2a::t_ad524cdd2df662 137,141,152
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2f7010620eb565e4dc654483d352b8f7f0a8b1b8",
+  "prompts": {},
+  "sessions": {
+    "s_02cc4278029d2a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4fd5f4ef-9af1-454e-990a-f63a7203c921",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

@@ -315,6 +315,12 @@ test.each([
     statusCode: 400,
   },
   {
+    name: 'a client error with an empty body',
+    response: () => Promise.resolve(new Response(null, { status: 400 })),
+    message: 'The Polar API rejected the request (400).',
+    statusCode: 400,
+  },
+  {
     name: 'a refused connection',
     response: () =>
       Promise.reject(

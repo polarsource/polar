@@ -105,17 +105,19 @@ const truncate = (text: string, length: number) =>
 
 const sentence = (text: string) => (/[.!?]$/.test(text) ? text : `${text}.`)
 
+const emptyBodyPlaceholders = new Set<unknown>(['Server error', 'Client error'])
+
 const responseBody = (error: unknown, statusCode: number) => {
-  if (error instanceof PolarServerError) {
-    const prefix = serverErrorPrefix(statusCode)
-    const body = error.message.startsWith(prefix)
-      ? error.message.slice(prefix.length)
-      : undefined
-    return body === 'Server error' ? undefined : body
-  }
-  return typeof error === 'object' && error !== null && 'error' in error
-    ? error.error
-    : undefined
+  const prefix = serverErrorPrefix(statusCode)
+  const body =
+    error instanceof PolarServerError
+      ? error.message.startsWith(prefix)
+        ? error.message.slice(prefix.length)
+        : undefined
+      : typeof error === 'object' && error !== null && 'error' in error
+        ? error.error
+        : undefined
+  return emptyBodyPlaceholders.has(body) ? undefined : body
 }
 
 const serverMessage = (body: unknown, detail: string | undefined) => {

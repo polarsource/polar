@@ -1,0 +1,21 @@
+server/polar/dispute/service.py
+  s_8606a0a4dff6d2::t_11b8c14a6e4c0f 60-61
+server/tests/dispute/test_service.py
+  s_8606a0a4dff6d2::t_f832d7c13991c0 1654,1678
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "62fcd9c74e035ce52cdc0d3bb18c03f234295917",
+  "prompts": {},
+  "sessions": {
+    "s_8606a0a4dff6d2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "27928f2b-2ca8-4471-b046-7f4aaf11b62a",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

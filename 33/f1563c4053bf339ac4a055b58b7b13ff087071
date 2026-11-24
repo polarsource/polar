@@ -1,0 +1,37 @@
+server/polar/dispute/service.py
+  s_d4a843b33596ce::t_eeb679f567a928 35,60-64,87-96,424-429,488-522
+server/polar/integrations/chargeback_stop/tasks.py
+  s_8606a0a4dff6d2::t_873e2e4930926e 6-9,30-33,50-53
+server/polar/integrations/chargeback_stop/types.py
+  s_8606a0a4dff6d2::t_30c8216c0e9ec5 15-17
+server/polar/payment/repository.py
+  s_d4a843b33596ce::t_11c0c360216385 58-78
+server/polar/refund/repository.py
+  s_8606a0a4dff6d2::t_f32e0c36eacf19 49-54
+server/tests/dispute/test_service.py
+  s_d4a843b33596ce::t_6bf3ee91c463fa 12,20,90-92,103-105,1637-1706
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "33f1563c4053bf339ac4a055b58b7b13ff087071",
+  "prompts": {},
+  "sessions": {
+    "s_8606a0a4dff6d2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "27928f2b-2ca8-4471-b046-7f4aaf11b62a",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_d4a843b33596ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "12adddd7-b520-4f67-a19e-0f92eb2e092a",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

@@ -12,7 +12,6 @@ interface ToolbarSearchProps {
   placeholder: string
 }
 
-// Free text applied as the list's `query`. Each list endpoint decides what it matches.
 export const ToolbarSearch = ({
   value,
   onChange,
@@ -20,8 +19,8 @@ export const ToolbarSearch = ({
 }: ToolbarSearchProps) => {
   const inputRef = useRef<HTMLInputElement>(null)
   const [text, setText] = useState(value ?? '')
+  const [focused, setFocused] = useState(false)
 
-  // "/" focuses the search, unless it is being typed into another field.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement
@@ -62,7 +61,7 @@ export const ToolbarSearch = ({
         ref={inputRef}
         type="search"
         aria-label="Search"
-        className="dark:focus:border-polar-600 h-8 w-56 rounded-full pr-8 pl-8.5 shadow-none focus:border-gray-300 focus:shadow-xs focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 [&::-webkit-search-cancel-button]:appearance-none"
+        className="dark:focus:border-polar-500 h-8 w-76 rounded-full pr-8 pl-8.5 shadow-none focus:border-gray-400 focus:shadow-xs focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 [&::-webkit-search-cancel-button]:appearance-none"
         preSlot={<Search className="size-3.5" />}
         placeholder={placeholder}
         value={text}
@@ -70,16 +69,25 @@ export const ToolbarSearch = ({
           setText(event.target.value)
           commit(event.target.value)
         }}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') {
+            // Stops the native search input from also clearing the text.
+            event.preventDefault()
+            event.currentTarget.blur()
+          }
+        }}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
       />
-      {text && (
-        <Box
-          position="absolute"
-          top={0}
-          bottom={0}
-          right="xs"
-          alignItems="center"
-          zIndex={20}
-        >
+      <Box
+        position="absolute"
+        top={0}
+        bottom={0}
+        right="xs"
+        alignItems="center"
+        zIndex={20}
+      >
+        {text ? (
           <button
             type="button"
             aria-label="Clear search"
@@ -88,8 +96,16 @@ export const ToolbarSearch = ({
           >
             <X className="size-3.5" />
           </button>
-        </Box>
-      )}
+        ) : (
+          !focused && (
+            <Box as="span" aria-hidden pr="s" pointerEvents="none">
+              <kbd className="dark:bg-polar-700 dark:text-polar-400 flex size-[18px] items-center justify-center rounded-[4px] bg-gray-100 font-mono text-[11px] leading-none text-gray-500">
+                /
+              </kbd>
+            </Box>
+          )
+        )}
+      </Box>
     </Box>
   )
 }

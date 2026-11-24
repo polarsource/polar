@@ -87,8 +87,6 @@ export const CheckoutsToolbar = ({
       onReset={hasActiveFilters ? reset : undefined}
       actions={actions}
     >
-      {/* A checkout can have a name and email before it has a customer, so
-          this finds the ones the customer filter cannot. */}
       <ToolbarSearch
         value={query}
         onChange={onQuerySelect}

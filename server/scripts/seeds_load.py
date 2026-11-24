@@ -110,6 +110,9 @@ from polar.models.webhook_endpoint import (
 )
 from polar.organization.schemas import OrganizationCreate
 from polar.organization.service import organization as organization_service
+from polar.organization_access_token.repository import (
+    OrganizationAccessTokenRepository,
+)
 from polar.organization_review.appeal_case import appeal_case as appeal_case_service
 from polar.postgres import AsyncSession, create_async_engine
 from polar.product.schemas import (
@@ -3074,7 +3077,13 @@ def seeds_load(
 
 
 @cli.command(name="polar-self-env")
-def polar_self_env() -> None:
+def polar_self_env(
+    keep_valid: bool = typer.Option(
+        False,
+        "--keep-valid",
+        help="Output nothing when the configured access token still works.",
+    ),
+) -> None:
     """Output Polar self-integration env vars for the seeded Polar org."""
 
     async def run() -> None:
@@ -3088,6 +3097,13 @@ def polar_self_env() -> None:
             ).scalar_one_or_none()
             if org is None:
                 raise typer.Exit(1)
+
+            if keep_valid and settings.POLAR_ACCESS_TOKEN:
+                configured = await OrganizationAccessTokenRepository.from_session(
+                    session
+                ).get_by_token(settings.POLAR_ACCESS_TOKEN)
+                if configured is not None and configured.organization_id == org.id:
+                    return
 
             scale_product = (
                 await session.execute(

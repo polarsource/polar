@@ -58,6 +58,7 @@ dev switch -i my-branch # ...and reinstall JS deps (skips package prebuilds)
 
 ```bash
 dev db migrate          # Run database migrations
+dev db rollback <rev>   # Roll back a migration, even one from another branch
 dev db reset            # Reset database to clean state
 dev db reset --force    # Reset without confirmation
 ```

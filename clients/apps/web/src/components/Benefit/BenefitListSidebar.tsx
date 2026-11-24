@@ -2,6 +2,7 @@
 
 import { BenefitListFilterEmptyState } from '@/components/Benefit/BenefitListFilterEmptyState'
 import { BenefitTypeFilter } from '@/components/Benefit/BenefitTypeFilter'
+import { ManagedAsCodeNavIndicator } from '@/components/Dashboard/ManagedAsCodeNavIndicator'
 import CreateBenefitModalContent from '@/components/Benefit/CreateBenefitModalContent'
 import {
   benefitsDisplayNames,
@@ -20,6 +21,7 @@ import {
 } from '@polar-sh/orbit/icons'
 import { enums, schemas } from '@polar-sh/client'
 import { Input, Button, Spinner, InlineModal } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import {
@@ -152,7 +154,16 @@ export const BenefitListSidebar = ({
                 <ArrowDownward fontSize="small" />
               )}
             </Button>
-            {!managedAsCode && (
+            {managedAsCode ? (
+              <Box
+                width={24}
+                height={24}
+                alignItems="center"
+                justifyContent="center"
+              >
+                <ManagedAsCodeNavIndicator />
+              </Box>
+            ) : (
               <Button
                 size="icon"
                 className="h-6 w-6"

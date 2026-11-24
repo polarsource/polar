@@ -44,12 +44,14 @@ export const VersionsTab = ({
 }: {
   organization: schemas['Organization']
   catalogs: schemas['Catalog'][]
-}) => (
-  <List size="small">
-    {catalogs
-      // The draft is shown above the list
-      .filter(({ status }) => status !== 'draft')
-      .map((catalog) => (
+}) => {
+  // The draft is shown above the list
+  const published = catalogs.filter(({ status }) => status !== 'draft')
+  if (!published.length) return null
+
+  return (
+    <List size="small">
+      {published.map((catalog) => (
         <Link
           key={catalog.id}
           href={`/dashboard/${organization.slug}/products/versions/${catalog.id}`}
@@ -81,5 +83,6 @@ export const VersionsTab = ({
           </ListItem>
         </Link>
       ))}
-  </List>
-)
+    </List>
+  )
+}

@@ -1,4 +1,4 @@
-import { StatusIcon } from '@/components/Shared/StatusIcon'
+import { StatusIcon, StatusTooltip } from '@/components/Shared/StatusIcon'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { twMerge } from 'tailwind-merge'
@@ -39,6 +39,22 @@ export const subscriptionStatusDisplayNames: {
   unpaid: 'Unpaid',
 }
 
+const subscriptionStatusDescriptions: {
+  [key in schemas['SubscriptionStatus']]: string
+} = {
+  incomplete: 'The first payment has not been completed.',
+  incomplete_expired: 'The first payment was not completed in time.',
+  trialing: 'In a trial. The first charge is made when the trial ends.',
+  active: 'Running, and renewed automatically each billing period.',
+  past_due: 'A renewal payment failed. Polar is retrying it automatically.',
+  paused:
+    'Paused. Benefits are revoked and nothing is charged until it resumes.',
+  trial_ended:
+    'The trial ended without a payment method, so it did not convert.',
+  canceled: 'Ended. Benefits are revoked.',
+  unpaid: 'Ended because its payment could not be collected.',
+}
+
 const isRunning = (status: schemas['SubscriptionStatus']) =>
   status === 'active' || status === 'trialing'
 
@@ -65,6 +81,30 @@ export const getScheduledStatusLabel = (
   return subscriptionStatusDisplayNames[status]
 }
 
+export const getScheduledStatusDescription = (
+  status: schemas['SubscriptionStatus'],
+  { isCanceling = false, isPausing = false },
+): string => {
+  if (isRunning(status)) {
+    if (isCanceling) return 'Running until the end of the period, then it ends.'
+    if (isPausing) return 'Running until the end of the period, then it pauses.'
+  }
+  return subscriptionStatusDescriptions[status]
+}
+
+export const getSubscriptionStatusDescription = ({
+  status,
+  ends_at: endsAt,
+  pause_at_period_end: pausesAtPeriodEnd,
+}: Pick<
+  schemas['Subscription'],
+  'status' | 'ends_at' | 'pause_at_period_end'
+>): string =>
+  getScheduledStatusDescription(status, {
+    isCanceling: endsAt !== null,
+    isPausing: pausesAtPeriodEnd,
+  })
+
 export const getSubscriptionStatusLabel = ({
   status,
   ends_at: endsAt,
@@ -88,14 +128,17 @@ export const SubscriptionStatusLabel = ({
   const label = getSubscriptionStatusLabel(subscription)
 
   return (
-    <div className={twMerge('flex flex-row items-center gap-x-2', className)}>
-      <StatusIcon
-        {...getSubscriptionStatusIcon(
-          subscription.status,
-          subscription.cancel_at_period_end || subscription.pause_at_period_end,
-        )}
-      />
-      <span>{label}</span>
-    </div>
+    <StatusTooltip description={getSubscriptionStatusDescription(subscription)}>
+      <div className={twMerge('flex flex-row items-center gap-x-2', className)}>
+        <StatusIcon
+          {...getSubscriptionStatusIcon(
+            subscription.status,
+            subscription.cancel_at_period_end ||
+              subscription.pause_at_period_end,
+          )}
+        />
+        <span>{label}</span>
+      </div>
+    </StatusTooltip>
   )
 }

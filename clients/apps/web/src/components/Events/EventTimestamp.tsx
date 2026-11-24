@@ -72,11 +72,11 @@ const ZoneRow = ({
   timeZone?: string
 }) => (
   <>
-    <Text variant="caption" color="muted" monospace>
+    <Text variant="caption" color="muted">
       {label}
     </Text>
-    <Text>{formatDate(date, timeZone)}</Text>
-    <Box justifyContent="end">
+    <Box alignItems="baseline" columnGap="s">
+      <Text>{formatDate(date, timeZone)}</Text>
       <Text color="muted" tabularNums>
         {formatTime(date, timeZone)}
       </Text>
@@ -93,7 +93,7 @@ const TimestampDetails = ({ date }: { date: Date }) => {
     <Box flexDirection="column" gap="m" padding="xs">
       <Text color="muted">{formatRelative(date, now)}</Text>
       <Grid
-        templateColumns="auto 1fr auto"
+        templateColumns="auto 1fr"
         columnGap="m"
         rowGap="s"
         alignItems="center"

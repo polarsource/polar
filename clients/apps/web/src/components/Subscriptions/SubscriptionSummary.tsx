@@ -9,9 +9,15 @@ import { SubscriptionStatus } from './SubscriptionStatus'
 export const SubscriptionSummary = ({
   subscription,
   organization,
+  showProduct = true,
+  showStatus = true,
 }: {
   subscription: schemas['Subscription']
   organization: schemas['Organization']
+  // Off where the product is listed right under the summary.
+  showProduct?: boolean
+  // Off where the status has a row of its own under the summary.
+  showStatus?: boolean
 }) => {
   const {
     amount,
@@ -38,18 +44,25 @@ export const SubscriptionSummary = ({
             per {count > 1 ? `${count} ${interval}s` : interval}
           </Text>
         </Box>
-        <Box alignItems="center" gap="s" minWidth={0}>
-          <Text color="muted" truncate>
-            {product.name}
+        {showProduct && (
+          <Box alignItems="center" gap="s" minWidth={0}>
+            <Text color="muted" truncate>
+              {product.name}
+            </Text>
+            <CatalogVersionLabel
+              organization={organization}
+              version={product}
+            />
+          </Box>
+        )}
+      </Box>
+      {showStatus && (
+        <Box flexShrink={0}>
+          <Text as="div">
+            <SubscriptionStatus subscription={subscription} />
           </Text>
-          <CatalogVersionLabel organization={organization} version={product} />
         </Box>
-      </Box>
-      <Box flexShrink={0}>
-        <Text as="div">
-          <SubscriptionStatus subscription={subscription} />
-        </Text>
-      </Box>
+      )}
     </Box>
   )
 }

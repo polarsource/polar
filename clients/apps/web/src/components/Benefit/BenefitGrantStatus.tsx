@@ -1,5 +1,8 @@
 import { schemas } from '@polar-sh/client'
-import { Status, type StatusColor } from '@polar-sh/orbit'
+import {
+  StatusLabel,
+  type StatusIconProps,
+} from '@/components/Shared/StatusIcon'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 
 interface BenefitGrantStatusProps {
@@ -28,19 +31,19 @@ export const BenefitGrantStatus = ({ grant }: BenefitGrantStatusProps) => {
     Error: grant.error?.message ?? 'An unknown error occurred',
   }
 
-  const statusColors: Record<typeof status, StatusColor> = {
-    Revoked: 'red',
-    Granted: 'green',
-    'Manually granted': 'green',
-    'Manually revoked': 'red',
-    Pending: 'yellow',
-    Error: 'red',
+  const statusIcons: Record<typeof status, StatusIconProps> = {
+    Revoked: { shape: 'cross', tone: 'red' },
+    Granted: { shape: 'check', tone: 'green' },
+    'Manually granted': { shape: 'check', tone: 'green' },
+    'Manually revoked': { shape: 'cross', tone: 'red' },
+    Pending: { shape: 'half', tone: 'yellow' },
+    Error: { shape: 'alert', tone: 'red' },
   }
 
   return (
     <Tooltip>
       <TooltipTrigger>
-        <Status color={statusColors[status]} status={status} />
+        <StatusLabel {...statusIcons[status]} label={status} />
       </TooltipTrigger>
       <TooltipContent>{statusDescription[status]}</TooltipContent>
     </Tooltip>

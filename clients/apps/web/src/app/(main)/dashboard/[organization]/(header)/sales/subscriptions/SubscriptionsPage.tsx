@@ -13,7 +13,7 @@ import {
   MAX_PIXELS_PER_DAY,
   type GanttGroup,
 } from '@/components/Subscriptions/Gantt/scale'
-import { SubscriptionDetailPanel } from '@/components/Subscriptions/SubscriptionDetailPanel'
+import { SubscriptionSidePanel } from '@/components/Subscriptions/SubscriptionSidePanel'
 import { SELECTABLE_STATUSES } from '@/components/Subscriptions/selectableStatuses'
 import { SubscriptionsTable } from '@/components/Subscriptions/SubscriptionsTable'
 import { useSafeCopy } from '@/hooks/clipboard'
@@ -299,13 +299,15 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       className="min-h-0 flex-1 pb-0"
       detailView={
         selected ? (
-          <SubscriptionDetailPanel
+          <SubscriptionSidePanel
             key={selected.id}
             subscription={selected}
             organization={organization}
-            onPrevious={previous ? () => select(previous.id) : undefined}
-            onNext={next ? () => select(next.id) : undefined}
-            onClose={() => select(null)}
+            navigation={{
+              onPrevious: previous ? () => select(previous.id) : undefined,
+              onNext: next ? () => select(next.id) : undefined,
+              onClose: () => select(null),
+            }}
           />
         ) : undefined
       }

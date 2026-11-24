@@ -6,9 +6,11 @@ import { useModal } from '@/components/Modal/useModal'
 import { SubscriptionSeatsSection } from '@/components/Seats/SubscriptionSeatsSection'
 import SubscriptionActionsMenu from '@/components/Subscriptions/SubscriptionActionsMenu'
 import { SubscriptionDetailsGrid } from '@/components/Subscriptions/SubscriptionDetailsGrid'
-import SubscriptionInvoicePreview from '@/components/Subscriptions/SubscriptionInvoicePreview'
 import SubscriptionUsageChargePreview from '@/components/Subscriptions/SubscriptionUsageChargePreview'
-import SubscriptionOrdersSection from '@/components/Subscriptions/SubscriptionOrdersSection'
+import { SubscriptionAttention } from '@/components/Subscriptions/SubscriptionAttention'
+import { SubscriptionBenefitGrants } from '@/components/Subscriptions/SubscriptionBenefitGrants'
+import { SubscriptionBillingHistory } from '@/components/Subscriptions/SubscriptionBillingHistory'
+import { SubscriptionSidePanel } from '@/components/Subscriptions/SubscriptionSidePanel'
 import { SubscriptionSecondaryDetails } from '@/components/Subscriptions/SubscriptionSecondaryDetails'
 import UpdateSubscriptionModal from '@/components/Subscriptions/UpdateSubscriptionModal'
 import { useProduct, useSubscription } from '@/hooks/queries'
@@ -59,15 +61,15 @@ const ClientPage: React.FC<ClientPageProps> = ({
           <SubscriptionActionsMenu subscription={subscription} />
         </Box>
       }
-      contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none"
-      contextViewTitle="Customer"
-      contextView={
-        <CustomerContextView
+      detailView={
+        <SubscriptionSidePanel
           organization={organization}
-          customer={subscription.customer}
+          subscription={subscription}
         />
       }
     >
+      <SubscriptionAttention subscription={subscription} />
+
       <SubscriptionDetailsGrid
         subscription={subscription}
         product={product}
@@ -75,7 +77,16 @@ const ClientPage: React.FC<ClientPageProps> = ({
       />
 
       <SubscriptionUsageChargePreview subscription={subscription} />
-      <SubscriptionInvoicePreview subscription={subscription} />
+
+      <SubscriptionBillingHistory
+        organization={organization}
+        subscription={subscription}
+      />
+
+      <SubscriptionBenefitGrants
+        organization={organization}
+        subscription={subscription}
+      />
 
       <SubscriptionSecondaryDetails
         subscription={subscription}
@@ -86,15 +97,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
       <SubscriptionSeatsSection subscription={subscription} />
 
-      <SubscriptionOrdersSection
-        organization={organization}
-        subscription={subscription}
-      />
-
       <Box
         flexDirection="column"
         rowGap="l"
-        display={{ base: 'flex', md: 'none' }}
+        display={{ base: 'flex', lg: 'none' }}
       >
         <Text variant="heading-xs" as="h3">
           Customer

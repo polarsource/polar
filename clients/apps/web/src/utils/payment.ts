@@ -1,5 +1,4 @@
 import { schemas } from '@polar-sh/client'
-import type { StatusColor } from '@polar-sh/orbit'
 
 type PaymentDisplayStatus = schemas['PaymentStatus'] | 'blocked'
 
@@ -16,16 +15,6 @@ export const PaymentStatusDisplayTitle: Record<PaymentDisplayStatus, string> = {
   pending: 'Pending',
   failed: 'Declined',
   blocked: 'Blocked',
-}
-
-export const PaymentStatusDisplayColor: Record<
-  PaymentDisplayStatus,
-  StatusColor
-> = {
-  succeeded: 'green',
-  pending: 'yellow',
-  failed: 'red',
-  blocked: 'red',
 }
 
 export const isBlockedPayment = (payment: schemas['Payment']): boolean =>

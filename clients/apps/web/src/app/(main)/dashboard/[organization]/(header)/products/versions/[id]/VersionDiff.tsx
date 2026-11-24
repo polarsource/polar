@@ -1,7 +1,7 @@
 import { schemas } from '@polar-sh/client'
 import { Grid, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ChevronDown } from '@polar-sh/orbit/icons'
+import { ArrowUpRight, ChevronDown } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { useId, useState } from 'react'
 import {
@@ -224,25 +224,32 @@ const ItemName = ({
   href?: string
   removed?: boolean
   muted?: boolean
-}) => (
-  <Text
-    variant="body"
-    color={removed || muted ? 'muted' : 'default'}
-    lineThrough={removed}
-    truncate
-  >
-    {href ? (
-      <Link
-        href={href}
-        className="hover:underline hover:decoration-current/30 hover:underline-offset-4"
-      >
-        {name}
-      </Link>
-    ) : (
-      name
-    )}
-  </Text>
-)
+}) => {
+  const text = (
+    <Text
+      variant="body"
+      color={removed || muted ? 'muted' : 'default'}
+      lineThrough={removed}
+      truncate
+    >
+      {name}
+    </Text>
+  )
+  if (!href) return text
+  return (
+    <Link href={href} className="group flex min-w-0 items-center gap-x-1">
+      {text}
+      <Box as="span" display="block" flexShrink={0} color="text-tertiary">
+        <ArrowUpRight
+          size={14}
+          strokeWidth={1.5}
+          aria-hidden
+          className="block opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+        />
+      </Box>
+    </Link>
+  )
+}
 
 const UnchangedItems = <T extends { external_id: string }>({
   items,

@@ -265,6 +265,7 @@ async def run_task(
                             debounce.message_id,
                             debounce_key,
                             dict(message_options or {}),
+                            message_timestamp,
                         )
                     ]
                 )

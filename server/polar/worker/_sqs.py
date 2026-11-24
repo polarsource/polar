@@ -49,6 +49,7 @@ class Job(NamedTuple):
     message_id: str | None = None
     debounce_key: str | None = None
     message_options: dict[str, Any] | None = None
+    message_timestamp: int | None = None
 
 
 class Envelope(NamedTuple):
@@ -313,6 +314,7 @@ def send_jobs_sync(jobs: list[Job]) -> None:
                 job.args,
                 job.kwargs,
                 job.correlation_id,
+                message_timestamp=job.message_timestamp,
                 message_id=job.message_id,
                 debounce_key=job.debounce_key,
                 message_options=job.message_options,

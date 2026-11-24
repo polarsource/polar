@@ -333,7 +333,11 @@ class TestRunTaskDebounce:
         )
 
         await run_task(
-            "dummy", ("arg",), message_id="owner", debounce_key=self.DEBOUNCE_KEY
+            "dummy",
+            ("arg",),
+            message_timestamp=1234567890000,
+            message_id="owner",
+            debounce_key=self.DEBOUNCE_KEY,
         )
 
         task_fn.assert_not_awaited()
@@ -343,5 +347,6 @@ class TestRunTaskDebounce:
         assert job.args == ("arg",)
         assert job.debounce_key == self.DEBOUNCE_KEY
         assert job.message_id == await fake_redis.hget(self.DEBOUNCE_KEY, "message_id")
+        assert job.message_timestamp == 1234567890000
         assert job.delay is not None
         assert job.delay > 0

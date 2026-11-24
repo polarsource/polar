@@ -6,8 +6,10 @@ from uuid import UUID
 import structlog
 
 from polar.config import settings
+from polar.exceptions import PolarTaskError
 from polar.kit.utils import utc_now
 from polar.logging import Logger
+from polar.models.merchant_migration import MERCHANT_MIGRATION_FINISHED_STEPS
 from polar.observability.task_logging import LoggableField
 from polar.worker import (
     AsyncSessionMaker,
@@ -22,6 +24,14 @@ from .repository import MerchantMigrationRepository
 from .service import merchant_migration as merchant_migration_service
 
 log: Logger = structlog.get_logger()
+
+
+class MerchantMigrationNotClosed(PolarTaskError):
+    def __init__(self, merchant_migration_id: UUID) -> None:
+        super().__init__(
+            f"Merchant migration {merchant_migration_id} is still open, "
+            "likely because an operation is running."
+        )
 
 
 @actor(
@@ -127,8 +137,6 @@ async def merchant_migration_notify_waiting_for_ops(
 
 
 async def _close(migration_id: UUID, *, idle_since: datetime | None) -> bool:
-    """Close the migration in bounded steps, each in its own transaction, and
-    return whether anything changed."""
     steps = 0
     while True:
         async with AsyncSessionMaker() as session:
@@ -182,5 +190,14 @@ async def merchant_migration_close_idle() -> None:
 async def merchant_migration_close(
     merchant_migration_id: Annotated[UUID, LoggableField],
 ) -> None:
-    """Close a migration Polar staff closed from the backoffice."""
     await _close(merchant_migration_id, idle_since=None)
+    async with AsyncSessionMaker() as session:
+        migration = await MerchantMigrationRepository.from_session(session).get_by_id(
+            merchant_migration_id
+        )
+    # A running precheck or import blocks the close: retry once it's done.
+    if (
+        migration is not None
+        and migration.step not in MERCHANT_MIGRATION_FINISHED_STEPS
+    ):
+        raise MerchantMigrationNotClosed(merchant_migration_id)

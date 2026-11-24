@@ -16,6 +16,7 @@ from polar.merchant_migration.service import (
 )
 from polar.merchant_migration.slack import SlackAlertInProgress
 from polar.merchant_migration.tasks import (
+    MerchantMigrationNotClosed,
     merchant_migration_close,
     merchant_migration_close_idle,
     merchant_migration_notify_created,
@@ -339,3 +340,18 @@ class TestClose:
             "cus_imported",
             "cus_skipped",
         }
+
+    async def test_retries_while_an_operation_runs(
+        self,
+        worker_session: AsyncSession,
+        save_fixture: SaveFixture,
+        idle_migration: MerchantMigration,
+    ) -> None:
+        idle_migration.operation = MerchantMigrationOperation(
+            status=MerchantMigrationOperationStatus.running,
+            last_progress_at=utc_now(),
+        )
+        await save_fixture(idle_migration)
+
+        with pytest.raises(MerchantMigrationNotClosed):
+            await merchant_migration_close(idle_migration.id)

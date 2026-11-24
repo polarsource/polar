@@ -64,8 +64,10 @@ from .repository import MerchantMigrationRecordRepository
 log = structlog.get_logger()
 
 EXTERNAL_ID_PREFIX = "lemon_squeezy:"
-# Order pages granted per run, each read once with the store's keys.
-PURCHASE_PAGES_PER_RUN = 10
+# Order pages granted per run. Each run reads all of the store's license keys
+# once, so fewer, bigger runs read them fewer times: 5,000 orders fit well
+# within the job's time limit.
+PURCHASE_PAGES_PER_RUN = 50
 DOWNLOAD_CHUNK_SIZE = 1024 * 1024
 
 
@@ -168,10 +170,9 @@ class MigrationBenefits:
         self, selected: Collection[str], first_page: int
     ) -> int | None:
         """Give one-time buyers the benefits of what they bought, keeping their
-        license key, a few order pages from ``first_page`` on. Returns the page to go
-        on from, None once done. The store's keys are read once per run, so a
-        run covers several pages. A rerun is safe: an existing grant is
-        skipped."""
+        license key, ``PURCHASE_PAGES_PER_RUN`` order pages from ``first_page``
+        on. Returns the page to go on from, None once done. A rerun is safe:
+        an existing grant is skipped."""
         benefits_by_variant: dict[str, list[Benefit]] = {}
         for proposal in await self.proposals():
             if proposal.created is None or proposal.source.source_id not in selected:
@@ -325,8 +326,8 @@ class MigrationBenefits:
                     properties=properties,
                 )
             except BenefitGrantAlreadyExists:
-                # One manual grant per buyer and benefit: a second purchase of
-                # the same product doesn't get its own key.
+                # One manual grant per buyer and benefit: a rerun, or a second
+                # purchase of the same product, which doesn't get its own key.
                 log.info(
                     "merchant_migration.purchase_already_granted",
                     organization_id=self.organization.id,

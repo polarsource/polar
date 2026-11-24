@@ -9,6 +9,8 @@ description: "Link Polar customers to your users and send them to checkout."
 
 In this step you'll create a customer for one of your users, then send them to a checkout for **Pro**.
 
+The examples use the sandbox client from the [quickstart overview](/quickstart/overview#prerequisites), on API version `2026-10`.
+
 ## Create the customer when a user signs up
 
 Create a Polar customer when a user signs up in your application, with your user ID as `external_id`:
@@ -82,15 +84,35 @@ curl -X POST https://sandbox-api.polar.sh/v1/checkouts/ \
 Passing `external_customer_id` ties the purchase to your user and locks the email field to theirs. After paying, the customer returns to your `success_url`, with `{CHECKOUT_ID}` replaced by the session ID.
 
 <Tip>
-  Don't need per-user sessions? Create a [Checkout Link](/features/checkout/links) in the dashboard and link to it from your pricing page. To keep customers on your site, use [embedded checkout](/features/checkout/embed).
+  Don't need per-user sessions? Create a [Checkout Link](/features/checkout/links) in the dashboard or with `polar checkout_links create`, and link to it from your pricing page. To keep customers on your site, use [embedded checkout](/features/checkout/embed).
 </Tip>
 
 ## Check it worked
 
-Open the checkout URL and pay with Stripe's test card `4242 4242 4242 4242`, any future expiry date and any CVC. In your sandbox dashboard:
+<Visibility for="agents">
+  Paying requires a person to complete the checkout page. Ask the user to pay with the test card before checking the customer state.
+</Visibility>
 
-- **Customers** shows Jane, with an active **Pro** subscription.
-- Jane's **AI tokens** meter shows the 100,000 credited tokens.
+Open the checkout URL and pay with Stripe's test card `4242 4242 4242 4242`, any future expiry date and any CVC. Then read Jane's customer state: `active_subscriptions` has **Pro**, and `active_meters` shows the 100,000 credited tokens.
+
+<Tabs>
+  <Tab title="Dashboard">
+    - Open **Customers**
+    - Select Jane
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar customers get_state_external user_123
+    ```
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Show the customer state for user_123 in my Polar sandbox.
+    ```
+
+    Uses the `customers_get_state_external` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
 
 ## Learn more
 

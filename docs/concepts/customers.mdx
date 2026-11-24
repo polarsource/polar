@@ -1,6 +1,6 @@
 ---
 title: "Customers"
-description: "Who buys from you, and how they map to users in your application."
+description: "How customers map to your users with external IDs, the customer state, and teams with seats."
 ---
 
 A **customer** is the person or team that buys from you. Everything they do on Polar hangs off the customer: orders, subscriptions, benefit grants, usage and payment methods.
@@ -47,6 +47,16 @@ For team customers, identify the end user by their member, not by the customer w
 ## Customer portal
 
 Customers manage their own billing in the [customer portal](/features/customer-portal/introduction): they can update payment methods, download invoices, view usage, and cancel or change their subscriptions. They sign in with their email, or you can send them in with a [customer session](/api-reference/current/customer-sessions/create-customer-session) from your application.
+
+## From the CLI or your agent
+
+Every task here also works from your terminal and your agent. See the [CLI reference](/integrate/cli/reference) and the [MCP server](/integrate/mcp).
+
+| Task | CLI | MCP operation |
+| --- | --- | --- |
+| Create a customer | `polar customers create` | `customers_create` |
+| Read a customer state by your user ID | `polar customers get_state_external <external_id>` | `customers_get_state_external` |
+| List a team's members | `polar customers members list` | `customers_members_list` |
 
 ## Learn more
 

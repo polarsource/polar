@@ -9,6 +9,8 @@ description: "Create a plan with a base fee, metered usage and included credits.
 
 In this step you'll create a **Pro** plan: $20 a month, including 100,000 tokens, with usage beyond that billed per token.
 
+The examples use the sandbox client from the [quickstart overview](/quickstart/overview#prerequisites), on API version `2026-10`.
+
 ## Create the credits benefit
 
 A [Credits benefit](/features/benefits/credits) adds units to a customer's meter balance at the start of every billing cycle. Usage draws the balance down before anything is billed.
@@ -116,11 +118,31 @@ Customers now pay $20 a month. The first 100,000 tokens each month are covered b
   To protect customers from surprise bills, set a `cap_amount` on the metered price. To never bill for usage at all, leave out the metered price and sell credits only. See [Usage-based pricing](/features/usage-based-billing/billing).
 </Tip>
 
-You can build the same plan in the dashboard under **Products → New Product**, or with `polar products create` in the [CLI](/integrate/cli/reference/products).
+The [CLI](/integrate/cli/reference/products) takes the same bodies: `polar benefits create`, `polar products create` and `polar products update_benefits`, each with `--data '<json>'`. You can also build the plan in the dashboard under **Products → New Product**.
 
 ## Check it worked
 
-Open **Products** in your sandbox dashboard. **Pro** is listed with a $20 monthly price, a metered price on **AI tokens**, and the credits benefit.
+**Pro** has a $20 monthly price, a metered price on **AI tokens**, and the credits benefit.
+
+<Tabs>
+  <Tab title="Dashboard">
+    - Open **Products**
+    - Select **Pro**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar products get $PRODUCT_ID
+    ```
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Show the Pro product in my Polar sandbox with its prices and benefits.
+    ```
+
+    Uses the `products_get` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
 
 ## Learn more
 

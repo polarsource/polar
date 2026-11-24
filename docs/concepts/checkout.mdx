@@ -1,6 +1,6 @@
 ---
 title: "Checkout"
-description: "How a customer buys a product."
+description: "Checkout Links vs. Checkout Sessions, and what a completed checkout creates."
 ---
 
 **Checkout** is where a customer picks a product, enters their payment and billing details, and pays. Polar hosts the checkout page, calculates tax for the customer's location, and handles the payment.
@@ -48,6 +48,15 @@ A session moves through the statuses `open`, `confirmed`, and then `succeeded` o
 - **Custom fields** collect extra information, like a company name or a terms checkbox. See [Custom fields](/features/custom-fields).
 - **Ad-hoc prices** set a price for a single session without changing your catalog. See [Ad-hoc prices](/features/checkout/session#ad-hoc-prices).
 - **Embedded checkout** opens the checkout on your own site instead of redirecting. See [Embedded checkout](/features/checkout/embed).
+
+## From the CLI or your agent
+
+Checkout Sessions are created from your backend with the SDK or API. Checkout Links also work from the CLI or your agent:
+
+| Task | CLI | MCP operation |
+| --- | --- | --- |
+| Create a Checkout Link | `polar checkout_links create` | `checkout_links_create` |
+| List checkout sessions | `polar checkouts list` | `checkouts_list` |
 
 ## Learn more
 

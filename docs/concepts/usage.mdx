@@ -1,7 +1,7 @@
 ---
 title: "Usage: events & meters"
 sidebarTitle: "Usage"
-description: "Track what customers use, then bill for it or draw it down from credits."
+description: "How events and meters work, and how usage is billed or drawn down from credits."
 ---
 
 Usage-based billing in Polar is built from two objects:
@@ -59,6 +59,17 @@ The customer's current balance for each meter is part of their [customer state](
 ## Costs
 
 Events can also carry what each action costs you, through a `_cost` metadata property. [Cost insights](/features/cost-insights/introduction) combines those costs with your revenue to show profit per customer.
+
+## From the CLI or your agent
+
+Events are sent from your application with the SDK or API. Everything else works from the CLI or your agent:
+
+| Task | CLI | MCP operation |
+| --- | --- | --- |
+| Create a meter | `polar meters create` | `meters_create` |
+| Read a meter's usage | `polar meters quantities <id>` | `meters_quantities` |
+| Read a customer's balance per meter | `polar customer_meters list` | `customer_meters_list` |
+| List the event names you've sent | `polar events list_names` | `events_list_names` |
 
 ## Learn more
 

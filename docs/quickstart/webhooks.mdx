@@ -9,6 +9,8 @@ description: "Listen to webhooks and read the customer state to grant access in 
 
 In this step you'll listen for state changes, then gate your AI feature on the customer's subscription and credit balance.
 
+The examples use the sandbox client from the [quickstart overview](/quickstart/overview#prerequisites), on API version `2026-10`.
+
 ## Forward webhooks to your machine
 
 Use the [Polar CLI](/integrate/cli/webhooks) to receive your sandbox organization's webhooks on your local server:
@@ -112,9 +114,34 @@ Polar never blocks events, so a guardrail like this lives in your application. T
 
 ## Check it worked
 
-With `polar webhook listen` running, revoke Jane's subscription from your sandbox dashboard. The CLI logs a `customer.state_changed` delivery, and your handler records that Jane no longer has Pro.
+With `polar webhook listen` running, revoke Jane's subscription. Its ID is in `active_subscriptions` of her customer state. The CLI logs a `customer.state_changed` delivery, and your handler records that Jane no longer has Pro.
+
+<Tabs>
+  <Tab title="Dashboard">
+    - Open **Customers**
+    - Select Jane
+    - Open the **Pro** subscription
+    - Click **Revoke**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar subscriptions revoke <subscription_id>
+    ```
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Revoke user_123's Pro subscription in my Polar sandbox.
+    ```
+
+    Uses the `subscriptions_revoke` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
 
 Revoking ends the subscription immediately. A subscription canceled at period end stays active until then, so access correctly continues.
+
+<Visibility for="agents">
+  In the handler, return `403` when signature verification fails (`PolarWebhookVerificationError`) and `202` for event types the SDK doesn't know (`PolarWebhookUnknownTypeError`), so Polar doesn't retry them.
+</Visibility>
 
 ## You're done
 

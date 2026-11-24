@@ -1,6 +1,6 @@
 ---
 title: "Orders & subscriptions"
-description: "Every charge is an order. A subscription is the recurring relationship behind it."
+description: "Order billing reasons and statuses, subscription statuses, and when benefits are revoked."
 ---
 
 An **order** is the record of a single charge: the amount, the tax, the invoice, and the product and customer it belongs to.
@@ -53,6 +53,17 @@ A subscription that's canceled **at period end** stays `active` until `current_p
 ## Changing a subscription
 
 You and your customers can switch a subscription to another product, change its seats or units, apply a discount or move its billing date. Charges for a change mid-period are [prorated](/features/subscriptions/proration): either added to the next order or invoiced right away.
+
+## From the CLI or your agent
+
+Every task here also works from your terminal and your agent. See the [CLI reference](/integrate/cli/reference) and the [MCP server](/integrate/mcp).
+
+| Task | CLI | MCP operation |
+| --- | --- | --- |
+| List orders | `polar orders list` | `orders_list` |
+| Get an order's invoice | `polar orders invoice <id>` | `orders_invoice` |
+| Change a subscription | `polar subscriptions update <id>` | `subscriptions_update` |
+| End a subscription now | `polar subscriptions revoke <id>` | `subscriptions_revoke` |
 
 ## Learn more
 

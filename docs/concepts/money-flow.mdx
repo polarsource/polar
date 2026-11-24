@@ -1,6 +1,6 @@
 ---
 title: "Money flow"
-description: "How a customer's payment becomes a payout to you."
+description: "How a payment becomes your balance and payout, including tax, fees, refunds and disputes."
 ---
 
 As your [Merchant of Record](/merchant-of-record/introduction), Polar collects every payment, pays the tax, and passes the rest on to you:
@@ -40,6 +40,15 @@ New transactions are held for a settlement delay before they can be paid out, an
 A **refund** returns all or part of an order's amount to the customer, along with the matching tax. Payment processing fees aren't returned. Polar may also refund an order itself to head off a likely chargeback. See [Refunds](/features/refunds).
 
 A **dispute**, or chargeback, is when a customer asks their bank to reverse a payment. Each dispute has a fee, deducted from your balance whatever the outcome. See [Fees](/merchant-of-record/fees).
+
+## From the CLI or your agent
+
+Every task here also works from your terminal and your agent. See the [CLI reference](/integrate/cli/reference) and the [MCP server](/integrate/mcp).
+
+| Task | CLI | MCP operation |
+| --- | --- | --- |
+| List payments | `polar payments list` | `payments_list` |
+| Refund an order | `polar refunds create` | `refunds_create` |
 
 ## Learn more
 

@@ -65,6 +65,18 @@ curl https://sandbox-api.polar.sh/v1/... \
 ```
 </CodeGroup>
 
+<Visibility for="agents">
+  Rules for implementing this quickstart in a user's project:
+
+  - Use the sandbox (`https://sandbox-api.polar.sh`, `environment: "sandbox"`) until the user says to go live.
+  - Keep `POLAR_ACCESS_TOKEN` and `POLAR_WEBHOOK_SECRET` on the server. Never send them to the browser.
+  - Use the application's own user ID as `external_id` and `external_customer_id`. Don't store Polar customer IDs.
+  - Ask the user which feature to meter and how to price it. The names and amounts in these pages are examples.
+  - Pin one API version across the project: `@polar-sh/sdk/2026-10`, `polar.v2026_10` or the `Polar-Version: 2026-10` header.
+  - Follow the steps in order: [track usage](/quickstart/track-usage), [catalog](/quickstart/catalog), [checkout](/quickstart/checkout), [webhooks](/quickstart/webhooks). Each step ends with a way to check it worked.
+</Visibility>
+
+
 <Tip>
   Prefer to let your agent do it? Run `polar agent setup` to connect Claude Code, Codex or Cursor to Polar, then ask it to follow this quickstart. See [MCP](/integrate/mcp).
 </Tip>

@@ -1,6 +1,6 @@
 ---
 title: "Products & prices"
-description: "What you sell, and how much it costs."
+description: "Products and price types, one-time vs. recurring billing, and how price changes affect subscribers."
 ---
 
 A **product** is anything you sell on Polar. Subscriptions and one-time purchases are both products: same API, same data model, different billing.
@@ -50,6 +50,16 @@ Whether a price includes tax depends on your [tax behavior](/features/tax-inclus
 ## Archiving
 
 Archive a product to stop selling it. Existing customers keep their access and subscriptions keep renewing, but the product no longer appears in new checkouts. Only products that have never been used can be deleted permanently.
+
+## From the CLI or your agent
+
+Every task here also works from your terminal and your agent. See the [CLI reference](/integrate/cli/reference) and the [MCP server](/integrate/mcp).
+
+| Task | CLI | MCP operation |
+| --- | --- | --- |
+| Create a product | `polar products create` | `products_create` |
+| Attach benefits | `polar products update_benefits <id>` | `products_update_benefits` |
+| Archive or update a product | `polar products update <id>` | `products_update` |
 
 ## Learn more
 

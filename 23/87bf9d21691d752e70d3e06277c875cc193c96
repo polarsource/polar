@@ -1,0 +1,19 @@
+clients/apps/web/src/components/Orders/DownloadInvoice.tsx
+  s_9d4fcc69d80fc5::t_ca721b8680489f 133
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2387bf9d21691d752e70d3e06277c875cc193c96",
+  "prompts": {},
+  "sessions": {
+    "s_9d4fcc69d80fc5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20ccd-705d-7a61-9a99-612697cae1a1",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

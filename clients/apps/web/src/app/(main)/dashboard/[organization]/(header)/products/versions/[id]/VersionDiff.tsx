@@ -201,42 +201,27 @@ const CollapsedLines = ({
   )
 }
 
-const ItemRow = ({
-  href,
-  children,
-}: {
-  href?: string
-  children: React.ReactNode
-}) => {
-  const row = (
-    <Box
-      alignItems="baseline"
-      justifyContent="between"
-      columnGap="l"
-      px="xl"
-      py="m"
-      minWidth={0}
-      backgroundColor={href ? { hover: 'background-card' } : undefined}
-      transitionProperty="colors"
-      transitionDuration="fast"
-    >
-      {children}
-    </Box>
-  )
-  if (!href) return row
-  return (
-    <Link href={href} className="block">
-      {row}
-    </Link>
-  )
-}
+const ItemRow = ({ children }: { children: React.ReactNode }) => (
+  <Box
+    alignItems="baseline"
+    justifyContent="between"
+    columnGap="l"
+    px="xl"
+    py="m"
+    minWidth={0}
+  >
+    {children}
+  </Box>
+)
 
 const ItemName = ({
   name,
+  href,
   removed = false,
   muted = false,
 }: {
   name: string
+  href?: string
   removed?: boolean
   muted?: boolean
 }) => (
@@ -246,7 +231,16 @@ const ItemName = ({
     lineThrough={removed}
     truncate
   >
-    {name}
+    {href ? (
+      <Link
+        href={href}
+        className="hover:underline hover:decoration-current/30 hover:underline-offset-4"
+      >
+        {name}
+      </Link>
+    ) : (
+      name
+    )}
   </Text>
 )
 
@@ -306,8 +300,12 @@ const UnchangedItems = <T extends { external_id: string }>({
             borderStyle="solid"
             borderColor="border-secondary"
           >
-            <ItemRow href={href?.(item.external_id)}>
-              <ItemName name={String(item[nameField])} muted />
+            <ItemRow>
+              <ItemName
+                name={String(item[nameField])}
+                href={href?.(item.external_id)}
+                muted
+              />
             </ItemRow>
           </Box>
         ))}
@@ -352,9 +350,10 @@ const DiffSection = <T extends { external_id: string }>({
             borderColor="border-primary"
             overflow="hidden"
           >
-            <ItemRow href={href?.(key)}>
+            <ItemRow>
               <ItemName
                 name={String(item[nameField])}
+                href={href?.(key)}
                 removed={change === 'removed'}
               />
               <ChangeStatus change={change} />

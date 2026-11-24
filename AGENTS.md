@@ -166,9 +166,7 @@ job auto-translates the rest. Don't edit other locale files. (More in `clients/A
 **Effect** (`clients/apps/mcp`, `clients/packages/{cli,polar,ingestion}`, `sdk/cli-commands`,
 `sdk/generator/cli_commands/template`): don't write Effect from memory. Before writing or changing
 Effect code, search the Effect and opencode sources for the established pattern (errors, services
-and layers, schemas, CLI, HTTP, testing). For errors that means tagged error classes,
-`Effect.catchTag`/`catchTags`, `Match` on tags, not hand-rolled `{ _tag }` unions with `switch`
-or sniffing error message strings. Clone them if missing (`git -C <dir> pull` refreshes them):
+and layers, schemas, CLI, HTTP, testing). Clone them if missing (`git -C <dir> pull` refreshes them):
 
 ```bash
 mkdir -p ~/.local/share/effect-solutions

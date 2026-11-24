@@ -118,7 +118,10 @@ export const useCatalogConfig = (
     enabled: !!catalogId,
   })
 
-export const useRemovedCatalogItems = (organizationId: string) =>
+export const useRemovedCatalogItems = (
+  organizationId: string,
+  enabled = true,
+) =>
   useQuery({
     queryKey: ['catalogs', 'removed', { organizationId }],
     queryFn: () =>
@@ -129,6 +132,7 @@ export const useRemovedCatalogItems = (organizationId: string) =>
       ),
     retry: defaultRetry,
     staleTime: 0,
+    enabled,
   })
 
 export const usePublishCatalog = () =>

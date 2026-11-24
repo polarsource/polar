@@ -89,6 +89,7 @@ def build_chargeback_stop_alert(
     transaction_currency_code: str = "USD",
     transaction_authorised_at: str | None = None,
     transaction_authorisation_code: str | None = None,
+    transaction_card_last4: str | None = None,
     transaction_acquirer_reference_number: str | None = None,
 ) -> ChargebackStopAlert:
     return ChargebackStopAlert(
@@ -102,6 +103,7 @@ def build_chargeback_stop_alert(
         transaction_currency_code=transaction_currency_code.upper(),
         transaction_authorised_at=transaction_authorised_at,
         transaction_authorisation_code=transaction_authorisation_code,
+        transaction_card_last4=transaction_card_last4,
         transaction_acquirer_reference_number=transaction_acquirer_reference_number,
     )
 
@@ -1647,12 +1649,17 @@ class TestUpsertFromChargebackStop:
             organization,
             order=order,
             processor_id="STRIPE_CHARGE_ID",
-            method_metadata={"authorization_code": "AUTH01"},
+            method_metadata={
+                "authorization_code": "AUTH01",
+                "last4": "1111",
+                "wallet": {"dynamic_last4": "4242"},
+            },
         )
         alert = build_chargeback_stop_alert(
             integration_transaction_id=None,
             transaction_authorised_at=f"{utc_now().date()}T00:00:00Z",
             transaction_authorisation_code="AUTH01",
+            transaction_card_last4="4242",
         )
 
         dispute = await dispute_service.upsert_from_chargeback_stop(session, alert)
@@ -1671,12 +1678,13 @@ class TestUpsertFromChargebackStop:
                 save_fixture,
                 organization,
                 processor_id=charge_id,
-                method_metadata={"authorization_code": "AUTH01"},
+                method_metadata={"authorization_code": "AUTH01", "last4": "4242"},
             )
         alert = build_chargeback_stop_alert(
             integration_transaction_id=None,
             transaction_authorised_at=f"{utc_now().date()}T00:00:00Z",
             transaction_authorisation_code="AUTH01",
+            transaction_card_last4="4242",
         )
 
         with pytest.raises(DisputeAlertTransactionNotLinkedError):

@@ -14,4 +14,5 @@ class ChargebackStopAlert(TypedDict):
     transaction_currency_code: str
     transaction_authorised_at: NotRequired[str | None]
     transaction_authorisation_code: NotRequired[str | None]
+    transaction_card_last4: NotRequired[str | None]
     transaction_acquirer_reference_number: NotRequired[str | None]

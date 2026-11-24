@@ -505,19 +505,22 @@ class DisputeService:
                 raise DisputeAlertTargetsRefundError(alert["id"], refund.id)
 
         authorization_code = alert.get("transaction_authorisation_code")
+        card_last4 = alert.get("transaction_card_last4")
         authorized_at = alert.get("transaction_authorised_at")
-        if authorization_code and authorized_at:
+        if authorization_code and card_last4 and authorized_at:
             authorized_day = datetime.fromisoformat(authorized_at)
             payment_repository = PaymentRepository.from_session(session)
             payments = await payment_repository.get_all_succeeded_by_authorization_code(
                 PaymentProcessor.stripe,
                 authorization_code,
+                card_last4,
                 currency=alert["transaction_currency_code"].lower(),
                 amount=alert["transaction_amount_in_cents"],
                 created_after=authorized_day - ALERT_AUTHORIZATION_WINDOW_BEFORE,
                 created_before=authorized_day + ALERT_AUTHORIZATION_WINDOW_AFTER,
             )
-            # Authorisation codes are short: only trust a single match.
+            # Authorisation codes are short and can repeat: only trust a
+            # single match that also has the same card last 4.
             if len(payments) == 1:
                 return payments[0].processor_id
 

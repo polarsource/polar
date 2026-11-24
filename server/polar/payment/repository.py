@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, func, or_, select
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.enums import PaymentProcessor
@@ -59,6 +59,7 @@ class PaymentRepository(
         self,
         processor: PaymentProcessor,
         authorization_code: str,
+        card_last4: str,
         *,
         currency: str,
         amount: int,
@@ -73,6 +74,11 @@ class PaymentRepository(
             Payment.created_at >= created_after,
             Payment.created_at < created_before,
             Payment.method_metadata["authorization_code"].astext == authorization_code,
+            # With a wallet, the network sees the device card number
+            or_(
+                Payment.method_metadata["last4"].astext == card_last4,
+                Payment.method_metadata["wallet"]["dynamic_last4"].astext == card_last4,
+            ),
         )
         return await self.get_all(statement)
 

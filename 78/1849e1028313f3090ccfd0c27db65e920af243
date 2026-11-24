@@ -1,0 +1,21 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/BenefitsStep.tsx
+  s_587ceda2630946::t_e4e34c3d868742 32
+clients/apps/web/src/hooks/queries/merchantMigrations.ts
+  s_587ceda2630946::t_a1f78093ea6b92 180-181,184,188-191,214-218
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "781849e1028313f3090ccfd0c27db65e920af243",
+  "prompts": {},
+  "sessions": {
+    "s_587ceda2630946": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "857c022f-2249-4a02-a91e-cde99fa20ae3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

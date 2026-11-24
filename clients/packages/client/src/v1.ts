@@ -28520,11 +28520,6 @@ export interface components {
        */
       benefit_id: string | null
       /**
-       * For Subscriptions
-       * @description Subscribers have it on the source.
-       */
-      for_subscriptions: boolean
-      /**
        * For One Time
        * @description Buyers of one-time products have it on the source.
        */

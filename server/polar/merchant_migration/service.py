@@ -1041,7 +1041,6 @@ class MerchantMigrationService:
                         if product_id in names
                     ],
                     benefit_id=proposal.created.id if proposal.created else None,
-                    for_subscriptions=proposal.source.for_subscriptions,
                     for_one_time=proposal.source.for_one_time,
                 )
                 for proposal in proposals

@@ -379,9 +379,7 @@ class CanonicalBenefit:
     license_keys: CanonicalLicenseKeySettings | None = None
     files: list[CanonicalBenefitFile] = field(default_factory=list)
     links: list[CanonicalBenefitLink] = field(default_factory=list)
-    # Who has it on the source: subscribers, buyers of one-time products, or
-    # both when the same access is on both kinds of product.
-    for_subscriptions: bool = False
+    # Buyers of a one-time product have it on the source.
     for_one_time: bool = False
 
 

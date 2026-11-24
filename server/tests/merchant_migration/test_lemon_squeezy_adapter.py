@@ -271,7 +271,7 @@ class TestExtract:
         assert subscription.payment_method.last4 == "4242"
         assert subscription.price_tax_behavior == TaxBehavior.exclusive
         assert subscription.import_tax_behavior() == TaxBehavior.exclusive
-        assert subscription.license_key is None
+        assert subscription.order_item_source_id == "80"
 
     async def test_usage_price_reads_decimal_cents(self) -> None:
         usage = {"usage_aggregation": "sum"}
@@ -423,9 +423,9 @@ class TestGetSubscription:
         )
 
         subscription = await adapter.get_subscription("100")
-
         assert subscription is not None
-        assert subscription.license_key == "KEY-SUB"
+
+        assert await adapter.get_license_key(subscription) == "KEY-SUB"
         [lookup] = [r for r in requests if r.url.path == "/v1/license-keys"]
         assert lookup.url.params["filter[order_item_id]"] == "80"
 

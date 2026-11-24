@@ -696,15 +696,17 @@ class SubscriptionCutover:
     ) -> None:
         """Seed the subscription's license key grant with the key the customer
         already has. Activating it then grants that key instead of a new one."""
-        properties = await kept_key_properties(
-            self.session, product.organization_id, source.license_key
-        )
-        if not properties:
-            return
         benefit = await BenefitRepository.from_session(
             self.session
         ).get_by_product_and_type(product.id, BenefitType.license_keys)
         if benefit is None:
+            return
+        properties = await kept_key_properties(
+            self.session,
+            product.organization_id,
+            await self.adapter.get_license_key(source),
+        )
+        if not properties:
             return
         # The grant task looks the grant up by the customer's owner member.
         member = await MemberRepository.from_session(

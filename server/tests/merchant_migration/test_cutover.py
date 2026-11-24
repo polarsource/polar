@@ -1,5 +1,4 @@
 from collections.abc import AsyncIterator, Awaitable, Callable
-from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID, uuid4
@@ -152,9 +151,11 @@ class _FakeSourceAdapter:
         subscription: CanonicalSubscription | None,
         *,
         error: Exception | None = None,
+        license_key: str | None = None,
     ) -> None:
         self._subscription = subscription
         self._error = error
+        self._license_key = license_key
         self.stopped: list[str] = []
         self.period_end_stops: list[bool] = []
 
@@ -162,6 +163,9 @@ class _FakeSourceAdapter:
         if self._error is not None:
             raise self._error
         return self._subscription
+
+    async def get_license_key(self, subscription: CanonicalSubscription) -> str | None:
+        return self._license_key
 
     async def stop_source_subscription(
         self,
@@ -385,7 +389,7 @@ class TestRun:
         copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
 
         outcome = await cutover(
-            _FakeSourceAdapter(replace(canonical_subscription(), license_key="KEY-1"))
+            _FakeSourceAdapter(canonical_subscription(), license_key="KEY-1")
         )
 
         assert outcome.status == MerchantMigrationCutoverStatus.moved

@@ -48,6 +48,10 @@ That is how this team reviews.
 `BillingEntry` is the ledger tying an invoice line back to the events that caused it. Anything
 computing an amount from a summary or a recomputation loses that trace.
 
+For organizations on reducer billing (`reducer_billing_enabled`), that ledger is the reducer's
+sealed buckets instead of billing entries — sealed before the order exists, then marked as
+billed by the order. The rules below apply to both ledgers.
+
 - Invoicing metered usage reads billing entries, never the customer meter's computed balance.
   *"Billing Entries are the source of truth… Otherwise, we lose the ability to track billing
   down to the events."* (#12510)

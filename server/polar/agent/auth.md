@@ -58,8 +58,9 @@ server or CLI.
 
 Call the API with `Authorization: Bearer <access_token>`. Before the claim you can create one
 organization and set up its products, benefits, discounts, files, meters, events, checkouts and
-checkout links. You can't touch customers, orders, subscriptions, refunds, payouts, members,
-webhooks or organization access tokens until a human claims you.
+checkout links. You can't touch customers, orders, subscriptions, refunds, payouts, members or
+webhooks until a human claims you. You can't create organization access tokens even then: see
+Step 5 to get the app a token.
 
 ## Step 4: Hand over to a human (claim)
 
@@ -117,6 +118,33 @@ Once claimed, you act on behalf of the human: the organization is theirs, and yo
 access. Everything issued to you before the claim stops working, including the old identity
 assertion. Use the new one in Step 3 from now on.
 
+## Step 5: Get a token for the app
+
+Your access token is for setting things up, not for running the app: it expires every hour and,
+once you're claimed, acts for the human in all their organizations, so it can't ingest events.
+
+When the app needs credentials (to ingest events, check a customer's meters or benefits, ...),
+get an organization access token with the [Polar CLI](https://polar.sh/docs/integrate/cli/introduction).
+Pass only the scopes the app needs:
+
+```sh
+POLAR_ACCESS_TOKEN=<access_token> polar auth token --scope events:write --scope ...
+```
+
+Give the human the link it prints; they must open it on the machine you run on. Once they
+approve, the CLI prints the token. Store it in the app's secrets (e.g. `.env`), never in the
+repo or the chat.
+
+If you can't run the CLI on the human's machine, send them this link instead, with only the
+scopes the app needs:
+
+```
+${dashboard_url}/<organization slug>/cli/token?name=<token name>&scopes=<scope>,<scope>
+```
+
+They create the token and put it in the app's secrets themselves. Don't ask them to paste it
+into the chat.
+
 ## Errors
 
 | Code | Where | What to do |
@@ -130,6 +158,7 @@ assertion. Use the new one in Step 3 from now on.
 | `invalid_grant` | token endpoint, claim poll | The claim token is wrong, already used, or you were revoked. |
 | `invalid_client` | token endpoint | Don't send a `client_id`: Polar knows your client from your credentials. |
 | `authorization_pending`, `slow_down`, `expired_token` | token endpoint, claim poll | See Step 4. |
+| HTTP 403 | `/v1/events/ingest` | You're claimed, so your token can't ingest events. See Step 5. |
 
 ## Revoking
 

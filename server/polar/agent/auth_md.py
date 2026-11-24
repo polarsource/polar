@@ -2,6 +2,7 @@ from collections.abc import Callable
 from pathlib import Path
 from string import Template
 
+from polar.config import settings
 from polar.oauth2.constants import SERVICE_DOCUMENTATION
 
 _TEMPLATE = Template((Path(__file__).parent / "auth.md").read_text())
@@ -15,5 +16,6 @@ def render_auth_md(url_for: Callable[[str], str]) -> str:
         claim_endpoint=url_for("agent:start_claim"),
         token_endpoint=url_for("oauth2:request_token"),
         revocation_endpoint=url_for("oauth2:revoke_token"),
+        dashboard_url=settings.generate_frontend_url("/dashboard"),
         api_documentation=SERVICE_DOCUMENTATION,
     )

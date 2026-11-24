@@ -2808,6 +2808,8 @@ class CheckoutService:
         checkout: Checkout,
         checkout_update: CheckoutUpdate | CheckoutUpdatePublic | CheckoutConfirmStripe,
         price_set: PriceSet,
+        *,
+        custom_amount: int | None = None,
     ) -> Checkout:
         checkout.product_price = price_set.get_default_price()
         previous_seats = checkout.seats
@@ -2862,7 +2864,14 @@ class CheckoutService:
                 max_units=checkout.max_units,
             )
             checkout.units = units
-        self._set_upfront_amount(checkout, price_set.get_static_prices())
+        custom_price = price_set.get_custom_price()
+        if custom_price is None:
+            custom_amount = None
+        elif custom_amount is not None:
+            validate_custom_price_amount(custom_price, custom_amount, checkout.currency)
+        self._set_upfront_amount(
+            checkout, price_set.get_static_prices(), custom_amount=custom_amount
+        )
 
         return checkout
 
@@ -3194,15 +3203,9 @@ class CheckoutService:
         )
         checkout_product.product = version
         checkout.product = version
-        checkout = await self._update_price(checkout, checkout_update, currency_prices)
-        custom_price = currency_prices.get_custom_price()
-        if custom_price is not None and custom_amount is not None:
-            validate_custom_price_amount(custom_price, custom_amount, checkout.currency)
-            self._set_upfront_amount(
-                checkout,
-                currency_prices.get_static_prices(),
-                custom_amount=custom_amount,
-            )
+        checkout = await self._update_price(
+            checkout, checkout_update, currency_prices, custom_amount=custom_amount
+        )
         if checkout.discount is not None and not checkout.discount.is_applicable(
             version, checkout.currency
         ):

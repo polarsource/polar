@@ -4,6 +4,7 @@ import type { ActiveOrganization } from '@/schemas/Auth'
 import {
   BillingConfigError,
   type LoadedConfig,
+  type PlanCatalogs,
   type PlanResult,
   PlanOutput,
 } from '@/schemas/BillingConfig'
@@ -12,12 +13,12 @@ import { Organizations } from '@/services/organizations'
 import { commentOnPullRequest } from '@/services/pull-request-comment'
 import { planMarkdown } from '@/utils/billing-config/markdown'
 import {
+  applyOrPublish,
   errors,
   fixErrors,
   found,
   next,
   overview,
-  runApply,
   sections,
   target,
   unchanged,
@@ -28,10 +29,39 @@ import { withProgress } from '@/utils/progress'
 import { commented, prComment } from '@/utils/pull-request-comment'
 import * as ui from '@/utils/ui'
 
+// Plan compares with the live catalog: an unpublished draft is compared separately
+const readCatalogs = (
+  config: LoadedConfig,
+  organization: ActiveOrganization,
+  result: PlanResult,
+) =>
+  Effect.gen(function* () {
+    const billing = yield* BillingConfig
+    const { live, draft } = yield* billing.catalogs(organization)
+    if (draft === null) return { live, draft: null } satisfies PlanCatalogs
+    const drift =
+      errors(result.issues) > 0
+        ? null
+        : yield* billing
+            .plan(config, organization, { catalogId: draft.id })
+            .pipe(
+              Effect.map((plan) =>
+                errors(plan.issues) > 0
+                  ? null
+                  : plan.entries.filter(
+                      (entry) => entry.action !== 'unchanged',
+                    ),
+              ),
+              Effect.orElseSucceed(() => null),
+            )
+    return { live, draft: { ...draft, drift } } satisfies PlanCatalogs
+  }).pipe(Effect.option, Effect.map(Option.getOrUndefined))
+
 const render = (
   config: LoadedConfig,
   organization: ActiveOrganization,
   result: PlanResult,
+  catalogs: PlanCatalogs | undefined,
 ) => [
   ...sections(config, result),
   ...overview(config, organization, result),
@@ -42,7 +72,7 @@ const render = (
           ui.blank,
           ui.success(`${target(organization)} is up to date, nothing to apply`),
         ]
-      : next(runApply)),
+      : next(applyOrPublish(catalogs))),
   ui.blank,
 ]
 
@@ -88,35 +118,48 @@ export const plan = Command.make('plan', { file, org, prComment }).pipe(
               yield* progress.start('Found')
               yield* progress.finish(found(config))
               yield* progress.start('Comparing')
-              const [elapsed, { organization, result }] = yield* Effect.timed(
-                Effect.gen(function* () {
-                  const organization = yield* (yield* Organizations).resolve(
-                    Option.getOrUndefined(org),
-                  )
-                  const result = yield* billing.plan(config, organization)
-                  return { organization, result }
-                }),
-              )
+              const [elapsed, { organization, result, catalogs }] =
+                yield* Effect.timed(
+                  Effect.gen(function* () {
+                    const organization = yield* (yield* Organizations).resolve(
+                      Option.getOrUndefined(org),
+                    )
+                    const result = yield* billing.plan(config, organization)
+                    return {
+                      organization,
+                      result,
+                      catalogs: yield* readCatalogs(
+                        config,
+                        organization,
+                        result,
+                      ),
+                    }
+                  }),
+                )
               yield* progress.finish(
                 `${Math.round(Duration.toMillis(elapsed))}ms`,
               )
-              return { config, organization, result }
+              return { config, organization, result, catalogs }
             }),
           'columns',
         )
         if (prComment) {
-          const { config, organization, result } = planned
+          const { config, organization, result, catalogs } = planned
           const posted = yield* commentOnPullRequest(
             `config plan ${organization.id} ${config.file}`,
-            planMarkdown(config, organization, result),
+            planMarkdown(config, organization, result, catalogs),
           )
           yield* say([commented(posted)])
         }
         return planned
       }),
-    render: ({ config, organization, result }) =>
-      render(config, organization, result),
-    json: ({ config, result }) => ({ file: config.file, ...result }),
+    render: ({ config, organization, result, catalogs }) =>
+      render(config, organization, result, catalogs),
+    json: ({ config, result, catalogs }) => ({
+      file: config.file,
+      ...result,
+      ...catalogs,
+    }),
     failed: ({ config, result }) =>
       errors(result.issues) > 0
         ? new BillingConfigError({

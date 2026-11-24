@@ -108,7 +108,25 @@ describe('planMarkdown', () => {
       [
         '| Organization | Environment | Config | Changes | Catalog |',
         '| --- | --- | --- | --- | --- |',
-        '| Acme\\_Inc | sandbox | `polar.json` | 2 to change, 1 to add, 1 unchanged | v1 → Spring\\_pricing (draft) |',
+        '| Acme\\_Inc | sandbox | `polar.json` | 2 to change, 1 to add, 1 unchanged | v1 (live) → Spring\\_pricing (draft) |',
+      ].join('\n'),
+    )
+  })
+
+  test('notes an unpublished draft under the target', () => {
+    expect(
+      planMarkdown(
+        config,
+        acme,
+        { entries, issues: [] },
+        { live: null, draft: { id: 'cat-draft', name: 'v1', drift: [] } },
+      ),
+    ).toContain(
+      [
+        "> Applying the config in this pull request changes billing for **Acme\\_Inc** in sandbox. Review every change below before it's applied.",
+        '>',
+        "> Compared with the live catalog (none yet). A previous apply saved these changes in draft v1, which isn't live yet.",
+        '',
       ].join('\n'),
     )
   })

@@ -2,6 +2,7 @@ import type { ActiveOrganization } from '@/schemas/Auth'
 import type {
   AppliedEntry,
   LoadedConfig,
+  PlanCatalogs,
   PlanResult,
 } from '@/schemas/BillingConfig'
 import { isSet, name } from '@/utils/billing-config/describe'
@@ -13,7 +14,12 @@ import {
   valueLines,
 } from '@/utils/billing-config/entries'
 import { formatProblems } from '@/utils/billing-config/problems'
-import { catalogChange, errors, unchanged } from '@/utils/billing-config/review'
+import {
+  catalogChange,
+  draftNote,
+  errors,
+  unchanged,
+} from '@/utils/billing-config/review'
 import { shownDiff, usedMeters } from '@/utils/billing-config/sentences'
 import { documents } from '@/utils/billing-config/tree'
 
@@ -118,16 +124,22 @@ const entryLines = (
   ]
 }
 
+const pendingDraft = (catalogs: PlanCatalogs | undefined) =>
+  catalogs?.draft
+    ? `\n>\n> ${escape(draftNote(catalogs.live, catalogs.draft).join(' '))}`
+    : ''
+
 const callout = (
   config: LoadedConfig,
   organization: ActiveOrganization,
   result: PlanResult,
+  catalogs: PlanCatalogs | undefined,
 ) => {
   const where = `**${escape(organization.name)}** in ${organization.environment}`
   if (errors(result.issues) > 0) {
     return `> [!CAUTION]\n> \`${config.file}\` can't be applied to ${where}. Fix the errors below first.`
   }
-  return `> [!NOTE]\n> Applying the config in this pull request changes billing for ${where}. Review every change below before it's applied.`
+  return `> [!NOTE]\n> Applying the config in this pull request changes billing for ${where}. Review every change below before it's applied.${pendingDraft(catalogs)}`
 }
 
 const metadata = (
@@ -160,12 +172,13 @@ export const planMarkdown = (
   config: LoadedConfig,
   organization: ActiveOrganization,
   result: PlanResult,
+  catalogs?: PlanCatalogs,
 ) =>
   unchanged(result.entries) && errors(result.issues) === 0
     ? undefined
     : [
         '## Polar billing plan updated',
-        callout(config, organization, result),
+        callout(config, organization, result, catalogs),
         metadata(config, organization, result),
         ...[
           ...new Set([

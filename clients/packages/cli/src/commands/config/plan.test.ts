@@ -1,10 +1,16 @@
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import { Effect } from 'effect'
 import { FetchHttpClient } from 'effect/http'
 import { plan } from '@/commands/config/plan'
-import type { LoadedConfig, PlanResult } from '@/schemas/BillingConfig'
+import {
+  BillingConfigError,
+  type Catalogs,
+  type LoadedConfig,
+  type PlanResult,
+} from '@/schemas/BillingConfig'
 import { Environment } from '@/services/api'
 import { Auth } from '@/services/auth'
+import type { CatalogOptions } from '@/services/billing-config/api'
 import { BillingConfig } from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
 import { runCli, stripAnsi } from '@/utils/test-utils/cli'
@@ -53,7 +59,18 @@ const locked = {
   location: { line: 3, column: 5, length: 1 },
 }
 
-const run = async (result: PlanResult, args: string[] = []) => {
+const draft = { id: 'cat-draft', name: 'v1' }
+
+const run = async (
+  result: PlanResult,
+  args: string[] = [],
+  catalogs: Catalogs | null = { live: null, draft: null },
+  againstDraft: PlanResult = { entries: [], issues: [] },
+) => {
+  const planned = vi.fn(
+    (_config: unknown, _organization: unknown, options?: CatalogOptions) =>
+      Effect.succeed(options?.catalogId === undefined ? result : againstDraft),
+  )
   const cli = runCli(plan, ['polar.json', ...args])
   const exit = await Effect.runPromiseExit(
     cli.effect.pipe(
@@ -62,14 +79,17 @@ const run = async (result: PlanResult, args: string[] = []) => {
         BillingConfig.of({
           generate: () => Effect.die('unused'),
           load: () => Effect.succeed(config),
-          plan: () => Effect.succeed(result),
+          plan: planned,
           apply: () => Effect.die('unused'),
           init: () => Effect.die('unused'),
           install: () => Effect.die('unused'),
           disable: () => Effect.die('unused'),
           deprecations: () => Effect.die('unused'),
           prune: () => Effect.die('unused'),
-          catalogs: () => Effect.die('unused'),
+          catalogs: () =>
+            catalogs === null
+              ? Effect.fail(new BillingConfigError({ message: 'Forbidden' }))
+              : Effect.succeed(catalogs),
           publish: () => Effect.die('unused'),
         }),
       ),
@@ -85,7 +105,11 @@ const run = async (result: PlanResult, args: string[] = []) => {
       Effect.provide(FetchHttpClient.layer),
     ),
   )
-  return { output: stripAnsi(cli.output()), failed: exit._tag === 'Failure' }
+  return {
+    output: stripAnsi(cli.output()),
+    failed: exit._tag === 'Failure',
+    planned: planned.mock.calls.map(([, , options]) => options?.catalogId),
+  }
 }
 
 const TREE =
@@ -145,18 +169,78 @@ describe('polar config plan', () => {
       issues: [],
     })
     expect(output).toMatch(
-      /│ {2}Changes {7}0 to change, 1 to add, 0 unchanged *│\n *│ {2}Catalog {7}v1 → v2 \(draft\) *│\n *│ {2}Issues/,
+      /│ {2}Changes {7}0 to change, 1 to add, 0 unchanged *│\n *│ {2}Catalog {7}v1 \(live\) → v2 \(draft\) *│\n *│ {2}Issues/,
     )
-    expect(output.match(/v1 → v2/g)).toHaveLength(1)
+    expect(output.match(/v1 \(live\) → v2/g)).toHaveLength(1)
   })
 
-  test('shows the first catalog as replacing none', async () => {
+  test('shows the first catalog as replacing no live catalog', async () => {
     const { output } = await run({
       entries,
       catalog: { before: null, name: 'v1' },
       issues: [],
     })
-    expect(output).toContain('Catalog       none → v1 (draft)')
+    expect(output).toContain('Catalog       no live catalog → v1 (draft)')
+  })
+
+  test('points out a draft that already has the changes', async () => {
+    const { output, failed, planned } = await run(
+      { entries, catalog: { before: null, name: 'v1' }, issues: [] },
+      [],
+      { live: null, draft },
+      {
+        entries: [{ ...entries[0]!, action: 'unchanged' as const }],
+        issues: [],
+      },
+    )
+    expect(failed).toBe(false)
+    expect(planned).toEqual([undefined, 'cat-draft'])
+    expect(output).toMatch(
+      /Next\n {2}╭─+╮\n *│ {2}Compared with the live catalog \(none yet\)\. *│\n *│ {2}A previous apply saved these changes in draft v1, which isn't live yet\. *│\n *│ {2}Run polar config publish to make it live\. *│\n {2}╰─+╯\n$/,
+    )
+  })
+
+  test('asks to apply again when the draft is missing changes', async () => {
+    const { output } = await run(
+      { entries, issues: [] },
+      [],
+      { live: { id: 'cat-live', name: 'v3' }, draft },
+      { entries, issues: [] },
+    )
+    expect(output.replace(/ *│\n *│ +/g, ' ')).toContain(
+      "Compared with the live catalog (v3). A previous apply saved draft v1, which isn't live yet and is missing some of these changes. Run polar config apply to update it, then polar config publish to make it live.",
+    )
+  })
+
+  test('prints the live catalog and the draft as JSON', async () => {
+    const { output } = await run(
+      { entries, issues: [] },
+      ['--json'],
+      { live: null, draft },
+      { entries, issues: [] },
+    )
+    expect(JSON.parse(output)).toEqual({
+      file: 'polar.json',
+      entries,
+      issues: [],
+      live: null,
+      draft: { ...draft, drift: entries },
+    })
+  })
+
+  test('leaves the catalogs out when they cannot be read', async () => {
+    const { output, failed, planned } = await run(
+      { entries, issues: [] },
+      ['--json'],
+      null,
+    )
+    expect(failed).toBe(false)
+    expect(planned).toEqual([undefined])
+    expect(JSON.parse(output)).toEqual({
+      file: 'polar.json',
+      entries,
+      issues: [],
+    })
   })
 
   test('fails on errors but still shows the changes and warnings', async () => {

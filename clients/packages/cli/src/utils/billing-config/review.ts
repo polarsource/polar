@@ -1,9 +1,12 @@
 import type { ActiveOrganization, PolarEnvironment } from '@/schemas/Auth'
 import type {
   AppliedEntry,
+  Catalog,
   CatalogPlan,
   ConfigIssue,
   LoadedConfig,
+  PlanCatalogs,
+  PlanDraft,
   PlanResult,
 } from '@/schemas/BillingConfig'
 import { record } from '@/utils/billing-config/describe'
@@ -32,12 +35,36 @@ export const catalogChange = (
   { before, name }: CatalogPlan,
   dim: (text: string) => string = ui.dim,
 ) =>
-  `${before === null ? dim('none') : (before.name ?? dim('unnamed'))} ${dim('→')} ${name} ${dim('(draft)')}`
+  `${before === null ? dim('no live catalog') : `${before.name ?? dim('unnamed')} ${dim('(live)')}`} ${dim('→')} ${name} ${dim('(draft)')}`
 
 export const fixErrors = (issues: ReadonlyArray<ConfigIssue>) =>
   `${ui.INDENT}Fix the ${errors(issues) === 1 ? 'error' : `${errors(issues)} errors`} above, then run ${ui.command('polar config plan')} again.`
 
 export const runApply = `${ui.INDENT}Run ${ui.command('polar config apply')} to apply it.`
+
+const draftName = ({ name }: Catalog) =>
+  name === null ? 'the draft' : `draft ${name}`
+
+export const draftNote = (live: Catalog | null, draft: PlanDraft) => [
+  `Compared with the live catalog (${live === null ? 'none yet' : (live.name ?? 'unnamed')}).`,
+  draft.drift?.length === 0
+    ? `A previous apply saved these changes in ${draftName(draft)}, which isn't live yet.`
+    : `A previous apply saved ${draftName(draft)}, which isn't live yet${draft.drift === null ? '' : ' and is missing some of these changes'}.`,
+]
+
+export const applyOrPublish = (catalogs: PlanCatalogs | undefined) =>
+  catalogs?.draft
+    ? [
+        ...draftNote(catalogs.live, catalogs.draft),
+        `Run ${
+          catalogs.draft.drift?.length === 0
+            ? ''
+            : `${ui.command('polar config apply')} to update it, then `
+        }${ui.command('polar config publish')} to make it live.`,
+      ]
+        .map((line) => `${ui.INDENT}${line}`)
+        .join('\n')
+    : runApply
 
 export const unchanged = (entries: ReadonlyArray<AppliedEntry>) =>
   entries.every((entry) => entry.action === 'unchanged')

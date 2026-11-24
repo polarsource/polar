@@ -1,0 +1,19 @@
+server/migrations/versions/2026-11-24-1011_enforce_order_payment_processor_metadata_not_null.py
+  s_9d4fcc69d80fc5::t_f68b50f6c9b5f7 50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "620ee9ad082c7e5b662ef57505087fa3ad052ccd",
+  "prompts": {},
+  "sessions": {
+    "s_9d4fcc69d80fc5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20ccd-705d-7a61-9a99-612697cae1a1",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

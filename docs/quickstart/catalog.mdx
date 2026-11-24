@@ -39,7 +39,7 @@ credits = polar.benefits.create(
 ```
 
 ```bash cURL
-curl -X POST https://sandbox-api.polar.sh/v1/benefits/ \
+export BENEFIT_ID=$(curl -s -X POST https://sandbox-api.polar.sh/v1/benefits/ \
   -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
   -H "Polar-Version: 2026-10" \
   -H "Content-Type: application/json" \
@@ -51,13 +51,13 @@ curl -X POST https://sandbox-api.polar.sh/v1/benefits/ \
       "units": 100000,
       "rollover": false
     }
-  }'
+  }' | jq -r .id)
 ```
 </CodeGroup>
 
 ## Create the product
 
-Create a monthly product with two prices: a fixed base fee and a metered price on the **AI tokens** meter, then attach the credits benefit. Amounts are in cents. With cURL, export the benefit's `id` as `BENEFIT_ID` and the product's `id` as `PRODUCT_ID` before the request that uses them.
+Create a monthly product with two prices: a fixed base fee and a metered price on the **AI tokens** meter, then attach the credits benefit. Amounts are in cents.
 
 <CodeGroup>
 ```typescript TypeScript
@@ -89,7 +89,7 @@ polar.products.update_benefits(product.id, benefits=[credits.id])
 ```
 
 ```bash cURL
-curl -X POST https://sandbox-api.polar.sh/v1/products/ \
+export PRODUCT_ID=$(curl -s -X POST https://sandbox-api.polar.sh/v1/products/ \
   -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
   -H "Polar-Version: 2026-10" \
   -H "Content-Type: application/json" \
@@ -100,7 +100,7 @@ curl -X POST https://sandbox-api.polar.sh/v1/products/ \
       { "amount_type": "fixed", "price_amount": 2000 },
       { "amount_type": "metered_unit", "meter_id": "'"$METER_ID"'", "unit_amount": "0.002" }
     ]
-  }'
+  }' | jq -r .id)
 
 curl -X POST "https://sandbox-api.polar.sh/v1/products/$PRODUCT_ID/benefits" \
   -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \

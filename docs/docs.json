@@ -45,19 +45,6 @@
             "pages": [
               "introduction",
               {
-                "group": "Concepts",
-                "pages": [
-                  "concepts/overview",
-                  "concepts/products",
-                  "concepts/benefits",
-                  "concepts/customers",
-                  "concepts/checkout",
-                  "concepts/orders-and-subscriptions",
-                  "concepts/usage",
-                  "concepts/money-flow"
-                ]
-              },
-              {
                 "group": "Quickstart",
                 "pages": [
                   "quickstart/overview",
@@ -67,7 +54,20 @@
                   "quickstart/webhooks"
                 ]
               },
-              "merchant-of-record/introduction",
+              {
+                "group": "Core Concepts",
+                "pages": [
+                  "concepts/overview",
+                  "concepts/usage",
+                  "concepts/benefits",
+                  "concepts/products",
+                  "concepts/customers",
+                  "concepts/checkout",
+                  "concepts/orders-and-subscriptions",
+                  "merchant-of-record/introduction",
+                  "concepts/money-flow"
+                ]
+              },
               "merchant-of-record/fees",
               {
                 "group": "Migrating to Polar",

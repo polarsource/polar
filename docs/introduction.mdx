@@ -1,142 +1,72 @@
 ---
 title: "Introduction"
-description: "Polar is the open source billing platform for software: grant and meter usage, bill for it, and manage your customers, with Polar as your Merchant of Record."
+description: "Polar is an open source billing platform and Merchant of Record (MoR), used by tens of thousands of software companies worldwide."
 ---
 
-Polar runs billing for software products. You decide what customers get and how you charge for it. Polar handles access, usage tracking, checkout, invoicing, global sales tax and customer self-service.
-
-Polar is built around one loop.
+Polar covers the loop every software business runs to grow revenue, from granting access to improving prices.
 
 <CardGroup cols={2}>
-  <Card title="1. Enable & track usage" icon="gauge" href="/concepts/usage">
-    Grant [benefits](/concepts/benefits) like license keys, feature flags and
-    credits, then track what customers use with [events and
-    meters](/concepts/usage). Use credit balances and spending caps as
-    guardrails.
+  <Card title="1. Usage" icon="gauge">
+    Grant access with [benefits](/concepts/benefits) like [credits](/features/benefits/credits), [feature flags](/features/benefits/feature-flags) and [Slack Connect](/features/benefits/slack-shared-channel), and track usage in real time.
   </Card>
-  <Card title="2. Bill for that usage" icon="file-invoice-dollar" href="/concepts/orders-and-subscriptions">
-    Charge for usage on top of subscriptions and one-time purchases. Polar
-    creates the [orders](/features/orders), collects payment and handles
-    [failed payments](/features/subscriptions/failed-payments).
+  <Card title="2. Billing" icon="file-invoice-dollar">
+    [Subscriptions](/features/subscriptions/introduction) and [checkout](/features/checkout/session) for any pricing model, with automatic credit renewals and [dunning](/features/subscriptions/failed-payments).
   </Card>
-  <Card title="3. Manage customers" icon="users" href="/concepts/customers">
-    Read everything a customer has access to from one [customer
-    state](/integrate/customer-state), and let customers manage their own
-    billing in the [customer portal](/features/customer-portal/introduction).
+  <Card title="3. Customers" icon="users">
+    Manage customers, benefits and billing from the dashboard, [CLI](/integrate/cli/introduction), or [MCP and AI plugins](/integrate/mcp).
   </Card>
-  <Card title="4. Iterate on pricing" icon="flask" disabled>
-    **Coming soon.** Version your pricing and simulate changes against real
-    usage before you roll them out.
+  <Card title="4. Pricing" icon="chart-line-up">
+    Iterate on pricing using [Customer Cost Insights](/features/cost-insights/introduction), with legacy prices grandfathered automatically.
   </Card>
 </CardGroup>
 
-<Card title="How Polar works" icon="book-open" href="/concepts/overview" horizontal>
-  The building blocks behind the loop, and how they fit together.
+<Card title="Scale your product, not operations" icon="globe" href="/merchant-of-record/introduction">
+  As the Merchant of Record, we calculate, collect and remit sales tax and VAT worldwide and work to prevent fraud and chargebacks.
 </Card>
 
-## Set up Polar with your agent
-
-Everything you can do in the dashboard, you can do from your terminal or AI agent. Create products and benefits, set up checkouts, look up customers and manage subscriptions with the Polar CLI and MCP server.
+## Integrate usage-based credits in 5 minutes
 
 ```bash Terminal
+# Install Polar CLI
 curl -fsSL https://polar.sh/install.sh | bash
+
+# Install Agentic Polar Skills
 polar agent setup
+
+# Implement Polar for Billing
+claude "Sign up for Polar following https://polar.sh/auth.md, then follow https://polar.sh/docs/quickstart/overview to add usage-based billing with credits to this project: track usage, create products, add a checkout flow, handle webhooks, and gate paid features by subscription and credit balance."
 ```
 
-`polar agent setup` detects Claude Code, Codex and Cursor and connects them to Polar's MCP server and skills.
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart/overview">
+    Track usage, sell a plan with included credits, add checkout and sync access. In TypeScript, Python or cURL.
+  </Card>
+  <Card title="How Polar works" icon="book-open" href="/concepts/overview">
+    The building blocks behind Polar and how they fit together.
+  </Card>
+</CardGroup>
+
+## Designed for developers & agents
+
+Anything you can click in the dashboard, you can run from your terminal or prompt from your agent.
 
 <CardGroup cols={3}>
   <Card title="MCP server" icon="robot" href="/integrate/mcp">
-    Connect Claude, ChatGPT, Cursor, Codex and other agents to your organization.
+    Claude, ChatGPT, Cursor, Codex and more.
   </Card>
-  <Card title="Polar CLI" icon="terminal" href="/integrate/cli/introduction">
-    Manage every resource, forward webhooks locally and switch between environments.
+  <Card title="CLI" icon="terminal" href="/integrate/cli/introduction">
+    Every resource, plus local webhooks.
   </Card>
   <Card title="Sandbox" icon="flask-vial" href="/integrate/sandbox">
-    Build and test against a separate environment with no real money.
+    Test everything. No real money.
   </Card>
-</CardGroup>
-
-<Tip>
-  No account yet? Tell your agent to read [`https://polar.sh/auth.md`](https://polar.sh/auth.md). It can sign up on its own, set up your products and checkouts, and hand the organization over to you.
-</Tip>
-
-## Pricing models
-
-Mix these on a single product, like a fixed base fee plus usage.
-
-<CardGroup cols={3}>
-  <Card title="Fixed price" icon="tag" href="/features/products#pricing">
-    One-time purchases and subscriptions at a set price.
+  <Card title="SDKs" icon="code" href="/integrate/sdk/introduction">
+    Typed clients for TypeScript and Python.
   </Card>
-  <Card title="Usage-based" icon="chart-line" href="/features/usage-based-billing/billing">
-    Per unit, volume or graduated rates on metered usage.
-  </Card>
-  <Card title="Credits" icon="coins" href="/features/usage-based-billing/credits">
-    Prepaid usage that's drawn down as customers use your product.
-  </Card>
-  <Card title="Seat-based" icon="user-group" href="/features/seat-based-pricing">
-    Per-seat team plans, with seats assigned to members.
-  </Card>
-  <Card title="Unit-based" icon="cubes" href="/features/unit-based-pricing">
-    A quantity of anything, paid up front, with tiered rates.
-  </Card>
-  <Card title="Pay what you want & free" icon="hand-holding-dollar" href="/features/products#pricing">
-    Customer-chosen amounts with a minimum, or free tiers.
-  </Card>
-</CardGroup>
-
-Add [trials](/features/subscriptions/trials) and [discounts](/features/discounts) to any of them, price in [multiple currencies](/features/products#multiple-payment-currencies), and choose [tax-inclusive or exclusive](/features/tax-inclusive-pricing) prices.
-
-## Integrate Polar
-
-<Steps>
-  <Step title="Create your products">
-    Model your [products](/concepts/products), prices and benefits in the
-    dashboard, with the [CLI](/integrate/cli/introduction), or through the
-    [API](/api-reference).
-  </Step>
-  <Step title="Add checkout">
-    Share a [Checkout Link](/features/checkout/links), [embed
-    checkout](/features/checkout/embed) on your site, or create [checkout
-    sessions](/features/checkout/session) from your backend.
-  </Step>
-  <Step title="Sync access">
-    Read the [customer state](/integrate/customer-state) or listen to
-    [webhooks](/integrate/webhooks/endpoints) to grant access in your
-    application.
-  </Step>
-  <Step title="Track usage">
-    [Ingest events](/features/usage-based-billing/event-ingestion) for
-    anything you meter or draw down from credits.
-  </Step>
-  <Step title="Go live">
-    Pass the [account review](/merchant-of-record/account-reviews), connect a
-    [payout account](/features/finance/accounts), and switch from the sandbox
-    to production.
-  </Step>
-</Steps>
-
-<CardGroup cols={3}>
-  <Card title="TypeScript SDK" icon="js" href="/integrate/sdk/typescript" />
-  <Card title="Python SDK" icon="python" href="/integrate/sdk/python" />
-  <Card title="Framework adapters" icon="code" href="/integrate/sdk/adapters/introduction">
-    Next.js, Nuxt, TanStack Start, Laravel, Better Auth and more.
-  </Card>
-</CardGroup>
-
-## Polar is your Merchant of Record
-
-Polar is the seller of record for every sale. We calculate, collect and remit sales tax and VAT worldwide, work to prevent chargebacks, and pay out your balance.
-
-<CardGroup cols={3}>
-  <Card title="Merchant of Record" icon="globe" href="/merchant-of-record/introduction">
-    What it means and what Polar takes care of.
-  </Card>
-  <Card title="Fees" icon="percent" href="/merchant-of-record/fees">
-    5% + 50¢ per transaction on the free plan, lower on paid plans.
+  <Card title="Framework adapters" icon="plug" href="/integrate/sdk/adapters/introduction">
+    Next.js, Nuxt, Laravel, Better Auth and more.
   </Card>
   <Card title="Open source" icon="github" href="https://github.com/polarsource/polar">
-    Polar is built in the open under the Apache 2.0 license.
+    Apache 2.0. Built in the open.
   </Card>
 </CardGroup>

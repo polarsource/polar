@@ -868,5 +868,5 @@ class SubscriptionListParams(QuerySchema):
     )
     query: Annotated[str | None, Version(starting_from=V2027_01)] = Field(
         None,
-        description="Filter by customer name, email or external ID, or product name.",
+        description="Filter by customer name, email or external ID, or a subscription or customer ID.",
     )

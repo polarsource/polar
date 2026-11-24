@@ -474,7 +474,7 @@ class OrderListParams(QuerySchema):
     )
     query: Annotated[str | None, Version(starting_from=V2027_01)] = Field(
         None,
-        description="Filter by customer name, email or external ID, invoice number or product name.",
+        description="Filter by customer name, email or external ID, invoice number, or an order, customer, subscription or checkout ID.",
     )
     created_after: datetime | None = Field(
         None,

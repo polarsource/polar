@@ -193,7 +193,11 @@ class TestList:
         other.customer_email = "janexdoe@example.com"
         await save_fixture(other)
 
-        for query, expected in [("jane_doe", by_email), ("jane smith", by_name)]:
+        for query, expected in [
+            ("jane_doe", by_email),
+            ("jane smith", by_name),
+            (str(other.id), other),
+        ]:
             response = await client.get(f"{api_prefix}/", params={"query": query})
             assert response.status_code == 200
             items = response.json()["items"]

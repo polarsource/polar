@@ -66,7 +66,7 @@ from polar.kit.email import EmailNotValidError, validate_email_syntax
 from polar.kit.operator import attrgetter
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
-from polar.kit.utils import generate_uuid, utc_now
+from polar.kit.utils import generate_uuid, parse_uuid, utc_now
 from polar.kit.visibility import Visibility
 from polar.logging import Logger
 from polar.member.service import member_service
@@ -344,12 +344,15 @@ class CheckoutService:
             statement = statement.where(Checkout.status.in_(status))
 
         if query is not None:
-            statement = statement.where(
-                or_(
-                    Checkout.customer_email.icontains(query, autoescape=True),
-                    Checkout.customer_name.icontains(query, autoescape=True),
+            if (query_id := parse_uuid(query)) is not None:
+                statement = statement.where(Checkout.id == query_id)
+            else:
+                statement = statement.where(
+                    or_(
+                        Checkout.customer_email.icontains(query, autoescape=True),
+                        Checkout.customer_name.icontains(query, autoescape=True),
+                    )
                 )
-            )
 
         if created_after is not None:
             statement = statement.where(Checkout.created_at > created_after)

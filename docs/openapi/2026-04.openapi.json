@@ -6901,10 +6901,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Filter by customer name or email.",
+              "description": "Filter by customer name or email, or a checkout ID.",
               "title": "Query"
             },
-            "description": "Filter by customer name or email."
+            "description": "Filter by customer name or email, or a checkout ID."
           },
           {
             "name": "page",

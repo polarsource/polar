@@ -5785,27 +5785,34 @@ class TestList:
         session: AsyncSession,
         save_fixture: SaveFixture,
         user_organization: UserOrganization,
-        organization: Organization,
         product: Product,
         customer: Customer,
         customer_second: Customer,
+        organization: Organization,
     ) -> None:
-        pro_product = await create_product(
+        external_id = str(uuid.uuid4())
+        by_external_id = await create_active_subscription(
             save_fixture,
-            organization=organization,
-            name="Pro Plan",
-            recurring_interval=SubscriptionRecurringInterval.month,
+            product=product,
+            customer=await create_customer(
+                save_fixture,
+                organization=organization,
+                external_id=external_id,
+                email="external@example.com",
+            ),
         )
         by_customer = await create_active_subscription(
             save_fixture, product=product, customer=customer_second
         )
-        by_product = await create_active_subscription(
-            save_fixture, product=pro_product, customer=customer
+        by_id = await create_active_subscription(
+            save_fixture, product=product, customer=customer
         )
 
         for query, expected in [
             ("customer.second", by_customer),
-            ("pro plan", by_product),
+            (str(by_id.id), by_id),
+            (str(customer_second.id), by_customer),
+            (external_id, by_external_id),
         ]:
             results, count = await subscription_service.list(
                 session,

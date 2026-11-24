@@ -6944,10 +6944,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Filter by customer name or email.",
+              "description": "Filter by customer name or email, or a checkout ID.",
               "title": "Query"
             },
-            "description": "Filter by customer name or email."
+            "description": "Filter by customer name or email, or a checkout ID."
           },
           {
             "name": "created_after",
@@ -8097,10 +8097,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Filter by customer name, email or external ID, or product name.",
+              "description": "Filter by customer name, email or external ID, or a subscription or customer ID.",
               "title": "Query"
             },
-            "description": "Filter by customer name, email or external ID, or product name."
+            "description": "Filter by customer name, email or external ID, or a subscription or customer ID."
           },
           {
             "name": "page",
@@ -11003,10 +11003,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Filter by customer name, email or external ID, invoice number or product name.",
+              "description": "Filter by customer name, email or external ID, invoice number, or an order, customer, subscription or checkout ID.",
               "title": "Query"
             },
-            "description": "Filter by customer name, email or external ID, invoice number or product name."
+            "description": "Filter by customer name, email or external ID, invoice number, or an order, customer, subscription or checkout ID."
           },
           {
             "name": "created_after",

@@ -10,6 +10,13 @@ def generate_uuid() -> uuid.UUID:
     return uuid.uuid4()
 
 
+def parse_uuid(value: str) -> uuid.UUID | None:
+    try:
+        return uuid.UUID(value)
+    except ValueError:
+        return None
+
+
 def human_readable_size(num: float, suffix: str = "B") -> str:
     for unit in ("", "K", "M", "G", "T", "P", "E", "Z"):
         if abs(num) < 1024.0:

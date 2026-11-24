@@ -64,7 +64,7 @@ from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
-from polar.kit.utils import utc_now
+from polar.kit.utils import parse_uuid, utc_now
 from polar.logging import Logger
 from polar.models import (
     Checkout,
@@ -452,13 +452,25 @@ class OrderService:
             statement = statement.where(Order.status.in_(status))
 
         if query is not None:
-            statement = statement.where(
-                or_(
-                    CustomerRepository.from_session(session).get_search_clause(query),
-                    Order.invoice_number.istartswith(query, autoescape=True),
-                    Product.name.icontains(query, autoescape=True),
+            if (query_id := parse_uuid(query)) is not None:
+                statement = statement.where(
+                    or_(
+                        Order.id == query_id,
+                        Order.customer_id == query_id,
+                        Order.subscription_id == query_id,
+                        Order.checkout_id == query_id,
+                        Customer.external_id == query,
+                    )
                 )
-            )
+            else:
+                statement = statement.where(
+                    or_(
+                        CustomerRepository.from_session(session).get_search_clause(
+                            query
+                        ),
+                        Order.invoice_number.istartswith(query, autoescape=True),
+                    )
+                )
 
         if created_after is not None:
             statement = statement.where(Order.created_at > created_after)

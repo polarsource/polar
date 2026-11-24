@@ -82,7 +82,7 @@ from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
-from polar.kit.utils import utc_now
+from polar.kit.utils import parse_uuid, utc_now
 from polar.kit.visibility import Visibility
 from polar.logging import Logger
 from polar.meter.repository import MeterRepository
@@ -718,12 +718,18 @@ class SubscriptionService:
             statement = statement.where(Subscription.started_at < started_before)
 
         if query is not None:
-            statement = statement.where(
-                or_(
-                    CustomerRepository.from_session(session).get_search_clause(query),
-                    Product.name.icontains(query, autoescape=True),
+            if (query_id := parse_uuid(query)) is not None:
+                statement = statement.where(
+                    or_(
+                        Subscription.id == query_id,
+                        Subscription.customer_id == query_id,
+                        Customer.external_id == query,
+                    )
                 )
-            )
+            else:
+                statement = statement.where(
+                    CustomerRepository.from_session(session).get_search_clause(query)
+                )
 
         if metadata is not None:
             statement = apply_metadata_clause(Subscription, statement, metadata)

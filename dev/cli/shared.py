@@ -66,6 +66,10 @@ class Context:
     skip_integrations: bool = False
     database_name: str | None = None
     state: dict = field(default_factory=dict)
+    failure_reason: str | None = None
+
+
+last_command_interrupted = False
 
 
 def run_command(
@@ -98,6 +102,8 @@ def run_command(
     except subprocess.TimeoutExpired:
         return None
     except KeyboardInterrupt:
+        global last_command_interrupted
+        last_command_interrupted = True
         console.print("\n[yellow]Interrupted[/yellow]")
         return None
 

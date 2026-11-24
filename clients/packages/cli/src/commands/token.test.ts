@@ -15,6 +15,13 @@ const acme: ActiveOrganization = {
   environment: 'sandbox',
 }
 
+const globex: ActiveOrganization = {
+  id: 'org-2',
+  name: 'Globex',
+  slug: 'globex',
+  environment: 'sandbox',
+}
+
 let requests: TokenRequest[]
 
 let organizations: ReturnType<typeof fakeOrganizations>
@@ -42,7 +49,7 @@ const run = (args: string[]) => {
 beforeEach(() => {
   requests = []
   organizations = fakeOrganizations({
-    items: [acme],
+    items: [acme, globex],
     selected: { id: acme.id, environment: acme.environment },
   })
 })
@@ -62,6 +69,19 @@ test('prints only the token', async () => {
       organization: { slug: 'acme', environment: 'sandbox' },
       name: basename(process.cwd()),
       scopes: ['products:read', 'checkouts:write'],
+    },
+  ])
+})
+
+test('creates the token for the organization passed with --org', async () => {
+  const { promise } = run(['--org', globex.id, '--scope', 'events:write'])
+  await promise
+
+  expect(requests).toEqual([
+    {
+      organization: { slug: 'globex', environment: 'sandbox' },
+      name: basename(process.cwd()),
+      scopes: ['events:write'],
     },
   ])
 })

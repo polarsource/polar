@@ -1,8 +1,9 @@
-import { Effect, Path, Redacted } from 'effect'
+import { Effect, Option, Path, Redacted } from 'effect'
 import { Command, Flag } from 'effect/cli'
 import { Organizations } from '@/services/organizations'
 import { sdkHint, TokenHandoff } from '@/services/token-handoff'
 import { textOnly } from '@/utils/command'
+import { org } from '@/utils/flags'
 import { noteToStderr } from '@/utils/progress'
 import * as ui from '@/utils/ui'
 
@@ -26,7 +27,7 @@ const announceTokenPage = (page: URL) =>
     ].join('\n'),
   )
 
-export const token = Command.make('token', { scope }).pipe(
+export const token = Command.make('token', { scope, org }).pipe(
   Command.withDescription(
     'Create an organization access token for your app and print it',
   ),
@@ -41,13 +42,19 @@ export const token = Command.make('token', { scope }).pipe(
       description:
         'Preselect scopes and store the token as a GitHub Actions secret without writing it to disk',
     },
+    {
+      command: 'polar auth token --org acme --scope events:write',
+      description: 'Create a token for a specific organization',
+    },
   ]),
   textOnly({
     reason: 'it prints only the token',
     run: (flags) =>
       Effect.gen(function* () {
         const path = yield* Path.Path
-        const { slug, environment } = yield* (yield* Organizations).resolve()
+        const { slug, environment } = yield* (yield* Organizations).resolve(
+          Option.getOrUndefined(flags.org),
+        )
         const created = yield* (yield* TokenHandoff).receive(
           {
             organization: { slug, environment },

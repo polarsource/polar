@@ -107,6 +107,7 @@ polar auth token [flags]
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--scope` | `string` | Scope to preselect on the token page, e.g. products:read. Repeatable |
+| `--org` | `string` | Organization ID or slug for this invocation only |
 
 **Examples**
 
@@ -118,6 +119,11 @@ echo "POLAR_ACCESS_TOKEN=$(polar auth token)" >> .env.local
 Preselect scopes and store the token as a GitHub Actions secret without writing it to disk
 ```bash
 polar auth token --scope products:read --scope checkouts:write | gh secret set POLAR_ACCESS_TOKEN
+```
+
+Create a token for a specific organization
+```bash
+polar auth token --org acme --scope events:write
 ```
 
 ## polar auth logout

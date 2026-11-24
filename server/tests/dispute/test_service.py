@@ -1651,7 +1651,7 @@ class TestUpsertFromChargebackStop:
         )
         alert = build_chargeback_stop_alert(
             integration_transaction_id=None,
-            transaction_authorised_at=utc_now().isoformat(),
+            transaction_authorised_at=f"{utc_now().date()}T00:00:00Z",
             transaction_authorisation_code="AUTH01",
         )
 
@@ -1675,7 +1675,7 @@ class TestUpsertFromChargebackStop:
             )
         alert = build_chargeback_stop_alert(
             integration_transaction_id=None,
-            transaction_authorised_at=utc_now().isoformat(),
+            transaction_authorised_at=f"{utc_now().date()}T00:00:00Z",
             transaction_authorisation_code="AUTH01",
         )
 

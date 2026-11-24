@@ -57,8 +57,8 @@ from .stripe import get_dispute_balance_transaction, is_rapid_resolution_dispute
 # merchant's own reply to take the dispute out of scope.
 DISPUTE_AUTO_ACCEPT_DELAY = timedelta(hours=24)
 
-# ChargebackStop gives the authorisation day without a time, so we look for
-# the payment from the day before to the day after.
+# ChargebackStop gives the authorisation day at midnight, without a time.
+# We look for the payment from the day before to the end of the day after.
 ALERT_AUTHORIZATION_WINDOW_BEFORE = timedelta(days=1)
 ALERT_AUTHORIZATION_WINDOW_AFTER = timedelta(days=2)
 

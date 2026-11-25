@@ -113,7 +113,7 @@ export const SubscriptionBillingHistory = ({
       />
     )
   }
-  if (isLoading) {
+  if (isLoading || charge === undefined) {
     return <Text color="muted">Loading billing history</Text>
   }
   return (

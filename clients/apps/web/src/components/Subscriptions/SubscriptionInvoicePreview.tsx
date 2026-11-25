@@ -24,10 +24,11 @@ export interface UpcomingCharge {
   note: string | null
 }
 
-// The next charge the subscription will make, if it will make one.
+// The next charge the subscription will make, if it will make one. Undefined
+// while that is still being worked out.
 export const useSubscriptionUpcomingCharge = (
   subscription: schemas['Subscription'],
-): UpcomingCharge | null => {
+): UpcomingCharge | null | undefined => {
   const isTrialing = subscription.status === 'trialing'
   const isActive = subscription.status === 'active'
   const isPaused = subscription.status === 'paused'
@@ -45,10 +46,8 @@ export const useSubscriptionUpcomingCharge = (
   const showsCharge =
     (isActive || isTrialing || isResumingCharge) && !isPausingIndefinitely
 
-  const { data: chargePreview } = useSubscriptionChargePreview(
-    subscription.id,
-    { enabled: showsCharge },
-  )
+  const { data: chargePreview, isLoading: isPreviewLoading } =
+    useSubscriptionChargePreview(subscription.id, { enabled: showsCharge })
 
   const productId = useMemo(
     () => subscription.pending_update?.product_id ?? subscription.product_id,
@@ -66,6 +65,9 @@ export const useSubscriptionUpcomingCharge = (
   const usageOnMeterCycle = billsUsageOnMeterCycle(subscription)
   const hasMeters = subscription.meters.length > 0 && !usageOnMeterCycle
 
+  if (showsCharge && isPreviewLoading) {
+    return undefined
+  }
   if (!showsCharge || !chargePreview) {
     return null
   }

@@ -54,6 +54,7 @@ export const BillingHistoryAttempts = ({
   const { data: refunds } = useRefunds(order.id)
   const { data: disputes } = useDisputes(organizationId, {
     order_id: order.id,
+    limit: 100,
   })
   const format = formatCurrency('accounting')
   const nextAttempt =

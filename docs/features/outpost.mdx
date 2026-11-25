@@ -145,7 +145,7 @@ Outpost queues each event in Redis when you track it, and delivers the queue to 
 
 With Outpost, `flush()` does not fail when a delivery does: the events stay queued, and the next flush takes them. It can still time out.
 
-`onDelivered` and `onDropped` run on the instance that delivered the batch. A batch mixes events from every instance, so it does not map to one request.
+`onDelivered` and `onDropped` run on the instance that delivered the batch. A batch mixes events from every instance, so it does not map to one request. Keep them short: the instance waits for them before it delivers its next batch, and `flush()` and `close()` wait for them too.
 
 ## Performance and sizing
 

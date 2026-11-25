@@ -6,7 +6,7 @@ import { Spinner, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { type RowData } from '@tanstack/react-table'
 import { type ReactNode, useEffect } from 'react'
-import { CondensedTable } from './CondensedTable'
+import { CondensedTable, type CondensedTableExpansion } from './CondensedTable'
 import { CondensedTableHeader } from './CondensedTableHeader'
 import { CondensedTableSkeleton } from './CondensedTableSkeleton'
 import { type CondensedTableInstance } from './table'
@@ -18,7 +18,9 @@ interface CondensedTableViewProps<T extends RowData> {
   isLoading: boolean
   emptyLabel: string
   // Rows open a page of their own, so there is no selection to step through.
-  onOpen: (id: string) => void
+  onOpen?: (id: string) => void
+  // Or they open in place.
+  expansion?: CondensedTableExpansion<T>
   renderCompact: (row: T) => ReactNode
   footerLabel?: string
   isLoadingMore: boolean
@@ -34,6 +36,7 @@ export const CondensedTableView = <T extends RowData>({
   isLoading,
   emptyLabel,
   onOpen,
+  expansion,
   renderCompact,
   footerLabel,
   isLoadingMore,
@@ -50,7 +53,12 @@ export const CondensedTableView = <T extends RowData>({
 
   return (
     <Box flexDirection="column" flexGrow={1} minHeight={0}>
-      <CondensedTableHeader table={table} inset="l" compact />
+      <CondensedTableHeader
+        table={table}
+        inset="l"
+        compact
+        expandable={expansion !== undefined}
+      />
       <Box flexDirection="column" flexGrow={1} minHeight={0} overflowY="auto">
         {isLoading ? (
           <CondensedTableSkeleton table={table} inset="l" compact />
@@ -67,6 +75,7 @@ export const CondensedTableView = <T extends RowData>({
             navigable={false}
             renderCompact={renderCompact}
             inset="l"
+            expansion={expansion}
           />
         )}
         <div ref={endRef} />

@@ -27,11 +27,10 @@ export function SubscriptionUpdated({
       <Intro headline={`You're now subscribed to ${product.name}`}>
         This change is effective immediately and you'll be billed at your new
         rate going forward.{' '}
-        {order ? (
-          <>The invoice for this change is attached.</>
-        ) : (
-          'Any difference in price will be reflected on your next billing cycle.'
-        )}
+        {order
+          ? order.is_invoice_generated &&
+            'The invoice for this change is attached.'
+          : 'Any difference in price will be reflected on your next billing cycle.'}
       </Intro>
       {previous_billing_provider && organization.name && (
         <BillingMigrationNotice

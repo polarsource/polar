@@ -2485,7 +2485,7 @@ class TestLogCustomerMeterComparison:
                 count=2, total=Decimal(11), minimum=Decimal(1), maximum=Decimal(10)
             )
 
-        async def get_legacy_usage() -> float:
+        async def get_legacy_usage() -> Decimal:
             raise AssertionError("legacy usage shouldn't be read again")
 
         async def get_usage_ingested_before(before: datetime) -> UsageSummary:
@@ -2506,7 +2506,8 @@ class TestLogCustomerMeterComparison:
         assert json.loads(cast(str, span.attributes["reducer"]))["late_events"] == 2
 
     @pytest.mark.parametrize(
-        ("legacy_usage_after", "match"), [(12.0, True), (9.0, True), (8.0, False)]
+        ("legacy_usage_after", "match"),
+        [(Decimal(12), True), (Decimal(9), True), (Decimal(8), False)],
     )
     async def test_bounds_usage_ingested_after_the_legacy_read(
         self,
@@ -2515,7 +2516,7 @@ class TestLogCustomerMeterComparison:
         session: AsyncSession,
         redis: Redis,
         organization: Organization,
-        legacy_usage_after: float,
+        legacy_usage_after: Decimal,
         match: bool,
     ) -> None:
         meter = await rollup_tokens(
@@ -2542,7 +2543,7 @@ class TestLogCustomerMeterComparison:
         async def get_late_usage() -> UsageSummary:
             return UsageSummary(count=0, total=Decimal(0), minimum=None, maximum=None)
 
-        async def get_legacy_usage() -> float:
+        async def get_legacy_usage() -> Decimal:
             return legacy_usage_after
 
         async def get_usage_ingested_before(before: datetime) -> UsageSummary:
@@ -2608,8 +2609,8 @@ class TestLogCustomerMeterComparison:
                 count=1, total=Decimal(4), minimum=Decimal(4), maximum=Decimal(4)
             )
 
-        async def get_legacy_usage() -> float:
-            return 30.0
+        async def get_legacy_usage() -> Decimal:
+            return Decimal(30)
 
         async def get_usage_ingested_before(before: datetime) -> UsageSummary:
             assert before == reducer.created_at

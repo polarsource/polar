@@ -83,7 +83,9 @@ export default async function Page(props: {
   })
 
   if (response.status === 401) {
-    redirect(`/${organization.slug}/portal/request`)
+    redirect(
+      `/${organization.slug}/portal/request?${new URLSearchParams(searchParams)}`,
+    )
   }
 
   if (error) {

@@ -1,0 +1,23 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/BenefitsStep.tsx
+  s_d4a843b33596ce::t_4989fa5340b026 133,170-179
+server/polar/benefit/grant/repository.py
+  s_d4a843b33596ce::t_c4b009dd9ac142 2,215,218,225,227
+server/polar/merchant_migration/service.py
+  s_d4a843b33596ce::t_a2f6cc5c09c704 1028,1032-1033
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "685438a6eca51a955e0b1ac2791de63b6d3e9fc4",
+  "prompts": {},
+  "sessions": {
+    "s_d4a843b33596ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "12adddd7-b520-4f67-a19e-0f92eb2e092a",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

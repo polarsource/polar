@@ -8,24 +8,31 @@ up here beyond brand and last four: moving them is a PAN import.
 """
 
 import asyncio
+import hashlib
 from collections.abc import AsyncIterator
 from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
 import httpx2
 
+from polar.benefit.strategies.base.schemas import BENEFIT_DESCRIPTION_MAX_LENGTH
 from polar.enums import RecurringInterval, TaxBehavior
 from polar.kit.schemas import Schema
 
 from ..canonical import (
     CanonicalAccount,
+    CanonicalBenefit,
+    CanonicalBenefitFile,
+    CanonicalBenefitLink,
+    CanonicalBenefitType,
     CanonicalCollectionMethod,
     CanonicalCustomer,
     CanonicalDiscount,
     CanonicalDiscountDuration,
     CanonicalDiscountType,
+    CanonicalLicenseKeySettings,
     CanonicalPaymentMethod,
     CanonicalPaymentMethodType,
     CanonicalPrice,
@@ -48,6 +55,12 @@ RATE_LIMIT_RETRY_DELAYS = (2, 5, 15, 30, 60)
 # `expired` is over; `cancelled` still runs until `ends_at` and is taken over
 # as a pending cancellation.
 SKIPPED_SUBSCRIPTION_STATUSES = frozenset({"expired"})
+
+LICENSE_LENGTH_UNITS: dict[str, Literal["day", "month", "year"]] = {
+    "days": "day",
+    "months": "month",
+    "years": "year",
+}
 
 
 class LemonSqueezyStoreRequired(MerchantMigrationError):
@@ -253,9 +266,7 @@ class LemonSqueezyAdapter:
             return None
         latest = prices[-1]
         latest_attributes = latest["attributes"]
-        # One-time prices carry a renewal interval too; only the category says
-        # whether the price renews.
-        recurring = latest_attributes.get("category") == "subscription"
+        recurring = _renews(latest)
         recurring_interval = (
             latest_attributes.get("renewal_interval_unit") if recurring else None
         )
@@ -493,6 +504,127 @@ class LemonSqueezyAdapter:
         self._redemptions_by_order = by_order
         return by_order
 
+    async def list_benefits(self) -> list[CanonicalBenefit]:
+        """License key settings, files and links per variant, grouped so
+        variants that give the same thing share one benefit. Keys are never
+        shared across products: a key validates against its benefit, so it
+        would unlock every product in the group. Every source id carries the
+        store, so a second store's benefits never pass for this one's."""
+        await self.resolve_store()
+        variants: list[tuple[dict[str, Any], str]] = []
+        page = 1
+        while True:
+            batch, has_more, included = await self._list(
+                "/variants", page, {"include": "product"}
+            )
+            products = {
+                item["id"]: item for item in included if item["type"] == "products"
+            }
+            for variant in batch:
+                product = products.get(str(variant["attributes"]["product_id"]))
+                if product is not None and str(
+                    product["attributes"]["store_id"]
+                ) == str(self.store_id):
+                    variants.append((variant, product["attributes"]["name"]))
+            if not has_more:
+                break
+            page += 1
+
+        files_by_variant = await self._load_files({v["id"] for v, _ in variants})
+        groups: dict[str, CanonicalBenefit] = {}
+
+        def add(
+            variant_id: str,
+            type: CanonicalBenefitType,
+            key: str,
+            description: str,
+            **payload: Any,
+        ) -> None:
+            source_id = f"{self.store_id}:{type}:{key}"
+            groups.setdefault(
+                source_id,
+                CanonicalBenefit(
+                    source_id=source_id,
+                    type=type,
+                    description=description,
+                    product_source_ids=[],
+                    **payload,
+                ),
+            ).product_source_ids.append(variant_id)
+
+        for variant, product_name in variants:
+            attributes = variant["attributes"]
+            if attributes.get("has_license_keys"):
+                settings = _license_key_settings(attributes)
+                add(
+                    variant["id"],
+                    "license_keys",
+                    f"{attributes['product_id']}:"
+                    f"{settings.activation_limit or 'unlimited'}:"
+                    f"{settings.expires_ttl or 'never'}:"
+                    f"{settings.expires_timeframe or 'never'}",
+                    _description(product_name, "license key"),
+                    license_keys=settings,
+                )
+            if files := files_by_variant.get(variant["id"]):
+                add(
+                    variant["id"],
+                    "downloadables",
+                    _digest(",".join(sorted(file.source_id for file in files))),
+                    _description(product_name, "files"),
+                    files=files,
+                )
+            links = [
+                CanonicalBenefitLink(
+                    title=link.get("title") or link["url"], url=link["url"]
+                )
+                for link in attributes.get("links") or []
+                if link.get("url")
+            ]
+            if links:
+                add(
+                    variant["id"],
+                    "custom",
+                    _digest(",".join(f"{link.title}|{link.url}" for link in links)),
+                    _description(product_name, "links"),
+                    links=links,
+                )
+        return sorted(groups.values(), key=lambda benefit: _TYPE_ORDER[benefit.type])
+
+    async def _load_files(
+        self, variant_ids: set[str]
+    ) -> dict[str, list[CanonicalBenefitFile]]:
+        """Published files of this store's variants. `/files` has no store
+        filter; other stores' files are left out by their variant."""
+        files: dict[str, list[CanonicalBenefitFile]] = {}
+        page = 1
+        while True:
+            batch, has_more, _ = await self._list("/files", page)
+            for file in batch:
+                attributes = file["attributes"]
+                variant_id = str(attributes["variant_id"])
+                if (
+                    variant_id not in variant_ids
+                    or attributes.get("status") != "published"
+                ):
+                    continue
+                files.setdefault(variant_id, []).append(
+                    CanonicalBenefitFile(
+                        source_id=file["id"],
+                        name=attributes["name"],
+                        size=int(attributes.get("size") or 0),
+                    )
+                )
+            if not has_more:
+                return files
+            page += 1
+
+    async def file_download_url(self, file_source_id: str) -> str:
+        """A fresh signed link: Lemon Squeezy's expire after an hour."""
+        response = await self._request("GET", f"/files/{file_source_id}")
+        response.raise_for_status()
+        return response.json()["data"]["attributes"]["download_url"]
+
     async def get_subscription(self, source_id: str) -> CanonicalSubscription | None:
         body = await self._retrieve_subscription(source_id)
         if (
@@ -688,3 +820,48 @@ def _customer_countries(included: list[dict[str, Any]]) -> dict[str, str]:
         for item in included
         if item["type"] == "customers" and item["attributes"].get("country")
     }
+
+
+def _license_key_settings(attributes: dict[str, Any]) -> CanonicalLicenseKeySettings:
+    unlimited_activations = attributes.get("is_license_limit_unlimited") or not (
+        attributes.get("license_activation_limit")
+    )
+    timeframe = LICENSE_LENGTH_UNITS.get(attributes.get("license_length_unit") or "")
+    never_expires = (
+        attributes.get("is_license_length_unlimited")
+        or not attributes.get("license_length_value")
+        or timeframe is None
+    )
+    return CanonicalLicenseKeySettings(
+        activation_limit=None
+        if unlimited_activations
+        else int(attributes["license_activation_limit"]),
+        expires_ttl=None if never_expires else int(attributes["license_length_value"]),
+        expires_timeframe=None if never_expires else timeframe,
+    )
+
+
+_TYPE_ORDER: dict[CanonicalBenefitType, int] = {
+    "license_keys": 0,
+    "downloadables": 1,
+    "custom": 2,
+}
+
+
+def _renews(price: dict[str, Any]) -> bool:
+    # One-time prices carry a renewal interval too; only the category says
+    # whether the price renews.
+    return price["attributes"].get("category") == "subscription"
+
+
+def _digest(value: str) -> str:
+    return hashlib.sha256(value.encode()).hexdigest()[:16]
+
+
+def _description(product_name: str, suffix: str) -> str:
+    # "Icon Links" stays as it is, not "Icon Links links". "Profile" doesn't.
+    name, stem = product_name.lower().rstrip("s"), suffix.rstrip("s")
+    if name == stem or name.endswith(f" {stem}"):
+        return product_name[:BENEFIT_DESCRIPTION_MAX_LENGTH].strip()
+    room = BENEFIT_DESCRIPTION_MAX_LENGTH - len(suffix) - 1
+    return f"{product_name[:room].strip()} {suffix}"

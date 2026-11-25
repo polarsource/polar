@@ -10,6 +10,7 @@ from polar.merchant_migration.adapters.lemon_squeezy import (
     LemonSqueezyAdapter,
     LemonSqueezyStoreNotFound,
     LemonSqueezyStoreRequired,
+    _description,
 )
 from polar.merchant_migration.canonical import (
     CanonicalCustomer,
@@ -542,3 +543,131 @@ class TestStopSourceSubscription:
         await adapter.stop_source_subscription("100", reference="mig")
 
         assert [request.method for request in requests] == ["GET"]
+
+
+def _variant(variant_id: str, product_id: int, **attributes: Any) -> dict[str, Any]:
+    return {
+        "type": "variants",
+        "id": variant_id,
+        "attributes": {
+            "product_id": product_id,
+            "name": variant_id,
+            "status": "published",
+            **attributes,
+        },
+    }
+
+
+def _file(file_id: str, variant_id: int, **attributes: Any) -> dict[str, Any]:
+    return {
+        "type": "files",
+        "id": file_id,
+        "attributes": {
+            "variant_id": variant_id,
+            "name": f"{file_id}.zip",
+            "size": 1024,
+            "status": "published",
+            **attributes,
+        },
+    }
+
+
+@pytest.mark.anyio
+class TestListBenefits:
+    async def test_variants_giving_the_same_access_share_a_benefit(self) -> None:
+        license = {
+            "has_license_keys": True,
+            "license_activation_limit": 3,
+            "license_length_value": 1,
+            "license_length_unit": "years",
+        }
+        adapter, _ = _adapter(
+            {
+                "/v1/variants": _page(
+                    [
+                        _variant("10", 5, **license),
+                        _variant(
+                            "11",
+                            5,
+                            links=[{"title": "Docs", "url": "https://example.com"}],
+                            **license,
+                        ),
+                        _variant(
+                            "12",
+                            5,
+                            has_license_keys=True,
+                            is_license_limit_unlimited=True,
+                            is_license_length_unlimited=True,
+                        ),
+                        _variant("14", 8, **license),
+                        _variant("999", 6, **license),
+                    ],
+                    included=[
+                        {
+                            "type": "products",
+                            "id": "5",
+                            "attributes": {"store_id": 1, "name": "App"},
+                        },
+                        {
+                            "type": "products",
+                            "id": "6",
+                            "attributes": {"store_id": 2, "name": "Other"},
+                        },
+                        {
+                            "type": "products",
+                            "id": "8",
+                            "attributes": {"store_id": 1, "name": "Plugin"},
+                        },
+                    ],
+                ),
+                "/v1/files": _page(
+                    [
+                        _file("1", 10),
+                        _file("1", 11),
+                        _file("2", 12, status="draft"),
+                        _file("3", 999),
+                    ]
+                ),
+            },
+            store_id="1",
+        )
+
+        benefits = await adapter.list_benefits()
+
+        limited, unlimited, other_product, files, links = benefits
+        assert limited.product_source_ids == ["10", "11"]
+        assert limited.license_keys is not None
+        assert limited.license_keys.activation_limit == 3
+        assert (
+            limited.license_keys.expires_ttl,
+            limited.license_keys.expires_timeframe,
+        ) == (1, "year")
+        assert other_product.product_source_ids == ["14"]
+        assert other_product.source_id != limited.source_id
+        assert limited.source_id.startswith("1:")
+        assert unlimited.product_source_ids == ["12"]
+        assert unlimited.license_keys is not None
+        assert unlimited.license_keys.activation_limit is None
+        assert unlimited.license_keys.expires_ttl is None
+        assert files.product_source_ids == ["10", "11"]
+        assert [file.name for file in files.files] == ["1.zip"]
+        assert links.product_source_ids == ["11"]
+        assert [(link.title, link.url) for link in links.links] == [
+            ("Docs", "https://example.com")
+        ]
+
+
+@pytest.mark.parametrize(
+    ("product_name", "suffix", "description"),
+    [
+        ("Icon Links", "links", "Icon Links"),
+        ("Pro License Keys", "license key", "Pro License Keys"),
+        ("Files", "files", "Files"),
+        ("Profile", "files", "Profile files"),
+        ("Uplink", "links", "Uplink links"),
+    ],
+)
+def test_description_adds_the_suffix_once(
+    product_name: str, suffix: str, description: str
+) -> None:
+    assert _description(product_name, suffix) == description

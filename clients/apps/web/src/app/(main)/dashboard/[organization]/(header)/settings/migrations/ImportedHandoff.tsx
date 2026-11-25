@@ -18,6 +18,7 @@ interface Props {
   migrationId: string
   outcome: ImportOutcome
   onReviewRecords: () => void
+  onSetUpBenefits?: () => void
 }
 
 const UNCOUNTED = 'Your catalog is now in Polar.'
@@ -28,6 +29,8 @@ const MAYBE_ON_POLAR =
   'These subscriptions were prepared in an earlier migration. If their ' +
   "cards are already on Polar, you'll go straight to the switch. Otherwise " +
   "you'll get a checklist to move them."
+const SET_UP_BENEFITS =
+  'Bring your license keys, files and links over, so customers keep access.'
 const NOTHING_TO_MOVE =
   'There is nothing to move yet. Prepare your subscriptions first, then come ' +
   "back to move your customers' saved cards."
@@ -69,6 +72,7 @@ export function ImportedHandoff({
   migrationId,
   outcome,
   onReviewRecords,
+  onSetUpBenefits,
 }: Props) {
   const start = useStartPanTransfer(migrationId)
   const remaining = plural(outcome.selectableTotal, 'subscription')
@@ -78,6 +82,32 @@ export function ImportedHandoff({
   }
   const nothingLanded = nothingImported(landed)
   const earlier = preparedEarlier(landed)
+  const next = onSetUpBenefits
+    ? {
+        title: 'Next: set up benefits',
+        body: SET_UP_BENEFITS,
+        action: {
+          text: 'Set up benefits',
+          disabled: nothingLanded,
+          onClick: onSetUpBenefits,
+        },
+      }
+    : {
+        title: earlier ? 'Next: check saved cards' : 'Next: move saved cards',
+        body: earlier ? MAYBE_ON_POLAR : CARDS_AT_STRIPE,
+        action: {
+          text: start.isPending
+            ? 'Starting…'
+            : earlier
+              ? 'Continue'
+              : 'Start moving cards',
+          // Not disabled on success: that would strand the merchant if the
+          // refetch which unmounts this card never arrives, and a second
+          // click is merely a recoverable "already started".
+          disabled: start.isPending || nothingLanded,
+          onClick: () => start.mutate(),
+        },
+      }
 
   return (
     <Box
@@ -108,15 +138,9 @@ export function ImportedHandoff({
 
       <Box flexDirection="column" rowGap="xs">
         <Text variant="title" as="h3">
-          {earlier ? 'Next: check saved cards' : 'Next: move saved cards'}
+          {next.title}
         </Text>
-        <Text color="muted">
-          {nothingLanded
-            ? NOTHING_TO_MOVE
-            : earlier
-              ? MAYBE_ON_POLAR
-              : CARDS_AT_STRIPE}
-        </Text>
+        <Text color="muted">{nothingLanded ? NOTHING_TO_MOVE : next.body}</Text>
       </Box>
 
       {start.error && (
@@ -128,18 +152,7 @@ export function ImportedHandoff({
       <ButtonGroup
         size="sm"
         actions={[
-          {
-            text: start.isPending
-              ? 'Starting…'
-              : earlier
-                ? 'Continue'
-                : 'Start moving cards',
-            // Not disabled on success: that would strand the merchant if the
-            // refetch which unmounts this card never arrives, and a second
-            // click is merely a recoverable "already started".
-            disabled: start.isPending || nothingLanded,
-            onClick: () => start.mutate(),
-          },
+          next.action,
           { text: 'Review records', onClick: onReviewRecords },
         ]}
       />

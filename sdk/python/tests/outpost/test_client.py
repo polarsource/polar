@@ -2640,6 +2640,26 @@ async def test_delivers_what_another_instance_queued_while_it_flushed(
 
 
 @pytest.mark.anyio
+async def test_drains_on_a_flush_after_one_that_failed_before_it_drained(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    ingest: dict[str, typing.Any],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url, redis = redis_connection
+    monkeypatch.setattr("polar.outpost.client.FLUSH_TENURE", 0.1)
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.track(_usage("event-0", 10))
+        outpost._failure = PolarOutpostError("Polar refused the token")
+        await outpost.flush()
+        outpost._failure = None
+        await anyio.sleep(0.2)
+        await outpost.flush()
+        assert _delivered(ingest) == [["event-0"]]
+
+
+@pytest.mark.anyio
 async def test_hands_its_slot_over_a_few_seconds_into_a_drain_a_flush_waits_on(
     redis_connection: tuple[str, Redis],
     polar_client: httpx2.AsyncClient,

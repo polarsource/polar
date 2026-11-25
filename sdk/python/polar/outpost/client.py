@@ -1008,8 +1008,7 @@ class Outpost:
         try:
             try:
                 await self._in_flight()
-                self._limit_drain()
-                await self._drain_outbox_quietly()
+                await self._drain_outbox_quietly(limited=True)
                 # Their last exports land in the buffer, which the shared Redis takes
                 # before it closes.
                 await self._shutdown_telemetry()
@@ -1210,8 +1209,7 @@ class Outpost:
             self._flushing[scope] = deadline
             try:
                 with anyio.fail_after(timeout):
-                    self._limit_drain()
-                    await self._drain_outbox_quietly()
+                    await self._drain_outbox_quietly(limited=True)
                 await self._in_flight(max(0.0, deadline - anyio.current_time()))
             finally:
                 del self._flushing[scope]
@@ -1684,11 +1682,13 @@ class Outpost:
             if "BUSYGROUP" not in str(error):
                 raise
 
-    async def _drain_outbox_quietly(self) -> None:
+    async def _drain_outbox_quietly(self, *, limited: bool = False) -> None:
         """Redis keeps what a drain fails to deliver: the next flush takes it. Without an
         event of its own to deliver, a flush waits for the drain in flight, if any."""
         if self._redis is None or self._failure is not None:
             return
+        if limited:
+            self._limit_drain()
         if self._undrained:
             await self._drain()
         elif self._draining is not None:

@@ -723,7 +723,7 @@ export class Outpost {
     const released = new Promise<void>((resolve) => (this.releaseFlush = resolve));
     // Redis keeps what a drain fails to deliver: the next flush takes it. Without an event of its
     // own to deliver, a flush waits for the drain in flight, if any.
-    if (this.delivers) this.limitDrain();
+    if (this.delivers && (this.undrained || this.draining)) this.limitDrain();
     const draining = !this.delivers ? undefined : (this.undrained ? this.drain() : this.draining)?.catch(() => {});
     await Promise.race([Promise.all([this.inFlight(), draining]), released]);
   }
@@ -1119,7 +1119,7 @@ export class Outpost {
 
   // The fleet's other instances keep writing: a drain a flush or a close waits on would never end.
   private limitDrain(): void {
-    if (this.undrained || this.draining) this.drainUntil = Math.min(this.drainUntil, Date.now() + FLUSH_TENURE);
+    this.drainUntil = Math.min(this.drainUntil, Date.now() + FLUSH_TENURE);
   }
 
   private async drainOutbox(): Promise<void> {

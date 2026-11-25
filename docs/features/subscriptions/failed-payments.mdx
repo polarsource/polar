@@ -4,11 +4,11 @@ sidebarTitle: "Failed payments"
 description: "What happens when a renewal payment fails: the past_due status, Polar's retry schedule, the benefit grace period, and how you and your customers recover."
 ---
 
-When a subscription renews, Polar starts the next billing cycle, creates the order and charges the customer's saved payment method. If the charge fails, the subscription moves to `past_due` and Polar retries it on a schedule, a process called **dunning**, instead of ending it right away.
+When a subscription renews, Polar starts the next billing cycle, creates the order and charges the customer's saved payment method. If the charge fails, the subscription moves to **Past due** (`past_due`) and Polar retries it on a schedule, a process called **dunning**, instead of ending it right away.
 
 ## What happens when a renewal fails
 
-1. The subscription moves from `active` to `past_due`, and `past_due_at` records when.
+1. The subscription moves from **Active** (`active`) to **Past due** (`past_due`), and `past_due_at` records when.
 2. Polar emails the customer with a link to the [Customer Portal](/features/customer-portal/introduction), where they can update their payment method or retry the payment.
 3. The renewal order stays open, with `next_payment_attempt_at` set to the next retry.
 
@@ -23,7 +23,7 @@ Polar then retries on a fixed schedule, counted from the first failure:
 
 If a retry succeeds, the order is paid. The subscription returns to `active` once all its open orders are paid. A `past_due` subscription keeps renewing, so there can be more than one.
 
-If every retry fails, Polar **revokes** the subscription: it moves to `canceled` and benefits are revoked.
+If every retry fails, Polar **revokes** the subscription: it moves to **Canceled** (`canceled`) and benefits are revoked.
 
 When the card is declined in a way that won't recover, such as `lost_card`, Polar skips the retries in between and makes one last attempt at the 21-day mark. The customer can still add a new card before then.
 

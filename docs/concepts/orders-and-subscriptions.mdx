@@ -18,24 +18,24 @@ flowchart LR
 
 ## Orders
 
-Polar creates an order whenever it charges a customer. The order's `billing_reason` tells you why:
+Polar creates an order whenever it charges a customer. The order's `billing_reason` tells you why. The dashboard shows it as **Billing reason** on the order:
 
-| `billing_reason` | When |
-| --- | --- |
-| `purchase` | A one-time product is bought |
-| `subscription_create` | A subscription starts |
-| `subscription_cycle` | A subscription renews |
-| `subscription_update` | A plan or seat change is charged right away |
-| `subscription_meter_cycle` | Usage is billed at the end of a meter period |
+| `billing_reason` | Dashboard | When |
+| --- | --- | --- |
+| `purchase` | **Purchase** | A one-time product is bought |
+| `subscription_create` | **Subscription Create** | A subscription starts |
+| `subscription_cycle` | **Subscription Cycle** | A subscription renews |
+| `subscription_update` | **Subscription Update** | A plan or seat change is charged right away |
+| `subscription_meter_cycle` | **Subscription Meter Cycle** | Usage is billed at the end of a meter period |
 
-| Status | Meaning |
-| --- | --- |
-| `draft` | Created for an [off-session charge](/features/off-session-charges) and not charged yet |
-| `pending` | Polar is collecting the payment |
-| `paid` | The payment succeeded |
-| `refunded` | Fully refunded |
-| `partially_refunded` | Part of the amount was refunded |
-| `void` | Won't be collected, for example after every payment retry failed |
+| Status | Dashboard | Meaning |
+| --- | --- | --- |
+| `draft` | **Draft** | Created for an [off-session charge](/features/off-session-charges) and not charged yet |
+| `pending` | **Pending** | Polar is collecting the payment |
+| `paid` | **Paid** | The payment succeeded |
+| `refunded` | **Refunded** | Fully refunded |
+| `partially_refunded` | **Partially refunded** | Part of the amount was refunded |
+| `void` | **Void** | Won't be collected, for example after every payment retry failed |
 
 Every paid order has a receipt, and you or the customer can generate an invoice for it.
 
@@ -45,34 +45,34 @@ You can also charge an existing customer outside of checkout by creating a draft
 
 A subscription follows the billing interval of its product. At the end of each period, Polar starts a new one, creates an order, and charges the customer's saved payment method. By default, metered usage from the period that just ended is billed on the same order.
 
-| Status | Meaning | Benefits |
-| --- | --- | --- |
-| `trialing` | In a free [trial](/features/subscriptions/trials) | Granted |
-| `active` | Paid and renewing | Granted |
-| `past_due` | A renewal payment failed and Polar is [retrying it](/features/subscriptions/failed-payments) | Revoked, unless you set a grace period |
-| `paused` | [Paused](/features/subscriptions/manage#pause-and-resume), no orders are created | Revoked |
-| `trial_ended` | The trial ended without a payment method on file | Revoked |
-| `canceled` | Ended, including after payment retries run out | Revoked |
-| `incomplete` | Being created, the first payment isn't confirmed yet | Not granted |
+| Status | Dashboard | Meaning | Benefits |
+| --- | --- | --- | --- |
+| `trialing` | **Trialing** | In a free [trial](/features/subscriptions/trials) | Granted |
+| `active` | **Active** | Paid and renewing | Granted |
+| `past_due` | **Past due** | A renewal payment failed and Polar is [retrying it](/features/subscriptions/failed-payments) | Revoked, unless you set a grace period |
+| `paused` | **Paused** | [Paused](/features/subscriptions/manage#pause-and-resume), no orders are created | Revoked |
+| `trial_ended` | **Trial ended** | The trial ended without a payment method on file | Revoked |
+| `canceled` | **Canceled** | Ended, including after payment retries run out | Revoked |
+| `incomplete` | **Incomplete** | Being created, the first payment isn't confirmed yet | Not granted |
 
 Treat the less common `incomplete_expired` and `unpaid` statuses as ended subscriptions.
 
-A subscription that's canceled **at period end** stays `active` until `current_period_end`, and can be uncanceled until then. A **revoked** subscription ends immediately.
+A subscription that's canceled **at period end** stays `active` until `current_period_end`, and can be uncanceled until then. The dashboard labels it **Canceling** in the meantime. A **revoked** subscription ends immediately.
 
 ## Changing a subscription
 
 You and your customers can switch a subscription to another product, change its seats or units, apply a discount or move its billing date. Charges for a change mid-period are [prorated](/features/subscriptions/proration): either added to the next order or invoiced right away.
 
-## From the CLI or your agent
+## In the dashboard, CLI or your agent
 
-Every task here also works from your terminal and your agent. See the [CLI reference](/integrate/cli/reference) and the [MCP server](/integrate/mcp).
+Orders are under **Sales → Orders** and subscriptions under **Sales → Subscriptions**. Each customer's page lists theirs too. The same tasks work from your terminal and your agent. See the [CLI reference](/integrate/cli/reference) and the [MCP server](/integrate/mcp).
 
-| Task | CLI | MCP operation |
-| --- | --- | --- |
-| List orders | `polar orders list` | `orders_list` |
-| Get an order's invoice | `polar orders invoice <id>` | `orders_invoice` |
-| Change a subscription | `polar subscriptions update <id>` | `subscriptions_update` |
-| End a subscription now | `polar subscriptions revoke <id>` | `subscriptions_revoke` |
+| Task | Dashboard | CLI | MCP operation |
+| --- | --- | --- | --- |
+| List orders | **Sales → Orders** | `polar orders list` | `orders_list` |
+| Get an order's invoice | Open the order | `polar orders invoice <id>` | `orders_invoice` |
+| Change a subscription | Open the subscription | `polar subscriptions update <id>` | `subscriptions_update` |
+| End a subscription now | **Cancel Subscription** with **Cancellation Date** set to **Immediately** | `polar subscriptions revoke <id>` | `subscriptions_revoke` |
 
 ## Learn more
 

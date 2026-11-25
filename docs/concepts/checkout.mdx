@@ -40,7 +40,7 @@ When the checkout succeeds, Polar:
 3. Creates a subscription, if the product is recurring.
 4. Grants the product's [benefits](/concepts/benefits).
 
-A session moves through the statuses `open`, `confirmed`, and then `succeeded` or `failed`. Sessions that are never completed become `expired`.
+A session moves through the statuses `open`, `confirmed`, and then `succeeded` or `failed`. Sessions that are never completed become `expired`. The dashboard lists every session with its status (**Open**, **Confirmed**, **Succeeded**, **Failed**, **Expired**) under **Sales → Checkouts**.
 
 ## Customizing checkout
 
@@ -49,14 +49,14 @@ A session moves through the statuses `open`, `confirmed`, and then `succeeded` o
 - **Ad-hoc prices** set a price for a single session without changing your catalog. See [Ad-hoc prices](/features/checkout/session#ad-hoc-prices).
 - **Embedded checkout** opens the checkout on your own site instead of redirecting. See [Embedded checkout](/features/checkout/embed).
 
-## From the CLI or your agent
+## In the dashboard, CLI or your agent
 
-Checkout Sessions are created from your backend with the SDK or API. Checkout Links also work from the CLI or your agent:
+Checkout Sessions are created from your backend with the SDK or API. Checkout Links and the list of sessions also work from the dashboard, the CLI or your agent:
 
-| Task | CLI | MCP operation |
-| --- | --- | --- |
-| Create a Checkout Link | `polar checkout_links create` | `checkout_links_create` |
-| List checkout sessions | `polar checkouts list` | `checkouts_list` |
+| Task | Dashboard | CLI | MCP operation |
+| --- | --- | --- | --- |
+| Create a Checkout Link | **Products → Checkout Links** | `polar checkout_links create` | `checkout_links_create` |
+| List checkout sessions | **Sales → Checkouts** | `polar checkouts list` | `checkouts_list` |
 
 ## Learn more
 

@@ -47,7 +47,7 @@ curl https://sandbox-api.polar.sh/v1/products/ \
 
 Tokens belong to one environment. A sandbox token only works against `https://sandbox-api.polar.sh`, and a production token only against `https://api.polar.sh`. See [Sandbox](/integrate/sandbox).
 
-To create an organization access token from the terminal, run `polar auth token`. See [Access tokens](/integrate/oat#create-a-token).
+Create an organization access token under **Settings → Access Tokens** in the dashboard, or from the terminal with `polar auth token`. See [Access tokens](/integrate/oat#create-a-token).
 
 <Visibility for="agents">
   Use an organization access token unless the user is building an app for other Polar users. Never put a token in browser or mobile code. Read it from `POLAR_ACCESS_TOKEN` on the server.

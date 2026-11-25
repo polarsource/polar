@@ -162,6 +162,14 @@ Deleting a benefit revokes it from every customer who holds it. Detach it from p
   Deleting a benefit can't be undone, and customers lose access right away.
 </Warning>
 
+In the dashboard:
+
+- Open **Products → Benefits** and select the benefit
+- Click **Edit Benefit** to change it
+- Open the **…** menu and click **Delete Benefit** to delete it
+
+The benefit's page also lists its **Benefit Grants**: who holds it and each grant's status.
+
 | Task | CLI | MCP operation |
 | --- | --- | --- |
 | Update a benefit | `polar benefits update <id>` | `benefits_update` |
@@ -175,7 +183,7 @@ Deleting a benefit revokes it from every customer who holds it. Detach it from p
 
 You can grant a benefit to a customer without a purchase, revoke any grant, including one from a purchase, and undo a manual revocation. Meter Credits benefits can't be granted this way. Credit the meter directly instead, see [Credits](/features/usage-based-billing/credits).
 
-- **Dashboard:** open **Customers**, select the customer and click **Grant benefit**.
+- **Dashboard:** open **Customers** and select the customer. Under **Benefit Grants**, click **Grant benefit**. Each grant row has **Revoke**, and a manually revoked grant has **Unrevoke**.
 - **Prompt:** "Grant the Beta access benefit to user_123 in my Polar sandbox organization." Uses the `benefit_grants_create` operation of the [Polar MCP server](/integrate/mcp). `benefit_grants_revoke` and `benefit_grants_update` revoke and restore grants. These have no CLI command yet.
 - **API:** [`POST /v1/benefit-grants/`](/api-reference/next/benefit-grants/create-benefit-grant), [`DELETE /v1/benefit-grants/{id}`](/api-reference/next/benefit-grants/revoke-benefit-grant) and [`PATCH /v1/benefit-grants/{id}`](/api-reference/next/benefit-grants/update-benefit-grant).
 
@@ -183,7 +191,7 @@ Granting and revoking are asynchronous. The returned grant may not be granted ye
 
 ## Grant errors
 
-When Polar can't deliver a benefit, for example because the GitHub App lost access to the repository, the grant's `error` field holds the reason. List a benefit's grants with `polar benefits grants <id>` or the dashboard's benefit page to find failed grants.
+When Polar can't deliver a benefit, for example because the GitHub App lost access to the repository, the grant's `error` field holds the reason. Find failed grants under **Benefit Grants** on the benefit's page in **Products → Benefits**, or list them with `polar benefits grants <id>`.
 
 ## Webhooks
 

@@ -91,8 +91,8 @@ In production, send events with `polar.metering()`. See [Send events](/features/
 
 | Field | Required | Description |
 | --- | --- | --- |
-| `amount` | Yes | The cost **in cents**, as a decimal. Up to 17 digits, 12 after the decimal point. |
-| `currency` | Yes | `usd`. No other currency is supported. |
+| Yes | `amount` | The cost **in cents**, as a decimal. Up to 17 digits, 12 after the decimal point. |
+| Yes | `currency` | `usd`. No other currency is supported. |
 
 The amount is in cents, not dollars: `150` is $1.50, and `0.0014` is $0.000014. Fractions of a cent are kept, so you can record the cost of a single API call.
 
@@ -100,14 +100,14 @@ The amount is in cents, not dollars: `150` is $1.50, and `0.0014` is $0.000014. 
 
 | Field | Required | Description |
 | --- | --- | --- |
-| `vendor` | Yes | The provider, such as `openai` |
-| `model` | Yes | The model, such as `gpt-4.1-nano` |
-| `input_tokens` | Yes | Input tokens |
-| `output_tokens` | Yes | Output tokens |
-| `total_tokens` | Yes | Total tokens |
-| `cached_input_tokens` | No | Input tokens served from cache |
-| `prompt` | No | The prompt |
-| `response` | No | The response |
+| Yes | `vendor` | The provider, such as `openai` |
+| Yes | `model` | The model, such as `gpt-4.1-nano` |
+| Yes | `input_tokens` | Input tokens |
+| Yes | `output_tokens` | Output tokens |
+| Yes | `total_tokens` | Total tokens |
+| No | `cached_input_tokens` | Input tokens served from cache |
+| No | `prompt` | The prompt |
+| No | `response` | The response |
 
 These two are the only nested objects metadata accepts. A meter can read inside them with a dot path, like `_cost.amount` or `_llm.total_tokens`.
 
@@ -173,19 +173,19 @@ Select an event type to see its **Occurrences**, **Total Cost**, **Average Cost*
 
 ## Cost metrics
 
-These metrics come from your `_cost` data and your revenue. Amounts are in cents.
+These metrics come from your `_cost` data and your revenue. Find them as charts on **Analytics → Costs** and in the **Costs** and **Usage** groups on **Analytics → Metrics**. Amounts are in cents.
 
-| Slug | Name | Definition |
+| Name | Slug | Definition |
 | --- | --- | --- |
-| `costs` | Costs | Sum of `_cost.amount` on your events in each period |
-| `cumulative_costs` | Cumulative Costs | Running total of `costs` |
-| `cost_per_user` | Cost Per User | Costs divided by active subscriptions |
-| `gross_margin` | Gross Margin | Cumulative revenue minus cumulative costs |
-| `gross_margin_percentage` | Gross Margin % | Gross margin as a share of cumulative revenue |
-| `cashflow` | Cashflow | Revenue minus costs in each period |
-| `active_user_by_event` | Active Users by Event | Distinct customers who sent events in the period |
+| Costs | `costs` | Sum of `_cost.amount` on your events in each period |
+| Cumulative Costs | `cumulative_costs` | Running total of `costs` |
+| Cost Per User | `cost_per_user` | Costs divided by active subscriptions |
+| Gross Margin | `gross_margin` | Cumulative revenue minus cumulative costs |
+| Gross Margin % | `gross_margin_percentage` | Gross margin as a share of cumulative revenue |
+| Cashflow | `cashflow` | Revenue minus costs in each period |
+| Active User (By event) | `active_user_by_event` | Distinct customers who sent events in the period |
 
-Lifetime value (`ltv`) also subtracts cost per user from revenue per user. See [Metrics](/features/analytics) for every metric.
+**Lifetime Value** (`ltv`) also subtracts cost per user from revenue per user. See [Metrics](/features/analytics) for every metric.
 
 <CodeGroup>
 ```typescript TypeScript
@@ -227,7 +227,7 @@ Costs are sent with events, from your application. Reading them works everywhere
 
 | Task | CLI | MCP operation |
 | --- | --- | --- |
-| Read cost metrics | `polar metrics get --start-date 2026-11-01 --end-date 2026-11-30 --interval day --metrics '["costs","gross_margin"]'` | `metrics_get` |
+| Read cost metrics | `polar metrics get --start-date 2026-11-01 --end-date 2026-11-30 --interval day --metrics costs --metrics gross_margin` | `metrics_get` |
 | Read one event and its `_cost` | `polar events get <id>` | `events_get` |
 
 ```text Prompt

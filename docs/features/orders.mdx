@@ -9,12 +9,13 @@ The code examples use API version `2026-10` and the sandbox.
 
 ## Find an order
 
-Orders are listed under **Sales** in the dashboard. Filter by customer, product, subscription, status or date.
+Orders are listed under **Sales → Orders** in the dashboard. Filter by customer, product, subscription, status or date.
 
 <Tabs>
   <Tab title="Dashboard">
-    - Open **Sales**
-    - Select an order to see its amounts, customer, invoice and refunds
+    - Open **Sales → Orders**
+    - Filter by customer, product or status
+    - Select an order to see its amounts, customer, payment attempts, refunds and disputes
   </Tab>
   <Tab title="CLI">
     ```bash
@@ -53,7 +54,16 @@ curl -G https://sandbox-api.polar.sh/v1/orders/ \
 ```
 </CodeGroup>
 
-An order's `status` is `draft`, `pending`, `paid`, `refunded`, `partially_refunded` or `void`. Free orders, with a total of 0, are `paid` right away with no payment step.
+| Dashboard | API `status` |
+| --- | --- |
+| **Draft** | `draft` |
+| **Pending** | `pending` |
+| **Paid** | `paid` |
+| **Refunded** | `refunded` |
+| **Partially refunded** | `partially_refunded` |
+| **Void** | `void` |
+
+Free orders, with a total of 0, are `paid` right away with no payment step.
 
 ## What's on an order
 
@@ -67,17 +77,36 @@ An order's `status` is `draft`, `pending`, `paid`, `refunded`, `partially_refund
 
 ## Edit billing details
 
-You can change the billing name and address until the invoice is generated. Address fields used to calculate tax can't change.
+You can change the billing name and address on an order. Address fields used to calculate tax can't change. Generating the invoice again picks up the new details.
 
-```bash
-polar orders update <order_id> --billing-name "Acme Inc."
-```
+<Tabs>
+  <Tab title="Dashboard">
+    - Open the order under **Sales → Orders**
+    - Open the actions menu and click **Edit Invoice**, or **Download Invoice** if no invoice exists yet
+    - Change the **Billing name** or **Billing address**
+    - Click **Update invoice**, or **Generate invoice** the first time
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar orders update <order_id> --billing-name "Acme Inc."
+    ```
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Set the billing name on order <order_id> to Acme Inc. in my Polar sandbox.
+    ```
+
+    Uses the `orders_update` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
 
 Over the API, send `billing_name` or `billing_address` to [Update Order](/api-reference/current/orders/update-order).
 
 ## Invoices
 
-Polar can produce a PDF invoice for every paid order. Generate it, then fetch its URL:
+Polar can produce a PDF invoice for every paid order. In the dashboard, open the order, then click **Download Invoice** in its actions menu. The first time, Polar asks for the billing details and generates it. **Edit Invoice** in the same menu changes them later.
+
+Over the API, generate it, then fetch its URL:
 
 <CodeGroup>
 ```typescript TypeScript
@@ -103,12 +132,12 @@ curl "https://sandbox-api.polar.sh/v1/orders/$ORDER_ID/invoice" \
 ```
 </CodeGroup>
 
-From the CLI: `polar orders generate_invoice <order_id>`, then `polar orders invoice <order_id>`. In the dashboard, download it from the order page.
+From the CLI: `polar orders generate_invoice <order_id>`, then `polar orders invoice <order_id>`.
 
 Generation returns `202 Accepted` and runs in the background. If the invoice isn't ready yet, retry the fetch shortly after. Check `is_invoice_generated` on the order.
 
 <Note>
-  Once an invoice is generated, its billing details are frozen. Customers can correct their name, company, tax ID or address from the [Customer Portal](/features/customer-portal/introduction), which regenerates the invoice.
+  Customers can correct their name, company, tax ID or address from the [Customer Portal](/features/customer-portal/introduction), which regenerates the invoice.
 </Note>
 
 ## Receipts
@@ -120,13 +149,13 @@ A **receipt** is the proof of payment for an order. Polar issues one for every p
 - Any refunds, with dates and amounts.
 - The same line items, taxes, totals and invoice number as the invoice.
 
-Download it from the order page, with `polar orders receipt <order_id>`, or with [Get Order Receipt](/api-reference/current/orders/get-order-receipt). Customers get a **Download Receipt** button on each paid order in the Customer Portal.
+In the dashboard, open the order and click **Download Receipt** in its actions menu. From the CLI, run `polar orders receipt <order_id>`. Over the API, use [Get Order Receipt](/api-reference/current/orders/get-order-receipt). Customers get a **Download receipt** button on each paid order in the Customer Portal.
 
 The first request may return `202 Accepted` while the PDF renders. Retry shortly after to get a download URL.
 
 ## Export orders
 
-Download orders as CSV from **Sales → Export CSV**, picking the columns to include. Over the API, call [Export Orders](/api-reference/current/orders/export-orders) with optional `product_id`, `status`, `created_after`, `created_before`, `timezone` and `columns` filters.
+Download orders as CSV from **Sales → Orders**: open the actions menu in the toolbar, click **Export CSV** and pick the columns to include. Over the API, call [Export Orders](/api-reference/current/orders/export-orders) with optional `product_id`, `status`, `created_after`, `created_before`, `timezone` and `columns` filters.
 
 <Note>
   Export is dashboard or API only. Not available from the CLI or MCP server.
@@ -135,6 +164,8 @@ Download orders as CSV from **Sales → Export CSV**, picking the columns to inc
 ## Payment attempts
 
 Each attempt to charge an order is a **payment**, with a `status` of `pending`, `succeeded` or `failed`. A failed payment carries `decline_reason` and `decline_message`. Use it to see why a renewal failed.
+
+In the dashboard, open the order. Its **Payment attempts** section lists each attempt with its method and status. From the CLI:
 
 ```bash
 polar payments list --order-id <order_id> --status failed
@@ -150,7 +181,7 @@ To charge a customer's saved payment method for a one-off amount, create a draft
 
 ## Refunds and disputes
 
-Refund an order in full or in part from its page or the API. See [Refunds](/features/refunds). If a customer disputes the charge with their bank, see [Disputes](/features/disputes).
+Refund an order in full or in part with **Refund order** on its page, or over the API. See [Refunds](/features/refunds). If a customer disputes the charge with their bank, see [Disputes](/features/disputes).
 
 ## Webhooks
 

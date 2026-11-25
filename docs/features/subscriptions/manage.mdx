@@ -21,14 +21,14 @@ Open **Sales → Subscriptions** and select a subscription. Changes live in two 
 | Where | Action | Shown when |
 | --- | --- | --- |
 | **Update Subscription** → **Plan** | **New product**, **Proration behavior** and **Discount** | Always. **Proration behavior** shows when you pick a new product outside a trial |
-| **Update Subscription** → **Trial** | **Trial End Date**, **Update trial end date**, **End trial now** | The subscription is `trialing` |
-| **Update Subscription** → **Billing Period** | **Billing Period End Date** | The subscription is `active` |
-| **Update Subscription** → **Seats** | **Total seats** and **Proration behavior** | The subscription is seat-based and `active` or `trialing` |
+| **Update Subscription** → **Trial** | **Trial End Date**, **Update trial end date**, **End trial now** | The subscription is **Trialing** |
+| **Update Subscription** → **Billing Period** | **Billing Period End Date** | The subscription is **Active** |
+| **Update Subscription** → **Seats** | **Total seats** and **Proration behavior** | The subscription is seat-based and **Active** or **Trialing** |
 | Actions menu | **Cancel Subscription** or **Uncancel** | The subscription hasn't ended |
 | Actions menu | **Pause Subscription**, **Cancel Scheduled Pause** or **Resume Now** | Active and not canceling, or paused |
 | **Scheduled update** | **Cancel scheduled change** | A change is scheduled for the next cycle |
 
-The **Plan** tab previews the charge or credit before you confirm. Unit changes and metadata aren't in the dashboard. Use the CLI, an agent or the API.
+The **Plan** tab previews the charge or credit before you confirm. The subscription page also lists its orders, **Metadata** and **Activity**. Unit changes and metadata edits aren't in the dashboard. Use the CLI, an agent or the API.
 
 ## Change the plan
 
@@ -84,7 +84,7 @@ curl -X PATCH https://sandbox-api.polar.sh/v1/subscriptions/$SUBSCRIPTION_ID \
 ```
 </CodeGroup>
 
-The [proration behavior](/features/subscriptions/proration) decides when the change applies and how the difference is billed. `invoice`, `prorate` and `reset` apply it now. `next_period` schedules it for the next cycle. Leave it out to use your organization's default.
+The [proration behavior](/features/subscriptions/proration) decides when the change applies and how the difference is billed. **Prorate & charge now** (`invoice`), **Prorate on next invoice** (`prorate`) and **Charge full amount & reset cycle** (`reset`) apply it now. **Schedule for next cycle** (`next_period`) schedules it for the next cycle. Leave it out to use your organization's default.
 
 <Note>
   `auto` (prorate upgrades, schedule downgrades) is available from API version 2027-01. See [Update Subscription](/api-reference/next/subscriptions/update-subscription). The CLI and the `2026-10` SDKs don't accept it. Agents using the MCP server can, because it calls `2027-01`.
@@ -388,9 +388,7 @@ curl -X PATCH https://sandbox-api.polar.sh/v1/subscriptions/$SUBSCRIPTION_ID \
 
 ## Update metadata
 
-Store your own key-value data on a subscription with `metadata`. It doesn't change billing.
-
-<Note>Not available in the dashboard. Use the CLI, an agent or the API.</Note>
+Store your own key-value data on a subscription with `metadata`. It doesn't change billing. The dashboard shows it under **Metadata** on the subscription page, but can't edit it.
 
 <CodeGroup>
 ```typescript TypeScript
@@ -575,7 +573,20 @@ curl -X PATCH https://sandbox-api.polar.sh/v1/subscriptions/$SUBSCRIPTION_ID \
 ```
 </CodeGroup>
 
-`customer_cancellation_reason` is one of `too_expensive`, `missing_features`, `switched_service`, `unused`, `customer_service`, `low_quality`, `too_complex` or `other`. Add free text with `customer_cancellation_comment`.
+`customer_cancellation_reason` is the **Customer Feedback** option in the dashboard. Add free text with `customer_cancellation_comment`, the **Comment** field.
+
+| Dashboard | API `customer_cancellation_reason` |
+| --- | --- |
+| **Too Expensive** | `too_expensive` |
+| **Missing Features** | `missing_features` |
+| **Switched Service** | `switched_service` |
+| **Unused** | `unused` |
+| **Customer Service** | `customer_service` |
+| **Low Quality** | `low_quality` |
+| **Too Complicated** | `too_complex` |
+| **Other** | `other` |
+
+The same reasons make up the **Cancellations** charts under **Analytics → Metrics**.
 
 <Warning>
   Only set the reason and comment when they come from the customer, for example from a cancellation survey or a support conversation. Customers can see `customer_cancellation_comment` in their purchase history, so don't put internal notes there.
@@ -683,7 +694,7 @@ The [Customer Portal](/features/customer-portal/introduction) offers part of thi
 | Change seats | With **Enable subscription seat management** |
 | Change units | With **Enable subscription unit changes** |
 | Pause and resume | With **Enable subscription pausing** |
-| Add billing details to a `trial_ended` subscription and restart it | Always. See [Trials](/features/subscriptions/trials#card-up-front-or-card-less) |
+| Add billing details to a **Trial ended** subscription and restart it | Always. See [Trials](/features/subscriptions/trials#card-up-front-or-card-less) |
 
 Revoking, discounts, trial changes, rescheduling the renewal and metadata are for you only.
 

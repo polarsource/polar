@@ -41,14 +41,14 @@ A **refund** returns all or part of an order's amount to the customer, along wit
 
 A **dispute**, or chargeback, is when a customer asks their bank to reverse a payment. Each dispute has a fee, deducted from your balance whatever the outcome. See [Fees](/merchant-of-record/fees).
 
-## From the CLI or your agent
+## In the dashboard, CLI or your agent
 
-Every task here also works from your terminal and your agent. See the [CLI reference](/integrate/cli/reference) and the [MCP server](/integrate/mcp).
+Your balance and payouts are under **Finance → Payouts**, and your payout account under **Finance → Account**. These are dashboard only. Payments and refunds also work from your terminal and your agent. See the [CLI reference](/integrate/cli/reference) and the [MCP server](/integrate/mcp).
 
-| Task | CLI | MCP operation |
-| --- | --- | --- |
-| List payments | `polar payments list` | `payments_list` |
-| Refund an order | `polar refunds create` | `refunds_create` |
+| Task | Dashboard | CLI | MCP operation |
+| --- | --- | --- | --- |
+| List payments | The order's page under **Sales → Orders** | `polar payments list` | `payments_list` |
+| Refund an order | **Refund Order** on the order | `polar refunds create` | `refunds_create` |
 
 ## Learn more
 

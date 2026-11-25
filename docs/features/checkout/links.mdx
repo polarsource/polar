@@ -135,13 +135,15 @@ To open the checkout on your own site, open the link and select the **Embed** ta
 
 ## Find the sessions a link created
 
-Every visit creates a session you can inspect, filtered by product:
+Every visit creates a session you can inspect, filtered by product.
+
+In the dashboard, open **Sales → Checkouts** and filter by **Product** and **Status** (**Open**, **Confirmed**, **Succeeded**, **Expired** or **Failed**).
+
+From the CLI:
 
 ```bash
 polar checkouts list --product-id <product_id> --status succeeded
 ```
-
-In the dashboard, sessions are listed under **Sales → Checkouts**.
 
 ## From the CLI or your agent
 

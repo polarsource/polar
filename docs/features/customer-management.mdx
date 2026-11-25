@@ -73,7 +73,7 @@ Set `external_id` to your user's ID, so you never need to store Polar's customer
 
 ## Individuals and teams
 
-A customer's `type` is `individual` (the default) or `team`. A team separates who pays from who uses the product, through **members** with the roles `owner`, `billing_manager` and `member`.
+A customer's `type` is `individual` (the default) or `team`. A team separates who pays from who uses the product, through **members** with the roles **Owner** (`owner`), **Billing Manager** (`billing_manager`) and **Member** (`member`).
 
 - Creating a customer also creates its `owner` member, from the customer's email and name, or from the `owner` you pass.
 - A team customer can be created without an email if you pass an `owner` with one.
@@ -83,18 +83,20 @@ Members are managed under the customer's **Members** tab, with `polar customers 
 
 ## Customer fields
 
-| Field | Notes |
-| --- | --- |
-| `email` | Unique within your organization. Optional for teams with an owner. |
-| `external_id` | Your user ID. Set once. |
-| `name`, `billing_name` | `billing_name` appears on invoices and falls back to `name`. |
-| `billing_address`, `tax_id` | Usually collected at checkout. |
-| `locale` | The customer's language, used by [localization](/features/checkout/localization). |
-| `metadata` | Your own key-value data. Up to 50 keys, keys up to 40 characters, string values up to 500 characters. |
-| `type` | `individual` or `team`. |
-| `email_verified` | Whether the customer verified their email. |
-| `default_payment_method_id` | The saved method used for renewals. |
-| `first_user_event_at` | When the first usage event arrived for this customer. |
+**Name**, **Email**, **External ID** and **Metadata** are editable in the dashboard. The rest are set at checkout or over the API.
+
+| Dashboard | API field | Notes |
+| --- | --- | --- |
+| **Email** | `email` | Unique within your organization. Optional for teams with an owner. |
+| **External ID** | `external_id` | Your user ID. Set once. |
+| **Name** | `name`, `billing_name` | `billing_name` appears on invoices and falls back to `name`. |
+| | `billing_address`, `tax_id` | Usually collected at checkout. |
+| | `locale` | The customer's language, used by [localization](/features/checkout/localization). |
+| **Metadata** | `metadata` | Your own key-value data. Up to 50 keys, keys up to 40 characters, string values up to 500 characters. |
+| | `type` | `individual` or `team`. |
+| | `email_verified` | Whether the customer verified their email. |
+| | `default_payment_method_id` | The saved method used for renewals. |
+| | `first_user_event_at` | When the first usage event arrived for this customer. |
 
 To set metadata on customers created by checkout, pass `customer_metadata` on the [Checkout Session](/features/checkout/session#metadata).
 
@@ -121,7 +123,7 @@ To set metadata on customers created by checkout, pass `customer_metadata` on th
   </Tab>
 </Tabs>
 
-**Active** customers have at least one `trialing`, `active` or `past_due` subscription (`--active=true` in the CLI).
+**Active** customers have at least one **Trialing**, **Active** or **Past due** subscription (`--active=true` in the CLI).
 
 ## The customer page
 

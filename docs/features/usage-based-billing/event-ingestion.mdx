@@ -8,7 +8,7 @@ An **event** is a raw fact about what a customer did in your application: an API
 The examples on this page use the sandbox and API version `2026-10`.
 
 <Note>
-  API only. Sending and listing events isn't available from the CLI or MCP server. Use the SDK or the [Ingest Events API](/api-reference/current/events/ingest-events).
+  Sending events is API only. It isn't available from the dashboard, CLI or MCP server. Use the SDK or the [Ingest Events API](/api-reference/current/events/ingest-events).
 </Note>
 
 ## Send an event
@@ -76,7 +76,7 @@ curl -X POST https://sandbox-api.polar.sh/v1/events/ingest \
 ```
 </CodeGroup>
 
-The response counts what was stored: `{ "inserted": 1, "duplicates": 0 }`.
+The response counts what was stored: `{ "inserted": 1, "duplicates": 0 }`. To check it arrived, open **Analytics → Events** in the dashboard. See [View events](#view-events).
 
 You don't need to create the customer first. Polar stores an event for an `external_customer_id` that has no customer yet, and links it once a customer exists with that `external_id`.
 

@@ -63,13 +63,13 @@ For costs over time, margins and breakdowns by event type or model, use **Analyt
 
 ## From the CLI or your agent
 
-These don't reproduce the dashboard views, but return the same underlying data:
+These don't reproduce the dashboard views, but return the same underlying data. The `costs` and `gross_margin` metrics are **Costs** and **Gross Margin** under **Analytics → Metrics**.
 
 | Question | CLI | MCP operation |
 | --- | --- | --- |
 | Which subscriptions are past due? | `polar subscriptions list --status past_due --sorting -amount` | `subscriptions_list` |
 | Which subscriptions are canceling? | `polar subscriptions list --cancel-at-period-end --sorting current_period_end` | `subscriptions_list` |
-| What does one customer cost me? | `polar metrics get --start-date 2026-11-01 --end-date 2026-11-30 --interval month --customer-id <id> --metrics '["costs","gross_margin"]'` | `metrics_get` |
+| What does one customer cost me? | `polar metrics get --start-date 2026-11-01 --end-date 2026-11-30 --interval month --customer-id <id> --metrics costs --metrics gross_margin` | `metrics_get` |
 
 ```text Prompt
 List the past due and canceling subscriptions in my Polar sandbox organization, largest first.

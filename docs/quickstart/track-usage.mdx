@@ -77,6 +77,35 @@ For LLM calls, streams and S3 uploads, an [ingestion strategy](/features/usage-b
 
 A meter selects events with a filter and aggregates them into usage. Create one that sums `total_tokens` across `ai_usage` events:
 
+<Tabs>
+  <Tab title="Dashboard">
+    - Open **Products → Meters**
+    - Click **Create Meter**
+    - Set **Name** to "AI tokens"
+    - Under **Filters**, add a condition: **Name** equals `ai_usage`
+    - Set **Aggregation** to **Sum** over the property `total_tokens`
+    - Click **Create Meter**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    export METER_ID=$(polar meters create --name "AI tokens" \
+      --filter '{"conjunction":"and","clauses":[{"property":"name","operator":"eq","value":"ai_usage"}]}' \
+      --aggregation '{"func":"sum","property":"total_tokens"}' | jq -r .id)
+    ```
+
+    See [`polar meters`](/integrate/cli/reference/meters).
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Create a meter called AI tokens in my Polar sandbox that sums total_tokens across ai_usage events.
+    ```
+
+    Uses the `meters_create` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+From your code:
+
 <CodeGroup>
 ```typescript TypeScript
 const meter = await polar.meters.create({
@@ -118,9 +147,9 @@ export METER_ID=$(curl -s -X POST https://sandbox-api.polar.sh/v1/meters/ \
 
 Metadata keys are used directly as properties, without a `metadata.` prefix.
 
-You can also run `polar meters create` with the same fields in the [CLI](/integrate/cli/reference/meters), or create it under **Products → Meters** in the dashboard. Polar backfills a new meter from events you've already sent, so your first event counts.
+Polar backfills a new meter from events you've already sent, so your first event counts.
 
-Keep the meter's `id`. You'll use it in the next step. The cURL example saves it as `METER_ID`.
+Keep the meter's `id`. You'll use it in the next step. The CLI and cURL examples save it as `METER_ID`.
 
 ## Check it worked
 
@@ -130,6 +159,7 @@ Read the meter's usage for `user_123`. It includes the 77 tokens from your event
   <Tab title="Dashboard">
     - Open **Products → Meters**
     - Select **AI tokens**
+    - Open the **Customers** tab to see usage per customer, or **Events** to see the event you sent
   </Tab>
   <Tab title="CLI">
     ```bash

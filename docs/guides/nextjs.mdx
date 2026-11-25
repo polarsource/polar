@@ -22,7 +22,7 @@ pnpm add @polar-sh/sdk @polar-sh/nextjs
 
 ## Set the access token
 
-Create an [organization access token](/integrate/oat) in your sandbox organization, or run `polar auth token`, and add it to `.env.local`:
+Create an [organization access token](/integrate/oat) in your sandbox organization's **Settings → Access Tokens**, or run `polar auth token`, and add it to `.env.local`:
 
 ```bash .env.local
 POLAR_ACCESS_TOKEN="polar_oat_..."
@@ -78,7 +78,7 @@ Copy the secret it prints into `.env.local`:
 POLAR_WEBHOOK_SECRET="..."
 ```
 
-When you deploy, [create a webhook endpoint](/integrate/webhooks/endpoints) for `https://<your-domain>/api/webhook/polar` and use that endpoint's secret instead.
+When you deploy, [create a webhook endpoint](/integrate/webhooks/endpoints) in **Settings → Webhooks** for `https://<your-domain>/api/webhook/polar` and use that endpoint's secret instead.
 
 ### Add the webhook route
 

@@ -34,10 +34,14 @@ curl https://sandbox-api.polar.sh/v1/customers/external/user_123/state \
 
 To use Polar's customer ID, call `getState` (`get_state` in Python), or `GET /v1/customers/{id}/state`.
 
+To look up the same information by hand:
+
 <Tabs>
   <Tab title="Dashboard">
     - Open **Customers**
     - Select the customer
+    - **Overview** lists their **Subscriptions** and **Benefit Grants**
+    - **Usage** shows each meter's consumed and credited units
   </Tab>
   <Tab title="CLI">
     ```bash

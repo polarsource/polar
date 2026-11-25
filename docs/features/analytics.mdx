@@ -3,38 +3,29 @@ title: "Metrics"
 description: "Read revenue, subscription, checkout, churn, cost and seat metrics in the dashboard or by slug through the API, CLI and MCP, with how each one is calculated."
 ---
 
-**Metrics** are the numbers on **Analytics → Metrics**: revenue, orders, subscriptions, checkouts, cancellations, unit economics, costs, usage and seats. Each metric has a slug you can request through the API, the CLI or your agent.
+**Metrics** are the numbers on **Analytics → Metrics**: revenue, orders, subscriptions, checkouts, cancellations, unit economics, costs, usage and seats. Each metric has a name in the dashboard and a slug you request through the API, the CLI or your agent. The tables below list both.
 
 The code examples use API version `2026-10` and the sandbox.
 
 ## How metrics are bucketed
 
-You pick a date range and an **interval**: hour, day, week, month or year. Polar splits the range into intervals and computes every metric per interval. Each interval is one point on a chart and one entry in `periods` in the API response. The API also returns a `totals` value per metric for the whole range.
+You pick a date range and an **interval**: hourly, daily, weekly, monthly or yearly. Polar splits the range into intervals and computes every metric per interval. Each interval is one point on a chart and one entry in `periods` in the API response. The API also returns a `totals` value per metric for the whole range.
 
 Amounts are in cents. Percentages are returned as fractions, so `0.25` is 25%.
 
-## In the dashboard
-
-- Open **Analytics → Metrics**
-- Pick a date range and an interval
-- Filter by product, or leave the filter empty for all products
-- Open a group, such as **Revenue** or **Seats**, to see its charts
-
-Click **Create Dashboard** to build a custom dashboard from any metrics. Use **Export** to download the metrics as CSV.
-
-<Note>
-  Custom dashboards and CSV export are dashboard only.
-</Note>
-
-## From the API, CLI or your agent
-
-Pass the slugs you need in `metrics` to compute only those. Without it, every metric is returned. Filter with `product_id`, `customer_id` or `billing_type` (`one_time` or `recurring`), and set `timezone` for the interval boundaries (UTC by default).
+## Read metrics
 
 <Tabs>
+  <Tab title="Dashboard">
+    - Open **Analytics → Metrics**
+    - Pick a date range and an interval
+    - Filter by product, or leave the filter empty for all products
+    - Scroll to a group, such as **Revenue** or **Seats**, to see its charts
+  </Tab>
   <Tab title="CLI">
     ```bash
     polar metrics get --start-date 2026-10-01 --end-date 2026-10-31 \
-      --interval day --metrics monthly_recurring_revenue,churn_rate
+      --interval day --metrics monthly_recurring_revenue --metrics churn_rate
     ```
 
     See [`polar metrics`](/integrate/cli/reference/metrics).
@@ -47,6 +38,8 @@ Pass the slugs you need in `metrics` to compute only those. Without it, every me
     Uses the `metrics_get` operation of the [Polar MCP server](/integrate/mcp).
   </Tab>
 </Tabs>
+
+In code, pass the slugs you need in `metrics` to compute only those. Without it, every metric is returned. Filter with `product_id`, `customer_id` or `billing_type` (`one_time` or `recurring`), and set `timezone` for the interval boundaries (UTC by default).
 
 <CodeGroup>
 ```typescript TypeScript
@@ -85,113 +78,125 @@ curl -G https://sandbox-api.polar.sh/v1/metrics/ \
 
 Each interval has a maximum date range. Check it with `polar metrics limits` (`metrics_limits`, or `GET /v1/metrics/limits`).
 
+## Custom dashboards and export
+
+- On **Analytics → Metrics**, click **Create Dashboard** to group any metrics into your own dashboard
+- Use **Export** to download the metrics as CSV
+- On the **Overview** page, click **Customize** to choose the metrics shown there
+
+<Note>
+  Dashboard only.
+</Note>
+
+The names in the tables below are the chart titles. The metric picker shortens a few, such as **Committed MRR**, **Checkouts Conversion** and **Canceled - Too Expensive**.
+
 ## Revenue
 
-| Slug | Name | Definition |
+| Name | Slug | Definition |
 | --- | --- | --- |
-| `revenue` | Revenue | Gross revenue from every paid order in the interval: one-time purchases, new subscriptions and renewals. Order subtotal, before Polar fees and tax |
-| `net_revenue` | Net Revenue | Revenue after Polar's fee and the payment processor's fee |
-| `cumulative_revenue` | Cumulative Revenue | Running total of revenue from the start of the range |
-| `net_cumulative_revenue` | Net Cumulative Revenue | Running total of net revenue from the start of the range |
-| `average_order_value` | Average Order Value | Revenue divided by the number of orders |
-| `net_average_order_value` | Net Average Order Value | Net revenue divided by the number of orders |
+| Revenue | `revenue` | Gross revenue from every paid order in the interval: one-time purchases, new subscriptions and renewals. Order subtotal, before Polar fees and tax |
+| Net Revenue | `net_revenue` | Revenue after Polar's fee and the payment processor's fee |
+| Cumulative Revenue | `cumulative_revenue` | Running total of revenue from the start of the range |
+| Net Cumulative Revenue | `net_cumulative_revenue` | Running total of net revenue from the start of the range |
+| Average Order Value | `average_order_value` | Revenue divided by the number of orders |
+| Net Average Order Value | `net_average_order_value` | Net revenue divided by the number of orders |
 
 ## Orders
 
-| Slug | Name | Definition |
+| Name | Slug | Definition |
 | --- | --- | --- |
-| `orders` | Orders | Paid orders in the interval, whatever the billing reason |
-| `one_time_products` | One-Time Products | Paid orders for one-time products |
-| `one_time_products_revenue` | One-Time Products Revenue | Gross revenue from one-time product orders |
-| `one_time_products_net_revenue` | One-Time Products Net Revenue | Net revenue from one-time product orders |
+| Orders | `orders` | Paid orders in the interval, whatever the billing reason |
+| One-Time Products | `one_time_products` | Paid orders for one-time products |
+| One-Time Products Revenue | `one_time_products_revenue` | Gross revenue from one-time product orders |
+| One-Time Products Net Revenue | `one_time_products_net_revenue` | Net revenue from one-time product orders |
 
 ## Subscriptions
 
-| Slug | Name | Definition |
+| Name | Slug | Definition |
 | --- | --- | --- |
-| `new_subscriptions` | New Subscriptions | Subscriptions whose first paid order falls in the interval |
-| `new_subscriptions_revenue` | New Subscriptions Revenue | Gross revenue from the first order of new subscriptions |
-| `new_subscriptions_net_revenue` | New Subscriptions Net Revenue | Net revenue from the first order of new subscriptions |
-| `renewed_subscriptions` | Renewed Subscriptions | Orders with billing reason `subscription_cycle` |
-| `renewed_subscriptions_revenue` | Renewed Subscriptions Revenue | Gross revenue from renewal orders |
-| `renewed_subscriptions_net_revenue` | Renewed Subscriptions Net Revenue | Net revenue from renewal orders |
-| `active_subscriptions` | Active Subscriptions | Subscriptions that have started and not yet ended. Includes subscriptions canceled at period end, paused and past due |
-| `committed_subscriptions` | Committed Subscriptions | Active subscriptions that aren't set to end, the ones you can expect to renew |
-| `monthly_recurring_revenue` | Monthly Recurring Revenue | Sum of active subscriptions' amounts, normalized to a month (a yearly plan counts 1/12). Excludes trials. Includes paused and past-due subscriptions until they end |
-| `committed_monthly_recurring_revenue` | Committed MRR | MRR from subscriptions that aren't set to end |
-| `annual_recurring_revenue` | Annual Recurring Revenue | MRR × 12. API only |
-| `committed_annual_recurring_revenue` | Committed Annual Recurring Revenue | Committed MRR × 12. API only |
-| `trial_monthly_recurring_revenue` | Trial MRR Including Canceled Trials | Monthly-normalized amount of subscriptions in a trial, including canceled trials |
-| `trial_committed_monthly_recurring_revenue` | Trial Committed MRR | Monthly-normalized amount of trials that aren't canceled |
+| New Subscriptions | `new_subscriptions` | Subscriptions whose first paid order falls in the interval |
+| New Subscriptions Revenue | `new_subscriptions_revenue` | Gross revenue from the first order of new subscriptions |
+| New Subscriptions Net Revenue | `new_subscriptions_net_revenue` | Net revenue from the first order of new subscriptions |
+| Renewed Subscriptions | `renewed_subscriptions` | Orders with billing reason `subscription_cycle` |
+| Renewed Subscriptions Revenue | `renewed_subscriptions_revenue` | Gross revenue from renewal orders |
+| Renewed Subscriptions Net Revenue | `renewed_subscriptions_net_revenue` | Net revenue from renewal orders |
+| Active Subscriptions | `active_subscriptions` | Subscriptions that have started and not yet ended. Includes subscriptions canceled at period end, paused and past due |
+| Committed Subscriptions | `committed_subscriptions` | Active subscriptions that aren't set to end, the ones you can expect to renew |
+| Monthly Recurring Revenue | `monthly_recurring_revenue` | Sum of active subscriptions' amounts, normalized to a month (a yearly plan counts 1/12). Excludes trials. Includes paused and past-due subscriptions until they end |
+| Committed Monthly Recurring Revenue | `committed_monthly_recurring_revenue` | MRR from subscriptions that aren't set to end |
+| Annual Recurring Revenue | `annual_recurring_revenue` | MRR × 12. API only |
+| Committed Annual Recurring Revenue | `committed_annual_recurring_revenue` | Committed MRR × 12. API only |
+| Trialing MRR Including Cancelations | `trial_monthly_recurring_revenue` | Monthly-normalized amount of subscriptions in a trial, including canceled trials |
+| Trialing Monthly Recurring Revenue | `trial_committed_monthly_recurring_revenue` | Monthly-normalized amount of trials that aren't canceled |
 
 ## Checkouts
 
-| Slug | Name | Definition |
+| Name | Slug | Definition |
 | --- | --- | --- |
-| `checkouts` | Checkouts | Checkout Sessions created in the interval, whatever their outcome |
-| `succeeded_checkouts` | Succeeded Checkouts | Checkouts that reached `succeeded` |
-| `checkouts_conversion` | Checkouts Conversion | Succeeded checkouts divided by checkouts. 0 when there are none |
+| Checkouts | `checkouts` | Checkout Sessions created in the interval, whatever their outcome |
+| Succeeded Checkouts | `succeeded_checkouts` | Checkouts that reached `succeeded` |
+| Checkouts Conversion Rate | `checkouts_conversion` | Succeeded checkouts divided by checkouts. 0 when there are none |
 
 ## Cancellations
 
-| Slug | Name | Definition |
+| Name | Slug | Definition |
 | --- | --- | --- |
-| `canceled_subscriptions` | Canceled Subscriptions | Subscriptions canceled in the interval. They may stay active until the end of the paid period |
-| `canceled_subscriptions_customer_service` | Canceled - Customer Service | Canceled with the reason customer service |
-| `canceled_subscriptions_low_quality` | Canceled - Low Quality | Canceled with the reason low quality |
-| `canceled_subscriptions_missing_features` | Canceled - Missing Features | Canceled with the reason missing features |
-| `canceled_subscriptions_switched_service` | Canceled - Switched Service | Canceled with the reason switched service |
-| `canceled_subscriptions_too_complex` | Canceled - Too Complex | Canceled with the reason too complex |
-| `canceled_subscriptions_too_expensive` | Canceled - Too Expensive | Canceled with the reason too expensive |
-| `canceled_subscriptions_unused` | Canceled - Unused | Canceled with the reason unused |
-| `canceled_subscriptions_other` | Canceled - Other | Canceled with another reason or none |
-| `churned_subscriptions` | Churned Subscriptions | Subscriptions that actually ended in the interval, when access stops |
-| `churn_rate` | Churn Rate | Subscriptions canceled in the 30 days before the interval, divided by those active at the start of that window. With a yearly interval, the window is the year |
+| Canceled Subscriptions | `canceled_subscriptions` | Subscriptions canceled in the interval. They may stay active until the end of the paid period |
+| Canceled Subscriptions - Customer Service | `canceled_subscriptions_customer_service` | Canceled with the reason customer service |
+| Canceled Subscriptions - Low Quality | `canceled_subscriptions_low_quality` | Canceled with the reason low quality |
+| Canceled Subscriptions - Missing Features | `canceled_subscriptions_missing_features` | Canceled with the reason missing features |
+| Canceled Subscriptions - Switched Service | `canceled_subscriptions_switched_service` | Canceled with the reason switched service |
+| Canceled Subscriptions - Too Complex | `canceled_subscriptions_too_complex` | Canceled with the reason too complex |
+| Canceled Subscriptions - Too Expensive | `canceled_subscriptions_too_expensive` | Canceled with the reason too expensive |
+| Canceled Subscriptions - Unused | `canceled_subscriptions_unused` | Canceled with the reason unused |
+| Canceled Subscriptions - Other | `canceled_subscriptions_other` | Canceled with another reason or none |
+| Churned Subscriptions | `churned_subscriptions` | Subscriptions that actually ended in the interval, when access stops |
+| Churn Rate | `churn_rate` | Subscriptions canceled in the 30 days before the interval, divided by those active at the start of that window. With a yearly interval, the window is the year |
 
-The group also shows `active_subscriptions` and `committed_subscriptions` to put churn in context.
+On **Analytics → Metrics**, the reason metrics are combined into one stacked chart labeled by reason: **Too Expensive**, **Missing Features**, **Switched Service**, **Unused**, **Customer Service**, **Low Quality**, **Too Complex** and **Other**. The group also shows **Active Subscriptions** and **Committed Subscriptions** to put churn in context.
 
 ## Unit economics
 
-| Slug | Name | Definition |
+| Name | Slug | Definition |
 | --- | --- | --- |
-| `average_revenue_per_user` | Average Revenue Per User | MRR divided by the number of distinct subscribed customers. 0 when there are none |
-| `ltv` | Lifetime Value | (ARPU − cost per user) ÷ churn rate. 0 when churn rate is 0 |
+| Average Revenue Per User | `average_revenue_per_user` | MRR divided by the number of distinct subscribed customers. 0 when there are none |
+| Lifetime Value | `ltv` | (ARPU − cost per user) ÷ churn rate. 0 when churn rate is 0 |
 
-The group also shows `churn_rate`.
+The group also shows **Churn Rate**.
 
 ## Costs
 
 Cost metrics come from events with a `_cost` field. See [Cost insights](/features/cost-insights/introduction). They're stored with sub-cent precision.
 
-| Slug | Name | Definition |
+| Name | Slug | Definition |
 | --- | --- | --- |
-| `costs` | Costs | Costs recorded in the interval |
-| `cumulative_costs` | Cumulative Costs | Running total of costs from the start of the range |
-| `cost_per_user` | Cost Per User | Costs in the interval divided by active users by event. For the whole range, total costs divided by active subscriptions |
-| `gross_margin` | Gross Margin | Cumulative revenue minus cumulative costs |
-| `gross_margin_percentage` | Gross Margin % | Gross margin as a share of cumulative revenue. 0 when there's no revenue |
-| `cashflow` | Cashflow | Revenue minus costs within the interval, not cumulative |
+| Costs | `costs` | Costs recorded in the interval |
+| Cumulative Costs | `cumulative_costs` | Running total of costs from the start of the range |
+| Cost Per User | `cost_per_user` | Costs in the interval divided by active users by event. For the whole range, total costs divided by active subscriptions |
+| Gross Margin | `gross_margin` | Cumulative revenue minus cumulative costs |
+| Gross Margin % | `gross_margin_percentage` | Gross margin as a share of cumulative revenue. 0 when there's no revenue |
+| Cashflow | `cashflow` | Revenue minus costs within the interval, not cumulative |
 
 ## Usage
 
-| Slug | Name | Definition |
+| Name | Slug | Definition |
 | --- | --- | --- |
-| `active_user_by_event` | Active Users by Event | Distinct customers with at least one ingested event in the interval |
+| Active User (By event) | `active_user_by_event` | Distinct customers with at least one ingested event in the interval |
 
 ## Seats
 
 Seat metrics count assigned seats on [seat-based products](/features/seat-based-pricing).
 
-| Slug | Name | Definition |
+| Name | Slug | Definition |
 | --- | --- | --- |
-| `seat_customers` | Active Customers | Distinct customers with at least one seat that isn't revoked |
-| `new_seat_customers` | New Customers | Customers whose first seat was created in the interval |
-| `churned_seat_customers` | Churned Customers | Customers whose last seat was revoked in the interval |
-| `seats_total` | Seat Count | Seats assigned and not revoked at the end of the interval |
-| `seats_claimed` | Claimed Seats | Seats claimed by a member. API only |
-| `seats_pending` | Pending Seats | Seats assigned but not yet claimed. API only |
-| `average_seats_per_customer` | Average Seats per Customer | Seat count divided by active customers |
-| `seat_utilization_rate` | Seat Utilization Rate | Claimed seats divided by seat count |
+| Active Customers | `seat_customers` | Distinct customers with at least one seat that isn't revoked |
+| New Customers | `new_seat_customers` | Customers whose first seat was created in the interval |
+| Churned Customers | `churned_seat_customers` | Customers whose last seat was revoked in the interval |
+| Seat Count | `seats_total` | Seats assigned and not revoked at the end of the interval |
+| Claimed Seats | `seats_claimed` | Seats claimed by a member. API only |
+| Pending Seats | `seats_pending` | Seats assigned but not yet claimed. API only |
+| Average Seats per Customer | `average_seats_per_customer` | Seat count divided by active customers |
+| Seat Utilization Rate | `seat_utilization_rate` | Claimed seats divided by seat count |
 
 ## Learn more
 

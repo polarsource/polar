@@ -10,7 +10,7 @@ Clients belong to your user account, not to an organization. Create a separate c
 
 ## Create a client
 
-- Open [**Account Settings → Developer**](https://polar.sh/dashboard/account/developer)
+- Open [**Account Settings → OAuth Apps**](https://polar.sh/dashboard/account/developer)
 - Click **Create OAuth App**
 - Fill in the fields below
 - Click **Create**
@@ -31,6 +31,8 @@ You can also register clients from code with [Create Client](/api-reference/curr
 ## Store the credentials
 
 After you create the client, Polar shows its **Client ID** (`polar_ci_…`) and **Client Secret** (`polar_cs_…`).
+
+To find them later, open the app in **Account Settings → OAuth Apps** and click **Reveal client secret**. The same page lets you edit the client's fields or delete it.
 
 <Warning>
   The Client Secret lets anyone request tokens as your app. Keep it on your server, never in a browser or mobile app, and never commit it. A public client has no secret to protect, which is why it must use PKCE.

@@ -139,7 +139,7 @@ See [Trials](/features/subscriptions/trials) for how trials start, convert and e
 
 Benefits are what customers get: license keys, file downloads, Discord roles, GitHub access, feature flags, credits or a custom benefit. Polar grants them on purchase and revokes them when access ends.
 
-Attach benefits with `polar products update_benefits <id> --benefits '["<benefit_id>"]'` or `POST /v1/products/{id}/benefits`. See [Benefits](/concepts/benefits).
+In the dashboard, select benefits under **Automated Benefits** on the product form, or click **Create Benefit** there to make a new one. From the CLI, run `polar products update_benefits <id> --benefits '["<benefit_id>"]'`. Over the API, it's `POST /v1/products/{id}/benefits`. See [Manage benefits](/features/benefits/introduction#attach-a-benefit-to-a-product).
 
 ## Checkout page
 
@@ -156,6 +156,8 @@ Attach key-value `metadata` to a product to store your own IDs or categories. Cu
 ## Update a product
 
 Everything except the billing cycle can change after creation, including the price types.
+
+In the dashboard, open **Products**, select the product, click **Edit Product**, make your changes and click **Update Product**. From the CLI, run `polar products update <product_id>`. With your agent, ask for the change; it uses the `products_update` operation.
 
 - **Prices.** Send a new `prices` list to replace them. To keep an existing price, include it as `{ "id": "<price_id>" }`. Replaced prices are archived. Existing subscribers stay on the price they signed up at, so a change only affects new purchases. To move a subscriber, [update their subscription](/features/subscriptions/manage).
 - **Meter cycle.** A `meter_interval` can't be changed once set. See [Meter cycle](/features/usage-based-billing/billing#meter-cycle).
@@ -191,7 +193,7 @@ Archive a product to stop selling it. It disappears from new checkouts and its C
 
 A product with no orders, subscriptions, trials or discounts can be deleted for good. Otherwise, archive it.
 
-In the dashboard, open the product's **…** menu and click **Delete Permanently**. From the CLI, run `polar products delete <product_id>`.
+In the dashboard, archive the product first. Then open its **…** menu and click **Delete Permanently**. The option only shows when the product can be deleted. From the CLI, run `polar products delete <product_id>`.
 
 ## From the CLI or your agent
 

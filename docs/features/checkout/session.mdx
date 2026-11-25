@@ -226,13 +226,22 @@ The `/v1/checkouts/client/{client_secret}` endpoints are what Polar's checkout p
 
 A session starts `open` and expires 24 hours after creation (`expires_at`). Paying moves it to `confirmed`, then `succeeded` or `failed`. A session never completed becomes `expired`.
 
+| Dashboard | API `status` |
+| --- | --- |
+| **Open** | `open` |
+| **Confirmed** | `confirmed` |
+| **Succeeded** | `succeeded` |
+| **Expired** | `expired` |
+| **Failed** | `failed` |
+
 ## Inspect sessions
 
-Sessions are listed under **Sales → Checkouts** in the dashboard, and from the CLI or your agent:
+Find sessions in the dashboard, from the CLI or with your agent:
 
 <Tabs>
   <Tab title="Dashboard">
     - Open **Sales → Checkouts**
+    - Filter by **Status**, **Product** or **Customer**, or search
     - Select a session
   </Tab>
   <Tab title="CLI">

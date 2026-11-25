@@ -19,7 +19,7 @@ flowchart LR
 
 ## One-time or recurring
 
-A product is either a **one-time purchase** or **recurring**.
+A product is either a **one-time purchase** or **recurring**. In the product form, these are **One-time purchase** and **Recurring subscription** under **Pricing**.
 
 - A one-time product is charged once and grants its benefits for good.
 - A recurring product bills on an interval (daily, weekly, monthly or yearly, optionally every _n_ intervals). Buying it creates a [subscription](/concepts/orders-and-subscriptions).
@@ -28,14 +28,14 @@ The billing cycle is fixed when you create the product. To offer monthly and yea
 
 ## Price types
 
-| Type | The customer pays | Typical use |
-| --- | --- | --- |
-| `fixed` | A set amount, or nothing for a free product | Plans, licenses, free tiers |
-| `custom` | An amount they choose, with an optional minimum | Pay what you want, donations |
-| `seat_based` | Per seat, up front, with optional tiers | Team plans. See [Seat-based pricing](/features/seat-based-pricing) |
-| `unit_based` | Per unit, up front, with optional tiers | Devices, capacity. See [Unit-based pricing](/features/unit-based-pricing) |
-| `metered_unit` | A flat rate per unit of usage, after the period | API calls, tokens. See [Usage](/concepts/usage) |
-| `metered_tiers` | Tiered rates for usage, after the period | Volume discounts on usage |
+| API type | Dashboard | The customer pays | Typical use |
+| --- | --- | --- | --- |
+| `fixed` | **Fixed price**, or **Free** | A set amount, or nothing for a free product | Plans, licenses, free tiers |
+| `custom` | **Pay what you want** | An amount they choose, with an optional minimum | Donations |
+| `seat_based` | **Seats** | Per seat, up front, with optional tiers | Team plans. See [Seat-based pricing](/features/seat-based-pricing) |
+| `unit_based` | **Units** | Per unit, up front, with optional tiers | Devices, capacity. See [Unit-based pricing](/features/unit-based-pricing) |
+| `metered_unit` | **Metered price**, **Flat price per unit** | A flat rate per unit of usage, after the period | API calls, tokens. See [Usage](/concepts/usage) |
+| `metered_tiers` | **Metered price**, **Graduated** or **Volume** | Tiered rates for usage, after the period | Volume discounts on usage |
 
 A free price is a `fixed` price with `price_amount: 0`. There is no separate `free` type in the API, even though the dashboard lists **Free** as an option.
 
@@ -76,15 +76,15 @@ Whether a price includes tax depends on your [tax behavior](/features/tax-inclus
 
 Archive a product to stop selling it. Existing customers keep their access and subscriptions keep renewing, but the product no longer appears in new checkouts. Only products that have never been used can be deleted permanently.
 
-## From the CLI or your agent
+## In the dashboard, CLI or your agent
 
-Every task here also works from your terminal and your agent. See the [CLI reference](/integrate/cli/reference) and the [MCP server](/integrate/mcp).
+Products live under **Products** in the dashboard. The same tasks work from your terminal and your agent. See the [CLI reference](/integrate/cli/reference) and the [MCP server](/integrate/mcp).
 
-| Task | CLI | MCP operation |
-| --- | --- | --- |
-| Create a product | `polar products create` | `products_create` |
-| Attach benefits | `polar products update_benefits <id>` | `products_update_benefits` |
-| Archive or update a product | `polar products update <id>` | `products_update` |
+| Task | Dashboard | CLI | MCP operation |
+| --- | --- | --- | --- |
+| Create a product | **Products → New Product** | `polar products create` | `products_create` |
+| Attach benefits | **Automated Benefits** on the product | `polar products update_benefits <id>` | `products_update_benefits` |
+| Archive or update a product | **Edit Product** or **Archive Product** in the product's menu | `polar products update <id>` | `products_update` |
 
 ## Learn more
 

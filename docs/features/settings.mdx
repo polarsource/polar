@@ -3,42 +3,9 @@ title: "Settings"
 description: "Find any organization setting: where it is in the dashboard, what it does, its API field, and which page covers it in detail."
 ---
 
-This page maps every section of **Settings** in the dashboard, in the same order as the sidebar. Each section lists its settings, the matching field on the [organization](/api-reference/current/organizations/update-organization) where there is one, and the page that covers it.
+This page maps every section of **Settings** in the dashboard, in the same order as the sidebar. Each section lists its settings, the matching field on the [organization](/api-reference/current/organizations/update-organization) where there is one, and the page that covers it. To change a setting from code, see [Change settings from the API](#change-settings-from-the-api).
 
 Only Admins and the Owner can change organization settings. Other members see them read-only. See [Team management](/features/team-management#permissions).
-
-## Change settings from the API
-
-Organization settings are fields on the organization. Update them with [Update Organization](/api-reference/current/organizations/update-organization), using a token with the `organizations:write` scope. Settings have no CLI command or MCP operation: `polar organizations` and the MCP server can read your organization but not update it.
-
-<CodeGroup>
-```typescript TypeScript
-await polar.organizations.update(process.env.POLAR_ORGANIZATION_ID!, {
-  default_tax_behavior: "inclusive",
-});
-```
-
-```python Python
-polar.organizations.update(
-    os.environ["POLAR_ORGANIZATION_ID"],
-    default_tax_behavior="inclusive",
-)
-```
-
-```bash cURL
-curl -X PATCH https://sandbox-api.polar.sh/v1/organizations/$POLAR_ORGANIZATION_ID \
-  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
-  -H "Polar-Version: 2026-10" \
-  -H "Content-Type: application/json" \
-  -d '{ "default_tax_behavior": "inclusive" }'
-```
-</CodeGroup>
-
-The examples use the sandbox client from the [quickstart overview](/quickstart/overview#prerequisites), on API version `2026-10`. Nested settings objects, such as `subscription_settings` or `customer_email_settings`, require all their fields: read the current values first and send the full object.
-
-<Visibility for="agents">
-  Read the organization first with `GET /v1/organizations/{id}`, change only the fields the user asked for, and send nested settings objects back in full. Use the sandbox until the user says otherwise. Settings marked "Dashboard only" below have no API field.
-</Visibility>
 
 ## Organization
 
@@ -157,6 +124,39 @@ These sections belong to your personal Polar account, not the organization:
 - **Profile:** personal information, identity verification, appearance, and deleting your account.
 - **Security:** sign-in methods and two-factor authentication.
 - **OAuth Apps:** OAuth applications you've registered. See [OAuth](/integrate/oauth2/introduction).
+
+## Change settings from the API
+
+Organization settings are fields on the organization. Update them with [Update Organization](/api-reference/current/organizations/update-organization), using a token with the `organizations:write` scope. Settings have no CLI command or MCP operation: `polar organizations` and the MCP server can read your organization but not update it.
+
+<CodeGroup>
+```typescript TypeScript
+await polar.organizations.update(process.env.POLAR_ORGANIZATION_ID!, {
+  default_tax_behavior: "inclusive",
+});
+```
+
+```python Python
+polar.organizations.update(
+    os.environ["POLAR_ORGANIZATION_ID"],
+    default_tax_behavior="inclusive",
+)
+```
+
+```bash cURL
+curl -X PATCH https://sandbox-api.polar.sh/v1/organizations/$POLAR_ORGANIZATION_ID \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{ "default_tax_behavior": "inclusive" }'
+```
+</CodeGroup>
+
+The examples use the sandbox client from the [quickstart overview](/quickstart/overview#prerequisites), on API version `2026-10`. Nested settings objects, such as `subscription_settings` or `customer_email_settings`, require all their fields: read the current values first and send the full object.
+
+<Visibility for="agents">
+  Read the organization first with `GET /v1/organizations/{id}`, change only the fields the user asked for, and send nested settings objects back in full. Use the sandbox until the user says otherwise. Settings marked "Dashboard only" below have no API field.
+</Visibility>
 
 ## Learn more
 

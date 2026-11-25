@@ -17,7 +17,7 @@ Every organization has one, at `https://polar.sh/<org-slug>/portal`, or `https:/
 | **Usage** | Their consumption per meter. Shown when **Show metered usage** is on. |
 | **Billing** | Payment methods, billing details, email address, billing managers for teams, and a data export |
 
-For [team customers](/concepts/customers#individuals-and-teams), **Orders** and **Billing** are only shown to members with billing permission: the `owner` and `billing_manager` roles. Other members see **Overview** and **Usage**.
+For [team customers](/concepts/customers#individuals-and-teams), **Orders** and **Billing** are only shown to members with billing permission: the **Owner** (`owner`) and **Billing Manager** (`billing_manager`) roles. Other members see **Overview** and **Usage**.
 
 ## What customers can do
 
@@ -69,9 +69,17 @@ With [localization](/features/checkout/localization) on, the portal is shown in 
   </Accordion>
 </AccordionGroup>
 
+## Support customers from the dashboard
+
+Customers use the portal themselves. To help one, open them under **Customers**:
+
+- The **Overview** tab shows their subscriptions, orders and benefit grants, the same things they see in the portal
+- **Copy Customer Portal** in the **⋮** menu copies a pre-authenticated portal link, valid for one hour
+- Choose what customers can change under **Settings → Customer Portal**. See [Portal settings](/features/customer-portal/settings)
+
 ## From the CLI or your agent
 
-Customers use the portal themselves. These merchant-side tasks help you support them:
+The same support tasks from the CLI or an agent:
 
 | Task | CLI | MCP operation |
 | --- | --- | --- |

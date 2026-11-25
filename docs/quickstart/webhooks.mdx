@@ -114,14 +114,15 @@ Polar never blocks events, so a guardrail like this lives in your application. T
 
 ## Check it worked
 
-With `polar webhook listen` running, revoke Jane's subscription. Its ID is in `active_subscriptions` of her customer state. The CLI logs a `customer.state_changed` delivery, and your handler records that Jane no longer has Pro.
+With `polar webhook listen` running, cancel Jane's subscription immediately. From the CLI or API, its ID is in `active_subscriptions` of her customer state. The CLI logs a `customer.state_changed` delivery, and your handler records that Jane no longer has Pro.
 
 <Tabs>
   <Tab title="Dashboard">
-    - Open **Customers**
-    - Select Jane
-    - Open the **Pro** subscription
-    - Click **Revoke**
+    - Open **Sales → Subscriptions**
+    - Open Jane's **Pro** subscription
+    - In the actions menu, click **Cancel Subscription**
+    - Set **Cancellation Date** to **Immediately**
+    - Click **Cancel Subscription**
   </Tab>
   <Tab title="CLI">
     ```bash
@@ -137,7 +138,7 @@ With `polar webhook listen` running, revoke Jane's subscription. Its ID is in `a
   </Tab>
 </Tabs>
 
-Revoking ends the subscription immediately. A subscription canceled at period end stays active until then, so access correctly continues.
+Canceling immediately (a revoke in the API) ends the subscription now. A subscription canceled at **End of current period** stays active until then, so access correctly continues.
 
 <Visibility for="agents">
   In the handler, return `403` when signature verification fails (`PolarWebhookVerificationError`) and `202` for event types the SDK doesn't know (`PolarWebhookUnknownTypeError`), so Polar doesn't retry them.

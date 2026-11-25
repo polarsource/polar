@@ -15,6 +15,36 @@ The examples use the sandbox client from the [quickstart overview](/quickstart/o
 
 A [Meter Credits benefit](/features/usage-based-billing/credits) adds units to a customer's meter balance at the start of every billing cycle. Usage draws the balance down before anything is billed.
 
+<Tabs>
+  <Tab title="Dashboard">
+    - Open **Products → Benefits**
+    - Click **Create Benefit**
+    - Set the type to **Meter Credits**
+    - Enter the **Description** "100,000 AI tokens per month"
+    - Pick the **AI tokens** meter and set **Number of credited units** to 100,000
+    - Leave **Rollover unused credits** unchecked
+    - Click **Create**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    export BENEFIT_ID=$(polar benefits create --type meter_credit \
+      --description "100,000 AI tokens per month" \
+      --properties '{"meter_id": "'"$METER_ID"'", "units": 100000, "rollover": false}' | jq -r .id)
+    ```
+
+    See [`polar benefits`](/integrate/cli/reference/benefits).
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    In my Polar sandbox, create a Meter Credits benefit that grants 100,000 units of the AI tokens meter per month, without rollover.
+    ```
+
+    Uses the `benefits_create` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+From your code:
+
 <CodeGroup>
 ```typescript TypeScript
 const credits = await polar.benefits.create({
@@ -59,7 +89,42 @@ export BENEFIT_ID=$(curl -s -X POST https://sandbox-api.polar.sh/v1/benefits/ \
 
 ## Create the product
 
-Create a monthly product with two prices: a fixed base fee and a metered price on the **AI tokens** meter, then attach the credits benefit. Amounts are in cents.
+Create a monthly product with two prices: a fixed base fee and a metered price on the **AI tokens** meter, then attach the credits benefit.
+
+<Tabs>
+  <Tab title="Dashboard">
+    - Open **Products**
+    - Click **New Product**
+    - Set **Name** to "Pro"
+    - Under **Pricing**, choose **Recurring subscription** and set **Every** 1 month
+    - Pick **Fixed price** and enter $20
+    - Click **Add metered price**, select the **AI tokens** meter and set **Amount per unit** to $0.00002
+    - Under **Automated Benefits**, select the credits benefit
+    - Click **Create Product**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    export PRODUCT_ID=$(polar products create --name "Pro" --recurring-interval month \
+      --prices '[
+        { "amount_type": "fixed", "price_amount": 2000 },
+        { "amount_type": "metered_unit", "meter_id": "'"$METER_ID"'", "unit_amount": "0.002" }
+      ]' | jq -r .id)
+
+    polar products update_benefits $PRODUCT_ID --data '{ "benefits": ["'"$BENEFIT_ID"'"] }'
+    ```
+
+    See [`polar products`](/integrate/cli/reference/products).
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    In my Polar sandbox, create a monthly product called Pro for $20, with a metered price of $0.00002 per unit on the AI tokens meter, and attach the 100,000 AI tokens credits benefit.
+    ```
+
+    Uses the `products_create` and `products_update_benefits` operations of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+From your code. Amounts are in cents:
 
 <CodeGroup>
 ```typescript TypeScript
@@ -118,8 +183,6 @@ Customers now pay $20 a month. The first 100,000 tokens each month are covered b
   To protect customers from surprise bills, set a `cap_amount` on the metered price. To never bill for usage at all, leave out the metered price and sell credits only. See [Usage-based pricing](/features/usage-based-billing/billing).
 </Tip>
 
-The [CLI](/integrate/cli/reference/products) takes the same bodies: `polar benefits create`, `polar products create` and `polar products update_benefits`, each with `--data '<json>'`. You can also build the plan in the dashboard under **Products → New Product**.
-
 ## Check it worked
 
 **Pro** has a $20 monthly price, a metered price on **AI tokens**, and the credits benefit.
@@ -128,6 +191,7 @@ The [CLI](/integrate/cli/reference/products) takes the same bodies: `polar benef
   <Tab title="Dashboard">
     - Open **Products**
     - Select **Pro**
+    - Check the prices and the benefit under **Automated Benefits**
   </Tab>
   <Tab title="CLI">
     ```bash

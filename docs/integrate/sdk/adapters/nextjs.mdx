@@ -99,7 +99,7 @@ If you identify customers by your own user ID, pass `getExternalCustomerId` inst
 
 ## Webhooks
 
-The webhook handler verifies the signature of each request with your webhook secret, then calls your handlers. It acknowledges the request for you. Test it locally with `polar webhook listen`. See [Webhooks on your machine](/integrate/cli/webhooks).
+The webhook handler verifies the signature of each request with your webhook secret, then calls your handlers. Copy the secret from the endpoint in **Settings → Webhooks**. It acknowledges the request for you. Test it locally with `polar webhook listen`. See [Webhooks on your machine](/integrate/cli/webhooks).
 
 ```typescript icon="square-js" api/webhook/polar/route.ts
 import { Webhooks } from "@polar-sh/nextjs";

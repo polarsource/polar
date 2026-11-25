@@ -4,7 +4,7 @@ sidebarTitle: "Trials"
 description: "Offer free trials on subscription products, with or without a card up front. Covers where trials are set, what happens when they end, reminders and trial abuse prevention."
 ---
 
-A **trial** is a free period at the start of a subscription. The customer gets the product's benefits right away and is charged when the trial ends. The subscription is `trialing` until then.
+A **trial** is a free period at the start of a subscription. The customer gets the product's benefits right away and is charged when the trial ends. The subscription is **Trialing** (`trialing`) until then. To see every trial, filter **Sales → Subscriptions** by the **Trialing** status.
 
 The code examples use the sandbox client from the [quickstart overview](/quickstart/overview#prerequisites), on API version `2026-10`.
 
@@ -120,7 +120,7 @@ A **card-less trial** skips the payment form at checkout. Turn off **Require cre
 
 When a card-less trial ends without a payment method or a complete billing address:
 
-1. The subscription moves to `trial_ended` and the customer loses access to its benefits.
+1. The subscription moves to **Trial ended** (`trial_ended`) and the customer loses access to its benefits.
 2. The customer can add their billing details in the [Customer Portal](/features/customer-portal/introduction). Polar charges them right away and the subscription becomes `active` with a new billing period.
 3. If they don't, Polar revokes the subscription **14 days after the trial ended**. Usage recorded during the trial isn't billed.
 
@@ -130,7 +130,7 @@ A `trial_ended` subscription can't change plan, seats or units. Free products ne
 
 ## Extend or end a trial
 
-Set a new `trial_end` date to extend a trial, or `"now"` to end it and charge the first cycle right away. In the dashboard, open the subscription, click **Update Subscription** and use the **Trial** tab. It's only shown while the subscription is `trialing`.
+Set a new `trial_end` date to extend a trial, or `"now"` to end it and charge the first cycle right away. In the dashboard, open the subscription, click **Update Subscription** and use the **Trial** tab. It's only shown while the subscription is **Trialing**.
 
 See [Extend or end a trial](/features/subscriptions/manage#extend-or-end-a-trial) for the CLI, prompt and API examples, including adding a trial to an `active` subscription.
 

@@ -44,7 +44,11 @@ UPI and the Korean methods depend on the currency only. They appear whenever the
 
 Methods marked "One-time purchases" can't be saved for later charges. Polar hides them whenever the checkout saves a payment method: subscriptions, and checkouts with nothing to pay today, such as a free trial. In those cases the customer sees cards and the reusable methods.
 
-## Read the payment method in the API
+## See which method a customer used
+
+In the dashboard, open **Customers** and select the customer. The **Method** column under **Recent Payments** shows how each payment was made.
+
+From the API, CLI or your agent:
 
 - A Checkout Session's `payment_method_type` is the method the customer paid with.
 - A customer's saved methods are listed with `polar customers list_payment_methods <id>` or `list_payment_methods_external <external_id>` (MCP `customers_list_payment_methods`, `customers_list_payment_methods_external`). See [List customer payment methods](/api-reference/current/customers/list-customer-payment-methods).

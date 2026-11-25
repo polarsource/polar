@@ -254,7 +254,9 @@ A reversal has `parent_id` set to the ID of the credit it reverses. The history 
 
 ## Track the balance
 
-Read the balance before you serve usage that needs credits:
+To check one customer by hand, open **Customers**, select the customer and open the **Usage** tab. Each meter shows **Consumed**, **Credited**, **Balance** and **Overages**.
+
+In your application, read the balance before you serve usage that needs credits:
 
 - The [customer state](/integrate/customer-state) lists every active meter with `consumed_units`, `credited_units` and `balance`.
 - The [Customer Meters API](/api-reference/current/customer_meters/list-customer-meters) returns the same per meter. From the CLI: `polar customer_meters list --external-customer-id user_123`.

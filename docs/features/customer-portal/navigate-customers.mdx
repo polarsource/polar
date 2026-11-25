@@ -4,7 +4,7 @@ sidebarTitle: "Link to the portal"
 description: "Send customers to the Customer Portal: the public portal URL, pre-authenticated links from your app, and the emails Polar sends."
 ---
 
-Customers reach the [Customer Portal](/features/customer-portal/introduction) in three ways: the public URL, a pre-authenticated link from your app, or the emails Polar sends them.
+Customers reach the [Customer Portal](/features/customer-portal/introduction) in three ways: the public URL, a pre-authenticated link from you or your app, or the emails Polar sends them.
 
 ## The portal URL
 
@@ -22,6 +22,14 @@ To sign in:
 3. They enter the code and land in the portal.
 
 Use this URL where you need a stable link: your website footer, help center or support replies.
+
+## Copy a link from the dashboard
+
+To send one customer straight into their portal, for example from a support conversation:
+
+- Open **Customers** and select the customer
+- Open the **⋮** menu and click **Copy Customer Portal**
+- Paste the link to the customer. It signs them in without an email code and expires after one hour
 
 ## Pre-authenticated links
 
@@ -66,7 +74,7 @@ curl -X POST https://sandbox-api.polar.sh/v1/customer-sessions/ \
 
 The session expires after one hour. Create it when the customer clicks, and don't store the URL. The examples use the sandbox and API version `2026-10`.
 
-<Note>API only. Not available from the CLI or MCP server.</Note>
+<Note>Creating a customer session is API only. Not available from the CLI or MCP server. For a one-off link, [copy it from the dashboard](#copy-a-link-from-the-dashboard).</Note>
 
 <Visibility for="agents">
   Create customer sessions on the server, with the user's ID as `external_customer_id`, right before redirecting. Never store or log `customer_portal_url` or `token`: either one signs the customer in for an hour. Over HTTP, this is `POST /v1/customer-sessions/` with the `Polar-Version: 2026-10` header.

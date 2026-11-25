@@ -130,6 +130,13 @@ Fully refunding an order frees the customer's slot, so they can use the code aga
 - **Checkout Session.** Pass `discount_id` when you [create a Checkout Session](/features/checkout/session).
 - **Subscription.** Set `discount_id` on an existing subscription. It applies from the next billing cycle. Set it to `null` to remove the discount. See [Manage subscriptions](/features/subscriptions/manage).
 
+To apply a discount to a subscription in the dashboard:
+
+- Open **Sales → Subscriptions** and select the subscription
+- Click **Update Subscription**
+- On the **Plan** tab, pick the **Discount**, or remove the current one
+- Click **Update Subscription**
+
 <CodeGroup>
 ```typescript TypeScript
 await polar.subscriptions.update(subscriptionId, { discount_id: discount.id });

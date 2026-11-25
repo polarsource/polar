@@ -24,7 +24,8 @@ Products, meters, benefits, discounts and Checkout Links from the sandbox don't 
 <Tabs>
   <Tab title="Dashboard">
     - Switch to the production organization
-    - Open **Products** and recreate each product, meter and benefit
+    - Recreate meters under **Products → Meters** and benefits under **Products → Benefits**
+    - Recreate products under **Products**, then Checkout Links and discounts under **Products → Checkout Links** and **Products → Discounts**
   </Tab>
   <Tab title="CLI">
     ```bash
@@ -149,7 +150,7 @@ Then click **Submit for review**. See the [review checklist](/merchant-of-record
 ## Check it worked
 
 - **Finance → Account** shows your account as submitted or approved.
-- After approval, a real purchase through your production checkout creates an order under **Sales**, and your handler receives `customer.state_changed` from the production endpoint. Refund the purchase from the order if it was a test.
+- After approval, a real purchase through your production checkout creates an order under **Sales → Orders**, and your handler receives `customer.state_changed` from the production endpoint. Refund the purchase from the order if it was a test.
 
 ## Learn more
 

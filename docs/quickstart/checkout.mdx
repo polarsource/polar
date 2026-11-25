@@ -39,6 +39,8 @@ curl -X POST https://sandbox-api.polar.sh/v1/customers/ \
 ```
 </CodeGroup>
 
+To add a test customer by hand, open **Customers**, click **+**, fill in **Email** and **External ID**, and click **Create Customer**. From the CLI: `polar customers create --email jane@example.com --external-id user_123`.
+
 The events you sent in [step 1](/quickstart/track-usage) with `external_customer_id: "user_123"` now belong to this customer.
 
 Creating customers up front is optional, since checkout creates the customer if it doesn't exist. Doing it at sign-up means usage, free plans and the [customer portal](/features/customer-portal/introduction) work from the first moment.
@@ -84,7 +86,7 @@ curl -X POST https://sandbox-api.polar.sh/v1/checkouts/ \
 Passing `external_customer_id` ties the purchase to your user and locks the email field to theirs. After paying, the customer returns to your `success_url`, with `{CHECKOUT_ID}` replaced by the session ID.
 
 <Tip>
-  Don't need per-user sessions? Create a [Checkout Link](/features/checkout/links) in the dashboard or with `polar checkout_links create`, and link to it from your pricing page. To keep customers on your site, use [embedded checkout](/features/checkout/embed).
+  Don't need per-user sessions? Create a [Checkout Link](/features/checkout/links) under **Products → Checkout Links**, or with `polar checkout_links create`, and link to it from your pricing page. To keep customers on your site, use [embedded checkout](/features/checkout/embed).
 </Tip>
 
 ## Check it worked
@@ -93,12 +95,14 @@ Passing `external_customer_id` ties the purchase to your user and locks the emai
   Paying requires a person to complete the checkout page. Ask the user to pay with the test card before checking the customer state.
 </Visibility>
 
-Open the checkout URL and pay with Stripe's test card `4242 4242 4242 4242`, any future expiry date and any CVC. Then read Jane's customer state: `active_subscriptions` has **Pro**, and `active_meters` shows the 100,000 credited tokens.
+Open the checkout URL and pay with Stripe's test card `4242 4242 4242 4242`, any future expiry date and any CVC. Then check Jane's customer: she has an active **Pro** subscription and 100,000 credited tokens on the **AI tokens** meter. In the customer state, these are `active_subscriptions` and `active_meters`.
 
 <Tabs>
   <Tab title="Dashboard">
     - Open **Customers**
     - Select Jane
+    - **Overview** lists the **Pro** subscription
+    - **Usage** shows the **AI tokens** meter and its credits
   </Tab>
   <Tab title="CLI">
     ```bash

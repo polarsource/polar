@@ -52,6 +52,11 @@ When it's on, listen for the [`customer.updated`](/api-reference/current/custome
 
 Shows the **Usage** page, with the customer's consumption per [meter](/features/usage-based-billing/meters). Turned off, the page is hidden, but the [customer meters endpoints](/api-reference/current/customer_meters/list-customer-meters) keep working.
 
+## Change settings in the dashboard
+
+- Open **Settings → Customer Portal**
+- Turn each switch on or off. Changes save automatically
+
 ## Change settings from the API
 
 Send `customer_portal_settings` to [Update Organization](/api-reference/current/organizations/update-organization). The `usage` and `subscription` objects are required, with `show`, `update_plan` and `update_seats`. The examples use the sandbox and API version `2026-10`:

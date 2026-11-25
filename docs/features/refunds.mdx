@@ -19,7 +19,7 @@ You refund the **net amount**, excluding tax. The maximum is the order's net amo
 
 <Tabs>
   <Tab title="Dashboard">
-    - Open the order under **Sales**
+    - Open the order under **Sales → Orders**
     - In the **Refunds** section, click **Refund order**
     - Set **Amount (excl. tax)**. It defaults to the maximum
     - Pick a **Reason**
@@ -76,25 +76,27 @@ curl -X POST https://sandbox-api.polar.sh/v1/refunds/ \
 ```
 </CodeGroup>
 
-| Field | Description |
-| --- | --- |
-| `order_id` | The order to refund |
-| `amount` | Net amount in cents, excluding tax. At least 1 |
-| `reason` | See [Reasons](#reasons) |
-| `comment` | An internal note. The customer doesn't see it |
-| `revoke_benefits` | Revoke the order's benefits. Defaults to `false` in the API. The dashboard preselects it for one-time purchases |
-| `metadata` | Your own key-value data |
+| Dashboard | API field | Description |
+| --- | --- | --- |
+| | `order_id` | The order to refund |
+| **Amount (excl. tax)** | `amount` | Net amount in cents, excluding tax. At least 1 |
+| **Reason** | `reason` | See [Reasons](#reasons) |
+| | `comment` | An internal note. The customer doesn't see it |
+| **Revoke Benefits** | `revoke_benefits` | Revoke the order's benefits. Defaults to `false` in the API. The dashboard preselects it for one-time purchases |
+| | `metadata` | Your own key-value data |
+
+Refunds on an order are listed in its **Refunds** section, with amount, status and reason.
 
 ## Reasons
 
-| Value | Dashboard |
+| Dashboard | API `reason` |
 | --- | --- |
-| `duplicate` | **Duplicate** |
-| `fraudulent` | **Fraudulent** |
-| `customer_request` | **Customer Request** |
-| `service_disruption` | **Service Disruption** |
-| `satisfaction_guarantee` | **Satisfaction Guarantee** |
-| `other` | **Other** |
+| **Duplicate** | `duplicate` |
+| **Fraudulent** | `fraudulent` |
+| **Customer Request** | `customer_request` |
+| **Service Disruption** | `service_disruption` |
+| **Satisfaction Guarantee** | `satisfaction_guarantee` |
+| **Other** | `other` |
 
 Refunds Polar issues itself use other reasons, such as `dispute_prevention`. You can't pick those.
 

@@ -10,15 +10,15 @@ The answers are stored under `custom_field_data` on the checkout, order and subs
 
 ## Field types
 
-| Type | Input | Stored as | Constraints (`properties`) |
-| --- | --- | --- | --- |
-| `text` | Text input, or a textarea | String | `textarea`, `min_length`, `max_length` |
-| `number` | Number input | Whole number (32-bit integer) | `ge` (minimum), `le` (maximum) |
-| `date` | Date picker | ISO 8601 date | `ge`, `le`, as Unix timestamps in the API |
-| `checkbox` | Checkbox | `true` or `false` | A required checkbox must be checked |
-| `select` | Dropdown | The option's `value` | `options`: a list of `{ "value", "label" }`, at least one |
+| Dashboard | API `type` | Input | Stored as | Constraints (`properties`) |
+| --- | --- | --- | --- | --- |
+| **Text** | `text` | Text input, or a textarea | String | `textarea`, `min_length`, `max_length` |
+| **Number** | `number` | Number input | Whole number (32-bit integer) | `ge` (minimum), `le` (maximum) |
+| **Date** | `date` | Date picker | ISO 8601 date | `ge`, `le`, as Unix timestamps in the API |
+| **Checkbox** | `checkbox` | Checkbox | `true` or `false` | A required checkbox must be checked |
+| **Select** | `select` | Dropdown | The option's `value` | `options`: a list of `{ "value", "label" }`, at least one |
 
-Every type also takes `form_label`, `form_help_text` and `form_placeholder` in `properties`. The label and help text support basic Markdown, including links. Without a `form_label`, the field's name is the label.
+Every type also takes a **Label**, **Help text** and **Placeholder** (`form_label`, `form_help_text` and `form_placeholder` in `properties`). The label and help text support basic Markdown, including links. Without a `form_label`, the field's name is the label.
 
 The type can't be changed after creation.
 

@@ -99,9 +99,20 @@ Every change sends a webhook: `subscription.created`, `subscription.active`, `su
 
 To check access, read [customer state](/integrate/customer-state) rather than tracking each event.
 
+## Find subscriptions
+
+- Open **Sales → Subscriptions**
+- Use **Search subscriptions**, or filter by **Status** or **Cancellation reason**
+- Switch between the timeline and table views, and **Sort** by **Newest**, **Next renewal** or **Highest amount**
+- Select a subscription to see its orders, scheduled changes and **Activity**
+
+The statuses in the dashboard map to the API's `status`: **Trialing** (`trialing`), **Active** (`active`), **Past due** (`past_due`), **Paused** (`paused`), **Trial ended** (`trial_ended`), **Canceled** (`canceled`), **Incomplete** (`incomplete`) and **Unpaid** (`unpaid`). An active subscription set to end shows as **Canceling**, and one set to pause as **Pausing**. See [Orders & subscriptions](/concepts/orders-and-subscriptions) for what each means.
+
+From the CLI, use `polar subscriptions list`. See [From the CLI or your agent](#from-the-cli-or-your-agent).
+
 ## Export subscriptions
 
-Open **Sales → Subscriptions** and choose **Export CSV**. Pick the columns and download the file.
+Open **Sales → Subscriptions**, then choose **Export CSV** from the actions menu in the toolbar. Pick the columns and download the file.
 
 <Note>Dashboard only. Not available from the CLI or MCP server.</Note>
 

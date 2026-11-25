@@ -240,15 +240,20 @@ A seat can carry `metadata`, such as a department or cost center: up to 10 keys 
 
 ## Manage seats
 
-| Status | Meaning |
-| --- | --- |
-| `pending` | Assigned and invited, not claimed yet |
-| `claimed` | Claimed by the member, benefits granted |
-| `revoked` | Revoked, benefits removed, the seat can be reassigned |
+Open **Sales → Subscriptions** and select the subscription. The **Seats** section shows how many seats are available and lists each seat's **Email** and **Status**.
 
-- **Resend an invitation** for a pending seat. Claim links expire after 24 hours. Use `polar customer_seats resend_invitation <seat_id>` or `polar.customerSeats.resendInvitation(seatId)`.
-- **Revoke a seat** to remove a member's access and free the seat. Use `polar customer_seats revoke_seat <seat_id>`.
-- **List seats** with `polar customer_seats list_seats --subscription-id <id>`.
+| Dashboard | API `status` | Meaning |
+| --- | --- | --- |
+| **Pending** | `pending` | Assigned and invited, not claimed yet |
+| **Claimed** | `claimed` | Claimed by the member, benefits granted |
+| **Revoked** | `revoked` | Revoked, benefits removed, the seat can be reassigned |
+
+Each seat's **…** menu has the actions:
+
+- **Resend Invitation** for a pending seat. Claim links expire after 24 hours. From the CLI, `polar customer_seats resend_invitation <seat_id>`. In code, `polar.customerSeats.resendInvitation(seatId)`.
+- **Revoke Seat** to remove a member's access and free the seat. From the CLI, `polar customer_seats revoke_seat <seat_id>`.
+
+List seats from the CLI with `polar customer_seats list_seats --subscription-id <id>`.
 
 <Warning>
   **Revoking a seat doesn't lower the bill.** It frees the seat for someone else, but the customer still pays for the same seat count. To stop paying for a seat, reduce the seat count.

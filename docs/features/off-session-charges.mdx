@@ -104,6 +104,8 @@ curl -X POST "https://sandbox-api.polar.sh/v1/orders/$ORDER_ID/finalize" \
 
 On success, the order becomes `paid` and gets an invoice number. Polar grants the product's [benefits](/concepts/benefits) before the response returns, emails the customer a confirmation and sends `order.paid`.
 
+In the dashboard, the order shows under **Sales → Orders** as **Draft** until it's finalized, then as **Paid**. Open it to see the **Payment attempts** for each try.
+
 ## Handle failures
 
 If the charge fails, the API returns an error and the order stays `draft`. Fix the problem and finalize the same order again. A failed attempt doesn't use up an invoice number.

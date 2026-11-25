@@ -57,7 +57,7 @@ Then attach it to a product. See [Manage benefits](/features/benefits/introducti
 | **Limit Activations** | `properties.activations.limit` (> 0) | No activations |
 | **Enable user to deactivate instances via Polar** | `properties.activations.enable_customer_admin` | Off |
 | **Limit Usage** | `properties.limit_usage` (> 0) | Unlimited |
-| **Visibility** | `visibility` | `public` |
+| **Visibility** | `visibility` | **Visible** (`public`) |
 
 Changes to these options apply to keys already issued, not just new ones.
 
@@ -90,11 +90,11 @@ With **Enable user to deactivate instances via Polar**, customers can remove act
 
 ## Key statuses
 
-| Status | Meaning | Validates |
-| --- | --- | --- |
-| `granted` | Active | Yes, unless expired |
-| `disabled` | Turned off by you. Set it back to `granted` to re-enable | No |
-| `revoked` | The benefit was revoked, for example when a subscription ended | No |
+| Dashboard | API `status` | Meaning | Validates |
+| --- | --- | --- | --- |
+| **Granted** | `granted` | Active | Yes, unless expired |
+| **Disabled** | `disabled` | Turned off by you. Set it back to **Granted** to re-enable | No |
+| **Revoked** | `revoked` | The benefit was revoked, for example when a subscription ended | No |
 
 ## Manage keys
 

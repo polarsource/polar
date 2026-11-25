@@ -22,7 +22,7 @@ from polar.worker import (
 )
 
 from . import pan_transfer, slack
-from .benefits import keep_activations
+from .benefits import keep_key_state
 from .repository import MerchantMigrationRepository
 from .service import BENEFITS_RUN_LIMIT
 from .service import merchant_migration as merchant_migration_service
@@ -90,9 +90,17 @@ async def merchant_migration_set_up_benefits(
 async def merchant_migration_keep_license_key_activations(
     benefit_grant_id: Annotated[UUID, LoggableField],
     activations: list[dict[str, str]],
+    expires_at: str | None = None,
+    keep_expiry: bool = False,
 ) -> None:
     async with AsyncSessionMaker() as session:
-        if await keep_activations(session, benefit_grant_id, activations):
+        if await keep_key_state(
+            session,
+            benefit_grant_id,
+            activations,
+            datetime.fromisoformat(expires_at) if expires_at else None,
+            keep_expiry=keep_expiry,
+        ):
             return
     # The grant task hasn't made the key yet.
     if can_retry():

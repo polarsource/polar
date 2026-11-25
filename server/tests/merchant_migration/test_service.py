@@ -1,5 +1,5 @@
 from collections.abc import AsyncIterator
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from unittest.mock import Mock
 from uuid import UUID
@@ -6139,6 +6139,7 @@ class TestExecuteBenefits:
                     name="Bob",
                     license_key=CanonicalLicenseKey(
                         key="KEY-LIFETIME",
+                        expires_at=datetime(2027, 3, 1, tzinfo=UTC),
                         activations=[
                             CanonicalLicenseKeyActivation(
                                 id="16a12ab5-d7b7-442e-a2db-e9dfa14a05de",
@@ -6192,6 +6193,8 @@ class TestExecuteBenefits:
             activations=[
                 {"id": "16a12ab5-d7b7-442e-a2db-e9dfa14a05de", "label": "Studio Mac"}
             ],
+            keep_expiry=True,
+            expires_at="2027-03-01T00:00:00+00:00",
         )
         customer_repository = CustomerRepository.from_session(session)
         assert (

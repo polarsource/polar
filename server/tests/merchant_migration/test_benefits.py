@@ -1,12 +1,24 @@
-from uuid import UUID
+from datetime import UTC, datetime
+from uuid import UUID, uuid4
 
 import pytest
+from pytest_mock import MockerFixture
 
 from polar.kit.utils import utc_now
 from polar.license_key.repository import LicenseKeyRepository
-from polar.merchant_migration.benefits import keep_activations, kept_key_properties
+from polar.merchant_migration.benefits import (
+    keep_key_state,
+    kept_key_properties,
+    queue_kept_key_state,
+)
 from polar.merchant_migration.canonical import CanonicalLicenseKey
-from polar.models import Benefit, Customer, LicenseKeyActivation, Organization
+from polar.models import (
+    Benefit,
+    BenefitGrant,
+    Customer,
+    LicenseKeyActivation,
+    Organization,
+)
 from polar.models.benefit import BenefitType
 from polar.models.license_key import LicenseKey, LicenseKeyStatus
 from polar.postgres import AsyncSession
@@ -102,11 +114,11 @@ class TestKeepActivations:
             save_fixture, organization, customer
         )
 
-        done = await keep_activations(
+        done = await keep_key_state(
             session, grant_id, [{"id": ACTIVATION_ID, "label": "Ada's laptop"}]
         )
         # A rerun skips the activation it already made.
-        await keep_activations(
+        await keep_key_state(
             session, grant_id, [{"id": ACTIVATION_ID, "label": "Ada's laptop"}]
         )
 
@@ -130,7 +142,7 @@ class TestKeepActivations:
             save_fixture, customer, benefit, properties={"user_provided_key": "KEY-1"}
         )
 
-        assert not await keep_activations(
+        assert not await keep_key_state(
             session, grant.id, [{"id": ACTIVATION_ID, "label": "Ada's laptop"}]
         )
 
@@ -145,7 +157,7 @@ class TestKeepActivations:
             save_fixture, organization, customer, key="POLAR-NEW"
         )
 
-        assert await keep_activations(
+        assert await keep_key_state(
             session, grant_id, [{"id": ACTIVATION_ID, "label": "Ada's laptop"}]
         )
         assert (
@@ -154,3 +166,77 @@ class TestKeepActivations:
             )
             == set()
         )
+
+    @pytest.mark.parametrize(
+        ("source_expires_at", "keep_expiry", "expected"),
+        [
+            (datetime(2027, 3, 1, tzinfo=UTC), True, datetime(2027, 3, 1, tzinfo=UTC)),
+            # A source key that never expires stays that way on Polar.
+            (None, True, None),
+            # A job queued before expiries were kept leaves the key alone.
+            (None, False, datetime(2028, 1, 1, tzinfo=UTC)),
+        ],
+    )
+    async def test_keeps_the_source_expiry(
+        self,
+        source_expires_at: datetime | None,
+        keep_expiry: bool,
+        expected: datetime | None,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        _, license_key, grant_id = await self._kept_key(
+            save_fixture, organization, customer
+        )
+        license_key.expires_at = datetime(2028, 1, 1, tzinfo=UTC)
+        await save_fixture(license_key)
+
+        assert await keep_key_state(
+            session, grant_id, [], source_expires_at, keep_expiry=keep_expiry
+        )
+
+        await session.refresh(license_key)
+        assert license_key.expires_at == expected
+
+
+class TestQueueKeptKeyState:
+    @pytest.mark.parametrize(
+        ("benefit_expires", "subscription", "keep_expiry"),
+        [
+            # The benefit would date the key: keep the source's "never".
+            ({"ttl": 1, "timeframe": "year"}, False, True),
+            # Nothing to correct and no activations: no job.
+            (None, False, None),
+            # A subscription's key follows the subscription.
+            ({"ttl": 1, "timeframe": "year"}, True, None),
+        ],
+    )
+    def test_keeps_a_never_expiring_source_key(
+        self,
+        mocker: MockerFixture,
+        benefit_expires: dict[str, object] | None,
+        subscription: bool,
+        keep_expiry: bool | None,
+    ) -> None:
+        enqueue_job = mocker.patch("polar.merchant_migration.benefits.enqueue_job")
+        benefit = Benefit(properties={"expires": benefit_expires})
+        grant = BenefitGrant(
+            id=uuid4(),
+            properties={"user_provided_key": "KEY-1"},
+            subscription_id=uuid4() if subscription else None,
+        )
+
+        queue_kept_key_state(grant, benefit, CanonicalLicenseKey(key="KEY-1"))
+
+        if keep_expiry is None:
+            enqueue_job.assert_not_called()
+        else:
+            enqueue_job.assert_called_once_with(
+                "merchant_migration.keep_license_key_activations",
+                benefit_grant_id=grant.id,
+                activations=[],
+                keep_expiry=keep_expiry,
+                expires_at=None,
+            )

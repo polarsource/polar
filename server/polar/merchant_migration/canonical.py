@@ -396,6 +396,7 @@ class CanonicalLicenseKeyActivation:
 class CanonicalLicenseKey:
     key: str
     activations: list[CanonicalLicenseKeyActivation] = field(default_factory=list)
+    expires_at: datetime | None = None
 
 
 @dataclass

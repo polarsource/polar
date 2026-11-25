@@ -50,7 +50,7 @@ from polar.subscription.service import subscription as subscription_service
 from polar.worker import JobQueueManager
 
 from .adapters import SourceAdapter
-from .benefits import kept_key_properties, queue_kept_activations
+from .benefits import kept_key_properties, queue_kept_key_state
 from .canonical import (
     CanonicalProduct,
     CanonicalSubscription,
@@ -731,7 +731,7 @@ class SubscriptionCutover:
             ),
             flush=True,
         )
-        queue_kept_activations(grant, license_key)
+        queue_kept_key_state(grant, benefit, license_key)
 
     async def _staged_add_on_product(
         self, add_on: CanonicalSubscriptionAddOn

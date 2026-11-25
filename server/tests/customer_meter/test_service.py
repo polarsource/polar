@@ -1976,7 +1976,7 @@ class TestGetReducerUnits:
 
 @pytest.mark.anyio
 class TestCustomerStateReducerUnits:
-    async def test_reads_the_reducer_uncached_on_reducer_billing(
+    async def test_caches_the_stored_units_and_reads_the_reducer(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -1989,9 +1989,35 @@ class TestCustomerStateReducerUnits:
         await save_fixture(organization)
 
         state = await customer_service.get_state(session, redis, customer)
+        cached_state = await customer_service.get_state(session, redis, customer)
 
         assert [meter.consumed_units for meter in state.active_meters] == [3]
-        assert await redis.get(f"polar:customer_state:v8:{customer.id}") is None
+        assert [meter.balance for meter in state.active_meters] == [-3]
+        assert [meter.consumed_units for meter in cached_state.active_meters] == [3]
+        raw_state = await redis.get(f"polar:customer_state:v8:{customer.id}")
+        assert raw_state is not None
+        assert b'"consumed_units":0.0' in raw_state
+
+    async def test_reads_the_cached_units_when_redis_fails(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        stale_customer_meter: CustomerMeter,
+    ) -> None:
+        customer = stale_customer_meter.customer
+        organization = customer.organization
+        organization.feature_settings = {"reducer_billing_enabled": True}
+        await save_fixture(organization)
+        await customer_service.get_state(session, redis, customer)
+        mocker.patch(
+            "polar.reducer.redis_store.get_many_bucket_totals", side_effect=RedisError
+        )
+
+        state = await customer_service.get_state(session, redis, customer)
+
+        assert [meter.consumed_units for meter in state.active_meters] == [0]
 
     async def test_caches_the_stored_units_without_reducer_billing(
         self,

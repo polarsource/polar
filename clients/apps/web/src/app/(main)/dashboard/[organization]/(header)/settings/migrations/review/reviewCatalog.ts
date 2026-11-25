@@ -2,6 +2,7 @@ import { CATALOG_READ_DURATION } from '../catalogReadCopy'
 
 export type ReviewCatalogEmptyKind =
   | 'no_stripe_subscriptions'
+  | 'benefits_only'
   | 'subscriptions_on_connected_accounts'
   | 'all_switched'
 
@@ -18,8 +19,12 @@ export function reviewCatalogEmptyKind(
   total: number,
   imported: number,
   hasConnectedAccounts: boolean,
+  hasBenefitsStep = false,
 ): ReviewCatalogEmptyKind | null {
   if (total <= 0) {
+    if (hasBenefitsStep) {
+      return 'benefits_only'
+    }
     return hasConnectedAccounts
       ? 'subscriptions_on_connected_accounts'
       : 'no_stripe_subscriptions'
@@ -56,6 +61,11 @@ export const CATALOG_EMPTY_COPY: Record<
     description:
       'We found no subscriptions that can move to Polar. If you have added some since, scan again.',
   },
+  benefits_only: {
+    title: 'No subscriptions to import',
+    description:
+      'We found no subscriptions that can move to Polar. You can still bring over your license keys, files and links.',
+  },
   subscriptions_on_connected_accounts: {
     title: 'No subscriptions on this account',
     description:
@@ -69,3 +79,5 @@ export const CATALOG_REFRESH_COPY = {
 } as const
 
 export const CATALOG_READ_ERROR_TITLE = "We couldn't read your subscriptions"
+
+export const CATALOG_CONTINUE_ERROR_TITLE = "We couldn't continue to benefits"

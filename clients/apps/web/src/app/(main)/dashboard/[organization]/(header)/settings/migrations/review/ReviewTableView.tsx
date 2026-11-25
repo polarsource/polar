@@ -57,6 +57,7 @@ interface Props {
   refreshError?: string
   attentionCount: number
   hasConnectedAccounts: boolean
+  hasBenefitsStep: boolean
   paymentMethods: PaymentMethodCount[]
 }
 
@@ -85,6 +86,7 @@ export function ReviewTableView({
   refreshError,
   attentionCount,
   hasConnectedAccounts,
+  hasBenefitsStep,
   paymentMethods,
 }: Props) {
   const refreshing = rerunning && !stalled
@@ -96,6 +98,7 @@ export function ReviewTableView({
     counts.subscriptions.total,
     counts.subscriptions.imported,
     hasConnectedAccounts,
+    hasBenefitsStep,
   )
   const selectableTotal = counts.subscriptions.selectable
   const importCount = selectedCount(selection, selectableTotal)
@@ -141,6 +144,13 @@ export function ReviewTableView({
         rerunning={rerunning}
         stalled={stalled}
         readError={refreshError}
+        {...(catalogEmpty === 'benefits_only'
+          ? {
+              onContinue,
+              continuing: importing,
+              continueError: importError,
+            }
+          : {})}
       />
     )
   }

@@ -1,0 +1,31 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/BenefitsForm.tsx
+  s_d4a843b33596ce::t_948d50adecea60 9,32,43,58,86-91,106,148,161-174
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/BenefitsStep.tsx
+  s_d4a843b33596ce::t_6536e0754f5f95 86,97,102,134-135
+clients/packages/client/src/v1.ts
+  s_d4a843b33596ce::t_9e819a55fc3d0a 28563-28564,28566
+server/polar/benefit/grant/repository.py
+  s_d4a843b33596ce::t_55f8c8dcbab874 213-228
+server/polar/merchant_migration/schemas.py
+  s_d4a843b33596ce::t_93928b4ec0f0db 543,545-547
+server/polar/merchant_migration/service.py
+  s_d4a843b33596ce::t_1fd6ccfd879a04 16,1022-1024,1026-1034
+server/tests/merchant_migration/test_service.py
+  s_d4a843b33596ce::t_b7437d7c0b3995 6053
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5d3af30eb17ef5f157901a83d912399f2119dc4e",
+  "prompts": {},
+  "sessions": {
+    "s_d4a843b33596ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "12adddd7-b520-4f67-a19e-0f92eb2e092a",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

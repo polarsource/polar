@@ -2,8 +2,7 @@
 
 import { useDeleteOrganization } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
-import { api } from '@/utils/client'
-import { schemas, unwrap } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { useRouter } from 'next/navigation'
 import { useCallback, useState } from 'react'
@@ -46,12 +45,7 @@ export default function OrganizationDeleteSettings({
         variant: 'success',
         duration: TOAST_LONG_DURATION,
       })
-      const orgs = await unwrap(api.GET('/v1/organizations/'))
-      router.push(
-        orgs.items.length === 0
-          ? '/dashboard/account/preferences'
-          : '/dashboard',
-      )
+      router.push('/dashboard')
     } else if (data.requires_support) {
       const reasons = (data.blocked_reasons ?? [])
         .map((r: string) => {

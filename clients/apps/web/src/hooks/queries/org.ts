@@ -42,10 +42,12 @@ export const useLeaveOrganization = (id: string) =>
         params: { path: { id } },
       })
     },
-    onSuccess: async () => {
+    onSuccess: async (result) => {
+      if (result.error) return
       getQueryClient().invalidateQueries({
         queryKey: ['organizations'],
       })
+      await refreshUser()
     },
   })
 
@@ -472,9 +474,11 @@ export const useDeleteOrganization = () =>
         params: { path: { id: variables.id } },
       })
     },
-    onSuccess: async () => {
+    onSuccess: async (result) => {
+      if (result.error) return
       getQueryClient().invalidateQueries({
         queryKey: ['organizations'],
       })
+      await refreshUser()
     },
   })

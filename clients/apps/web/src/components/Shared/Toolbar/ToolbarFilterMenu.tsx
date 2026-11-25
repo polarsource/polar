@@ -26,15 +26,15 @@ import { twMerge } from 'tailwind-merge'
 const TRIGGER_ON_CLASS = 'dark:bg-polar-700 bg-gray-200'
 // Sized to stand beside a filter chip.
 const ADD_TRIGGER_CLASS = 'size-[26px] shrink-0 rounded-md [&_svg]:size-3.5!'
-const PANEL_CLASS =
+export const PANEL_CLASS =
   'dark:bg-polar-800 dark:border-polar-700 rounded-xl border border-gray-200 bg-white text-[13px] shadow-xl'
 const SEARCH_CLASS =
   'dark:placeholder:text-polar-500 dark:border-polar-700 dark:focus:border-polar-700 w-full rounded-t-xl border-x-0 border-t-0 border-b border-gray-200 bg-transparent px-3.5 py-2 text-[13px] outline-none placeholder:text-gray-400 focus:border-gray-200 focus:ring-0 focus:outline-none'
-const ITEM_CLASS =
+export const ITEM_CLASS =
   'flex h-7 w-full cursor-pointer items-center gap-3 rounded-md px-2 text-left'
 const ITEM_ACTIVE_CLASS = 'dark:bg-polar-700 bg-gray-100'
-const ITEM_HOVER_CLASS = 'dark:hover:bg-polar-700 hover:bg-gray-100'
-const ICON_CLASS =
+export const ITEM_HOVER_CLASS = 'dark:hover:bg-polar-700 hover:bg-gray-100'
+export const ICON_CLASS =
   'dark:text-polar-400 size-3.5 shrink-0 text-gray-500 [&_svg]:size-3.5'
 const CHECKBOX_CLASS =
   'dark:border-polar-500 flex size-3.5 shrink-0 items-center justify-center rounded-[4px] border border-gray-300'

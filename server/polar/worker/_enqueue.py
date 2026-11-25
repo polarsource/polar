@@ -6,12 +6,13 @@ import time
 import uuid
 from collections import defaultdict
 from collections.abc import AsyncIterator, Callable, Iterable, Iterator, Mapping
-from typing import Any, Self
+from typing import Any, Self, cast
 
 import dramatiq
 import structlog
 from dramatiq.common import dq_name
 from redis.exceptions import RedisError
+from redis.typing import EncodableT, FieldT
 
 from polar.config import settings
 from polar.logging import CorrelationID, Logger
@@ -218,7 +219,11 @@ class JobQueueManager:
         try:
             async with redis.pipeline(transaction=False) as pipeline:
                 for stream, fields, retention in self._appended:
-                    pipeline.xadd(stream, fields, minid=now - retention)
+                    pipeline.xadd(
+                        stream,
+                        cast(dict[FieldT, EncodableT], fields),
+                        minid=now - retention,
+                    )
                     # Trimming only runs on an append: a stream nothing appends to
                     # any more goes with its last entries.
                     pipeline.pexpire(stream, retention)

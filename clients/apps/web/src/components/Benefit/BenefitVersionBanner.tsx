@@ -51,6 +51,7 @@ export const BenefitVersionBanner = ({
     return (
       <DraftVersionBanner
         organization={organization}
+        resource="benefit"
         draftId={catalog.id}
         currentHref={
           current

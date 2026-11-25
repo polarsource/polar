@@ -9,7 +9,6 @@ from shared import (
     DEFAULT_API_PORT,
     SERVER_DIR,
     console,
-    find_available_port,
     is_port_in_use,
 )
 
@@ -27,13 +26,12 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
 
         target_port = port or DEFAULT_API_PORT
         if is_port_in_use(target_port):
-            if port:
-                console.print(f"[red]Port {target_port} is already in use[/red]")
-                raise typer.Exit(1)
-            else:
-                new_port = find_available_port(target_port)
-                console.print(f"[yellow]Port {target_port} in use, using {new_port} instead[/yellow]")
-                target_port = new_port
+            console.print(
+                f"[red]Port {target_port} is already in use.[/red] "
+                f"Free it with [bold]dev kill-ports {target_port}[/bold], "
+                "or pick another port with --port."
+            )
+            raise typer.Exit(1)
 
         console.print(f"\n[bold blue]Starting API server on port {target_port}[/bold blue]\n")
 

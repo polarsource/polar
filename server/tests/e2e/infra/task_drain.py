@@ -251,6 +251,7 @@ class TaskDrain:
             raw_message_id = await self._redis.lpop(redis_key)
             if raw_message_id is None:
                 continue
+            assert not isinstance(raw_message_id, list)
 
             message_id = (
                 raw_message_id.decode()

@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import PlainTextResponse, RedirectResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from polar.config import settings
@@ -21,6 +21,10 @@ async def redirect_to_frontend_not_found(
     return RedirectResponse(settings.generate_frontend_url("/404"), status_code=302)
 
 
+async def robots_txt() -> PlainTextResponse:
+    return PlainTextResponse("User-agent: *\nDisallow: /\n")
+
+
 router = get_api_router_class(TransactionalAPIRoute)()
 router.get("/{client_secret}")(redirect)
 
@@ -34,4 +38,5 @@ app = FastAPI(
         PolarError: redirect_to_frontend,
     },
 )
+app.get("/robots.txt", include_in_schema=False)(robots_txt)
 app.include_router(router)

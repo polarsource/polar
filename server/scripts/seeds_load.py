@@ -110,6 +110,9 @@ from polar.models.webhook_endpoint import (
 )
 from polar.organization.schemas import OrganizationCreate
 from polar.organization.service import organization as organization_service
+from polar.organization_access_token.repository import (
+    OrganizationAccessTokenRepository,
+)
 from polar.organization_review.appeal_case import appeal_case as appeal_case_service
 from polar.postgres import AsyncSession, create_async_engine
 from polar.product.schemas import (
@@ -126,6 +129,7 @@ from polar.redis import Redis, create_redis
 from polar.support_case.service import support_case as support_case_service
 from polar.user.repository import UserRepository
 from polar.user.service import user as user_service
+from polar.version import CURRENT_API_VERSION
 from polar.webhook.service import generate_webhook_secret
 from polar.worker import JobQueueManager
 from scripts.db import assert_dev_or_testing
@@ -3074,7 +3078,13 @@ def seeds_load(
 
 
 @cli.command(name="polar-self-env")
-def polar_self_env() -> None:
+def polar_self_env(
+    keep_valid: bool = typer.Option(
+        False,
+        "--keep-valid",
+        help="Output nothing when the configured access token still works.",
+    ),
+) -> None:
     """Output Polar self-integration env vars for the seeded Polar org."""
 
     async def run() -> None:
@@ -3089,6 +3099,13 @@ def polar_self_env() -> None:
             if org is None:
                 raise typer.Exit(1)
 
+            if keep_valid and settings.POLAR_ACCESS_TOKEN:
+                configured = await OrganizationAccessTokenRepository.from_session(
+                    session
+                ).get_by_token(settings.POLAR_ACCESS_TOKEN)
+                if configured is not None and configured.organization_id == org.id:
+                    return
+
             scale_product = (
                 await session.execute(
                     select(Product).where(
@@ -3102,7 +3119,8 @@ def polar_self_env() -> None:
             if scale_product is None:
                 raise typer.Exit(1)
 
-            # Delete any existing dev seed token
+            # Keep the token already in .env when it is still valid, so a
+            # running API and worker don't start failing with 401.
             existing = (
                 (
                     await session.execute(
@@ -3115,17 +3133,36 @@ def polar_self_env() -> None:
                 .scalars()
                 .all()
             )
-            for t in existing:
-                await session.delete(t)
-
-            token, token_hash = generate_token_hash_pair(prefix="polar_oat_")
-            oat = OrganizationAccessToken(
-                organization_id=org.id,
-                token=token_hash,
-                scope=TOKEN_SCOPES,
-                comment=TOKEN_COMMENT,
+            current_token = settings.POLAR_ACCESS_TOKEN
+            kept_oat = (
+                await OrganizationAccessTokenRepository.from_session(
+                    session
+                ).get_by_token(current_token)
+                if current_token
+                else None
             )
-            session.add(oat)
+            if kept_oat is not None and (
+                kept_oat.organization_id != org.id or kept_oat.comment != TOKEN_COMMENT
+            ):
+                kept_oat = None
+
+            for t in existing:
+                if kept_oat is None or t.id != kept_oat.id:
+                    await session.delete(t)
+
+            if kept_oat is not None:
+                kept_oat.scope = TOKEN_SCOPES
+                token = current_token
+            else:
+                token, token_hash = generate_token_hash_pair(prefix="polar_oat_")
+                session.add(
+                    OrganizationAccessToken(
+                        organization=org,
+                        token=token_hash,
+                        scope=TOKEN_SCOPES,
+                        comment=TOKEN_COMMENT,
+                    )
+                )
 
             existing_webhooks = (
                 (
@@ -3139,21 +3176,41 @@ def polar_self_env() -> None:
                 .scalars()
                 .all()
             )
+            current_webhook_secret = settings.POLAR_WEBHOOK_SECRET
+            kept_webhook: WebhookEndpoint | None = None
             for w in existing_webhooks:
-                await session.delete(w)
+                if (
+                    kept_webhook is None
+                    and current_webhook_secret
+                    and w.secret == current_webhook_secret
+                    and w.deleted_at is None
+                ):
+                    w.url = WEBHOOK_URL
+                    w.format = WebhookFormat.raw
+                    w.events = WEBHOOK_EVENTS
+                    w.api_version = CURRENT_API_VERSION
+                    w.enabled = True
+                    w.expires_at = None
+                    kept_webhook = w
+                else:
+                    await session.delete(w)
 
-            webhook_secret = generate_webhook_secret()
-            webhook = WebhookEndpoint(
-                organization_id=org.id,
-                url=WEBHOOK_URL,
-                name=WEBHOOK_NAME,
-                format=WebhookFormat.raw,
-                secret=webhook_secret,
-                secret_generated_at=utc_now(),
-                events=WEBHOOK_EVENTS,
-                enabled=True,
-            )
-            session.add(webhook)
+            if kept_webhook is not None:
+                webhook_secret = current_webhook_secret
+            else:
+                webhook_secret = generate_webhook_secret()
+                session.add(
+                    WebhookEndpoint(
+                        organization=org,
+                        url=WEBHOOK_URL,
+                        name=WEBHOOK_NAME,
+                        format=WebhookFormat.raw,
+                        secret=webhook_secret,
+                        secret_generated_at=utc_now(),
+                        events=WEBHOOK_EVENTS,
+                        enabled=True,
+                    )
+                )
 
             await session.commit()
 

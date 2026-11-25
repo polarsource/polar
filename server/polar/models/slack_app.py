@@ -41,16 +41,10 @@ class SlackApp(RecordModel):
     client_id: Mapped[str | None] = mapped_column(
         String(255), nullable=True, default=None
     )
-    client_secret: Mapped[str | None] = mapped_column(
-        String(255), nullable=True, default=None
-    )
     client_secret_encrypted: Mapped[EncryptedString | None] = mapped_column(
         EncryptedStringType(SLACK_APP_CLIENT_SECRET_CONTEXT),
         nullable=True,
         default=None,
-    )
-    signing_secret: Mapped[str | None] = mapped_column(
-        String(255), nullable=True, default=None
     )
     signing_secret_encrypted: Mapped[EncryptedString | None] = mapped_column(
         EncryptedStringType(SLACK_APP_SIGNING_SECRET_CONTEXT),
@@ -66,9 +60,6 @@ class SlackApp(RecordModel):
     )
     bot_user_id: Mapped[str | None] = mapped_column(
         String(32), nullable=True, default=None
-    )
-    bot_token: Mapped[str | None] = mapped_column(
-        String(255), nullable=True, default=None
     )
     bot_token_encrypted: Mapped[EncryptedString | None] = mapped_column(
         EncryptedStringType(SLACK_APP_BOT_TOKEN_CONTEXT),

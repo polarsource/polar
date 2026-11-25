@@ -96,7 +96,7 @@ export const CatalogVersionSelect = ({
           className="rounded-2xl bg-transparent"
         >
           <CommandInput
-            placeholder="Change version…"
+            placeholder="Filter versions…"
             wrapperClassName="dark:border-polar-700 px-4 [&>svg]:hidden"
             className="h-10 border-0 px-0 text-sm focus:ring-0 focus:outline-0"
           />

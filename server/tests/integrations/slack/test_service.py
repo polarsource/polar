@@ -61,21 +61,18 @@ async def _create_integration(
         display_name="Test",
         slack_app_id=slack_app_id,
         client_id="100.200",
-        client_secret="cs-test",
-        signing_secret="ss-test",
         team_id="T1" if bot_token else None,
         team_name="Test team" if bot_token else None,
         bot_user_id="U1" if bot_token else None,
-        bot_token=bot_token,
         authed_user_id="U2" if bot_token else None,
         scopes=["channels:manage"] if bot_token else None,
     )
     integration.id = SlackApp.generate_id()
     integration.client_secret_encrypted = await SlackApp.encrypt_client_secret(
-        integration.id, integration.client_secret
+        integration.id, "cs-test"
     )
     integration.signing_secret_encrypted = await SlackApp.encrypt_signing_secret(
-        integration.id, integration.signing_secret
+        integration.id, "ss-test"
     )
     integration.bot_token_encrypted = await SlackApp.encrypt_bot_token(
         integration.id, bot_token
@@ -140,7 +137,7 @@ class TestSetCredentials:
         )
 
         assert integration.slack_app_id == "A0NEWAPPID0"
-        assert integration.bot_token is None
+        assert integration.bot_token_encrypted is None
         assert integration.team_id is None
         assert await integration.get_client_secret() == "cs-test-secret"
         assert await integration.get_signing_secret() == "ss-test-secret"

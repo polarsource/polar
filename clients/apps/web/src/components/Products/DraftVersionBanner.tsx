@@ -4,14 +4,15 @@ import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { PublishDraftButton } from './PublishDraftButton'
 
 export const DraftVersionBanner = ({
   organization,
+  resource,
   draftId,
   currentHref,
 }: {
   organization: schemas['Organization']
+  resource: 'product' | 'meter' | 'benefit'
   draftId: string
   currentHref: string | null
 }) => {
@@ -35,20 +36,27 @@ export const DraftVersionBanner = ({
       <Box flexDirection="column" rowGap="xs" minWidth={0}>
         <Text variant="title">You&apos;re viewing a draft</Text>
         <Text color="muted">
-          This version isn&apos;t published yet. New checkouts use{' '}
-          {liveCatalog ? (
-            <Link
-              href={`/dashboard/${organization.slug}/products/versions/${liveCatalog.id}`}
-              className="hover:underline"
-            >
-              <Text as="span" color="default">
-                {liveCatalog.name ?? 'the current version'}
-              </Text>
-            </Link>
+          This {resource} version isn&apos;t published yet.{' '}
+          {liveCatalog === null ? (
+            'New checkouts can’t use it until it is.'
           ) : (
-            'the current version'
-          )}{' '}
-          until it is.
+            <>
+              New checkouts use{' '}
+              {liveCatalog ? (
+                <Link
+                  href={`/dashboard/${organization.slug}/products/versions/${liveCatalog.id}`}
+                  className="hover:underline"
+                >
+                  <Text as="span" color="default">
+                    {liveCatalog.name ?? 'the current version'}
+                  </Text>
+                </Link>
+              ) : (
+                'the current version'
+              )}{' '}
+              until it is.
+            </>
+          )}
         </Text>
       </Box>
       <Box
@@ -73,10 +81,6 @@ export const DraftVersionBanner = ({
             View current version
           </Button>
         ) : null}
-        <PublishDraftButton
-          organizationId={organization.id}
-          catalogId={draftId}
-        />
       </Box>
     </Box>
   )

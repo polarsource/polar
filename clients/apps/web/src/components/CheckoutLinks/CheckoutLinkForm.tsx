@@ -203,6 +203,9 @@ export const CheckoutLinkForm = ({
         success_url: data.success_url || null,
         return_url: data.return_url || null,
         metadata: entriesToMetadata(data.metadata),
+        trial_payment_setup_required: data.trial_interval
+          ? data.trial_payment_setup_required
+          : null,
       }
 
       let newCheckoutLink: schemas['CheckoutLink']

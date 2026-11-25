@@ -357,9 +357,10 @@ async def kept_key_properties(
     organization, so the grant then makes a new one."""
     if key is None:
         return {}
+    # A deleted key still holds its value.
     taken = await LicenseKeyRepository.from_session(
         session
-    ).get_by_organization_and_key(organization_id, key)
+    ).get_by_organization_and_key(organization_id, key, include_deleted=True)
     return {} if taken is not None else {"user_provided_key": key}
 
 

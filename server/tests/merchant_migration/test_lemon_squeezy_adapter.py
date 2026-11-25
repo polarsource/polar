@@ -681,6 +681,9 @@ class TestListPurchases:
             {
                 "/v1/prices": _page(
                     [
+                        _price(
+                            "20", 10, 900, "2025-01-01T00:00:00Z", category="one_time"
+                        ),
                         _price("21", 10, 1200, "2026-01-01T00:00:00Z"),
                         _price(
                             "22", 12, 1900, "2026-01-01T00:00:00Z", category="one_time"
@@ -695,6 +698,17 @@ class TestListPurchases:
                         order("73", 12, 83, status="pending"),
                         order("74", 12, 84),
                         order("75", 12, 85, status="partial_refund"),
+                        # Bought once, before the variant became a subscription.
+                        order(
+                            "76",
+                            10,
+                            86,
+                            first_order_item={
+                                "id": 86,
+                                "variant_id": 10,
+                                "price_id": 20,
+                            },
+                        ),
                     ]
                 ),
                 "/v1/license-keys": _page(
@@ -728,6 +742,7 @@ class TestListPurchases:
             ("71", None, True),
             ("74", "KEY-LIFETIME", False),
             ("75", None, False),
+            ("76", None, False),
         ]
 
 

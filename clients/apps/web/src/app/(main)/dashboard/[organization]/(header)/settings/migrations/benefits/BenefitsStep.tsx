@@ -132,7 +132,7 @@ function BenefitsReady({
           {created.length
             ? `${plural(created.length, 'benefit')} created.${
                 pastPurchasesGranted
-                  ? ' Past buyers find their keys and files in the customer portal.'
+                  ? ' Past buyers find them in the customer portal.'
                   : ''
               }`
             : 'No benefits were created. You can add them later from each product.'}

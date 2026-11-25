@@ -672,7 +672,7 @@ class LemonSqueezyAdapter:
                 continue
             if not item or not attributes.get("user_email"):
                 continue
-            if self._is_subscription_variant(str(item["variant_id"])):
+            if self._is_subscription_order(item):
                 continue
             purchases.append(
                 CanonicalPurchase(
@@ -686,6 +686,14 @@ class LemonSqueezyAdapter:
                 )
             )
         return purchases, has_more
+
+    def _is_subscription_order(self, item: dict[str, Any]) -> bool:
+        """Whether the order started a subscription, from the price it was paid
+        at: the variant may have switched to a subscription since."""
+        price = self._prices_by_id.get(str(item.get("price_id")))
+        if price is not None:
+            return _renews(price)
+        return self._is_subscription_variant(str(item["variant_id"]))
 
     def _is_subscription_variant(self, variant_id: str) -> bool:
         prices = self._prices_by_variant.get(variant_id, [])

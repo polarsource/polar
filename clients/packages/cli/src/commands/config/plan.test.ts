@@ -188,7 +188,7 @@ describe('polar config plan', () => {
     expect(output).toContain('Catalog       no live catalog → v1 (draft)')
   })
 
-  test('points out a draft that already has the changes, apart from webhooks', async () => {
+  test('asks to apply webhook changes before publishing a draft that has the rest', async () => {
     const webhook = {
       section: 'webhooks',
       id: 'orders',
@@ -211,7 +211,7 @@ describe('polar config plan', () => {
     expect(failed).toBe(false)
     expect(planned).toEqual([undefined, 'cat-draft'])
     expect(output).toMatch(
-      /Next\n {2}╭─+╮\n *│ {2}Compared with the live catalog \(none yet\)\. *│\n *│ {2}A previous apply saved these changes in draft v1, which isn't live yet\. *│\n *│ {2}Webhook changes don't go into the draft: apply makes them right away\. *│\n *│ {2}Run polar config publish to make it live\. *│\n {2}╰─+╯\n$/,
+      /Next\n {2}╭─+╮\n *│ {2}Compared with the live catalog \(none yet\)\. *│\n *│ {2}A previous apply saved these changes in draft v1, which isn't live yet\. *│\n *│ {2}Webhook changes don't go into the draft: apply makes them right away\. *│\n *│ {2}Run polar config apply, then polar config publish to make it live\. *│\n {2}╰─+╯\n$/,
     )
   })
 

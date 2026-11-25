@@ -88,20 +88,32 @@ export const draftNote = (
   ]
 }
 
+// Apply discards a draft that differs from a file matching the live catalog
+export const discardsDraft = (
+  draft: PlanDraft,
+  entries: ReadonlyArray<AppliedEntry>,
+) =>
+  draft.drift !== null &&
+  draft.drift.length > 0 &&
+  draftedChanges(entries).length === 0
+
 const draftAction = (
   draft: PlanDraft,
   entries: ReadonlyArray<AppliedEntry>,
 ) => {
+  const apply = ui.command('polar config apply')
   const publish = `${ui.command('polar config publish')} to make it live.`
-  if (draft.drift?.length === 0) return [`Run ${publish}`]
-  if (draftedChanges(entries).length > 0) {
-    return [
-      `Run ${ui.command('polar config apply')} to update the draft, then ${publish}`,
-    ]
+  const webhooks = immediateChanges(entries).length > 0
+  if (draft.drift?.length === 0) {
+    return [webhooks ? `Run ${apply}, then ${publish}` : `Run ${publish}`]
   }
-  return draft.drift === null
-    ? []
-    : [`Run ${ui.command('polar config apply')} to discard the draft.`]
+  if (draftedChanges(entries).length > 0) {
+    return [`Run ${apply} to update the draft, then ${publish}`]
+  }
+  if (discardsDraft(draft, entries)) {
+    return [`Run ${apply} to discard the draft.`]
+  }
+  return webhooks ? [`Run ${apply} to make the webhook changes.`] : []
 }
 
 export const draftNext = (

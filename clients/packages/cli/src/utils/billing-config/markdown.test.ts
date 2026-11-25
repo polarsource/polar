@@ -131,6 +131,28 @@ describe('planMarkdown', () => {
     )
   })
 
+  test('warns that applying discards a draft the file no longer matches', () => {
+    expect(
+      planMarkdown(
+        config,
+        acme,
+        { entries: [entries[1]!], issues: [] },
+        {
+          live: { id: 'cat-live', name: 'v3' },
+          draft: { id: 'cat-draft', name: null, drift: [entries[0]!] },
+        },
+      ),
+    ).toContain(
+      [
+        '> [!WARNING]',
+        '> Applying the config in this pull request discards the unpublished draft of **Acme\\_Inc** in sandbox.',
+        '>',
+        "> Compared with the live catalog (v3). A previous apply saved a draft, which isn't live yet and has changes polar.json doesn't.",
+        '',
+      ].join('\n'),
+    )
+  })
+
   test('has nothing to say when the plan changes nothing and has no errors', () => {
     expect(
       planMarkdown(config, acme, {

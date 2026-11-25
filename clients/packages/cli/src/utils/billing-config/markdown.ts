@@ -16,6 +16,7 @@ import {
 import { formatProblems } from '@/utils/billing-config/problems'
 import {
   catalogChange,
+  discardsDraft,
   draftNote,
   errors,
   unchanged,
@@ -143,6 +144,9 @@ const callout = (
   if (errors(result.issues) > 0) {
     return `> [!CAUTION]\n> \`${config.file}\` can't be applied to ${where}. Fix the errors below first.`
   }
+  if (unchanged(result.entries)) {
+    return `> [!WARNING]\n> Applying the config in this pull request discards the unpublished draft of ${where}.${pendingDraft(config, result, catalogs)}`
+  }
   return `> [!NOTE]\n> Applying the config in this pull request changes billing for ${where}. Review every change below before it's applied.${pendingDraft(config, result, catalogs)}`
 }
 
@@ -178,7 +182,9 @@ export const planMarkdown = (
   result: PlanResult,
   catalogs?: PlanCatalogs,
 ) =>
-  unchanged(result.entries) && errors(result.issues) === 0
+  unchanged(result.entries) &&
+  errors(result.issues) === 0 &&
+  !(catalogs?.draft && discardsDraft(catalogs.draft, result.entries))
     ? undefined
     : [
         '## Polar billing plan updated',

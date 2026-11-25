@@ -24,8 +24,11 @@ export function BenefitsStep({
 }) {
   const [editing, setEditing] = useState(false)
   const operation = migration.operation
+  // A stalled run may still be copying a large file, and the card move waits
+  // for it to end.
   const running =
-    operation?.kind === 'benefits' && isActiveMigrationOperation(operation)
+    operation?.kind === 'benefits' &&
+    (isActiveMigrationOperation(operation) || operation.stalled)
   const failed = operation?.kind === 'benefits' && operation.status === 'failed'
   const showForm = editing || failed
   const benefits = useMigrationBenefits(
@@ -129,7 +132,7 @@ function BenefitsReady({
           {created.length
             ? `${plural(created.length, 'benefit')} created.${
                 pastPurchasesGranted
-                  ? ' Past buyers find their keys and files in the customer portal.'
+                  ? ' Past buyers find them in the customer portal.'
                   : ''
               }`
             : 'No benefits were created. You can add them later from each product.'}

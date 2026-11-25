@@ -77,6 +77,7 @@ from polar.merchant_migration.schemas import (
     PrecheckRecordStatus,
 )
 from polar.merchant_migration.service import (
+    BenefitsNotReady,
     BenefitsUnavailable,
     CatalogImportBlocked,
     CatalogImportNotReady,
@@ -4967,6 +4968,37 @@ class TestStartPanTransfer:
         )
 
         assert checklist.current_step_key == "request_copy"
+
+    @pytest.mark.auth
+    async def test_lemon_squeezy_refuses_after_failed_benefits(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        migration = await self._prepared(
+            mocker,
+            session,
+            save_fixture,
+            organization,
+            product,
+            cards_on_polar=set(),
+        )
+        migration.source_platform = MerchantMigrationSourcePlatform.lemon_squeezy
+        migration.step = MerchantMigrationStep.set_up_benefits
+        migration.operation = MerchantMigrationOperation(
+            kind=MerchantMigrationOperationKind.benefits,
+            status=MerchantMigrationOperationStatus.failed,
+        )
+        await save_fixture(migration)
+
+        with pytest.raises(BenefitsNotReady):
+            await service.start_pan_transfer(session, auth_subject, migration.id)
 
     @pytest.mark.auth
     @pytest.mark.parametrize("stalled", [False, True])

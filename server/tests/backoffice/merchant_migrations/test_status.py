@@ -200,9 +200,21 @@ class TestFinished:
         assert not is_finished(_migration(step=MerchantMigrationStep.copy_cards))
 
     def test_closed_displays_on_the_last_step(self) -> None:
-        assert step_position(MerchantMigrationStep.closed) == step_position(
-            MerchantMigrationStep.completed
+        assert step_position(
+            _migration(step=MerchantMigrationStep.closed)
+        ) == step_position(_migration(step=MerchantMigrationStep.completed))
+
+    def test_only_lemon_squeezy_counts_the_benefits_step(self) -> None:
+        assert step_position(_migration(step=MerchantMigrationStep.copy_cards)) == (
+            4,
+            6,
         )
+        assert step_position(
+            _migration(
+                step=MerchantMigrationStep.copy_cards,
+                platform=MerchantMigrationSourcePlatform.lemon_squeezy,
+            )
+        ) == (5, 7)
 
 
 class TestStaleness:

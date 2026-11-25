@@ -28,6 +28,17 @@ export default function Home() {
     })
   }
 
+  const onClickIngest = async () => {
+    const { data: ingestion } = await authClient.usage.ingest({
+      event: 'user.created',
+      metadata: {
+        email: 'test@test.com',
+      },
+    })
+
+    console.log(ingestion)
+  }
+
   const onClickSubscriptions = async () => {
     const { data: subs } = await authClient.customer.subscriptions.list({
       query: {
@@ -56,6 +67,9 @@ export default function Home() {
         </button>
         <button onClick={onClickOrganization} type="button">
           Organization
+        </button>
+        <button onClick={onClickIngest} type="button">
+          Ingest
         </button>
         <button onClick={onClickSubscriptions} type="button">
           Subscriptions

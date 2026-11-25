@@ -1,4 +1,4 @@
-import { checkout, polar, portal, webhooks } from '@polar-sh/better-auth'
+import { checkout, polar, portal, usage, webhooks } from '@polar-sh/better-auth'
 import { betterAuth } from 'better-auth'
 import { organization } from 'better-auth/plugins'
 import Database from 'better-sqlite3'
@@ -43,6 +43,7 @@ export const auth = betterAuth({
           ],
           returnUrl: 'https://myapp.com',
         }),
+        usage(),
         portal({
           returnUrl: 'https://myapp.com',
         }),

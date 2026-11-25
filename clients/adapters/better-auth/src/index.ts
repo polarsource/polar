@@ -19,4 +19,5 @@ export type { PolarOptions } from './types'
 
 export * from './plugins/portal'
 export * from './plugins/checkout'
+export * from './plugins/usage'
 export * from './plugins/webhooks'

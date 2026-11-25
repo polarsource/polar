@@ -1,0 +1,23 @@
+server/migrations/versions/2026-11-25-1014_add_order_payment_processor_metadata.py
+  s_9d4fcc69d80fc5::t_6af3abd7fe34c9 1-24
+server/polar/models/order.py
+  s_9d4fcc69d80fc5::t_a3e87bd5950073 3,213-216
+server/scripts/backfill_order_payment_processor_metadata.py
+  s_9d4fcc69d80fc5::t_0ad665c09031f8 1-32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "aedc55204ded7471d400bc5b34afbe6fd74c2601",
+  "prompts": {},
+  "sessions": {
+    "s_9d4fcc69d80fc5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20ccd-705d-7a61-9a99-612697cae1a1",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

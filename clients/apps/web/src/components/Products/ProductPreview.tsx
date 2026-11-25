@@ -6,7 +6,7 @@ import {
   EntityPreviewSection,
   EntityPreviewTitle,
 } from '@/components/Shared/EntityPreview'
-import { useCatalogVersionLabels } from '@/hooks/queries/catalogs'
+import { useCatalog, useCatalogVersionLabels } from '@/hooks/queries/catalogs'
 import { useProduct } from '@/hooks/queries/products'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
@@ -62,7 +62,15 @@ const Version = ({
   product: schemas['Product']
 }) => {
   const { data: catalogs } = useCatalogVersionLabels(organization)
-  const catalog = product.catalog_id && catalogs?.get(product.catalog_id)
+  const listed = product.catalog_id
+    ? catalogs?.get(product.catalog_id)
+    : undefined
+  // The shared lookup holds the newest versions only. An older one is asked
+  // for by itself.
+  const { data: older } = useCatalog(
+    catalogs && !listed ? product.catalog_id : null,
+  )
+  const catalog = listed ?? older
   if (!catalog) return null
   const state = product.is_current
     ? 'Current'

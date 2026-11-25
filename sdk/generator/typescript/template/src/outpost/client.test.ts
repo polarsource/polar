@@ -2639,4 +2639,27 @@ describe("Redis cost", () => {
     expect((cost.commands.evalsha ?? 0) + (cost.commands.eval ?? 0)).toBeLessThanOrEqual(10);
     expect(cost.commands.exists).toBeLessThanOrEqual(2 * (200 / 25 + 2));
   });
+
+  it("waits on a cold customer's fetch at the same cost, however many reads wait", async () => {
+    snapshot = aliceSnapshot;
+    reducerSnapshots = { tokens: { delay: 500 }, credits: { delay: 500 } };
+    const [first, second] = await Promise.all([
+      quiet({ snapshotTimeout: 2_000 }),
+      quiet({ snapshotTimeout: 2_000 }),
+    ]);
+    await first.actor({ external_customer_id: "bob" });
+    await second.actor({ external_customer_id: "bob" });
+    const asked = meterUsageRequests.length;
+    const fetching = first.meter(meter);
+    await vi.waitFor(() => expect(meterUsageRequests.length).toBeGreaterThan(asked));
+    let reads: Awaited<typeof fetching>[] = [];
+    const cost = await redisCost(async () => {
+      reads = await Promise.all(Array.from({ length: 20 }, () => second.meter(meter)));
+    });
+    expect(reads.map((read) => read?.consumed_units)).toEqual(Array(20).fill(3));
+    const polls = ["exists", "get", "hget"].map((command) => cost.commands[command] ?? 0);
+    // One poller per instance: the first waits on its own fetch, the second on the first's.
+    expect(polls.reduce((sum, calls) => sum + calls)).toBeLessThanOrEqual(2 * (500 / 25 + 2));
+    await fetching;
+  });
 });

@@ -4448,3 +4448,44 @@ async def test_lets_the_readers_of_a_cold_customer_wait_on_its_fetch_then_read_i
         cost = await _cost(redis_commands, read)
     assert cost["evalsha"] + cost.get("eval", 0) <= 15
     assert cost["exists"] <= 2 * (0.08 / 0.025 + 6)
+
+
+@pytest.mark.anyio
+async def test_waits_on_a_cold_customers_fetch_at_the_same_cost_however_many_reads_wait(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    redis_commands: collections.Counter[str],
+    snapshots: dict[str, dict[str, typing.Any]],
+) -> None:
+    url, redis = redis_connection
+    for reducer in ("tokens", "credits"):
+        snapshots[f"external:alice:{reducer}"] = {
+            **_snapshot("alice", reducer, BUCKET + 1),
+            "delay": 0.5,
+        }
+    async with (
+        Outpost(url, client=polar_client, telemetry=False, snapshot_timeout=2) as first,
+        Outpost(url, client=polar_client, telemetry=False, snapshot_timeout=2) as second,
+        anyio.create_task_group() as group,
+    ):
+        group.start_soon(
+            functools.partial(first.meter, external_customer_id="alice", meter_id="meter")
+        )
+        while not await redis.exists("outpost:v1:org-1:fetch:external:alice:tokens"):
+            await anyio.sleep(0.005)
+        reads: list[float | None] = []
+
+        async def read() -> None:
+            meter = await second.meter(external_customer_id="alice", meter_id="meter")
+            reads.append(None if meter is None else meter.consumed_units)
+
+        async def wait() -> None:
+            async with anyio.create_task_group() as readers:
+                for _ in range(20):
+                    readers.start_soon(read)
+
+        cost = await _cost(redis_commands, wait)
+    assert reads == [3] * 20
+    # One poller per instance: the first waits on its own fetch, the second on the first's.
+    polls = sum(cost.get(command, 0) for command in ("exists", "get", "hget"))
+    assert polls <= 2 * (0.5 / 0.025 + 2)

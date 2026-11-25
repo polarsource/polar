@@ -131,7 +131,7 @@ const pendingDraft = (
   catalogs: PlanCatalogs | undefined,
 ) =>
   catalogs?.draft
-    ? `\n>\n> ${escape(draftNote(config.file, catalogs.live, catalogs.draft, entries).join(' '))}`
+    ? `\n>\n> ${escape(plain(draftNote(config.file, catalogs.draft, entries).join(' ')))}`
     : ''
 
 const callout = (
@@ -145,7 +145,7 @@ const callout = (
     return `> [!CAUTION]\n> \`${config.file}\` can't be applied to ${where}. Fix the errors below first.`
   }
   if (unchanged(result.entries)) {
-    return `> [!WARNING]\n> Applying the config in this pull request discards the unpublished draft of ${where}.${pendingDraft(config, result, catalogs)}`
+    return `> [!WARNING]\n> Applying this config discards the unpublished draft of ${where}.${pendingDraft(config, result, catalogs)}`
   }
   return `> [!NOTE]\n> Applying the config in this pull request changes billing for ${where}. Review every change below before it's applied.${pendingDraft(config, result, catalogs)}`
 }

@@ -93,13 +93,7 @@ const render = (
   ...(errors(result.issues) > 0
     ? next(fixErrors(result.issues))
     : catalogs?.draft
-      ? next(
-          draftNext(
-            config.file,
-            { live: catalogs.live, draft: catalogs.draft },
-            result.entries,
-          ),
-        )
+      ? next(draftNext(config.file, catalogs.draft, result.entries))
       : unchanged(result.entries)
         ? [
             ui.blank,

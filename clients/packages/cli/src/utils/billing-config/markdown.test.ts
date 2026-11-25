@@ -125,7 +125,7 @@ describe('planMarkdown', () => {
       [
         "> Applying the config in this pull request changes billing for **Acme\\_Inc** in sandbox. Review every change below before it's applied.",
         '>',
-        "> Compared with the live catalog (none yet). A previous apply saved these changes in draft v1, which isn't live yet.",
+        '> These changes are saved in a draft.',
         '',
       ].join('\n'),
     )
@@ -145,9 +145,9 @@ describe('planMarkdown', () => {
     ).toContain(
       [
         '> [!WARNING]',
-        '> Applying the config in this pull request discards the unpublished draft of **Acme\\_Inc** in sandbox.',
+        '> Applying this config discards the unpublished draft of **Acme\\_Inc** in sandbox.',
         '>',
-        "> Compared with the live catalog (v3). A previous apply saved a draft, which isn't live yet and has changes polar.json doesn't.",
+        "> The draft has changes polar.json doesn't.",
         '',
       ].join('\n'),
     )

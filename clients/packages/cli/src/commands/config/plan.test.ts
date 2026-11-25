@@ -211,7 +211,7 @@ describe('polar config plan', () => {
     expect(failed).toBe(false)
     expect(planned).toEqual([undefined, 'cat-draft'])
     expect(output).toMatch(
-      /Next\n {2}╭─+╮\n *│ {2}Compared with the live catalog \(none yet\)\. *│\n *│ {2}A previous apply saved these changes in draft v1, which isn't live yet\. *│\n *│ {2}Webhook changes don't go into the draft: apply makes them right away\. *│\n *│ {2}Run polar config apply, then polar config publish to make it live\. *│\n {2}╰─+╯\n$/,
+      /Next\n {2}╭─+╮\n *│ {2}These changes are saved in a draft\. *│\n *│ {2}Webhook changes take effect on polar config apply\. *│\n *│ {2}Run polar config apply, then polar config publish\. *│\n {2}╰─+╯\n$/,
     )
   })
 
@@ -223,7 +223,7 @@ describe('polar config plan', () => {
       { entries, issues: [] },
     )
     expect(output.replace(/ *│\n *│ +/g, ' ')).toContain(
-      "Compared with the live catalog (v3). A previous apply saved draft v1, which isn't live yet and is missing some of these changes. Run polar config apply to update the draft, then polar config publish to make it live.",
+      'The draft is missing some of these changes. Run polar config apply, then polar config publish.',
     )
   })
 
@@ -239,7 +239,7 @@ describe('polar config plan', () => {
     )
     expect(output).not.toContain('up to date')
     expect(output.replace(/ *│\n *│ +/g, ' ')).toContain(
-      "Compared with the live catalog (v3). A previous apply saved draft v1, which isn't live yet and has changes polar.json doesn't. Run polar config apply to discard the draft.",
+      "The draft has changes polar.json doesn't. Run polar config apply to discard them.",
     )
   })
 
@@ -287,7 +287,7 @@ describe('polar config plan', () => {
       failing,
     )
     expect(human.output.replace(/ *│\n *│ +/g, ' ')).toContain(
-      "A previous apply saved draft v1, which isn't live yet and could not be compared with polar.json. Run polar config apply to update the draft, then polar config publish to make it live.",
+      "There's an unpublished draft. Run polar config apply, then polar config publish.",
     )
     expect(JSON.parse(json.output).draft).toEqual({ ...draft, drift: null })
   })

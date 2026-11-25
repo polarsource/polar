@@ -1,7 +1,6 @@
 import type { ActiveOrganization, PolarEnvironment } from '@/schemas/Auth'
 import type {
   AppliedEntry,
-  Catalog,
   CatalogPlan,
   ConfigIssue,
   LoadedConfig,
@@ -60,33 +59,33 @@ const immediateChanges = (entries: ReadonlyArray<AppliedEntry>) =>
     (entry) => !DRAFTED.has(entry.section) && entry.action !== 'unchanged',
   )
 
-const draftState = (file: string, draft: PlanDraft, changes: boolean) => {
-  if (draft.drift === null) return `could not be compared with ${file}`
-  if (draft.drift.length === 0) return changes ? null : `matches ${file}`
+const draftFact = (
+  file: string,
+  draft: PlanDraft,
+  entries: ReadonlyArray<AppliedEntry>,
+) => {
+  const changes = draftedChanges(entries).length > 0
+  if (draft.drift === null) return "There's an unpublished draft."
+  if (draft.drift.length === 0) {
+    return changes
+      ? 'These changes are saved in a draft.'
+      : `The draft matches ${file}.`
+  }
   return changes
-    ? 'is missing some of these changes'
-    : `has changes ${file} doesn't`
+    ? 'The draft is missing some of these changes.'
+    : `The draft has changes ${file} doesn't.`
 }
 
 export const draftNote = (
   file: string,
-  live: Catalog | null,
   draft: PlanDraft,
   entries: ReadonlyArray<AppliedEntry>,
-) => {
-  const state = draftState(file, draft, draftedChanges(entries).length > 0)
-  return [
-    `Compared with the live catalog (${live === null ? 'none yet' : (live.name ?? 'unnamed')}).`,
-    state === null
-      ? `A previous apply saved these changes in ${draft.name === null ? 'the draft' : `draft ${draft.name}`}, which isn't live yet.`
-      : `A previous apply saved ${draft.name === null ? 'a draft' : `draft ${draft.name}`}, which isn't live yet and ${state}.`,
-    ...(immediateChanges(entries).length > 0
-      ? [
-          "Webhook changes don't go into the draft: apply makes them right away.",
-        ]
-      : []),
-  ]
-}
+) => [
+  draftFact(file, draft, entries),
+  ...(immediateChanges(entries).length > 0
+    ? [`Webhook changes take effect on ${ui.command('polar config apply')}.`]
+    : []),
+]
 
 // Apply discards a draft that differs from a file matching the live catalog
 export const discardsDraft = (
@@ -102,26 +101,28 @@ const draftAction = (
   entries: ReadonlyArray<AppliedEntry>,
 ) => {
   const apply = ui.command('polar config apply')
-  const publish = `${ui.command('polar config publish')} to make it live.`
+  const publish = ui.command('polar config publish')
   const webhooks = immediateChanges(entries).length > 0
-  if (draft.drift?.length === 0) {
-    return [webhooks ? `Run ${apply}, then ${publish}` : `Run ${publish}`]
+  if (draft.drift?.length === 0 && !webhooks) {
+    return [
+      `Run ${publish} to make ${draftedChanges(entries).length > 0 ? 'them' : 'it'} live.`,
+    ]
   }
-  if (draftedChanges(entries).length > 0) {
-    return [`Run ${apply} to update the draft, then ${publish}`]
+  if (draft.drift?.length === 0 || draftedChanges(entries).length > 0) {
+    return [`Run ${apply}, then ${publish}.`]
   }
   if (discardsDraft(draft, entries)) {
-    return [`Run ${apply} to discard the draft.`]
+    return [`Run ${apply} to discard them.`]
   }
-  return webhooks ? [`Run ${apply} to make the webhook changes.`] : []
+  return webhooks ? [`Run ${apply}.`] : []
 }
 
 export const draftNext = (
   file: string,
-  { live, draft }: { live: Catalog | null; draft: PlanDraft },
+  draft: PlanDraft,
   entries: ReadonlyArray<AppliedEntry>,
 ) =>
-  [...draftNote(file, live, draft, entries), ...draftAction(draft, entries)]
+  [...draftNote(file, draft, entries), ...draftAction(draft, entries)]
     .map((line) => `${ui.INDENT}${line}`)
     .join('\n')
 

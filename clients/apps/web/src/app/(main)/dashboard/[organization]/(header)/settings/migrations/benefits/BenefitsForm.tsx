@@ -9,7 +9,8 @@ import { plural } from '../review/importSummary'
 import { useRecordSummary } from '../review/recordSummary'
 import { BenefitRow, BenefitSection } from './BenefitRows'
 
-const LICENSE_KEY_DOCS = 'https://polar.sh/docs/features/benefits/license-keys'
+const LICENSE_KEY_DOCS =
+  'https://polar.sh/docs/migrate-lemon-squeezy#update-your-app-before-you-switch'
 
 interface Props {
   migrationId: string
@@ -118,16 +119,17 @@ export function BenefitsForm({
 
       {hasLicenseKeys && (
         <Text variant="caption" color="muted">
-          Your app must{' '}
+          Customers keep their license keys and activations. Until every
+          subscriber has switched, your app should check keys with Polar first
+          and fall back to Lemon Squeezy.{' '}
           <a
             href={LICENSE_KEY_DOCS}
             target="_blank"
             rel="noreferrer"
             className="underline"
           >
-            check license keys with Polar
+            How to update your app
           </a>
-          . Used activations and expiry dates start fresh.
         </Text>
       )}
 

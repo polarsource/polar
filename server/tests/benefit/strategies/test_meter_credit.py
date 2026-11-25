@@ -26,8 +26,10 @@ from polar.models.benefit import BenefitType
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from polar.redis import Redis
+from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_active_subscription,
     create_benefit,
     create_event,
     create_meter,
@@ -81,6 +83,7 @@ class TestCycleMeterCredit:
         subscription.current_period_start = utc_now()
         await save_fixture(subscription)
 
+        await subscription_service.reset_meters(session, subscription)
         await benefit_grant_service.cycle_benefit_grant(
             session, redis, subscription_grant
         )
@@ -93,6 +96,53 @@ class TestCycleMeterCredit:
         assert customer_meter is not None
         # After cycle: 50 rollover units from top-up + 100 new cycle units = 150
         assert customer_meter.balance == 150
+
+    async def test_cycle_does_not_reset_meter(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        meter = await create_meter(save_fixture, organization=organization)
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.meter_credit,
+            properties={"meter_id": str(meter.id), "units": 100, "rollover": False},
+        )
+        owner = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            started_at=utc_now() - timedelta(days=10),
+        )
+        other = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            started_at=utc_now() - timedelta(days=5),
+        )
+        await benefit_grant_service.grant_benefit(
+            session, redis, customer, benefit, subscription=owner
+        )
+        other_grant = await benefit_grant_service.grant_benefit(
+            session, redis, customer, benefit, subscription=other
+        )
+
+        other.current_period_start = utc_now()
+        await save_fixture(other)
+        await subscription_service.reset_meters(session, other)
+        await benefit_grant_service.cycle_benefit_grant(session, redis, other_grant)
+
+        customer_meter = await CustomerMeterRepository.from_session(
+            session
+        ).get_by_customer_and_meter(customer.id, meter.id)
+        assert customer_meter is not None
+        # The owner's credits survive the other subscription's renewal.
+        assert customer_meter.balance == 300
 
 
 @pytest.mark.anyio

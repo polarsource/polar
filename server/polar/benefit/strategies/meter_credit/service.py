@@ -57,54 +57,6 @@ class BenefitMeterCreditService(
         properties = self._get_properties(benefit)
         meter_id = uuid.UUID(properties["meter_id"])
 
-        # Reset the meter on cycle
-        event_repository = EventRepository.from_session(self.session)
-        latest_meter_reset = await event_repository.get_latest_meter_reset(
-            customer, meter_id
-        )
-        last_credited_at = datetime.fromisoformat(grant_properties["last_credited_at"])
-        # Do it only if the meter wasn't reset during the last cycle
-        # It happens because the billing logic trigger a reset after generating the invoice
-        if (
-            latest_meter_reset is None
-            or latest_meter_reset.ingested_at < last_credited_at
-        ):
-            rollover_units = 0
-            meter_repository = MeterRepository.from_session(self.session)
-            meter = await meter_repository.get_by_id(meter_id)
-            assert meter is not None
-            rollover_units = await customer_meter_service.get_rollover_units(
-                self.session, customer, meter
-            )
-
-            await event_service.create_event(
-                self.session,
-                build_system_event(
-                    SystemEvent.meter_reset,
-                    customer=customer,
-                    organization=benefit.organization,
-                    metadata={
-                        "meter_id": str(meter_id),
-                    },
-                ),
-            )
-
-            if rollover_units > 0:
-                await event_service.create_event(
-                    self.session,
-                    build_system_event(
-                        SystemEvent.meter_credited,
-                        customer=customer,
-                        organization=benefit.organization,
-                        metadata={
-                            "meter_id": str(meter_id),
-                            "units": rollover_units,
-                            "rollover": True,
-                            "reason": "benefit",
-                        },
-                    ),
-                )
-
         return await self._create_event(
             customer,
             benefit.organization,

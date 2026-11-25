@@ -816,8 +816,7 @@ class MeterService:
             )
             .order_by(None)
         )
-        result = await session.scalar(statement)
-        return result or 0.0
+        return float(await session.scalar(statement) or 0)
 
 
 meter = MeterService()

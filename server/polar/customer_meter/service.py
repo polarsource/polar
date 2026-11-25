@@ -7,7 +7,7 @@ from typing import Any
 
 import logfire
 from redis import RedisError
-from sqlalchemy import ColumnElement, Float, Select, and_, func, or_, select, union_all
+from sqlalchemy import ColumnElement, Select, and_, func, or_, select, union_all
 from sqlalchemy.exc import DBAPIError, IntegrityError, MultipleResultsFound
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.attributes import set_committed_value
@@ -531,7 +531,7 @@ class CustomerMeterService:
             for event in credit_events
             if event.user_metadata["rollover"]
         )
-        usage_units = Decimal(await self._get_usage_quantity(session, customer, meter))
+        usage_units = await self._get_usage_quantity(session, customer, meter)
         # Usage draws from non-rollover credits first, matching get_rollover_units.
         if credit.user_metadata["rollover"]:
             unused = min(
@@ -776,7 +776,7 @@ class CustomerMeterService:
             else:
                 if consumed_units is not None:
                     return consumed_units
-        return Decimal(await self._get_usage_quantity(session, customer, meter))
+        return await self._get_usage_quantity(session, customer, meter)
 
     async def _get_usage_quantity(
         self,
@@ -785,7 +785,7 @@ class CustomerMeterService:
         meter: Meter,
         *,
         cutoff: datetime | None = None,
-    ) -> float:
+    ) -> Decimal:
         """
         Get the aggregated usage quantity for a customer's meter.
 
@@ -816,7 +816,7 @@ class CustomerMeterService:
             result = await session.scalar(
                 by_customer_id.with_only_columns(agg_column, maintain_column_froms=True)
             )
-            return result or 0.0
+            return Decimal(result or 0)
 
         by_external_id = self._build_events_statement(
             event_repository,
@@ -841,7 +841,7 @@ class CustomerMeterService:
             result = await session.scalar(
                 select(func.coalesce(func.sum(union_subquery.c.value), 0))
             )
-            return result or 0.0
+            return Decimal(result or 0)
 
         raw_value_column = self._get_raw_aggregation_column(meter)
         union_subquery = union_all(
@@ -851,7 +851,7 @@ class CustomerMeterService:
 
         outer_agg = self._get_outer_aggregation(meter, union_subquery.c.value)
         result = await session.scalar(select(func.coalesce(outer_agg, 0)))
-        return result or 0.0
+        return Decimal(result or 0)
 
     async def _get_late_usage(
         self, session: AsyncSession, customer: Customer, meter: Meter
@@ -941,11 +941,7 @@ class CustomerMeterService:
 
     def _get_raw_aggregation_column(self, meter: Meter) -> Any:
         if isinstance(meter.aggregation, PropertyAggregation):
-            prop = meter.aggregation.property
-            if prop in Event._filterable_fields:
-                _, attr = Event._filterable_fields[prop]
-                return func.cast(attr, Float)
-            return get_nested_metadata_attr(Event, prop).as_float()
+            return meter.aggregation.get_sql_value(Event)
         elif isinstance(meter.aggregation, UniqueAggregation):
             return get_nested_metadata_attr(Event, meter.aggregation.property)
         return Event.id

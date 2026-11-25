@@ -21,7 +21,11 @@ from polar.config import settings
 from polar.logging import CorrelationID, Logger
 from polar.observability.task_logging import set_sentry_task_context, task_log_context
 from polar.operational_errors import handle_operational_error
-from polar.redis import REDIS_RETRY_ON_ERRROR, SyncFailoverRedis
+from polar.redis import (
+    REDIS_CONNECTION_OPTIONS,
+    REDIS_RETRY_ON_ERRROR,
+    SyncFailoverRedis,
+)
 
 from . import _sqs
 from ._asyncio import MonitoredAsyncIO
@@ -219,6 +223,7 @@ def get_broker(*, database: bool = True) -> dramatiq.Broker:
         retry_on_error=REDIS_RETRY_ON_ERRROR,
         socket_timeout=10,
         socket_connect_timeout=3,
+        **REDIS_CONNECTION_OPTIONS,
     )
 
     result_backend = ResultsBackend(
@@ -230,6 +235,7 @@ def get_broker(*, database: bool = True) -> dramatiq.Broker:
                 retry_on_error=REDIS_RETRY_ON_ERRROR,
                 socket_timeout=10,
                 socket_connect_timeout=3,
+                **REDIS_CONNECTION_OPTIONS,
             )
         ),
     )
@@ -241,6 +247,7 @@ def get_broker(*, database: bool = True) -> dramatiq.Broker:
                 retry_on_error=REDIS_RETRY_ON_ERRROR,
                 socket_timeout=10,
                 socket_connect_timeout=3,
+                **REDIS_CONNECTION_OPTIONS,
             )
         )
     )

@@ -20,7 +20,7 @@ async def _enqueue(count: int, redis_key: str, failure: bool) -> None:
             for _ in range(count):
                 enqueue_job("dummy", redis_key=redis_key, failure=failure)
     finally:
-        await redis.close()
+        await redis.aclose()
 
 
 def main(

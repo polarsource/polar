@@ -65,7 +65,6 @@ from .merchant_migration_operation import (
     MerchantMigrationOperationStatus,
 )
 from .merchant_migration_record import (
-    MerchantMigrationCardStatus,
     MerchantMigrationCutoverStatus,
     MerchantMigrationRecord,
     MerchantMigrationRecordStatus,
@@ -210,7 +209,6 @@ __all__ = [
     "MemberRole",
     "MemberSession",
     "MerchantMigration",
-    "MerchantMigrationCardStatus",
     "MerchantMigrationCutoverStatus",
     "MerchantMigrationOperation",
     "MerchantMigrationOperationSelection",

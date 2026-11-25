@@ -18,10 +18,8 @@ from polar.merchant_migration.cards import (
     link_mapped_payment_method,
     link_payment_method,
     parse_payment_method_mapping_csv,
-    resolve_copied_card,
 )
 from polar.models import Customer, Organization, PaymentMethod
-from polar.models.merchant_migration_record import MerchantMigrationCardStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer
@@ -151,77 +149,6 @@ async def imported_customer(
         email="imported@example.com",
         stripe_customer_id="cus_1",
     )
-
-
-@pytest.mark.anyio
-class TestResolveCopiedCard:
-    async def test_customer_not_on_polars_account_yet(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        imported_customer: Customer,
-    ) -> None:
-        _listing(
-            mocker,
-            error=stripe_lib.InvalidRequestError("No such customer", "customer"),
-        )
-
-        copied = await resolve_copied_card(session, imported_customer)
-
-        assert copied.payment_method is None
-        assert copied.status == MerchantMigrationCardStatus.nothing_copied
-
-    async def test_nothing_copied(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        imported_customer: Customer,
-    ) -> None:
-        _listing(mocker, [])
-
-        copied = await resolve_copied_card(session, imported_customer)
-
-        assert copied.status == MerchantMigrationCardStatus.nothing_copied
-
-    async def test_only_a_method_polar_does_not_charge(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        imported_customer: Customer,
-    ) -> None:
-        _listing(mocker, [_stripe_payment_method("pm_link", type="link")])
-
-        copied = await resolve_copied_card(session, imported_customer)
-
-        assert copied.payment_method is None
-        assert copied.status == MerchantMigrationCardStatus.non_card_only
-
-    @pytest.mark.parametrize(
-        ("details", "status"),
-        [
-            ({"country": "US"}, MerchantMigrationCardStatus.ready),
-            ({"country": "IN"}, MerchantMigrationCardStatus.india_card),
-            ({"exp_year": 2020}, MerchantMigrationCardStatus.expired_card),
-        ],
-    )
-    async def test_classifies_the_copied_card(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        imported_customer: Customer,
-        details: dict[str, Any],
-        status: MerchantMigrationCardStatus,
-    ) -> None:
-        _listing(
-            mocker,
-            [_stripe_payment_method("pm_copied", details={**_card("4242"), **details})],
-        )
-
-        copied = await resolve_copied_card(session, imported_customer)
-
-        assert copied.payment_method is not None
-        assert copied.payment_method.processor_id == "pm_copied"
-        assert copied.status == status
 
 
 @pytest.mark.anyio

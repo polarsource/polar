@@ -41,7 +41,6 @@ from polar.models.merchant_migration_operation import (
     MerchantMigrationOperationStatus,
 )
 from polar.models.merchant_migration_record import (
-    MerchantMigrationCardStatus,
     MerchantMigrationCutoverStatus,
     MerchantMigrationRecordStatus,
     MerchantMigrationRecordType,
@@ -63,14 +62,13 @@ from .canonical import (
     deserialize,
     serialize,
 )
+from .card_status import MerchantMigrationCardStatus, card_status
 from .cards import (
     AmbiguousCopiedCard,
     PaymentMethodMapping,
-    card_status,
     link_mapped_payment_method,
-    mapped_payment_method,
+    link_payment_method,
     parse_payment_method_mapping_csv,
-    resolve_copied_card,
 )
 from .cutover import SubscriptionCutover
 from .errors import MerchantMigrationError
@@ -353,14 +351,14 @@ class SourceKeyModeMismatch(MerchantMigrationError):
 
 
 class _CardLookup(NamedTuple):
-    """What one `resolve_copied_card` call is decided by, and so what a second
+    """What one `link_payment_method` call is decided by, and so what a second
     call with the same values would repeat."""
 
     customer_id: UUID
     source_method_id: str | None
 
 
-type ResolvedCards = dict[_CardLookup, MerchantMigrationCardStatus]
+type ResolvedCards = dict[_CardLookup, PaymentMethod | None]
 
 
 def _staged_subscription(
@@ -1280,6 +1278,10 @@ class MerchantMigrationService:
                 "merchant_migration.missing", merchant_migration_id=migration_id
             )
             return
+        if migration.exact_card_mapping:
+            await repository.refresh_for_update(migration)
+            await self._complete_step(session, migration, STEP_VERIFY_CARDS)
+            return
 
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         records = await record_repository.list_imported_subscriptions(
@@ -1299,14 +1301,7 @@ class MerchantMigrationService:
             customer = await customer_repository.get_by_id(customer_record.target_id)
             if customer is None:
                 continue
-            await record_repository.update(
-                record,
-                update_dict={
-                    "card_status": await self._resolve_card(
-                        session, migration, record, customer, resolved
-                    )
-                },
-            )
+            await self._resolve_card(session, record, customer, resolved)
 
         if len(records) == CARD_VERIFICATION_BATCH_SIZE:
             enqueue_job(
@@ -1322,34 +1317,22 @@ class MerchantMigrationService:
     async def _resolve_card(
         self,
         session: AsyncSession,
-        migration: MerchantMigration,
         record: MerchantMigrationRecord,
         customer: Customer,
         resolved: ResolvedCards,
-    ) -> MerchantMigrationCardStatus:
-        """What the copy left to charge, resolved once per customer and source
-        method rather than once per subscription they hold."""
+    ) -> PaymentMethod | None:
+        """The method to charge, resolved once per customer and source method
+        rather than once per subscription they hold."""
         source_method = _staged_payment_method(record)
         key = _CardLookup(
             customer_id=customer.id,
             source_method_id=source_method.source_id if source_method else None,
         )
-        if key in resolved:
-            return resolved[key]
-        if migration.exact_card_mapping:
-            # The mapping already stored each copy: nothing to read from Stripe.
-            mapped = await mapped_payment_method(session, customer, source_method)
-            resolved[key] = (
-                card_status(mapped)
-                if mapped is not None
-                else MerchantMigrationCardStatus.nothing_copied
-            )
-        else:
+        if key not in resolved:
             try:
-                copied = await resolve_copied_card(
+                resolved[key] = await link_payment_method(
                     session, customer, source_method=source_method
                 )
-                resolved[key] = copied.status
             except AmbiguousCopiedCard as e:
                 log.error(
                     "merchant_migration.verify_cards.card_resolution_error",
@@ -1358,7 +1341,7 @@ class MerchantMigrationService:
                     customer_id=customer.id,
                     error=str(e),
                 )
-                resolved[key] = MerchantMigrationCardStatus.ambiguous
+                resolved[key] = None
         return resolved[key]
 
     async def _complete_step(
@@ -1573,11 +1556,16 @@ class MerchantMigrationService:
             flush=flush,
         )
 
-    async def close_idle(
-        self, session: AsyncSession, migration_id: UUID, *, idle_since: datetime
+    async def close(
+        self,
+        session: AsyncSession,
+        migration_id: UUID,
+        *,
+        idle_since: datetime | None = None,
     ) -> bool:
-        """Take one bounded step towards closing a migration with no activity
-        since ``idle_since``, and return whether it changed anything.
+        """Take one bounded step towards closing a migration, and return whether
+        it changed anything. With ``idle_since``, only a migration with no
+        activity since then is closed; without it, Polar staff close it now.
 
         First delete the records never imported, one batch per call. Then, in a
         single call, delete the stored source key and mark the migration
@@ -1591,7 +1579,10 @@ class MerchantMigrationService:
         if (
             migration is None
             or migration.step in MERCHANT_MIGRATION_FINISHED_STEPS
-            or (migration.modified_at or migration.created_at) >= idle_since
+            or (
+                idle_since is not None
+                and (migration.modified_at or migration.created_at) >= idle_since
+            )
             or self._operation_blocks_new_work(migration)
         ):
             return False
@@ -1721,7 +1712,18 @@ class MerchantMigrationService:
         # scopes to the selection via `_finish_cutover`.
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         counts = await record_repository.count_cutover_statuses(migration.id)
-        card_counts = await record_repository.count_pending_card_statuses(migration.id)
+        pending = counts.get(None, 0)
+        card_counts = Counter(
+            card_status(method_metadata)
+            for method_metadata in (
+                await record_repository.copied_cards(
+                    migration.id, exact=migration.exact_card_mapping, pending_only=True
+                )
+            ).values()
+        )
+        card_counts[MerchantMigrationCardStatus.no_card] = pending - sum(
+            card_counts.values()
+        )
         operation = migration.operation
         if operation is not None and operation.is_stalled():
             operation = self._failed_operation(migration, _STALLED_CUTOVER_ERROR)
@@ -1739,7 +1741,7 @@ class MerchantMigrationService:
                     status=status, count=card_counts[status]
                 )
                 for status in MerchantMigrationCardStatus
-                if card_counts.get(status)
+                if card_counts[status] > 0
             ],
         )
 
@@ -2023,16 +2025,16 @@ class MerchantMigrationService:
         if not any(item.entity == PrecheckEntity.subscriptions for item in items):
             return
         record_repository = MerchantMigrationRecordRepository.from_session(session)
-        covered = await record_repository.payment_method_coverage(
-            migration.id,
-            exact=migration.exact_card_mapping,
+        cards = await record_repository.copied_cards(
+            migration.id, exact=migration.exact_card_mapping
         )
         for item in items:
             if item.entity != PrecheckEntity.subscriptions or item.record_id is None:
                 continue
-            item.has_payment_method = (
-                item.record_id in covered
-                and item.card_status != MerchantMigrationCardStatus.india_card
+            item.card_status = card_status(cards.get(item.record_id))
+            item.has_payment_method = item.card_status not in (
+                MerchantMigrationCardStatus.no_card,
+                MerchantMigrationCardStatus.india_card,
             )
 
     async def _classify_staged(
@@ -2231,7 +2233,6 @@ class MerchantMigrationService:
             if entity == PrecheckEntity.subscriptions:
                 item.cutover_status = record.cutover_status
                 item.cutover_error = record.cutover_error
-                item.card_status = record.card_status
                 item.renews_at = self._staged_renews_at(record)
                 subscription = _staged_subscription(record)
                 item.dependencies_imported = (

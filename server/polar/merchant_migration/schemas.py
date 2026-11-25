@@ -18,13 +18,13 @@ from polar.models.merchant_migration_operation import (
     MerchantMigrationOperationStatus,
 )
 from polar.models.merchant_migration_record import (
-    MerchantMigrationCardStatus,
     MerchantMigrationCutoverStatus,
     MerchantMigrationRecordStatus,
 )
 from polar.organization.schemas import OrganizationID
 
 from .canonical import CanonicalPaymentMethodType, PaymentMethodAssessment
+from .card_status import MerchantMigrationCardStatus
 from .pan_transfer import PanTransferMethod, PanTransferStep
 
 
@@ -266,17 +266,17 @@ class MerchantMigrationRecordItem(Schema):
     cutover_error: str | None = Field(
         description="Why the switch skipped or failed this subscription.",
     )
-    card_status: MerchantMigrationCardStatus | None = Field(
-        description=(
-            "What the card copy left on Polar for this subscription to charge. "
-            "None until the card verification has looked at it, and for "
-            "non-subscription rows."
-        ),
-    )
     renews_at: datetime | None = Field(
         description=(
             "When the subscription next renews on the source, as staged at import. "
             "Null for non-subscription rows or when the source reported none."
+        ),
+    )
+    card_status: MerchantMigrationCardStatus | None = Field(
+        description=(
+            "Whether the card Polar would charge for this subscription can take a "
+            "renewal, read from the copied card as it is now. None for "
+            "non-subscription rows."
         ),
     )
     has_payment_method: bool | None = Field(
@@ -453,7 +453,7 @@ class MerchantMigrationCutoverRequest(Schema):
 
 class MerchantMigrationCardStatusCount(Schema):
     status: MerchantMigrationCardStatus = Field(
-        description="What the card copy left on Polar to charge."
+        description="Whether the card Polar would charge can take a renewal."
     )
     count: int = Field(description="How many subscriptions it applies to.")
 
@@ -473,8 +473,8 @@ class MerchantMigrationCutoverReport(Schema):
     failed: int = Field(description="Hit an unexpected error.")
     card_statuses: list[MerchantMigrationCardStatusCount] = Field(
         description=(
-            "How the subscriptions not switched yet split by what the card "
-            "verification found. Statuses with no subscriptions are left out."
+            "How the subscriptions not switched yet split by whether their card "
+            "can take a renewal. Statuses with no subscriptions are left out."
         )
     )
 

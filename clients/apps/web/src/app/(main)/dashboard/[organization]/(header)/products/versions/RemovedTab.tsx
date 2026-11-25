@@ -133,10 +133,6 @@ export const RemovedTab = ({
 
   if (!removed) return null
 
-  if (!removed.length) {
-    return <Text color="muted">Nothing has been removed from the catalog.</Text>
-  }
-
   return (
     <Box flexDirection="column" rowGap="2xl">
       <Text variant="body" color="muted">

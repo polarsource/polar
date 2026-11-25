@@ -1,7 +1,7 @@
 import { schemas } from '@polar-sh/client'
 import { Grid, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ChevronDown } from '@polar-sh/orbit/icons'
+import { ArrowUpRight, ChevronDown } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { useId, useState } from 'react'
 import {
@@ -201,54 +201,55 @@ const CollapsedLines = ({
   )
 }
 
-const ItemRow = ({
-  href,
-  children,
-}: {
-  href?: string
-  children: React.ReactNode
-}) => {
-  const row = (
-    <Box
-      alignItems="baseline"
-      justifyContent="between"
-      columnGap="l"
-      px="xl"
-      py="m"
-      minWidth={0}
-      backgroundColor={href ? { hover: 'background-card' } : undefined}
-      transitionProperty="colors"
-      transitionDuration="fast"
-    >
-      {children}
-    </Box>
-  )
-  if (!href) return row
-  return (
-    <Link href={href} className="block">
-      {row}
-    </Link>
-  )
-}
+const ItemRow = ({ children }: { children: React.ReactNode }) => (
+  <Box
+    alignItems="baseline"
+    justifyContent="between"
+    columnGap="l"
+    px="xl"
+    py="m"
+    minWidth={0}
+  >
+    {children}
+  </Box>
+)
 
 const ItemName = ({
   name,
+  href,
   removed = false,
   muted = false,
 }: {
   name: string
+  href?: string
   removed?: boolean
   muted?: boolean
-}) => (
-  <Text
-    variant="body"
-    color={removed || muted ? 'muted' : 'default'}
-    lineThrough={removed}
-    truncate
-  >
-    {name}
-  </Text>
-)
+}) => {
+  const text = (
+    <Text
+      variant="body"
+      color={removed || muted ? 'muted' : 'default'}
+      lineThrough={removed}
+      truncate
+    >
+      {name}
+    </Text>
+  )
+  if (!href) return text
+  return (
+    <Link href={href} className="group flex min-w-0 items-center gap-x-1">
+      {text}
+      <Box as="span" display="block" flexShrink={0} color="text-tertiary">
+        <ArrowUpRight
+          size={14}
+          strokeWidth={1.5}
+          aria-hidden
+          className="block opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+        />
+      </Box>
+    </Link>
+  )
+}
 
 const UnchangedItems = <T extends { external_id: string }>({
   items,
@@ -306,8 +307,12 @@ const UnchangedItems = <T extends { external_id: string }>({
             borderStyle="solid"
             borderColor="border-secondary"
           >
-            <ItemRow href={href?.(item.external_id)}>
-              <ItemName name={String(item[nameField])} muted />
+            <ItemRow>
+              <ItemName
+                name={String(item[nameField])}
+                href={href?.(item.external_id)}
+                muted
+              />
             </ItemRow>
           </Box>
         ))}
@@ -352,9 +357,10 @@ const DiffSection = <T extends { external_id: string }>({
             borderColor="border-primary"
             overflow="hidden"
           >
-            <ItemRow href={href?.(key)}>
+            <ItemRow>
               <ItemName
                 name={String(item[nameField])}
+                href={href?.(key)}
                 removed={change === 'removed'}
               />
               <ChangeStatus change={change} />

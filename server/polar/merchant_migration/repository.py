@@ -44,7 +44,6 @@ from polar.models.merchant_migration_operation import (
     MerchantMigrationOperationSelection,
 )
 from polar.models.merchant_migration_record import (
-    MerchantMigrationCardStatus,
     MerchantMigrationCutoverStatus,
     MerchantMigrationRecordStatus,
     MerchantMigrationRecordType,
@@ -821,26 +820,28 @@ class MerchantMigrationRecordRepository(
         result = await self.session.execute(statement)
         return {status: count for status, count in result.all()}
 
-    async def count_pending_card_statuses(
-        self, migration_id: UUID
-    ) -> dict[MerchantMigrationCardStatus, int]:
-        """What the card verification found for the imported subscriptions the
-        cutover hasn't settled yet."""
-        statement = (
-            self._switchable_subscriptions_statement(migration_id)
-            .where(
-                MerchantMigrationRecord.cutover_status.is_(None),
-                MerchantMigrationRecord.card_status.is_not(None),
-            )
-            .with_only_columns(
-                MerchantMigrationRecord.card_status,
-                func.count(MerchantMigrationRecord.id),
-            )
-            .order_by(None)
-            .group_by(MerchantMigrationRecord.card_status)
+    async def copied_cards(
+        self, migration_id: UUID, *, exact: bool = False, pending_only: bool = False
+    ) -> dict[UUID, dict[str, Any]]:
+        """The card each switchable subscription record would renew with, as its
+        stored metadata: the customer's default card when it is one of them."""
+        statement = self._payment_method_coverage_statement(
+            migration_id, exact=exact
+        ).with_only_columns(
+            MerchantMigrationRecord.id,
+            PaymentMethod.id == Customer.default_payment_method_id,
+            PaymentMethod.method_metadata,
         )
+        if pending_only:
+            statement = statement.where(
+                MerchantMigrationRecord.cutover_status.is_(None)
+            )
         result = await self.session.execute(statement)
-        return {status: count for status, count in result.all() if status is not None}
+        cards: dict[UUID, dict[str, Any]] = {}
+        for record_id, is_default, method_metadata in result.all():
+            if is_default or record_id not in cards:
+                cards[record_id] = method_metadata
+        return cards
 
     async def payment_method_coverage(
         self, migration_id: UUID, *, exact: bool = False

@@ -13,13 +13,9 @@ from uuid import UUID
 import stripe as stripe_lib
 
 from polar.customer.repository import CustomerRepository
-from polar.enums import PaymentProcessor
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
-from polar.kit.utils import utc_now
 from polar.models import Customer, PaymentMethod
-from polar.models.merchant_migration_record import MerchantMigrationCardStatus
-from polar.payment_method.repository import PaymentMethodRepository
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.postgres import AsyncSession
 
@@ -122,48 +118,19 @@ def parse_payment_method_mapping_csv(contents: bytes) -> list[PaymentMethodMappi
     return list(by_source.values())
 
 
-@dataclass(frozen=True)
-class CopiedCard:
-    payment_method: PaymentMethod | None
-    status: MerchantMigrationCardStatus
-
-
-def card_status(payment_method: PaymentMethod) -> MerchantMigrationCardStatus:
-    """Whether a card that landed can take a renewal. A card only proves itself
-    on a real charge; these are the failures known ahead of one."""
-    if payment_method.method_metadata.get("country") == "IN":
-        return MerchantMigrationCardStatus.india_card
-    expires_at = payment_method.expires_at
-    if expires_at is not None and expires_at <= utc_now():
-        return MerchantMigrationCardStatus.expired_card
-    return MerchantMigrationCardStatus.ready
-
-
 async def link_payment_method(
     session: AsyncSession,
     customer: Customer,
     *,
     source_method: CanonicalPaymentMethod | None = None,
 ) -> PaymentMethod | None:
-    """The method to charge, or None while nothing has landed for this customer."""
-    copied = await resolve_copied_card(session, customer, source_method=source_method)
-    return copied.payment_method
-
-
-async def resolve_copied_card(
-    session: AsyncSession,
-    customer: Customer,
-    *,
-    source_method: CanonicalPaymentMethod | None = None,
-) -> CopiedCard:
-    """The method to charge and what the copy left for it.
+    """The method to charge, or None while nothing has landed for this customer.
 
     ``source_method`` is what the source subscription was charging; its copy
     wins. Idempotent, so it can run again as more cards arrive.
     """
-    nothing_copied = CopiedCard(None, MerchantMigrationCardStatus.nothing_copied)
     if customer.stripe_customer_id is None:
-        return nothing_copied
+        return None
     try:
         stripe_payment_methods = [
             stripe_payment_method
@@ -173,9 +140,7 @@ async def resolve_copied_card(
         ]
     except stripe_lib.InvalidRequestError:
         # No such customer on our account: the copy hasn't reached them.
-        return nothing_copied
-    if not stripe_payment_methods:
-        return nothing_copied
+        return None
 
     # Only cards: like Link, a copied bank debit isn't charged on Polar, and
     # the customer enters their billing details again.
@@ -187,7 +152,7 @@ async def resolve_copied_card(
         if stripe_payment_method.type == CARD_TYPE
     ]
     if not payment_methods:
-        return CopiedCard(None, MerchantMigrationCardStatus.non_card_only)
+        return None
 
     preferred = _preferred(payment_methods, customer, source_method)
     # What the renewal charges when a subscription has no method of its own.
@@ -195,35 +160,7 @@ async def resolve_copied_card(
         await CustomerRepository.from_session(session).update(
             customer, update_dict={"default_payment_method_id": preferred.id}
         )
-    return CopiedCard(preferred, card_status(preferred))
-
-
-async def mapped_payment_method(
-    session: AsyncSession,
-    customer: Customer,
-    source_method: CanonicalPaymentMethod | None,
-) -> PaymentMethod | None:
-    """The card to charge once Stripe's mapping has rewritten each staged
-    method to its copy: that copy, else the customer's default card, else any
-    card of theirs when the source method couldn't be copied at all."""
-    repository = PaymentMethodRepository.from_session(session)
-    if source_method is not None:
-        payment_method = await repository.get_by_customer_and_processor_id(
-            customer.id, PaymentProcessor.stripe, source_method.source_id
-        )
-        if payment_method is not None and payment_method.type == CARD_TYPE:
-            return payment_method
-    if customer.default_payment_method_id is not None:
-        default = await repository.get_by_id_and_customer(
-            customer.default_payment_method_id, customer.id
-        )
-        if default is not None and default.type == CARD_TYPE:
-            return default
-    if source_method is not None and source_method.type.requires_reentry:
-        for payment_method in await repository.list_by_customer(customer.id):
-            if payment_method.type == CARD_TYPE:
-                return payment_method
-    return None
+    return preferred
 
 
 async def link_mapped_payment_method(

@@ -1,7 +1,7 @@
 import dataclasses
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
-from typing import TYPE_CHECKING, Any, Never
+from typing import TYPE_CHECKING, Any, Never, cast
 
 import dramatiq
 import redis
@@ -16,11 +16,8 @@ from polar.redis import SyncFailoverRedis
 if TYPE_CHECKING:
     from ._enqueue import JSONSerializable
 
-    RedisAsyncIO = redis.asyncio.Redis[str]
-    RedisAsyncIOPipeline = redis.asyncio.client.Pipeline[str]
-else:
-    RedisAsyncIO = redis.asyncio.Redis
-    RedisAsyncIOPipeline = redis.asyncio.client.Pipeline
+RedisAsyncIO = redis.asyncio.Redis
+RedisAsyncIOPipeline = redis.asyncio.client.Pipeline
 
 log: Logger = structlog.get_logger()
 
@@ -217,7 +214,7 @@ class DebounceMiddleware(dramatiq.Middleware):
             )
             self._skip_debounced(message)
 
-        message_owner = debounce_data[b"message_id"].decode("utf-8")
+        message_owner = cast(bytes, debounce_data[b"message_id"]).decode("utf-8")
         enqueue_timestamp = int(debounce_data[b"enqueue_timestamp"])
         message.options["debounce_enqueue_timestamp"] = enqueue_timestamp
 

@@ -11,11 +11,11 @@ describe('cardStatusSummaryText', () => {
     const text = cardStatusSummaryText([
       { status: 'ready', count: 30 },
       { status: 'india_card', count: 2 },
-      { status: 'nothing_copied', count: 3 },
+      { status: 'no_card', count: 3 },
     ])
     expect(text).toContain('5 subscriptions not switched yet')
     expect(text).toContain(
-      '2 with an India-issued card and 3 with nothing copied',
+      '2 with an India-issued card and 3 with no card on Polar',
     )
   })
 })

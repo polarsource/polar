@@ -1,10 +1,13 @@
 'use client'
 
 import revalidate from '@/app/actions'
+import { toast } from '@/components/Toast/use-toast'
 import {
   useCustomerClearPendingSubscriptionUpdate,
   useCustomerCancelSubscription,
+  usePortalAuthenticatedUser,
 } from '@/hooks/queries/customerPortal'
+import { hasBillingPermission } from '@/utils/customerPortal'
 import { Client, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Button } from '@polar-sh/orbit'
@@ -56,6 +59,9 @@ const CustomerSubscriptionDetails = ({
     hide: hideBenefitGrantsModal,
     show: showBenefitGrantsModal,
   } = useModal()
+
+  const { data: authenticatedUser } = usePortalAuthenticatedUser(api)
+  const canManageBilling = hasBillingPermission(authenticatedUser)
 
   const cancelSubscription = useCustomerCancelSubscription(api)
 
@@ -121,14 +127,16 @@ const CustomerSubscriptionDetails = ({
             <Box as="span" color="text-primary">
               Scheduled change
             </Box>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowClearPendingUpdateModal(true)}
-              loading={clearPendingUpdate.isPending}
-            >
-              Cancel change
-            </Button>
+            {canManageBilling && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowClearPendingUpdateModal(true)}
+                loading={clearPendingUpdate.isPending}
+              >
+                Cancel change
+              </Button>
+            )}
           </Box>
           <PortalRows>
             <PendingUpdateRows
@@ -177,27 +185,34 @@ const CustomerSubscriptionDetails = ({
 
       <Box columnGap="s" rowGap="s" flexWrap="wrap" justifyContent="end">
         {isTrialEnded ? (
-          <TrialEndedSubscriptionActions
-            api={api}
-            subscription={subscription}
-          />
+          canManageBilling && (
+            <TrialEndedSubscriptionActions
+              api={api}
+              subscription={subscription}
+            />
+          )
         ) : isTrialing && !isCanceled ? (
-          <TrialSubscriptionActions
-            api={api}
-            subscription={subscription}
-            canChangePlan={showSubscriptionUpdates}
-            onChangePlan={() => setShowChangePlanModal(true)}
-          />
+          canManageBilling && (
+            <TrialSubscriptionActions
+              api={api}
+              subscription={subscription}
+              canChangePlan={showSubscriptionUpdates}
+              onChangePlan={() => setShowChangePlanModal(true)}
+            />
+          )
         ) : (
           <>
-            {showSubscriptionUpdates && !isCanceled && !isPastDue && (
-              <Button
-                onClick={() => setShowChangePlanModal(true)}
-                variant="secondary"
-              >
-                Change plan
-              </Button>
-            )}
+            {canManageBilling &&
+              showSubscriptionUpdates &&
+              !isCanceled &&
+              !isPastDue && (
+                <Button
+                  onClick={() => setShowChangePlanModal(true)}
+                  variant="secondary"
+                >
+                  Change plan
+                </Button>
+              )}
 
             {!isTrialing && (
               <>
@@ -225,14 +240,14 @@ const CustomerSubscriptionDetails = ({
               </>
             )}
 
-            {isPastDue && (
+            {canManageBilling && isPastDue && (
               <SubscriptionRetryPaymentButton
                 api={api}
                 subscription={subscription}
               />
             )}
 
-            {canUncancel && (
+            {canManageBilling && canUncancel && (
               <UncancelSubscriptionButton
                 api={api}
                 subscription={subscription}
@@ -286,7 +301,15 @@ const CustomerSubscriptionDetails = ({
         cancelText="Keep change"
         confirmText="Cancel change"
         onConfirm={async () => {
-          await clearPendingUpdate.mutateAsync(subscription.id)
+          try {
+            await clearPendingUpdate.mutateAsync(subscription.id)
+          } catch (error) {
+            toast({
+              title: 'Error',
+              description: `Failed to cancel the scheduled change: ${(error as Error).message}`,
+            })
+            return
+          }
           await revalidate(`customer_portal`)
           router.refresh()
         }}

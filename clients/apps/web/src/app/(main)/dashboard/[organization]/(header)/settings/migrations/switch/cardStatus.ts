@@ -24,22 +24,10 @@ export const CARD_STATUS_COPY: Partial<Record<CardStatus, CardStatusCopy>> = {
     detail: 'The copied card has expired.',
     count: (count) => `${count} with an expired card`,
   },
-  non_card_only: {
-    label: 'No card copied',
-    detail:
-      "Only a payment method Polar can't charge was copied, such as Link.",
-    count: (count) => `${count} with only a method Polar can't charge`,
-  },
-  nothing_copied: {
-    label: 'No card copied',
-    detail: 'No payment method was copied for this customer.',
-    count: (count) => `${count} with nothing copied`,
-  },
-  ambiguous: {
-    label: 'Card unclear',
-    detail:
-      "Several copied cards look like the one this subscription was charging, so Polar can't tell which to use.",
-    count: (count) => `${count} where the card to charge is unclear`,
+  no_card: {
+    label: 'No card',
+    detail: 'Polar has no card to charge for this customer.',
+    count: (count) => `${count} with no card on Polar`,
   },
 }
 

@@ -28422,19 +28422,16 @@ export interface components {
     }
     /**
      * MerchantMigrationCardStatus
-     * @description What the card copy left on Polar for an imported subscription to charge.
      * @enum {string}
      */
     MerchantMigrationCardStatus:
       | 'ready'
       | 'india_card'
       | 'expired_card'
-      | 'non_card_only'
-      | 'nothing_copied'
-      | 'ambiguous'
+      | 'no_card'
     /** MerchantMigrationCardStatusCount */
     MerchantMigrationCardStatusCount: {
-      /** @description What the card copy left on Polar to charge. */
+      /** @description Whether the card Polar would charge can take a renewal. */
       status: components['schemas']['MerchantMigrationCardStatus']
       /**
        * Count
@@ -28492,7 +28489,7 @@ export interface components {
       failed: number
       /**
        * Card Statuses
-       * @description How the subscriptions not switched yet split by what the card verification found. Statuses with no subscriptions are left out.
+       * @description How the subscriptions not switched yet split by whether their card can take a renewal. Statuses with no subscriptions are left out.
        */
       card_statuses: components['schemas']['MerchantMigrationCardStatusCount'][]
     }
@@ -28753,13 +28750,13 @@ export interface components {
        * @description Why the switch skipped or failed this subscription.
        */
       cutover_error: string | null
-      /** @description What the card copy left on Polar for this subscription to charge. None until the card verification has looked at it, and for non-subscription rows. */
-      card_status: components['schemas']['MerchantMigrationCardStatus'] | null
       /**
        * Renews At
        * @description When the subscription next renews on the source, as staged at import. Null for non-subscription rows or when the source reported none.
        */
       renews_at: string | null
+      /** @description Whether the card Polar would charge for this subscription can take a renewal, read from the copied card as it is now. None for non-subscription rows. */
+      card_status: components['schemas']['MerchantMigrationCardStatus'] | null
       /**
        * Has Payment Method
        * @description Whether Polar already has a card to charge for this subscription's customer. Null for non-subscription rows.
@@ -75678,14 +75675,7 @@ export const memberSortPropertyValues: ReadonlyArray<
 > = ['created_at', '-created_at']
 export const merchantMigrationCardStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationCardStatus']
-> = [
-  'ready',
-  'india_card',
-  'expired_card',
-  'non_card_only',
-  'nothing_copied',
-  'ambiguous',
-]
+> = ['ready', 'india_card', 'expired_card', 'no_card']
 export const merchantMigrationCutoverStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationCutoverStatus']
 > = ['moved', 'skipped', 'failed']

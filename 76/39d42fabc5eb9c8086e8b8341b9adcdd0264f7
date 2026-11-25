@@ -1,0 +1,21 @@
+server/tests/benefit/strategies/test_meter_credit.py
+  s_ec7be1e6abd9fa::t_dba9614ba171b4 86,100-116,121-122,127-145
+  s_ec7be1e6abd9fa::t_043447fe93d46f 29,32,117-120,123-126
+  s_ec7be1e6abd9fa::t_c17c360e008462 146
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7639d42fabc5eb9c8086e8b8341b9adcdd0264f7",
+  "prompts": {},
+  "sessions": {
+    "s_ec7be1e6abd9fa": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a7a92383-1b3b-490b-b2db-2a2e8d406e05",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

@@ -1,8 +1,12 @@
 import { schemas } from '@polar-sh/client'
 import { Pill } from '@polar-sh/orbit'
 import { CircleX, Clock } from '@polar-sh/orbit/icons'
+import { StatusTooltip } from '@/components/Shared/StatusIcon'
 import { SubscriptionStatusIcon } from './SubscriptionStatusIcon'
-import { getSubscriptionStatusLabel } from './utils'
+import {
+  getSubscriptionStatusDescription,
+  getSubscriptionStatusLabel,
+} from './utils'
 
 const formatEventDate = (datetime: string): string => {
   const event = new Date(datetime)
@@ -40,8 +44,14 @@ export const SubscriptionStatus = ({
 
   return (
     <div className="flex flex-row items-center gap-x-2">
-      <SubscriptionStatusIcon subscription={subscription} />
-      <span>{getSubscriptionStatusLabel(subscription)}</span>
+      <StatusTooltip
+        description={getSubscriptionStatusDescription(subscription)}
+      >
+        <span className="flex flex-row items-center gap-x-2">
+          <SubscriptionStatusIcon subscription={subscription} />
+          <span>{getSubscriptionStatusLabel(subscription)}</span>
+        </span>
+      </StatusTooltip>
       {date && (
         <Pill color="gray">
           {subscription.status === 'canceled' ? (

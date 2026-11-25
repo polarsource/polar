@@ -2,10 +2,12 @@
 
 import { Box } from '@polar-sh/orbit/Box'
 import { flexRender, type RowData } from '@tanstack/react-table'
-import { type ReactNode, useEffect } from 'react'
+import { ChevronDown, ChevronRight } from '@polar-sh/orbit/icons'
+import { Fragment, type ReactNode, useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
 import {
   CondensedTableCell,
+  CondensedTableExpanderCell,
   CondensedTableLine,
   type CondensedTableInset,
 } from './columns'
@@ -31,40 +33,52 @@ const scrollToRow = (id: string | null) =>
     .querySelector(`[data-condensed-row="${id}"]`)
     ?.scrollIntoView({ block: 'nearest' })
 
+// Rows that open in place to show more about themselves, under the row.
+export interface CondensedTableExpansion<T extends RowData> {
+  // Rows with nothing to open are left as plain lines. All can by default.
+  canExpand?: (row: T) => boolean
+  isExpanded: (row: T) => boolean
+  onToggle: (row: T) => void
+  render: (row: T) => ReactNode
+}
+
 interface CondensedTableProps<T extends RowData> {
   table: CondensedTableInstance<T>
-  selectedId: string | null
-  onSelect: (id: string) => void
+  selectedId?: string | null
+  // Without it, and without an expansion, the rows are not interactive.
+  onSelect?: (id: string) => void
   // Arrow keys move the selection. Defaults to onSelect.
   onStep?: (id: string) => void
-  onClose: () => void
+  onClose?: () => void
   // Whether Escape and the arrow keys act on the selection. Off for a list
   // whose rows open a page, where the keys should scroll as usual.
   navigable?: boolean
   // A stacked layout for small screens, used in place of the columns.
   renderCompact?: (row: T) => ReactNode
   inset?: CondensedTableInset
+  expansion?: CondensedTableExpansion<T>
 }
 
 export const CondensedTable = <T extends RowData>({
   table,
-  selectedId,
+  selectedId = null,
   onSelect,
   onStep = onSelect,
   onClose,
   navigable = true,
   renderCompact,
   inset = 'm',
+  expansion,
 }: CondensedTableProps<T>) => {
   const { rows } = table.getRowModel()
   const ids = rows.map((row) => row.id)
 
   useEffect(() => {
-    if (!navigable) return
+    if (!navigable || !onStep) return
     const onKeyDown = (e: KeyboardEvent) => {
       if (isKeyHandledElsewhere(e) || e.metaKey || e.ctrlKey || e.altKey) return
       if (e.key === 'Escape' && selectedId) {
-        onClose()
+        onClose?.()
         return
       }
       if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
@@ -92,22 +106,19 @@ export const CondensedTable = <T extends RowData>({
   return (
     <Box flexDirection="column">
       {rows.map((row) => {
-        const { id } = row
+        const { id, original } = row
         const selected = id === selectedId
-        return (
-          <button
-            key={id}
-            type="button"
-            onClick={() => onSelect(id)}
-            aria-current={selected}
-            data-condensed-row={id}
-            className={twMerge(
-              'w-full cursor-pointer text-left',
-              selected
-                ? 'dark:bg-polar-800 bg-gray-100'
-                : 'dark:hover:bg-polar-800/50 hover:bg-gray-50',
-            )}
-          >
+        const canExpand =
+          expansion !== undefined && (expansion.canExpand?.(original) ?? true)
+        const expanded = canExpand && expansion.isExpanded(original)
+        const onClick = canExpand
+          ? () => expansion.onToggle(original)
+          : onSelect
+            ? () => onSelect(id)
+            : undefined
+        const Chevron = expanded ? ChevronDown : ChevronRight
+        const content = (
+          <>
             {renderCompact && (
               <Box
                 display={{ base: 'flex', md: 'none' }}
@@ -115,17 +126,27 @@ export const CondensedTable = <T extends RowData>({
                 gap="xs"
                 paddingHorizontal={inset}
                 paddingVertical="s"
-                borderBottomWidth={1}
+                borderBottomWidth={expanded ? 0 : 1}
                 borderStyle="solid"
                 borderColor="border-secondary"
               >
-                {renderCompact(row.original)}
+                {renderCompact(original)}
               </Box>
             )}
             <CondensedTableLine
               inset={inset}
               desktopOnly={renderCompact !== undefined}
+              borderless={expanded}
             >
+              {expansion && (
+                <CondensedTableExpanderCell>
+                  {canExpand && (
+                    <Box as="span" display="inline-flex" color="text-secondary">
+                      <Chevron size={16} aria-hidden />
+                    </Box>
+                  )}
+                </CondensedTableExpanderCell>
+              )}
               {row.getAllCells().map((cell) => (
                 <CondensedTableCell
                   key={cell.id}
@@ -135,7 +156,41 @@ export const CondensedTable = <T extends RowData>({
                 </CondensedTableCell>
               ))}
             </CondensedTableLine>
-          </button>
+          </>
+        )
+        return (
+          <Fragment key={id}>
+            {onClick ? (
+              <button
+                type="button"
+                onClick={onClick}
+                aria-current={selected}
+                aria-expanded={canExpand ? expanded : undefined}
+                data-condensed-row={id}
+                className={twMerge(
+                  'w-full cursor-pointer text-left',
+                  selected
+                    ? 'dark:bg-polar-800 bg-gray-100'
+                    : 'dark:hover:bg-polar-800/50 hover:bg-gray-50',
+                )}
+              >
+                {content}
+              </button>
+            ) : (
+              <div data-condensed-row={id}>{content}</div>
+            )}
+            {expanded && (
+              <Box
+                flexDirection="column"
+                paddingBottom="s"
+                borderBottomWidth={1}
+                borderStyle="solid"
+                borderColor="border-secondary"
+              >
+                {expansion.render(original)}
+              </Box>
+            )}
+          </Fragment>
         )
       })}
     </Box>

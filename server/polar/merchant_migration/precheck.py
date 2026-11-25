@@ -1099,6 +1099,7 @@ def _item(
         tax_behavior=tax_behavior,
         discount_name=discount_name,
         discount_code=discount_code,
+        card_status=None,
         has_payment_method=None,
         payment_method_type=payment_method_type,
         payment_method_assessment=payment_method_assessment,

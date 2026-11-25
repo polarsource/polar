@@ -84,6 +84,7 @@ def _subscription(**overrides: Any) -> dict[str, Any]:
             "billing_anchor": 15,
             "renews_at": "2026-12-15T00:00:00.000000Z",
             "ends_at": None,
+            "order_item_id": 80,
             "first_subscription_item": {"id": 1, "price_id": 21, "quantity": 1},
             "created_at": "2026-11-01T00:00:00.000000Z",
             **overrides,
@@ -186,6 +187,24 @@ ROUTES: dict[str, dict[str, Any]] = {
     "/v1/orders": _page(
         [{"type": "orders", "id": "70", "attributes": {"tax_inclusive": False}}]
     ),
+    "/v1/license-keys": _page(
+        [
+            {
+                "type": "license-keys",
+                "id": "60",
+                "attributes": {
+                    "order_item_id": 80,
+                    "key": "KEY-SUB",
+                    "status": "active",
+                },
+            },
+            {
+                "type": "license-keys",
+                "id": "61",
+                "attributes": {"order_item_id": 81, "key": "KEY-OFF", "disabled": True},
+            },
+        ]
+    ),
 }
 
 
@@ -253,6 +272,7 @@ class TestExtract:
         assert subscription.payment_method.last4 == "4242"
         assert subscription.price_tax_behavior == TaxBehavior.exclusive
         assert subscription.import_tax_behavior() == TaxBehavior.exclusive
+        assert subscription.order_item_source_id == "80"
 
     async def test_usage_price_reads_decimal_cents(self) -> None:
         usage = {"usage_aggregation": "sum"}
@@ -398,6 +418,18 @@ class TestGetSourceAccount:
 
 @pytest.mark.anyio
 class TestGetSubscription:
+    async def test_reads_the_subscriptions_license_key(self) -> None:
+        adapter, requests = _adapter(
+            {"/v1/subscriptions/100": {"data": _subscription()}}
+        )
+
+        subscription = await adapter.get_subscription("100")
+        assert subscription is not None
+
+        assert await adapter.get_license_key(subscription) == "KEY-SUB"
+        [lookup] = [r for r in requests if r.url.path == "/v1/license-keys"]
+        assert lookup.url.params["filter[order_item_id]"] == "80"
+
     async def test_period_start_keeps_month_end_anchor(self) -> None:
         adapter, _ = _adapter(
             {

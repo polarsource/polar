@@ -211,6 +211,9 @@ class _FakeAdapter:
                 return record
         return None
 
+    async def get_license_key(self, subscription: CanonicalSubscription) -> None:
+        return None
+
     async def stop_source_subscription(
         self,
         source_id: str,

@@ -278,6 +278,9 @@ class CanonicalSubscription:
     # Set on a two-item subscription when the second item reads as an add-on.
     # ``price_source_id`` and the fields above then describe the plan.
     add_on: CanonicalSubscriptionAddOn | None = None
+    # Lemon Squeezy: the order item that started it, which its license key
+    # belongs to. The key itself is read at cutover, never staged.
+    order_item_source_id: str | None = None
 
     type = MerchantMigrationRecordType.subscription
 
@@ -720,6 +723,7 @@ def deserialize(
                 )
                 if add_on is not None
                 else None,
+                order_item_source_id=data.get("order_item_source_id"),
             )
         case MerchantMigrationRecordType.discount:
             return CanonicalDiscount(

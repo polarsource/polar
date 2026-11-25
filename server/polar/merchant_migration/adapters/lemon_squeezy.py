@@ -717,6 +717,28 @@ class LemonSqueezyAdapter:
             _customer_countries(body.get("included", [])),
         )
 
+    async def get_license_key(self, subscription: CanonicalSubscription) -> str | None:
+        """The usable key of the order item that started the subscription, read
+        on its own so the cutover never pages every key of the store."""
+        if subscription.order_item_source_id is None:
+            return None
+        license_keys, _, _ = await self._list(
+            "/license-keys",
+            1,
+            {
+                **self._store_filter,
+                "filter[order_item_id]": subscription.order_item_source_id,
+            },
+        )
+        return next(
+            (
+                license_key["attributes"]["key"]
+                for license_key in license_keys
+                if _usable_key(license_key)
+            ),
+            None,
+        )
+
     async def stop_source_subscription(
         self,
         source_id: str,
@@ -815,6 +837,9 @@ class LemonSqueezyAdapter:
             # Lemon Squeezy is the merchant of record and always computes tax.
             automatic_tax=True,
             price_tax_behavior=tax_behaviors.get(str(attributes["order_id"])),
+            order_item_source_id=str(attributes["order_item_id"])
+            if attributes.get("order_item_id") is not None
+            else None,
         )
 
     def _price_id(self, item: dict[str, Any], variant_id: Any) -> str:
@@ -933,9 +958,10 @@ def _renews(price: dict[str, Any]) -> bool:
 def _usable_key(license_key: dict[str, Any]) -> bool:
     # An expired key isn't revived: Polar would restart its term from today.
     attributes = license_key["attributes"]
-    return not attributes.get("disabled") and attributes.get("status") not in (
-        "disabled",
-        "expired",
+    return (
+        bool((attributes.get("key") or "").strip())
+        and not attributes.get("disabled")
+        and attributes.get("status") not in ("disabled", "expired")
     )
 
 

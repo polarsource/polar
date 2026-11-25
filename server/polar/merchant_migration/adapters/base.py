@@ -34,6 +34,12 @@ class SourceAdapter(Protocol):
         """
         ...
 
+    async def get_license_key(self, subscription: CanonicalSubscription) -> str | None:
+        """The license key the customer has for this subscription on the
+        source, kept on Polar so their apps keep working. None when the source
+        has none."""
+        ...
+
     async def stop_source_subscription(
         self,
         source_id: str,

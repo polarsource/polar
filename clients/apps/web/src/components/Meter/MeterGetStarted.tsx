@@ -61,9 +61,8 @@ const polar = createPolar({
   }
 });
 
-export const GET = async (req: Request) => {
-  // Replace with your logic to get the customer id
-  const customerId = req.headers.get("x-customer-id") ?? "";
+export const GET = async () => {
+  const customerId = "your_customer_id";
 
   await polar.events.ingest({
     events: [

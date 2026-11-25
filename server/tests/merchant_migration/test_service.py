@@ -6050,7 +6050,7 @@ class TestExecuteBenefits:
             )
 
         listed = await service.get_benefits(session, auth_subject, migration.id)
-        assert listed.past_purchases_granted
+        assert listed.past_buyers_granted == 1
         benefit = await BenefitRepository.from_session(
             session
         ).get_by_external_id_and_organization(

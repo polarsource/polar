@@ -28560,10 +28560,10 @@ export interface components {
        */
       items: components['schemas']['MerchantMigrationBenefit'][]
       /**
-       * Past Purchases Granted
-       * @description Whether the latest set-up run gave past one-time buyers their license keys and files. False again once a later step runs.
+       * Past Buyers Granted
+       * @description How many past one-time buyers hold these benefits, once the latest set-up run gave them out. None before that, and again once a later step runs.
        */
-      past_purchases_granted: boolean
+      past_buyers_granted: number | null
     }
     /** MerchantMigrationBenefitsCreate */
     MerchantMigrationBenefitsCreate: {

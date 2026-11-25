@@ -540,10 +540,11 @@ class MerchantMigrationBenefits(Schema):
     items: Sequence[MerchantMigrationBenefit] = Field(
         description="What the source gives buyers, as Polar benefits."
     )
-    past_purchases_granted: bool = Field(
+    past_buyers_granted: int | None = Field(
         description=(
-            "Whether the latest set-up run gave past one-time buyers their "
-            "license keys and files. False again once a later step runs."
+            "How many past one-time buyers hold these benefits, once the latest "
+            "set-up run gave them out. None before that, and again once a later "
+            "step runs."
         )
     )
 

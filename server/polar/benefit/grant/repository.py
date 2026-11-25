@@ -210,6 +210,22 @@ class BenefitGrantRepository(
             if external_id is not None
         }
 
+    async def count_customers_granted_manually(
+        self, benefit_ids: Sequence[UUID]
+    ) -> int:
+        """Customers holding one of these benefits outside a subscription or an
+        order, counting grants still being fulfilled."""
+        if not benefit_ids:
+            return 0
+        statement = select(func.count(BenefitGrant.customer_id.distinct())).where(
+            BenefitGrant.benefit_id.in_(benefit_ids),
+            BenefitGrant.subscription_id.is_(None),
+            BenefitGrant.order_id.is_(None),
+            BenefitGrant.revoked_at.is_(None),
+            ~BenefitGrant.is_deleted,
+        )
+        return (await self.session.execute(statement)).scalar_one()
+
     async def list_granted_by_customer(
         self,
         customer_id: UUID,

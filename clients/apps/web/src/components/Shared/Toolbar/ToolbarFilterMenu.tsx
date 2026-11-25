@@ -31,7 +31,7 @@ const ADD_TRIGGER_CLASS = 'size-[26px] shrink-0 rounded-md [&_svg]:size-3.5!'
 // An arrow at the end of an entity link, which shows while the link is
 // pointed at, focused, or has its menu open.
 const INLINE_TRIGGER_CLASS =
-  'dark:text-polar-500 dark:hover:bg-polar-700 flex shrink-0 cursor-pointer items-center self-stretch rounded-md px-1 text-gray-400 opacity-0 group-hover/entity:opacity-100 hover:bg-gray-200 hover:text-gray-950 focus-visible:opacity-100 data-[state=open]:opacity-100 dark:hover:text-white'
+  'dark:text-polar-500 dark:hover:bg-polar-700 flex shrink-0 cursor-pointer items-center justify-center w-5 self-stretch rounded-md text-gray-400 opacity-0 group-hover/entity:opacity-100 hover:bg-gray-200 hover:text-gray-950 focus-visible:opacity-100 data-[state=open]:opacity-100 dark:hover:text-white data-[state=open]:bg-gray-200 data-[state=open]:text-gray-950 dark:data-[state=open]:bg-polar-700 dark:data-[state=open]:text-white'
 export const PANEL_CLASS =
   'dark:bg-polar-800 dark:border-polar-700 rounded-xl border border-gray-200 bg-white text-[13px] shadow-xl'
 const SEARCH_CLASS =
@@ -146,6 +146,8 @@ const OptionsPanel = ({
     if (!isWaiting && isNearEnd(listRef.current)) onEndReached?.()
   }, [optionCount, isWaiting, onEndReached])
 
+  const isSelectable = filter.selectable !== false
+
   const pick = (option: FilterOption) => {
     if (filter.type === 'single') {
       filter.onChange(option.value)
@@ -199,9 +201,13 @@ const OptionsPanel = ({
               key={option.value}
               type="button"
               role={
-                filter.type === 'multi' ? 'menuitemcheckbox' : 'menuitemradio'
+                !isSelectable
+                  ? 'menuitem'
+                  : filter.type === 'multi'
+                    ? 'menuitemcheckbox'
+                    : 'menuitemradio'
               }
-              aria-checked={isOn}
+              aria-checked={isSelectable ? isOn : undefined}
               className={twMerge(ITEM_CLASS, ITEM_HOVER_CLASS)}
               onClick={() => pick(option)}
             >
@@ -212,9 +218,11 @@ const OptionsPanel = ({
                   {isOn && <Check className="size-2.5" strokeWidth={3} />}
                 </span>
               ) : (
-                <span className="flex size-3.5 shrink-0 items-center">
-                  {isOn && <Check className="size-3.5" />}
-                </span>
+                isSelectable && (
+                  <span className="flex size-3.5 shrink-0 items-center">
+                    {isOn && <Check className="size-3.5" />}
+                  </span>
+                )
               )}
               {option.icon}
               <span className="truncate">{option.label}</span>
@@ -358,7 +366,7 @@ export const ToolbarFilterMenu = ({
             className={INLINE_TRIGGER_CLASS}
             aria-label="More actions"
           >
-            <ChevronDown className="size-3.5" aria-hidden />
+            <ChevronDown className="size-3" aria-hidden />
           </button>
         ) : (
           <Button

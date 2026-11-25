@@ -62,7 +62,7 @@ export const TimestampMenu = ({ timestamp }: { timestamp: string }) => {
       icon: <RefreshCw />,
       items: links(
         'Started',
-        `${sales}/subscriptions?view=list`,
+        `${sales}/subscriptions?view=table`,
         'started_after',
         'started_before',
       ),

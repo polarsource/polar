@@ -63,7 +63,7 @@ export const SubscriptionSidePanel = ({
 }: SubscriptionSidePanelProps) => {
   const { customer, discount } = subscription
   const cancellationReason = getCancellationReason(subscription)
-  const subscriptionsPath = `/dashboard/${organization.slug}/sales/subscriptions?view=list`
+  const subscriptionsPath = `/dashboard/${organization.slug}/sales/subscriptions?view=table`
   const [today] = useState(() => new Date())
   const dunning = useSubscriptionDunning(organization.id, subscription.id)
   // The same requests the subscription page's billing history makes.

@@ -10,7 +10,12 @@ import {
 } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { type ReactNode } from 'react'
-import { EntityLinkMenu, type EntityLinkMenuItem } from './EntityLinkMenu'
+import { twMerge } from 'tailwind-merge'
+import {
+  EntityLinkMenu,
+  type EntityLinkMenuItem,
+  type EntityMenuAction,
+} from './EntityLinkMenu'
 
 export type EntityKind =
   | 'product'
@@ -62,9 +67,11 @@ const ENTITIES: Record<EntityKind, { icon: typeof Package; hover: string }> = {
 }
 
 // The padding is pulled back out, so the mark lines up with text around it
-// and only the highlight reaches past.
+// and only the highlight reaches past. It stays lit while its menu is open.
+// The width limit counts the pulled-back padding, or a chip that fills its
+// container would be cut short of its own text.
 export const ENTITY_CHIP_CLASS =
-  'group/entity dark:hover:bg-polar-800 -mx-1.5 inline-flex w-fit max-w-full min-w-0 items-center rounded-md hover:bg-gray-100'
+  'group/entity dark:hover:bg-polar-800 -mx-1.5 inline-flex w-fit max-w-[calc(100%+0.75rem)] min-w-0 items-center rounded-md hover:bg-gray-100 has-[[data-state=open]]:bg-gray-100 dark:has-[[data-state=open]]:bg-polar-800'
 const LINK_CLASS = 'inline-flex min-w-0 items-center gap-2 py-0.5 pl-1.5'
 const ICON_CLASS =
   'dark:text-polar-500 size-4 shrink-0 text-gray-400 transition-colors'
@@ -75,27 +82,85 @@ export const EntityLink = ({
   kind,
   href,
   menuItems,
+  minimal = false,
+  muted = false,
   children,
 }: {
   kind: EntityKind
   href: string
   menuItems?: EntityLinkMenuItem[]
+  // Leaves the mark out, where the column already says what the name is.
+  minimal?: boolean
+  // For a name that is secondary to the one beside it.
+  muted?: boolean
   children: ReactNode
 }) => {
   const { icon: Icon, hover } = ENTITIES[kind]
   const hasMenu = menuItems != null && menuItems.length > 0
   return (
-    <span className={ENTITY_CHIP_CLASS}>
+    // A click on the link or its menu is not one on the row around it.
+    <span
+      className={ENTITY_CHIP_CLASS}
+      onClick={(event) => event.stopPropagation()}
+    >
       <Link
         href={href}
         className={`${LINK_CLASS} ${hasMenu ? 'pr-1' : 'pr-1.5'}`}
       >
-        <Icon className={`${ICON_CLASS} ${hover}`} aria-hidden />
-        <Text as="span" truncate>
+        {!minimal && <Icon className={`${ICON_CLASS} ${hover}`} aria-hidden />}
+        <Text as="span" color={muted ? 'muted' : 'default'} truncate>
           {children}
         </Text>
       </Link>
       {hasMenu && <EntityLinkMenu items={menuItems} />}
+    </span>
+  )
+}
+
+export interface CombinedEntity {
+  kind: EntityKind
+  href: string
+  name: string
+  menuItems?: EntityMenuAction[]
+  // For a name that is secondary to the one before it.
+  muted?: boolean
+}
+
+// Two things that belong together on one line, as one chip: each name is its
+// own link, without a mark, and one arrow at the end opens a menu that keeps
+// what can be done with each under its name.
+export const CombinedEntityLink = ({
+  entities,
+}: {
+  entities: [CombinedEntity, CombinedEntity]
+}) => {
+  const menuItems = entities
+    .filter(({ menuItems }) => menuItems != null && menuItems.length > 0)
+    .map(({ kind, name, menuItems = [] }) => {
+      const { icon: Icon } = ENTITIES[kind]
+      return { label: name, icon: <Icon />, items: menuItems }
+    })
+  const [first, second] = entities
+  return (
+    <span
+      className={twMerge(ENTITY_CHIP_CLASS, 'gap-2 pl-1.5')}
+      onClick={(event) => event.stopPropagation()}
+    >
+      <Link href={first.href} className="min-w-0 py-0.5">
+        <Text as="span" color={first.muted ? 'muted' : 'default'} truncate>
+          {first.name}
+        </Text>
+      </Link>
+      <Link href={second.href} className="max-w-[45%] min-w-0 shrink-0 py-0.5">
+        <Text as="span" color={second.muted ? 'muted' : 'default'} truncate>
+          {second.name}
+        </Text>
+      </Link>
+      {menuItems.length > 0 ? (
+        <EntityLinkMenu items={menuItems} />
+      ) : (
+        <span className="w-0.5" />
+      )}
     </span>
   )
 }

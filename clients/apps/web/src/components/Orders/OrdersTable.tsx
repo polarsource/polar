@@ -1,6 +1,9 @@
 'use client'
 
+import { CustomerEntityLink } from '@/components/Customer/CustomerEntityLink'
+import { EventTimestamp } from '@/components/Events/EventTimestamp'
 import { CatalogVersionLabel } from '@/components/Products/CatalogVersionLabel'
+import { ProductEntityLink } from '@/components/Products/ProductEntityLink'
 import {
   CondensedTableView,
   useCondensedTable,
@@ -21,7 +24,6 @@ type Order = schemas['Order']
 const EMPTY: Order[] = []
 
 const formatDate = (date: string) => format(new Date(date), 'MMM d, yyyy')
-const formatTime = (date: string) => format(new Date(date), 'HH:mm')
 
 const formatAmount = (order: Order) =>
   formatCurrency('accounting')(order.net_amount, order.currency)
@@ -40,11 +42,20 @@ const getBillingName = ({ customer }: Order) =>
 const getProductLabel = ({ product, description }: Order) =>
   product?.name ?? description
 
-const CustomerCell = ({ order }: { order: Order }) => {
+const CustomerCell = ({
+  order,
+  organization,
+}: {
+  order: Order
+  organization: schemas['Organization']
+}) => {
   const billingName = getBillingName(order)
   return (
     <>
-      <Text truncate>{getCustomerLabel(order)}</Text>
+      <CustomerEntityLink
+        organization={organization}
+        customer={order.customer}
+      />
       {billingName && (
         <Text color="muted" truncate>
           {billingName}
@@ -62,9 +73,13 @@ const ProductCell = ({
   organization: schemas['Organization']
 }) => (
   <>
-    <Text color="muted" truncate>
-      {getProductLabel(order)}
-    </Text>
+    {order.product ? (
+      <ProductEntityLink organization={organization} product={order.product} />
+    ) : (
+      <Text color="muted" truncate>
+        {getProductLabel(order)}
+      </Text>
+    )}
     {order.product && (
       <CatalogVersionLabel
         organization={organization}
@@ -86,16 +101,13 @@ const getColumns = (
     accessorKey: 'created_at',
     header: 'Date',
     sortDescFirst: true,
-    meta: { width: 144, skeleton: [120] },
+    meta: { width: 172, skeleton: [120] },
     cell: ({ row: { original: order } }) => (
-      <>
-        <Text tabularNums wrap="nowrap">
-          {formatDate(order.created_at)}
-        </Text>
-        <Text color="muted" tabularNums wrap="nowrap">
-          {formatTime(order.created_at)}
-        </Text>
-      </>
+      <EventTimestamp
+        timestamp={order.created_at}
+        format="datetime"
+        focusable={false}
+      />
     ),
   },
   {
@@ -107,7 +119,9 @@ const getColumns = (
       minWidth: 120,
       skeleton: [140, 180, 120, 200, 160, 110, 190, 150, 130, 170],
     },
-    cell: ({ row }) => <CustomerCell order={row.original} />,
+    cell: ({ row }) => (
+      <CustomerCell order={row.original} organization={organization} />
+    ),
   },
   {
     id: 'product',

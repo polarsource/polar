@@ -161,9 +161,17 @@ export const CondensedTable = <T extends RowData>({
         return (
           <Fragment key={id}>
             {onClick ? (
-              <button
-                type="button"
+              // Not a button, so a cell can hold a link or a menu of its own.
+              <div
+                role="button"
+                tabIndex={0}
                 onClick={onClick}
+                onKeyDown={(event) => {
+                  if (event.target !== event.currentTarget) return
+                  if (event.key !== 'Enter' && event.key !== ' ') return
+                  event.preventDefault()
+                  onClick()
+                }}
                 aria-current={selected}
                 aria-expanded={canExpand ? expanded : undefined}
                 data-condensed-row={id}
@@ -175,7 +183,7 @@ export const CondensedTable = <T extends RowData>({
                 )}
               >
                 {content}
-              </button>
+              </div>
             ) : (
               <div data-condensed-row={id}>{content}</div>
             )}

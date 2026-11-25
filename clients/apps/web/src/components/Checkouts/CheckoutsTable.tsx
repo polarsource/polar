@@ -1,6 +1,9 @@
 'use client'
 
+import { CustomerEntityLink } from '@/components/Customer/CustomerEntityLink'
+import { EventTimestamp } from '@/components/Events/EventTimestamp'
 import { CatalogVersionLabel } from '@/components/Products/CatalogVersionLabel'
+import { ProductEntityLink } from '@/components/Products/ProductEntityLink'
 import {
   CondensedTableView,
   useCondensedTable,
@@ -20,7 +23,6 @@ type Checkout = schemas['Checkout']
 const EMPTY: Checkout[] = []
 
 const formatDate = (date: string) => format(new Date(date), 'MMM d, yyyy')
-const formatTime = (date: string) => format(new Date(date), 'HH:mm')
 
 const getCustomerLabel = (checkout: Checkout) =>
   checkout.customer_name || checkout.customer_email || '—'
@@ -39,11 +41,30 @@ const getBillingName = ({
 const getProductLabel = ({ products }: Checkout) =>
   products.map(({ name }) => name).join(', ')
 
-const CustomerCell = ({ checkout }: { checkout: Checkout }) => {
+const CustomerCell = ({
+  checkout,
+  organization,
+}: {
+  checkout: Checkout
+  organization: schemas['Organization']
+}) => {
   const billingName = getBillingName(checkout)
   return (
     <>
-      <Text truncate>{getCustomerLabel(checkout)}</Text>
+      {/* A checkout has a customer once someone is known to be behind it. */}
+      {checkout.customer_id ? (
+        <CustomerEntityLink
+          organization={organization}
+          customer={{
+            id: checkout.customer_id,
+            name: checkout.customer_name,
+            email: checkout.customer_email,
+          }}
+          filterable
+        />
+      ) : (
+        <Text truncate>{getCustomerLabel(checkout)}</Text>
+      )}
       {billingName && (
         <Text color="muted" truncate>
           {billingName}
@@ -63,9 +84,13 @@ const ProductCell = ({
   const [product] = checkout.products
   return (
     <>
-      <Text color="muted" truncate>
-        {getProductLabel(checkout)}
-      </Text>
+      {checkout.products.length === 1 ? (
+        <ProductEntityLink organization={organization} product={product} />
+      ) : (
+        <Text color="muted" truncate>
+          {getProductLabel(checkout)}
+        </Text>
+      )}
       {checkout.products.length === 1 && (
         <CatalogVersionLabel organization={organization} version={product} />
       )}
@@ -81,16 +106,13 @@ const getColumns = (
     accessorKey: 'created_at',
     header: 'Date',
     sortDescFirst: true,
-    meta: { width: 144, skeleton: [120] },
+    meta: { width: 172, skeleton: [120] },
     cell: ({ row: { original: checkout } }) => (
-      <>
-        <Text tabularNums wrap="nowrap">
-          {formatDate(checkout.created_at)}
-        </Text>
-        <Text color="muted" tabularNums wrap="nowrap">
-          {formatTime(checkout.created_at)}
-        </Text>
-      </>
+      <EventTimestamp
+        timestamp={checkout.created_at}
+        format="datetime"
+        focusable={false}
+      />
     ),
   },
   {
@@ -101,7 +123,9 @@ const getColumns = (
       minWidth: 120,
       skeleton: [140, 180, 120, 200, 160, 110, 190, 150, 130, 170],
     },
-    cell: ({ row }) => <CustomerCell checkout={row.original} />,
+    cell: ({ row }) => (
+      <CustomerCell checkout={row.original} organization={organization} />
+    ),
   },
   {
     id: 'product',

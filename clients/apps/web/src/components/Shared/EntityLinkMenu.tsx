@@ -65,6 +65,7 @@ export const EntityLinkMenu = ({ items }: { items: EntityLinkMenuItem[] }) => {
           label: action.label,
         })),
         value: null,
+        selectable: false,
         onChange: (value) => {
           if (value !== null) run(group.items[Number(value)])
         },

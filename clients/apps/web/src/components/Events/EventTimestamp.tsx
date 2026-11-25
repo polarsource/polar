@@ -112,10 +112,10 @@ export const EventTimestamp = ({
           )}
         </span>
       </TooltipTrigger>
-      {/* Kept clear of the arrow, which is on the left when flush right. */}
+      {/* Above, so it covers neither the arrow nor the rest of the row. */}
       <TooltipContent
-        side={align === 'end' ? 'top' : 'left'}
-        align={align === 'end' ? 'end' : 'center'}
+        side="top"
+        align={align === 'end' ? 'end' : 'start'}
         className="p-3"
       >
         <TimestampDetails date={new Date(timestamp)} />

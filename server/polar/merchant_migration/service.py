@@ -651,9 +651,6 @@ class MerchantMigrationService:
         organization: Organization,
         create_schema: MerchantMigrationLemonSqueezyCreate,
     ) -> MerchantMigration:
-        if not organization.is_lemon_squeezy_migration_enabled:
-            raise MerchantMigrationNotEnabled()
-
         adapter = LemonSqueezyAdapter(create_schema.api_key, create_schema.store_id)
         try:
             store = await adapter.resolve_store()

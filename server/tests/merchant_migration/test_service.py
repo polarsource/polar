@@ -5962,12 +5962,16 @@ async def _lemon_squeezy_imported_migration(
     save_fixture: SaveFixture,
     auth_subject: AuthSubject[User],
     organization: Organization,
+    *,
+    step: MerchantMigrationStep | None = None,
 ) -> MerchantMigration:
     migration = await _staged_migration(
         mocker, session, save_fixture, auth_subject, organization
     )
     await _import_catalog(session, auth_subject, migration.id)
     migration.source_platform = MerchantMigrationSourcePlatform.lemon_squeezy
+    if step is not None:
+        migration.step = step
     await save_fixture(migration)
     return migration
 
@@ -6030,10 +6034,13 @@ class TestFinishWithoutSubscriptions:
         user_organization: UserOrganization,
     ) -> None:
         migration = await _lemon_squeezy_imported_migration(
-            mocker, session, save_fixture, auth_subject, organization
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            step=MerchantMigrationStep.set_up_benefits,
         )
-        migration.step = MerchantMigrationStep.set_up_benefits
-        await save_fixture(migration)
 
         with pytest.raises(MigrationNotFinishable):
             await service.finish_without_subscriptions(

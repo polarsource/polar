@@ -9,7 +9,10 @@ from polar.config import settings
 from polar.models import Model
 
 # Columns removed from the models but still in the database until dropped by hand.
-UNMAPPED_COLUMNS: set[tuple[str, str]] = set()
+UNMAPPED_COLUMNS: set[tuple[str, str]] = {
+    ("oauth_accounts", "access_token"),
+    ("oauth_accounts", "refresh_token"),
+}
 
 
 def include_object(object, name, type_, reflected, compare_to):

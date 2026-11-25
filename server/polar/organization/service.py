@@ -84,6 +84,9 @@ from polar.organization_access_token.repository import (
     OrganizationAccessTokenRepository,
 )
 from polar.organization_domain.repository import OrganizationDomainRepository
+from polar.organization_domain.service import (
+    organization_domain as organization_domain_service,
+)
 from polar.organization_email.service import (
     organization_email as organization_email_service,
 )
@@ -724,11 +727,22 @@ class OrganizationService:
 
         previous_website = organization.website
         previous_email = organization.email
+        previous_embed_hosts = organization.embed_hosts
 
         organization = await repository.update(organization, update_dict=update_dict)
 
         if organization.email != previous_email:
             await organization_email_service.track_change(session, organization)
+
+        new_embed_hosts = [
+            host
+            for host in organization.embed_hosts
+            if host not in previous_embed_hosts
+        ]
+        if new_embed_hosts:
+            await organization_domain_service.register_payment_method_domains(
+                session, organization, new_embed_hosts
+            )
 
         if organization.website != previous_website:
             enqueue_job(
@@ -788,6 +802,14 @@ class OrganizationService:
         resend_service.on_organization_status_changed(
             organization.id, previous_status, status
         )
+        if (
+            status == OrganizationStatus.ACTIVE
+            and previous_status != OrganizationStatus.ACTIVE
+        ):
+            enqueue_job(
+                "organization_domain.register_organization_payment_method_domains",
+                organization_id=organization.id,
+            )
 
     async def reset_onboarding_for_review(
         self,
@@ -1356,6 +1378,11 @@ class OrganizationService:
             enqueue_job(
                 "payout.release_held_payouts",
                 account_id=confirmed.account_id,
+            )
+        if confirmed is not None:
+            enqueue_job(
+                "organization_domain.register_organization_payment_method_domains",
+                organization_id=confirmed.id,
             )
 
         return confirmed

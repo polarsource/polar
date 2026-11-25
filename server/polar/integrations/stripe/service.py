@@ -543,6 +543,14 @@ class StripeService:
         )
         return await stripe_lib.PaymentMethod.detach_async(payment_method_id)
 
+    async def get_payment_method_domain(
+        self, domain_name: str
+    ) -> stripe_lib.PaymentMethodDomain | None:
+        result = await stripe_lib.PaymentMethodDomain.list_async(
+            domain_name=domain_name, limit=1
+        )
+        return result.data[0] if result.data else None
+
     async def create_payment_method_domain(
         self, domain_name: str
     ) -> stripe_lib.PaymentMethodDomain:

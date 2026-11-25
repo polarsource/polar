@@ -1,6 +1,6 @@
 import contextlib
 import secrets
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from uuid import UUID
 
 import dns.asyncresolver
@@ -18,11 +18,17 @@ from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import Organization, OrganizationDomain
-from polar.organization.embed_hosts import WILDCARD_PREFIX, is_shared_host
+from polar.models.organization import OrganizationStatus
+from polar.organization.embed_hosts import (
+    WILDCARD_PREFIX,
+    is_shared_host,
+    parse_host_pattern,
+)
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
+from polar.worker import enqueue_job
 
 from .repository import OrganizationDomainRepository
 from .schemas import OrganizationDomainCreate
@@ -161,7 +167,56 @@ class OrganizationDomainService:
             *organization.embed_hosts,
             *(host for host in hosts if host not in organization.embed_hosts),
         ]
+        await self.register_payment_method_domains(session, organization)
         return organization_domain
+
+    async def get_payment_method_domains(
+        self,
+        session: AsyncReadSession,
+        organization: Organization,
+        embed_hosts: Iterable[str] | None = None,
+    ) -> Sequence[str]:
+        """Stripe shows Apple Pay and Google Pay only on registered domains, and
+        takes no wildcards, so each embed host under a verified domain goes in
+        alone. Without `embed_hosts`, takes every embed host. Only approved
+        organizations register."""
+        if organization.status != OrganizationStatus.ACTIVE:
+            return []
+        repository = OrganizationDomainRepository.from_session(session)
+        verified_domains = [
+            organization_domain.domain
+            for organization_domain in await repository.get_all(
+                repository.get_verified_statement_by_organization(organization.id)
+            )
+        ]
+        if embed_hosts is None:
+            embed_hosts = organization.embed_hosts
+        domains: list[str] = []
+        for entry in embed_hosts:
+            pattern = parse_host_pattern(entry)
+            if pattern is None or pattern.wildcard or pattern.scheme is not None:
+                continue
+            if pattern.host not in domains and any(
+                pattern.host == domain or pattern.host.endswith(f".{domain}")
+                for domain in verified_domains
+            ):
+                domains.append(pattern.host)
+        return domains
+
+    async def register_payment_method_domains(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        embed_hosts: Iterable[str] | None = None,
+    ) -> None:
+        domains = await self.get_payment_method_domains(
+            session, organization, embed_hosts
+        )
+        if domains:
+            enqueue_job(
+                "organization_domain.register_payment_method_domains",
+                domains=domains,
+            )
 
     async def reverify(
         self, session: AsyncSession, organization: Organization

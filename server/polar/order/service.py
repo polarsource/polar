@@ -12,6 +12,7 @@ import structlog
 from pydantic import MISSING
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import joinedload
+from stripe.params import CustomerCreateParams
 
 from polar.account.repository import AccountRepository
 from polar.auth.models import AuthSubject
@@ -2357,10 +2358,6 @@ class OrderService:
         organization = await org_repository.get_by_id(customer.organization_id)
         assert organization is not None, "Organization must exist"
 
-        if customer.stripe_customer_id is None:
-            log.warning("Customer is not a Stripe customer", customer_id=customer.id)
-            raise OrderNotEligibleForRetry(order)
-
         saved_payment_method: PaymentMethod | None = None
         if payment_method_id is not None:
             payment_method_repository = PaymentMethodRepository.from_session(session)
@@ -2387,6 +2384,18 @@ class OrderService:
 
         try:
             async with self.acquire_payment_lock(session, order):
+                if customer.stripe_customer_id is None:
+                    customer_params: CustomerCreateParams = {
+                        "idempotency_key": f"order-payment-customer:{customer.id}",
+                    }
+                    if customer.email is not None:
+                        customer_params["email"] = customer.email
+                    stripe_customer = await stripe_service.create_customer(
+                        **customer_params
+                    )
+                    customer.stripe_customer_id = stripe_customer.id
+                    await customer_repository.update(customer)
+
                 if saved_payment_method is not None:
                     # Using saved payment method
                     payment_intent_params: dict[str, Any] = {

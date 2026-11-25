@@ -123,6 +123,12 @@ class TestPay:
     async def test_draft_becomes_pending_when_payment_is_accepted(
         self, session: AsyncSession, draft_order: Order, mocker: MockerFixture
     ) -> None:
+        customer = draft_order.customer
+        customer.stripe_customer_id = None
+        create_stripe_customer = mocker.patch(
+            "polar.order.service.stripe_service.create_customer",
+            return_value=stripe_lib.Customer.construct_from({"id": "cus_new"}, None),
+        )
         submit = mocker.patch(
             "polar.order.service.stripe_service.create_payment_intent",
             return_value=stripe_lib.PaymentIntent.construct_from(
@@ -137,7 +143,12 @@ class TestPay:
 
         result = await customer_order_service.pay(session, draft_order, order_pay)
 
+        create_stripe_customer.assert_awaited_once()
         submit.assert_awaited_once()
+        assert submit.call_args.kwargs["customer"] == "cus_new"
+        await session.flush()
+        await session.refresh(customer, {"stripe_customer_id"})
+        assert customer.stripe_customer_id == "cus_new"
         assert result.status == OrderStatus.pending
         assert result.next_payment_attempt_at is None
         assert result.payment_processor_metadata["intent_status"] == "succeeded"

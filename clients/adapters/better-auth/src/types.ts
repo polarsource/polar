@@ -4,6 +4,7 @@ import type { UnionToIntersection, User } from 'better-auth'
 import type { PolarOrganizationOptions } from './organization/types'
 import type { checkout } from './plugins/checkout'
 import type { portal } from './plugins/portal'
+import type { AuthorizeReference } from './reference'
 import type { webhooks } from './plugins/webhooks'
 
 export type Product = {
@@ -61,6 +62,20 @@ export interface PolarOptions {
    * Organization support is disabled when omitted.
    */
   experimental_organizationSync?: PolarOrganizationOptions
+  /**
+   * Authorize reading the subscriptions tagged with a `reference_id`.
+   *
+   * By default, the signed-in user may read their own reference and the
+   * Better Auth organizations they belong to. Provide this function to
+   * authorize other reference IDs, such as workspaces or projects from your own
+   * tables, or to change the default.
+   *
+   * Return `true` or `'redacted'` to list the subscriptions without customer
+   * billing details (subscriptions the user purchased keep them), `'full'` to
+   * include them, `'purchased'` to list only the subscriptions the user
+   * purchased, and `false` or `'none'` to reject the request.
+   */
+  authorizeReference?: AuthorizeReference
   /**
    * Use Polar plugins
    */

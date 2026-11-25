@@ -1,11 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { portal } from '../../plugins/portal'
 import { resolveBillingPrincipal } from '../../principal'
+import { resolveReferenceAccess } from '../../reference'
 import { mockApiError } from '../utils/helpers'
 import { createMockPolarClient } from '../utils/mocks'
 
 vi.mock('../../principal', () => ({
   resolveBillingPrincipal: vi.fn(),
+}))
+
+vi.mock('../../reference', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../reference')>()),
+  resolveReferenceAccess: vi.fn(),
 }))
 
 vi.mock('better-auth/api', () => ({
@@ -516,52 +522,163 @@ describe('portal plugin', () => {
       expect(ctx.json).toHaveBeenCalledWith(mockSubscriptions)
     })
 
-    it('should list subscriptions by reference ID', async () => {
-      const mockSubscriptions = {
-        items: [{ id: 'sub-1', metadata: { referenceId: 'ref-123' } }],
-        pagination: { total: 1, maxPage: 1 },
+    describe('reference_id', () => {
+      const ownSubscription = {
+        id: 'sub-own',
+        product_id: 'product-123',
+        metadata: { referenceId: 'ref-123', internalNote: 'VIP' },
+        customer: { external_id: 'user-123', email: 'me@example.com' },
+        product: { id: 'product-123', benefits: [] },
+        meters: [],
       }
-
-      vi.mocked(mockClient.subscriptions.list).mockResolvedValue(
-        mockSubscriptions,
-      )
-
-      const ctx = {
+      const otherSubscription = {
+        id: 'sub-other',
+        product_id: 'product-123',
+        metadata: { referenceId: 'ref-123', internalNote: 'VIP' },
+        customer: { external_id: 'user-456', email: 'buyer@example.com' },
+        product: { id: 'product-123', benefits: [] },
+        meters: [],
+      }
+      const mockSubscriptions = {
+        items: [ownSubscription, otherSubscription],
+        pagination: { total_count: 2, max_page: 1 },
+      }
+      const createContext = () => ({
         context: {
-          session: { user: { id: 'user-123' } },
+          session: { user: { id: 'user-123' }, session: { id: 'session-1' } },
+          logger: { error: vi.fn(), warn: vi.fn() },
         },
         query: { reference_id: 'ref-123', page: 1, limit: 10 },
         json: vi.fn(),
-      }
+      })
+      const mockAccess = (
+        access: 'full' | 'redacted' | 'purchased' | 'none',
+        unauthorizedFallback = false,
+      ) =>
+        vi.mocked(resolveReferenceAccess).mockResolvedValue({
+          access,
+          referenceType: 'organization',
+          unauthorizedFallback,
+        })
 
-      await handler(ctx)
-
-      expect(mockClient.subscriptions.list).toHaveBeenCalledWith({
-        page: 1,
-        limit: 10,
-        active: undefined,
-        metadata: { referenceId: 'ref-123' },
+      beforeEach(() => {
+        vi.mocked(mockClient.subscriptions.list).mockResolvedValue(
+          mockSubscriptions,
+        )
       })
 
-      expect(ctx.json).toHaveBeenCalledWith(mockSubscriptions)
-    })
+      it('returns customer billing details with billing access', async () => {
+        mockAccess('full')
+        const ctx = createContext()
 
-    it('should handle API errors for reference ID lookup', async () => {
-      vi.mocked(mockClient.subscriptions.list).mockRejectedValue(
-        mockApiError(400, 'Subscription lookup failed'),
-      )
+        await handler(ctx)
 
-      const ctx = {
-        context: {
-          session: { user: { id: 'user-123' } },
-          logger: { error: vi.fn() },
-        },
-        query: { reference_id: 'ref-123' },
-      }
+        expect(mockClient.subscriptions.list).toHaveBeenCalledWith({
+          page: 1,
+          limit: 10,
+          active: undefined,
+          metadata: { referenceId: 'ref-123' },
+        })
+        expect(ctx.json).toHaveBeenCalledWith(mockSubscriptions)
+      })
 
-      await expect(handler(ctx)).rejects.toThrow(
-        'Subscriptions list with reference_id failed',
-      )
+      it('removes billing details from subscriptions the user did not purchase', async () => {
+        mockAccess('redacted')
+        const ctx = createContext()
+
+        await handler(ctx)
+
+        expect(mockClient.subscriptions.list).toHaveBeenCalledWith({
+          page: 1,
+          limit: 10,
+          active: undefined,
+          metadata: { referenceId: 'ref-123' },
+        })
+        expect(ctx.json).toHaveBeenCalledWith({
+          items: [
+            ownSubscription,
+            {
+              id: 'sub-other',
+              product_id: 'product-123',
+              metadata: { referenceId: 'ref-123' },
+              product: { id: 'product-123', benefits: [] },
+              meters: [],
+            },
+          ],
+          pagination: mockSubscriptions.pagination,
+        })
+      })
+
+      it('asks Polar only for the subscriptions the user purchased with own access', async () => {
+        mockAccess('purchased')
+        vi.mocked(mockClient.subscriptions.list).mockResolvedValue({
+          items: [ownSubscription],
+          pagination: { total_count: 1, max_page: 1 },
+        })
+        const ctx = createContext()
+
+        await handler(ctx)
+
+        expect(mockClient.subscriptions.list).toHaveBeenCalledWith({
+          page: 1,
+          limit: 10,
+          active: undefined,
+          metadata: { referenceId: 'ref-123' },
+          external_customer_id: 'user-123',
+        })
+        expect(ctx.json).toHaveBeenCalledWith({
+          items: [ownSubscription],
+          pagination: { total_count: 1, max_page: 1 },
+        })
+      })
+
+      it('warns once when an unknown reference uses the unauthorized fallback', async () => {
+        mockAccess('redacted', true)
+        const ctx = createContext()
+
+        await handler(ctx)
+        await handler(ctx)
+
+        expect(ctx.context.logger.warn).toHaveBeenCalledTimes(1)
+        expect(ctx.context.logger.warn).toHaveBeenCalledWith(
+          expect.stringContaining('authorizeReference'),
+        )
+      })
+
+      it("lists the user's own subscriptions for an empty reference_id", async () => {
+        vi.mocked(mockClient.customerSessions.create).mockResolvedValue({
+          token: 'session-token-123',
+        })
+        vi.mocked(
+          mockClient.customerPortal.subscriptions.list,
+        ).mockResolvedValue({ items: [] })
+        const endpoints = portal()(mockClient) as any
+        const query = endpoints.subscriptions.config.query.parse({
+          reference_id: '',
+        })
+
+        await handler({ ...createContext(), query })
+
+        expect(resolveReferenceAccess).not.toHaveBeenCalled()
+        expect(mockClient.subscriptions.list).not.toHaveBeenCalled()
+        expect(
+          mockClient.customerPortal.subscriptions.list,
+        ).toHaveBeenCalledWith(
+          { page: undefined, limit: undefined, active: undefined },
+          { accessToken: 'session-token-123' },
+        )
+      })
+
+      it('should handle API errors for reference ID lookup', async () => {
+        mockAccess('full')
+        vi.mocked(mockClient.subscriptions.list).mockRejectedValue(
+          mockApiError(400, 'Subscription lookup failed'),
+        )
+
+        await expect(handler(createContext())).rejects.toThrow(
+          'Subscriptions list with reference_id failed',
+        )
+      })
     })
 
     it('should handle API errors for customer portal lookup', async () => {

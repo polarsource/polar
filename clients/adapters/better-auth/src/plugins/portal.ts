@@ -10,6 +10,11 @@ import { APIError } from 'better-auth/api'
 import { createAuthEndpoint, sessionMiddleware } from 'better-auth/api'
 import * as z from 'zod/v4'
 import { resolveBillingPrincipal } from '../principal'
+import {
+  type ListResourceReferenceSubscription,
+  resolveReferenceAccess,
+  toEntitlementSubscription,
+} from '../reference'
 import type { PolarOptions } from '../types'
 
 const OrganizationQuery = z.object({
@@ -28,9 +33,13 @@ export const portal =
   ({ returnUrl, theme }: PortalConfig = {}) =>
   (
     polar: PolarCore,
-    rootOptions?: Pick<PolarOptions, 'experimental_organizationSync'>,
+    rootOptions?: Pick<
+      PolarOptions,
+      'experimental_organizationSync' | 'authorizeReference'
+    >,
   ) => {
     const retUrl = returnUrl ? new URL(returnUrl) : undefined
+    let warnedUnauthorizedReference = false
 
     return {
       portal: createAuthEndpoint(
@@ -249,6 +258,34 @@ export const portal =
           }
 
           if (ctx.query?.reference_id) {
+            const referenceId = ctx.query.reference_id
+            const userId = ctx.context.session.user.id
+            const { access, unauthorizedFallback } =
+              await resolveReferenceAccess({
+                context: ctx.context,
+                session: ctx.context.session,
+                referenceId,
+                mapBetterAuthRoleToPolarRole:
+                  rootOptions?.experimental_organizationSync
+                    ?.mapBetterAuthRoleToPolarRole,
+                authorizeReference: rootOptions?.authorizeReference,
+                request: ctx.request,
+              })
+
+            if (access === 'none') {
+              throw new APIError('FORBIDDEN', {
+                message:
+                  'Not allowed to list subscriptions for this reference_id',
+              })
+            }
+
+            if (unauthorizedFallback && !warnedUnauthorizedReference) {
+              warnedUnauthorizedReference = true
+              ctx.context.logger.warn(
+                'Polar: customer.subscriptions.list received a reference_id that is neither the signed-in user nor a Better Auth organization, so access to it could not be verified. Customer billing details were removed from the response. Set `authorizeReference` on polar() to authorize your own reference IDs: without it, the next major version returns only the subscriptions the signed-in user purchased.',
+              )
+            }
+
             try {
               const subscriptions: models.ListResourceSubscription =
                 await listSubscriptions(polar)({
@@ -256,13 +293,30 @@ export const portal =
                   limit: ctx.query?.limit,
                   active: ctx.query?.active,
                   metadata: {
-                    referenceId: ctx.query?.reference_id,
+                    referenceId,
                   },
+                  ...(access === 'purchased'
+                    ? { external_customer_id: userId }
+                    : {}),
                 })
 
-              return ctx.json(subscriptions)
+              const response: ListResourceReferenceSubscription =
+                access === 'redacted'
+                  ? {
+                      ...subscriptions,
+                      items: subscriptions.items.map((subscription) =>
+                        subscription.customer.external_id === userId
+                          ? subscription
+                          : toEntitlementSubscription(
+                              subscription,
+                              referenceId,
+                            ),
+                      ),
+                    }
+                  : subscriptions
+
+              return ctx.json(response)
             } catch (e: unknown) {
-              console.log(e)
               if (e instanceof Error) {
                 ctx.context.logger.error(
                   `Polar subscriptions list with reference_id failed. Error: ${e.message}`,

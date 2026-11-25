@@ -32884,6 +32884,16 @@ export interface components {
        * @description Entries of `embed_hosts` admitting every tenant of a platform, such as `*.vercel.app`.
        */
       shared_hosts: string[]
+      /**
+       * Wallet Hosts
+       * @description Entries of `embed_hosts` registered with Stripe for wallet payments, such as Apple Pay and Google Pay.
+       */
+      wallet_hosts: string[]
+      /**
+       * Pending Wallet Hosts
+       * @description Entries of `embed_hosts` that get wallet payments once the organization can take payments.
+       */
+      pending_wallet_hosts: string[]
     }
     /** OrganizationFeatureSettings */
     OrganizationFeatureSettings: {

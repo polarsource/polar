@@ -140,6 +140,7 @@ from polar.subscription.repository import SubscriptionRepository
 from polar.tax.tax_id import TaxIDFormat
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_benefit_grant,
     create_customer,
     create_payment_method,
     create_subscription,
@@ -6090,3 +6091,13 @@ class TestExecuteBenefits:
             )
             is None
         )
+
+        # Neither a revoked grant nor one the merchant adds later counts.
+        grant.manually_revoked_at = utc_now()
+        await save_fixture(grant)
+        late_buyer = await create_customer(
+            save_fixture, organization=organization, email="dan@example.com"
+        )
+        await create_benefit_grant(save_fixture, late_buyer, benefit)
+        listed = await service.get_benefits(session, auth_subject, migration.id)
+        assert listed.past_buyers_granted == 0

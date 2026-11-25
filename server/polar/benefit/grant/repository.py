@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from datetime import datetime
 from typing import Unpack
 from uuid import UUID
 
@@ -211,17 +212,19 @@ class BenefitGrantRepository(
         }
 
     async def count_customers_granted_manually(
-        self, benefit_ids: Sequence[UUID]
+        self, benefit_ids: Sequence[UUID], *, granted_before: datetime
     ) -> int:
         """Customers holding one of these benefits outside a subscription or an
-        order, counting grants still being fulfilled."""
+        order, counting grants still being fulfilled but not revoked ones."""
         if not benefit_ids:
             return 0
         statement = select(func.count(BenefitGrant.customer_id.distinct())).where(
             BenefitGrant.benefit_id.in_(benefit_ids),
             BenefitGrant.subscription_id.is_(None),
             BenefitGrant.order_id.is_(None),
+            BenefitGrant.created_at <= granted_before,
             BenefitGrant.revoked_at.is_(None),
+            BenefitGrant.manually_revoked_at.is_(None),
             ~BenefitGrant.is_deleted,
         )
         return (await self.session.execute(statement)).scalar_one()

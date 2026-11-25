@@ -219,7 +219,7 @@ export function PersonalDetailsStep({ geoCountry }: { geoCountry?: string }) {
 
     trackStepCompleted('personal')
     await showApiResponse(201, 'Created')
-    reloadUser()
+    await reloadUser()
     router.push('/onboarding/business')
   }
 

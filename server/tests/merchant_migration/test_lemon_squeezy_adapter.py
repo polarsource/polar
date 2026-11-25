@@ -436,6 +436,17 @@ class TestGetSourceAccount:
 
 
 @pytest.mark.anyio
+class TestIsLiveKey:
+    @pytest.mark.parametrize(("test_mode", "expected"), [(True, False), (False, True)])
+    async def test_reads_the_keys_mode(self, test_mode: bool, expected: bool) -> None:
+        adapter, _ = _adapter(
+            {"/v1/users/me": {"data": {}, "meta": {"test_mode": test_mode}}}
+        )
+
+        assert await adapter.is_live_key() is expected
+
+
+@pytest.mark.anyio
 class TestGetSubscription:
     async def test_reads_the_subscriptions_license_key(self) -> None:
         adapter, requests = _adapter(

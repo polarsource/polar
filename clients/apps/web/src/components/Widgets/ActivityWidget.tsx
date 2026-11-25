@@ -112,11 +112,13 @@ const ActivityWidgetContent = ({ className }: ActivityWidgetProps) => {
             >
               <Box alignItems="baseline" columnGap="s" minWidth={0}>
                 <Text truncate>{entry?.title}</Text>
-                <Text color="muted" truncate>
-                  {eventCustomerLabel(event) ?? entry?.summary}
-                </Text>
+                <Box minWidth={0} flexShrink={100}>
+                  <Text color="muted" truncate>
+                    {eventCustomerLabel(event) ?? entry?.summary}
+                  </Text>
+                </Box>
               </Box>
-              <Text color="muted" tabularNums>
+              <Text color="muted" tabularNums wrap="nowrap">
                 {formatRelativeTime(event.timestamp)}
               </Text>
             </ListRow>

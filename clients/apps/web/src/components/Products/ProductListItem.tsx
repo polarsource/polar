@@ -2,7 +2,6 @@ import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import { toast } from '@/components/Toast/use-toast'
-import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useUpdateProduct } from '@/hooks/queries/products'
 import {
   isMeteredPrice,
@@ -61,7 +60,8 @@ export const ProductListItem = ({
   }
 
   const updateProduct = useUpdateProduct(organization)
-  const managedAsCode = useIsManagedAsCode(organization.id)
+  const managedAsCode =
+    organization.feature_settings?.config_as_code_enabled ?? false
 
   const onArchiveProduct = useCallback(async () => {
     try {

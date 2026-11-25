@@ -6,10 +6,10 @@ import { getExperimentNames } from '@/experiments'
 import { getDistinctId } from '@/experiments/distinct-id'
 import { ExperimentProvider } from '@/experiments/ExperimentProvider'
 import { getExperiments } from '@/experiments/server'
-import { UserContextProvider } from '@/providers/auth'
+import { AuthContext } from '@/providers/auth'
 import { CONFIG } from '@/utils/config'
 import { GOOGLE_ANALYTICS_CONSENT_DEFAULT_SCRIPT } from '@/utils/googleAnalyticsConsent'
-import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
+import { getAuthenticatedUser } from '@/utils/user'
 import { schemas } from '@polar-sh/client'
 import { PHASE_PRODUCTION_BUILD } from 'next/constants'
 import { Viewport } from 'next/types'
@@ -31,11 +31,9 @@ export default async function RootLayout({
   children: React.ReactNode
 }) {
   let authenticatedUser: schemas['UserRead'] | undefined = undefined
-  let userOrganizations: schemas['OrganizationWithRole'][] = []
 
   try {
     authenticatedUser = await getAuthenticatedUser()
-    userOrganizations = await getUserOrganizations()
   } catch (e) {
     if (process.env.NEXT_PHASE !== PHASE_PRODUCTION_BUILD) {
       throw e
@@ -71,10 +69,7 @@ export default async function RootLayout({
       </head>
       <body style={{ textRendering: 'optimizeLegibility' }}>
         <ExperimentProvider experiments={experimentVariants}>
-          <UserContextProvider
-            user={authenticatedUser}
-            userOrganizations={userOrganizations}
-          >
+          <AuthContext value={authenticatedUser}>
             <PolarPostHogProvider>
               <PolarQueryClientProvider>
                 <PolarNuqsProvider>
@@ -86,7 +81,7 @@ export default async function RootLayout({
                 </PolarNuqsProvider>
               </PolarQueryClientProvider>
             </PolarPostHogProvider>
-          </UserContextProvider>
+          </AuthContext>
         </ExperimentProvider>
       </body>
     </html>

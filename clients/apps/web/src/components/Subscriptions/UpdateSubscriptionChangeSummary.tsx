@@ -162,7 +162,7 @@ export const UpdateSubscriptionChangeSummary = ({
       ) : (
         <Box alignItems="baseline" columnGap="m" flexWrap="wrap">
           <Text
-            variant="heading-m"
+            variant="heading-s"
             weight="book"
             tabularNums
             color={headline ? 'default' : 'muted'}

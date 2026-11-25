@@ -86,7 +86,6 @@ from polar.merchant_migration.service import (
     CatalogImportNotReady,
     CutoverNotStarted,
     InvalidSourceCredentials,
-    MerchantMigrationNotEnabled,
     MigrationNotFinishable,
     MigrationOperationInProgress,
     MissingStripeScopes,
@@ -236,8 +235,14 @@ def _create_schema(organization: Organization) -> MerchantMigrationStripeCreate:
 
 
 class _FakeLemonSqueezyAdapter:
-    def __init__(self, *, error: Exception | None = None) -> None:
+    def __init__(
+        self, *, error: Exception | None = None, livemode: bool = False
+    ) -> None:
         self._error = error
+        self._livemode = livemode
+
+    async def is_live_key(self) -> bool:
+        return self._livemode
 
     async def resolve_store(self) -> dict[str, Any]:
         if self._error is not None:
@@ -258,18 +263,6 @@ def _lemon_squeezy_create_schema(
     )
 
 
-@pytest.fixture
-async def lemon_squeezy_enabled(
-    save_fixture: SaveFixture, organization: Organization
-) -> Organization:
-    organization.feature_settings = {
-        **organization.feature_settings,
-        "lemon_squeezy_migration_enabled": True,
-    }
-    await save_fixture(organization)
-    return organization
-
-
 def _lemon_squeezy_http_error(status_code: int) -> httpx2.HTTPStatusError:
     request = httpx2.Request("GET", "https://api.lemonsqueezy.com/v1/stores")
     return httpx2.HTTPStatusError(
@@ -282,25 +275,6 @@ def _lemon_squeezy_http_error(status_code: int) -> httpx2.HTTPStatusError:
 @pytest.mark.anyio
 class TestCreateLemonSqueezy:
     @pytest.mark.auth
-    async def test_requires_feature_flag(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User],
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        adapter = mocker.patch("polar.merchant_migration.service.LemonSqueezyAdapter")
-
-        with pytest.raises(MerchantMigrationNotEnabled):
-            await service.create(
-                session, auth_subject, _lemon_squeezy_create_schema(organization)
-            )
-
-        adapter.assert_not_called()
-        await assert_no_migrations(session, organization)
-
-    @pytest.mark.auth
     async def test_stores_key_and_store_then_queues_precheck(
         self,
         mocker: MockerFixture,
@@ -308,7 +282,6 @@ class TestCreateLemonSqueezy:
         save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
         organization: Organization,
-        lemon_squeezy_enabled: Organization,
         user_organization: UserOrganization,
     ) -> None:
         adapter = mocker.patch(
@@ -337,7 +310,78 @@ class TestCreateLemonSqueezy:
         assert migration.source_connected is True
         assert migration.source_credentials["store_id"] == "1"
         assert migration.source_credentials["store_name"] == "Acme"
+        assert migration.source_credentials["livemode"] is False
         assert await service._decrypt_api_key(migration) == "ls_key"
+
+    @pytest.mark.auth
+    async def test_sandbox_rejects_a_live_key(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        mocker.patch(
+            "polar.merchant_migration.service.LemonSqueezyAdapter",
+            return_value=_FakeLemonSqueezyAdapter(livemode=True),
+        )
+
+        with pytest.raises(SourceKeyModeMismatch):
+            await service.create(
+                session, auth_subject, _lemon_squeezy_create_schema(organization)
+            )
+
+        await assert_no_migrations(session, organization)
+
+    @pytest.mark.auth
+    async def test_production_rejects_a_test_key(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        mocker.patch.object(settings, "is_production", return_value=True)
+        mocker.patch(
+            "polar.merchant_migration.service.LemonSqueezyAdapter",
+            return_value=_FakeLemonSqueezyAdapter(livemode=False),
+        )
+
+        with pytest.raises(SourceKeyModeMismatch):
+            await service.create(
+                session, auth_subject, _lemon_squeezy_create_schema(organization)
+            )
+
+        await assert_no_migrations(session, organization)
+
+    @pytest.mark.auth
+    async def test_production_accepts_a_live_key(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        mocker.patch.object(settings, "is_production", return_value=True)
+        mocker.patch.object(
+            encryption,
+            "get_key_provider",
+            return_value=LocalKeyProvider(settings.ENCRYPTION_LOCAL_KEY),
+        )
+        mocker.patch(
+            "polar.merchant_migration.service.LemonSqueezyAdapter",
+            return_value=_FakeLemonSqueezyAdapter(livemode=True),
+        )
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+
+        migration = await service.create(
+            session, auth_subject, _lemon_squeezy_create_schema(organization)
+        )
+
+        assert migration.source_credentials["livemode"] is True
 
     @pytest.mark.auth
     @pytest.mark.parametrize(
@@ -357,7 +401,6 @@ class TestCreateLemonSqueezy:
         save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
         organization: Organization,
-        lemon_squeezy_enabled: Organization,
         user_organization: UserOrganization,
     ) -> None:
         mocker.patch(
@@ -381,7 +424,6 @@ class TestCreateLemonSqueezy:
         auth_subject: AuthSubject[User],
         organization: Organization,
         organization_second: Organization,
-        lemon_squeezy_enabled: Organization,
         user_organization: UserOrganization,
     ) -> None:
         await save_fixture(

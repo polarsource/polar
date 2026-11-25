@@ -198,8 +198,12 @@ class MerchantMigrationRecordRepository(
 ):
     model = MerchantMigrationRecord
 
-    async def has_moved_subscription(self, subscription_id: UUID) -> bool:
-        statement = select(
+    async def get_moved_subscription_source(
+        self, subscription_id: UUID
+    ) -> MerchantMigrationSourcePlatform | None:
+        """The platform the subscription switched from, or None if it didn't
+        switch."""
+        statement = (
             self.get_base_statement()
             .join(
                 MerchantMigration,
@@ -214,9 +218,10 @@ class MerchantMigrationRecordRepository(
                 == MerchantMigrationCutoverStatus.moved,
                 MerchantMigration.deleted_at.is_(None),
             )
-            .exists()
+            .with_only_columns(MerchantMigration.source_platform)
+            .limit(1)
         )
-        return bool(await self.session.scalar(statement))
+        return await self.session.scalar(statement)
 
     async def has_subscriptions_to_move(self, migration_id: UUID) -> bool:
         statement = select(

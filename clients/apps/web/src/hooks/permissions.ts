@@ -13,11 +13,3 @@ export const useHasPermission = (
   const organization = userOrganizations.find((o) => o.id === organizationId)
   return organization?.permissions.includes(permission) ?? false
 }
-
-export const useIsManagedAsCode = (
-  organizationId: string | undefined,
-): boolean => {
-  const { userOrganizations } = useAuth()
-  const organization = userOrganizations.find((o) => o.id === organizationId)
-  return organization?.feature_settings?.config_as_code_enabled ?? false
-}

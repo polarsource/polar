@@ -8,7 +8,8 @@ export const UpdateSubscriptionSection = ({
   divider = false,
   children,
 }: {
-  title: string
+  // Left out where the fields' own labels already say what the section is.
+  title?: string
   description?: string
   divider?: boolean
   children: ReactNode
@@ -22,16 +23,18 @@ export const UpdateSubscriptionSection = ({
     borderColor={divider ? 'border-primary' : undefined}
     paddingTop={divider ? '2xl' : undefined}
   >
-    <Box flexDirection="column" rowGap="xs">
-      <Text variant="heading-xxs" as="h3">
-        {title}
-      </Text>
-      {description && (
-        <Text variant="caption" color="muted">
-          {description}
+    {title && (
+      <Box flexDirection="column" rowGap="xs">
+        <Text variant="title" as="h3">
+          {title}
         </Text>
-      )}
-    </Box>
+        {description && (
+          <Text variant="caption" color="muted">
+            {description}
+          </Text>
+        )}
+      </Box>
+    )}
     {children}
   </Box>
 )

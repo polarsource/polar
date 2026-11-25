@@ -136,19 +136,6 @@ class TestCreate:
         assert response.status_code == 422
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
-    async def test_lemon_squeezy_without_feature_flag_returns_403(
-        self,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        response = await client.post(
-            "/v1/merchant-migrations/",
-            json=_body(organization, source_platform="lemon_squeezy", api_key="ls"),
-        )
-        assert response.status_code == 403
-
-    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
     async def test_missing_scopes_returns_400(
         self,
         client: AsyncClient,

@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING, Any, Self
 from uuid import UUID
 
 from alembic_utils.pg_function import PGFunction
@@ -208,6 +208,10 @@ class Order(
 
     next_payment_attempt_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None, index=True
+    )
+
+    payment_processor_metadata: Mapped[dict[str, Any] | None] = mapped_column(
+        JSONB(none_as_null=True), default=dict
     )
 
     payment_lock_acquired_at: Mapped[datetime | None] = mapped_column(

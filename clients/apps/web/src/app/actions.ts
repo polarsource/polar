@@ -1,6 +1,15 @@
 'use server'
 
-import { revalidateTag } from 'next/cache'
+import { refresh, revalidateTag } from 'next/cache'
+
+export async function refreshUser() {
+  refresh()
+}
+
+export async function refreshOrganization(slug: string) {
+  refresh()
+  revalidateTag(`organizations:${slug}`, { expire: 0 })
+}
 
 export default async function revalidate(
   tag: Parameters<typeof revalidateTag>[0],

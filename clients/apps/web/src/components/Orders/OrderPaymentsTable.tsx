@@ -8,6 +8,8 @@ import { DataTable } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { OrderSection } from './OrderSection'
 
+export const ORDER_PAYMENTS_SECTION_ID = 'payment-attempts'
+
 export const OrderPaymentsTable = ({
   payments,
   isLoading,
@@ -16,7 +18,7 @@ export const OrderPaymentsTable = ({
   isLoading: boolean
 }) => {
   return (
-    <OrderSection title="Payment attempts">
+    <OrderSection id={ORDER_PAYMENTS_SECTION_ID} title="Payment attempts">
       <DataTable
         isLoading={isLoading}
         columns={[

@@ -272,16 +272,6 @@ class OrganizationFeatureSettings(Schema):
             ),
         ),
     ] = False
-    lemon_squeezy_migration_enabled: Annotated[
-        bool,
-        Version(starting_from=V2027_01),
-        Field(
-            description=(
-                "If this organization can migrate its billing from Lemon Squeezy "
-                "to Polar."
-            ),
-        ),
-    ] = False
 
 
 class OrganizationFeatureSettingsUpdate(Schema):

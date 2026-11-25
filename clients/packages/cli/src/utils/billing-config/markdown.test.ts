@@ -64,10 +64,10 @@ describe('planMarkdown', () => {
   test('titles, notes the target and diffs each changed section', () => {
     expect(planMarkdown(config, acme, { entries, issues: [] })).toBe(
       [
-        '## Polar billing plan updated',
+        '## Polar billing config changed',
         '',
         '> [!NOTE]',
-        "> Applying the config in this pull request changes billing for **Acme\\_Inc** in sandbox. Review every change below before it's applied.",
+        "> Publishing the config in this pull request changes billing for **Acme\\_Inc** in sandbox. Review every change below before it's published.",
         '',
         '| Organization | Environment | Config | Changes |',
         '| --- | --- | --- | --- |',
@@ -108,7 +108,47 @@ describe('planMarkdown', () => {
       [
         '| Organization | Environment | Config | Changes | Catalog |',
         '| --- | --- | --- | --- | --- |',
-        '| Acme\\_Inc | sandbox | `polar.json` | 2 to change, 1 to add, 1 unchanged | v1 → Spring\\_pricing (draft) |',
+        '| Acme\\_Inc | sandbox | `polar.json` | 2 to change, 1 to add, 1 unchanged | v1 (live) → Spring\\_pricing (draft) |',
+      ].join('\n'),
+    )
+  })
+
+  test('notes an unpublished draft under the target', () => {
+    expect(
+      planMarkdown(
+        config,
+        acme,
+        { entries, issues: [] },
+        { live: null, draft: { id: 'cat-draft', name: 'v1', drift: [] } },
+      ),
+    ).toContain(
+      [
+        "> Publishing the config in this pull request changes billing for **Acme\\_Inc** in sandbox. Review every change below before it's published.",
+        '>',
+        '> These changes are saved in a draft.',
+        '',
+      ].join('\n'),
+    )
+  })
+
+  test('warns that saving discards a draft the file no longer matches', () => {
+    expect(
+      planMarkdown(
+        config,
+        acme,
+        { entries: [entries[1]!], issues: [] },
+        {
+          live: { id: 'cat-live', name: 'v3' },
+          draft: { id: 'cat-draft', name: null, drift: [entries[0]!] },
+        },
+      ),
+    ).toContain(
+      [
+        '> [!WARNING]',
+        '> Saving this config to the draft discards the unpublished draft of **Acme\\_Inc** in sandbox.',
+        '>',
+        "> The draft has changes polar.json doesn't.",
+        '',
       ].join('\n'),
     )
   })
@@ -143,7 +183,9 @@ describe('planMarkdown', () => {
         },
       ],
     })
-    expect(output).toContain("> [!CAUTION]\n> `polar.json` can't be applied")
+    expect(output).toContain(
+      "> [!CAUTION]\n> `polar.json` can't be saved to the draft",
+    )
     expect(output).toMatch(/#### Problems\n\n```\n.*Error:.*\n```$/s)
   })
 

@@ -2,6 +2,7 @@ import type { ActiveOrganization } from '@/schemas/Auth'
 import type {
   AppliedEntry,
   LoadedConfig,
+  PlanCatalogs,
   PlanResult,
 } from '@/schemas/BillingConfig'
 import { isSet, name } from '@/utils/billing-config/describe'
@@ -13,7 +14,13 @@ import {
   valueLines,
 } from '@/utils/billing-config/entries'
 import { formatProblems } from '@/utils/billing-config/problems'
-import { catalogChange, errors, unchanged } from '@/utils/billing-config/review'
+import {
+  catalogChange,
+  discardsDraft,
+  draftNote,
+  errors,
+  unchanged,
+} from '@/utils/billing-config/review'
 import { shownDiff, usedMeters } from '@/utils/billing-config/sentences'
 import { documents } from '@/utils/billing-config/tree'
 
@@ -118,16 +125,29 @@ const entryLines = (
   ]
 }
 
+const pendingDraft = (
+  config: LoadedConfig,
+  { entries }: PlanResult,
+  catalogs: PlanCatalogs | undefined,
+) =>
+  catalogs?.draft
+    ? `\n>\n> ${escape(plain(draftNote(config.file, catalogs.draft, entries).join(' ')))}`
+    : ''
+
 const callout = (
   config: LoadedConfig,
   organization: ActiveOrganization,
   result: PlanResult,
+  catalogs: PlanCatalogs | undefined,
 ) => {
   const where = `**${escape(organization.name)}** in ${organization.environment}`
   if (errors(result.issues) > 0) {
     return `> [!CAUTION]\n> \`${config.file}\` can't be saved to the draft of ${where}. Fix the errors below first.`
   }
-  return `> [!NOTE]\n> Publishing the config in this pull request changes billing for ${where}. Review every change below before it's published.`
+  if (unchanged(result.entries)) {
+    return `> [!WARNING]\n> Saving this config to the draft discards the unpublished draft of ${where}.${pendingDraft(config, result, catalogs)}`
+  }
+  return `> [!NOTE]\n> Publishing the config in this pull request changes billing for ${where}. Review every change below before it's published.${pendingDraft(config, result, catalogs)}`
 }
 
 const metadata = (
@@ -160,12 +180,15 @@ export const planMarkdown = (
   config: LoadedConfig,
   organization: ActiveOrganization,
   result: PlanResult,
+  catalogs?: PlanCatalogs,
 ) =>
-  unchanged(result.entries) && errors(result.issues) === 0
+  unchanged(result.entries) &&
+  errors(result.issues) === 0 &&
+  !(catalogs?.draft && discardsDraft(catalogs.draft, result.entries))
     ? undefined
     : [
         '## Polar billing config changed',
-        callout(config, organization, result),
+        callout(config, organization, result, catalogs),
         metadata(config, organization, result),
         ...[
           ...new Set([

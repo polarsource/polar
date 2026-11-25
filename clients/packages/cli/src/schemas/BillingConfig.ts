@@ -185,9 +185,24 @@ export const ApplyResult = Schema.Union([
 ])
 export type ApplyResult = typeof ApplyResult.Type
 
+// `drift` lists the planned changes the draft lacks, null when it could not be compared
+export const PlanDraft = Schema.Struct({
+  ...Catalog.fields,
+  drift: Schema.NullOr(Schema.Array(AppliedEntry)),
+})
+export type PlanDraft = typeof PlanDraft.Type
+
+export const PlanCatalogs = Schema.Struct({
+  live: Schema.NullOr(Catalog),
+  draft: Schema.NullOr(PlanDraft),
+})
+export type PlanCatalogs = typeof PlanCatalogs.Type
+
 export const PlanOutput = Schema.Struct({
   file: Schema.String,
   ...PlanResult.fields,
+  live: Schema.optionalKey(PlanCatalogs.fields.live),
+  draft: Schema.optionalKey(PlanCatalogs.fields.draft),
 })
 
 export const ApplyOutput = Schema.Union(

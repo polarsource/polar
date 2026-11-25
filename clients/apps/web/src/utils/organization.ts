@@ -1,12 +1,16 @@
 import { Client, schemas, unwrap } from '@polar-sh/client'
 import { notFound } from 'next/navigation'
 import { cache } from 'react'
+import { getUserOrganizations } from '@/utils/user'
 
 const _getOrganizationBySlug = async (
   api: Client,
   slug: string,
   cached: boolean,
 ): Promise<schemas['Organization'] | undefined> => {
+  const own = (await getUserOrganizations()).find((o) => o.slug === slug)
+  if (own) return own
+
   const requestOptions: Record<string, unknown> & {
     params: { query: { slug: string } }
   } = {
@@ -50,7 +54,7 @@ export const getOrganizationBySlugOrNotFound = async (
   // This avoids race conditions with new organizations (e.g. during onboarding)
   // without losing the cache in 99% of the cases
   if (!organization) {
-    organization = await _getOrganizationBySlug(api, slug, true)
+    organization = await _getOrganizationBySlug(api, slug, false)
   }
 
   if (!organization) {

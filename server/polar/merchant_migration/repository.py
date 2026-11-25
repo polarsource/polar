@@ -843,6 +843,29 @@ class MerchantMigrationRecordRepository(
         result = await self.session.execute(statement)
         return {status: count for status, count in result.all()}
 
+    async def copied_cards(
+        self, migration_id: UUID, *, exact: bool = False, pending_only: bool = False
+    ) -> dict[UUID, dict[str, Any]]:
+        """The card each switchable subscription record would renew with, as its
+        stored metadata: the customer's default card when it is one of them."""
+        statement = self._payment_method_coverage_statement(
+            migration_id, exact=exact
+        ).with_only_columns(
+            MerchantMigrationRecord.id,
+            PaymentMethod.id == Customer.default_payment_method_id,
+            PaymentMethod.method_metadata,
+        )
+        if pending_only:
+            statement = statement.where(
+                MerchantMigrationRecord.cutover_status.is_(None)
+            )
+        result = await self.session.execute(statement)
+        cards: dict[UUID, dict[str, Any]] = {}
+        for record_id, is_default, method_metadata in result.all():
+            if is_default or record_id not in cards:
+                cards[record_id] = method_metadata
+        return cards
+
     async def payment_method_coverage(
         self, migration_id: UUID, *, exact: bool = False
     ) -> set[UUID]:

@@ -69,12 +69,10 @@ class OAuth2FactorMixin:
                 OAuthAccount.id == enrollment.id,
             )
             .values(
-                access_token=enrollment.access_token,
                 access_token_encrypted=await OAuthAccount.encrypt_access_token(
                     enrollment.id, enrollment.access_token
                 ),
                 expires_at=enrollment.expires_at,
-                refresh_token=enrollment.refresh_token,
                 refresh_token_encrypted=await OAuthAccount.encrypt_refresh_token(
                     enrollment.id, enrollment.refresh_token
                 ),

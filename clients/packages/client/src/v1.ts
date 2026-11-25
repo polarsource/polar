@@ -28579,6 +28579,25 @@ export interface components {
        */
       grant_past_purchases: boolean
     }
+    /**
+     * MerchantMigrationCardStatus
+     * @enum {string}
+     */
+    MerchantMigrationCardStatus:
+      | 'ready'
+      | 'india_card'
+      | 'expired_card'
+      | 'no_card'
+    /** MerchantMigrationCardStatusCount */
+    MerchantMigrationCardStatusCount: {
+      /** @description Whether the card Polar would charge can take a renewal. */
+      status: components['schemas']['MerchantMigrationCardStatus']
+      /**
+       * Count
+       * @description How many subscriptions it applies to.
+       */
+      count: number
+    }
     MerchantMigrationCreate:
       | components['schemas']['MerchantMigrationStripeCreate']
       | components['schemas']['MerchantMigrationLemonSqueezyCreate']
@@ -28627,6 +28646,11 @@ export interface components {
        * @description Hit an unexpected error.
        */
       failed: number
+      /**
+       * Card Statuses
+       * @description How the subscriptions not switched yet split by whether their card can take a renewal. Statuses with no subscriptions are left out.
+       */
+      card_statuses: components['schemas']['MerchantMigrationCardStatusCount'][]
     }
     /** MerchantMigrationCutoverRequest */
     MerchantMigrationCutoverRequest: {
@@ -28894,6 +28918,8 @@ export interface components {
        * @description When the subscription next renews on the source, as staged at import. Null for non-subscription rows or when the source reported none.
        */
       renews_at: string | null
+      /** @description Whether the card Polar would charge for this subscription can take a renewal, read from the copied card as it is now. None for non-subscription rows. */
+      card_status: components['schemas']['MerchantMigrationCardStatus'] | null
       /**
        * Has Payment Method
        * @description Whether Polar already has a card to charge for this subscription's customer. Null for non-subscription rows.
@@ -75959,6 +75985,9 @@ export const merchantMigrationBenefitTypeValues: ReadonlyArray<
 export const merchantMigrationBenefitExpires_timeframeAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationBenefit']['expires_timeframe']
 > = ['day', 'month', 'year']
+export const merchantMigrationCardStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MerchantMigrationCardStatus']
+> = ['ready', 'india_card', 'expired_card', 'no_card']
 export const merchantMigrationCutoverStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationCutoverStatus']
 > = ['moved', 'skipped', 'failed']

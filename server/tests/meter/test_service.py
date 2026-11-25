@@ -1537,6 +1537,37 @@ class TestGetQuantity:
 
         assert quantity == 30.0
 
+    async def test_sums_exactly(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+    ) -> None:
+        for cost in (0.1, 0.2, -0.3):
+            await create_event(
+                save_fixture,
+                organization=customer.organization,
+                customer=customer,
+                metadata={"cost": cost},
+            )
+        meter = await create_meter(
+            save_fixture,
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.sum, property="cost"
+            ),
+            organization=customer.organization,
+        )
+
+        quantity = await meter_service.get_quantity(
+            session,
+            meter,
+            EventRepository.from_session(session)
+            .get_base_statement()
+            .where(Event.organization_id == customer.organization_id),
+        )
+
+        assert quantity == 0.0
+
 
 @pytest.fixture
 async def meter(save_fixture: SaveFixture, organization: Organization) -> Meter:

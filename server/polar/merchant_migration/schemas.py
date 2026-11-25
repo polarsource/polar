@@ -28,6 +28,7 @@ from .canonical import (
     CanonicalPaymentMethodType,
     PaymentMethodAssessment,
 )
+from .card_status import MerchantMigrationCardStatus
 from .pan_transfer import PanTransferMethod, PanTransferStep
 
 
@@ -275,6 +276,13 @@ class MerchantMigrationRecordItem(Schema):
             "Null for non-subscription rows or when the source reported none."
         ),
     )
+    card_status: MerchantMigrationCardStatus | None = Field(
+        description=(
+            "Whether the card Polar would charge for this subscription can take a "
+            "renewal, read from the copied card as it is now. None for "
+            "non-subscription rows."
+        ),
+    )
     has_payment_method: bool | None = Field(
         description=(
             "Whether Polar already has a card to charge for this subscription's "
@@ -447,6 +455,13 @@ class MerchantMigrationCutoverRequest(Schema):
     )
 
 
+class MerchantMigrationCardStatusCount(Schema):
+    status: MerchantMigrationCardStatus = Field(
+        description="Whether the card Polar would charge can take a renewal."
+    )
+    count: int = Field(description="How many subscriptions it applies to.")
+
+
 class MerchantMigrationCutoverReport(Schema):
     """Where the switch has got to, for the imported subscriptions."""
 
@@ -460,6 +475,12 @@ class MerchantMigrationCutoverReport(Schema):
     moved: int = Field(description="Now billed by Polar.")
     skipped: int = Field(description="Left on the source.")
     failed: int = Field(description="Hit an unexpected error.")
+    card_statuses: list[MerchantMigrationCardStatusCount] = Field(
+        description=(
+            "How the subscriptions not switched yet split by whether their card "
+            "can take a renewal. Statuses with no subscriptions are left out."
+        )
+    )
 
 
 class PanTransferStepComplete(Schema):

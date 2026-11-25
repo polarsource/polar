@@ -10,12 +10,14 @@ from pytest_mock import MockerFixture
 from polar.backoffice.app import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
 from polar.backoffice.organizations_v2.endpoints import _stripe_reject_reason_for_aup
+from polar.enums import PayoutAccountType
 from polar.kit.utils import utc_now
 from polar.models import (
     BackofficeUser,
     OrganizationDomain,
     OrganizationEmail,
     PayoutAccount,
+    UserOrganization,
 )
 from polar.models.backoffice_user_session import BackofficeUserSession
 from polar.models.organization import Organization, OrganizationStatus
@@ -366,6 +368,56 @@ class TestOffboardDialog:
         ).get_current_decision(organization.id)
         assert current is None
         assert organization.status == previous_status
+
+
+@pytest.mark.anyio
+class TestSetupManualAccount:
+    async def test_switch_from_stripe(
+        self,
+        backoffice_client: httpx2.AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,
+    ) -> None:
+        stripe_account = await create_payout_account(
+            save_fixture, organization, user, country="FR", currency="eur"
+        )
+        account_page = f"/organizations/{organization.id}?section=account"
+        response = await backoffice_client.get(account_page)
+        assert response.status_code == 200
+        assert "Switch to Manual Payouts" in response.text
+
+        url = f"/organizations/{organization.id}/setup-account"
+        response = await backoffice_client.get(url)
+        assert response.status_code == 200
+        assert "Switch to Manual Payouts" in response.text
+        assert 'value="FR"' in response.text
+        assert str(stripe_account.id) in response.text
+
+        response = await backoffice_client.post(url, data={"country": "FR"})
+        assert response.status_code == 409
+
+        data = {"previous_payout_account_id": str(stripe_account.id), "country": "FR"}
+        response = await backoffice_client.post(url, data=data)
+        assert response.status_code == 303
+        await session.refresh(organization, ["payout_account"])
+        manual = organization.payout_account
+        assert manual is not None
+        assert manual.type == PayoutAccountType.manual
+        assert (manual.country, manual.currency) == ("FR", "usd")
+        assert manual.admin_id == user.id
+        await session.refresh(stripe_account)
+        assert stripe_account.type == PayoutAccountType.stripe
+        assert stripe_account.deleted_at is None
+
+        response = await backoffice_client.post(url, data=data)
+        assert response.status_code == 409
+
+        response = await backoffice_client.get(account_page)
+        assert response.status_code == 200
+        assert "Switch to Manual Payouts" not in response.text
 
 
 @pytest.mark.anyio

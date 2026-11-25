@@ -2,6 +2,10 @@
 
 import { ManagedAsCodeHint } from '@/components/Dashboard/ManagedAsCodeBadge'
 import { BulkActionBar } from '@/components/BulkActions/BulkActionBar'
+import {
+  DraftContents,
+  versionsHref,
+} from '@/components/Layout/Dashboard/CatalogHoverCard'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import Pagination from '@/components/Pagination/Pagination'
 import {
@@ -10,6 +14,7 @@ import {
 } from '@/components/Products/BulkArchiveProductsModal'
 import { ProductListItem } from '@/components/Products/ProductListItem'
 import { useIsManagedAsCode } from '@/hooks/permissions'
+import { useCatalogs } from '@/hooks/queries/catalogs'
 import { useProducts } from '@/hooks/queries/products'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { useSelection } from '@/hooks/useSelection'
@@ -21,7 +26,7 @@ import {
   SearchFilled as Search,
 } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { Button, Text } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
 import { List } from '@polar-sh/orbit'
 import {
@@ -105,6 +110,10 @@ export default function ClientPage({
     query: query ?? undefined,
     is_archived: show === 'all' ? null : show === 'active' ? false : true,
   })
+
+  const { data: latestCatalogs } = useCatalogs(org.id, 1, 1)
+  const draft = latestCatalogs?.items.find(({ status }) => status === 'draft')
+  const showDraftEmptyState = !!draft && !query && show !== 'archived'
 
   const items = useMemo(
     () =>
@@ -267,6 +276,32 @@ export default function ClientPage({
               ))}
             </List>
           </Pagination>
+        ) : showDraftEmptyState ? (
+          <ShadowBoxOnMd className="items-center justify-center md:flex md:flex-col md:py-48">
+            <Box flexDirection="column" alignItems="center" rowGap="xl">
+              <HiveOutlined
+                className="dark:text-polar-600 text-5xl text-gray-300"
+                fontSize="large"
+              />
+              <Box
+                flexDirection="column"
+                alignItems="center"
+                rowGap="s"
+                textAlign="center"
+              >
+                <Text as="h3" variant="heading-xs">
+                  Your products are in a draft
+                </Text>
+                <DraftContents organization={org} draft={draft} />
+                <Text color="muted">Publish the draft to make them live.</Text>
+              </Box>
+              <Link href={versionsHref(org, draft)}>
+                <Button role="link" variant="secondary">
+                  Review draft
+                </Button>
+              </Link>
+            </Box>
+          </ShadowBoxOnMd>
         ) : (
           <ShadowBoxOnMd className="items-center justify-center gap-y-6 md:flex md:flex-col md:py-48">
             <HiveOutlined

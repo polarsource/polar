@@ -229,14 +229,16 @@ const CustomerPortalSubscription = ({
         <PortalSection
           title="Scheduled change"
           actions={
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowClearPendingUpdateModal(true)}
-              loading={clearPendingUpdate.isPending}
-            >
-              Cancel change
-            </Button>
+            canManageBilling && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowClearPendingUpdateModal(true)}
+                loading={clearPendingUpdate.isPending}
+              >
+                Cancel change
+              </Button>
+            )
           }
         >
           <PortalRows>
@@ -329,8 +331,15 @@ const CustomerPortalSubscription = ({
         cancelText="Keep change"
         confirmText="Cancel change"
         onConfirm={async () => {
-          await clearPendingUpdate.mutateAsync(subscription.id)
-          refetchOrders()
+          try {
+            await clearPendingUpdate.mutateAsync(subscription.id)
+            refetchOrders()
+          } catch (error) {
+            toast({
+              title: 'Error',
+              description: `Failed to cancel the scheduled change: ${(error as Error).message}`,
+            })
+          }
         }}
       />
     </Box>

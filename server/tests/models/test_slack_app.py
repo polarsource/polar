@@ -80,9 +80,6 @@ class TestGetSecrets:
         integration.bot_token_encrypted = await SlackApp.encrypt_bot_token(
             integration.id, "xoxb-encrypted"
         )
-        integration.client_secret = "cs-plain"
-        integration.signing_secret = "ss-plain"
-        integration.bot_token = "xoxb-plain"
 
         assert await integration.get_client_secret() == "cs-encrypted"
         assert await integration.get_signing_secret() == "ss-encrypted"
@@ -91,9 +88,6 @@ class TestGetSecrets:
     async def test_none_without_encrypted(self, organization: Organization) -> None:
         integration = _build(organization)
         integration.id = SlackApp.generate_id()
-        integration.client_secret = "cs-plain"
-        integration.signing_secret = "ss-plain"
-        integration.bot_token = "xoxb-plain"
 
         assert await integration.get_client_secret() is None
         assert await integration.get_signing_secret() is None
@@ -107,8 +101,6 @@ class TestGetSecrets:
         integration.client_secret_encrypted = await SlackApp.encrypt_client_secret(
             integration.id, "cs-encrypted"
         )
-        integration.signing_secret = "ss-plain"
-        integration.bot_token = None
 
         assert await integration.get_client_secret() == "cs-encrypted"
         assert await integration.get_signing_secret() is None

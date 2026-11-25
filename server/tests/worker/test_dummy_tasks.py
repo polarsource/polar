@@ -1,6 +1,6 @@
 import contextlib
 from types import SimpleNamespace
-from typing import Any, cast
+from typing import Any
 
 import pytest
 from pytest_mock import MockerFixture
@@ -27,7 +27,7 @@ async def test_dummy_task_uses_database_and_redis(
     await dummy_task(redis_key="dummy:test")
 
     execute.assert_awaited_once()
-    value = cast(str | bytes | None, await redis.get("dummy:test"))
+    value = await redis.get("dummy:test")
     if isinstance(value, bytes):
         value = value.decode()
     assert value == "1"

@@ -112,7 +112,7 @@ async def enqueue_sync_users(statement: Select[UUID]) -> None:
                     await asyncio.sleep(1)
     finally:
         await engine.dispose()
-        await redis.close()
+        await redis.aclose()
 
 
 if __name__ == "__main__":

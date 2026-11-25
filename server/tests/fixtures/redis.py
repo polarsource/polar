@@ -7,7 +7,7 @@ from polar.redis import Redis
 
 @pytest.fixture(autouse=True)
 async def redis() -> Redis:
-    return FakeAsyncRedis()
+    return FakeAsyncRedis(protocol=3)
 
 
 @pytest.fixture(autouse=True)

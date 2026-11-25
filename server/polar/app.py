@@ -205,10 +205,10 @@ async def lifespan(
     stop_slo_metrics()
     stop_remote_write_pusher()
 
-    await redis.close(True)
+    await redis.aclose(True)
     rate_limit_redis = getattr(app.state, "rate_limit_redis", None)
     if rate_limit_redis is not None:
-        await rate_limit_redis.close(True)
+        await rate_limit_redis.aclose(True)
     await async_engine.dispose()
     if async_read_engine is not async_engine:
         await async_read_engine.dispose()

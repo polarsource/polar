@@ -1,0 +1,24 @@
+server/polar/models/order.py
+  s_9d4fcc69d80fc5::t_a3e87bd5950073 3,213-216
+server/migrations/versions/2026-11-25-1014_add_order_payment_processor_metadata.py
+  s_9d4fcc69d80fc5::t_6af3abd7fe34c9 1-24
+server/scripts/backfill_order_payment_processor_metadata.py
+  s_9d4fcc69d80fc5::t_e37e6aaa97e1fa 2,5-11,14-18,21-33,36,40-45
+  s_9d4fcc69d80fc5::t_0ad665c09031f8 1,3-4,12-13,19-20,34-35,37-39,46-50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "aafdc00750e720de01ff5f3fb6504f8d6ff091b5",
+  "prompts": {},
+  "sessions": {
+    "s_9d4fcc69d80fc5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20ccd-705d-7a61-9a99-612697cae1a1",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": null
+    }
+  }
+}

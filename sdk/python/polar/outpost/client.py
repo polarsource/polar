@@ -2091,15 +2091,20 @@ class Outpost:
                 )
             return
 
+        async def extend() -> bool:
+            return bool(
+                await redis.eval(
+                    EXTEND_LOCK_SCRIPT,
+                    1,
+                    self._pull_lock_key,
+                    lock,
+                    int(PULL_LOCK_TTL * 1000),
+                )
+            )
+
         async def renew() -> None:
             # The page's snapshots and their confirms would outlast the lock otherwise.
-            await redis.eval(
-                EXTEND_LOCK_SCRIPT,
-                1,
-                self._pull_lock_key,
-                lock,
-                int(PULL_LOCK_TTL * 1000),
-            )
+            await extend()
 
         renewed = _throttled(renew, PULL_LOCK_TTL)
         pages = 0
@@ -2124,10 +2129,17 @@ class Outpost:
                         raise PolarOutpostError("Polar rejected the pull") from error
                     raise
                 pages += 1
+                if changes["configuration_changed"]:
+                    await self._configure("polar")
+                # Past its lock, another instance may pull the same page: only one counts
+                # its reset and its configuration change.
+                if (
+                    changes["reset"] or changes["configuration_changed"]
+                ) and not await extend():
+                    break
                 if changes["reset"]:
                     self._resets = await redis.hincrby(self._pull_key, "reset", 1)
                 if changes["configuration_changed"]:
-                    await self._configure("polar")
                     self._configuration_revision = await redis.hincrby(
                         self._pull_key, "configuration", 1
                     )

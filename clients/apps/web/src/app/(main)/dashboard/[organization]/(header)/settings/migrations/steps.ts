@@ -80,10 +80,18 @@ const LEMON_SQUEEZY_STEPS: MigrationStepDef[] = MIGRATION_STEPS.flatMap((def) =>
     : [def],
 )
 
+const BENEFITS_ONLY_STEPS: MigrationStepDef[] = LEMON_SQUEEZY_STEPS.filter(
+  (def) => def.key !== 'cards' && def.key !== 'cutover',
+)
+
 export function migrationSteps(
   source: schemas['MerchantMigration']['source_platform'],
+  benefitsOnly = false,
 ): MigrationStepDef[] {
-  return source === 'lemon_squeezy' ? LEMON_SQUEEZY_STEPS : MIGRATION_STEPS
+  if (source !== 'lemon_squeezy') {
+    return MIGRATION_STEPS
+  }
+  return benefitsOnly ? BENEFITS_ONLY_STEPS : LEMON_SQUEEZY_STEPS
 }
 
 export const OWNER_LABELS: Record<StepOwner, string | null> = {

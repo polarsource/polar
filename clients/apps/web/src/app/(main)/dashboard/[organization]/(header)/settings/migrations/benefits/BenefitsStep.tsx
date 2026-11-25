@@ -2,6 +2,7 @@
 
 import {
   isActiveMigrationOperation,
+  useFinishMerchantMigration,
   useMigrationBenefits,
   useStartPanTransfer,
 } from '@/hooks/queries/merchantMigrations'
@@ -19,8 +20,10 @@ import { BenefitsForm } from './BenefitsForm'
 // `set_up_benefits`.
 export function BenefitsStep({
   migration,
+  benefitsOnly = false,
 }: {
   migration: schemas['MerchantMigration']
+  benefitsOnly?: boolean
 }) {
   const [editing, setEditing] = useState(false)
   const operation = migration.operation
@@ -84,6 +87,7 @@ export function BenefitsStep({
           migrationId={migration.id}
           benefits={benefits.data?.items ?? []}
           pastBuyersGranted={benefits.data?.past_buyers_granted ?? null}
+          benefitsOnly={benefitsOnly}
           onEdit={() => setEditing(true)}
         />
       )}
@@ -95,24 +99,45 @@ function BenefitsReady({
   migrationId,
   benefits,
   pastBuyersGranted,
+  benefitsOnly,
   onEdit,
 }: {
   migrationId: string
   benefits: schemas['MerchantMigrationBenefit'][]
   pastBuyersGranted: number | null
+  benefitsOnly: boolean
   onEdit: () => void
 }) {
   const start = useStartPanTransfer(migrationId)
+  const finish = useFinishMerchantMigration(migrationId)
   const created = benefits.filter((b) => b.benefit_id)
   const offered = benefits.filter(
     (b) => b.products.length > 0 || b.for_one_time,
   )
   const left = offered.length - created.length
-  const startAction = {
-    text: start.isPending ? 'Starting…' : 'Start moving cards',
-    disabled: start.isPending,
-    onClick: () => start.mutate(),
-  }
+  const next = benefitsOnly
+    ? {
+        title: 'Next: finish the migration',
+        body: 'You have no subscriptions to move, so there are no cards to move either. Finishing deletes your Lemon Squeezy API key from Polar.',
+        errorTitle: "We couldn't finish this migration",
+        error: finish.error,
+        action: {
+          text: finish.isPending ? 'Finishing…' : 'Finish migration',
+          disabled: finish.isPending,
+          onClick: () => finish.mutate(),
+        },
+      }
+    : {
+        title: 'Next: move saved cards',
+        body: "Your customers' cards are still with Lemon Squeezy. Moving them lets Polar charge them. This is a checklist. You can leave and come back.",
+        errorTitle: "We couldn't start moving cards",
+        error: start.error,
+        action: {
+          text: start.isPending ? 'Starting…' : 'Start moving cards',
+          disabled: start.isPending,
+          onClick: () => start.mutate(),
+        },
+      }
   return (
     <Box
       flexDirection="column"
@@ -141,27 +166,23 @@ function BenefitsReady({
       />
       <Box flexDirection="column" rowGap="xs">
         <Text variant="title" as="h3">
-          Next: move saved cards
+          {next.title}
         </Text>
-        <Text color="muted">
-          Your customers&apos; cards are still with Lemon Squeezy. Moving them
-          lets Polar charge them. This is a checklist. You can leave and come
-          back.
-        </Text>
+        <Text color="muted">{next.body}</Text>
       </Box>
-      {start.error && (
+      {next.error && (
         <Alert
           variant="danger"
-          title="We couldn't start moving cards"
-          description={start.error.message}
+          title={next.errorTitle}
+          description={next.error.message}
         />
       )}
       <ButtonGroup
         size="sm"
         actions={
           left > 0
-            ? [startAction, { text: 'Add more benefits', onClick: onEdit }]
-            : [startAction]
+            ? [next.action, { text: 'Add more benefits', onClick: onEdit }]
+            : [next.action]
         }
       />
     </Box>

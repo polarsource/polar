@@ -706,6 +706,53 @@ class TestGetPanTransfer:
 
 
 @pytest.mark.anyio
+class TestFinish:
+    async def test_anonymous(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        migration = await _create_migration(
+            save_fixture, organization, step=MerchantMigrationStep.set_up_benefits
+        )
+
+        response = await client.post(f"/v1/merchant-migrations/{migration.id}/finish")
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_finishes_with_no_subscriptions(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _create_migration(
+            save_fixture, organization, step=MerchantMigrationStep.set_up_benefits
+        )
+
+        response = await client.post(f"/v1/merchant-migrations/{migration.id}/finish")
+        assert response.status_code == 200
+        assert response.json()["step"] == "completed"
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_refuses_before_benefits(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _create_migration(
+            save_fixture, organization, step=MerchantMigrationStep.create_catalog
+        )
+
+        response = await client.post(f"/v1/merchant-migrations/{migration.id}/finish")
+        assert response.status_code == 409
+
+
+@pytest.mark.anyio
 class TestStartPanTransfer:
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
     async def test_start_requires_an_imported_catalog(

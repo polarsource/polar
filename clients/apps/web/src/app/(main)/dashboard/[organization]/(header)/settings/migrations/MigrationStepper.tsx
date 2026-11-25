@@ -11,14 +11,16 @@ import { currentPosition, migrationSteps } from './steps'
 export function MigrationStepper({
   migration,
   panCurrentStepKey,
+  benefitsOnly = false,
 }: {
   migration: schemas['MerchantMigration']
   panCurrentStepKey?: string | null
+  benefitsOnly?: boolean
 }) {
   if (migration.step === 'closed') {
     return null
   }
-  const steps = migrationSteps(migration.source_platform)
+  const steps = migrationSteps(migration.source_platform, benefitsOnly)
   const position = currentPosition(migration, panCurrentStepKey)
   // A completed migration has every step behind it.
   const current = position.kind === 'completed' ? steps.length : position.index

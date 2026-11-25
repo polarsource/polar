@@ -61,6 +61,7 @@ from .service import (
     MerchantMigrationNotEnabled,
     MerchantMigrationNotFound,
     MerchantMigrationRecordNotFound,
+    MigrationNotFinishable,
     MigrationOperationInProgress,
     MissingStripeScopes,
     OrganizationNotOnboarded,
@@ -342,6 +343,38 @@ async def set_up_benefits(
 ) -> MerchantMigration:
     return await merchant_migration_service.set_up_benefits(
         session, auth_subject, id, benefits_create
+    )
+
+
+@router.post(
+    "/{id}/finish",
+    response_model=MerchantMigrationSchema,
+    summary="Finish Merchant Migration Without Subscriptions",
+    responses={
+        403: {
+            "description": "Not allowed to manage this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "Merchant migration not found.",
+            "model": MerchantMigrationNotFound.schema(),
+        },
+        409: {
+            "description": "Benefits aren't set up yet, another operation is "
+            "still running, or there are subscriptions to move.",
+            "model": BenefitsNotReady.schema()
+            | MigrationOperationInProgress.schema()
+            | MigrationNotFinishable.schema(),
+        },
+    },
+)
+async def finish(
+    id: UUID4,
+    auth_subject: MerchantMigrationWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> MerchantMigration:
+    return await merchant_migration_service.finish_without_subscriptions(
+        session, auth_subject, id
     )
 
 

@@ -6124,6 +6124,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/merchant-migrations/{id}/finish': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Finish Merchant Migration Without Subscriptions
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['merchant-migrations:finish']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/merchant-migrations/{id}/pan-transfer': {
     parameters: {
       query?: never
@@ -29961,6 +29981,17 @@ export interface components {
       average_seats_per_customer?: number | null
       /** Seat Utilization Rate */
       seat_utilization_rate?: number | null
+    }
+    /** MigrationNotFinishable */
+    MigrationNotFinishable: {
+      /**
+       * Error
+       * @example MigrationNotFinishable
+       * @constant
+       */
+      error: 'MigrationNotFinishable'
+      /** Detail */
+      detail: string
     }
     /** MigrationOperationInProgress */
     MigrationOperationInProgress: {
@@ -65240,6 +65271,67 @@ export interface operations {
             | components['schemas']['BenefitsUnavailable']
             | components['schemas']['BenefitsNotReady']
             | components['schemas']['MigrationOperationInProgress']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'merchant-migrations:finish': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigration']
+        }
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Merchant migration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationNotFound']
+        }
+      }
+      /** @description Benefits aren't set up yet, another operation is still running, or there are subscriptions to move. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['BenefitsNotReady']
+            | components['schemas']['MigrationOperationInProgress']
+            | components['schemas']['MigrationNotFinishable']
         }
       }
       /** @description Validation Error */

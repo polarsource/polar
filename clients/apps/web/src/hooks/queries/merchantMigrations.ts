@@ -232,6 +232,21 @@ export const useStartPanTransfer = (id: string) =>
     ...panTransferHandlers(id),
   })
 
+export const useFinishMerchantMigration = (id: string) =>
+  useMutation({
+    mutationFn: () =>
+      dataOrThrow(
+        api.POST('/v1/merchant-migrations/{id}/finish', {
+          params: { path: { id } },
+        }),
+        "We couldn't finish this migration. Please try again.",
+      ),
+    onSuccess: (migration) => {
+      getQueryClient().setQueryData(['merchantMigration', { id }], migration)
+      invalidateMigration(id)
+    },
+  })
+
 export const useCompletePanTransferStep = (id: string) =>
   useMutation({
     mutationFn: ({

@@ -306,6 +306,15 @@ class BenefitsNotReady(MerchantMigrationError):
         )
 
 
+class MigrationNotFinishable(MerchantMigrationError):
+    def __init__(self) -> None:
+        super().__init__(
+            "Only a migration with no subscriptions to move can finish after "
+            "its benefits are set up.",
+            409,
+        )
+
+
 class CatalogImportNotReady(MerchantMigrationError):
     def __init__(self) -> None:
         super().__init__(
@@ -1335,6 +1344,44 @@ class MerchantMigrationService:
         )
         self._enqueue_waiting_for_ops(migration, steps)
         return self._checklist(migration, steps)
+
+    async def finish_without_subscriptions(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        migration_id: UUID,
+    ) -> MerchantMigration:
+        """Complete a migration that only brought benefits over. Card movement
+        and the switch exist for subscriptions, so with none to move they'd
+        leave the merchant on steps with nothing to do."""
+        migration = await self._get_manageable(
+            session, auth_subject, migration_id, for_update=True
+        )
+        if migration.step != MerchantMigrationStep.set_up_benefits:
+            raise BenefitsNotReady()
+        operation = migration.operation
+        if operation is not None and operation.is_active:
+            raise MigrationOperationInProgress()
+        if (
+            operation is not None
+            and operation.kind == MerchantMigrationOperationKind.benefits
+            and operation.status == MerchantMigrationOperationStatus.failed
+        ):
+            raise BenefitsNotReady()
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        if await record_repository.has_subscriptions_to_move(migration.id):
+            raise MigrationNotFinishable()
+
+        log.info("merchant_migration.completed", merchant_migration_id=migration.id)
+        repository = MerchantMigrationRepository.from_session(session)
+        await repository.update(
+            migration,
+            update_dict={
+                "step": MerchantMigrationStep.completed,
+                "source_credentials": self._without_source_key(migration),
+            },
+        )
+        return migration
 
     async def _cards_already_on_polar(
         self, session: AsyncSession, migration: MerchantMigration

@@ -33,7 +33,7 @@ export const SubscriptionAttention = ({
     if (subscription.status === 'trial_ended') {
       return {
         variant: 'warning',
-        title: 'Trial ended without a payment method',
+        title: 'Trial ended without complete payment details',
       }
     }
     if (subscription.cancel_at_period_end) {

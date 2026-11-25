@@ -76,7 +76,9 @@ class OAuthAccount(RecordModel):
     )
 
     platform: Mapped[OAuthPlatform] = mapped_column(String(32), nullable=False)
-    access_token: Mapped[str] = mapped_column(String(1024), nullable=False)
+    access_token: Mapped[str | None] = mapped_column(
+        String(1024), nullable=True, default=None
+    )
     access_token_encrypted: Mapped[EncryptedString] = mapped_column(
         EncryptedStringType(OAUTH_ACCOUNT_ACCESS_TOKEN_CONTEXT),
         nullable=False,

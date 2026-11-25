@@ -1,6 +1,5 @@
 import importlib
 import sys
-import time
 from collections.abc import Iterator
 from types import ModuleType
 
@@ -12,6 +11,7 @@ from logfire.testing import CaptureLogfire
 from pytest_mock import MockerFixture
 
 from polar.config import settings
+from polar.worker._debounce import SKIP
 from polar.worker._sqs import build_envelope
 
 
@@ -100,13 +100,7 @@ class TestHandler:
         mocker.patch.object(settings, "LOGFIRE_IGNORED_ACTORS", {"dummy"})
         mocker.patch("polar.worker._debounce.log", aws_lambda.log)
         redis = mocker.Mock()
-        redis.hgetall = mocker.AsyncMock(
-            return_value={
-                "executed": "0",
-                "message_id": "other",
-                "enqueue_timestamp": str(int(time.time())),
-            }
-        )
+        redis.eval = mocker.AsyncMock(return_value=[SKIP])
         mocker.patch("polar.worker._runner.RedisMiddleware.get", return_value=redis)
         context = mocker.Mock()
         context.get_remaining_time_in_millis.return_value = 30000

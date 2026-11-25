@@ -129,6 +129,46 @@ class TestFlushGate:
         assert job.delay == 1000
         assert await redis.exists(expected_key) == 1
 
+    async def test_debounced_actor_sends_once_while_owner_waits(
+        self, redis: Redis, mocker: MockerFixture
+    ) -> None:
+        mocker.patch.object(settings, "WORKER_SQS_ENABLED", True)
+        mocker.patch.object(settings, "WORKER_SQS_ACTORS", {"customer.webhook"})
+        send_jobs = mocker.patch("polar.worker._enqueue._sqs.send_jobs")
+
+        CorrelationID.set()
+        customer_id = uuid4()
+        for _ in range(2):
+            jqm = JobQueueManager()
+            jqm.enqueue_job(
+                "customer.webhook", WebhookEventType.customer_state_changed, customer_id
+            )
+            jqm.enqueue_job(
+                "customer.webhook", WebhookEventType.customer_state_changed, customer_id
+            )
+            await jqm.flush(dramatiq.get_broker(), redis)
+
+        sent = [call.args[0] for call in send_jobs.await_args_list]
+        assert [len(jobs) for jobs in sent] == [1, 0]
+
+    async def test_debounced_redis_actor_pushes_once_while_owner_waits(
+        self, redis: Redis
+    ) -> None:
+        CorrelationID.set()
+        customer_id = uuid4()
+        jqm = JobQueueManager()
+        jqm.enqueue_job(
+            "customer.webhook", WebhookEventType.customer_state_changed, customer_id
+        )
+        jqm.enqueue_job(
+            "customer.webhook", WebhookEventType.customer_state_changed, customer_id
+        )
+        jqm.enqueue_job("customer.state_changed", customer_id)
+        await jqm.flush(dramatiq.get_broker(), redis)
+
+        assert await redis.llen("dramatiq:medium_priority.DQ") == 1
+        assert await redis.llen("dramatiq:high_priority") == 1
+
 
 @pytest.mark.anyio
 class TestFlushIngestedEventsChunking:

@@ -22,11 +22,11 @@ Steps 4 and 5 happen in your app. The others happen in Polar under **Settings â†
   Switching can't be undone. Before you switch any subscription:
 
   - **Ship the app update.** Once a subscription switches, its license key is on Polar, and an app that only asks Lemon Squeezy can't rely on it.
-  - **Turn off Lemon Squeezy's cancellation emails.** Lemon Squeezy sees the switch as a cancellation. If your store emails customers when a subscription is cancelled, every customer you switch gets one. Turn that email off in your Lemon Squeezy store's email settings, and turn it back on after your last switch.
+  - **Turn off Lemon Squeezy's cancellation emails.** Lemon Squeezy sees the switch as a cancellation. If your store emails customers when a subscription is cancelled, every customer you switch gets one. Turn that email off in your Lemon Squeezy store's email settings.
   - **Check your Lemon Squeezy webhooks.** Lemon Squeezy sends `subscription_cancelled`, and later `subscription_expired`. Make sure your handlers don't remove access or start churn emails for subscriptions that switched.
 </Warning>
 
-When you switch, a subscription that renews within 24 hours stays on Lemon Squeezy, so it isn't charged twice. Switch it after that renewal. A subscription already cancelled on Lemon Squeezy still switches, and Polar ends it on the same date instead of renewing it.
+When you switch, a subscription that renews within 24 hours stays on Lemon Squeezy, so it isn't charged twice. Polar marks it as skipped and doesn't retry it on its own: once that renewal has gone through, start the switch again for it. A subscription already cancelled on Lemon Squeezy still switches, and Polar ends it on the same date instead of renewing it.
 
 Polar doesn't send customers a separate email about the switch. Their first billing emails from Polar include a short note that their billing moved to Polar.
 

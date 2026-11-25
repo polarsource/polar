@@ -1,0 +1,37 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/BenefitsForm.tsx
+  s_d4a843b33596ce::t_3721dc0610e354 45
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/benefitCopy.ts
+  s_d4a843b33596ce::t_3a9db17add668e 9
+clients/packages/client/src/v1.ts
+  s_d4a843b33596ce::t_3df1d598973a66 28489,28494,28508-28509,28511,28561-28562,28564,65101,65163
+server/polar/merchant_migration/benefits.py
+  s_d4a843b33596ce::t_db10f0204b102a 258-262,271-273
+server/polar/merchant_migration/endpoints.py
+  s_d4a843b33596ce::t_d07be2fa413896 294,321-322
+server/polar/merchant_migration/schemas.py
+  s_d4a843b33596ce::t_261531861c84d6 516,519,527-528,543-544
+server/polar/merchant_migration/service.py
+  s_d4a843b33596ce::t_b800403e8596e2 4,6,136-137,1033,1062-1063,1070-1071,1086,1089,1125,1144-1147,1157-1160,1164-1165,1167-1168,1194-1202,1258-1264
+server/polar/merchant_migration/tasks.py
+  s_d4a843b33596ce::t_53252c17389701 21,58
+server/tests/merchant_migration/test_endpoints.py
+  s_d4a843b33596ce::t_3f9a635bb41a53 799-830
+server/tests/merchant_migration/test_service.py
+  s_d4a843b33596ce::t_304dd862d561bc 63,4955-4956,4958-4959,5783,5809,5813,5832,5834,5839-5854,5859,5861,5891
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5db50bbfca5716751738a3a67fb594f96be8bb3f",
+  "prompts": {},
+  "sessions": {
+    "s_d4a843b33596ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "12adddd7-b520-4f67-a19e-0f92eb2e092a",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

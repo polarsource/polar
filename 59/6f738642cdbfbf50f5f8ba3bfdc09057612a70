@@ -1,0 +1,45 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/ImportedHandoff.tsx
+  s_587ceda2630946::t_5f8c22e3e37bbf 34
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/BenefitRows.tsx
+  s_587ceda2630946::t_bfc05ed87bb7e0 2,4-5,17-20,43-45,69,71
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/BenefitsForm.tsx
+  s_587ceda2630946::t_ecc3f1de510630 5,11-12,20-21,29,32-34,36-39,41,56-57,62-81,83-86,97-99,105-112,114-128,133-137,140-157
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/BenefitsStep.tsx
+  s_37bf03e3cd4b2d::t_d40371496d3a86 52-54,82,93,98,103-112,128-136,154-158,162-166
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/steps.ts
+  s_37bf03e3cd4b2d::t_35e8446f8f117f 73
+server/polar/merchant_migration/adapters/lemon_squeezy.py
+  s_587ceda2630946::t_c8b96f93bed54a 122,509-511,514,523-524,526-527,684-685,962-964
+server/polar/merchant_migration/benefits.py
+  s_587ceda2630946::t_cba499e450b72f 294-298
+server/polar/merchant_migration/canonical.py
+  s_587ceda2630946::t_28f811a367eda9 397-398
+server/polar/merchant_migration/service.py
+  s_587ceda2630946::t_28b83b6f9171a9 136-139
+server/tests/merchant_migration/test_lemon_squeezy_adapter.py
+  s_587ceda2630946::t_9583f3bca9416f 736-745,755-759
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "596f738642cdbfbf50f5f8ba3bfdc09057612a70",
+  "prompts": {},
+  "sessions": {
+    "s_37bf03e3cd4b2d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b8575e47-be3f-4ef4-80ee-520d51c8c6ba",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_587ceda2630946": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "857c022f-2249-4a02-a91e-cde99fa20ae3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

@@ -1,0 +1,39 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/BenefitsForm.tsx
+  s_d4a843b33596ce::t_41fcfe927e32fd 20-22,33-38,52-58,60,95-110
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/BenefitsStep.tsx
+  s_d4a843b33596ce::t_0602c8e4e34415 83,94,99,104-106,130-134
+server/polar/benefit/grant/service.py
+  s_d4a843b33596ce::t_78f0d3c43314eb 159-174,184
+server/polar/merchant_migration/benefits.py
+  s_d4a843b33596ce::t_ece433b23a9f6f 13,22-23,40-41,46-48,56,129,158-178,284-344
+server/polar/merchant_migration/schemas.py
+  s_d4a843b33596ce::t_850a4abbbc0536 534-536,543-548,555-561
+server/polar/merchant_migration/service.py
+  s_d4a843b33596ce::t_c2ce477faa9874 1018,1020-1022,1044,1087-1090,1140-1143,1174
+clients/packages/client/src/v1.ts
+  s_d4a843b33596ce::t_bd5024b60521d4 28522-28526,28562-28566,28575-28580
+server/polar/merchant_migration/adapters/lemon_squeezy.py
+  s_d4a843b33596ce::t_6478656982828a 41,122,509-533,561,572,581-586,661-695,925-933
+server/polar/merchant_migration/canonical.py
+  s_d4a843b33596ce::t_d8f3329cabfcc5 379-393
+server/tests/merchant_migration/test_lemon_squeezy_adapter.py
+  s_d4a843b33596ce::t_830c1e41ef8498 640,658-728
+server/tests/merchant_migration/test_service.py
+  s_d4a843b33596ce::t_c149dfebd22ea1 44,97,5757,5780-5782,5785,5843-5845,5905-5973
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cb5d873f494be0ade118cdb2e4e4bee8a32f72ba",
+  "prompts": {},
+  "sessions": {
+    "s_d4a843b33596ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "12adddd7-b520-4f67-a19e-0f92eb2e092a",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

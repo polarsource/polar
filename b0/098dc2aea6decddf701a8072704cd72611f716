@@ -1,0 +1,29 @@
+dev/cli/commands/api.py
+  s_6d161b2d3fb15f::t_b30c13ab61f016 29-34
+server/scripts/seeds_load.py
+  s_fd3579d2e82988::t_5a731ccf9a952d 51-55,3109-3110,3123-3127,3129-3153,3167-3168,3170-3199
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b0098dc2aea6decddf701a8072704cd72611f716",
+  "prompts": {},
+  "sessions": {
+    "s_6d161b2d3fb15f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bb61745e-ee0b-4159-b550-930158497705",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_fd3579d2e82988": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "081144c0-6592-4cbb-8431-62871b3ccf57",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

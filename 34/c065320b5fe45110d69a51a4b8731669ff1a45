@@ -1,0 +1,49 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/BenefitRows.tsx
+  s_587ceda2630946::t_f8f23988728ab7 1-113
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/BenefitsForm.tsx
+  s_587ceda2630946::t_a322614c232eb5 5,8-10,19-20,30-38,43,51-54,59-75,77-88,120-121,123-125
+clients/packages/client/src/v1.ts
+  s_587ceda2630946::t_1fe9dca484fd60 28522-28531
+server/polar/merchant_migration/adapters/lemon_squeezy.py
+  s_37bf03e3cd4b2d::t_bc92a40a4212f3 559,570,579-584
+server/polar/merchant_migration/canonical.py
+  s_37bf03e3cd4b2d::t_d758b5fbb2a3eb 382-385
+server/polar/merchant_migration/schemas.py
+  s_587ceda2630946::t_d8d349832b5782 534-537
+server/polar/merchant_migration/service.py
+  s_37bf03e3cd4b2d::t_93a5947d3d5ef3 1041-1042
+server/tests/merchant_migration/test_lemon_squeezy_adapter.py
+  s_d4a843b33596ce::t_3edbcc7eeddec2 672
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "34c065320b5fe45110d69a51a4b8731669ff1a45",
+  "prompts": {},
+  "sessions": {
+    "s_37bf03e3cd4b2d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b8575e47-be3f-4ef4-80ee-520d51c8c6ba",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_587ceda2630946": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "857c022f-2249-4a02-a91e-cde99fa20ae3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_d4a843b33596ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "12adddd7-b520-4f67-a19e-0f92eb2e092a",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

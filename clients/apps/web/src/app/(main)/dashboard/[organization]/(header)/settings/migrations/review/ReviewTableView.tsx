@@ -144,13 +144,9 @@ export function ReviewTableView({
         rerunning={rerunning}
         stalled={stalled}
         readError={refreshError}
-        {...(catalogEmpty === 'benefits_only'
-          ? {
-              onContinue,
-              continuing: importing,
-              continueError: importError,
-            }
-          : {})}
+        onContinue={onContinue}
+        continuing={importing}
+        continueError={importError}
       />
     )
   }

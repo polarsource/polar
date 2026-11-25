@@ -360,9 +360,11 @@ async def set_up_benefits(
             "model": MerchantMigrationNotFound.schema(),
         },
         409: {
-            "description": "Benefits aren't set up yet, another operation is "
-            "still running, or there are subscriptions to move.",
-            "model": BenefitsNotReady.schema()
+            "description": "Only Lemon Squeezy migrations bring benefits over, "
+            "benefits aren't set up yet, another operation is still running, "
+            "or there are subscriptions to move.",
+            "model": BenefitsUnavailable.schema()
+            | BenefitsNotReady.schema()
             | MigrationOperationInProgress.schema()
             | MigrationNotFinishable.schema(),
         },

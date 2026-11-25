@@ -65316,13 +65316,14 @@ export interface operations {
           'application/json': components['schemas']['MerchantMigrationNotFound']
         }
       }
-      /** @description Benefits aren't set up yet, another operation is still running, or there are subscriptions to move. */
+      /** @description Only Lemon Squeezy migrations bring benefits over, benefits aren't set up yet, another operation is still running, or there are subscriptions to move. */
       409: {
         headers: {
           [name: string]: unknown
         }
         content: {
           'application/json':
+            | components['schemas']['BenefitsUnavailable']
             | components['schemas']['BenefitsNotReady']
             | components['schemas']['MigrationOperationInProgress']
             | components['schemas']['MigrationNotFinishable']

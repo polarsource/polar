@@ -1,9 +1,9 @@
 import { schemas } from '@polar-sh/client'
 import { useRecordSummary } from './review/recordSummary'
+import { BENEFITS_STEP } from './steps'
 
 const AFTER_IMPORT: schemas['MerchantMigrationStep'][] = [
-  'create_catalog',
-  'set_up_benefits',
+  ...BENEFITS_STEP.steps,
   'completed',
 ]
 

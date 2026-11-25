@@ -20,10 +20,10 @@ import { BenefitsForm } from './BenefitsForm'
 // `set_up_benefits`.
 export function BenefitsStep({
   migration,
-  benefitsOnly = false,
+  benefitsOnly,
 }: {
   migration: schemas['MerchantMigration']
-  benefitsOnly?: boolean
+  benefitsOnly: boolean
 }) {
   const [editing, setEditing] = useState(false)
   const operation = migration.operation

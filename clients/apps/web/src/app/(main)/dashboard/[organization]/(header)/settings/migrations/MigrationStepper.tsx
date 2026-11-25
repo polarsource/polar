@@ -11,11 +11,11 @@ import { currentPosition, migrationSteps } from './steps'
 export function MigrationStepper({
   migration,
   panCurrentStepKey,
-  benefitsOnly = false,
+  benefitsOnly,
 }: {
   migration: schemas['MerchantMigration']
   panCurrentStepKey?: string | null
-  benefitsOnly?: boolean
+  benefitsOnly: boolean
 }) {
   if (migration.step === 'closed') {
     return null

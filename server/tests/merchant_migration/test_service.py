@@ -5988,26 +5988,17 @@ def _benefits_adapter(
     )
 
 
-async def _benefits_set_up_migration(
-    save_fixture: SaveFixture,
-    organization: Organization,
-    *subscription_statuses: MerchantMigrationRecordStatus,
+@pytest.fixture
+async def benefits_only_migration(
+    save_fixture: SaveFixture, organization: Organization
 ) -> MerchantMigration:
-    migration = await build_connected_migration(save_fixture, organization)
-    migration.source_platform = MerchantMigrationSourcePlatform.lemon_squeezy
-    migration.step = MerchantMigrationStep.set_up_benefits
+    migration = MerchantMigration(
+        organization=organization,
+        source_platform=MerchantMigrationSourcePlatform.lemon_squeezy,
+        step=MerchantMigrationStep.set_up_benefits,
+        source_credentials={"api_key_encrypted": "encrypted", "store_id": "1"},
+    )
     await save_fixture(migration)
-    for index, status in enumerate(subscription_statuses):
-        await save_fixture(
-            MerchantMigrationRecord(
-                merchant_migration=migration,
-                organization=organization,
-                type=MerchantMigrationRecordType.subscription,
-                status=status,
-                source_id=f"sub_{index}",
-                canonical=serialize(canonical_subscription(source_id=f"sub_{index}")),
-            )
-        )
     return migration
 
 
@@ -6017,41 +6008,32 @@ class TestFinishWithoutSubscriptions:
     async def test_completes_and_drops_the_key(
         self,
         session: AsyncSession,
-        save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
-        organization: Organization,
         user_organization: UserOrganization,
+        benefits_only_migration: MerchantMigration,
     ) -> None:
-        migration = await _benefits_set_up_migration(
-            save_fixture, organization, MerchantMigrationRecordStatus.skipped
-        )
-
         finished = await service.finish_without_subscriptions(
-            session, auth_subject, migration.id
+            session, auth_subject, benefits_only_migration.id
         )
 
         assert finished.step == MerchantMigrationStep.completed
         assert "api_key_encrypted" not in finished.source_credentials
 
     @pytest.mark.auth
-    @pytest.mark.parametrize(
-        "status",
-        [
-            MerchantMigrationRecordStatus.pending,
-            MerchantMigrationRecordStatus.imported,
-            MerchantMigrationRecordStatus.failed,
-        ],
-    )
     async def test_refuses_with_subscriptions_to_move(
         self,
-        status: MerchantMigrationRecordStatus,
+        mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        migration = await _benefits_set_up_migration(save_fixture, organization, status)
+        migration = await _lemon_squeezy_imported_migration(
+            mocker, session, save_fixture, auth_subject, organization
+        )
+        migration.step = MerchantMigrationStep.set_up_benefits
+        await save_fixture(migration)
 
         with pytest.raises(MigrationNotFinishable):
             await service.finish_without_subscriptions(
@@ -6059,21 +6041,29 @@ class TestFinishWithoutSubscriptions:
             )
 
     @pytest.mark.auth
-    async def test_refuses_before_benefits(
+    @pytest.mark.parametrize(
+        ("step", "error"),
+        [
+            (MerchantMigrationStep.create_catalog, BenefitsNotReady),
+            (MerchantMigrationStep.completed, MigrationNotFinishable),
+        ],
+    )
+    async def test_refuses_outside_the_benefits_step(
         self,
+        step: MerchantMigrationStep,
+        error: type[Exception],
         session: AsyncSession,
         save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
-        organization: Organization,
         user_organization: UserOrganization,
+        benefits_only_migration: MerchantMigration,
     ) -> None:
-        migration = await _benefits_set_up_migration(save_fixture, organization)
-        migration.step = MerchantMigrationStep.create_catalog
-        await save_fixture(migration)
+        benefits_only_migration.step = step
+        await save_fixture(benefits_only_migration)
 
-        with pytest.raises(BenefitsNotReady):
+        with pytest.raises(error):
             await service.finish_without_subscriptions(
-                session, auth_subject, migration.id
+                session, auth_subject, benefits_only_migration.id
             )
 
     @pytest.mark.auth
@@ -6082,20 +6072,19 @@ class TestFinishWithoutSubscriptions:
         session: AsyncSession,
         save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
-        organization: Organization,
         user_organization: UserOrganization,
+        benefits_only_migration: MerchantMigration,
     ) -> None:
-        migration = await _benefits_set_up_migration(save_fixture, organization)
-        migration.operation = MerchantMigrationOperation(
+        benefits_only_migration.operation = MerchantMigrationOperation(
             status=MerchantMigrationOperationStatus.running,
             kind=MerchantMigrationOperationKind.benefits,
             last_progress_at=utc_now(),
         )
-        await save_fixture(migration)
+        await save_fixture(benefits_only_migration)
 
         with pytest.raises(MigrationOperationInProgress):
             await service.finish_without_subscriptions(
-                session, auth_subject, migration.id
+                session, auth_subject, benefits_only_migration.id
             )
 
 

@@ -223,19 +223,6 @@ class MerchantMigrationRecordRepository(
         )
         return await self.session.scalar(statement)
 
-    async def has_subscriptions_to_move(self, migration_id: UUID) -> bool:
-        statement = select(
-            self.get_base_statement()
-            .where(
-                MerchantMigrationRecord.merchant_migration_id == migration_id,
-                MerchantMigrationRecord.type
-                == MerchantMigrationRecordType.subscription,
-                MerchantMigrationRecord.status != MerchantMigrationRecordStatus.skipped,
-            )
-            .exists()
-        )
-        return bool(await self.session.scalar(statement))
-
     async def get_by_source(
         self,
         *,

@@ -31,7 +31,9 @@ export function CatalogEmptyPanel({
   continueError,
 }: Props) {
   const refreshing = rerunning && !stalled
-  const error = readError ?? continueError
+  const canContinue = kind === 'benefits_only' && onContinue !== undefined
+  const continueFailure = canContinue ? continueError : undefined
+  const error = readError ?? continueFailure
   const failed = Boolean(error) && !rerunning
   const { title, description } = rerunning
     ? {
@@ -42,8 +44,8 @@ export function CatalogEmptyPanel({
       }
     : readError
       ? { title: CATALOG_READ_ERROR_TITLE, description: readError }
-      : continueError
-        ? { title: CATALOG_CONTINUE_ERROR_TITLE, description: continueError }
+      : continueFailure
+        ? { title: CATALOG_CONTINUE_ERROR_TITLE, description: continueFailure }
         : CATALOG_EMPTY_COPY[kind]
 
   return (
@@ -76,7 +78,7 @@ export function CatalogEmptyPanel({
             {refreshing ? 'Refreshing…' : 'Refresh catalog'}
           </Button>
         )}
-        {onContinue && (
+        {canContinue && (
           <Button
             size="sm"
             onClick={onContinue}

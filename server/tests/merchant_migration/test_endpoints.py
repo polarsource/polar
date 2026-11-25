@@ -718,6 +718,8 @@ class TestFinish:
         migration = await _create_migration(
             save_fixture, organization, step=MerchantMigrationStep.set_up_benefits
         )
+        migration.source_platform = MerchantMigrationSourcePlatform.lemon_squeezy
+        await save_fixture(migration)
 
         response = await client.post(f"/v1/merchant-migrations/{migration.id}/finish")
         assert response.status_code == 200

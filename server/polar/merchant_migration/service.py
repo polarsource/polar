@@ -307,11 +307,20 @@ class BenefitsNotReady(MerchantMigrationError):
         )
 
 
+_BEFORE_BENEFITS = frozenset(
+    {
+        MerchantMigrationStep.source_setup,
+        MerchantMigrationStep.pre_check,
+        MerchantMigrationStep.create_catalog,
+    }
+)
+
+
 class MigrationNotFinishable(MerchantMigrationError):
     def __init__(self) -> None:
         super().__init__(
-            "Only a migration with no subscriptions to move can finish after "
-            "its benefits are set up.",
+            "Only a migration setting up benefits, with no subscriptions to "
+            "move, can finish here.",
             409,
         )
 
@@ -1324,19 +1333,7 @@ class MerchantMigrationService:
         )
         if migration.step != ready_step:
             raise PanTransferNotReady()
-        # Stalled counts too: once this leaves `create_catalog` the import can't
-        # be retried, and whatever it hadn't prepared would never be switched.
-        operation = migration.operation
-        if operation is not None and operation.is_active:
-            raise MigrationOperationInProgress()
-        # Moving on would leave the step, and a failed run with it: it could
-        # never be retried. Skipping the step ends the run instead.
-        if (
-            operation is not None
-            and operation.kind == MerchantMigrationOperationKind.benefits
-            and operation.status == MerchantMigrationOperationStatus.failed
-        ):
-            raise BenefitsNotReady()
+        self._ensure_ready_to_leave(migration)
         # The first step tells the merchant which Stripe account to send the cards
         # to. Without it configured we'd mark that step done while showing them
         # nothing, and they'd address the transfer to no one.
@@ -1376,19 +1373,21 @@ class MerchantMigrationService:
         migration = await self._get_manageable(
             session, auth_subject, migration_id, for_update=True
         )
+        if migration.source_platform != MerchantMigrationSourcePlatform.lemon_squeezy:
+            raise BenefitsUnavailable()
+        if migration.step in _BEFORE_BENEFITS:
+            raise BenefitsNotReady()
         if migration.step != MerchantMigrationStep.set_up_benefits:
-            raise BenefitsNotReady()
-        operation = migration.operation
-        if operation is not None and operation.is_active:
-            raise MigrationOperationInProgress()
-        if (
-            operation is not None
-            and operation.kind == MerchantMigrationOperationKind.benefits
-            and operation.status == MerchantMigrationOperationStatus.failed
+            raise MigrationNotFinishable()
+        self._ensure_ready_to_leave(migration)
+        # The same classification the review counts come from, so the button
+        # and this check agree on what can still move.
+        subscriptions = await self._classify_staged(
+            session, migration, [PrecheckEntity.subscriptions]
+        )
+        if any(
+            item.status == PrecheckRecordStatus.importable for item in subscriptions
         ):
-            raise BenefitsNotReady()
-        record_repository = MerchantMigrationRecordRepository.from_session(session)
-        if await record_repository.has_subscriptions_to_move(migration.id):
             raise MigrationNotFinishable()
 
         log.info("merchant_migration.completed", merchant_migration_id=migration.id)
@@ -1401,6 +1400,21 @@ class MerchantMigrationService:
             },
         )
         return migration
+
+    def _ensure_ready_to_leave(self, migration: MerchantMigration) -> None:
+        # Stalled counts too: once this leaves `create_catalog` the import can't
+        # be retried, and whatever it hadn't prepared would never be switched.
+        operation = migration.operation
+        if operation is not None and operation.is_active:
+            raise MigrationOperationInProgress()
+        # Moving on would leave the step, and a failed run with it: it could
+        # never be retried. Skipping the step ends the run instead.
+        if (
+            operation is not None
+            and operation.kind == MerchantMigrationOperationKind.benefits
+            and operation.status == MerchantMigrationOperationStatus.failed
+        ):
+            raise BenefitsNotReady()
 
     async def _cards_already_on_polar(
         self, session: AsyncSession, migration: MerchantMigration

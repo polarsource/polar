@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getAuthenticatedUser, requireAuthenticatedUser } from './user'
 
-const { cookieStore, get, redirect } = vi.hoisted(() => ({
+const { cookieStore, requestHeaders, get, redirect } = vi.hoisted(() => ({
   cookieStore: { has: vi.fn() },
+  requestHeaders: new Headers(),
   get: vi.fn(),
   redirect: vi.fn(() => {
     throw new Error('NEXT_REDIRECT')
@@ -11,6 +12,7 @@ const { cookieStore, get, redirect } = vi.hoisted(() => ({
 
 vi.mock('next/headers', () => ({
   cookies: async () => cookieStore,
+  headers: async () => requestHeaders,
 }))
 
 vi.mock('next/navigation', () => ({ redirect }))
@@ -81,7 +83,18 @@ describe('requireAuthenticatedUser', () => {
     cookieStore.has.mockReturnValue(true)
   })
 
-  it('redirects to login when the session cookie is no longer valid', async () => {
+  it('redirects to login, back to the requested page, when the session cookie is no longer valid', async () => {
+    respondWith(401)
+    requestHeaders.set('x-polar-request-path', '/dashboard/acme?tab=orders')
+
+    await expect(requireAuthenticatedUser()).rejects.toThrow('NEXT_REDIRECT')
+    expect(redirect).toHaveBeenCalledWith(
+      '/auth?return_to=%2Fdashboard%2Facme%3Ftab%3Dorders',
+    )
+    requestHeaders.delete('x-polar-request-path')
+  })
+
+  it('redirects to login without a return path when none was forwarded', async () => {
     respondWith(401)
 
     await expect(requireAuthenticatedUser()).rejects.toThrow('NEXT_REDIRECT')

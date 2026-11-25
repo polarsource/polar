@@ -11,6 +11,7 @@ import { getServerURL } from './utils/api'
 import { CONFIG } from './utils/config'
 import { POLAR_ENV_COOKIE } from './utils/cookies'
 import { POLAR_EMBED_ORIGIN_HEADER } from './utils/embed'
+import { getLoginPath, POLAR_REQUEST_PATH_HEADER } from './utils/login'
 
 const IS_SANDBOX =
   (process.env.NEXT_PUBLIC_ENVIRONMENT ||
@@ -207,18 +208,19 @@ const getEmbedPolicy = async (
   return undefined
 }
 
+const getRequestPath = (request: NextRequest): string =>
+  `${request.nextUrl.pathname}${request.nextUrl.search}`
+
 const getLoginResponse = (request: NextRequest): NextResponse => {
-  const redirectURL = request.nextUrl.clone()
-  redirectURL.pathname = '/auth'
-  redirectURL.search = ''
-  const returnTo = `${request.nextUrl.pathname}${request.nextUrl.search}`
-  redirectURL.searchParams.set('return_to', returnTo)
-  return NextResponse.redirect(redirectURL)
+  return NextResponse.redirect(
+    new URL(getLoginPath(getRequestPath(request)), request.nextUrl),
+  )
 }
 
 export async function proxy(request: NextRequest) {
   const requestHeaders = new Headers(request.headers)
   requestHeaders.delete(POLAR_EMBED_ORIGIN_HEADER)
+  requestHeaders.delete(POLAR_REQUEST_PATH_HEADER)
 
   // Do not run middleware for forwarded routes
   // @pieterbeulque added this because the `config.matcher` behavior below
@@ -377,6 +379,7 @@ export async function proxy(request: NextRequest) {
     getOrCreateDistinctId(request)
 
   requestHeaders.set(DISTINCT_ID_HEADER, distinctId)
+  requestHeaders.set(POLAR_REQUEST_PATH_HEADER, getRequestPath(request))
 
   const embedPolicy = await getEmbedPolicy(request)
   if (embedPolicy?.embed_origin) {

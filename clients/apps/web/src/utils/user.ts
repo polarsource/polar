@@ -1,9 +1,10 @@
 import { schemas } from '@polar-sh/client'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { cache } from 'react'
 import { getServerSideAPI } from './client/serverside'
 import { CONFIG } from './config'
+import { getLoginPath, POLAR_REQUEST_PATH_HEADER } from './login'
 
 const _getAuthenticatedUser = async (): Promise<
   schemas['UserRead'] | undefined
@@ -46,7 +47,7 @@ export const requireAuthenticatedUser = async (): Promise<
 > => {
   const user = await getAuthenticatedUser()
   if (!user) {
-    redirect('/auth')
+    redirect(getLoginPath((await headers()).get(POLAR_REQUEST_PATH_HEADER)))
   }
   return user
 }

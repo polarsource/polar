@@ -216,6 +216,20 @@ describe('middleware function', () => {
     fetchSpy.mockRestore()
   })
 
+  it('forwards the requested path so a layout can send the user back after login', async () => {
+    const request = new NextRequest(
+      'https://example.com/dashboard/acme?tab=orders',
+      { headers: { 'x-polar-request-path': '/spoofed' } },
+    )
+    request.cookies.set('polar_session', 'session-token')
+
+    const response = await proxy(request)
+
+    expect(getForwardedRequestHeader(response, 'x-polar-request-path')).toBe(
+      '/dashboard/acme?tab=orders',
+    )
+  })
+
   it('should allow unauthenticated access to public routes', async () => {
     const request = new NextRequest('https://example.com/')
 

@@ -6,6 +6,7 @@ import structlog
 from authlib.oauth2.rfc6749.errors import (
     AccessDeniedError,
     InvalidRequestError,
+    InvalidScopeError,
     OAuth2Error,
 )
 from authlib.oauth2.rfc6749.grants import (
@@ -89,6 +90,9 @@ class AuthorizationCodeGrant(
         self._hooks["before_validate_authorization_request_payload"] = {
             self.before_validate_authorization_request_payload
         }
+        self._hooks["after_validate_authorization_request_payload"] = {
+            self.after_validate_authorization_request_payload
+        }
 
     def before_validate_authorization_request_payload(
         self, grant: "typing.Self", redirect_uri: str
@@ -101,6 +105,16 @@ class AuthorizationCodeGrant(
         scope: str | None = payload.data.get("scope")
         if scope is None:
             self.request.payload.data["scope"] = self.request.client.scope
+
+    def after_validate_authorization_request_payload(
+        self, grant: "typing.Self", result: None
+    ) -> None:
+        """
+        Reject requests whose scope resolves to nothing once filtered
+        by the client's allowed scope: authlib only rejects `None`.
+        """
+        if not self.request.scope:
+            raise InvalidScopeError()
 
     def create_authorization_response(
         self, redirect_uri: str, grant_user: User | None

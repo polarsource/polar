@@ -83,12 +83,16 @@ export default async function Page(props: {
   })
 
   if (response.status === 401) {
-    redirect(`/${organization.slug}/portal/request`)
+    redirect(
+      `/${organization.slug}/portal/request?${new URLSearchParams(searchParams)}`,
+    )
   }
 
   if (response.status === 403) {
     // Member doesn't have billing permissions - redirect to overview
-    redirect(`/${organization.slug}/portal`)
+    redirect(
+      `/${organization.slug}/portal?${new URLSearchParams(resolvedSearchParams)}`,
+    )
   }
 
   if (error) {

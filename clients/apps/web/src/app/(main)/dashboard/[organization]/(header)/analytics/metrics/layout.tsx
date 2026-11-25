@@ -12,7 +12,6 @@ export default async function Layout(props: {
   const params = await props.params
   const api = await getServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
-    api,
     params.organization,
   )
 

@@ -9,11 +9,15 @@ from freezegun import freeze_time
 from pytest_mock import MockerFixture
 from sqlalchemy.exc import OperationalError
 
+from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.enums import RecurringInterval, TaxBehavior
 from polar.kit.utils import utc_now
+from polar.member.repository import MemberRepository
 from polar.merchant_migration.canonical import (
     CanonicalAccount,
     CanonicalCollectionMethod,
+    CanonicalLicenseKey,
+    CanonicalLicenseKeyActivation,
     CanonicalPaymentMethod,
     CanonicalPaymentMethodType,
     CanonicalPrice,
@@ -37,6 +41,7 @@ from polar.models import (
     ProductPriceFixed,
     Subscription,
 )
+from polar.models.benefit import BenefitType
 from polar.models.discount import Discount, DiscountDuration, DiscountType
 from polar.models.merchant_migration_record import (
     MerchantMigrationCutoverStatus,
@@ -51,11 +56,13 @@ from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_benefit,
     create_customer,
     create_discount,
     create_payment_method,
     create_product_price_fixed,
     create_subscription,
+    set_product_benefits,
 )
 from tests.fixtures.stripe import build_stripe_payment_method
 from tests.merchant_migration._helpers import (
@@ -147,9 +154,11 @@ class _FakeSourceAdapter:
         subscription: CanonicalSubscription | None,
         *,
         error: Exception | None = None,
+        license_key: CanonicalLicenseKey | None = None,
     ) -> None:
         self._subscription = subscription
         self._error = error
+        self._license_key = license_key
         self.stopped: list[str] = []
         self.period_end_stops: list[bool] = []
 
@@ -157,6 +166,11 @@ class _FakeSourceAdapter:
         if self._error is not None:
             raise self._error
         return self._subscription
+
+    async def get_license_key(
+        self, subscription: CanonicalSubscription
+    ) -> CanonicalLicenseKey | None:
+        return self._license_key
 
     async def stop_source_subscription(
         self,
@@ -354,6 +368,68 @@ class TestRun:
         assert subscription.user_metadata["provider_subscription_id"] == "sub_1"
         assert subscription.tax_behavior == tax
         assert subscription.tax_exempted is False
+
+    async def test_keeps_the_customers_license_key(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        cutover: RunCutover,
+        pending_record: MerchantMigrationRecord,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.license_keys,
+            properties={
+                "prefix": None,
+                "expires": None,
+                "activations": None,
+                "limit_usage": None,
+            },
+        )
+        await set_product_benefits(save_fixture, product=product, benefits=[benefit])
+        copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        enqueue_job = mocker.patch("polar.merchant_migration.benefits.enqueue_job")
+        activation = CanonicalLicenseKeyActivation(
+            id="16a12ab5-d7b7-442e-a2db-e9dfa14a05de", label="Ada's laptop"
+        )
+
+        outcome = await cutover(
+            _FakeSourceAdapter(
+                canonical_subscription(),
+                license_key=CanonicalLicenseKey(
+                    key="KEY-1",
+                    activations=[activation],
+                    expires_at=datetime(2027, 3, 1, tzinfo=UTC),
+                ),
+            )
+        )
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        # The grant task looks the grant up by the owner member, so the seed
+        # must carry it.
+        owner = await MemberRepository.from_session(session).get_owner_by_customer_id(
+            subscription.customer_id
+        )
+        assert owner is not None
+        grant = await BenefitGrantRepository.from_session(
+            session
+        ).get_by_benefit_and_scope(
+            subscription.customer, benefit, member=owner, subscription=subscription
+        )
+        assert grant is not None
+        assert dict(grant.properties) == {"user_provided_key": "KEY-1"}
+        enqueue_job.assert_called_once_with(
+            "merchant_migration.keep_license_key_activations",
+            benefit_grant_id=grant.id,
+            activations=[{"id": activation.id, "label": "Ada's laptop"}],
+            keep_expiry=False,
+            expires_at=None,
+        )
 
     async def test_price_on_a_later_imported_product_moves_onto_the_first(
         self,
@@ -1492,6 +1568,21 @@ class TestRun:
         assert "has expired" in (outcome.message or "")
         subscription = await _created(session, pending_record)
         assert subscription.status == SubscriptionStatus.active
+
+    async def test_moves_an_india_card_and_says_so(
+        self,
+        mocker: MockerFixture,
+        cutover: RunCutover,
+    ) -> None:
+        copied_cards(
+            mocker,
+            build_stripe_payment_method(customer="cus_1", details={"country": "IN"}),
+        )
+
+        outcome = await cutover(_source())
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert "India-issued" in (outcome.message or "")
 
     async def test_moves_without_a_card_and_leaves_it_to_dunning(
         self,

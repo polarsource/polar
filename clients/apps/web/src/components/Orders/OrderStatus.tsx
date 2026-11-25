@@ -16,6 +16,15 @@ export const OrderStatusDisplayTitle: Record<Status, string> = {
   void: 'Void',
 }
 
+const OrderStatusDescription: Record<Status, string> = {
+  draft: 'Created but not finalized. Nothing has been charged yet.',
+  pending: 'Created, and Polar is attempting to collect payment.',
+  paid: 'The payment succeeded.',
+  partially_refunded: 'Part of the order has been refunded.',
+  refunded: 'The order has been fully refunded.',
+  void: 'Will not be collected, for example after repeated payment failures.',
+}
+
 const OrderStatusIcon: Record<Status, StatusIconProps> = {
   draft: { shape: 'dashed' },
   pending: { shape: 'half', tone: 'yellow' },
@@ -48,5 +57,6 @@ export const OrderStatus = ({ status }: { status: Status }) => (
   <StatusLabel
     {...OrderStatusIcon[status]}
     label={OrderStatusDisplayTitle[status]}
+    description={OrderStatusDescription[status]}
   />
 )

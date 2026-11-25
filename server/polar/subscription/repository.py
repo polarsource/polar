@@ -169,15 +169,21 @@ class SubscriptionRepository(
         )
         return await self.get_all(statement)
 
-    async def has_earlier_subscription_on_meter(
-        self, subscription: Subscription, customer_id: UUID, meter_id: UUID
+    async def is_meter_owned_by_other_subscription(
+        self,
+        subscription: Subscription,
+        customer_id: UUID,
+        meter_id: UUID,
+        *,
+        bills_meter: bool,
     ) -> bool:
-        """Whether another live subscription that started before `subscription`
-        bills or credits the customer's meter."""
+        """Whether another live subscription owns the customer's meter: the
+        earliest that bills it, or the earliest that credits it when none bills
+        it."""
         price = with_polymorphic(
             ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
         )
-        bills_meter = (
+        other_bills_meter = (
             select(SubscriptionProductPrice.id)
             .join(
                 price,
@@ -192,7 +198,7 @@ class SubscriptionRepository(
             )
             .exists()
         )
-        credits_meter = (
+        other_credits_meter = (
             select(BenefitGrant.id)
             .join(Benefit, Benefit.id == BenefitGrant.benefit_id)
             .where(
@@ -205,6 +211,18 @@ class SubscriptionRepository(
             )
             .exists()
         )
+        started_earlier = or_(
+            Subscription.started_at < subscription.started_at,
+            and_(
+                Subscription.started_at == subscription.started_at,
+                Subscription.id < subscription.id,
+            ),
+        )
+        owns_meter = (
+            and_(other_bills_meter, started_earlier)
+            if bills_meter
+            else or_(other_bills_meter, and_(other_credits_meter, started_earlier))
+        )
         statement = select(
             self.get_base_statement()
             .where(
@@ -214,14 +232,7 @@ class SubscriptionRepository(
                     | SubscriptionStatus.paused_statuses()
                 ),
                 Subscription.ended_at.is_(None),
-                or_(
-                    Subscription.started_at < subscription.started_at,
-                    and_(
-                        Subscription.started_at == subscription.started_at,
-                        Subscription.id < subscription.id,
-                    ),
-                ),
-                or_(bills_meter, credits_meter),
+                owns_meter,
             )
             .exists()
         )

@@ -20,7 +20,10 @@ import typer
 from rich.console import Console
 from sqlalchemy import CursorResult, select, update
 
-from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
+from polar.kit.db.postgres import (  # lint-skip: dry-run
+    AsyncSession,
+    create_async_sessionmaker,
+)
 from polar.models import WebhookDelivery, WebhookEndpoint
 from polar.postgres import create_async_engine
 from scripts.helper import configure_script_logging, typer_async

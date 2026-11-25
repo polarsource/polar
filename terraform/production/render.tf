@@ -141,6 +141,11 @@ module "production" {
       custom_domains     = [{ name = "worker-invoices-receipts.polar.sh" }]
       dramatiq_prom_port = "10003"
     }
+    worker-event-mover = {
+      start_command      = "uv run python -m polar.event.mover"
+      num_instances      = 2
+      dramatiq_prom_port = "10004"
+    }
   }
 
   environment_groups = module.backend_environment.environment_groups

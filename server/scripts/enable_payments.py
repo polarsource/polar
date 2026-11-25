@@ -7,7 +7,7 @@ import typer
 from sqlalchemy import select
 
 import polar.tasks  # noqa: F401
-from polar.kit.db.postgres import create_async_sessionmaker
+from polar.kit.db.postgres import create_async_sessionmaker  # lint-skip: dry-run
 from polar.kit.utils import utc_now
 from polar.models.organization import Organization, OrganizationStatus
 from polar.models.organization_review import OrganizationReview

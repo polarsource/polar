@@ -1,7 +1,11 @@
-from unittest.mock import AsyncMock, MagicMock
+import time
+from typing import Any
+from unittest.mock import AsyncMock, MagicMock, Mock
 
 import pytest
 from redis import ConnectionError, ReadOnlyError
+from redis.backoff import NoBackoff
+from redis.retry import Retry
 
 from polar.redis import (
     FailoverPipeline,
@@ -10,93 +14,101 @@ from polar.redis import (
     SyncFailoverRedis,
 )
 
+FAILURE: dict[str, Any] = {
+    "failure_count": 1,
+    "start_time": time.monotonic(),
+    "command_name": "SET",
+}
 
-def create_async_client() -> FailoverRedis:
+
+def create_connection(mock: type[Mock]) -> Mock:
+    connection = mock()
+    connection.retry = Retry(NoBackoff(), retries=3)
+    return connection
+
+
+def create_async_client() -> tuple[FailoverRedis, AsyncMock]:
     client = FailoverRedis()
-    client.connection_pool = AsyncMock()
-    return client
+    pool = AsyncMock()
+    client.connection_pool = pool
+    return client, pool
 
 
-def create_sync_client() -> SyncFailoverRedis:
+def create_sync_client() -> tuple[SyncFailoverRedis, MagicMock]:
     client = SyncFailoverRedis()
-    client.connection_pool = MagicMock()
-    return client
+    pool = MagicMock()
+    client.connection_pool = pool
+    return client, pool
 
 
 @pytest.mark.anyio
 class TestFailoverRedis:
     async def test_readonly_drops_idle_connections(self) -> None:
-        client = create_async_client()
-        try:
-            raise ReadOnlyError("READONLY")
-        except ReadOnlyError:
-            await client._close_connection(AsyncMock())
+        client, pool = create_async_client()
 
-        client.connection_pool.disconnect.assert_awaited_once_with(
-            inuse_connections=False
+        await client._close_connection(
+            create_connection(AsyncMock), ReadOnlyError("READONLY"), **FAILURE
         )
 
-    async def test_other_errors_leave_pool_alone(self) -> None:
-        client = create_async_client()
-        try:
-            raise ConnectionError("connection lost")
-        except ConnectionError:
-            await client._close_connection(AsyncMock())
+        pool.disconnect.assert_awaited_once_with(inuse_connections=False)
 
-        client.connection_pool.disconnect.assert_not_awaited()
+    async def test_other_errors_leave_pool_alone(self) -> None:
+        client, pool = create_async_client()
+
+        await client._close_connection(
+            create_connection(AsyncMock), ConnectionError("connection lost"), **FAILURE
+        )
+
+        pool.disconnect.assert_not_awaited()
 
     async def test_pipeline_returns_failover_pipeline(self) -> None:
-        client = create_async_client()
+        client, _ = create_async_client()
         assert isinstance(client.pipeline(), FailoverPipeline)
 
     async def test_pipeline_readonly_drops_idle_connections(self) -> None:
-        client = create_async_client()
+        client, pool = create_async_client()
         pipeline = client.pipeline()
         assert isinstance(pipeline, FailoverPipeline)
         pipeline.watching = False
 
         await pipeline._disconnect_raise_on_watching(
-            AsyncMock(), ReadOnlyError("READONLY")
+            create_connection(AsyncMock), ReadOnlyError("READONLY"), **FAILURE
         )
 
-        client.connection_pool.disconnect.assert_awaited_once_with(
-            inuse_connections=False
-        )
+        pool.disconnect.assert_awaited_once_with(inuse_connections=False)
 
 
 class TestSyncFailoverRedis:
     def test_readonly_drops_idle_connections(self) -> None:
-        client = create_sync_client()
-        try:
-            raise ReadOnlyError("READONLY")
-        except ReadOnlyError:
-            client._close_connection(MagicMock())
+        client, pool = create_sync_client()
 
-        client.connection_pool.disconnect.assert_called_once_with(
-            inuse_connections=False
+        client._close_connection(
+            create_connection(MagicMock), ReadOnlyError("READONLY"), **FAILURE
         )
 
-    def test_other_errors_leave_pool_alone(self) -> None:
-        client = create_sync_client()
-        try:
-            raise ConnectionError("connection lost")
-        except ConnectionError:
-            client._close_connection(MagicMock())
+        pool.disconnect.assert_called_once_with(inuse_connections=False)
 
-        client.connection_pool.disconnect.assert_not_called()
+    def test_other_errors_leave_pool_alone(self) -> None:
+        client, pool = create_sync_client()
+
+        client._close_connection(
+            create_connection(MagicMock), ConnectionError("connection lost"), **FAILURE
+        )
+
+        pool.disconnect.assert_not_called()
 
     def test_pipeline_returns_failover_pipeline(self) -> None:
-        client = create_sync_client()
+        client, _ = create_sync_client()
         assert isinstance(client.pipeline(), SyncFailoverPipeline)
 
     def test_pipeline_readonly_drops_idle_connections(self) -> None:
-        client = create_sync_client()
+        client, pool = create_sync_client()
         pipeline = client.pipeline()
         assert isinstance(pipeline, SyncFailoverPipeline)
         pipeline.watching = False
 
-        pipeline._disconnect_raise_on_watching(MagicMock(), ReadOnlyError("READONLY"))
-
-        client.connection_pool.disconnect.assert_called_once_with(
-            inuse_connections=False
+        pipeline._disconnect_raise_on_watching(
+            create_connection(MagicMock), ReadOnlyError("READONLY"), **FAILURE
         )
+
+        pool.disconnect.assert_called_once_with(inuse_connections=False)

@@ -8,6 +8,7 @@ from shared import (
     SERVER_DIR,
     Context,
     console,
+    link_polar_self,
     run_command,
     step_failed,
     step_spinner,
@@ -15,6 +16,12 @@ from shared import (
 )
 
 NAME = "Running database migrations"
+
+KNOWN_FAILURES = (
+    ("Multiple head revisions", "multiple_heads"),
+    ("Connection refused", "database_unreachable"),
+    ("Connect call failed", "database_unreachable"),
+)
 
 GENERIC_HINTS = (
     "Is PostgreSQL up? [bold]dev status[/bold] shows it; [bold]docker compose logs db[/bold] in server/ shows why not",
@@ -66,10 +73,18 @@ def run(ctx: Context) -> bool:
         )
         if result and result.returncode == 0:
             step_status(True, "Database migrations", "applied")
+            if link_polar_self(keep_valid=True):
+                step_status(
+                    True,
+                    "Polar self-integration",
+                    "token re-linked, restart the API and worker to use it",
+                )
             return True
 
         revision = unknown_revision(result)
         drift = find_drift(revision) if revision else None
+        if drift:
+            ctx.failure_reason = "revision_from_other_branch"
         if drift and drift.target:
             report_drift(drift)
         elif drift:
@@ -85,6 +100,10 @@ def run(ctx: Context) -> bool:
                 lines=1,
             )
         else:
+            output = f"{result.stdout}\n{result.stderr}" if result else ""
+            ctx.failure_reason = next(
+                (reason for marker, reason in KNOWN_FAILURES if marker in output), None
+            )
             step_failed(
                 "Database migrations", "failed", result, hints=GENERIC_HINTS, lines=40
             )

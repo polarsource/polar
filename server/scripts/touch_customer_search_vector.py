@@ -5,7 +5,7 @@ import typer
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from sqlalchemy import select, update
 
-from polar.kit.db.postgres import create_async_sessionmaker
+from polar.kit.db.postgres import create_async_sessionmaker  # lint-skip: dry-run
 from polar.models import Customer
 from polar.postgres import create_async_engine
 from scripts.helper import (

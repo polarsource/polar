@@ -37,7 +37,7 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.metadata import MetadataMixin
 from polar.kit.utils import utc_now
-from polar.product.guard import is_metered_price
+from polar.product.guard import has_future_charges, is_metered_price
 
 from .product_price import ProductPrice
 from .subscription_meter import SubscriptionMeter
@@ -499,6 +499,14 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         return type_coerce(
             cls.status.in_(SubscriptionStatus.billable_statuses()),
             Boolean,
+        )
+
+    @property
+    def has_future_charges(self) -> bool:
+        return has_future_charges(
+            self.prices,
+            sum(spp.amount for spp in self.subscription_product_prices),
+            self.discount,
         )
 
     @hybrid_property

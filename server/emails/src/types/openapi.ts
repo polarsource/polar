@@ -2488,12 +2488,6 @@ export interface components {
        * @default false
        */
       reducer_billing_enabled: boolean
-      /**
-       * Lemon Squeezy Migration Enabled
-       * @description If this organization can migrate its billing from Lemon Squeezy to Polar.
-       * @default false
-       */
-      lemon_squeezy_migration_enabled: boolean
     }
     /** OrganizationInviteEmail */
     OrganizationInviteEmail: {

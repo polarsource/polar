@@ -1,13 +1,17 @@
+import uuid
+
 import typer
-from sqlalchemy import Update, exists, func, literal, select, update
+from sqlalchemy import Select, Update, exists, func, literal, select, update
 from sqlalchemy.dialects.postgresql import JSONB
 
+from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
 from polar.models import (
     Organization,
     ProductPrice,
     Subscription,
     SubscriptionProductPrice,
 )
+from polar.postgres import create_async_engine
 from scripts.helper import (
     configure_script_logging,
     limit_bindparam,
@@ -22,7 +26,7 @@ configure_script_logging()
 FLAG = "reducer_billing_enabled"
 
 
-def enable_statement() -> Update:
+def candidates_statement() -> Select[uuid.UUID]:
     # Select organizations with uncanceled / ongoing metered subscriptions
     # this will be used as an anti-filter, so that we can enable
     # the feature flag for all orgs that _do not_ meet these requirements
@@ -39,6 +43,13 @@ def enable_statement() -> Update:
             ProductPrice.is_metered,
         )
     )
+    return select(Organization.id).where(
+        Organization.feature_settings[FLAG].as_boolean().is_not(True),
+        ~has_metered_subscription,
+    )
+
+
+def enable_statement() -> Update:
     return (
         update(Organization)
         .values(
@@ -47,16 +58,14 @@ def enable_statement() -> Update:
             )
         )
         .where(
-            Organization.id.in_(
-                select(Organization.id)
-                .where(
-                    Organization.feature_settings[FLAG].as_boolean().is_not(True),
-                    ~has_metered_subscription,
-                )
-                .limit(limit_bindparam())
-            ),
+            Organization.id.in_(candidates_statement().limit(limit_bindparam())),
         )
     )
+
+
+async def count_candidates(session: AsyncSession) -> int:
+    statement = candidates_statement().with_only_columns(func.count(Organization.id))
+    return (await session.execute(statement)).scalar_one()
 
 
 @cli.command()
@@ -64,7 +73,20 @@ def enable_statement() -> Update:
 async def enable_reducer_billing_flag(
     batch_size: int = typer.Option(5000, help="Number of rows to process per batch"),
     sleep_seconds: float = typer.Option(0.1, help="Seconds to sleep between batches"),
+    execute: bool = typer.Option(False, help="Apply the changes; dry-run otherwise"),
 ) -> None:
+    if not execute:
+        engine = create_async_engine("script")
+        try:
+            async with create_async_sessionmaker(engine)() as session:
+                count = await count_candidates(session)
+        finally:
+            await engine.dispose()
+        typer.echo(
+            f"Dry run: {count} organizations would get {FLAG}. Pass --execute to apply."
+        )
+        return
+
     await run_batched_update(
         enable_statement(), batch_size=batch_size, sleep_seconds=sleep_seconds
     )

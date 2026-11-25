@@ -18,7 +18,6 @@ import { Button, InlineModal, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useModal } from '@/components/Modal/useModal'
 import { useToast } from '@/components/Toast/use-toast'
-import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useDeleteBenefit } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { usePushRouteWithoutCache } from '@/utils/router'
@@ -45,7 +44,8 @@ const ClientPage: React.FC<ClientPageProps> = ({
 }: ClientPageProps) => {
   const pushRouteWithoutCache = usePushRouteWithoutCache()
   const { toast } = useToast()
-  const managedAsCode = useIsManagedAsCode(organization.id)
+  const managedAsCode =
+    organization.feature_settings?.config_as_code_enabled ?? false
 
   const {
     isShown: isEditShown,

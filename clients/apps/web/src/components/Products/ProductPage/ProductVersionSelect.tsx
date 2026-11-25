@@ -1,4 +1,3 @@
-import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useSelectedProducts } from '@/hooks/queries/products'
 import { schemas } from '@polar-sh/client'
 import { CatalogVersionSelect } from '../CatalogVersionSelect'
@@ -10,7 +9,8 @@ export const ProductVersionSelect = ({
   organization: schemas['Organization']
   product: schemas['Product']
 }) => {
-  const managedAsCode = useIsManagedAsCode(organization.id)
+  const managedAsCode =
+    organization.feature_settings?.config_as_code_enabled ?? false
   const { data: versions } = useSelectedProducts(
     {
       organization_id: organization.id,

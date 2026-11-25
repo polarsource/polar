@@ -1,4 +1,3 @@
-import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { RedirectType, redirect } from 'next/navigation'
 
@@ -8,9 +7,7 @@ export default async function Page(props: {
 }) {
   const params = await props.params
   const searchParams = await props.searchParams
-  const api = await getServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
-    api,
     params.organization,
   )
 

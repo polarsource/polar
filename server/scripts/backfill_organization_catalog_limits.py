@@ -8,7 +8,7 @@ from sqlalchemy import func, or_, select, update
 
 from polar.config import settings
 from polar.models import Organization
-from scripts.helper import (
+from scripts.helper import (  # lint-skip: dry-run
     configure_script_logging,
     limit_bindparam,
     run_batched_update,

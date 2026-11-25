@@ -64,10 +64,10 @@ describe('planMarkdown', () => {
   test('titles, notes the target and diffs each changed section', () => {
     expect(planMarkdown(config, acme, { entries, issues: [] })).toBe(
       [
-        '## Polar billing plan updated',
+        '## Polar billing config changed',
         '',
         '> [!NOTE]',
-        "> Applying the config in this pull request changes billing for **Acme\\_Inc** in sandbox. Review every change below before it's applied.",
+        "> Publishing the config in this pull request changes billing for **Acme\\_Inc** in sandbox. Review every change below before it's published.",
         '',
         '| Organization | Environment | Config | Changes |',
         '| --- | --- | --- | --- |',
@@ -123,7 +123,7 @@ describe('planMarkdown', () => {
       ),
     ).toContain(
       [
-        "> Applying the config in this pull request changes billing for **Acme\\_Inc** in sandbox. Review every change below before it's applied.",
+        "> Publishing the config in this pull request changes billing for **Acme\\_Inc** in sandbox. Review every change below before it's published.",
         '>',
         '> These changes are saved in a draft.',
         '',
@@ -131,7 +131,7 @@ describe('planMarkdown', () => {
     )
   })
 
-  test('warns that applying discards a draft the file no longer matches', () => {
+  test('warns that saving discards a draft the file no longer matches', () => {
     expect(
       planMarkdown(
         config,
@@ -145,7 +145,7 @@ describe('planMarkdown', () => {
     ).toContain(
       [
         '> [!WARNING]',
-        '> Applying this config discards the unpublished draft of **Acme\\_Inc** in sandbox.',
+        '> Saving this config to the draft discards the unpublished draft of **Acme\\_Inc** in sandbox.',
         '>',
         "> The draft has changes polar.json doesn't.",
         '',
@@ -183,7 +183,9 @@ describe('planMarkdown', () => {
         },
       ],
     })
-    expect(output).toContain("> [!CAUTION]\n> `polar.json` can't be applied")
+    expect(output).toContain(
+      "> [!CAUTION]\n> `polar.json` can't be saved to the draft",
+    )
     expect(output).toMatch(/#### Problems\n\n```\n.*Error:.*\n```$/s)
   })
 

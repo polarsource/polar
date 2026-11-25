@@ -1,9 +1,7 @@
 'use client'
 
-import revalidate from '@/app/actions'
 import { CurrencySelector } from '@/components/CurrencySelector'
 import { useToast } from '@/components/Toast/use-toast'
-import { useAuth } from '@/hooks'
 import { useCreateOrganization } from '@/hooks/queries'
 import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
@@ -44,7 +42,6 @@ const CreateOrganizationForm = ({
   actionsContainer: HTMLElement | null
   onCreated: (organization: schemas['Organization']) => void
 }) => {
-  const { currentUser, reloadUser } = useAuth()
   const createOrganization = useCreateOrganization()
   const { toast } = useToast()
   const [editedSlug, setEditedSlug] = useState(false)
@@ -92,8 +89,6 @@ const CreateOrganizationForm = ({
       return
     }
 
-    await revalidate(`users:${currentUser?.id}:organizations`, { expire: 0 })
-    await reloadUser()
     onCreated(organization)
   }
 

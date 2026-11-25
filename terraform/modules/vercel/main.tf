@@ -64,8 +64,8 @@ locals {
   secret_environment_variables = [
     { key = "PYDANTIC_AI_GATEWAY_API_KEY", value = var.secrets.pydantic_ai_gateway_api_key, target = ["production", "preview"], sensitive = true },
     { key = "MINTLIFY_ASSISTANT_API_KEY", value = var.secrets.mintlify_assistant_api_key, target = ["production", "preview"], sensitive = true },
-    { key = "GRAM_API_KEY", value = var.secrets.gram_api_key, target = ["production", "preview"], sensitive = false },
-    { key = "SENTRY_AUTH_TOKEN", value = var.secrets.sentry_auth_token, target = ["production", "preview"], sensitive = false },
+    { key = "GRAM_API_KEY", value = var.secrets.gram_api_key, target = ["production", "preview"], sensitive = true },
+    { key = "SENTRY_AUTH_TOKEN", value = var.secrets.sentry_auth_token, target = ["production", "preview"], sensitive = true },
   ]
 
   managed_environment_variables = concat(

@@ -10,7 +10,7 @@ import rich
 import structlog
 
 from polar import tasks  # noqa: F401
-from polar.kit.db.postgres import create_async_sessionmaker
+from polar.kit.db.postgres import create_async_sessionmaker  # lint-skip: dry-run
 from polar.postgres import create_async_engine
 from polar.redis import create_redis
 from polar.worker import JobQueueManager
@@ -119,7 +119,7 @@ def start_shell() -> None:
         try:
             loop.run_until_complete(session.close())
             loop.run_until_complete(engine.dispose())
-            loop.run_until_complete(redis.close())
+            loop.run_until_complete(redis.aclose())
             loop.close()
         except Exception as e:
             print(f"cleanup failed: {e!r}")

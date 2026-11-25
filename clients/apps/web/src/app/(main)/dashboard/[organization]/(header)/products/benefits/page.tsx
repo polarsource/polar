@@ -1,3 +1,4 @@
+import { ManagedAsCodeHint } from '@/components/Dashboard/ManagedAsCodeBadge'
 import { MasterDetailIndex } from '@/components/Layout/MasterDetailIndex'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
@@ -19,7 +20,6 @@ export default async function Page(props: {
   const searchParams = await props.searchParams
   const api = await getServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
-    api,
     params.organization,
   )
 
@@ -48,15 +48,19 @@ export default async function Page(props: {
   return (
     <div className="mt-96 flex w-full flex-col items-center justify-center gap-4">
       <h1 className="text-2xl">No Benefits</h1>
-      <p className="dark:text-polar-500 text-gray-500">
-        Create a benefit to get started
-      </p>
-      {!organization.feature_settings?.config_as_code_enabled && (
-        <Link
-          href={`/dashboard/${organization.slug}/products/benefits?create_benefit=true`}
-        >
-          <Button>Create Benefit</Button>
-        </Link>
+      {organization.feature_settings?.config_as_code_enabled ? (
+        <ManagedAsCodeHint resource="benefits" />
+      ) : (
+        <>
+          <p className="dark:text-polar-500 text-gray-500">
+            Create a benefit to get started
+          </p>
+          <Link
+            href={`/dashboard/${organization.slug}/products/benefits?create_benefit=true`}
+          >
+            <Button>Create Benefit</Button>
+          </Link>
+        </>
       )}
     </div>
   )

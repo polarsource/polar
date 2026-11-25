@@ -1,5 +1,5 @@
 import AccessRestrictedView from '@/components/Auth/AccessRestrictedView'
-import { getUserOrganizations } from '@/utils/user'
+import { getOrganizationBySlug } from '@/utils/organization'
 import { schemas } from '@polar-sh/client'
 
 // Server component: gates a route segment on an organization permission.
@@ -21,10 +21,7 @@ export default async function OrganizationPermissionGuard({
   children: React.ReactNode
   standalone?: boolean
 }) {
-  const userOrganizations = await getUserOrganizations()
-  const organization = userOrganizations.find(
-    (o) => o.slug === organizationSlug,
-  )
+  const organization = await getOrganizationBySlug(organizationSlug)
 
   if (!organization?.permissions.includes(permission)) {
     return <AccessRestrictedView message={message} standalone={standalone} />

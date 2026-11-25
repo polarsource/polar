@@ -270,4 +270,4 @@ export const updatedIds = (
   )
 
 export const planSummary = (entries: ReadonlyArray<AppliedEntry>) =>
-  `${ui.INDENT}${ui.dim('Plan:')} ${planTally(entries)}`
+  `${ui.INDENT}${ui.dim('Changes:')} ${planTally(entries)}`

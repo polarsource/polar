@@ -106,7 +106,6 @@ from polar.models import (
     User,
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
-from polar.models.discount import DiscountDuration, DiscountPercentage
 from polar.models.order import OrderBillingReasonInternal
 from polar.models.product_price import (
     ProductPriceFixed,
@@ -1521,7 +1520,7 @@ class SubscriptionService:
         # A change the merchant scheduled for the trial end is applied as is.
         if subscription.pending_update is not None:
             return False
-        if not self._charges_after_trial(subscription):
+        if not subscription.has_future_charges:
             return False
         return not self._has_payment_method(
             subscription
@@ -1560,30 +1559,6 @@ class SubscriptionService:
             session, subscription, self, notify_customer=False
         ) as ctx:
             return await self.revoke(session, ctx, subscription)
-
-    def _charges_after_trial(self, subscription: Subscription) -> bool:
-        # Same rule checkout uses to decide whether to ask for a card.
-        has_metered_prices = any(
-            is_metered_price(price) for price in subscription.prices
-        )
-        discount = subscription.discount
-        renews_at = subscription.current_period_end
-        if discount is not None and discount.is_repetition_expired(
-            subscription.discount_applied_at or renews_at, renews_at
-        ):
-            discount = None
-        amount = (
-            subscription.amount
-            if discount is not None
-            else sum(spp.amount for spp in subscription.subscription_product_prices)
-        )
-        if amount == 0 and not has_metered_prices:
-            return False
-        return not (
-            isinstance(discount, DiscountPercentage)
-            and discount.duration == DiscountDuration.forever
-            and discount.basis_points == 10_000
-        )
 
     def _clear_expired_discount(
         self,
@@ -1670,9 +1645,9 @@ class SubscriptionService:
         existing one. Meters are taken from the metered prices and from the
         granted meter-credit benefits, so a meter that is only credited is reset
         too, whether or not the renewal payment succeeds: its credits were for
-        the period that just ended. A meter that a live subscription started
-        earlier also bills or credits is left to that subscription, which owns
-        it.
+        the period that just ended. A meter is left to the live subscription
+        that owns it: the earliest that bills it, or the earliest that credits
+        it when none bills it.
         """
         meters: dict[tuple[uuid.UUID, uuid.UUID], tuple[Customer, Meter]] = {
             (subscription.customer_id, price.meter_id): (
@@ -1682,6 +1657,7 @@ class SubscriptionService:
             for price in subscription.prices
             if is_metered_price(price)
         }
+        billed_meters = set(meters)
         if include_meter_credits:
             benefit_grant_repository = BenefitGrantRepository.from_session(session)
             grants = await benefit_grant_repository.list_granted_meter_credits_by_subscription(
@@ -1700,9 +1676,9 @@ class SubscriptionService:
                     meters[(grant.customer_id, meter_id)] = (grant.customer, meter)
 
         repository = SubscriptionRepository.from_session(session)
-        for customer, meter in meters.values():
-            if await repository.has_earlier_subscription_on_meter(
-                subscription, customer.id, meter.id
+        for key, (customer, meter) in meters.items():
+            if await repository.is_meter_owned_by_other_subscription(
+                subscription, customer.id, meter.id, bills_meter=key in billed_meters
             ):
                 continue
             await self.reset_customer_meter(
@@ -4935,7 +4911,7 @@ class SubscriptionService:
     ) -> None:
         if subscription.trial_end is None:
             return
-        if not self._charges_after_trial(subscription):
+        if not subscription.has_future_charges:
             return
         payment_method_required = not self._has_payment_method(subscription)
         billing_address_required = not self._has_complete_billing_address(subscription)

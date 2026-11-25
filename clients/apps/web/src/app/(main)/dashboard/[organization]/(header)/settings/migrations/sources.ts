@@ -12,13 +12,10 @@ export const SOURCE_LABELS: Record<MigrationSource, string> = {
   paddle: 'Paddle',
 }
 
-export function connectableSources(
-  organization: schemas['Organization'],
-): ConnectableSource[] {
-  return organization.feature_settings?.lemon_squeezy_migration_enabled
-    ? ['stripe', 'lemon_squeezy']
-    : ['stripe']
-}
+export const CONNECTABLE_SOURCES: ConnectableSource[] = [
+  'stripe',
+  'lemon_squeezy',
+]
 
 export function sourceAccountLabel(
   migration: schemas['MerchantMigration'],

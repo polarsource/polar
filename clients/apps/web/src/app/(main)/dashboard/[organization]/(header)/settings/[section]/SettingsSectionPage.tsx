@@ -16,7 +16,7 @@ import {
   SETTINGS_SECTIONS,
   SettingsSectionSlug,
 } from '@/components/Settings/settingsSections'
-import { useHasPermission, useIsManagedAsCode } from '@/hooks/permissions'
+import { useHasPermission } from '@/hooks/permissions'
 import { CONFIG } from '@/utils/config'
 import { schemas } from '@polar-sh/client'
 import { Alert } from '@polar-sh/orbit'
@@ -160,7 +160,8 @@ export default function SettingsSectionPage({
     organization.id,
     'organization:manage',
   )
-  const managedAsCode = useIsManagedAsCode(organization.id)
+  const managedAsCode =
+    organization.feature_settings?.config_as_code_enabled ?? false
 
   return (
     <DashboardBody

@@ -52,6 +52,8 @@ dev worker              # Start background job worker
 dev switch my-branch    # Stop web, checkout branch, wipe .next, relaunch web
 dev switch -b my-branch # ...creating the branch (git checkout -b)
 dev switch -i my-branch # ...and reinstall JS deps (skips package prebuilds)
+dev otp                 # Print a login code for the sign-in waiting in the browser
+dev otp me@example.com  # ...for a specific email
 ```
 
 ### Database
@@ -99,7 +101,7 @@ Captures before/after screenshots across branches and generates a visual diff re
 
 ```bash
 dev polar auth login --local        # Any `polar` command, run from clients/packages/cli/src
-dev polar config plan               # Runs in your current directory, e.g. clients/apps/demo-app
+dev polar config validate               # Runs in your current directory, e.g. clients/apps/demo-app
 dev polar --link                    # Make `dev polar` work in any directory
 dev polar --unlink                  # Make `dev` work inside the Polar repo only
 ```

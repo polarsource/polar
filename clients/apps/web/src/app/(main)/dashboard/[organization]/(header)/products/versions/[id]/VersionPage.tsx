@@ -1,5 +1,6 @@
 'use client'
 
+import { DraftGlyph } from '@/components/Layout/Dashboard/CatalogHoverCard'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { PublishDraftButton } from '@/components/Products/PublishDraftButton'
 import { useCatalog, useCatalogConfig } from '@/hooks/queries/catalogs'
@@ -12,7 +13,6 @@ import {
   CalendarDays,
   CircleCheck,
   History,
-  Pencil,
 } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -98,7 +98,7 @@ const SettingsChanges = ({ changes }: { changes: SettingChange[] }) => (
 const statusIcon = {
   live: CircleCheck,
   archived: Archive,
-  draft: Pencil,
+  draft: DraftGlyph,
 } as const
 
 const PanelSection = ({
@@ -238,7 +238,8 @@ export default function VersionPage({
       title={null}
       header={
         <>
-          <Box alignItems="center" columnGap="l" minWidth={0}>
+          {/* Matches the Publish button height so drafts don't shift the header */}
+          <Box alignItems="center" columnGap="l" minWidth={0} minHeight={40}>
             <Link
               href={versionsPath}
               aria-label="Back to versions"

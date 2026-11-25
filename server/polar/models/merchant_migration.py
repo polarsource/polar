@@ -45,6 +45,8 @@ class MerchantMigrationStep(StrEnum):
     source_setup = "source_setup"
     pre_check = "pre_check"
     create_catalog = "create_catalog"
+    # Lemon Squeezy only: license keys and files become Polar benefits.
+    set_up_benefits = "set_up_benefits"
     copy_cards = "copy_cards"
     activate_subscriptions = "activate_subscriptions"
     # Every imported subscription was switched, skipped or failed. Finishing

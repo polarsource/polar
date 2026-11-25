@@ -142,12 +142,12 @@ const callout = (
 ) => {
   const where = `**${escape(organization.name)}** in ${organization.environment}`
   if (errors(result.issues) > 0) {
-    return `> [!CAUTION]\n> \`${config.file}\` can't be applied to ${where}. Fix the errors below first.`
+    return `> [!CAUTION]\n> \`${config.file}\` can't be saved to the draft of ${where}. Fix the errors below first.`
   }
   if (unchanged(result.entries)) {
-    return `> [!WARNING]\n> Applying this config discards the unpublished draft of ${where}.${pendingDraft(config, result, catalogs)}`
+    return `> [!WARNING]\n> Saving this config to the draft discards the unpublished draft of ${where}.${pendingDraft(config, result, catalogs)}`
   }
-  return `> [!NOTE]\n> Applying the config in this pull request changes billing for ${where}. Review every change below before it's applied.${pendingDraft(config, result, catalogs)}`
+  return `> [!NOTE]\n> Publishing the config in this pull request changes billing for ${where}. Review every change below before it's published.${pendingDraft(config, result, catalogs)}`
 }
 
 const metadata = (
@@ -187,7 +187,7 @@ export const planMarkdown = (
   !(catalogs?.draft && discardsDraft(catalogs.draft, result.entries))
     ? undefined
     : [
-        '## Polar billing plan updated',
+        '## Polar billing config changed',
         callout(config, organization, result, catalogs),
         metadata(config, organization, result),
         ...[

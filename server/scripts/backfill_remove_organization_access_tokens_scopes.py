@@ -5,7 +5,7 @@ import typer
 from sqlalchemy import func, select, update
 
 from polar.models.organization_access_token import OrganizationAccessToken
-from scripts.helper import (
+from scripts.helper import (  # lint-skip: dry-run
     configure_script_logging,
     limit_bindparam,
     run_batched_update,

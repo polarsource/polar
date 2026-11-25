@@ -5,7 +5,7 @@ import typer
 from sqlalchemy import select, update
 
 from polar.models import Organization, OrganizationDomain
-from scripts.helper import (
+from scripts.helper import (  # lint-skip: dry-run
     configure_script_logging,
     limit_bindparam,
     run_batched_update,

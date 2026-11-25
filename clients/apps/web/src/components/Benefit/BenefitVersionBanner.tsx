@@ -1,4 +1,3 @@
-import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useGrantsForBenefit } from '@/hooks/queries/benefits'
 import { useCatalog, useLiveCatalog } from '@/hooks/queries/catalogs'
 import { DraftVersionBanner } from '@/components/Products/DraftVersionBanner'
@@ -37,7 +36,8 @@ export const BenefitVersionBanner = ({
   organization: schemas['Organization']
   benefit: schemas['Benefit']
 }) => {
-  const managedAsCode = useIsManagedAsCode(organization.id)
+  const managedAsCode =
+    organization.feature_settings?.config_as_code_enabled ?? false
   const { data: liveCatalog } = useLiveCatalog(organization.id, managedAsCode)
   const { data: liveVersion } = useCatalog(liveCatalog?.id)
   const { data: catalog } = useCatalog(
@@ -51,6 +51,7 @@ export const BenefitVersionBanner = ({
     return (
       <DraftVersionBanner
         organization={organization}
+        resource="benefit"
         draftId={catalog.id}
         currentHref={
           current

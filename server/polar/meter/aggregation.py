@@ -6,7 +6,7 @@ from pydantic import BaseModel, Discriminator, TypeAdapter
 from sqlalchemy import (
     ColumnExpressionArgument,
     Dialect,
-    Float,
+    Numeric,
     TypeDecorator,
     false,
     func,
@@ -77,8 +77,8 @@ class PropertyAggregation(BaseModel):
     def get_sql_value(self, model: type[Any]) -> Any:
         if self.property in model._filterable_fields:
             _, attr = model._filterable_fields[self.property]
-            return func.cast(attr, Float)
-        return get_nested_metadata_attr(model, self.property).as_float()
+            return func.cast(attr, Numeric)
+        return func.cast(get_nested_metadata_attr(model, self.property), Numeric)
 
     def get_sql_column(self, model: type[Any]) -> Any:
         return self.func.get_sql_function(self.get_sql_value(model))

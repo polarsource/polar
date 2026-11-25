@@ -15,7 +15,6 @@ import { Box } from '@polar-sh/orbit/Box'
 import { LogIn } from '@polar-sh/orbit/icons'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { ConfirmModal } from '../../Modal/ConfirmModal'
 import { useModal } from '../../Modal/useModal'
 import {
@@ -35,7 +34,6 @@ const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
     hide: hideEnforceModal,
   } = useModal()
   const { currentUser } = useAuth()
-  const router = useRouter()
   const connections = useSSOConnections(org.id)
   const domains = useOrganizationDomains(org.id)
   const verifiedDomains = (domains.data?.items ?? []).filter(isVerifiedDomain)
@@ -61,10 +59,7 @@ const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
         title: 'Update failed',
         description: extractApiErrorMessage(error),
       })
-      return
     }
-    // Refresh the router to get the updated organization data from the server
-    router.refresh()
   }
 
   return (

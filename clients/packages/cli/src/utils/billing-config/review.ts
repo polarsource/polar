@@ -36,11 +36,11 @@ export const catalogChange = (
   `${before === null ? dim('no live catalog') : `${before.name ?? dim('unnamed')} ${dim('(live)')}`} ${dim('→')} ${name} ${dim('(draft)')}`
 
 export const fixErrors = (issues: ReadonlyArray<ConfigIssue>) =>
-  `${ui.INDENT}Fix the ${errors(issues) === 1 ? 'error' : `${errors(issues)} errors`} above, then run ${ui.command('polar config plan')} again.`
+  `${ui.INDENT}Fix the ${errors(issues) === 1 ? 'error' : `${errors(issues)} errors`} above, then run ${ui.command('polar config validate')} again.`
 
-export const runApply = `${ui.INDENT}Run ${ui.command('polar config apply')} to apply it.`
+export const runDraft = `${ui.INDENT}Run ${ui.command('polar config draft')} to save it to the draft.`
 
-// Apply saves these sections to the draft, and makes webhook changes right away
+// `polar config draft` saves these sections to the draft, and makes webhook changes right away
 const DRAFTED = new Set([
   'products',
   'benefits',
@@ -83,11 +83,11 @@ export const draftNote = (
 ) => [
   draftFact(file, draft, entries),
   ...(immediateChanges(entries).length > 0
-    ? [`Webhook changes take effect on ${ui.command('polar config apply')}.`]
+    ? [`Webhook changes take effect on ${ui.command('polar config draft')}.`]
     : []),
 ]
 
-// Apply discards a draft that differs from a file matching the live catalog
+// `polar config draft` discards a draft that differs from a file matching the live catalog
 export const discardsDraft = (
   draft: PlanDraft,
   entries: ReadonlyArray<AppliedEntry>,
@@ -100,7 +100,7 @@ const draftAction = (
   draft: PlanDraft,
   entries: ReadonlyArray<AppliedEntry>,
 ) => {
-  const apply = ui.command('polar config apply')
+  const save = ui.command('polar config draft')
   const publish = ui.command('polar config publish')
   const webhooks = immediateChanges(entries).length > 0
   if (draft.drift?.length === 0 && !webhooks) {
@@ -109,12 +109,12 @@ const draftAction = (
     ]
   }
   if (draft.drift?.length === 0 || draftedChanges(entries).length > 0) {
-    return [`Run ${apply}, then ${publish}.`]
+    return [`Run ${save}, then ${publish}.`]
   }
   if (discardsDraft(draft, entries)) {
-    return [`Run ${apply} to discard them.`]
+    return [`Run ${save} to discard them.`]
   }
-  return webhooks ? [`Run ${apply}.`] : []
+  return webhooks ? [`Run ${save}.`] : []
 }
 
 export const draftNext = (
@@ -156,7 +156,7 @@ export const found = (config: LoadedConfig) => {
     ...(settings && Object.keys(settings).length > 0 ? ['settings'] : []),
     ...counts(config.input),
   ]
-  return all.length === 0 ? 'nothing to apply' : all.join(', ')
+  return all.length === 0 ? 'nothing to change' : all.join(', ')
 }
 
 const ENVIRONMENT_COLORS: Record<PolarEnvironment, (text: string) => string> = {

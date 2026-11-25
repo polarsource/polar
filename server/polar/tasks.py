@@ -34,6 +34,7 @@ from polar.observability.slo_report import tasks as slo_report
 from polar.order import tasks as order
 from polar.organization import tasks as organization
 from polar.organization_access_token import tasks as organization_access_token
+from polar.organization_domain import tasks as organization_domain
 from polar.organization_review import tasks as organization_review
 from polar.payment_method import tasks as payment_method
 from polar.payout import tasks as payout
@@ -80,6 +81,7 @@ __all__ = [
     "order",
     "organization",
     "organization_access_token",
+    "organization_domain",
     "organization_review",
     "payment_method",
     "payment_retry_alert",

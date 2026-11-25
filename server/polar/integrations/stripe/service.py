@@ -543,6 +543,14 @@ class StripeService:
         )
         return await stripe_lib.PaymentMethod.detach_async(payment_method_id)
 
+    async def get_payment_method_domain(
+        self, domain_name: str
+    ) -> stripe_lib.PaymentMethodDomain | None:
+        result = await stripe_lib.PaymentMethodDomain.list_async(
+            domain_name=domain_name, limit=1
+        )
+        return result.data[0] if result.data else None
+
     async def create_payment_method_domain(
         self, domain_name: str
     ) -> stripe_lib.PaymentMethodDomain:
@@ -550,6 +558,18 @@ class StripeService:
         return await stripe_lib.PaymentMethodDomain.create_async(
             domain_name=domain_name, enabled=True
         )
+
+    async def list_payment_method_domains(
+        self,
+    ) -> AsyncIterator[stripe_lib.PaymentMethodDomain]:
+        result = await stripe_lib.PaymentMethodDomain.list_async(limit=100)
+        return result.auto_paging_iter()
+
+    async def update_payment_method_domain(
+        self, id: str, *, enabled: bool
+    ) -> stripe_lib.PaymentMethodDomain:
+        log.info("stripe.payment_method_domain.update", id=id, enabled=enabled)
+        return await stripe_lib.PaymentMethodDomain.modify_async(id, enabled=enabled)
 
     async def get_verification_session(
         self, id: str, *, expand: list[str] | None = None

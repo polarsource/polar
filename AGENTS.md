@@ -232,9 +232,10 @@ Add new operations and webhooks to the matching groups in `docs/docs.json`; that
 
 ## Driving the local UI
 
-**Login.** Email OTP codes are printed in the API pane / log (`LOGIN CODE: …`). Grab with
-`tmux capture-pane -t polar:services.0 -p | grep -a "LOGIN CODE" | tail -1`. `admin@polar.sh`
-is the conventional test account.
+**Login.** Enter the email on the login page, then run `dev otp` to print a code for that
+sign-in (`dev otp <email>` when several are waiting). It issues a new code, so the one in the
+API log (`LOGIN CODE: …`) stops working. `admin@polar.sh` is the conventional test account.
+The `local-login` skill has the full steps.
 
 **Onboarding gotcha.** The org-creation wizard's "Launch Dashboard" button only submits once the
 Product step's required fields are filled (description ≥30 chars, ≥1 selling category, ≥1 pricing

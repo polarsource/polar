@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from 'vitest'
 import { Effect } from 'effect'
 import { FetchHttpClient } from 'effect/http'
-import { plan } from '@/commands/config/plan'
+import { validate } from '@/commands/config/validate'
 import {
   BillingConfigError,
   type Catalogs,
@@ -76,7 +76,7 @@ const run = async (
           ? Effect.fail(againstDraft)
           : Effect.succeed(againstDraft),
   )
-  const cli = runCli(plan, ['polar.json', ...args])
+  const cli = runCli(validate, ['polar.json', ...args])
   const exit = await Effect.runPromiseExit(
     cli.effect.pipe(
       Effect.provideService(
@@ -120,12 +120,12 @@ const run = async (
 const TREE =
   /│ {2}\+ tool-calls *│\n *│ {6}events {7}all events *│\n *│ {6}aggregation {2}count *│/
 
-describe('polar config plan', () => {
+describe('polar config validate', () => {
   test('shows the changes and succeeds with warnings', async () => {
     const { output, failed } = await run({ entries, issues: [warning] })
     expect(failed).toBe(false)
     expect(output).toMatch(
-      /Summary\n {2}╭─+╮\n *│ {2}Organization {2}Acme *│\n *│ {2}Environment {3}sandbox *│\n *│ {2}File {10}polar\.json *│\n *│ {2}Changes {7}0 to change, 1 to add, 0 unchanged *│\n *│ {2}Issues {8}1 warning *│\n {2}╰─+╯\n\n {2}Next\n {2}╭─+╮\n *│ {2}Run polar config apply to apply it\. *│\n {2}╰─+╯\n$/,
+      /Summary\n {2}╭─+╮\n *│ {2}Organization {2}Acme *│\n *│ {2}Environment {3}sandbox *│\n *│ {2}File {10}polar\.json *│\n *│ {2}Changes {7}0 to change, 1 to add, 0 unchanged *│\n *│ {2}Issues {8}1 warning *│\n {2}╰─+╯\n\n {2}Next\n {2}╭─+╮\n *│ {2}Run polar config draft to save it to the draft\. *│\n {2}╰─+╯\n$/,
     )
     expect(output).toMatch(TREE)
     expect(output).toContain(
@@ -142,7 +142,7 @@ describe('polar config plan', () => {
     expect(failed).toBe(false)
     expect(output).toContain('Changes       0 to change, 1 to add, 0 unchanged')
     expect(output).toMatch(
-      /│ {2}Run polar config apply to apply it\. *│\n {2}╰─+╯\n$/,
+      /│ {2}Run polar config draft to save it to the draft\. *│\n {2}╰─+╯\n$/,
     )
   })
 
@@ -164,7 +164,7 @@ describe('polar config plan', () => {
     expect(output).toContain(
       'Changes       0 to change, 0 to add, 1 to remove, 0 unchanged',
     )
-    expect(output).toContain('Run polar config apply to apply it.')
+    expect(output).toContain('Run polar config draft to save it to the draft.')
   })
 
   test('shows the catalog change once, in the summary', async () => {
@@ -188,7 +188,7 @@ describe('polar config plan', () => {
     expect(output).toContain('Catalog       no live catalog → v1 (draft)')
   })
 
-  test('asks to apply webhook changes before publishing a draft that has the rest', async () => {
+  test('asks to save webhook changes before publishing a draft that has the rest', async () => {
     const webhook = {
       section: 'webhooks',
       id: 'orders',
@@ -211,11 +211,11 @@ describe('polar config plan', () => {
     expect(failed).toBe(false)
     expect(planned).toEqual([undefined, 'cat-draft'])
     expect(output).toMatch(
-      /Next\n {2}╭─+╮\n *│ {2}These changes are saved in a draft\. *│\n *│ {2}Webhook changes take effect on polar config apply\. *│\n *│ {2}Run polar config apply, then polar config publish\. *│\n {2}╰─+╯\n$/,
+      /Next\n {2}╭─+╮\n *│ {2}These changes are saved in a draft\. *│\n *│ {2}Webhook changes take effect on polar config draft\. *│\n *│ {2}Run polar config draft, then polar config publish\. *│\n {2}╰─+╯\n$/,
     )
   })
 
-  test('asks to apply again when the draft is missing changes', async () => {
+  test('asks to save again when the draft is missing changes', async () => {
     const { output } = await run(
       { entries, issues: [] },
       [],
@@ -223,7 +223,7 @@ describe('polar config plan', () => {
       { entries, issues: [] },
     )
     expect(output.replace(/ *│\n *│ +/g, ' ')).toContain(
-      'The draft is missing some of these changes. Run polar config apply, then polar config publish.',
+      'The draft is missing some of these changes. Run polar config draft, then polar config publish.',
     )
   })
 
@@ -239,7 +239,7 @@ describe('polar config plan', () => {
     )
     expect(output).not.toContain('up to date')
     expect(output.replace(/ *│\n *│ +/g, ' ')).toContain(
-      "The draft has changes polar.json doesn't. Run polar config apply to discard them.",
+      "The draft has changes polar.json doesn't. Run polar config draft to discard them.",
     )
   })
 
@@ -287,7 +287,7 @@ describe('polar config plan', () => {
       failing,
     )
     expect(human.output.replace(/ *│\n *│ +/g, ' ')).toContain(
-      "There's an unpublished draft. Run polar config apply, then polar config publish.",
+      "There's an unpublished draft. Run polar config draft, then polar config publish.",
     )
     expect(JSON.parse(json.output).draft).toEqual({ ...draft, drift: null })
   })
@@ -318,7 +318,7 @@ describe('polar config plan', () => {
     expect(output).toContain('Warning:')
     expect(output).toContain('Issues        1 error, 1 warning')
     expect(output).toContain(
-      'Fix the error above, then run polar config plan again.',
+      'Fix the error above, then run polar config validate again.',
     )
   })
 

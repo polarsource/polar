@@ -16,12 +16,16 @@ from dateutil.relativedelta import relativedelta
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import joinedload, noload, selectinload
 
+from polar.benefit.grant.repository import BenefitGrantRepository
+from polar.benefit.repository import BenefitRepository
 from polar.customer.repository import CustomerRepository
 from polar.discount.repository import DiscountRepository
 from polar.enums import PaymentProcessor
 from polar.kit.utils import utc_now
 from polar.logging import Logger
+from polar.member.service import member_service
 from polar.models import (
+    BenefitGrant,
     Customer,
     Discount,
     MerchantMigration,
@@ -31,6 +35,7 @@ from polar.models import (
     ProductPriceUnit,
     Subscription,
 )
+from polar.models.benefit import BenefitType
 from polar.models.discount import DiscountDuration
 from polar.models.merchant_migration_record import (
     MerchantMigrationCutoverStatus,
@@ -45,6 +50,7 @@ from polar.subscription.service import subscription as subscription_service
 from polar.worker import JobQueueManager
 
 from .adapters import SourceAdapter
+from .benefits import kept_key_properties, queue_kept_key_state
 from .canonical import (
     CanonicalProduct,
     CanonicalSubscription,
@@ -53,6 +59,7 @@ from .canonical import (
     deserialize,
     discount_started_at_for,
 )
+from .card_status import MerchantMigrationCardStatus, card_status
 from .cards import CARD_TYPE, AmbiguousCopiedCard, link_payment_method
 from .importer import (
     _CUSTOMER_ALREADY_SUBSCRIBED,
@@ -129,6 +136,11 @@ _NOT_PAUSED = "It isn't paused in Polar any more, so it was left alone."
 _CARD_EXPIRED = (
     "The copied card has expired, so the first Polar renewal will fail and go to "
     "dunning. The customer needs to enter a new one."
+)
+_INDIA_CARD = (
+    "The copied card is India-issued. India requires a mandate for recurring "
+    "charges, and it didn't move with the card, so the first Polar renewal will "
+    "fail and go to dunning. The customer needs to add another payment method."
 )
 _UNREADABLE = (
     "We can't read what was imported for this subscription, so we can't tell "
@@ -668,6 +680,7 @@ class SubscriptionCutover:
             },
             flush=True,
         )
+        await self._keep_license_key(source, customer, product, subscription)
 
         # Read before the source stop: an immediate cancel clears the flag.
         scheduled_end = _scheduled_end(source, staged)
@@ -679,6 +692,46 @@ class SubscriptionCutover:
             already_stopped=already_stopped,
             scheduled_end=scheduled_end,
         )
+
+    async def _keep_license_key(
+        self,
+        source: CanonicalSubscription,
+        customer: Customer,
+        product: Product,
+        subscription: Subscription,
+    ) -> None:
+        """Seed the subscription's license key grant with the key the customer
+        already has. Activating it then grants that key instead of a new one."""
+        benefit = await BenefitRepository.from_session(
+            self.session
+        ).get_by_product_and_type(product.id, BenefitType.license_keys)
+        if benefit is None:
+            return
+        license_key = await self.adapter.get_license_key(source)
+        properties = await kept_key_properties(
+            self.session, product.organization_id, license_key
+        )
+        if not properties:
+            return
+        # The grant task looks the grant up by the customer's owner member.
+        if customer.email is None:
+            return
+        member = await member_service.create_owner_member(
+            self.session, customer, product.organization
+        )
+        if member is None:
+            return
+        grant = await BenefitGrantRepository.from_session(self.session).create(
+            BenefitGrant(
+                customer=customer,
+                benefit=benefit,
+                member=member,
+                subscription=subscription,
+                properties=properties,
+            ),
+            flush=True,
+        )
+        queue_kept_key_state(grant, benefit, license_key)
 
     async def _staged_add_on_product(
         self, add_on: CanonicalSubscriptionAddOn
@@ -930,10 +983,13 @@ class SubscriptionCutover:
             ):
                 return _NOT_COPYABLE
             return _NO_PAYMENT_METHOD
-        expires_at = payment_method.expires_at
-        if expires_at is None or expires_at > utc_now():
-            return None
-        return _CARD_EXPIRED
+        match card_status(payment_method.method_metadata):
+            case MerchantMigrationCardStatus.india_card:
+                return _INDIA_CARD
+            case MerchantMigrationCardStatus.expired_card:
+                return _CARD_EXPIRED
+            case _:
+                return None
 
     def _period(
         self, source: CanonicalSubscription, subscription: Subscription

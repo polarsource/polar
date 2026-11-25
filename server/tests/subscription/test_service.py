@@ -147,6 +147,7 @@ from tests.fixtures.random_objects import (
     create_payment_method,
     create_product,
     create_product_fixed_and_seat,
+    create_product_price_seat_unit,
     create_product_price_unit_based,
     create_product_unit_based,
     create_subscription,
@@ -5304,6 +5305,47 @@ class TestResetMeters:
         await subscription_service.reset_meters(session, earlier)
         assert len(await get_all_by_name(session, SystemEvent.meter_reset)) == 1
 
+    async def test_leaves_meter_of_later_billing_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        product_recurring_metered: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        crediting = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            started_at=utc_now() - timedelta(days=1),
+        )
+        billing = await create_active_subscription(
+            save_fixture,
+            product=product_recurring_metered,
+            customer=customer,
+            started_at=utc_now(),
+        )
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.meter_credit,
+            properties={
+                "meter_id": str(billing.meters[0].meter_id),
+                "units": 100,
+                "rollover": False,
+            },
+        )
+        await create_benefit_grant(
+            save_fixture, customer, benefit, granted=True, subscription=crediting
+        )
+
+        await subscription_service.reset_meters(session, crediting)
+        assert await get_all_by_name(session, SystemEvent.meter_reset) == []
+
+        await subscription_service.reset_meters(session, billing)
+        assert len(await get_all_by_name(session, SystemEvent.meter_reset)) == 1
+
 
 @pytest.mark.anyio
 class TestUpdateMeters:
@@ -9357,6 +9399,80 @@ class TestSendTrialConversionReminderEmail:
         )
 
         enqueue_email_mock.assert_not_called()
+
+    async def test_seat_price_with_free_first_tier(
+        self,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        customer.billing_address = Address(country=CountryAlpha2("FR"))
+        await save_fixture(customer)
+        seat_price = await create_product_price_seat_unit(
+            save_fixture,
+            product=product,
+            tiers=[
+                {"min_seats": 1, "max_seats": 1, "price_per_seat": 0},
+                {"min_seats": 2, "max_seats": None, "price_per_seat": 1000},
+            ],
+        )
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.subscription_product_prices = [
+            SubscriptionProductPrice.from_price(seat_price, seats=1)
+        ]
+        subscription.amount = 0
+        await save_fixture(subscription)
+
+        assert subscription_service.should_expire_trial(subscription) is True
+
+        await subscription_service.send_trial_conversion_reminder_email(
+            session, subscription
+        )
+
+        enqueue_email_mock.assert_called_once()
+        email = enqueue_email_mock.call_args[0][0]
+        assert isinstance(email, SubscriptionTrialPaymentMethodRequiredEmail)
+
+    async def test_pay_what_you_want_with_repeating_full_discount(
+        self,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+        product_recurring_custom_price: Product,
+        customer: Customer,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=10_000,
+            duration=DiscountDuration.repeating,
+            duration_in_months=3,
+            organization=organization,
+        )
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer, discount=discount
+        )
+        subscription.subscription_product_prices = [
+            SubscriptionProductPrice.from_price(
+                product_recurring_custom_price.prices[0], amount=1000
+            )
+        ]
+        subscription.amount = 0
+        await save_fixture(subscription)
+
+        await subscription_service.send_trial_conversion_reminder_email(
+            session, subscription
+        )
+
+        enqueue_email_mock.assert_called_once()
+        email = enqueue_email_mock.call_args[0][0]
+        assert isinstance(email, SubscriptionTrialPaymentMethodRequiredEmail)
 
     async def test_metered_with_repeating_full_discount(
         self,

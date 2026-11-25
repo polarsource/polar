@@ -815,3 +815,32 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
                 for customer_id, external_customer_id in identities
             ),
         )
+
+    async def is_credit_billed(
+        self,
+        reducer: Reducer,
+        customer: Customer,
+        credit: Event,
+        *,
+        bucket_size: timedelta,
+    ) -> bool:
+        """Whether the credit reducer billed the credit event: the first
+        generation still open at its ingestion holds it."""
+        statement = (
+            select(ReducerBucket.billed_at.is_not(None))
+            .where(
+                ReducerBucket.organization_id == reducer.organization_id,
+                ReducerBucket.reducer_id == reducer.id,
+                _is_customer(ReducerBucket, customer.id, None),
+                ReducerBucket.bucket_start <= credit.timestamp,
+                ReducerBucket.bucket_start > credit.timestamp - bucket_size,
+                ReducerBucket.bucket_end > credit.timestamp,
+                or_(
+                    ReducerBucket.sealed_at.is_(None),
+                    ReducerBucket.sealed_at >= credit.ingested_at,
+                ),
+            )
+            .order_by(ReducerBucket.generation)
+            .limit(1)
+        )
+        return bool((await self.session.execute(statement)).scalar_one_or_none())

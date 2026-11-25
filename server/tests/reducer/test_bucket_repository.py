@@ -11,6 +11,7 @@ from polar.models.reducer import ReducerKind
 from polar.postgres import AsyncSession
 from polar.reducer.bucket_repository import ReducerBucketRepository
 from polar.reducer.repository import ReducerRepository
+from polar.reducer.service import REDUCER_BUCKET_SIZE
 from polar.reducer.service import reducer as reducer_service
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -228,3 +229,82 @@ class TestGetUnsealedTotalsByIdentity:
 
         count, *_ = totals[(reducer.id, (customer.id, "second"))]
         assert count == 1
+
+
+@pytest.mark.anyio
+class TestIsCreditBilled:
+    async def test_tracks_billed_generation_by_ingestion_time(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        await reducer_service.sync_meter(session, meter)
+        reducer = await ReducerRepository.from_session(session).get_by_meter_and_kind(
+            meter.id, ReducerKind.credit
+        )
+        assert reducer is not None
+        repo = ReducerBucketRepository.from_session(session)
+
+        credit_time = BUCKET_START + timedelta(minutes=1)
+        sealed_at = BUCKET_START + timedelta(minutes=2)
+        early_credit = await create_event(
+            save_fixture,
+            organization=organization,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            timestamp=credit_time,
+            ingested_at=credit_time,
+            customer=customer,
+            metadata={"meter_id": str(meter.id), "units": 10, "rollover": False},
+        )
+        late_credit = await create_event(
+            save_fixture,
+            organization=organization,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            timestamp=credit_time,
+            ingested_at=sealed_at + timedelta(minutes=1),
+            customer=customer,
+            metadata={"meter_id": str(meter.id), "units": 10, "rollover": False},
+        )
+
+        assert (
+            await repo.is_credit_billed(
+                reducer, customer, early_credit, bucket_size=REDUCER_BUCKET_SIZE
+            )
+            is False
+        )
+
+        for generation, sealed in ((1, sealed_at), (2, None)):
+            await save_fixture(
+                ReducerBucket(
+                    organization=organization,
+                    reducer=reducer,
+                    customer_id=customer.id,
+                    bucket_start=BUCKET_START,
+                    bucket_end=BUCKET_END,
+                    generation=generation,
+                    count=1,
+                    sum=Decimal(10),
+                    min=Decimal(10),
+                    max=Decimal(10),
+                    sealed_at=sealed,
+                    billed_at=sealed,
+                )
+            )
+
+        assert (
+            await repo.is_credit_billed(
+                reducer, customer, early_credit, bucket_size=REDUCER_BUCKET_SIZE
+            )
+            is True
+        )
+        assert (
+            await repo.is_credit_billed(
+                reducer, customer, late_credit, bucket_size=REDUCER_BUCKET_SIZE
+            )
+            is False
+        )

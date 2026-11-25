@@ -504,9 +504,15 @@ class CustomerMeterService:
 
         # Checked after locking the meter so a cycle committed concurrently is seen.
         meter_reset = await event_repository.get_latest_meter_reset(customer, meter.id)
+        reducer_billing = customer.organization.is_reducer_billing_enabled
         invoiced = await BillingEntryRepository.from_session(
             session
-        ).has_invoiced_for_event(credit.id)
+        ).has_invoiced_for_event(credit.id) or (
+            reducer_billing
+            and await reducer_service.is_credit_billed(
+                session, customer, meter.id, credit
+            )
+        )
         if invoiced or (
             meter_reset is not None and credit.ingested_at < meter_reset.timestamp
         ):
@@ -531,7 +537,9 @@ class CustomerMeterService:
             for event in credit_events
             if event.user_metadata["rollover"]
         )
-        usage_units = await self._get_usage_quantity(session, customer, meter)
+        usage_units = await self._get_consumed_units(
+            session, redis, customer, meter, reducer_billing=reducer_billing
+        )
         # Usage draws from non-rollover credits first, matching get_rollover_units.
         if credit.user_metadata["rollover"]:
             unused = min(
@@ -562,7 +570,12 @@ class CustomerMeterService:
         await event_service.create_event(session, event)
 
         _, updated = await self.update_customer_meter(
-            session, redis, customer, meter, activate_meter=True
+            session,
+            redis,
+            customer,
+            meter,
+            activate_meter=True,
+            reducer_billing=reducer_billing,
         )
         if updated:
             enqueue_job("customer.state_changed", customer.id)

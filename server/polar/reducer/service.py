@@ -243,6 +243,22 @@ class ReducerService:
                 meter_id=meter_id,
             )
 
+    async def is_credit_billed(
+        self,
+        session: AsyncReadSession,
+        customer: Customer,
+        meter_id: UUID,
+        credit: Event,
+    ) -> bool:
+        reducer = await ReducerRepository.from_session(session).get_by_meter_and_kind(
+            meter_id, ReducerKind.credit
+        )
+        if reducer is None:
+            return False
+        return await ReducerBucketRepository.from_session(session).is_credit_billed(
+            reducer, customer, credit, bucket_size=REDUCER_BUCKET_SIZE
+        )
+
     async def bill(
         self,
         session: AsyncSession,

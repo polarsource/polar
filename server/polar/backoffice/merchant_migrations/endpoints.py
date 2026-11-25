@@ -311,7 +311,13 @@ class SourceModeItem(description_list.DescriptionListItem[MerchantMigration]):
         if not item.source_connected:
             text("Not connected")
             return None
-        text("Live" if item.source_credentials.get("livemode") else "Test")
+        match item.source_credentials.get("livemode"):
+            case True:
+                text("Live")
+            case False:
+                text("Test")
+            case _:
+                text("Unknown")
         return None
 
 

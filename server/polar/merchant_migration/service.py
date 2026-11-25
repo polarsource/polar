@@ -225,6 +225,7 @@ class LemonSqueezySourceCredentials(TypedDict):
     api_key_encrypted: str
     store_id: str
     store_name: str | None
+    livemode: bool
 
 
 class MerchantMigrationNotFound(MerchantMigrationError):
@@ -372,11 +373,23 @@ class SourceAccountNotMigratable(BlockedByPrecheck):
 
 
 class SourceKeyModeMismatch(MerchantMigrationError):
-    def __init__(self, *, expect_live: bool) -> None:
+    def __init__(
+        self,
+        *,
+        expect_live: bool,
+        source_platform: MerchantMigrationSourcePlatform = (
+            MerchantMigrationSourcePlatform.stripe
+        ),
+    ) -> None:
         mode = "live" if expect_live else "test"
+        example = (
+            f" (e.g. `rk_{mode}_…`)"
+            if source_platform == MerchantMigrationSourcePlatform.stripe
+            else ""
+        )
         super().__init__(
-            f"This Polar environment needs a {mode}-mode Stripe key "
-            f"(e.g. `rk_{mode}_…`), so the migration runs against {mode} data.",
+            f"This Polar environment needs a {mode}-mode {source_platform.label} "
+            f"API key{example}, so the migration runs against {mode} data.",
             400,
         )
 
@@ -652,7 +665,14 @@ class MerchantMigrationService:
         create_schema: MerchantMigrationLemonSqueezyCreate,
     ) -> MerchantMigration:
         adapter = LemonSqueezyAdapter(create_schema.api_key, create_schema.store_id)
+        expect_live = settings.is_production()
         try:
+            livemode = await adapter.is_live_key()
+            if livemode != expect_live:
+                raise SourceKeyModeMismatch(
+                    expect_live=expect_live,
+                    source_platform=MerchantMigrationSourcePlatform.lemon_squeezy,
+                )
             store = await adapter.resolve_store()
             source_account = await adapter.get_source_account()
         except httpx2.HTTPStatusError as e:
@@ -673,6 +693,7 @@ class MerchantMigrationService:
                 ),
                 store_id=store["id"],
                 store_name=store["attributes"].get("name"),
+                livemode=livemode,
             )
         )
         repository = MerchantMigrationRepository.from_session(session)

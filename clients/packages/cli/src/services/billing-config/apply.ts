@@ -30,7 +30,7 @@ export const apply =
     Effect.gen(function* () {
       const response = yield* post(
         clients,
-        '/config/apply?publish=false',
+        '/config/draft',
         config,
         organization,
         options,

@@ -55,9 +55,9 @@ class TestInit:
 
 
 @pytest.mark.anyio
-class TestApply:
+class TestDraft:
     async def test_anonymous(self, client: AsyncClient) -> None:
-        response = await client.post("/v1/config/apply", json={"meters": [METER]})
+        response = await client.post("/v1/config/draft", json={"meters": [METER]})
 
         assert response.status_code == 401
 
@@ -69,7 +69,7 @@ class TestApply:
         user_organization: UserOrganization,
     ) -> None:
         response = await client.post(
-            "/v1/config/apply",
+            "/v1/config/draft",
             json={
                 "meters": [METER],
                 "organization_id": str(organization.id),
@@ -91,7 +91,7 @@ class TestApply:
         mocker.patch("polar.meter.service.enqueue_job")
 
         response = await client.post(
-            "/v1/config/apply",
+            "/v1/config/draft",
             json={
                 "meters": [METER],
                 "organization_id": str(organization.id),
@@ -109,7 +109,7 @@ class TestApply:
         ]
         assert json["removed"] == []
         assert json["catalog"]["before"] is None
-        # Apply saves a draft by default, and a draft is named when published.
+        # A draft is named when published.
         assert json["catalog"]["after"]["name"] is None
 
     @pytest.mark.auth(
@@ -122,7 +122,7 @@ class TestApply:
     ) -> None:
         mocker.patch("polar.meter.service.enqueue_job")
 
-        response = await client.post("/v1/config/apply", json={"meters": [METER]})
+        response = await client.post("/v1/config/draft", json={"meters": [METER]})
 
         assert response.status_code == 200
 
@@ -135,7 +135,7 @@ class TestApply:
         user_organization: UserOrganization,
     ) -> None:
         response = await client.post(
-            "/v1/config/apply",
+            "/v1/config/draft",
             json={
                 "meters": [{**METER, "agregation": {"func": "count"}}],
                 "organization_id": str(organization.id),
@@ -155,7 +155,7 @@ class TestApply:
         user_organization: UserOrganization,
     ) -> None:
         response = await client.post(
-            "/v1/config/apply",
+            "/v1/config/draft",
             json={
                 "meters": [{**METER, "external_id": "tool calls"}],
                 "organization_id": str(organization.id),
@@ -201,7 +201,7 @@ class TestApply:
         user_organization: UserOrganization,
     ) -> None:
         response = await client.post(
-            "/v1/config/apply",
+            "/v1/config/draft",
             json={
                 "meters": [METER],
                 "products": [
@@ -264,7 +264,7 @@ class TestApply:
         user_organization: UserOrganization,
     ) -> None:
         response = await client.post(
-            "/v1/config/apply",
+            "/v1/config/draft",
             json={
                 "products": [product],
                 "organization_id": str(organization.id),
@@ -319,7 +319,7 @@ class TestApply:
         user_organization: UserOrganization,
     ) -> None:
         response = await client.post(
-            "/v1/config/apply",
+            "/v1/config/draft",
             json={
                 "products": [product],
                 "organization_id": str(organization.id),
@@ -339,7 +339,7 @@ class TestApply:
         user_organization: UserOrganization,
     ) -> None:
         response = await client.post(
-            "/v1/config/apply",
+            "/v1/config/draft",
             json={
                 "meters": [METER, {**METER, "name": "Duplicate"}],
                 "organization_id": str(organization.id),
@@ -355,7 +355,7 @@ class TestApply:
 
 
 @pytest.mark.anyio
-class TestPlan:
+class TestValidate:
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_empty_config(
@@ -365,7 +365,7 @@ class TestPlan:
         user_organization: UserOrganization,
     ) -> None:
         response = await client.post(
-            "/v1/config/plan", json={"organization_id": str(organization.id)}
+            "/v1/config/validate", json={"organization_id": str(organization.id)}
         )
 
         assert response.status_code == 200
@@ -395,7 +395,7 @@ class TestPlan:
         )
 
         response = await client.post(
-            "/v1/config/plan",
+            "/v1/config/validate",
             json={"meters": [METER], "organization_id": str(organization.id)},
         )
 
@@ -432,7 +432,7 @@ class TestPlan:
         }
 
         response = await client.post(
-            "/v1/config/plan",
+            "/v1/config/validate",
             json={
                 "meters": [renamed_meter, METER],
                 "organization_id": str(organization.id),
@@ -460,7 +460,7 @@ class TestPlan:
         user_organization: UserOrganization,
     ) -> None:
         response = await client.post(
-            "/v1/config/plan",
+            "/v1/config/validate",
             params={"catalog_id": str(uuid.uuid4())},
             json={"meters": [METER], "organization_id": str(organization.id)},
         )
@@ -569,7 +569,7 @@ class TestExport:
         assert second["external_id"] == "other-meter"
 
         plan_response = await client.post(
-            "/v1/config/plan",
+            "/v1/config/validate",
             json={**json["config"], "organization_id": str(organization.id)},
         )
 

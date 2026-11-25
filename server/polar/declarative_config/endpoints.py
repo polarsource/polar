@@ -187,11 +187,11 @@ async def disable(
 
 
 @router.post(
-    "/apply",
+    "/draft",
     response_model=ConfigApplyResult,
-    summary="Apply Config",
+    summary="Draft Config",
     responses={
-        200: {"description": "Config applied."},
+        200: {"description": "Config saved to the draft catalog."},
         401: {"description": "Not authenticated.", "model": Unauthorized.schema()},
         403: {
             "description": (
@@ -214,49 +214,41 @@ async def disable(
         },
     },
 )
-async def apply(
+async def draft(
     config: Config,
     auth_subject: ConfigWrite,
-    publish: bool = Query(
-        False,
-        description=(
-            "Publish the catalog changes. By default, product, benefit, meter "
-            "and settings changes are saved in the organization's draft catalog, "
-            "to publish later. With `true`, they go live and a pending draft is "
-            "discarded."
-        ),
-    ),
     session: AsyncSession = Depends(get_db_session),
     redis: Redis = Depends(get_redis),
 ) -> ConfigApplyResult:
     """
-    Apply a declarative config document to the organization.
+    Save a declarative config document to the organization's draft catalog.
+    Nothing changes for customers until the draft is published.
 
     Meters, benefits and products are matched by
     `external_id`: missing ones are created, and changed ones are updated.
     Deprecated products are neither created nor updated.
     Deprecated products, and products that `config pull` exports but the config
-    doesn't list, are left out of the published catalog. Other products, and all
+    doesn't list, are left out of the catalog. Other products, and all
     products when `products` is omitted, are left untouched. A product that
     isn't listed but has a billable subscription or a pending subscription
-    update must be marked deprecated instead, or nothing is applied.
+    update must be marked deprecated instead, or nothing is saved.
     Other resources that aren't listed are left untouched.
     `settings` go live with the catalog, so products can be priced in a new
     `payments.currency` in the same config. Every active product must have a price in
-    the resulting currency, or nothing is applied.
-    Everything is applied in one transaction.
+    the resulting currency, or nothing is saved.
+    Everything is saved in one transaction.
 
     Each section requires the write scope for its resource.
     """
     return await declarative_config_service.apply(
-        session, redis, auth_subject, config, publish=publish
+        session, redis, auth_subject, config, publish=False
     )
 
 
 @router.post(
-    "/plan",
+    "/validate",
     response_model=ConfigPlan,
-    summary="Plan Config",
+    summary="Validate Config",
     responses={
         200: {"description": "Config checked."},
         401: {"description": "Not authenticated.", "model": Unauthorized.schema()},
@@ -271,19 +263,20 @@ async def apply(
         404: CatalogNotFoundResponse,
     },
 )
-async def plan(
+async def validate(
     config: Config,
     auth_subject: ConfigRead,
     catalog_id: CatalogQuery = None,
     session: AsyncSession = Depends(get_db_session),
 ) -> ConfigPlan:
     """
-    Preview what applying a declarative config document would do, without applying it.
+    Check a declarative config document and preview what saving it to the draft
+    would change, without changing anything.
 
     Returns the action for each resource, and every issue: `error` issues make
-    apply fail, `warning` issues don't.
+    draft fail, `warning` issues don't.
 
-    With the ID of an archived catalog, the plan shows the changes from that
+    With the ID of an archived catalog, the result shows the changes from that
     version instead of the live one, without settings, and the response's
     `catalog` is None.
 

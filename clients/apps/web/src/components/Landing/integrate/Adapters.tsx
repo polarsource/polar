@@ -1,6 +1,6 @@
 import { type Snippet, SnippetPicker } from './SnippetPicker'
 
-const ADAPTER_DOCS = '/docs/integrate/sdk/adapters/introduction'
+const ADAPTER_DOCS = '/docs/integrate/sdk/adapters'
 
 const ADAPTERS: Snippet[] = [
   {

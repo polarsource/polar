@@ -151,6 +151,8 @@ A **receipt** is the proof of payment for an order. Polar issues one for every p
 
 In the dashboard, open the order and click **Download Receipt** in its actions menu. From the CLI, run `polar orders receipt <order_id>`. Over the API, use [Get Order Receipt](/api-reference/current/orders/get-order-receipt). Customers get a **Download receipt** button on each paid order in the Customer Portal.
 
+The order and subscription emails link to the receipt in the Customer Portal. If you turn one of those emails off in [Customer notifications](/features/notifications#customer-notifications), the receipt still exists, but the customer isn't emailed about it.
+
 The first request may return `202 Accepted` while the PDF renders. Retry shortly after to get a download URL.
 
 ## Export orders

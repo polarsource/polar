@@ -57,7 +57,7 @@ You don't have to create the customer first. A [Checkout Session](/concepts/chec
 
 ## Use it in API calls
 
-Every customer endpoint has a variant under `/v1/customers/external/{external_id}`. Reading a customer's subscriptions, benefits and meters by your user ID:
+Every endpoint that reads, updates or deletes a single customer has a variant under `/v1/customers/external/{external_id}`. To create a customer with one, pass `external_id` in the request body. Reading a customer's subscriptions, benefits and meters by your user ID:
 
 <CodeGroup>
 ```typescript TypeScript

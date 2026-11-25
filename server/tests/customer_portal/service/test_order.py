@@ -8,6 +8,7 @@ from polar.auth.models import AuthSubject
 from polar.customer_portal.schemas.order import (
     CustomerOrderPayConfirmationToken,
     CustomerOrderPayPaymentMethod,
+    CustomerOrderPayWithoutCredentials,
 )
 from polar.customer_portal.service.order import (
     CustomerOrderSortProperty,
@@ -87,9 +88,8 @@ class TestPay:
         submit.assert_awaited_once_with(
             session,
             order,
-            confirmation_token_id=None,
-            payment_processor=PaymentProcessor.stripe,
             payment_method_id=payment_method_id,
+            intent_type="payment",
         )
 
     async def test_updates_billing_and_submits_confirmation_token(
@@ -121,7 +121,7 @@ class TestPay:
             order,
             confirmation_token_id="ctoken_test",
             payment_processor=PaymentProcessor.stripe,
-            payment_method_id=None,
+            intent_type="payment",
         )
 
     async def test_saves_customer_billing_when_draft_payment_requires_action(
@@ -264,6 +264,29 @@ class TestPay:
                 ),
             )
 
+        submit.assert_not_awaited()
+
+    async def test_payment_required_without_credentials(
+        self, session: AsyncSession, draft_order: Order, mocker: MockerFixture
+    ) -> None:
+        submit = mocker.patch(
+            "polar.order.service.OrderService.handle_on_session_payment"
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await customer_order_service.pay(
+                session,
+                draft_order,
+                CustomerOrderPayWithoutCredentials(
+                    billing_address=AddressInput.model_validate({"country": "FR"}),
+                ),
+            )
+
+        assert (
+            exc_info.value.errors()[0]["msg"]
+            == "A payment method or confirmation token is required."
+        )
+        assert draft_order.status == OrderStatus.draft
         submit.assert_not_awaited()
 
 

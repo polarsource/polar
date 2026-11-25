@@ -16,8 +16,9 @@ from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderStatus
 from polar.models.payment import PaymentStatus
 from polar.models.subscription import SubscriptionStatus
+from polar.order.tasks import order_paid
 from polar.postgres import AsyncSession
-from polar.version import V2027_01
+from polar.version import V2026_10, V2027_01
 from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT, MEMBER_AUTH_SUBJECT
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -72,6 +73,8 @@ class TestCreateOrder:
         assert draft["invoice_number"] is None
         assert draft["applied_balance_amount"] == 0
         assert draft["due_amount"] == subscription.amount
+        assert draft["is_payment_required"] is True
+        assert draft["is_payment_setup_required"] is True
         assert draft["billing_name"] == customer.billing_name
         assert draft["billing_address"]["country"] == "FR"
         assert sum(item["amount"] for item in draft["items"]) == subscription.amount
@@ -198,6 +201,97 @@ class TestPayOrder:
         }
         stripe_service_mock.create_payment_intent.assert_awaited_once()
 
+    async def test_zero_due_recurring_order_creates_setup_intent(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture, customer=customer, product=product
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            subtotal_amount=0,
+            billing_address=Address.model_validate({"country": "FR"}),
+        )
+        stripe_service_mock.create_setup_intent.return_value = (
+            stripe_lib.SetupIntent.construct_from(
+                {
+                    "id": "seti_test",
+                    "status": "requires_action",
+                    "client_secret": "seti_test_secret",
+                },
+                None,
+            )
+        )
+
+        response = await client.patch(
+            f"/v1/customer-portal/orders/{order.id}/pay",
+            json={
+                "payment_processor": "stripe",
+                "confirmation_token_id": "ctoken_test",
+            },
+        )
+
+        assert response.status_code == 202, response.text
+        assert response.json()["status"] == OrderStatus.pending
+        assert response.json()["payment_processor_metadata"] == {
+            "intent_id": "seti_test",
+            "intent_status": "requires_action",
+            "intent_client_secret": "seti_test_secret",
+        }
+        stripe_service_mock.create_setup_intent.assert_awaited_once()
+        stripe_service_mock.create_payment_intent.assert_not_awaited()
+
+    async def test_free_trial_draft_queues_settlement_without_stripe(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        product_recurring_free_price: Product,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+        mocker: MockerFixture,
+    ) -> None:
+        customer.billing_address = None
+        await save_fixture(customer)
+        subscription = await create_subscription(
+            save_fixture,
+            customer=customer,
+            product=product_recurring_free_price,
+            status=SubscriptionStatus.trial_ended,
+        )
+        draft = await client.post(
+            "/v1/customer-portal/orders/",
+            json={"subscription_id": str(subscription.id)},
+        )
+        assert draft.status_code == 201, draft.text
+        order_id = uuid.UUID(draft.json()["id"])
+        url = f"/v1/customer-portal/orders/{order_id}"
+        enqueue = mocker.patch("polar.customer_portal.service.order.enqueue_job")
+
+        response = await client.patch(f"{url}/pay", json={})
+
+        assert response.status_code == 202, response.text
+        assert response.json()["status"] == OrderStatus.pending
+        enqueue.assert_called_once_with("order.paid", order_id=order_id)
+        stripe_service_mock.create_customer.assert_not_awaited()
+        stripe_service_mock.create_payment_intent.assert_not_awaited()
+        stripe_service_mock.create_setup_intent.assert_not_awaited()
+
+        await order_paid(order_id)
+
+        response = await client.get(url)
+        assert response.status_code == 200, response.text
+        assert response.json()["status"] == OrderStatus.paid
+        assert response.json()["subscription"]["status"] == SubscriptionStatus.active
+
     async def test_hides_other_customers_order(
         self, client: AsyncClient, save_fixture: SaveFixture, customer_second: Customer
     ) -> None:
@@ -217,6 +311,7 @@ class TestPayOrder:
 @pytest.mark.anyio
 class TestGetOrder:
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    @pytest.mark.api_version(V2026_10)
     async def test_excludes_non_public_benefits(
         self,
         client: AsyncClient,
@@ -246,6 +341,9 @@ class TestGetOrder:
         assert response.status_code == 200
 
         json = response.json()
+        assert "is_payment_required" not in json
+        assert "is_payment_setup_required" not in json
+        assert "payment_processor_metadata" not in json
         benefit_ids = {benefit["id"] for benefit in json["product"]["benefits"]}
         assert str(public_benefit.id) in benefit_ids
         assert str(private_benefit.id) not in benefit_ids

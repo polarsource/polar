@@ -61,7 +61,18 @@ class CustomerOrder(OrderBase):
     description: str = Field(
         description="A summary description of the order.", examples=["Pro Plan"]
     )
-    payment_processor_metadata: dict[str, str]
+    is_payment_required: Annotated[bool, Version(starting_from=V2027_01)] = Field(
+        description="Whether the order has a positive amount due after discounts, taxes, and applied balance."
+    )
+    is_payment_setup_required: Annotated[bool, Version(starting_from=V2027_01)] = Field(
+        description=(
+            "Whether a payment method must be set up for future subscription charges, "
+            "even if the order has no amount due."
+        )
+    )
+    payment_processor_metadata: Annotated[
+        dict[str, str], Version(starting_from=V2027_01)
+    ]
 
 
 class CustomerOrderInvoice(Schema):
@@ -99,8 +110,16 @@ class CustomerOrderPayConfirmationToken(CustomerOrderUpdate):
     confirmation_token_id: str
 
 
+class CustomerOrderPayWithoutCredentials(CustomerOrderUpdate):
+    """Pay a zero-due order that needs no payment method for future charges."""
+
+    model_config = ConfigDict(extra="forbid")
+
+
 CustomerOrderPay = Annotated[
-    CustomerOrderPayPaymentMethod | CustomerOrderPayConfirmationToken,
+    CustomerOrderPayPaymentMethod
+    | CustomerOrderPayConfirmationToken
+    | CustomerOrderPayWithoutCredentials,
     SetSchemaReference("CustomerOrderPay"),
 ]
 

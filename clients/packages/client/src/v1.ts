@@ -21560,6 +21560,16 @@ export interface components {
        * @example Pro Plan
        */
       description: string
+      /**
+       * Is Payment Required
+       * @description Whether the order has a positive amount due after discounts, taxes, and applied balance.
+       */
+      is_payment_required: boolean
+      /**
+       * Is Payment Setup Required
+       * @description Whether a payment method must be set up for future subscription charges, even if the order has no amount due.
+       */
+      is_payment_setup_required: boolean
       /** Payment Processor Metadata */
       payment_processor_metadata: {
         [key: string]: string
@@ -21621,6 +21631,7 @@ export interface components {
     CustomerOrderPay:
       | components['schemas']['CustomerOrderPayPaymentMethod']
       | components['schemas']['CustomerOrderPayConfirmationToken']
+      | components['schemas']['CustomerOrderPayWithoutCredentials']
     /** CustomerOrderPayConfirmationToken */
     CustomerOrderPayConfirmationToken: {
       /**
@@ -21668,6 +21679,29 @@ export interface components {
        * Format: uuid4
        */
       payment_method_id: string
+    }
+    /**
+     * CustomerOrderPayWithoutCredentials
+     * @description Pay a zero-due order that needs no payment method for future charges.
+     */
+    CustomerOrderPayWithoutCredentials: {
+      /**
+       * Billing Name
+       * @description The name of the customer that should appear on the invoice.
+       */
+      billing_name?: string | null
+      /** @description The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated on subscription drafts. */
+      billing_address?: components['schemas']['AddressInput']
+      /**
+       * Tax Id
+       * @description Tax ID for the billing address on a subscription draft. Set to null to remove it.
+       */
+      tax_id?: string | null
+      /**
+       * Discount Code
+       * @description Discount code to apply to the subscription draft. Set to null to remove it.
+       */
+      discount_code?: string | null
     }
     /**
      * CustomerOrderPaymentConfirmation

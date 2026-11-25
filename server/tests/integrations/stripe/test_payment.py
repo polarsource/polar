@@ -51,6 +51,7 @@ from tests.fixtures.random_objects import (
     create_order,
     create_organization,
     create_product,
+    create_subscription,
     create_user,
     create_wallet,
     create_wallet_transaction,
@@ -709,6 +710,55 @@ class TestHandleSuccess:
         assert paid_order.status == OrderStatus.paid
         assert paid_order.next_payment_attempt_at is None
         assert paid_order.payment_lock_acquired_at is None
+
+    async def test_order_setup_intent_saves_payment_method(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture, customer=customer, product=product
+        )
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            product=product,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            subtotal_amount=0,
+        )
+        stripe_payment_method = build_stripe_payment_method()
+        intent = stripe_lib.SetupIntent.construct_from(
+            {
+                "id": "seti_test",
+                "metadata": {
+                    "organization_id": str(order.organization_id),
+                    "order_id": str(order.id),
+                },
+                "payment_method": stripe_payment_method,
+            },
+            None,
+        )
+        enqueue = mocker.patch("polar.integrations.stripe.payment.enqueue_job")
+
+        await handle_success(session, intent)
+        await session.flush()
+
+        method = await PaymentMethodRepository.from_session(
+            session
+        ).get_by_customer_and_processor_id(
+            customer.id, PaymentProcessor.stripe, stripe_payment_method.id
+        )
+        assert method is not None
+        assert customer.default_payment_method_id == method.id
+        assert subscription.payment_method_id == method.id
+        assert order.status == OrderStatus.pending
+        enqueue.assert_called_once_with(
+            "order.paid", order_id=order.id, payment_id=None
+        )
 
     async def test_wallet_order(
         self,

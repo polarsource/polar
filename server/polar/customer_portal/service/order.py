@@ -1,7 +1,7 @@
 import uuid
 from collections.abc import Sequence
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
 from sqlalchemy import UnaryExpression, asc, desc
 from sqlalchemy.orm import contains_eager
@@ -25,6 +25,7 @@ from polar.order.service import order as order_service
 from polar.receipt.service import receipt as receipt_service
 from polar.subscription.repository import SubscriptionRepository
 from polar.tax.calculation.base import TaxCalculationLogicalError
+from polar.worker import enqueue_job
 
 from ..repository.order import CustomerOrderRepository
 from ..schemas.order import (
@@ -32,7 +33,7 @@ from ..schemas.order import (
     CustomerOrderPay,
     CustomerOrderPayConfirmationToken,
     CustomerOrderPaymentConfirmation,
-    CustomerOrderPayPaymentMethod,
+    CustomerOrderPayWithoutCredentials,
     CustomerOrderReceipt,
     CustomerOrderUpdate,
 )
@@ -217,7 +218,9 @@ class CustomerOrderService:
                 ]
             ) from e
 
-        if order.billing_address is None:
+        is_payment_required = order.is_payment_required
+        needs_intent = is_payment_required or order.is_payment_setup_required
+        if needs_intent and order.billing_address is None:
             raise PolarRequestValidationError(
                 [
                     ValidationError(
@@ -229,20 +232,41 @@ class CustomerOrderService:
                 ]
             )
 
+        intent_type: Literal["payment", "setup"] = (
+            "payment" if is_payment_required else "setup"
+        )
         try:
             order.status = OrderStatus.pending
-            order = await order_service.handle_on_session_payment(
-                session,
-                order,
-                confirmation_token_id=order_pay.confirmation_token_id
-                if isinstance(order_pay, CustomerOrderPayConfirmationToken)
-                else None,
-                payment_processor=PaymentProcessor.stripe,
-                payment_method_id=order_pay.payment_method_id
-                if isinstance(order_pay, CustomerOrderPayPaymentMethod)
-                else None,
-            )
-        except PaymentError:
+            if not needs_intent:
+                async with order_service.acquire_payment_lock(session, order):
+                    enqueue_job("order.paid", order_id=order.id)
+            elif isinstance(order_pay, CustomerOrderPayWithoutCredentials):
+                raise PolarRequestValidationError(
+                    [
+                        ValidationError(
+                            type="missing",
+                            loc=("body",),
+                            msg="A payment method or confirmation token is required.",
+                            input=order_pay.model_dump(exclude_unset=True),
+                        )
+                    ]
+                )
+            elif isinstance(order_pay, CustomerOrderPayConfirmationToken):
+                order = await order_service.handle_on_session_payment(
+                    session,
+                    order,
+                    confirmation_token_id=order_pay.confirmation_token_id,
+                    payment_processor=PaymentProcessor.stripe,
+                    intent_type=intent_type,
+                )
+            else:
+                order = await order_service.handle_on_session_payment(
+                    session,
+                    order,
+                    payment_method_id=order_pay.payment_method_id,
+                    intent_type=intent_type,
+                )
+        except PaymentError, PolarRequestValidationError:
             order.status = original_status
             raise
 
@@ -289,13 +313,17 @@ class CustomerOrderService:
         payment_method_id: uuid.UUID | None = None,
     ) -> CustomerOrderPaymentConfirmation:
         try:
-            order = await order_service.handle_on_session_payment(
-                session,
-                order,
-                confirmation_token_id,
-                payment_processor,
-                payment_method_id,
-            )
+            if confirmation_token_id is not None:
+                order = await order_service.handle_on_session_payment(
+                    session,
+                    order,
+                    confirmation_token_id=confirmation_token_id,
+                    payment_processor=payment_processor,
+                )
+            elif payment_method_id is not None:
+                order = await order_service.handle_on_session_payment(
+                    session, order, payment_method_id=payment_method_id
+                )
         except PaymentError as e:
             return CustomerOrderPaymentConfirmation(
                 status="failed", error=e.error or "Payment failed. Please try again."

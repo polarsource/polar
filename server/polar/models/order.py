@@ -35,6 +35,8 @@ from polar.models.order_item import OrderItem
 from polar.tax.calculation import TaxBreakdownItem
 from polar.tax.tax_id import TaxID, TaxIDType
 
+from .discount import DiscountDuration, DiscountPercentage
+
 if TYPE_CHECKING:
     from polar.models import (
         Checkout,
@@ -353,6 +355,28 @@ class Order(
     @classmethod
     def _due_amount_expression(cls) -> ColumnElement[int]:
         return func.greatest(0, cls.total_amount + cls.applied_balance_amount)
+
+    @property
+    def is_payment_required(self) -> bool:
+        return self.due_amount > 0
+
+    @property
+    def is_payment_setup_required(self) -> bool:
+        if self.subscription is None:
+            return False
+
+        discount = self.discount
+        if (
+            isinstance(discount, DiscountPercentage)
+            and discount.duration == DiscountDuration.forever
+            and discount.basis_points == 10_000
+        ):
+            return False
+
+        return any(
+            price.amount > 0 or price.product_price.is_metered
+            for price in self.subscription.subscription_product_prices
+        )
 
     @property
     def taxed(self) -> int:

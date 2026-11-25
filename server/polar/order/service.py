@@ -3479,6 +3479,10 @@ class OrderService:
             )
             return order
 
+        # Failing attempt to pay a draft order, revert to draft
+        if order.status == OrderStatus.pending and order.invoice_number is None:
+            return await self._revert_to_draft(session, order)
+
         # Skip dunning for manual retries - user can retry again
         if skip_dunning:
             log.info(

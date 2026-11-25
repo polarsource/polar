@@ -4588,6 +4588,24 @@ class TestHandlePayment:
 class TestHandlePaymentFailure:
     """Test order service handle payment failure functionality"""
 
+    async def test_unnumbered_pending_order_returns_to_draft(
+        self, session: AsyncSession, save_fixture: SaveFixture, customer: Customer
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            status=OrderStatus.pending,
+            payment_lock_acquired_at=utc_now(),
+        )
+        order.invoice_number = None
+
+        result = await order_service.handle_payment_failure(
+            session, order, skip_dunning=True
+        )
+
+        assert result.status == OrderStatus.draft
+        assert result.payment_lock_acquired_at is None
+
     @freeze_time("2024-01-01 12:00:00")
     async def test_subscription_order(
         self,
@@ -4623,6 +4641,8 @@ class TestHandlePaymentFailure:
         result_order = await order_service.handle_payment_failure(session, order)
 
         # Then
+        assert result_order.status == OrderStatus.pending
+        assert result_order.invoice_number is not None
         assert result_order.next_payment_attempt_at is not None
         expected_retry_date = utc_now() + timedelta(days=2)
         assert result_order.next_payment_attempt_at == expected_retry_date

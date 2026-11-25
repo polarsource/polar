@@ -797,6 +797,38 @@ class TestStartPanTransfer:
 
 
 @pytest.mark.anyio
+class TestBenefits:
+    async def test_anonymous(
+        self, client: AsyncClient, save_fixture: SaveFixture, organization: Organization
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        response = await client.get(f"/v1/merchant-migrations/{migration.id}/benefits")
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize("method", ["GET", "POST"])
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_stripe_migration_has_none(
+        self,
+        method: str,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _create_migration(
+            save_fixture, organization, step=MerchantMigrationStep.create_catalog
+        )
+
+        response = await client.request(
+            method,
+            f"/v1/merchant-migrations/{migration.id}/benefits",
+            json={"ids": []} if method == "POST" else None,
+        )
+
+        assert response.status_code == 409
+
+
+@pytest.mark.anyio
 class TestCompletePanTransferStep:
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
     async def test_complete_advances_and_persists(

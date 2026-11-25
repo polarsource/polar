@@ -1839,11 +1839,16 @@ class MerchantMigrationService:
             flush=flush,
         )
 
-    async def close_idle(
-        self, session: AsyncSession, migration_id: UUID, *, idle_since: datetime
+    async def close(
+        self,
+        session: AsyncSession,
+        migration_id: UUID,
+        *,
+        idle_since: datetime | None = None,
     ) -> bool:
-        """Take one bounded step towards closing a migration with no activity
-        since ``idle_since``, and return whether it changed anything.
+        """Take one bounded step towards closing a migration, and return whether
+        it changed anything. With ``idle_since``, only a migration with no
+        activity since then is closed; without it, Polar staff close it now.
 
         First delete the records never imported, one batch per call. Then, in a
         single call, delete the stored source key and mark the migration
@@ -1857,7 +1862,10 @@ class MerchantMigrationService:
         if (
             migration is None
             or migration.step in MERCHANT_MIGRATION_FINISHED_STEPS
-            or (migration.modified_at or migration.created_at) >= idle_since
+            or (
+                idle_since is not None
+                and (migration.modified_at or migration.created_at) >= idle_since
+            )
             or self._operation_blocks_new_work(migration)
         ):
             return False

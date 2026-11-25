@@ -63,21 +63,18 @@ async def _create_integration(
         display_name="Test",
         slack_app_id="A0TESTAPPID",
         client_id="100.200",
-        client_secret="cs-test",
-        signing_secret="ss-test",
         team_id="T1" if installed else None,
         team_name="Test team" if installed else None,
         bot_user_id="U1" if installed else None,
-        bot_token=bot_token,
         authed_user_id="U2" if installed else None,
         scopes=["channels:manage"] if installed else None,
     )
     integration.id = SlackApp.generate_id()
     integration.client_secret_encrypted = await SlackApp.encrypt_client_secret(
-        integration.id, integration.client_secret
+        integration.id, "cs-test"
     )
     integration.signing_secret_encrypted = await SlackApp.encrypt_signing_secret(
-        integration.id, integration.signing_secret
+        integration.id, "ss-test"
     )
     integration.bot_token_encrypted = await SlackApp.encrypt_bot_token(
         integration.id, bot_token
@@ -1587,37 +1584,6 @@ class TestSlackSharedChannelGrant:
             properties={**_BASE_PROPERTIES, "team_invitees": ["U01", "U02"]},
         )
         await _create_integration(save_fixture, benefit)
-        client = _mock_client(mocker)
-        strategy = _strategy(session, redis, client)
-
-        await strategy.grant(
-            benefit,
-            customer,
-            {"invited_email": "admin@customer.example"},
-        )
-
-        client.conversations_invite.assert_awaited_once_with(
-            bot_token="xoxb-test-token", channel="C123", users=["U01", "U02"]
-        )
-
-    async def test_grant_reads_bot_token_when_plaintext_absent(
-        self,
-        session: AsyncSession,
-        redis: Redis,
-        save_fixture: SaveFixture,
-        mocker: MockerFixture,
-        customer: Customer,
-        organization: Organization,
-    ) -> None:
-        benefit = await create_benefit(
-            save_fixture,
-            organization=organization,
-            type=BenefitType.slack_shared_channel,
-            properties={**_BASE_PROPERTIES, "team_invitees": ["U01", "U02"]},
-        )
-        integration = await _create_integration(save_fixture, benefit)
-        integration.bot_token = None
-        await save_fixture(integration)
         client = _mock_client(mocker)
         strategy = _strategy(session, redis, client)
 

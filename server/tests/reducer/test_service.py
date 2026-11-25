@@ -2660,7 +2660,11 @@ class TestSyncMeter:
         await reducer_service.sync_meter(session, meter)
         await set_job_queue_manager_context.flush(dramatiq.get_broker(), redis)
 
-        [(_, fields)] = await redis.xrange(f"outpost:changes:{meter.organization_id}")
+        [(_, fields)] = (
+            await redis.xrange(f"outpost:changes:{meter.organization_id}") or []
+        )
+
+        assert fields is not None
         assert json.loads(fields[b"event"]) == {"type": "configuration"}
 
     async def test_creates_usage_and_credit_reducers(

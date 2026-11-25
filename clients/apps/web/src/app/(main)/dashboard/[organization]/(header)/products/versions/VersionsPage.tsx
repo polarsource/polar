@@ -1,6 +1,6 @@
 'use client'
 
-import { useCatalogs } from '@/hooks/queries/catalogs'
+import { useCatalogs, useRemovedCatalogItems } from '@/hooks/queries/catalogs'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import Pagination from '@/components/Pagination/Pagination'
 import { EmptyState } from '@/components/Shared/EmptyState'
@@ -77,32 +77,37 @@ export const VersionsPage = ({
     'tab',
     parseAsStringLiteral(tabs).withDefault('versions'),
   )
+  const { data: removed, isError } = useRemovedCatalogItems(organization.id)
+  // On error, keep the tabs so the Removed tab can show its alert and retry
+  const hasRemoved = !!removed?.length || isError
 
   return (
     <DashboardBody title="Versions">
       <Box flexDirection="column" rowGap="2xl">
-        <Subnav label="Version sections">
-          {(
-            [
-              ['versions', 'Overview'],
-              ['removed', 'Removed'],
-            ] as const
-          ).map(([value, label]) => (
-            <SubnavItem key={value} active={tab === value}>
-              <button
-                type="button"
-                className="cursor-pointer"
-                onClick={() => setTab(value)}
-              >
-                {label}
-              </button>
-            </SubnavItem>
-          ))}
-        </Subnav>
-        {tab === 'versions' ? (
-          <HistoryTab organization={organization} />
-        ) : (
+        {hasRemoved && (
+          <Subnav label="Version sections">
+            {(
+              [
+                ['versions', 'Overview'],
+                ['removed', 'Removed'],
+              ] as const
+            ).map(([value, label]) => (
+              <SubnavItem key={value} active={tab === value}>
+                <button
+                  type="button"
+                  className="cursor-pointer"
+                  onClick={() => setTab(value)}
+                >
+                  {label}
+                </button>
+              </SubnavItem>
+            ))}
+          </Subnav>
+        )}
+        {hasRemoved && tab === 'removed' ? (
           <RemovedTab organization={organization} />
+        ) : (
+          <HistoryTab organization={organization} />
         )}
       </Box>
     </DashboardBody>

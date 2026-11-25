@@ -34,7 +34,9 @@ class TestEnqueue:
         assert await redis.xlen(key) == 0
         await set_job_queue_manager_context.flush(dramatiq.get_broker(), redis)
 
-        [(_, fields)] = await redis.xrange(key)
+        [(_, fields)] = await redis.xrange(key) or []
+
+        assert fields is not None
         assert json.loads(fields[b"event"]) == {
             "type": "reducer_bucket",
             "reducer_id": str(reducer_id),

@@ -97,7 +97,9 @@ const CatalogLabel = ({
       Catalog
     </Text>
     {catalog ? (
-      <CatalogVersionChip organization={organization} catalog={catalog} />
+      <Box maxWidth="50%" minWidth={0}>
+        <CatalogVersionChip organization={organization} catalog={catalog} />
+      </Box>
     ) : null}
   </Box>
 )

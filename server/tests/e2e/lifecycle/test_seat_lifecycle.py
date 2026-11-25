@@ -14,8 +14,8 @@ Volume pricing tiers:
 from datetime import UTC, datetime
 from decimal import Decimal
 
-import freezegun
 import pytest
+import time_machine
 from httpx2 import AsyncClient
 
 from polar.kit.db.postgres import AsyncSession
@@ -53,7 +53,7 @@ class TestSeatSubscriptionLifecycle:
         mar1 = datetime(2025, 3, 1, 12, 0, 0, tzinfo=UTC)
 
         # ── January 1st: Subscribe with 3 seats (Tier 1: $10/seat = $30) ─
-        with freezegun.freeze_time(jan1):
+        with time_machine.travel(jan1, tick=False):
             purchase = await complete_purchase(
                 client,
                 session,
@@ -76,7 +76,7 @@ class TestSeatSubscriptionLifecycle:
             subscription_id = sub["id"]
 
         # ── January 16th: Upgrade to 8 seats (Tier 2: $8/seat = $64) ─────
-        with freezegun.freeze_time(jan16):
+        with time_machine.travel(jan16, tick=False):
             response = await client.patch(
                 f"/v1/subscriptions/{subscription_id}",
                 json={"seats": 8, "proration_behavior": "prorate"},
@@ -101,7 +101,7 @@ class TestSeatSubscriptionLifecycle:
             assert increase_entries[0].amount == expected_proration
 
         # ── February 1st: First renewal (cycle + upgrade proration) ───────
-        with freezegun.freeze_time(feb1):
+        with time_machine.travel(feb1, tick=False):
             await trigger_subscription_cycle(session, drain, subscription_id)
 
             response = await client.get("/v1/orders/")
@@ -117,7 +117,7 @@ class TestSeatSubscriptionLifecycle:
             assert renewal_1["amount"] == 6400 + expected_proration
 
         # ── February 15th: Downgrade to 4 seats (Tier 1: $10/seat = $40) ─
-        with freezegun.freeze_time(feb15):
+        with time_machine.travel(feb15, tick=False):
             response = await client.patch(
                 f"/v1/subscriptions/{subscription_id}",
                 json={"seats": 4, "proration_behavior": "prorate"},
@@ -143,7 +143,7 @@ class TestSeatSubscriptionLifecycle:
             assert decrease_entries[0].amount == expected_credit
 
         # ── March 1st: Second renewal (cycle - downgrade credit) ──────────
-        with freezegun.freeze_time(mar1):
+        with time_machine.travel(mar1, tick=False):
             await trigger_subscription_cycle(session, drain, subscription_id)
 
             response = await client.get("/v1/orders/")

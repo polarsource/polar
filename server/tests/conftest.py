@@ -4,10 +4,7 @@ from pathlib import Path
 os.environ["POLAR_ENV"] = "testing"
 
 
-import freezegun
 import pytest
-
-freezegun.configure(extend_ignore_list=["_pytest.timing"])
 
 _ci_collection_paths: set[Path] | None = None
 if test_files_path := os.environ.get("POLAR_TEST_FILES"):

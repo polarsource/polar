@@ -15,9 +15,9 @@ This thin wrapper bridges the gap: it calls
 exposed as a ``@staticmethod`` — and executes it via the test's async
 session.  Zero query duplication; only the execution path differs.
 
-Usage with freezegun::
+Usage with time_machine::
 
-    with freeze_time("2024-02-15"):
+    with time_machine.travel("2024-02-15T00:00:00Z", tick=False):
         count = await scheduler_sim.get_due_count()
         result = await scheduler_sim.trigger_due_cycles(drain)
         assert "subscription.cycle" in result

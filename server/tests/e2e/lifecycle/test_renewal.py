@@ -6,12 +6,12 @@ The scheduler picks it up via SubscriptionJobStore → enqueues subscription.cyc
 billing entries created → order.create_subscription_order runs →
 new order with billing_reason=subscription_cycle.
 
-Uses freezegun to control time so the scheduler's cron job picker logic is
+Uses time_machine to control time so the scheduler's cron job picker logic is
 exercised with realistic time progression instead of manual date manipulation.
 """
 
-import freezegun
 import pytest
+import time_machine
 from httpx2 import AsyncClient
 
 from polar.kit.db.postgres import AsyncSession
@@ -22,8 +22,8 @@ from tests.e2e.purchase.conftest import complete_purchase
 from tests.fixtures.database import SaveFixture
 
 # Purchase happens on Jan 15 → monthly sub ends Feb 15
-PURCHASE_DATE = "2024-01-15 12:00:00"
-RENEWAL_DATE = "2024-02-15 12:00:01"
+PURCHASE_DATE = "2024-01-15T12:00:00Z"
+RENEWAL_DATE = "2024-02-15T12:00:01Z"
 
 
 @pytest.mark.anyio
@@ -40,7 +40,7 @@ class TestRenewal:
         monthly_product: Product,
     ) -> None:
         # Given: purchase a subscription
-        with freezegun.freeze_time(PURCHASE_DATE):
+        with time_machine.travel(PURCHASE_DATE, tick=False):
             await complete_purchase(
                 client,
                 session,
@@ -53,13 +53,13 @@ class TestRenewal:
 
         # Run 3 consecutive monthly cycles
         cycle_dates = [
-            "2024-02-15 12:00:01",  # 1st renewal
-            "2024-03-15 12:00:01",  # 2nd renewal
-            "2024-04-15 12:00:01",  # 3rd renewal
+            "2024-02-15T12:00:01Z",  # 1st renewal
+            "2024-03-15T12:00:01Z",  # 2nd renewal
+            "2024-04-15T12:00:01Z",  # 3rd renewal
         ]
 
         for cycle_date in cycle_dates:
-            with freezegun.freeze_time(cycle_date):
+            with time_machine.travel(cycle_date, tick=False):
                 assert await scheduler_sim.get_due_count() == 1, (
                     f"Expected 1 due sub at {cycle_date}"
                 )
@@ -110,7 +110,7 @@ class TestRenewal:
         ``subscription_renewals`` (gates renewal payments AND scheduler
         picking). The ``checkout=off, renewals=on`` case used to drop
         renewals because they were tagged with ``PaymentTrigger.purchase``."""
-        with freezegun.freeze_time(PURCHASE_DATE):
+        with time_machine.travel(PURCHASE_DATE, tick=False):
             await complete_purchase(
                 client,
                 session,
@@ -131,7 +131,7 @@ class TestRenewal:
         await save_fixture(organization)
         stripe_sim.mock.create_payment_intent.reset_mock()
 
-        with freezegun.freeze_time(RENEWAL_DATE):
+        with time_machine.travel(RENEWAL_DATE, tick=False):
             assert await scheduler_sim.get_due_count() == (1 if expect_renewal else 0)
             await scheduler_sim.trigger_due_cycles(drain)
 

@@ -5,11 +5,10 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from unittest.mock import ANY, AsyncMock, MagicMock, call
 
-import freezegun
 import pytest
 import stripe as stripe_lib
+import time_machine
 from babel.dates import format_date
-from freezegun import freeze_time
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
@@ -288,7 +287,7 @@ def webhook_service_send_mock(mocker: MockerFixture) -> AsyncMock:
 @pytest.fixture
 def frozen_time() -> Generator[datetime]:
     frozen_time = utc_now()
-    with freezegun.freeze_time(frozen_time):
+    with time_machine.travel(frozen_time, tick=False):
         yield frozen_time
 
 
@@ -1755,7 +1754,7 @@ class TestApplyUpdate:
         assert updated.current_meter_period_end is not None
         assert updated.current_meter_period_end > updated.current_meter_period_start
 
-    @freeze_time("2026-06-15")
+    @time_machine.travel("2026-06-15T00:00:00Z", tick=False)
     async def test_meter_clock_contains_now_when_period_started_in_past(
         self,
         save_fixture: SaveFixture,
@@ -1863,7 +1862,7 @@ class TestCycle:
         assert updated.current_period_end == current_period_end
 
     @pytest.mark.parametrize("cancel_at_period_end", [False, True])
-    @freeze_time("2024-01-15 12:00:00")
+    @time_machine.travel("2024-01-15T12:00:00Z", tick=False)
     async def test_clamps_meter_reset_to_now_when_cycling_early(
         self,
         cancel_at_period_end: bool,
@@ -1896,7 +1895,7 @@ class TestCycle:
             include_meter_credits=not cancel_at_period_end,
         )
 
-    @freeze_time("2024-01-15 12:00:00")
+    @time_machine.travel("2024-01-15T12:00:00Z", tick=False)
     async def test_preserves_period_end_when_cycling_late(
         self,
         mocker: MockerFixture,
@@ -2067,7 +2066,7 @@ class TestCycle:
         assert billing_entry.amount == 0
         assert billing_entry.currency == subscription.currency
 
-    @freeze_time("2024-01-15")
+    @time_machine.travel("2024-01-15T00:00:00Z", tick=False)
     async def test_discount_repetition(
         self,
         session: AsyncSession,
@@ -2163,7 +2162,7 @@ class TestCycle:
         assert updated_subscription.current_period_end > previous_current_period_end
         assert updated_subscription.scheduler_locked_at is None
 
-    @freeze_time("2024-01-15")
+    @time_machine.travel("2024-01-15T00:00:00Z", tick=False)
     async def test_nth_month_cycle(
         self,
         session: AsyncSession,
@@ -2362,7 +2361,7 @@ class TestCycle:
         subject = enqueue_email_mock.call_args.kwargs["subject"]
         assert "ended" in subject.lower()
 
-    @freeze_time("2024-01-15 10:00:00")
+    @time_machine.travel("2024-01-15T10:00:00Z", tick=False)
     async def test_cancel_at_period_end_sets_ended_at_to_current_time(
         self,
         session: AsyncSession,
@@ -2562,7 +2561,7 @@ class TestCycle:
             "expected exactly one SubscriptionRevokedEmail from cycle()"
         )
 
-    @freeze_time("2024-04-28 12:00:00")
+    @time_machine.travel("2024-04-28T12:00:00Z", tick=False)
     async def test_trial_end_rebases_anchor_to_trial_end_day(
         self,
         session: AsyncSession,
@@ -2870,7 +2869,7 @@ class TestCycle:
         )
         cycle_at = subscription.current_period_end
 
-        with freeze_time(cycle_at):
+        with time_machine.travel(cycle_at, tick=False):
             subscription_update, _ = generate_subscription_update(
                 subscription,
                 SubscriptionProrationBehavior.reset,
@@ -3341,7 +3340,7 @@ class TestCycleMeters:
         subscription.current_meter_period_end = datetime(2026, 4, 1, tzinfo=UTC)
         await save_fixture(subscription)
 
-        with freezegun.freeze_time(datetime(2026, 4, 1, 0, 0, 1, tzinfo=UTC)):
+        with time_machine.travel(datetime(2026, 4, 1, 0, 0, 1, tzinfo=UTC), tick=False):
             updated = await subscription_service.cycle_meters(session, subscription)
 
         assert updated.discount is None
@@ -3384,7 +3383,7 @@ class TestCycleMeters:
         subscription.current_meter_period_end = datetime(2026, 2, 1, tzinfo=UTC)
         await save_fixture(subscription)
 
-        with freezegun.freeze_time(datetime(2026, 2, 1, 0, 0, 1, tzinfo=UTC)):
+        with time_machine.travel(datetime(2026, 2, 1, 0, 0, 1, tzinfo=UTC), tick=False):
             updated = await subscription_service.cycle_meters(session, subscription)
 
         assert updated.discount == discount
@@ -3428,7 +3427,7 @@ class TestCycleMeters:
         subscription.current_meter_period_end = datetime(2026, 3, 1, tzinfo=UTC)
         await save_fixture(subscription)
 
-        with freezegun.freeze_time(datetime(2026, 3, 1, 0, 0, 1, tzinfo=UTC)):
+        with time_machine.travel(datetime(2026, 3, 1, 0, 0, 1, tzinfo=UTC), tick=False):
             updated = await subscription_service.cycle_meters(session, subscription)
         assert updated.discount == discount
 
@@ -3438,7 +3437,7 @@ class TestCycleMeters:
         updated.scheduler_locked_at = utc_now()
         await save_fixture(updated)
 
-        with freezegun.freeze_time(datetime(2026, 4, 1, 0, 0, 1, tzinfo=UTC)):
+        with time_machine.travel(datetime(2026, 4, 1, 0, 0, 1, tzinfo=UTC), tick=False):
             updated = await subscription_service.cycle_meters(session, updated)
         assert updated.discount is None
 
@@ -3584,7 +3583,7 @@ class TestCheckMeterCycleLag:
         with pytest.raises(SubscriptionMeterCycleLag):
             subscription_service.check_meter_cycle_lag(subscription)
 
-    @freeze_time("2024-01-15 12:00:00")
+    @time_machine.travel("2024-01-15T12:00:00Z", tick=False)
     async def test_noop_within_one_period(
         self,
         save_fixture: SaveFixture,
@@ -4043,7 +4042,7 @@ class TestUncancel:
 
 @pytest.mark.anyio
 class TestReinstate:
-    @freeze_time("2024-03-15 12:00:00")
+    @time_machine.travel("2024-03-15T12:00:00Z", tick=False)
     async def test_valid(
         self,
         mocker: MockerFixture,
@@ -4146,7 +4145,7 @@ class TestReinstate:
             await get_all_by_name(session, SystemEvent.subscription_reactivated) == []
         )
 
-    @freeze_time("2024-03-15 12:00:00")
+    @time_machine.travel("2024-03-15T12:00:00Z", tick=False)
     async def test_preserves_current_period(
         self,
         mocker: MockerFixture,
@@ -4178,7 +4177,7 @@ class TestReinstate:
         assert reinstated.current_period_end == current_period_end
 
     @pytest.mark.parametrize("invalid_state", ["active", "more_than_one_cycle_late"])
-    @freeze_time("2024-03-15 12:00:00")
+    @time_machine.travel("2024-03-15T12:00:00Z", tick=False)
     async def test_invalid(
         self,
         invalid_state: str,
@@ -4933,7 +4932,7 @@ class TestActivateImported:
         enqueued = [call.args[0] for call in enqueue_job_mock.call_args_list]
         assert "order.create_subscription_order" not in enqueued
 
-    @freeze_time("2026-06-15")
+    @time_machine.travel("2026-06-15T00:00:00Z", tick=False)
     async def test_meter_clock_contains_now_when_period_started_in_past(
         self,
         session: AsyncSession,
@@ -6767,7 +6766,7 @@ class TestUpdate:
         assert pending_update.new_cycle_start == trial_end
         assert pending_update.new_cycle_end == expected_period_end
 
-        with freeze_time(trial_end):
+        with time_machine.travel(trial_end, tick=False):
             async with SubscriptionUpdateContext(
                 session, updated, subscription_service
             ) as ctx:
@@ -6899,7 +6898,7 @@ class TestUpdateProduct:
             "Product is no longer sold. Use the current version."
         )
 
-    @freeze_time("2026-06-15")
+    @time_machine.travel("2026-06-15T00:00:00Z", tick=False)
     async def test_meter_clock_contains_now_when_period_started_in_past(
         self,
         session: AsyncSession,
@@ -7081,7 +7080,7 @@ class TestUpdateProduct:
         product: Product,
     ) -> None:
         trial_creation_time = datetime(2025, 1, 1, 12, 0, 0, tzinfo=UTC)
-        with freezegun.freeze_time(trial_creation_time):
+        with time_machine.travel(trial_creation_time, tick=False):
             subscription = await create_trialing_subscription(
                 save_fixture,
                 product=product,
@@ -7100,7 +7099,7 @@ class TestUpdateProduct:
             trial_interval_count=7,
         )
 
-        with freezegun.freeze_time(trial_creation_time + timedelta(days=1)):
+        with time_machine.travel(trial_creation_time + timedelta(days=1), tick=False):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -7124,7 +7123,7 @@ class TestUpdateProduct:
         product: Product,
     ) -> None:
         trial_creation_time = datetime(2025, 1, 1, 12, 0, 0, tzinfo=UTC)
-        with freezegun.freeze_time(trial_creation_time):
+        with time_machine.travel(trial_creation_time, tick=False):
             subscription = await create_trialing_subscription(
                 save_fixture,
                 product=product,
@@ -7142,7 +7141,7 @@ class TestUpdateProduct:
         )
 
         change_time = trial_creation_time + timedelta(days=10)
-        with freezegun.freeze_time(change_time):
+        with time_machine.travel(change_time, tick=False):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -8868,7 +8867,7 @@ class TestUpdateTrial:
         trial_end = subscription.current_period_end + timedelta(days=14)
 
         trial_added_at = datetime(2025, 6, 1, 12, 0, 0, tzinfo=UTC)
-        with freezegun.freeze_time(trial_added_at):
+        with time_machine.travel(trial_added_at, tick=False):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -9638,7 +9637,7 @@ class TestSendTrialConversionReminderEmail:
 class TestMarkPastDue:
     """Test subscription service dunning functionality"""
 
-    @freeze_time("2024-01-01 12:00:00")
+    @time_machine.travel("2024-01-01T12:00:00Z", tick=False)
     async def test_mark_past_due(
         self,
         session: AsyncSession,
@@ -9666,7 +9665,7 @@ class TestMarkPastDue:
             delay=None,
         )
 
-    @freeze_time("2024-01-01 12:00:00")
+    @time_machine.travel("2024-01-01T12:00:00Z", tick=False)
     async def test_mark_past_due_sends_email(
         self,
         mocker: MockerFixture,
@@ -9692,7 +9691,7 @@ class TestMarkPastDue:
         assert result_subscription.status == SubscriptionStatus.past_due
         send_past_due_email_mock.assert_called_once_with(session, subscription)
 
-    @freeze_time("2024-01-01 12:00:00")
+    @time_machine.travel("2024-01-01T12:00:00Z", tick=False)
     async def test_mark_past_due_skips_ended_subscription(
         self,
         session: AsyncSession,
@@ -10893,7 +10892,7 @@ class TestUpdateSeats:
 
         # When: Update with reset behavior
         update_time = datetime(2025, 6, 16, tzinfo=UTC)
-        with freezegun.freeze_time(update_time):
+        with time_machine.travel(update_time, tick=False):
             new_anchor_day = update_time.day
             new_period_end = subscription.recurring_interval.get_next_period(
                 update_time, new_anchor_day, subscription.recurring_interval_count
@@ -10970,7 +10969,7 @@ class TestUpdateSeats:
 
         # When: Seats change with reset behavior mid-month
         update_time = datetime(2025, 6, 15, tzinfo=UTC)
-        with freezegun.freeze_time(update_time):
+        with time_machine.travel(update_time, tick=False):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:

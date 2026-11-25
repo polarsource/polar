@@ -8,6 +8,7 @@ import {
 import { schemas } from '@polar-sh/client'
 import { Alert, Spinner, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { BenefitsStep } from '../benefits/BenefitsStep'
 import { PanTransferPanel } from '../cards/PanTransferPanel'
 import { ImportedStep } from '../ImportedStep'
 import { MigrationStepper } from '../MigrationStepper'
@@ -139,7 +140,13 @@ function StepContent({
       return <ReviewTable migrationId={migration.id} />
     // No `StepHeading`: the handoff panel is its own heading.
     case 'create_catalog':
-      return <ImportedStep migrationId={migration.id} />
+      if (migration.source_platform !== 'lemon_squeezy') {
+        return <ImportedStep migrationId={migration.id} />
+      }
+    // Lemon Squeezy sets benefits up before moving cards.
+    // falls through
+    case 'set_up_benefits':
+      return <BenefitsStep migration={migration} />
     case 'copy_cards':
       return (
         <Box flexDirection="column" rowGap="l">

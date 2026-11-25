@@ -168,7 +168,9 @@ export const StatusTooltip = ({
   description ? (
     <Tooltip delayDuration={300}>
       <TooltipTrigger asChild>
-        <span className="inline-flex max-w-full min-w-0">{children}</span>
+        <span className="inline-flex max-w-full min-w-0" tabIndex={0}>
+          {children}
+        </span>
       </TooltipTrigger>
       <TooltipContent className="max-w-64">{description}</TooltipContent>
     </Tooltip>

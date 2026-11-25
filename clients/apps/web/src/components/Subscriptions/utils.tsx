@@ -50,7 +50,7 @@ const subscriptionStatusDescriptions: {
   paused:
     'Paused. Benefits are revoked and nothing is charged until it resumes.',
   trial_ended:
-    'The trial ended without a payment method, so it did not convert.',
+    'The trial ended without complete payment details, so it did not convert.',
   canceled: 'Ended. Benefits are revoked.',
   unpaid: 'Ended because its payment could not be collected.',
 }

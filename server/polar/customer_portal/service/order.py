@@ -9,6 +9,8 @@ from sqlalchemy.sql.elements import OrderByList
 
 from polar.auth.models import AuthSubject, Customer, Member
 from polar.customer.repository import CustomerRepository
+from polar.discount.service import DiscountNotRedeemableError
+from polar.discount.service import discount as discount_service
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.invoice.service import invoice as invoice_service
@@ -236,36 +238,50 @@ class CustomerOrderService:
             "payment" if is_payment_required else "setup"
         )
         try:
-            order.status = OrderStatus.pending
-            if not needs_intent:
-                async with order_service.acquire_payment_lock(session, order):
-                    enqueue_job("order.paid", order_id=order.id)
-            elif isinstance(order_pay, CustomerOrderPayWithoutCredentials):
-                raise PolarRequestValidationError(
-                    [
-                        ValidationError(
-                            type="missing",
-                            loc=("body",),
-                            msg="A payment method or confirmation token is required.",
-                            input=order_pay.model_dump(exclude_unset=True),
-                        )
-                    ]
-                )
-            elif isinstance(order_pay, CustomerOrderPayConfirmationToken):
-                order = await order_service.handle_on_session_payment(
-                    session,
-                    order,
-                    confirmation_token_id=order_pay.confirmation_token_id,
-                    payment_processor=PaymentProcessor.stripe,
-                    intent_type=intent_type,
-                )
-            else:
-                order = await order_service.handle_on_session_payment(
-                    session,
-                    order,
-                    payment_method_id=order_pay.payment_method_id,
-                    intent_type=intent_type,
-                )
+            async with discount_service.redeem_order_discount(session, order):
+                order.status = OrderStatus.pending
+                if not needs_intent:
+                    async with order_service.acquire_payment_lock(session, order):
+                        enqueue_job("order.paid", order_id=order.id)
+                elif isinstance(order_pay, CustomerOrderPayWithoutCredentials):
+                    raise PolarRequestValidationError(
+                        [
+                            ValidationError(
+                                type="missing",
+                                loc=("body",),
+                                msg="A payment method or confirmation token is required.",
+                                input=order_pay.model_dump(exclude_unset=True),
+                            )
+                        ]
+                    )
+                elif isinstance(order_pay, CustomerOrderPayConfirmationToken):
+                    order = await order_service.handle_on_session_payment(
+                        session,
+                        order,
+                        confirmation_token_id=order_pay.confirmation_token_id,
+                        payment_processor=PaymentProcessor.stripe,
+                        intent_type=intent_type,
+                    )
+                else:
+                    order = await order_service.handle_on_session_payment(
+                        session,
+                        order,
+                        payment_method_id=order_pay.payment_method_id,
+                        intent_type=intent_type,
+                    )
+        except DiscountNotRedeemableError as e:
+            raise PolarRequestValidationError(
+                [
+                    ValidationError(
+                        type="value_error",
+                        loc=("body", "discount_code"),
+                        msg="Discount is no longer redeemable.",
+                        input=order.discount.code
+                        if order.discount is not None
+                        else None,
+                    )
+                ]
+            ) from e
         except PaymentError, PolarRequestValidationError:
             order.status = original_status
             raise

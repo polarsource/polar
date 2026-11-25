@@ -1,8 +1,10 @@
+from datetime import timedelta
 from uuid import uuid4
 
 import pytest
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
+from sqlalchemy import select
 
 from polar.auth.models import AuthSubject
 from polar.customer_portal.schemas.order import (
@@ -21,7 +23,9 @@ from polar.kit.address import AddressInput
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
-from polar.models import Customer, Order, Organization, Product
+from polar.kit.utils import utc_now
+from polar.models import Customer, DiscountRedemption, Order, Organization, Product
+from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.order.service import PaymentError
@@ -29,6 +33,7 @@ from polar.order.service import order as order_service
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_discount,
     create_order,
     create_product,
     create_subscription,
@@ -171,10 +176,22 @@ class TestPay:
         assert result.subscription.status == SubscriptionStatus.trial_ended
 
     async def test_declined_payment_rolls_back_to_draft(
-        self, session: AsyncSession, draft_order: Order, mocker: MockerFixture
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        draft_order: Order,
+        mocker: MockerFixture,
     ) -> None:
         customer = draft_order.customer
         original_billing_name = draft_order.billing_name
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            duration=DiscountDuration.once,
+            organization=draft_order.organization,
+            basis_points=2500,
+            code="ORDER25",
+        )
         submit = mocker.patch(
             "polar.order.service.stripe_service.create_payment_intent",
             side_effect=stripe_lib.CardError(
@@ -184,6 +201,7 @@ class TestPay:
         order_pay = CustomerOrderPayConfirmationToken(
             billing_name="Updated billing name",
             billing_address=AddressInput.model_validate({"country": "FR"}),
+            discount_code="ORDER25",
             payment_processor=PaymentProcessor.stripe,
             confirmation_token_id="ctoken_test",
         )
@@ -199,6 +217,141 @@ class TestPay:
         assert draft_order.billing_name == original_billing_name
         assert draft_order.payment_processor_metadata == {}
         assert customer.billing_name == original_billing_name
+        await session.refresh(discount, {"redemptions_count"})
+        assert discount.redemptions_count == 0
+
+    async def test_reserves_draft_discount_for_payment(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        draft_order: Order,
+        mocker: MockerFixture,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            duration=DiscountDuration.once,
+            organization=draft_order.organization,
+            basis_points=2500,
+            code="ORDER25",
+            max_redemptions=1,
+        )
+        undiscounted_amount = draft_order.due_amount
+        submit = mocker.patch(
+            "polar.order.service.stripe_service.create_payment_intent",
+            return_value=stripe_lib.PaymentIntent.construct_from(
+                {"id": "pi_test", "status": "requires_action", "client_secret": None},
+                None,
+            ),
+        )
+
+        order = await customer_order_service.pay(
+            session,
+            draft_order,
+            CustomerOrderPayConfirmationToken(
+                billing_address=AddressInput.model_validate({"country": "FR"}),
+                discount_code="ORDER25",
+                payment_processor=PaymentProcessor.stripe,
+                confirmation_token_id="ctoken_test",
+            ),
+        )
+
+        redemption = (
+            await session.scalars(
+                select(DiscountRedemption).where(
+                    DiscountRedemption.order_id == order.id
+                )
+            )
+        ).one()
+        assert redemption.discount_id == discount.id
+        assert redemption.subscription_id == order.subscription_id
+        assert discount.redemptions_count == 1
+        assert submit.call_args.kwargs["amount"] == order.due_amount
+        assert order.due_amount < undiscounted_amount
+
+    async def test_rechecks_discount_applied_to_draft(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        draft_order: Order,
+        mocker: MockerFixture,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            duration=DiscountDuration.once,
+            organization=draft_order.organization,
+            basis_points=2500,
+            ends_at=utc_now() - timedelta(days=1),
+        )
+        draft_order.discount = discount
+        submit = mocker.patch(
+            "polar.order.service.stripe_service.create_payment_intent"
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await customer_order_service.pay(
+                session,
+                draft_order,
+                CustomerOrderPayConfirmationToken(
+                    billing_address=AddressInput.model_validate({"country": "FR"}),
+                    payment_processor=PaymentProcessor.stripe,
+                    confirmation_token_id="ctoken_test",
+                ),
+            )
+
+        assert exc_info.value.errors()[0]["loc"] == ("body", "discount_code")
+        submit.assert_not_awaited()
+
+    async def test_draft_respects_per_customer_discount_limit(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        draft_order: Order,
+        mocker: MockerFixture,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            duration=DiscountDuration.once,
+            organization=draft_order.organization,
+            basis_points=2500,
+            code="ORDER25",
+            max_redemptions_per_customer=1,
+        )
+        assert draft_order.product is not None
+        subscription = await create_subscription(
+            save_fixture, customer=draft_order.customer, product=draft_order.product
+        )
+        pending_order = await create_order(
+            save_fixture,
+            customer=draft_order.customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+        )
+        await save_fixture(
+            DiscountRedemption(
+                discount=discount, subscription=subscription, order=pending_order
+            )
+        )
+        submit = mocker.patch(
+            "polar.order.service.stripe_service.create_payment_intent"
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await customer_order_service.pay(
+                session,
+                draft_order,
+                CustomerOrderPayConfirmationToken(
+                    billing_address=AddressInput.model_validate({"country": "FR"}),
+                    discount_code="ORDER25",
+                    payment_processor=PaymentProcessor.stripe,
+                    confirmation_token_id="ctoken_test",
+                ),
+            )
+
+        assert exc_info.value.errors()[0]["loc"] == ("body", "discount_code")
+        submit.assert_not_awaited()
 
     @pytest.mark.parametrize("status", [OrderStatus.paid, OrderStatus.void])
     async def test_rejects_closed_order(

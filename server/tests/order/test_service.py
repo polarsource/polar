@@ -72,6 +72,7 @@ from polar.models.checkout import CheckoutStatus
 from polar.models.custom_field import CustomFieldType
 from polar.models.customer import CustomerType
 from polar.models.discount import DiscountDuration, DiscountType
+from polar.models.discount_redemption import DiscountRedemption
 from polar.models.dispute import DisputeStatus
 from polar.models.merchant_migration_record import MerchantMigrationCutoverStatus
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
@@ -4605,6 +4606,34 @@ class TestHandlePaymentFailure:
 
         assert result.status == OrderStatus.draft
         assert result.payment_lock_acquired_at is None
+
+    async def test_releases_discount_reserved_for_failed_order(
+        self, session: AsyncSession, save_fixture: SaveFixture, customer: Customer
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            duration=DiscountDuration.once,
+            organization=customer.organization,
+            basis_points=2500,
+            max_redemptions=2,
+        )
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            status=OrderStatus.pending,
+            discount=discount,
+        )
+        order.invoice_number = None
+        await save_fixture(DiscountRedemption(discount=discount, order=order))
+        existing_redemption = DiscountRedemption(discount=discount)
+        await save_fixture(existing_redemption)
+
+        await order_service.handle_payment_failure(session, order, skip_dunning=True)
+
+        await session.refresh(discount, {"redemptions_count"})
+        assert discount.redemptions_count == 1
+        assert await session.get(DiscountRedemption, existing_redemption.id) is not None
 
     @freeze_time("2024-01-01 12:00:00")
     async def test_subscription_order(

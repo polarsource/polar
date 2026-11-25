@@ -16,6 +16,7 @@ from polar.authz.service import (
     assert_organization_permission,
     assert_resource_permission,
 )
+from polar.customer.repository import CustomerRepository
 from polar.discount.repository import (
     DiscountRedemptionRepository,
     DiscountRepository,
@@ -31,6 +32,7 @@ from polar.models import (
     Customer,
     Discount,
     DiscountProduct,
+    Order,
     Organization,
     Product,
     User,
@@ -38,6 +40,7 @@ from polar.models import (
 from polar.models.checkout import Checkout
 from polar.models.discount import DiscountFixed, DiscountType
 from polar.models.discount_redemption import DiscountRedemption
+from polar.models.order import OrderStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession
@@ -536,7 +539,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         session: AsyncSession,
         discount: Discount,
         *,
-        checkout: Checkout,
+        checkout: Checkout | None = None,
         customer: Customer | None = None,
         payment_method_fingerprint: str | None = None,
     ) -> bool:
@@ -553,12 +556,11 @@ class DiscountService(ResourceServiceReader[Discount]):
         if discount.max_redemptions_per_customer is None:
             return False
 
-        customer_id = customer.id if customer is not None else checkout.customer_id
-        email = (
-            customer.email
-            if customer is not None and customer.email
-            else checkout.customer_email
-        )
+        customer_id = customer.id if customer is not None else None
+        email = customer.email if customer is not None else None
+        if checkout is not None:
+            customer_id = customer_id or checkout.customer_id
+            email = email or checkout.customer_email
 
         try:
             customer_email = unalias_email(email).lower() if email else None
@@ -568,12 +570,45 @@ class DiscountService(ResourceServiceReader[Discount]):
         repository = DiscountRedemptionRepository.from_session(session)
         count = await repository.count_redemptions_by_customer(
             discount.id,
-            exclude_checkout_id=checkout.id,
+            exclude_checkout_id=checkout.id if checkout is not None else None,
             customer_id=customer_id,
             customer_email=customer_email,
             payment_method_fingerprint=payment_method_fingerprint,
         )
         return count >= discount.max_redemptions_per_customer
+
+    @contextlib.asynccontextmanager
+    async def redeem_order_discount(
+        self, session: AsyncSession, order: Order
+    ) -> AsyncIterator[None]:
+        if order.status != OrderStatus.draft or (discount := order.discount) is None:
+            yield
+            return
+
+        subscription = order.subscription
+        assert subscription is not None
+        if discount.id == subscription.discount_id:
+            yield
+            return
+
+        product = order.product
+        assert product is not None
+        if discount.is_deleted or not discount.is_applicable(product, order.currency):
+            raise DiscountNotRedeemableError(discount)
+
+        if discount.max_redemptions_per_customer is not None:
+            await CustomerRepository.from_session(session).get_by_id(
+                order.customer_id, for_update=True
+            )
+            if await self.check_per_customer_limit_reached(
+                session, discount, customer=order.customer
+            ):
+                raise DiscountNotRedeemableError(discount)
+
+        async with self.redeem_discount(session, discount) as redemption:
+            redemption.order = order
+            redemption.subscription = subscription
+            yield
 
     @contextlib.asynccontextmanager
     async def redeem_discount(

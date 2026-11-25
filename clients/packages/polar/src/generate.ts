@@ -42,6 +42,16 @@ const renderPairs = (pairs: ReadonlyArray<readonly [string, string]>) =>
     ? `{ ${pairs.map(([name, value]) => `${key(name)}: ${literal(value)}`).join(', ')} }`
     : `[${pairs.map(([name, value]) => `[${literal(name)}, ${literal(value)}]`).join(', ')}]`
 
+type Plain = string | number | boolean | { readonly [name: string]: Plain }
+
+const renderObject = (value: { readonly [name: string]: Plain }): string => {
+  const entries = Object.entries(value).map(
+    ([name, item]) =>
+      `${key(name)}: ${typeof item === 'object' ? renderObject(item) : literal(item)}`,
+  )
+  return entries.length === 0 ? '{}' : `{ ${entries.join(', ')} }`
+}
+
 const renderMetadata = (metadata: Metadata | undefined): string[] =>
   metadata === undefined || Object.keys(metadata).length === 0
     ? []
@@ -568,7 +578,7 @@ export const generateConfig = Effect.fnUntraced(function* (input: unknown) {
   const settings =
     config.settings === undefined
       ? []
-      : [`  settings: ${JSON.stringify(config.settings)},`]
+      : [`  settings: ${renderObject(config.settings)},`]
 
   return [
     `import { ${[...imports].join(', ')} } from '@polar-sh/polar'`,

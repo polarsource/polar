@@ -11,10 +11,17 @@ interface LinkedCustomer {
   name?: string | null
   email?: string | null
   external_id?: string | null
+  billing_name?: string | null
 }
 
 export const getCustomerLabel = (customer: LinkedCustomer) =>
   customer.name || customer.email || '—'
+
+// The billing name, when it says more than the customer's own name.
+const getBillingName = ({ name, billing_name }: LinkedCustomer) =>
+  billing_name && name?.toLocaleLowerCase() !== billing_name.toLocaleLowerCase()
+    ? billing_name
+    : undefined
 
 // What can be done with a customer from their link. In a list that filters
 // by customer the list is narrowed down to them; anywhere else the way leads
@@ -52,15 +59,19 @@ export const CustomerEntityLink = ({
   customer,
   filterable = false,
   minimal,
+  withBillingName = false,
 }: {
   organization: schemas['Organization']
   customer: LinkedCustomer
   filterable?: boolean
   minimal?: boolean
+  // Says who is billed after the name, when that is someone else.
+  withBillingName?: boolean
 }) => (
   <EntityLink
     kind="customer"
     minimal={minimal}
+    secondary={withBillingName ? getBillingName(customer) : undefined}
     href={buildCustomerDashboardPath(organization.slug, customer)}
     menuItems={useCustomerMenuItems(organization, customer, filterable)}
   >

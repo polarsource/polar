@@ -31,14 +31,6 @@ const formatAmount = (order: Order) =>
 const getCustomerLabel = ({ customer }: Order) =>
   customer.name || customer.email || '—'
 
-// The billing name, when it says more than the customer's own name.
-const getBillingName = ({ customer }: Order) =>
-  customer.billing_name &&
-  customer.name?.toLocaleLowerCase() !==
-    customer.billing_name.toLocaleLowerCase()
-    ? customer.billing_name
-    : null
-
 const getProductLabel = ({ product, description }: Order) =>
   product?.name ?? description
 
@@ -48,22 +40,13 @@ const CustomerCell = ({
 }: {
   order: Order
   organization: schemas['Organization']
-}) => {
-  const billingName = getBillingName(order)
-  return (
-    <>
-      <CustomerEntityLink
-        organization={organization}
-        customer={order.customer}
-      />
-      {billingName && (
-        <Text color="muted" truncate>
-          {billingName}
-        </Text>
-      )}
-    </>
-  )
-}
+}) => (
+  <CustomerEntityLink
+    organization={organization}
+    customer={order.customer}
+    withBillingName
+  />
+)
 
 const ProductCell = ({
   order,

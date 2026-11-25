@@ -84,6 +84,7 @@ export const EntityLink = ({
   menuItems,
   minimal = false,
   muted = false,
+  secondary,
   children,
 }: {
   kind: EntityKind
@@ -93,6 +94,9 @@ export const EntityLink = ({
   minimal?: boolean
   // For a name that is secondary to the one beside it.
   muted?: boolean
+  // Said after the name, and part of the same link. It gives way first when
+  // the two do not fit.
+  secondary?: string
   children: ReactNode
 }) => {
   const { icon: Icon, hover } = ENTITIES[kind]
@@ -111,6 +115,13 @@ export const EntityLink = ({
         <Text as="span" color={muted ? 'muted' : 'default'} truncate>
           {children}
         </Text>
+        {secondary && (
+          <span className="flex min-w-0 shrink-[4]">
+            <Text as="span" color="muted" truncate>
+              {secondary}
+            </Text>
+          </span>
+        )}
       </Link>
       {hasMenu && <EntityLinkMenu items={menuItems} />}
     </span>

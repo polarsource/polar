@@ -485,7 +485,6 @@ class LemonSqueezyAdapter:
             order = orders.get(order_id) or await self._retrieve_order(order_id)
             if order is None:
                 continue
-            orders[order_id] = order
             tax_inclusive = order["attributes"].get("tax_inclusive")
             if tax_inclusive is not None:
                 behaviors[order_id] = (

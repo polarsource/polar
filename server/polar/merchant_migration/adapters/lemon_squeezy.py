@@ -149,6 +149,11 @@ class LemonSqueezyAdapter:
         has_more = pagination.get("currentPage", page) < pagination.get("lastPage", 1)
         return body["data"], has_more, body.get("included", [])
 
+    async def is_live_key(self) -> bool:
+        response = await self._request("GET", "/users/me")
+        response.raise_for_status()
+        return not response.json()["meta"]["test_mode"]
+
     async def resolve_store(self) -> dict[str, Any]:
         if self._store is not None:
             return self._store

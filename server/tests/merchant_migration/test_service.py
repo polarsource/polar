@@ -234,8 +234,14 @@ def _create_schema(organization: Organization) -> MerchantMigrationStripeCreate:
 
 
 class _FakeLemonSqueezyAdapter:
-    def __init__(self, *, error: Exception | None = None) -> None:
+    def __init__(
+        self, *, error: Exception | None = None, livemode: bool = False
+    ) -> None:
         self._error = error
+        self._livemode = livemode
+
+    async def is_live_key(self) -> bool:
+        return self._livemode
 
     async def resolve_store(self) -> dict[str, Any]:
         if self._error is not None:
@@ -303,7 +309,78 @@ class TestCreateLemonSqueezy:
         assert migration.source_connected is True
         assert migration.source_credentials["store_id"] == "1"
         assert migration.source_credentials["store_name"] == "Acme"
+        assert migration.source_credentials["livemode"] is False
         assert await service._decrypt_api_key(migration) == "ls_key"
+
+    @pytest.mark.auth
+    async def test_sandbox_rejects_a_live_key(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        mocker.patch(
+            "polar.merchant_migration.service.LemonSqueezyAdapter",
+            return_value=_FakeLemonSqueezyAdapter(livemode=True),
+        )
+
+        with pytest.raises(SourceKeyModeMismatch):
+            await service.create(
+                session, auth_subject, _lemon_squeezy_create_schema(organization)
+            )
+
+        await assert_no_migrations(session, organization)
+
+    @pytest.mark.auth
+    async def test_production_rejects_a_test_key(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        mocker.patch.object(settings, "is_production", return_value=True)
+        mocker.patch(
+            "polar.merchant_migration.service.LemonSqueezyAdapter",
+            return_value=_FakeLemonSqueezyAdapter(livemode=False),
+        )
+
+        with pytest.raises(SourceKeyModeMismatch):
+            await service.create(
+                session, auth_subject, _lemon_squeezy_create_schema(organization)
+            )
+
+        await assert_no_migrations(session, organization)
+
+    @pytest.mark.auth
+    async def test_production_accepts_a_live_key(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        mocker.patch.object(settings, "is_production", return_value=True)
+        mocker.patch.object(
+            encryption,
+            "get_key_provider",
+            return_value=LocalKeyProvider(settings.ENCRYPTION_LOCAL_KEY),
+        )
+        mocker.patch(
+            "polar.merchant_migration.service.LemonSqueezyAdapter",
+            return_value=_FakeLemonSqueezyAdapter(livemode=True),
+        )
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+
+        migration = await service.create(
+            session, auth_subject, _lemon_squeezy_create_schema(organization)
+        )
+
+        assert migration.source_credentials["livemode"] is True
 
     @pytest.mark.auth
     @pytest.mark.parametrize(

@@ -74,7 +74,7 @@ def source_cell(migration: MerchantMigration) -> None:
         if not migration.source_connected:
             with tag.div(classes="badge badge-sm badge-warning whitespace-nowrap"):
                 text("Not connected")
-        elif not migration.source_credentials.get("livemode"):
+        elif migration.source_credentials.get("livemode") is False:
             with tag.div(classes="badge badge-sm badge-outline whitespace-nowrap"):
                 text("Test mode")
 

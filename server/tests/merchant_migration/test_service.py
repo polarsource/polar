@@ -86,7 +86,6 @@ from polar.merchant_migration.service import (
     CatalogImportNotReady,
     CutoverNotStarted,
     InvalidSourceCredentials,
-    MerchantMigrationNotEnabled,
     MigrationOperationInProgress,
     MissingStripeScopes,
     OrganizationNotOnboarded,
@@ -257,18 +256,6 @@ def _lemon_squeezy_create_schema(
     )
 
 
-@pytest.fixture
-async def lemon_squeezy_enabled(
-    save_fixture: SaveFixture, organization: Organization
-) -> Organization:
-    organization.feature_settings = {
-        **organization.feature_settings,
-        "lemon_squeezy_migration_enabled": True,
-    }
-    await save_fixture(organization)
-    return organization
-
-
 def _lemon_squeezy_http_error(status_code: int) -> httpx2.HTTPStatusError:
     request = httpx2.Request("GET", "https://api.lemonsqueezy.com/v1/stores")
     return httpx2.HTTPStatusError(
@@ -281,25 +268,6 @@ def _lemon_squeezy_http_error(status_code: int) -> httpx2.HTTPStatusError:
 @pytest.mark.anyio
 class TestCreateLemonSqueezy:
     @pytest.mark.auth
-    async def test_requires_feature_flag(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User],
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        adapter = mocker.patch("polar.merchant_migration.service.LemonSqueezyAdapter")
-
-        with pytest.raises(MerchantMigrationNotEnabled):
-            await service.create(
-                session, auth_subject, _lemon_squeezy_create_schema(organization)
-            )
-
-        adapter.assert_not_called()
-        await assert_no_migrations(session, organization)
-
-    @pytest.mark.auth
     async def test_stores_key_and_store_then_queues_precheck(
         self,
         mocker: MockerFixture,
@@ -307,7 +275,6 @@ class TestCreateLemonSqueezy:
         save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
         organization: Organization,
-        lemon_squeezy_enabled: Organization,
         user_organization: UserOrganization,
     ) -> None:
         adapter = mocker.patch(
@@ -356,7 +323,6 @@ class TestCreateLemonSqueezy:
         save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
         organization: Organization,
-        lemon_squeezy_enabled: Organization,
         user_organization: UserOrganization,
     ) -> None:
         mocker.patch(
@@ -380,7 +346,6 @@ class TestCreateLemonSqueezy:
         auth_subject: AuthSubject[User],
         organization: Organization,
         organization_second: Organization,
-        lemon_squeezy_enabled: Organization,
         user_organization: UserOrganization,
     ) -> None:
         await save_fixture(

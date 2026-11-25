@@ -9,7 +9,6 @@ import { Box } from '@polar-sh/orbit/Box'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 import { CreateMigrationModal } from './CreateMigrationModal'
-import { connectableSources } from './sources'
 import { SettingsGroup } from '@/components/Settings/SettingsGroup'
 import { EmptyState } from '@/components/Shared/EmptyState'
 import { Download } from '@polar-sh/orbit/icons'
@@ -108,7 +107,6 @@ export default function MigrationsPage({ organization }: Props) {
         modalContent={
           <CreateMigrationModal
             organizationId={organization.id}
-            sources={connectableSources(organization)}
             onCreated={onCreated}
             onClose={hide}
           />

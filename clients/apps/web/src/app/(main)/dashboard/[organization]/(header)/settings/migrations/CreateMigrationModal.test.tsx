@@ -232,7 +232,7 @@ describe('CreateMigrationModal', () => {
     ).toBeTruthy()
   })
 
-  it('offers only Stripe unless Lemon Squeezy is enabled', () => {
+  it('offers Stripe and Lemon Squeezy, starting on Stripe', () => {
     render(
       <CreateMigrationModal
         organizationId="org_1"
@@ -241,7 +241,7 @@ describe('CreateMigrationModal', () => {
       />,
     )
 
-    expect(screen.queryByRole('button', { name: 'Lemon Squeezy' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Lemon Squeezy' })).toBeTruthy()
     expect(screen.getByPlaceholderText('rk_test_...')).toBeTruthy()
   })
 
@@ -252,7 +252,6 @@ describe('CreateMigrationModal', () => {
     render(
       <CreateMigrationModal
         organizationId="org_1"
-        sources={['stripe', 'lemon_squeezy']}
         onCreated={onCreated}
         onClose={vi.fn()}
       />,

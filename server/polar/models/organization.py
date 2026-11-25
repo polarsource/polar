@@ -783,10 +783,6 @@ class Organization(RateLimitGroupMixin, RecordModel):
     def is_reducer_billing_enabled(self) -> bool:
         return self.feature_settings.get("reducer_billing_enabled", False)
 
-    @property
-    def is_lemon_squeezy_migration_enabled(self) -> bool:
-        return self.feature_settings.get("lemon_squeezy_migration_enabled", False)
-
     products_limit: Mapped[int] = mapped_column(
         Integer,
         nullable=False,

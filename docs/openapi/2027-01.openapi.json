@@ -70376,12 +70376,6 @@
             "title": "Reducer Billing Enabled",
             "description": "If this organization's metered usage is billed from the reducer instead of the legacy billing entries.",
             "default": false
-          },
-          "lemon_squeezy_migration_enabled": {
-            "type": "boolean",
-            "title": "Lemon Squeezy Migration Enabled",
-            "description": "If this organization can migrate its billing from Lemon Squeezy to Polar.",
-            "default": false
           }
         },
         "type": "object",

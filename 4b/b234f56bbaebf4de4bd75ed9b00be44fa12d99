@@ -1,0 +1,29 @@
+server/polar/merchant_migration/benefits.py
+  s_d4a843b33596ce::t_487aceb03dfa4e 16,40,344,389,400-407,416-421,430-431,452
+server/polar/merchant_migration/cutover.py
+  s_d4a843b33596ce::t_06c826ba911a4d 734
+server/polar/merchant_migration/tasks.py
+  s_d4a843b33596ce::t_2deb95445f8d06 94,102
+server/tests/merchant_migration/test_benefits.py
+  s_d4a843b33596ce::t_0ee32a691b124e 2,5,9-13,15-21,170-179,182-184,193-194,196-198,201-242
+server/tests/merchant_migration/test_cutover.py
+  s_d4a843b33596ce::t_31b93b2e91d9e7 430
+server/tests/merchant_migration/test_service.py
+  s_d4a843b33596ce::t_a00adb9c9eed34 6196
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4bb234f56bbaebf4de4bd75ed9b00be44fa12d99",
+  "prompts": {},
+  "sessions": {
+    "s_d4a843b33596ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "12adddd7-b520-4f67-a19e-0f92eb2e092a",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

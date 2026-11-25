@@ -80,7 +80,7 @@ def confirmation_dialog(
 
             # Icon and title
             with tag.div(classes="flex items-center gap-3 mb-4"):
-                with tag.div(classes="text-4xl"):
+                with tag.div(classes="text-xl"):
                     text(config["icon"])
                 with tag.h3(classes="text-lg font-bold"):
                     text(title)

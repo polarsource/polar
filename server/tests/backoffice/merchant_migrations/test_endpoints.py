@@ -491,6 +491,29 @@ class TestDetail:
 
 
 @pytest.mark.anyio
+class TestClose:
+    async def test_queues_the_close(
+        self,
+        mocker: MockerFixture,
+        backoffice_client: httpx2.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        enqueue_job = mocker.patch(
+            "polar.backoffice.merchant_migrations.endpoints.enqueue_job"
+        )
+        migration = await _create_migration(save_fixture, organization)
+
+        await _post_action(
+            backoffice_client, f"/merchant-migrations/{migration.id}/close"
+        )
+
+        enqueue_job.assert_called_once_with(
+            "merchant_migration.close", merchant_migration_id=migration.id
+        )
+
+
+@pytest.mark.anyio
 class TestCompleteStep:
     async def test_completes_an_ops_owned_step(
         self,

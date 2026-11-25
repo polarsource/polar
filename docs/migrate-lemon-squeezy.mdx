@@ -54,6 +54,7 @@ A few things don't carry over:
 - **Keys that are disabled or expired** on Lemon Squeezy aren't brought over. A subscriber gets a new key when they switch.
 - **A key whose value is already used** in your Polar organization is replaced with a new key.
 - **Devices activated on Lemon Squeezy after the move** aren't on Polar. They activate once on Polar.
+- **Keys with unlimited activations** on Lemon Squeezy have no activation limit on Polar. Their existing devices keep validating with their saved ID, but Polar doesn't track new devices for these keys: validate them without a device ID.
 
 ### Update your app before you switch
 
@@ -119,6 +120,7 @@ The same saved ID works with both. Polar answers 404 both when it doesn't know a
 | --- | --- | --- |
 | Key moved, device activated before the move | `200`, `status: "granted"` | Valid. |
 | Key moved, device activated on Lemon Squeezy after the move | `404` with the device ID, `200` without it | Activate the device on Polar. |
+| Key with no activation limit, new device | Activation answers `403`, `This license key does not support activations.` | Valid. Validate without a device ID from now on. |
 | Key revoked or disabled on Polar | `404`, `License key is no longer active.` | Invalid. Don't ask Lemon Squeezy. |
 | Key expired on Polar | `404`, `License key has expired.` | Invalid. Don't ask Lemon Squeezy. |
 | Key not on Polar yet, such as a subscriber before the switch | `404`, `Not found` | Ask Lemon Squeezy. |
@@ -129,7 +131,7 @@ Once a key is on Polar, Polar decides. Disabling the key or letting it expire on
 Keep in mind:
 
 - **Ship the update early.** Polar cancels the Lemon Squeezy subscription when it switches, so an app version that only checks Lemon Squeezy can't rely on that key afterwards.
-- **New activations go to Polar.** When `checkLicense` returns `activate_on_polar`, or a device isn't activated anywhere yet and Polar knows the key, [activate it on Polar](/features/benefits/license-keys#activate-license-keys-optional) and save the new ID.
+- **New activations go to Polar.** When `checkLicense` returns `activate_on_polar`, or a device isn't activated anywhere yet and Polar knows the key, [activate it on Polar](/features/benefits/license-keys#activate-license-keys-optional) and save the new ID. If Polar answers that the key doesn't support activations, the key has no activation limit: it's valid, so validate it without a device ID from then on.
 - **Remove the fallback** once every subscription has switched and Lemon Squeezy has stopped processing payments.
 
 For new sales, Polar's [license key benefit](/features/benefits/license-keys) issues keys automatically after purchase, with optional activation limits and expiration.

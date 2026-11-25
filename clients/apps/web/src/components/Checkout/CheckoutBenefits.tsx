@@ -2,12 +2,14 @@ import { useCustomerBenefitGrants } from '@/hooks/queries/customerPortal'
 import { useCustomerSSE } from '@/hooks/sse'
 import { createClientSideAPI } from '@/utils/client'
 import type { ProductCheckoutPublic } from '@polar-sh/checkout/guards'
+import { UnauthorizedResponseError } from '@polar-sh/client'
 import {
   DEFAULT_LOCALE,
   useTranslations,
   type AcceptedLocale,
 } from '@polar-sh/i18n'
 import { List, ListItem } from '@polar-sh/orbit'
+import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { BenefitGrant } from '../Benefit/BenefitGrant'
 import { SpinnerNoMargin } from '@polar-sh/orbit'
@@ -26,9 +28,14 @@ const CheckoutBenefits = ({
   maxWaitingTimeMs = 15000,
 }: CheckoutBenefitsProps) => {
   const t = useTranslations(locale)
+  const router = useRouter()
   const api = createClientSideAPI(customerSessionToken)
   const expectedBenefits = checkout.product.benefits.length
-  const { data: benefitGrants, refetch } = useCustomerBenefitGrants(
+  const {
+    data: benefitGrants,
+    error,
+    refetch,
+  } = useCustomerBenefitGrants(
     api,
     { checkout_id: checkout.id },
     {
@@ -38,6 +45,25 @@ const CheckoutBenefits = ({
           : maxWaitingTimeMs,
     },
   )
+
+  const sessionExpired = error instanceof UnauthorizedResponseError
+  useEffect(() => {
+    if (!sessionExpired) {
+      return
+    }
+    const searchParams = new URLSearchParams()
+    if (checkout.customer_email) {
+      searchParams.set('email', checkout.customer_email)
+    }
+    router.replace(
+      `/${checkout.organization.slug}/portal/request?${searchParams}`,
+    )
+  }, [
+    sessionExpired,
+    router,
+    checkout.organization.slug,
+    checkout.customer_email,
+  ])
 
   const customerEvents = useCustomerSSE(customerSessionToken)
   useEffect(() => {

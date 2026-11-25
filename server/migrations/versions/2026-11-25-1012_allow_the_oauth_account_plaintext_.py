@@ -1,7 +1,7 @@
 """allow the oauth account plaintext access token to be null
 
 Revision ID: 3df4cc859d09
-Revises: 3c1e7a9d52f4
+Revises: 28550449a4b9
 Create Date: 2026-11-25 09:17:13.477823
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "3df4cc859d09"
-down_revision = "3c1e7a9d52f4"
+down_revision = "28550449a4b9"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

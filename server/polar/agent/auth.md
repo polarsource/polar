@@ -118,6 +118,12 @@ Once claimed, you act on behalf of the human: the organization is theirs, and yo
 access. Everything issued to you before the claim stops working, including the old identity
 assertion. Use the new one in Step 3 from now on.
 
+Until the human completes Polar's account review, the organization is in test mode: checkout only
+accepts free products and 100% discounts, so it can't take real money. Right after the claim, tell
+the human to complete the review at
+`${dashboard_url}/<organization slug>/finance/account`, where they provide their business details,
+verify their identity and connect a payout account. Only they can do it.
+
 ## Step 5: Get a token for the app
 
 Your access token is for setting things up, not for running the app: it expires every hour and,

@@ -282,6 +282,10 @@ async def export_customer_ids(
     response_model=MerchantMigrationBenefits,
     summary="List Merchant Migration Benefits",
     responses={
+        400: {
+            "description": "The source isn't connected.",
+            "model": SourceNotConnected.schema(),
+        },
         403: {
             "description": "Not allowed to manage this organization.",
             "model": NotPermitted.schema(),
@@ -309,6 +313,10 @@ async def benefits(
     response_model=MerchantMigrationSchema,
     summary="Set Up Merchant Migration Benefits",
     responses={
+        400: {
+            "description": "The source isn't connected.",
+            "model": SourceNotConnected.schema(),
+        },
         403: {
             "description": "Not allowed to manage this organization.",
             "model": NotPermitted.schema(),
@@ -374,10 +382,11 @@ async def pan_transfer(
             "model": MerchantMigrationNotFound.schema(),
         },
         409: {
-            "description": "The catalog isn't imported yet, the transfer already "
-            "started, card transfers aren't configured, or another operation "
-            "is still running.",
+            "description": "The catalog isn't imported yet, benefits failed to "
+            "set up, the transfer already started, card transfers aren't "
+            "configured, or another operation is still running.",
             "model": PanTransferNotReady.schema()
+            | BenefitsNotReady.schema()
             | PanTransferAlreadyStarted.schema()
             | PanTransferUnavailable.schema()
             | MigrationOperationInProgress.schema(),

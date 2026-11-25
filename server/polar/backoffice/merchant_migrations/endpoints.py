@@ -361,7 +361,7 @@ async def get_migration(
         else []
     )
 
-    position, total = step_position(migration.step)
+    position, total = step_position(migration)
     organization_url = str(
         request.url_for(
             "organizations:detail", organization_id=migration.organization_id

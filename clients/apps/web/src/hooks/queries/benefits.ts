@@ -240,6 +240,15 @@ export const useGrantsForBenefit = ({
     retry: defaultRetry,
   })
 
+const BENEFIT_GRANTS_PAGE_SIZE = 100
+
+const isManualGrantInProgress = (grant: schemas['BenefitGrant']) =>
+  grant.manually_granted_at &&
+  !grant.manually_revoked_at &&
+  !grant.is_granted &&
+  !grant.is_revoked &&
+  !grant.error
+
 export const useBenefitGrants = (
   organizationId?: string,
   parameters?: Omit<
@@ -263,16 +272,42 @@ export const useBenefitGrants = (
     retry: defaultRetry,
     enabled: !!organizationId,
     refetchInterval: ({ state }) =>
-      state.data?.items.some(
-        (grant) =>
-          grant.manually_granted_at &&
-          !grant.manually_revoked_at &&
-          !grant.is_granted &&
-          !grant.is_revoked &&
-          !grant.error,
-      )
-        ? 2000
-        : false,
+      state.data?.items.some(isManualGrantInProgress) ? 2000 : false,
+  })
+
+// Every page of the matching grants, for when one page cannot be trusted to
+// hold the ones that are wanted.
+export const useAllBenefitGrants = (
+  organizationId: string,
+  parameters: Omit<
+    NonNullable<operations['benefit-grants:list']['parameters']['query']>,
+    'organization_id' | 'page' | 'limit'
+  >,
+) =>
+  useQuery({
+    queryKey: ['benefit-grants', 'all', { organizationId, ...parameters }],
+    queryFn: async () => {
+      const grants: schemas['BenefitGrant'][] = []
+      for (let page = 1; ; page++) {
+        const { items, pagination } = await unwrap(
+          api.GET('/v1/benefit-grants/', {
+            params: {
+              query: {
+                organization_id: organizationId,
+                ...parameters,
+                limit: BENEFIT_GRANTS_PAGE_SIZE,
+                page,
+              },
+            },
+          }),
+        )
+        grants.push(...items)
+        if (items.length === 0 || page >= pagination.max_page) return grants
+      }
+    },
+    retry: defaultRetry,
+    refetchInterval: ({ state }) =>
+      state.data?.some(isManualGrantInProgress) ? 2000 : false,
   })
 
 const invalidateBenefitGrantQueries = async (benefitId: string) => {

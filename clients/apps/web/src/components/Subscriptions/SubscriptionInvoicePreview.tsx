@@ -4,7 +4,6 @@ import {
   InvoicePreview,
   type InvoiceLineItem,
 } from '@/components/Orders/InvoicePreview'
-import { OrderSection } from '@/components/Orders/OrderSection'
 import { useProduct } from '@/hooks/queries'
 import { useSubscriptionChargePreview } from '@/hooks/queries/subscriptions'
 import { isFreePrice, isSeatBasedPrice } from '@/utils/product'
@@ -15,14 +14,21 @@ import {
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { useMemo } from 'react'
 
-const SubscriptionInvoicePreview = ({
-  subscription,
-}: {
-  subscription: schemas['Subscription']
-}) => {
+export interface UpcomingCharge {
+  title: string
+  chargeDate: string | null
+  items: InvoiceLineItem[]
+  preview: schemas['SubscriptionChargePreview']
+  note: string | null
+}
+
+// The next charge the subscription will make, if it will make one. Undefined
+// while that is still being worked out.
+export const useSubscriptionUpcomingCharge = (
+  subscription: schemas['Subscription'],
+): UpcomingCharge | null | undefined => {
   const isTrialing = subscription.status === 'trialing'
   const isActive = subscription.status === 'active'
   const isPaused = subscription.status === 'paused'
@@ -40,10 +46,8 @@ const SubscriptionInvoicePreview = ({
   const showsCharge =
     (isActive || isTrialing || isResumingCharge) && !isPausingIndefinitely
 
-  const { data: chargePreview } = useSubscriptionChargePreview(
-    subscription.id,
-    { enabled: showsCharge },
-  )
+  const { data: chargePreview, isLoading: isPreviewLoading } =
+    useSubscriptionChargePreview(subscription.id, { enabled: showsCharge })
 
   const productId = useMemo(
     () => subscription.pending_update?.product_id ?? subscription.product_id,
@@ -61,6 +65,9 @@ const SubscriptionInvoicePreview = ({
   const usageOnMeterCycle = billsUsageOnMeterCycle(subscription)
   const hasMeters = subscription.meters.length > 0 && !usageOnMeterCycle
 
+  if (showsCharge && isPreviewLoading) {
+    return undefined
+  }
   if (!showsCharge || !chargePreview) {
     return null
   }
@@ -115,16 +122,12 @@ const SubscriptionInvoicePreview = ({
       : subscription.current_period_end
 
   let title = 'Upcoming renewal'
-  let dateLabel = 'Next invoice'
   if (isTrialing) {
     title = 'First charge after trial'
-    dateLabel = 'Trial ends'
   } else if (isCancelingAtPeriodEnd) {
     title = 'Final charge'
-    dateLabel = 'Subscription ends'
   } else if (isResumingCharge) {
     title = 'Charge on resume'
-    dateLabel = 'Resumes'
   }
 
   const note = isCancelingAtPeriodEnd
@@ -137,45 +140,31 @@ const SubscriptionInvoicePreview = ({
       ? 'Final charges may vary based on usage until the end of the billing period.'
       : null
 
-  return (
-    <Box
-      flexDirection="column"
-      borderTopWidth={1}
-      borderStyle="solid"
-      borderColor="border-primary"
-      paddingTop="4xl"
-    >
-      <OrderSection
-        title={title}
-        description={
-          <Box alignItems="center" columnGap="s">
-            <Text color="muted">{dateLabel}</Text>
-            {chargeDate && (
-              <>
-                <Text color="muted">·</Text>
-                <Text color="muted">
-                  <FormattedDateTime dateStyle="medium" datetime={chargeDate} />
-                </Text>
-              </>
-            )}
-          </Box>
-        }
-      >
-        <InvoicePreview
-          currency={subscription.currency}
-          items={items}
-          subtotalAmount={chargePreview.subtotal_amount}
-          discountAmount={chargePreview.discount_amount}
-          netAmount={chargePreview.net_amount}
-          taxAmount={chargePreview.tax_amount}
-          totalAmount={chargePreview.total_amount}
-          appliedBalanceAmount={chargePreview.applied_balance_amount}
-          dueAmount={chargePreview.due_amount}
-        />
-        {note && <Text color="muted">{note}</Text>}
-      </OrderSection>
-    </Box>
-  )
+  return { title, chargeDate, items, preview: chargePreview, note }
 }
+
+// The lines of the invoice the upcoming charge will make.
+const SubscriptionInvoicePreview = ({
+  subscription,
+  charge: { items, preview, note },
+}: {
+  subscription: schemas['Subscription']
+  charge: UpcomingCharge
+}) => (
+  <Box flexDirection="column" rowGap="m" paddingHorizontal="m" paddingTop="s">
+    <InvoicePreview
+      currency={subscription.currency}
+      items={items}
+      subtotalAmount={preview.subtotal_amount}
+      discountAmount={preview.discount_amount}
+      netAmount={preview.net_amount}
+      taxAmount={preview.tax_amount}
+      totalAmount={preview.total_amount}
+      appliedBalanceAmount={preview.applied_balance_amount}
+      dueAmount={preview.due_amount}
+    />
+    {note && <Text color="muted">{note}</Text>}
+  </Box>
+)
 
 export default SubscriptionInvoicePreview

@@ -127,7 +127,7 @@ export const UpdateSubscriptionPlanForm = ({
         rowGap="2xl"
         onSubmit={handleSubmit(onSubmit)}
       >
-        <UpdateSubscriptionSection title="Product">
+        <UpdateSubscriptionSection>
           <FormField
             control={control}
             name="product_id"
@@ -191,9 +191,7 @@ export const UpdateSubscriptionPlanForm = ({
               )}
             />
           )}
-        </UpdateSubscriptionSection>
 
-        <UpdateSubscriptionSection title="Discount" divider>
           <SubscriptionDiscountField
             control={control}
             subscription={subscription}

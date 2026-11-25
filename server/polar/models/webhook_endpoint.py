@@ -8,9 +8,12 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models.base import RecordModel
+from polar.kit.encryption import EncryptedString, EncryptedStringType
 from polar.kit.external_id import ExternalIDMixin
 from polar.kit.versioning import APIVersion, APIVersionType
 from polar.version import CURRENT_API_VERSION
+
+WEBHOOK_ENDPOINT_SECRET_CONTEXT = {"table": "webhook_endpoints", "column": "secret"}
 
 if TYPE_CHECKING:
     from .organization import Organization
@@ -99,7 +102,10 @@ class WebhookEndpoint(ExternalIDMixin, RecordModel):
     url: Mapped[str] = mapped_column(String, nullable=False)
     name: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
     format: Mapped[WebhookFormat] = mapped_column(String, nullable=False)
-    secret: Mapped[str] = mapped_column(String, nullable=False)
+    secret: Mapped[str] = mapped_column(String, nullable=True)
+    secret_encrypted: Mapped[EncryptedString | None] = mapped_column(
+        EncryptedStringType(WEBHOOK_ENDPOINT_SECRET_CONTEXT), nullable=True
+    )
     secret_generated_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
     )

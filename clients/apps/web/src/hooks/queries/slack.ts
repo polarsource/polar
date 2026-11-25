@@ -1,6 +1,6 @@
 import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
-import { schemas } from '@polar-sh/client'
+import { schemas, unwrap } from '@polar-sh/client'
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
@@ -69,13 +69,8 @@ export const usePreviewSlackChannelName = (
 ) =>
   useQuery({
     queryKey: ['slackChannelNamePreview', body],
-    queryFn: async () => {
-      const { data, error } = await api.POST(
-        '/v1/benefits/slack/preview-channel-name',
-        { body },
-      )
-      return { data, error }
-    },
+    queryFn: () =>
+      unwrap(api.POST('/v1/benefits/slack/preview-channel-name', { body })),
     retry: false,
     staleTime: Infinity,
     placeholderData: keepPreviousData,

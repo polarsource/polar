@@ -1,5 +1,6 @@
 import { usePreviewSlackChannelName } from '@/hooks/queries'
 import useDebounce from '@/utils/useDebounce'
+import { ClientResponseError } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 
@@ -15,19 +16,19 @@ interface Props {
 
 export const ChannelNamePreview = ({ template, organizationId }: Props) => {
   const debouncedTemplate = useDebounce(template, 250)
-  const { data: preview, isError } = usePreviewSlackChannelName({
+  const { data: preview, error: previewError } = usePreviewSlackChannelName({
     organization_id: organizationId,
     template: debouncedTemplate,
     customer_name: 'Sample Customer',
     customer_email: 'customer@example.com',
   })
 
-  const error = isError
-    ? 'Could not render the preview'
-    : preview?.error
-      ? getTemplateErrorMessage(preview.error.detail)
-      : null
-  const rendered = preview?.data?.channel_name ?? null
+  const error = !previewError
+    ? null
+    : previewError instanceof ClientResponseError
+      ? getTemplateErrorMessage(previewError.error.detail)
+      : 'Could not render the preview'
+  const rendered = previewError ? null : (preview?.channel_name ?? null)
 
   if (!template || !debouncedTemplate) return null
 

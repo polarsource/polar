@@ -82,13 +82,13 @@ The billing cycle is fixed once the product is created. To change it, create a n
 
 ## Pricing
 
-Under **Pricing**, add one or more prices. The dashboard offers these price types:
+Under **Pricing**, add one or more prices. See [Pricing models](/features/pricing-models) for how they combine into one-time purchases, subscriptions, credits and usage. The dashboard offers these price types:
 
 | Dashboard | API `amount_type` | See |
 | --- | --- | --- |
-| **Fixed price** | `fixed` | |
+| **Fixed price** | `fixed` | [Fixed pricing](/features/fixed-pricing) |
 | **Pay what you want** | `custom` | `minimum_amount`, `maximum_amount`, `preset_amount` |
-| **Free** | `fixed` with `price_amount: 0` | |
+| **Free** | `fixed` with `price_amount: 0` | [Free products](/features/fixed-pricing#free-products) |
 | **Seats** | `seat_based` | [Seat-based pricing](/features/seat-based-pricing) |
 | **Units** | `unit_based` | [Unit-based pricing](/features/unit-based-pricing) |
 | **Metered price** | `metered_unit` or `metered_tiers` | [Usage-based pricing](/features/usage-based-billing/billing). Recurring products only |

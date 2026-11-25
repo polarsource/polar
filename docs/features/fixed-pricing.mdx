@@ -1,0 +1,193 @@
+---
+title: "Fixed pricing"
+description: "Sell a one-time purchase or a flat recurring plan at a set amount, offer free products, and change prices without affecting existing subscribers."
+---
+
+A **fixed price** charges the same amount every time: once for a one-time purchase, or on every cycle for a subscription. It's the simplest price type on Polar and the base of most plans: a $49 license, a $20/month SaaS plan, a free tier.
+
+In the API, it's a price with `amount_type: "fixed"` and a `price_amount` in cents. See [Products & prices](/concepts/products) for the other price types and how they combine.
+
+The code examples use API version `2026-10` and the sandbox. See [Sandbox](/integrate/sandbox) to get an access token.
+
+## Sell a one-time purchase
+
+A one-time product is charged once and grants its [benefits](/concepts/benefits) for good. Use it for licenses, downloads, lifetime deals and credit packs.
+
+<Tabs>
+  <Tab title="Dashboard">
+    - Open **Products**
+    - Click **New Product**
+    - Enter a **Name**
+    - Under **Pricing**, choose **One-time purchase**
+    - Pick **Fixed price** and enter $49
+    - Click **Create Product**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar products create --name "Lifetime license" \
+      --prices '[{ "amount_type": "fixed", "price_amount": 4900 }]'
+    ```
+
+    See [`polar products`](/integrate/cli/reference/products).
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Create a one-time product called Lifetime license for $49 in my Polar sandbox organization.
+    ```
+
+    Uses the `products_create` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+<CodeGroup>
+```typescript TypeScript
+const product = await polar.products.create({
+  name: "Lifetime license",
+  prices: [{ amount_type: "fixed", price_amount: 4900 }],
+});
+```
+
+```python Python
+product = polar.products.create(
+    name="Lifetime license",
+    prices=[{"amount_type": "fixed", "price_amount": 4900}],
+)
+```
+
+```bash cURL
+export PRODUCT_ID=$(curl -s -X POST https://sandbox-api.polar.sh/v1/products/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Lifetime license",
+    "prices": [{ "amount_type": "fixed", "price_amount": 4900 }]
+  }' | jq -r .id)
+```
+</CodeGroup>
+
+Each purchase creates a paid [order](/concepts/orders-and-subscriptions).
+
+## Sell a subscription
+
+Add a billing cycle and the same fixed price renews on every cycle. Buying the product creates a [subscription](/concepts/orders-and-subscriptions), with one order per cycle.
+
+<Tabs>
+  <Tab title="Dashboard">
+    - Open **Products**
+    - Click **New Product**
+    - Enter a **Name**
+    - Under **Pricing**, choose **Recurring subscription** and set **Every** 1 month
+    - Pick **Fixed price** and enter $20
+    - Click **Create Product**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar products create --name "Pro" --recurring-interval month \
+      --prices '[{ "amount_type": "fixed", "price_amount": 2000 }]'
+    ```
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Create a monthly product called Pro for $20 in my Polar sandbox organization.
+    ```
+
+    Uses the `products_create` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+<CodeGroup>
+```typescript TypeScript
+const product = await polar.products.create({
+  name: "Pro",
+  recurring_interval: "month",
+  prices: [{ amount_type: "fixed", price_amount: 2000 }],
+});
+```
+
+```python Python
+product = polar.products.create(
+    name="Pro",
+    recurring_interval="month",
+    prices=[{"amount_type": "fixed", "price_amount": 2000}],
+)
+```
+
+```bash cURL
+export PRODUCT_ID=$(curl -s -X POST https://sandbox-api.polar.sh/v1/products/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Pro",
+    "recurring_interval": "month",
+    "prices": [{ "amount_type": "fixed", "price_amount": 2000 }]
+  }' | jq -r .id)
+```
+</CodeGroup>
+
+`recurring_interval` is `day`, `week`, `month` or `year`. Set `recurring_interval_count` (1 to 999) to bill every _n_ intervals, such as every 3 months. The billing cycle can't change after creation.
+
+A recurring product can start with a free trial. See [Trials](/features/subscriptions/trials).
+
+### Monthly and yearly plans
+
+A product has one billing cycle, and Polar has no variants. To sell monthly and yearly, create two products, such as Pro Monthly at $20 and Pro Yearly at $200, and offer both at checkout with a [Checkout Link](/features/checkout/links) or a [Checkout Session](/features/checkout/session). Customers can switch between them later. See [Manage subscriptions](/features/subscriptions/manage).
+
+## Free products
+
+A free product is a fixed price of 0. The dashboard lists it as **Free**. In the API, it's `amount_type: "fixed"` with `price_amount: 0`.
+
+Use it for a free tier, a lead magnet or a free download. The customer still goes through checkout, becomes a [customer](/concepts/customers) and receives the product's benefits. Checkout doesn't ask for payment details when nothing is due now or later.
+
+A free price stands alone. It can't be combined with seat-based or unit-based prices.
+
+## Amounts and currencies
+
+`price_amount` is in the currency's smallest unit, so `2000` is $20.00. Each currency has a minimum, such as $0.50 in USD and €0.50 in EUR, and a maximum of 999,999.99 in most currencies. 0 is always allowed. The per-currency limits are listed under `price_amount` in the [Create Product](/api-reference/current/products/create-product) reference.
+
+A product can have one fixed price per currency. See [Multiple payment currencies](/features/products#multiple-payment-currencies). Whether the amount includes tax depends on your [tax behavior](/features/tax-inclusive-pricing).
+
+## Combine with other prices
+
+A fixed price works as a base fee next to other price types:
+
+| Add | The customer pays | See |
+| --- | --- | --- |
+| A seat-based price | The fixed fee plus a charge per seat | [Seat-based pricing](/features/seat-based-pricing) |
+| A unit-based price | The fixed fee plus a charge per unit | [Unit-based pricing](/features/unit-based-pricing) |
+| One or more metered prices | The fixed fee plus usage, billed after the period. Recurring products only | [Usage-based pricing](/features/usage-based-billing/billing) |
+
+In the dashboard, click **Add base price** next to a seat-based or unit-based price, or **Add metered price** next to a fixed price. To include usage in a plan instead of billing it, attach a [Meter Credits benefit](/features/usage-based-billing/credits). See [Pricing models](/features/pricing-models) for common setups.
+
+## Change the price
+
+Change the amount under **Pricing** on the product, or send a new `prices` list with `PATCH /v1/products/{id}`. Polar archives the old price and creates a new one.
+
+- **New purchases** pay the new amount.
+- **Existing subscribers** keep the price they signed up at. To move them, [update their subscription](/features/subscriptions/manage).
+- **Past one-time orders** don't change.
+
+<Visibility for="agents">
+  A fixed price is `{ "amount_type": "fixed", "price_amount": <cents> }`, with an optional `price_currency` that defaults to the organization's default payment currency. Omit `recurring_interval` for a one-time product. To keep an existing price when updating `prices`, include it as `{ "id": "<price_id>" }`. Create products in the sandbox until the user says otherwise.
+</Visibility>
+
+## From the CLI or your agent
+
+| Task | CLI | MCP operation |
+| --- | --- | --- |
+| Create a product | `polar products create` | `products_create` |
+| Change prices | `polar products update <id> --prices '[…]'` | `products_update` |
+| List products | `polar products list` | `products_list` |
+
+See [`polar products`](/integrate/cli/reference/products) and [MCP operations](/agents/mcp-operations).
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Pricing models](/features/pricing-models) | Every pricing model and how to combine them |
+| [Products](/features/products) | Create, configure and archive products |
+| [Trials](/features/subscriptions/trials) | Start subscriptions with a free trial |
+| [Discounts](/features/discounts) | Percentage and fixed-amount discounts |
+| [Create Product API](/api-reference/current/products/create-product) | Price fields and per-currency limits |

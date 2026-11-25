@@ -81,7 +81,7 @@
             ]
           },
           {
-            "group": "Build with agents",
+            "group": "Agents & CLI",
             "pages": [
               "agents/overview",
               "integrate/mcp",
@@ -137,61 +137,12 @@
             ]
           },
           {
-            "group": "Build",
-            "pages": [
-              "integrate/authentication",
-              "integrate/oat",
-              {
-                "group": "SDKs & frameworks",
-                "pages": [
-                  "integrate/sdk/introduction",
-                  "integrate/sdk/typescript",
-                  "integrate/sdk/python",
-                  {
-                    "group": "Framework adapters",
-                    "pages": [
-                      "integrate/sdk/adapters/introduction",
-                      "integrate/sdk/adapters/better-auth",
-                      "integrate/sdk/adapters/laravel",
-                      "integrate/sdk/adapters/nextjs",
-                      "integrate/sdk/adapters/nuxt",
-                      "integrate/sdk/adapters/tanstack-start"
-                    ]
-                  },
-                  {
-                    "group": "Framework guides",
-                    "pages": [
-                      "guides/encore",
-                      "guides/laravel",
-                      "guides/nextjs"
-                    ]
-                  }
-                ]
-              },
-              {
-                "group": "Webhooks",
-                "pages": [
-                  "integrate/webhooks/endpoints",
-                  "integrate/webhooks/delivery",
-                  "integrate/webhooks/events"
-                ]
-              },
-              {
-                "group": "OAuth 2.0",
-                "pages": [
-                  "integrate/oauth2/introduction",
-                  "integrate/oauth2/setup",
-                  "integrate/oauth2/connect"
-                ]
-              }
-            ]
-          },
-          {
             "group": "Usage",
             "pages": [
               "features/usage-based-billing/event-ingestion",
               "features/usage-based-billing/meters",
               "features/usage-based-billing/credits",
+              "features/cost-insights/introduction",
               {
                 "group": "Ingestion strategies",
                 "pages": [
@@ -208,9 +159,11 @@
               {
                 "group": "Pricing models",
                 "pages": [
-                  "features/usage-based-billing/billing",
+                  "features/pricing-models",
+                  "features/fixed-pricing",
+                  "features/seat-based-pricing",
                   "features/unit-based-pricing",
-                  "features/seat-based-pricing"
+                  "features/usage-based-billing/billing"
                 ]
               },
               "features/tax-inclusive-pricing",
@@ -294,8 +247,7 @@
             "group": "Analytics",
             "pages": [
               "features/analytics",
-              "features/customer-analytics",
-              "features/cost-insights/introduction"
+              "features/customer-analytics"
             ]
           },
           {
@@ -352,7 +304,37 @@
                 "group": "Get Started",
                 "pages": [
                   "api-reference/2026-04/introduction",
+                  "integrate/authentication",
+                  "integrate/oat",
+                  "integrate/sandbox",
                   "api-reference/2026-04/versioning"
+                ]
+              },
+              {
+                "group": "SDKs & Frameworks",
+                "pages": [
+                  "integrate/sdk/introduction",
+                  "integrate/sdk/typescript",
+                  "integrate/sdk/python",
+                  {
+                    "group": "Framework Adapters",
+                    "pages": [
+                      "integrate/sdk/adapters/introduction",
+                      "integrate/sdk/adapters/better-auth",
+                      "integrate/sdk/adapters/laravel",
+                      "integrate/sdk/adapters/nextjs",
+                      "integrate/sdk/adapters/nuxt",
+                      "integrate/sdk/adapters/tanstack-start"
+                    ]
+                  },
+                  {
+                    "group": "Framework Guides",
+                    "pages": [
+                      "guides/encore",
+                      "guides/laravel",
+                      "guides/nextjs"
+                    ]
+                  }
                 ]
               },
               {
@@ -680,9 +662,12 @@
               {
                 "group": "Webhooks",
                 "pages": [
+                  "integrate/webhooks/endpoints",
+                  "integrate/webhooks/delivery",
                   {
                     "group": "Events",
                     "pages": [
+                      "integrate/webhooks/events",
                       {
                         "group": "Customer Events",
                         "pages": [
@@ -807,6 +792,9 @@
               {
                 "group": "OAuth 2.0",
                 "pages": [
+                  "integrate/oauth2/introduction",
+                  "integrate/oauth2/setup",
+                  "integrate/oauth2/connect",
                   "GET /v1/oauth2/authorize",
                   "POST /v1/oauth2/token",
                   "POST /v1/oauth2/introspect",
@@ -833,7 +821,37 @@
                 "group": "Get Started",
                 "pages": [
                   "api-reference/2026-10/introduction",
+                  "integrate/authentication",
+                  "integrate/oat",
+                  "integrate/sandbox",
                   "api-reference/2026-10/versioning"
+                ]
+              },
+              {
+                "group": "SDKs & Frameworks",
+                "pages": [
+                  "integrate/sdk/introduction",
+                  "integrate/sdk/typescript",
+                  "integrate/sdk/python",
+                  {
+                    "group": "Framework Adapters",
+                    "pages": [
+                      "integrate/sdk/adapters/introduction",
+                      "integrate/sdk/adapters/better-auth",
+                      "integrate/sdk/adapters/laravel",
+                      "integrate/sdk/adapters/nextjs",
+                      "integrate/sdk/adapters/nuxt",
+                      "integrate/sdk/adapters/tanstack-start"
+                    ]
+                  },
+                  {
+                    "group": "Framework Guides",
+                    "pages": [
+                      "guides/encore",
+                      "guides/laravel",
+                      "guides/nextjs"
+                    ]
+                  }
                 ]
               },
               {
@@ -1161,9 +1179,12 @@
               {
                 "group": "Webhooks",
                 "pages": [
+                  "integrate/webhooks/endpoints",
+                  "integrate/webhooks/delivery",
                   {
                     "group": "Events",
                     "pages": [
+                      "integrate/webhooks/events",
                       {
                         "group": "Customer Events",
                         "pages": [
@@ -1288,6 +1309,9 @@
               {
                 "group": "OAuth 2.0",
                 "pages": [
+                  "integrate/oauth2/introduction",
+                  "integrate/oauth2/setup",
+                  "integrate/oauth2/connect",
                   "GET /v1/oauth2/authorize",
                   "POST /v1/oauth2/token",
                   "POST /v1/oauth2/introspect",
@@ -1313,7 +1337,37 @@
                 "group": "Get Started",
                 "pages": [
                   "api-reference/2027-01/introduction",
+                  "integrate/authentication",
+                  "integrate/oat",
+                  "integrate/sandbox",
                   "api-reference/2027-01/versioning"
+                ]
+              },
+              {
+                "group": "SDKs & Frameworks",
+                "pages": [
+                  "integrate/sdk/introduction",
+                  "integrate/sdk/typescript",
+                  "integrate/sdk/python",
+                  {
+                    "group": "Framework Adapters",
+                    "pages": [
+                      "integrate/sdk/adapters/introduction",
+                      "integrate/sdk/adapters/better-auth",
+                      "integrate/sdk/adapters/laravel",
+                      "integrate/sdk/adapters/nextjs",
+                      "integrate/sdk/adapters/nuxt",
+                      "integrate/sdk/adapters/tanstack-start"
+                    ]
+                  },
+                  {
+                    "group": "Framework Guides",
+                    "pages": [
+                      "guides/encore",
+                      "guides/laravel",
+                      "guides/nextjs"
+                    ]
+                  }
                 ]
               },
               {
@@ -1647,9 +1701,12 @@
               {
                 "group": "Webhooks",
                 "pages": [
+                  "integrate/webhooks/endpoints",
+                  "integrate/webhooks/delivery",
                   {
                     "group": "Events",
                     "pages": [
+                      "integrate/webhooks/events",
                       {
                         "group": "Customer Events",
                         "pages": [
@@ -1775,6 +1832,9 @@
               {
                 "group": "OAuth 2.0",
                 "pages": [
+                  "integrate/oauth2/introduction",
+                  "integrate/oauth2/setup",
+                  "integrate/oauth2/connect",
                   "GET /v1/oauth2/authorize",
                   "POST /v1/oauth2/token",
                   "POST /v1/oauth2/introspect",

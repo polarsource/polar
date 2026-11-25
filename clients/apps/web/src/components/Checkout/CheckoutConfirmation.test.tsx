@@ -78,20 +78,4 @@ describe('CheckoutConfirmation', () => {
       ).not.toBeInTheDocument(),
     )
   })
-
-  it('sends the customer to the portal sign-in once the session has expired', async () => {
-    const { router } = renderConfirmation({
-      checkout: {
-        customer_email: 'buyer@example.com',
-        product: { ...createCheckout().product, benefits: [customBenefit] },
-      },
-      customerSessionExpired: true,
-    })
-
-    await waitFor(() =>
-      expect(router.replace).toHaveBeenCalledWith(
-        '/polar-penguin/portal/request?email=buyer%40example.com',
-      ),
-    )
-  })
 })

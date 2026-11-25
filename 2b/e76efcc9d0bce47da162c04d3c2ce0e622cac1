@@ -1,0 +1,43 @@
+server/polar/customer_portal/schemas/order.py
+  s_9d4fcc69d80fc5::t_6613d5b0b49379 78-83
+server/polar/customer_portal/endpoints/order.py
+  s_9d4fcc69d80fc5::t_3bb38e9cce9f5c 119-121
+  s_9d4fcc69d80fc5::t_6062477dce5ca6 10,22,28,106-118
+  s_9d4fcc69d80fc5::t_e75ea3487228f2 122-123
+server/polar/order/repository.py
+  s_9d4fcc69d80fc5::t_271306274120cd 96-106
+server/polar/order/service.py
+  s_9d4fcc69d80fc5::t_1fa33074dab2d8 681-748
+server/polar/customer_portal/service/order.py
+  s_9d4fcc69d80fc5::t_0a50980e130328 12,159-179
+  s_9d4fcc69d80fc5::t_1bce00b440d499 19-20,24,145-148,150-153,155-158,180
+  s_9d4fcc69d80fc5::t_f3222c0e679992 149,154
+  s_9d4fcc69d80fc5::t_03c5b6976049a1 181
+server/polar/subscription/repository.py
+  s_9d4fcc69d80fc5::t_fc2c1a3084b382 519,526-527
+server/tests/customer_portal/endpoints/test_order.py
+  s_9d4fcc69d80fc5::t_8f5cd7e7f0a803 14,51,78-81
+  s_9d4fcc69d80fc5::t_ea7d4f1848c5a1 111-114
+  s_9d4fcc69d80fc5::t_97ac27a2c28555 97-100,141-143
+  s_9d4fcc69d80fc5::t_45924a98c62e1f 18,21,40-50,52-77,82-83,88-96,101-107,115-134,139-140,144-148
+  s_9d4fcc69d80fc5::t_ac494e4dee67c7 84-87,108-110,135-138
+  s_9d4fcc69d80fc5::t_fcac9ec8f921d6 149-150
+clients/packages/client/src/v1.ts
+  s_9d4fcc69d80fc5::t_2970851969e921 982-986,21557-21565,49716-49748
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2be76efcc9d0bce47da162c04d3c2ce0e622cac1",
+  "prompts": {},
+  "sessions": {
+    "s_9d4fcc69d80fc5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20ccd-705d-7a61-9a99-612697cae1a1",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

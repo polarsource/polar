@@ -244,7 +244,7 @@ class TestListBenefitGrants:
             role="member",
             _oauth_accounts={},
         )
-        member.set_oauth_account(
+        await member.set_oauth_account(
             CustomerOAuthAccount(
                 access_token="member-token",
                 account_id="11111",

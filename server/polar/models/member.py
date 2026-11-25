@@ -1,4 +1,3 @@
-import dataclasses
 from enum import StrEnum
 from typing import Any
 from uuid import UUID
@@ -8,7 +7,13 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
-from polar.models.customer import Customer, CustomerOAuthAccount, CustomerOAuthPlatform
+from polar.models.customer import (
+    Customer,
+    CustomerOAuthAccount,
+    CustomerOAuthPlatform,
+    decrypt_oauth_account,
+    encrypt_oauth_account,
+)
 
 
 class MemberRole(StrEnum):
@@ -85,24 +90,29 @@ class Member(RecordModel):
     def customer(cls) -> Mapped["Customer"]:
         return relationship("Customer", lazy="raise", back_populates="members")
 
-    def get_oauth_account(
+    async def get_oauth_account(
         self, account_id: str, platform: CustomerOAuthPlatform
     ) -> CustomerOAuthAccount | None:
-        oauth_account_data = self._oauth_accounts.get(
-            platform.get_account_key(account_id)
-        )
+        account_key = platform.get_account_key(account_id)
+        oauth_account_data = self._oauth_accounts.get(account_key)
         if oauth_account_data is None:
             return None
 
-        return CustomerOAuthAccount(**oauth_account_data)
+        return await decrypt_oauth_account(
+            self.__tablename__, self.id, account_key, oauth_account_data
+        )
 
-    def set_oauth_account(
+    async def set_oauth_account(
         self, oauth_account: CustomerOAuthAccount, platform: CustomerOAuthPlatform
     ) -> None:
+        if self.id is None:
+            self.id = self.generate_id()
         account_key = platform.get_account_key(oauth_account.account_id)
         self._oauth_accounts = {
             **self._oauth_accounts,
-            account_key: dataclasses.asdict(oauth_account),
+            account_key: await encrypt_oauth_account(
+                self.__tablename__, self.id, oauth_account, platform
+            ),
         }
 
     def remove_oauth_account(

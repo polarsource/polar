@@ -1,19 +1,19 @@
 ---
 title: "Introduction"
-description: "Polar is an open source billing platform and Merchant of Record (MoR), used by tens of thousands of software companies worldwide."
+description: "Start here to see what Polar, an open source billing platform and Merchant of Record (MoR), covers and where to begin your integration."
 ---
 
 Polar covers the loop every software business runs to grow revenue, from granting access to improving prices.
 
 <CardGroup cols={2}>
   <Card title="1. Usage" icon="gauge">
-    Grant access with [benefits](/concepts/benefits) like [credits](/features/benefits/credits), [feature flags](/features/benefits/feature-flags) and [Slack Connect](/features/benefits/slack-shared-channel), and track usage in real time.
+    Grant access with [benefits](/concepts/benefits) like [credits](/features/usage-based-billing/credits), [feature flags](/features/benefits/feature-flags) and [Slack Connect](/features/benefits/slack-shared-channel), and track usage in real time.
   </Card>
   <Card title="2. Billing" icon="file-invoice-dollar">
     [Subscriptions](/features/subscriptions/introduction) and [checkout](/features/checkout/session) for any pricing model, with automatic credit renewals and [dunning](/features/subscriptions/failed-payments).
   </Card>
   <Card title="3. Customers" icon="users">
-    Manage customers, benefits and billing from the dashboard, [CLI](/integrate/cli/introduction), or [MCP and AI plugins](/integrate/mcp).
+    Manage customers, benefits and billing from the dashboard, [CLI](/integrate/cli/introduction), or [MCP](/integrate/mcp) and [AI plugins](/agents/skills-and-plugins).
   </Card>
   <Card title="4. Pricing" icon="chart-line-up">
     Iterate on pricing using [Customer Cost Insights](/features/cost-insights/introduction), with legacy prices grandfathered automatically.
@@ -30,12 +30,14 @@ Polar covers the loop every software business runs to grow revenue, from grantin
 # Install Polar CLI
 curl -fsSL https://polar.sh/install.sh | bash
 
-# Install Agentic Polar Skills
+# Set up the Polar plugin, MCP server and skills for your coding agent
 polar agent setup
 
 # Implement Polar for Billing
 claude "Sign up for Polar following https://polar.sh/auth.md, then follow https://polar.sh/docs/quickstart/overview to add usage-based billing with credits to this project: track usage, create products, add a checkout flow, handle webhooks, and gate paid features by subscription and credit balance."
 ```
+
+Your agent signs itself up through [`auth.md`](/agents/signup) and hands the organization to you with a claim code. See [Build with agents](/agents/overview) for the other ways to connect it.
 
 <CardGroup cols={2}>
   <Card title="Quickstart" icon="rocket" href="/quickstart/overview">

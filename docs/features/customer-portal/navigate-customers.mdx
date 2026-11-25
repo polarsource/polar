@@ -1,76 +1,110 @@
 ---
-title: "Navigate Customers to the Portal"
-sidebarTitle: "Navigate Customers"
-description: "Three ways your customers can reach their Customer Portal"
+title: "Link to the portal"
+sidebarTitle: "Link to the portal"
+description: "Send customers to the Customer Portal: the public portal URL, pre-authenticated links from your app, and the emails Polar sends."
 ---
 
-There are three ways your customers can land on the Customer Portal: the default URL, a pre-authenticated link you generate from your application, or the links Polar automatically includes in the emails it sends to your customers.
+Customers reach the [Customer Portal](/features/customer-portal/introduction) in three ways: the public URL, a pre-authenticated link from your app, or the emails Polar sends them.
 
-## 1. The default portal URL
+## The portal URL
 
-Every organization gets a Customer Portal hosted at:
+Every organization's portal lives at:
 
-```
-https://polar.sh/<your-org-slug>/portal
-```
+| Environment | URL |
+| --- | --- |
+| Production | `https://polar.sh/<org-slug>/portal` |
+| Sandbox | `https://sandbox.polar.sh/<org-slug>/portal` |
 
-Customers authenticate by entering the email address they used to purchase or subscribe. Polar then emails them a one-time code to complete sign-in.
+To sign in:
 
-<img className="block dark:hidden" src="/assets/features/customer-portal/signin.light.png" />
-<img className="hidden dark:block" src="/assets/features/customer-portal/signin.dark.png" />
+1. The customer enters the email they bought with.
+2. Polar emails them a 6-digit code, valid for 30 minutes.
+3. They enter the code and land in the portal.
 
-This URL is a good choice to link from your marketing site, your app's help menu, or a support article — anywhere you need a stable, shareable link.
+Use this URL where you need a stable link: your website footer, help center or support replies.
 
-## 2. Pre-authenticated portal links
+## Pre-authenticated links
 
-If your customer is already signed in to your application, you can generate an authenticated link that drops them directly into the portal — no email code required.
+When the customer is already signed in to your app, skip the email code. Create a **customer session** on your server and redirect the customer to its `customer_portal_url`:
 
-Under the hood, this calls the [Create Customer Session](/api-reference/current/customer-sessions/create-customer-session) endpoint and redirects the user to the `customer_portal_url` it returns.
-
-```typescript
-import { createPolar } from "@polar-sh/sdk/2026-10";
-
-const polar = createPolar({
-  accessToken: process.env.POLAR_ACCESS_TOKEN!,
+<CodeGroup>
+```typescript TypeScript
+const session = await polar.customerSessions.create({
+  external_customer_id: "user_123",
+  return_url: "https://example.com/account",
 });
 
-async function run() {
-  const result = await polar.customerSessions.create({
-    customer_id: "<value>",
-  });
-
-  redirect(result.customer_portal_url);
-}
-
-run();
+redirect(session.customer_portal_url);
 ```
 
-If you're on Next.js, the `@polar-sh/nextjs` adapter wraps this into a single route handler:
+```python Python
+session = polar.customer_sessions.create(
+    external_customer_id="user_123",
+    return_url="https://example.com/account",
+)
 
-```typescript
-// app/portal/route.ts
+return redirect(session.customer_portal_url)
+```
+
+```bash cURL
+curl -X POST https://sandbox-api.polar.sh/v1/customer-sessions/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "external_customer_id": "user_123",
+    "return_url": "https://example.com/account"
+  }' | jq -r .customer_portal_url
+```
+</CodeGroup>
+
+| Field | What it does |
+| --- | --- |
+| `external_customer_id` or `customer_id` | The customer, by your user ID or Polar's ID. |
+| `return_url` | Shows a back button in the portal that returns to this URL. |
+| `member_id` or `external_member_id` | For [team customers](/concepts/customers#individuals-and-teams), the member to sign in as. Without it, the session is for the customer's owner. |
+
+The session expires after one hour. Create it when the customer clicks, and don't store the URL. The examples use the sandbox and API version `2026-10`.
+
+<Note>API only. Not available from the CLI or MCP server.</Note>
+
+<Visibility for="agents">
+  Create customer sessions on the server, with the user's ID as `external_customer_id`, right before redirecting. Never store or log `customer_portal_url` or `token`: either one signs the customer in for an hour. Over HTTP, this is `POST /v1/customer-sessions/` with the `Polar-Version: 2026-10` header.
+</Visibility>
+
+### With a framework adapter
+
+The [Next.js adapter](/integrate/sdk/adapters/nextjs) turns this into one route handler:
+
+```typescript app/portal/route.ts
 import { CustomerPortal } from "@polar-sh/nextjs";
 
 export const GET = CustomerPortal({
   accessToken: process.env.POLAR_ACCESS_TOKEN!,
-  getCustomerId: async (req) => "<value>",
-  environment: "sandbox", // Use sandbox if you're testing Polar — pass 'production' otherwise
+  getExternalCustomerId: async (req) => getUserIdFromSession(req),
+  returnUrl: "https://example.com/account",
+  environment: "sandbox",
 });
 ```
 
-Point a link in your app at `/portal` and your customer is one click away from managing their billing.
+Link to `/portal` from your app, and the customer lands in the portal signed in. Use `environment: "production"` when you go live. Other [adapters](/integrate/sdk/adapters/introduction) offer the same handler.
 
-<Note>
-  Customer Session tokens are short-lived. Always generate a fresh link at the
-  moment the customer clicks, rather than storing the URL.
-</Note>
+## Emails Polar sends
 
-## 3. Emails Polar sends to your customers
+Most emails Polar sends your customers link to the portal, including:
 
-You don't have to build anything to get customers to the portal — Polar already includes a link to it in the transactional emails we send on your behalf, including:
+- Order and subscription confirmations
+- Renewal and trial conversion reminders
+- Past-due payment and card expiring notices
+- Subscription updated, paused, resumed, canceled and revoked notices
 
-- **Order confirmation** emails sent after a successful checkout
-- **Subscription renewal** and **subscription updated** emails
-- **Failed payment** notifications, so customers can update their card
+You choose which emails are sent under **Settings → Customer Notifications**. Turning an email off also removes that path to the portal, so keep a link in your own app.
 
-This means that even if you never link to the portal from your own app, your customers already have a way to get back to it from their inbox.
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Customer Portal](/features/customer-portal/introduction) | What customers can do in the portal |
+| [Build your own portal](/features/customer-portal/custom-portal) | Use customer sessions with the Customer Portal API |
+| [Create Customer Session API](/api-reference/current/customer-sessions/create-customer-session) | API reference |
+| [Notifications](/features/notifications) | Customer email settings |

@@ -1,63 +1,294 @@
 ---
-title: "Event Ingestion"
-description: "Ingest events from your application"
+title: "Send events"
+description: "Send usage events from your application with the SDK or API, batch them in production with polar.metering(), and check the limits each event must meet."
 ---
 
-import Events from "/snippets/usage/events.mdx";
+An **event** is a raw fact about what a customer did in your application: an API call, 77 LLM tokens, a 3 MB upload. Meters aggregate events into usage, which you can bill or draw down from credits. See [Usage](/concepts/usage) for how events, meters and prices fit together.
 
-<Events />
+The examples on this page use the sandbox and API version `2026-10`.
 
-## Ingest events using the Polar SDK
+<Note>
+  API only. Sending and listing events isn't available from the CLI or MCP server. Use the SDK or the [Ingest Events API](/api-reference/current/events/ingest-events).
+</Note>
 
-To ingest events, you can use the Polar SDKs.
+## Send an event
 
-### TypeScript Example
+Identify the customer with your own user ID as `external_customer_id`, or with Polar's customer ID as `customer_id`. Put everything you might want to filter or sum on in `metadata`.
 
-```typescript
+<CodeGroup>
+```typescript TypeScript
 import { createPolar } from "@polar-sh/sdk/2026-10";
 
 const polar = createPolar({
   accessToken: process.env.POLAR_ACCESS_TOKEN!,
+  environment: "sandbox",
 });
 
 await polar.events.ingest({
   events: [
     {
-      name: "<value>",
-      external_customer_id: "<id>",
+      name: "ai_usage",
+      external_customer_id: "user_123",
       metadata: {
-        key: "value",
+        model: "gpt-4.1-nano",
+        total_tokens: 77,
       },
     },
   ],
 });
 ```
 
-<Note>
-  You are always responsible for checking the balance of your customers' Usage
-  Meter. As events always are ingested, we will never prohibit any customer's
-  action based on their Usage Meter balance.
-</Note>
+```python Python
+import os
 
-## Ingestion Strategies
+from polar.v2026_10 import Polar
 
-To make it easier to ingest events, we have created a set of ingestion strategies for common event sources.
+polar = Polar(os.environ["POLAR_ACCESS_TOKEN"], environment="sandbox")
 
-Learn more about our [Ingestion Strategies](/features/usage-based-billing/ingestion-strategies).
+polar.events.ingest(
+    events=[
+        {
+            "name": "ai_usage",
+            "external_customer_id": "user_123",
+            "metadata": {
+                "model": "gpt-4.1-nano",
+                "total_tokens": 77,
+            },
+        }
+    ]
+)
+```
 
-## Good to know
+```bash cURL
+curl -X POST https://sandbox-api.polar.sh/v1/events/ingest \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "events": [
+      {
+        "name": "ai_usage",
+        "external_customer_id": "user_123",
+        "metadata": { "model": "gpt-4.1-nano", "total_tokens": 77 }
+      }
+    ]
+  }'
+```
+</CodeGroup>
 
-### Events are immutable
+The response counts what was stored: `{ "inserted": 1, "duplicates": 0 }`.
 
-Once an event is ingested, it cannot be changed, nor can it be deleted.
+You don't need to create the customer first. Polar stores an event for an `external_customer_id` that has no customer yet, and links it once a customer exists with that `external_id`.
 
-### Backdated events
+Send raw facts, like the tokens used by one request, not running totals. Polar does the aggregation, so the same events can feed several [meters](/features/usage-based-billing/meters).
 
-You can set the `timestamp` field on an event to any point in the past — useful for batched ingestion or replaying from your own queue. The timestamp does not need to be part of the current billing cycle.
+<Warning>
+  Polar never blocks usage. Events are always accepted, even when a customer has used all their credits. Check the balance yourself before you serve a request: it's `balance` on each entry in `active_meters` of the [customer state](/integrate/customer-state).
+</Warning>
 
-Polar attributes events to billing periods based on **when they were received by Polar**, not the supplied `timestamp`. An event ingested today with a `timestamp` from a previous billing period is included on the **current cycle** — it is not added to the already-closed invoice for the period it logically belongs to. Polar never issues retroactive invoices or credits for late events.
+## Send events in production
 
-The supplied `timestamp` is still used to:
+`events.ingest` makes one HTTP request per call. In a request path, use `polar.metering()` instead. It buffers events in memory and sends them in the background:
 
-- Place events on the time series shown in the dashboard and the Customer Portal.
-- Set the date range displayed on the metered line item of the next invoice.
+- Up to 100 events per request.
+- A batch is sent 1 second after its first event, or sooner when it's full.
+- Network errors, rate limits (`429`) and server errors are retried, 3 attempts in total. Other errors drop the batch.
+- `flush()` waits until earlier events are delivered. `close()` sends what's left and stops.
+
+<CodeGroup>
+```typescript TypeScript
+import { createPolar } from "@polar-sh/sdk/2026-10";
+
+const polar = createPolar({
+  accessToken: process.env.POLAR_ACCESS_TOKEN!,
+  environment: "sandbox",
+});
+
+export const metering = polar.metering();
+
+await metering.track({
+  name: "ai_usage",
+  external_customer_id: "user_123",
+  metadata: { model: "gpt-4.1-nano", total_tokens: 77 },
+});
+
+// On shutdown
+await metering.close();
+```
+
+```python Python
+import asyncio
+import os
+
+from polar.v2026_10 import PolarAsync
+
+polar = PolarAsync(os.environ["POLAR_ACCESS_TOKEN"], environment="sandbox")
+
+
+async def main() -> None:
+    async with polar.metering() as metering:
+        await metering.track(
+            name="ai_usage",
+            external_customer_id="user_123",
+            metadata={"model": "gpt-4.1-nano", "total_tokens": 77},
+        )
+
+
+asyncio.run(main())
+```
+</CodeGroup>
+
+Create one metering client per process and reuse it. In Python it's async only: open it with `async with` once at startup, for example in your web framework's lifespan handler, and it closes on exit.
+
+**One trade-off:** `track()` returns once the event is buffered, not when Polar has it. If the process dies before a flush, buffered events are lost. On serverless platforms, `await metering.flush()` before you return the response. Failed batches are logged. Pass `onDropped` (TypeScript) or `on_dropped` (Python) in the `buffered` options to handle them yourself:
+
+```typescript TypeScript
+const metering = polar.metering({
+  buffered: {
+    onDropped: (events, reason) => {
+      console.error(`Dropped ${events.length} events: ${reason}`);
+    },
+  },
+});
+```
+
+`reason` is one of `retry_exhausted`, `permanent_error`, `shutdown_timeout` or `worker_error`.
+
+### Bind events to a customer
+
+`actor()` returns a helper that attaches the customer to every event, and reads that customer's meter balance:
+
+<CodeGroup>
+```typescript TypeScript
+const user = await metering.actor({ external_customer_id: "user_123" });
+
+await user.track({ name: "ai_usage", metadata: { total_tokens: 77 } });
+
+const meter = await user.meter(process.env.POLAR_METER_ID!);
+if (meter && meter.balance <= 0) {
+  // Out of credits
+}
+```
+
+```python Python
+user = await metering.actor(external_customer_id="user_123")
+
+await user.track(name="ai_usage", metadata={"total_tokens": 77})
+
+meter = await user.meter(os.environ["POLAR_METER_ID"])
+if meter and meter.balance <= 0:
+    ...  # Out of credits
+```
+</CodeGroup>
+
+The meter read returns `consumed_units`, `credited_units` and `balance` from the [Customer Meters API](/api-reference/current/customer_meters/list-customer-meters).
+
+## Event fields
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `name` | Yes | Event name, up to 128 characters. Meters usually filter on it. |
+| `external_customer_id` or `customer_id` | Yes, one of them | Your user ID, or Polar's customer ID (a UUID). |
+| `external_member_id` or `member_id` | No | The team member who did it. Must match the customer ID kind. |
+| `metadata` | No | Flat key-value pairs. See below. |
+| `timestamp` | No | When it happened. Defaults to now. At most 5 seconds in the future. |
+| `external_id` | No | Your unique ID for the event. Polar skips an event whose `external_id` it already has. |
+| `parent_id` | No | A parent event's Polar ID or `external_id`. Groups events into a trace. |
+| `organization_id` | Depends | Required unless you use an organization access token. |
+
+Metadata rules:
+
+- Values are a string (1 to 500 characters), a number or a boolean. Numbers must be within ±2^53−1.
+- No nested objects, except two keys Polar reads specially: `_cost` for what the event cost you, and `_llm` for LLM token usage. See [Cost insights](/features/cost-insights/introduction#cost-events).
+
+If any event in a request is invalid, Polar rejects the whole request with a `422` and stores none of them. With `polar.metering()`, that drops the batch, so validate events before you track them.
+
+## Group events with a parent
+
+Set `parent_id` to the Polar ID or `external_id` of another event to make it a child, for example one event per LLM call under one event for the agent run. The parent can arrive in a later request. Until it does, the child is held back and isn't processed. See [Cost insights](/features/cost-insights/introduction#traces) for how traces roll up costs.
+
+## Avoid duplicates
+
+Set `external_id` to an ID you control, like a request ID. If you retry a request after a timeout, events Polar already has are skipped and counted in `duplicates`. An `external_id` is unique per organization.
+
+## Team members
+
+When the customer is a team, add `external_member_id` (with `external_customer_id`) or `member_id` (with `customer_id`) to attribute usage to the person who did it. Usage still counts toward the team's meters. See [Customers](/concepts/customers).
+
+## Events are immutable
+
+Once ingested, an event can't be changed or deleted. To correct usage, send a new event, or grant [credits](/features/usage-based-billing/credits).
+
+## Backdated events
+
+You can set `timestamp` to any point in the past, for example when you replay events from your own queue. It doesn't need to fall in the current billing cycle.
+
+Polar attributes events to billing periods by **when Polar received them**, not by `timestamp`. An event ingested today with a timestamp from a closed period is billed on the **current** cycle. Polar never reissues a closed invoice or credits it for late events.
+
+The `timestamp` is still used to:
+
+- Place the event on the time series in the dashboard and the Customer Portal.
+- Set the date range shown on the metered line item of the next invoice.
+
+## System events
+
+Polar also writes events itself, with `source` set to `system`: `order.paid`, `subscription.created`, `benefit.granted`, `meter.credited` and others. Your events have `source` set to `user`. Both kinds show up in the dashboard, and meters can filter on `source`.
+
+## View events
+
+- **Analytics → Events** lists every event, with filters for time range, event name, **Source** (user or system), cost and LLM events.
+- On a customer's page, the **Events** tab shows that customer's events.
+
+To give an event name a readable label in the dashboard, set it on its event type:
+
+<Tabs>
+  <Tab title="Dashboard">
+    - Open **Analytics → Costs**
+    - Select the event type under **Breakdown**
+    - Click **Edit** and set the label
+
+    Only event types that carry a cost are listed there. Use the CLI or API for the others.
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar event_types list --query ai_usage
+    polar event_types update <event-type-id> --label "AI usage"
+    ```
+
+    See the [`event_types` reference](/integrate/cli/reference/event_types).
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Rename the ai_usage event type to "AI usage" in my Polar sandbox organization.
+    ```
+
+    Uses the `event_types_list` and `event_types_update` operations of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+## From the CLI or your agent
+
+Events are sent from your application. You can read them back:
+
+| Task | CLI | MCP operation |
+| --- | --- | --- |
+| List the event names you've sent | `polar events list_names --source user` | `events_list_names` |
+| Get one event | `polar events get <id>` | `events_get` |
+| List event types with counts | `polar event_types list` | `event_types_list` |
+
+To list the events themselves, use the [List Events API](/api-reference/current/events/list-events).
+
+<Visibility for="agents">
+  There is no CLI command or MCP operation to ingest events. Send them from application code with `polar.events.ingest` or `polar.metering()`, or over HTTP with `POST /v1/events/ingest`. Use the sandbox (`https://sandbox-api.polar.sh`) until the user says otherwise, and use the app's user ID as `external_customer_id`. Never send events from client-side code: the access token must stay on the server.
+</Visibility>
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Usage](/concepts/usage) | How events, meters, metered prices and credits fit together |
+| [Meters](/features/usage-based-billing/meters) | Filter and aggregate events into usage |
+| [Ingestion strategies](/features/usage-based-billing/ingestion-strategies/ingestion-strategy) | Send events for streams, S3 uploads and timings automatically (TypeScript) |
+| [Bill for LLM tokens](/features/usage-based-billing/ingestion-strategies/llm-strategy) | Track token usage from AI SDK or PydanticAI calls |
+| [Cost insights](/features/cost-insights/introduction) | Record what each event costs you |
+| [Ingest Events API](/api-reference/current/events/ingest-events) | API reference |

@@ -1,6 +1,6 @@
 ---
 title: Nuxt
-description: Payments and Checkouts made dead simple with Nuxt
+description: "Add checkout, Customer Portal and verified webhook routes to a Nuxt app with the @polar-sh/nuxt module, including every checkout query parameter."
 ---
 
 import WebhookHandlers from "/snippets/adapters/webhook-handlers.mdx";
@@ -11,7 +11,7 @@ import WebhookHandlers from "/snippets/adapters/webhook-handlers.mdx";
 
 ## Installation
 
-Install the required Polar packages using the following command:
+Install the adapter:
 
 <Tabs>
   <Tab title="npm">
@@ -36,7 +36,7 @@ Install the required Polar packages using the following command:
   </Tab>
 </Tabs>
 
-The module requires Nuxt 4 and Node.js 22 or later.
+The module requires Nuxt 4 and Node.js 24 or later.
 
 ### Register the module
 
@@ -60,7 +60,7 @@ The module auto-imports `Checkout`, `CustomerPortal` and `Webhooks` in your `ser
 
 ## Checkout
 
-Create a Checkout handler which takes care of redirections.
+Create a checkout route. It creates a Checkout Session from the query parameters and redirects the customer to it.
 
 ```typescript icon="square-js" server/routes/api/checkout.get.ts
 export default defineEventHandler((event) => {
@@ -82,9 +82,9 @@ export default defineEventHandler((event) => {
 
 `successUrl` and `returnUrl` must be absolute URLs. The handler appends `checkout_id={CHECKOUT_ID}` to `successUrl`; pass `includeCheckoutId: false` to turn this off.
 
-### Query Params
+### Query parameters
 
-Pass query params to this route.
+The route accepts these query parameters:
 
 - products `?products=123` - Separate multiple products with commas: `?products=123,456`
 - customer_id (optional) `?products=123&customer_id=xxx`
@@ -105,7 +105,7 @@ The handler returns `400` when the query params are invalid, for example when `p
 
 ## Customer Portal
 
-Create a customer portal where your customer can view orders and subscriptions.
+Create a route that signs the customer in to the Customer Portal, where they can view orders and manage subscriptions.
 
 ```typescript icon="square-js" server/routes/api/portal.get.ts
 export default defineEventHandler((event) => {
@@ -131,7 +131,7 @@ export default defineEventHandler((event) => {
 
 ## Webhooks
 
-A simple utility which verifies the signature of incoming webhook payloads with your webhook secret.
+The webhook handler verifies the signature of each request with your webhook secret, then calls your handlers. It acknowledges the request for you. Test it locally with `polar webhook listen`. See [Webhooks on your machine](/integrate/cli/webhooks).
 
 ```typescript icon="square-js" server/routes/webhook/polar.post.ts
 export default defineEventHandler((event) => {
@@ -151,8 +151,8 @@ export default defineEventHandler((event) => {
 });
 ```
 
-### Payload Handlers
+### Payload handlers
 
-The Webhook handler also supports granular handlers for easy integration.
+The webhook handler also takes one handler per event type.
 
 <WebhookHandlers />

@@ -1,33 +1,76 @@
 ---
-title: "Custom Benefit"
+title: "Custom benefit"
 sidebarTitle: "Custom"
-description: "Create your own Custom benefit"
+description: "Deliver a private note, link or instructions to customers after purchase, or a benefit Polar doesn't automate."
 ---
 
-You can add a simple, custom benefit, which allows you to attach a note to paying customers.
+A **Custom benefit** delivers a private note to customers after they buy. Use it for anything Polar doesn't automate: a booking link, onboarding instructions, a support email or a partner coupon code.
 
-**Custom Notes**
------------------------
+## What the customer gets
 
-Secret message only customers can see, e.g [Cal.com](http://Cal.com) link, private email for support etc.
+The note, rendered as Markdown, on the checkout confirmation page, in the purchase confirmation email and in the [Customer Portal](/features/customer-portal/introduction). The note is optional. Without one, the customer sees only the benefit's description.
 
-For custom integrations you can also distinguish benefits granted to customers to offer even more bespoke user benefits.
+## Create it
 
-## Sharing links and instructions after purchase
+<Tabs>
+  <Tab title="Dashboard">
+    - Open **Products** → **Benefits**
+    - Click **Create Benefit**
+    - Choose **Custom** as the **Type**
+    - Set the **Description**, the title customers see, e.g. "Onboarding call"
+    - Write the **Private note**
+    - Click **Create**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar benefits create --data '{
+      "type": "custom",
+      "description": "Onboarding call",
+      "properties": { "note": "Book your call: https://cal.com/example/onboarding" }
+    }'
+    ```
 
-Because the **Private note** supports Markdown, a Custom benefit is the simplest way to deliver post-purchase content without writing any code:
+    See [`polar benefits`](/integrate/cli/reference/benefits).
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Create a Custom benefit called "Onboarding call" with the note "Book your call: https://cal.com/example/onboarding" in my Polar sandbox organization.
+    ```
 
-- A private link (Calendly, Notion, …)
-- Onboarding instructions or a welcome message
-- A coupon code for a partner service
+    Uses the `benefits_create` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
 
-Set the **Description** to the title customers will see (e.g. *"Your onboarding link"*), put the link or instructions in **Private note**, and attach the benefit to a product. The rendered Markdown appears on the checkout success page, in the purchase confirmation email, and in the [Customer Portal](/features/customer-portal).
+Then attach it to a product. See [Manage benefits](/features/benefits/introduction#attach-a-benefit-to-a-product).
 
-<Note>
-  Previously, we recommended using a Custom benefit without a note as a way to
-  grant access to software or SaaS features — decoupling entitlements from
-  checking directly on products. We now recommend the
-  [Feature Flag](/features/benefits/feature-flags) benefit for this purpose, as
-  it's purpose-built for feature gating and supports key-value metadata.
-</Note>
+## Options
 
+| Dashboard | API property | Default |
+| --- | --- | --- |
+| **Private note** | `properties.note` | None |
+| **Visibility** | `visibility` | `public` |
+| **Metadata** | `metadata` | None |
+
+## Customer experience
+
+After paying, the customer sees the benefit's description with the note below it. The same note is in their confirmation email and stays available in the Customer Portal for as long as they hold the benefit.
+
+## Revocation
+
+When the benefit is revoked, for example when a subscription ends, the note disappears from the Customer Portal. Anything you delivered outside Polar, like a booked call or a shared document, is up to you to remove.
+
+## Visibility
+
+Configurable. A hidden Custom benefit is granted but never shown to the customer, so the note isn't delivered. Hide it only when your application reads the grant from the [customer state](/integrate/customer-state).
+
+<Tip>
+  To gate a feature in your application, use a [Feature Flag](/features/benefits/feature-flags) benefit. It's built for access checks and carries metadata.
+</Tip>
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Manage benefits](/features/benefits/introduction) | Attach, update, delete and grant benefits |
+| [Benefits](/concepts/benefits) | How grants and revocation work |
+| [Create Benefit API](/api-reference/current/benefits/create-benefit) | Request schema for `custom` |

@@ -1,66 +1,92 @@
 ---
-title: "Sandbox Environment"
-sidebarTitle: "Sandbox Environment"
+title: "Sandbox environment"
+sidebarTitle: "Sandbox"
+description: "Use Polar's sandbox to build and test an integration without real money: sign up, test cards, and the sandbox API, SDK, CLI and MCP settings."
 ---
 
-A separate environment, isolated from your production data
-
-To test Polar or work on your integration without worrying about actual money processing or breaking your live organization, you can use our [sandbox environment](https://sandbox.polar.sh/start).
-
-It's a dedicated server, completely isolated from the production instance where you can do all the experiments you want.
+The **sandbox** is a separate Polar environment for building and testing. It has its own dashboard at [sandbox.polar.sh](https://sandbox.polar.sh/start), its own API at `https://sandbox-api.polar.sh`, and its own accounts, organizations, products, customers and access tokens. Nothing in it moves real money.
 
 <Note>
-  **Why a dedicated environment instead of a test mode?**
-
-  Since we're dealing with money and need to keep track of all movements to assure our Merchant of Record service, we found it safer to isolate live data from test data so it never interferes. Besides, it allows you to create an unlimited number of account and organization to test lot of different scenarios. Consider it as your own development server!
+  **Why a separate environment instead of a test mode?** As the Merchant of Record, Polar tracks every money movement. Keeping test data in a separate environment means it can never mix with live data. It also lets you create as many organizations as you need to test different setups.
 </Note>
 
 ## Get started
 
-You can access the sandbox environment directly on [sandbox.polar.sh](https://sandbox.polar.sh/start) or by clicking on `Go to sandbox` from the organization switcher.
+Open [sandbox.polar.sh](https://sandbox.polar.sh/start), or select **Go to sandbox** in the organization switcher of the dashboard. Create a user account and an organization there, separate from your production ones. Then follow the [quickstart](/quickstart/overview).
 
-You'll then need to create a dedicated user account and organization, the same way described in our [Quick Start guide](/introduction).
+## Test payments
 
-### Testing payments
+The sandbox runs the full customer flow, including checkout. Pay with Stripe's [test card numbers](https://docs.stripe.com/testing#cards). For a successful payment, use this card with any future expiration date and any CVC:
 
-The sandbox environment allows you to experience the complete customer funnel, including checkout. You can perform test payments using Stripe's [test card numbers](https://docs.stripe.com/testing#cards).
-
-The easiest one to test a successful payment is to use the following card number with a future expiration date and random CVC:
-
-```
+```text
 4242 4242 4242 4242
 ```
 
 ## API and SDK
 
-To make requests to our [API](/api-reference), all you need to do is to switch the base URL from `https://api.polar.sh` to `https://sandbox-api.polar.sh`. You'll also need to create an access token in the **sandbox environment**, the access token created in the production environment can't be used in the sandbox.
+Send requests to `https://sandbox-api.polar.sh` instead of `https://api.polar.sh`, with an [access token](/integrate/oat) created in the sandbox. Production tokens don't work in the sandbox, and sandbox tokens don't work in production.
 
-Our official SDKs support the sandbox environment through a dedicated parameter.
+The SDKs take an `environment` option:
 
 <CodeGroup>
-  ```ts TypeScript
-  import { createPolar } from "@polar-sh/sdk/2026-10";
+```typescript TypeScript
+import { createPolar } from "@polar-sh/sdk/2026-10";
 
-  const polar = createPolar({
-    accessToken: process.env.POLAR_ACCESS_TOKEN!,
-    environment: "sandbox",
-  });
-  ```
+const polar = createPolar({
+  accessToken: process.env.POLAR_ACCESS_TOKEN!,
+  environment: "sandbox",
+});
+```
 
-  ```py Python
-  import os
+```python Python
+import os
 
-  from polar.v2026_10 import Polar
+from polar.v2026_10 import Polar
 
-  polar = Polar(
-      os.environ["POLAR_ACCESS_TOKEN"],
-      environment="sandbox",
-  )
-  ```
+polar = Polar(
+    os.environ["POLAR_ACCESS_TOKEN"],
+    environment="sandbox",
+)
+```
+
+```bash cURL
+curl https://sandbox-api.polar.sh/v1/products/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10"
+```
 </CodeGroup>
+
+See the [API reference](/api-reference/current/introduction) for every endpoint.
+
+## CLI
+
+Sign in to the sandbox and choose a sandbox organization. Commands then talk to the sandbox:
+
+```bash Terminal
+polar auth login --sandbox
+polar auth org
+```
+
+The active organization decides the environment, and you can be signed in to sandbox and production at once. With an access token instead of a session, set `POLAR_ENVIRONMENT=sandbox`. See [CLI authentication](/integrate/cli/authentication).
+
+## MCP server
+
+Connect your agent to the sandbox server, `https://mcp.polar.sh/mcp/polar-sandbox`, next to the production one. Prompts that say "in my Polar sandbox" use it. See [MCP server](/integrate/mcp).
+
+<Visibility for="agents">
+  Default to the sandbox: `https://sandbox-api.polar.sh`, `environment: "sandbox"`, `polar auth login --sandbox` and the `polar-sandbox` MCP server. Switch to production only when the user asks.
+</Visibility>
 
 ## Limitations
 
-The limitations listed below only apply to sandbox and doesn't reflect the behavior in production.
+These apply only to the sandbox:
 
-* Customer-facing emails (order confirmations, subscription renewal reminders, etc.) are only delivered to recipients who are members of your organization. Manage these in [**Settings → Members**](https://polar.sh/to/dashboard/settings/members). Sub-addressing aliases like `you+test@example.com` are accepted.
+- Customer-facing emails, such as order confirmations and renewal reminders, are only delivered to members of your organization. Manage them in [**Settings → Members**](https://polar.sh/to/dashboard/settings/members). Sub-addressing aliases like `you+test@example.com` work.
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Quickstart](/quickstart/overview) | Build a full integration in the sandbox |
+| [Access tokens](/integrate/oat) | Create a token for the sandbox API |
+| [Go live](/quickstart/go-live) | Move your integration to production |

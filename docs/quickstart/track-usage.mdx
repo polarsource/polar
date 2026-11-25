@@ -118,7 +118,7 @@ export METER_ID=$(curl -s -X POST https://sandbox-api.polar.sh/v1/meters/ \
 
 Metadata keys are used directly as properties, without a `metadata.` prefix.
 
-You can also run `polar meters create` with the same fields in the [CLI](/integrate/cli/reference/meters), or create it under **Products → Meters** in the dashboard, where you can preview matching events as you build the filter. Polar backfills a new meter from events you've already sent, so your first event counts.
+You can also run `polar meters create` with the same fields in the [CLI](/integrate/cli/reference/meters), or create it under **Products → Meters** in the dashboard. Polar backfills a new meter from events you've already sent, so your first event counts.
 
 Keep the meter's `id`. You'll use it in the next step. The cURL example saves it as `METER_ID`.
 
@@ -151,7 +151,7 @@ Read the meter's usage for `user_123`. It includes the 77 tokens from your event
 
 | Resource | Description |
 | --- | --- |
-| [Event ingestion](/features/usage-based-billing/event-ingestion) | Batching, backdated events and immutability |
+| [Send events](/features/usage-based-billing/event-ingestion) | Batching with `polar.metering()`, limits and backdated events |
 | [Meters](/features/usage-based-billing/meters) | Filters, aggregations and units |
 | [Cost insights](/features/cost-insights/introduction) | Track what each customer costs you on the same events |
 

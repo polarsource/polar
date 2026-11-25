@@ -1,106 +1,148 @@
 ---
-title: "Account Reviews"
+title: "Account reviews"
 sidebarTitle: "Overview"
+description: "Understand how Polar reviews your organization before and after you go live, how to appeal a decision, and what keeps your account in good standing."
 ---
 
-As a Merchant of Record (MoR), Polar resells your digital goods and services on your behalf. To do this responsibly, we verify that every business using Polar complies with our [Acceptable Use Policy](https://polar.sh/legal/acceptable-use-policy), and we continuously monitor transactions to prevent fraud, abuse, and high-risk activity.
+As your [Merchant of Record](/merchant-of-record/introduction), Polar is the legal seller of your products. So Polar checks that every organization complies with the [Acceptable Use Policy](https://polar.sh/legal/acceptable-use-policy) (AUP), and keeps monitoring transactions for fraud, abuse and risk.
 
-We process every review as quickly as we can and resolve every single one.
+An **account review** is that check. The first one runs when you submit your organization, and it's automated: you get a result in a few minutes. Reviews then continue as you sell.
 
-### First payout review
+<Note>Dashboard only. Reviews and appeals aren't available from the CLI or MCP server.</Note>
+
+## Your first review
 
 <Tip>
-  **Build first, submit second.** It's tempting to get approved before doing the integration work, but a complete setup is what makes a review fast and clean. Configure your [products and benefits](/features/products), wire up your integration (checkout links, API keys, webhooks), and have a live website pointing to it. The more we can see end-to-end, the more confidently — and quickly — we can approve your account.
+  **Build first, submit second.** Set up your [products and benefits](/features/products), your checkout (Checkout Links or the API with webhooks) and a live website before you submit. The more the review can see end to end, the more likely it passes on the first try.
 </Tip>
 
-Before you can accept payments, you'll go through our main account review. You submit it yourself from [**Finance → Account**](https://polar.sh/to/dashboard/finance/account) in your Polar dashboard, once every required item on the checklist is complete: a product, a checkout setup, identity verification (KYC) of the organization owner, a payout account, a product description, a reachable website and a verified support email.
+<Steps>
+  <Step title="Complete the checklist">
+    Open [**Finance → Account**](https://polar.sh/to/dashboard/finance/account) and complete every required item: a product, a checkout setup, the owner's identity verification, a payout account, a product description, a reachable website and a verified support email. See the [review checklist](/merchant-of-record/review-checklist).
+  </Step>
+  <Step title="Submit for review">
+    Click **Submit for review**. The checklist locks.
+  </Step>
+  <Step title="Automated check">
+    Polar checks your organization details against the AUP. This typically takes one to two minutes.
+  </Step>
+  <Step title="Result">
+    You see one of the results below.
+  </Step>
+</Steps>
 
-See the [Review Checklist](/merchant-of-record/review-checklist) for what each item requires and how to fix common issues.
+| Result | What it means |
+| --- | --- |
+| **Approved!** | You can accept payments immediately. A manual review still takes place. Payouts you request in the meantime are paid out automatically once it's complete. |
+| **Additional review required** | The check couldn't verify your organization automatically, so a person reviews it. You can't accept payments yet. [Submit an appeal](#appeals) to speed up the manual review. |
+| **Payment access denied** | Your organization doesn't meet the AUP, or the check hit a technical error and a manual review follows. You can [appeal](#appeals). |
 
-Initial reviews can take **up to 14 days** to complete, depending on volume, weekends, and holidays. This review keeps us compliant with our [Acceptable Use Policy](https://polar.sh/legal/acceptable-use-policy) and meets our own KYC/AML requirements as a billing platform.
+## Appeals
 
-### Continuous reviews
+If your result isn't **Approved!**, you can appeal it from **Finance → Account**:
 
-We continuously monitor all transactions across our platform to proactively prevent fraud, and we run asynchronous reviews of accounts at certain sales thresholds. Most of these reviews don't require any additional information from you.
+1. Click **Submit an appeal**.
+2. Answer **Why should your organization be approved?** in 50 to 5,000 characters. Include context about your business that helps the review.
+3. Click **Submit Appeal**.
 
-You can always request a [payout](/features/finance/payouts). A request made while your organization is under review shows as "Held for review" until approval, then is paid out automatically. Your customers are unaffected: new purchases keep going through, and existing subscriptions renew as usual.
+Polar reviews your appeal automatically first. This usually takes about a minute.
 
-In a continuous review, we look at two things: that your use case is still within our [Acceptable Use Policy](https://polar.sh/legal/acceptable-use-policy) and consistent with what was approved during your first review, and that your account is in good financial health — refunds, chargebacks, and risk scores across recent transactions.
+- **Appeal approved:** payment access is restored, and you can accept payments.
+- **Appeal denied:** click **Ask for human review** to open a conversation with Polar's review team. Explain why the decision is wrong. Polar's team replies within one to two business days, and you can attach files to your replies.
 
-<Note>
-  **Chargebacks and card networks.** Credit card networks (e.g. Visa, Mastercard) consider chargebacks above 0.7% of sales excessive. Exceeding that threshold can lead to monitoring programs with extra costs, penalties, and ultimately termination from the network. We might reach out proactively to collaborate on lowering your chargeback ratio before it approaches these thresholds.
-</Note>
+The conversation stays on **Finance → Account**. A badge on **Finance** shows when there's an unread reply. Contacting support doesn't speed up a review or give you extra status updates.
 
-## Operational Guidelines
+You can submit one appeal per review.
 
-### Customer Support
+## Organization statuses
 
-You're responsible for supporting your own customers. The volume of support requests we receive about your account, and how you handle them when we loop you in, both factor into our reviews.
+Your organization's status decides what it can do. It's the `status` field on the [organization](/api-reference/current/organizations/get-organization).
 
-When we include you in a customer support thread, we expect a response within **48 hours**. If we don't hear back, we may refund the affected customers and issue a warning. Repeated unresponsiveness leads to offboarding.
+| Status | Meaning | Payments | Payouts |
+| --- | --- | --- | --- |
+| `created` | Not yet approved | No | No |
+| `active` | Approved | Yes | Yes |
+| `review` | Under review | Yes | Requested payouts are held until approval |
+| `snoozed` | Under review, with the review postponed | Yes | Requested payouts are held until approval |
+| `denied` | Not approved. You can [appeal](#appeals). | No | No |
+| `offboarding` | Leaving Polar. See [Migrate away](/migrate-away). | Existing subscriptions keep renewing | No |
+| `offboarded` | Offboarding complete | No | Yes, to withdraw the remaining balance |
+| `blocked` | Blocked for fraud or abuse | No | No |
 
-### Test Transactions
+## Continuous reviews
 
-Don't run test purchases with real card details. Payment processors flag this as "card testing" and can block the card or your account, and it triggers our own account reviews.
+Polar keeps monitoring every transaction to prevent fraud, and reviews organizations again as their sales grow. Changing your products can also trigger a review. Most reviews don't need anything from you.
 
-Use our sandbox environment instead. If you need to verify something in production, set up a free product or a 100% discount code so no real money changes hands.
+While your organization is under review, your customers aren't affected: new purchases go through and subscriptions renew as usual. You can still request a [payout](/features/finance/payouts). It shows as **Held for review** until the review is approved, then it's paid out automatically.
 
-### Chargeback Management
+A continuous review checks two things:
 
-We hold accounts to a **0.4% chargeback rate** — well below the 0.7% threshold the card networks themselves treat as excessive. Customers can file chargebacks up to 120 days after a transaction, so we monitor these continuously.
+- Your use case is still within the AUP and matches what was approved in your first review.
+- Your account is financially healthy: refunds, disputes and risk scores across recent transactions.
 
-If your rate climbs toward our threshold, we'll reach out first to collaborate on bringing it down. If that doesn't work, we may take the following actions, in order of severity:
+If you verified a [domain](/features/domains), keep its DNS record in place. Polar checks it again during reviews.
 
-1. Refund individual transactions as needed.
-2. Hold payouts pending review, until the 120-day chargeback window for those transactions has closed.
+## Operational guidelines
+
+### Expected responsiveness
+
+You're responsible for supporting your own customers. The volume of support requests Polar receives about your organization, and how you handle them when Polar loops you in, both count in reviews.
+
+When Polar includes you in a customer support thread, reply within **48 hours**. If you don't, Polar may refund the affected customers and issue a warning. Repeated unresponsiveness leads to offboarding.
+
+### Test transactions
+
+Don't run test purchases with real card details. Payment processors flag this as card testing and can block the card or your account. It also triggers a review.
+
+Use the [sandbox](/integrate/sandbox) instead. To check something in production, use a free product or a 100% discount code so no real money changes hands.
+
+### Chargeback management
+
+Card networks such as Visa and Mastercard consider a dispute rate above 0.7% of sales excessive, and can respond with monitoring programs, penalties and termination. Polar holds organizations to a **0.4% chargeback rate**. Customers can file a chargeback up to 120 days after a transaction, so Polar monitors it continuously.
+
+If your rate climbs toward the threshold, Polar contacts you first to bring it down together. If that doesn't work, Polar may, in order of severity:
+
+1. Refund individual transactions.
+2. Hold payouts until the 120-day chargeback window for those transactions has closed.
 3. Pause future payments.
 4. Block the account and refund customers.
 
-We don't take any of these actions lightly and always try to resolve issues with you first.
+Polar also receives early dispute signals from the card networks. Below a certain transaction value, it refunds the order automatically, cancels any related subscription and revokes the customer's benefits. You get an email when this happens, unless you turned off **Prevented Chargebacks** in your [notifications](/features/notifications). Benefits the customer already used, such as downloaded files or forked repositories, can't be taken back.
 
-<Note>
-  We integrate with credit card networks to receive early chargeback signals before they're officially filed. Below a certain transaction value, we automatically refund the order, cancel any related subscription, and revoke the customer's benefits to reduce chargebacks proactively. If we issue a proactive refund, we'll notify you by email. Keep in mind that benefits the customer has already consumed — such as downloaded files or forked repositories — can't be taken back.
-</Note>
+### Policy violations
 
-### Policy Violations
+When an organization violates the AUP, separately from dispute issues, Polar offboards it. Payment processing is blocked and payouts are held pending review.
 
-When an account violates our [Acceptable Use Policy](https://polar.sh/legal/acceptable-use-policy) — separately from chargeback issues — we offboard the merchant. Payment processing is blocked and payouts are held pending review.
+If Polar suspects fraud or intentional abuse, it blocks the account immediately. Otherwise, it contacts you and gives you 48 hours to respond. If you don't, affected customers may be refunded. Polar may also run test transactions to check an account.
 
-If we suspect fraud or intentional abuse, we block the account immediately. Otherwise, we reach out and give you 48 hours to respond; failure to respond may result in refunds to affected customers. We may also run test transactions ourselves to verify account status.
-
-We aim to work with you on the best path forward, but for compliance and risk reasons we have to cancel subscriptions and refund payments made in violation of the policy.
+For compliance and risk reasons, Polar has to cancel subscriptions and refund payments made in violation of the policy.
 
 ## FAQ
 
 <AccordionGroup>
   <Accordion title="Why is my account under review again?">
-    Your account may go through multiple reviews as your business grows. We perform [continuous reviews](#continuous-reviews) at certain sales thresholds to maintain platform integrity and prevent fraud. This is a standard practice across payment platforms and is part of our ongoing risk management process.
+    Polar reviews organizations again as their sales grow, and when their products change. See [continuous reviews](#continuous-reviews). This is standard practice across payment platforms.
   </Accordion>
-  <Accordion title="Why do you need my social media in settings?">
-    We request social media information as part of our identity verification and fraud prevention processes. This helps us:
-
-    * Verify that you're a real business or creator with an online presence
-    * Understand your products and services better
-    * Ensure compliance with our [acceptable use policies](https://polar.sh/legal/acceptable-use-policy)
-
-    Providing accurate social media information helps speed up the review process and demonstrates the legitimacy of your business.
+  <Accordion title="Why do you need my social media links?">
+    They help verify that you're a real business or creator with an online presence, and help Polar understand what you sell. Adding them can speed up your review.
   </Accordion>
-  <Accordion title="Are social media settings visible publicly?">
-    No, your social media settings are not publicly visible. This information is used internally for verification and compliance purposes only. We treat all merchant information with strict confidentiality and use it solely for risk assessment and account review processes.
+  <Accordion title="Are my social media links public?">
+    No. Only Polar's review team sees them.
   </Accordion>
-  <Accordion title="Why do I need to share a video recording showing the product working?">
-    To help us verify that everything is working correctly in line with our acceptable use policy, our team would ask you to share a 100% discount code by email. This is our preferred method, as it allows the team to go through the full journey themselves and confirm the automated fulfillment from an unpaid user to a paid user.
+  <Accordion title="Why do you ask for a 100% discount code or a video of my product?">
+    To check that your product works and is delivered automatically after purchase, the review team may ask for a 100% discount code by email. It lets them go through the full journey from unpaid to paid user themselves.
 
-    Alternatively, you can provide a video recording that clearly shows the complete flow from an unpaid user to a paid user, including how the product is automatically accessible after purchase.
+    Alternatively, you can send a video that shows the complete flow from an unpaid user to a paid user, including how the product becomes available after purchase.
   </Accordion>
-  <Accordion title="How do I transfer my organization to a new admin?">
-    To transfer admin ownership of an organization:
-
-    1. Invite the new admin to the team via `Settings` > `Members` in the Polar dashboard
-    2. Ask that new admin to complete identity verification under `Finance` > `Account` after logging in via that email in the Polar dashboard
-    3. Make sure no payout is pending
-    4. Send an email from the current admin email to our support confirming the transfer to the new admin
-
-    If you need assistance with changing organization ownership or have special circumstances, please contact [support@polar.sh](mailto:support@polar.sh).
+  <Accordion title="How do I transfer ownership of my organization?">
+    See [Team management](/features/team-management#transfer-ownership).
   </Accordion>
 </AccordionGroup>
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Review checklist](/merchant-of-record/review-checklist) | What to complete before you submit |
+| [Acceptable Use Policy](/merchant-of-record/acceptable-use/introduction) | What you can sell with Polar |
+| [Balance and payouts](/features/finance/payouts) | Withdraw your balance and held payouts |

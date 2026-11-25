@@ -28,9 +28,18 @@ Polar creates an order whenever it charges a customer. The order's `billing_reas
 | `subscription_update` | A plan or seat change is charged right away |
 | `subscription_meter_cycle` | Usage is billed at the end of a meter period |
 
-An order is `pending` while Polar collects the payment, then `paid`. A paid order can later be `refunded` or `partially_refunded`. Every paid order has a receipt, and you or the customer can generate an invoice for it.
+| Status | Meaning |
+| --- | --- |
+| `draft` | Created for an [off-session charge](/features/off-session-charges) and not charged yet |
+| `pending` | Polar is collecting the payment |
+| `paid` | The payment succeeded |
+| `refunded` | Fully refunded |
+| `partially_refunded` | Part of the amount was refunded |
+| `void` | Won't be collected, for example after every payment retry failed |
 
-You can also charge an existing customer outside of checkout by creating a draft order and finalizing it. See [Arbitrary charges](/features/orders#arbitrary-charges).
+Every paid order has a receipt, and you or the customer can generate an invoice for it.
+
+You can also charge an existing customer outside of checkout by creating a draft order and finalizing it. See [Off-session charges](/features/off-session-charges).
 
 ## Subscriptions
 
@@ -69,7 +78,7 @@ Every task here also works from your terminal and your agent. See the [CLI refer
 
 | Resource | Description |
 | --- | --- |
-| [Orders](/features/orders) | Order statuses, invoices, receipts and arbitrary charges |
+| [Orders](/features/orders) | Invoices, receipts and billing details |
 | [Subscriptions](/features/subscriptions/introduction) | How subscriptions renew and end |
 | [Managing subscriptions](/features/subscriptions/manage) | Change, pause, cancel and revoke |
 | [Refunds](/features/refunds) | Full and partial refunds |

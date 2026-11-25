@@ -2,14 +2,12 @@
 title: "Python SDK"
 sidebarTitle: "Python"
 icon: python
-description: "Fully typed Python client for the Polar API"
+description: "Install and configure polar-sdk: create a versioned sync or async client, switch between sandbox and production, page through lists, handle errors and batch usage events."
 ---
 
-The official Python SDK provides fully typed synchronous and asynchronous clients for the Polar API.
+`polar-sdk` is the official Python client for the Polar API, with synchronous and asynchronous clients. It requires Python 3.11 or later.
 
-## Installation
-
-The SDK requires Python 3.11 or later.
+## Install
 
 <Tabs>
   <Tab title="uv">
@@ -24,20 +22,22 @@ The SDK requires Python 3.11 or later.
   </Tab>
 </Tabs>
 
-## Quickstart
+## Create a client
 
-Create an [organization access token](/integrate/oat), store it in `POLAR_ACCESS_TOKEN`, and make your first request:
+Create an [organization access token](/integrate/oat), or run `polar auth token`, and store it in `POLAR_ACCESS_TOKEN`. Then make your first request:
 
 ```python main.py
 import os
 
 from polar.v2026_10 import Polar
 
-polar = Polar(os.environ["POLAR_ACCESS_TOKEN"])
+polar = Polar(os.environ["POLAR_ACCESS_TOKEN"], environment="sandbox")
 
-customer_state = polar.customers.get_state_external("customer_external_id")
-print(customer_state)
+state = polar.customers.get_state_external("user_123")
+print(state.active_subscriptions)
 ```
+
+The import path pins the client to API version `2026-10`: its types and the `Polar-Version` header it sends. See [SDKs](/integrate/sdk/introduction#api-versions).
 
 ### Async client
 
@@ -51,63 +51,81 @@ from polar.v2026_10 import PolarAsync
 
 
 async def main() -> None:
-    polar = PolarAsync(os.environ["POLAR_ACCESS_TOKEN"])
-    customer_state = await polar.customers.get_state_external(
-        "customer_external_id"
+    async with PolarAsync(os.environ["POLAR_ACCESS_TOKEN"], environment="sandbox") as polar:
+        state = await polar.customers.get_state_external("user_123")
+        print(state.active_subscriptions)
+
+
+asyncio.run(main())
+```
+
+Both clients work as context managers, `with Polar(...)` and `async with PolarAsync(...)`, and close their HTTP connections when the block exits.
+
+### Options
+
+| Argument | Default | Description |
+| --- | --- | --- |
+| `access_token` | Required | An organization access token, or a user's [OAuth 2.0](/integrate/oauth2/introduction) access token |
+| `environment` | `"production"` | `"sandbox"` calls `https://sandbox-api.polar.sh`. A token only works in the environment it was created in. |
+| `timeout` | `5.0` | Request timeout in seconds. Override it per call with `request_timeout=`. |
+| `organization_id` | `None` | The organization to act on, for tokens that can access more than one |
+
+## List resources
+
+List methods return one page. `iter_list` yields every item across pages:
+
+```python
+for product in polar.products.iter_list(is_archived=False):
+    print(product.name)
+```
+
+## Handle errors
+
+Every SDK error extends `polar.PolarError`. Errors the API documents, such as `ResourceNotFound`, have their own classes in `polar.v2026_10.errors`:
+
+```python
+from polar import PolarRateLimitError
+from polar.v2026_10.errors import ResourceNotFound
+
+try:
+    polar.customers.get_state_external("user_123")
+except ResourceNotFound:
+    ...  # No customer with this external ID
+except PolarRateLimitError:
+    ...  # Back off and retry
+```
+
+## Verify webhooks
+
+`validate_event` checks the signature and returns a typed event:
+
+```python
+from polar.v2026_10.webhooks import validate_event
+
+event = validate_event(request_body, request_headers, os.environ["POLAR_WEBHOOK_SECRET"])
+```
+
+See [Handle deliveries](/integrate/webhooks/delivery) for a full handler.
+
+## Send usage events
+
+`polar.metering()` on `PolarAsync` buffers usage events in memory and sends them in batches in the background, so tracking doesn't slow down your requests:
+
+```python
+async with polar.metering() as metering:
+    await metering.track(
+        name="ai_usage",
+        external_customer_id="user_123",
+        metadata={"total_tokens": 77},
     )
-    print(customer_state)
-
-
-asyncio.run(main())
 ```
 
-The import path pins your client to the `2026-10` API version.
+See [Event ingestion](/features/usage-based-billing/event-ingestion) for batching, retries and limits.
 
-## Context managers
+## Learn more
 
-Both clients support context managers to close their HTTP connections automatically when the block exits.
-
-For synchronous applications, use `Polar` with `with`:
-
-```python
-import os
-
-from polar.v2026_10 import Polar
-
-with Polar(os.environ["POLAR_ACCESS_TOKEN"]) as polar:
-    customer_state = polar.customers.get_state_external("customer_external_id")
-    print(customer_state)
-```
-
-For asynchronous applications, use `PolarAsync` with `async with`:
-
-```python
-import asyncio
-import os
-
-from polar.v2026_10 import PolarAsync
-
-
-async def main() -> None:
-    async with PolarAsync(os.environ["POLAR_ACCESS_TOKEN"]) as polar:
-        customer_state = await polar.customers.get_state_external(
-            "customer_external_id"
-        )
-        print(customer_state)
-
-
-asyncio.run(main())
-```
-
-## Sandbox environment
-
-The client uses production by default. Pass `environment="sandbox"` to use the isolated [sandbox environment](/integrate/sandbox):
-
-```python
-polar = Polar(
-    os.environ["POLAR_ACCESS_TOKEN"],
-    environment="sandbox",
-)
-```
-
-[View the source code on GitHub](https://github.com/polarsource/polar/tree/main/sdk/python).
+| Resource | Description |
+| --- | --- |
+| [Source on GitHub](https://github.com/polarsource/polar/tree/main/sdk/python) | The SDK's code |
+| [API reference](/api-reference/current) | Every operation, with Python samples |
+| [Authentication](/integrate/authentication) | Which token to use |

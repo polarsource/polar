@@ -52,7 +52,7 @@ Usage reaches billing in two ways, and you can combine them.
 
 **Metered prices** bill usage after the fact. Add a metered price to a recurring product, and Polar invoices the usage on the subscription's next order. See [Usage-based pricing](/features/usage-based-billing/billing).
 
-**Credits** are prepaid. A [Credits benefit](/features/benefits/credits) adds units to a customer's meter balance, once for a one-time purchase or every cycle for a subscription. Usage draws the balance down first. If the product also has a metered price, anything beyond the credits is billed as overage. Without one, usage is never charged.
+**Credits** are prepaid. A [Meter Credits benefit](/features/usage-based-billing/credits) adds units to a customer's meter balance, once for a one-time purchase or every cycle for a subscription. Usage draws the balance down first. If the product also has a metered price, anything beyond the credits is billed as overage. Without one, usage is never charged.
 
 The customer's current balance for each meter is part of their [customer state](/integrate/customer-state).
 
@@ -75,7 +75,7 @@ Events are sent from your application with the SDK or API. Everything else works
 
 | Resource | Description |
 | --- | --- |
-| [Event ingestion](/features/usage-based-billing/event-ingestion) | Send events with the SDK or API |
+| [Send events](/features/usage-based-billing/event-ingestion) | Send events with the SDK or API |
 | [Ingestion strategies](/features/usage-based-billing/ingestion-strategies/ingestion-strategy) | Ready-made ingestion for LLMs, streams, S3 and more |
 | [Meters](/features/usage-based-billing/meters) | Filters, aggregations and units |
 | [Credits](/features/usage-based-billing/credits) | Prepaid usage and manual credit grants |

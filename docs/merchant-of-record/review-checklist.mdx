@@ -19,7 +19,7 @@ The **Submit for review** button stays disabled until every required item is com
 | [Add a support email](#add-a-support-email) | Yes | You verified your support email with the code we send to it |
 | [Add social links](#add-social-links) | No | You added at least one public profile |
 
-Once you submit, the checklist is locked and we review your account. You can start accepting payments when the review is approved.
+Once you submit, the checklist locks and an automated review runs, typically in one to two minutes. If it passes, you can accept payments right away. If it doesn't, you can appeal. See [Your first review](/merchant-of-record/account-reviews#your-first-review) and [Appeals](/merchant-of-record/account-reviews#appeals).
 
 ## Create your first product
 
@@ -51,7 +51,7 @@ The organization **owner** verifies their identity through Stripe Identity, with
 
 <AccordionGroup>
   <Accordion title="The item says I'm not allowed to complete it">
-    Only the organization owner can complete identity verification. Ask the owner to log in and complete it from **Finance → Account**. To change the owner, see [How do I transfer my organization to a new admin?](/merchant-of-record/account-reviews#faq)
+    Only the organization owner can complete identity verification. Ask the owner to log in and complete it from **Finance → Account**. To change the owner, see [Transfer ownership](/features/team-management#transfer-ownership).
   </Accordion>
   <Accordion title="It says &quot;Awaiting external verification&quot;">
     Stripe is still processing your verification. This usually takes a few minutes. The checklist updates on its own once Stripe is done.
@@ -82,7 +82,7 @@ Tell us what you sell, who it's for and how you price it, in at least 30 charact
 
 Add the website where customers learn about your product. It must start with `https://`. When you load the checklist, Polar requests the page and expects a successful response within 5 seconds.
 
-You can also verify that you own the domain by adding a DNS TXT record. This is optional, but it helps your review.
+You can also verify that you own the domain by adding a DNS TXT record. This is optional, but it helps your review. See [Domains](/features/domains).
 
 <AccordionGroup>
   <Accordion title="It says &quot;We could not reach this URL&quot;">

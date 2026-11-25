@@ -1,0 +1,207 @@
+---
+title: "Validate license keys"
+sidebarTitle: "Validate license keys"
+description: "Activate, validate and deactivate Polar license keys from your server or a desktop or mobile app, and handle each failure."
+---
+
+Your application checks a customer's key against Polar's API at startup, per session or before a paid action. This page shows the three calls involved: **activate** a device, **validate** the key, **deactivate** a device. To set up the benefit itself, see [License Keys](/features/benefits/license-keys).
+
+<Note>API only. Not available from the CLI or MCP server.</Note>
+
+The examples use API version `2026-10` and the sandbox.
+
+## Server or public client
+
+The same three calls exist twice. Pick by where your code runs:
+
+| Where the check runs | Endpoints | Authentication |
+| --- | --- | --- |
+| Your server or backend | `POST /v1/license-keys/validate`, `/activate`, `/deactivate` | An access token with the `license_keys:write` scope |
+| A desktop app, CLI tool, plugin or mobile app you ship to customers | `POST /v1/customer-portal/license-keys/validate`, `/activate`, `/deactivate` | None |
+
+Never ship an access token inside an application you distribute. Anyone could extract it. The customer portal endpoints need no token and only accept the license key itself, so they're safe in public clients.
+
+Both take the same request body and return the same response.
+
+Every request needs the key and your `organization_id`. Copy the ID from **Settings** under **Identifiers**, or run `polar organizations list`. It stops a valid key from another Polar organization from unlocking your software.
+
+## Activate a device
+
+Skip this step if the benefit has no activation limit. Activating a key without **Limit Activations** returns `403`.
+
+With activations on, activate once per device or installation and store the returned `id` locally. Use `conditions` for values that must match on later validations, like a major version or a machine fingerprint, and `meta` for anything you only want to record.
+
+<CodeGroup>
+```typescript TypeScript
+const activation = await polar.licenseKeys.activate({
+  key: licenseKey,
+  organization_id: process.env.POLAR_ORGANIZATION_ID!,
+  label: "MacBook Pro",
+  conditions: { major_version: 2 },
+  meta: { hostname: "janes-macbook" },
+});
+
+saveActivationId(activation.id);
+```
+
+```python Python
+import os
+
+activation = polar.license_keys.activate(
+    key=license_key,
+    organization_id=os.environ["POLAR_ORGANIZATION_ID"],
+    label="MacBook Pro",
+    conditions={"major_version": 2},
+    meta={"hostname": "janes-macbook"},
+)
+
+save_activation_id(activation.id)
+```
+
+```bash cURL
+export ACTIVATION_ID=$(curl -s -X POST https://sandbox-api.polar.sh/v1/customer-portal/license-keys/activate \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "key": "'"$LICENSE_KEY"'",
+    "organization_id": "'"$POLAR_ORGANIZATION_ID"'",
+    "label": "MacBook Pro",
+    "conditions": { "major_version": 2 },
+    "meta": { "hostname": "janes-macbook" }
+  }' | jq -r .id)
+```
+</CodeGroup>
+
+The TypeScript and Python examples use the server endpoints through the `polar` client. From a public client, send the request without `Authorization`, as the cURL example does. With the SDK, create the client with an empty access token and call `polar.customerPortal.licenseKeys.activate` (`polar.customer_portal.license_keys.activate` in Python). The same applies to validate and deactivate.
+
+## Validate a key
+
+Validate on each session or before a paid action. Pass `activation_id` and the same `conditions` when the key uses activations. Pass `increment_usage` to consume the key's usage quota.
+
+<CodeGroup>
+```typescript TypeScript
+import { errors } from "@polar-sh/sdk/2026-10";
+
+try {
+  const validated = await polar.licenseKeys.validate({
+    key: licenseKey,
+    organization_id: process.env.POLAR_ORGANIZATION_ID!,
+    benefit_id: process.env.POLAR_LICENSE_BENEFIT_ID,
+    activation_id: activationId,
+    conditions: { major_version: 2 },
+    increment_usage: 1,
+  });
+  unlock({ usage: validated.usage, limit: validated.limit_usage });
+} catch (error) {
+  if (error instanceof errors.ResourceNotFound || error instanceof errors.BadRequest) {
+    lock();
+  } else {
+    throw error;
+  }
+}
+```
+
+```python Python
+import os
+
+from polar.v2026_10.errors import BadRequest, ResourceNotFound
+
+try:
+    validated = polar.license_keys.validate(
+        key=license_key,
+        organization_id=os.environ["POLAR_ORGANIZATION_ID"],
+        benefit_id=os.environ["POLAR_LICENSE_BENEFIT_ID"],
+        activation_id=activation_id,
+        conditions={"major_version": 2},
+        increment_usage=1,
+    )
+    unlock(usage=validated.usage, limit=validated.limit_usage)
+except (ResourceNotFound, BadRequest):
+    lock()
+```
+
+```bash cURL
+curl -X POST https://sandbox-api.polar.sh/v1/customer-portal/license-keys/validate \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "key": "'"$LICENSE_KEY"'",
+    "organization_id": "'"$POLAR_ORGANIZATION_ID"'",
+    "benefit_id": "'"$BENEFIT_ID"'",
+    "activation_id": "'"$ACTIVATION_ID"'",
+    "conditions": { "major_version": 2 },
+    "increment_usage": 1
+  }'
+```
+</CodeGroup>
+
+A successful response means the key is valid right now: its `status` is `granted`, it hasn't expired, and everything you passed matched. It includes the key's `benefit_id`, `customer_id`, `expires_at`, `usage`, `limit_usage`, `validations` and the matched `activation`.
+
+### Scope the check
+
+`organization_id` only proves the key is yours. If you sell more than one product with license keys, pass `benefit_id` so a key for one product can't unlock another. On your server, you can also pass `customer_id` to require that the key belongs to the signed-in customer.
+
+## Deactivate a device
+
+Deactivate when the customer signs out or moves to another device, to free the activation slot. Customers can also do this in the Customer Portal if you enabled it on the benefit.
+
+<CodeGroup>
+```typescript TypeScript
+await polar.licenseKeys.deactivate({
+  key: licenseKey,
+  organization_id: process.env.POLAR_ORGANIZATION_ID!,
+  activation_id: activationId,
+});
+```
+
+```python Python
+polar.license_keys.deactivate(
+    key=license_key,
+    organization_id=os.environ["POLAR_ORGANIZATION_ID"],
+    activation_id=activation_id,
+)
+```
+
+```bash cURL
+curl -X POST https://sandbox-api.polar.sh/v1/customer-portal/license-keys/deactivate \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "key": "'"$LICENSE_KEY"'",
+    "organization_id": "'"$POLAR_ORGANIZATION_ID"'",
+    "activation_id": "'"$ACTIVATION_ID"'"
+  }'
+```
+</CodeGroup>
+
+A successful deactivation returns `204` with no body.
+
+## Handle failures
+
+| Call | Status | Cause |
+| --- | --- | --- |
+| validate | `404` | Unknown key, or the key is `revoked`, `disabled` or expired. Also when `activation_id`, `conditions`, `benefit_id` or `customer_id` don't match |
+| validate | `400` | `increment_usage` exceeds the remaining usage |
+| activate | `403` | The key is `revoked`, `disabled` or expired, has no activation limit, or reached its limit |
+| activate, deactivate | `404` | Unknown key or activation |
+
+The response's `detail` says which check failed. Treat any `404` from validate as "no access". Don't retry it.
+
+<Visibility for="agents">
+  Rules for license key integrations:
+  - Code that ships to end users (desktop apps, CLIs, plugins, mobile apps) must call the unauthenticated `/v1/customer-portal/license-keys/{validate,activate,deactivate}` endpoints and must never embed a Polar access token. Server code uses `/v1/license-keys/...` with a token that has `license_keys:write`.
+  - Always send `organization_id`. When the organization sells more than one license-key benefit, also send `benefit_id`.
+  - Only call activate when the benefit has `properties.activations` set. Persist the activation `id` and send it, with identical `conditions`, on every validate.
+  - Treat a `200` from validate as valid and any `404` as invalid. Don't compare `expires_at` yourself; subscription keys have no expiry and are revoked instead.
+  - These operations aren't in the CLI or MCP server. Use the SDK (`polar.licenseKeys.*`, `polar.license_keys.*`, or the `customerPortal` / `customer_portal` equivalents) or HTTP.
+</Visibility>
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [License Keys](/features/benefits/license-keys) | Prefix, expiry, activations, usage limits and rotation |
+| [Validate License Key API (server)](/api-reference/current/license_keys/validate-license-key) | Authenticated endpoint schema |
+| [Validate License Key API (public client)](/api-reference/current/customer_portal/validate-license-key) | Unauthenticated endpoint schema |
+| [Activate License Key API](/api-reference/current/license_keys/activate-license-key) | Create an activation |
+| [Deactivate License Key API](/api-reference/current/license_keys/deactivate-license-key) | Remove an activation |

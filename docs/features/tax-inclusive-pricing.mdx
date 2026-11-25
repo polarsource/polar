@@ -1,78 +1,102 @@
 ---
-title: "Tax Inclusive Pricing"
-description: "Control whether your product prices include or exclude tax at checkout"
+title: "Tax-inclusive pricing"
+description: "Choose whether your prices include tax or have it added at checkout, for your organization or a single price."
 ---
 
-When displaying a price to a customer, there are two common conventions: either the displayed price **already includes tax** (inclusive), or tax is **calculated and added on top** at checkout (exclusive). Polar gives you fine-grained control over this behavior at both the organization level and on individual product prices.
+**Tax behavior** decides whether the price you set already includes tax (inclusive) or has tax added on top at checkout (exclusive). It changes how a price is presented, not how much tax is owed.
 
-## Tax Behavior Options
+## Tax behavior options
 
-There are three options available:
+| Dashboard | API value | Effect |
+| --- | --- | --- |
+| **Location based** | `location` | Polar picks inclusive or exclusive from the customer's country. The default |
+| **Inclusive** | `inclusive` | The price includes tax. Tax is taken out of the total at checkout |
+| **Exclusive** | `exclusive` | The price is before tax. Tax is added on top at checkout |
 
-| Option             | Description                                                                                        |
-| ------------------ | -------------------------------------------------------------------------------------------------- |
-| **Location-based** | Polar automatically picks the right behavior based on the customer's country. This is the default. |
-| **Inclusive**      | The price shown to the customer already includes tax. Tax is extracted from the total at checkout. |
-| **Exclusive**      | The price shown to the customer is before tax. Tax is calculated and added on top at checkout.     |
+With a 20% tax rate:
 
-<Info>
-  **Location-based** is the recommended option for most businesses. It follows
-  common regional conventions — customers in the United States, Canada, and
-  India see exclusive pricing, while customers in the rest of the world (e.g.
-  EU, UK) see inclusive pricing.
-</Info>
+- **Inclusive:** a \$12.00 price costs the customer \$12.00, of which \$2.00 is tax and \$10.00 is net.
+- **Exclusive:** a \$10.00 price costs the customer \$12.00: \$10.00 net plus \$2.00 tax.
 
-### How it affects checkout
+Either way, the tax amount is itemized at checkout and on receipts.
 
-- **Inclusive**: If a product is priced at \$12.00 and the tax rate is 20%, the customer pays \$12.00 — \$2.00 of which is tax and \$10.00 is the net amount.
-- **Exclusive**: If a product is priced at \$10.00 and the tax rate is 20%, the customer pays \$12.00 — \$10.00 net plus \$2.00 tax added on top.
+## Location-based behavior
 
-In both cases the tax amount is fully visible and itemized on the checkout page and on receipts.
+With **Location based**, Polar resolves the behavior at checkout from the customer's billing address. This follows regional conventions:
 
-## Setting the Default Tax Behavior
+| Countries | Behavior |
+| --- | --- |
+| United States, Canada, India | Exclusive: tax is added on top |
+| All other countries | Inclusive: tax is included in the price |
 
-The default tax behavior applies to all products in your organization that don't have a price-level override.
+## Set the default
 
-To change it:
+The default applies to every price that doesn't set its own.
 
-1. Go to your organization's settings.
-2. Find the **Default tax behavior** selector under the **Payments** section.
-3. Choose **Location-based**, **Inclusive**, or **Exclusive**.
-4. The setting is saved automatically.
+- Open **Settings → Payments**
+- Under **Default tax behavior**, choose **Location based**, **Inclusive** or **Exclusive**
 
-<img
-  className="block dark:hidden"
-  src="/assets/features/tax-inclusive-pricing/settings.light.png"
-/>
-<img
-  className="hidden dark:block"
-  src="/assets/features/tax-inclusive-pricing/settings.dark.png"
-/>
+Over the API, set `default_tax_behavior` with [Update Organization](/api-reference/current/organizations/update-organization).
 
-## Location-based Behavior in Detail
+<Note>
+  Dashboard or API only. The CLI and MCP server don't update organization settings.
+</Note>
 
-When the tax behavior is set to **Location-based**, Polar resolves the actual inclusive/exclusive behavior at checkout time based on the customer's billing address:
+## Override a single price
 
-| Countries                    | Behavior                                                    |
-| ---------------------------- | ----------------------------------------------------------- |
-| United States, Canada, India | **Exclusive** — tax is added on top of the listed price     |
-| All other countries          | **Inclusive** — tax is already included in the listed price |
+A price can set its own `tax_behavior`, which wins over the default. The dashboard product form has no control for it, so set it through the API, CLI or your agent. All prices in the same currency on a product must use the same tax behavior.
 
-This follows prevailing regional conventions: North American and Indian consumers generally expect prices before tax, while European and most other international customers expect VAT-inclusive pricing.
+<CodeGroup>
+```typescript TypeScript
+const product = await polar.products.create({
+  name: "Pro",
+  recurring_interval: "month",
+  prices: [
+    { amount_type: "fixed", price_amount: 2000, tax_behavior: "inclusive" },
+  ],
+});
+```
 
-## Relationship with Merchant of Record
+```python Python
+product = polar.products.create(
+    name="Pro",
+    recurring_interval="month",
+    prices=[
+        {"amount_type": "fixed", "price_amount": 2000, "tax_behavior": "inclusive"}
+    ],
+)
+```
 
-As a [Merchant of Record](/merchant-of-record/introduction), we handle the calculation, collection, and remittance of sales taxes globally on your behalf. Tax behavior only controls **how the price is presented** to your customer — it does not affect whether tax is collected or how much is owed.
+```bash cURL
+curl -X POST https://sandbox-api.polar.sh/v1/products/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Pro",
+    "recurring_interval": "month",
+    "prices": [{ "amount_type": "fixed", "price_amount": 2000, "tax_behavior": "inclusive" }]
+  }'
+```
+</CodeGroup>
 
-Regardless of the tax behavior chosen, Polar always:
+From the CLI, pass the same price JSON to `polar products create --prices` or `polar products update <id> --prices`. With an agent, the `products_create` and `products_update` operations take it too.
 
-- Calculates the correct tax amount for the customer's jurisdiction.
-- Displays the tax breakdown clearly on the checkout page.
-- Issues a compliant receipt that itemizes the tax amount.
-- Remits the collected tax to the appropriate tax authorities.
+## Tax and the Merchant of Record
 
-<Info>
-  Changing the tax behavior on a price does **not** change the effective tax
-  rate or your tax obligations. It only changes whether the stated price is
-  presented as tax-included or tax-excluded to the customer.
-</Info>
+As your [Merchant of Record](/merchant-of-record/introduction), Polar calculates, collects and remits sales tax and VAT on every sale. Whatever the tax behavior, Polar:
+
+- Calculates the tax for the customer's jurisdiction.
+- Shows the tax breakdown at checkout.
+- Issues a receipt that itemizes the tax.
+- Remits the tax to the right authorities.
+
+Changing the tax behavior doesn't change the tax rate or your obligations. It only changes whether the stated price includes tax.
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Merchant of Record](/merchant-of-record/introduction) | What Polar handles as the seller of record |
+| [Products](/features/products) | Prices and currencies |
+| [Update Organization API](/api-reference/current/organizations/update-organization) | Set `default_tax_behavior` |

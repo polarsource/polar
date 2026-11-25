@@ -1,219 +1,699 @@
 ---
 title: "Managing subscriptions"
-sidebarTitle: "Managing subscriptions"
-description: "Everything you can do to a subscription after it's been created."
+sidebarTitle: "Manage subscriptions"
+description: "Change a subscription's plan, seats, units, discount, trial or renewal date, or pause, cancel or revoke it, from the dashboard, CLI, an agent or the API."
 ---
 
-Once a subscription exists, you'll want to adjust it over time — change plans, extend trials, tweak seats, or end it. This page covers everything a merchant can do to a subscription, both from the dashboard and through the API.
+After a subscription starts, you can change what the customer pays for and when, or end it. Every change on this page is one call to [Update Subscription](/api-reference/current/subscriptions/update-subscription) (`PATCH /v1/subscriptions/{id}`), except revoking, which has its own endpoint.
 
-All of these actions are available under **Sales → Subscriptions** in the dashboard, and via the [Update Subscription](/api-reference/current/subscriptions/update-subscription) endpoint. Customers can also perform a subset of them from the [Customer Portal](/features/customer-portal/introduction) — which ones is controlled by your [portal settings](/features/customer-portal/settings).
+Customers can make some of these changes themselves from the [Customer Portal](/features/customer-portal/introduction). See [What customers can do](#what-customers-can-do).
+
+The code examples use the sandbox client from the [quickstart overview](/quickstart/overview#prerequisites), on API version `2026-10`. The cURL examples read the subscription ID from `$SUBSCRIPTION_ID`.
+
+<Visibility for="agents">
+  Use the sandbox until the user says otherwise. All changes are `PATCH /v1/subscriptions/{id}`; revoking is `DELETE /v1/subscriptions/{id}`. One PATCH body does one kind of change: product, proration, discount, `trial_end` and metadata together, or seats, units, billing period, cancel, revoke, pause, resume, or `pending_update: null`. `auto` proration needs API version 2027-01, which the MCP server uses but the CLI and the 2026-10 SDKs don't. Each change sends `subscription.updated`; ending one sends `subscription.canceled` or `subscription.revoked`.
+</Visibility>
+
+## Where to find each action in the dashboard
+
+Open **Sales → Subscriptions** and select a subscription. Changes live in two places:
+
+| Where | Action | Shown when |
+| --- | --- | --- |
+| **Update Subscription** → **Plan** | **New product**, **Proration behavior** and **Discount** | Always. **Proration behavior** shows when you pick a new product outside a trial |
+| **Update Subscription** → **Trial** | **Trial End Date**, **Update trial end date**, **End trial now** | The subscription is `trialing` |
+| **Update Subscription** → **Billing Period** | **Billing Period End Date** | The subscription is `active` |
+| **Update Subscription** → **Seats** | **Total seats** and **Proration behavior** | The subscription is seat-based and `active` or `trialing` |
+| Actions menu | **Cancel Subscription** or **Uncancel** | The subscription hasn't ended |
+| Actions menu | **Pause Subscription**, **Cancel Scheduled Pause** or **Resume Now** | Active and not canceling, or paused |
+| **Scheduled update** | **Cancel scheduled change** | A change is scheduled for the next cycle |
+
+The **Plan** tab previews the charge or credit before you confirm. Unit changes and metadata aren't in the dashboard. Use the CLI, an agent or the API.
 
 ## Change the plan
 
-Switch a subscription to a different recurring product — the standard upgrade or downgrade flow.
+Move a subscription to another recurring product to upgrade or downgrade it.
 
-- When the change takes effect depends on the [proration behavior](/features/subscriptions/proration): `invoice` and `prorate` apply the new product immediately, `next_period` schedules a pending update that's only applied at the start of the next billing cycle, and `auto` applies upgrades immediately and schedules downgrades (during a trial, it applies every change immediately).
-- The new product must share the subscription's currency.
-- You can upgrade a non-seat subscription to a seat-based product — the billing customer is auto-promoted to a `team` customer and claims a seat — but you can't switch a seat-based subscription back to a non-seat product. Non-seat → seat changes must apply immediately, so `next_period` proration isn't allowed for that transition.
-- You can't change the plan on a subscription that's already canceled or scheduled to cancel — uncancel first.
-- Plan changes on a **trialing** subscription are allowed. The trial carries over with its end recomputed from the new product's trial length (anchored to the original `trial_start`). If the new product has no trial — or its trial would already have elapsed — the trial ends immediately and a fresh billing cycle starts on the new product.
-- Custom-priced products (pay-what-you-want) aren't valid destinations for a plan change.
-- The current discount carries over to the new product, including plan changes from the [Customer Portal](/features/customer-portal/introduction) and `PATCH /v1/subscriptions/{id}` calls that omit `discount_id`. Set `discount_id` to `null` to remove it. From API version `2027-01`, a scheduled change reports that removal as `pending_update.discount_unset: true`. `discount_id: null` on that object means the current discount stays.
+<Tabs>
+  <Tab title="Dashboard">
+    - Open the subscription
+    - Click **Update Subscription**
+    - On the **Plan** tab, pick the **New product**
+    - Choose a **Proration behavior**
+    - Click **Update Subscription**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar subscriptions update $SUBSCRIPTION_ID \
+      --product-id $PRODUCT_ID --proration-behavior prorate
+    ```
+
+    See [`polar subscriptions update`](/integrate/cli/reference/subscriptions#polar-subscriptions-update).
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Move Jane's (jane@example.com) subscription to the Pro Yearly product in my Polar sandbox organization and prorate the difference on the next invoice.
+    ```
+
+    Uses the `subscriptions_list` and `subscriptions_update` operations of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
 
 <CodeGroup>
-
-```bash cURL
-curl --request PATCH \
-  --url https://api.polar.sh/v1/subscriptions/{subscription_id} \
-  --header 'Authorization: Bearer <TOKEN>' \
-  --header 'Content-Type: application/json' \
-  --data '{
-    "product_id": "<new_product_id>",
-    "proration_behavior": "prorate"
-  }'
+```typescript TypeScript
+const subscription = await polar.subscriptions.update(subscriptionId, {
+  product_id: productId,
+  proration_behavior: "prorate",
+});
 ```
 
-```py Python
-polar.subscriptions.update(
-    "<subscription_id>",
-    product_id="<new_product_id>",
+```python Python
+subscription = polar.subscriptions.update(
+    subscription_id,
+    product_id=product_id,
     proration_behavior="prorate",
 )
 ```
 
+```bash cURL
+curl -X PATCH https://sandbox-api.polar.sh/v1/subscriptions/$SUBSCRIPTION_ID \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{ "product_id": "'"$PRODUCT_ID"'", "proration_behavior": "prorate" }'
+```
 </CodeGroup>
 
-Read more in [Proration](/features/subscriptions/proration).
+The [proration behavior](/features/subscriptions/proration) decides when the change applies and how the difference is billed. `invoice`, `prorate` and `reset` apply it now. `next_period` schedules it for the next cycle. Leave it out to use your organization's default.
 
-## Change the number of seats
+<Note>
+  `auto` (prorate upgrades, schedule downgrades) is available from API version 2027-01. See [Update Subscription](/api-reference/next/subscriptions/update-subscription). The CLI and the `2026-10` SDKs don't accept it. Agents using the MCP server can, because it calls `2027-01`.
+</Note>
 
-For [seat-based subscriptions](/features/seat-based-pricing), update how many seats the customer is paying for. Like plan changes, when the seat count actually takes effect depends on the [proration behavior](/features/subscriptions/proration): immediate with `invoice` or `prorate`, scheduled for the next cycle with `next_period`, and with `auto` immediate for increases and scheduled for decreases (immediate for both during a trial).
+The new product must:
 
-```bash cURL
-curl --request PATCH \
-  --url https://api.polar.sh/v1/subscriptions/{subscription_id} \
-  --header 'Authorization: Bearer <TOKEN>' \
-  --header 'Content-Type: application/json' \
-  --data '{ "seats": 25, "proration_behavior": "invoice" }'
+- Exist in your organization and not be archived.
+- Be recurring, with a price in the subscription's currency.
+- Not use a pay-what-you-want (custom) price.
+
+And the subscription must not be canceled, scheduled to cancel or `trial_ended`. Uncancel it first.
+
+**Seat-based products.** You can move a non-seat subscription to a seat-based product: the customer becomes a `team` customer and takes a seat. That change must apply now, so `next_period` isn't allowed. You can't move a seat-based subscription back to a non-seat product.
+
+**During a trial.** The trial carries over, with its end recalculated from the new product's trial length and the original `trial_start`. If the new product has no trial, or it would already be over, the trial ends and a paid cycle starts on the new product.
+
+**Discounts carry over.** The current discount stays on the new product unless you also send `discount_id: null`.
+
+## Change seats
+
+Change how many seats a [seat-based subscription](/features/seat-based-pricing) pays for. Proration works like a plan change: `next_period` schedules the new count for the next cycle.
+
+<Tabs>
+  <Tab title="Dashboard">
+    - Open the subscription
+    - Click **Update Subscription**
+    - On the **Seats** tab, set **Total seats**
+    - Choose a **Proration behavior**
+    - Click **Update Seats**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar subscriptions update $SUBSCRIPTION_ID --seats 25 --proration-behavior invoice
+    ```
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Set Jane's (jane@example.com) team subscription to 25 seats and charge the difference now.
+    ```
+
+    Uses the `subscriptions_update` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+<CodeGroup>
+```typescript TypeScript
+await polar.subscriptions.update(subscriptionId, {
+  seats: 25,
+  proration_behavior: "invoice",
+});
 ```
 
-## Apply or change a discount
-
-Attach a [discount](/features/discounts) to an active subscription, or remove the current one by setting `discount_id` to `null`. Leaving `discount_id` out keeps the current discount, including when the same request changes the product. The change is applied to the **next** billing cycle — it doesn't retroactively re-bill the current period. From API version `2027-01`, a removal scheduled with the plan change shows up as `pending_update.discount_unset: true`.
-
-```bash cURL
-curl --request PATCH \
-  --url https://api.polar.sh/v1/subscriptions/{subscription_id} \
-  --header 'Authorization: Bearer <TOKEN>' \
-  --header 'Content-Type: application/json' \
-  --data '{ "discount_id": "<discount_id>" }'
+```python Python
+polar.subscriptions.update(subscription_id, seats=25, proration_behavior="invoice")
 ```
 
-## Manage the trial
+```bash cURL
+curl -X PATCH https://sandbox-api.polar.sh/v1/subscriptions/$SUBSCRIPTION_ID \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{ "seats": 25, "proration_behavior": "invoice" }'
+```
+</CodeGroup>
 
-You can add, extend, or end a [trial](/features/subscriptions/trials) on any subscription:
+The count can't go below the price's minimum seats. Seat changes aren't allowed on a canceled, canceling or `trial_ended` subscription.
 
-- **Add or extend** a trial by setting `trial_end` to a future date. If the subscription is currently active, its status switches to `trialing` and the next charge is postponed to the new date.
-- **End a trial immediately** by setting `trial_end` to `"now"`. Polar will charge the first billing cycle and only change the subscription to `active` if payment succeeds. If payment fails, the subscription remains `trialing` with its original trial end.
+## Change units
+
+Change the quantity on a [unit-based subscription](/features/unit-based-pricing). It takes `proration_behavior` like seats.
+
+<Note>Not available in the dashboard. Use the CLI, an agent or the API.</Note>
+
+<Tabs>
+  <Tab title="CLI">
+    ```bash
+    polar subscriptions update $SUBSCRIPTION_ID --units 10
+    ```
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Change Jane's (jane@example.com) subscription to 10 units.
+    ```
+
+    Uses the `subscriptions_update` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+<CodeGroup>
+```typescript TypeScript
+await polar.subscriptions.update(subscriptionId, { units: 10 });
+```
+
+```python Python
+polar.subscriptions.update(subscription_id, units=10)
+```
 
 ```bash cURL
-curl --request PATCH \
-  --url https://api.polar.sh/v1/subscriptions/{subscription_id} \
-  --header 'Authorization: Bearer <TOKEN>' \
-  --header 'Content-Type: application/json' \
-  --data '{ "trial_end": "2026-06-01T00:00:00Z" }'
+curl -X PATCH https://sandbox-api.polar.sh/v1/subscriptions/$SUBSCRIPTION_ID \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{ "units": 10 }'
 ```
+</CodeGroup>
+
+## Apply or remove a discount
+
+Set `discount_id` to attach a [discount](/features/discounts), or to `null` to remove the current one. The change applies from the next billing cycle and doesn't re-bill the current period.
+
+<Tabs>
+  <Tab title="Dashboard">
+    - Open the subscription
+    - Click **Update Subscription**
+    - On the **Plan** tab, pick a **Discount**, or clear the current one
+    - Click **Update Subscription**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar subscriptions update $SUBSCRIPTION_ID --discount-id $DISCOUNT_ID
+
+    # Remove the discount
+    polar subscriptions update $SUBSCRIPTION_ID --discount-id null
+    ```
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Apply the LAUNCH20 discount to Jane's (jane@example.com) subscription.
+    ```
+
+    Uses the `discounts_list` and `subscriptions_update` operations of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+<CodeGroup>
+```typescript TypeScript
+await polar.subscriptions.update(subscriptionId, { discount_id: discountId });
+```
+
+```python Python
+polar.subscriptions.update(subscription_id, discount_id=discount_id)
+```
+
+```bash cURL
+curl -X PATCH https://sandbox-api.polar.sh/v1/subscriptions/$SUBSCRIPTION_ID \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{ "discount_id": "'"$DISCOUNT_ID"'" }'
+```
+</CodeGroup>
+
+Leaving `discount_id` out keeps the current discount, even when the same request changes the product.
+
+<Note>
+  From API version 2027-01, a discount removal scheduled with a `next_period` plan change shows as `pending_update.discount_unset: true`. There, `discount_id: null` on the pending update means the current discount stays.
+</Note>
+
+## Extend or end a trial
+
+Set `trial_end` to a new date to extend a [trial](/features/subscriptions/trials), or to `"now"` to end it and charge the first cycle right away. If that charge fails, the subscription stays `trialing` with its original end date.
+
+You can also start a trial on an `active` subscription through the CLI, an agent or the API. The new `trial_end` must be after the current period end. The subscription moves to `trialing` and the next charge moves to that date.
+
+<Tabs>
+  <Tab title="Dashboard">
+    - Open a trialing subscription
+    - Click **Update Subscription**
+    - On the **Trial** tab, pick a **Trial End Date** and click **Update trial end date**
+    - Or click **End trial now** and confirm with **End Trial**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar subscriptions update $SUBSCRIPTION_ID --trial-end 2026-12-15T00:00:00Z
+
+    # End the trial and charge now
+    polar subscriptions update $SUBSCRIPTION_ID --trial-end now
+    ```
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Extend Jane's (jane@example.com) trial until December 15, 2026.
+    ```
+
+    Uses the `subscriptions_update` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+<CodeGroup>
+```typescript TypeScript
+await polar.subscriptions.update(subscriptionId, {
+  trial_end: "2026-12-15T00:00:00Z",
+});
+```
+
+```python Python
+polar.subscriptions.update(subscription_id, trial_end="2026-12-15T00:00:00Z")
+```
+
+```bash cURL
+curl -X PATCH https://sandbox-api.polar.sh/v1/subscriptions/$SUBSCRIPTION_ID \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{ "trial_end": "2026-12-15T00:00:00Z" }'
+```
+</CodeGroup>
 
 ## Reschedule the next renewal
 
-If you need to move a subscription's renewal date — for example, to align several subscriptions on the same day, or to extend the current period as a goodwill gesture — you can set a new `current_billing_period_end`. The new date has to be in the future, and this operation isn't available on revoked subscriptions.
+Set `current_billing_period_end` to move the renewal date, for example to line several subscriptions up on the same day or to give a customer extra time. The new date can be earlier or later than the current period end, as long as it's in the future. The subscription must be `active`.
 
-If the subscription is scheduled to cancel at period end, its `ends_at` moves with the new date: it ends then instead of on the original period end.
+If the subscription is set to cancel at period end, it ends on the new date instead.
+
+<Tabs>
+  <Tab title="Dashboard">
+    - Open an active subscription
+    - Click **Update Subscription**
+    - On the **Billing Period** tab, pick a **Billing Period End Date**
+    - Click **Update Billing Period**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar subscriptions update $SUBSCRIPTION_ID \
+      --current-billing-period-end 2027-01-15T00:00:00Z
+    ```
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Move the next renewal of Jane's (jane@example.com) subscription to January 15, 2027.
+    ```
+
+    Uses the `subscriptions_update` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+<CodeGroup>
+```typescript TypeScript
+await polar.subscriptions.update(subscriptionId, {
+  current_billing_period_end: "2027-01-15T00:00:00Z",
+});
+```
+
+```python Python
+polar.subscriptions.update(
+    subscription_id,
+    current_billing_period_end="2027-01-15T00:00:00Z",
+)
+```
 
 ```bash cURL
-curl --request PATCH \
-  --url https://api.polar.sh/v1/subscriptions/{subscription_id} \
-  --header 'Authorization: Bearer <TOKEN>' \
-  --header 'Content-Type: application/json' \
-  --data '{ "current_billing_period_end": "2026-07-15T00:00:00Z" }'
+curl -X PATCH https://sandbox-api.polar.sh/v1/subscriptions/$SUBSCRIPTION_ID \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{ "current_billing_period_end": "2027-01-15T00:00:00Z" }'
 ```
+</CodeGroup>
+
+## Clear a scheduled change
+
+A `next_period` change waits in the subscription's `pending_update` until the next cycle. Any new update replaces it. To drop it without making another change, set `pending_update` to `null`.
+
+<Tabs>
+  <Tab title="Dashboard">
+    - Open the subscription
+    - Under **Scheduled update**, click **Cancel scheduled change**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar subscriptions update $SUBSCRIPTION_ID --pending-update null
+    ```
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Cancel the scheduled plan change on Jane's (jane@example.com) subscription.
+    ```
+
+    Uses the `subscriptions_update` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+<CodeGroup>
+```typescript TypeScript
+await polar.subscriptions.update(subscriptionId, { pending_update: null });
+```
+
+```python Python
+polar.subscriptions.update(subscription_id, pending_update=None)
+```
+
+```bash cURL
+curl -X PATCH https://sandbox-api.polar.sh/v1/subscriptions/$SUBSCRIPTION_ID \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{ "pending_update": null }'
+```
+</CodeGroup>
+
+## Update metadata
+
+Store your own key-value data on a subscription with `metadata`. It doesn't change billing.
+
+<Note>Not available in the dashboard. Use the CLI, an agent or the API.</Note>
+
+<CodeGroup>
+```typescript TypeScript
+await polar.subscriptions.update(subscriptionId, {
+  metadata: { workspace_id: "ws_123" },
+});
+```
+
+```python Python
+polar.subscriptions.update(subscription_id, metadata={"workspace_id": "ws_123"})
+```
+
+```bash cURL
+curl -X PATCH https://sandbox-api.polar.sh/v1/subscriptions/$SUBSCRIPTION_ID \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{ "metadata": { "workspace_id": "ws_123" } }'
+```
+</CodeGroup>
+
+From the CLI: `polar subscriptions update $SUBSCRIPTION_ID --metadata '{"workspace_id": "ws_123"}'`.
 
 ## Pause and resume
 
-Pausing stops billing without ending the subscription. Use it for seasonal plans or account "freezes", where a customer steps away for a while and comes back to the same subscription and payment method.
+Pausing stops billing without ending the subscription. The customer keeps the same subscription and payment method for when they come back.
 
 ### Pause at period end
 
-Calling pause sets `pause_at_period_end = true`. The subscription stays **active** and keeps its benefits until its `current_period_end`, then it moves to the `paused` status: benefits are revoked and no further orders are generated. Pausing never charges the customer and never takes effect mid-period.
+Setting `pause_at_period_end` keeps the subscription `active`, with its benefits, until `current_period_end`. Then it moves to `paused`: benefits are revoked and no orders are created. Pausing never charges the customer and never takes effect mid-period.
 
-Pass an optional `resumes_at` date to schedule an automatic resume. It has to be after the current period end. Leave it out to pause indefinitely and resume by hand later.
+Pass `resumes_at` to resume automatically on that date. It must be after the current period end. Leave it out to pause until you resume by hand.
 
-```bash cURL
-curl --request PATCH \
-  --url https://api.polar.sh/v1/subscriptions/{subscription_id} \
-  --header 'Authorization: Bearer <TOKEN>' \
-  --header 'Content-Type: application/json' \
-  --data '{
-    "pause_at_period_end": true,
-    "resumes_at": "2026-11-01T00:00:00Z"
-  }'
+You can only pause an `active` subscription that isn't set to cancel or already set to pause.
+
+<Tabs>
+  <Tab title="Dashboard">
+    - Open the subscription
+    - In the actions menu, click **Pause Subscription**
+    - Optionally pick a **Resume date (optional)**
+    - Click **Pause Subscription**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar subscriptions update $SUBSCRIPTION_ID \
+      --pause-at-period-end --resumes-at 2027-03-01T00:00:00Z
+    ```
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Pause Jane's (jane@example.com) subscription at the end of this period and resume it on March 1, 2027.
+    ```
+
+    Uses the `subscriptions_update` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+<CodeGroup>
+```typescript TypeScript
+await polar.subscriptions.update(subscriptionId, {
+  pause_at_period_end: true,
+  resumes_at: "2027-03-01T00:00:00Z",
+});
 ```
 
-You can only pause a subscription that's active, with no pending cancellation or pause. To cancel a scheduled pause before it takes effect, set `pause_at_period_end` back to `false`.
+```python Python
+polar.subscriptions.update(
+    subscription_id,
+    pause_at_period_end=True,
+    resumes_at="2027-03-01T00:00:00Z",
+)
+```
 
 ```bash cURL
-curl --request PATCH \
-  --url https://api.polar.sh/v1/subscriptions/{subscription_id} \
-  --header 'Authorization: Bearer <TOKEN>' \
-  --header 'Content-Type: application/json' \
-  --data '{ "pause_at_period_end": false }'
+curl -X PATCH https://sandbox-api.polar.sh/v1/subscriptions/$SUBSCRIPTION_ID \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{ "pause_at_period_end": true, "resumes_at": "2027-03-01T00:00:00Z" }'
 ```
+</CodeGroup>
+
+To cancel a scheduled pause before it takes effect, set `pause_at_period_end` to `false`. In the dashboard, click **Cancel Scheduled Pause** in the actions menu. From the CLI, pass `--data '{"pause_at_period_end": false}'`.
 
 ### Resume
 
-Resuming a paused subscription takes effect **right now**: status moves back to `active`, a new billing period starts from the resume date, and the customer is charged immediately. The payment method stays on file, so there's no second checkout. An automatic resume on the `resumes_at` date does exactly the same thing.
+Resuming takes effect now: the subscription moves back to `active`, a new billing period starts today and the customer is charged right away with the saved payment method. An automatic resume on `resumes_at` does the same.
 
-```bash cURL
-curl --request PATCH \
-  --url https://api.polar.sh/v1/subscriptions/{subscription_id} \
-  --header 'Authorization: Bearer <TOKEN>' \
-  --header 'Content-Type: application/json' \
-  --data '{ "resume": true }'
+<Tabs>
+  <Tab title="Dashboard">
+    - Open a paused subscription
+    - In the actions menu, click **Resume Now**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar subscriptions update $SUBSCRIPTION_ID --resume true
+    ```
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Resume Jane's (jane@example.com) paused subscription now.
+    ```
+
+    Uses the `subscriptions_update` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+<CodeGroup>
+```typescript TypeScript
+await polar.subscriptions.update(subscriptionId, { resume: true });
 ```
 
-## Cancel or revoke
+```python Python
+polar.subscriptions.update(subscription_id, resume=True)
+```
 
-Polar distinguishes between **canceling** and **revoking** a subscription. Both end the customer's access eventually — the difference is when.
+```bash cURL
+curl -X PATCH https://sandbox-api.polar.sh/v1/subscriptions/$SUBSCRIPTION_ID \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{ "resume": true }'
+```
+</CodeGroup>
+
+## Cancel, uncancel or revoke
+
+Both end the subscription. The difference is when.
+
+- **Cancel at period end** keeps the subscription `active`, with its benefits, until `current_period_end`. No more renewals are created. You or the customer can uncancel until then.
+- **Revoke** ends it now: the status moves to `canceled`, `ended_at` is set and benefits are revoked. It can't be undone.
 
 ### Cancel at period end
 
-Calling cancel (or toggling "Cancel at period end" in the dashboard) sets `cancel_at_period_end = true` and schedules the subscription to end on its `current_period_end`. Until then:
+This is the option customers use from the [Customer Portal](/features/customer-portal/introduction).
 
-- The subscription stays **active** and the customer keeps their benefits — they paid for that period.
-- No further orders are generated after the current one.
-- You can **uncancel** at any time before the end date, which reverts the scheduled cancellation.
+<Tabs>
+  <Tab title="Dashboard">
+    - Open the subscription
+    - In the actions menu, click **Cancel Subscription**
+    - Set **Cancellation Date** to **End of current period**
+    - Optionally set **Customer Feedback** and **Comment**
+    - Click **Cancel Subscription**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar subscriptions update $SUBSCRIPTION_ID \
+      --cancel-at-period-end --customer-cancellation-reason too_expensive
+    ```
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Cancel Jane's (jane@example.com) subscription at the end of the current period. She said it's too expensive.
+    ```
 
-This is the gentler option and the one customers trigger themselves from the [Customer Portal](/features/customer-portal/introduction). It's also what satisfies the "cancel the way you signed up" requirement in jurisdictions like California's [Automatic Renewal Law](https://oag.ca.gov/consumers/auto-renewing-subscriptions).
+    Uses the `subscriptions_update` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
 
-```bash cURL
-curl --request PATCH \
-  --url https://api.polar.sh/v1/subscriptions/{subscription_id} \
-  --header 'Authorization: Bearer <TOKEN>' \
-  --header 'Content-Type: application/json' \
-  --data '{
-    "cancel_at_period_end": true,
-    "customer_cancellation_reason": "too_expensive"
-  }'
+<CodeGroup>
+```typescript TypeScript
+await polar.subscriptions.update(subscriptionId, {
+  cancel_at_period_end: true,
+  customer_cancellation_reason: "too_expensive",
+});
 ```
 
-You can optionally record a **cancellation reason** and **comment** — useful for tracking churn. The supported reasons are `too_expensive`, `missing_features`, `switched_service`, `unused`, `customer_service`, `low_quality`, `too_complex`, and `other`.
-
-<Note>
-  Only set the cancellation reason and comment when they actually come from
-  the customer (for example, from a cancellation survey or a support
-  conversation). Customers can see their `customer_cancellation_comment` in
-  their purchase history, so don't put internal notes there.
-</Note>
-
-### Revoke immediately
-
-Revoking ends the subscription **right now**: status moves to `canceled`, `ended_at` is set to the current time, and all benefits are revoked. There's no refund — if you need to issue one, do it separately from [Refunds](/features/refunds).
-
-Use this when access needs to stop immediately — a terms-of-service violation, a chargeback, or an explicit customer request.
+```python Python
+polar.subscriptions.update(
+    subscription_id,
+    cancel_at_period_end=True,
+    customer_cancellation_reason="too_expensive",
+)
+```
 
 ```bash cURL
-curl --request DELETE \
-  --url https://api.polar.sh/v1/subscriptions/{subscription_id} \
-  --header 'Authorization: Bearer <TOKEN>'
+curl -X PATCH https://sandbox-api.polar.sh/v1/subscriptions/$SUBSCRIPTION_ID \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{ "cancel_at_period_end": true, "customer_cancellation_reason": "too_expensive" }'
 ```
+</CodeGroup>
+
+`customer_cancellation_reason` is one of `too_expensive`, `missing_features`, `switched_service`, `unused`, `customer_service`, `low_quality`, `too_complex` or `other`. Add free text with `customer_cancellation_comment`.
 
 <Warning>
-  Revoking is irreversible. If you want the option to reverse the decision,
-  cancel at period end instead.
+  Only set the reason and comment when they come from the customer, for example from a cancellation survey or a support conversation. Customers can see `customer_cancellation_comment` in their purchase history, so don't put internal notes there.
 </Warning>
 
 ### Uncancel
 
-If a subscription is set to cancel at period end and hasn't ended yet, you (or the customer) can reverse the decision. The `cancel_at_period_end` flag is cleared, `ends_at` and `canceled_at` are unset, and the subscription goes back to renewing normally.
+Reverse a cancellation at period end before the subscription ends. `cancel_at_period_end` is cleared, `ends_at` and `canceled_at` are unset, and the subscription renews as before. You can't uncancel a subscription that has ended.
 
-```bash cURL
-curl --request PATCH \
-  --url https://api.polar.sh/v1/subscriptions/{subscription_id} \
-  --header 'Authorization: Bearer <TOKEN>' \
-  --header 'Content-Type: application/json' \
-  --data '{ "cancel_at_period_end": false }'
+<Tabs>
+  <Tab title="Dashboard">
+    - Open the subscription
+    - In the actions menu, click **Uncancel**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar subscriptions update $SUBSCRIPTION_ID --data '{"cancel_at_period_end": false}'
+    ```
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Undo the scheduled cancellation on Jane's (jane@example.com) subscription.
+    ```
+
+    Uses the `subscriptions_update` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+<CodeGroup>
+```typescript TypeScript
+await polar.subscriptions.update(subscriptionId, { cancel_at_period_end: false });
 ```
 
-Uncancelling is not possible once the subscription has actually ended.
+```python Python
+polar.subscriptions.update(subscription_id, cancel_at_period_end=False)
+```
+
+```bash cURL
+curl -X PATCH https://sandbox-api.polar.sh/v1/subscriptions/$SUBSCRIPTION_ID \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{ "cancel_at_period_end": false }'
+```
+</CodeGroup>
+
+### Revoke now
+
+Use this when access must stop now: a terms-of-service violation, a chargeback, or a customer asking to stop immediately. Revoking doesn't refund anything. Issue a [refund](/features/refunds) separately if you need one.
+
+<Warning>
+  Revoking can't be undone. Cancel at period end if you might want to reverse it.
+</Warning>
+
+<Tabs>
+  <Tab title="Dashboard">
+    - Open the subscription
+    - In the actions menu, click **Cancel Subscription**
+    - Set **Cancellation Date** to **Immediately**
+    - Click **Cancel Subscription**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar subscriptions revoke $SUBSCRIPTION_ID
+    ```
+
+    The CLI asks for confirmation. Pass `--confirm` to skip it in scripts.
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Revoke Jane's (jane@example.com) subscription now.
+    ```
+
+    Uses the `subscriptions_revoke` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+<CodeGroup>
+```typescript TypeScript
+await polar.subscriptions.revoke(subscriptionId);
+```
+
+```python Python
+polar.subscriptions.revoke(subscription_id)
+```
+
+```bash cURL
+curl -X DELETE https://sandbox-api.polar.sh/v1/subscriptions/$SUBSCRIPTION_ID \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10"
+```
+</CodeGroup>
+
+To record a cancellation reason when revoking, use `PATCH` with `{ "revoke": true, "customer_cancellation_reason": "..." }` instead.
 
 ## What customers can do
 
-The [Customer Portal](/features/customer-portal/introduction) exposes a subset of these actions to the customer, gated by your [portal settings](/features/customer-portal/settings):
+The [Customer Portal](/features/customer-portal/introduction) offers part of this page to customers. Some actions depend on your [portal settings](/features/customer-portal/settings) under **Settings → Customer Portal**:
 
-- **Cancel at period end** is always available — this is the self-service guarantee the portal provides.
-- **Update the default payment method** is always available — the primary way customers recover from a failed renewal.
-- **Change plan** is available when **Enable subscription plan changes** is on.
-- **Change seats** (for seat-based subscriptions) is available when **Enable subscription seat management** is on.
-- **Pause and resume** is available when **Enable subscription pause** is on.
+| Action | Available |
+| --- | --- |
+| Cancel at period end and uncancel | Always |
+| Update the payment method | Always |
+| Change plan | With **Enable subscription plan changes**. Only to products with `public` visibility |
+| Change seats | With **Enable subscription seat management** |
+| Change units | With **Enable subscription unit changes** |
+| Pause and resume | With **Enable subscription pausing** |
+| Add billing details to a `trial_ended` subscription and restart it | Always. See [Trials](/features/subscriptions/trials#card-up-front-or-card-less) |
 
-Everything else on this page is merchant-only: revoking a subscription, applying or changing a discount, extending or ending a trial, and rescheduling the renewal date are not exposed to customers.
+Revoking, discounts, trial changes, rescheduling the renewal and metadata are for you only.
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Orders & subscriptions](/concepts/orders-and-subscriptions) | Statuses and when benefits are revoked |
+| [Proration](/features/subscriptions/proration) | How plan, seat and unit changes are billed |
+| [Trials](/features/subscriptions/trials) | Trial setup, reminders and `trial_ended` |
+| [Failed payments](/features/subscriptions/failed-payments) | Retries and recovery for `past_due` subscriptions |
+| [`polar subscriptions`](/integrate/cli/reference/subscriptions) | CLI reference |
+| [Update Subscription](/api-reference/current/subscriptions/update-subscription) · [Revoke Subscription](/api-reference/current/subscriptions/revoke-subscription) | API reference |

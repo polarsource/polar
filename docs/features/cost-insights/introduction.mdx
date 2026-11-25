@@ -1,59 +1,245 @@
 ---
-title: Introduction to Cost Insights
-sidebarTitle: Introduction
-description: Track costs, profits, and customer lifetime value with event-based cost tracking
+title: "Cost insights"
+description: "Record what each event costs you with _cost and _llm metadata, group costs into traces, and read costs, margins and cost drivers per customer."
 ---
 
-<img className="block dark:hidden" src="/assets/features/cost/ingestion.light.png" />
-<img className="hidden dark:block" src="/assets/features/cost/ingestion.dark.png" />
+**Cost insights** puts what you spend next to what you earn. Attach a cost to the events you already send, and Polar reports costs, gross margin and cashflow, overall and per customer. Revenue comes from your orders. Costs come from your events.
 
-Cost Insights is a powerful feature that enables you to calculate business-centric metrics like Costs, Profits, and Customer Lifetime Value (LTV) by annotating your events with cost data.
+Typical costs: LLM calls, GPU minutes, storage, email and SMS sends.
 
-## Overview
+The examples on this page use the sandbox and API version `2026-10`. See [Usage](/concepts/usage) for how events work.
 
-While Polar automatically tracks revenue from orders and subscriptions, Cost Insights allows you to track the costs associated with delivering your product or service. By combining revenue and cost data, you can gain deep insights into profitability on a per-customer basis.
+## Cost events
 
-## How It Works
+Add a `_cost` object to an event's `metadata`. For LLM calls, add `_llm` too, so costs can be broken down by model and vendor.
 
-Cost Insights works in three simple steps:
+<CodeGroup>
+```typescript TypeScript
+await polar.events.ingest({
+  events: [
+    {
+      name: "ai_usage",
+      external_customer_id: "user_123",
+      metadata: {
+        total_tokens: 77,
+        _cost: { amount: 0.0014, currency: "usd" },
+        _llm: {
+          vendor: "openai",
+          model: "gpt-4.1-nano",
+          input_tokens: 58,
+          output_tokens: 19,
+          total_tokens: 77,
+        },
+      },
+    },
+  ],
+});
+```
 
-1. **Ingest events with cost data**: Add a `_cost` property to events metadata when ingesting them through Polar's Event Ingestion API
-2. **Automatic aggregation**: Polar automatically aggregates costs alongside your revenue data
-3. **Query and analyze**: Use the Metrics API, or the Polar Dashboard to retrieve costs, profits, and customer LTV
+```python Python
+polar.events.ingest(
+    events=[
+        {
+            "name": "ai_usage",
+            "external_customer_id": "user_123",
+            "metadata": {
+                "total_tokens": 77,
+                "_cost": {"amount": 0.0014, "currency": "usd"},
+                "_llm": {
+                    "vendor": "openai",
+                    "model": "gpt-4.1-nano",
+                    "input_tokens": 58,
+                    "output_tokens": 19,
+                    "total_tokens": 77,
+                },
+            },
+        }
+    ]
+)
+```
 
-### Quick Example
+```bash cURL
+curl -X POST https://sandbox-api.polar.sh/v1/events/ingest \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "events": [
+      {
+        "name": "ai_usage",
+        "external_customer_id": "user_123",
+        "metadata": {
+          "total_tokens": 77,
+          "_cost": { "amount": 0.0014, "currency": "usd" },
+          "_llm": {
+            "vendor": "openai",
+            "model": "gpt-4.1-nano",
+            "input_tokens": 58,
+            "output_tokens": 19,
+            "total_tokens": 77
+          }
+        }
+      }
+    ]
+  }'
+```
+</CodeGroup>
+
+In production, send events with `polar.metering()`. See [Send events](/features/usage-based-billing/event-ingestion#send-events-in-production).
+
+### `_cost`
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `amount` | Yes | The cost **in cents**, as a decimal. Up to 17 digits, 12 after the decimal point. |
+| `currency` | Yes | `usd`. No other currency is supported. |
+
+The amount is in cents, not dollars: `150` is $1.50, and `0.0014` is $0.000014. Fractions of a cent are kept, so you can record the cost of a single API call.
+
+### `_llm`
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `vendor` | Yes | The provider, such as `openai` |
+| `model` | Yes | The model, such as `gpt-4.1-nano` |
+| `input_tokens` | Yes | Input tokens |
+| `output_tokens` | Yes | Output tokens |
+| `total_tokens` | Yes | Total tokens |
+| `cached_input_tokens` | No | Input tokens served from cache |
+| `prompt` | No | The prompt |
+| `response` | No | The response |
+
+These two are the only nested objects metadata accepts. A meter can read inside them with a dot path, like `_cost.amount` or `_llm.total_tokens`.
+
+The [LLM strategy](/features/usage-based-billing/ingestion-strategies/llm-strategy) adds `_llm` for you, and `_cost` when you give it a `.cost()` function. Other [ingestion strategies](/features/usage-based-billing/ingestion-strategies/ingestion-strategy) accept `.cost()` too.
+
+## Traces
+
+One user action often costs several things: an agent run makes three LLM calls and a web search. Send each as an event, and link them with `parent_id` so their costs add up under one **trace**.
+
+1. Send the root event with your own `external_id`, such as a request ID.
+2. Send each child with `parent_id` set to that `external_id`, or to the root event's Polar ID.
 
 ```json
 {
   "events": [
     {
-      "name": "llm.inference",
+      "name": "agent_run",
       "external_customer_id": "user_123",
-      "metadata": {
-        "_cost": {
-          "amount": 0.025, // $0.00025 in cents
-          "currency": "usd"
-        }
-      }
+      "external_id": "req_8f2c"
+    },
+    {
+      "name": "ai_usage",
+      "external_customer_id": "user_123",
+      "parent_id": "req_8f2c",
+      "metadata": { "_cost": { "amount": 0.0014, "currency": "usd" } }
+    },
+    {
+      "name": "web_search",
+      "external_customer_id": "user_123",
+      "parent_id": "req_8f2c",
+      "metadata": { "_cost": { "amount": 0.5, "currency": "usd" } }
     }
   ]
 }
 ```
 
-## Common Use Cases
+Children can arrive before their parent. Polar holds them until the parent arrives. If it never does, they aren't processed, so always send the root.
 
-- **AI/LLM Applications**: Track the cost of API calls to OpenAI, Anthropic, or other LLM providers
-- **Infrastructure Costs**: Monitor compute, storage, or bandwidth costs per customer
-- **Third-Party Services**: Track costs from email providers, SMS gateways, or other external services
-- **Customer Profitability**: Calculate profit margins and LTV for each customer
+In **Analytics → Costs**, the event type page for `agent_run` adds up the costs of its children, so you see what a whole run costs.
 
-## Documentation
+If you trace with OpenTelemetry, the `PolarTraceExporter` sends spans as events with the parent links already set. See [OpenTelemetry](/features/usage-based-billing/ingestion-strategies/ingestion-strategy#opentelemetry).
 
-<CardGroup cols={2}>
-  <Card title="Cost Events" icon="chart-line" href="/features/cost-insights/cost-events">
-    Learn how to track costs by adding the `_cost` property to your events metadata
-  </Card>
-  <Card title="Cost Metrics" icon="chart-bar" href="/features/analytics">
-    Query and analyze costs, profits, and customer lifetime value
-  </Card>
-</CardGroup>
+## Where costs show up
+
+<Note>
+  Dashboard only, except the metrics below, which the API, CLI and MCP server can read.
+</Note>
+
+**Analytics → Costs** has two tabs:
+
+- **Overview**: the cost metrics as charts, then:
+  - **Breakdown**: event types ranked by total spend in the period.
+  - **Changes**: the biggest cost movers compared to the previous period.
+  - **By Customer**: customers ranked by total cost.
+  - **Anomalies**: individual traces whose total cost is at or above the 99th percentile for their event type.
+- **LLM**: costs from events with `_llm`, ranked **By Model**, **By Vendor** and **By Customer**.
+
+Select an event type to see its **Occurrences**, **Total Cost**, **Average Cost** and **Cost per Customer** over time.
+
+**Analytics → Events** has a **Cost** filter to show only events that carry a cost.
+
+**Customers → Cost Drivers** ranks customers by their share of your costs. See [Customer analytics](/features/customer-analytics#cost-drivers).
+
+## Cost metrics
+
+These metrics come from your `_cost` data and your revenue. Amounts are in cents.
+
+| Slug | Name | Definition |
+| --- | --- | --- |
+| `costs` | Costs | Sum of `_cost.amount` on your events in each period |
+| `cumulative_costs` | Cumulative Costs | Running total of `costs` |
+| `cost_per_user` | Cost Per User | Costs divided by active subscriptions |
+| `gross_margin` | Gross Margin | Cumulative revenue minus cumulative costs |
+| `gross_margin_percentage` | Gross Margin % | Gross margin as a share of cumulative revenue |
+| `cashflow` | Cashflow | Revenue minus costs in each period |
+| `active_user_by_event` | Active Users by Event | Distinct customers who sent events in the period |
+
+Lifetime value (`ltv`) also subtracts cost per user from revenue per user. See [Metrics](/features/analytics) for every metric.
+
+<CodeGroup>
+```typescript TypeScript
+const metrics = await polar.metrics.get({
+  start_date: "2026-11-01",
+  end_date: "2026-11-30",
+  interval: "day",
+  metrics: ["costs", "gross_margin", "cashflow"],
+});
+```
+
+```python Python
+metrics = polar.metrics.get(
+    start_date="2026-11-01",
+    end_date="2026-11-30",
+    interval="day",
+    metrics=["costs", "gross_margin", "cashflow"],
+)
+```
+
+```bash cURL
+curl -G https://sandbox-api.polar.sh/v1/metrics/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  --data-urlencode "start_date=2026-11-01" \
+  --data-urlencode "end_date=2026-11-30" \
+  --data-urlencode "interval=day" \
+  --data-urlencode "metrics=costs" \
+  --data-urlencode "metrics=gross_margin" \
+  --data-urlencode "metrics=cashflow"
+```
+</CodeGroup>
+
+Pass `customer_id` to get one customer's costs and margin.
+
+## From the CLI or your agent
+
+Costs are sent with events, from your application. Reading them works everywhere:
+
+| Task | CLI | MCP operation |
+| --- | --- | --- |
+| Read cost metrics | `polar metrics get --start-date 2026-11-01 --end-date 2026-11-30 --interval day --metrics '["costs","gross_margin"]'` | `metrics_get` |
+| Read one event and its `_cost` | `polar events get <id>` | `events_get` |
+
+```text Prompt
+What were my costs and gross margin in my Polar sandbox organization last month?
+```
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Send events](/features/usage-based-billing/event-ingestion) | Event fields, limits and `polar.metering()` |
+| [Bill for LLM tokens](/features/usage-based-billing/ingestion-strategies/llm-strategy) | Send token usage and cost for every LLM call |
+| [Customer analytics](/features/customer-analytics) | Top customers, at-risk subscriptions and cost drivers |
+| [Metrics](/features/analytics) | Every metric and how to read it |
+| [Get Metrics API](/api-reference/current/metrics/get-metrics) | API reference |

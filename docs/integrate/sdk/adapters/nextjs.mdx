@@ -1,6 +1,6 @@
 ---
 title: "Next.js"
-description: "Payments and Checkouts made dead simple with Next.js"
+description: "Add checkout, Customer Portal and verified webhook routes to a Next.js app with the @polar-sh/nextjs adapter, including every checkout query parameter."
 ---
 
 import WebhookHandlers from "/snippets/adapters/webhook-handlers.mdx";
@@ -13,7 +13,7 @@ import WebhookHandlers from "/snippets/adapters/webhook-handlers.mdx";
 
 ## Installation
 
-Install the required Polar packages using the following command:
+Install the adapter:
 
 <Tabs>
   <Tab title="npm">
@@ -42,7 +42,7 @@ The adapter works with App Router route handlers on Next.js 15 and 16.
 
 ## Checkout
 
-Create a Checkout handler which takes care of redirections.
+Create a checkout route. It creates a Checkout Session from the query parameters and redirects the customer to it.
 
 ```typescript icon="square-js" checkout/route.ts
 import { Checkout } from "@polar-sh/nextjs";
@@ -58,9 +58,9 @@ export const GET = Checkout({
 
 `successUrl` and `returnUrl` must be absolute URLs. The handler appends `checkout_id={CHECKOUT_ID}` to `successUrl`; pass `includeCheckoutId: false` to turn this off.
 
-### Query Params
+### Query parameters
 
-Pass query params to this route.
+The route accepts these query parameters:
 
 - products `?products=123` - Repeat the parameter for multiple products: `?products=123&products=456`
 - customer_id (optional) `?products=123&customer_id=xxx`
@@ -81,7 +81,7 @@ The handler returns `400` when `products` is missing.
 
 ## Customer Portal
 
-Create a customer portal where your customer can view orders and subscriptions.
+Create a route that signs the customer in to the Customer Portal, where they can view orders and manage subscriptions.
 
 ```typescript icon="square-js" portal/route.ts
 import { CustomerPortal } from "@polar-sh/nextjs";
@@ -99,7 +99,7 @@ If you identify customers by your own user ID, pass `getExternalCustomerId` inst
 
 ## Webhooks
 
-A simple utility which verifies the signature of incoming webhook payloads with your webhook secret.
+The webhook handler verifies the signature of each request with your webhook secret, then calls your handlers. It acknowledges the request for you. Test it locally with `polar webhook listen`. See [Webhooks on your machine](/integrate/cli/webhooks).
 
 ```typescript icon="square-js" api/webhook/polar/route.ts
 import { Webhooks } from "@polar-sh/nextjs";
@@ -113,8 +113,8 @@ export const POST = Webhooks({
 });
 ```
 
-### Payload Handlers
+### Payload handlers
 
-The Webhook handler also supports granular handlers for easy integration.
+The webhook handler also takes one handler per event type.
 
 <WebhookHandlers />

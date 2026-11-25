@@ -156,8 +156,52 @@ Use `<Tabs>` in the order **Dashboard, CLI, Prompt**, matching "a click, command
 - **Prompt:** the MCP server doesn't expose one tool per operation. Agents use `search` and
   `execute` to call operations named `{resource}_{action}` (e.g. `customers_get_state_external`).
   Show a plain-language prompt the reader can paste, and name the operation it uses. Take operation
-  names from the table in `docs/integrate/mcp.mdx`.
-- If an action exists in only one surface, show that one and don't invent the others.
+  names from `docs/agents/mcp-operations.mdx`. The MCP server calls API version `2027-01`, so an
+  operation's payload follows the `2027-01` schema.
+- If an action exists in only one surface, show that one and don't invent the others. Say so in one
+  line instead of leaving tabs empty: `<Note>API only. Not available from the CLI or MCP server.</Note>`
+  or `<Note>Dashboard only.</Note>`.
+- When a step asks for an access token, show `polar auth token` next to the dashboard steps.
+
+#### Surface coverage
+
+The CLI group and MCP prefix are the same name: `customers_get_state_external` is
+`polar customers get_state_external`. These have **no CLI command and no MCP operation**, so show
+the API, SDK or dashboard only:
+
+- Creating or updating checkout sessions, and creating customer sessions (portal links).
+- Ingesting or listing events.
+- Creating subscriptions. Creating, finalizing or exporting orders.
+- Updating the organization: every Settings toggle, embed hosts, localization, tax behavior.
+- Uploading files. Validating, activating or deactivating license keys.
+- Disputes (public API only).
+- Balance, payouts, payout accounts, transactions, taxes, members, SSO, domains, migrations
+  (dashboard only).
+
+CLI only: `polar webhook listen|trigger`, `polar auth token`, `polar agent setup`. MCP only (API
+`2027-01`): `benefit_grants_create|update|revoke`, `customer_meters_reverse_credit`,
+`webhooks_get_external_webhook_endpoint`.
+
+### API versions and gated features
+
+- Code examples use the current version, `2026-10`.
+- A feature only in `2027-01` gets `<Note>Available from API version 2027-01.</Note>` and links
+  `/api-reference/next/...`. Never hard-code `/api-reference/2027-01/`.
+- A preview feature (granted per organization, e.g. `reset` proration, off-session charges, the
+  Slack benefit) gets a `<Note>` saying it's in preview and how to request access.
+- Don't document features behind an internal flag that isn't offered to merchants (config as code,
+  catalog versions, subscription bulk update, `polar config`).
+- Don't state a limit, policy or number you can't find in the code or confirm with the owner. Leave
+  it out rather than guess.
+
+### Product names and labels
+
+- Title Case for product nouns: Checkout Link, Checkout Session, Customer Portal, Merchant of
+  Record. Lowercase "checkout", "customer state", "sandbox".
+- Copy dashboard labels from the components in `clients/apps/web/src/components/**`, not from
+  memory. Settings paths look like **Settings → Subscriptions**.
+- No screenshots, videos or embedded widgets. Describe the UI in text: steps with bold labels or a
+  field table (UI label | API field | default).
 - For API code examples, keep the TypeScript/Python/cURL `<CodeGroup>`; add a CLI command after it
   when there's a one-line equivalent.
 - On feature and concept pages, a `## From the CLI or your agent` section listing the relevant

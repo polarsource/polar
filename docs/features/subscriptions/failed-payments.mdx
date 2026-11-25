@@ -1,62 +1,144 @@
 ---
 title: "Recovering failed payments"
 sidebarTitle: "Failed payments"
-description: "How Polar retries failed renewals before revoking a subscription."
+description: "What happens when a renewal payment fails: the past_due status, Polar's retry schedule, the benefit grace period, and how you and your customers recover."
 ---
 
-When a subscription renews, Polar advances it to the next billing cycle first, then attempts to charge the customer's default payment method for the new order. If that charge fails, the subscription moves to `past_due` and enters Polar's automated **payment recovery** (dunning) flow instead of being canceled straight away.
+When a subscription renews, Polar starts the next billing cycle, creates the order and charges the customer's saved payment method. If the charge fails, the subscription moves to `past_due` and Polar retries it on a schedule, a process called **dunning**, instead of ending it right away.
 
-This page explains exactly what happens during that window, how to give yourself breathing room before benefits are revoked, and what levers you have to help the customer recover.
+## What happens when a renewal fails
 
-## The retry schedule
+1. The subscription moves from `active` to `past_due`, and `past_due_at` records when.
+2. Polar emails the customer with a link to the [Customer Portal](/features/customer-portal/introduction), where they can update their payment method or retry the payment.
+3. The renewal order stays open, with `next_payment_attempt_at` set to the next retry.
 
-As soon as the first renewal charge fails:
+Polar then retries on a fixed schedule, counted from the first failure:
 
-1. The subscription's status moves from `active` to `past_due`, and `past_due_at` is stamped with the time of the failure.
-2. Polar emails the customer to let them know the charge failed and links them to the [Customer Portal](/features/customer-portal/introduction) so they can update their default payment method.
-3. The renewal order stays open with `next_payment_attempt_at` set to the next retry time.
+| Retry | Delay from previous | Time since first failure |
+| --- | --- | --- |
+| 1st | 2 days | 2 days |
+| 2nd | 5 days | 7 days |
+| 3rd | 7 days | 14 days |
+| 4th | 7 days | 21 days |
 
-Polar then retries the charge on a fixed schedule, starting from the time of the first failure:
+If a retry succeeds, the order is paid. The subscription returns to `active` once all its open orders are paid. A `past_due` subscription keeps renewing, so there can be more than one.
 
-| Attempt | Delay from previous | Cumulative time from first failure |
-| ------- | ------------------- | ---------------------------------- |
-| 1st retry | 2 days  | 2 days  |
-| 2nd retry | 5 days  | 7 days  |
-| 3rd retry | 7 days  | 14 days |
-| 4th retry | 7 days  | 21 days |
+If every retry fails, Polar **revokes** the subscription: it moves to `canceled` and benefits are revoked.
 
-If a retry succeeds, the failed order is paid. The subscription returns to `active` once all of its pending orders have been paid (past-due subscriptions keep cycling, so there can be more than one). If all four retries fail — or the payment's decline code indicates the method will never succeed (for example, `lost_card`) — Polar stops retrying and **revokes the subscription**. Its status moves to `canceled` and benefits are revoked (subject to the grace period below).
+When the card is declined in a way that won't recover, such as `lost_card`, Polar skips the retries in between and makes one last attempt at the 21-day mark. The customer can still add a new card before then.
+
+The `subscription.past_due` webhook fires when the subscription enters `past_due`, and `subscription.updated` on every status change. See [Webhook events](/integrate/webhooks/events).
 
 ## Benefit revocation grace period
 
-By default, benefits follow the subscription's status strictly: the moment the subscription leaves `active`, benefits are revoked. For many businesses that's harsh — a single expired card shouldn't instantly lock a paying customer out while they update their details.
+By default, benefits are revoked as soon as the subscription becomes `past_due`. A grace period keeps them granted for a while, so one expired card doesn't lock a paying customer out while they fix it.
 
-Polar has an organization-level **grace period** that holds off benefit revocation while a subscription is in `past_due`. You can set it under **Settings → Subscriptions → Grace period for benefit revocation**. The available values are:
+Set it under **Settings → Subscriptions → Grace period for benefit revocation**. The API field is `subscription_settings.benefit_revocation_grace_period` on the organization, in days.
 
-- **Immediately** (default) — revoke benefits as soon as the subscription leaves `active`.
-- **After 2 days**
-- **After 7 days**
-- **After 14 days**
-- **After 21 days** — benefits stay granted for the full length of the retry schedule.
+| Option | `benefit_revocation_grace_period` |
+| --- | --- |
+| **Immediately** (default) | `0` |
+| **After 2 Days** | `2` |
+| **After 7 Days** | `7` |
+| **After 14 Days** | `14` |
+| **After 21 Days** | `21`, the whole retry schedule |
 
-The grace period is measured from `past_due_at`. While it's in effect the subscription is still `past_due` (so you can differentiate it in your own app), but the customer retains access to their benefits. Once the grace period expires — or the subscription is revoked for good — benefits are revoked on the next check.
+The grace period counts from `past_due_at`. During it, the subscription is still `past_due`, so your app can tell the difference, but the customer keeps their benefits. When it runs out, or the subscription is revoked, benefits are revoked.
 
 <Note>
-  The grace period only delays **benefit revocation**. It does not change the
-  retry schedule, and it does not keep the subscription `active`. If you want
-  to treat past-due subscribers specially (for example, with a banner or
-  a reduced feature set), listen for the
-  [`subscription.updated`](/api-reference/current/subscription_updated) webhook
-  and branch on `status === "past_due"`.
+  The grace period only delays benefit revocation. It doesn't change the retry schedule or keep the subscription `active`. To treat past-due customers differently in your app, for example with a banner, check for `status === "past_due"` in [customer state](/integrate/customer-state) or the `subscription.updated` webhook.
 </Note>
 
-## Helping customers recover
+## How customers recover
 
-The most reliable way for a customer to get back into `active` is to update their default payment method from the [Customer Portal](/features/customer-portal/introduction). As soon as the payment method is updated, Polar retries the charge immediately rather than waiting for the next scheduled attempt.
+From the [Customer Portal](/features/customer-portal/introduction), a customer can:
 
-Things you can do from your side:
+- **Update their payment method.** Polar retries the open orders with the new card right away instead of waiting for the next scheduled attempt.
+- **Retry the payment** on the failed order, up to 5 times per order.
 
-- Link prominently to the Customer Portal from your own app when a customer is `past_due`.
-- [Issue a refund](/features/refunds) on the original failed order if you want to credit the customer for the lost time while keeping the subscription.
-- [Reschedule the renewal](/features/subscriptions/manage#reschedule-the-next-renewal) to give the customer extra time before the next attempt.
-- [Revoke the subscription](/features/subscriptions/manage#revoke-immediately) manually if you've decided not to pursue recovery.
+Link to the Customer Portal from your app when a customer is `past_due`. See [Customer Portal](/features/customer-portal/introduction) for how to create a portal link.
+
+## What you can do
+
+In the dashboard, open the subscription from **Sales → Subscriptions**. Its **Activity** shows **Payment failed**, each **Retry failed** and the next **Payment retry**.
+
+- **Find past-due subscriptions** and inspect the failed attempts and their decline reasons.
+- **[Reschedule the renewal](/features/subscriptions/manage#reschedule-the-next-renewal)** to move the next billing date.
+- **[Revoke the subscription](/features/subscriptions/manage#revoke-now)** if you don't want to keep trying.
+
+<Tabs>
+  <Tab title="Dashboard">
+    - Open **Sales → Subscriptions**
+    - Filter by the **Past due** status
+    - Open a subscription to see its **Activity**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar subscriptions list --status past_due
+
+    # Failed payment attempts for one customer
+    polar payments list --customer-id $CUSTOMER_ID --status failed
+    ```
+
+    See [`polar subscriptions`](/integrate/cli/reference/subscriptions) and [`polar payments`](/integrate/cli/reference/payments).
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    List my past-due subscriptions in my Polar sandbox organization, with each customer's email and the decline reason of their last failed payment.
+    ```
+
+    Uses the `subscriptions_list` and `payments_list` operations of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+<CodeGroup>
+```typescript TypeScript
+const pastDue = await polar.subscriptions.list({ status: "past_due" });
+
+const failedPayments = await polar.payments.list({
+  customer_id: customerId,
+  status: "failed",
+});
+```
+
+```python Python
+past_due = polar.subscriptions.list(status="past_due")
+
+failed_payments = polar.payments.list(customer_id=customer_id, status="failed")
+```
+
+```bash cURL
+curl -G https://sandbox-api.polar.sh/v1/subscriptions/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -d status=past_due
+
+curl -G https://sandbox-api.polar.sh/v1/payments/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -d customer_id=$CUSTOMER_ID \
+  -d status=failed
+```
+</CodeGroup>
+
+The examples use the sandbox client from the [quickstart overview](/quickstart/overview#prerequisites), on API version `2026-10`.
+
+## Usage billed on its own order
+
+When a subscription bills metered usage on a separate order at the end of a meter period, a failed payment on that order follows the same retry schedule but doesn't move the subscription to `past_due`. If the retries run out, the order is voided. See [Billing](/features/usage-based-billing/billing).
+
+## Customer emails
+
+Two [customer notification emails](/features/subscriptions/introduction#customer-notification-emails) help prevent and recover failed payments. Both are under **Settings → Customer Notifications → Renewals**:
+
+- **Subscription past due**, sent when a renewal payment fails.
+- **Card expiring**, sent before the card backing an active subscription expires.
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Orders & subscriptions](/concepts/orders-and-subscriptions) | Subscription statuses and when benefits are revoked |
+| [Managing subscriptions](/features/subscriptions/manage) | Reschedule, cancel or revoke |
+| [Customer Portal](/features/customer-portal/introduction) | Where customers update their payment method |
+| [Payments API](/api-reference/current/payments/list-payments) | Payment attempts and decline reasons |

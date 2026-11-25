@@ -1,147 +1,165 @@
 ---
 title: "Checkout Links"
 sidebarTitle: "Checkout Links"
-description: "Persistent URLs that create a Checkout Session on visit"
+description: "Create a reusable checkout URL for your website, emails or social posts, and customize it per visit with query parameters."
 ---
 
-This is the simplest way to start selling. Configure once in the dashboard, share the URL anywhere (your website, social media, email, a button in your app), and Polar handles the rest.
+A **Checkout Link** is a permanent URL that opens a new checkout session each time someone visits it. Create it once, then put it on a pricing page, in an email or behind a button. No code needed.
+
+Each visit creates a fresh Checkout Session from the link's settings and redirects the customer to it. Share the link, never the session URL behind it: sessions expire after 24 hours. See [Checkout](/concepts/checkout) for how links and sessions compare.
 
 <Tip>
-  If you need to create Checkout Sessions programmatically (e.g. with per-customer data computed by your backend), use the [Checkout API](/features/checkout/session) directly instead.
+  Know who the customer is, or need per-customer prices or metadata? Create a [Checkout Session](/features/checkout/session) from your backend instead.
 </Tip>
-
-## How it works
-
-A Checkout Link is a long-lived URL tied to your organization. The link itself doesn't expire, and you can share it indefinitely.
-
-When a customer visits the link:
-
-1. Polar reads the link's configuration (products, preset discount, metadata, etc.).
-2. A new, short-lived Checkout Session is created from that configuration.
-3. The customer is redirected to the session's checkout page to complete the purchase.
-
-Each visit produces a brand new Checkout Session. Always share the Checkout Link URL itself, never the URL of a generated Checkout Session, since those are temporary and will expire.
 
 ## Create a Checkout Link
 
-Checkout Links are managed from the [**Checkout Links**](https://polar.sh/to/dashboard/products/checkout-links) page. Click on **New Link** to create one.
+<Tabs>
+  <Tab title="Dashboard">
+    - Open **Products → Checkout Links**
+    - Click **+**
+    - Add a **Label** and select one or more **Products**
+    - Click **Create Link**, then copy the URL from the **Link** tab
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar checkout_links create --payment-processor stripe \
+      --products <product_id> \
+      --label "Pricing page" \
+      --success-url "https://example.com/billing?checkout_id={CHECKOUT_ID}"
+    ```
 
-### Products
+    `--payment-processor stripe` is required. Repeat `--products` to offer several products. See [`polar checkout_links`](/integrate/cli/reference/checkout_links).
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Create a Checkout Link for my Pro product in my Polar sandbox, labeled "Pricing page", that returns customers to https://example.com/billing.
+    ```
 
-You can select one or several products. With several products, customers can switch between them on the checkout page before paying. Products are shown in the order you list them.
+    Uses the `checkout_links_create` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+The response's `url` is the link to share. From the API, send the same fields to [`POST /v1/checkout-links/`](/api-reference/current/checkout-links/create-checkout-link):
+
+<CodeGroup>
+```typescript TypeScript
+const link = await polar.checkoutLinks.create({
+  payment_processor: "stripe",
+  products: [product.id],
+  label: "Pricing page",
+  success_url: "https://example.com/billing?checkout_id={CHECKOUT_ID}",
+});
+
+console.log(link.url);
+```
+
+```python Python
+link = polar.checkout_links.create(
+    payment_processor="stripe",
+    products=[product.id],
+    label="Pricing page",
+    success_url="https://example.com/billing?checkout_id={CHECKOUT_ID}",
+)
+
+print(link.url)
+```
+
+```bash cURL
+curl -X POST https://sandbox-api.polar.sh/v1/checkout-links/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "payment_processor": "stripe",
+    "products": ["'"$PRODUCT_ID"'"],
+    "label": "Pricing page",
+    "success_url": "https://example.com/billing?checkout_id={CHECKOUT_ID}"
+  }'
+```
+</CodeGroup>
+
+The examples use the sandbox and API version `2026-10`. See the [quickstart](/quickstart/overview#prerequisites) for the client setup.
+
+## Link settings
+
+| Dashboard label | API field | What it does |
+| --- | --- | --- |
+| **Label** | `label` | Internal name to tell links apart. Customers don't see it. |
+| **Products** | `products` | Products offered, in this order. The first is preselected. With several products, the customer picks one: products aren't bundled into one order. |
+| **Success URL** | `success_url` | Where the customer goes after paying. Add `checkout_id={CHECKOUT_ID}` and Polar fills in the session ID. Without it, the customer stays on Polar's confirmation page. |
+| **Return URL** | `return_url` | Shows a back button on the checkout that returns to this URL. |
+| **Preset discount** | `discount_id` | Applied automatically when the checkout opens. A discount that no longer applies is ignored. |
+| **Allow discount codes** | `allow_discount_codes` | Lets the customer enter a code. With a preset discount, the customer can't change it when this is off. |
+| **Require billing address** | `require_billing_address` | Asks for the full address instead of only the country. Customers in the US always enter their full address. |
+| **Lock number of seats** | `seats` | Locks [seat-based](/features/seat-based-pricing) products to this seat count. Ignored if the products no longer allow it. |
+| (API and CLI only) | `units` | Locks [unit-based](/features/unit-based-pricing) products to this unit count. |
+| **Free Trial Configuration** | `trial_interval`, `trial_interval_count` | Overrides the products' own trial for sessions from this link. Shown for recurring products. |
+| **Metadata** | `metadata` | Copied to each session, and from there to the order and subscription. |
 
 <Note>
-  Customers always purchase a single product per checkout. Selecting multiple products on a Checkout Link gives the customer a choice between them; it doesn't bundle them together. True multi-product checkout (multiple products in the same order) isn't supported yet.
+  Discounts without a code can only be applied through a link's preset discount or a [Checkout Session](/features/checkout/session#discounts). See [Discounts](/features/discounts).
 </Note>
-
-### Discount
-
-You can preset a discount on the link. It will be **automatically applied** when the customer lands on the checkout page, with no action required from them. Useful for running promotions or offering special pricing through specific links.
-
-If **Allow discount codes** is enabled, customers can still manually enter another discount code during checkout.
-
-<Tip>
-  Discounts without a code can only be applied through Checkout Link presets or the [Checkout API](/features/checkout/session). Learn more in the [Discounts documentation](/features/discounts).
-</Tip>
-
-### Success URL
-
-URL where the customer is redirected after a successful payment. If left empty, the customer stays on the Polar-hosted confirmation page.
-
-You can add the `checkout_id={CHECKOUT_ID}` query parameter to the Success URL and Polar will substitute it with the actual Checkout Session ID at redirect time. This is handy to fetch the order details from your backend on the confirmation page.
-
-### Return URL
-
-URL for the back button shown on the checkout page. When the customer clicks it, they're sent back to this URL (typically your pricing page or the previous page on your site). If not set, no back button is shown.
-
-### Trial
-
-If the link's products are subscriptions, you can configure a trial period directly on the Checkout Link. When set, this trial **overrides** the default trial configured on the products themselves, but only for sessions created from this link.
-
-This is useful for running campaigns with longer (or shorter) trials than your default, without having to duplicate the product. If left empty, the product's own trial configuration is used.
-
-### Seats
-
-If the link's products use seat-based pricing, you can preconfigure a fixed number of seats. When set, the checkout session is locked to that seat count—the customer cannot change it. This is useful for creating links with a predetermined team size.
-
-If the products no longer support the configured seat count when the link is opened (e.g., tier limits changed), the value is ignored and the customer can select freely.
-
-### Metadata
-
-An optional key-value object for storing extra information. Metadata set on the link is copied to the generated Checkout Session, and propagates to the resulting Order and/or Subscription on success.
 
 ## Query parameters
 
-Append query parameters to a Checkout Link URL to override or extend its preset configuration on a per-visit basis.
+Add query parameters to the link URL to change one visit without changing the link.
 
-### Preselect a product
+| Parameter | What it does |
+| --- | --- |
+| `product_id` | Preselect one of the link's products. The customer can still switch. |
+| `customer_email` | Prefill the email. |
+| `customer_name` | Prefill the name. |
+| `discount_code` | Prefill the discount code field. Only works with discounts that have a code. Unlike a preset discount, the customer sees the code. |
+| `amount` | Prefill the amount of a pay-what-you-want price. |
+| `custom_field_data.{slug}` | Prefill a [custom field](/features/custom-fields) by its slug. |
+| `locale` | Set the checkout language, as a BCP 47 tag like `fr` or `pt-PT`. Only applies when [localization](/features/checkout/localization) is enabled. |
+| `theme` | Force `light` or `dark`. By default, the theme follows the customer's system. |
 
-When a link is configured with several products, point the customer directly to one of them using `product_id`. The customer can still switch products on the checkout page.
+```text
+<checkout_link_url>?customer_email=jane@example.com&locale=fr&theme=dark
+```
 
-<ParamField path="product_id" type="string">
-  ID of the product to preselect. Must be one of the products configured on the Checkout Link.
-</ParamField>
+### Store attribution and reference metadata
 
-### Prefill fields
+These parameters are saved in the session's [`metadata`](/api-reference/current/checkouts/get-checkout-session#response-metadata), and copied to the order and subscription:
 
-<ParamField path="customer_email" type="string">
-  Prefill the customer email.
-</ParamField>
+| Parameter | Use it for |
+| --- | --- |
+| `reference_id` | Your own reference for the visit |
+| `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `utm_term` | Campaign attribution |
 
-<ParamField path="customer_name" type="string">
-  Prefill the customer name.
-</ParamField>
+## Embed the link
 
-<ParamField path="discount_code" type="string">
-  Prefill the discount code input. Only works with discounts that have a code set. See the [Discounts documentation](/features/discounts) for details.
+To open the checkout on your own site, open the link and select the **Embed** tab, then click **Copy**. See [Embedded checkout](/features/checkout/embed).
 
-  This is different from presetting a discount on the link. A preset discount is silently applied, whereas `discount_code` only fills the input field so the customer can see it.
-</ParamField>
+## Find the sessions a link created
 
-<ParamField path="amount" type="string">
-  Prefill the amount when the product uses Pay-What-You-Want pricing.
-</ParamField>
+Every visit creates a session you can inspect, filtered by product:
 
-<ParamField path="locale" type="string">
-  Force the checkout page language, given as an IETF BCP 47 language tag (e.g.
-  `en`, `fr`, `pt-BR`). If omitted, the language is detected from the
-  customer's browser. Checkout localization is in beta. See
-  [Checkout Localization](/features/checkout/localization) for details.
-</ParamField>
+```bash
+polar checkouts list --product-id <product_id> --status succeeded
+```
 
-<ParamField path="custom_field_data.{slug}" type="string">
-  Prefill custom field data, where `{slug}` is the slug of the custom field.
-</ParamField>
+In the dashboard, sessions are listed under **Sales → Checkouts**.
 
-<ParamField path="theme" type="string">
-  Force the checkout page theme. Accepts `light` or `dark`. If omitted, the
-  theme follows the customer's system preference.
-</ParamField>
+## From the CLI or your agent
 
-### Attribution and reference metadata
+| Task | CLI | MCP operation |
+| --- | --- | --- |
+| Create a link | `polar checkout_links create` | `checkout_links_create` |
+| List links | `polar checkout_links list` | `checkout_links_list` |
+| Get a link | `polar checkout_links get <id>` | `checkout_links_get` |
+| Update a link | `polar checkout_links update <id>` | `checkout_links_update` |
+| Delete a link | `polar checkout_links delete <id>` | `checkout_links_delete` |
 
-These parameters are automatically attached to the generated Checkout Session [`metadata`](/api-reference/current/checkouts/get-checkout-session#response-metadata).
+Deleting a link stops its URL from working.
 
-<ParamField path="reference_id" type="string">
-  Your own reference ID for the Checkout Session.
-</ParamField>
+## Learn more
 
-<ParamField path="utm_source" type="string">
-  UTM source of the Checkout Session.
-</ParamField>
-
-<ParamField path="utm_medium" type="string">
-  UTM medium of the Checkout Session.
-</ParamField>
-
-<ParamField path="utm_campaign" type="string">
-  UTM campaign of the Checkout Session.
-</ParamField>
-
-<ParamField path="utm_content" type="string">
-  UTM content of the Checkout Session.
-</ParamField>
-
-<ParamField path="utm_term" type="string">
-  UTM term of the Checkout Session.
-</ParamField>
+| Resource | Description |
+| --- | --- |
+| [Checkout](/concepts/checkout) | Checkout Links vs. Checkout Sessions, and what a checkout creates |
+| [Checkout Sessions](/features/checkout/session) | Create sessions from your backend with per-customer data |
+| [Embedded checkout](/features/checkout/embed) | Open the checkout as an overlay on your site |
+| [Checkout Links API](/api-reference/current/checkout-links/create-checkout-link) | API reference |

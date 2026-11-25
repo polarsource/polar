@@ -1,0 +1,31 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/CreateMigrationModal.test.tsx
+  s_e4f28be0e20585::t_51e7f9274dc80b 235,244
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/sources.ts
+  s_e4f28be0e20585::t_5121fbb0340d11 15-18
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/CreateMigrationModal.tsx
+  s_d4a843b33596ce::t_71cc0ee8c1a5ba 17-21,39-41,88-98
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ca431e21f82952200b21285c33f3de819a19ce62",
+  "prompts": {},
+  "sessions": {
+    "s_d4a843b33596ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "12adddd7-b520-4f67-a19e-0f92eb2e092a",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_e4f28be0e20585": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a211cc-c77a-7d50-93f7-803cd6527e7b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

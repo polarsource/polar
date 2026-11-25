@@ -1,0 +1,21 @@
+server/polar/meter/aggregation.py
+  s_ec7be1e6abd9fa::t_036dcde26e0c61 10,81-82,85
+server/tests/meter/test_service.py
+  s_ec7be1e6abd9fa::t_847dc12071992d 1540-1570
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ceead9077227e90671e7be302ada5639969aa2de",
+  "prompts": {},
+  "sessions": {
+    "s_ec7be1e6abd9fa": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a7a92383-1b3b-490b-b2db-2a2e8d406e05",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

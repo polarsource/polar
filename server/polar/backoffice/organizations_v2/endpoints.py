@@ -4575,12 +4575,15 @@ async def setup_account(
     """Show modal to setup a manual payment account."""
     repository = OrganizationRepository(session)
 
-    organization = await repository.get_by_id(
-        organization_id,
-        include_blocked=True,
-        options=(selectinload(Organization.payout_account),),
-        for_update=request.method == "POST",
-    )
+    if request.method == "POST":
+        organization = await repository.get_by_id(
+            organization_id,
+            include_blocked=True,
+            options=(selectinload(Organization.payout_account),),
+            for_update=True,
+        )
+    else:
+        organization = await repository.get_by_id_with_payout_account(organization_id)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
@@ -4641,8 +4644,9 @@ async def setup_account(
                 with tag.p():
                     text(
                         "Payouts already transferred to Stripe will continue there. "
-                        "Held payouts and payouts awaiting transfer will be canceled "
-                        "and can be requested again."
+                        "Switching cancels held payouts. If a transfer has not "
+                        "started by the time you switch, the transfer worker "
+                        "will cancel that payout. Canceled payouts can be requested again."
                     )
             with tag.div(classes="alert alert-warning"):
                 with tag.span(classes="text-sm"):

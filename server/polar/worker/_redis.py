@@ -14,7 +14,7 @@ _redis: Redis | None = None
 async def _close_redis() -> None:
     global _redis
     if _redis is not None:
-        await _redis.close(True)
+        await _redis.aclose(True)
         log.info("Closed Redis client")
         _redis = None
 

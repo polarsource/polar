@@ -62,6 +62,7 @@ const NonCurrentMeterBanner = ({
     return (
       <DraftVersionBanner
         organization={organization}
+        resource="meter"
         draftId={catalog.id}
         currentHref={currentHref}
       />

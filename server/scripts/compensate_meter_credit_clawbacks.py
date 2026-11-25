@@ -159,7 +159,7 @@ async def run(
                         f"{id}: {'credited' if execute else 'would credit'} {units}"
                     )
     finally:
-        await redis.close()
+        await redis.aclose()
         await engine.dispose()
 
 

@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 
@@ -6,8 +7,10 @@ import structlog
 from dramatiq.errors import Retry
 
 from polar.config import settings
+from polar.exceptions import PolarTaskError
 from polar.kit.utils import utc_now
 from polar.logging import Logger
+from polar.models.merchant_migration import MERCHANT_MIGRATION_FINISHED_STEPS
 from polar.observability.task_logging import LoggableField
 from polar.worker import (
     AsyncSessionMaker,
@@ -25,6 +28,14 @@ from .service import BENEFITS_RUN_LIMIT
 from .service import merchant_migration as merchant_migration_service
 
 log: Logger = structlog.get_logger()
+
+
+class MerchantMigrationNotClosed(PolarTaskError):
+    def __init__(self, merchant_migration_id: UUID) -> None:
+        super().__init__(
+            f"Merchant migration {merchant_migration_id} is still open, "
+            "likely because an operation is running."
+        )
 
 
 @actor(
@@ -165,6 +176,19 @@ async def merchant_migration_notify_waiting_for_ops(
         await slack.notify_waiting_for_ops(RedisMiddleware.get(), migration, step)
 
 
+async def _close(migration_id: UUID, *, idle_since: datetime | None) -> bool:
+    steps = 0
+    while True:
+        async with AsyncSessionMaker() as session:
+            if not await merchant_migration_service.close(
+                session, migration_id, idle_since=idle_since
+            ):
+                break
+        steps += 1
+        await asyncio.sleep(0.1)
+    return steps > 0
+
+
 @actor(
     actor_name="merchant_migration.close_idle",
     cron_trigger=CronTrigger.from_crontab("0 3 * * *"),
@@ -182,27 +206,38 @@ async def merchant_migration_close_idle() -> None:
 
     closed = 0
     for migration_id in migration_ids:
-        steps = 0
         try:
-            while True:
-                async with AsyncSessionMaker() as session:
-                    if not await merchant_migration_service.close_idle(
-                        session, migration_id, idle_since=idle_since
-                    ):
-                        break
-                steps += 1
-                await asyncio.sleep(0.1)
+            if await _close(migration_id, idle_since=idle_since):
+                closed += 1
         except Exception:
             log.exception(
                 "merchant_migration.close_idle.failed",
                 merchant_migration_id=migration_id,
             )
-            continue
-        if steps:
-            closed += 1
 
     log.info(
         "merchant_migration.close_idle",
         candidates=len(migration_ids),
         closed=closed,
     )
+
+
+@actor(
+    actor_name="merchant_migration.close",
+    priority=TaskPriority.LOW,
+    time_limit=600_000,
+)
+async def merchant_migration_close(
+    merchant_migration_id: Annotated[UUID, LoggableField],
+) -> None:
+    await _close(merchant_migration_id, idle_since=None)
+    async with AsyncSessionMaker() as session:
+        migration = await MerchantMigrationRepository.from_session(session).get_by_id(
+            merchant_migration_id
+        )
+    # A running precheck or import blocks the close: retry once it's done.
+    if (
+        migration is not None
+        and migration.step not in MERCHANT_MIGRATION_FINISHED_STEPS
+    ):
+        raise MerchantMigrationNotClosed(merchant_migration_id)

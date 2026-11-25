@@ -8,7 +8,7 @@ from uuid import UUID
 from fastapi import Depends, HTTPException, Query, Request
 from pydantic import UUID4, ValidationError
 from starlette.datastructures import UploadFile
-from tagflow import tag, text
+from tagflow import attr, tag, text
 
 from polar.backoffice.routing import BackofficeRouter
 from polar.config import settings
@@ -36,11 +36,13 @@ from polar.postgres import (
     get_db_session,
 )
 from polar.redis import Redis, get_redis
+from polar.worker import enqueue_job
 
 from .. import formatters
 from ..components import (
     alert,
     button,
+    confirmation_dialog,
     datatable,
     description_list,
     metric_card,
@@ -382,6 +384,21 @@ async def get_migration(
                     with tag.a(href=organization_url, classes="no-underline"):
                         text(migration.organization.name)
                 views.attention_badge(triage)
+                if not is_finished(migration):
+                    with tag.div(classes="ml-auto"):
+                        with button(
+                            variant="error",
+                            size="sm",
+                            ghost=True,
+                            hx_get=str(
+                                request.url_for(
+                                    "merchant_migrations:confirm_close",
+                                    id=migration.id,
+                                )
+                            ),
+                            hx_target="#modal",
+                        ):
+                            text("Close migration")
 
             with alert("warning" if triage.needs_ops else None, soft=True):
                 with tag.div(classes="flex flex-col gap-1"):
@@ -459,6 +476,45 @@ async def get_migration(
                     with tag.h2(classes="text-xl"):
                         text("Failed records")
                     views.failed_records_table(failed, records.failed)
+
+
+@router.get("/{id}/close", name="merchant_migrations:confirm_close")
+async def confirm_close(
+    request: Request,
+    id: UUID4,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> None:
+    migration = await _get_migration(session, id)
+    with confirmation_dialog(
+        "Close migration",
+        "The merchant can no longer continue this migration. Records that were "
+        "never imported and the stored source API key are deleted. Everything "
+        "already on Polar stays. This can't be undone.",
+        variant="error",
+        confirm_text="Close migration",
+        open=True,
+    ):
+        attr(
+            "hx-post",
+            str(request.url_for("merchant_migrations:close", id=migration.id)),
+        )
+        attr("hx-target", "#modal")
+
+
+@router.post("/{id}/close", name="merchant_migrations:close")
+async def close_migration(
+    request: Request,
+    id: UUID4,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> HXRedirectResponse:
+    migration = await _get_migration(session, id)
+    enqueue_job("merchant_migration.close", merchant_migration_id=migration.id)
+    await add_toast(
+        request,
+        "Closing the migration. If a precheck or import is running, it closes once that finishes.",
+        "success",
+    )
+    return _detail_redirect(request, migration.id)
 
 
 @router.api_route(

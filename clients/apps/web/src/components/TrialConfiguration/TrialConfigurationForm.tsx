@@ -53,7 +53,7 @@ export const TrialConfigurationForm = ({
     if (!enabled) {
       setValue('trial_interval', null)
       setValue('trial_interval_count', null)
-      setValue('trial_payment_setup_required', null)
+      setValue('trial_payment_setup_required', true)
     } else {
       setValue('trial_interval', 'month')
       setValue('trial_interval_count', 1)

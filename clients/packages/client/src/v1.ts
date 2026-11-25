@@ -28519,6 +28519,11 @@ export interface components {
        * @description The Polar benefit, once created.
        */
       benefit_id: string | null
+      /**
+       * For One Time
+       * @description Buyers of one-time products have it on the source.
+       */
+      for_one_time: boolean
     }
     /** MerchantMigrationBenefitFile */
     MerchantMigrationBenefitFile: {
@@ -28554,6 +28559,11 @@ export interface components {
        * @description What the source gives buyers, as Polar benefits.
        */
       items: components['schemas']['MerchantMigrationBenefit'][]
+      /**
+       * Past Buyers Granted
+       * @description How many past one-time buyers hold these benefits, once the latest set-up run gave them out. None before that, and again once a later step runs.
+       */
+      past_buyers_granted: number | null
     }
     /** MerchantMigrationBenefitsCreate */
     MerchantMigrationBenefitsCreate: {
@@ -28562,6 +28572,12 @@ export interface components {
        * @description `id`s of the benefits to create, from the list. Empty skips this step.
        */
       ids: string[]
+      /**
+       * Grant Past Purchases
+       * @description Also give one-time buyers the benefits of what they bought, keeping their license keys.
+       * @default false
+       */
+      grant_past_purchases: boolean
     }
     /**
      * MerchantMigrationCardStatus

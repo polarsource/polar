@@ -83,6 +83,7 @@ export function BenefitsStep({
         <BenefitsReady
           migrationId={migration.id}
           benefits={benefits.data?.items ?? []}
+          pastBuyersGranted={benefits.data?.past_buyers_granted ?? null}
           onEdit={() => setEditing(true)}
         />
       )}
@@ -93,15 +94,19 @@ export function BenefitsStep({
 function BenefitsReady({
   migrationId,
   benefits,
+  pastBuyersGranted,
   onEdit,
 }: {
   migrationId: string
   benefits: schemas['MerchantMigrationBenefit'][]
+  pastBuyersGranted: number | null
   onEdit: () => void
 }) {
   const start = useStartPanTransfer(migrationId)
   const created = benefits.filter((b) => b.benefit_id)
-  const offered = benefits.filter((b) => b.products.length > 0)
+  const offered = benefits.filter(
+    (b) => b.products.length > 0 || b.for_one_time,
+  )
   const left = offered.length - created.length
   const startAction = {
     text: start.isPending ? 'Starting…' : 'Start moving cards',
@@ -125,7 +130,7 @@ function BenefitsReady({
         </Text>
         <Text color="muted">
           {created.length
-            ? `${plural(created.length, 'benefit')} created.`
+            ? `${plural(created.length, 'benefit')} created.${pastBuyersLine(pastBuyersGranted)}`
             : 'No benefits were created. You can add them later from each product.'}
         </Text>
       </Box>
@@ -161,4 +166,14 @@ function BenefitsReady({
       />
     </Box>
   )
+}
+
+function pastBuyersLine(granted: number | null): string {
+  if (granted === null) {
+    return ''
+  }
+  if (granted === 0) {
+    return ' No past buyers had bought them.'
+  }
+  return ` ${plural(granted, 'past buyer')} ${granted === 1 ? 'has' : 'have'} them in the customer portal.`
 }

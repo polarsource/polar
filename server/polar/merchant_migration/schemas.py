@@ -552,17 +552,34 @@ class MerchantMigrationBenefit(Schema):
         description="Imported products that get this benefit."
     )
     benefit_id: UUID4 | None = Field(description="The Polar benefit, once created.")
+    for_one_time: bool = Field(
+        description="Buyers of one-time products have it on the source."
+    )
 
 
 class MerchantMigrationBenefits(Schema):
     items: Sequence[MerchantMigrationBenefit] = Field(
         description="What the source gives buyers, as Polar benefits."
     )
+    past_buyers_granted: int | None = Field(
+        description=(
+            "How many past one-time buyers hold these benefits, once the latest "
+            "set-up run gave them out. None before that, and again once a later "
+            "step runs."
+        )
+    )
 
 
 class MerchantMigrationBenefitsCreate(Schema):
     ids: list[str] = Field(
         description="`id`s of the benefits to create, from the list. Empty skips this step."
+    )
+    grant_past_purchases: bool = Field(
+        default=False,
+        description=(
+            "Also give one-time buyers the benefits of what they bought, "
+            "keeping their license keys."
+        ),
     )
 
 

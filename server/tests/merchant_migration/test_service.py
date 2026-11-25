@@ -41,6 +41,7 @@ from polar.merchant_migration.canonical import (
     CanonicalPrice,
     CanonicalPricingScheme,
     CanonicalProduct,
+    CanonicalPurchase,
     CanonicalRecord,
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
@@ -96,6 +97,7 @@ from polar.merchant_migration.service import (
 )
 from polar.merchant_migration.service import merchant_migration as service
 from polar.models import (
+    BenefitGrant,
     Customer,
     Discount,
     DiscountProduct,
@@ -137,6 +139,7 @@ from polar.subscription.repository import SubscriptionRepository
 from polar.tax.tax_id import TaxIDFormat
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_benefit_grant,
     create_customer,
     create_payment_method,
     create_subscription,
@@ -5898,7 +5901,7 @@ def _license_benefit() -> CanonicalBenefit:
         source_id="license_keys:3:1:year",
         type="license_keys",
         description="Pro license key",
-        product_source_ids=["prod_1:month:1"],
+        product_source_ids=["prod_1:month:1", "variant_lifetime"],
         license_keys=CanonicalLicenseKeySettings(
             activation_limit=3, expires_ttl=1, expires_timeframe="year"
         ),
@@ -5926,9 +5929,12 @@ def _run(migration: MerchantMigration) -> str:
     return str((migration.operation.cursor or {})["run"])
 
 
-def _benefits_adapter(mocker: MockerFixture) -> None:
+def _benefits_adapter(
+    mocker: MockerFixture, purchases: list[CanonicalPurchase] | None = None
+) -> None:
     adapter = mocker.Mock(spec=LemonSqueezyAdapter)
     adapter.list_benefits = mocker.AsyncMock(return_value=[_license_benefit()])
+    adapter.list_purchases = mocker.AsyncMock(return_value=(purchases or [], False))
     mocker.patch.object(
         service, "_benefits_adapter", new=mocker.AsyncMock(return_value=adapter)
     )
@@ -6103,3 +6109,83 @@ class TestExecuteBenefits:
             )
         )
         assert attached.scalars().all() == [benefit.id]
+
+    @pytest.mark.auth
+    async def test_grants_past_buyers_their_key(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        redis: Redis,
+    ) -> None:
+        migration = await _lemon_squeezy_imported_migration(
+            mocker, session, save_fixture, auth_subject, organization
+        )
+        _benefits_adapter(
+            mocker,
+            purchases=[
+                CanonicalPurchase(
+                    source_id="order_1",
+                    product_source_id="variant_lifetime",
+                    email="bob@example.com",
+                    name="Bob",
+                    license_key="KEY-LIFETIME",
+                ),
+                CanonicalPurchase(
+                    source_id="order_2",
+                    product_source_id="variant_without_benefits",
+                    email="carol@example.com",
+                    name="Carol",
+                    license_key=None,
+                ),
+            ],
+        )
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        mocker.patch("polar.benefit.grant.service.enqueue_job")
+        await service.set_up_benefits(
+            session,
+            auth_subject,
+            migration.id,
+            MerchantMigrationBenefitsCreate(
+                ids=["license_keys:3:1:year"], grant_past_purchases=True
+            ),
+        )
+
+        for _ in range(5):
+            await service.execute_benefits(
+                session, redis, migration.id, _run(migration)
+            )
+
+        listed = await service.get_benefits(session, auth_subject, migration.id)
+        assert listed.past_buyers_granted == 1
+        benefit = await BenefitRepository.from_session(
+            session
+        ).get_by_external_id_and_organization(
+            "lemon_squeezy:license_keys:3:1:year", organization.id
+        )
+        assert benefit is not None
+        result = await session.execute(
+            select(BenefitGrant).where(BenefitGrant.benefit_id == benefit.id)
+        )
+        [grant] = result.scalars().all()
+        assert dict(grant.properties) == {"user_provided_key": "KEY-LIFETIME"}
+        customer_repository = CustomerRepository.from_session(session)
+        assert (
+            await customer_repository.get_by_email_and_organization(
+                "carol@example.com", organization.id
+            )
+            is None
+        )
+
+        # Neither a revoked grant nor one the merchant adds later counts.
+        grant.manually_revoked_at = utc_now()
+        await save_fixture(grant)
+        late_buyer = await create_customer(
+            save_fixture, organization=organization, email="dan@example.com"
+        )
+        await create_benefit_grant(save_fixture, late_buyer, benefit)
+        listed = await service.get_benefits(session, auth_subject, migration.id)
+        assert listed.past_buyers_granted == 0

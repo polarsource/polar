@@ -38,6 +38,7 @@ from ..canonical import (
     CanonicalPrice,
     CanonicalPricingScheme,
     CanonicalProduct,
+    CanonicalPurchase,
     CanonicalRecord,
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
@@ -118,6 +119,7 @@ class LemonSqueezyAdapter:
         self._redemptions_by_order: dict[str, list[dict[str, Any]]] | None = None
         self._redemption_counts: dict[str, int] = {}
         self._order_tax_behaviors: dict[str, TaxBehavior] | None = None
+        self._license_keys: dict[str, str | None] | None = None
 
     async def _request(
         self, method: str, path: str, params: dict[str, Any] | None = None
@@ -504,6 +506,31 @@ class LemonSqueezyAdapter:
         self._redemptions_by_order = by_order
         return by_order
 
+    async def _load_license_keys(self) -> dict[str, str | None]:
+        """Keys per order item: a one-time purchase's key belongs to its only
+        item. None marks an item whose key was disabled or has expired."""
+        if self._license_keys is not None:
+            return self._license_keys
+        keys: dict[str, str | None] = {}
+        page = 1
+        while True:
+            license_keys, has_more, _ = await self._list(
+                "/license-keys", page, self._store_filter
+            )
+            for license_key in license_keys:
+                order_item_id = license_key["attributes"]["order_item_id"]
+                if _usable_key(license_key):
+                    keys[str(order_item_id)] = keys.get(str(order_item_id)) or str(
+                        license_key["attributes"]["key"]
+                    )
+                else:
+                    keys.setdefault(str(order_item_id), None)
+            if not has_more:
+                break
+            page += 1
+        self._license_keys = keys
+        return keys
+
     async def list_benefits(self) -> list[CanonicalBenefit]:
         """License key settings, files and links per variant, grouped so
         variants that give the same thing share one benefit. Keys are never
@@ -531,6 +558,7 @@ class LemonSqueezyAdapter:
             page += 1
 
         files_by_variant = await self._load_files({v["id"] for v, _ in variants})
+        await self._load_all_prices()
         groups: dict[str, CanonicalBenefit] = {}
 
         def add(
@@ -541,7 +569,7 @@ class LemonSqueezyAdapter:
             **payload: Any,
         ) -> None:
             source_id = f"{self.store_id}:{type}:{key}"
-            groups.setdefault(
+            benefit = groups.setdefault(
                 source_id,
                 CanonicalBenefit(
                     source_id=source_id,
@@ -550,7 +578,12 @@ class LemonSqueezyAdapter:
                     product_source_ids=[],
                     **payload,
                 ),
-            ).product_source_ids.append(variant_id)
+            )
+            benefit.product_source_ids.append(variant_id)
+            if self._prices_by_variant.get(
+                variant_id
+            ) and not self._is_subscription_variant(variant_id):
+                benefit.for_one_time = True
 
         for variant, product_name in variants:
             attributes = variant["attributes"]
@@ -624,6 +657,49 @@ class LemonSqueezyAdapter:
         response = await self._request("GET", f"/files/{file_source_id}")
         response.raise_for_status()
         return response.json()["data"]["attributes"]["download_url"]
+
+    async def list_purchases(self, page: int) -> tuple[list[CanonicalPurchase], bool]:
+        """One page of paid one-time orders, a partly refunded one included.
+        An order that started a subscription moves with the subscription."""
+        orders, has_more, _ = await self._list("/orders", page, self._store_filter)
+        license_keys = await self._load_license_keys()
+        await self._load_all_prices()
+        purchases: list[CanonicalPurchase] = []
+        for order in orders:
+            attributes = order["attributes"]
+            item = attributes.get("first_order_item") or {}
+            if attributes.get("status") not in ("paid", "partial_refund"):
+                continue
+            if not item or not attributes.get("user_email"):
+                continue
+            if self._is_subscription_order(item):
+                continue
+            purchases.append(
+                CanonicalPurchase(
+                    source_id=order["id"],
+                    product_source_id=str(item["variant_id"]),
+                    email=attributes["user_email"],
+                    name=attributes.get("user_name"),
+                    license_key=license_keys.get(str(item["id"])),
+                    license_key_disabled=str(item["id"]) in license_keys
+                    and license_keys[str(item["id"])] is None,
+                )
+            )
+        return purchases, has_more
+
+    def _is_subscription_order(self, item: dict[str, Any]) -> bool:
+        """Whether the order started a subscription, from the price it was paid
+        at: the variant may have switched to a subscription since."""
+        price = self._prices_by_id.get(str(item.get("price_id")))
+        if price is not None:
+            return _renews(price)
+        return self._is_subscription_variant(str(item["variant_id"]))
+
+    def _is_subscription_variant(self, variant_id: str) -> bool:
+        prices = self._prices_by_variant.get(variant_id, [])
+        return bool(prices) and _renews(
+            max(prices, key=lambda price: price["attributes"]["created_at"])
+        )
 
     async def get_subscription(self, source_id: str) -> CanonicalSubscription | None:
         body = await self._retrieve_subscription(source_id)
@@ -852,6 +928,15 @@ def _renews(price: dict[str, Any]) -> bool:
     # One-time prices carry a renewal interval too; only the category says
     # whether the price renews.
     return price["attributes"].get("category") == "subscription"
+
+
+def _usable_key(license_key: dict[str, Any]) -> bool:
+    # An expired key isn't revived: Polar would restart its term from today.
+    attributes = license_key["attributes"]
+    return not attributes.get("disabled") and attributes.get("status") not in (
+        "disabled",
+        "expired",
+    )
 
 
 def _digest(value: str) -> str:

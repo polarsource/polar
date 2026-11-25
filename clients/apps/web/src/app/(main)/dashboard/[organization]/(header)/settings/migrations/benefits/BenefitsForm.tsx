@@ -6,6 +6,7 @@ import { Alert, ButtonGroup, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useState } from 'react'
 import { plural } from '../review/importSummary'
+import { useRecordSummary } from '../review/recordSummary'
 import { BenefitRow, BenefitSection } from './BenefitRows'
 
 const LICENSE_KEY_DOCS = 'https://polar.sh/docs/features/benefits/license-keys'
@@ -17,7 +18,9 @@ interface Props {
   onDone: () => void
 }
 
-// Benefits on imported products. One nobody would get isn't offered.
+// Each benefit shows once: with subscribers when it's on an imported product,
+// otherwise with past one-time buyers. One nobody would get isn't offered.
+// Past buyers get only the benefits that stay ticked.
 export function BenefitsForm({
   migrationId,
   benefits,
@@ -26,11 +29,18 @@ export function BenefitsForm({
 }: Props) {
   const [excluded, setExcluded] = useState<Set<string>>(new Set())
   const setUp = useSetUpMigrationBenefits(migrationId)
+  const records = useRecordSummary(migrationId)
 
   const forSubscribers = benefits.filter((b) => b.products.length > 0)
-  const selected = forSubscribers.filter((b) => !excluded.has(b.id))
+  const forPastBuyers = benefits.filter(
+    (b) => b.products.length === 0 && b.for_one_time,
+  )
+  const selected = [...forSubscribers, ...forPastBuyers].filter(
+    (b) => !excluded.has(b.id),
+  )
   const toCreate = selected.filter((b) => !b.benefit_id)
   const hasLicenseKeys = selected.some((b) => b.type === 'license_keys')
+  const grantsPastBuyers = selected.some((b) => b.for_one_time)
 
   const toggle = (id: string) =>
     setExcluded((current) => {
@@ -42,9 +52,15 @@ export function BenefitsForm({
     })
 
   const submit = (benefitIds: string[]) =>
-    setUp.mutate({ ids: benefitIds }, { onSuccess: onDone })
+    setUp.mutate(
+      {
+        ids: benefitIds,
+        grant_past_purchases: grantsPastBuyers,
+      },
+      { onSuccess: onDone },
+    )
 
-  if (forSubscribers.length === 0) {
+  if (forSubscribers.length === 0 && forPastBuyers.length === 0) {
     return (
       <Box flexDirection="column" rowGap="l">
         <Text color="muted">
@@ -67,8 +83,29 @@ export function BenefitsForm({
   return (
     <Box flexDirection="column" rowGap="xl">
       {forSubscribers.length > 0 && (
-        <BenefitSection title="Subscribers">
+        <BenefitSection
+          title="Subscribers"
+          description={subscribersWhen(
+            records.isLoading ? null : records.counts.subscriptions.ready,
+          )}
+        >
           {forSubscribers.map((benefit) => (
+            <BenefitRow
+              key={benefit.id}
+              benefit={benefit}
+              selected={!excluded.has(benefit.id)}
+              onToggle={() => toggle(benefit.id)}
+            />
+          ))}
+        </BenefitSection>
+      )}
+
+      {forPastBuyers.length > 0 && (
+        <BenefitSection
+          title="Past one-time buyers"
+          description="They get these now, in the customer portal. Polar doesn't email them."
+        >
+          {forPastBuyers.map((benefit) => (
             <BenefitRow
               key={benefit.id}
               benefit={benefit}
@@ -108,9 +145,7 @@ export function BenefitsForm({
           {
             text: setUp.isPending
               ? 'Creating…'
-              : toCreate.length
-                ? `Create ${plural(toCreate.length, 'benefit')}`
-                : 'Continue',
+              : submitLabel(toCreate.length, grantsPastBuyers),
             disabled: setUp.isPending,
             onClick: () => submit(selected.map((b) => b.id)),
           },
@@ -122,4 +157,18 @@ export function BenefitsForm({
       />
     </Box>
   )
+}
+
+function subscribersWhen(ready: number | null): string {
+  if (!ready) {
+    return 'They get these when they switch to Polar.'
+  }
+  return `${plural(ready, 'subscriber')} ${ready === 1 ? 'gets' : 'get'} these when they switch to Polar.`
+}
+
+function submitLabel(toCreate: number, grantsPastBuyers: boolean): string {
+  if (grantsPastBuyers) {
+    return toCreate ? 'Create and grant' : 'Grant'
+  }
+  return toCreate ? `Create ${plural(toCreate, 'benefit')}` : 'Continue'
 }

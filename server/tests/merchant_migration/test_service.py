@@ -86,6 +86,7 @@ from polar.merchant_migration.service import (
     CatalogImportNotReady,
     CutoverNotStarted,
     InvalidSourceCredentials,
+    MigrationNotFinishable,
     MigrationOperationInProgress,
     MissingStripeScopes,
     OrganizationNotOnboarded,
@@ -5961,12 +5962,16 @@ async def _lemon_squeezy_imported_migration(
     save_fixture: SaveFixture,
     auth_subject: AuthSubject[User],
     organization: Organization,
+    *,
+    step: MerchantMigrationStep | None = None,
 ) -> MerchantMigration:
     migration = await _staged_migration(
         mocker, session, save_fixture, auth_subject, organization
     )
     await _import_catalog(session, auth_subject, migration.id)
     migration.source_platform = MerchantMigrationSourcePlatform.lemon_squeezy
+    if step is not None:
+        migration.step = step
     await save_fixture(migration)
     return migration
 
@@ -5985,6 +5990,109 @@ def _benefits_adapter(
     mocker.patch.object(
         service, "_benefits_adapter", new=mocker.AsyncMock(return_value=adapter)
     )
+
+
+@pytest.fixture
+async def benefits_only_migration(
+    save_fixture: SaveFixture, organization: Organization
+) -> MerchantMigration:
+    migration = MerchantMigration(
+        organization=organization,
+        source_platform=MerchantMigrationSourcePlatform.lemon_squeezy,
+        step=MerchantMigrationStep.set_up_benefits,
+        source_credentials={"api_key_encrypted": "encrypted", "store_id": "1"},
+    )
+    await save_fixture(migration)
+    return migration
+
+
+@pytest.mark.anyio
+class TestFinishWithoutSubscriptions:
+    @pytest.mark.auth
+    async def test_completes_and_drops_the_key(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        benefits_only_migration: MerchantMigration,
+    ) -> None:
+        finished = await service.finish_without_subscriptions(
+            session, auth_subject, benefits_only_migration.id
+        )
+
+        assert finished.step == MerchantMigrationStep.completed
+        assert "api_key_encrypted" not in finished.source_credentials
+
+    @pytest.mark.auth
+    async def test_refuses_with_subscriptions_to_move(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _lemon_squeezy_imported_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            step=MerchantMigrationStep.set_up_benefits,
+        )
+
+        with pytest.raises(MigrationNotFinishable):
+            await service.finish_without_subscriptions(
+                session, auth_subject, migration.id
+            )
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize(
+        ("step", "error"),
+        [
+            (MerchantMigrationStep.create_catalog, BenefitsNotReady),
+            (MerchantMigrationStep.completed, MigrationNotFinishable),
+        ],
+    )
+    async def test_refuses_outside_the_benefits_step(
+        self,
+        step: MerchantMigrationStep,
+        error: type[Exception],
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        benefits_only_migration: MerchantMigration,
+    ) -> None:
+        benefits_only_migration.step = step
+        await save_fixture(benefits_only_migration)
+
+        with pytest.raises(error):
+            await service.finish_without_subscriptions(
+                session, auth_subject, benefits_only_migration.id
+            )
+
+    @pytest.mark.auth
+    async def test_refuses_while_benefits_are_running(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        benefits_only_migration: MerchantMigration,
+    ) -> None:
+        benefits_only_migration.operation = MerchantMigrationOperation(
+            status=MerchantMigrationOperationStatus.running,
+            kind=MerchantMigrationOperationKind.benefits,
+            last_progress_at=utc_now(),
+        )
+        await save_fixture(benefits_only_migration)
+
+        with pytest.raises(MigrationOperationInProgress):
+            await service.finish_without_subscriptions(
+                session, auth_subject, benefits_only_migration.id
+            )
 
 
 @pytest.mark.anyio

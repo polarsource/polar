@@ -168,6 +168,7 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
       attentionCount={attentionCount}
       paymentMethods={paymentMethods}
       hasConnectedAccounts={migration?.source?.has_connected_accounts === true}
+      hasBenefitsStep={migration?.source_platform === 'lemon_squeezy'}
       rows={records.data?.items ?? []}
       page={page}
       pageSize={pageSize}

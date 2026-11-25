@@ -31,6 +31,8 @@ const MAYBE_ON_POLAR =
   "you'll get a checklist to move them."
 const SET_UP_BENEFITS =
   'Bring your license keys, files and links over, so customers keep access.'
+const NO_SUBSCRIPTIONS_IMPORTED =
+  'No subscriptions were imported. Everything stayed where it was.'
 const NOTHING_TO_MOVE =
   'There is nothing to move yet. Prepare your subscriptions first, then come ' +
   "back to move your customers' saved cards."
@@ -82,13 +84,15 @@ export function ImportedHandoff({
   }
   const nothingLanded = nothingImported(landed)
   const earlier = preparedEarlier(landed)
+  // Benefits are read from the source, not from imported records, so a
+  // merchant with only license keys or files can still set them up.
+  const benefitsOnly = Boolean(onSetUpBenefits) && nothingLanded
   const next = onSetUpBenefits
     ? {
         title: 'Next: set up benefits',
         body: SET_UP_BENEFITS,
         action: {
           text: 'Set up benefits',
-          disabled: nothingLanded,
           onClick: onSetUpBenefits,
         },
       }
@@ -123,10 +127,12 @@ export function ImportedHandoff({
       {/* No success icon: the stepper above already marks Assessment done. */}
       <Box flexDirection="column" rowGap="xs">
         <Text variant="title" as="h3">
-          Catalog imported
+          {benefitsOnly ? 'Nothing imported' : 'Catalog imported'}
         </Text>
         <Text color="muted">
-          {receipt(outcome, nothingLanded, landed.readyToSwitch)}
+          {benefitsOnly
+            ? NO_SUBSCRIPTIONS_IMPORTED
+            : receipt(outcome, nothingLanded, landed.readyToSwitch)}
         </Text>
       </Box>
 
@@ -140,7 +146,9 @@ export function ImportedHandoff({
         <Text variant="title" as="h3">
           {next.title}
         </Text>
-        <Text color="muted">{nothingLanded ? NOTHING_TO_MOVE : next.body}</Text>
+        <Text color="muted">
+          {nothingLanded && !benefitsOnly ? NOTHING_TO_MOVE : next.body}
+        </Text>
       </Box>
 
       {start.error && (

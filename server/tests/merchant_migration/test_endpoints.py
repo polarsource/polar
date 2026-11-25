@@ -693,6 +693,67 @@ class TestGetPanTransfer:
 
 
 @pytest.mark.anyio
+class TestFinish:
+    async def test_anonymous(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        migration = await _create_migration(
+            save_fixture, organization, step=MerchantMigrationStep.set_up_benefits
+        )
+
+        response = await client.post(f"/v1/merchant-migrations/{migration.id}/finish")
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_finishes_with_no_subscriptions(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = MerchantMigration(
+            organization=organization,
+            source_platform=MerchantMigrationSourcePlatform.lemon_squeezy,
+            step=MerchantMigrationStep.set_up_benefits,
+            source_credentials={"api_key_encrypted": "encrypted", "store_id": "1"},
+        )
+        await save_fixture(migration)
+
+        response = await client.post(f"/v1/merchant-migrations/{migration.id}/finish")
+        assert response.status_code == 200
+        assert response.json()["step"] == "completed"
+        stored = await MerchantMigrationRepository.from_session(session).get_by_id(
+            migration.id
+        )
+        assert stored is not None
+        assert stored.source_credentials == {"store_id": "1"}
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_refuses_before_benefits(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _create_migration(
+            save_fixture,
+            organization,
+            step=MerchantMigrationStep.create_catalog,
+            source_platform=MerchantMigrationSourcePlatform.lemon_squeezy,
+        )
+
+        response = await client.post(f"/v1/merchant-migrations/{migration.id}/finish")
+        assert response.status_code == 409
+        assert response.json()["error"] == "BenefitsNotReady"
+
+
+@pytest.mark.anyio
 class TestStartPanTransfer:
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
     async def test_start_requires_an_imported_catalog(
@@ -1423,10 +1484,13 @@ async def _create_migration(
     save_fixture: SaveFixture,
     organization: Organization,
     step: MerchantMigrationStep = MerchantMigrationStep.source_setup,
+    source_platform: MerchantMigrationSourcePlatform = (
+        MerchantMigrationSourcePlatform.stripe
+    ),
 ) -> MerchantMigration:
     migration = MerchantMigration(
         organization_id=organization.id,
-        source_platform=MerchantMigrationSourcePlatform.stripe,
+        source_platform=source_platform,
         step=step,
     )
     await save_fixture(migration)

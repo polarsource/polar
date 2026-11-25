@@ -9,6 +9,7 @@ import { schemas } from '@polar-sh/client'
 import { Alert, Spinner, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { BenefitsStep } from '../benefits/BenefitsStep'
+import { useBenefitsOnly } from '../benefitsOnly'
 import { PanTransferPanel } from '../cards/PanTransferPanel'
 import { ImportedStep } from '../ImportedStep'
 import { MigrationStepper } from '../MigrationStepper'
@@ -88,8 +89,9 @@ function MigrationLoaded({
   const needsPan = migration.step === 'copy_cards'
   const pan = usePanTransfer(needsPan ? migration.id : '')
   const panCurrentStepKey = pan.data?.current_step_key ?? null
+  const benefitsOnly = useBenefitsOnly(migration)
 
-  if (needsPan && pan.isLoading) {
+  if ((needsPan && pan.isLoading) || benefitsOnly === null) {
     return (
       <Box padding="3xl" alignItems="center" justifyContent="center">
         <Spinner />
@@ -102,10 +104,12 @@ function MigrationLoaded({
       <MigrationStepper
         migration={migration}
         panCurrentStepKey={panCurrentStepKey}
+        benefitsOnly={benefitsOnly}
       />
       <StepContent
         migration={migration}
         panCurrentStepKey={panCurrentStepKey}
+        benefitsOnly={benefitsOnly}
       />
     </Box>
   )
@@ -114,9 +118,11 @@ function MigrationLoaded({
 function StepContent({
   migration,
   panCurrentStepKey,
+  benefitsOnly,
 }: {
   migration: schemas['MerchantMigration']
   panCurrentStepKey: string | null
+  benefitsOnly: boolean
 }) {
   if (!migration.source_connected) {
     return (
@@ -125,7 +131,7 @@ function StepContent({
       </Text>
     )
   }
-  const def = currentStepDef(migration, panCurrentStepKey)
+  const def = currentStepDef(migration, panCurrentStepKey, benefitsOnly)
   switch (visibleMigrationStep(migration, panCurrentStepKey)) {
     // The stepper shows a connected migration as assessing, but nothing is
     // staged until the first pre-check runs.
@@ -146,7 +152,7 @@ function StepContent({
     // Lemon Squeezy sets benefits up before moving cards.
     // falls through
     case 'set_up_benefits':
-      return <BenefitsStep migration={migration} />
+      return <BenefitsStep migration={migration} benefitsOnly={benefitsOnly} />
     case 'copy_cards':
       return (
         <Box flexDirection="column" rowGap="l">
@@ -170,6 +176,15 @@ function StepContent({
     // Completing deleted the Stripe key, so the report stays but nothing can
     // be switched again.
     case 'completed':
+      if (benefitsOnly) {
+        return (
+          <Text color="muted">
+            This migration is complete. Your license keys, files and links are
+            on Polar, and Polar deleted your Lemon Squeezy API key. You can edit
+            them from Benefits.
+          </Text>
+        )
+      }
       return (
         <Box flexDirection="column" rowGap="l">
           <Text variant="caption" color="muted">

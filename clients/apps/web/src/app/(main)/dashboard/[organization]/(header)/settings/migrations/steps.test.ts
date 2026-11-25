@@ -1,6 +1,6 @@
 import { schemas } from '@polar-sh/client'
 import { describe, expect, it } from 'vitest'
-import { currentPosition } from './steps'
+import { currentPosition, migrationSteps } from './steps'
 
 function migration(
   step: schemas['MerchantMigrationStep'],
@@ -54,5 +54,35 @@ describe('currentPosition', () => {
       { kind: 'step', index: 2 },
       { kind: 'step', index: 3 },
     ])
+  })
+})
+
+describe('migrationSteps', () => {
+  it('drops card movement and the switch when only benefits move', () => {
+    expect(migrationSteps('lemon_squeezy', true).map((def) => def.key)).toEqual(
+      ['connect', 'assessment', 'benefits'],
+    )
+  })
+
+  it('keeps every step for a Lemon Squeezy migration with subscriptions', () => {
+    expect(migrationSteps('lemon_squeezy').map((def) => def.key)).toEqual([
+      'connect',
+      'assessment',
+      'benefits',
+      'cards',
+      'cutover',
+    ])
+  })
+})
+
+describe('currentPosition for a benefits-only migration', () => {
+  it('counts against the shortened step list', () => {
+    const benefits = migration('set_up_benefits', {
+      source_platform: 'lemon_squeezy',
+    })
+    const position = currentPosition(benefits, null, true)
+
+    expect(position).toEqual({ kind: 'step', index: 2 })
+    expect(migrationSteps('lemon_squeezy', true)).toHaveLength(3)
   })
 })

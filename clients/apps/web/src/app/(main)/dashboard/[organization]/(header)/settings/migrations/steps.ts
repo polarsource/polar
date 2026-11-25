@@ -80,10 +80,18 @@ const LEMON_SQUEEZY_STEPS: MigrationStepDef[] = MIGRATION_STEPS.flatMap((def) =>
     : [def],
 )
 
+const BENEFITS_ONLY_STEPS: MigrationStepDef[] = LEMON_SQUEEZY_STEPS.filter(
+  (def) => def.key !== 'cards' && def.key !== 'cutover',
+)
+
 export function migrationSteps(
   source: schemas['MerchantMigration']['source_platform'],
+  benefitsOnly = false,
 ): MigrationStepDef[] {
-  return source === 'lemon_squeezy' ? LEMON_SQUEEZY_STEPS : MIGRATION_STEPS
+  if (source !== 'lemon_squeezy') {
+    return MIGRATION_STEPS
+  }
+  return benefitsOnly ? BENEFITS_ONLY_STEPS : LEMON_SQUEEZY_STEPS
 }
 
 export const OWNER_LABELS: Record<StepOwner, string | null> = {
@@ -122,24 +130,27 @@ export function visibleMigrationStep(
 export function currentPosition(
   migration: schemas['MerchantMigration'],
   panCurrentStepKey?: string | null,
+  benefitsOnly = false,
 ): MigrationPosition {
   if (!migration.source_connected) {
     return { kind: 'step', index: 0 }
   }
   const visible = visibleMigrationStep(migration, panCurrentStepKey)
   const step = visible === 'source_setup' ? 'pre_check' : visible
-  const index = migrationSteps(migration.source_platform).findIndex((def) =>
-    def.steps.includes(step),
-  )
+  const index = migrationSteps(
+    migration.source_platform,
+    benefitsOnly,
+  ).findIndex((def) => def.steps.includes(step))
   return index === -1 ? { kind: 'completed' } : { kind: 'step', index }
 }
 
 export function currentStepDef(
   migration: schemas['MerchantMigration'],
   panCurrentStepKey?: string | null,
+  benefitsOnly = false,
 ): MigrationStepDef | null {
-  const position = currentPosition(migration, panCurrentStepKey)
+  const position = currentPosition(migration, panCurrentStepKey, benefitsOnly)
   return position.kind === 'completed'
     ? null
-    : migrationSteps(migration.source_platform)[position.index]
+    : migrationSteps(migration.source_platform, benefitsOnly)[position.index]
 }

@@ -1,0 +1,43 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/BenefitsForm.tsx
+  s_d4a843b33596ce::t_d5166896699508 9,21-23,32,35-40,43,55-61,63,86-91,103-118,148,161-174
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/BenefitsStep.tsx
+  s_d4a843b33596ce::t_9b718e6677eaeb 86,97,102,107-109,133,170-179
+clients/packages/client/src/v1.ts
+  s_d4a843b33596ce::t_3071ca4ef159f4 28522-28526,28562-28566,28575-28580
+server/polar/benefit/grant/repository.py
+  s_d4a843b33596ce::t_cc93f0a9863c7b 2,214-231
+server/polar/benefit/grant/service.py
+  s_d4a843b33596ce::t_b22a623693ac4e 159-174,184
+server/polar/merchant_migration/adapters/lemon_squeezy.py
+  s_d4a843b33596ce::t_e86891b89101aa 41,122,509-533,561,572,581-586,661-703,933-941
+server/polar/merchant_migration/benefits.py
+  s_d4a843b33596ce::t_ba31b45267b0f3 13,19,23-24,27,36-38,45-46,51-53,61,64-65,67-70,140,169-191,297-365
+server/polar/merchant_migration/canonical.py
+  s_d4a843b33596ce::t_f877257c8eca2e 379-393
+server/polar/merchant_migration/schemas.py
+  s_d4a843b33596ce::t_c71c60e0f5be6a 555-557,564-570,577-583
+server/polar/merchant_migration/service.py
+  s_d4a843b33596ce::t_471ca092c0c05c 16,1023-1036,1038,1060,1106-1110,1161-1169,1202
+server/tests/merchant_migration/test_benefits.py
+  s_d4a843b33596ce::t_dfd576f40d01fe 1-50
+server/tests/merchant_migration/test_lemon_squeezy_adapter.py
+  s_d4a843b33596ce::t_fb8005174c82d5 641,661-748
+server/tests/merchant_migration/test_service.py
+  s_d4a843b33596ce::t_d3751a1eba7691 44,100,142,5904,5932-5934,5937,6112-6191
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f7911db010c49c1922a6a0cbe97b3f14656f017c",
+  "prompts": {},
+  "sessions": {
+    "s_d4a843b33596ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "12adddd7-b520-4f67-a19e-0f92eb2e092a",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

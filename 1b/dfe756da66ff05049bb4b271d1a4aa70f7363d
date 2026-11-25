@@ -1,0 +1,33 @@
+server/polar/merchant_migration/adapters/base.py
+  s_587ceda2630946::t_6d46098b7d6233 37-42
+server/polar/merchant_migration/adapters/lemon_squeezy.py
+  s_587ceda2630946::t_fe05c3f21c4218 704,712-715,720-723,729,832-834
+server/polar/merchant_migration/adapters/stripe.py
+  s_587ceda2630946::t_8a9cae1797d5a4 658-661
+server/polar/merchant_migration/canonical.py
+  s_587ceda2630946::t_a6d0b15c81b50f 281-283,726
+server/polar/merchant_migration/cutover.py
+  s_587ceda2630946::t_11d15eb2668ffb 704-710
+server/tests/merchant_migration/test_cutover.py
+  s_587ceda2630946::t_dbacf918ef7ce7 154,158,167-169,392
+server/tests/merchant_migration/test_lemon_squeezy_adapter.py
+  s_587ceda2630946::t_182f9e9fc03106 274,427-428
+server/tests/merchant_migration/test_service.py
+  s_587ceda2630946::t_a1ed358cb40c66 211-213
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1bdfe756da66ff05049bb4b271d1a4aa70f7363d",
+  "prompts": {},
+  "sessions": {
+    "s_587ceda2630946": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "857c022f-2249-4a02-a91e-cde99fa20ae3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

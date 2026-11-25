@@ -1,0 +1,23 @@
+server/polar/email/billing_migration.py
+  s_d4a843b33596ce::t_d2082f4e2d5bc5 3,19-20,29
+server/polar/merchant_migration/repository.py
+  s_d4a843b33596ce::t_c4d0a5e6016f98 201-206,221-222,224
+server/tests/email/test_billing_migration.py
+  s_d4a843b33596ce::t_b0ff6c88b49ffc 6-12,79-107
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2347741431b31afa7eaaa472d3e9ce7200454614",
+  "prompts": {},
+  "sessions": {
+    "s_d4a843b33596ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "12adddd7-b520-4f67-a19e-0f92eb2e092a",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

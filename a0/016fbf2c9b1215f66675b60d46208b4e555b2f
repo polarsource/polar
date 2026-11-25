@@ -1,0 +1,19 @@
+docs/migrate-lemon-squeezy.mdx
+  s_d4a843b33596ce::t_571c73459e61e4 11,13-17,164-166
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a0016fbf2c9b1215f66675b60d46208b4e555b2f",
+  "prompts": {},
+  "sessions": {
+    "s_d4a843b33596ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "12adddd7-b520-4f67-a19e-0f92eb2e092a",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

@@ -1,0 +1,19 @@
+server/polar/merchant_migration/benefits.py
+  s_d4a843b33596ce::t_1bc317e4cd5e29 67-70,173-175,329-330
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "19d34fc6b2f15e8163e3ed5719ae7ccc22f1d863",
+  "prompts": {},
+  "sessions": {
+    "s_d4a843b33596ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "12adddd7-b520-4f67-a19e-0f92eb2e092a",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

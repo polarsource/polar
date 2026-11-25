@@ -1,0 +1,43 @@
+server/polar/merchant_migration/adapters/lemon_squeezy.py
+  s_d4a843b33596ce::t_1c59f64a0526d0 543,790
+server/polar/merchant_migration/benefits.py
+  s_d7cc2ba6160b37::t_389e3610156afa 15,343,387,390-393,399-401,409,413-417,420-422,438-440
+server/polar/merchant_migration/canonical.py
+  s_d4a843b33596ce::t_bdde4a1957f8d1 399
+server/polar/merchant_migration/cutover.py
+  s_d4a843b33596ce::t_727b92eb31a1ab 53,734
+server/polar/merchant_migration/tasks.py
+  s_d4a843b33596ce::t_7f03f907bb3f53 25,93,96-101
+server/tests/merchant_migration/test_benefits.py
+  s_d4a843b33596ce::t_6e9a5f62ccef05 1,8,106,110,134,149,158-174
+server/tests/merchant_migration/test_cutover.py
+  s_d4a843b33596ce::t_f87451f036e548 403-407,430
+server/tests/merchant_migration/test_lemon_squeezy_adapter.py
+  s_d4a843b33596ce::t_bf29a338d29e88 816,848
+server/tests/merchant_migration/test_service.py
+  s_d4a843b33596ce::t_b201434ca3556f 2,6142,6196
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b1b883e5c737e212cc490d31e7495d7244145707",
+  "prompts": {},
+  "sessions": {
+    "s_d4a843b33596ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "12adddd7-b520-4f67-a19e-0f92eb2e092a",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_d7cc2ba6160b37": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "agent-a6a29fe3130f5537e",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

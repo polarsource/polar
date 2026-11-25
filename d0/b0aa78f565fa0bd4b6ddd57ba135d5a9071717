@@ -1,0 +1,29 @@
+server/polar/backoffice/merchant_migrations/endpoints.py
+  s_2d59e38305efb8::t_b666e3233f6e97 314-320
+server/polar/backoffice/merchant_migrations/views.py
+  s_2d59e38305efb8::t_2efbe1742a82b2 77
+server/polar/merchant_migration/adapters/lemon_squeezy.py
+  s_2d59e38305efb8::t_1b9c60d460ff91 152-156
+server/polar/merchant_migration/service.py
+  s_2d59e38305efb8::t_216aa0fa353a67 228,376-383,385-389,391-392,668,670-675,696
+server/tests/merchant_migration/test_lemon_squeezy_adapter.py
+  s_2d59e38305efb8::t_51c937de3b2eb7 438-448
+server/tests/merchant_migration/test_service.py
+  s_2d59e38305efb8::t_acebf77823d267 237-239,241-244,312,315-366
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d0b0aa78f565fa0bd4b6ddd57ba135d5a9071717",
+  "prompts": {},
+  "sessions": {
+    "s_2d59e38305efb8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4125303f-d2bd-4c0b-8aa3-91bb345fc28b",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

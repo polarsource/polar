@@ -1,0 +1,124 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/ImportedHandoff.tsx
+  s_37bf03e3cd4b2d::t_2ce78ffd79bd04 21,32-33,75,85-110,141,143,155
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/ImportedStep.tsx
+  s_37bf03e3cd4b2d::t_52a28361cc83f5 12-18,37
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationRow.tsx
+  s_37bf03e3cd4b2d::t_cb5b039510a645 9,22-24
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationStepper.tsx
+  s_37bf03e3cd4b2d::t_fa4dd401226e8a 5,21,24,28
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/[id]/MigrationDetailPage.tsx
+  s_37bf03e3cd4b2d::t_df18244ef3fff4 11,143-149
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/BenefitRows.tsx
+  s_37bf03e3cd4b2d::t_51abf03f55f58d 1-85
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/benefitCopy.ts
+  s_37bf03e3cd4b2d::t_a48d856438c283 1-8,10-25
+  s_d4a843b33596ce::t_3a9db17add668e 9
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/steps.test.ts
+  s_37bf03e3cd4b2d::t_233eefd357ffdb 43-57
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/steps.ts
+  s_37bf03e3cd4b2d::t_fdb54acd478614 65-88,117,131-133,142-144
+clients/apps/web/src/hooks/queries/merchantMigrations.ts
+  s_37bf03e3cd4b2d::t_cef07f1ba97091 180-222
+server/polar/backoffice/merchant_migrations/status.py
+  s_37bf03e3cd4b2d::t_1eeb42372e2aea 41,324
+server/polar/merchant_migration/endpoints.py
+  s_37bf03e3cd4b2d::t_bf8df4e4c2e69a 36-37,55-56,280-293,295-320,323-339
+  s_d4a843b33596ce::t_d07be2fa413896 294,321-322
+server/polar/merchant_migration/repository.py
+  s_37bf03e3cd4b2d::t_378372720d544d 1,235-248,249-257
+server/polar/merchant_migration/tasks.py
+  s_37bf03e3cd4b2d::t_7bc58a0c0932ce 53-57,59-62,64-66,68
+  s_d4a843b33596ce::t_53252c17389701 21,58
+  s_d4a843b33596ce::t_8d38ca06252b7f 63,67
+server/polar/models/merchant_migration.py
+  s_37bf03e3cd4b2d::t_d06fa48de99b8a 48-49
+server/polar/models/merchant_migration_operation.py
+  s_37bf03e3cd4b2d::t_0f196d79672623 40
+server/polar/product/repository.py
+  s_37bf03e3cd4b2d::t_f33d7cfa3526c3 1,162-172
+server/tests/backoffice/merchant_migrations/test_endpoints.py
+  s_37bf03e3cd4b2d::t_e795edfb08d7bf 214
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/BenefitsForm.tsx
+  s_d4a843b33596ce::t_b53f50e2d654cf 1-19,23-32,39-51,59,61-94,111-154
+  s_d4a843b33596ce::t_41fcfe927e32fd 20-22,33-38,52-53,55-58,60,95-110
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/BenefitsStep.tsx
+  s_d4a843b33596ce::t_0ec1efd3c3f674 1-82,84-93,95-98,100-103,107-129,135-170
+  s_d4a843b33596ce::t_0602c8e4e34415 83,94,99,104-106,130-134
+clients/packages/client/src/v1.ts
+  s_d4a843b33596ce::t_2bb46d85666081 6103-6126,14285-14306,28469-28488,28490-28493,28495-28507,28510,28512-28521,28527-28561,28567-28570,28579,28581,28737-28741,29022,65079-65116,65118-65178,65180-65201,75937-75942,75951,75967
+  s_d4a843b33596ce::t_3df1d598973a66 28489,28494,28508-28509,28511,28571-28572,28574,65117,65179
+  s_d4a843b33596ce::t_bd5024b60521d4 28522-28526,28562-28563,28565-28566,28575-28580
+  s_d4a843b33596ce::t_49760a84d37e24 28564
+server/polar/merchant_migration/adapters/lemon_squeezy.py
+  s_d4a843b33596ce::t_2b3619da719cca 11,16,20,26-29,35,60-65,271,534-560,562-571,573-580,587-660,914-947,957-966
+  s_d4a843b33596ce::t_6478656982828a 41,122,509-510,512-521,523-533,561,572,581-586,661,664-670,672-695,950,954-956
+  s_d4a843b33596ce::t_f5fa0f6ed6f2eb 511,522,662-663,671,948-949,951-953
+  s_d4a843b33596ce::t_a468f804c6d8e3 704,711-733
+server/polar/merchant_migration/benefits.py
+  s_d4a843b33596ce::t_14f375b180b5ff 1-12,14-18,20-22,25-26,28-35,39-44,47-50,54-60,62-63,66,71-139,141-168,192-296,370-378,382-386
+  s_d4a843b33596ce::t_db10f0204b102a 366-370,379-381
+  s_d4a843b33596ce::t_ece433b23a9f6f 13,23-24,45-46,51-53,61,140,172,176-181,183-188,191,297-311,313-328,337-352,355-364
+  s_d4a843b33596ce::t_088b0cc00bbd90 19,27,36-38,64-65,169-171,182,189-190,312,331-336,353-354
+  s_d4a843b33596ce::t_1bc317e4cd5e29 67-70,173-175,329-330
+server/polar/merchant_migration/canonical.py
+  s_d4a843b33596ce::t_4b554d46d282f3 343-381,397-398
+  s_d4a843b33596ce::t_d8f3329cabfcc5 382-394,396
+  s_d4a843b33596ce::t_6bf620374aa427 395
+  s_d4a843b33596ce::t_c3fe68fccd6c8b 281-283,726
+server/polar/merchant_migration/schemas.py
+  s_d4a843b33596ce::t_3c6a46d7c6e1e5 26-30,499-515,517-518,520-526,529-533,537-542,549-551,561-563
+  s_d4a843b33596ce::t_261531861c84d6 516,519,527-528,552-553
+  s_d4a843b33596ce::t_850a4abbbc0536 534-536,543-544,547-548,555-561
+  s_d4a843b33596ce::t_b810ac936920b1 545-546
+server/polar/merchant_migration/service.py
+  s_d4a843b33596ce::t_e5c7dacdf8368d 51,56,102-106,135,138-141,290-305,1003-1019,1021,1025-1036,1038-1045,1047-1066,1070-1075,1078-1091,1097-1098,1100-1110,1116-1118,1120-1124,1128,1130-1132,1134-1146,1156-1162,1167-1175,1180-1182,1185,1189-1200,1202-1212,1222-1230
+  s_d4a843b33596ce::t_b800403e8596e2 4,6,136-137,1037,1067,1076,1099,1163-1166,1176-1179,1183-1184,1186-1187,1214-1221,1277-1283
+  s_d4a843b33596ce::t_68ee83e831aad6 1068-1069,1077,1111-1115,1119,1125-1127,1129,1133,1201,1213
+  s_d4a843b33596ce::t_c2ce477faa9874 1020,1022-1024,1046,1092,1094,1096,1147,1188
+  s_d4a843b33596ce::t_3c270b61b4b798 1148-1155
+server/tests/merchant_migration/test_lemon_squeezy_adapter.py
+  s_d4a843b33596ce::t_3efe795dc20e93 577-671,673-689
+  s_d4a843b33596ce::t_830c1e41ef8498 672,690-724,726-727,729-742,745-760,762
+  s_d4a843b33596ce::t_15017beedf5c6f 725,728,743-744,761
+  s_d4a843b33596ce::t_680a72c852ca5c 86,189-206,274,420-431
+server/tests/merchant_migration/test_service.py
+  s_d4a843b33596ce::t_d06a74f11ebf77 17,28-31,34,38,71,80,107,135,5755-5761,5763-5784,5793-5794,5796-5798,5799-5818,5820-5822,5824-5841,5843,5845-5848,5865-5868,5870,5872-5874,5878-5882,5919-5938,5940-5942,5946-5969
+  s_d4a843b33596ce::t_304dd862d561bc 64,4957-4958,4960-4961,5819,5823,5842,5844,5849-5864,5869,5871,5939
+  s_d4a843b33596ce::t_5cf53e41aca643 5785-5789,5875-5877,5883-5918,5943-5945
+  s_d4a843b33596ce::t_c149dfebd22ea1 44,98,5762,5790-5791,5795,5970-6010,6012-6015,6019-6040
+server/tests/merchant_migration/test_endpoints.py
+  s_d4a843b33596ce::t_3f9a635bb41a53 799-830
+server/polar/benefit/grant/service.py
+  s_d4a843b33596ce::t_78f0d3c43314eb 159-170,172-174,184
+  s_d4a843b33596ce::t_4c608b4a8dfdc8 171
+server/polar/benefit/repository.py
+  s_d4a843b33596ce::t_a162bca8273603 77-90
+server/polar/merchant_migration/cutover.py
+  s_d4a843b33596ce::t_3761e90fe2cfd4 19-20,26,28,38,53,677,690-723
+server/tests/merchant_migration/test_cutover.py
+  s_d4a843b33596ce::t_bf55114bf79f33 2,13,42,57,63,363-400
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "698171d6af033b84183536da414e89f39da14d7d",
+  "prompts": {},
+  "sessions": {
+    "s_37bf03e3cd4b2d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b8575e47-be3f-4ef4-80ee-520d51c8c6ba",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_d4a843b33596ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "12adddd7-b520-4f67-a19e-0f92eb2e092a",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

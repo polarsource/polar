@@ -1,0 +1,43 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/ImportedHandoff.tsx
+  s_d4a843b33596ce::t_ada6c670c136f7 21,32-33,75,85-110,141,143,155
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/ImportedStep.tsx
+  s_d4a843b33596ce::t_cbd431dc4f22ad 12-18,37
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationRow.tsx
+  s_d4a843b33596ce::t_91ca7d6127a924 9,22-24
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationStepper.tsx
+  s_d4a843b33596ce::t_cfce4f65a414aa 5,21,24,28
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/[id]/MigrationDetailPage.tsx
+  s_d4a843b33596ce::t_46607b14a3bc91 11,143-149
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/BenefitRows.tsx
+  s_d4a843b33596ce::t_eed686d3bc88ce 1-85
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/BenefitsForm.tsx
+  s_d4a843b33596ce::t_9f229a6df65c92 1-125
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/BenefitsStep.tsx
+  s_d4a843b33596ce::t_4e42e532514467 1-161
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/benefitCopy.ts
+  s_d4a843b33596ce::t_069a5548877eeb 1-25
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/steps.test.ts
+  s_d4a843b33596ce::t_b83cdb054d8fcd 43-57
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/steps.ts
+  s_d4a843b33596ce::t_4f8a5ec806a8d6 65-88,117,131-133,142-144
+clients/apps/web/src/hooks/queries/merchantMigrations.ts
+  s_d4a843b33596ce::t_92867101cc906c 180-222
+clients/packages/client/src/v1.ts
+  s_d4a843b33596ce::t_b67ee187e36fc5 6103-6126,14285-14306,28469-28565,28721-28725,29006,65063-65185,75921-75926,75935,75951
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a6433bb6ad7cf2e96d5047f7e9f8f1df2b001c5f",
+  "prompts": {},
+  "sessions": {
+    "s_d4a843b33596ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "12adddd7-b520-4f67-a19e-0f92eb2e092a",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

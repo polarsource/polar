@@ -1,0 +1,43 @@
+server/polar/backoffice/merchant_migrations/status.py
+  s_587ceda2630946::t_307072df5b3b9c 26,52-55,200,203-210
+server/tests/backoffice/merchant_migrations/test_status.py
+  s_587ceda2630946::t_33e8b53f84f894 203-210,212-217
+server/tests/merchant_migration/test_service.py
+  s_587ceda2630946::t_9e1011fcdc70c2 79,4967-4997
+clients/packages/client/src/v1.ts
+  s_d4a843b33596ce::t_5ff0cc14db3050 65083-65091,65154-65162,65291,65299
+server/polar/backoffice/merchant_migrations/endpoints.py
+  s_d4a843b33596ce::t_464891d3e70ba4 364
+server/polar/backoffice/merchant_migrations/views.py
+  s_d4a843b33596ce::t_218c15e12be9ba 84
+server/polar/merchant_migration/endpoints.py
+  s_d4a843b33596ce::t_820044beb541a3 285-288,316-319,385-387,389
+server/polar/merchant_migration/service.py
+  s_d4a843b33596ce::t_7aca6b0a0de2ac 1269-1270,1272-1279
+server/tests/backoffice/merchant_migrations/test_endpoints.py
+  s_d4a843b33596ce::t_61034554266982 214
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4fca9a77654008d531f99c363b75b355f52a5133",
+  "prompts": {},
+  "sessions": {
+    "s_587ceda2630946": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "857c022f-2249-4a02-a91e-cde99fa20ae3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_d4a843b33596ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "12adddd7-b520-4f67-a19e-0f92eb2e092a",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

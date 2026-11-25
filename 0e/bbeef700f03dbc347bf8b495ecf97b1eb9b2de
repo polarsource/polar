@@ -1,0 +1,30 @@
+server/polar/customer_meter/service.py
+  s_6b363d9cefbc3a::t_9b254c3a542d35 186
+  s_6b363d9cefbc3a::t_7c90652d3e95bc 181-185,187-196,199-202
+  s_6b363d9cefbc3a::t_90a69028b554de 197-198
+  s_6b363d9cefbc3a::t_e1ee370c4eb1cf 157-165
+server/tests/customer_meter/test_service.py
+  s_6b363d9cefbc3a::t_90a69028b554de 1999
+  s_6b363d9cefbc3a::t_69bfdfe546d0be 1979,1992,1995-1998,2000-2020
+server/polar/customer/service.py
+  s_6b363d9cefbc3a::t_004c01ab84b83f 1027,1033-1039,1043-1054,1058-1068
+  s_6b363d9cefbc3a::t_03159558eb433f 1007,1010-1012
+  s_6b363d9cefbc3a::t_90a69028b554de 4,1055-1057
+  s_6b363d9cefbc3a::t_aaa0baf5e99a40 1069
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0ebbeef700f03dbc347bf8b495ecf97b1eb9b2de",
+  "prompts": {},
+  "sessions": {
+    "s_6b363d9cefbc3a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d62ff3de-d91d-4391-bd9a-f7fef946e1ba",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

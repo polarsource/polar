@@ -83,7 +83,7 @@ export function BenefitsStep({
         <BenefitsReady
           migrationId={migration.id}
           benefits={benefits.data?.items ?? []}
-          pastPurchasesGranted={!!benefits.data?.past_purchases_granted}
+          pastBuyersGranted={benefits.data?.past_buyers_granted ?? null}
           onEdit={() => setEditing(true)}
         />
       )}
@@ -94,12 +94,12 @@ export function BenefitsStep({
 function BenefitsReady({
   migrationId,
   benefits,
-  pastPurchasesGranted,
+  pastBuyersGranted,
   onEdit,
 }: {
   migrationId: string
   benefits: schemas['MerchantMigrationBenefit'][]
-  pastPurchasesGranted: boolean
+  pastBuyersGranted: number | null
   onEdit: () => void
 }) {
   const start = useStartPanTransfer(migrationId)
@@ -131,8 +131,8 @@ function BenefitsReady({
         <Text color="muted">
           {created.length
             ? `${plural(created.length, 'benefit')} created.${
-                pastPurchasesGranted
-                  ? ' Past buyers find them in the customer portal.'
+                pastBuyersGranted
+                  ? ` ${plural(pastBuyersGranted, 'past buyer')} ${pastBuyersGranted === 1 ? 'has' : 'have'} them in the customer portal.`
                   : ''
               }`
             : 'No benefits were created. You can add them later from each product.'}

@@ -6,6 +6,7 @@ import { Alert, ButtonGroup, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useState } from 'react'
 import { plural } from '../review/importSummary'
+import { useRecordSummary } from '../review/recordSummary'
 import { BenefitRow, BenefitSection } from './BenefitRows'
 
 const LICENSE_KEY_DOCS = 'https://polar.sh/docs/features/benefits/license-keys'
@@ -28,6 +29,7 @@ export function BenefitsForm({
 }: Props) {
   const [excluded, setExcluded] = useState<Set<string>>(new Set())
   const setUp = useSetUpMigrationBenefits(migrationId)
+  const records = useRecordSummary(migrationId)
 
   const forSubscribers = benefits.filter((b) => b.products.length > 0)
   const forPastBuyers = benefits.filter(
@@ -38,6 +40,7 @@ export function BenefitsForm({
   )
   const toCreate = selected.filter((b) => !b.benefit_id)
   const hasLicenseKeys = selected.some((b) => b.type === 'license_keys')
+  const grantsPastBuyers = selected.some((b) => b.for_one_time)
 
   const toggle = (id: string) =>
     setExcluded((current) => {
@@ -52,7 +55,7 @@ export function BenefitsForm({
     setUp.mutate(
       {
         ids: benefitIds,
-        grant_past_purchases: selected.some((b) => b.for_one_time),
+        grant_past_purchases: grantsPastBuyers,
       },
       { onSuccess: onDone },
     )
@@ -80,7 +83,12 @@ export function BenefitsForm({
   return (
     <Box flexDirection="column" rowGap="xl">
       {forSubscribers.length > 0 && (
-        <BenefitSection title="Subscribers">
+        <BenefitSection
+          title="Subscribers"
+          description={subscribersWhen(
+            records.isLoading ? null : records.counts.subscriptions.ready,
+          )}
+        >
           {forSubscribers.map((benefit) => (
             <BenefitRow
               key={benefit.id}
@@ -95,7 +103,7 @@ export function BenefitsForm({
       {forPastBuyers.length > 0 && (
         <BenefitSection
           title="Past one-time buyers"
-          description="Polar doesn't email them. They find everything in the customer portal."
+          description="They get these now, in the customer portal. Polar doesn't email them."
         >
           {forPastBuyers.map((benefit) => (
             <BenefitRow
@@ -137,9 +145,7 @@ export function BenefitsForm({
           {
             text: setUp.isPending
               ? 'Creating…'
-              : toCreate.length
-                ? `Create ${plural(toCreate.length, 'benefit')}`
-                : 'Continue',
+              : submitLabel(toCreate.length, grantsPastBuyers),
             disabled: setUp.isPending,
             onClick: () => submit(selected.map((b) => b.id)),
           },
@@ -151,4 +157,18 @@ export function BenefitsForm({
       />
     </Box>
   )
+}
+
+function subscribersWhen(ready: number | null): string {
+  if (!ready) {
+    return 'They get these when they switch to Polar.'
+  }
+  return `${plural(ready, 'subscriber')} ${ready === 1 ? 'gets' : 'get'} these when they switch to Polar.`
+}
+
+function submitLabel(toCreate: number, grantsPastBuyers: boolean): string {
+  if (grantsPastBuyers) {
+    return toCreate ? 'Create and grant' : 'Grant'
+  }
+  return toCreate ? `Create ${plural(toCreate, 'benefit')}` : 'Continue'
 }

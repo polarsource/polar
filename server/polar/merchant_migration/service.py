@@ -13,6 +13,7 @@ from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
 from polar.auth.scope import Scope
 from polar.authz.service import assert_organization_permission
+from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.config import settings
 from polar.customer.repository import CustomerRepository, CustomerStripeIdentity
 from polar.exceptions import NotPermitted, PolarError
@@ -1018,10 +1019,19 @@ class MerchantMigrationService:
             migration.organization_id, product_ids
         )
         operation = migration.operation
-        return MerchantMigrationBenefits(
-            past_purchases_granted=operation is not None
+        past_buyers_granted = None
+        if (
+            operation is not None
             and operation.kind == MerchantMigrationOperationKind.benefits
-            and bool((operation.cursor or {}).get("past_purchases_granted")),
+            and (operation.cursor or {}).get("past_purchases_granted")
+        ):
+            past_buyers_granted = await BenefitGrantRepository.from_session(
+                session
+            ).count_customers_granted_manually(
+                [proposal.created.id for proposal in proposals if proposal.created]
+            )
+        return MerchantMigrationBenefits(
+            past_buyers_granted=past_buyers_granted,
             items=[
                 MerchantMigrationBenefit(
                     id=proposal.source.source_id,

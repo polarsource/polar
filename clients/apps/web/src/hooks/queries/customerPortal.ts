@@ -246,6 +246,11 @@ export const useDeleteCustomerPaymentMethod = (api: Client) =>
 export const useCustomerBenefitGrants = (
   api: Client,
   parameters?: operations['customer_portal:benefit-grants:list']['parameters']['query'],
+  options: {
+    refetchInterval?: (
+      data: schemas['ListResource_CustomerBenefitGrant_'] | undefined,
+    ) => number | false
+  } = {},
 ) =>
   useQuery({
     queryKey: ['customer_benefit_grants', { ...(parameters || {}) }],
@@ -256,6 +261,9 @@ export const useCustomerBenefitGrants = (
         }),
       ),
     retry: defaultRetry,
+    refetchInterval: options.refetchInterval
+      ? (query) => options.refetchInterval?.(query.state.data) ?? false
+      : undefined,
   })
 
 export const useCustomerBenefitGrantUpdate = (api: Client) =>

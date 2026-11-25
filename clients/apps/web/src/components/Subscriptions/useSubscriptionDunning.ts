@@ -32,6 +32,7 @@ export const useSubscriptionDunning = (
     }))
   const succeeded = payments?.items.find(({ status }) => status === 'succeeded')
   return {
+    orderId: order.id,
     attempts,
     nextAttemptAt:
       order.status === 'pending' && order.next_payment_attempt_at

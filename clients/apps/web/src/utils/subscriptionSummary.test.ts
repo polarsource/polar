@@ -135,3 +135,50 @@ describe('getMonthlyRecurringAmount', () => {
     ).toBeNull()
   })
 })
+
+describe('getSubscriptionActivity orders', () => {
+  const orders = [
+    { id: 'renewal', created_at: '2026-06-10T00:00:05Z' },
+    { id: 'first', created_at: '2026-03-10T00:00:02Z' },
+  ]
+  const dunning = {
+    orderId: 'renewal',
+    attempts: [
+      {
+        at: new Date('2026-06-11T00:00:00Z').getTime(),
+        isRetry: false,
+        reason: null,
+      },
+    ],
+    nextAttemptAt: new Date('2026-06-16T00:00:00Z').getTime(),
+    recoveredAt: null,
+  }
+  const links = (activity: ReturnType<typeof getSubscriptionActivity>) =>
+    Object.fromEntries(
+      activity.map(({ label, orderId, isPayment }) => [
+        label,
+        orderId ? `${orderId}${isPayment ? '#payments' : ''}` : null,
+      ]),
+    )
+
+  it('links the first charge and the renewal to their orders', () => {
+    expect(
+      links(getSubscriptionActivity(subscription(), NOW, undefined, orders)),
+    ).toEqual({ Renews: null, Renewed: 'renewal', Subscribed: 'first' })
+  })
+
+  it('links payment attempts to the payments of the order they were for', () => {
+    expect(
+      links(getSubscriptionActivity(subscription(), NOW, dunning, orders)),
+    ).toMatchObject({
+      'Payment failed': 'renewal#payments',
+      'Payment retry': 'renewal#payments',
+    })
+  })
+
+  it('leaves an event without an order near it unlinked', () => {
+    expect(
+      links(getSubscriptionActivity(subscription(), NOW, undefined, [])),
+    ).toEqual({ Renews: null, Renewed: null, Subscribed: null })
+  })
+})

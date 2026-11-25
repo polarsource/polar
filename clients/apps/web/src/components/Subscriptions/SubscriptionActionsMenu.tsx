@@ -4,16 +4,11 @@ import { useModal } from '@/components/Modal/useModal'
 import CancelSubscriptionModal from '@/components/Subscriptions/CancelSubscriptionModal'
 import PauseSubscriptionModal from '@/components/Subscriptions/PauseSubscriptionModal'
 import { toast } from '@/components/Toast/use-toast'
-import {
-  useCancelScheduledPause,
-  useResumeSubscription,
-  useUncancelSubscription,
-} from '@/hooks/queries'
-import { extractApiErrorMessage } from '@/utils/api/errors'
 import { getPauseAction } from '@/utils/subscription'
 import { MoreVertOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Button, InlineModal } from '@polar-sh/orbit'
+import { useSubscriptionActions } from './useSubscriptionActions'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,57 +28,7 @@ const SubscriptionActionsMenu = ({
 
   const pauseAction = getPauseAction(subscription)
 
-  const uncancelSubscription = useUncancelSubscription(subscription.id)
-  const resumeSubscription = useResumeSubscription(subscription.id)
-  const cancelScheduledPause = useCancelScheduledPause(subscription.id)
-
-  const handleUncancel = async () => {
-    try {
-      await uncancelSubscription.mutateAsync()
-      toast({
-        title: 'Subscription Uncanceled',
-        description:
-          'The subscription has been uncanceled and will continue at the next billing cycle.',
-      })
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: `Failed to uncancel the subscription: ${extractApiErrorMessage(error as Record<string, unknown>)}`,
-      })
-    }
-  }
-
-  const handleResume = async () => {
-    try {
-      await resumeSubscription.mutateAsync()
-      toast({
-        title: 'Subscription Resumed',
-        description:
-          'The subscription has been resumed and charged for a new billing period.',
-      })
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: `Failed to resume the subscription: ${extractApiErrorMessage(error as Record<string, unknown>)}`,
-      })
-    }
-  }
-
-  const handleCancelScheduledPause = async () => {
-    try {
-      await cancelScheduledPause.mutateAsync()
-      toast({
-        title: 'Scheduled Pause Canceled',
-        description:
-          'The subscription will no longer be paused at the end of the period.',
-      })
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: `Failed to cancel the scheduled pause: ${extractApiErrorMessage(error as Record<string, unknown>)}`,
-      })
-    }
-  }
+  const actions = useSubscriptionActions(subscription.id)
 
   const handleCopyId = () => {
     navigator.clipboard
@@ -117,8 +62,8 @@ const SubscriptionActionsMenu = ({
           {subscription.status !== 'canceled' &&
             (subscription.cancel_at_period_end ? (
               <DropdownMenuItem
-                onClick={handleUncancel}
-                disabled={uncancelSubscription.isPending}
+                onClick={actions.uncancel.run}
+                disabled={actions.uncancel.isPending}
               >
                 Uncancel
               </DropdownMenuItem>
@@ -129,15 +74,15 @@ const SubscriptionActionsMenu = ({
             ))}
           {pauseAction === 'resume' ? (
             <DropdownMenuItem
-              onClick={handleResume}
-              disabled={resumeSubscription.isPending}
+              onClick={actions.resume.run}
+              disabled={actions.resume.isPending}
             >
               Resume Now
             </DropdownMenuItem>
           ) : pauseAction === 'cancel_scheduled_pause' ? (
             <DropdownMenuItem
-              onClick={handleCancelScheduledPause}
-              disabled={cancelScheduledPause.isPending}
+              onClick={actions.cancelScheduledPause.run}
+              disabled={actions.cancelScheduledPause.isPending}
             >
               Cancel Scheduled Pause
             </DropdownMenuItem>

@@ -37,6 +37,8 @@ export type SubscriptionActivityKind =
   | 'trial'
   | 'converted'
   | 'renewal'
+  | 'update'
+  | 'usage'
   | 'failed'
   | 'recovered'
   | 'canceled'
@@ -50,9 +52,14 @@ export interface SubscriptionActivityItem {
   detail?: string
   at: number
   upcoming: boolean
+  // The order behind the event, and whether it is about the order's payments.
+  orderId?: string
+  isPayment?: boolean
 }
 
 export interface SubscriptionDunning {
+  // The order the attempts were made on.
+  orderId?: string
   attempts: { at: number; isRetry: boolean; reason: string | null }[]
   nextAttemptAt: number | null
   recoveredAt: number | null
@@ -78,10 +85,41 @@ export type ActivitySubscription = Pick<
 const toTime = (value: string | null | undefined): number | null =>
   value ? new Date(value).getTime() : null
 
+export type ActivityOrder = Pick<schemas['Order'], 'id' | 'created_at'>
+
+// An order is made when the charge is due, a moment after the event it bills.
+const ORDER_MATCH_WINDOW = 24 * 60 * 60 * 1000
+
+// The charges that start, convert and renew a subscription each have an order.
+const BILLED_KINDS = new Set<SubscriptionActivityKind>([
+  'started',
+  'converted',
+  'renewal',
+])
+
+// The order made for an event at the given time, if there is one.
+const findOrderAt = <T extends ActivityOrder>(
+  orders: T[],
+  at: number,
+): T | undefined => {
+  let closest: { order: T; distance: number } | undefined
+  for (const order of orders) {
+    const distance = Math.abs(new Date(order.created_at).getTime() - at)
+    if (
+      distance <= ORDER_MATCH_WINDOW &&
+      distance < (closest?.distance ?? Infinity)
+    ) {
+      closest = { order, distance }
+    }
+  }
+  return closest?.order
+}
+
 export const getSubscriptionActivity = (
   subscription: ActivitySubscription,
   now: number,
   dunning?: SubscriptionDunning,
+  orders: ActivityOrder[] = [],
 ): SubscriptionActivityItem[] => {
   const items: SubscriptionActivityItem[] = []
   const add = (
@@ -90,9 +128,17 @@ export const getSubscriptionActivity = (
     at: number | null,
   ) => {
     if (at !== null) {
-      items.push({ kind, label, at, upcoming: at > now })
+      const upcoming = at > now
+      const orderId =
+        !upcoming && BILLED_KINDS.has(kind)
+          ? findOrderAt(orders, at)?.id
+          : undefined
+      items.push({ kind, label, at, upcoming, ...(orderId ? { orderId } : {}) })
     }
   }
+  const payment = dunning?.orderId
+    ? { orderId: dunning.orderId, isPayment: true }
+    : {}
 
   const startedAt = new Date(subscription.started_at).getTime()
   const trialStart = toTime(subscription.trial_start)
@@ -139,6 +185,7 @@ export const getSubscriptionActivity = (
         detail: reason ?? undefined,
         at,
         upcoming: false,
+        ...payment,
       })
     }
   } else {
@@ -150,6 +197,7 @@ export const getSubscriptionActivity = (
       label: 'Payment recovered',
       at: dunning.recoveredAt,
       upcoming: false,
+      ...payment,
     })
   }
   if (dunning?.nextAttemptAt) {
@@ -158,6 +206,7 @@ export const getSubscriptionActivity = (
       label: 'Payment retry',
       at: dunning.nextAttemptAt,
       upcoming: true,
+      ...payment,
     })
   }
   add('canceled', 'Cancellation requested', toTime(subscription.canceled_at))

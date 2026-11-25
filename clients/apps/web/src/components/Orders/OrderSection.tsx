@@ -5,17 +5,20 @@ import { Box } from '@polar-sh/orbit/Box'
 import type { ReactNode } from 'react'
 
 export const OrderSection = ({
+  id,
   title,
   description,
   action,
   children,
 }: {
+  // Lets a link elsewhere point at the section.
+  id?: string
   title: ReactNode
   description?: ReactNode
   action?: ReactNode
   children: ReactNode
 }) => (
-  <Box as="section" flexDirection="column" rowGap="xl">
+  <Box as="section" id={id} flexDirection="column" rowGap="xl">
     <Box justifyContent="between" alignItems="start" columnGap="m">
       <Box flexDirection="column" rowGap="xs">
         <Text variant="heading-xs" as="h3">

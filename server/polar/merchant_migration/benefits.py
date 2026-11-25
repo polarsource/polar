@@ -20,6 +20,7 @@ import structlog
 
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
+from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.grant.service import BenefitGrantAlreadyExists
 from polar.benefit.grant.service import benefit_grant as benefit_grant_service
 from polar.benefit.repository import BenefitRepository
@@ -50,15 +51,28 @@ from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.utils import generate_uuid
 from polar.license_key.repository import LicenseKeyRepository
 from polar.member.service import member_service
-from polar.models import Benefit, Customer, File, Organization
+from polar.models import (
+    Benefit,
+    BenefitGrant,
+    Customer,
+    File,
+    LicenseKeyActivation,
+    Organization,
+)
 from polar.models.benefit import BenefitType
 from polar.models.file import FileServiceTypes
 from polar.models.merchant_migration_record import MerchantMigrationRecordType
 from polar.product.service import product as product_service
 from polar.redis import Redis
+from polar.worker import enqueue_job
 
 from .adapters.lemon_squeezy import LemonSqueezyAdapter
-from .canonical import CanonicalBenefit, CanonicalBenefitFile, CanonicalPurchase
+from .canonical import (
+    CanonicalBenefit,
+    CanonicalBenefitFile,
+    CanonicalLicenseKey,
+    CanonicalPurchase,
+)
 from .repository import MerchantMigrationRecordRepository
 
 log = structlog.get_logger()
@@ -317,7 +331,7 @@ class MigrationBenefits:
                 else {}
             )
             try:
-                await benefit_grant_service.grant_manually(
+                grant = await benefit_grant_service.grant_manually(
                     self.session,
                     self.organization,
                     customer,
@@ -325,6 +339,7 @@ class MigrationBenefits:
                     member,
                     properties=properties,
                 )
+                queue_kept_activations(grant, purchase.license_key)
             except BenefitGrantAlreadyExists:
                 # One manual grant per buyer and benefit: a rerun, or a second
                 # purchase of the same product, which doesn't get its own key.
@@ -350,18 +365,82 @@ class MigrationBenefits:
 
 
 async def kept_key_properties(
-    session: AsyncReadSession, organization_id: UUID, key: str | None
+    session: AsyncReadSession,
+    organization_id: UUID,
+    license_key: CanonicalLicenseKey | None,
 ) -> BenefitGrantLicenseKeysProperties:
-    """Grant properties that make the license key grant reuse ``key``. Empty
-    when there's none or the organization already has it: keys are unique per
-    organization, so the grant then makes a new one."""
-    if key is None:
+    """Grant properties that make the license key grant reuse the source key.
+    Empty when there's none or the organization already has it: keys are
+    unique per organization, so the grant then makes a new one."""
+    if license_key is None:
         return {}
     # A deleted key still holds its value.
     taken = await LicenseKeyRepository.from_session(
         session
-    ).get_by_organization_and_key(organization_id, key, include_deleted=True)
-    return {} if taken is not None else {"user_provided_key": key}
+    ).get_by_organization_and_key(
+        organization_id, license_key.key, include_deleted=True
+    )
+    return {} if taken is not None else {"user_provided_key": license_key.key}
+
+
+def queue_kept_activations(
+    grant: BenefitGrant, license_key: CanonicalLicenseKey | None
+) -> None:
+    """Bring the source key's activations once the grant has made the key.
+    Read now: the source may be gone by the time the grant runs."""
+    if (
+        license_key is None
+        or not license_key.activations
+        or grant.properties.get("user_provided_key") != license_key.key
+    ):
+        return
+    enqueue_job(
+        "merchant_migration.keep_license_key_activations",
+        benefit_grant_id=grant.id,
+        activations=[
+            {"id": activation.id, "label": activation.label}
+            for activation in license_key.activations
+        ],
+    )
+
+
+async def keep_activations(
+    session: AsyncSession, benefit_grant_id: UUID, activations: list[dict[str, str]]
+) -> bool:
+    """Give the key the grant kept the activations it has on the source, under
+    the same ids, so activated devices keep validating. False while the grant
+    hasn't made the key yet."""
+    grant = await BenefitGrantRepository.from_session(session).get_by_id(
+        benefit_grant_id
+    )
+    if grant is None or grant.is_revoked:
+        return True
+    license_key_id = grant.properties.get("license_key_id")
+    if license_key_id is None:
+        return grant.error is not None
+    repository = LicenseKeyRepository.from_session(session)
+    license_key = await repository.get_by_id(UUID(str(license_key_id)))
+    # The grant made a new key: the source's activations aren't its own.
+    if license_key is None or license_key.key != grant.properties.get(
+        "user_provided_key"
+    ):
+        return True
+    ids = [UUID(activation["id"]) for activation in activations]
+    taken = await repository.get_activation_ids(ids)
+    for activation_id, activation in zip(ids, activations, strict=True):
+        if activation_id in taken:
+            continue
+        session.add(
+            LicenseKeyActivation(
+                id=activation_id,
+                license_key=license_key,
+                label=activation["label"],
+                conditions={},
+                meta={},
+            )
+        )
+    await session.flush()
+    return True
 
 
 class FileCopyFailed(Exception):

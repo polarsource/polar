@@ -35,6 +35,8 @@ from polar.merchant_migration.canonical import (
     CanonicalCollectionMethod,
     CanonicalCustomer,
     CanonicalDiscountDuration,
+    CanonicalLicenseKey,
+    CanonicalLicenseKeyActivation,
     CanonicalLicenseKeySettings,
     CanonicalPaymentMethod,
     CanonicalPaymentMethodType,
@@ -6135,7 +6137,15 @@ class TestExecuteBenefits:
                     product_source_id="variant_lifetime",
                     email="bob@example.com",
                     name="Bob",
-                    license_key="KEY-LIFETIME",
+                    license_key=CanonicalLicenseKey(
+                        key="KEY-LIFETIME",
+                        activations=[
+                            CanonicalLicenseKeyActivation(
+                                id="16a12ab5-d7b7-442e-a2db-e9dfa14a05de",
+                                label="Studio Mac",
+                            )
+                        ],
+                    ),
                 ),
                 CanonicalPurchase(
                     source_id="order_2",
@@ -6148,6 +6158,7 @@ class TestExecuteBenefits:
         )
         mocker.patch("polar.merchant_migration.service.enqueue_job")
         mocker.patch("polar.benefit.grant.service.enqueue_job")
+        keep_activations = mocker.patch("polar.merchant_migration.benefits.enqueue_job")
         await service.set_up_benefits(
             session,
             auth_subject,
@@ -6175,6 +6186,13 @@ class TestExecuteBenefits:
         )
         [grant] = result.scalars().all()
         assert dict(grant.properties) == {"user_provided_key": "KEY-LIFETIME"}
+        keep_activations.assert_called_once_with(
+            "merchant_migration.keep_license_key_activations",
+            benefit_grant_id=grant.id,
+            activations=[
+                {"id": "16a12ab5-d7b7-442e-a2db-e9dfa14a05de", "label": "Studio Mac"}
+            ],
+        )
         customer_repository = CustomerRepository.from_session(session)
         assert (
             await customer_repository.get_by_email_and_organization(

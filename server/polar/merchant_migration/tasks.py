@@ -4,6 +4,7 @@ from typing import Annotated
 from uuid import UUID
 
 import structlog
+from dramatiq.errors import Retry
 
 from polar.config import settings
 from polar.exceptions import PolarTaskError
@@ -17,9 +18,11 @@ from polar.worker import (
     RedisMiddleware,
     TaskPriority,
     actor,
+    can_retry,
 )
 
 from . import pan_transfer, slack
+from .benefits import keep_activations
 from .repository import MerchantMigrationRepository
 from .service import BENEFITS_RUN_LIMIT
 from .service import merchant_migration as merchant_migration_service
@@ -77,6 +80,26 @@ async def merchant_migration_set_up_benefits(
         await merchant_migration_service.execute_benefits(
             session, RedisMiddleware.get(), merchant_migration_id, run
         )
+
+
+@actor(
+    actor_name="merchant_migration.keep_license_key_activations",
+    priority=TaskPriority.LOW,
+    max_retries=10,
+)
+async def merchant_migration_keep_license_key_activations(
+    benefit_grant_id: Annotated[UUID, LoggableField],
+    activations: list[dict[str, str]],
+) -> None:
+    async with AsyncSessionMaker() as session:
+        if await keep_activations(session, benefit_grant_id, activations):
+            return
+    # The grant task hasn't made the key yet.
+    if can_retry():
+        raise Retry()
+    log.warning(
+        "merchant_migration.activations_not_kept", benefit_grant_id=benefit_grant_id
+    )
 
 
 @actor(

@@ -50,7 +50,7 @@ from polar.subscription.service import subscription as subscription_service
 from polar.worker import JobQueueManager
 
 from .adapters import SourceAdapter
-from .benefits import kept_key_properties
+from .benefits import kept_key_properties, queue_kept_activations
 from .canonical import (
     CanonicalProduct,
     CanonicalSubscription,
@@ -707,10 +707,9 @@ class SubscriptionCutover:
         ).get_by_product_and_type(product.id, BenefitType.license_keys)
         if benefit is None:
             return
+        license_key = await self.adapter.get_license_key(source)
         properties = await kept_key_properties(
-            self.session,
-            product.organization_id,
-            await self.adapter.get_license_key(source),
+            self.session, product.organization_id, license_key
         )
         if not properties:
             return
@@ -722,7 +721,7 @@ class SubscriptionCutover:
         )
         if member is None:
             return
-        await BenefitGrantRepository.from_session(self.session).create(
+        grant = await BenefitGrantRepository.from_session(self.session).create(
             BenefitGrant(
                 customer=customer,
                 benefit=benefit,
@@ -732,6 +731,7 @@ class SubscriptionCutover:
             ),
             flush=True,
         )
+        queue_kept_activations(grant, license_key)
 
     async def _staged_add_on_product(
         self, add_on: CanonicalSubscriptionAddOn

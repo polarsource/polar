@@ -65080,6 +65080,15 @@ export interface operations {
           'application/json': components['schemas']['MerchantMigrationBenefits']
         }
       }
+      /** @description The source isn't connected. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SourceNotConnected']
+        }
+      }
       /** @description Not allowed to manage this organization. */
       403: {
         headers: {
@@ -65140,6 +65149,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['MerchantMigration']
+        }
+      }
+      /** @description The source isn't connected. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SourceNotConnected']
         }
       }
       /** @description Not allowed to manage this organization. */
@@ -65270,7 +65288,7 @@ export interface operations {
           'application/json': components['schemas']['MerchantMigrationNotFound']
         }
       }
-      /** @description The catalog isn't imported yet, the transfer already started, card transfers aren't configured, or another operation is still running. */
+      /** @description The catalog isn't imported yet, benefits failed to set up, the transfer already started, card transfers aren't configured, or another operation is still running. */
       409: {
         headers: {
           [name: string]: unknown
@@ -65278,6 +65296,7 @@ export interface operations {
         content: {
           'application/json':
             | components['schemas']['PanTransferNotReady']
+            | components['schemas']['BenefitsNotReady']
             | components['schemas']['PanTransferAlreadyStarted']
             | components['schemas']['PanTransferUnavailable']
             | components['schemas']['MigrationOperationInProgress']

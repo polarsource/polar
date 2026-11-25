@@ -10,6 +10,7 @@ from polar.merchant_migration.adapters.lemon_squeezy import (
     LemonSqueezyAdapter,
     LemonSqueezyStoreNotFound,
     LemonSqueezyStoreRequired,
+    _description,
 )
 from polar.merchant_migration.canonical import (
     CanonicalCustomer,
@@ -654,3 +655,19 @@ class TestListBenefits:
         assert [(link.title, link.url) for link in links.links] == [
             ("Docs", "https://example.com")
         ]
+
+
+@pytest.mark.parametrize(
+    ("product_name", "suffix", "description"),
+    [
+        ("Icon Links", "links", "Icon Links"),
+        ("Pro License Keys", "license key", "Pro License Keys"),
+        ("Files", "files", "Files"),
+        ("Profile", "files", "Profile files"),
+        ("Uplink", "links", "Uplink links"),
+    ],
+)
+def test_description_adds_the_suffix_once(
+    product_name: str, suffix: str, description: str
+) -> None:
+    assert _description(product_name, suffix) == description

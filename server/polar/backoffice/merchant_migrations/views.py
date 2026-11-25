@@ -81,7 +81,7 @@ def source_cell(migration: MerchantMigration) -> None:
 
 def step_cell(migration: MerchantMigration) -> None:
     step = visible_step(migration.step)
-    position, total = step_position(migration.step)
+    position, total = step_position(migration)
     with tag.div(classes="flex flex-col"):
         text(STEP_LABELS[step])
         with tag.div(classes="text-xs text-base-content/60"):

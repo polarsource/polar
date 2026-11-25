@@ -1266,8 +1266,17 @@ class MerchantMigrationService:
             raise PanTransferNotReady()
         # Stalled counts too: once this leaves `create_catalog` the import can't
         # be retried, and whatever it hadn't prepared would never be switched.
-        if migration.operation is not None and migration.operation.is_active:
+        operation = migration.operation
+        if operation is not None and operation.is_active:
             raise MigrationOperationInProgress()
+        # Moving on would leave the step, and a failed run with it: it could
+        # never be retried. Skipping the step ends the run instead.
+        if (
+            operation is not None
+            and operation.kind == MerchantMigrationOperationKind.benefits
+            and operation.status == MerchantMigrationOperationStatus.failed
+        ):
+            raise BenefitsNotReady()
         # The first step tells the merchant which Stripe account to send the cards
         # to. Without it configured we'd mark that step done while showing them
         # nothing, and they'd address the transfer to no one.

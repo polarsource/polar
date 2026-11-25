@@ -422,6 +422,7 @@ export class Outpost {
   private readonly telemetryBuffer = new TelemetryBuffer();
   private queued: { identity: string; done: () => void }[] = [];
   private fetchTimer?: ReturnType<typeof setTimeout>;
+  private fetchedPoll?: Promise<string | null>;
   private isConfigured = false;
   private prefix = KEY_VERSION;
   private telemetryTimer?: ReturnType<typeof setInterval>;
@@ -863,42 +864,46 @@ export class Outpost {
   }
 
   // Reads the customer's states from Redis. One Polar has no snapshot of yet is asked for once,
-  // then read again once the fleet's fetch of it ends.
+  // then read again each time the fleet ends a fetch.
   private async read(customer: string, reducers: Reducer[], statistics: string[]): Promise<Read[]> {
     const deadline = Date.now() + (this.options.snapshotTimeout ?? SNAPSHOT_TIMEOUT);
-    let reads = await this.load(customer, reducers, statistics);
+    let { reads, fetched } = await this.load(customer, reducers, statistics);
     // Polar sends no snapshot without a connection.
     if (!this.connected) return reads;
     // A state confirmed before the last reset serves the read while Polar confirms it again.
-    const fetched = Promise.all(
-      reducers.map((reducer, index) =>
-        isReady(reads[index]) && !this.isStale(reads[index])
-          ? undefined
-          : this.fetch(customer, reducer),
-      ),
-    );
-    if (reads.every(isReady)) return reads;
-    await waitAtMost(fetched, deadline - Date.now());
-    const markers = reducers
-      .filter((_, index) => !isReady(reads[index]))
-      .map((reducer) => this.fetchKey(`${customer}:${reducer.id}`));
+    reducers.forEach((reducer, index) => {
+      if (!isReady(reads[index]) || this.isStale(reads[index])) void this.fetch(customer, reducer);
+    });
     for (;;) {
-      const fetching = await this.requireRunning()
-        .exists(...markers)
-        .catch((error: unknown) => {
-          throw redisUnavailable(error);
-        });
-      if (!fetching || Date.now() >= deadline) {
-        reads = await this.load(customer, reducers, statistics);
-        if (reads.every(isReady) || Date.now() >= deadline) return reads;
-      }
-      await sleep(Math.min(POLL_INTERVAL, deadline - Date.now()));
+      if (reads.every(isReady) || Date.now() >= deadline) return reads;
+      let count = fetched;
+      while (count === fetched && Date.now() < deadline) count = await this.nextFetchedCount();
+      ({ reads, fetched } = await this.load(customer, reducers, statistics));
     }
   }
 
+  // The fleet counts the batches of cold customers it fetched. One look every POLL_INTERVAL,
+  // whatever the number of reads waiting on this instance.
+  private nextFetchedCount(): Promise<string | null> {
+    this.fetchedPoll ??= sleep(POLL_INTERVAL)
+      .then(() =>
+        this.requireRunning()
+          .hget(this.pullKey, "fetched")
+          .catch((error: unknown) => {
+            throw redisUnavailable(error);
+          }),
+      )
+      .finally(() => (this.fetchedPoll = undefined));
+    return this.fetchedPoll;
+  }
+
   // One command: each reducer's state, with only the statistics the read adds up, unless Polar
-  // does not know the customer.
-  private async load(customer: string, reducers: Reducer[], statistics: string[]): Promise<Read[]> {
+  // does not know the customer, and the fleet's fetch count.
+  private async load(
+    customer: string,
+    reducers: Reducer[],
+    statistics: string[],
+  ): Promise<{ reads: Read[]; fetched: string | null }> {
     const keys = reducers.flatMap((reducer) => {
       const identity = `${customer}:${reducer.id}`;
       return [`${this.prefix}:state:${identity}`, this.missingKey(identity)];
@@ -910,10 +915,11 @@ export class Outpost {
       });
     const resets = results[reducers.length] as string | null;
     this.resets = resets === null ? null : Number(resets);
-    return reducers.map((_, index) => {
+    const reads = reducers.map((_, index): Read => {
       const [retryAt, state] = results[index] as [string | null, string[]];
       return Number(retryAt) > Date.now() ? "missing" : decodeState(state);
     });
+    return { reads, fetched: results[reducers.length + 1] as string | null };
   }
 
   private isStale(read: Read): boolean {
@@ -1059,7 +1065,10 @@ export class Outpost {
       );
     } finally {
       await this.requireRedis()
+        .pipeline()
         .del(...identities.map((identity) => this.fetchKey(identity)))
+        .hincrby(this.pullKey, "fetched", 1)
+        .exec()
         .catch(() => {});
     }
   }

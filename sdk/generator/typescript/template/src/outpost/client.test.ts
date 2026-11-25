@@ -2637,7 +2637,7 @@ describe("Redis cost", () => {
     const cost = await redisCost(() => Promise.all([first.meter(meter), second.meter(meter)]));
     // ioredis sends a script's first call on a connection as EVAL.
     expect((cost.commands.evalsha ?? 0) + (cost.commands.eval ?? 0)).toBeLessThanOrEqual(10);
-    expect(cost.commands.exists).toBeLessThanOrEqual(2 * (200 / 25 + 2));
+    expect(cost.commands.hget).toBeLessThanOrEqual(2 * (200 / 25 + 2));
   });
 
   it("waits on a cold customer's fetch at the same cost, however many reads wait", async () => {

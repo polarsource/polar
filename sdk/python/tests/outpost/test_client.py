@@ -4474,7 +4474,7 @@ async def test_lets_the_readers_of_a_cold_customer_wait_on_its_fetch_then_read_i
 
         cost = await _cost(redis_commands, read)
     assert cost["evalsha"] + cost.get("eval", 0) <= 15
-    assert cost["exists"] <= 2 * (0.08 / 0.025 + 6)
+    assert cost["hget"] <= 2 * (0.08 / 0.025 + 6)
 
 
 @pytest.mark.anyio

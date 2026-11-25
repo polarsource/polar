@@ -19,7 +19,6 @@ from polar.file.schemas import (
     FileUpload,
     ProductMediaFileCreate,
 )
-from polar.file.service import file as file_service
 from polar.integrations.aws.s3.client import client as s3_client
 from polar.integrations.aws.s3.schemas import (
     S3FileCreateMultipart,
@@ -93,6 +92,8 @@ class TestFile:
         s3_stub: Stubber,
         parts: int = 1,
     ) -> FileUpload:
+        from polar.file.service import file as file_service
+
         self.stub_create(s3_stub, FileServiceTypes.downloadable)
         return await file_service.generate_presigned_upload(
             session,

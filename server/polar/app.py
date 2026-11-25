@@ -290,11 +290,15 @@ def create_app(
     return app
 
 
-configure_sentry()
-configure_logfire("server")
-configure_logging(logfire=True)
-configure_posthog()
+if not settings.is_testing():
+    configure_sentry()
+    configure_logfire("server")
+    configure_logging(logfire=True)
+    configure_posthog()
+else:
+    configure_logging(logfire=False)
 
 app = create_app()
-instrument_fastapi(app)
-instrument_httpx()
+if not settings.is_testing():
+    instrument_fastapi(app)
+    instrument_httpx()

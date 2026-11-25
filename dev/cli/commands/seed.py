@@ -6,35 +6,18 @@ from rich.table import Table
 from rich.text import Text
 
 from shared import (
-    ROOT_DIR,
     SERVER_DIR,
     console,
+    link_polar_self,
     run_command,
     step_spinner,
     step_status,
-    update_secrets,
 )
 
 
 def _configure_polar_self_integration() -> None:
-    """Query the seeded admin org and configure Polar self-integration env vars."""
-    result = run_command(
-        ["uv", "run", "python", "-m", "scripts.seeds_load", "polar-self-env"],
-        cwd=SERVER_DIR,
-        capture=True,
-    )
-    if not result or result.returncode != 0:
-        return
-
-    values = {}
-    for line in result.stdout.strip().split("\n"):
-        if "=" in line:
-            key, value = line.split("=", 1)
-            values[key.strip()] = value.strip()
-    update_secrets(values)
-
-    run_command([str(ROOT_DIR / "dev" / "setup-environment")], capture=True)
-    console.print("[dim]Configured Polar self-integration in .env[/dim]")
+    if link_polar_self():
+        console.print("[dim]Configured Polar self-integration in .env[/dim]")
 
 
 def _print_command_output(result: object) -> None:

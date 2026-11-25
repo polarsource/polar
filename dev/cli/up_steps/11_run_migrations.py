@@ -8,6 +8,7 @@ from shared import (
     SERVER_DIR,
     Context,
     console,
+    link_polar_self,
     run_command,
     step_failed,
     step_spinner,
@@ -72,6 +73,12 @@ def run(ctx: Context) -> bool:
         )
         if result and result.returncode == 0:
             step_status(True, "Database migrations", "applied")
+            if link_polar_self(keep_valid=True):
+                step_status(
+                    True,
+                    "Polar self-integration",
+                    "token re-linked, restart the API and worker to use it",
+                )
             return True
 
         revision = unknown_revision(result)

@@ -1,6 +1,6 @@
 import CheckoutPage from '@/app/(checkout)/checkout/[clientSecret]/CheckoutPage'
 import { CheckoutConfirmation } from '@/components/Checkout/CheckoutConfirmation'
-import { UserContextProvider } from '@/providers/auth'
+import { AuthContext } from '@/providers/auth'
 import type { ProductCheckoutPublic } from '@polar-sh/checkout/guards'
 import {
   CheckoutFormProvider,
@@ -389,7 +389,7 @@ export const renderCheckout = ({
     : 'polar_distinct_id=; max-age=0; path=/'
 
   const result = renderWithProviders(
-    <UserContextProvider user={authenticatedUser}>
+    <AuthContext value={authenticatedUser}>
       <CheckoutProvider
         clientSecret={checkout.client_secret}
         initialCheckout={checkout}
@@ -399,7 +399,7 @@ export const renderCheckout = ({
           <CheckoutPage embed={embed} theme={theme} locale={locale} />
         </CheckoutFormProvider>
       </CheckoutProvider>
-    </UserContextProvider>,
+    </AuthContext>,
     {
       pathname: `/checkout/${checkout.client_secret}`,
       searchParams: embed ? 'embed=true' : '',

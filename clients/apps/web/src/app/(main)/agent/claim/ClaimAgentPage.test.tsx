@@ -1,5 +1,5 @@
 import { setSessionRefreshListener } from '@/components/SessionRefresh/store'
-import { UserContextProvider } from '@/providers/auth'
+import { AuthContext } from '@/providers/auth'
 import { stubLocationAssign } from '@/test-utils/location'
 import { renderWithProviders } from '@/test-utils/render'
 import { API_URL, apiError, server } from '@/test-utils/server'
@@ -77,14 +77,14 @@ const preview: schemas['AgentClaimPreview'] = {
 
 const renderPage = (resumeActionId?: string, { signedOut = false } = {}) =>
   renderWithProviders(
-    <UserContextProvider user={signedOut ? undefined : user}>
+    <AuthContext value={signedOut ? undefined : user}>
       <ClaimAgentPage
         linkToken={LINK_TOKEN}
         resumeActionId={resumeActionId}
         authenticationSession={null}
         pacingMs={0}
       />
-    </UserContextProvider>,
+    </AuthContext>,
   )
 
 const enterCode = async (code: string) => {

@@ -6,7 +6,7 @@ import { getExperimentNames } from '@/experiments'
 import { getDistinctId } from '@/experiments/distinct-id'
 import { ExperimentProvider } from '@/experiments/ExperimentProvider'
 import { getExperiments } from '@/experiments/server'
-import { UserContextProvider } from '@/providers/auth'
+import { AuthContext } from '@/providers/auth'
 import { CONFIG } from '@/utils/config'
 import { GOOGLE_ANALYTICS_CONSENT_DEFAULT_SCRIPT } from '@/utils/googleAnalyticsConsent'
 import { getAuthenticatedUser } from '@/utils/user'
@@ -69,7 +69,7 @@ export default async function RootLayout({
       </head>
       <body style={{ textRendering: 'optimizeLegibility' }}>
         <ExperimentProvider experiments={experimentVariants}>
-          <UserContextProvider user={authenticatedUser}>
+          <AuthContext value={authenticatedUser}>
             <PolarPostHogProvider>
               <PolarQueryClientProvider>
                 <PolarNuqsProvider>
@@ -81,7 +81,7 @@ export default async function RootLayout({
                 </PolarNuqsProvider>
               </PolarQueryClientProvider>
             </PolarPostHogProvider>
-          </UserContextProvider>
+          </AuthContext>
         </ExperimentProvider>
       </body>
     </html>

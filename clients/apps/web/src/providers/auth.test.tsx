@@ -3,7 +3,7 @@ import { renderWithProviders } from '@/test-utils/render'
 import type { schemas } from '@polar-sh/client'
 import { screen } from '@testing-library/react'
 import { expect, it } from 'vitest'
-import { UserContextProvider } from './auth'
+import { AuthContext } from './auth'
 
 it('updates organizations when the server refreshes the signed-in user', () => {
   const user = {
@@ -19,15 +19,15 @@ it('updates organizations when the server refreshes the signed-in user', () => {
   }
 
   const { rerender } = renderWithProviders(
-    <UserContextProvider user={user}>
+    <AuthContext value={user}>
       <OrganizationList />
-    </UserContextProvider>,
+    </AuthContext>,
   )
   expect(screen.queryByText(organization.name)).toBeNull()
   rerender(
-    <UserContextProvider user={{ ...user, organizations: [organization] }}>
+    <AuthContext value={{ ...user, organizations: [organization] }}>
       <OrganizationList />
-    </UserContextProvider>,
+    </AuthContext>,
   )
   expect(screen.getByText(organization.name)).toBeInTheDocument()
 })

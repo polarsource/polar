@@ -16,6 +16,14 @@ const CheckoutStatusIcon: Record<Status, StatusIconProps> = {
   failed: { shape: 'cross', tone: 'red' },
 }
 
+const CheckoutStatusDescription: Record<Status, string> = {
+  open: 'The checkout session was opened.',
+  confirmed: 'The customer clicked Pay. The payment has not succeeded yet.',
+  succeeded: 'The payment was performed successfully.',
+  expired: 'The session expired and is no longer accessible.',
+  failed: 'Failed for technical reasons and cannot be retried.',
+}
+
 // In the order a checkout moves through them.
 const ORDERED: Status[] = [
   'open',
@@ -35,5 +43,6 @@ export const CheckoutStatus = ({ status }: { status: Status }) => (
   <StatusLabel
     {...CheckoutStatusIcon[status]}
     label={CheckoutStatusDisplayTitle[status]}
+    description={CheckoutStatusDescription[status]}
   />
 )

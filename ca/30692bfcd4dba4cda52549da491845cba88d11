@@ -1,0 +1,45 @@
+clients/packages/client/src/v1.ts
+  s_6d161b2d3fb15f::t_bc4c6ac0c1f5cb 6103-6126,14285-14306,28469-28565,28721-28725,29006,65063-65185,75921-75926,75935,75951
+server/polar/backoffice/merchant_migrations/status.py
+  s_6d161b2d3fb15f::t_039bb6a190ed56 41,324
+server/polar/merchant_migration/benefits.py
+  s_6d161b2d3fb15f::t_6547358e8c2b52 1-278
+server/polar/merchant_migration/endpoints.py
+  s_6d161b2d3fb15f::t_e6e91c63c635b5 36-37,55-56,280-339
+server/polar/merchant_migration/repository.py
+  s_6d161b2d3fb15f::t_4a3b3b366b6070 1,235-257
+server/polar/merchant_migration/schemas.py
+  s_6d161b2d3fb15f::t_4f57b02772de0f 26-30,499-547
+server/polar/merchant_migration/service.py
+  s_6d161b2d3fb15f::t_39b211b6945949 4,6,51,56,102-106,135-141,290-305,1003-1212,1259-1265
+server/polar/merchant_migration/tasks.py
+  s_6d161b2d3fb15f::t_4fff63db3b896e 21,53-68
+server/polar/models/merchant_migration.py
+  s_6d161b2d3fb15f::t_414a50cd9d1bf9 48-49
+server/polar/models/merchant_migration_operation.py
+  s_6d161b2d3fb15f::t_2710d1442782e1 40
+server/polar/product/repository.py
+  s_6d161b2d3fb15f::t_adaa198095ed35 1,162-172
+server/tests/backoffice/merchant_migrations/test_endpoints.py
+  s_6d161b2d3fb15f::t_15f8123f7d4cba 214
+server/tests/merchant_migration/test_endpoints.py
+  s_6d161b2d3fb15f::t_a13be992724a29 799-830
+server/tests/merchant_migration/test_service.py
+  s_6d161b2d3fb15f::t_7841aba234ef5d 17,28-31,34,38,63,70,79,105,133,4955-4956,4958-4959,5753-5964
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ca30692bfcd4dba4cda52549da491845cba88d11",
+  "prompts": {},
+  "sessions": {
+    "s_6d161b2d3fb15f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bb61745e-ee0b-4159-b550-930158497705",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

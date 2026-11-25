@@ -377,9 +377,7 @@ class SourceKeyModeMismatch(MerchantMigrationError):
         self,
         *,
         expect_live: bool,
-        source_platform: MerchantMigrationSourcePlatform = (
-            MerchantMigrationSourcePlatform.stripe
-        ),
+        source_platform: MerchantMigrationSourcePlatform,
     ) -> None:
         mode = "live" if expect_live else "test"
         example = (
@@ -613,7 +611,10 @@ class MerchantMigrationService:
         # runs against Stripe test data (and a sandbox run never touches live data).
         expect_live = settings.is_production()
         if _is_live_key(create_schema.api_key) != expect_live:
-            raise SourceKeyModeMismatch(expect_live=expect_live)
+            raise SourceKeyModeMismatch(
+                expect_live=expect_live,
+                source_platform=MerchantMigrationSourcePlatform.stripe,
+            )
 
         adapter = StripeAdapter(create_schema.api_key)
         try:

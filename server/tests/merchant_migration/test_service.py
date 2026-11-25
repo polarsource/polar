@@ -334,7 +334,29 @@ class TestCreateLemonSqueezy:
         await assert_no_migrations(session, organization)
 
     @pytest.mark.auth
-    async def test_production_requires_a_live_key(
+    async def test_production_rejects_a_test_key(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        mocker.patch.object(settings, "is_production", return_value=True)
+        mocker.patch(
+            "polar.merchant_migration.service.LemonSqueezyAdapter",
+            return_value=_FakeLemonSqueezyAdapter(livemode=False),
+        )
+
+        with pytest.raises(SourceKeyModeMismatch):
+            await service.create(
+                session, auth_subject, _lemon_squeezy_create_schema(organization)
+            )
+
+        await assert_no_migrations(session, organization)
+
+    @pytest.mark.auth
+    async def test_production_accepts_a_live_key(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -348,20 +370,16 @@ class TestCreateLemonSqueezy:
             "get_key_provider",
             return_value=LocalKeyProvider(settings.ENCRYPTION_LOCAL_KEY),
         )
-        adapter = mocker.patch(
+        mocker.patch(
             "polar.merchant_migration.service.LemonSqueezyAdapter",
-            return_value=_FakeLemonSqueezyAdapter(livemode=False),
+            return_value=_FakeLemonSqueezyAdapter(livemode=True),
         )
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
 
-        with pytest.raises(SourceKeyModeMismatch):
-            await service.create(
-                session, auth_subject, _lemon_squeezy_create_schema(organization)
-            )
-
-        adapter.return_value = _FakeLemonSqueezyAdapter(livemode=True)
         migration = await service.create(
             session, auth_subject, _lemon_squeezy_create_schema(organization)
         )
+
         assert migration.source_credentials["livemode"] is True
 
     @pytest.mark.auth

@@ -1,6 +1,6 @@
 import { basename } from 'node:path'
 import { Effect, Redacted } from 'effect'
-import { beforeEach, expect, test } from 'vitest'
+import { beforeEach, expect, test, vi } from 'vitest'
 import { token as tokenCommand } from '@/commands/token'
 import type { ActiveOrganization } from '@/schemas/Auth'
 import { Organizations } from '@/services/organizations'
@@ -84,4 +84,20 @@ test('creates the token for the organization passed with --org', async () => {
       scopes: ['events:write'],
     },
   ])
+})
+
+test('says what was created and how to use a sandbox token', async () => {
+  const stderr = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
+  const { promise } = run([])
+  await promise
+  const notes = stderr.mock.calls.map(([chunk]) => String(chunk)).join('')
+  stderr.mockRestore()
+
+  expect(notes).toContain(
+    'Opening your browser to create an access token for acme on sandbox...',
+  )
+  expect(notes).toContain('Created an access token for acme on sandbox')
+  expect(notes).toContain(
+    "Pass environment: 'sandbox' when you create the SDK client.",
+  )
 })

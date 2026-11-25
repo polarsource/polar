@@ -59,7 +59,7 @@ export default function CLITokenPage() {
       }
       setStep({ name: 'sending' })
       try {
-        window.location.assign(await getCLITokenURL(handoff, created))
+        window.location.replace(await getCLITokenURL(handoff, created))
       } catch {
         toast({
           title: 'Could not send the token to the CLI',

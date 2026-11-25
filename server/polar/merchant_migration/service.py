@@ -64,6 +64,7 @@ from .canonical import (
     deserialize,
     serialize,
 )
+from .card_status import MerchantMigrationCardStatus, card_status
 from .cards import (
     AmbiguousCopiedCard,
     PaymentMethodMapping,
@@ -104,6 +105,7 @@ from .schemas import (
     MerchantMigrationBenefitProduct,
     MerchantMigrationBenefits,
     MerchantMigrationBenefitsCreate,
+    MerchantMigrationCardStatusCount,
     MerchantMigrationCreate,
     MerchantMigrationCutoverReport,
     MerchantMigrationImportReport,
@@ -1965,6 +1967,18 @@ class MerchantMigrationService:
         # scopes to the selection via `_finish_cutover`.
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         counts = await record_repository.count_cutover_statuses(migration.id)
+        pending = counts.get(None, 0)
+        card_counts = Counter(
+            card_status(method_metadata)
+            for method_metadata in (
+                await record_repository.copied_cards(
+                    migration.id, exact=migration.exact_card_mapping, pending_only=True
+                )
+            ).values()
+        )
+        card_counts[MerchantMigrationCardStatus.no_card] = pending - sum(
+            card_counts.values()
+        )
         operation = migration.operation
         if operation is not None and operation.is_stalled():
             operation = self._failed_operation(migration, _STALLED_CUTOVER_ERROR)
@@ -1977,6 +1991,13 @@ class MerchantMigrationService:
             moved=counts.get(MerchantMigrationCutoverStatus.moved, 0),
             skipped=counts.get(MerchantMigrationCutoverStatus.skipped, 0),
             failed=counts.get(MerchantMigrationCutoverStatus.failed, 0),
+            card_statuses=[
+                MerchantMigrationCardStatusCount(
+                    status=status, count=card_counts[status]
+                )
+                for status in MerchantMigrationCardStatus
+                if card_counts[status] > 0
+            ],
         )
 
     def _build_selection(
@@ -2259,14 +2280,17 @@ class MerchantMigrationService:
         if not any(item.entity == PrecheckEntity.subscriptions for item in items):
             return
         record_repository = MerchantMigrationRecordRepository.from_session(session)
-        covered = await record_repository.payment_method_coverage(
-            migration.id,
-            exact=migration.exact_card_mapping,
+        cards = await record_repository.copied_cards(
+            migration.id, exact=migration.exact_card_mapping
         )
         for item in items:
             if item.entity != PrecheckEntity.subscriptions or item.record_id is None:
                 continue
-            item.has_payment_method = item.record_id in covered
+            item.card_status = card_status(cards.get(item.record_id))
+            item.has_payment_method = item.card_status not in (
+                MerchantMigrationCardStatus.no_card,
+                MerchantMigrationCardStatus.india_card,
+            )
 
     async def _classify_staged(
         self,

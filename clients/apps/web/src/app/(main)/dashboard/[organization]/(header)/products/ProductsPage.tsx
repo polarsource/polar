@@ -1,5 +1,6 @@
 'use client'
 
+import { ManagedAsCodeHint } from '@/components/Dashboard/ManagedAsCodeBadge'
 import { BulkActionBar } from '@/components/BulkActions/BulkActionBar'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import Pagination from '@/components/Pagination/Pagination'
@@ -281,6 +282,9 @@ export default function ClientPage({
                     : 'Start selling digital products today'}
                 </p>
               </div>
+              {managedAsCode && !query && (
+                <ManagedAsCodeHint resource="products" />
+              )}
               {!managedAsCode && !query && (
                 <Link href={`/dashboard/${org.slug}/products/new`}>
                   <Button role="link" variant="secondary">

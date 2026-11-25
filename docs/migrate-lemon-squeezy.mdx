@@ -8,13 +8,13 @@ Lemon Squeezy is [winding down payment processing on March 31, 2027](https://www
 
 ## Migration steps
 
-Steps 2 to 7 happen in Polar under **Settings → Migrations**.
+Steps 4 and 5 happen in your app. The others happen in Polar under **Settings → Migrations**.
 
-1. **Move new sales to Polar.** New customers check out on Polar. Existing subscriptions keep renewing on Lemon Squeezy until you switch them.
-2. **Connect your Lemon Squeezy store** with an API key.
-3. **Assess and import your catalog.** Polar checks what can move, then imports your products, discounts and customers. Billing stays on Lemon Squeezy.
-4. **Set up benefits.** Polar brings over your license keys, files and links. See [Benefits and license keys](#benefits-and-license-keys).
-5. **Update your app.** If your app checks license keys, ship the update in [Update your app before you switch](#update-your-app-before-you-switch).
+1. **Connect your Lemon Squeezy store** with an API key.
+2. **Assess and import your catalog.** Polar checks what can move, then imports your products, discounts and customers. Billing stays on Lemon Squeezy.
+3. **Set up benefits.** Polar brings over your license keys, files and links. See [Benefits and license keys](#benefits-and-license-keys).
+4. **Update your app.** If your app checks license keys, ship the update in [Update your app before you switch](#update-your-app-before-you-switch).
+5. **Move new sales to Polar.** Sell the imported products on Polar, so new customers get the same products and benefits as your existing subscribers. Existing subscriptions keep renewing on Lemon Squeezy until you switch them.
 6. **Move saved cards.** Request the copy in Lemon Squeezy, with Polar as the destination. Lemon Squeezy copies your customers and their saved cards to Polar, and usually starts within a week.
 7. **Switch billing to Polar.** For each subscription you select, Polar cancels it on Lemon Squeezy and bills the next renewal on Polar.
 
@@ -161,7 +161,9 @@ subscriptions, or ship anything until the user reviews and approves that plan.
 
 Design a progressive migration in which:
 
-1. New sales use Polar first.
+1. New sales move to Polar once the catalog is imported, benefits are set up,
+   and the application checks license keys with Polar, so new customers buy
+   the same products as existing subscribers.
 2. Existing Lemon Squeezy subscriptions keep renewing on Lemon Squeezy until
    they switch through Polar's migration flow (**Settings → Migrations**).
 3. Each subscription has exactly one system responsible for its next renewal.

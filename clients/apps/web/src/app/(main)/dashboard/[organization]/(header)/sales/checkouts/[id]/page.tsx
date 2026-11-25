@@ -16,7 +16,6 @@ export default async function Page(props: {
   const params = await props.params
   const api = await getServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
-    api,
     params.organization,
   )
   const checkout = await getCheckoutById(api, params.id)

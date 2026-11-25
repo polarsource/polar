@@ -13,7 +13,6 @@ import {
   BulkArchiveProductsModal,
 } from '@/components/Products/BulkArchiveProductsModal'
 import { ProductListItem } from '@/components/Products/ProductListItem'
-import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useCatalogs } from '@/hooks/queries/catalogs'
 import { useProducts } from '@/hooks/queries/products'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
@@ -64,7 +63,7 @@ export default function ClientPage({
   const [{ query, show }, setFilters] = useQueryStates(filterParsers)
 
   const searchParams = useSearchParams()
-  const managedAsCode = useIsManagedAsCode(org.id)
+  const managedAsCode = org.feature_settings?.config_as_code_enabled ?? false
 
   const onPageChange = useCallback(
     (page: number) =>

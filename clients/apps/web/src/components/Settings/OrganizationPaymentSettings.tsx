@@ -1,6 +1,5 @@
 'use client'
 
-import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useUpdateOrganization } from '@/hooks/queries'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { setValidationErrors } from '@/utils/api/errors'
@@ -46,7 +45,8 @@ export const taxBehaviorOptionDisplayNames: Record<
 const OrganizationPaymentSettings: React.FC<
   OrganizationPaymentSettingsProps
 > = ({ organization: _organization, readOnly: _readOnly }) => {
-  const managedAsCode = useIsManagedAsCode(_organization.id)
+  const managedAsCode =
+    _organization.feature_settings?.config_as_code_enabled ?? false
   const readOnly = _readOnly || managedAsCode
   const organization = _organization as schemas['Organization'] & {
     default_presentment_currency: schemas['PresentmentCurrency']

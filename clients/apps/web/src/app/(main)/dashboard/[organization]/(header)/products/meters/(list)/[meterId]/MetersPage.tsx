@@ -7,7 +7,7 @@ import { MeterVersionSelect } from '@/components/Meter/MeterVersionSelect'
 import { useModal } from '@/components/Modal/useModal'
 import { CatalogVersionLabel } from '@/components/Products/CatalogVersionLabel'
 import { useToast } from '@/components/Toast/use-toast'
-import { useHasPermission, useIsManagedAsCode } from '@/hooks/permissions'
+import { useHasPermission } from '@/hooks/permissions'
 import { useUpdateMeter } from '@/hooks/queries/meters'
 import { apiErrorToast } from '@/utils/api/errors'
 import { permissionDeniedMessage } from '@/utils/permissions'
@@ -45,7 +45,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, meter }) => {
   const { toast } = useToast()
   const updateMeter = useUpdateMeter(meter.id)
   const canManageProducts = useHasPermission(organization.id, 'products:manage')
-  const managedAsCode = useIsManagedAsCode(organization.id)
+  const managedAsCode =
+    organization.feature_settings?.config_as_code_enabled ?? false
 
   const handleArchiveMeter = useCallback(async () => {
     if (!canManageProducts) {

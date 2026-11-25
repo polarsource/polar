@@ -20,7 +20,6 @@ export default async function Page(props: {
   const searchParams = await props.searchParams
   const api = await getServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
-    api,
     params.organization,
   )
 

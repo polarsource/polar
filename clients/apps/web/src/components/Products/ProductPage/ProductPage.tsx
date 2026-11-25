@@ -3,7 +3,6 @@ import { useModal } from '@/components/Modal/useModal'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import { toast } from '@/components/Toast/use-toast'
 import { useSafeCopy } from '@/hooks/clipboard'
-import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useDeleteProduct, useMetrics, useUpdateProduct } from '@/hooks/queries'
 import { apiErrorToast, extractApiErrorMessage } from '@/utils/api/errors'
 import { getChartRangeParams } from '@/utils/metrics'
@@ -82,7 +81,8 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
 
   const updateProduct = useUpdateProduct(organization)
   const deleteProduct = useDeleteProduct(organization)
-  const managedAsCode = useIsManagedAsCode(organization.id)
+  const managedAsCode =
+    organization.feature_settings?.config_as_code_enabled ?? false
   const router = useRouter()
   const safeCopy = useSafeCopy(toast)
 

@@ -36,10 +36,7 @@ export default async function Page(props: {
   const searchParams = await props.searchParams
 
   const api = await getServerSideAPI()
-  const organization = await getOrganizationBySlugOrNotFound(
-    api,
-    organizationSlug,
-  )
+  const organization = await getOrganizationBySlugOrNotFound(organizationSlug)
 
   const redirectPath = `/dashboard/${organizationSlug}/analytics/metrics`
 

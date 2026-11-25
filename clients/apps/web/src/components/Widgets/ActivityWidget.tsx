@@ -1,7 +1,7 @@
 import { eventCustomerLabel } from '@/components/Events/EventLogRow'
 import { resolveTimelineEventHref } from '@/components/Timeline/links'
 import { resolveTimelineEntry } from '@/components/Timeline/renderers'
-import { formatRelativeTime } from '@/components/Timeline/TimelineItem'
+import { EventTimestamp } from '@/components/Events/EventTimestamp'
 import { useEvents, useEventTypeStats } from '@/hooks/queries/events'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { Text } from '@polar-sh/orbit'
@@ -118,9 +118,13 @@ const ActivityWidgetContent = ({ className }: ActivityWidgetProps) => {
                   </Text>
                 </Box>
               </Box>
-              <Text color="muted" tabularNums wrap="nowrap">
-                {formatRelativeTime(event.timestamp)}
-              </Text>
+              <EventTimestamp
+                timestamp={event.timestamp}
+                format="relative"
+                muted
+                focusable={false}
+                align="end"
+              />
             </ListRow>
           ))}
         </Box>

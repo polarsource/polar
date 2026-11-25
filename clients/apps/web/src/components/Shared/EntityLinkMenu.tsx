@@ -1,57 +1,77 @@
 'use client'
 
+import { type Filter } from '@/components/Shared/FilterPopover'
+import { ToolbarFilterMenu } from '@/components/Shared/Toolbar/ToolbarFilterMenu'
 import { toast } from '@/components/Toast/use-toast'
 import { useSafeCopy } from '@/hooks/clipboard'
-import { ChevronDown } from '@polar-sh/orbit/icons'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@polar-sh/ui/components/atoms/DropdownMenu'
-import Link from 'next/link'
+import { ArrowUpRight, Copy } from '@polar-sh/orbit/icons'
+import { useRouter } from 'next/navigation'
+import { type ReactNode } from 'react'
 
 // What a menu item does: put a value on the clipboard, go somewhere, or run.
+// A place to go can be worked out when it is picked.
+export type EntityMenuAction = { label: string; icon?: ReactNode } & (
+  | { copy: string }
+  | { href: string | (() => string) }
+  | { onSelect: () => void }
+)
+
+// An action, or a named set of them that opens beside the menu.
 export type EntityLinkMenuItem =
-  | { label: string; copy: string }
-  | { label: string; href: string }
-  | { label: string; onSelect: () => void }
+  | EntityMenuAction
+  | { label: string; icon?: ReactNode; items: EntityMenuAction[] }
 
-const TRIGGER_CLASS =
-  'dark:text-polar-500 dark:hover:bg-polar-700 flex shrink-0 opacity-0 group-hover/entity:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100 cursor-pointer items-center self-stretch rounded-md px-1 text-gray-400 hover:bg-gray-200 hover:text-gray-950 dark:hover:text-white'
+const getIcon = (action: EntityMenuAction) => {
+  if (action.icon) return action.icon
+  if ('copy' in action) return <Copy />
+  return 'href' in action ? <ArrowUpRight /> : null
+}
 
+// The menu behind the arrow of an entity link. It is the toolbar's filter
+// menu: actions on top, then each set of actions as a property that opens to
+// its options.
 export const EntityLinkMenu = ({ items }: { items: EntityLinkMenuItem[] }) => {
+  const router = useRouter()
   const safeCopy = useSafeCopy(toast)
 
+  const run = (action: EntityMenuAction) => {
+    if ('copy' in action) {
+      safeCopy(action.copy).then(() => toast({ title: 'Copied to clipboard' }))
+    } else if ('href' in action) {
+      router.push(typeof action.href === 'string' ? action.href : action.href())
+    } else {
+      action.onSelect()
+    }
+  }
+
+  const actions = items
+    .filter((item): item is EntityMenuAction => !('items' in item))
+    .map((action) => ({
+      key: action.label,
+      label: action.label,
+      icon: getIcon(action),
+      onSelect: () => run(action),
+    }))
+  const filters = items
+    .filter((item) => 'items' in item)
+    .map(
+      (group): Filter => ({
+        type: 'single',
+        key: group.label,
+        label: group.label,
+        icon: group.icon,
+        options: group.items.map((action, index) => ({
+          value: String(index),
+          label: action.label,
+        })),
+        value: null,
+        onChange: (value) => {
+          if (value !== null) run(group.items[Number(value)])
+        },
+      }),
+    )
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger className={TRIGGER_CLASS} aria-label="More actions">
-        <ChevronDown className="size-3.5" aria-hidden />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start">
-        {items.map((item) =>
-          'href' in item ? (
-            <DropdownMenuItem key={item.label} asChild>
-              <Link href={item.href}>{item.label}</Link>
-            </DropdownMenuItem>
-          ) : (
-            <DropdownMenuItem
-              key={item.label}
-              onClick={() => {
-                if ('copy' in item) {
-                  safeCopy(item.copy).then(() =>
-                    toast({ title: 'Copied to clipboard' }),
-                  )
-                } else {
-                  item.onSelect()
-                }
-              }}
-            >
-              {item.label}
-            </DropdownMenuItem>
-          ),
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <ToolbarFilterMenu variant="inline" actions={actions} filters={filters} />
   )
 }

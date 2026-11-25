@@ -63,7 +63,7 @@ const ENTITIES: Record<EntityKind, { icon: typeof Package; hover: string }> = {
 
 // The padding is pulled back out, so the mark lines up with text around it
 // and only the highlight reaches past.
-const CHIP_CLASS =
+export const ENTITY_CHIP_CLASS =
   'group/entity dark:hover:bg-polar-800 -mx-1.5 inline-flex w-fit max-w-full min-w-0 items-center rounded-md hover:bg-gray-100'
 const LINK_CLASS = 'inline-flex min-w-0 items-center gap-2 py-0.5 pl-1.5'
 const ICON_CLASS =
@@ -85,7 +85,7 @@ export const EntityLink = ({
   const { icon: Icon, hover } = ENTITIES[kind]
   const hasMenu = menuItems != null && menuItems.length > 0
   return (
-    <span className={CHIP_CLASS}>
+    <span className={ENTITY_CHIP_CLASS}>
       <Link
         href={href}
         className={`${LINK_CLASS} ${hasMenu ? 'pr-1' : 'pr-1.5'}`}

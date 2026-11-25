@@ -10,7 +10,6 @@ import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { BillingHistoryDate } from './BillingHistoryDate'
 
 export const SubscriptionSidePanelCustomer = ({
   organization,
@@ -79,9 +78,7 @@ export const SubscriptionSidePanelCustomer = ({
           <Text tabularNums>{orders ?? '—'}</Text>
         </Field>
         <Field label="First seen">
-          <EventTimestamp timestamp={customer.created_at}>
-            <BillingHistoryDate at={customer.created_at} />
-          </EventTimestamp>
+          <EventTimestamp timestamp={customer.created_at} format="datetime" />
         </Field>
         {customer.type === 'team' && (
           <Field label="Type">

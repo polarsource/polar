@@ -1,3 +1,4 @@
+import { EventTimestamp } from '@/components/Events/EventTimestamp'
 import { useOrganizationAccount, useTransactionsSummary } from '@/hooks/queries'
 import { usePayouts } from '@/hooks/queries/payouts'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
@@ -82,19 +83,13 @@ const AccountWidgetContent = ({ className }: AccountWidgetProps) => {
               borderStyle="solid"
               borderColor="border-secondary"
             >
-              <Text color="muted">
-                {new Date(payout.created_at).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric',
-                })}
-              </Text>
-              <Box alignItems="center" columnGap="m" flexShrink={0}>
+              <Box alignItems="center" columnGap="m" minWidth={0}>
                 <PayoutStatusIcon payout={payout} />
                 <Text tabularNums>
                   {formatCurrency('compact')(payout.amount, payout.currency)}
                 </Text>
               </Box>
+              <EventTimestamp timestamp={payout.created_at} muted align="end" />
             </Box>
           ))}
         </Box>

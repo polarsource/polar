@@ -15,8 +15,6 @@ export const useSearch = (organizationId: string, query: string) =>
       ),
     retry: false,
     placeholderData: (previousData, previousQuery) =>
-      previousQuery?.queryKey[1] === organizationId
-        ? previousData
-        : undefined,
+      previousQuery?.queryKey[1] === organizationId ? previousData : undefined,
     enabled: !!query,
   })

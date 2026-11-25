@@ -2,8 +2,8 @@ import { Text } from '@polar-sh/orbit'
 import {
   CircleUserRound,
   FileText,
-  Funnel,
   Gift,
+  MessageCircle,
   Package,
   Percent,
   RefreshCw,
@@ -24,8 +24,9 @@ export type EntityKind =
   | 'subscription'
   | 'order'
   | 'benefit'
-  // Not a page of its own: a list narrowed down to what shares the value.
-  | 'filter'
+  // Not a page of its own: the list narrowed down to what was cancelled for
+  // the same reason.
+  | 'reason'
 
 // Each kind has its own mark, which takes its color while pointed at.
 const ENTITIES: Record<EntityKind, { icon: typeof Package; hover: string }> = {
@@ -54,8 +55,8 @@ const ENTITIES: Record<EntityKind, { icon: typeof Package; hover: string }> = {
     hover:
       'group-hover/entity:text-indigo-500 dark:group-hover/entity:text-indigo-400',
   },
-  filter: {
-    icon: Funnel,
+  reason: {
+    icon: MessageCircle,
     hover:
       'group-hover/entity:text-gray-950 dark:group-hover/entity:text-white',
   },

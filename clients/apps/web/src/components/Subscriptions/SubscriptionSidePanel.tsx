@@ -187,7 +187,7 @@ export const SubscriptionSidePanel = ({
         {cancellationReason && (
           <Field label="Reason">
             <EntityLink
-              kind="filter"
+              kind="reason"
               href={`/dashboard/${organization.slug}/sales/subscriptions?customer_cancellation_reason=${subscription.customer_cancellation_reason}`}
             >
               {cancellationReason}

@@ -1433,6 +1433,8 @@ export class Outpost {
           throw error;
         });
         pages += 1;
+        // Past its lock, another instance may pull the same page: only one counts its reset.
+        if ((changes.reset || changes.configuration_changed) && !(await extend())) break;
         if (changes.reset) this.resets = await redis.hincrby(this.pullKey, "reset", 1);
         if (changes.configuration_changed) {
           await this.configure("polar");

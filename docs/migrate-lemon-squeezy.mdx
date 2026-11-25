@@ -28,7 +28,7 @@ Steps 2 to 7 happen in Polar under **Settings → Migrations**.
 
 When you switch, a subscription that renews within 24 hours stays on Lemon Squeezy, so it isn't charged twice. Switch it after that renewal. A subscription already cancelled on Lemon Squeezy still switches, and Polar ends it on the same date instead of renewing it.
 
-Polar doesn't send customers a separate email about the switch. Their next billing email from Polar says their billing moved from Lemon Squeezy.
+Polar doesn't send customers a separate email about the switch. Their first billing emails from Polar include a short note that their billing moved to Polar.
 
 ## Benefits and license keys
 
@@ -76,8 +76,8 @@ async function isLicenseValid(key: string) {
   const { detail } = await polar.json();
   if (REJECTED_ON_POLAR.includes(detail)) return false;
 
-  // Polar doesn't have this key yet: check it with Lemon Squeezy, as today.
-  return isLicenseValidOnLemonSqueezy(key);
+  // Polar doesn't have this key yet: use your current Lemon Squeezy check.
+  return isLicenseValidOnLemonSqueezy(key); // Your existing function.
 }
 ```
 

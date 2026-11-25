@@ -631,11 +631,13 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             ),
         )
 
-    def get_meter_clause(self, meter: Meter) -> ColumnExpressionArgument[bool]:
+    def get_meter_clause(
+        self, meter: Meter, model: type[Event | StagedEvent] = Event
+    ) -> ColumnExpressionArgument[bool]:
         return and_(
-            meter.filter.get_sql_clause(Event),
+            meter.filter.get_sql_clause(model),
             # Additional clauses to make sure we work on rows with the right type for aggregation
-            meter.aggregation.get_sql_clause(Event),
+            meter.aggregation.get_sql_clause(model),
         )
 
     def get_meter_system_clause(self, meter: Meter) -> ColumnExpressionArgument[bool]:
@@ -650,6 +652,39 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             Event.organization_id == meter.organization_id,
             self.get_meter_clause(meter),
         )
+
+    def get_staged_meter_statement(
+        self,
+        customer: Customer,
+        meter: Meter,
+        meter_reset_event: Event | None = None,
+        cutoff: datetime | None = None,
+    ) -> Select[StagedEvent]:
+        statement = select(StagedEvent).where(
+            StagedEvent.organization_id == meter.organization_id,
+            StagedEvent.source == EventSource.user,
+            self.get_meter_clause(meter, StagedEvent),
+        )
+        if customer.external_id is not None:
+            statement = statement.where(
+                or_(
+                    StagedEvent.customer_id == customer.id,
+                    StagedEvent.external_customer_id == customer.external_id,
+                )
+            )
+        else:
+            statement = statement.where(StagedEvent.customer_id == customer.id)
+
+        if meter_reset_event is not None:
+            statement = statement.where(
+                StagedEvent.ingested_at
+                >= min(meter_reset_event.timestamp, meter_reset_event.ingested_at)
+            )
+
+        if cutoff is not None:
+            statement = statement.where(StagedEvent.timestamp < cutoff)
+
+        return statement
 
     async def get_meters_matching_customers(
         self,

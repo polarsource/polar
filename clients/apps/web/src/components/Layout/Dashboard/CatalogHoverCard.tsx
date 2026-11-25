@@ -47,7 +47,7 @@ export const DraftGlyph = ({ size = 12 }: { size?: number }) => (
 const plural = (count: number, noun: string) =>
   `${count} ${noun}${count === 1 ? '' : 's'}`
 
-const DraftContents = ({
+export const DraftContents = ({
   organization,
   draft,
 }: {

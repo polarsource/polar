@@ -91,6 +91,7 @@ async def merchant_migration_keep_license_key_activations(
     benefit_grant_id: Annotated[UUID, LoggableField],
     activations: list[dict[str, str]],
     expires_at: str | None = None,
+    keep_expiry: bool = False,
 ) -> None:
     async with AsyncSessionMaker() as session:
         if await keep_key_state(
@@ -98,6 +99,7 @@ async def merchant_migration_keep_license_key_activations(
             benefit_grant_id,
             activations,
             datetime.fromisoformat(expires_at) if expires_at else None,
+            keep_expiry=keep_expiry,
         ):
             return
     # The grant task hasn't made the key yet.

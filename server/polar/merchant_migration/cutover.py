@@ -731,7 +731,7 @@ class SubscriptionCutover:
             ),
             flush=True,
         )
-        queue_kept_key_state(grant, license_key)
+        queue_kept_key_state(grant, benefit, license_key)
 
     async def _staged_add_on_product(
         self, add_on: CanonicalSubscriptionAddOn

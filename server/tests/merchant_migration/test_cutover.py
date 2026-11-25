@@ -427,6 +427,7 @@ class TestRun:
             "merchant_migration.keep_license_key_activations",
             benefit_grant_id=grant.id,
             activations=[{"id": activation.id, "label": "Ada's laptop"}],
+            keep_expiry=False,
             expires_at=None,
         )
 

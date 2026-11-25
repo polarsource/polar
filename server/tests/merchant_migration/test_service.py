@@ -6193,6 +6193,7 @@ class TestExecuteBenefits:
             activations=[
                 {"id": "16a12ab5-d7b7-442e-a2db-e9dfa14a05de", "label": "Studio Mac"}
             ],
+            keep_expiry=True,
             expires_at="2027-03-01T00:00:00+00:00",
         )
         customer_repository = CustomerRepository.from_session(session)

@@ -1,10 +1,10 @@
 import { api } from '@/utils/client'
 import { unwrap } from '@polar-sh/client'
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 
 export const useSearch = (organizationId: string, query: string) =>
   useQuery({
-    queryKey: ['search', { organizationId, query }],
+    queryKey: ['search', organizationId, query],
     queryFn: () =>
       unwrap(
         api.GET('/v1/search', {
@@ -14,6 +14,9 @@ export const useSearch = (organizationId: string, query: string) =>
         }),
       ),
     retry: false,
-    placeholderData: keepPreviousData,
+    placeholderData: (previousData, previousQuery) =>
+      previousQuery?.queryKey[1] === organizationId
+        ? previousData
+        : undefined,
     enabled: !!query,
   })

@@ -5,6 +5,7 @@ import { type EntityMenuAction } from '@/components/Shared/EntityLinkMenu'
 import { useFilterMenuItem } from '@/components/Shared/useFilterMenuItem'
 import { buildCustomerDashboardPath } from '@/utils/customer'
 import { schemas } from '@polar-sh/client'
+import { CustomerPreview } from './CustomerPreview'
 
 interface LinkedCustomer {
   id: string
@@ -74,6 +75,9 @@ export const CustomerEntityLink = ({
     secondary={withBillingName ? getBillingName(customer) : undefined}
     href={buildCustomerDashboardPath(organization.slug, customer)}
     menuItems={useCustomerMenuItems(organization, customer, filterable)}
+    preview={
+      <CustomerPreview organization={organization} customerId={customer.id} />
+    }
   >
     {getCustomerLabel(customer)}
   </EntityLink>

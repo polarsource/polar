@@ -21,7 +21,7 @@ from fastapi.datastructures import FormData
 from pydantic import UUID4, BaseModel, Field, ValidationError, field_validator
 from pydantic_core import PydanticCustomError, SchemaSerializer, core_schema
 from sqlalchemy import ColumnElement, Select, and_, case, false, func, or_, select
-from sqlalchemy.orm import contains_eager, joinedload
+from sqlalchemy.orm import contains_eager, joinedload, selectinload
 from sse_starlette.sse import EventSourceResponse
 from tagflow import tag, text
 
@@ -4575,12 +4575,25 @@ async def setup_account(
     """Show modal to setup a manual payment account."""
     repository = OrganizationRepository(session)
 
-    organization = await repository.get_by_id(organization_id, include_blocked=True)
+    organization = await repository.get_by_id(
+        organization_id,
+        include_blocked=True,
+        options=(selectinload(Organization.payout_account),),
+        for_update=request.method == "POST",
+    )
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
+    current = organization.payout_account
+    if current is not None and current.type == PayoutAccountType.manual:
+        raise OrganizationError("Organization already uses manual payouts", 409)
+
     if request.method == "POST":
         data = await request.form()
+        if data.get("previous_payout_account_id") != (
+            str(current.id) if current else None
+        ):
+            raise OrganizationError("Payout account has changed", 409)
         country = str(data.get("country", "US")).upper()
 
         owner_user = await repository.get_owner_user(organization)
@@ -4609,30 +4622,43 @@ async def setup_account(
     form_action = str(
         request.url_for("organizations:setup_account", organization_id=organization_id)
     )
-    with modal("Setup Manual Account", open=True):
+    action = "Switch to Manual Payouts" if current else "Create Manual Account"
+    with modal(action, open=True):
         with tag.form(
+            id="manual-payout-account-form",
             method="post",
             hx_post=form_action,
             hx_target="#modal",
             classes="space-y-4",
         ):
-            with tag.p(classes="text-sm text-base-content/60"):
-                text("This will create a manual payout account for this organization.")
-
+            if current:
+                with tag.input(
+                    type="hidden",
+                    name="previous_payout_account_id",
+                    value=str(current.id),
+                ):
+                    pass
+                with tag.p():
+                    text(
+                        "Payouts already transferred to Stripe will continue there. "
+                        "Held payouts and payouts awaiting transfer will be canceled "
+                        "and can be requested again."
+                    )
             with tag.div(classes="alert alert-warning"):
                 with tag.span(classes="text-sm"):
                     text(
-                        "Manual accounts require manual payout processing and do not integrate with Stripe."
+                        "New payouts for this organization must be processed manually in USD."
                     )
 
             with tag.div(classes="form-control w-full"):
-                with tag.label(classes="label"):
+                with tag.label(classes="label", **{"for": "manual-payout-country"}):
                     with tag.span(classes="label-text font-semibold"):
                         text("Country")
                 with tag.input(
+                    id="manual-payout-country",
                     type="text",
                     name="country",
-                    value="US",
+                    value=current.country if current else "US",
                     placeholder="2-letter country code (e.g. US, FR, GB)",
                     maxlength="2",
                     classes="input input-bordered w-full uppercase",
@@ -4640,12 +4666,14 @@ async def setup_account(
                 ):
                     pass
 
-            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
-                with button(variant="primary", type="submit"):
-                    text("Create Manual Account")
+        with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+            with tag.form(method="dialog"):
+                with button(ghost=True):
+                    text("Cancel")
+            with button(
+                variant="primary", type="submit", form="manual-payout-account-form"
+            ):
+                text(action)
 
     return None
 

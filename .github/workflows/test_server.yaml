@@ -4,11 +4,12 @@ on:
   push:
     branches: ["main"]
   pull_request:
-    types: [opened, synchronize, edited]
+    types: [opened, synchronize, reopened, edited]
   merge_group:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  # Keep metadata edits from canceling real CI; their job names also keep the skipped checks separate.
+  group: ${{ github.workflow }}-${{ github.event.action == 'edited' && !github.event.changes.base && format('pr-metadata-{0}', github.run_id) || github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -17,7 +18,8 @@ permissions:
 
 jobs:
   changes:
-    name: "Detect changes"
+    name: "Detect changes${{ github.event.action == 'edited' && !github.event.changes.base && ' (PR metadata only)' || '' }}"
+    if: github.event.action != 'edited' || github.event.changes.base
     runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
       server: ${{ steps.filter.outputs.server }}
@@ -63,18 +65,36 @@ jobs:
               - 'clients/**'
 
   linters:
-    name: "Server: Linters 📝"
+    name: "Server: Linters 📝${{ github.event.action == 'edited' && !github.event.changes.base && ' (PR metadata only)' || '' }}"
     needs: changes
-    if: needs.changes.outputs.server == 'true'
+    # GitHub only evaluates this required check's name when the job runs.
+    if: >-
+      ${{ !cancelled() &&
+      (github.event.action != 'edited' || github.event.changes.base) &&
+      (github.event_name != 'push' || (needs.changes.result == 'success' && needs.changes.outputs.server == 'true')) }}
     timeout-minutes: 15
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ${{ needs.changes.result == 'success' && needs.changes.outputs.server == 'true' && 'blacksmith-4vcpu-ubuntu-2404' || 'ubuntu-slim' }}
     steps:
+      - name: Report server change detection
+        if: needs.changes.result != 'success' || needs.changes.outputs.server != 'true'
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          SERVER_CHANGED: ${{ needs.changes.outputs.server }}
+        run: |
+          if [ "$CHANGES_RESULT" != "success" ] || [ "$SERVER_CHANGED" != "false" ]; then
+            echo "::error::Could not determine whether server files changed."
+            exit 1
+          fi
+          echo "No server changes; lint and type checks are not needed."
+
       - name: Harden the runner (Audit all outbound calls)
+        if: needs.changes.outputs.server == 'true'
         uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
         with:
           egress-policy: audit
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: needs.changes.outputs.server == 'true'
 
       # - uses: actions/cache@v4
       #   with:
@@ -86,29 +106,34 @@ jobs:
       #       mypy-
 
       - name: Install uv
+        if: needs.changes.outputs.server == 'true'
         uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
           enable-cache: true
 
       - name: Set up Python
+        if: needs.changes.outputs.server == 'true'
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version-file: "server/pyproject.toml"
 
       - name: 🔧 uv install
+        if: needs.changes.outputs.server == 'true'
         working-directory: ./server
         run: uv sync --dev --frozen
 
       - name: 🐶 Lint Server (ruff)
+        if: needs.changes.outputs.server == 'true'
         working-directory: ./server
         run: uv run task lint_check
 
       - name: 🛟 Type Check Server (mypy)
+        if: needs.changes.outputs.server == 'true'
         working-directory: ./server
         run: uv run task lint_types
 
   emails:
-    name: "Server: Emails 📬"
+    name: "Server: Emails 📬${{ github.event.action == 'edited' && !github.event.changes.base && ' (PR metadata only)' || '' }}"
     needs: changes
     if: needs.changes.outputs.emails == 'true'
     timeout-minutes: 10
@@ -145,7 +170,7 @@ jobs:
         run: pnpm typecheck
 
   tinybird-check:
-    name: "Server: Tinybird Schema 🐦"
+    name: "Server: Tinybird Schema 🐦${{ github.event.action == 'edited' && !github.event.changes.base && ' (PR metadata only)' || '' }}"
     needs: changes
     if: needs.changes.outputs.tinybird == 'true'
     runs-on: blacksmith-4vcpu-ubuntu-2404
@@ -185,7 +210,7 @@ jobs:
 
   # Required by the migrations-lock ruleset, toggled by migrations-lock.yml / migrations-unlock.yml
   no-migrations:
-    name: "Server: No migrations"
+    name: "Server: No migrations${{ github.event.action == 'edited' && !github.event.changes.base && ' (PR metadata only)' || '' }}"
     needs: changes
     if: >-
       vars.MIGRATIONS_LOCKED == 'true' &&
@@ -204,7 +229,7 @@ jobs:
           exit 1
 
   migration-check:
-    name: "Server: Migration Check 📚"
+    name: "Server: Migration Check 📚${{ github.event.action == 'edited' && !github.event.changes.base && ' (PR metadata only)' || '' }}"
     needs: changes
     if: needs.changes.outputs.migrations == 'true' && github.event_name == 'pull_request'
     runs-on: blacksmith-4vcpu-ubuntu-2404
@@ -293,7 +318,7 @@ jobs:
         run: exit 1
 
   env-vars-check:
-    name: "Server: Env Var Check 🔑"
+    name: "Server: Env Var Check 🔑${{ github.event.action == 'edited' && !github.event.changes.base && ' (PR metadata only)' || '' }}"
     needs: changes
     if: needs.changes.outputs.env_vars == 'true' && github.event_name == 'pull_request'
     runs-on: blacksmith-4vcpu-ubuntu-2404
@@ -380,7 +405,7 @@ jobs:
             })
 
   migration-heads:
-    name: "Server: Migration heads"
+    name: "Server: Migration heads${{ github.event.action == 'edited' && !github.event.changes.base && ' (PR metadata only)' || '' }}"
     needs: changes
     if: >-
       needs.changes.outputs.migration_heads == 'true' &&
@@ -425,7 +450,7 @@ jobs:
         run: uv run python -m scripts.check_migrations --base "$BASE_SHA"
 
   test:
-    name: "Server: Tests 🐍 (${{ matrix.shard == 'tinybird' && 'Tinybird' || format('{0}/4', matrix.shard) }})"
+    name: "Server: Tests 🐍 (${{ matrix.shard == 'tinybird' && 'Tinybird' || format('{0}/4', matrix.shard) }})${{ github.event.action == 'edited' && !github.event.changes.base && ' (PR metadata only)' || '' }}"
     needs: changes
     if: needs.changes.outputs.server == 'true'
     strategy:
@@ -598,9 +623,9 @@ jobs:
           retention-days: 1
 
   test-status:
-    name: "Server: Tests 🐍"
+    name: "Server: Tests 🐍${{ github.event.action == 'edited' && !github.event.changes.base && ' (PR metadata only)' || '' }}"
     needs: [changes, test]
-    if: always()
+    if: always() && (github.event.action != 'edited' || github.event.changes.base)
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Harden the runner (Audit all outbound calls)

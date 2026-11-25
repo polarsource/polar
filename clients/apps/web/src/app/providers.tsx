@@ -1,7 +1,7 @@
 'use client'
 
 import { cookieConsentGiven } from '@/components/Privacy/CookieConsent'
-import { DISTINCT_ID_COOKIE } from '@/experiments/constants'
+import { DISTINCT_ID_COOKIE, isCookielessPath } from '@/experiments/constants'
 import { getQueryClient } from '@/utils/api/query'
 import { CONFIG } from '@/utils/config'
 import { redactClaimTokens } from '@/utils/telemetry'
@@ -15,10 +15,12 @@ import { PostHogProvider } from 'posthog-js/react'
 import { PropsWithChildren } from 'react'
 
 if (typeof window !== 'undefined' && CONFIG.POSTHOG_TOKEN) {
-  const distinctId = document.cookie
-    .split('; ')
-    .find((row) => row.startsWith(`${DISTINCT_ID_COOKIE}=`))
-    ?.split('=')[1]
+  const distinctId = isCookielessPath(window.location.pathname)
+    ? document.documentElement.dataset.distinctId
+    : document.cookie
+        .split('; ')
+        .find((row) => row.startsWith(`${DISTINCT_ID_COOKIE}=`))
+        ?.split('=')[1]
 
   posthog.init(CONFIG.POSTHOG_TOKEN, {
     ui_host: 'https://us.i.posthog.com',

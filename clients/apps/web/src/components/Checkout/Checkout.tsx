@@ -1,6 +1,5 @@
 'use client'
 
-import { DISTINCT_ID_COOKIE } from '@/experiments/constants'
 import { useAuth } from '@/hooks/auth'
 import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { usePostHog } from '@/hooks/posthog'
@@ -135,13 +134,7 @@ const Checkout = ({
       locale,
     })
 
-    const cookies = document.cookie.split(';')
-    const distinctIdCookie = cookies.find((c) =>
-      c.trim().startsWith(`${DISTINCT_ID_COOKIE}=`),
-    )
-    const distinctId = distinctIdCookie?.split('=')[1]?.trim()
-
-    trackCheckoutOpened(distinctId)
+    trackCheckoutOpened(posthog.getDistinctId())
   }, [trackCheckoutOpened, posthog, checkout.id, locale])
 
   const themePreset = getThemePreset(theme)

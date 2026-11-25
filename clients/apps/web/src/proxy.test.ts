@@ -550,6 +550,43 @@ describe('checkout frame ancestors', () => {
     expect(mockFetch).not.toHaveBeenCalled()
   })
 
+  it('sets the distinct id cookie everywhere but checkout', async () => {
+    const checkout = await proxy(
+      new NextRequest('https://polar.sh/checkout/polar_c_123'),
+    )
+    const storefront = await proxy(new NextRequest('https://polar.sh/acme'))
+
+    expect(checkout.cookies.get('polar_distinct_id')).toBeUndefined()
+    expect(storefront.cookies.get('polar_distinct_id')).toBeDefined()
+  })
+
+  it('gives a checkout the same distinct id on every request', async () => {
+    const distinctId = async (url: string, cookie?: string) => {
+      const request = new NextRequest(url)
+      if (cookie) {
+        request.cookies.set('polar_distinct_id', cookie)
+      }
+      return getForwardedRequestHeader(
+        await proxy(request),
+        'x-polar-distinct-id',
+      )
+    }
+
+    const first = await distinctId('https://polar.sh/checkout/polar_c_123')
+
+    expect(first).toMatch(/^anon_[\w-]{21}$/)
+    expect(first).not.toContain('polar_c_123')
+    expect(
+      await distinctId('https://polar.sh/checkout/polar_c_123/confirmation'),
+    ).toBe(first)
+    expect(
+      await distinctId('https://polar.sh/checkout/polar_c_123', 'anon_visitor'),
+    ).toBe(first)
+    expect(await distinctId('https://polar.sh/checkout/polar_c_456')).not.toBe(
+      first,
+    )
+  })
+
   it('refuses framing when the call fails', async () => {
     mockFetch.mockRejectedValue(new Error('unreachable'))
 

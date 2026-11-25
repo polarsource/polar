@@ -1,5 +1,6 @@
 import { schemas } from '@polar-sh/client'
 import { nanoid } from 'nanoid'
+import { createHash } from 'node:crypto'
 import { RequestCookiesAdapter } from 'next/dist/server/web/spec-extension/adapters/request-cookies'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
@@ -61,6 +62,16 @@ const AUTHENTICATED_ROUTES = [
 const getOrCreateDistinctId = (
   request: NextRequest,
 ): { id: string; isNew: boolean } => {
+  const checkoutClientSecret = request.nextUrl.pathname.match(
+    CHECKOUT_CLIENT_SECRET,
+  )?.[1]
+  if (checkoutClientSecret) {
+    const hash = createHash('sha256')
+      .update(checkoutClientSecret)
+      .digest('base64url')
+    return { id: `anon_${hash.slice(0, 21)}`, isNew: false }
+  }
+
   const existing = request.cookies.get(DISTINCT_ID_COOKIE)?.value
   if (existing) {
     return { id: existing, isNew: false }

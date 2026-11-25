@@ -1596,7 +1596,6 @@ class CheckoutService:
                 if checkout.analytics_metadata
                 else None
             )
-            or checkout.customer_email
             or f"checkout:{checkout.id}"
         )
 
@@ -1800,9 +1799,7 @@ class CheckoutService:
         if checkout.analytics_metadata and checkout.analytics_metadata.get("opened_at"):
             return checkout
 
-        resolved_distinct_id = (
-            distinct_id or checkout.customer_email or f"checkout:{checkout.id}"
-        )
+        resolved_distinct_id = distinct_id or f"checkout:{checkout.id}"
 
         analytics_metadata = {
             **(checkout.analytics_metadata or {}),

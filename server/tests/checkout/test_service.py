@@ -8850,7 +8850,7 @@ class TestMarkOpened:
 
         posthog_mock.capture.assert_called_once()
         call_kwargs = posthog_mock.capture.call_args
-        assert call_kwargs[1]["distinct_id"] == "test@example.com"
+        assert call_kwargs[1]["distinct_id"] == f"checkout:{checkout_one_time_fixed.id}"
         assert call_kwargs[1]["event"] == "storefront:subscriptions:checkout:open"
         assert call_kwargs[1]["properties"]["checkout_id"] == str(
             checkout_one_time_fixed.id
@@ -8933,7 +8933,7 @@ class TestHandleSuccessPostHogTracking:
 
         posthog_mock.capture.assert_called_once()
         call_kwargs = posthog_mock.capture.call_args
-        assert call_kwargs[1]["distinct_id"] == "customer@example.com"
+        assert call_kwargs[1]["distinct_id"] == f"checkout:{checkout.id}"
         assert call_kwargs[1]["event"] == "storefront:subscriptions:checkout:complete"
         assert call_kwargs[1]["properties"]["checkout_id"] == str(checkout.id)
 

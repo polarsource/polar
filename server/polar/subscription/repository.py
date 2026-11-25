@@ -177,9 +177,9 @@ class SubscriptionRepository(
         *,
         bills_meter: bool,
     ) -> bool:
-        """Whether another live subscription owns the customer's meter: the
+        """Whether another billable subscription owns the customer's meter: the
         earliest that bills it, or the earliest that credits it when none bills
-        it."""
+        it. A paused subscription doesn't renew, so it can't reset the meter."""
         price = with_polymorphic(
             ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
         )
@@ -227,10 +227,7 @@ class SubscriptionRepository(
             self.get_base_statement()
             .where(
                 Subscription.id != subscription.id,
-                Subscription.status.in_(
-                    SubscriptionStatus.billable_statuses()
-                    | SubscriptionStatus.paused_statuses()
-                ),
+                Subscription.billable,
                 Subscription.ended_at.is_(None),
                 owns_meter,
             )

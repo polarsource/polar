@@ -1,0 +1,19 @@
+server/polar/backoffice/organizations_v2/endpoints.py
+  s_07d9d4d50cfb77::t_58da7d77609bf4 4578-4586,4647-4649
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "96c52138ce6e261abf02aefb2f294992eee245ad",
+  "prompts": {},
+  "sessions": {
+    "s_07d9d4d50cfb77": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a21378-62dc-7091-bf04-34976fd90520",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

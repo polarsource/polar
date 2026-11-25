@@ -17,7 +17,7 @@ import anyio.lowlevel
 import httpx2
 import pytest
 import redis.asyncio.connection as redis_connection_module
-from fakeredis import FakeAsyncRedis, FakeServer
+from fakeredis import FakeAsyncRedis, FakeAsyncRedisConnection, FakeServer
 from opentelemetry.sdk.metrics.export import (
     ExponentialHistogramDataPoint,
     MetricExporter,
@@ -736,6 +736,34 @@ async def test_talks_to_redis_over_one_connection(
     before = len(await redis.client_list())
     async with Outpost(url, client=polar_client):
         assert len(await redis.client_list()) == before + 1
+
+
+@pytest.mark.anyio
+async def test_waits_for_a_redis_connection_once_its_pool_is_full(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url, _ = redis_connection
+    read_response = FakeAsyncRedisConnection.read_response
+
+    # Each answer takes a moment: the commands overlap, as on a cold start.
+    async def slow(connection: FakeAsyncRedisConnection, **kwargs: typing.Any) -> typing.Any:
+        await anyio.sleep(0.01)
+        return await read_response(connection, **kwargs)
+
+    monkeypatch.setattr(FakeAsyncRedisConnection, "read_response", slow)
+    async with Outpost(url, client=polar_client, telemetry=False) as outpost:
+        redis = outpost._require_redis()
+
+        async def ping() -> None:
+            await redis.ping()
+
+        async with anyio.create_task_group() as group:
+            for _ in range(150):
+                group.start_soon(ping)
+        pool = redis.connection_pool
+        assert len(pool._available_connections) + len(pool._in_use_connections) <= 32
 
 
 @pytest.mark.anyio

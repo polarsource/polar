@@ -1384,13 +1384,13 @@ export class Outpost {
           throw error;
         });
         pages += 1;
-        // Past its lock, another instance may pull the same page: only one counts its reset.
+        if (changes.configuration_changed) await this.configure("polar");
+        // Past its lock, another instance may pull the same page: only one counts its reset
+        // and its configuration change.
         if ((changes.reset || changes.configuration_changed) && !(await extend())) break;
         if (changes.reset) this.resets = await redis.hincrby(this.pullKey, "reset", 1);
-        if (changes.configuration_changed) {
-          await this.configure("polar");
+        if (changes.configuration_changed)
           this.configurationRevision = await redis.hincrby(this.pullKey, "configuration", 1);
-        }
         const resets = this.resets;
         // Each customer's snapshots apply in order; customers apply side by side.
         const customers = new Map<string, Snapshot[]>();

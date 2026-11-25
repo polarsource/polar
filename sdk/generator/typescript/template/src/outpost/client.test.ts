@@ -1729,6 +1729,19 @@ it("stops a pull that lost its lock before it counts the reset", async () => {
   expect(await redis.hget(`outpost:v1:${organization}:pull`, "reset")).toBeNull();
 });
 
+it("stops a pull that lost its lock while it fetched the configuration", async () => {
+  const outpost = await start();
+  const redisClient = outpost["redis"]!;
+  const set = redisClient.set.bind(redisClient);
+  vi.spyOn(redisClient, "set").mockImplementation(((lock: string, token: string) =>
+    set(lock, token, "PX", 100, "NX")) as never);
+  const revision = await redis.hget(`outpost:v1:${organization}:pull`, "configuration");
+  configurationDelay = 200;
+  configurationChanged = true;
+  await outpost["pull"]();
+  expect(await redis.hget(`outpost:v1:${organization}:pull`, "configuration")).toBe(revision);
+});
+
 it("asks for a bucket's pending events a thousand at a time", async () => {
   const outpost = await warm();
   for (let i = 0; i < 1_001; i++) await outpost.track(usage(`event-${i}`, 1));

@@ -2129,8 +2129,10 @@ class Outpost:
                         raise PolarOutpostError("Polar rejected the pull") from error
                     raise
                 pages += 1
+                if changes["configuration_changed"]:
+                    await self._configure("polar")
                 # Past its lock, another instance may pull the same page: only one counts
-                # its reset.
+                # its reset and its configuration change.
                 if (
                     changes["reset"] or changes["configuration_changed"]
                 ) and not await extend():
@@ -2138,7 +2140,6 @@ class Outpost:
                 if changes["reset"]:
                     self._resets = await redis.hincrby(self._pull_key, "reset", 1)
                 if changes["configuration_changed"]:
-                    await self._configure("polar")
                     self._configuration_revision = await redis.hincrby(
                         self._pull_key, "configuration", 1
                     )

@@ -1,0 +1,148 @@
+clients/.changeset/cli-auth-token-output.md
+  h_12064c78efc6c2 1-5
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/finance/account/AccountPageApproved.tsx
+  h_12064c78efc6c2 7,16-17
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/products/ProductsPage.tsx
+  h_12064c78efc6c2 3,285-287
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/products/benefits/page.tsx
+  h_12064c78efc6c2 1,52-64
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/switch/SwitchRecordModal.tsx
+  h_12064c78efc6c2 8,140
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/switch/SwitchSummary.tsx
+  h_12064c78efc6c2 2,4,24,32-40
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/switch/cardStatus.test.ts
+  h_12064c78efc6c2 1-41
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/switch/cardStatus.ts
+  h_12064c78efc6c2 1-53
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/switch/switchStatus.test.ts
+  h_12064c78efc6c2 60-78
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/switch/switchStatus.ts
+  h_12064c78efc6c2 2,19-22
+clients/apps/web/src/app/(main)/dashboard/[organization]/cli/token/CLITokenPage.tsx
+  h_12064c78efc6c2 62
+clients/apps/web/src/components/Benefit/BenefitGrantStatus.tsx
+  h_12064c78efc6c2 2-5,34-40,46
+clients/apps/web/src/components/Benefit/ChannelNamePreview.tsx
+  h_12064c78efc6c2 3,6-10,19-24,26-31
+clients/apps/web/src/components/Checkout/CheckoutBenefits.tsx
+  h_12064c78efc6c2 31-40
+clients/apps/web/src/components/Checkouts/CheckoutStatus.tsx
+  h_12064c78efc6c2 19-26,46
+clients/apps/web/src/components/Dashboard/ManagedAsCodeBadge.tsx
+  h_12064c78efc6c2 2-3,11-25
+clients/apps/web/src/components/Events/EventTimestamp.tsx
+  h_12064c78efc6c2 41,75-77,91-96
+clients/apps/web/src/components/Meter/MeterIngestionGuide.tsx
+  h_12064c78efc6c2 3,41-43
+clients/apps/web/src/components/Orders/OrderRefundsSection.tsx
+  h_12064c78efc6c2 5-6,78
+clients/apps/web/src/components/Orders/OrderStatus.tsx
+  h_12064c78efc6c2 19-27,60
+clients/apps/web/src/components/PaymentStatus/PaymentStatus.tsx
+  h_12064c78efc6c2 1-4,10-19,24-26
+clients/apps/web/src/components/Payouts/PayoutStatus.tsx
+  h_12064c78efc6c2 1-6,9-11,14-15,20-26,29-35,38-60
+clients/apps/web/src/components/Payouts/WithdrawModal.tsx
+  h_12064c78efc6c2 4,10-14,19,32-40,89-106
+clients/apps/web/src/components/Refunds/RefundStatus.tsx
+  h_12064c78efc6c2 1-36
+clients/apps/web/src/components/Search/OmniSearch.tsx
+  h_12064c78efc6c2 8-9,22,41-50,112,162-170
+clients/apps/web/src/components/Shared/CondensedTable/CondensedTable.tsx
+  h_12064c78efc6c2 5-6,10,36-44,47-49,52,59,64,71,77,81,109,111-121,129,133,139,141-149,159-193
+clients/apps/web/src/components/Shared/CondensedTable/CondensedTableHeader.tsx
+  h_12064c78efc6c2 6,22-23,30,33
+clients/apps/web/src/components/Shared/CondensedTable/columns.tsx
+  h_12064c78efc6c2 28-45,52-54,63,73
+clients/apps/web/src/components/Shared/CondensedTable/index.ts
+  h_12064c78efc6c2 1-6,13
+clients/apps/web/src/components/Shared/EntityLink.tsx
+  h_12064c78efc6c2 1-101
+clients/apps/web/src/components/Shared/EntityLinkMenu.tsx
+  h_12064c78efc6c2 1-57
+clients/apps/web/src/components/Shared/StatusIcon.tsx
+  h_12064c78efc6c2 1,3,159-180,184,186-192
+clients/apps/web/src/components/Subscriptions/SubscriptionStatus.tsx
+  h_12064c78efc6c2 4,6-9,47-54
+clients/apps/web/src/components/Subscriptions/utils.tsx
+  h_12064c78efc6c2 1,42-57,84-107,131-142
+clients/apps/web/src/hooks/identityVerification.ts
+  h_12064c78efc6c2 4-6,8-9,34-35,39,41-58,104-105
+clients/apps/web/src/hooks/queries/customerPortal.ts
+  h_12064c78efc6c2 249-253,264-266
+clients/apps/web/src/hooks/queries/payouts.ts
+  h_12064c78efc6c2 29-45
+clients/apps/web/src/hooks/queries/search.ts
+  h_12064c78efc6c2 1-20
+clients/apps/web/src/hooks/queries/slack.ts
+  h_12064c78efc6c2 3-4,67-77
+clients/apps/web/src/utils/organization.ts
+  h_12064c78efc6c2 4,11-13,57
+clients/packages/cli/src/commands/token.test.ts
+  h_12064c78efc6c2 3,88-103
+clients/packages/cli/src/commands/token.ts
+  h_12064c78efc6c2 3,18-33,69,72,76-82
+clients/packages/cli/src/services/token-handoff.ts
+  h_12064c78efc6c2 24,26-29,31-34
+clients/packages/client/src/v1.ts
+  h_12064c78efc6c2 28566-28584,28633-28637,28905-28906,75972-75974
+clients/packages/orbit/src/icons/lucide.ts
+  h_12064c78efc6c2 50
+clients/packages/polar/src/generate.test.ts
+  h_12064c78efc6c2 700-711
+clients/packages/polar/src/generate.ts
+  h_12064c78efc6c2 45-54,581
+server/migrations/env.py
+  h_12064c78efc6c2 12
+server/migrations/versions/2026-11-25-0948_drop_the_slack_app_plaintext_secrets.py
+  h_12064c78efc6c2 1-55
+server/migrations/versions/2026-11-25-1012_allow_the_oauth_account_plaintext_.py
+  h_12064c78efc6c2 1-46
+server/polar/customer_meter/service.py
+  h_12064c78efc6c2 10,534,779,788,819,844,854,944
+server/polar/merchant_migration/card_status.py
+  h_12064c78efc6c2 1-37
+server/polar/merchant_migration/cutover.py
+  h_12064c78efc6c2 56,134-138,939-945
+server/polar/merchant_migration/precheck.py
+  h_12064c78efc6c2 1102
+server/polar/merchant_migration/repository.py
+  h_12064c78efc6c2 846-868
+server/polar/merchant_migration/schemas.py
+  h_12064c78efc6c2 31,279-285,458-464,478-483
+server/polar/merchant_migration/service.py
+  h_12064c78efc6c2 67,108,1970-1981,1994-2000,2283-2284,2289-2293
+server/polar/meter/aggregation.py
+  h_12064c78efc6c2 9,80-81
+server/polar/meter/service.py
+  h_12064c78efc6c2 819
+server/polar/models/user.py
+  h_12064c78efc6c2 79-81
+server/polar/reducer/service.py
+  h_12064c78efc6c2 962,1004
+server/tests/customer_meter/test_service.py
+  h_12064c78efc6c2 1003-1050
+server/tests/merchant_migration/test_card_status.py
+  h_12064c78efc6c2 1-33
+server/tests/merchant_migration/test_cutover.py
+  h_12064c78efc6c2 1496-1510
+server/tests/merchant_migration/test_service.py
+  h_12064c78efc6c2 51,5616-5666,5790-5846
+server/tests/meter/test_service.py
+  h_12064c78efc6c2 1540-1570
+server/tests/models/test_oauth_account.py
+  h_12064c78efc6c2 24
+server/tests/reducer/test_service.py
+  h_12064c78efc6c2 2488,2509-2510,2519,2546,2612-2613
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c12e75aa878bb49623441865a05084b291e55cb2",
+  "prompts": {},
+  "humans": {
+    "h_12064c78efc6c2": {
+      "author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

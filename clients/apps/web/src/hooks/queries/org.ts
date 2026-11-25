@@ -7,6 +7,7 @@ import {
   schemas,
   unwrap,
 } from '@polar-sh/client'
+import * as Sentry from '@sentry/nextjs'
 import { skipToken, useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
@@ -42,10 +43,12 @@ export const useLeaveOrganization = (id: string) =>
         params: { path: { id } },
       })
     },
-    onSuccess: async () => {
+    onSuccess: async (result) => {
+      if (result.error) return
       getQueryClient().invalidateQueries({
         queryKey: ['organizations'],
       })
+      await refreshUser().catch((error) => Sentry.captureException(error))
     },
   })
 
@@ -472,9 +475,11 @@ export const useDeleteOrganization = () =>
         params: { path: { id: variables.id } },
       })
     },
-    onSuccess: async () => {
+    onSuccess: async (result) => {
+      if (result.error) return
       getQueryClient().invalidateQueries({
         queryKey: ['organizations'],
       })
+      await refreshUser().catch((error) => Sentry.captureException(error))
     },
   })

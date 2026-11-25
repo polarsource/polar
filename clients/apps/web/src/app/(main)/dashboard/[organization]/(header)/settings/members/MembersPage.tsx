@@ -7,6 +7,7 @@ import { useModal } from '@/components/Modal/useModal'
 import { useToast } from '@/components/Toast/use-toast'
 import { useAuth } from '@/hooks/auth'
 import { useHasPermission } from '@/hooks/permissions'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import {
   useLeaveOrganization,
   useListOrganizationMembers,
@@ -118,7 +119,14 @@ export default function ClientPage({
 
   const onConfirmLeave = useCallback(async () => {
     try {
-      await leaveOrganization.mutateAsync()
+      const { error } = await leaveOrganization.mutateAsync()
+      if (error) {
+        toast({
+          title: 'Failed to leave organization',
+          description: extractApiErrorMessage(error),
+        })
+        return
+      }
       toast({
         title: 'Left organization',
         description: `You have left ${organization.name}.`,

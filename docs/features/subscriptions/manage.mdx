@@ -84,7 +84,7 @@ curl -X PATCH https://sandbox-api.polar.sh/v1/subscriptions/$SUBSCRIPTION_ID \
 ```
 </CodeGroup>
 
-The [proration behavior](/features/subscriptions/proration) decides when the change applies and how the difference is billed. **Prorate & charge now** (`invoice`), **Prorate on next invoice** (`prorate`) and **Charge full amount & reset cycle** (`reset`) apply it now. **Schedule for next cycle** (`next_period`) schedules it for the next cycle. Leave it out to use your organization's default.
+The [proration behavior](/features/subscriptions/proration) decides when the change applies and how the difference is billed. **Prorate & charge now** (`invoice`) and **Prorate on next invoice** (`prorate`) apply it now. **Charge full amount & reset cycle** (`reset`) also applies it now, but isn't available to every organization. **Schedule for next cycle** (`next_period`) schedules it for the next cycle. Leave it out to use your organization's default.
 
 <Note>
   `auto` (prorate upgrades, schedule downgrades) is available from API version 2027-01. See [Update Subscription](/api-reference/next/subscriptions/update-subscription). The CLI and the `2026-10` SDKs don't accept it. Agents using the MCP server can, because it calls `2027-01`.

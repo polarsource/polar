@@ -37,7 +37,7 @@ Polar creates an order whenever it charges a customer. The order's `billing_reas
 | `partially_refunded` | **Partially refunded** | Part of the amount was refunded |
 | `void` | **Void** | Won't be collected, for example after every payment retry failed |
 
-Every paid order has a receipt, and you or the customer can generate an invoice for it.
+Every paid order with a successful payment has a receipt, so free orders don't. You or the customer can generate an invoice for a paid order.
 
 You can also charge an existing customer outside of checkout by creating a draft order and finalizing it. See [Off-session charges](/features/off-session-charges).
 

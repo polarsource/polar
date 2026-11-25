@@ -75,7 +75,7 @@ This route creates a Checkout Session, redirects the customer to it, and sends t
 
 ```php
 // routes/web.php
-Route::get('/checkout', [CheckoutController::class, 'handle']);
+Route::get('/checkout', [CheckoutController::class, 'handle'])->middleware('auth');
 ```
 
 Then create `CheckoutController` in `app/Http/Controllers`:
@@ -102,6 +102,7 @@ class CheckoutController extends Controller
             ->post('https://sandbox-api.polar.sh/v1/checkouts/', [
                 'products' => [$productId],
                 'success_url' => $confirmationUrl,
+                'external_customer_id' => (string) $request->user()->id,
             ]);
 
         $data = $result->json();
@@ -113,7 +114,7 @@ class CheckoutController extends Controller
 }
 ```
 
-Link to `/checkout?productId=<product_id>`, as the products page does. After payment, Polar redirects the customer to the confirmation page. To link the Polar customer to your user, also send `external_customer_id` with your user's ID, so you can look them up by your own ID later.
+Link to `/checkout?productId=<product_id>`, as the products page does. After payment, Polar redirects the customer to the confirmation page. `external_customer_id` links the Polar customer to your signed-in user, so you can look them up by your own ID later.
 
 ## Show a confirmation page
 

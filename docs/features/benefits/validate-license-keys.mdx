@@ -86,7 +86,7 @@ try {
   const validated = await polar.licenseKeys.validate({
     key: licenseKey,
     organization_id: process.env.POLAR_ORGANIZATION_ID!,
-    benefit_id: process.env.POLAR_LICENSE_BENEFIT_ID,
+    benefit_id: process.env.POLAR_LICENSE_BENEFIT_ID!,
     activation_id: activationId,
     conditions: { major_version: 2 },
     increment_usage: 1,

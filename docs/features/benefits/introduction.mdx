@@ -207,7 +207,7 @@ When Polar can't deliver a benefit, for example because the GitHub App lost acce
 Each grant change also fires `customer.state_changed`, which is usually all you need. See [Webhook events](/integrate/webhooks/events).
 
 <Visibility for="agents">
-  Read access from the customer state (`GET /v1/customers/external/{external_id}/state`, `granted_benefits[].benefit_id` and `benefit_metadata`), not by listing grants. `visibility` only accepts `private` or `draft` on `custom`, `license_keys`, `meter_credit` and `feature_flag`; other types return a validation error. `POST /v1/products/{id}/benefits` replaces the full list. `DELETE /v1/benefits/{id}` revokes every grant. Manual grants (`benefit-grants` create, update, revoke) require API version `2027-01`.
+  Read access from the customer state (`GET /v1/customers/external/{external_id}/state`, `granted_benefits[].benefit_id` and `benefit_metadata`), not by listing grants. `visibility` takes `public` or `private`. Only `custom`, `license_keys`, `meter_credit` and `feature_flag` accept a value other than `public`; other types return a validation error. `POST /v1/products/{id}/benefits` replaces the full list. `DELETE /v1/benefits/{id}` revokes every grant. Manual grants (`benefit-grants` create, update, revoke) require API version `2027-01`.
 </Visibility>
 
 ## Learn more

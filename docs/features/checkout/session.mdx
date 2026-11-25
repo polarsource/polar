@@ -166,7 +166,7 @@ const checkout = await polar.checkouts.create({
 ```python Python
 checkout = polar.checkouts.create(
     products=[product.id],
-    customer_ip_address=request.headers.get("X-Forwarded-For", "").split(",")[0],
+    customer_ip_address=request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or None,
 )
 ```
 

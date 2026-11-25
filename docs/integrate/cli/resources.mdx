@@ -71,7 +71,7 @@ polar custom_fields update <custom_field_id> --name "Company" --type text
 
 ## Organizations
 
-Commands use the active organization, and its environment. The CLI sends the organization in the `Polar-Organization` header, so results are scoped to it. There's no environment flag on resource commands.
+Commands use the active organization, and its environment. The CLI sends the organization in the `Polar-Organization` header, so results are scoped to it. Resource commands have no environment flag, except the `customer_seats` commands that run without a login (see below).
 
 To use another organization for one command, pass `--org`. It selects that organization's environment and credentials for the request without changing the active one:
 

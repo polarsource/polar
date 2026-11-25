@@ -32,15 +32,26 @@ Polar sends `customer.state_changed` whenever a customer's subscriptions, benefi
 import { webhooks } from "@polar-sh/sdk/2026-10";
 
 export async function POST(request: Request) {
-  const event = await webhooks.validateEvent(
-    await request.text(),
-    {
-      "webhook-id": request.headers.get("webhook-id") ?? "",
-      "webhook-timestamp": request.headers.get("webhook-timestamp") ?? "",
-      "webhook-signature": request.headers.get("webhook-signature") ?? "",
-    },
-    process.env.POLAR_WEBHOOK_SECRET!,
-  );
+  let event;
+  try {
+    event = await webhooks.validateEvent(
+      await request.text(),
+      {
+        "webhook-id": request.headers.get("webhook-id") ?? "",
+        "webhook-timestamp": request.headers.get("webhook-timestamp") ?? "",
+        "webhook-signature": request.headers.get("webhook-signature") ?? "",
+      },
+      process.env.POLAR_WEBHOOK_SECRET!,
+    );
+  } catch (error) {
+    if (error instanceof webhooks.PolarWebhookVerificationError) {
+      return new Response(null, { status: 403 });
+    }
+    if (error instanceof webhooks.PolarWebhookUnknownTypeError) {
+      return new Response(null, { status: 202 });
+    }
+    throw error;
+  }
 
   if (event.type === "customer.state_changed") {
     const state = event.data;
@@ -57,18 +68,27 @@ export async function POST(request: Request) {
 import os
 
 from flask import Flask, request
-from polar.v2026_10.webhooks import validate_event
+from polar.v2026_10.webhooks import (
+    PolarWebhookUnknownTypeError,
+    PolarWebhookVerificationError,
+    validate_event,
+)
 
 app = Flask(__name__)
 
 
 @app.post("/api/webhooks")
 def webhook():
-    event = validate_event(
-        request.get_data(),
-        dict(request.headers),
-        os.environ["POLAR_WEBHOOK_SECRET"],
-    )
+    try:
+        event = validate_event(
+            request.get_data(),
+            dict(request.headers),
+            os.environ["POLAR_WEBHOOK_SECRET"],
+        )
+    except PolarWebhookVerificationError:
+        return "", 403
+    except PolarWebhookUnknownTypeError:
+        return "", 202
 
     if event.type == "customer.state_changed":
         state = event.data
@@ -78,7 +98,7 @@ def webhook():
 ```
 </CodeGroup>
 
-`validateEvent` (`validate_event` in Python) throws if the signature is invalid. Without an SDK, verify the signature with a [Standard Webhooks library](/integrate/webhooks/delivery#custom-validation). See [Webhook delivery](/integrate/webhooks/delivery) for error handling and retries. If you use Next.js, Nuxt or Better Auth, an [adapter](/integrate/sdk/adapters/introduction) gives you this handler in a few lines.
+`validateEvent` (`validate_event` in Python) throws if the signature is invalid, and the handler answers `403`. Event types your SDK version doesn't know yet get a `202`, so Polar doesn't retry them. Without an SDK, verify the signature with a [Standard Webhooks library](/integrate/webhooks/delivery#custom-validation). See [Webhook delivery](/integrate/webhooks/delivery) for error handling and retries. If you use Next.js, Nuxt or Better Auth, an [adapter](/integrate/sdk/adapters/introduction) gives you this handler in a few lines.
 
 ## Guard usage with the customer state
 

@@ -399,7 +399,7 @@ describe('AgentClaimSuccess', () => {
     })
 
   it('counts down, then falls back when the browser keeps the tab open', () => {
-    const { close, posthog } = renderCountdown()
+    const { close } = renderCountdown()
 
     expect(
       screen.getByText('This page will close in 5 seconds…'),
@@ -413,11 +413,6 @@ describe('AgentClaimSuccess', () => {
 
     expect(close).toHaveBeenCalledOnce()
     expect(screen.getByText('You can close this tab.')).toBeInTheDocument()
-    expect(posthog.events.map(({ event }) => event)).toEqual([
-      'dashboard:agent:claim_success:view',
-      'dashboard:agent:auto_close:start',
-      'dashboard:agent:auto_close:fail',
-    ])
   })
 
   it('stops counting once the human heads to the dashboard', () => {

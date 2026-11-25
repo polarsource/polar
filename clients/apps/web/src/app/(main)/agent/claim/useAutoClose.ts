@@ -1,12 +1,10 @@
 'use client'
 
-import { usePostHog } from '@/hooks/posthog'
 import { useEffect, useState } from 'react'
 
 const TICK_MS = 1000
 
 export const useAutoClose = (seconds: number | null) => {
-  const posthog = usePostHog()
   const [secondsLeft, setSecondsLeft] = useState(seconds)
   const counting = secondsLeft !== null && secondsLeft > 0
   const stop = () => setSecondsLeft(null)
@@ -32,15 +30,12 @@ export const useAutoClose = (seconds: number | null) => {
 
   useEffect(() => {
     if (secondsLeft !== 0) return
-    posthog.capture('dashboard:agent:auto_close:start')
     window.close()
     const check = setTimeout(() => {
-      if (window.closed) return
-      posthog.capture('dashboard:agent:auto_close:fail')
-      setSecondsLeft(null)
+      if (!window.closed) setSecondsLeft(null)
     }, 0)
     return () => clearTimeout(check)
-  }, [secondsLeft, posthog])
+  }, [secondsLeft])
 
   return { secondsLeft: counting ? secondsLeft : null, stop }
 }

@@ -1025,10 +1025,12 @@ class MerchantMigrationService:
             and operation.kind == MerchantMigrationOperationKind.benefits
             and (operation.cursor or {}).get("past_purchases_granted")
         ):
+            # Only what the run gave: the merchant can grant these by hand after.
             past_buyers_granted = await BenefitGrantRepository.from_session(
                 session
             ).count_customers_granted_manually(
-                [proposal.created.id for proposal in proposals if proposal.created]
+                [proposal.created.id for proposal in proposals if proposal.created],
+                granted_before=operation.last_progress_at or utc_now(),
             )
         return MerchantMigrationBenefits(
             past_buyers_granted=past_buyers_granted,

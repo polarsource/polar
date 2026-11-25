@@ -130,11 +130,7 @@ function BenefitsReady({
         </Text>
         <Text color="muted">
           {created.length
-            ? `${plural(created.length, 'benefit')} created.${
-                pastBuyersGranted
-                  ? ` ${plural(pastBuyersGranted, 'past buyer')} ${pastBuyersGranted === 1 ? 'has' : 'have'} them in the customer portal.`
-                  : ''
-              }`
+            ? `${plural(created.length, 'benefit')} created.${pastBuyersLine(pastBuyersGranted)}`
             : 'No benefits were created. You can add them later from each product.'}
         </Text>
       </Box>
@@ -170,4 +166,14 @@ function BenefitsReady({
       />
     </Box>
   )
+}
+
+function pastBuyersLine(granted: number | null): string {
+  if (granted === null) {
+    return ''
+  }
+  if (granted === 0) {
+    return ' No past buyers had bought them.'
+  }
+  return ` ${plural(granted, 'past buyer')} ${granted === 1 ? 'has' : 'have'} them in the customer portal.`
 }

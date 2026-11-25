@@ -1,0 +1,27 @@
+server/migrations/versions/2026-11-25-1615_link_discount_redemptions_to_orders.py
+  s_9d4fcc69d80fc5::t_28e138a7ec2bb5 17-32,37-42,47-64
+  s_9d4fcc69d80fc5::t_d38b502d5c901b 36
+  s_9d4fcc69d80fc5::t_0cba0c1cbaa2ce 43-46
+  s_9d4fcc69d80fc5::t_eae64215070f63 14-16
+  s_9d4fcc69d80fc5::t_c90515f024157d 33-35
+  s_9d4fcc69d80fc5::t_a89c109930f5bf 1-13
+server/polar/models/discount_redemption.py
+  s_9d4fcc69d80fc5::t_1e65ea81c315a1 4,15-22,49-50,52
+  s_9d4fcc69d80fc5::t_d38b502d5c901b 10,51,53-56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b7fdff77bd0ae7a54c1dcae445c7f0969813a111",
+  "prompts": {},
+  "sessions": {
+    "s_9d4fcc69d80fc5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20ccd-705d-7a61-9a99-612697cae1a1",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

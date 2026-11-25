@@ -1,0 +1,21 @@
+server/tests/openapi.2026-10.json
+  s_9d4fcc69d80fc5::t_550d12ce4bacc8 1
+server/tests/openapi.2026-04.json
+  s_9d4fcc69d80fc5::t_550d12ce4bacc8 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0b0e45209bf58cd216218170a37dde5c8cff53ca",
+  "prompts": {},
+  "sessions": {
+    "s_9d4fcc69d80fc5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20ccd-705d-7a61-9a99-612697cae1a1",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

@@ -1,6 +1,11 @@
 'use client'
 
+import { EventTimestamp } from '@/components/Events/EventTimestamp'
 import { CatalogVersionLabel } from '@/components/Products/CatalogVersionLabel'
+import { CustomerEntityLink } from '@/components/Customer/CustomerEntityLink'
+import { ProductEntityLink } from '@/components/Products/ProductEntityLink'
+import { useFilterMenuItem } from '@/components/Shared/useFilterMenuItem'
+import { EntityLink } from '@/components/Shared/EntityLink'
 import {
   CondensedTable,
   CondensedTableHeader,
@@ -28,7 +33,6 @@ import {
 type Subscription = schemas['Subscription']
 
 const formatDate = (date: string) => format(new Date(date), 'MMM d, yyyy')
-const formatTime = (date: string) => format(new Date(date), 'HH:mm')
 
 const getCustomerLabel = ({ customer }: Subscription) =>
   customer.name || customer.email || '—'
@@ -73,15 +77,43 @@ const ProductCell = ({
   organization: schemas['Organization']
 }) => (
   <>
-    <Text color="muted" truncate>
-      {subscription.product.name}
-    </Text>
+    <ProductEntityLink
+      organization={organization}
+      product={subscription.product}
+    />
     <CatalogVersionLabel
       organization={organization}
       version={subscription.product}
     />
   </>
 )
+
+const DiscountLink = ({
+  discount,
+  organization,
+}: {
+  discount: NonNullable<Subscription['discount']>
+  organization: schemas['Organization']
+}) => {
+  const filter = useFilterMenuItem(
+    'discount_id',
+    discount.id,
+    'Filter by this discount',
+  )
+  return (
+    <EntityLink
+      kind="discount"
+      href={`/dashboard/${organization.slug}/products/discounts${discount.code ? `?query=${encodeURIComponent(discount.code)}` : ''}`}
+      menuItems={[
+        ...filter,
+        { label: 'Copy discount ID', copy: discount.id },
+        ...(discount.code ? [{ label: 'Copy code', copy: discount.code }] : []),
+      ]}
+    >
+      {discount.name}
+    </EntityLink>
+  )
+}
 
 const EMPTY: Subscription[] = []
 
@@ -98,23 +130,26 @@ const getColumns = (
       minWidth: 120,
       skeleton: [140, 180, 120, 200, 160, 110, 190, 150, 130, 170],
     },
-    cell: ({ row }) => <Text truncate>{getCustomerLabel(row.original)}</Text>,
+    cell: ({ row }) => (
+      <CustomerEntityLink
+        organization={organization}
+        customer={row.original.customer}
+        filterable
+      />
+    ),
   },
   {
     accessorKey: 'started_at',
     header: 'Started',
     sortDescFirst: true,
-    meta: { width: 144, skeleton: [120] },
+    meta: { width: 172, skeleton: [120] },
     cell: ({ row: { original: subscription } }) =>
       subscription.started_at ? (
-        <>
-          <Text tabularNums wrap="nowrap">
-            {formatDate(subscription.started_at)}
-          </Text>
-          <Text color="muted" tabularNums wrap="nowrap">
-            {formatTime(subscription.started_at)}
-          </Text>
-        </>
+        <EventTimestamp
+          timestamp={subscription.started_at}
+          format="datetime"
+          focusable={false}
+        />
       ) : (
         <Text color="muted">—</Text>
       ),
@@ -138,11 +173,13 @@ const getColumns = (
     id: 'discount',
     accessorFn: ({ discount }) => discount?.name ?? '',
     header: 'Discount',
-    cell: ({ row }) => (
-      <Text color="muted" truncate>
-        {row.original.discount?.name ?? ''}
-      </Text>
-    ),
+    cell: ({ row: { original: subscription } }) =>
+      subscription.discount && (
+        <DiscountLink
+          discount={subscription.discount}
+          organization={organization}
+        />
+      ),
   },
   {
     accessorKey: 'current_period_end',

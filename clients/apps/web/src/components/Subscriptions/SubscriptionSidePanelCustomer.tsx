@@ -2,15 +2,13 @@
 
 import { Field } from '@/components/Events/EventDetailField'
 import { EventTimestamp } from '@/components/Events/EventTimestamp'
-import { EntityLink } from '@/components/Shared/EntityLink'
+import { CustomerEntityLink } from '@/components/Customer/CustomerEntityLink'
 import { useMetrics } from '@/hooks/queries/metrics'
-import { buildCustomerDashboardPath } from '@/utils/customer'
 import { formatCountry } from '@/utils/formatters'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { BillingHistoryDate } from './BillingHistoryDate'
 
 export const SubscriptionSidePanelCustomer = ({
   organization,
@@ -48,25 +46,7 @@ export const SubscriptionSidePanelCustomer = ({
         borderStyle="solid"
         borderColor="border-secondary"
       >
-        <EntityLink
-          kind="customer"
-          href={buildCustomerDashboardPath(organization.slug, customer)}
-          menuItems={[
-            { label: 'Copy customer ID', copy: customer.id },
-            ...(customer.email
-              ? [{ label: 'Copy email', copy: customer.email }]
-              : []),
-            ...(customer.external_id
-              ? [{ label: 'Copy external ID', copy: customer.external_id }]
-              : []),
-            {
-              label: 'View subscriptions',
-              href: `/dashboard/${organization.slug}/sales/subscriptions?view=list&customer_id=${customer.id}`,
-            },
-          ]}
-        >
-          {customer.name || customer.email || '—'}
-        </EntityLink>
+        <CustomerEntityLink organization={organization} customer={customer} />
       </Box>
 
       <Box flexDirection="column" paddingHorizontal="l" paddingBottom="m">
@@ -79,9 +59,7 @@ export const SubscriptionSidePanelCustomer = ({
           <Text tabularNums>{orders ?? '—'}</Text>
         </Field>
         <Field label="First seen">
-          <EventTimestamp timestamp={customer.created_at}>
-            <BillingHistoryDate at={customer.created_at} />
-          </EventTimestamp>
+          <EventTimestamp timestamp={customer.created_at} format="datetime" />
         </Field>
         {customer.type === 'team' && (
           <Field label="Type">

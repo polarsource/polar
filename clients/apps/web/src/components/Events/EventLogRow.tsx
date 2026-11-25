@@ -4,16 +4,9 @@ import { formatCurrency } from '@polar-sh/currency'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { EventTimestamp } from './EventTimestamp'
+import { formatEventTimestamp } from './timestampFormat'
 
-export const formatEventTimestamp = (timestamp: string) =>
-  new Date(timestamp).toLocaleString('en-US', {
-    month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  })
+export { formatEventTimestamp }
 
 export const eventCustomerLabel = (event: schemas['Event']) =>
   event.customer?.name ??
@@ -47,11 +40,12 @@ export const eventLogColumns: CondensedTableColumn<schemas['Event']>[] = [
       skeleton: [104],
     },
     cell: ({ row: { original: event } }) => (
-      <EventTimestamp timestamp={event.timestamp} focusable={false}>
-        <Text color="muted" tabularNums truncate>
-          {formatEventTimestamp(event.timestamp)}
-        </Text>
-      </EventTimestamp>
+      <EventTimestamp
+        timestamp={event.timestamp}
+        format="precise"
+        muted
+        focusable={false}
+      />
     ),
   },
   {

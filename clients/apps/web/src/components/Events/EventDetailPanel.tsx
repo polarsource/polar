@@ -161,9 +161,7 @@ const EventDetails = ({
           </Text>
         </Field>
         <Field label="Time">
-          <EventTimestamp timestamp={event.timestamp}>
-            <Text tabularNums>{formatEventTimestamp(event.timestamp)}</Text>
-          </EventTimestamp>
+          <EventTimestamp timestamp={event.timestamp} format="precise" />
         </Field>
         <Field label="Source">
           <Text>{event.source === 'system' ? 'System' : 'User'}</Text>

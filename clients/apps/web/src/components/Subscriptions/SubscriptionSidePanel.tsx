@@ -12,7 +12,6 @@ import { schemas } from '@polar-sh/client'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { ChevronDown, ChevronUp, X } from '@polar-sh/orbit/icons'
-import { format } from 'date-fns'
 import Link from 'next/link'
 import { useState } from 'react'
 import { CatalogVersionLabel } from '@/components/Products/CatalogVersionLabel'
@@ -42,8 +41,6 @@ const SHORT_DATE_LABELS: Record<string, string> = {
 const ROW_CLASS =
   'dark:hover:bg-polar-800 -mx-2 flex items-center justify-between gap-3 rounded-md px-2 py-1.5 hover:bg-gray-100'
 
-const formatDate = (value: string) => format(new Date(value), 'MMM d, yyyy')
-
 // The subscription at a glance and who it belongs to, in the same panel the
 // subscriptions list opens beside it.
 interface SubscriptionSidePanelProps {
@@ -66,7 +63,7 @@ export const SubscriptionSidePanel = ({
 }: SubscriptionSidePanelProps) => {
   const { customer, discount } = subscription
   const cancellationReason = getCancellationReason(subscription)
-  const subscriptionsPath = `/dashboard/${organization.slug}/sales/subscriptions?view=list`
+  const subscriptionsPath = `/dashboard/${organization.slug}/sales/subscriptions?view=table`
   const [today] = useState(() => new Date())
   const dunning = useSubscriptionDunning(organization.id, subscription.id)
   // The same requests the subscription page's billing history makes.
@@ -161,9 +158,7 @@ export const SubscriptionSidePanel = ({
         {getSubscriptionKeyDates(subscription).map(({ label, datetime }) => (
           <Field key={label} label={SHORT_DATE_LABELS[label] ?? label}>
             {datetime ? (
-              <EventTimestamp timestamp={datetime}>
-                <Text tabularNums>{formatDate(datetime)}</Text>
-              </EventTimestamp>
+              <EventTimestamp timestamp={datetime} />
             ) : (
               <Text color="muted">Until resumed</Text>
             )}

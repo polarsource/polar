@@ -9,6 +9,7 @@ import {
 import { Button } from '@polar-sh/orbit'
 import {
   Check,
+  ChevronDown,
   ChevronRight,
   FilterListOutlined,
   FunnelX,
@@ -21,11 +22,16 @@ import {
 } from '@polar-sh/ui/components/ui/popover'
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { type ToolbarAction } from './ToolbarActionsMenu'
 
 // Filled while the menu is open or anything is applied, in place of a badge.
 const TRIGGER_ON_CLASS = 'dark:bg-polar-700 bg-gray-200'
 // Sized to stand beside a filter chip.
 const ADD_TRIGGER_CLASS = 'size-[26px] shrink-0 rounded-md [&_svg]:size-3.5!'
+// An arrow at the end of an entity link, which shows while the link is
+// pointed at, focused, or has its menu open.
+const INLINE_TRIGGER_CLASS =
+  'dark:text-polar-500 dark:hover:bg-polar-700 flex shrink-0 cursor-pointer items-center justify-center w-5 self-stretch rounded-md text-gray-400 opacity-0 group-hover/entity:opacity-100 hover:bg-gray-200 hover:text-gray-950 focus-visible:opacity-100 data-[state=open]:opacity-100 dark:hover:text-white data-[state=open]:bg-gray-200 data-[state=open]:text-gray-950 dark:data-[state=open]:bg-polar-700 dark:data-[state=open]:text-white'
 export const PANEL_CLASS =
   'dark:bg-polar-800 dark:border-polar-700 rounded-xl border border-gray-200 bg-white text-[13px] shadow-xl'
 const SEARCH_CLASS =
@@ -140,6 +146,8 @@ const OptionsPanel = ({
     if (!isWaiting && isNearEnd(listRef.current)) onEndReached?.()
   }, [optionCount, isWaiting, onEndReached])
 
+  const isSelectable = filter.type === 'multi' || filter.selectable !== false
+
   const pick = (option: FilterOption) => {
     if (filter.type === 'single') {
       filter.onChange(option.value)
@@ -193,9 +201,13 @@ const OptionsPanel = ({
               key={option.value}
               type="button"
               role={
-                filter.type === 'multi' ? 'menuitemcheckbox' : 'menuitemradio'
+                !isSelectable
+                  ? 'menuitem'
+                  : filter.type === 'multi'
+                    ? 'menuitemcheckbox'
+                    : 'menuitemradio'
               }
-              aria-checked={isOn}
+              aria-checked={isSelectable ? isOn : undefined}
               className={twMerge(ITEM_CLASS, ITEM_HOVER_CLASS)}
               onClick={() => pick(option)}
             >
@@ -206,9 +218,11 @@ const OptionsPanel = ({
                   {isOn && <Check className="size-2.5" strokeWidth={3} />}
                 </span>
               ) : (
-                <span className="flex size-3.5 shrink-0 items-center">
-                  {isOn && <Check className="size-3.5" />}
-                </span>
+                isSelectable && (
+                  <span className="flex size-3.5 shrink-0 items-center">
+                    {isOn && <Check className="size-3.5" />}
+                  </span>
+                )
               )}
               {option.icon}
               <span className="truncate">{option.label}</span>
@@ -242,9 +256,13 @@ interface ToolbarFilterMenuProps {
   filters: Filter[]
   // Offered at the foot of the menu while there is something to reset.
   onReset?: () => void
-  // The toolbar button, or a plus that follows the filter chips. The plus sits
-  // at the left of the toolbar, so its menu and options open to the right.
-  variant?: 'toolbar' | 'add'
+  // The toolbar button, a plus that follows the filter chips, or an arrow
+  // inside a line of text. The plus sits at the left of the toolbar, so its
+  // menu and options open to the right. The arrow can be anywhere, so its
+  // options open towards the middle of the window.
+  variant?: 'toolbar' | 'add' | 'inline'
+  // Things to do, listed above the properties.
+  actions?: ToolbarAction[]
 }
 
 // A list of properties, each opening its options beside it.
@@ -252,10 +270,15 @@ export const ToolbarFilterMenu = ({
   filters,
   onReset,
   variant = 'toolbar',
+  actions = [],
 }: ToolbarFilterMenuProps) => {
   const [open, setOpen] = useState(false)
   const [activeKey, setActiveKey] = useState<string | null>(null)
   const isAdd = variant === 'add'
+  const isInline = variant === 'inline'
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const [isInLeftHalf, setIsInLeftHalf] = useState(false)
+  const opensRight = isAdd || (isInline && isInLeftHalf)
   const hasApplied = filters.some(
     (filter) => isFilterActive(filter) && !isFilterDefaulted(filter),
   )
@@ -301,7 +324,12 @@ export const ToolbarFilterMenu = ({
       options &&
       origin &&
       event.timeStamp - openedAtRef.current >= SETTLE_DELAY &&
-      isHeadingForOptions(point, origin, options.getBoundingClientRect(), isAdd)
+      isHeadingForOptions(
+        point,
+        origin,
+        options.getBoundingClientRect(),
+        opensRight,
+      )
     ) {
       if (pendingRef.current?.key === key) return
       clearPending()
@@ -320,6 +348,10 @@ export const ToolbarFilterMenu = ({
   const onOpenChange = (value: boolean) => {
     clearPending()
     trailRef.current = []
+    const trigger = triggerRef.current?.getBoundingClientRect()
+    if (value && trigger) {
+      setIsInLeftHalf(trigger.left < window.innerWidth / 2)
+    }
     setOpen(value)
     activate(null)
   }
@@ -327,69 +359,111 @@ export const ToolbarFilterMenu = ({
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>
-        <Button
-          size="icon"
-          variant="ghost"
-          className={twMerge(
-            isAdd ? ADD_TRIGGER_CLASS : 'h-7 w-7 [&_svg]:size-4!',
-            (open || (hasApplied && !isAdd)) && TRIGGER_ON_CLASS,
-          )}
-          aria-label={
-            isAdd
-              ? 'Add filter'
-              : hasApplied
-                ? 'Filters, some applied'
-                : 'Filters'
-          }
-          title={isAdd ? 'Add filter' : 'Filters'}
-        >
-          {isAdd ? <Plus /> : <FilterListOutlined fontSize="inherit" />}
-        </Button>
+        {isInline ? (
+          <button
+            ref={triggerRef}
+            type="button"
+            className={INLINE_TRIGGER_CLASS}
+            aria-label="More actions"
+          >
+            <ChevronDown className="size-3" aria-hidden />
+          </button>
+        ) : (
+          <Button
+            size="icon"
+            variant="ghost"
+            className={twMerge(
+              isAdd ? ADD_TRIGGER_CLASS : 'h-7 w-7 [&_svg]:size-4!',
+              (open || (hasApplied && !isAdd)) && TRIGGER_ON_CLASS,
+            )}
+            aria-label={
+              isAdd
+                ? 'Add filter'
+                : hasApplied
+                  ? 'Filters, some applied'
+                  : 'Filters'
+            }
+            title={isAdd ? 'Add filter' : 'Filters'}
+          >
+            {isAdd ? <Plus /> : <FilterListOutlined fontSize="inherit" />}
+          </Button>
+        )}
       </PopoverTrigger>
       <PopoverContent
-        align={isAdd ? 'start' : 'end'}
+        align={isAdd || isInline ? 'start' : 'end'}
         sideOffset={8}
         className={twMerge(PANEL_CLASS, 'w-60 overflow-visible p-0')}
       >
-        <div className="p-1.5">
-          {filters.map((filter) => {
-            const isActive = filter.key === activeKey
-            return (
-              <div
-                key={filter.key}
-                className="relative"
-                onMouseMove={(event) => hover(filter.key, event)}
+        {actions.length > 0 && (
+          <div
+            className={twMerge(
+              'p-1.5',
+              filters.length > 0 &&
+                'dark:border-polar-700 border-b border-gray-200',
+            )}
+            onMouseMove={(event) => hover(null, event)}
+          >
+            {actions.map(({ key, label, icon, onSelect }) => (
+              <button
+                key={key}
+                type="button"
+                role="menuitem"
+                className={twMerge(ITEM_CLASS, ITEM_HOVER_CLASS)}
+                onClick={() => {
+                  onSelect()
+                  onOpenChange(false)
+                }}
               >
-                <button
-                  type="button"
-                  aria-haspopup="menu"
-                  aria-expanded={isActive}
-                  className={twMerge(ITEM_CLASS, isActive && ITEM_ACTIVE_CLASS)}
-                  onClick={() => activate(filter.key)}
+                <span className={ICON_CLASS}>{icon}</span>
+                <span className="truncate">{label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+        {filters.length > 0 && (
+          <div className="p-1.5">
+            {filters.map((filter) => {
+              const isActive = filter.key === activeKey
+              return (
+                <div
+                  key={filter.key}
+                  className="relative"
+                  onMouseMove={(event) => hover(filter.key, event)}
                 >
-                  <span className={ICON_CLASS}>{filter.icon}</span>
-                  <span className="grow truncate">{filter.label}</span>
-                  <ChevronRight className="size-3 opacity-50" />
-                </button>
-                {isActive && (
-                  // Padded, not offset, so the pointer can cross the gap.
-                  <div
-                    ref={optionsRef}
+                  <button
+                    type="button"
+                    aria-haspopup="menu"
+                    aria-expanded={isActive}
                     className={twMerge(
-                      'absolute top-0 -mt-[7px]',
-                      isAdd ? 'left-full pl-3' : 'right-full pr-3',
+                      ITEM_CLASS,
+                      isActive && ITEM_ACTIVE_CLASS,
                     )}
+                    onClick={() => activate(filter.key)}
                   >
-                    <OptionsPanel
-                      filter={filter}
-                      onPicked={() => onOpenChange(false)}
-                    />
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
+                    <span className={ICON_CLASS}>{filter.icon}</span>
+                    <span className="grow truncate">{filter.label}</span>
+                    <ChevronRight className="size-3 opacity-50" />
+                  </button>
+                  {isActive && (
+                    // Padded, not offset, so the pointer can cross the gap.
+                    <div
+                      ref={optionsRef}
+                      className={twMerge(
+                        'absolute top-0 -mt-[7px]',
+                        opensRight ? 'left-full pl-3' : 'right-full pr-3',
+                      )}
+                    >
+                      <OptionsPanel
+                        filter={filter}
+                        onPicked={() => onOpenChange(false)}
+                      />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
         {onReset && (
           <div
             className="dark:border-polar-700 border-t border-gray-200 p-1.5"

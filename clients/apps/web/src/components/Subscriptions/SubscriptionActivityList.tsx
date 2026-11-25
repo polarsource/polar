@@ -17,7 +17,6 @@ import {
   Plus,
   RefreshCw,
 } from '@polar-sh/orbit/icons'
-import { format } from 'date-fns'
 import Link from 'next/link'
 import { ORDER_PAYMENTS_SECTION_ID } from '../Orders/OrderPaymentsTable'
 
@@ -53,7 +52,6 @@ const getIconClass = (kind: SubscriptionActivityKind): string => {
 const ACTIVITY_ROW_HEIGHT = 40
 const ACTIVITY_ICON_SIZE = 14
 const ACTIVITY_LINE_GAP = 7
-const DATE_FORMAT = 'MMM d, yyyy'
 
 const LINK_CLASS = 'min-w-0 truncate hover:underline'
 
@@ -125,11 +123,11 @@ export const SubscriptionActivityList = ({
             )}
           </Box>
           <Box height={ACTIVITY_ROW_HEIGHT} alignItems="center" flexShrink={0}>
-            <EventTimestamp timestamp={new Date(at).toISOString()}>
-              <Text as="span" color="muted" tabularNums>
-                {format(at, DATE_FORMAT)}
-              </Text>
-            </EventTimestamp>
+            <EventTimestamp
+              timestamp={new Date(at).toISOString()}
+              muted
+              align="end"
+            />
           </Box>
         </Box>
       )

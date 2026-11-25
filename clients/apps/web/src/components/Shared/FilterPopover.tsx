@@ -59,6 +59,9 @@ export interface SingleFilter extends FilterBase {
   value: string | null
   defaultValue?: string | null
   onChange: (value: string | null) => void
+  // False for options that are things to do, not a value to hold: the
+  // toolbar's filter menu then keeps no room for a mark of the one picked.
+  selectable?: boolean
 }
 
 export interface MultiFilter extends FilterBase {

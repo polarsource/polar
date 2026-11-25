@@ -1,0 +1,48 @@
+server/tests/payment_method/test_service.py
+  s_9d4fcc69d80fc5::t_58776e51fe2d6b 13,110,296,316,342
+server/tests/models/test_order.py
+  s_9d4fcc69d80fc5::t_60b4e86f7ff00e 13-17
+  s_9d4fcc69d80fc5::t_0dd15dd8537c52 26-29
+  s_9d4fcc69d80fc5::t_7ccea25df2108d 21-25,30,32,34-43,45,49-55,57,59-87,90-96,102-123,129-149
+  s_9d4fcc69d80fc5::t_3b8863a90389c7 5,18-20,31,33,44,46-48,56,58,88-89,97-101,124-128
+server/tests/integrations/stripe/test_payment.py
+  s_9d4fcc69d80fc5::t_a11ed5a8312e31 54,714-761
+  s_9d4fcc69d80fc5::t_e1d7f9b1ff42ed 762
+server/polar/customer_portal/schemas/order.py
+  s_9d4fcc69d80fc5::t_96d344857db226 73-75
+  s_9d4fcc69d80fc5::t_7939a957fb68ca 64-72
+server/polar/integrations/stripe/payment.py
+  s_9d4fcc69d80fc5::t_58776e51fe2d6b 38,245,247,259-266
+server/polar/order/service.py
+  s_9d4fcc69d80fc5::t_6aed937e3d1dde 2258-2277,2279,2281,2316-2319,2321,2350-2359,2361,2363-2364,2367-2377,2381,2389-2392
+  s_9d4fcc69d80fc5::t_6e46f73092373f 7,2250,2255-2256
+server/tests/order/test_service.py
+  s_9d4fcc69d80fc5::t_8f9187e165fc00 6523-6572,6651-6654,6700-6703,6748-6751,6918-6921
+  s_9d4fcc69d80fc5::t_2a0ed4b0367c15 6603,6794-6797,6821-6824,6849-6852,6880-6883,6962-6965
+server/tests/customer_portal/endpoints/test_order.py
+  s_9d4fcc69d80fc5::t_7939a957fb68ca 20,75-76,222,252-253
+  s_9d4fcc69d80fc5::t_96d344857db226 254
+server/polar/models/order.py
+  s_9d4fcc69d80fc5::t_80bdca7600668b 38-39,359-379
+  s_9d4fcc69d80fc5::t_8aeee41283a386 380
+server/polar/payment_method/service.py
+  s_9d4fcc69d80fc5::t_58776e51fe2d6b 20,146
+clients/packages/client/src/v1.ts
+  s_9d4fcc69d80fc5::t_d3c016b443992e 21496-21505
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f3e430fd7902b81c4c081f3df520881a88959bf6",
+  "prompts": {},
+  "sessions": {
+    "s_9d4fcc69d80fc5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20ccd-705d-7a61-9a99-612697cae1a1",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

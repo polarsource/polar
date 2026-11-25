@@ -8,6 +8,7 @@ from sqlalchemy.orm import contains_eager
 from sqlalchemy.sql.elements import OrderByList
 
 from polar.auth.models import AuthSubject, Customer, Member
+from polar.customer.repository import CustomerRepository
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.invoice.service import invoice as invoice_service
@@ -230,7 +231,7 @@ class CustomerOrderService:
 
         try:
             order.status = OrderStatus.pending
-            return await order_service.handle_on_session_payment(
+            order = await order_service.handle_on_session_payment(
                 session,
                 order,
                 confirmation_token_id=order_pay.confirmation_token_id
@@ -244,6 +245,18 @@ class CustomerOrderService:
         except PaymentError:
             order.status = original_status
             raise
+
+        # Update the customer's billing information
+        await CustomerRepository.from_session(session).update(
+            order.customer,
+            update_dict={
+                "billing_name": order.billing_name,
+                "billing_address": order.billing_address,
+                "tax_id": order.tax_id,
+            },
+        )
+
+        return order
 
     async def trigger_invoice_generation(
         self, session: AsyncSession, order: Order

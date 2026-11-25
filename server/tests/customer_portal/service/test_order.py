@@ -80,6 +80,10 @@ class TestPay:
         result = await customer_order_service.pay(session, order, order_pay)
 
         assert result.billing_name == "Updated billing name"
+        await session.flush()
+        await session.refresh(customer)
+        assert customer.billing_name == "Updated billing name"
+        assert customer.billing_address == result.billing_address
         submit.assert_awaited_once_with(
             session,
             order,
@@ -120,7 +124,7 @@ class TestPay:
             payment_method_id=None,
         )
 
-    async def test_draft_becomes_pending_when_payment_is_accepted(
+    async def test_saves_customer_billing_when_draft_payment_requires_action(
         self, session: AsyncSession, draft_order: Order, mocker: MockerFixture
     ) -> None:
         customer = draft_order.customer
@@ -132,11 +136,18 @@ class TestPay:
         submit = mocker.patch(
             "polar.order.service.stripe_service.create_payment_intent",
             return_value=stripe_lib.PaymentIntent.construct_from(
-                {"id": "pi_test", "status": "succeeded", "client_secret": None}, None
+                {
+                    "id": "pi_test",
+                    "status": "requires_action",
+                    "client_secret": "pi_test_secret",
+                },
+                None,
             ),
         )
         order_pay = CustomerOrderPayConfirmationToken(
+            billing_name="Updated billing name",
             billing_address=AddressInput.model_validate({"country": "FR"}),
+            tax_id="FR61954506077",
             payment_processor=PaymentProcessor.stripe,
             confirmation_token_id="ctoken_test",
         )
@@ -147,11 +158,14 @@ class TestPay:
         submit.assert_awaited_once()
         assert submit.call_args.kwargs["customer"] == "cus_new"
         await session.flush()
-        await session.refresh(customer, {"stripe_customer_id"})
+        await session.refresh(customer)
         assert customer.stripe_customer_id == "cus_new"
+        assert customer.billing_name == "Updated billing name"
+        assert customer.billing_address == result.billing_address
+        assert customer.tax_id == ("FR61954506077", "eu_vat")
         assert result.status == OrderStatus.pending
         assert result.next_payment_attempt_at is None
-        assert result.payment_processor_metadata["intent_status"] == "succeeded"
+        assert result.payment_processor_metadata["intent_status"] == "requires_action"
         assert result.invoice_number is None
         assert result.subscription is not None
         assert result.subscription.status == SubscriptionStatus.trial_ended
@@ -159,6 +173,7 @@ class TestPay:
     async def test_declined_payment_rolls_back_to_draft(
         self, session: AsyncSession, draft_order: Order, mocker: MockerFixture
     ) -> None:
+        customer = draft_order.customer
         original_billing_name = draft_order.billing_name
         submit = mocker.patch(
             "polar.order.service.stripe_service.create_payment_intent",
@@ -179,9 +194,11 @@ class TestPay:
 
         submit.assert_awaited_once()
         await session.refresh(draft_order)
+        await session.refresh(customer)
         assert draft_order.status == OrderStatus.draft
         assert draft_order.billing_name == original_billing_name
         assert draft_order.payment_processor_metadata == {}
+        assert customer.billing_name == original_billing_name
 
     @pytest.mark.parametrize("status", [OrderStatus.paid, OrderStatus.void])
     async def test_rejects_closed_order(

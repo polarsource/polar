@@ -23,7 +23,7 @@ from polar.discount.repository import DiscountRepository
 from polar.enums import PaymentProcessor
 from polar.kit.utils import utc_now
 from polar.logging import Logger
-from polar.member.repository import MemberRepository
+from polar.member.service import member_service
 from polar.models import (
     BenefitGrant,
     Customer,
@@ -709,9 +709,13 @@ class SubscriptionCutover:
         if not properties:
             return
         # The grant task looks the grant up by the customer's owner member.
-        member = await MemberRepository.from_session(
-            self.session
-        ).get_owner_by_customer_id(customer.id)
+        if customer.email is None:
+            return
+        member = await member_service.create_owner_member(
+            self.session, customer, product.organization
+        )
+        if member is None:
+            return
         await BenefitGrantRepository.from_session(self.session).create(
             BenefitGrant(
                 customer=customer,

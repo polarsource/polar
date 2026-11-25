@@ -12,6 +12,7 @@ from sqlalchemy.exc import OperationalError
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.enums import RecurringInterval, TaxBehavior
 from polar.kit.utils import utc_now
+from polar.member.repository import MemberRepository
 from polar.merchant_migration.canonical import (
     CanonicalAccount,
     CanonicalCollectionMethod,
@@ -394,10 +395,16 @@ class TestRun:
 
         assert outcome.status == MerchantMigrationCutoverStatus.moved
         subscription = await _created(session, pending_record)
+        # The grant task looks the grant up by the owner member, so the seed
+        # must carry it.
+        owner = await MemberRepository.from_session(session).get_owner_by_customer_id(
+            subscription.customer_id
+        )
+        assert owner is not None
         grant = await BenefitGrantRepository.from_session(
             session
         ).get_by_benefit_and_scope(
-            subscription.customer, benefit, subscription=subscription
+            subscription.customer, benefit, member=owner, subscription=subscription
         )
         assert grant is not None
         assert dict(grant.properties) == {"user_provided_key": "KEY-1"}

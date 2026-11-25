@@ -950,9 +950,10 @@ def _renews(price: dict[str, Any]) -> bool:
 def _usable_key(license_key: dict[str, Any]) -> bool:
     # An expired key isn't revived: Polar would restart its term from today.
     attributes = license_key["attributes"]
-    return not attributes.get("disabled") and attributes.get("status") not in (
-        "disabled",
-        "expired",
+    return (
+        bool((attributes.get("key") or "").strip())
+        and not attributes.get("disabled")
+        and attributes.get("status") not in ("disabled", "expired")
     )
 
 

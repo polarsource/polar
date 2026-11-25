@@ -1,6 +1,7 @@
+from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, or_, update
+from sqlalchemy import Select, or_, select, update
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import (
@@ -17,7 +18,7 @@ from polar.kit.repository import (
     RepositorySoftDeletionMixin,
 )
 from polar.kit.utils import utc_now
-from polar.models import LicenseKey
+from polar.models import LicenseKey, LicenseKeyActivation
 from polar.models.license_key import LicenseKeyStatus
 
 
@@ -135,3 +136,12 @@ class LicenseKeyRepository(
         statement = self.get_base_statement()
         statement = statement.where(LicenseKey.organization_id.in_(org_ids))
         return statement
+
+    async def get_activation_ids(self, ids: Sequence[UUID]) -> set[UUID]:
+        """The ids an activation already holds, deleted ones included."""
+        if not ids:
+            return set()
+        result = await self.session.execute(
+            select(LicenseKeyActivation.id).where(LicenseKeyActivation.id.in_(ids))
+        )
+        return set(result.scalars().all())

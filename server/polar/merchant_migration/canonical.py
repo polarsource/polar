@@ -384,6 +384,21 @@ class CanonicalBenefit:
 
 
 @dataclass
+class CanonicalLicenseKeyActivation:
+    """A device the key is activated on. Its id is a UUID4, so Polar keeps it
+    and the device's saved id validates on Polar as is."""
+
+    id: str
+    label: str
+
+
+@dataclass
+class CanonicalLicenseKey:
+    key: str
+    activations: list[CanonicalLicenseKeyActivation] = field(default_factory=list)
+
+
+@dataclass
 class CanonicalPurchase:
     """A paid one-time purchase whose buyer keeps the product's benefits."""
 
@@ -391,7 +406,7 @@ class CanonicalPurchase:
     product_source_id: str
     email: str
     name: str | None
-    license_key: str | None
+    license_key: CanonicalLicenseKey | None
     # The buyer's key was disabled or has expired: they don't get one on Polar.
     license_key_disabled: bool = False
 

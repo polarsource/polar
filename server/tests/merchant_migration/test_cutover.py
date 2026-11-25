@@ -16,6 +16,8 @@ from polar.member.repository import MemberRepository
 from polar.merchant_migration.canonical import (
     CanonicalAccount,
     CanonicalCollectionMethod,
+    CanonicalLicenseKey,
+    CanonicalLicenseKeyActivation,
     CanonicalPaymentMethod,
     CanonicalPaymentMethodType,
     CanonicalPrice,
@@ -152,7 +154,7 @@ class _FakeSourceAdapter:
         subscription: CanonicalSubscription | None,
         *,
         error: Exception | None = None,
-        license_key: str | None = None,
+        license_key: CanonicalLicenseKey | None = None,
     ) -> None:
         self._subscription = subscription
         self._error = error
@@ -165,7 +167,9 @@ class _FakeSourceAdapter:
             raise self._error
         return self._subscription
 
-    async def get_license_key(self, subscription: CanonicalSubscription) -> str | None:
+    async def get_license_key(
+        self, subscription: CanonicalSubscription
+    ) -> CanonicalLicenseKey | None:
         return self._license_key
 
     async def stop_source_subscription(
@@ -388,9 +392,16 @@ class TestRun:
         )
         await set_product_benefits(save_fixture, product=product, benefits=[benefit])
         copied_cards(mocker, build_stripe_payment_method(customer="cus_1"))
+        enqueue_job = mocker.patch("polar.merchant_migration.benefits.enqueue_job")
+        activation = CanonicalLicenseKeyActivation(
+            id="16a12ab5-d7b7-442e-a2db-e9dfa14a05de", label="Ada's laptop"
+        )
 
         outcome = await cutover(
-            _FakeSourceAdapter(canonical_subscription(), license_key="KEY-1")
+            _FakeSourceAdapter(
+                canonical_subscription(),
+                license_key=CanonicalLicenseKey(key="KEY-1", activations=[activation]),
+            )
         )
 
         assert outcome.status == MerchantMigrationCutoverStatus.moved
@@ -408,6 +419,11 @@ class TestRun:
         )
         assert grant is not None
         assert dict(grant.properties) == {"user_provided_key": "KEY-1"}
+        enqueue_job.assert_called_once_with(
+            "merchant_migration.keep_license_key_activations",
+            benefit_grant_id=grant.id,
+            activations=[{"id": activation.id, "label": "Ada's laptop"}],
+        )
 
     async def test_price_on_a_later_imported_product_moves_onto_the_first(
         self,

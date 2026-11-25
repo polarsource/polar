@@ -17,6 +17,8 @@ from polar.merchant_migration.canonical import (
     CanonicalDiscount,
     CanonicalDiscountDuration,
     CanonicalDiscountType,
+    CanonicalLicenseKey,
+    CanonicalLicenseKeyActivation,
     CanonicalPaymentMethodType,
     CanonicalPricingScheme,
     CanonicalProduct,
@@ -206,6 +208,23 @@ ROUTES: dict[str, dict[str, Any]] = {
         ]
     ),
 }
+
+
+ACTIVATION_ID = "16a12ab5-d7b7-442e-a2db-e9dfa14a05de"
+
+
+def _instance(
+    instance_id: str, license_key_id: int, identifier: str, name: str
+) -> dict[str, Any]:
+    return {
+        "type": "license-key-instances",
+        "id": instance_id,
+        "attributes": {
+            "license_key_id": license_key_id,
+            "identifier": identifier,
+            "name": name,
+        },
+    }
 
 
 def _adapter(
@@ -420,15 +439,57 @@ class TestGetSourceAccount:
 class TestGetSubscription:
     async def test_reads_the_subscriptions_license_key(self) -> None:
         adapter, requests = _adapter(
+            {
+                "/v1/subscriptions/100": {"data": _subscription()},
+                "/v1/license-keys": _page(
+                    [
+                        {
+                            "type": "license-keys",
+                            "id": "60",
+                            "attributes": {
+                                "order_item_id": 80,
+                                "key": "KEY-SUB",
+                                "status": "active",
+                                "instances_count": 2,
+                            },
+                        }
+                    ]
+                ),
+                "/v1/license-key-instances": _page(
+                    [
+                        _instance("1", 60, ACTIVATION_ID, "Ada's laptop"),
+                        _instance("2", 60, "not-a-uuid", "Old device"),
+                    ]
+                ),
+            }
+        )
+
+        subscription = await adapter.get_subscription("100")
+        assert subscription is not None
+
+        assert await adapter.get_license_key(subscription) == CanonicalLicenseKey(
+            key="KEY-SUB",
+            activations=[
+                CanonicalLicenseKeyActivation(id=ACTIVATION_ID, label="Ada's laptop")
+            ],
+        )
+        [lookup] = [r for r in requests if r.url.path == "/v1/license-keys"]
+        assert lookup.url.params["filter[order_item_id]"] == "80"
+        [instances] = [r for r in requests if r.url.path == "/v1/license-key-instances"]
+        assert instances.url.params["filter[license_key_id]"] == "60"
+
+    async def test_skips_activations_of_a_key_without_any(self) -> None:
+        adapter, requests = _adapter(
             {"/v1/subscriptions/100": {"data": _subscription()}}
         )
 
         subscription = await adapter.get_subscription("100")
         assert subscription is not None
 
-        assert await adapter.get_license_key(subscription) == "KEY-SUB"
-        [lookup] = [r for r in requests if r.url.path == "/v1/license-keys"]
-        assert lookup.url.params["filter[order_item_id]"] == "80"
+        assert await adapter.get_license_key(subscription) == CanonicalLicenseKey(
+            key="KEY-SUB"
+        )
+        assert not [r for r in requests if r.url.path == "/v1/license-key-instances"]
 
     async def test_period_start_keeps_month_end_anchor(self) -> None:
         adapter, _ = _adapter(
@@ -748,7 +809,11 @@ class TestListPurchases:
                         {
                             "type": "license-keys",
                             "id": "60",
-                            "attributes": {"order_item_id": 84, "key": "KEY-LIFETIME"},
+                            "attributes": {
+                                "order_item_id": 84,
+                                "key": "KEY-LIFETIME",
+                                "instances_count": 1,
+                            },
                         },
                         {
                             "type": "license-keys",
@@ -761,6 +826,9 @@ class TestListPurchases:
                         },
                     ]
                 ),
+                "/v1/license-key-instances": _page(
+                    [_instance("1", 60, ACTIVATION_ID, "Studio Mac")]
+                ),
             },
             store_id="1",
         )
@@ -772,7 +840,18 @@ class TestListPurchases:
             (p.source_id, p.license_key, p.license_key_disabled) for p in purchases
         ] == [
             ("71", None, True),
-            ("74", "KEY-LIFETIME", False),
+            (
+                "74",
+                CanonicalLicenseKey(
+                    key="KEY-LIFETIME",
+                    activations=[
+                        CanonicalLicenseKeyActivation(
+                            id=ACTIVATION_ID, label="Studio Mac"
+                        )
+                    ],
+                ),
+                False,
+            ),
             ("75", None, False),
             ("76", None, False),
         ]

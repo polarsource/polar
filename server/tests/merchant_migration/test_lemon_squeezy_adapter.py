@@ -94,6 +94,8 @@ def _subscription(**overrides: Any) -> dict[str, Any]:
     }
 
 
+ORDER = {"type": "orders", "id": "70", "attributes": {"tax_inclusive": False}}
+
 ROUTES: dict[str, dict[str, Any]] = {
     "/v1/stores": _page([STORE]),
     "/v1/prices": _page(
@@ -185,10 +187,11 @@ ROUTES: dict[str, dict[str, Any]] = {
             }
         ]
     ),
-    "/v1/subscriptions": _page([_subscription(), _subscription(status="expired")]),
-    "/v1/orders": _page(
-        [{"type": "orders", "id": "70", "attributes": {"tax_inclusive": False}}]
+    "/v1/subscriptions": _page(
+        [_subscription(), _subscription(status="expired")], included=[ORDER]
     ),
+    "/v1/orders": _page([ORDER]),
+    "/v1/orders/70": {"data": ORDER},
     "/v1/license-keys": _page(
         [
             {
@@ -292,6 +295,35 @@ class TestExtract:
         assert subscription.price_tax_behavior == TaxBehavior.exclusive
         assert subscription.import_tax_behavior() == TaxBehavior.exclusive
         assert subscription.order_item_source_id == "80"
+
+    async def test_reads_tax_from_the_included_order_only(self) -> None:
+        adapter, requests = _adapter()
+
+        [record async for record in adapter.extract()]
+
+        assert not [r for r in requests if r.url.path.startswith("/v1/orders")]
+
+    async def test_reads_an_order_missing_from_the_page_on_its_own(self) -> None:
+        adapter, requests = _adapter(
+            {
+                "/v1/subscriptions": _page([_subscription()]),
+                "/v1/orders/70": {
+                    "data": {
+                        "type": "orders",
+                        "id": "70",
+                        "attributes": {"tax_inclusive": True},
+                    }
+                },
+            }
+        )
+
+        records = [record async for record in adapter.extract()]
+
+        [subscription] = [r for r in records if isinstance(r, CanonicalSubscription)]
+        assert subscription.price_tax_behavior == TaxBehavior.inclusive
+        assert [
+            r.url.path for r in requests if r.url.path.startswith("/v1/orders")
+        ] == ["/v1/orders/70"]
 
     async def test_usage_price_reads_decimal_cents(self) -> None:
         usage = {"usage_aggregation": "sum"}
@@ -613,7 +645,7 @@ class TestGetSubscription:
         assert subscription is not None
         assert subscription.payment_method is not None
         assert subscription.payment_method.billing_country == "IN"
-        assert requests[0].url.params["include"] == "customer"
+        assert requests[0].url.params["include"] == "customer,order"
 
     async def test_missing(self) -> None:
         adapter, _ = _adapter()

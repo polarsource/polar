@@ -121,7 +121,6 @@ class LemonSqueezyAdapter:
         self._prices_by_id: dict[str, dict[str, Any]] = {}
         self._redemptions_by_order: dict[str, list[dict[str, Any]]] | None = None
         self._redemption_counts: dict[str, int] = {}
-        self._order_tax_behaviors: dict[str, TaxBehavior] | None = None
         self._license_keys: dict[str, CanonicalLicenseKey | None] | None = None
 
     async def _request(
@@ -448,12 +447,17 @@ class LemonSqueezyAdapter:
         subscriptions, has_more, included = await self._list(
             "/subscriptions",
             cursor.page,
-            {**self._store_filter, "include": "customer"},
+            {**self._store_filter, "include": "customer,order"},
         )
+        subscriptions = [
+            subscription
+            for subscription in subscriptions
+            if subscription["attributes"]["status"] not in SKIPPED_SUBSCRIPTION_STATUSES
+        ]
         customer_countries = _customer_countries(included)
         await self._load_all_prices()
         discounts_by_order = await self._load_redemptions()
-        tax_behaviors = await self._load_order_tax_behaviors()
+        tax_behaviors = await self._order_tax_behaviors(subscriptions, included)
         currency = await self._currency()
         records: list[CanonicalRecord] = [
             self._map_subscription(
@@ -464,32 +468,37 @@ class LemonSqueezyAdapter:
                 customer_countries,
             )
             for subscription in subscriptions
-            if subscription["attributes"]["status"] not in SKIPPED_SUBSCRIPTION_STATUSES
         ]
         return records, has_more
 
-    async def _load_order_tax_behaviors(self) -> dict[str, TaxBehavior]:
-        """Whether each order's price included tax. Prices don't say; the order
-        a subscription started from does, and its renewals follow it."""
-        if self._order_tax_behaviors is not None:
-            return self._order_tax_behaviors
+    async def _order_tax_behaviors(
+        self, subscriptions: list[dict[str, Any]], included: list[dict[str, Any]]
+    ) -> dict[str, TaxBehavior]:
+        """Whether each subscription's first order included tax. Prices don't
+        say; the order does, and its renewals follow it. Only these orders are
+        read: paging every order of a large store outlasts the task's time
+        limit."""
+        orders = {item["id"]: item for item in included if item["type"] == "orders"}
         behaviors: dict[str, TaxBehavior] = {}
-        page = 1
-        while True:
-            orders, has_more, _ = await self._list("/orders", page, self._store_filter)
-            for order in orders:
-                tax_inclusive = order["attributes"].get("tax_inclusive")
-                if tax_inclusive is not None:
-                    behaviors[order["id"]] = (
-                        TaxBehavior.inclusive
-                        if tax_inclusive
-                        else TaxBehavior.exclusive
-                    )
-            if not has_more:
-                break
-            page += 1
-        self._order_tax_behaviors = behaviors
+        for subscription in subscriptions:
+            order_id = str(subscription["attributes"]["order_id"])
+            order = orders.get(order_id) or await self._retrieve_order(order_id)
+            if order is None:
+                continue
+            orders[order_id] = order
+            tax_inclusive = order["attributes"].get("tax_inclusive")
+            if tax_inclusive is not None:
+                behaviors[order_id] = (
+                    TaxBehavior.inclusive if tax_inclusive else TaxBehavior.exclusive
+                )
         return behaviors
+
+    async def _retrieve_order(self, order_id: str) -> dict[str, Any] | None:
+        response = await self._request("GET", f"/orders/{order_id}")
+        if response.status_code == 404:
+            return None
+        response.raise_for_status()
+        return response.json()["data"]
 
     async def _load_redemptions(self) -> dict[str, list[dict[str, Any]]]:
         """Redemptions, per order and counted per discount. A subscription keeps
@@ -757,7 +766,7 @@ class LemonSqueezyAdapter:
         return self._map_subscription(
             body["data"],
             await self._load_redemptions(),
-            await self._load_order_tax_behaviors(),
+            await self._order_tax_behaviors([body["data"]], body.get("included", [])),
             await self._currency(),
             _customer_countries(body.get("included", [])),
         )
@@ -821,7 +830,7 @@ class LemonSqueezyAdapter:
 
     async def _retrieve_subscription(self, source_id: str) -> dict[str, Any] | None:
         response = await self._request(
-            "GET", f"/subscriptions/{source_id}", {"include": "customer"}
+            "GET", f"/subscriptions/{source_id}", {"include": "customer,order"}
         )
         if response.status_code == 404:
             return None

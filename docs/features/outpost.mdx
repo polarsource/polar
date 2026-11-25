@@ -111,28 +111,34 @@ Every event needs an `external_id`. Outpost uses it to count an event once while
 
 In Python, `track()` also rejects a NaN or an infinity anywhere in the event.
 
-The first read of a customer waits for Polar's snapshot, up to `snapshotTimeout` (5 seconds by default). If it does not arrive in time, `meter()` throws `NotReadyError`, and the next read asks Polar again. Import the error from `@polar-sh/sdk/outpost` or `polar.outpost`. Warm the customer when the session starts, so the read that matters is ready:
+The first read of a customer waits for Polar's snapshot, up to `snapshotTimeout` (5 seconds by default). If it does not arrive in time, `meter()` throws `NotReadyError`, and the next read asks Polar again. Import the error from `@polar-sh/sdk/outpost` or `polar.outpost`.
+
+Call `actor()` when a session, a conversation or an agent run starts. It waits for the snapshot the same way, without throwing, so the reads that decide whether to serve find the customer ready.
 
 <Tabs>
   <Tab title="TypeScript">
     ```typescript
+    // When the session starts
     const actor = await metering.actor({ external_customer_id: "customer_123" });
-    await actor.track({ name: "api_request", external_id: "req_42", metadata: { tokens: 42 } });
 
+    // On each request of the session
     const meter = await actor.meter("meter_uuid");
     if (meter !== null && meter.balance <= 0) {
       // Decline the call, switch to a cheaper model, or ask for a top-up.
     }
+    await actor.track({ name: "api_request", external_id: "req_42", metadata: { tokens: 42 } });
     ```
   </Tab>
   <Tab title="Python">
     ```python
+    # When the session starts
     actor = await metering.actor(external_customer_id="customer_123")
-    await actor.track(name="api_request", external_id="req_42", metadata={"tokens": 42})
 
+    # On each request of the session
     meter = await actor.meter("meter_uuid")
     if meter is not None and meter.balance <= 0:
         ...  # Decline the call, switch to a cheaper model, or ask for a top-up.
+    await actor.track(name="api_request", external_id="req_42", metadata={"tokens": 42})
     ```
   </Tab>
 </Tabs>

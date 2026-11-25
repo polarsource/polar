@@ -171,7 +171,7 @@ Metering uses an in-memory queue by default. Pass `queue=` to use a different qu
 
 ### Actor context
 
-It's common to have several events for the same customer in the same session. You can create an actor context, so you don't have to pass the customer identifier for each event:
+It's common to have several events for the same customer in the same session. You can create an actor context, so you don't have to pass the customer identifier for each event. With Outpost, create the actor when a session starts: it waits for the customer's snapshot, so the reads that follow find the customer ready.
 
 ```python
 async with polar.metering() as metering:

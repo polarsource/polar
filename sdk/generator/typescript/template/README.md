@@ -123,7 +123,8 @@ async function recordUsage() {
 
 ### Actor context
 
-Bind a customer once when tracking several events. Actor creation may warm Outpost state.
+Bind a customer once when tracking several events.
+With Outpost, create the actor when a session starts: it waits for the customer's snapshot, so the reads that follow find the customer ready.
 
 ```typescript
 const actor = await metering.actor({ external_customer_id: "customer_123" });

@@ -141,7 +141,6 @@ export function CreateMigrationModal({
                 setError(null)
                 setMissingResources([])
               }}
-              autoFocus
             />
             {keyError ? (
               <Text variant="caption" color="danger" role="alert">

@@ -462,7 +462,7 @@ class LemonSqueezyAdapter:
         records: list[CanonicalRecord] = [
             self._map_subscription(
                 subscription,
-                discounts_by_order,
+                await self._current_redemptions(subscription, discounts_by_order),
                 tax_behaviors,
                 currency,
                 customer_countries,
@@ -470,6 +470,52 @@ class LemonSqueezyAdapter:
             for subscription in subscriptions
         ]
         return records, has_more
+
+    async def _current_redemptions(
+        self,
+        subscription: dict[str, Any],
+        discounts_by_order: dict[str, list[dict[str, Any]]],
+    ) -> list[dict[str, Any]]:
+        """The redemptions of the subscription's first order, unless its coupon
+        no longer takes money off. The latest renewal says so: a coupon that ran
+        out, or that was deleted since, charges the full price there."""
+        redemptions = discounts_by_order.get(
+            str(subscription["attributes"]["order_id"]), []
+        )
+        if not redemptions:
+            return []
+        latest_renewal = await self._latest_renewal(subscription["id"])
+        if latest_renewal is not None and not latest_renewal["attributes"].get(
+            "discount_total"
+        ):
+            return []
+        return redemptions
+
+    async def _latest_renewal(self, subscription_id: str) -> dict[str, Any] | None:
+        renewals: list[dict[str, Any]] = []
+        page = 1
+        while True:
+            invoices, has_more, _ = await self._list(
+                "/subscription-invoices",
+                page,
+                {"filter[subscription_id]": subscription_id},
+            )
+            renewals.extend(
+                invoice
+                for invoice in invoices
+                if invoice["attributes"].get("billing_reason") == "renewal"
+                and invoice["attributes"].get("status") != "void"
+            )
+            if not has_more:
+                break
+            page += 1
+        return max(
+            renewals,
+            key=lambda invoice: datetime.fromisoformat(
+                invoice["attributes"]["created_at"]
+            ),
+            default=None,
+        )
 
     async def _order_tax_behaviors(
         self, subscriptions: list[dict[str, Any]], included: list[dict[str, Any]]
@@ -764,7 +810,9 @@ class LemonSqueezyAdapter:
         await self._load_all_prices()
         return self._map_subscription(
             body["data"],
-            await self._load_redemptions(),
+            await self._current_redemptions(
+                body["data"], await self._load_redemptions()
+            ),
             await self._order_tax_behaviors([body["data"]], body.get("included", [])),
             await self._currency(),
             _customer_countries(body.get("included", [])),
@@ -839,7 +887,7 @@ class LemonSqueezyAdapter:
     def _map_subscription(
         self,
         subscription: dict[str, Any],
-        discounts_by_order: dict[str, list[dict[str, Any]]],
+        redemptions: list[dict[str, Any]],
         tax_behaviors: dict[str, TaxBehavior],
         currency: str,
         customer_countries: dict[str, str],
@@ -855,7 +903,6 @@ class LemonSqueezyAdapter:
             else (status == "on_trial" and attributes.get("trial_ends_at"))
             or attributes.get("renews_at")
         )
-        redemptions = discounts_by_order.get(str(attributes["order_id"]), [])
         discount_ids = [
             str(redemption["attributes"]["discount_id"]) for redemption in redemptions
         ]

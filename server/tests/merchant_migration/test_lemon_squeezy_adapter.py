@@ -190,6 +190,7 @@ ROUTES: dict[str, dict[str, Any]] = {
     "/v1/subscriptions": _page(
         [_subscription(), _subscription(status="expired")], included=[ORDER]
     ),
+    "/v1/subscription-invoices": _page([]),
     "/v1/orders": _page([ORDER]),
     "/v1/orders/70": {"data": ORDER},
     "/v1/license-keys": _page(
@@ -211,6 +212,23 @@ ROUTES: dict[str, dict[str, Any]] = {
         ]
     ),
 }
+
+
+def _renewal(
+    invoice_id: str, discount_total: int, created_at: str, **overrides: Any
+) -> dict[str, Any]:
+    return {
+        "type": "subscription-invoices",
+        "id": invoice_id,
+        "attributes": {
+            "subscription_id": 100,
+            "billing_reason": "renewal",
+            "status": "paid",
+            "discount_total": discount_total,
+            "created_at": created_at,
+            **overrides,
+        },
+    }
 
 
 ACTIVATION_ID = "16a12ab5-d7b7-442e-a2db-e9dfa14a05de"
@@ -421,6 +439,59 @@ class TestExtract:
         assert product.name == "App"
         assert product.archived is False
 
+    async def test_coupon_the_latest_renewal_no_longer_applies_is_dropped(
+        self,
+    ) -> None:
+        adapter, requests = _adapter(
+            {
+                "/v1/subscription-invoices": _page(
+                    [
+                        _renewal("1", 240, "2026-10-15T00:00:00Z"),
+                        _renewal("2", 0, "2026-11-15T00:00:00Z"),
+                        _renewal("3", 240, "2026-11-20T00:00:00Z", status="void"),
+                        _renewal(
+                            "4", 240, "2026-11-21T00:00:00Z", billing_reason="updated"
+                        ),
+                    ]
+                )
+            }
+        )
+
+        records = [record async for record in adapter.extract()]
+
+        [subscription] = [r for r in records if isinstance(r, CanonicalSubscription)]
+        assert subscription.has_discount is False
+        assert subscription.discount_source_ids == []
+        assert subscription.discount_started_at is None
+        [lookup] = [r for r in requests if r.url.path == "/v1/subscription-invoices"]
+        assert lookup.url.params["filter[subscription_id]"] == "100"
+
+    async def test_coupon_the_latest_renewal_still_applies_is_kept(self) -> None:
+        adapter, _ = _adapter(
+            {
+                "/v1/subscription-invoices": _page(
+                    [
+                        _renewal("2", 240, "2026-11-15T00:00:00Z"),
+                        _renewal("1", 0, "2026-10-15T00:00:00Z"),
+                    ]
+                )
+            }
+        )
+
+        records = [record async for record in adapter.extract()]
+
+        [subscription] = [r for r in records if isinstance(r, CanonicalSubscription)]
+        assert subscription.discount_source_ids == ["30"]
+
+    async def test_subscription_without_coupon_reads_no_invoices(self) -> None:
+        adapter, requests = _adapter({"/v1/discount-redemptions": _page([])})
+
+        records = [record async for record in adapter.extract()]
+
+        [subscription] = [r for r in records if isinstance(r, CanonicalSubscription)]
+        assert subscription.discount_source_ids == []
+        assert not [r for r in requests if r.url.path == "/v1/subscription-invoices"]
+
     async def test_limited_discount_without_variants_is_left_out(self) -> None:
         adapter, _ = _adapter({"/v1/discounts/30/variants": _page([])})
 
@@ -536,6 +607,21 @@ class TestGetSubscription:
             key="KEY-SUB"
         )
         assert not [r for r in requests if r.url.path == "/v1/license-key-instances"]
+
+    async def test_drops_a_coupon_that_ran_out(self) -> None:
+        adapter, _ = _adapter(
+            {
+                "/v1/subscriptions/100": {"data": _subscription()},
+                "/v1/subscription-invoices": _page(
+                    [_renewal("1", 0, "2026-11-15T00:00:00Z")]
+                ),
+            }
+        )
+
+        subscription = await adapter.get_subscription("100")
+
+        assert subscription is not None
+        assert subscription.discount_source_ids == []
 
     async def test_period_start_keeps_month_end_anchor(self) -> None:
         adapter, _ = _adapter(

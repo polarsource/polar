@@ -1563,6 +1563,21 @@ class TestRun:
         subscription = await _created(session, pending_record)
         assert subscription.status == SubscriptionStatus.active
 
+    async def test_moves_an_india_card_and_says_so(
+        self,
+        mocker: MockerFixture,
+        cutover: RunCutover,
+    ) -> None:
+        copied_cards(
+            mocker,
+            build_stripe_payment_method(customer="cus_1", details={"country": "IN"}),
+        )
+
+        outcome = await cutover(_source())
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert "India-issued" in (outcome.message or "")
+
     async def test_moves_without_a_card_and_leaves_it_to_dunning(
         self,
         mocker: MockerFixture,

@@ -51,6 +51,7 @@ from polar.merchant_migration.canonical import (
     deserialize,
     serialize,
 )
+from polar.merchant_migration.card_status import MerchantMigrationCardStatus
 from polar.merchant_migration.cards import (
     AmbiguousCopiedCard,
 )
@@ -5621,6 +5622,57 @@ class TestGetCutoverReport:
         assert report.started is False
 
     @pytest.mark.auth
+    async def test_counts_card_statuses_of_what_has_not_switched(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        for source_id, country, cutover_status in [
+            ("sub_ready", "US", None),
+            ("sub_india", "IN", None),
+            ("sub_moved", "IN", MerchantMigrationCutoverStatus.moved),
+            ("sub_none", None, None),
+        ]:
+            record = await _imported_subscription(
+                save_fixture,
+                migration,
+                organization,
+                product,
+                source_id=source_id,
+                email=f"{source_id}@example.com",
+            )
+            if country is not None:
+                customer = await CustomerRepository.from_session(
+                    session
+                ).get_by_email_and_organization(
+                    f"{source_id}@example.com", organization.id
+                )
+                assert customer is not None
+                await create_payment_method(
+                    save_fixture,
+                    customer,
+                    processor_id=f"pm_{source_id}",
+                    method_metadata={"country": country},
+                )
+            await record_repository.update(
+                record, update_dict={"cutover_status": cutover_status}, flush=True
+            )
+
+        report = await service.get_cutover_report(session, auth_subject, migration.id)
+
+        assert {entry.status: entry.count for entry in report.card_statuses} == {
+            MerchantMigrationCardStatus.ready: 1,
+            MerchantMigrationCardStatus.india_card: 1,
+            MerchantMigrationCardStatus.no_card: 1,
+        }
+
+    @pytest.mark.auth
     async def test_counts_all_imports_even_with_a_selection(
         self,
         session: AsyncSession,
@@ -5742,6 +5794,63 @@ class TestListRecordsCutover:
         assert item.cutover_error == "Renews too soon."
         assert item.has_payment_method is True
         assert item.renews_at is not None
+
+    @pytest.mark.auth
+    async def test_reads_the_status_of_the_card_it_would_charge(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        for source_id, cards in [
+            ("sub_ready", [{"country": "US"}]),
+            ("sub_india", [{"country": "US"}, {"country": "IN"}]),
+            ("sub_none", []),
+        ]:
+            await _imported_subscription(
+                save_fixture,
+                migration,
+                organization,
+                product,
+                source_id=source_id,
+                email=f"{source_id}@example.com",
+            )
+            customer = await CustomerRepository.from_session(
+                session
+            ).get_by_email_and_organization(f"{source_id}@example.com", organization.id)
+            assert customer is not None
+            for index, method_metadata in enumerate(cards):
+                payment_method = await create_payment_method(
+                    save_fixture,
+                    customer,
+                    processor_id=f"pm_{source_id}_{index}",
+                    method_metadata=method_metadata,
+                )
+            if cards:
+                customer.default_payment_method = payment_method
+                await save_fixture(customer)
+
+        items, _ = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.subscriptions,
+            status=None,
+            pagination=PaginationParams(page=1, limit=50),
+        )
+
+        assert {
+            item.source_id: (item.card_status, item.has_payment_method)
+            for item in items
+        } == {
+            "sub_ready": (MerchantMigrationCardStatus.ready, True),
+            "sub_india": (MerchantMigrationCardStatus.india_card, False),
+            "sub_none": (MerchantMigrationCardStatus.no_card, False),
+        }
 
     @pytest.mark.auth
     async def test_filters_on_cutover_status(

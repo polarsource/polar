@@ -4,6 +4,7 @@ import type { UnionToIntersection, User } from 'better-auth'
 import type { PolarOrganizationOptions } from './organization/types'
 import type { checkout } from './plugins/checkout'
 import type { portal } from './plugins/portal'
+import type { usage } from './plugins/usage'
 import type { AuthorizeReference } from './reference'
 import type { webhooks } from './plugins/webhooks'
 
@@ -23,6 +24,7 @@ export type PolarPlugin = (
   options?: PolarOptions,
 ) => ReturnType<
   | ReturnType<typeof checkout>
+  | ReturnType<typeof usage>
   | ReturnType<typeof portal>
   | ReturnType<typeof webhooks>
 >

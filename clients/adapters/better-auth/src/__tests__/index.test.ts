@@ -2,12 +2,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { polar } from '../index'
 import { checkout } from '../plugins/checkout'
 import { portal } from '../plugins/portal'
+import { usage } from '../plugins/usage'
 import { webhooks } from '../plugins/webhooks'
 import { createTestPolarOptions } from './utils/helpers'
 import { createMockPolarClient } from './utils/mocks'
 
 vi.mock('../plugins/checkout')
 vi.mock('../plugins/portal')
+vi.mock('../plugins/usage')
 vi.mock('../plugins/webhooks')
 
 describe('polar plugin', () => {
@@ -27,6 +29,12 @@ describe('polar plugin', () => {
       vi.fn().mockReturnValue({
         'portal/url': vi.fn(),
         'portal/customer': vi.fn(),
+      }),
+    )
+
+    vi.mocked(usage).mockReturnValue(
+      vi.fn().mockReturnValue({
+        'usage/ingest': vi.fn(),
       }),
     )
 

@@ -10,7 +10,7 @@ import {
   pendingEntries,
   pendingIds,
 } from "./benchmark";
-import { CONFIRM_SCRIPT } from "./scripts";
+import { CONFIRM_SCRIPT } from "../redis";
 import { startRedisServer, type RedisServer } from "./testing";
 
 const OPTIONS = { warmupTime: 500, time: 2_000 };

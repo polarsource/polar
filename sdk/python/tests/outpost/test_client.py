@@ -37,16 +37,15 @@ from redis.exceptions import ConnectionError as RedisConnectionError
 from redis.exceptions import TimeoutError as RedisTimeoutError
 
 from polar import __version__
+from polar._redis import REDIS_CONNECTIONS, RedisReconnectBackoff
 from polar.metering import EventInput
 from polar.metering.errors import UnknownMeterError
 from polar.outpost import NotReadyError
 from polar.outpost.client import (
     APPLY_SNAPSHOT_SCRIPT,
     CONFIRM_SCRIPT,
-    REDIS_CONNECTIONS,
     WRITE_BUCKET_SCRIPT,
     Outpost,
-    RedisReconnectBackoff,
     _is_transient_error,
     is_sampled,
 )
@@ -96,7 +95,7 @@ async def redis_connection(
 ) -> collections.abc.AsyncIterator[tuple[str, Redis]]:
     server = FakeServer()
     monkeypatch.setattr(
-        "polar.outpost.client.BlockingConnectionPool.from_url",
+        "polar._redis.BlockingConnectionPool.from_url",
         lambda url, **kwargs: BlockingConnectionPool(
             connection_class=FakeAsyncRedisConnection,
             server=server,
@@ -219,14 +218,14 @@ def _pulls(polar_requests: list[tuple[str, typing.Any]]) -> int:
 @pytest.fixture
 def clock(monkeypatch: pytest.MonkeyPatch) -> types.SimpleNamespace:
     clock = types.SimpleNamespace(elapsed=0.0)
-    monkeypatch.setattr(
-        "polar.outpost.client.time",
-        types.SimpleNamespace(
-            perf_counter=time.perf_counter,
-            time_ns=time.time_ns,
-            time=lambda: time.time() + clock.elapsed,
-        ),
+    patched_time = types.SimpleNamespace(
+        perf_counter=time.perf_counter,
+        time_ns=time.time_ns,
+        time=lambda: time.time() + clock.elapsed,
     )
+    monkeypatch.setattr("polar.outpost.client.time", patched_time)
+    monkeypatch.setattr("polar.metering.outbox.redis.time", patched_time)
+    monkeypatch.setattr("polar._redis.time", patched_time)
     return clock
 
 
@@ -2688,7 +2687,7 @@ async def test_drains_on_a_flush_after_one_that_failed_before_it_drained(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     url, redis = redis_connection
-    monkeypatch.setattr("polar.outpost.client.FLUSH_TENURE", 0.1)
+    monkeypatch.setattr("polar.metering.outbox.redis.FLUSH_TENURE", 0.1)
     await _seal(redis, BUCKET)
     async with Outpost(url, client=polar_client) as outpost:
         await outpost.track(_usage("event-0", 10))
@@ -2708,7 +2707,7 @@ async def test_hands_its_slot_over_a_few_seconds_into_a_drain_a_flush_waits_on(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     url, redis = redis_connection
-    monkeypatch.setattr("polar.outpost.client.FLUSH_TENURE", 0.3)
+    monkeypatch.setattr("polar.metering.outbox.redis.FLUSH_TENURE", 0.3)
     await _seal(redis, BUCKET)
     async with (
         Outpost(url, client=polar_client) as first,

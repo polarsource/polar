@@ -12,15 +12,13 @@ from jinja2 import Environment, FileSystemLoader, Template
 from generator.ir import APIIR, APIVersion, LiteralType
 
 _LOOP_DIRECTORY_PATTERN = re.compile(r"^\[\[([\w\.]+)\]\]$")
-# The Outpost Lua scripts, which every SDK embeds in a string literal, and the constants
-# every SDK shares.
-OUTPOST_SCRIPTS_DIRECTORY = pathlib.Path(__file__).parent.parent / "outpost"
+REDIS_DIRECTORY = pathlib.Path(__file__).parent.parent / "redis"
 _LITERAL_BREAKERS = ("`", "${", '"""', "\\")
 
 
-def load_outpost_scripts() -> dict[str, str]:
+def _load_redis_scripts(directory: pathlib.Path) -> dict[str, str]:
     scripts = {}
-    for path in sorted(OUTPOST_SCRIPTS_DIRECTORY.glob("*.lua")):
+    for path in sorted(directory.glob("*.lua")):
         script = path.read_text()
         if breaker := next((b for b in _LITERAL_BREAKERS if b in script), None):
             raise ValueError(
@@ -30,8 +28,16 @@ def load_outpost_scripts() -> dict[str, str]:
     return scripts
 
 
-def load_outpost_constants() -> dict[str, typing.Any]:
-    return tomllib.loads((OUTPOST_SCRIPTS_DIRECTORY / "constants.toml").read_text())
+def load_redis_scripts() -> dict[str, dict[str, str]]:
+    return {
+        "common": _load_redis_scripts(REDIS_DIRECTORY),
+        "outpost": _load_redis_scripts(REDIS_DIRECTORY / "outpost"),
+        "outbox": _load_redis_scripts(REDIS_DIRECTORY / "outbox"),
+    }
+
+
+def load_redis_constants() -> dict[str, typing.Any]:
+    return tomllib.loads((REDIS_DIRECTORY / "constants.toml").read_text())
 
 
 PrereleaseLabel = Literal["alpha", "beta", "rc"]
@@ -108,8 +114,8 @@ class EmitterBase(abc.ABC):
         return {
             "ir": self.ir,
             "version": self.format_version(),
-            "outpost_scripts": load_outpost_scripts(),
-            "outpost_constants": load_outpost_constants(),
+            "redis_scripts": load_redis_scripts(),
+            "redis_constants": load_redis_constants(),
         }
 
     def get_version_context(self, api: APIVersion) -> dict[str, typing.Any]:

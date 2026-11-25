@@ -86,7 +86,7 @@ export const getSubscriptionKeyDates = (
   }
 
   const dates: SubscriptionKeyDate[] = [
-    { label: 'Started', datetime: subscription.created_at },
+    { label: 'Started', datetime: subscription.started_at },
   ]
   if (trialEnd) dates.push({ label: 'Trial ends', datetime: trialEnd })
   if (nextEvent) {

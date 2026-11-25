@@ -135,11 +135,17 @@ export const CombinedEntityLink = ({
   entities: [CombinedEntity, CombinedEntity]
 }) => {
   const menuItems = entities
-    .filter(({ menuItems }) => menuItems != null && menuItems.length > 0)
-    .map(({ kind, name, menuItems = [] }) => {
+    .map(({ kind, name, menuItems = [] }, index) => {
       const { icon: Icon } = ENTITIES[kind]
-      return { label: name, icon: <Icon />, items: menuItems }
+      // Keyed by place, as the two can share a name or a kind.
+      return {
+        key: `${kind}-${index}`,
+        label: name,
+        icon: <Icon />,
+        items: menuItems,
+      }
     })
+    .filter(({ items }) => items.length > 0)
   const [first, second] = entities
   return (
     <span

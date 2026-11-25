@@ -52,9 +52,6 @@ interface FilterBase {
   valueLabel?: string
   // Shown under the options in the toolbar's filter menu.
   extra?: React.ReactNode
-  // False for options that are things to do, not a value to hold: the
-  // toolbar's filter menu then keeps no room for a mark of the one picked.
-  selectable?: boolean
 }
 
 export interface SingleFilter extends FilterBase {
@@ -62,6 +59,9 @@ export interface SingleFilter extends FilterBase {
   value: string | null
   defaultValue?: string | null
   onChange: (value: string | null) => void
+  // False for options that are things to do, not a value to hold: the
+  // toolbar's filter menu then keeps no room for a mark of the one picked.
+  selectable?: boolean
 }
 
 export interface MultiFilter extends FilterBase {

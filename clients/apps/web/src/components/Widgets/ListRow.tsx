@@ -16,13 +16,14 @@ export const ListRow = ({
     alignItems="baseline"
     justifyContent="between"
     columnGap="m"
-    paddingVertical="s"
+    paddingVertical={href ? undefined : 's'}
     borderTopWidth={1}
     borderStyle="solid"
     borderColor="border-secondary"
   >
     {href ? (
-      <Link href={href} className="flex min-w-0 flex-1 hover:opacity-60">
+      // The link carries the row's padding, so all of the row's height opens it.
+      <Link href={href} className="flex min-w-0 flex-1 py-2 hover:opacity-60">
         {children}
       </Link>
     ) : (

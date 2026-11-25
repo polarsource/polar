@@ -146,7 +146,7 @@ const OptionsPanel = ({
     if (!isWaiting && isNearEnd(listRef.current)) onEndReached?.()
   }, [optionCount, isWaiting, onEndReached])
 
-  const isSelectable = filter.selectable !== false
+  const isSelectable = filter.type === 'multi' || filter.selectable !== false
 
   const pick = (option: FilterOption) => {
     if (filter.type === 'single') {

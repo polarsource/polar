@@ -19,7 +19,13 @@ export type EntityMenuAction = { label: string; icon?: ReactNode } & (
 // An action, or a named set of them that opens beside the menu.
 export type EntityLinkMenuItem =
   | EntityMenuAction
-  | { label: string; icon?: ReactNode; items: EntityMenuAction[] }
+  | {
+      label: string
+      icon?: ReactNode
+      items: EntityMenuAction[]
+      // Tells two sets with the same label apart.
+      key?: string
+    }
 
 const getIcon = (action: EntityMenuAction) => {
   if (action.icon) return action.icon
@@ -57,7 +63,7 @@ export const EntityLinkMenu = ({ items }: { items: EntityLinkMenuItem[] }) => {
     .map(
       (group): Filter => ({
         type: 'single',
-        key: group.label,
+        key: group.key ?? group.label,
         label: group.label,
         icon: group.icon,
         options: group.items.map((action, index) => ({

@@ -1,4 +1,3 @@
-import secrets
 import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -14,6 +13,7 @@ from polar.customer.repository import CustomerRepository
 from polar.customer_seat.sender import send_seat_invitation_email
 from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError
+from polar.kit.crypto import generate_token_hash_pair
 from polar.kit.db.postgres import AsyncSession
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
@@ -38,6 +38,14 @@ from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 from .repository import CustomerSeatRepository
 
 log = structlog.get_logger()
+
+INVITATION_TOKEN_PREFIX = "polar_st_"
+INVITATION_TOKEN_TTL = timedelta(days=1)
+
+
+def _generate_invitation_token() -> tuple[str, str, datetime]:
+    token, token_hash = generate_token_hash_pair(prefix=INVITATION_TOKEN_PREFIX)
+    return token, token_hash, datetime.now(UTC) + INVITATION_TOKEN_TTL
 
 
 class SeatError(PolarError): ...
@@ -287,12 +295,13 @@ class SeatService:
             member_id,
         )
 
-        if immediate_claim:
-            invitation_token = None
-            token_expires_at = None
-        else:
-            invitation_token = secrets.token_urlsafe(32)
-            token_expires_at = datetime.now(UTC) + timedelta(days=1)
+        invitation_token: str | None = None
+        invitation_token_hash: str | None = None
+        token_expires_at: datetime | None = None
+        if not immediate_claim:
+            invitation_token, invitation_token_hash, token_expires_at = (
+                _generate_invitation_token()
+            )
 
         revoked_seat = await repository.get_revoked_seat_by_container(container)
 
@@ -300,6 +309,7 @@ class SeatService:
             seat = revoked_seat
             seat.status = SeatStatus.claimed if immediate_claim else SeatStatus.pending
             seat.invitation_token = invitation_token
+            seat.invitation_token_hash = invitation_token_hash
             seat.invitation_token_expires_at = token_expires_at
             seat.customer_id = target.customer.id if target.customer else None
             seat.member = target.member
@@ -311,6 +321,7 @@ class SeatService:
             seat = CustomerSeat(
                 status=SeatStatus.claimed if immediate_claim else SeatStatus.pending,
                 invitation_token=invitation_token,
+                invitation_token_hash=invitation_token_hash,
                 invitation_token_expires_at=token_expires_at,
                 customer=target.customer,
                 member=target.member,
@@ -353,12 +364,14 @@ class SeatService:
             )
             if organization:
                 if target.seat_member_email is not None:
+                    assert invitation_token is not None
                     billing_manager_display = self._resolve_billing_manager_display(
                         billing_manager_customer
                     )
                     send_seat_invitation_email(
                         customer_email=target.seat_member_email,
                         seat=seat,
+                        invitation_token=invitation_token,
                         organization=organization,
                         product_name=product.name,
                         billing_manager_email=billing_manager_display,
@@ -476,6 +489,7 @@ class SeatService:
         seat.status = SeatStatus.claimed
         seat.claimed_at = datetime.now(UTC)
         seat.invitation_token = None  # Single-use token
+        seat.invitation_token_hash = None
 
         await session.flush()
 
@@ -555,6 +569,7 @@ class SeatService:
         seat.status = SeatStatus.revoked
         seat.revoked_at = datetime.now(UTC)
         seat.invitation_token = None
+        seat.invitation_token_hash = None
         seat.customer_id = None
         seat.member_id = None
         seat.email = None
@@ -617,8 +632,8 @@ class SeatService:
         if not seat.is_pending():
             raise SeatNotPending()
 
-        if not seat.invitation_token:
-            raise InvalidInvitationToken(seat.invitation_token or "")
+        if seat.invitation_token_hash is None and seat.invitation_token is None:
+            raise InvalidInvitationToken("")
 
         state = sa_inspect(seat)
         seat_member_email = None
@@ -630,7 +645,15 @@ class SeatService:
             seat_member_email = seat.customer.email
 
         if not seat_member_email:
-            raise InvalidInvitationToken(seat.invitation_token or "")
+            raise InvalidInvitationToken("")
+
+        invitation_token, invitation_token_hash, token_expires_at = (
+            _generate_invitation_token()
+        )
+        seat.invitation_token = invitation_token
+        seat.invitation_token_hash = invitation_token_hash
+        seat.invitation_token_expires_at = token_expires_at
+        await session.flush()
 
         log.info(
             "Resending seat invitation",
@@ -647,6 +670,7 @@ class SeatService:
         send_seat_invitation_email(
             customer_email=seat_member_email,
             seat=seat,
+            invitation_token=invitation_token,
             organization=organization,
             product_name=product_name,
             billing_manager_email=billing_manager_display,

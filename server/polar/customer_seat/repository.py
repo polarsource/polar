@@ -1,11 +1,12 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, func, select, update
+from sqlalchemy import Select, func, or_, select, update
 from sqlalchemy.orm import joinedload
 
 from polar.authz.types import AccessibleOrganizationID
-from polar.kit.repository import RepositoryBase
+from polar.kit.crypto import get_token_hash_candidates
+from polar.kit.repository import RepositoryBase, RepositoryTokenHashMixin
 from polar.kit.repository.base import Options
 from polar.models import (
     CustomerSeat,
@@ -20,8 +21,11 @@ from polar.subscription.repository import SubscriptionRepository
 SeatContainer = Subscription | Order
 
 
-class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
+class CustomerSeatRepository(
+    RepositoryTokenHashMixin[CustomerSeat], RepositoryBase[CustomerSeat]
+):
     model = CustomerSeat
+    token_hash_attribute = "invitation_token_hash"
 
     async def list_by_container(
         self, container: SeatContainer, *, options: Options = ()
@@ -146,9 +150,16 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
     async def get_by_invitation_token(
         self, token: str, *, options: Options = ()
     ) -> CustomerSeat | None:
+        if not token.isascii():
+            return None
         statement = (
             select(CustomerSeat)
-            .where(CustomerSeat.invitation_token == token)
+            .where(
+                or_(
+                    self.token_hash_clause(get_token_hash_candidates(token)),
+                    CustomerSeat.invitation_token == token,
+                )
+            )
             .options(*options)
         )
         return await self.get_one_or_none(statement)

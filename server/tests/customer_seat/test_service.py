@@ -1389,6 +1389,11 @@ class TestGetSeatByToken:
         assert seat is None
 
     @pytest.mark.anyio
+    async def test_get_seat_by_token_non_ascii(self, session: AsyncSession) -> None:
+        seat = await seat_service.get_seat_by_token(session, "tökén")
+        assert seat is None
+
+    @pytest.mark.anyio
     async def test_get_seat_by_token_revoked(
         self,
         session: AsyncSession,
@@ -1944,11 +1949,15 @@ class TestResendInvitation:
             # Verify the seat is still pending
             assert result_seat.status == SeatStatus.pending
             assert result_seat.id == seat.id
-            assert result_seat.invitation_token == original_token
 
             # Verify email was sent
             mock_send_email.assert_called_once()
             call_kwargs = mock_send_email.call_args[1]
+            new_token = call_kwargs["invitation_token"]
+            assert new_token != original_token
+            assert await seat_service.get_seat_by_token(session, new_token) == seat
+            assert original_token is not None
+            assert await seat_service.get_seat_by_token(session, original_token) is None
             assert call_kwargs["customer_email"] == customer.email
             assert call_kwargs["seat"] == seat
             assert (

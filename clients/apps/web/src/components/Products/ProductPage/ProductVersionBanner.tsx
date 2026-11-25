@@ -1,4 +1,3 @@
-import { useIsManagedAsCode } from '@/hooks/permissions'
 import {
   useCatalog,
   useLiveCatalog,
@@ -43,7 +42,8 @@ export const ProductVersionBanner = ({
   organization: schemas['Organization']
   product: schemas['Product']
 }) => {
-  const managedAsCode = useIsManagedAsCode(organization.id)
+  const managedAsCode =
+    organization.feature_settings?.config_as_code_enabled ?? false
   const { data: catalog } = useCatalog(
     managedAsCode ? product.catalog_id : null,
   )

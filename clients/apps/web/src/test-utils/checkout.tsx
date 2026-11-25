@@ -389,10 +389,7 @@ export const renderCheckout = ({
     : 'polar_distinct_id=; max-age=0; path=/'
 
   const result = renderWithProviders(
-    <UserContextProvider
-      user={authenticatedUser}
-      userOrganizations={authenticatedUser?.organizations ?? []}
-    >
+    <UserContextProvider user={authenticatedUser}>
       <CheckoutProvider
         clientSecret={checkout.client_secret}
         initialCheckout={checkout}

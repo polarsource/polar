@@ -77,10 +77,7 @@ const preview: schemas['AgentClaimPreview'] = {
 
 const renderPage = (resumeActionId?: string, { signedOut = false } = {}) =>
   renderWithProviders(
-    <UserContextProvider
-      user={signedOut ? undefined : user}
-      userOrganizations={[]}
-    >
+    <UserContextProvider user={signedOut ? undefined : user}>
       <ClaimAgentPage
         linkToken={LINK_TOKEN}
         resumeActionId={resumeActionId}

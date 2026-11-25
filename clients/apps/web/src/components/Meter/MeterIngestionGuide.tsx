@@ -2,7 +2,6 @@
 
 import { ManagedAsCodeHint } from '@/components/Dashboard/ManagedAsCodeBadge'
 import { Well, WellContent, WellHeader } from '@/components/Shared/Well'
-import { useIsManagedAsCode } from '@/hooks/permissions'
 import {
   SyntaxHighlighterClient,
   SyntaxHighlighterProvider,
@@ -14,7 +13,8 @@ import { useContext } from 'react'
 
 export const MeterIngestionGuide = () => {
   const { organization } = useContext(OrganizationContext)
-  const managedAsCode = useIsManagedAsCode(organization.id)
+  const managedAsCode =
+    organization.feature_settings?.config_as_code_enabled ?? false
 
   return (
     <SyntaxHighlighterProvider>

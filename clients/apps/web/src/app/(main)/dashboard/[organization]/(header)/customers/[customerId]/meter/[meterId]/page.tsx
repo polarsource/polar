@@ -16,7 +16,6 @@ export async function generateMetadata(props: {
   const params = await props.params
   const api = await getServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
-    api,
     params.organization,
   )
 
@@ -35,7 +34,6 @@ export default async function Page(props: { params: Params }) {
   const params = await props.params
   const api = await getServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
-    api,
     params.organization,
   )
 

@@ -7,7 +7,6 @@ import { ManagedAsCodeBadge } from '@/components/Dashboard/ManagedAsCodeBadge'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@polar-sh/orbit'
 import { toast } from '@/components/Toast/use-toast'
-import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useCustomFields, useDeleteCustomField } from '@/hooks/queries'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { extractApiErrorMessage } from '@/utils/api/errors'
@@ -44,7 +43,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     })
 
   const [{ type }] = useQueryStates(filterParsers)
-  const managedAsCode = useIsManagedAsCode(organization.id)
+  const managedAsCode =
+    organization.feature_settings?.config_as_code_enabled ?? false
 
   const [showNewModal, setShowNewModal] = useState(false)
   const [showUpdateModal, setShowUpdateModal] = useState(false)

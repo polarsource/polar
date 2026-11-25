@@ -1,42 +1,31 @@
+import { refreshUser } from '@/app/actions'
 import { usePostHog } from '@/hooks/posthog'
 import { AuthContext } from '@/providers/auth'
 import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { CONFIG } from '@/utils/config'
-import { schemas, unwrap } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import * as Sentry from '@sentry/nextjs'
 import { useSearchParams } from 'next/navigation'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useCallback, useContext, useEffect } from 'react'
 
+const reloadUser = async () => {
+  try {
+    await refreshUser()
+  } catch (error) {
+    Sentry.captureException(error)
+  }
+}
+
 export const useAuth = (): {
   authenticated: boolean
   currentUser: schemas['UserRead'] | undefined
-  reloadUser: () => Promise<undefined>
+  reloadUser: () => Promise<void>
   userOrganizations: schemas['OrganizationWithRole'][]
-  setUserOrganizations: React.Dispatch<
-    React.SetStateAction<schemas['OrganizationWithRole'][]>
-  >
 } => {
   const posthog = usePostHog()
-  const {
-    user: currentUser,
-    setUser: setCurrentUser,
-    userOrganizations,
-    setUserOrganizations,
-  } = useContext(AuthContext)
-
-  const reloadUser = async (): Promise<undefined> => {
-    try {
-      const user = await unwrap(api.GET('/v1/users/me'))
-      setCurrentUser(user)
-      setUserOrganizations(user.organizations ?? [])
-    } catch (error) {
-      // Best-effort refresh: the user is re-seeded from middleware on the next
-      // navigation, so a failed reload is reported but never blocks the caller.
-      Sentry.captureException(error)
-    }
-  }
+  const currentUser = useContext(AuthContext)
 
   useEffect(() => {
     if (currentUser) {
@@ -54,8 +43,7 @@ export const useAuth = (): {
     currentUser,
     authenticated: currentUser !== undefined,
     reloadUser,
-    userOrganizations,
-    setUserOrganizations,
+    userOrganizations: currentUser?.organizations ?? [],
   }
 }
 

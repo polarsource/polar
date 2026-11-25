@@ -1,7 +1,6 @@
 'use client'
 
 import { Spinner } from '@polar-sh/orbit'
-import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useMetersInfinite } from '@/hooks/queries/meters'
 import { useInViewport } from '@/hooks/utils'
 import {
@@ -37,7 +36,8 @@ export const MeterListSidebar: React.FC<MeterListSidebarProps> = ({
   organization,
 }) => {
   const pathname = usePathname()
-  const managedAsCode = useIsManagedAsCode(organization.id)
+  const managedAsCode =
+    organization.feature_settings?.config_as_code_enabled ?? false
   const searchParams = useSearchParams()
 
   const [sorting, setSorting] = useQueryState(

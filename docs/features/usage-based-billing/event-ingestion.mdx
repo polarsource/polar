@@ -55,9 +55,9 @@ Once an event is ingested, it cannot be changed, nor can it be deleted.
 
 You can set the `timestamp` field on an event to any point in the past — useful for batched ingestion or replaying from your own queue. The timestamp does not need to be part of the current billing cycle.
 
-Polar attributes events to billing periods based on **when they were received by Polar**, not the supplied `timestamp`. An event ingested today with a `timestamp` from a previous billing period is included on the **current cycle** — it is not added to the already-closed invoice for the period it logically belongs to. Polar never issues retroactive invoices or credits for late events.
+Polar attributes events to billing periods based on their `timestamp`. An event that arrives after its period was invoiced is billed on the customer's **next invoice** — it is not added to the already-closed invoice. Polar never issues retroactive invoices or credits for late events. If the `timestamp` falls in a period where usage isn't charged, such as a trial, the event isn't billed. Similarly, Polar will bill based on the price that was set during the `timestamp` in the event that the customer has changed products after the `timestamp`.
 
-The supplied `timestamp` is still used to:
+The supplied `timestamp` is also used to:
 
 - Place events on the time series shown in the dashboard and the Customer Portal.
 - Set the date range displayed on the metered line item of the next invoice.

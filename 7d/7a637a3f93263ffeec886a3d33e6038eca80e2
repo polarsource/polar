@@ -1,0 +1,49 @@
+clients/packages/client/src/v1.ts
+  s_7517af2916aea6::t_f0c47b5334a1c5 6103-6126,14285-14306,28469-28565,28745-28749,29032,65089-65229,65317,65325,75966-75971,75983,75999
+server/polar/backoffice/merchant_migrations/endpoints.py
+  s_7517af2916aea6::t_2e2dde61e91238 366
+server/polar/backoffice/merchant_migrations/status.py
+  s_7517af2916aea6::t_5ef7e1da0324b6 26,42,52-55,200,203-210,334
+server/polar/backoffice/merchant_migrations/views.py
+  s_7517af2916aea6::t_7dc6a837b6d1ed 84
+server/polar/merchant_migration/benefits.py
+  s_7517af2916aea6::t_dfa307d4d1b316 1-278
+server/polar/merchant_migration/endpoints.py
+  s_7517af2916aea6::t_40d7cc1c18ffd7 36-37,55-56,280-347,385-387,389
+server/polar/merchant_migration/repository.py
+  s_7517af2916aea6::t_361b15fe33c684 1,235-257
+server/polar/merchant_migration/schemas.py
+  s_7517af2916aea6::t_918277f356e5ab 26-30,520-568
+server/polar/merchant_migration/service.py
+  s_7517af2916aea6::t_d23810c1db6c75 4,6,51,56,103-107,137-143,292-307,1005-1214,1261-1267,1271-1272,1274-1281
+server/polar/merchant_migration/tasks.py
+  s_7517af2916aea6::t_21c8ee951448a9 24,66-81
+server/polar/models/merchant_migration.py
+  s_7517af2916aea6::t_8a1b59555d885e 48-49
+server/polar/models/merchant_migration_operation.py
+  s_7517af2916aea6::t_61125c039f1024 40
+server/polar/product/repository.py
+  s_7517af2916aea6::t_c859aec87f72a5 1,162-172
+server/tests/backoffice/merchant_migrations/test_status.py
+  s_7517af2916aea6::t_c8d68dde340a71 203-210,212-217
+server/tests/merchant_migration/test_endpoints.py
+  s_7517af2916aea6::t_787b71fa0c08a1 799-830
+server/tests/merchant_migration/test_service.py
+  s_7517af2916aea6::t_be2da6694f4021 17,28-31,34,38,64,71,80-81,107,135,4957-4958,4960-4961,4968-4998,5894-6105
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7d7a637a3f93263ffeec886a3d33e6038eca80e2",
+  "prompts": {},
+  "sessions": {
+    "s_7517af2916aea6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a211cb-d4ea-7a00-b4f1-8a0d95fbc457",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

@@ -1,0 +1,25 @@
+clients/apps/web/src/components/Meter/MeterGetStarted.tsx
+  s_7517af2916aea6::t_0c1349a1ba6700 53,55,59,64-66,71,80-81
+clients/apps/web/src/components/Subscriptions/SubscriptionsTable.tsx
+  s_7517af2916aea6::t_dc750ce5375b63 21-26,31,36-44,46,51,53,60-65,104-120,131-136,171-177
+server/polar/oauth2/grants/authorization_code.py
+  s_7517af2916aea6::t_97ca37d0c65d8c 9,93-95,109-118
+server/tests/oauth2/endpoints/test_oauth2.py
+  s_7517af2916aea6::t_0633e155784ad7 760-811
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4c99821c2576e85c5fdf0edb81c60cb6df8de4ca",
+  "prompts": {},
+  "sessions": {
+    "s_7517af2916aea6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a211cb-d4ea-7a00-b4f1-8a0d95fbc457",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

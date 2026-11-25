@@ -87,7 +87,9 @@ export default async function Page(props: {
   )
 
   if (!hasBillingPermission(authenticatedUser)) {
-    redirect(`/${organization.slug}/portal`)
+    redirect(
+      `/${organization.slug}/portal?${new URLSearchParams(resolvedSearchParams)}`,
+    )
   }
 
   return (

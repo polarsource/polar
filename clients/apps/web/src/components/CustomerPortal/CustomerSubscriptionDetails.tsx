@@ -185,27 +185,34 @@ const CustomerSubscriptionDetails = ({
 
       <Box columnGap="s" rowGap="s" flexWrap="wrap" justifyContent="end">
         {isTrialEnded ? (
-          <TrialEndedSubscriptionActions
-            api={api}
-            subscription={subscription}
-          />
+          canManageBilling && (
+            <TrialEndedSubscriptionActions
+              api={api}
+              subscription={subscription}
+            />
+          )
         ) : isTrialing && !isCanceled ? (
-          <TrialSubscriptionActions
-            api={api}
-            subscription={subscription}
-            canChangePlan={showSubscriptionUpdates}
-            onChangePlan={() => setShowChangePlanModal(true)}
-          />
+          canManageBilling && (
+            <TrialSubscriptionActions
+              api={api}
+              subscription={subscription}
+              canChangePlan={showSubscriptionUpdates}
+              onChangePlan={() => setShowChangePlanModal(true)}
+            />
+          )
         ) : (
           <>
-            {showSubscriptionUpdates && !isCanceled && !isPastDue && (
-              <Button
-                onClick={() => setShowChangePlanModal(true)}
-                variant="secondary"
-              >
-                Change plan
-              </Button>
-            )}
+            {canManageBilling &&
+              showSubscriptionUpdates &&
+              !isCanceled &&
+              !isPastDue && (
+                <Button
+                  onClick={() => setShowChangePlanModal(true)}
+                  variant="secondary"
+                >
+                  Change plan
+                </Button>
+              )}
 
             {!isTrialing && (
               <>
@@ -233,14 +240,14 @@ const CustomerSubscriptionDetails = ({
               </>
             )}
 
-            {isPastDue && (
+            {canManageBilling && isPastDue && (
               <SubscriptionRetryPaymentButton
                 api={api}
                 subscription={subscription}
               />
             )}
 
-            {canUncancel && (
+            {canManageBilling && canUncancel && (
               <UncancelSubscriptionButton
                 api={api}
                 subscription={subscription}
@@ -296,14 +303,15 @@ const CustomerSubscriptionDetails = ({
         onConfirm={async () => {
           try {
             await clearPendingUpdate.mutateAsync(subscription.id)
-            await revalidate(`customer_portal`)
-            router.refresh()
           } catch (error) {
             toast({
               title: 'Error',
               description: `Failed to cancel the scheduled change: ${(error as Error).message}`,
             })
+            return
           }
+          await revalidate(`customer_portal`)
+          router.refresh()
         }}
       />
     </PortalCard>

@@ -101,22 +101,21 @@ See [Handle deliveries](/integrate/webhooks/delivery) for a full handler.
 
 ## Send usage events
 
-`polar.metering()` buffers usage events in memory and sends them in batches in the background, so tracking doesn't slow down your requests:
+`polar.events.ingest` sends a list of usage events in one request:
 
 ```typescript
-const metering = polar.metering();
-
-await metering.track({
-  name: "ai_usage",
-  external_customer_id: "user_123",
-  metadata: { total_tokens: 77 },
+await polar.events.ingest({
+  events: [
+    {
+      name: "ai_usage",
+      external_customer_id: "user_123",
+      metadata: { total_tokens: 77 },
+    },
+  ],
 });
-
-// On shutdown
-await metering.close();
 ```
 
-See [Event ingestion](/features/usage-based-billing/event-ingestion) for batching, retries and limits.
+See [Send events](/features/usage-based-billing/event-ingestion) for batching, duplicates and limits.
 
 ## Framework adapters
 

@@ -49,9 +49,9 @@ The client sends that version in the `Polar-Version` header, and its types match
 | Call the API | `polar.customers.getStateExternal(...)` | `polar.customers.get_state_external(...)` |
 | Page through lists | `polar.products.iterList()` | `polar.products.iter_list()` |
 | Verify webhooks | `webhooks.validateEvent(...)` | `validate_event(...)` |
-| Send usage events in batches | `polar.metering()` | `polar.metering()` on `PolarAsync` |
+| Send usage events | `polar.events.ingest(...)` | `polar.events.ingest(...)` |
 
-See [Handle deliveries](/integrate/webhooks/delivery) for webhooks and [Event ingestion](/features/usage-based-billing/event-ingestion) for metering.
+See [Handle deliveries](/integrate/webhooks/delivery) for webhooks and [Send events](/features/usage-based-billing/event-ingestion) for usage events.
 
 ## Other ways in
 

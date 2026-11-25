@@ -260,7 +260,6 @@ In your application, read the balance before you serve usage that needs credits:
 
 - The [customer state](/integrate/customer-state) lists every active meter with `consumed_units`, `credited_units` and `balance`.
 - The [Customer Meters API](/api-reference/current/customer_meters/list-customer-meters) returns the same per meter. From the CLI: `polar customer_meters list --external-customer-id user_123`.
-- `polar.metering()` reads one meter for one customer: `await metering.meter(meterId, { external_customer_id: "user_123" })`. See [Send events](/features/usage-based-billing/event-ingestion#bind-events-to-a-customer).
 
 The `customer.state_changed` webhook fires when the state changes, so you can cache it instead of polling.
 

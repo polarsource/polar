@@ -225,7 +225,7 @@
             ]
           },
           {
-            "group": "Billing operations",
+            "group": "Billing",
             "pages": [
               "features/orders",
               "features/off-session-charges",

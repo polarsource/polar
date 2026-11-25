@@ -1,6 +1,6 @@
 ---
 title: "Send events"
-description: "Send usage events from your application with the SDK or API, batch them in production with polar.metering(), and check the limits each event must meet."
+description: "Send usage events from your application with the SDK or API, batch them, check a customer's balance, and see the limits each event must meet."
 ---
 
 An **event** is a raw fact about what a customer did in your application: an API call, 77 LLM tokens, a 3 MB upload. Meters aggregate events into usage, which you can bill or draw down from credits. See [Usage](/concepts/usage) for how events, meters and prices fit together.
@@ -83,105 +83,101 @@ You don't need to create the customer first. Polar stores an event for an `exter
 Send raw facts, like the tokens used by one request, not running totals. Polar does the aggregation, so the same events can feed several [meters](/features/usage-based-billing/meters).
 
 <Warning>
-  Polar never blocks usage. Events are always accepted, even when a customer has used all their credits. Check the balance yourself before you serve a request: it's `balance` on each entry in `active_meters` of the [customer state](/integrate/customer-state).
+  Polar never blocks usage. Events are always accepted, even when a customer has used all their credits. Check the balance yourself before you serve a request. See [Check a customer's balance](#check-a-customers-balance).
 </Warning>
 
-## Send events in production
+## Send events in batches
 
-`events.ingest` makes one HTTP request per call. In a request path, use `polar.metering()` instead. It buffers events in memory and sends them in the background:
-
-- Up to 100 events per request.
-- A batch is sent 1 second after its first event, or sooner when it's full.
-- Network errors, rate limits (`429`) and server errors are retried, 3 attempts in total. Other errors drop the batch.
-- `flush()` waits until earlier events are delivered. `close()` sends what's left and stops.
+`events.ingest` takes a list, and each call is one HTTP request. In a busy request path, don't send one request per action. Collect events, for example in a queue or background job, and send them together:
 
 <CodeGroup>
 ```typescript TypeScript
-import { createPolar } from "@polar-sh/sdk/2026-10";
-
-const polar = createPolar({
-  accessToken: process.env.POLAR_ACCESS_TOKEN!,
-  environment: "sandbox",
+await polar.events.ingest({
+  events: [
+    {
+      name: "ai_usage",
+      external_customer_id: "user_123",
+      external_id: "req_01",
+      metadata: { model: "gpt-4.1-nano", total_tokens: 77 },
+    },
+    {
+      name: "ai_usage",
+      external_customer_id: "user_456",
+      external_id: "req_02",
+      metadata: { model: "gpt-4.1-nano", total_tokens: 120 },
+    },
+  ],
 });
-
-export const metering = polar.metering();
-
-await metering.track({
-  name: "ai_usage",
-  external_customer_id: "user_123",
-  metadata: { model: "gpt-4.1-nano", total_tokens: 77 },
-});
-
-// On shutdown
-await metering.close();
 ```
 
 ```python Python
-import asyncio
-import os
+polar.events.ingest(
+    events=[
+        {
+            "name": "ai_usage",
+            "external_customer_id": "user_123",
+            "external_id": "req_01",
+            "metadata": {"model": "gpt-4.1-nano", "total_tokens": 77},
+        },
+        {
+            "name": "ai_usage",
+            "external_customer_id": "user_456",
+            "external_id": "req_02",
+            "metadata": {"model": "gpt-4.1-nano", "total_tokens": 120},
+        },
+    ]
+)
+```
 
-from polar.v2026_10 import PolarAsync
-
-polar = PolarAsync(os.environ["POLAR_ACCESS_TOKEN"], environment="sandbox")
-
-
-async def main() -> None:
-    async with polar.metering() as metering:
-        await metering.track(
-            name="ai_usage",
-            external_customer_id="user_123",
-            metadata={"model": "gpt-4.1-nano", "total_tokens": 77},
-        )
-
-
-asyncio.run(main())
+```bash cURL
+curl -X POST https://sandbox-api.polar.sh/v1/events/ingest \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "events": [
+      { "name": "ai_usage", "external_customer_id": "user_123", "external_id": "req_01", "metadata": { "total_tokens": 77 } },
+      { "name": "ai_usage", "external_customer_id": "user_456", "external_id": "req_02", "metadata": { "total_tokens": 120 } }
+    ]
+  }'
 ```
 </CodeGroup>
 
-Create one metering client per process and reuse it. In Python it's async only: open it with `async with` once at startup, for example in your web framework's lifespan handler, and it closes on exit.
+**One trade-off:** events you hold back aren't in Polar until you send them, so meters and balances lag behind. Events still in memory are lost if the process dies. Retry a failed request with the same events: with `external_id` set, the ones Polar already stored are skipped. See [Avoid duplicates](#avoid-duplicates).
 
-**One trade-off:** `track()` returns once the event is buffered, not when Polar has it. If the process dies before a flush, buffered events are lost. On serverless platforms, `await metering.flush()` before you return the response. Failed batches are logged. Pass `onDropped` (TypeScript) or `on_dropped` (Python) in the `buffered` options to handle them yourself:
+## Check a customer's balance
 
-```typescript TypeScript
-const metering = polar.metering({
-  buffered: {
-    onDropped: (events, reason) => {
-      console.error(`Dropped ${events.length} events: ${reason}`);
-    },
-  },
-});
-```
-
-`reason` is one of `retry_exhausted`, `permanent_error`, `shutdown_timeout` or `worker_error`.
-
-### Bind events to a customer
-
-`actor()` returns a helper that attaches the customer to every event, and reads that customer's meter balance:
+Polar doesn't stop a customer at zero, so check before you serve a request. Read the customer state by your user ID and find the meter in `active_meters`:
 
 <CodeGroup>
 ```typescript TypeScript
-const user = await metering.actor({ external_customer_id: "user_123" });
+const state = await polar.customers.getStateExternal("user_123");
 
-await user.track({ name: "ai_usage", metadata: { total_tokens: 77 } });
-
-const meter = await user.meter(process.env.POLAR_METER_ID!);
-if (meter && meter.balance <= 0) {
+const tokens = state.active_meters.find((m) => m.meter_id === process.env.POLAR_METER_ID);
+if (!tokens || tokens.balance <= 0) {
   // Out of credits
 }
 ```
 
 ```python Python
-user = await metering.actor(external_customer_id="user_123")
+state = polar.customers.get_state_external("user_123")
 
-await user.track(name="ai_usage", metadata={"total_tokens": 77})
-
-meter = await user.meter(os.environ["POLAR_METER_ID"])
-if meter and meter.balance <= 0:
+tokens = next(
+    (m for m in state.active_meters if m.meter_id == os.environ["POLAR_METER_ID"]),
+    None,
+)
+if tokens is None or tokens.balance <= 0:
     ...  # Out of credits
+```
+
+```bash cURL
+curl https://sandbox-api.polar.sh/v1/customers/external/user_123/state \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10"
 ```
 </CodeGroup>
 
-The meter read returns `consumed_units`, `credited_units` and `balance` from the [Customer Meters API](/api-reference/current/customer_meters/list-customer-meters).
+Each entry has `consumed_units`, `credited_units` and `balance`. The [Customer Meters API](/api-reference/current/customer_meters/list-customer-meters) returns the same per meter. See [Customer state](/integrate/customer-state).
 
 ## Event fields
 
@@ -201,7 +197,7 @@ Metadata rules:
 - Values are a string (1 to 500 characters), a number or a boolean. Numbers must be within ±2^53−1.
 - No nested objects, except two keys Polar reads specially: `_cost` for what the event cost you, and `_llm` for LLM token usage. See [Cost insights](/features/cost-insights/introduction#cost-events).
 
-If any event in a request is invalid, Polar rejects the whole request with a `422` and stores none of them. With `polar.metering()`, that drops the batch, so validate events before you track them.
+If any event in a request is invalid, Polar rejects the whole request with a `422` and stores none of them. One bad event fails the whole batch, so validate events before you send them.
 
 ## Group events with a parent
 
@@ -279,7 +275,7 @@ Events are sent from your application. You can read them back:
 To list the events themselves, use the [List Events API](/api-reference/current/events/list-events).
 
 <Visibility for="agents">
-  There is no CLI command or MCP operation to ingest events. Send them from application code with `polar.events.ingest` or `polar.metering()`, or over HTTP with `POST /v1/events/ingest`. Use the sandbox (`https://sandbox-api.polar.sh`) until the user says otherwise, and use the app's user ID as `external_customer_id`. Never send events from client-side code: the access token must stay on the server.
+  There is no CLI command or MCP operation to ingest events. Send them from application code with `polar.events.ingest`, or over HTTP with `POST /v1/events/ingest`. Use the sandbox (`https://sandbox-api.polar.sh`) until the user says otherwise, and use the app's user ID as `external_customer_id`. Never send events from client-side code: the access token must stay on the server.
 </Visibility>
 
 ## Learn more

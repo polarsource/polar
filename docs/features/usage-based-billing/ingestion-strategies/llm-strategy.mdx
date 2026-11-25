@@ -12,22 +12,16 @@ The examples use the sandbox and API version `2026-10`, with the sample customer
 The LLM strategy from `@polar-sh/ingestion` wraps an [AI SDK](https://ai-sdk.dev) model. Every call through the wrapped model sends an event with its token usage. It works with AI SDK 5, 6 and 7, for `generateText`, `streamText` and anything else built on them.
 
 ```bash
-pnpm add @polar-sh/ingestion @polar-sh/sdk ai @ai-sdk/openai
+pnpm add @polar-sh/ingestion ai @ai-sdk/openai
 ```
 
 ```typescript
 import { Ingestion } from "@polar-sh/ingestion";
 import { LLMStrategy } from "@polar-sh/ingestion/strategies/LLM";
-import { createPolar } from "@polar-sh/sdk/2026-10";
 import { openai } from "@ai-sdk/openai";
 import { generateText } from "ai";
 
-const polar = createPolar({
-  accessToken: process.env.POLAR_ACCESS_TOKEN!,
-  environment: "sandbox",
-});
-
-const llm = Ingestion(polar.metering())
+const llm = Ingestion({ accessToken: process.env.POLAR_ACCESS_TOKEN, server: "sandbox" })
   .strategy(new LLMStrategy(openai("gpt-4.1-nano")))
   .ingest("ai_usage");
 
@@ -43,7 +37,7 @@ export async function POST(request: Request) {
 
 Pass the user's ID from your session instead of `"user_123"`. With `streamText`, the event is sent when the stream finishes.
 
-`polar.metering()` batches events and sends them in the background. Call `close()` on it when the process shuts down, or `flush()` before a serverless function returns. See [Send events in production](/features/usage-based-billing/event-ingestion#send-events-in-production). If sending fails, the strategy logs the error and your call still succeeds.
+Each call sends its event in its own request. If sending fails, the strategy logs the error and your call still succeeds, but that event is lost.
 
 Requires Node.js 24 or later. More strategies, for S3, streams and timings, are on [Ingestion strategies](/features/usage-based-billing/ingestion-strategies/ingestion-strategy).
 
@@ -83,7 +77,7 @@ Add `.cost()` to attach what each call cost you, in cents. It receives the token
 const INPUT_CENTS_PER_TOKEN = 0.00001;
 const OUTPUT_CENTS_PER_TOKEN = 0.00004;
 
-const llm = Ingestion(polar.metering())
+const llm = Ingestion({ accessToken: process.env.POLAR_ACCESS_TOKEN, server: "sandbox" })
   .strategy(new LLMStrategy(openai("gpt-4.1-nano")))
   .cost((ctx) => ({
     amount: ctx.inputTokens * INPUT_CENTS_PER_TOKEN + ctx.outputTokens * OUTPUT_CENTS_PER_TOKEN,
@@ -96,7 +90,7 @@ Use your provider's current rates. The result is added to the event as `_cost`.
 
 ## Python: PydanticAI
 
-There's no strategy package for Python. Read the usage from the run and send it with `polar.metering()`, which batches events in the background. It's async, so use `PolarAsync`.
+There's no strategy package for Python. Read the usage from the run and send it with `polar.events.ingest`.
 
 ```bash
 pip install polar-sdk pydantic-ai
@@ -105,47 +99,46 @@ pip install polar-sdk pydantic-ai
 ```python
 import os
 
-from polar.metering import Metering
-from polar.v2026_10 import PolarAsync
+from polar.v2026_10 import Polar
 from pydantic_ai import Agent
 
-polar = PolarAsync(os.environ["POLAR_ACCESS_TOKEN"], environment="sandbox")
+polar = Polar(os.environ["POLAR_ACCESS_TOKEN"], environment="sandbox")
 agent = Agent("openai:gpt-4.1-nano")
 
 
-async def answer(metering: Metering, user_id: str, prompt: str) -> str:
-    result = await agent.run(prompt)
+def answer(user_id: str, prompt: str) -> str:
+    result = agent.run_sync(prompt)
     usage = result.usage
 
-    await metering.track(
-        name="ai_usage",
-        external_customer_id=user_id,
-        metadata={
-            "_llm": {
-                "vendor": "openai",
-                "model": "gpt-4.1-nano",
-                "input_tokens": usage.input_tokens,
-                "cached_input_tokens": usage.cache_read_tokens,
-                "output_tokens": usage.output_tokens,
-                "total_tokens": usage.total_tokens,
-            },
-        },
+    polar.events.ingest(
+        events=[
+            {
+                "name": "ai_usage",
+                "external_customer_id": user_id,
+                "metadata": {
+                    "_llm": {
+                        "vendor": "openai",
+                        "model": "gpt-4.1-nano",
+                        "input_tokens": usage.input_tokens,
+                        "cached_input_tokens": usage.cache_read_tokens,
+                        "output_tokens": usage.output_tokens,
+                        "total_tokens": usage.total_tokens,
+                    },
+                },
+            }
+        ]
     )
     return result.output
+
+
+print(answer("user_123", "Where is the windy city?"))
 ```
 
-Open the metering client once, when your app starts, and pass it in:
-
-```python
-async with polar.metering() as metering:
-    print(await answer(metering, "user_123", "Where is the windy city?"))
-```
-
-In a web app, open it in your framework's startup or lifespan handler. It sends what's left in the buffer when the block exits.
+This sends one request per call. To send fewer requests, collect events and send them in batches. See [Send events in batches](/features/usage-based-billing/event-ingestion#send-events-in-batches).
 
 This uses PydanticAI 2.x, where `result.usage` is a property. To record the cost, add `"_cost": {"amount": ..., "currency": "usd"}` next to `_llm`, with the amount in cents.
 
-The same pattern works for any Python LLM client: read the token counts from its response and track them.
+The same pattern works for any Python LLM client: read the token counts from its response and send them.
 
 ## Create the meter
 
@@ -196,7 +189,7 @@ polar meters quantities <meter-id> --external-customer-id user_123 \
 
 | Resource | Description |
 | --- | --- |
-| [Send events](/features/usage-based-billing/event-ingestion) | Event fields, limits and `polar.metering()` |
+| [Send events](/features/usage-based-billing/event-ingestion) | Event fields, batching and limits |
 | [Meters](/features/usage-based-billing/meters) | Filters, aggregations and units |
 | [Usage-based pricing](/features/usage-based-billing/billing) | Charge per token |
 | [Credits](/features/usage-based-billing/credits) | Include tokens in a plan |

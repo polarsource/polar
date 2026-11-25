@@ -85,7 +85,7 @@ curl -X POST https://sandbox-api.polar.sh/v1/events/ingest \
 ```
 </CodeGroup>
 
-In production, send events with `polar.metering()`. See [Send events](/features/usage-based-billing/event-ingestion#send-events-in-production).
+In production, send events in batches. See [Send events](/features/usage-based-billing/event-ingestion#send-events-in-batches).
 
 ### `_cost`
 
@@ -238,7 +238,7 @@ What were my costs and gross margin in my Polar sandbox organization last month?
 
 | Resource | Description |
 | --- | --- |
-| [Send events](/features/usage-based-billing/event-ingestion) | Event fields, limits and `polar.metering()` |
+| [Send events](/features/usage-based-billing/event-ingestion) | Event fields, limits and batching |
 | [Bill for LLM tokens](/features/usage-based-billing/ingestion-strategies/llm-strategy) | Send token usage and cost for every LLM call |
 | [Customer analytics](/features/customer-analytics) | Top customers, at-risk subscriptions and cost drivers |
 | [Metrics](/features/analytics) | Every metric and how to read it |

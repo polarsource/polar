@@ -33,38 +33,25 @@ Every strategy follows the same pattern:
 
 Pass `customerId` instead of `externalCustomerId` to identify the customer by Polar's ID.
 
-In production, pass the buffered client from your Polar SDK. Events are batched and retried in the background instead of costing one HTTP request each:
+Connect with an access token:
 
 ```typescript
 import { Ingestion } from "@polar-sh/ingestion";
-import { createPolar } from "@polar-sh/sdk/2026-10";
 
-const polar = createPolar({
-  accessToken: process.env.POLAR_ACCESS_TOKEN!,
-  environment: "sandbox",
-});
-
-export const metering = polar.metering();
-export const ingestion = Ingestion(metering);
-```
-
-Call `await metering.close()` on shutdown. See [Send events in production](/features/usage-based-billing/event-ingestion#send-events-in-production).
-
-You can also pass an access token. Each event is then sent in its own request:
-
-```typescript
 const ingestion = Ingestion({
   accessToken: process.env.POLAR_ACCESS_TOKEN,
   server: "sandbox",
 });
 ```
 
-**One trade-off:** a strategy never throws when sending fails. It logs the error with `console.error` and your request carries on. Your user isn't blocked by a Polar outage, but a failed event is lost. With `polar.metering()`, failed batches are retried first, and you can catch drops with `onDropped`.
+`accessToken` defaults to the `POLAR_ACCESS_TOKEN` environment variable. Each event is sent in its own request to the [Ingest Events API](/api-reference/current/events/ingest-events).
+
+**One trade-off:** a strategy never throws when sending fails. It logs the error with `console.error` and your request carries on. Your user isn't blocked by a Polar outage, but a failed event is lost.
 
 To attach what each event cost you, add `.cost()`. It receives the strategy's context and returns an amount in cents:
 
 ```typescript
-const s3Ingestion = Ingestion(metering)
+const s3Ingestion = Ingestion({ accessToken: process.env.POLAR_ACCESS_TOKEN, server: "sandbox" })
   .strategy(new S3Strategy(s3Client))
   .cost((ctx) => ({ amount: ctx.bytes * 0.000002, currency: "usd" }))
   .ingest("s3_upload");
@@ -248,7 +235,7 @@ Attribute names with dots, like `gen_ai.usage.input_tokens`, are stored as they 
 | Resource | Description |
 | --- | --- |
 | [Bill for LLM tokens](/features/usage-based-billing/ingestion-strategies/llm-strategy) | The LLM strategy for AI SDK models, and Python |
-| [Send events](/features/usage-based-billing/event-ingestion) | Send events with the SDK, field limits and `polar.metering()` |
+| [Send events](/features/usage-based-billing/event-ingestion) | Send events with the SDK, batching and field limits |
 | [Meters](/features/usage-based-billing/meters) | Filter and aggregate the events a strategy sends |
 | [Cost insights](/features/cost-insights/introduction) | Track what each event costs you |
 | [`@polar-sh/ingestion` source](https://github.com/polarsource/polar/tree/main/clients/packages/ingestion) | Package source and README |

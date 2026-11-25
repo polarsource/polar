@@ -120,4 +120,20 @@ describe('CatalogEmptyPanel', () => {
       screen.getByRole('button', { name: 'Continue to benefits' }),
     ).toBeEnabled()
   })
+
+  it('keeps continuing to benefits available while a refresh is stalled', () => {
+    render(
+      <CatalogEmptyPanel
+        kind="benefits_only"
+        rerunning
+        stalled
+        onRerunPrecheck={() => undefined}
+        onContinue={() => undefined}
+      />,
+    )
+
+    expect(
+      screen.getByRole('button', { name: 'Continue to benefits' }),
+    ).toBeEnabled()
+  })
 })

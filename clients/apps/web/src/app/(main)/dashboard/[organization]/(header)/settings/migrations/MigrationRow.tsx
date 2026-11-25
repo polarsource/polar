@@ -6,20 +6,24 @@ import { ChevronRight } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { SourceMark } from './SourceMark'
 import { SOURCE_LABELS, sourceAccountLabel } from './sources'
+import { useBenefitsOnly } from './benefitsOnly'
 import { currentPosition, migrationSteps } from './steps'
 
-function summary(migration: schemas['MerchantMigration']): string {
+function summary(
+  migration: schemas['MerchantMigration'],
+  benefitsOnly: boolean,
+): string {
   if (!migration.source_connected) {
     return `Connect ${SOURCE_LABELS[migration.source_platform]} to begin`
   }
   if (migration.step === 'closed') {
     return 'Closed after 90 days without activity'
   }
-  const position = currentPosition(migration)
+  const position = currentPosition(migration, null, benefitsOnly)
   if (position.kind === 'completed') {
     return 'Completed'
   }
-  const steps = migrationSteps(migration.source_platform)
+  const steps = migrationSteps(migration.source_platform, benefitsOnly)
   const def = steps[position.index]
   return `Step ${position.index + 1} of ${steps.length} · ${def.title}`
 }
@@ -33,6 +37,7 @@ export function MigrationRow({
 }) {
   const connected = migration.source_connected
   const accountLabel = sourceAccountLabel(migration)
+  const benefitsOnly = useBenefitsOnly(migration) ?? false
 
   return (
     <Link href={href}>
@@ -59,7 +64,7 @@ export function MigrationRow({
               </>
             )}
             {' · '}
-            {summary(migration)}
+            {summary(migration, benefitsOnly)}
           </Text>
         </Box>
         <Box alignItems="center" columnGap="s" flexShrink={0}>

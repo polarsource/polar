@@ -21,7 +21,7 @@ export function MigrationStepper({
     return null
   }
   const steps = migrationSteps(migration.source_platform, benefitsOnly)
-  const position = currentPosition(migration, panCurrentStepKey)
+  const position = currentPosition(migration, panCurrentStepKey, benefitsOnly)
   // A completed migration has every step behind it.
   const current = position.kind === 'completed' ? steps.length : position.index
 

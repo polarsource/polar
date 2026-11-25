@@ -130,24 +130,27 @@ export function visibleMigrationStep(
 export function currentPosition(
   migration: schemas['MerchantMigration'],
   panCurrentStepKey?: string | null,
+  benefitsOnly = false,
 ): MigrationPosition {
   if (!migration.source_connected) {
     return { kind: 'step', index: 0 }
   }
   const visible = visibleMigrationStep(migration, panCurrentStepKey)
   const step = visible === 'source_setup' ? 'pre_check' : visible
-  const index = migrationSteps(migration.source_platform).findIndex((def) =>
-    def.steps.includes(step),
-  )
+  const index = migrationSteps(
+    migration.source_platform,
+    benefitsOnly,
+  ).findIndex((def) => def.steps.includes(step))
   return index === -1 ? { kind: 'completed' } : { kind: 'step', index }
 }
 
 export function currentStepDef(
   migration: schemas['MerchantMigration'],
   panCurrentStepKey?: string | null,
+  benefitsOnly = false,
 ): MigrationStepDef | null {
-  const position = currentPosition(migration, panCurrentStepKey)
+  const position = currentPosition(migration, panCurrentStepKey, benefitsOnly)
   return position.kind === 'completed'
     ? null
-    : migrationSteps(migration.source_platform)[position.index]
+    : migrationSteps(migration.source_platform, benefitsOnly)[position.index]
 }

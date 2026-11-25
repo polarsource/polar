@@ -91,7 +91,7 @@ function MigrationLoaded({
   const panCurrentStepKey = pan.data?.current_step_key ?? null
   const benefitsOnly = useBenefitsOnly(migration)
 
-  if (needsPan && pan.isLoading) {
+  if ((needsPan && pan.isLoading) || benefitsOnly === null) {
     return (
       <Box padding="3xl" alignItems="center" justifyContent="center">
         <Spinner />
@@ -131,7 +131,7 @@ function StepContent({
       </Text>
     )
   }
-  const def = currentStepDef(migration, panCurrentStepKey)
+  const def = currentStepDef(migration, panCurrentStepKey, benefitsOnly)
   switch (visibleMigrationStep(migration, panCurrentStepKey)) {
     // The stepper shows a connected migration as assessing, but nothing is
     // staged until the first pre-check runs.

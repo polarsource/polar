@@ -74,3 +74,15 @@ describe('migrationSteps', () => {
     ])
   })
 })
+
+describe('currentPosition for a benefits-only migration', () => {
+  it('counts against the shortened step list', () => {
+    const benefits = migration('set_up_benefits', {
+      source_platform: 'lemon_squeezy',
+    })
+    const position = currentPosition(benefits, null, true)
+
+    expect(position).toEqual({ kind: 'step', index: 2 })
+    expect(migrationSteps('lemon_squeezy', true)).toHaveLength(3)
+  })
+})

@@ -82,7 +82,7 @@ export function CatalogEmptyPanel({
           <Button
             size="sm"
             onClick={onContinue}
-            disabled={continuing || rerunning}
+            disabled={continuing || refreshing}
           >
             {continuing ? 'Continuing…' : 'Continue to benefits'}
           </Button>

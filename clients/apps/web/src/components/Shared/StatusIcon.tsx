@@ -1,6 +1,6 @@
-import { Text } from '@polar-sh/orbit'
+import { Text, Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { useId } from 'react'
+import { useId, type ReactNode } from 'react'
 
 // A ring that fills up as something moves along: an outline for not started,
 // a level rising from the bottom for under way, and a filled disc with a mark
@@ -156,13 +156,36 @@ export const StatusIcon = ({ shape, tone = 'neutral' }: StatusIconProps) => {
   )
 }
 
+// Says what a status means when it is pointed at. Without a description the
+// status is left as it is.
+export const StatusTooltip = ({
+  description,
+  children,
+}: {
+  description?: string
+  children: ReactNode
+}) =>
+  description ? (
+    <Tooltip delayDuration={300}>
+      <TooltipTrigger asChild>
+        <span className="inline-flex max-w-full min-w-0">{children}</span>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-64">{description}</TooltipContent>
+    </Tooltip>
+  ) : (
+    children
+  )
+
 // A status as an icon and its name, in place of a colored pill.
 export const StatusLabel = ({
   label,
+  description,
   ...icon
-}: StatusIconProps & { label: string }) => (
-  <Box alignItems="center" gap="s" minWidth={0}>
-    <StatusIcon {...icon} />
-    <Text truncate>{label}</Text>
-  </Box>
+}: StatusIconProps & { label: string; description?: string }) => (
+  <StatusTooltip description={description}>
+    <Box alignItems="center" gap="s" minWidth={0}>
+      <StatusIcon {...icon} />
+      <Text truncate>{label}</Text>
+    </Box>
+  </StatusTooltip>
 )

@@ -1000,6 +1000,54 @@ class TestUpdateCustomerMeter:
         assert customer_meter.consumed_units == Decimal(200)
         assert updated is True
 
+    async def test_sum_aggregation_with_external_id_is_exact(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        customer_with_external_id: Customer,
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture,
+            name="Cost",
+            filter=Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="type", operator=FilterOperator.eq, value="llm"
+                    )
+                ],
+            ),
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.sum, property="cost"
+            ),
+            organization=organization,
+        )
+
+        timestamp = utc_now()
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=1),
+            organization=organization,
+            customer=customer_with_external_id,
+            metadata={"type": "llm", "cost": 0.1},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=2),
+            organization=organization,
+            external_customer_id=customer_with_external_id.external_id,
+            metadata={"type": "llm", "cost": 0.2},
+        )
+
+        customer_meter, _ = await customer_meter_service.update_customer_meter(
+            session, redis, customer_with_external_id, meter
+        )
+
+        assert customer_meter is not None
+        assert customer_meter.consumed_units == Decimal("0.3")
+
 
 @pytest.mark.anyio
 class TestGetLateUsage:

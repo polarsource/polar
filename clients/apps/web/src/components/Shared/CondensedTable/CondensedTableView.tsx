@@ -61,7 +61,12 @@ export const CondensedTableView = <T extends RowData>({
       />
       <Box flexDirection="column" flexGrow={1} minHeight={0} overflowY="auto">
         {isLoading ? (
-          <CondensedTableSkeleton table={table} inset="l" compact />
+          <CondensedTableSkeleton
+            table={table}
+            inset="l"
+            compact
+            expandable={expansion !== undefined}
+          />
         ) : table.getRowModel().rows.length === 0 ? (
           <Box padding="l">
             <Text color="muted">{emptyLabel}</Text>

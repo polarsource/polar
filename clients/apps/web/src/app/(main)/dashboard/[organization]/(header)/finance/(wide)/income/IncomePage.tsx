@@ -15,6 +15,8 @@ import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { sortingStateToQueryParam } from '@/utils/datatable'
 import { ISODuration } from '@/utils/duration'
 import { schemas } from '@polar-sh/client'
+import { Alert } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { Download } from '@polar-sh/orbit/icons'
 
 const PAGE_SIZE = 50
@@ -38,6 +40,8 @@ export default function ClientPage({
 
   const {
     data,
+    isError,
+    refetch,
     hasNextPage,
     isFetching,
     isFetchingNextPage,
@@ -95,17 +99,27 @@ export default function ClientPage({
       flush
     >
       <Toolbar title="Income" filters={[]} actions={actions} />
-      <IncomeTable
-        organization={organization}
-        transactions={transactions}
-        payoutTransactionDelay={payoutTransactionDelay}
-        sorting={sorting}
-        onSortingChange={setSorting}
-        footerLabel={countLabel}
-        isLoadingMore={isFetchingNextPage}
-        onRetry={isFetchNextPageError ? fetchNextPage : undefined}
-        onEndReached={loadMore}
-      />
+      {isError && !data ? (
+        <Box padding="l">
+          <Alert
+            variant="danger"
+            title="We couldn't load your income"
+            actions={[{ text: 'Try again', onClick: () => refetch() }]}
+          />
+        </Box>
+      ) : (
+        <IncomeTable
+          organization={organization}
+          transactions={transactions}
+          payoutTransactionDelay={payoutTransactionDelay}
+          sorting={sorting}
+          onSortingChange={setSorting}
+          footerLabel={countLabel}
+          isLoadingMore={isFetchingNextPage}
+          onRetry={isFetchNextPageError ? fetchNextPage : undefined}
+          onEndReached={loadMore}
+        />
+      )}
       <ExportTransactionsModal
         organization={organization}
         account={account}

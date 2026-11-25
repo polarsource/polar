@@ -33,7 +33,9 @@ export const IncomeAmount = ({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className={UNDERLINE_CLASS}>{value}</span>
+        <span className={UNDERLINE_CLASS} tabIndex={0}>
+          {value}
+        </span>
       </TooltipTrigger>
       <TooltipContent>
         <Box flexDirection="column" gap="xs">

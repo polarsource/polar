@@ -5,7 +5,7 @@ import {
 import { ISODuration } from '@/utils/duration'
 import { schemas } from '@polar-sh/client'
 import { format } from 'date-fns'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 type Status = 'pending' | 'available' | 'paid_out'
 
@@ -20,6 +20,9 @@ const IncomeStatusIcon: Record<Status, StatusIconProps> = {
   available: { shape: 'most', tone: 'blue' },
   paid_out: { shape: 'check', tone: 'green' },
 }
+
+// Income that becomes available within a day does so while the page is open.
+const MAX_WAIT = 24 * 60 * 60 * 1000
 
 // Income is held for the account's payout delay before it can be paid out.
 const getAvailableAt = (
@@ -49,8 +52,14 @@ const useIncomeStatus = (
   transaction: schemas['Transaction'],
   delay: ISODuration | null,
 ) => {
-  const [now] = useState(() => Date.now())
+  const [now, setNow] = useState(() => Date.now())
   const availableAt = getAvailableAt(transaction, delay)
+  const remaining = availableAt ? availableAt.getTime() - now : 0
+  useEffect(() => {
+    if (remaining <= 0 || remaining > MAX_WAIT) return
+    const timeout = setTimeout(() => setNow(Date.now()), remaining)
+    return () => clearTimeout(timeout)
+  }, [remaining])
   return {
     status: getIncomeStatus(transaction, availableAt, now),
     availableAt,

@@ -1,9 +1,11 @@
 import { useAuth } from '@/hooks'
 import { useCreateIdentityVerification } from '@/hooks/queries'
 import { toast } from '@/components/Toast/use-toast'
-import { schemas } from '@polar-sh/client'
+import { api } from '@/utils/client'
+import { schemas, unwrap } from '@polar-sh/client'
 import { loadPolarStripe } from '@/utils/stripe'
-import { useCallback, useEffect, useRef } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useCallback, useState } from 'react'
 
 const POLL_INTERVAL_MS = 3000
 const POLL_TIMEOUT_MS = 30_000
@@ -32,22 +34,27 @@ export const useStartIdentityVerification = () => {
   const identityVerificationStatus = currentUser?.identity_verification_status
   const createIdentityVerification = useCreateIdentityVerification()
   const stripePromise = loadPolarStripe()
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [pollingStartedAt, setPollingStartedAt] = useState<number | null>(null)
 
-  useEffect(() => {
-    if (pollingRef.current && isTerminalStatus(identityVerificationStatus)) {
-      clearInterval(pollingRef.current)
-      pollingRef.current = null
-    }
-  }, [identityVerificationStatus])
-
-  useEffect(() => {
-    return () => {
-      if (pollingRef.current) {
-        clearInterval(pollingRef.current)
+  useQuery({
+    queryKey: ['users', 'me', 'identity-verification-poll', pollingStartedAt],
+    queryFn: async () => {
+      const user = await unwrap(api.GET('/v1/users/me'))
+      if (isTerminalStatus(user.identity_verification_status)) {
+        await reloadUser()
       }
-    }
-  }, [])
+      return user
+    },
+    enabled: pollingStartedAt !== null,
+    refetchInterval: (query) =>
+      pollingStartedAt === null ||
+      isTerminalStatus(query.state.data?.identity_verification_status) ||
+      Date.now() - pollingStartedAt >= POLL_TIMEOUT_MS
+        ? false
+        : POLL_INTERVAL_MS,
+    retry: false,
+    gcTime: 0,
+  })
 
   const start = useCallback(async () => {
     const { data, error } = await createIdentityVerification.mutateAsync()
@@ -94,15 +101,7 @@ export const useStartIdentityVerification = () => {
     }
 
     await reloadUser()
-    pollingRef.current = setInterval(async () => {
-      await reloadUser()
-    }, POLL_INTERVAL_MS)
-    setTimeout(() => {
-      if (pollingRef.current) {
-        clearInterval(pollingRef.current)
-        pollingRef.current = null
-      }
-    }, POLL_TIMEOUT_MS)
+    setPollingStartedAt(Date.now())
   }, [createIdentityVerification, stripePromise, reloadUser])
 
   return {

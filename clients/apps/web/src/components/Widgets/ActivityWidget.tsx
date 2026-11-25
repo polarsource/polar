@@ -109,6 +109,14 @@ const ActivityWidgetContent = ({ className }: ActivityWidgetProps) => {
             <ListRow
               key={event.id}
               href={resolveTimelineEventHref(event, organization.slug)}
+              trailing={
+                <EventTimestamp
+                  timestamp={event.timestamp}
+                  format="relative"
+                  muted
+                  align="end"
+                />
+              }
             >
               <Box alignItems="baseline" columnGap="s" minWidth={0}>
                 <Text truncate>{entry?.title}</Text>
@@ -118,13 +126,6 @@ const ActivityWidgetContent = ({ className }: ActivityWidgetProps) => {
                   </Text>
                 </Box>
               </Box>
-              <EventTimestamp
-                timestamp={event.timestamp}
-                format="relative"
-                muted
-                focusable={false}
-                align="end"
-              />
             </ListRow>
           ))}
         </Box>

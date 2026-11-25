@@ -20,13 +20,13 @@ Start by moving new sales to Polar. New customers check out on Polar, while exis
 
 ### Payment methods that can't move
 
-Some saved payment methods can't be carried over from Lemon Squeezy. Customers who pay this way will need to take action before or after their subscription moves:
+Some saved payment methods can't be carried over from Lemon Squeezy:
 
-- **PayPal:** PayPal subscriptions can't be migrated to any provider, including Stripe Managed Payments. Customers need to start a new subscription with a supported payment method before their subscription can migrate.
-- **India-issued cards:** If you move to Stripe Managed Payments, customers need to reauthorize their payment method once their subscription moves to Stripe. If you move to Polar, customers need to add a new payment method.
-- **Cash App Pay and Link:** These can only be migrated to Stripe Managed Payments. If you move to Polar, customers need to add a new payment method.
+- **PayPal**
+- **India-issued cards:** the card moves, but India requires a mandate for recurring charges, and the mandate doesn't.
+- **Cash App Pay and Link**
 
-We're still exploring what this will look like for your customers, but we'll make sure the experience is smooth. Their subscription stays on Lemon Squeezy until they've updated their payment method, or until the migration deadline, so you don't miss any payments.
+These subscriptions still switch to Polar. Their first renewal on Polar fails, and Polar asks the customer to enter their payment details again. Once they do, the subscription keeps renewing on Polar as usual. If you want to avoid the failed renewal, ask these customers to update their payment method in the customer portal after the switch.
 
 ## Benefits and license keys
 
@@ -144,7 +144,7 @@ Polar is built for software and digital products: SaaS, apps, plugins, templates
 
 Lemon Squeezy offers PayPal at checkout, and Polar doesn't yet. We know this is a gap for many of you, and it's on our radar, but we can't share a timeline. Polar does support cards, Apple Pay, Google Pay and a growing set of local payment methods. See [Payment Methods](/features/checkout/payment-methods) for what your customers can use today.
 
-Keep in mind that PayPal subscriptions can't be exported from Lemon Squeezy, whichever provider you move to. Those customers will need to check out again on your new provider. See [Payment methods that can't move](#payment-methods-that-cant-move).
+Keep in mind that PayPal payment details can't be exported from Lemon Squeezy, whichever provider you move to. On Polar, these subscriptions still switch, and customers enter new payment details at their first renewal. See [Payment methods that can't move](#payment-methods-that-cant-move).
 
 ## Supported countries
 
@@ -246,8 +246,10 @@ subscriptions.
 - Never use email as the durable cross-system identity.
 - Never overwrite a Polar Customer `external_id`. It is unique within an
   organization and cannot be changed once set.
-- PayPal subscriptions cannot be moved. Those customers check out again on
-  Polar. Direct other payment method questions to the migration guide.
+- PayPal, Link, Cash App Pay and India-issued cards can't be carried over.
+  Those subscriptions still switch; their first renewal on Polar fails and
+  Polar asks the customer for new payment details. Never ask these customers
+  to check out again.
 
 ## Phase 1: discover the current integration
 

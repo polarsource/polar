@@ -91,11 +91,15 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
     canWithdraw &&
     supportEmailVerified &&
     !isPayoutIntervalLimited
-  const { data: estimate, error: estimateError } = usePayoutEstimate(
-    organization.id,
-    { enabled: isShown && !isFetching && canEstimatePayout },
-  )
-  const payoutEstimate = canEstimatePayout ? estimate : undefined
+  const {
+    data: estimate,
+    error: estimateError,
+    isFetching: isFetchingEstimate,
+  } = usePayoutEstimate(organization.id, {
+    enabled: isShown && !isFetching && canEstimatePayout,
+  })
+  const payoutEstimate =
+    canEstimatePayout && !isFetchingEstimate ? estimate : undefined
   const errorMessage =
     canEstimatePayout && estimateError
       ? getEstimateErrorMessage(estimateError)

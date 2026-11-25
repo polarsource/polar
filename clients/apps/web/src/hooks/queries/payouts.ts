@@ -40,5 +40,6 @@ export const usePayoutEstimate = (
         }),
       ),
     retry: false,
+    staleTime: 0,
     enabled,
   })

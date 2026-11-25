@@ -113,7 +113,7 @@ const TopCustomersWidgetContent = ({ className }: TopCustomersWidgetProps) => {
               >
                 <Box alignItems="baseline" columnGap="s" minWidth={0}>
                   <Text truncate>{customer.name ?? customer.email ?? '-'}</Text>
-                  <Text color="muted">
+                  <Text color="muted" wrap="nowrap">
                     {customer.order_count}{' '}
                     {customer.order_count === 1 ? 'order' : 'orders'}
                   </Text>

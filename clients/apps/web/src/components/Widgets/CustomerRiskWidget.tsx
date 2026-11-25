@@ -88,12 +88,14 @@ const CustomerRiskWidgetContent = ({ className }: CustomerRiskWidgetProps) => {
                       subscription.customer.email ??
                       '-'}
                   </Text>
-                  <Text color="muted" truncate>
-                    {subscription.product.name}
-                  </Text>
+                  <Box minWidth={0} flexShrink={100}>
+                    <Text color="muted" truncate>
+                      {subscription.product.name}
+                    </Text>
+                  </Box>
                 </Box>
                 <Box alignItems="baseline" columnGap="m" flexShrink={0}>
-                  <Text color="muted">
+                  <Text color="muted" wrap="nowrap">
                     {reason === 'past_due'
                       ? 'Past due'
                       : `Cancels ${cancelDate(subscription)}`}

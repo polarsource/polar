@@ -101,7 +101,7 @@ Captures before/after screenshots across branches and generates a visual diff re
 
 ```bash
 dev polar auth login --local        # Any `polar` command, run from clients/packages/cli/src
-dev polar config plan               # Runs in your current directory, e.g. clients/apps/demo-app
+dev polar config validate               # Runs in your current directory, e.g. clients/apps/demo-app
 dev polar --link                    # Make `dev polar` work in any directory
 dev polar --unlink                  # Make `dev` work inside the Polar repo only
 ```

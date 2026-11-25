@@ -22,7 +22,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
 
         Examples:
           dev polar auth login --local
-          dev polar config plan
+          dev polar config validate
           dev polar --link      Make `dev polar` work in any directory
           dev polar --unlink    Make `dev` work inside the Polar repo only
         """

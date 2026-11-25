@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest'
 import { Cause, Effect, Exit } from 'effect'
-import { apply } from '@/commands/config/apply'
+import { draft as draftCommand } from '@/commands/config/draft'
 import { formatProblems } from '@/utils/billing-config/problems'
 import {
   type AppliedEntry,
@@ -148,7 +148,7 @@ const run = async (
       _options?: CatalogOptions,
     ) => Effect.succeed(result),
   )
-  const cli = runCli(apply, ['polar.json', ...args], options)
+  const cli = runCli(draftCommand, ['polar.json', ...args], options)
   const exit = await Effect.runPromiseExit(
     cli.effect.pipe(
       Effect.provideService(
@@ -203,7 +203,7 @@ const message = (exit: Exit.Exit<unknown, unknown>) =>
       : String(Cause.squash(exit.cause))
     : undefined
 
-describe('polar config apply', () => {
+describe('polar config draft', () => {
   test('applies with --confirm and reports what was applied', async () => {
     const { output, failed, applied } = await run(
       { entries: [created, kept], issues: [] },
@@ -213,16 +213,16 @@ describe('polar config apply', () => {
     expect(failed).toBe(false)
     expect(applied).toBe(1)
     expect(output).toMatch(
-      /╯\n\n {2}Summary\n {2}╭─+╮\n *│ {2}Organization {2}Acme *│\n *│ {2}Environment {3}sandbox *│\n *│ {2}File {10}polar\.json *│\n *│ {2}Changes {7}0 to change, 1 to add, 1 unchanged *│\n *│ {2}Issues {8}none *│\n {2}╰─+╯\n\n {2}Apply\n/,
+      /╯\n\n {2}Summary\n {2}╭─+╮\n *│ {2}Organization {2}Acme *│\n *│ {2}Environment {3}sandbox *│\n *│ {2}File {10}polar\.json *│\n *│ {2}Changes {7}0 to change, 1 to add, 1 unchanged *│\n *│ {2}Issues {8}none *│\n {2}╰─+╯\n\n {2}Draft\n/,
     )
     expect(output).toMatch(
       /│ {2}\+ tool-calls *│\n *│ {6}events {7}all events *│\n *│ {6}aggregation {2}count *│/,
     )
     expect(output).toContain(
-      'polar.json applied to Acme (sandbox): 2 entries (1 created, 0 updated, 1 unchanged)',
+      'polar.json saved to Acme (sandbox): 2 entries (1 created, 0 updated, 1 unchanged)',
     )
     expect(output).toMatch(
-      /╯\n\n {2}Apply\n {2}╭─+╮\n {2}│ {2}Applying 1 change \(\d+ms\) *│\n {2}╰─+╯\n {2}polar\.json applied to Acme/,
+      /╯\n\n {2}Draft\n {2}╭─+╮\n {2}│ {2}Saving 1 change \(\d+ms\) *│\n {2}╰─+╯\n {2}polar\.json saved to Acme/,
     )
   })
 
@@ -285,8 +285,8 @@ describe('polar config apply', () => {
     )
     expect(applied).toBe(0)
     expect(output).toContain('+ tool-calls')
-    expect(terminal).toContain('y to apply  n to cancel')
-    expect(message(exit)).toBe('Apply cancelled, nothing changed')
+    expect(terminal).toContain('y to save  n to cancel')
+    expect(message(exit)).toBe('Draft cancelled, nothing changed')
   })
 
   test('applies when confirmed', async () => {
@@ -298,7 +298,7 @@ describe('polar config apply', () => {
     )
     expect(failed).toBe(false)
     expect(applied).toBe(1)
-    expect(output).toContain('polar.json applied to Acme (sandbox): 1 entry')
+    expect(output).toContain('polar.json saved to Acme (sandbox): 1 entry')
   })
 
   test('needs --confirm when there is no terminal to ask', async () => {
@@ -307,9 +307,11 @@ describe('polar config apply', () => {
       { status: 'applied', entries: [created] },
     )
     expect(applied).toBe(0)
-    expect(terminal).not.toContain('y to apply')
+    expect(terminal).not.toContain('y to save')
     expect(output).toContain('+ tool-calls')
-    expect(message(exit)).toBe('Confirmation needed to apply to Acme (sandbox)')
+    expect(message(exit)).toBe(
+      'Confirmation needed to save the draft of Acme (sandbox)',
+    )
   })
 
   test('does nothing when the config is already applied', async () => {
@@ -319,7 +321,7 @@ describe('polar config apply', () => {
     )
     expect(failed).toBe(false)
     expect(applied).toBe(0)
-    expect(output).toContain('Acme (sandbox) is up to date, nothing to apply')
+    expect(output).toContain('Acme (sandbox) is up to date, nothing to change')
   })
 
   test('applies when the draft holds a change the file no longer has', async () => {
@@ -346,7 +348,7 @@ describe('polar config apply', () => {
     expect(output).toContain(
       'Changes that are no longer in polar.json were removed from the draft of Acme (sandbox)',
     )
-    expect(output).not.toContain('nothing to apply')
+    expect(output).not.toContain('nothing to change')
   })
 
   test('does nothing when the draft already matches the file', async () => {
@@ -361,7 +363,7 @@ describe('polar config apply', () => {
       },
     )
     expect(applied).toBe(0)
-    expect(output).toContain('Acme (sandbox) is up to date, nothing to apply')
+    expect(output).toContain('Acme (sandbox) is up to date, nothing to change')
   })
 
   test('fails when it cannot tell whether a draft exists', async () => {
@@ -395,7 +397,7 @@ describe('polar config apply', () => {
     expect(output).toContain(
       'Warning: No events named "tool_call" have been received yet',
     )
-    expect(output).toContain('Acme (sandbox) is up to date, nothing to apply')
+    expect(output).toContain('Acme (sandbox) is up to date, nothing to change')
   })
 
   test.each([
@@ -446,6 +448,6 @@ describe('polar config apply', () => {
     expect(output).toContain('Error: Cannot change "filter" of meters.0')
     expect(output).toContain('Issues        1 error')
     expect(output).toContain('Fix the error above')
-    expect(output).not.toContain('applied')
+    expect(output).not.toContain('saved to Acme')
   })
 })

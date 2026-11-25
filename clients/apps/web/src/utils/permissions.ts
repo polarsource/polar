@@ -31,4 +31,4 @@ export const permissionDeniedMessage = (
 
 // Mirrors `ConfigAsCodeManaged` in server/polar/declarative_config/guard.py.
 export const MANAGED_AS_CODE_MESSAGE =
-  'This organization manages its catalog as code. Change your config and run `polar config apply`.'
+  'This organization manages its catalog as code. Change your config and run `polar config draft`.'

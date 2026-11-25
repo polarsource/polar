@@ -3,7 +3,7 @@ import { MANAGED_AS_CODE_MESSAGE } from '@/utils/permissions'
 import { getUserOrganizations } from '@/utils/user'
 
 // Server component: blocks catalog edit routes for organizations that manage
-// their catalog through `polar config apply`.
+// their catalog through `polar config draft`.
 export default async function ManagedAsCodeGuard({
   organizationSlug,
   children,

@@ -375,7 +375,7 @@ async def get_org_factors(
     )
 
     sso_factors: set[FactorBase[typing.Any]] = {
-        build_sso_factor(
+        await build_sso_factor(
             connection,
             organization_slug=organization.slug,
             state_service=state_service,

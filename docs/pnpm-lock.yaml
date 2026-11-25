@@ -188,8 +188,8 @@ importers:
   .:
     dependencies:
       mintlify:
-        specifier: ^4.3.16
-        version: 4.3.16(@types/node@24.19.2)
+        specifier: ^4.3.54
+        version: 4.3.54(@types/node@24.19.2)
       react:
         specifier: ^19.3.1
         version: 19.3.1
@@ -520,13 +520,13 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@mintlify/cli@4.1.16':
-    resolution: {integrity: sha512-nKRK2/Z+H9GVoxTHmeYMl5v6w4VWPzgFitnuXsFK6Th6nO7QqoDfgTg6oITYHCB4+95aQz6jGj1UtrGR5b0yLg==}
+  '@mintlify/cli@4.1.54':
+    resolution: {integrity: sha512-Uqc9aXSZwpThWQ403oSKZhY0x1PKOKFwxMnuSS9eW6Z08e+zbQKC7V6XCL0RhuIiLRPivAHxGBV4FyWdh29oTA==}
     engines: {node: '>=18.0.0'}
     hasBin: true
 
-  '@mintlify/package-builder@0.0.147':
-    resolution: {integrity: sha512-/OXPd65vk4tRqb7Q1ejgQCRP9SkYZE2DFJHBasC5ryp43+JgllW8fD/9/rtvNxG3uybfFvvN64lbxMd5qdti2Q==}
+  '@mintlify/package-builder@0.0.171':
+    resolution: {integrity: sha512-lG6LDPUDCYGqo3i5YsG31VJXBnT9qNR/ord12xAqkegHosirm0+iwZPSEmDW770PXKZmgxc3x1Aq3j2ihCdSWQ==}
     engines: {node: '>=18.0.0'}
     hasBin: true
 
@@ -610,8 +610,8 @@ packages:
   minimist@1.2.8:
     resolution: {integrity: sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==}
 
-  mintlify@4.3.16:
-    resolution: {integrity: sha512-xGD/t8CcPYTLx8+DhqflBmRKYiVhcXBouTnrhRCznwg7WWfZBC+et3YZ/Wgf1/okXezh1x32TmaWnzS4P0b2oQ==}
+  mintlify@4.3.54:
+    resolution: {integrity: sha512-oJVLyFxWFekExVcMmBzVqRbZIV3JOgozGCcAVSU6lwt9932G9JDamK5QgjzgoHaG6KfML3sRtVzr3dyeDGrEXw==}
     engines: {node: '>=18.0.0'}
     hasBin: true
 
@@ -908,17 +908,17 @@ snapshots:
   '@img/sharp-win32-x64@0.35.5':
     optional: true
 
-  '@mintlify/cli@4.1.16(@types/node@24.19.2)':
+  '@mintlify/cli@4.1.54(@types/node@24.19.2)':
     dependencies:
       sharp: 0.35.5(@types/node@24.19.2)
     optionalDependencies:
-      '@mintlify/package-builder': 0.0.147
+      '@mintlify/package-builder': 0.0.171
       fsevents: 2.3.3
       keytar: 7.9.0
     transitivePeerDependencies:
       - '@types/node'
 
-  '@mintlify/package-builder@0.0.147':
+  '@mintlify/package-builder@0.0.171':
     dependencies:
       entities: 7.0.1
       esbuild: 0.25.12
@@ -1039,9 +1039,9 @@ snapshots:
   minimist@1.2.8:
     optional: true
 
-  mintlify@4.3.16(@types/node@24.19.2):
+  mintlify@4.3.54(@types/node@24.19.2):
     dependencies:
-      '@mintlify/cli': 4.1.16(@types/node@24.19.2)
+      '@mintlify/cli': 4.1.54(@types/node@24.19.2)
     transitivePeerDependencies:
       - '@types/node'
 

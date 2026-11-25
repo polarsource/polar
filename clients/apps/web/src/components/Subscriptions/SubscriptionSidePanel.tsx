@@ -8,7 +8,6 @@ import { SidePanel } from '@/components/Shared/SidePanel'
 import { useSubscriptions } from '@/hooks/queries'
 import { withOrderActivity } from '@/utils/subscriptionOrderActivity'
 import { getSubscriptionActivity } from '@/utils/subscriptionSummary'
-import { useOrders } from '@/hooks/queries/orders'
 import { schemas } from '@polar-sh/client'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -28,6 +27,7 @@ import { SubscriptionStatus } from './SubscriptionStatus'
 import { SubscriptionStatusIcon } from './SubscriptionStatusIcon'
 import { SubscriptionSummary } from './SubscriptionSummary'
 import { useSubscriptionDunning } from './useSubscriptionDunning'
+import { useSubscriptionOrders } from './useSubscriptionOrders'
 import { formatSubscriptionPrice, getSubscriptionStatusLabel } from './utils'
 
 // The panel's label column is narrow, so the longer names are cut down.
@@ -69,20 +69,11 @@ export const SubscriptionSidePanel = ({
   const subscriptionsPath = `/dashboard/${organization.slug}/sales/subscriptions?view=list`
   const [today] = useState(() => new Date())
   const dunning = useSubscriptionDunning(organization.id, subscription.id)
-  // The same request the subscription page's orders table makes.
-  const { data: orders } = useOrders(organization.id, {
-    subscription_id: [subscription.id],
-    sorting: ['-created_at'],
-    limit: 100,
-  })
+  // The same requests the subscription page's billing history makes.
+  const { orders } = useSubscriptionOrders(organization.id, subscription.id)
   const activity = withOrderActivity(
-    getSubscriptionActivity(
-      subscription,
-      today.getTime(),
-      dunning,
-      orders?.items,
-    ),
-    orders?.items ?? [],
+    getSubscriptionActivity(subscription, today.getTime(), dunning, orders),
+    orders,
   )
   const { data: subscriptions } = useSubscriptions(organization.id, {
     customer_id: [customer.id],
@@ -182,7 +173,7 @@ export const SubscriptionSidePanel = ({
           <Field label="Discount">
             <EntityLink
               kind="discount"
-              href={`/dashboard/${organization.slug}/products/discounts?query=${discount.code}`}
+              href={`/dashboard/${organization.slug}/products/discounts${discount.code ? `?query=${encodeURIComponent(discount.code)}` : ''}`}
               menuItems={[
                 { label: 'Copy discount ID', copy: discount.id },
                 ...(discount.code

@@ -228,7 +228,11 @@ export const SubscriptionDetailsGrid = ({
           {cancellationComment && (
             <DetailCell
               label="Cancellation comment"
-              value={cancellationComment}
+              value={
+                <Text variant="body" wrap="pretty">
+                  {cancellationComment}
+                </Text>
+              }
               fullWidth
             />
           )}

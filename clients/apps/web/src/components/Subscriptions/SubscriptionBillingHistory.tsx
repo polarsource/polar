@@ -5,9 +5,8 @@ import {
   CondensedTableHeader,
   useCondensedTable,
 } from '@/components/Shared/CondensedTable'
-import { useOrders } from '@/hooks/queries/orders'
 import { schemas } from '@polar-sh/client'
-import { Text } from '@polar-sh/orbit'
+import { Alert, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useState } from 'react'
 import { BillingHistoryDate } from './BillingHistoryDate'
@@ -20,6 +19,7 @@ import {
   type BillingHistoryRow,
 } from './billingHistoryColumns'
 import { getBillingHistoryEvents } from './billingHistoryEvents'
+import { useSubscriptionOrders } from './useSubscriptionOrders'
 import SubscriptionInvoicePreview, {
   useSubscriptionUpcomingCharge,
 } from './SubscriptionInvoicePreview'
@@ -56,15 +56,13 @@ export const SubscriptionBillingHistory = ({
   organization: schemas['Organization']
   subscription: schemas['Subscription']
 }) => {
-  const { data, isLoading } = useOrders(organization.id, {
-    subscription_id: [subscription.id],
-    sorting: ['-created_at'],
-    limit: 100,
-  })
+  const { orders, isLoading, isError } = useSubscriptionOrders(
+    organization.id,
+    subscription.id,
+  )
   const charge = useSubscriptionUpcomingCharge(subscription)
   const [now] = useState(() => Date.now())
   const [toggled, setToggled] = useState<Record<string, boolean>>({})
-  const orders = data?.items ?? []
 
   const past: BillingHistoryRow[] = [
     ...orders.map((order) => ({
@@ -106,6 +104,15 @@ export const SubscriptionBillingHistory = ({
   const isExpanded = (row: BillingHistoryRow) =>
     toggled[row.id] ?? isOpenByDefault(row)
 
+  if (isError) {
+    return (
+      <Alert
+        variant="danger"
+        title="We couldn't load the billing history"
+        description="Please refresh the page and try again."
+      />
+    )
+  }
   if (isLoading) {
     return <Text color="muted">Loading billing history</Text>
   }

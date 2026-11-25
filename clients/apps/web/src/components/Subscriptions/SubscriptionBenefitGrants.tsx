@@ -10,7 +10,7 @@ import {
   type CondensedTableColumn,
 } from '@/components/Shared/CondensedTable'
 import { useHasPermission } from '@/hooks/permissions'
-import { useBenefitGrants } from '@/hooks/queries'
+import { useAllBenefitGrants } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -34,33 +34,35 @@ export const SubscriptionBenefitGrants = ({
     organization.id,
     'customers:manage',
   )
-  // Grants cannot be listed by subscription, so the customer's are, with the
-  // same request the customer page makes.
-  const { data } = useBenefitGrants(organization.id, {
+  // Grants cannot be listed by subscription, so all of the customer's are.
+  const { data } = useAllBenefitGrants(organization.id, {
     customer_id: [subscription.customer_id],
-    limit: 999,
     sorting: ['-granted_at'],
   })
-  const grants = (data?.items ?? []).filter(
+  const grants = (data ?? []).filter(
     ({ subscription_id }) => subscription_id === subscription.id,
   )
+
+  const renderBenefit = (grant: Grant) =>
+    grant.benefit.is_deleted ? (
+      <Text truncate>{grant.benefit.description}</Text>
+    ) : (
+      <Link
+        href={`/dashboard/${organization.slug}/products/benefits/${grant.benefit.id}`}
+        className="min-w-0 truncate hover:underline"
+      >
+        <Text truncate>{grant.benefit.description}</Text>
+      </Link>
+    )
+  const renderAction = (grant: Grant) =>
+    canManageCustomers ? <BenefitGrantAction grant={grant} /> : null
 
   const columns: CondensedTableColumn<Grant>[] = [
     {
       id: 'benefit',
       header: 'Benefit',
       meta: { grow: 2, minWidth: 120 },
-      cell: ({ row: { original: grant } }) =>
-        grant.benefit.is_deleted ? (
-          <Text truncate>{grant.benefit.description}</Text>
-        ) : (
-          <Link
-            href={`/dashboard/${organization.slug}/products/benefits/${grant.benefit.id}`}
-            className="min-w-0 truncate hover:underline"
-          >
-            <Text truncate>{grant.benefit.description}</Text>
-          </Link>
-        ),
+      cell: ({ row: { original: grant } }) => renderBenefit(grant),
     },
     {
       id: 'type',
@@ -96,8 +98,7 @@ export const SubscriptionBenefitGrants = ({
       id: 'action',
       header: '',
       meta: { width: 88, align: 'end' },
-      cell: ({ row: { original: grant } }) =>
-        canManageCustomers ? <BenefitGrantAction grant={grant} /> : null,
+      cell: ({ row: { original: grant } }) => renderAction(grant),
     },
   ]
   const table = useCondensedTable({ columns, rows: grants, getRowId })
@@ -114,10 +115,13 @@ export const SubscriptionBenefitGrants = ({
         <CondensedTable
           table={table}
           renderCompact={(grant) => (
-            <Box alignItems="center" justifyContent="between" gap="l">
-              <Text truncate>{grant.benefit.description}</Text>
+            <>
+              <Box alignItems="center" justifyContent="between" gap="l">
+                {renderBenefit(grant)}
+                {renderAction(grant)}
+              </Box>
               <BenefitGrantStatus grant={grant} />
-            </Box>
+            </>
           )}
         />
       </Box>

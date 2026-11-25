@@ -85,7 +85,14 @@ export type ActivitySubscription = Pick<
 const toTime = (value: string | null | undefined): number | null =>
   value ? new Date(value).getTime() : null
 
-export type ActivityOrder = Pick<schemas['Order'], 'id' | 'created_at'>
+export type ActivityOrder = Pick<schemas['Order'], 'id' | 'created_at'> &
+  Partial<Pick<schemas['Order'], 'billing_reason'>>
+
+// A plan change or a usage charge made near a renewal is not that renewal.
+const isCycleOrder = ({ billing_reason: reason }: ActivityOrder) =>
+  reason === undefined ||
+  reason === 'subscription_create' ||
+  reason === 'subscription_cycle'
 
 // An order is made when the charge is due, a moment after the event it bills.
 const ORDER_MATCH_WINDOW = 24 * 60 * 60 * 1000
@@ -103,7 +110,7 @@ const findOrderAt = <T extends ActivityOrder>(
   at: number,
 ): T | undefined => {
   let closest: { order: T; distance: number } | undefined
-  for (const order of orders) {
+  for (const order of orders.filter(isCycleOrder)) {
     const distance = Math.abs(new Date(order.created_at).getTime() - at)
     if (
       distance <= ORDER_MATCH_WINDOW &&

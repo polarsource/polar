@@ -176,6 +176,23 @@ describe('getSubscriptionActivity orders', () => {
     })
   })
 
+  it('does not take a plan change made closer to the renewal for it', () => {
+    const activity = getSubscriptionActivity(subscription(), NOW, undefined, [
+      {
+        id: 'change',
+        created_at: '2026-06-10T00:00:01Z',
+        billing_reason: 'subscription_update',
+      },
+      {
+        id: 'renewal',
+        created_at: '2026-06-10T00:00:05Z',
+        billing_reason: 'subscription_cycle',
+      },
+    ])
+
+    expect(links(activity)).toMatchObject({ Renewed: 'renewal' })
+  })
+
   it('leaves an event without an order near it unlinked', () => {
     expect(
       links(getSubscriptionActivity(subscription(), NOW, undefined, [])),

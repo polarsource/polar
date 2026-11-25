@@ -30,14 +30,23 @@ export const BillingHistoryDetailRow = ({
   <Box as="li" display="block">
     <Box
       display={{ base: 'flex', md: 'none' }}
-      alignItems="center"
-      justifyContent="between"
-      gap="l"
+      flexDirection="column"
+      rowGap="xs"
       paddingHorizontal="m"
       paddingVertical="xs"
     >
-      <BillingHistoryDate at={at} muted />
-      {status}
+      <Box alignItems="center" justifyContent="between" gap="l">
+        <BillingHistoryDate at={at} muted />
+        <Text color="muted" tabularNums>
+          {amount}
+        </Text>
+      </Box>
+      <Box alignItems="center" justifyContent="between" gap="l">
+        <Box alignItems="center" minWidth={0}>
+          {children}
+        </Box>
+        <Box flexShrink={0}>{status}</Box>
+      </Box>
     </Box>
     <CondensedTableLine inset="m" desktopOnly borderless>
       <CondensedTableExpanderCell>

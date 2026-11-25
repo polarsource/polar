@@ -8,7 +8,10 @@ import { StatusLabel } from '@/components/Shared/StatusIcon'
 import { useDisputes } from '@/hooks/queries/disputes'
 import { usePayments } from '@/hooks/queries/payments'
 import { useRefunds } from '@/hooks/queries/refunds'
-import { DisputeStatusDisplayTitle } from '@/utils/dispute'
+import {
+  DisputeStatusDisplayTitle,
+  getDisputeReasonDisplay,
+} from '@/utils/dispute'
 import { getPaymentDeclineMessage } from '@/utils/payment'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -48,9 +51,7 @@ export const BillingHistoryAttempts = ({
     sorting: ['-created_at'],
     limit: 100,
   })
-  const { data: refunds } = useRefunds(
-    order.refunded_amount > 0 ? order.id : undefined,
-  )
+  const { data: refunds } = useRefunds(order.id)
   const { data: disputes } = useDisputes(organizationId, {
     order_id: order.id,
   })
@@ -117,7 +118,7 @@ export const BillingHistoryAttempts = ({
           <Name>Dispute</Name>
           <Truncated>
             <Text as="span" color="muted">
-              {dispute.reason}
+              {getDisputeReasonDisplay(dispute.reason)}
             </Text>
           </Truncated>
         </BillingHistoryDetailRow>

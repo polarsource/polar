@@ -11,6 +11,12 @@ interface SubscriptionAction {
   isPending: boolean
 }
 
+// The mutations throw an Error that already carries the server's message.
+const getErrorMessage = (error: unknown) =>
+  error instanceof Error
+    ? error.message
+    : extractApiErrorMessage(error as Record<string, unknown>)
+
 const runWithToast = async (
   mutate: () => Promise<unknown>,
   success: { title: string; description: string },
@@ -22,7 +28,7 @@ const runWithToast = async (
   } catch (error) {
     toast({
       title: 'Error',
-      description: `${failure}: ${extractApiErrorMessage(error as Record<string, unknown>)}`,
+      description: `${failure}: ${getErrorMessage(error)}`,
     })
   }
 }

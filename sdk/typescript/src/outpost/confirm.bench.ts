@@ -2,6 +2,7 @@ import { Redis } from "ioredis";
 import { once } from "node:events";
 import { afterAll, beforeAll, bench, describe } from "vitest";
 
+import { CONFIRM_SCRIPT } from "../redis";
 import {
   COLD_UNTIL,
   PENDING_COUNTS,
@@ -10,7 +11,6 @@ import {
   pendingEntries,
   pendingIds,
 } from "./benchmark";
-import { CONFIRM_SCRIPT } from "./scripts";
 import { startRedisServer, type RedisServer } from "./testing";
 
 const OPTIONS = { warmupTime: 500, time: 2_000 };

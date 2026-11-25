@@ -37,6 +37,7 @@ from redis.exceptions import ConnectionError as RedisConnectionError
 from redis.exceptions import TimeoutError as RedisTimeoutError
 
 from polar import __version__
+from polar._redis import RedisReconnectBackoff
 from polar.metering import EventInput
 from polar.metering.errors import UnknownMeterError
 from polar.outpost import NotReadyError
@@ -45,7 +46,6 @@ from polar.outpost.client import (
     CONFIRM_SCRIPT,
     WRITE_BUCKET_SCRIPT,
     Outpost,
-    RedisReconnectBackoff,
     _is_transient_error,
     is_sampled,
 )
@@ -95,7 +95,7 @@ async def redis_connection(
 ) -> collections.abc.AsyncIterator[tuple[str, Redis]]:
     server = FakeServer()
     monkeypatch.setattr(
-        "polar.outpost.client.Redis.from_url",
+        "polar._redis.Redis.from_url",
         lambda url, **kwargs: FakeAsyncRedis(server=server, **kwargs),
     )
     async with FakeAsyncRedis(server=server) as redis:
@@ -209,14 +209,14 @@ def _pulls(polar_requests: list[tuple[str, typing.Any]]) -> int:
 @pytest.fixture
 def clock(monkeypatch: pytest.MonkeyPatch) -> types.SimpleNamespace:
     clock = types.SimpleNamespace(elapsed=0.0)
-    monkeypatch.setattr(
-        "polar.outpost.client.time",
-        types.SimpleNamespace(
-            perf_counter=time.perf_counter,
-            time_ns=time.time_ns,
-            time=lambda: time.time() + clock.elapsed,
-        ),
+    patched_time = types.SimpleNamespace(
+        perf_counter=time.perf_counter,
+        time_ns=time.time_ns,
+        time=lambda: time.time() + clock.elapsed,
     )
+    monkeypatch.setattr("polar.outpost.client.time", patched_time)
+    monkeypatch.setattr("polar.metering.outbox.redis.time", patched_time)
+    monkeypatch.setattr("polar._redis.time", patched_time)
     return clock
 
 

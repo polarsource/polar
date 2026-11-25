@@ -4,6 +4,7 @@ export default defineConfig({
   entry: [
     "src/index.ts",
     "src/metering/index.ts",
+    "src/metering/outbox/redis.ts",
     "src/outpost/index.ts",
     "src/2026-04/index.ts",
     "src/2026-04/services/**/*.ts",

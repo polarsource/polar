@@ -18,3 +18,4 @@ export { BufferedMeteringStrategy } from "./buffered";
 export type { BufferedMeteringOptions, DropReason } from "./buffered";
 export type { ContextualEventInput, EventInput } from "./event";
 export type { CustomerMeter, MeterInput } from "./meter";
+export type { Outbox } from "./outbox/index";

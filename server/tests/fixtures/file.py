@@ -246,11 +246,19 @@ class TestFile:
         return head
 
 
-@pytest.fixture(autouse=True)
-def s3_stub() -> Iterator[Stubber]:
+@pytest.fixture(scope="session", autouse=True)
+def session_s3_stub() -> Iterator[Stubber]:
     with Stubber(s3_client) as stub:
         yield stub
-        stub.assert_no_pending_responses()
+
+
+@pytest.fixture
+def s3_stub(session_s3_stub: Stubber) -> Iterator[Stubber]:
+    try:
+        yield session_s3_stub
+        session_s3_stub.assert_no_pending_responses()
+    finally:
+        getattr(session_s3_stub, "_queue").clear()
 
 
 async def uploaded_fixture(

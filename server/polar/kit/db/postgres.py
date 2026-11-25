@@ -56,6 +56,7 @@ def create_async_engine(
     connect_timeout: float | None = None,
     statement_cache_size: int = 100,
     prepared_statement_cache_size: int = 0,
+    query_cache_size: int = 128,
     debug: bool = False,
     ssl: str | None = None,
 ) -> AsyncEngine:
@@ -95,7 +96,7 @@ def create_async_engine(
         pool_pre_ping=pool_pre_ping,
         pool_logging_name=pool_logging_name,
         json_serializer=json_serializer,
-        query_cache_size=128,
+        query_cache_size=query_cache_size,
         hide_parameters=not debug,
     )
 

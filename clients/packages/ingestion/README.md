@@ -68,7 +68,7 @@ With the Polar Event Ingestion API, you can annotate arbitrary costs with events
 
 This is especially powerful with LLM calls, as token consumption typically comes with a cost for your business.
 
-[Learn more about cost ingestion](https://polar.sh/docs/features/cost-insights/cost-events)
+[Learn more about cost ingestion](https://polar.sh/docs/features/cost-insights/introduction#cost-events)
 
 ```typescript
 import { Polar } from '@polar-sh/sdk'

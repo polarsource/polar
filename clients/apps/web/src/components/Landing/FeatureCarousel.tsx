@@ -55,7 +55,7 @@ const FEATURES: GraphicCardProps[] = [
   {
     title: 'Benefits',
     desc: 'Feature flags and entitlements that switch on with a purchase and off when it ends.',
-    href: '/docs/features/benefits',
+    href: '/docs/features/benefits/introduction',
     Graphic: BenefitsMark,
   },
   {

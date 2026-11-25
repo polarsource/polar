@@ -51,7 +51,7 @@ Turn usage into revenue. Polar is the financial layer for a new generation of in
 - **Growth:** 3.60% + 35¢ per transaction
 - **Scale:** 3.40% + 30¢ per transaction
 - Eligible startups can apply to the [Startup Program](https://polar.sh/startup-program) for a year on our most generous plan
-- Additional fees may apply. [Read more](https://polar.sh/docs/documentation/polar-as-merchant-of-record/fees)
+- Additional fees may apply. [Read more](https://polar.sh/docs/merchant-of-record/fees)
 
 ## Roadmap, Issues & Feature Requests
 

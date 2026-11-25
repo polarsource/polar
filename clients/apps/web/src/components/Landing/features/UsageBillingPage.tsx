@@ -9,7 +9,7 @@ import { FieldGuide } from '../chapters/FieldGuide'
 import { FeatureCTA, FeaturePageLayout } from './FeaturePageLayout'
 
 /** The docs live on their own app, so this is a plain link, as the other feature pages have it. */
-const DOCS = '/docs/features/usage-based-billing/introduction'
+const DOCS = '/docs/concepts/usage'
 
 const Section = ({
   id,

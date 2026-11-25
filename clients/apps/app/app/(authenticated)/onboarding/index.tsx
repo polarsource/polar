@@ -151,7 +151,7 @@ export default function Onboarding() {
                   <Touchable
                     onPress={() =>
                       Linking.openURL(
-                        'https://docs.polar.sh/merchant-of-record/acceptable-use',
+                        'https://polar.sh/legal/acceptable-use-policy',
                       )
                     }
                   >
@@ -167,7 +167,7 @@ export default function Onboarding() {
                 <Touchable
                   onPress={() =>
                     Linking.openURL(
-                      'https://docs.polar.sh/merchant-of-record/account-reviews',
+                      'https://polar.sh/docs/merchant-of-record/account-reviews',
                     )
                   }
                 >

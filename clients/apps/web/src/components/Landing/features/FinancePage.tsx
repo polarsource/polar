@@ -20,7 +20,7 @@ export const FinancePage = () => {
         graphic={ConcentricDraw}
         title="Money in, money out"
         description="Balance, ledger, fees, and payouts."
-        docsHref="/docs/features/finance/balance"
+        docsHref="/docs/features/finance/payouts"
       />
 
       <FeaturePageIntro>

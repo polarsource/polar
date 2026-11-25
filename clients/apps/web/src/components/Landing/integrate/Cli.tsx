@@ -6,7 +6,7 @@ import { WindowFrame } from '../story/Frame'
 import { FrameSheet, ImageBand } from './Backdrop'
 import { DocsLink } from './DocsLink'
 
-const CLI_DOCS = '/docs/integrate/webhooks/locally'
+const CLI_DOCS = '/docs/integrate/cli/webhooks'
 
 const TRANSCRIPT = [
   '% curl -fsSL https://polar.sh/install.sh | bash',

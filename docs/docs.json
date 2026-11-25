@@ -2779,7 +2779,7 @@
     },
     {
       "source": "/documentation/tools/polar-init",
-      "destination": "/introduction#quickstart-from-cli"
+      "destination": "/introduction#integrate-usage-based-credits-in-5-minutes"
     },
     {
       "source": "/documentation/basics/getting-started",
@@ -3099,11 +3099,11 @@
     },
     {
       "source": "/onboarding",
-      "destination": "/introduction#quickstart"
+      "destination": "/quickstart/overview"
     },
     {
       "source": "/docs/onboarding",
-      "destination": "/introduction#quickstart"
+      "destination": "/quickstart/overview"
     },
     {
       "source": "/benefits",

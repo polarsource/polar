@@ -1,5 +1,6 @@
 'use client'
 
+import { ManagedAsCodeHint } from '@/components/Dashboard/ManagedAsCodeBadge'
 import { Well, WellContent, WellHeader } from '@/components/Shared/Well'
 import { useIsManagedAsCode } from '@/hooks/permissions'
 import {
@@ -37,7 +38,9 @@ export const MeterIngestionGuide = () => {
                   <code>api_call</code>.
                 </p>
               </div>
-              {!managedAsCode && (
+              {managedAsCode ? (
+                <ManagedAsCodeHint resource="meters" align="start" />
+              ) : (
                 <Link
                   href={`/dashboard/${organization.slug}/products/meters/create`}
                 >

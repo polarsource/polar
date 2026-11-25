@@ -5,6 +5,7 @@ import { Alert, InlineModalHeader, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { assessmentFacts } from '../review/assessmentFacts'
 import { RecordCard, TaxAfterSwitchField } from '../review/ReviewRecordFields'
+import { paymentMethodDetail } from './cardStatus'
 import { SwitchStatusIndicator } from './SwitchStatusIndicator'
 import { periodEndMoveNotice } from './switchCopy'
 import { needsAttention, SwitchRow } from './switchRows'
@@ -136,16 +137,7 @@ export function SwitchRecordModal({
           {facts.status ? (
             <DetailCell label="Status" value={facts.status} />
           ) : null}
-          <DetailCell
-            label="Payment method"
-            value={
-              row.has_payment_method === false
-                ? 'No payment method'
-                : row.has_payment_method
-                  ? 'Ready to charge'
-                  : null
-            }
-          />
+          <DetailCell label="Payment method" value={paymentMethodDetail(row)} />
           {discount ? <DetailCell label="Discount" value={discount} /> : null}
           <DetailCell label="Renewal at source" value={facts.renewal} />
           {facts.automaticTax ? (

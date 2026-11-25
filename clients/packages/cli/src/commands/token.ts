@@ -1,5 +1,6 @@
 import { Effect, Option, Path, Redacted } from 'effect'
 import { Command, Flag } from 'effect/cli'
+import type { ActiveOrganization } from '@/schemas/Auth'
 import { Organizations } from '@/services/organizations'
 import { sdkHint, TokenHandoff } from '@/services/token-handoff'
 import { textOnly } from '@/utils/command'
@@ -14,18 +15,22 @@ const scope = Flag.String('scope').pipe(
   Flag.atLeast(0),
 )
 
-const announceTokenPage = (page: URL) =>
-  noteToStderr(
-    [
-      ui.blank,
-      ui.step('Opening your browser to create an organization access token...'),
-      ui.step('If it does not open, visit:'),
-      `    ${ui.cyan(page.toString())}`,
-      ui.blank,
-      ui.step('Waiting for the token...'),
-      ui.blank,
-    ].join('\n'),
-  )
+const announceTokenPage =
+  ({ slug, environment }: Pick<ActiveOrganization, 'slug' | 'environment'>) =>
+  (page: URL) =>
+    noteToStderr(
+      [
+        ui.blank,
+        ui.step(
+          `Opening your browser to create an access token for ${slug} on ${environment}...`,
+        ),
+        ui.step('If it does not open, visit:'),
+        `    ${ui.cyan(page.toString())}`,
+        ui.blank,
+        ui.step('Waiting for you to approve it in the browser...'),
+        ui.blank,
+      ].join('\n'),
+    )
 
 export const token = Command.make('token', { scope, org }).pipe(
   Command.withDescription(
@@ -61,16 +66,21 @@ export const token = Command.make('token', { scope, org }).pipe(
         const { slug, environment } = yield* (yield* Organizations).resolve(
           Option.getOrUndefined(flags.org),
         )
+        const organization = { slug, environment }
         const created = yield* (yield* TokenHandoff).receive(
           {
-            organization: { slug, environment },
+            organization,
             name: path.basename(process.cwd()),
             scopes: flags.scope,
           },
-          announceTokenPage,
+          announceTokenPage(organization),
         )
-        const hint = yield* sdkHint(environment)
-        if (hint) yield* noteToStderr(ui.step(hint))
+        yield* noteToStderr(
+          [
+            ui.success(`Created an access token for ${slug} on ${environment}`),
+            ...(yield* sdkHint(environment)).map(ui.step),
+          ].join('\n'),
+        )
         return Redacted.value(created)
       }),
     render: (created: string) => [created],

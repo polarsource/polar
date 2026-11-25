@@ -4471,8 +4471,9 @@ async def test_waits_on_a_cold_customers_fetch_at_the_same_cost_however_many_rea
         group.start_soon(
             functools.partial(first.meter, external_customer_id="alice", meter_id="meter")
         )
-        while not await redis.exists("outpost:v1:org-1:fetch:external:alice:tokens"):
-            await anyio.sleep(0.005)
+        with anyio.fail_after(5):
+            while not await redis.exists("outpost:v1:org-1:fetch:external:alice:tokens"):
+                await anyio.sleep(0.005)
         reads: list[float | None] = []
 
         async def read() -> None:

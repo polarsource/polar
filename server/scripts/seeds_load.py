@@ -1881,18 +1881,22 @@ async def _create_simple_fixture_graph(session: AsyncSession) -> None:
         # Written directly so the http:// mock issuer bypasses the HttpsUrl schema.
         sso_connection_data = org_data.get("sso_connection")
         if sso_connection_data is not None:
+            sso_connection_id = OrganizationSSOConnection.generate_id()
             session.add(
                 OrganizationSSOConnection(
+                    id=sso_connection_id,
                     organization=organization,
                     name=sso_connection_data["name"],
                     type=OrganizationSSOConnectionType.oidc,
                     configuration={
                         "issuer": sso_connection_data["issuer"],
                         "client_id": sso_connection_data["client_id"],
-                        "client_secret": sso_connection_data["client_secret"],
                         "auth_method": "client_secret",
                         "authorization_parameters": {},
                     },
+                    client_secret_encrypted=await OrganizationSSOConnection.encrypt_client_secret(
+                        sso_connection_id, sso_connection_data["client_secret"]
+                    ),
                     enabled=True,
                 )
             )
@@ -3182,7 +3186,7 @@ def polar_self_env(
                 if (
                     kept_webhook is None
                     and current_webhook_secret
-                    and w.secret == current_webhook_secret
+                    and (await w.get_secret()) == current_webhook_secret
                     and w.deleted_at is None
                 ):
                     w.url = WEBHOOK_URL
@@ -3199,13 +3203,17 @@ def polar_self_env(
                 webhook_secret = current_webhook_secret
             else:
                 webhook_secret = generate_webhook_secret()
+                webhook_id = WebhookEndpoint.generate_id()
                 session.add(
                     WebhookEndpoint(
+                        id=webhook_id,
                         organization=org,
                         url=WEBHOOK_URL,
                         name=WEBHOOK_NAME,
                         format=WebhookFormat.raw,
-                        secret=webhook_secret,
+                        secret_encrypted=await WebhookEndpoint.encrypt_secret(
+                            webhook_id, webhook_secret
+                        ),
                         secret_generated_at=utc_now(),
                         events=WEBHOOK_EVENTS,
                         enabled=True,

@@ -1922,10 +1922,14 @@ class TestUpdateSSOEnforced:
             "issuer": "https://idp.example.com",
             "client_id": "client-id",
             "auth_method": OIDCAuthMethod.client_secret,
-            "client_secret": "secret",
             "authorization_parameters": {},
         }
+        id = OrganizationSSOConnection.generate_id()
         connection = OrganizationSSOConnection(
+            id=id,
+            client_secret_encrypted=await OrganizationSSOConnection.encrypt_client_secret(
+                id, "secret"
+            ),
             organization=organization,
             type=OrganizationSSOConnectionType.oidc,
             configuration=configuration,

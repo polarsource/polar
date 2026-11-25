@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import TYPE_CHECKING, NotRequired, TypedDict
+from typing import TYPE_CHECKING, TypedDict
 from uuid import UUID
 
 from sqlalchemy import Boolean, ForeignKey, String, Uuid
@@ -33,7 +33,6 @@ class OIDCConfiguration(TypedDict):
     issuer: str
     client_id: str
     auth_method: OIDCAuthMethod
-    client_secret: NotRequired[str]
     authorization_parameters: dict[str, str]
 
 
@@ -78,5 +77,5 @@ class OrganizationSSOConnection(RecordModel):
 
     async def get_client_secret(self) -> str | None:
         if self.client_secret_encrypted is None:
-            return self.configuration.get("client_secret")
+            return None
         return await self.client_secret_encrypted.decrypt(id=str(self.id))

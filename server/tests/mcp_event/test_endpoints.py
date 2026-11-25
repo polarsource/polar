@@ -19,6 +19,7 @@ from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import webhook_endpoint_secret
 
 CALLBACK_URL = "https://example.com/callback"
 SECRET = "whsec_" + base64.b64encode(b"a" * 32).decode()
@@ -151,7 +152,7 @@ class TestSubscribeMCPEvent:
             format=WebhookFormat.mcp,
             events=[WebhookEventType.order_paid],
             url=CALLBACK_URL,
-            secret="whsec_old",
+            **await webhook_endpoint_secret("whsec_old"),
             organization=organization,
             expires_at=expires_at,
         )
@@ -172,7 +173,7 @@ class TestSubscribeMCPEvent:
         assert not route.called
         refreshed = await session.get(WebhookEndpoint, endpoint.id)
         assert refreshed is not None
-        assert refreshed.secret == SECRET
+        assert (await refreshed.get_secret()) == SECRET
         assert refreshed.secret_generated_at is not None
         assert refreshed.expires_at is not None
         assert refreshed.expires_at > expires_at
@@ -311,7 +312,7 @@ class TestUnsubscribeMCPEvent:
             format=WebhookFormat.mcp,
             events=[WebhookEventType.order_paid],
             url=CALLBACK_URL,
-            secret=SECRET,
+            **await webhook_endpoint_secret(SECRET),
             organization=organization,
             expires_at=utc_now() + timedelta(hours=1),
         )

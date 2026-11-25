@@ -48,6 +48,7 @@ from tests.fixtures.random_objects import (
     create_product,
     create_product_price_fixed,
     create_refund,
+    webhook_endpoint_secret,
 )
 
 
@@ -1384,7 +1385,7 @@ class TestGetWebhookEndpoints:
         endpoint = WebhookEndpoint(
             url="https://myapp.com/webhook",
             format=WebhookFormat.raw,
-            secret="secret",
+            **await webhook_endpoint_secret("secret"),
             organization=organization,
         )
         await save_fixture(endpoint)
@@ -1392,7 +1393,7 @@ class TestGetWebhookEndpoints:
             WebhookEndpoint(
                 url="https://chatgpt.com/mcp/events",
                 format=WebhookFormat.mcp,
-                secret="secret",
+                **await webhook_endpoint_secret("secret"),
                 organization=organization,
             )
         )

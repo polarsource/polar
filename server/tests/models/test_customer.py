@@ -20,6 +20,8 @@ class TestOAuthAccount:
         await customer.set_oauth_account(oauth_account, CustomerOAuthPlatform.discord)
 
         stored = customer.oauth_accounts["discord:123"]
+        assert "access_token" not in stored
+        assert "refresh_token" not in stored
         assert stored["access_token_encrypted"] != "access"
         assert stored["refresh_token_encrypted"] != "refresh"
         assert (
@@ -27,9 +29,7 @@ class TestOAuthAccount:
             == oauth_account
         )
 
-    async def test_github_tokens_not_encrypted(
-        self, organization: Organization
-    ) -> None:
+    async def test_github_tokens_not_stored(self, organization: Organization) -> None:
         customer = Customer(organization=organization, email="customer@example.com")
         customer._oauth_accounts = {}
 
@@ -38,4 +38,9 @@ class TestOAuthAccount:
             CustomerOAuthPlatform.github,
         )
 
-        assert "access_token_encrypted" not in customer.oauth_accounts["github:123"]
+        assert customer.oauth_accounts["github:123"] == {
+            "account_id": "123",
+            "account_username": None,
+            "expires_at": None,
+            "refresh_token_expires_at": None,
+        }

@@ -59,6 +59,7 @@ from polar.webhook.webhooks import (
     WebhookSubscriptionUpdatedPayload,
 )
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import webhook_endpoint_secret
 from tests.kit.test_versioning import CURRENT_VERSION, NEXT_VERSION
 
 
@@ -321,7 +322,7 @@ async def test_webhook_send(
         url="https://example.com/hook",
         format=WebhookFormat.raw,
         organization_id=organization.id,
-        secret="mysecret",
+        **await webhook_endpoint_secret("mysecret"),
         events=[WebhookEventType.subscription_created],  # subscribe to event
     )
     await save_fixture(endpoint)
@@ -351,7 +352,7 @@ async def test_webhook_send_subscription_migrated(
         url="https://example.com/hook",
         format=WebhookFormat.raw,
         organization_id=organization.id,
-        secret="mysecret",
+        **await webhook_endpoint_secret("mysecret"),
         events=[WebhookEventType.subscription_migrated],
         api_version=CURRENT_API_VERSION,
     )
@@ -392,7 +393,7 @@ async def test_webhook_send_not_subscribed_to_event(
         url="https://example.com/hook",
         format=WebhookFormat.raw,
         organization_id=organization.id,
-        secret="mysecret",
+        **await webhook_endpoint_secret("mysecret"),
         events=[],  # not subscribing
     )
     await save_fixture(endpoint)
@@ -417,7 +418,7 @@ async def test_webhook_send_expired_endpoint(
         url="https://example.com/hook",
         format=WebhookFormat.mcp,
         organization_id=organization.id,
-        secret="mysecret",
+        **await webhook_endpoint_secret("mysecret"),
         events=[WebhookEventType.subscription_created],
         expires_at=utc_now() - timedelta(minutes=1),
     )
@@ -463,7 +464,7 @@ async def test_webhook_delivery_success(
         url="https://example.com/hook",
         format=WebhookFormat.raw,
         organization_id=organization.id,
-        secret="mysecret",
+        **await webhook_endpoint_secret("mysecret"),
     )
     await save_fixture(endpoint)
 
@@ -501,7 +502,7 @@ async def test_webhook_delivery_500(
         url="https://example.com/hook",
         format=WebhookFormat.raw,
         organization_id=organization.id,
-        secret="mysecret",
+        **await webhook_endpoint_secret("mysecret"),
     )
     await save_fixture(endpoint)
 
@@ -558,7 +559,7 @@ async def test_webhook_delivery_http_error(
         url="https://example.com/hook",
         format=WebhookFormat.raw,
         organization_id=organization.id,
-        secret="mysecret",
+        **await webhook_endpoint_secret("mysecret"),
     )
     await save_fixture(endpoint)
 
@@ -611,7 +612,7 @@ async def test_webhook_standard_webhooks_compatible(
         url="https://example.com/hook",
         format=WebhookFormat.raw,
         organization_id=organization.id,
-        secret=secret,
+        **await webhook_endpoint_secret(secret),
     )
     await save_fixture(endpoint)
 
@@ -647,7 +648,7 @@ async def test_webhook_legacy_signature_when_secret_generated_before_cutoff(
         url="https://example.com/hook",
         format=WebhookFormat.raw,
         organization_id=organization.id,
-        secret=secret,
+        **await webhook_endpoint_secret(secret),
         secret_generated_at=WEBHOOK_STANDARD_SIGNATURE_CUTOFF - timedelta(days=1),
     )
     await save_fixture(endpoint)
@@ -684,7 +685,7 @@ async def test_webhook_spec_signature_when_secret_generated_at_cutoff(
         url="https://example.com/hook",
         format=WebhookFormat.raw,
         organization_id=organization.id,
-        secret=secret,
+        **await webhook_endpoint_secret(secret),
         secret_generated_at=WEBHOOK_STANDARD_SIGNATURE_CUTOFF,
     )
     await save_fixture(endpoint)

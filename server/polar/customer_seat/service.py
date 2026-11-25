@@ -308,7 +308,6 @@ class SeatService:
         if revoked_seat:
             seat = revoked_seat
             seat.status = SeatStatus.claimed if immediate_claim else SeatStatus.pending
-            seat.invitation_token = invitation_token
             seat.invitation_token_hash = invitation_token_hash
             seat.invitation_token_expires_at = token_expires_at
             seat.customer_id = target.customer.id if target.customer else None
@@ -320,7 +319,6 @@ class SeatService:
         else:
             seat = CustomerSeat(
                 status=SeatStatus.claimed if immediate_claim else SeatStatus.pending,
-                invitation_token=invitation_token,
                 invitation_token_hash=invitation_token_hash,
                 invitation_token_expires_at=token_expires_at,
                 customer=target.customer,
@@ -488,8 +486,7 @@ class SeatService:
         # Claim the seat
         seat.status = SeatStatus.claimed
         seat.claimed_at = datetime.now(UTC)
-        seat.invitation_token = None  # Single-use token
-        seat.invitation_token_hash = None
+        seat.invitation_token_hash = None  # Single-use token
 
         await session.flush()
 
@@ -568,7 +565,6 @@ class SeatService:
 
         seat.status = SeatStatus.revoked
         seat.revoked_at = datetime.now(UTC)
-        seat.invitation_token = None
         seat.invitation_token_hash = None
         seat.customer_id = None
         seat.member_id = None
@@ -632,7 +628,7 @@ class SeatService:
         if not seat.is_pending():
             raise SeatNotPending()
 
-        if seat.invitation_token_hash is None and seat.invitation_token is None:
+        if seat.invitation_token_hash is None:
             raise InvalidInvitationToken("")
 
         state = sa_inspect(seat)
@@ -650,7 +646,6 @@ class SeatService:
         invitation_token, invitation_token_hash, token_expires_at = (
             _generate_invitation_token()
         )
-        seat.invitation_token = invitation_token
         seat.invitation_token_hash = invitation_token_hash
         seat.invitation_token_expires_at = token_expires_at
         await session.flush()

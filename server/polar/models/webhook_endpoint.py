@@ -102,7 +102,6 @@ class WebhookEndpoint(ExternalIDMixin, RecordModel):
     url: Mapped[str] = mapped_column(String, nullable=False)
     name: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
     format: Mapped[WebhookFormat] = mapped_column(String, nullable=False)
-    secret: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
     secret_encrypted: Mapped[EncryptedString | None] = mapped_column(
         EncryptedStringType(WEBHOOK_ENDPOINT_SECRET_CONTEXT), nullable=True
     )
@@ -137,7 +136,5 @@ class WebhookEndpoint(ExternalIDMixin, RecordModel):
         )
 
     async def get_secret(self) -> str:
-        if self.secret_encrypted is None:
-            assert self.secret is not None
-            return self.secret
+        assert self.secret_encrypted is not None
         return await self.secret_encrypted.decrypt(id=str(self.id))

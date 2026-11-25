@@ -161,12 +161,10 @@ class TriggerFixtures:
             case WebhookEventType.customer_seat_claimed:
                 self.seat.status = SeatStatus.claimed
                 self.seat.claimed_at = self.now
-                self.seat.invitation_token = None
                 return self.seat
             case WebhookEventType.customer_seat_revoked:
                 self.seat.status = SeatStatus.revoked
                 self.seat.revoked_at = self.now
-                self.seat.invitation_token = None
                 return self.seat
             case (
                 WebhookEventType.member_created
@@ -547,7 +545,6 @@ class TriggerFixtures:
                 status=SeatStatus.pending,
                 customer=self.customer,
                 customer_id=self.customer.id,
-                invitation_token=f"polar_st_{self.random.getrandbits(128):032x}",
                 seat_metadata={},
                 member=self.member,
                 member_id=self.member.id,

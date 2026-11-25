@@ -195,11 +195,11 @@ class WebhookService:
             WebhookEndpoint(
                 **create_schema.model_dump(exclude={"secret"}, by_alias=True),
                 id=id,
-                secret=secret,
                 secret_encrypted=await WebhookEndpoint.encrypt_secret(id, secret),
                 secret_generated_at=secret_generated_at,
                 organization=organization,
-            )
+            ),
+            flush=True,
         )
 
         return endpoint
@@ -238,7 +238,7 @@ class WebhookService:
 
         if "secret" in update_dict:
             update_dict["secret_encrypted"] = await WebhookEndpoint.encrypt_secret(
-                endpoint.id, update_dict["secret"]
+                endpoint.id, update_dict.pop("secret")
             )
             update_dict["secret_generated_at"] = None
 
@@ -264,7 +264,6 @@ class WebhookService:
         return await repository.update(
             endpoint,
             update_dict={
-                "secret": secret,
                 "secret_encrypted": await WebhookEndpoint.encrypt_secret(
                     endpoint.id, secret
                 ),

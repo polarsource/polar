@@ -1,0 +1,35 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/BenefitsStep.tsx
+  s_587ceda2630946::t_dd58c1e14c7510 135
+server/polar/merchant_migration/adapters/lemon_squeezy.py
+  s_587ceda2630946::t_bf169781fa39f7 675,690-697
+server/polar/merchant_migration/benefits.py
+  s_587ceda2630946::t_e2a2e7cda0eb05 360,363
+server/tests/merchant_migration/test_benefits.py
+  s_e4f28be0e20585::t_4b5c2d359c70f4 1-50
+server/tests/merchant_migration/test_lemon_squeezy_adapter.py
+  s_587ceda2630946::t_16cbe70b599637 684-686,701-711,745
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "637692971a22b44149560f8d4db5b63ef056da28",
+  "prompts": {},
+  "sessions": {
+    "s_587ceda2630946": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "857c022f-2249-4a02-a91e-cde99fa20ae3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_e4f28be0e20585": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a211cc-c77a-7d50-93f7-803cd6527e7b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

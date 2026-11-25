@@ -481,6 +481,7 @@
                       "GET /v1/benefits/{id}",
                       "GET /v1/benefits/",
                       "GET /v1/benefits/{id}/grants",
+                      "GET /v1/benefits/{id}/files",
                       "PATCH /v1/benefits/{id}",
                       "DELETE /v1/benefits/{id}",
                       "GET /v1/benefit-grants/"
@@ -998,6 +999,7 @@
                       "GET /v1/benefits/{id}",
                       "GET /v1/benefits/",
                       "GET /v1/benefits/{id}/grants",
+                      "GET /v1/benefits/{id}/files",
                       "PATCH /v1/benefits/{id}",
                       "DELETE /v1/benefits/{id}",
                       "GET /v1/benefit-grants/"
@@ -1515,6 +1517,7 @@
                       "GET /v1/benefits/{id}",
                       "GET /v1/benefits/",
                       "GET /v1/benefits/{id}/grants",
+                      "GET /v1/benefits/{id}/files",
                       "POST /v1/benefit-grants/",
                       "PATCH /v1/benefit-grants/{id}",
                       "DELETE /v1/benefit-grants/{id}",

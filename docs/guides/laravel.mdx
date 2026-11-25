@@ -78,6 +78,8 @@ This route creates a Checkout Session, redirects the customer to it, and sends t
 Route::get('/checkout', [CheckoutController::class, 'handle'])->middleware('auth');
 ```
 
+The `auth` middleware sends visitors who aren't signed in to your login page first, so every checkout belongs to one of your users. If your app has no login yet, add one with a [Laravel starter kit](https://laravel.com/docs/starter-kits). To sell to guests instead, drop the middleware and the `external_customer_id` line below.
+
 Then create `CheckoutController` in `app/Http/Controllers`:
 
 ```php

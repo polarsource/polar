@@ -4467,6 +4467,7 @@ class TestHandlePayment:
         await session.flush()
 
         assert result.status == OrderStatus.paid
+        assert result.invoice_number is not None
         assert subscription.status == SubscriptionStatus.active
         assert subscription.ends_at is None
         assert subscription.current_period_start == frozen_time
@@ -6851,28 +6852,6 @@ class TestHandleOnSessionPayment:
             product=product,
             customer=customer,
             status=OrderStatus.paid,  # Not pending
-        )
-        await save_fixture(order)
-
-        with pytest.raises(OrderNotEligibleForRetry):
-            await order_service.handle_on_session_payment(
-                session, order, "ctoken_test", PaymentProcessor.stripe
-            )
-
-    async def test_handle_on_session_payment_no_next_attempt(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        """Test retry payment with no next payment attempt scheduled."""
-        order = await create_order(
-            save_fixture,
-            product=product,
-            customer=customer,
-            status=OrderStatus.pending,
-            next_payment_attempt_at=None,  # No retry scheduled
         )
         await save_fixture(order)
 

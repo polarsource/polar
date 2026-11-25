@@ -534,6 +534,8 @@ class OrderService:
         session: AsyncSession,
         order: Order,
         order_update: OrderUpdate | CustomerOrderUpdate,
+        *,
+        strict_tax: bool = False,
     ) -> Order:
         if order.payment_lock_acquired_at is not None:
             raise PaymentAlreadyInProgress(order)
@@ -669,7 +671,7 @@ class OrderService:
                 tax_exempted=subscription.tax_exempted
                 if subscription is not None
                 else False,
-                allow_silent_failure=True,
+                allow_silent_failure=not strict_tax,
             )
             order.update_amounts(amounts)
             order = await repository.update(order)
@@ -2313,10 +2315,6 @@ class OrderService:
             log.warning("Order is not pending", order_id=order.id, status=order.status)
             raise OrderNotEligibleForRetry(order)
 
-        if order.next_payment_attempt_at is None:
-            log.warning("Order is not eligible for retry", order_id=order.id)
-            raise OrderNotEligibleForRetry(order)
-
         if order.subscription is None:
             log.warning("Order is not a subscription", order_id=order.id)
             raise OrderNotEligibleForRetry(order)
@@ -2440,10 +2438,6 @@ class OrderService:
                     processor_metadata["intent_client_secret"] = (
                         payment_intent.client_secret
                     )
-                if payment_intent.status not in ("succeeded", "requires_action"):
-                    error = getattr(payment_intent, "last_payment_error", None)
-                    if error is not None and error.message:
-                        processor_metadata["intent_error"] = error.message
                 order.payment_processor_metadata = processor_metadata
 
                 repository = OrderRepository.from_session(session)
@@ -2472,6 +2466,8 @@ class OrderService:
         update_dict: dict[str, Any] = {}
 
         if order.status == OrderStatus.pending:
+            if order.stripe_invoice_id is None:
+                order = await self._assign_invoice_number(session, order)
             update_dict["status"] = OrderStatus.paid
 
         # Clear retry attempt date on successful payment

@@ -1,20 +1,242 @@
+from uuid import uuid4
+
 import pytest
+import stripe as stripe_lib
+from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
+from polar.customer_portal.schemas.order import (
+    CustomerOrderPayConfirmationToken,
+    CustomerOrderPayPaymentMethod,
+)
 from polar.customer_portal.service.order import (
     CustomerOrderSortProperty,
+    OrderNotEligibleForRetry,
 )
 from polar.customer_portal.service.order import customer_order as customer_order_service
+from polar.enums import PaymentProcessor
+from polar.exceptions import PolarRequestValidationError
+from polar.kit.address import AddressInput
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
-from polar.models import Customer, Organization, Product
+from polar.models import Customer, Order, Organization, Product
+from polar.models.order import OrderStatus
+from polar.models.subscription import SubscriptionStatus
+from polar.order.service import PaymentError
+from polar.order.service import order as order_service
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_order,
     create_product,
+    create_subscription,
 )
+
+
+@pytest.mark.anyio
+class TestPay:
+    @pytest.fixture
+    async def draft_order(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> Order:
+        product.is_tax_applicable = False
+        customer.stripe_customer_id = "cus_test"
+        subscription = await create_subscription(
+            save_fixture,
+            customer=customer,
+            product=product,
+            status=SubscriptionStatus.trial_ended,
+        )
+        return await order_service.create_subscription_reactivation_order(
+            session, subscription
+        )
+
+    async def test_updates_billing_and_submits_saved_payment_method(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        mocker: MockerFixture,
+    ) -> None:
+        order = await create_order(
+            save_fixture, customer=customer, status=OrderStatus.pending
+        )
+        submit = mocker.patch(
+            "polar.order.service.OrderService.handle_on_session_payment",
+            return_value=order,
+        )
+        payment_method_id = uuid4()
+        order_pay = CustomerOrderPayPaymentMethod(
+            billing_name="Updated billing name",
+            billing_address=AddressInput.model_validate({"country": "FR"}),
+            payment_method_id=payment_method_id,
+        )
+
+        result = await customer_order_service.pay(session, order, order_pay)
+
+        assert result.billing_name == "Updated billing name"
+        submit.assert_awaited_once_with(
+            session,
+            order,
+            confirmation_token_id=None,
+            payment_processor=PaymentProcessor.stripe,
+            payment_method_id=payment_method_id,
+        )
+
+    async def test_updates_billing_and_submits_confirmation_token(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        mocker: MockerFixture,
+    ) -> None:
+        order = await create_order(
+            save_fixture, customer=customer, status=OrderStatus.pending
+        )
+        submit = mocker.patch(
+            "polar.order.service.OrderService.handle_on_session_payment",
+            return_value=order,
+        )
+        order_pay = CustomerOrderPayConfirmationToken(
+            billing_name="Updated billing name",
+            billing_address=AddressInput.model_validate({"country": "FR"}),
+            payment_processor=PaymentProcessor.stripe,
+            confirmation_token_id="ctoken_test",
+        )
+
+        result = await customer_order_service.pay(session, order, order_pay)
+
+        assert result.billing_name == "Updated billing name"
+        submit.assert_awaited_once_with(
+            session,
+            order,
+            confirmation_token_id="ctoken_test",
+            payment_processor=PaymentProcessor.stripe,
+            payment_method_id=None,
+        )
+
+    async def test_draft_becomes_pending_when_payment_is_accepted(
+        self, session: AsyncSession, draft_order: Order, mocker: MockerFixture
+    ) -> None:
+        submit = mocker.patch(
+            "polar.order.service.stripe_service.create_payment_intent",
+            return_value=stripe_lib.PaymentIntent.construct_from(
+                {"id": "pi_test", "status": "succeeded", "client_secret": None}, None
+            ),
+        )
+        order_pay = CustomerOrderPayConfirmationToken(
+            billing_address=AddressInput.model_validate({"country": "FR"}),
+            payment_processor=PaymentProcessor.stripe,
+            confirmation_token_id="ctoken_test",
+        )
+
+        result = await customer_order_service.pay(session, draft_order, order_pay)
+
+        submit.assert_awaited_once()
+        assert result.status == OrderStatus.pending
+        assert result.next_payment_attempt_at is None
+        assert result.payment_processor_metadata["intent_status"] == "succeeded"
+        assert result.invoice_number is None
+        assert result.subscription is not None
+        assert result.subscription.status == SubscriptionStatus.trial_ended
+
+    async def test_declined_payment_rolls_back_to_draft(
+        self, session: AsyncSession, draft_order: Order, mocker: MockerFixture
+    ) -> None:
+        original_billing_name = draft_order.billing_name
+        submit = mocker.patch(
+            "polar.order.service.stripe_service.create_payment_intent",
+            side_effect=stripe_lib.CardError(
+                "Your card was declined.", None, "card_declined"
+            ),
+        )
+        order_pay = CustomerOrderPayConfirmationToken(
+            billing_name="Updated billing name",
+            billing_address=AddressInput.model_validate({"country": "FR"}),
+            payment_processor=PaymentProcessor.stripe,
+            confirmation_token_id="ctoken_test",
+        )
+
+        with pytest.raises(PaymentError):
+            async with session.begin_nested():
+                await customer_order_service.pay(session, draft_order, order_pay)
+
+        submit.assert_awaited_once()
+        await session.refresh(draft_order)
+        assert draft_order.status == OrderStatus.draft
+        assert draft_order.billing_name == original_billing_name
+        assert draft_order.payment_processor_metadata == {}
+
+    @pytest.mark.parametrize("status", [OrderStatus.paid, OrderStatus.void])
+    async def test_rejects_closed_order(
+        self,
+        session: AsyncSession,
+        draft_order: Order,
+        status: OrderStatus,
+        mocker: MockerFixture,
+    ) -> None:
+        draft_order.status = status
+        submit = mocker.patch(
+            "polar.order.service.stripe_service.create_payment_intent"
+        )
+        order_pay = CustomerOrderPayConfirmationToken(
+            billing_address=AddressInput.model_validate({"country": "FR"}),
+            payment_processor=PaymentProcessor.stripe,
+            confirmation_token_id="ctoken_test",
+        )
+
+        with pytest.raises(OrderNotEligibleForRetry):
+            await customer_order_service.pay(session, draft_order, order_pay)
+
+        assert draft_order.status == status
+        submit.assert_not_awaited()
+
+    async def test_rejects_stale_trial_draft(
+        self, session: AsyncSession, draft_order: Order, mocker: MockerFixture
+    ) -> None:
+        assert draft_order.subscription is not None
+        draft_order.subscription.status = SubscriptionStatus.active
+        submit = mocker.patch(
+            "polar.order.service.stripe_service.create_payment_intent"
+        )
+        order_pay = CustomerOrderPayConfirmationToken(
+            billing_address=AddressInput.model_validate({"country": "FR"}),
+            payment_processor=PaymentProcessor.stripe,
+            confirmation_token_id="ctoken_test",
+        )
+
+        with pytest.raises(OrderNotEligibleForRetry):
+            await customer_order_service.pay(session, draft_order, order_pay)
+
+        assert draft_order.status == OrderStatus.draft
+        submit.assert_not_awaited()
+
+    async def test_taxable_draft_requires_billing_address(
+        self, session: AsyncSession, draft_order: Order, mocker: MockerFixture
+    ) -> None:
+        assert draft_order.product is not None
+        draft_order.product.is_tax_applicable = True
+        draft_order.billing_address = None
+        submit = mocker.patch(
+            "polar.order.service.OrderService.handle_on_session_payment"
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await customer_order_service.pay(
+                session,
+                draft_order,
+                CustomerOrderPayConfirmationToken(
+                    payment_processor=PaymentProcessor.stripe,
+                    confirmation_token_id="ctoken_test",
+                ),
+            )
+
+        submit.assert_not_awaited()
 
 
 @pytest.mark.anyio

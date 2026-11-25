@@ -15,6 +15,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.models import Order, Product
+from polar.models.order import OrderStatus
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.order.repository import OrderRepository
@@ -22,11 +23,15 @@ from polar.order.service import InvoiceDoesNotExist, PaymentError, ReceiptNotAll
 from polar.order.service import order as order_service
 from polar.receipt.service import receipt as receipt_service
 from polar.subscription.repository import SubscriptionRepository
+from polar.tax.calculation.base import TaxCalculationLogicalError
 
 from ..repository.order import CustomerOrderRepository
 from ..schemas.order import (
     CustomerOrderInvoice,
+    CustomerOrderPay,
+    CustomerOrderPayConfirmationToken,
     CustomerOrderPaymentConfirmation,
+    CustomerOrderPayPaymentMethod,
     CustomerOrderReceipt,
     CustomerOrderUpdate,
 )
@@ -183,6 +188,62 @@ class CustomerOrderService:
         self, session: AsyncSession, order: Order, order_update: CustomerOrderUpdate
     ) -> Order:
         return await order_service.update(session, order, order_update)
+
+    async def pay(
+        self, session: AsyncSession, order: Order, order_pay: CustomerOrderPay
+    ) -> Order:
+        original_status = order.status
+        if original_status != OrderStatus.pending and (
+            original_status != OrderStatus.draft
+            or order.subscription is None
+            or order.subscription.status != SubscriptionStatus.trial_ended
+        ):
+            raise OrderNotEligibleForRetry(order)
+
+        try:
+            order = await order_service.update(
+                session, order, order_pay, strict_tax=True
+            )
+        except TaxCalculationLogicalError as e:
+            raise PolarRequestValidationError(
+                [
+                    ValidationError(
+                        type="value_error",
+                        loc=("body", "billing_address"),
+                        msg=e.message,  # pyright: ignore
+                        input=order.billing_address,
+                    )
+                ]
+            ) from e
+
+        if order.billing_address is None:
+            raise PolarRequestValidationError(
+                [
+                    ValidationError(
+                        type="value_error",
+                        loc=("body", "billing_address"),
+                        msg="A billing address is required to calculate tax.",
+                        input=order.billing_address,
+                    )
+                ]
+            )
+
+        try:
+            order.status = OrderStatus.pending
+            return await order_service.handle_on_session_payment(
+                session,
+                order,
+                confirmation_token_id=order_pay.confirmation_token_id
+                if isinstance(order_pay, CustomerOrderPayConfirmationToken)
+                else None,
+                payment_processor=PaymentProcessor.stripe,
+                payment_method_id=order_pay.payment_method_id
+                if isinstance(order_pay, CustomerOrderPayPaymentMethod)
+                else None,
+            )
+        except PaymentError:
+            order.status = original_status
+            raise
 
     async def trigger_invoice_generation(
         self, session: AsyncSession, order: Order

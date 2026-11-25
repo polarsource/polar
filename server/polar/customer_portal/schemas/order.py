@@ -1,10 +1,10 @@
 from typing import Annotated
 
-from pydantic import UUID4, AliasChoices, AliasPath, Field, model_validator
+from pydantic import UUID4, AliasChoices, AliasPath, ConfigDict, Field, model_validator
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.enums import PaymentProcessor
-from polar.kit.schemas import MultipleQueryFilter, Schema
+from polar.kit.schemas import MultipleQueryFilter, Schema, SetSchemaReference
 from polar.kit.versioning import QuerySchema, Version
 from polar.models.product import ProductBillingType
 from polar.order.schemas import OrderBase, OrderItemSchema, OrderUpdateBase
@@ -61,6 +61,7 @@ class CustomerOrder(OrderBase):
     description: str = Field(
         description="A summary description of the order.", examples=["Pro Plan"]
     )
+    payment_processor_metadata: dict[str, str]
 
 
 class CustomerOrderInvoice(Schema):
@@ -83,6 +84,25 @@ class CustomerOrderCreate(Schema):
 
 class CustomerOrderUpdate(OrderUpdateBase):
     """Schema to update an order."""
+
+
+class CustomerOrderPayPaymentMethod(CustomerOrderUpdate):
+    model_config = ConfigDict(extra="forbid")
+
+    payment_method_id: UUID4
+
+
+class CustomerOrderPayConfirmationToken(CustomerOrderUpdate):
+    model_config = ConfigDict(extra="forbid")
+
+    payment_processor: PaymentProcessor
+    confirmation_token_id: str
+
+
+CustomerOrderPay = Annotated[
+    CustomerOrderPayPaymentMethod | CustomerOrderPayConfirmationToken,
+    SetSchemaReference("CustomerOrderPay"),
+]
 
 
 class CustomerOrderPaymentStatus(Schema):

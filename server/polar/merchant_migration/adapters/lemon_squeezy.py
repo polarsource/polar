@@ -540,6 +540,7 @@ class LemonSqueezyAdapter:
             keys[order_item_id] = CanonicalLicenseKey(
                 key=str(license_key["attributes"]["key"]),
                 activations=activations.get(str(license_key["id"]), []),
+                expires_at=parse_datetime(license_key["attributes"].get("expires_at")),
             )
         self._license_keys = keys
         return keys
@@ -786,6 +787,7 @@ class LemonSqueezyAdapter:
         return CanonicalLicenseKey(
             key=str(license_key["attributes"]["key"]),
             activations=activations.get(str(license_key["id"]), []),
+            expires_at=parse_datetime(license_key["attributes"].get("expires_at")),
         )
 
     async def stop_source_subscription(

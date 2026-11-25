@@ -12,6 +12,7 @@ import mimetypes
 import tempfile
 from collections.abc import Collection, Sequence
 from dataclasses import dataclass
+from datetime import datetime
 from typing import IO
 from uuid import UUID
 
@@ -339,7 +340,7 @@ class MigrationBenefits:
                     member,
                     properties=properties,
                 )
-                queue_kept_activations(grant, purchase.license_key)
+                queue_kept_key_state(grant, purchase.license_key)
             except BenefitGrantAlreadyExists:
                 # One manual grant per buyer and benefit: a rerun, or a second
                 # purchase of the same product, which doesn't get its own key.
@@ -383,16 +384,20 @@ async def kept_key_properties(
     return {} if taken is not None else {"user_provided_key": license_key.key}
 
 
-def queue_kept_activations(
+def queue_kept_key_state(
     grant: BenefitGrant, license_key: CanonicalLicenseKey | None
 ) -> None:
-    """Bring the source key's activations once the grant has made the key.
-    Read now: the source may be gone by the time the grant runs."""
+    """Bring the source key's activations and, for a one-time purchase, its
+    expiry, once the grant has made the key. Read now: the source may be gone
+    by the time the grant runs. A subscription's key follows the subscription,
+    so it keeps no expiry."""
     if (
         license_key is None
-        or not license_key.activations
         or grant.properties.get("user_provided_key") != license_key.key
     ):
+        return
+    expires_at = license_key.expires_at if grant.subscription_id is None else None
+    if not license_key.activations and expires_at is None:
         return
     enqueue_job(
         "merchant_migration.keep_license_key_activations",
@@ -401,15 +406,20 @@ def queue_kept_activations(
             {"id": activation.id, "label": activation.label}
             for activation in license_key.activations
         ],
+        expires_at=expires_at.isoformat() if expires_at else None,
     )
 
 
-async def keep_activations(
-    session: AsyncSession, benefit_grant_id: UUID, activations: list[dict[str, str]]
+async def keep_key_state(
+    session: AsyncSession,
+    benefit_grant_id: UUID,
+    activations: list[dict[str, str]],
+    expires_at: datetime | None = None,
 ) -> bool:
     """Give the key the grant kept the activations it has on the source, under
-    the same ids, so activated devices keep validating. False while the grant
-    hasn't made the key yet."""
+    the same ids, so activated devices keep validating, and the source's expiry,
+    so the key doesn't start a new term. False while the grant hasn't made the
+    key yet."""
     grant = await BenefitGrantRepository.from_session(session).get_by_id(
         benefit_grant_id
     )
@@ -425,6 +435,9 @@ async def keep_activations(
         "user_provided_key"
     ):
         return True
+    if expires_at is not None:
+        license_key.expires_at = expires_at
+        session.add(license_key)
     ids = [UUID(activation["id"]) for activation in activations]
     taken = await repository.get_activation_ids(ids)
     for activation_id, activation in zip(ids, activations, strict=True):

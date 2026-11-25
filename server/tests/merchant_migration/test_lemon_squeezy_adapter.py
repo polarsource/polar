@@ -813,6 +813,7 @@ class TestListPurchases:
                                 "order_item_id": 84,
                                 "key": "KEY-LIFETIME",
                                 "instances_count": 1,
+                                "expires_at": "2027-03-01T00:00:00Z",
                             },
                         },
                         {
@@ -844,6 +845,7 @@ class TestListPurchases:
                 "74",
                 CanonicalLicenseKey(
                     key="KEY-LIFETIME",
+                    expires_at=datetime(2027, 3, 1, tzinfo=UTC),
                     activations=[
                         CanonicalLicenseKeyActivation(
                             id=ACTIVATION_ID, label="Studio Mac"

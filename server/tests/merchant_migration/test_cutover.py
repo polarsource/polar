@@ -400,7 +400,11 @@ class TestRun:
         outcome = await cutover(
             _FakeSourceAdapter(
                 canonical_subscription(),
-                license_key=CanonicalLicenseKey(key="KEY-1", activations=[activation]),
+                license_key=CanonicalLicenseKey(
+                    key="KEY-1",
+                    activations=[activation],
+                    expires_at=datetime(2027, 3, 1, tzinfo=UTC),
+                ),
             )
         )
 
@@ -423,6 +427,7 @@ class TestRun:
             "merchant_migration.keep_license_key_activations",
             benefit_grant_id=grant.id,
             activations=[{"id": activation.id, "label": "Ada's laptop"}],
+            expires_at=None,
         )
 
     async def test_price_on_a_later_imported_product_moves_onto_the_first(

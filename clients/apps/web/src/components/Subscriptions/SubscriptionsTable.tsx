@@ -18,34 +18,51 @@ import { format } from 'date-fns'
 import { useEffect } from 'react'
 import { FOOTER_HEIGHT } from './Gantt/scale'
 import { SubscriptionStatusIcon } from './SubscriptionStatusIcon'
-import { formatSubscriptionPrice, getSubscriptionStatusLabel } from './utils'
+import { StatusTooltip } from '@/components/Shared/StatusIcon'
+import {
+  formatSubscriptionPrice,
+  getSubscriptionStatusDescription,
+  getSubscriptionStatusLabel,
+} from './utils'
 
 type Subscription = schemas['Subscription']
 
 const formatDate = (date: string) => format(new Date(date), 'MMM d, yyyy')
+const formatTime = (date: string) => format(new Date(date), 'HH:mm')
 
 const getCustomerLabel = ({ customer }: Subscription) =>
   customer.name || customer.email || '—'
 
-const getNextStep = (subscription: Subscription): string => {
+const RENEWING_STATUSES = new Set<Subscription['status']>([
+  'active',
+  'trialing',
+  'past_due',
+])
+
+// What is still to come for the subscription. Null once nothing is: it has
+// ended, or sits in a state with no date set to leave it.
+const getNextStep = (subscription: Subscription): string | null => {
   const { status, current_period_end: periodEnd } = subscription
-  if (subscription.ended_at) return `Ended ${formatDate(subscription.ended_at)}`
+  if (subscription.ended_at) return null
   if (subscription.ends_at) return `Ends ${formatDate(subscription.ends_at)}`
   if (status === 'paused') {
     return subscription.resumes_at
       ? `Resumes ${formatDate(subscription.resumes_at)}`
-      : '—'
+      : null
   }
+  if (!RENEWING_STATUSES.has(status)) return null
   if (subscription.pause_at_period_end) return `Pauses ${formatDate(periodEnd)}`
   if (status === 'trialing') return `Trial ends ${formatDate(periodEnd)}`
   return `Renews ${formatDate(periodEnd)}`
 }
 
 const StatusCell = ({ subscription }: { subscription: Subscription }) => (
-  <>
-    <SubscriptionStatusIcon subscription={subscription} />
-    <Text truncate>{getSubscriptionStatusLabel(subscription)}</Text>
-  </>
+  <StatusTooltip description={getSubscriptionStatusDescription(subscription)}>
+    <Box alignItems="center" gap="s" minWidth={0}>
+      <SubscriptionStatusIcon subscription={subscription} />
+      <Text truncate>{getSubscriptionStatusLabel(subscription)}</Text>
+    </Box>
+  </StatusTooltip>
 )
 
 const ProductCell = ({
@@ -84,10 +101,23 @@ const getColumns = (
     cell: ({ row }) => <Text truncate>{getCustomerLabel(row.original)}</Text>,
   },
   {
-    accessorKey: 'status',
-    header: 'Status',
-    meta: { width: 104, skeleton: [64, 56, 72] },
-    cell: ({ row }) => <StatusCell subscription={row.original} />,
+    accessorKey: 'started_at',
+    header: 'Started',
+    sortDescFirst: true,
+    meta: { width: 144, skeleton: [120] },
+    cell: ({ row: { original: subscription } }) =>
+      subscription.started_at ? (
+        <>
+          <Text tabularNums wrap="nowrap">
+            {formatDate(subscription.started_at)}
+          </Text>
+          <Text color="muted" tabularNums wrap="nowrap">
+            {formatTime(subscription.started_at)}
+          </Text>
+        </>
+      ) : (
+        <Text color="muted">—</Text>
+      ),
   },
   {
     id: 'product',
@@ -97,6 +127,12 @@ const getColumns = (
     cell: ({ row }) => (
       <ProductCell subscription={row.original} organization={organization} />
     ),
+  },
+  {
+    accessorKey: 'status',
+    header: 'Status',
+    meta: { width: 104, skeleton: [64, 56, 72] },
+    cell: ({ row }) => <StatusCell subscription={row.original} />,
   },
   {
     id: 'discount',
@@ -109,17 +145,6 @@ const getColumns = (
     ),
   },
   {
-    accessorKey: 'started_at',
-    header: 'Started',
-    sortDescFirst: true,
-    meta: { width: 96, skeleton: [80] },
-    cell: ({ row: { original: subscription } }) => (
-      <Text color="muted" tabularNums wrap="nowrap">
-        {subscription.started_at ? formatDate(subscription.started_at) : '—'}
-      </Text>
-    ),
-  },
-  {
     accessorKey: 'current_period_end',
     header: 'Next',
     sortDescFirst: false,
@@ -127,17 +152,6 @@ const getColumns = (
     cell: ({ row }) => (
       <Text color="muted" tabularNums truncate>
         {getNextStep(row.original)}
-      </Text>
-    ),
-  },
-  {
-    accessorKey: 'amount',
-    header: 'Price',
-    sortDescFirst: true,
-    meta: { width: 112, align: 'end', skeleton: [72, 64, 80] },
-    cell: ({ row }) => (
-      <Text tabularNums wrap="nowrap">
-        {formatSubscriptionPrice(row.original)}
       </Text>
     ),
   },
@@ -154,8 +168,13 @@ const CompactRow = ({ subscription }: { subscription: Subscription }) => (
       </Box>
     </Box>
     <Text variant="caption" color="muted" truncate>
-      {subscription.product.name} · {getSubscriptionStatusLabel(subscription)} ·{' '}
-      {getNextStep(subscription)}
+      {[
+        subscription.product.name,
+        getSubscriptionStatusLabel(subscription),
+        getNextStep(subscription),
+      ]
+        .filter(Boolean)
+        .join(' · ')}
     </Text>
   </>
 )

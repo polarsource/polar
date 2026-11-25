@@ -22,9 +22,78 @@ Some saved payment methods can't be carried over from Lemon Squeezy. Customers w
 
 We're still exploring what this will look like for your customers, but we'll make sure the experience is smooth. Their subscription stays on Lemon Squeezy until they've updated their payment method, or until the migration deadline, so you don't miss any payments.
 
-## License keys
+## Benefits and license keys
 
-Many of you ship desktop apps or plugins that store a license key on the customer's device, so handing out new keys isn't an option. We're looking into a way to bring your existing Lemon Squeezy license keys over to Polar unchanged, so customers can keep using the key they already have.
+When you migrate from Lemon Squeezy under **Settings → Migrations**, Polar reads what each of your products gives buyers and sets it up as [benefits](/features/benefits/introduction) on the imported products. You pick which ones to bring over, and you can edit them later from **Benefits**.
+
+| On Lemon Squeezy | On Polar                                                                                            |
+| ---------------- | --------------------------------------------------------------------------------------------------- |
+| License keys     | [License key benefit](/features/benefits/license-keys), with the same activation limit and expiry |
+| Files            | [File downloads benefit](/features/benefits/file-downloads), with the files copied to Polar        |
+| Links            | [Custom benefit](/features/benefits/custom), with the links in its note                            |
+
+### Who gets them, and when
+
+- **Subscribers** get the benefits when their subscription switches to Polar.
+- **Past one-time buyers** get them as soon as you set up benefits. This covers paid and partly refunded orders. Polar doesn't email them: they find their keys and files in the customer portal.
+
+### Customers keep their license key
+
+Each customer keeps the license key they already have, with the same value. Devices stay activated too: Polar keeps each Lemon Squeezy activation under the same ID, so the `instance_id` your app saved works as the `activation_id` on Polar.
+
+A few things don't carry over:
+
+- **Usage and validation counts** start at zero.
+- **Expiry dates** restart for one-time keys: a key that lasts a year lasts a year from the day it moves. Subscription keys don't expire on their own; they follow the subscription.
+- **Keys that are disabled or expired** on Lemon Squeezy aren't brought over. A subscriber gets a new key when they switch.
+- **A key whose value is already used** in your Polar organization is replaced with a new key.
+- **Devices activated on Lemon Squeezy after the move** aren't on Polar. They activate once on Polar.
+
+### Update your app before you switch
+
+A subscriber's key only reaches Polar when their subscription switches, so for a while some keys are on Lemon Squeezy and others on Polar. Before you switch any subscriptions, ship an app update that checks the key with Polar first and falls back to Lemon Squeezy:
+
+```ts
+async function isLicenseValid(key: string, instanceId: string) {
+  const polar = await fetch(
+    "https://api.polar.sh/v1/customer-portal/license-keys/validate",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        key,
+        organization_id: POLAR_ORGANIZATION_ID,
+        activation_id: instanceId,
+      }),
+    },
+  );
+  if (polar.ok) {
+    return (await polar.json()).status === "granted";
+  }
+  if (polar.status !== 404) {
+    throw new Error("Couldn't reach Polar"); // Handle it as you do today.
+  }
+
+  // Polar doesn't know this key or device yet: ask Lemon Squeezy.
+  const lemonSqueezy = await fetch(
+    "https://api.lemonsqueezy.com/v1/licenses/validate",
+    {
+      method: "POST",
+      headers: { Accept: "application/json" },
+      body: new URLSearchParams({ license_key: key, instance_id: instanceId }),
+    },
+  );
+  return (await lemonSqueezy.json()).valid === true;
+}
+```
+
+The same saved ID works with both. Only fall back on a 404: any other error from Polar is an outage, not an unknown key.
+
+Keep in mind:
+
+- **Ship the update early.** Polar cancels the Lemon Squeezy subscription when it switches, so an app version that only checks Lemon Squeezy can't rely on that key afterwards.
+- **New activations go to Polar.** When a device isn't activated yet, and Polar knows the key, [activate it on Polar](/features/benefits/license-keys#activate-license-keys-optional).
+- **Remove the fallback** once every subscription has switched and Lemon Squeezy has stopped processing payments.
 
 For new sales, Polar's [license key benefit](/features/benefits/license-keys) issues keys automatically after purchase, with optional activation limits and expiration.
 

@@ -23,6 +23,9 @@ flushers = 32
 outbox_claim_idle = 60000
 # How long a flusher holds its slot; each batch it delivers extends it.
 flusher_lock_ttl = 30000
+# How long a drain that flush() or close() waits on keeps going: the fleet's other instances
+# keep writing, so it hands its slot over between two batches.
+flush_tenure = 5000
 # How often a long-running instance drains the events it queued, without a flush.
 drain_interval = 1000
 # How long the fleet waits to send the outbox again after Polar failed to take a batch, when

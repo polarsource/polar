@@ -302,6 +302,7 @@ OUTBOX_BATCH = {{ outpost_constants.outbox_batch }}
 FLUSHERS = {{ outpost_constants.flushers }}
 OUTBOX_CLAIM_IDLE = {{ outpost_constants.outbox_claim_idle / 1000 }}
 FLUSHER_LOCK_TTL = {{ outpost_constants.flusher_lock_ttl / 1000 }}
+FLUSH_TENURE = {{ outpost_constants.flush_tenure / 1000 }}
 DRAIN_INTERVAL = {{ outpost_constants.drain_interval / 1000 }}
 OUTBOX_RETRY_DELAY = {{ outpost_constants.outbox_retry_delay / 1000 }}
 MAX_OUTBOX_RETRY_DELAY = {{ outpost_constants.max_outbox_retry_delay / 1000 }}

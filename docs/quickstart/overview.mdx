@@ -73,13 +73,17 @@ curl https://sandbox-api.polar.sh/v1/... \
   - Use the application's own user ID as `external_id` and `external_customer_id`. Don't store Polar customer IDs.
   - Ask the user which feature to meter and how to price it. The names and amounts in these pages are examples.
   - Pin one API version across the project: `@polar-sh/sdk/2026-10`, `polar.v2026_10` or the `Polar-Version: 2026-10` header.
-  - Follow the steps in order: [track usage](/quickstart/track-usage), [catalog](/quickstart/catalog), [checkout](/quickstart/checkout), [webhooks](/quickstart/webhooks). Each step ends with a way to check it worked.
+  - Follow the steps in order: [track usage](/quickstart/track-usage), [catalog](/quickstart/catalog), [checkout](/quickstart/checkout), [webhooks](/quickstart/webhooks). Each step ends with a way to verify it works.
 </Visibility>
 
 
 <Tip>
   Prefer to let your agent do it? Run `polar agent setup` to connect Claude Code, Codex or Cursor to Polar, then ask it to follow this quickstart. See [MCP](/integrate/mcp).
 </Tip>
+
+<Info>
+  **Use your own user IDs.** Every Polar customer can carry an `external_id`, set to the user's ID in your application. The quickstart uses `user_123` this way throughout, so you never store Polar's customer IDs or map them back to your users. See [External IDs](/integrate/external-ids).
+</Info>
 
 ## The path
 
@@ -106,7 +110,7 @@ curl https://sandbox-api.polar.sh/v1/... \
 
 Events are raw facts about what customers do in your product. Polar stores every event and computes usage from them when you ask, so:
 
-- You can start sending events **before** you've settled on pricing, and decide what to charge for later.
+- You can start sending events **before** you've settled on pricing, and decide later what to charge for, if anything.
 - Events sent with your own user ID are linked to the customer as soon as a customer with that external ID exists, even if the events came first.
 - New meters work on events you've already sent, so you see real usage the moment you create them.
 

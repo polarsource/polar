@@ -4,7 +4,7 @@ sidebarTitle: "Manage benefits"
 description: "Create benefits, attach them to products, control their visibility, grant or revoke them manually, and react to grant webhooks."
 ---
 
-A **benefit** is what a customer receives when they buy a product: a license key, a file, a Discord role, credits on a meter. You create a benefit once and attach it to any number of products. Polar grants it on purchase and revokes it when access ends. See [Benefits](/concepts/benefits) for grants and their lifecycle.
+A **benefit** is what a customer receives from you: credits on a meter, a feature flag, a shared Slack channel, a license key. You create a benefit once and attach it to any number of products. Polar grants it on purchase and revokes it when access ends. You can also [grant a benefit to a customer directly](#grant-or-revoke-a-benefit-manually), without a purchase. See [Benefits](/concepts/benefits) for grants and their lifecycle.
 
 This page covers the tasks every benefit type shares. Code examples use API version `2026-10`.
 
@@ -12,14 +12,14 @@ This page covers the tasks every benefit type shares. Code examples use API vers
 
 | Type | API `type` | What the customer gets |
 | --- | --- | --- |
-| [Feature Flag](/features/benefits/feature-flags) | `feature_flag` | A flag, with metadata, that your application checks |
 | [Meter Credits](/features/usage-based-billing/credits) | `meter_credit` | Units credited to a meter balance |
+| [Feature Flag](/features/benefits/feature-flags) | `feature_flag` | A flag, with metadata, that your application checks |
+| [Shared Slack Channel](/features/benefits/slack-shared-channel) | `slack_shared_channel` | A Slack Connect channel with your team |
+| [Custom](/features/benefits/custom) | `custom` | A private note, for anything else you deliver |
 | [License Keys](/features/benefits/license-keys) | `license_keys` | A unique key, with optional expiry, activations and usage limit |
 | [File Downloads](/features/benefits/file-downloads) | `downloadables` | Files to download |
 | [GitHub Repository Access](/features/benefits/github-access) | `github_repository` | An invitation to a private repository |
 | [Discord Invite](/features/benefits/discord-access) | `discord` | An invitation to a Discord server, with a role |
-| [Shared Slack Channel](/features/benefits/slack-shared-channel) | `slack_shared_channel` | A Slack Connect channel with your team |
-| [Custom](/features/benefits/custom) | `custom` | A private note, for anything else you deliver |
 
 ## Create a benefit
 
@@ -181,11 +181,39 @@ The benefit's page also lists its **Benefit Grants**: who holds it and each gran
 
 <Note>Available from API version 2027-01.</Note>
 
-You can grant a benefit to a customer without a purchase, revoke any grant, including one from a purchase, and undo a manual revocation. Meter Credits benefits can't be granted this way. Credit the meter directly instead, see [Credits](/features/usage-based-billing/credits).
+Benefits aren't tied to orders. You can grant a benefit to any customer without a purchase: to unlock a feature for a trial, compensate a customer, or deliver a deal agreed outside checkout. A manual grant lasts until you revoke it. You can also revoke any grant, including one from a purchase, and undo a manual revocation. Meter Credits benefits can't be granted this way. Credit the meter directly instead, see [Credits](/features/usage-based-billing/credits).
 
-- **Dashboard:** open **Customers** and select the customer. Under **Benefit Grants**, click **Grant benefit**. Each grant row has **Revoke**, and a manually revoked grant has **Unrevoke**.
-- **Prompt:** "Grant the Beta access benefit to user_123 in my Polar sandbox organization." Uses the `benefit_grants_create` operation of the [Polar MCP server](/integrate/mcp). `benefit_grants_revoke` and `benefit_grants_update` revoke and restore grants. These have no CLI command yet.
-- **API:** [`POST /v1/benefit-grants/`](/api-reference/next/benefit-grants/create-benefit-grant), [`DELETE /v1/benefit-grants/{id}`](/api-reference/next/benefit-grants/revoke-benefit-grant) and [`PATCH /v1/benefit-grants/{id}`](/api-reference/next/benefit-grants/update-benefit-grant).
+<Tabs>
+  <Tab title="Dashboard">
+    To grant a benefit:
+
+    - Open **Customers** and select the customer
+    - Under **Benefit Grants**, click **Grant benefit**
+    - Search for and select the benefit
+    - For a team customer, select the **Member** who gets it
+    - Click **Grant benefit**
+
+    To revoke a grant, click **Revoke** on its row and confirm. To undo a manual revocation, click **Unrevoke**. Both buttons appear under **Benefit Grants** on the customer's page and on the benefit's page in **Products → Benefits**.
+  </Tab>
+  <Tab title="CLI">
+    The CLI can't grant or revoke benefits yet. Use it to find a customer's grants:
+
+    ```bash
+    polar benefit_grants list --external-customer-id user_123
+    ```
+
+    See [`polar benefit_grants`](/integrate/cli/reference/benefit_grants).
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Grant the "Beta access" benefit to the customer with external ID user_123 in my Polar sandbox organization.
+    ```
+
+    Uses the `benefit_grants_create` operation of the [Polar MCP server](/integrate/mcp). Ask your agent to revoke a grant or undo a revocation the same way. It uses `benefit_grants_revoke` and `benefit_grants_update`.
+  </Tab>
+</Tabs>
+
+Through the API, use [`POST /v1/benefit-grants/`](/api-reference/next/benefit-grants/create-benefit-grant) to grant, [`DELETE /v1/benefit-grants/{id}`](/api-reference/next/benefit-grants/revoke-benefit-grant) to revoke and [`PATCH /v1/benefit-grants/{id}`](/api-reference/next/benefit-grants/update-benefit-grant) to undo a revocation.
 
 Granting and revoking are asynchronous. The returned grant may not be granted yet. A manually revoked grant stays revoked through renewals until you undo the revocation.
 

@@ -1,9 +1,9 @@
 ---
 title: "Benefits"
-description: "What customers get when they buy: benefit types, grants and revocation, and checking access."
+description: "What customers get from you: benefit types, grants and revocation, and checking access."
 ---
 
-A **benefit** is something a customer receives when they buy a product: a license key, a file, access to a private repository, usage credits. Other platforms call these **entitlements**.
+A **benefit** is something a customer receives from you: usage credits, a feature flag, a shared Slack channel, a license key. Customers get benefits automatically when they buy a product, and you can also grant them to any customer directly, without a purchase. Other platforms call these **entitlements**.
 
 Benefits are standalone objects. You create a benefit once and attach it to as many products as you like. Changing the benefit updates it everywhere.
 
@@ -11,18 +11,18 @@ Benefits are standalone objects. You create a benefit once and attach it to as m
 
 | Type | What the customer gets |
 | --- | --- |
+| [Meter Credits](/features/usage-based-billing/credits) | Units credited to a [meter](/concepts/usage) |
+| [Feature Flag](/features/benefits/feature-flags) | A flag, with metadata, that your application checks |
+| [Shared Slack Channel](/features/benefits/slack-shared-channel) | A Slack Connect channel with your team |
+| [Custom](/features/benefits/custom) | Anything else, delivered by you |
 | [License Keys](/features/benefits/license-keys) | A unique key, with optional activation limits and expiry |
 | [File Downloads](/features/benefits/file-downloads) | Files to download from the Customer Portal |
 | [GitHub Repository Access](/features/benefits/github-access) | An invitation to a private repository |
 | [Discord Invite](/features/benefits/discord-access) | An invitation to a server, with roles |
-| [Shared Slack Channel](/features/benefits/slack-shared-channel) | A Slack Connect channel with your team |
-| [Feature Flag](/features/benefits/feature-flags) | A flag, with metadata, that your application checks |
-| [Meter Credits](/features/usage-based-billing/credits) | Units credited to a [meter](/concepts/usage) |
-| [Custom](/features/benefits/custom) | Anything else, delivered by you |
 
 ## Grants
 
-When a customer gets a benefit, Polar creates a **benefit grant**: the record that this customer holds this benefit, and why.
+When a customer gets a benefit, Polar creates a **benefit grant**: the record that this customer holds this benefit, and why. A grant comes from a purchase or from you granting it directly.
 
 ```mermaid
 flowchart LR
@@ -33,6 +33,7 @@ flowchart LR
 - A **one-time purchase** grants its benefits for good, unless you revoke them when refunding the order.
 - A **subscription** grants them while it's `active` or `trialing`, and revokes them when it ends.
 - With [seat-based pricing](/features/seat-based-pricing), each team member who claims a seat gets their own grants.
+- A **manual grant** gives a customer a benefit without any order: a trial of a feature, a goodwill gesture, a deal agreed outside checkout. It lasts until you revoke it. See [Grant or revoke a benefit manually](/features/benefits/introduction#grant-or-revoke-a-benefit-manually).
 
 Polar delivers integrated benefits automatically. It generates the license key, sends the GitHub invitation or adds the Discord role, and removes access again on revocation. Custom benefits are delivered by you, and your application enforces feature flags and credits.
 

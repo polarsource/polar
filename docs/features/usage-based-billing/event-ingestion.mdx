@@ -3,7 +3,7 @@ title: "Send events"
 description: "Send usage events from your application with the SDK or API, batch them, check a customer's balance, and see the limits each event must meet."
 ---
 
-An **event** is a raw fact about what a customer did in your application: an API call, 77 LLM tokens, a 3 MB upload. Meters aggregate events into usage, which you can bill or draw down from credits. See [Usage](/concepts/usage) for how events, meters and prices fit together.
+An **event** is a raw fact about what a customer did in your application: an API call, 77 LLM tokens, a 3 MB upload. Meters aggregate events into usage per customer, which you can track on its own, bill, or draw down from credits. See [Usage](/concepts/usage) for how events, meters and prices fit together.
 
 The examples on this page use the sandbox and API version `2026-10`.
 
@@ -285,6 +285,6 @@ To list the events themselves, use the [List Events API](/api-reference/current/
 | [Usage](/concepts/usage) | How events, meters, metered prices and credits fit together |
 | [Meters](/features/usage-based-billing/meters) | Filter and aggregate events into usage |
 | [Ingestion strategies](/features/usage-based-billing/ingestion-strategies/ingestion-strategy) | Send events for streams, S3 uploads and timings automatically (TypeScript) |
-| [Bill for LLM tokens](/features/usage-based-billing/ingestion-strategies/llm-strategy) | Track token usage from AI SDK or PydanticAI calls |
+| [Track LLM tokens](/features/usage-based-billing/ingestion-strategies/llm-strategy) | Track token usage from AI SDK or PydanticAI calls |
 | [Cost insights](/features/cost-insights/introduction) | Record what each event costs you |
 | [Ingest Events API](/api-reference/current/events/ingest-events) | API reference |

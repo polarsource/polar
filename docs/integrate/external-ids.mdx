@@ -1,0 +1,133 @@
+---
+title: "External IDs"
+description: "Identify customers and members by your own user IDs in API calls, events, checkouts and webhooks, instead of storing Polar's IDs."
+---
+
+An **external ID** is the ID a customer has in your own system, stored on their Polar customer. Set `external_id` to your user's ID, and you can use that ID wherever the API asks for a customer.
+
+The examples use API version `2026-10`.
+
+## Why use your own IDs
+
+Without an external ID, you'd store Polar's customer ID next to each user and look it up before every call. Webhooks would arrive with an ID you have to map back to a user, and you'd have to handle the ones that arrive before your mapping is saved.
+
+With an external ID, there's nothing to map:
+
+- **No extra column.** You call the API with the user ID you already have.
+- **No reconciliation.** Webhook payloads and the customer state include `external_id`, so you know which user they're about.
+- **No ordering problems.** You can send usage events for a user before their Polar customer exists. Polar links them once a customer with that external ID is created.
+
+## Set an external ID
+
+Create the customer when a user signs up, with your user ID as `external_id`:
+
+<CodeGroup>
+```typescript TypeScript
+await polar.customers.create({
+  email: "jane@example.com",
+  external_id: "user_123",
+});
+```
+
+```python Python
+polar.customers.create(
+    email="jane@example.com",
+    external_id="user_123",
+)
+```
+
+```bash cURL
+curl -X POST https://sandbox-api.polar.sh/v1/customers/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{ "email": "jane@example.com", "external_id": "user_123" }'
+```
+</CodeGroup>
+
+From the CLI: `polar customers create --email jane@example.com --external-id user_123`. In the dashboard, fill in **External ID** when you create the customer.
+
+You don't have to create the customer first. A [Checkout Session](/concepts/checkout) created with `external_customer_id` links the purchase to the customer with that external ID, or creates one with it.
+
+**Rules:**
+
+- An external ID is unique within your organization.
+- Once set, it can't be changed. You can add one to an existing customer that doesn't have one yet.
+- Deleting a customer clears their external ID, so it can be used again.
+
+## Use it in API calls
+
+Every customer endpoint has a variant under `/v1/customers/external/{external_id}`. Reading a customer's subscriptions, benefits and meters by your user ID:
+
+<CodeGroup>
+```typescript TypeScript
+const state = await polar.customers.getStateExternal("user_123");
+```
+
+```python Python
+state = polar.customers.get_state_external("user_123")
+```
+
+```bash cURL
+curl https://sandbox-api.polar.sh/v1/customers/external/user_123/state \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10"
+```
+</CodeGroup>
+
+Elsewhere, pass it as `external_customer_id`:
+
+| Where | Field |
+|-------|-------|
+| Customers: get, update, delete, state, payment methods, members | `/v1/customers/external/{external_id}` |
+| [Ingesting events](/features/usage-based-billing/event-ingestion) | `external_customer_id` on each event |
+| [Checkout Sessions](/features/checkout/session) | `external_customer_id` |
+| Customer sessions, for [Customer Portal](/features/customer-portal/introduction) links | `external_customer_id` |
+| [Assigning seats](/features/seat-based-pricing) | `external_customer_id`, `external_member_id` |
+| Listing orders, subscriptions, checkouts, refunds, benefit grants, customer meters and events | `external_customer_id` query filter |
+
+For example, all subscriptions for one user:
+
+<CodeGroup>
+```typescript TypeScript
+for await (const subscription of polar.subscriptions.iterList({ external_customer_id: "user_123" })) {
+  console.log(subscription.id, subscription.status);
+}
+```
+
+```python Python
+for subscription in polar.subscriptions.iter_list(external_customer_id="user_123"):
+    print(subscription.id, subscription.status)
+```
+
+```bash cURL
+curl "https://sandbox-api.polar.sh/v1/subscriptions/?external_customer_id=user_123" \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10"
+```
+</CodeGroup>
+
+## Read it in webhooks
+
+Orders, subscriptions and benefit grants embed their customer, so `data.customer.external_id` tells you which user a webhook is about. The [`customer.state_changed`](/integrate/customer-state) payload has `external_id` at the top level.
+
+## Members
+
+On a [team customer](/concepts/customers), each member can have its own `external_id`, unique within that customer. Address a member with `/v1/customers/external/{external_id}/members/{member_external_id}`, and attribute usage to them with `external_member_id` on an event.
+
+## Event IDs are different
+
+An event's own `external_id` is not a customer ID. It's your unique ID for the event, used to deduplicate retries and link child events to a parent. The customer is `external_customer_id`.
+
+<Visibility for="agents">
+  Use the application's own user ID as the customer's `external_id` and pass it as `external_customer_id` everywhere. Don't add a column for Polar customer IDs. Read state with `GET /v1/customers/external/{external_id}/state`.
+</Visibility>
+
+## Learn more
+
+| Resource | Description |
+|----------|-------------|
+| [Customers](/concepts/customers) | How customers, teams and the customer state fit together |
+| [Customer management](/features/customer-management) | Create, update and delete customers |
+| [Customer state](/integrate/customer-state) | Grant access from one object per customer |
+| [Get Customer by External ID](/api-reference/current/customers/get-customer-by-external-id) | API reference |

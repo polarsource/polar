@@ -9,12 +9,16 @@ Polar is the seller of record for your software. You define what you sell, Polar
 Everything in Polar is built from a small set of objects. Understanding how they relate makes every other part of the docs easier to follow.
 
 ```mermaid actions={true}
-flowchart LR
-  P["Product<br/>prices + benefits"] --> CO[Checkout]
+flowchart TD
+  PR[Prices] --> P[Product]
+  B[Benefits] --> P
+  P --> CO[Checkout]
   CO -->|one-time| O[Order]
   CO -->|recurring| S[Subscription]
   S -->|renews| O
   O -->|grants| G[Benefit grants]
+  Y[You] -->|grant directly| G
+  G -.->|of| B
   G --> C[Customer]
   C -->|uses your product| E[Events]
   E --> M[Meters]
@@ -23,11 +27,11 @@ flowchart LR
 
 ## Usage
 
-To bill for [usage](/concepts/usage), send **events** from your application. **Meters** aggregate those events into usage per customer, which you can charge for with a metered price or draw down from prepaid credits.
+To track [usage](/concepts/usage), send **events** from your application. **Meters** aggregate those events into usage per customer. Use them to see what customers do and what they cost you, and optionally to charge with a metered price or draw down prepaid credits.
 
 ## Benefits
 
-[Benefits](/concepts/benefits) are what a customer receives when they buy a product: a license key, a file download, access to a GitHub repository, usage credits, and more. Polar grants them automatically when a purchase succeeds and revokes them when access ends.
+[Benefits](/concepts/benefits) are what a customer receives from you: usage credits, a feature flag, a shared Slack channel, a license key, and more. Polar grants them automatically when a purchase succeeds and revokes them when access ends. Benefits aren't tied to orders, though: you can also grant one to any customer directly, for a trial, a goodwill gesture or a deal agreed outside checkout.
 
 ## Products
 

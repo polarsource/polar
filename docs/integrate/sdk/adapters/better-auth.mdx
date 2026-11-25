@@ -371,9 +371,9 @@ The checkout plugin accepts the following configuration options:
 
 [Source code](https://github.com/polarsource/polar/blob/main/clients/adapters/better-auth/src/plugins/usage.ts)
 
-A plugin for Usage Based Billing that allows you to [ingest events](#1-event-ingestion) from your application and list the [authenticated user's Usage Meter](#2-customer-meters).
+A plugin for usage tracking and billing that allows you to [ingest events](#1-event-ingestion) from your application and list the [authenticated user's Usage Meter](#2-customer-meters).
 
-To enable [usage based billing](/concepts/usage) in your app, you would pass the `usage` plugin in the `use` property.
+To track [usage](/concepts/usage) in your app, you would pass the `usage` plugin in the `use` property.
 
 ```typescript icon="square-js" Usage Plugin Example
 import {
@@ -398,10 +398,10 @@ const auth = betterAuth({
 
 ### 1. Event ingestion
 
-Polar's Usage Based Billing builds entirely on event ingestion. Ingest events from your application, create Meters to represent that usage, and add metered prices to Products to charge for it.
+Usage in Polar builds entirely on event ingestion. Ingest events from your application and create meters to aggregate that usage. Add metered prices to products when you want to charge for it.
 
 <Warning>
-  **Ingest events from your server, not from the browser.** Events drive billing, so the client must never be trusted to decide what is consumed. Always ingest from the same server-side handler that performs the metered action (e.g. the route that generated the AI video, processed the upload, etc.) so that the recorded usage cannot be forged or bypassed.
+  **Ingest events from your server, not from the browser.** Events can drive billing, so the client must never be trusted to decide what is consumed. Always ingest from the same server-side handler that performs the metered action (e.g. the route that generated the AI video, processed the upload, etc.) so that the recorded usage cannot be forged or bypassed.
 </Warning>
 
 Because `createCustomerOnSignUp: true` sets the Polar customer's external ID to the Better Auth user ID, you can pass `external_customer_id: session.user.id` when ingesting. No extra lookup is needed.

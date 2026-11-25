@@ -1,5 +1,5 @@
 ---
-title: "4. Sync customer state"
+title: "Sync customer state"
 description: "Listen to webhooks and read the customer state to grant access in your application."
 ---
 
@@ -132,7 +132,7 @@ curl https://sandbox-api.polar.sh/v1/customers/external/user_123/state \
 
 Polar never blocks events, so a guardrail like this lives in your application. Then [send the usage event](/quickstart/track-usage) for the action, and the loop is complete.
 
-## Check it worked
+## Verify it works
 
 With `polar webhook listen` running, cancel Jane's subscription immediately. From the CLI or API, its ID is in `active_subscriptions` of her customer state. The CLI logs a `customer.state_changed` delivery, and your handler records that Jane no longer has Pro.
 

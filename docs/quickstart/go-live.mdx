@@ -1,5 +1,5 @@
 ---
-title: "5. Go live"
+title: "Go live"
 description: "Move a working sandbox integration to production: create the production organization, catalog, access token and webhook endpoint, then pass the account review."
 ---
 
@@ -147,7 +147,7 @@ Then click **Submit for review**. See the [review checklist](/merchant-of-record
 
 <Note>Dashboard only. The account review isn't available from the API, CLI or MCP server.</Note>
 
-## Check it worked
+## Verify it works
 
 - **Finance → Account** shows your account as submitted or approved.
 - After approval, a real purchase through your production checkout creates an order under **Sales → Orders**, and your handler receives `customer.state_changed` from the production endpoint. Refund the purchase from the order if it was a test.

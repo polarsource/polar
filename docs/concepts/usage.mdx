@@ -1,21 +1,24 @@
 ---
 title: "Usage: events & meters"
 sidebarTitle: "Usage"
-description: "How events and meters work, and how usage is billed or drawn down from credits."
+description: "How events and meters track what each customer does and costs you, whether or not you charge for it."
 ---
 
-Usage-based billing in Polar is built from two objects:
+Polar tracks what each customer does in your product. Usage is built from two objects:
 
 - **Events** are raw facts your application sends: "this customer made an API call", "this customer used 77 tokens".
 - **Meters** filter and aggregate events into a usage number per customer.
+
+Tracking usage doesn't require charging for it. You can send events and create meters with no metered price or credits at all, to see how customers use your product and what they cost you. Billing is one thing you can build on top, now or later.
 
 ```mermaid
 flowchart LR
   A[Your application] -->|ingest| E[Events]
   E --> M[Meter]
-  M --> MP[Metered price]
-  M --> CR[Credits balance]
-  MP --> O[Order at end of cycle]
+  E --> CI[Cost insights]
+  M --> U[Usage per customer]
+  M -.->|optional| MP[Metered price]
+  M -.->|optional| CR[Credits balance]
 ```
 
 ## Events
@@ -46,9 +49,17 @@ A meter defines which events count and how to add them up:
 
 For example, a meter that filters on `ai_usage` and sums `total_tokens` gives you the tokens each customer used in a period.
 
+## Tracking without billing
+
+A meter on its own is a usage report. Read it per customer and per period from the dashboard, CLI or API. Common reasons to track usage you don't charge for:
+
+- See which customers use a feature, and how much.
+- Compare what each customer costs you, such as LLM tokens or storage, with what they pay. See [Costs](#costs).
+- Collect real data before you decide on pricing. New meters backfill from events you've already sent, so you can explore pricing ideas against past usage.
+
 ## Charging for usage
 
-Usage reaches billing in two ways, and you can combine them.
+When you do charge for usage, it reaches billing in two ways, and you can combine them.
 
 **Metered prices** bill usage after the fact. Add a metered price to a recurring product, and Polar invoices the usage on the subscription's next order. See [Usage-based pricing](/features/usage-based-billing/billing).
 
@@ -58,7 +69,7 @@ The customer's current balance for each meter is part of their [customer state](
 
 ## Costs
 
-Events can also carry what each action costs you, through a `_cost` metadata property. [Cost insights](/features/cost-insights/introduction) combines those costs with your revenue to show profit per customer.
+Events can also carry what each action costs you, through a `_cost` metadata property. [Cost insights](/features/cost-insights/introduction) combines those costs with your revenue to show profit per customer. This works whether or not you bill for the usage behind them.
 
 ## In the dashboard, CLI or your agent
 

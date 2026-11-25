@@ -1,9 +1,9 @@
 ---
-title: "Bill for LLM tokens"
-description: "Send token usage for every LLM call, from the Vercel AI SDK in TypeScript or PydanticAI in Python, and create the meter that bills it."
+title: "Track LLM tokens"
+description: "Send token usage and cost for every LLM call, from the Vercel AI SDK in TypeScript or PydanticAI in Python, and create a meter that sums it."
 ---
 
-To bill for LLM usage, send one event per model call with its token counts, and create a meter that sums them. This page shows both, plus how to record what each call cost you.
+To track LLM usage, send one event per model call with its token counts, and create a meter that sums them. Bill for the meter, or use it only to see what each customer consumes and costs you. This page shows both, plus how to record what each call cost you.
 
 The examples use the sandbox and API version `2026-10`, with the sample customer `user_123` and the event name `ai_usage`. See [Usage](/concepts/usage) for how events and meters work.
 
@@ -172,7 +172,7 @@ Sum `_llm.total_tokens` across `ai_usage` events. The same meter works for event
 
 To bill input and output tokens at different prices, create two meters, one summing `_llm.input_tokens` and one summing `_llm.output_tokens`, and add a metered price for each. See [Usage-based pricing](/features/usage-based-billing/billing).
 
-## Check it worked
+## Verify it works
 
 Make one call as `user_123`, then open **Products → Meters → AI tokens**. The call's tokens show on the **Overview** tab, and the event on the **Events** tab. Or run:
 

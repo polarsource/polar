@@ -171,14 +171,20 @@
                 "group": "Benefits",
                 "pages": [
                   "features/benefits/introduction",
+                  "features/usage-based-billing/credits",
                   "features/benefits/feature-flags",
-                  "features/benefits/license-keys",
-                  "features/benefits/validate-license-keys",
+                  "features/benefits/slack-shared-channel",
+                  "features/benefits/custom",
+                  {
+                    "group": "License Keys",
+                    "pages": [
+                      "features/benefits/license-keys",
+                      "features/benefits/validate-license-keys"
+                    ]
+                  },
                   "features/benefits/file-downloads",
                   "features/benefits/github-access",
-                  "features/benefits/discord-access",
-                  "features/benefits/slack-shared-channel",
-                  "features/benefits/custom"
+                  "features/benefits/discord-access"
                 ]
               },
               "features/discounts"
@@ -190,8 +196,8 @@
               {
                 "group": "Checkout",
                 "pages": [
-                  "features/checkout/links",
                   "features/checkout/session",
+                  "features/checkout/links",
                   "features/custom-fields",
                   "features/checkout/payment-methods",
                   "features/checkout/localization",
@@ -306,7 +312,7 @@
                   "api-reference/2026-04/introduction",
                   "integrate/authentication",
                   "integrate/oat",
-                  "integrate/sandbox",
+                  "integrate/external-ids",
                   "api-reference/2026-04/versioning"
                 ]
               },
@@ -824,7 +830,7 @@
                   "api-reference/2026-10/introduction",
                   "integrate/authentication",
                   "integrate/oat",
-                  "integrate/sandbox",
+                  "integrate/external-ids",
                   "api-reference/2026-10/versioning"
                 ]
               },
@@ -1341,7 +1347,7 @@
                   "api-reference/2027-01/introduction",
                   "integrate/authentication",
                   "integrate/oat",
-                  "integrate/sandbox",
+                  "integrate/external-ids",
                   "api-reference/2027-01/versioning"
                 ]
               },

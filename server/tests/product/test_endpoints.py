@@ -18,6 +18,7 @@ from polar.models import (
 )
 from polar.models.catalog import CatalogStatus
 from polar.models.custom_field import CustomFieldType
+from polar.models.file import FileServiceTypes, ProductMediaFile
 from polar.organization_review.repository import OrganizationRiskSignalRepository
 from polar.postgres import AsyncSession
 from polar.version import V2026_04, V2026_10, V2027_01
@@ -1082,6 +1083,43 @@ class TestUpdateProduct:
         )
 
         assert response.status_code == 422
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_invalid_medias_and_attached_custom_fields(
+        self,
+        client: AsyncClient,
+        product: Product,
+        organization: Organization,
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+    ) -> None:
+        media = ProductMediaFile(
+            organization=organization,
+            name="cover.jpg",
+            path="cover.jpg",
+            mime_type="image/jpeg",
+            size=1024,
+            service=FileServiceTypes.product_media,
+            is_enabled=True,
+            is_uploaded=True,
+        )
+        await save_fixture(media)
+        response = await client.patch(
+            f"/v1/products/{product.id}",
+            json={
+                "medias": [str(media.id), str(uuid.uuid4())],
+                "attached_custom_fields": [
+                    {"custom_field_id": str(uuid.uuid4()), "required": False}
+                ],
+            },
+        )
+
+        assert response.status_code == 422
+        assert [error["loc"] for error in response.json()["detail"]] == [
+            ["body", "medias", 1],
+            ["body", "attached_custom_fields", 0],
+        ]
 
 
 @pytest.mark.anyio

@@ -620,7 +620,9 @@ class ProductService:
             # Lock the product row and reload attached_custom_fields. Two
             # transactions otherwise both delete the rows and insert order=0.
             await session.refresh(
-                product, {"attached_custom_fields"}, with_for_update=True
+                product,
+                {"attached_custom_fields", "organization_id"},
+                with_for_update=True,
             )
             attached_custom_fields_errors: list[ValidationError] = []
             try:

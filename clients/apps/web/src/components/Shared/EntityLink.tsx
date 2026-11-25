@@ -91,7 +91,9 @@ export const EntityLink = ({
         className={`${LINK_CLASS} ${hasMenu ? 'pr-1' : 'pr-1.5'}`}
       >
         <Icon className={`${ICON_CLASS} ${hover}`} aria-hidden />
-        <Text truncate>{children}</Text>
+        <Text as="span" truncate>
+          {children}
+        </Text>
       </Link>
       {hasMenu && <EntityLinkMenu items={menuItems} />}
     </span>

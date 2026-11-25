@@ -337,6 +337,47 @@ class CanonicalDiscount:
     type = MerchantMigrationRecordType.discount
 
 
+CanonicalBenefitType = Literal["license_keys", "downloadables", "custom"]
+
+
+@dataclass
+class CanonicalBenefitFile:
+    source_id: str
+    name: str
+    size: int
+
+
+@dataclass
+class CanonicalBenefitLink:
+    title: str
+    url: str
+
+
+@dataclass
+class CanonicalLicenseKeySettings:
+    activation_limit: int | None
+    # Both None when keys never expire.
+    expires_ttl: int | None
+    expires_timeframe: Literal["day", "month", "year"] | None
+
+
+@dataclass
+class CanonicalBenefit:
+    """Access a source product gives, offered to become a Polar benefit.
+
+    Not staged on the ledger: it's read from the source when the merchant sets
+    benefits up. ``source_id`` is stable across reads, so a retry finds the
+    benefit it already created."""
+
+    source_id: str
+    type: CanonicalBenefitType
+    description: str
+    product_source_ids: list[str]
+    license_keys: CanonicalLicenseKeySettings | None = None
+    files: list[CanonicalBenefitFile] = field(default_factory=list)
+    links: list[CanonicalBenefitLink] = field(default_factory=list)
+
+
 @dataclass
 class CanonicalAccount:
     """Source-account-level facts the precheck needs but that aren't per-record."""

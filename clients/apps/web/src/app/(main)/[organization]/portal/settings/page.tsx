@@ -1,6 +1,9 @@
 import { CustomerPortalSettings } from '@/components/CustomerPortal/CustomerPortalSettings'
 import { getServerSideAPI } from '@/utils/client/serverside'
-import { getOrganizationOrNotFound } from '@/utils/customerPortal'
+import {
+  getOrganizationOrNotFound,
+  hasBillingPermission,
+} from '@/utils/customerPortal'
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { CustomerPortalPage } from '../CustomerPortalPage'
@@ -75,6 +78,17 @@ export default async function Page(props: {
   if (customerResponse.status === 401) {
     redirect(
       `/${organization.slug}/portal/request?${new URLSearchParams(searchParams)}`,
+    )
+  }
+
+  const { data: authenticatedUser } = await api.GET(
+    '/v1/customer-portal/customer-session/user',
+    { cache: 'no-store' },
+  )
+
+  if (!hasBillingPermission(authenticatedUser)) {
+    redirect(
+      `/${organization.slug}/portal?${new URLSearchParams(resolvedSearchParams)}`,
     )
   }
 

@@ -2,8 +2,8 @@ import { Text } from '@polar-sh/orbit'
 import {
   CircleUserRound,
   FileText,
-  Funnel,
   Gift,
+  MessageCircle,
   Package,
   Percent,
   RefreshCw,
@@ -24,8 +24,9 @@ export type EntityKind =
   | 'subscription'
   | 'order'
   | 'benefit'
-  // Not a page of its own: a list narrowed down to what shares the value.
-  | 'filter'
+  // Not a page of its own: the list narrowed down to what was cancelled for
+  // the same reason.
+  | 'reason'
 
 // Each kind has its own mark, which takes its color while pointed at.
 const ENTITIES: Record<EntityKind, { icon: typeof Package; hover: string }> = {
@@ -54,8 +55,8 @@ const ENTITIES: Record<EntityKind, { icon: typeof Package; hover: string }> = {
     hover:
       'group-hover/entity:text-indigo-500 dark:group-hover/entity:text-indigo-400',
   },
-  filter: {
-    icon: Funnel,
+  reason: {
+    icon: MessageCircle,
     hover:
       'group-hover/entity:text-gray-950 dark:group-hover/entity:text-white',
   },
@@ -84,6 +85,7 @@ export const EntityLink = ({
   menuItems,
   minimal = false,
   muted = false,
+  secondary,
   children,
 }: {
   kind: EntityKind
@@ -93,6 +95,9 @@ export const EntityLink = ({
   minimal?: boolean
   // For a name that is secondary to the one beside it.
   muted?: boolean
+  // Said after the name, and part of the same link. It gives way first when
+  // the two do not fit.
+  secondary?: string
   children: ReactNode
 }) => {
   const { icon: Icon, hover } = ENTITIES[kind]
@@ -111,6 +116,13 @@ export const EntityLink = ({
         <Text as="span" color={muted ? 'muted' : 'default'} truncate>
           {children}
         </Text>
+        {secondary && (
+          <span className="flex min-w-0 shrink-[4]">
+            <Text as="span" color="muted" truncate>
+              {secondary}
+            </Text>
+          </span>
+        )}
       </Link>
       {hasMenu && <EntityLinkMenu items={menuItems} />}
     </span>

@@ -59,16 +59,20 @@ const CustomerCell = ({
             id: checkout.customer_id,
             name: checkout.customer_name,
             email: checkout.customer_email,
+            billing_name: checkout.customer_billing_name,
           }}
           filterable
+          withBillingName
         />
       ) : (
-        <Text truncate>{getCustomerLabel(checkout)}</Text>
-      )}
-      {billingName && (
-        <Text color="muted" truncate>
-          {billingName}
-        </Text>
+        <>
+          <Text truncate>{getCustomerLabel(checkout)}</Text>
+          {billingName && (
+            <Text color="muted" truncate>
+              {billingName}
+            </Text>
+          )}
+        </>
       )}
     </>
   )

@@ -59,10 +59,19 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
     tinybird_files = set(
         (Path(__file__).parent / "tinybird-files.txt").read_text().splitlines()
     )
+    shared_tinybird_workspace = bool(
+        os.environ.get("POLAR_TEST_TINYBIRD_TOKEN")
+        or os.environ.get("POLAR_TEST_TINYBIRD_TOKEN_FILE")
+    )
     for item in items:
         if "tinybird_workspace" in getattr(item, "fixturenames", ()):
             item.add_marker(pytest.mark.tinybird)
-            item.add_marker(pytest.mark.xdist_group(name="tinybird"))
+            group_name = (
+                f"tinybird:{item.nodeid.split('::', 1)[0]}"
+                if shared_tinybird_workspace
+                else "tinybird"
+            )
+            item.add_marker(pytest.mark.xdist_group(name=group_name))
         if (
             os.environ.get("POLAR_TEST_XDIST") == "true"
             and item.get_closest_marker("tinybird")

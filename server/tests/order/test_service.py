@@ -3462,6 +3462,76 @@ class TestSendConfirmationEmail:
             "Public benefit"
         ]
 
+    @pytest.mark.parametrize(
+        ("discount_amount", "benefits", "sent"),
+        [
+            pytest.param(1000, [], False, id="free_no_benefits"),
+            pytest.param(
+                1000,
+                [
+                    (BenefitType.feature_flag, Visibility.public),
+                    (BenefitType.meter_credit, Visibility.public),
+                ],
+                False,
+                id="free_only_silent_benefits",
+            ),
+            pytest.param(
+                1000,
+                [(BenefitType.custom, Visibility.private)],
+                False,
+                id="free_only_private_benefits",
+            ),
+            pytest.param(
+                1000,
+                [(BenefitType.custom, Visibility.public)],
+                True,
+                id="free_with_public_benefit",
+            ),
+            pytest.param(0, [], True, id="paid_no_benefits"),
+        ],
+    )
+    async def test_free_purchase_without_visible_benefits(
+        self,
+        mocker: MockerFixture,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+        discount_amount: int,
+        benefits: list[tuple[BenefitType, Visibility]],
+        sent: bool,
+    ) -> None:
+        mocker.patch(
+            "polar.order.service.invoice_service.create_order_invoice",
+            new_callable=AsyncMock,
+        )
+        product = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+        linked_benefits = []
+        for benefit_type, visibility in benefits:
+            benefit = await create_benefit(
+                save_fixture, organization=organization, type=benefit_type
+            )
+            benefit.visibility = visibility
+            await save_fixture(benefit)
+            linked_benefits.append(benefit)
+        product = await set_product_benefits(
+            save_fixture, product=product, benefits=linked_benefits
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=1000,
+            discount_amount=discount_amount,
+        )
+
+        await order_service.send_confirmation_email(session, order)
+
+        assert enqueue_email_mock.called is sent
+
     async def test_cycle_mentions_stripe_migration(
         self,
         mocker: MockerFixture,

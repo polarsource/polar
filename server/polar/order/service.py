@@ -65,6 +65,7 @@ from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
+from polar.kit.visibility import Visibility
 from polar.logging import Logger
 from polar.models import (
     Checkout,
@@ -82,6 +83,7 @@ from polar.models import (
     User,
     WalletTransaction,
 )
+from polar.models.benefit import BenefitType
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.payment import PaymentTrigger
@@ -145,6 +147,9 @@ from .schemas import OrderCreate, OrderInvoice, OrderReceipt, OrderUpdate
 from .sorting import OrderSortProperty
 
 log: Logger = structlog.get_logger()
+
+
+SILENT_BENEFIT_TYPES = frozenset({BenefitType.feature_flag, BenefitType.meter_credit})
 
 
 class OrderError(PolarError): ...
@@ -2707,6 +2712,18 @@ class OrderService:
                 )
                 if is_free_product_price:
                     return
+
+        # Skip free purchases that have nothing for the customer to access
+        if (
+            order.billing_reason == OrderBillingReasonInternal.purchase
+            and order.total_amount == 0
+            and not any(
+                benefit.visibility == Visibility.public
+                and benefit.type not in SILENT_BENEFIT_TYPES
+                for benefit in (order.product.benefits if order.product else [])
+            )
+        ):
+            return
 
         # Skip usage invoices fully covered by meter credits. The subtotal is
         # net of credits but not of discounts, which still warrant an invoice.

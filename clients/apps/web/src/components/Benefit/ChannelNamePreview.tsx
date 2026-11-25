@@ -2,7 +2,11 @@ import { usePreviewSlackChannelName } from '@/hooks/queries'
 import useDebounce from '@/utils/useDebounce'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { useEffect, useState } from 'react'
+
+const getTemplateErrorMessage = (detail: unknown): string => {
+  const message = Array.isArray(detail) ? detail[0]?.msg : undefined
+  return typeof message === 'string' ? message : 'Invalid template'
+}
 
 interface Props {
   template: string
@@ -10,44 +14,20 @@ interface Props {
 }
 
 export const ChannelNamePreview = ({ template, organizationId }: Props) => {
-  const { mutateAsync } = usePreviewSlackChannelName()
-  const [rendered, setRendered] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const debouncedTemplate = useDebounce(template, 250)
+  const { data: preview, isError } = usePreviewSlackChannelName({
+    organization_id: organizationId,
+    template: debouncedTemplate,
+    customer_name: 'Sample Customer',
+    customer_email: 'customer@example.com',
+  })
 
-  useEffect(() => {
-    if (!debouncedTemplate) return
-    let cancelled = false
-    mutateAsync({
-      organization_id: organizationId,
-      template: debouncedTemplate,
-      customer_name: 'Sample Customer',
-      customer_email: 'customer@example.com',
-    })
-      .then((result) => {
-        if (cancelled) return
-        if (result.error) {
-          const detail = Array.isArray(result.error.detail)
-            ? result.error.detail[0]?.msg
-            : undefined
-          const message =
-            typeof detail === 'string' ? detail : 'Invalid template'
-          setError(message)
-          setRendered(null)
-          return
-        }
-        setError(null)
-        setRendered(result.data?.channel_name ?? null)
-      })
-      .catch(() => {
-        if (cancelled) return
-        setError('Could not render the preview')
-        setRendered(null)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [debouncedTemplate, organizationId, mutateAsync])
+  const error = isError
+    ? 'Could not render the preview'
+    : preview?.error
+      ? getTemplateErrorMessage(preview.error.detail)
+      : null
+  const rendered = preview?.data?.channel_name ?? null
 
   if (!template || !debouncedTemplate) return null
 

@@ -166,8 +166,6 @@ class OAuthAccount(RecordModel):
     async def set_tokens(self, *, access_token: str, refresh_token: str | None) -> None:
         if self.id is None:
             self.id = self.generate_id()
-        self.access_token = access_token
-        self.refresh_token = refresh_token
         async with create_task_group() as tg:
             access_token_encrypted = tg.create_task(
                 self.encrypt_access_token(self.id, access_token)

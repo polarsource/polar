@@ -21,15 +21,13 @@ async def _build(user: User) -> OAuthAccount:
 
 @pytest.mark.anyio
 class TestSetTokens:
-    async def test_dual_writes_plain_and_encrypted(self, user: User) -> None:
+    async def test_writes_encrypted(self, user: User) -> None:
         oauth_account = await _build(user)
 
         await oauth_account.set_tokens(
             access_token="the-access-token", refresh_token="the-refresh-token"
         )
 
-        assert oauth_account.access_token == "the-access-token"
-        assert oauth_account.refresh_token == "the-refresh-token"
         assert isinstance(oauth_account.access_token_encrypted, EncryptedString)
         assert isinstance(oauth_account.refresh_token_encrypted, EncryptedString)
         assert (

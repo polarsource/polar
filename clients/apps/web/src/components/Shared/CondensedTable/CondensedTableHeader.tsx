@@ -3,6 +3,7 @@ import { MoveDown, MoveUp } from '@polar-sh/orbit/icons'
 import { flexRender, type RowData } from '@tanstack/react-table'
 import {
   CondensedTableCell,
+  CondensedTableExpanderCell,
   CondensedTableLine,
   type CondensedTableInset,
 } from './columns'
@@ -18,14 +19,18 @@ interface CondensedTableHeaderProps<T extends RowData> {
   // Hidden on small screens, where the rows use their compact layout.
   compact?: boolean
   inset?: CondensedTableInset
+  // Leaves room for the chevron of a table whose rows open in place.
+  expandable?: boolean
 }
 
 export const CondensedTableHeader = <T extends RowData>({
   table,
   compact = false,
   inset = 'm',
+  expandable = false,
 }: CondensedTableHeaderProps<T>) => (
   <CondensedTableLine inset={inset} desktopOnly={compact} header>
+    {expandable && <CondensedTableExpanderCell />}
     {table.getFlatHeaders().map((header) => {
       const { column } = header
       const meta = column.columnDef.meta

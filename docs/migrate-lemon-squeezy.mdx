@@ -8,7 +8,7 @@ Lemon Squeezy is [winding down payment processing on March 31, 2027](https://www
 
 ## Migration steps
 
-Steps 4 and 5 happen in your app. The others happen in Polar under **Settings → Migrations**.
+Steps 4 and 5 happen in your app. The others happen in Polar under **Settings → Migrations**, where step 6 guides you through requesting the card copy in Lemon Squeezy.
 
 1. **Connect your Lemon Squeezy store** with an API key.
 2. **Assess and import your catalog.** Polar checks what can move, then imports your products, discounts and customers. Billing stays on Lemon Squeezy.
@@ -29,6 +29,16 @@ Steps 4 and 5 happen in your app. The others happen in Polar under **Settings �
 When you switch, a subscription that renews within 24 hours stays on Lemon Squeezy, so it isn't charged twice. Polar marks it as skipped and doesn't retry it on its own: once that renewal has gone through, start the switch again for it. A subscription already cancelled on Lemon Squeezy still switches, and Polar ends it on the same date instead of renewing it.
 
 Polar doesn't send customers a separate email about the switch. The first renewal reminder and the first receipt from Polar include a short note that their billing moved to Polar.
+
+## Payment methods that can't move
+
+Some saved payment methods can't be carried over from Lemon Squeezy:
+
+- **PayPal**
+- **India-issued cards:** the card moves, but the approval India requires for recurring charges doesn't.
+- **Cash App Pay and Link**
+
+These subscriptions still switch. If Polar has another copied card for the customer, it uses that one. Otherwise their first renewal on Polar fails, and Polar asks the customer to enter their payment details again. Once they do, the subscription keeps renewing on Polar as usual. To avoid the failed payment, ask these customers to update their payment method in the customer portal after the switch.
 
 ## Benefits and license keys
 
@@ -95,16 +105,6 @@ If your app limits devices, see [Devices and activations](#devices-and-activatio
 ## Migration details
 
 <AccordionGroup>
-  <Accordion title="Payment methods that can't move">
-    Some saved payment methods can't be carried over from Lemon Squeezy:
-
-    - **PayPal**
-    - **India-issued cards:** the card moves, but the approval India requires for recurring charges doesn't.
-    - **Cash App Pay and Link**
-
-    These subscriptions still switch. If Polar has another copied card for the customer, it uses that one. Otherwise their first renewal on Polar fails, and Polar asks the customer to enter their payment details again. Once they do, the subscription keeps renewing on Polar as usual. To avoid the failed payment, ask these customers to update their payment method in the customer portal after the switch.
-  </Accordion>
-
   <Accordion title="Devices and activations">
     Activated devices stay activated. Polar keeps each Lemon Squeezy activation under the same ID, so the `instance_id` your app saved works as the `activation_id` in Polar's [validate](/features/benefits/license-keys#validate-license-keys) and [deactivate](/features/benefits/license-keys) endpoints. Devices count toward the key's activation limit, as they did on Lemon Squeezy.
 

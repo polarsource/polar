@@ -36,7 +36,7 @@ export const SubscriptionBenefitGrants = ({
   )
   // Grants cannot be listed by subscription, so the customer's are, with the
   // same request the customer page makes.
-  const { data, isLoading } = useBenefitGrants(organization.id, {
+  const { data } = useBenefitGrants(organization.id, {
     customer_id: [subscription.customer_id],
     limit: 999,
     sorting: ['-granted_at'],
@@ -102,29 +102,25 @@ export const SubscriptionBenefitGrants = ({
   ]
   const table = useCondensedTable({ columns, rows: grants, getRowId })
 
+  if (grants.length === 0) return null
+
   return (
     <Box as="section" flexDirection="column" rowGap="l">
       <Text variant="heading-xxs" as="h3">
         Benefit grants
       </Text>
-      {grants.length === 0 ? (
-        <Text color="muted">
-          {isLoading ? 'Loading benefit grants' : 'No benefits granted'}
-        </Text>
-      ) : (
-        <Box flexDirection="column" marginHorizontal="-m">
-          <CondensedTableHeader table={table} compact />
-          <CondensedTable
-            table={table}
-            renderCompact={(grant) => (
-              <Box alignItems="center" justifyContent="between" gap="l">
-                <Text truncate>{grant.benefit.description}</Text>
-                <BenefitGrantStatus grant={grant} />
-              </Box>
-            )}
-          />
-        </Box>
-      )}
+      <Box flexDirection="column" marginHorizontal="-m">
+        <CondensedTableHeader table={table} compact />
+        <CondensedTable
+          table={table}
+          renderCompact={(grant) => (
+            <Box alignItems="center" justifyContent="between" gap="l">
+              <Text truncate>{grant.benefit.description}</Text>
+              <BenefitGrantStatus grant={grant} />
+            </Box>
+          )}
+        />
+      </Box>
     </Box>
   )
 }

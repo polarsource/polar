@@ -4,14 +4,13 @@ import {
   CondensedTableExpanderCell,
   CondensedTableLine,
 } from '@/components/Shared/CondensedTable'
+import { EntityLink } from '@/components/Shared/EntityLink'
 import { schemas } from '@polar-sh/client'
-import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import Link from 'next/link'
 import { BillingHistoryAttempts } from './BillingHistoryAttempts'
 
 // What an order in the billing history opens to: everything that happened on
-// it, then its invoice and the way to its page.
+// it, then the link to its page.
 export const BillingHistoryOrderDetails = ({
   organization,
   order,
@@ -23,22 +22,19 @@ export const BillingHistoryOrderDetails = ({
     <BillingHistoryAttempts organizationId={organization.id} order={order} />
     <CondensedTableLine inset="m" desktopOnly={false} borderless>
       <CondensedTableExpanderCell />
-      <Box
-        flexGrow={1}
-        minWidth={0}
-        alignItems="center"
-        justifyContent="between"
-        columnGap="l"
-      >
-        <Text color="muted" truncate>
-          {order.invoice_number ? `Invoice ${order.invoice_number}` : ''}
-        </Text>
-        <Link
+      <Box flexGrow={1} minWidth={0} alignItems="center">
+        <EntityLink
+          kind="order"
           href={`/dashboard/${organization.slug}/sales/${order.id}`}
-          className="shrink-0 hover:underline"
+          menuItems={[
+            ...(order.invoice_number
+              ? [{ label: 'Copy invoice number', copy: order.invoice_number }]
+              : []),
+            { label: 'Copy order ID', copy: order.id },
+          ]}
         >
-          <Text wrap="nowrap">View order</Text>
-        </Link>
+          {order.invoice_number ? `Invoice ${order.invoice_number}` : 'Order'}
+        </EntityLink>
       </Box>
     </CondensedTableLine>
   </>

@@ -55,7 +55,7 @@ export const BillingHistoryStatus = ({ row }: { row: BillingHistoryRow }) => {
 export const getBillingHistoryAmount = (
   row: BillingHistoryRow,
 ): string | null => {
-  const format = formatCurrency('compact')
+  const format = formatCurrency('accounting')
   if (row.kind === 'upcoming') {
     return format(row.charge.preview.total_amount, row.currency)
   }

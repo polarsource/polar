@@ -12,6 +12,8 @@ import {
   CircleX,
   Clock,
   FlaskConical,
+  Gauge,
+  Package,
   Plus,
   RefreshCw,
 } from '@polar-sh/orbit/icons'
@@ -24,6 +26,8 @@ const ACTIVITY_ICONS: Record<SubscriptionActivityKind, typeof Clock> = {
   trial: FlaskConical,
   converted: CircleCheck,
   renewal: RefreshCw,
+  update: Package,
+  usage: Gauge,
   failed: CircleAlert,
   recovered: CircleCheck,
   canceled: CircleX,

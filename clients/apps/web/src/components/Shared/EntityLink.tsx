@@ -10,6 +10,7 @@ import {
 } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { type ReactNode } from 'react'
+import { EntityLinkMenu, type EntityLinkMenuItem } from './EntityLinkMenu'
 
 export type EntityKind =
   | 'product'
@@ -62,27 +63,37 @@ const ENTITIES: Record<EntityKind, { icon: typeof Package; hover: string }> = {
 
 // The padding is pulled back out, so the mark lines up with text around it
 // and only the highlight reaches past.
-const LINK_CLASS =
-  'group/entity dark:hover:bg-polar-800 -mx-1.5 inline-flex w-fit max-w-full min-w-0 items-center gap-2 rounded-md px-1.5 py-0.5 hover:bg-gray-100'
+const CHIP_CLASS =
+  'group/entity dark:hover:bg-polar-800 -mx-1.5 inline-flex w-fit max-w-full min-w-0 items-center rounded-md hover:bg-gray-100'
+const LINK_CLASS = 'inline-flex min-w-0 items-center gap-2 py-0.5 pl-1.5'
 const ICON_CLASS =
   'dark:text-polar-500 size-4 shrink-0 text-gray-400 transition-colors'
 
 // A link to something that has a page of its own: the mark of what it is,
-// then its name.
+// then its name. Given menu items, an arrow after the name opens them.
 export const EntityLink = ({
   kind,
   href,
+  menuItems,
   children,
 }: {
   kind: EntityKind
   href: string
+  menuItems?: EntityLinkMenuItem[]
   children: ReactNode
 }) => {
   const { icon: Icon, hover } = ENTITIES[kind]
+  const hasMenu = menuItems != null && menuItems.length > 0
   return (
-    <Link href={href} className={LINK_CLASS}>
-      <Icon className={`${ICON_CLASS} ${hover}`} aria-hidden />
-      <Text truncate>{children}</Text>
-    </Link>
+    <span className={CHIP_CLASS}>
+      <Link
+        href={href}
+        className={`${LINK_CLASS} ${hasMenu ? 'pr-1' : 'pr-1.5'}`}
+      >
+        <Icon className={`${ICON_CLASS} ${hover}`} aria-hidden />
+        <Text truncate>{children}</Text>
+      </Link>
+      {hasMenu && <EntityLinkMenu items={menuItems} />}
+    </span>
   )
 }

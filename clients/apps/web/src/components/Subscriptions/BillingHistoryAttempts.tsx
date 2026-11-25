@@ -2,6 +2,7 @@
 
 import PaymentMethod from '@/components/PaymentMethod/PaymentMethod'
 import PaymentStatus from '@/components/PaymentStatus/PaymentStatus'
+import { RefundStatus } from '@/components/Refunds/RefundStatus'
 import { RefundReasonDisplay } from '@/components/Refunds/utils'
 import { StatusLabel } from '@/components/Shared/StatusIcon'
 import { useDisputes } from '@/hooks/queries/disputes'
@@ -15,7 +16,7 @@ import { Text, Truncated } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import type { ReactNode } from 'react'
 import { BillingHistoryDetailRow } from './BillingHistoryDetailRow'
-import { DISPUTE_STATUS_ICONS, REFUND_STATUSES } from './billingHistoryStatuses'
+import { DISPUTE_STATUS_ICONS } from './billingHistoryStatuses'
 
 const TRIGGER_LABELS: Record<schemas['PaymentTrigger'], string> = {
   purchase: 'Purchase',
@@ -53,7 +54,7 @@ export const BillingHistoryAttempts = ({
   const { data: disputes } = useDisputes(organizationId, {
     order_id: order.id,
   })
-  const format = formatCurrency('compact')
+  const format = formatCurrency('accounting')
   const nextAttempt =
     order.status === 'pending' ? order.next_payment_attempt_at : null
 
@@ -87,7 +88,7 @@ export const BillingHistoryAttempts = ({
         <BillingHistoryDetailRow
           key={refund.id}
           at={refund.created_at}
-          status={<StatusLabel {...REFUND_STATUSES[refund.status]} />}
+          status={<RefundStatus status={refund.status} />}
           amount={`-${format(refund.amount, refund.currency)}`}
         >
           <Name>Refund</Name>

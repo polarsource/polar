@@ -6,12 +6,10 @@ import { EventTimestamp } from '@/components/Events/EventTimestamp'
 import { EntityLink } from '@/components/Shared/EntityLink'
 import { SidePanel } from '@/components/Shared/SidePanel'
 import { useSubscriptions } from '@/hooks/queries'
-import { useMetrics } from '@/hooks/queries/metrics'
-import { buildCustomerDashboardPath } from '@/utils/customer'
+import { withOrderActivity } from '@/utils/subscriptionOrderActivity'
 import { getSubscriptionActivity } from '@/utils/subscriptionSummary'
 import { useOrders } from '@/hooks/queries/orders'
 import { schemas } from '@polar-sh/client'
-import { formatCurrency } from '@polar-sh/currency'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { ChevronDown, ChevronUp, X } from '@polar-sh/orbit/icons'
@@ -25,6 +23,7 @@ import {
   getCancellationReason,
   getSubscriptionKeyDates,
 } from './SubscriptionDetailsGrid'
+import { SubscriptionSidePanelCustomer } from './SubscriptionSidePanelCustomer'
 import { SubscriptionStatus } from './SubscriptionStatus'
 import { SubscriptionStatusIcon } from './SubscriptionStatusIcon'
 import { SubscriptionSummary } from './SubscriptionSummary'
@@ -67,6 +66,7 @@ export const SubscriptionSidePanel = ({
 }: SubscriptionSidePanelProps) => {
   const { customer, discount } = subscription
   const cancellationReason = getCancellationReason(subscription)
+  const subscriptionsPath = `/dashboard/${organization.slug}/sales/subscriptions?view=list`
   const [today] = useState(() => new Date())
   const dunning = useSubscriptionDunning(organization.id, subscription.id)
   // The same request the subscription page's orders table makes.
@@ -75,19 +75,15 @@ export const SubscriptionSidePanel = ({
     sorting: ['-created_at'],
     limit: 100,
   })
-  const activity = getSubscriptionActivity(
-    subscription,
-    today.getTime(),
-    dunning,
-    orders?.items,
+  const activity = withOrderActivity(
+    getSubscriptionActivity(
+      subscription,
+      today.getTime(),
+      dunning,
+      orders?.items,
+    ),
+    orders?.items ?? [],
   )
-  const { data: metrics } = useMetrics({
-    startDate: new Date(customer.created_at),
-    endDate: today,
-    organization_id: organization.id,
-    interval: 'month',
-    customer_id: [customer.id],
-  })
   const { data: subscriptions } = useSubscriptions(organization.id, {
     customer_id: [customer.id],
     limit: 20,
@@ -95,7 +91,6 @@ export const SubscriptionSidePanel = ({
   const others = (subscriptions?.items ?? []).filter(
     ({ id }) => id !== subscription.id,
   )
-  const revenue = metrics?.periods.at(-1)?.cumulative_revenue
 
   return (
     <SidePanel persistent={!navigation}>
@@ -149,6 +144,13 @@ export const SubscriptionSidePanel = ({
           <EntityLink
             kind="product"
             href={`/dashboard/${organization.slug}/products/${subscription.product.id}`}
+            menuItems={[
+              { label: 'Copy product ID', copy: subscription.product.id },
+              {
+                label: 'View subscriptions',
+                href: `${subscriptionsPath}&product_id=${subscription.product.id}`,
+              },
+            ]}
           >
             {subscription.product.name}
           </EntityLink>
@@ -181,6 +183,16 @@ export const SubscriptionSidePanel = ({
             <EntityLink
               kind="discount"
               href={`/dashboard/${organization.slug}/products/discounts?query=${discount.code}`}
+              menuItems={[
+                { label: 'Copy discount ID', copy: discount.id },
+                ...(discount.code
+                  ? [{ label: 'Copy code', copy: discount.code }]
+                  : []),
+                {
+                  label: 'View subscriptions',
+                  href: `${subscriptionsPath}&discount_id=${discount.id}`,
+                },
+              ]}
             >
               {discount.name}
             </EntityLink>
@@ -221,70 +233,11 @@ export const SubscriptionSidePanel = ({
         </Box>
       )}
 
-      <Box
-        alignItems="center"
-        gap="m"
-        paddingHorizontal="l"
-        paddingVertical="m"
-        borderTopWidth={1}
-        borderStyle="solid"
-        borderColor="border-secondary"
-      >
-        <Box flexDirection="column" minWidth={0}>
-          <EntityLink
-            kind="customer"
-            href={buildCustomerDashboardPath(organization.slug, customer)}
-          >
-            {customer.name || customer.email || '—'}
-          </EntityLink>
-          {customer.name && customer.email && (
-            <Text color="muted" truncate>
-              {customer.email}
-            </Text>
-          )}
-        </Box>
-      </Box>
-
-      <Box flexDirection="column" paddingHorizontal="l" paddingBottom="m">
-        <Field label="Revenue">
-          <Text tabularNums>
-            {revenue == null ? '—' : formatCurrency('compact')(revenue, 'usd')}
-          </Text>
-        </Field>
-        <Field label="Since">
-          <EventTimestamp timestamp={customer.created_at}>
-            <Text tabularNums>{formatDate(customer.created_at)}</Text>
-          </EventTimestamp>
-        </Field>
-        {customer.email && (
-          <Field label="Email" copyValue={customer.email}>
-            <Text truncate>{customer.email}</Text>
-          </Field>
-        )}
-        {customer.external_id && (
-          <Field label="External ID" copyValue={customer.external_id}>
-            <Text truncate monospace>
-              {customer.external_id}
-            </Text>
-          </Field>
-        )}
-        <Field label="ID" copyValue={customer.id}>
-          <Text truncate monospace>
-            {customer.id}
-          </Text>
-        </Field>
-      </Box>
-
-      <Box paddingHorizontal="l" paddingTop="s" paddingBottom="l">
-        <Link
-          href={buildCustomerDashboardPath(organization.slug, customer)}
-          className="flex-1"
-        >
-          <Button fullWidth variant="secondary">
-            View customer
-          </Button>
-        </Link>
-      </Box>
+      <SubscriptionSidePanelCustomer
+        organization={organization}
+        customer={customer}
+        today={today}
+      />
 
       {others.length > 0 && (
         <Section title="Other subscriptions">

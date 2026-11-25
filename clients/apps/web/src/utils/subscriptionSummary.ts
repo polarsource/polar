@@ -37,6 +37,8 @@ export type SubscriptionActivityKind =
   | 'trial'
   | 'converted'
   | 'renewal'
+  | 'update'
+  | 'usage'
   | 'failed'
   | 'recovered'
   | 'canceled'

@@ -38,7 +38,7 @@ const formatRelative = (date: Date, now: number) => {
 }
 
 const formatDate = (date: Date, timeZone?: string) =>
-  date.toLocaleDateString('en-US', { dateStyle: 'long', timeZone })
+  date.toLocaleDateString('en-US', { dateStyle: 'medium', timeZone })
 
 const formatTime = (date: Date, timeZone?: string) =>
   date.toLocaleTimeString('en-US', {
@@ -72,9 +72,7 @@ const ZoneRow = ({
   timeZone?: string
 }) => (
   <>
-    <Text variant="caption" color="muted">
-      {label}
-    </Text>
+    <Text color="muted">{label}</Text>
     <Box alignItems="baseline" columnGap="s">
       <Text>{formatDate(date, timeZone)}</Text>
       <Text color="muted" tabularNums>
@@ -90,18 +88,12 @@ const TimestampDetails = ({ date }: { date: Date }) => {
   const isUtc = date.getTimezoneOffset() === 0
 
   return (
-    <Box flexDirection="column" gap="m" padding="xs">
-      <Text color="muted">{formatRelative(date, now)}</Text>
-      <Grid
-        templateColumns="auto 1fr"
-        columnGap="m"
-        rowGap="s"
-        alignItems="center"
-      >
-        <ZoneRow label="UTC" date={date} timeZone="UTC" />
-        {!isUtc && <ZoneRow label={local} date={date} />}
-      </Grid>
-    </Box>
+    <Grid templateColumns="auto auto" columnGap="l" rowGap="xs">
+      <Text color="muted">Relative</Text>
+      <Text>{formatRelative(date, now)}</Text>
+      <ZoneRow label="UTC" date={date} timeZone="UTC" />
+      {!isUtc && <ZoneRow label={local} date={date} />}
+    </Grid>
   )
 }
 

@@ -59,20 +59,24 @@ class MCPEventService:
 
         now = utc_now()
         ttl_ms = min(subscribe.ttl_ms or MAX_TTL_MS, MAX_TTL_MS)
-        update_dict = {
-            "secret": subscribe.secret,
-            "secret_generated_at": now,
-            "expires_at": now + timedelta(milliseconds=ttl_ms),
-        }
+        endpoint_id = endpoint.id if endpoint is not None else generate_uuid()
 
         is_live = (
             endpoint is not None
             and endpoint.expires_at is not None
             and endpoint.expires_at > now
         )
-        endpoint_id = endpoint.id if endpoint is not None else generate_uuid()
         if not is_live:
             await _verify_callback(url, subscribe.secret, endpoint_id, now)
+
+        update_dict = {
+            "secret": subscribe.secret,
+            "secret_encrypted": await WebhookEndpoint.encrypt_secret(
+                endpoint_id, subscribe.secret
+            ),
+            "secret_generated_at": now,
+            "expires_at": now + timedelta(milliseconds=ttl_ms),
+        }
 
         if endpoint is not None:
             return await repository.update(endpoint, update_dict=update_dict)

@@ -97,11 +97,11 @@ def validate_secret(secret: str) -> None:
         raise EmptyKey() from e
 
 
-def audit(endpoints: list[WebhookEndpoint]) -> list[InvalidSecretFinding]:
+async def audit(endpoints: list[WebhookEndpoint]) -> list[InvalidSecretFinding]:
     invalid_secrets: list[InvalidSecretFinding] = []
     for endpoint in endpoints:
         try:
-            validate_secret(endpoint.secret)
+            validate_secret(await endpoint.get_secret())
         except InvalidStandardSecret as e:
             invalid_secrets.append(
                 InvalidSecretFinding(
@@ -168,7 +168,7 @@ async def main(
     try:
         async with sessionmaker() as session:
             endpoints = await load_marked_standard(session)
-            findings = audit(endpoints)
+            findings = await audit(endpoints)
             render(findings, len(endpoints), verbose=verbose)
 
             if not correct:

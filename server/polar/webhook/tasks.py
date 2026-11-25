@@ -1,4 +1,5 @@
 import base64
+from collections import OrderedDict
 from datetime import datetime
 from ssl import SSLError
 from typing import Annotated
@@ -19,7 +20,7 @@ from polar.kit.http import SSRFBlockedError
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models.webhook_delivery import WebhookDelivery
-from polar.models.webhook_endpoint import WebhookFormat
+from polar.models.webhook_endpoint import WebhookEndpoint, WebhookFormat
 from polar.observability.task_logging import LoggableField
 from polar.webhook.repository import (
     WebhookDeliveryRepository,
@@ -39,6 +40,23 @@ from .constants import MCP_WEBHOOK_MAX_DELIVERIES, uses_standard_webhook_signatu
 from .service import webhook as webhook_service
 
 log: Logger = structlog.get_logger()
+
+_signing_secrets: OrderedDict[str, str] = OrderedDict()
+_SIGNING_SECRETS_MAX_SIZE = 4096
+
+
+async def get_cached_signing_secret(endpoint: WebhookEndpoint) -> str:
+    if endpoint.secret_encrypted is None:
+        return await endpoint.get_secret()
+    key = endpoint.secret_encrypted.encrypted_value
+    secret = _signing_secrets.get(key)
+    if secret is not None:
+        _signing_secrets.move_to_end(key)
+        return secret
+    secret = _signing_secrets[key] = await endpoint.get_secret()
+    if len(_signing_secrets) > _SIGNING_SECRETS_MAX_SIZE:
+        _signing_secrets.popitem(last=False)
+    return secret
 
 
 def sign_webhook(
@@ -141,7 +159,7 @@ async def _webhook_event_send(
 
     ts = utc_now()
     signature = sign_webhook(
-        event.webhook_endpoint.secret,
+        await get_cached_signing_secret(event.webhook_endpoint),
         str(event.id),
         ts,
         event.payload,

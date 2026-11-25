@@ -47,16 +47,13 @@ import { useOrganizationSubscription } from '@/hooks/queries'
 export const DashboardSidebar = ({
   type = 'organization',
   organization,
-  organizations,
-  memberOrganizations,
 }: {
   type?: 'organization' | 'account'
   organization?: schemas['Organization']
-  organizations: schemas['Organization'][]
-  memberOrganizations: schemas['MemberOrganization'][]
 }) => {
   const router = useRouter()
-  const { currentUser } = useAuth()
+  const { currentUser, userOrganizations: organizations } = useAuth()
+  const memberOrganizations = currentUser?.member_organizations ?? []
   const logout = useLogout()
 
   const [searchOpen, setSearchOpen] = useState(false)

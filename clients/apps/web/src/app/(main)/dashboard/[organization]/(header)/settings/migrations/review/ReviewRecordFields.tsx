@@ -1,11 +1,11 @@
 'use client'
 
 import { DetailCell } from '@/components/Orders/OrderSection'
-import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { useDashboardOrganization } from '@/hooks/dashboardOrganization'
 import { Alert, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
-import { Fragment, ReactNode, useContext } from 'react'
+import { Fragment, ReactNode } from 'react'
 import { ImportTaxPicker } from '../ImportTaxPicker'
 import { BillingAddressEditor } from './BillingAddressEditor'
 import { needsAttention, reasonLinks, ReviewRow } from './reviewRows'
@@ -54,7 +54,7 @@ export function RecordReason({
   row: ReviewRow
   hidden?: boolean
 }) {
-  const { organization } = useContext(OrganizationContext)
+  const organization = useDashboardOrganization()
   if (!row.reason || hidden) return null
 
   const links = reasonLinks(row, organization.slug)

@@ -6,13 +6,12 @@ import {
   SyntaxHighlighterClient,
   SyntaxHighlighterProvider,
 } from '@/components/SyntaxHighlighterShiki/SyntaxHighlighterClient'
-import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { useDashboardOrganization } from '@/hooks/dashboardOrganization'
 import { Button } from '@polar-sh/orbit'
 import Link from 'next/link'
-import { useContext } from 'react'
 
 export const MeterIngestionGuide = () => {
-  const { organization } = useContext(OrganizationContext)
+  const organization = useDashboardOrganization()
   const managedAsCode =
     organization.feature_settings?.config_as_code_enabled ?? false
 

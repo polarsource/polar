@@ -1,11 +1,11 @@
 import { useHasPermission } from '@/hooks/permissions'
 import { OrganizationPermission } from '@/hooks/queries/roles'
-import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { useDashboardOrganization } from '@/hooks/dashboardOrganization'
 import { permissionDeniedMessage } from '@/utils/permissions'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { BrickWallShield as BrickWallShieldIcon } from '@polar-sh/orbit/icons'
-import { PropsWithChildren, useContext } from 'react'
+import { PropsWithChildren } from 'react'
 import { WidgetContainer } from './WidgetContainer'
 
 interface WidgetRestrictedProps {
@@ -58,7 +58,7 @@ export const WidgetGuard = ({
   className,
   children,
 }: PropsWithChildren<WidgetRestrictedProps>) => {
-  const { organization } = useContext(OrganizationContext)
+  const organization = useDashboardOrganization()
   const allowed = useHasPermission(organization.id, permission)
 
   if (!allowed) {

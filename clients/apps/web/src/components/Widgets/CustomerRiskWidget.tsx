@@ -1,10 +1,9 @@
 import { cancelDate, useAtRisk } from '@/components/Customer/useAtRisk'
-import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { useDashboardOrganization } from '@/hooks/dashboardOrganization'
 import { formatCurrency } from '@polar-sh/currency'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
-import { useContext } from 'react'
 import { WidgetContainer } from './WidgetContainer'
 import { WidgetError } from './WidgetError'
 import { WidgetLink } from './WidgetLink'
@@ -30,7 +29,7 @@ export const CustomerRiskWidget = ({ className }: CustomerRiskWidgetProps) => (
 )
 
 const CustomerRiskWidgetContent = ({ className }: CustomerRiskWidgetProps) => {
-  const { organization } = useContext(OrganizationContext)
+  const organization = useDashboardOrganization()
   const { items, isLoading, isError, refetch } = useAtRisk(organization, LIMIT)
   const failed = isError && items.length === 0
   const basePath = `/dashboard/${organization.slug}/customers`

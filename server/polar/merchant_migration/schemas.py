@@ -23,7 +23,11 @@ from polar.models.merchant_migration_record import (
 )
 from polar.organization.schemas import OrganizationID
 
-from .canonical import CanonicalPaymentMethodType, PaymentMethodAssessment
+from .canonical import (
+    CanonicalBenefitType,
+    CanonicalPaymentMethodType,
+    PaymentMethodAssessment,
+)
 from .pan_transfer import PanTransferMethod, PanTransferStep
 
 
@@ -489,6 +493,55 @@ class PanTransferChecklist(Schema):
     )
     steps: Sequence[PanTransferStep] = Field(
         description="The ordered checklist. Titles and guidance live in the client, keyed by `key`."
+    )
+
+
+class MerchantMigrationBenefitFile(Schema):
+    name: str = Field(description="The file name.")
+    size: int = Field(description="Size in bytes.")
+
+
+class MerchantMigrationBenefitProduct(Schema):
+    id: UUID4 = Field(description="The imported Polar product.")
+    name: str = Field(description="The product name.")
+
+
+class MerchantMigrationBenefit(Schema):
+    id: str = Field(
+        description="Stable key for this source benefit. Send it back to create it."
+    )
+    type: CanonicalBenefitType = Field(description="The Polar benefit type it becomes.")
+    description: str = Field(description="The name the benefit gets on Polar.")
+    activation_limit: int | None = Field(
+        description="License keys only: how many devices a key activates. None is no limit."
+    )
+    expires_ttl: int | None = Field(
+        description="License keys only: how long a key lasts. None when it never expires."
+    )
+    expires_timeframe: Literal["day", "month", "year"] | None = Field(
+        description="License keys only: the unit of `expires_ttl`."
+    )
+    files: Sequence[MerchantMigrationBenefitFile] = Field(
+        description="File downloads only: the files Polar copies."
+    )
+    link_titles: Sequence[str] = Field(
+        description="Custom only: the titles of the links buyers get in a note."
+    )
+    products: Sequence[MerchantMigrationBenefitProduct] = Field(
+        description="Imported products that get this benefit."
+    )
+    benefit_id: UUID4 | None = Field(description="The Polar benefit, once created.")
+
+
+class MerchantMigrationBenefits(Schema):
+    items: Sequence[MerchantMigrationBenefit] = Field(
+        description="What the source gives buyers, as Polar benefits."
+    )
+
+
+class MerchantMigrationBenefitsCreate(Schema):
+    ids: list[str] = Field(
+        description="`id`s of the benefits to create, from the list. Empty skips this step."
     )
 
 

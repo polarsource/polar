@@ -21,6 +21,7 @@ from polar.worker import (
 
 from . import pan_transfer, slack
 from .repository import MerchantMigrationRepository
+from .service import BENEFITS_RUN_LIMIT
 from .service import merchant_migration as merchant_migration_service
 
 log: Logger = structlog.get_logger()
@@ -60,6 +61,22 @@ async def merchant_migration_import_catalog(
     """Create products, discounts, and customers, one batch per run."""
     async with AsyncSessionMaker() as session:
         await merchant_migration_service.execute_import(session, merchant_migration_id)
+
+
+@actor(
+    actor_name="merchant_migration.set_up_benefits",
+    priority=TaskPriority.LOW,
+    time_limit=int(BENEFITS_RUN_LIMIT.total_seconds() * 1000),
+    max_retries=3,
+)
+async def merchant_migration_set_up_benefits(
+    merchant_migration_id: Annotated[UUID, LoggableField],
+    run: Annotated[str, LoggableField],
+) -> None:
+    async with AsyncSessionMaker() as session:
+        await merchant_migration_service.execute_benefits(
+            session, RedisMiddleware.get(), merchant_migration_id, run
+        )
 
 
 @actor(

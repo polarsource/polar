@@ -6100,6 +6100,30 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/merchant-migrations/{id}/benefits': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Merchant Migration Benefits
+     * @description **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['merchant-migrations:benefits']
+    put?: never
+    /**
+     * Set Up Merchant Migration Benefits
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['merchant-migrations:set_up_benefits']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/merchant-migrations/{id}/pan-transfer': {
     parameters: {
       query?: never
@@ -14258,6 +14282,28 @@ export interface components {
      * @enum {string}
      */
     BenefitVisibility: 'draft' | 'private' | 'public'
+    /** BenefitsNotReady */
+    BenefitsNotReady: {
+      /**
+       * Error
+       * @example BenefitsNotReady
+       * @constant
+       */
+      error: 'BenefitsNotReady'
+      /** Detail */
+      detail: string
+    }
+    /** BenefitsUnavailable */
+    BenefitsUnavailable: {
+      /**
+       * Error
+       * @example BenefitsUnavailable
+       * @constant
+       */
+      error: 'BenefitsUnavailable'
+      /** Detail */
+      detail: string
+    }
     /**
      * BillingAddressFieldMode
      * @enum {string}
@@ -28420,6 +28466,103 @@ export interface components {
       /** @description Background work for the current step, if any. None until a run starts. */
       operation: components['schemas']['MerchantMigrationOperation'] | null
     }
+    /** MerchantMigrationBenefit */
+    MerchantMigrationBenefit: {
+      /**
+       * Id
+       * @description Stable key for this source benefit. Send it back to create it.
+       */
+      id: string
+      /**
+       * Type
+       * @description The Polar benefit type it becomes.
+       * @enum {string}
+       */
+      type: 'license_keys' | 'downloadables' | 'custom'
+      /**
+       * Description
+       * @description The name the benefit gets on Polar.
+       */
+      description: string
+      /**
+       * Activation Limit
+       * @description License keys only: how many devices a key activates. None is no limit.
+       */
+      activation_limit: number | null
+      /**
+       * Expires Ttl
+       * @description License keys only: how long a key lasts. None when it never expires.
+       */
+      expires_ttl: number | null
+      /**
+       * Expires Timeframe
+       * @description License keys only: the unit of `expires_ttl`.
+       */
+      expires_timeframe: ('day' | 'month' | 'year') | null
+      /**
+       * Files
+       * @description File downloads only: the files Polar copies.
+       */
+      files: components['schemas']['MerchantMigrationBenefitFile'][]
+      /**
+       * Link Titles
+       * @description Custom only: the titles of the links buyers get in a note.
+       */
+      link_titles: string[]
+      /**
+       * Products
+       * @description Imported products that get this benefit.
+       */
+      products: components['schemas']['MerchantMigrationBenefitProduct'][]
+      /**
+       * Benefit Id
+       * @description The Polar benefit, once created.
+       */
+      benefit_id: string | null
+    }
+    /** MerchantMigrationBenefitFile */
+    MerchantMigrationBenefitFile: {
+      /**
+       * Name
+       * @description The file name.
+       */
+      name: string
+      /**
+       * Size
+       * @description Size in bytes.
+       */
+      size: number
+    }
+    /** MerchantMigrationBenefitProduct */
+    MerchantMigrationBenefitProduct: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The imported Polar product.
+       */
+      id: string
+      /**
+       * Name
+       * @description The product name.
+       */
+      name: string
+    }
+    /** MerchantMigrationBenefits */
+    MerchantMigrationBenefits: {
+      /**
+       * Items
+       * @description What the source gives buyers, as Polar benefits.
+       */
+      items: components['schemas']['MerchantMigrationBenefit'][]
+    }
+    /** MerchantMigrationBenefitsCreate */
+    MerchantMigrationBenefitsCreate: {
+      /**
+       * Ids
+       * @description `id`s of the benefits to create, from the list. Empty skips this step.
+       */
+      ids: string[]
+    }
     MerchantMigrationCreate:
       | components['schemas']['MerchantMigrationStripeCreate']
       | components['schemas']['MerchantMigrationLemonSqueezyCreate']
@@ -28575,7 +28718,11 @@ export interface components {
      * MerchantMigrationOperationKind
      * @enum {string}
      */
-    MerchantMigrationOperationKind: 'precheck' | 'import' | 'cutover'
+    MerchantMigrationOperationKind:
+      | 'precheck'
+      | 'import'
+      | 'cutover'
+      | 'benefits'
     /**
      * MerchantMigrationOperationStatus
      * @enum {string}
@@ -28856,6 +29003,7 @@ export interface components {
       | 'source_setup'
       | 'pre_check'
       | 'create_catalog'
+      | 'set_up_benefits'
       | 'copy_cards'
       | 'activate_subscriptions'
       | 'completed'
@@ -64912,6 +65060,129 @@ export interface operations {
       }
     }
   }
+  'merchant-migrations:benefits': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationBenefits']
+        }
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Merchant migration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationNotFound']
+        }
+      }
+      /** @description Only Lemon Squeezy migrations bring benefits over. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['BenefitsUnavailable']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'merchant-migrations:set_up_benefits': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MerchantMigrationBenefitsCreate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigration']
+        }
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Merchant migration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationNotFound']
+        }
+      }
+      /** @description Only Lemon Squeezy migrations bring benefits over, the catalog isn't imported yet, or another operation is still running. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['BenefitsUnavailable']
+            | components['schemas']['BenefitsNotReady']
+            | components['schemas']['MigrationOperationInProgress']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'merchant-migrations:pan_transfer': {
     parameters: {
       query?: never
@@ -75647,6 +75918,12 @@ export const memberRoleValues: ReadonlyArray<
 export const memberSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MemberSortProperty']
 > = ['created_at', '-created_at']
+export const merchantMigrationBenefitTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MerchantMigrationBenefit']['type']
+> = ['license_keys', 'downloadables', 'custom']
+export const merchantMigrationBenefitExpires_timeframeAnyOf0Values: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MerchantMigrationBenefit']['expires_timeframe']
+> = ['day', 'month', 'year']
 export const merchantMigrationCutoverStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationCutoverStatus']
 > = ['moved', 'skipped', 'failed']
@@ -75655,7 +75932,7 @@ export const merchantMigrationLemonSqueezyCreateSource_platformValues: ReadonlyA
 > = ['lemon_squeezy']
 export const merchantMigrationOperationKindValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationOperationKind']
-> = ['precheck', 'import', 'cutover']
+> = ['precheck', 'import', 'cutover', 'benefits']
 export const merchantMigrationOperationStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationOperationStatus']
 > = ['pending', 'running', 'done', 'failed']
@@ -75671,6 +75948,7 @@ export const merchantMigrationStepValues: ReadonlyArray<
   'source_setup',
   'pre_check',
   'create_catalog',
+  'set_up_benefits',
   'copy_cards',
   'activate_subscriptions',
   'completed',

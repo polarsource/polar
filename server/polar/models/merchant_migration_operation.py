@@ -37,6 +37,7 @@ class MerchantMigrationOperationKind(StrEnum):
     precheck = "precheck"
     import_catalog = "import"
     cutover = "cutover"
+    benefits = "benefits"
 
 
 class MerchantMigrationOperationSelection(Schema):

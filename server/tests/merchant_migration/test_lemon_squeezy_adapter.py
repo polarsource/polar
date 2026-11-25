@@ -399,12 +399,16 @@ class TestExtract:
 
 @pytest.mark.anyio
 class TestGetSourceAccount:
-    async def test_maps_store(self) -> None:
-        adapter, _ = _adapter()
+    async def test_ignores_store_country(self) -> None:
+        india_store = {
+            **STORE,
+            "attributes": {"name": "Acme", "currency": "INR", "country": "IN"},
+        }
+        adapter, _ = _adapter({"/v1/stores": _page([india_store])})
 
         account = await adapter.get_source_account()
 
-        assert account.country == "US"
+        assert account.country is None
         assert account.has_connected_accounts is False
 
     async def test_several_stores_require_a_choice(self) -> None:
@@ -429,9 +433,8 @@ class TestGetSourceAccount:
             }
         )
 
-        account = await adapter.get_source_account()
+        await adapter.get_source_account()
 
-        assert account.country == "US"
         assert len(requests) == 2
 
 

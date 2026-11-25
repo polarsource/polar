@@ -177,11 +177,11 @@ class LemonSqueezyAdapter:
         return store["attributes"]["currency"].lower()
 
     async def get_source_account(self) -> CanonicalAccount:
-        store = await self.resolve_store()
-        return CanonicalAccount(
-            country=store["attributes"].get("country"),
-            has_connected_accounts=False,
-        )
+        await self.resolve_store()
+        # The store country is the seller's country, not where the cards are.
+        # Lemon Squeezy is the merchant of record and the card copy comes from
+        # its own Stripe account, so the store country is not the one to check.
+        return CanonicalAccount(country=None, has_connected_accounts=False)
 
     async def extract(self) -> AsyncIterator[CanonicalRecord]:
         cursor: dict[str, Any] | None = None

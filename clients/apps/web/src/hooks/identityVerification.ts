@@ -3,9 +3,10 @@ import { useCreateIdentityVerification } from '@/hooks/queries'
 import { toast } from '@/components/Toast/use-toast'
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
+import { AuthContext } from '@/providers/auth'
 import { loadPolarStripe } from '@/utils/stripe'
 import { useQuery } from '@tanstack/react-query'
-import { useCallback, useState } from 'react'
+import { useCallback, useContext, useState } from 'react'
 
 const POLL_INTERVAL_MS = 3000
 const POLL_TIMEOUT_MS = 30_000
@@ -30,7 +31,8 @@ const errorMessage = (
 }
 
 export const useStartIdentityVerification = () => {
-  const { currentUser, reloadUser } = useAuth()
+  const { currentUser } = useAuth()
+  const { setUser, setUserOrganizations } = useContext(AuthContext)
   const identityVerificationStatus = currentUser?.identity_verification_status
   const createIdentityVerification = useCreateIdentityVerification()
   const stripePromise = loadPolarStripe()
@@ -40,9 +42,8 @@ export const useStartIdentityVerification = () => {
     queryKey: ['users', 'me', 'identity-verification-poll', pollingStartedAt],
     queryFn: async () => {
       const user = await unwrap(api.GET('/v1/users/me'))
-      if (isTerminalStatus(user.identity_verification_status)) {
-        await reloadUser()
-      }
+      setUser(user)
+      setUserOrganizations(user.organizations ?? [])
       return user
     },
     enabled: pollingStartedAt !== null,
@@ -100,9 +101,8 @@ export const useStartIdentityVerification = () => {
       return
     }
 
-    await reloadUser()
     setPollingStartedAt(Date.now())
-  }, [createIdentityVerification, stripePromise, reloadUser])
+  }, [createIdentityVerification, stripePromise])
 
   return {
     start,

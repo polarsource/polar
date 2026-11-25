@@ -27,10 +27,17 @@ const CheckoutBenefits = ({
 }: CheckoutBenefitsProps) => {
   const t = useTranslations(locale)
   const api = createClientSideAPI(customerSessionToken)
-  const { data: benefitGrants, refetch } = useCustomerBenefitGrants(api, {
-    checkout_id: checkout.id,
-  })
   const expectedBenefits = checkout.product.benefits.length
+  const { data: benefitGrants, refetch } = useCustomerBenefitGrants(
+    api,
+    { checkout_id: checkout.id },
+    {
+      refetchInterval: (data) =>
+        data && data.items.length >= expectedBenefits
+          ? false
+          : maxWaitingTimeMs,
+    },
+  )
 
   const customerEvents = useCustomerSSE(customerSessionToken)
   useEffect(() => {
@@ -39,16 +46,6 @@ const CheckoutBenefits = ({
       customerEvents.off('benefit.granted', refetch)
     }
   }, [customerEvents, refetch])
-
-  useEffect(() => {
-    if (benefitGrants && benefitGrants.items.length >= expectedBenefits) {
-      return
-    }
-    const intervalId = setInterval(() => {
-      refetch()
-    }, maxWaitingTimeMs)
-    return () => clearInterval(intervalId)
-  }, [benefitGrants, expectedBenefits, maxWaitingTimeMs, refetch])
 
   if (expectedBenefits === 0) {
     return null

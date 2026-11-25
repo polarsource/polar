@@ -1,4 +1,4 @@
-name: Demo config plan
+name: Demo config validate
 
 on:
   pull_request:
@@ -66,4 +66,4 @@ jobs:
           POLAR_ENVIRONMENT: sandbox
           POLAR_ACCESS_TOKEN: ${{ secrets.DEMO_POLAR_ACCESS_TOKEN }}
           GITHUB_TOKEN: ${{ github.token }}
-        run: bun ../../packages/cli/src/cli.ts config plan --pr-comment
+        run: bun ../../packages/cli/src/cli.ts config validate --pr-comment

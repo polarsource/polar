@@ -214,8 +214,8 @@ describe('polar config init', () => {
     expect(output).toMatch(
       /2 {2}Add your meters, benefits and products +polar\.config\.ts/,
     )
-    expect(output).toContain('polar config plan')
-    expect(output).toContain('polar config apply')
+    expect(output).toContain('polar config validate')
+    expect(output).toContain('polar config draft')
   })
 
   test('says what it read from the catalog', async () => {
@@ -458,8 +458,8 @@ describe('polar config init', () => {
     const { output } = await run(['billing/polar.config.ts', '--json'])
 
     expect(JSON.parse(output).next.slice(-2)).toEqual([
-      'polar config plan billing/polar.config.ts',
-      'polar config apply billing/polar.config.ts',
+      'polar config validate billing/polar.config.ts',
+      'polar config draft billing/polar.config.ts',
     ])
   })
 
@@ -485,8 +485,8 @@ describe('polar config init', () => {
       organization: acme,
       next: [
         'Describe your meters, benefits and products in polar.config.ts',
-        'polar config plan',
-        'polar config apply',
+        'polar config validate',
+        'polar config draft',
       ],
     })
   })
@@ -541,9 +541,9 @@ describe('polar config init', () => {
     expect(result.next).toEqual([
       "If you don't have the polar-config skill, run polar agent setup --skills project and read .agents/skills/polar-config/SKILL.md. It sets up Polar for this agent and adds the Polar skills to this project, so tell the user before you run it.",
       "Write the meters, benefits and products into polar.config.ts from this app's pricing. Ask the user for any price you cannot find, never invent one.",
-      'Run polar config plan --json and fix every error it reports in the file.',
+      'Run polar config validate --json and fix every error it reports in the file.',
       'Tell the user what would change and wait for their go-ahead.',
-      'Run polar config apply --confirm. If it saves a draft, ask before running polar config publish --confirm.',
+      'Run polar config draft --confirm. If it saves a draft, ask before running polar config publish --confirm.',
     ])
   })
 
@@ -557,8 +557,8 @@ describe('polar config init', () => {
     const result = JSON.parse(output)
     expect(result.org).toBe('org-2')
     expect(result.next.slice(-2)).toEqual([
-      'polar config plan --org org-2',
-      'polar config apply --org org-2',
+      'polar config validate --org org-2',
+      'polar config draft --org org-2',
     ])
   })
 
@@ -771,7 +771,7 @@ describe('polar config init', () => {
       )
 
       expect(JSON.parse(output).next.slice(1, 3)).toEqual([
-        'polar.config.ts matches the catalog on Polar, so the config is set up. If the user asked for no change, run polar config plan to confirm nothing would change, tell them it is ready and stop.',
+        'polar.config.ts matches the catalog on Polar, so the config is set up. If the user asked for no change, run polar config validate to confirm nothing would change, tell them it is ready and stop.',
         'Otherwise make their change in polar.config.ts. Ask the user for any price you cannot find, never invent one.',
       ])
     })

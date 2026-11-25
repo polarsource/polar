@@ -64,10 +64,10 @@ describe('planMarkdown', () => {
   test('titles, notes the target and diffs each changed section', () => {
     expect(planMarkdown(config, acme, { entries, issues: [] })).toBe(
       [
-        '## Polar billing plan updated',
+        '## Polar billing config changed',
         '',
         '> [!NOTE]',
-        "> Applying the config in this pull request changes billing for **Acme\\_Inc** in sandbox. Review every change below before it's applied.",
+        "> Publishing the config in this pull request changes billing for **Acme\\_Inc** in sandbox. Review every change below before it's published.",
         '',
         '| Organization | Environment | Config | Changes |',
         '| --- | --- | --- | --- |',
@@ -143,7 +143,9 @@ describe('planMarkdown', () => {
         },
       ],
     })
-    expect(output).toContain("> [!CAUTION]\n> `polar.json` can't be applied")
+    expect(output).toContain(
+      "> [!CAUTION]\n> `polar.json` can't be saved to the draft",
+    )
     expect(output).toMatch(/#### Problems\n\n```\n.*Error:.*\n```$/s)
   })
 

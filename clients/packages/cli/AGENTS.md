@@ -21,7 +21,7 @@ The `polar-cli/*` rules in `lint/rules/` enforce these boundaries. Run
 ## Running it locally
 
 Run the local CLI from source as `dev polar <command>` (the `dev` CLI runs
-`src/` in your current directory, so `dev polar config plan` from
+`src/` in your current directory, so `dev polar config validate` from
 `clients/apps/demo-app` picks up its `polar.config.ts`). Never test against a
 compiled `polar` binary with saved sessions: macOS treats the fresh binary as
 untrusted and prompts for the keychain password on every read. When a compiled

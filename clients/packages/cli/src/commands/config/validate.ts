@@ -17,7 +17,7 @@ import {
   found,
   next,
   overview,
-  runApply,
+  runDraft,
   sections,
   target,
   unchanged,
@@ -40,37 +40,39 @@ const render = (
     : unchanged(result.entries)
       ? [
           ui.blank,
-          ui.success(`${target(organization)} is up to date, nothing to apply`),
+          ui.success(
+            `${target(organization)} is up to date, nothing to change`,
+          ),
         ]
-      : next(runApply)),
+      : next(runDraft)),
   ui.blank,
 ]
 
-export const plan = Command.make('plan', { file, org, prComment }).pipe(
+export const validate = Command.make('validate', { file, org, prComment }).pipe(
   Command.withDescription(
-    'Show what applying a billing config file would change, without applying it',
+    'Check a billing config file and show what saving it to the draft would change, without changing anything',
   ),
   Command.withExamples([
     {
-      command: 'polar config plan',
+      command: 'polar config validate',
       description: 'Check polar.config.ts in the current directory',
     },
     {
-      command: 'polar config plan billing/polar.json',
+      command: 'polar config validate billing/polar.json',
       description: 'Check a specific file',
     },
     {
-      command: 'polar config plan --org acme',
+      command: 'polar config validate --org acme',
       description: 'Check against another organization, by slug or ID',
     },
     {
-      command: 'polar config plan --json',
+      command: 'polar config validate --json',
       description: 'Print the changes and issues as JSON',
     },
     {
-      command: 'polar config plan --pr-comment',
+      command: 'polar config validate --pr-comment',
       description:
-        'Also post the plan on the pull request being built, in GitHub Actions or Buildkite',
+        'Also post the changes on the pull request being built, in GitHub Actions or Buildkite',
     },
   ]),
   output({
@@ -120,7 +122,7 @@ export const plan = Command.make('plan', { file, org, prComment }).pipe(
     failed: ({ config, result }) =>
       errors(result.issues) > 0
         ? new BillingConfigError({
-            message: `${config.file} cannot be applied`,
+            message: `${config.file} has errors`,
           })
         : undefined,
   }),

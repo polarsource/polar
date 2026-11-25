@@ -35,9 +35,9 @@ export const catalogChange = (
   `${before === null ? dim('none') : (before.name ?? dim('unnamed'))} ${dim('→')} ${name} ${dim('(draft)')}`
 
 export const fixErrors = (issues: ReadonlyArray<ConfigIssue>) =>
-  `${ui.INDENT}Fix the ${errors(issues) === 1 ? 'error' : `${errors(issues)} errors`} above, then run ${ui.command('polar config plan')} again.`
+  `${ui.INDENT}Fix the ${errors(issues) === 1 ? 'error' : `${errors(issues)} errors`} above, then run ${ui.command('polar config validate')} again.`
 
-export const runApply = `${ui.INDENT}Run ${ui.command('polar config apply')} to apply it.`
+export const runDraft = `${ui.INDENT}Run ${ui.command('polar config draft')} to save it to the draft.`
 
 export const unchanged = (entries: ReadonlyArray<AppliedEntry>) =>
   entries.every((entry) => entry.action === 'unchanged')
@@ -69,7 +69,7 @@ export const found = (config: LoadedConfig) => {
     ...(settings && Object.keys(settings).length > 0 ? ['settings'] : []),
     ...counts(config.input),
   ]
-  return all.length === 0 ? 'nothing to apply' : all.join(', ')
+  return all.length === 0 ? 'nothing to change' : all.join(', ')
 }
 
 const ENVIRONMENT_COLORS: Record<PolarEnvironment, (text: string) => string> = {

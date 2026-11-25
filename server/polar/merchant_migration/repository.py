@@ -1,4 +1,4 @@
-from collections.abc import AsyncGenerator, Mapping, Sequence
+from collections.abc import AsyncGenerator, Collection, Mapping, Sequence
 from dataclasses import replace
 from datetime import datetime
 from typing import Any, cast
@@ -231,6 +231,29 @@ class MerchantMigrationRecordRepository(
             MerchantMigrationRecord.source_id == source_id,
         )
         return await self.get_one_or_none(statement)
+
+    async def get_imported_target_ids(
+        self,
+        *,
+        organization_id: UUID,
+        type: MerchantMigrationRecordType,
+        source_ids: Collection[str],
+    ) -> dict[str, UUID]:
+        statement = select(
+            MerchantMigrationRecord.source_id, MerchantMigrationRecord.target_id
+        ).where(
+            MerchantMigrationRecord.organization_id == organization_id,
+            MerchantMigrationRecord.type == type,
+            MerchantMigrationRecord.source_id.in_(source_ids),
+            MerchantMigrationRecord.status == MerchantMigrationRecordStatus.imported,
+            MerchantMigrationRecord.deleted_at.is_(None),
+        )
+        result = await self.session.execute(statement)
+        return {
+            source_id: target_id
+            for source_id, target_id in result.all()
+            if target_id is not None
+        }
 
     async def set_subscription_tax_behavior(
         self, migration_id: UUID, tax_behavior: TaxBehavior

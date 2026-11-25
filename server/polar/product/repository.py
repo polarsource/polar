@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from typing import cast
 from uuid import UUID
 
@@ -158,6 +158,17 @@ class ProductRepository(
             )
         )
         return await self.get_all(statement)
+
+    async def get_names_by_ids(
+        self, organization_id: UUID, ids: Collection[UUID]
+    ) -> dict[UUID, str]:
+        statement = select(Product.id, Product.name).where(
+            Product.organization_id == organization_id,
+            Product.id.in_(ids),
+            Product.deleted_at.is_(None),
+        )
+        result = await self.session.execute(statement)
+        return {id: name for id, name in result.all()}
 
     async def get_all_by_external_ids(
         self,

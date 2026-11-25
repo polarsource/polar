@@ -959,7 +959,7 @@ class ReducerService:
         redis: Redis,
         customer_meter: CustomerMeter,
         get_late_usage: Callable[[], Awaitable[UsageSummary]],
-        get_legacy_usage: Callable[[], Awaitable[float]],
+        get_legacy_usage: Callable[[], Awaitable[Decimal]],
         get_usage_ingested_before: Callable[[datetime], Awaitable[UsageSummary]],
     ) -> None:
         if isinstance(customer_meter.meter.aggregation, UniqueAggregation):
@@ -1001,9 +1001,7 @@ class ReducerService:
                                 consumed_units_with_late_usage,
                                 customer_meter.consumed_units,
                             ):
-                                legacy_consumed_units_after = Decimal(
-                                    await get_legacy_usage()
-                                )
+                                legacy_consumed_units_after = await get_legacy_usage()
                                 # Legacy also counts usage ingested before the
                                 # reducer was created, which it only has if backfilled.
                                 if not _is_between(

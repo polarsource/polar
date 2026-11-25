@@ -136,19 +136,6 @@ class TestCreate:
         assert response.status_code == 422
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
-    async def test_lemon_squeezy_without_feature_flag_returns_403(
-        self,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        response = await client.post(
-            "/v1/merchant-migrations/",
-            json=_body(organization, source_platform="lemon_squeezy", api_key="ls"),
-        )
-        assert response.status_code == 403
-
-    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
     async def test_missing_scopes_returns_400(
         self,
         client: AsyncClient,
@@ -793,6 +780,38 @@ class TestStartPanTransfer:
         response = await client.post(
             f"/v1/merchant-migrations/{migration.id}/pan-transfer"
         )
+        assert response.status_code == 409
+
+
+@pytest.mark.anyio
+class TestBenefits:
+    async def test_anonymous(
+        self, client: AsyncClient, save_fixture: SaveFixture, organization: Organization
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        response = await client.get(f"/v1/merchant-migrations/{migration.id}/benefits")
+        assert response.status_code == 401
+
+    @pytest.mark.parametrize("method", ["GET", "POST"])
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_stripe_migration_has_none(
+        self,
+        method: str,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _create_migration(
+            save_fixture, organization, step=MerchantMigrationStep.create_catalog
+        )
+
+        response = await client.request(
+            method,
+            f"/v1/merchant-migrations/{migration.id}/benefits",
+            json={"ids": []} if method == "POST" else None,
+        )
+
         assert response.status_code == 409
 
 

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { Effect } from 'effect'
 import { FetchHttpClient } from 'effect/http'
-import { plan } from '@/commands/config/plan'
+import { validate } from '@/commands/config/validate'
 import type { LoadedConfig, PlanResult } from '@/schemas/BillingConfig'
 import { Environment } from '@/services/api'
 import { Auth } from '@/services/auth'
@@ -54,7 +54,7 @@ const locked = {
 }
 
 const run = async (result: PlanResult, args: string[] = []) => {
-  const cli = runCli(plan, ['polar.json', ...args])
+  const cli = runCli(validate, ['polar.json', ...args])
   const exit = await Effect.runPromiseExit(
     cli.effect.pipe(
       Effect.provideService(
@@ -91,12 +91,12 @@ const run = async (result: PlanResult, args: string[] = []) => {
 const TREE =
   /│ {2}\+ tool-calls *│\n *│ {6}events {7}all events *│\n *│ {6}aggregation {2}count *│/
 
-describe('polar config plan', () => {
+describe('polar config validate', () => {
   test('shows the changes and succeeds with warnings', async () => {
     const { output, failed } = await run({ entries, issues: [warning] })
     expect(failed).toBe(false)
     expect(output).toMatch(
-      /Summary\n {2}╭─+╮\n *│ {2}Organization {2}Acme *│\n *│ {2}Environment {3}sandbox *│\n *│ {2}File {10}polar\.json *│\n *│ {2}Changes {7}0 to change, 1 to add, 0 unchanged *│\n *│ {2}Issues {8}1 warning *│\n {2}╰─+╯\n\n {2}Next\n {2}╭─+╮\n *│ {2}Run polar config apply to apply it\. *│\n {2}╰─+╯\n$/,
+      /Summary\n {2}╭─+╮\n *│ {2}Organization {2}Acme *│\n *│ {2}Environment {3}sandbox *│\n *│ {2}File {10}polar\.json *│\n *│ {2}Changes {7}0 to change, 1 to add, 0 unchanged *│\n *│ {2}Issues {8}1 warning *│\n {2}╰─+╯\n\n {2}Next\n {2}╭─+╮\n *│ {2}Run polar config draft to save it to the draft\. *│\n {2}╰─+╯\n$/,
     )
     expect(output).toMatch(TREE)
     expect(output).toContain(
@@ -113,7 +113,7 @@ describe('polar config plan', () => {
     expect(failed).toBe(false)
     expect(output).toContain('Changes       0 to change, 1 to add, 0 unchanged')
     expect(output).toMatch(
-      /│ {2}Run polar config apply to apply it\. *│\n {2}╰─+╯\n$/,
+      /│ {2}Run polar config draft to save it to the draft\. *│\n {2}╰─+╯\n$/,
     )
   })
 
@@ -135,7 +135,7 @@ describe('polar config plan', () => {
     expect(output).toContain(
       'Changes       0 to change, 0 to add, 1 to remove, 0 unchanged',
     )
-    expect(output).toContain('Run polar config apply to apply it.')
+    expect(output).toContain('Run polar config draft to save it to the draft.')
   })
 
   test('shows the catalog change once, in the summary', async () => {
@@ -170,7 +170,7 @@ describe('polar config plan', () => {
     expect(output).toContain('Warning:')
     expect(output).toContain('Issues        1 error, 1 warning')
     expect(output).toContain(
-      'Fix the error above, then run polar config plan again.',
+      'Fix the error above, then run polar config validate again.',
     )
   })
 

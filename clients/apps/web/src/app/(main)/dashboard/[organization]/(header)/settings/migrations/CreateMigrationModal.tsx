@@ -14,7 +14,11 @@ import { useState } from 'react'
 import { ConnectGuide } from './ConnectGuide'
 import { LemonSqueezyConnectForm } from './LemonSqueezyConnectForm'
 import { SourceMark } from './SourceMark'
-import { ConnectableSource, SOURCE_LABELS } from './sources'
+import {
+  CONNECTABLE_SOURCES,
+  ConnectableSource,
+  SOURCE_LABELS,
+} from './sources'
 import {
   parseMissingStripeScopes,
   stripeKeyError,
@@ -25,16 +29,16 @@ const CONNECT_FALLBACK = 'Please check the API key and try again.'
 
 export function CreateMigrationModal({
   organizationId,
-  sources = ['stripe'],
   onCreated,
   onClose,
 }: {
   organizationId: string
-  sources?: ConnectableSource[]
   onCreated: (migration: schemas['MerchantMigration']) => void
   onClose: () => void
 }) {
-  const [source, setSource] = useState<ConnectableSource>(sources[0])
+  const [source, setSource] = useState<ConnectableSource>(
+    CONNECTABLE_SOURCES[0],
+  )
   const [apiKey, setApiKey] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [missingResources, setMissingResources] = useState<string[]>([])
@@ -81,19 +85,17 @@ export function CreateMigrationModal({
         </Text>
       </InlineModalHeader>
 
-      {sources.length > 1 ? (
-        <Box paddingHorizontal="2xl" paddingBottom="xl">
-          <SegmentedControl
-            variant="tabs"
-            value={source}
-            onChange={setSource}
-            options={sources.map((value) => ({
-              value,
-              label: SOURCE_LABELS[value],
-            }))}
-          />
-        </Box>
-      ) : null}
+      <Box paddingHorizontal="2xl" paddingBottom="xl">
+        <SegmentedControl
+          variant="tabs"
+          value={source}
+          onChange={setSource}
+          options={CONNECTABLE_SOURCES.map((value) => ({
+            value,
+            label: SOURCE_LABELS[value],
+          }))}
+        />
+      </Box>
 
       <Box
         alignItems="center"
@@ -141,7 +143,6 @@ export function CreateMigrationModal({
                 setError(null)
                 setMissingResources([])
               }}
-              autoFocus
             />
             {keyError ? (
               <Text variant="caption" color="danger" role="alert">

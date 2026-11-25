@@ -655,6 +655,10 @@ class StripeAdapter:
             return None
         return self._id_of(product)
 
+    async def get_license_key(self, subscription: CanonicalSubscription) -> None:
+        """Stripe has no license keys."""
+        return
+
     async def stop_source_subscription(
         self,
         source_id: str,

@@ -272,16 +272,6 @@ class OrganizationFeatureSettings(Schema):
             ),
         ),
     ] = False
-    lemon_squeezy_migration_enabled: Annotated[
-        bool,
-        Version(starting_from=V2027_01),
-        Field(
-            description=(
-                "If this organization can migrate its billing from Lemon Squeezy "
-                "to Polar."
-            ),
-        ),
-    ] = False
 
 
 class OrganizationFeatureSettingsUpdate(Schema):
@@ -665,6 +655,18 @@ class OrganizationEmbedStatus(Schema):
         description=(
             "Entries of `embed_hosts` admitting every tenant of a platform, "
             "such as `*.vercel.app`."
+        )
+    )
+    wallet_hosts: list[str] = Field(
+        description=(
+            "Entries of `embed_hosts` registered with Stripe for wallet payments, "
+            "such as Apple Pay and Google Pay."
+        )
+    )
+    pending_wallet_hosts: list[str] = Field(
+        description=(
+            "Entries of `embed_hosts` that get wallet payments once the "
+            "organization can take payments."
         )
     )
 

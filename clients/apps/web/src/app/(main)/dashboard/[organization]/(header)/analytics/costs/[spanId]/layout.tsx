@@ -1,7 +1,6 @@
 import CostsSidebarFilters from '@/components/Costs/CostsSidebarFilters'
 import { CostsSidebarTitle } from '@/components/Costs/CostsSidebarTitle'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 
 export default async function Layout({
@@ -13,11 +12,7 @@ export default async function Layout({
 }) {
   const resolvedParams = await params
   const organizationSlug = resolvedParams.organization
-  const api = await getServerSideAPI()
-  const organization = await getOrganizationBySlugOrNotFound(
-    api,
-    organizationSlug,
-  )
+  const organization = await getOrganizationBySlugOrNotFound(organizationSlug)
 
   return (
     <DashboardBody

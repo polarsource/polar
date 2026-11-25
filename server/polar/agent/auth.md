@@ -118,6 +118,8 @@ Once claimed, you act on behalf of the human: the organization is theirs, and yo
 access. Everything issued to you before the claim stops working, including the old identity
 assertion. Use the new one in Step 3 from now on.
 
+${payments}
+
 ## Step 5: Get a token for the app
 
 Your access token is for setting things up, not for running the app: it expires every hour and,

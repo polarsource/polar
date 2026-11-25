@@ -250,7 +250,7 @@ describe('tally and planSummary', () => {
   test('summarises a plan with additions in green and changes in yellow', () => {
     const summary = planSummary(entries)
     expect(stripAnsi(summary)).toBe(
-      '  Plan: 1 to change, 2 to add, 1 unchanged',
+      '  Changes: 1 to change, 2 to add, 1 unchanged',
     )
     expect(summary).toContain(ui.yellow('1 to change'))
     expect(summary).toContain(ui.green('2 to add'))

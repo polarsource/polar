@@ -1,6 +1,5 @@
 import { DraftVersionBanner } from '@/components/Products/DraftVersionBanner'
 import { formatPublishedAt } from '@/components/Products/ProductPage/ProductVersionBanner'
-import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useCatalog, useLiveCatalog } from '@/hooks/queries/catalogs'
 import { useMeters } from '@/hooks/queries/meters'
 import { schemas } from '@polar-sh/client'
@@ -15,7 +14,8 @@ export const MeterVersionBanner = ({
   organization: schemas['Organization']
   meter: schemas['Meter']
 }) => {
-  const managedAsCode = useIsManagedAsCode(organization.id)
+  const managedAsCode =
+    organization.feature_settings?.config_as_code_enabled ?? false
   const { data: catalog } = useCatalog(managedAsCode ? meter.catalog_id : null)
 
   if (

@@ -9,6 +9,7 @@ up here beyond brand and last four: moving them is a PAN import.
 
 import asyncio
 import hashlib
+import uuid
 from collections.abc import AsyncIterator
 from datetime import datetime
 from decimal import Decimal
@@ -32,12 +33,15 @@ from ..canonical import (
     CanonicalDiscount,
     CanonicalDiscountDuration,
     CanonicalDiscountType,
+    CanonicalLicenseKey,
+    CanonicalLicenseKeyActivation,
     CanonicalLicenseKeySettings,
     CanonicalPaymentMethod,
     CanonicalPaymentMethodType,
     CanonicalPrice,
     CanonicalPricingScheme,
     CanonicalProduct,
+    CanonicalPurchase,
     CanonicalRecord,
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
@@ -118,6 +122,7 @@ class LemonSqueezyAdapter:
         self._redemptions_by_order: dict[str, list[dict[str, Any]]] | None = None
         self._redemption_counts: dict[str, int] = {}
         self._order_tax_behaviors: dict[str, TaxBehavior] | None = None
+        self._license_keys: dict[str, CanonicalLicenseKey | None] | None = None
 
     async def _request(
         self, method: str, path: str, params: dict[str, Any] | None = None
@@ -504,6 +509,68 @@ class LemonSqueezyAdapter:
         self._redemptions_by_order = by_order
         return by_order
 
+    async def _load_license_keys(self) -> dict[str, CanonicalLicenseKey | None]:
+        """Keys per order item, with their activations: a one-time purchase's
+        key belongs to its only item. None marks an item whose key was disabled
+        or has expired."""
+        if self._license_keys is not None:
+            return self._license_keys
+        usable: dict[str, dict[str, Any]] = {}
+        keys: dict[str, CanonicalLicenseKey | None] = {}
+        page = 1
+        while True:
+            license_keys, has_more, _ = await self._list(
+                "/license-keys", page, self._store_filter
+            )
+            for license_key in license_keys:
+                order_item_id = str(license_key["attributes"]["order_item_id"])
+                if _usable_key(license_key):
+                    usable.setdefault(order_item_id, license_key)
+                else:
+                    keys.setdefault(order_item_id, None)
+            if not has_more:
+                break
+            page += 1
+        activations = (
+            await self._load_activations()
+            if any(_activated(license_key) for license_key in usable.values())
+            else {}
+        )
+        for order_item_id, license_key in usable.items():
+            keys[order_item_id] = CanonicalLicenseKey(
+                key=str(license_key["attributes"]["key"]),
+                activations=activations.get(str(license_key["id"]), []),
+                expires_at=parse_datetime(license_key["attributes"].get("expires_at")),
+            )
+        self._license_keys = keys
+        return keys
+
+    async def _load_activations(
+        self, license_key_id: str | None = None
+    ) -> dict[str, list[CanonicalLicenseKeyActivation]]:
+        """Activations per license key id, of one key or of every key the API
+        key can read: `/license-key-instances` has no store filter."""
+        params = {"filter[license_key_id]": license_key_id} if license_key_id else None
+        activations: dict[str, list[CanonicalLicenseKeyActivation]] = {}
+        page = 1
+        while True:
+            instances, has_more, _ = await self._list(
+                "/license-key-instances", page, params
+            )
+            for instance in instances:
+                attributes = instance["attributes"]
+                if not _is_uuid4(attributes.get("identifier")):
+                    continue
+                activations.setdefault(str(attributes["license_key_id"]), []).append(
+                    CanonicalLicenseKeyActivation(
+                        id=attributes["identifier"],
+                        label=attributes.get("name") or "Lemon Squeezy",
+                    )
+                )
+            if not has_more:
+                return activations
+            page += 1
+
     async def list_benefits(self) -> list[CanonicalBenefit]:
         """License key settings, files and links per variant, grouped so
         variants that give the same thing share one benefit. Keys are never
@@ -531,6 +598,7 @@ class LemonSqueezyAdapter:
             page += 1
 
         files_by_variant = await self._load_files({v["id"] for v, _ in variants})
+        await self._load_all_prices()
         groups: dict[str, CanonicalBenefit] = {}
 
         def add(
@@ -541,7 +609,7 @@ class LemonSqueezyAdapter:
             **payload: Any,
         ) -> None:
             source_id = f"{self.store_id}:{type}:{key}"
-            groups.setdefault(
+            benefit = groups.setdefault(
                 source_id,
                 CanonicalBenefit(
                     source_id=source_id,
@@ -550,7 +618,12 @@ class LemonSqueezyAdapter:
                     product_source_ids=[],
                     **payload,
                 ),
-            ).product_source_ids.append(variant_id)
+            )
+            benefit.product_source_ids.append(variant_id)
+            if self._prices_by_variant.get(
+                variant_id
+            ) and not self._is_subscription_variant(variant_id):
+                benefit.for_one_time = True
 
         for variant, product_name in variants:
             attributes = variant["attributes"]
@@ -625,6 +698,49 @@ class LemonSqueezyAdapter:
         response.raise_for_status()
         return response.json()["data"]["attributes"]["download_url"]
 
+    async def list_purchases(self, page: int) -> tuple[list[CanonicalPurchase], bool]:
+        """One page of paid one-time orders, a partly refunded one included.
+        An order that started a subscription moves with the subscription."""
+        orders, has_more, _ = await self._list("/orders", page, self._store_filter)
+        license_keys = await self._load_license_keys()
+        await self._load_all_prices()
+        purchases: list[CanonicalPurchase] = []
+        for order in orders:
+            attributes = order["attributes"]
+            item = attributes.get("first_order_item") or {}
+            if attributes.get("status") not in ("paid", "partial_refund"):
+                continue
+            if not item or not attributes.get("user_email"):
+                continue
+            if self._is_subscription_order(item):
+                continue
+            purchases.append(
+                CanonicalPurchase(
+                    source_id=order["id"],
+                    product_source_id=str(item["variant_id"]),
+                    email=attributes["user_email"],
+                    name=attributes.get("user_name"),
+                    license_key=license_keys.get(str(item["id"])),
+                    license_key_disabled=str(item["id"]) in license_keys
+                    and license_keys[str(item["id"])] is None,
+                )
+            )
+        return purchases, has_more
+
+    def _is_subscription_order(self, item: dict[str, Any]) -> bool:
+        """Whether the order started a subscription, from the price it was paid
+        at: the variant may have switched to a subscription since."""
+        price = self._prices_by_id.get(str(item.get("price_id")))
+        if price is not None:
+            return _renews(price)
+        return self._is_subscription_variant(str(item["variant_id"]))
+
+    def _is_subscription_variant(self, variant_id: str) -> bool:
+        prices = self._prices_by_variant.get(variant_id, [])
+        return bool(prices) and _renews(
+            max(prices, key=lambda price: price["attributes"]["created_at"])
+        )
+
     async def get_subscription(self, source_id: str) -> CanonicalSubscription | None:
         body = await self._retrieve_subscription(source_id)
         if (
@@ -639,6 +755,39 @@ class LemonSqueezyAdapter:
             await self._load_order_tax_behaviors(),
             await self._currency(),
             _customer_countries(body.get("included", [])),
+        )
+
+    async def get_license_key(
+        self, subscription: CanonicalSubscription
+    ) -> CanonicalLicenseKey | None:
+        """The usable key of the order item that started the subscription, with
+        its activations, read on its own so the cutover never pages every key
+        of the store."""
+        if subscription.order_item_source_id is None:
+            return None
+        license_keys, _, _ = await self._list(
+            "/license-keys",
+            1,
+            {
+                **self._store_filter,
+                "filter[order_item_id]": subscription.order_item_source_id,
+            },
+        )
+        license_key = next(
+            (license_key for license_key in license_keys if _usable_key(license_key)),
+            None,
+        )
+        if license_key is None:
+            return None
+        activations = (
+            await self._load_activations(str(license_key["id"]))
+            if _activated(license_key)
+            else {}
+        )
+        return CanonicalLicenseKey(
+            key=str(license_key["attributes"]["key"]),
+            activations=activations.get(str(license_key["id"]), []),
+            expires_at=parse_datetime(license_key["attributes"].get("expires_at")),
         )
 
     async def stop_source_subscription(
@@ -739,6 +888,9 @@ class LemonSqueezyAdapter:
             # Lemon Squeezy is the merchant of record and always computes tax.
             automatic_tax=True,
             price_tax_behavior=tax_behaviors.get(str(attributes["order_id"])),
+            order_item_source_id=str(attributes["order_item_id"])
+            if attributes.get("order_item_id") is not None
+            else None,
         )
 
     def _price_id(self, item: dict[str, Any], variant_id: Any) -> str:
@@ -852,6 +1004,27 @@ def _renews(price: dict[str, Any]) -> bool:
     # One-time prices carry a renewal interval too; only the category says
     # whether the price renews.
     return price["attributes"].get("category") == "subscription"
+
+
+def _activated(license_key: dict[str, Any]) -> bool:
+    return bool(license_key["attributes"].get("instances_count"))
+
+
+def _is_uuid4(value: object) -> bool:
+    try:
+        return uuid.UUID(str(value)).version == 4
+    except ValueError:
+        return False
+
+
+def _usable_key(license_key: dict[str, Any]) -> bool:
+    # An expired key isn't revived: Polar would restart its term from today.
+    attributes = license_key["attributes"]
+    return (
+        bool((attributes.get("key") or "").strip())
+        and not attributes.get("disabled")
+        and attributes.get("status") not in ("disabled", "expired")
+    )
 
 
 def _digest(value: str) -> str:

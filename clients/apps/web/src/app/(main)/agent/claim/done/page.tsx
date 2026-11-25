@@ -1,4 +1,3 @@
-import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlug } from '@/utils/organization'
 import { getAuthenticatedUser } from '@/utils/user'
 import { Metadata } from 'next'
@@ -25,9 +24,7 @@ export default async function Page(props: {
     )
   }
 
-  const organization = slug
-    ? await getOrganizationBySlug(await getServerSideAPI(), slug, false)
-    : undefined
+  const organization = slug ? await getOrganizationBySlug(slug) : undefined
 
   return <AgentClaimSuccess organization={organization ?? null} />
 }

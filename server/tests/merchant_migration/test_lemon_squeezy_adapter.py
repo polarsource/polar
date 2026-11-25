@@ -17,6 +17,8 @@ from polar.merchant_migration.canonical import (
     CanonicalDiscount,
     CanonicalDiscountDuration,
     CanonicalDiscountType,
+    CanonicalLicenseKey,
+    CanonicalLicenseKeyActivation,
     CanonicalPaymentMethodType,
     CanonicalPricingScheme,
     CanonicalProduct,
@@ -84,6 +86,7 @@ def _subscription(**overrides: Any) -> dict[str, Any]:
             "billing_anchor": 15,
             "renews_at": "2026-12-15T00:00:00.000000Z",
             "ends_at": None,
+            "order_item_id": 80,
             "first_subscription_item": {"id": 1, "price_id": 21, "quantity": 1},
             "created_at": "2026-11-01T00:00:00.000000Z",
             **overrides,
@@ -186,7 +189,42 @@ ROUTES: dict[str, dict[str, Any]] = {
     "/v1/orders": _page(
         [{"type": "orders", "id": "70", "attributes": {"tax_inclusive": False}}]
     ),
+    "/v1/license-keys": _page(
+        [
+            {
+                "type": "license-keys",
+                "id": "60",
+                "attributes": {
+                    "order_item_id": 80,
+                    "key": "KEY-SUB",
+                    "status": "active",
+                },
+            },
+            {
+                "type": "license-keys",
+                "id": "61",
+                "attributes": {"order_item_id": 81, "key": "KEY-OFF", "disabled": True},
+            },
+        ]
+    ),
 }
+
+
+ACTIVATION_ID = "16a12ab5-d7b7-442e-a2db-e9dfa14a05de"
+
+
+def _instance(
+    instance_id: str, license_key_id: int, identifier: str, name: str
+) -> dict[str, Any]:
+    return {
+        "type": "license-key-instances",
+        "id": instance_id,
+        "attributes": {
+            "license_key_id": license_key_id,
+            "identifier": identifier,
+            "name": name,
+        },
+    }
 
 
 def _adapter(
@@ -253,6 +291,7 @@ class TestExtract:
         assert subscription.payment_method.last4 == "4242"
         assert subscription.price_tax_behavior == TaxBehavior.exclusive
         assert subscription.import_tax_behavior() == TaxBehavior.exclusive
+        assert subscription.order_item_source_id == "80"
 
     async def test_usage_price_reads_decimal_cents(self) -> None:
         usage = {"usage_aggregation": "sum"}
@@ -398,6 +437,60 @@ class TestGetSourceAccount:
 
 @pytest.mark.anyio
 class TestGetSubscription:
+    async def test_reads_the_subscriptions_license_key(self) -> None:
+        adapter, requests = _adapter(
+            {
+                "/v1/subscriptions/100": {"data": _subscription()},
+                "/v1/license-keys": _page(
+                    [
+                        {
+                            "type": "license-keys",
+                            "id": "60",
+                            "attributes": {
+                                "order_item_id": 80,
+                                "key": "KEY-SUB",
+                                "status": "active",
+                                "instances_count": 2,
+                            },
+                        }
+                    ]
+                ),
+                "/v1/license-key-instances": _page(
+                    [
+                        _instance("1", 60, ACTIVATION_ID, "Ada's laptop"),
+                        _instance("2", 60, "not-a-uuid", "Old device"),
+                    ]
+                ),
+            }
+        )
+
+        subscription = await adapter.get_subscription("100")
+        assert subscription is not None
+
+        assert await adapter.get_license_key(subscription) == CanonicalLicenseKey(
+            key="KEY-SUB",
+            activations=[
+                CanonicalLicenseKeyActivation(id=ACTIVATION_ID, label="Ada's laptop")
+            ],
+        )
+        [lookup] = [r for r in requests if r.url.path == "/v1/license-keys"]
+        assert lookup.url.params["filter[order_item_id]"] == "80"
+        [instances] = [r for r in requests if r.url.path == "/v1/license-key-instances"]
+        assert instances.url.params["filter[license_key_id]"] == "60"
+
+    async def test_skips_activations_of_a_key_without_any(self) -> None:
+        adapter, requests = _adapter(
+            {"/v1/subscriptions/100": {"data": _subscription()}}
+        )
+
+        subscription = await adapter.get_subscription("100")
+        assert subscription is not None
+
+        assert await adapter.get_license_key(subscription) == CanonicalLicenseKey(
+            key="KEY-SUB"
+        )
+        assert not [r for r in requests if r.url.path == "/v1/license-key-instances"]
+
     async def test_period_start_keeps_month_end_anchor(self) -> None:
         adapter, _ = _adapter(
             {
@@ -638,6 +731,7 @@ class TestListBenefits:
         assert limited.product_source_ids == ["10", "11"]
         assert limited.license_keys is not None
         assert limited.license_keys.activation_limit == 3
+        assert not limited.for_one_time
         assert (
             limited.license_keys.expires_ttl,
             limited.license_keys.expires_timeframe,
@@ -654,6 +748,114 @@ class TestListBenefits:
         assert links.product_source_ids == ["11"]
         assert [(link.title, link.url) for link in links.links] == [
             ("Docs", "https://example.com")
+        ]
+
+
+@pytest.mark.anyio
+class TestListPurchases:
+    async def test_keeps_paid_one_time_orders(self) -> None:
+        def order(
+            order_id: str, variant_id: int, item_id: int, **attributes: Any
+        ) -> dict[str, Any]:
+            return {
+                "type": "orders",
+                "id": order_id,
+                "attributes": {
+                    "status": "paid",
+                    "refunded": False,
+                    "user_email": "ada@example.com",
+                    "user_name": "Ada",
+                    "first_order_item": {"id": item_id, "variant_id": variant_id},
+                    **attributes,
+                },
+            }
+
+        adapter, _ = _adapter(
+            {
+                "/v1/prices": _page(
+                    [
+                        _price(
+                            "20", 10, 900, "2025-01-01T00:00:00Z", category="one_time"
+                        ),
+                        _price("21", 10, 1200, "2026-01-01T00:00:00Z"),
+                        _price(
+                            "22", 12, 1900, "2026-01-01T00:00:00Z", category="one_time"
+                        ),
+                    ]
+                ),
+                "/v1/orders": _page(
+                    [
+                        order("70", 10, 80),
+                        order("71", 12, 81),
+                        order("72", 12, 82, status="refunded"),
+                        order("73", 12, 83, status="pending"),
+                        order("74", 12, 84),
+                        order("75", 12, 85, status="partial_refund"),
+                        # Bought once, before the variant became a subscription.
+                        order(
+                            "76",
+                            10,
+                            86,
+                            first_order_item={
+                                "id": 86,
+                                "variant_id": 10,
+                                "price_id": 20,
+                            },
+                        ),
+                    ]
+                ),
+                "/v1/license-keys": _page(
+                    [
+                        {
+                            "type": "license-keys",
+                            "id": "60",
+                            "attributes": {
+                                "order_item_id": 84,
+                                "key": "KEY-LIFETIME",
+                                "instances_count": 1,
+                                "expires_at": "2027-03-01T00:00:00Z",
+                            },
+                        },
+                        {
+                            "type": "license-keys",
+                            "id": "61",
+                            "attributes": {
+                                "order_item_id": 81,
+                                "key": "KEY-EXPIRED",
+                                "status": "expired",
+                            },
+                        },
+                    ]
+                ),
+                "/v1/license-key-instances": _page(
+                    [_instance("1", 60, ACTIVATION_ID, "Studio Mac")]
+                ),
+            },
+            store_id="1",
+        )
+
+        purchases, has_more = await adapter.list_purchases(1)
+
+        assert not has_more
+        assert [
+            (p.source_id, p.license_key, p.license_key_disabled) for p in purchases
+        ] == [
+            ("71", None, True),
+            (
+                "74",
+                CanonicalLicenseKey(
+                    key="KEY-LIFETIME",
+                    expires_at=datetime(2027, 3, 1, tzinfo=UTC),
+                    activations=[
+                        CanonicalLicenseKeyActivation(
+                            id=ACTIVATION_ID, label="Studio Mac"
+                        )
+                    ],
+                ),
+                False,
+            ),
+            ("75", None, False),
+            ("76", None, False),
         ]
 
 

@@ -4,6 +4,7 @@ from typing import Annotated
 from uuid import UUID
 
 import structlog
+from dramatiq.errors import Retry
 
 from polar.config import settings
 from polar.exceptions import PolarTaskError
@@ -17,10 +18,13 @@ from polar.worker import (
     RedisMiddleware,
     TaskPriority,
     actor,
+    can_retry,
 )
 
 from . import pan_transfer, slack
+from .benefits import keep_key_state
 from .repository import MerchantMigrationRepository
+from .service import BENEFITS_RUN_LIMIT
 from .service import merchant_migration as merchant_migration_service
 
 log: Logger = structlog.get_logger()
@@ -60,6 +64,50 @@ async def merchant_migration_import_catalog(
     """Create products, discounts, and customers, one batch per run."""
     async with AsyncSessionMaker() as session:
         await merchant_migration_service.execute_import(session, merchant_migration_id)
+
+
+@actor(
+    actor_name="merchant_migration.set_up_benefits",
+    priority=TaskPriority.LOW,
+    time_limit=int(BENEFITS_RUN_LIMIT.total_seconds() * 1000),
+    max_retries=3,
+)
+async def merchant_migration_set_up_benefits(
+    merchant_migration_id: Annotated[UUID, LoggableField],
+    run: Annotated[str, LoggableField],
+) -> None:
+    async with AsyncSessionMaker() as session:
+        await merchant_migration_service.execute_benefits(
+            session, RedisMiddleware.get(), merchant_migration_id, run
+        )
+
+
+@actor(
+    actor_name="merchant_migration.keep_license_key_activations",
+    priority=TaskPriority.LOW,
+    max_retries=10,
+)
+async def merchant_migration_keep_license_key_activations(
+    benefit_grant_id: Annotated[UUID, LoggableField],
+    activations: list[dict[str, str]],
+    expires_at: str | None = None,
+    keep_expiry: bool = False,
+) -> None:
+    async with AsyncSessionMaker() as session:
+        if await keep_key_state(
+            session,
+            benefit_grant_id,
+            activations,
+            datetime.fromisoformat(expires_at) if expires_at else None,
+            keep_expiry=keep_expiry,
+        ):
+            return
+    # The grant task hasn't made the key yet.
+    if can_retry():
+        raise Retry()
+    log.warning(
+        "merchant_migration.activations_not_kept", benefit_grant_id=benefit_grant_id
+    )
 
 
 @actor(

@@ -1,17 +1,29 @@
 import {
+  StatusLabel,
+  type StatusIconProps,
+} from '@/components/Shared/StatusIcon'
+import {
   getPaymentDisplayStatus,
-  PaymentStatusDisplayColor,
   PaymentStatusDisplayTitle,
 } from '@/utils/payment'
 import { schemas } from '@polar-sh/client'
-import { Status } from '@polar-sh/orbit'
+
+const PaymentStatusIcon: Record<
+  ReturnType<typeof getPaymentDisplayStatus>,
+  StatusIconProps
+> = {
+  pending: { shape: 'half', tone: 'yellow' },
+  succeeded: { shape: 'check', tone: 'green' },
+  failed: { shape: 'cross', tone: 'red' },
+  blocked: { shape: 'alert', tone: 'red' },
+}
 
 const PaymentStatus = ({ payment }: { payment: schemas['Payment'] }) => {
   const status = getPaymentDisplayStatus(payment)
   return (
-    <Status
-      color={PaymentStatusDisplayColor[status]}
-      status={PaymentStatusDisplayTitle[status]}
+    <StatusLabel
+      {...PaymentStatusIcon[status]}
+      label={PaymentStatusDisplayTitle[status]}
     />
   )
 }

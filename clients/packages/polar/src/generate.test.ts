@@ -697,6 +697,18 @@ test('leaves empty metadata out of the generated code', async () => {
   expect(source).not.toContain('.metadata(')
 })
 
+test('renders settings as an object literal', async () => {
+  const source = await Effect.runPromise(
+    generateConfig({
+      settings: { payments: { currency: 'eur', tax: 'location' } },
+      meters: [],
+    }),
+  )
+  expect(source).toContain(
+    "  settings: { payments: { currency: 'eur', tax: 'location' } },",
+  )
+})
+
 test('renders date bounds as the UTC day they fall on', async () => {
   const source = await Effect.runPromise(
     generateConfig({

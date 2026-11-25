@@ -1,13 +1,14 @@
 ---
 title: "Migrate from Stripe"
 sidebarTitle: "Migrate from Stripe"
-description: "Move customers, products, subscriptions, and payment data from Stripe to Polar."
+description: "Move your customers, products, subscriptions and saved cards from Stripe to Polar."
 ---
 
 import { MigrationCoexistence, MigrationSwitch } from "/snippets/migration-coexistence.jsx";
 
-Polar currently supports migrations from Stripe. Polar helps you safely migrate
-customers, products, subscriptions, and payment data.
+Move your Stripe subscriptions to Polar without asking customers to enter their
+card again. Customers keep the period they already paid for, and Polar bills
+their next renewal.
 
 ## Before you begin
 
@@ -15,8 +16,8 @@ You need an active Polar organization that is ready to sell, plus access to the
 Stripe account so you can create API keys. The mode of your Stripe key must
 match the Polar environment: live for production or test for sandbox.
 
-Stripe Connect platform accounts and Stripe accounts in India cannot connect to
-the automated flow.
+Stripe accounts in India can't use the automated flow. If you run a Stripe
+Connect platform, only the subscriptions on your own Stripe account move.
 
 ## How coexistence works
 
@@ -28,21 +29,17 @@ until you switch them through Polar.
 
 ## Migration overview
 
-The first and last stages happen in your application. The four stages in the
-middle match the journey under **Settings → Migrations** in Polar.
+Steps 1 and 6 happen in your application. Steps 2 to 5 happen in Polar under
+**Settings → Migrations**.
 
-1. **Move new sales to Polar** — Polar becomes the billing system for every new customer.
-2. **Connect your Stripe account** — Polar gets read and cutover access only.
-3. **Assess and import your catalog** — Products and customers land in Polar; billing stays on Stripe.
-4. **Move saved cards** — Stripe copies cards to Polar for renewals after the switch.
-5. **Switch billing to Polar** — Selected subscriptions stop renewing on Stripe and continue on Polar.
-6. **Reconcile and clean up** — Confirm your application data is correct, then complete the cleanup.
-
-The sections below walk through each stage in full.
+1. **Move new sales to Polar:** every new customer checks out on Polar.
+2. **Connect your Stripe account:** Polar only reads your data, and cancels the subscriptions you switch.
+3. **Assess and import your catalog:** products, discounts and customers are created in Polar. Billing stays on Stripe.
+4. **Move saved cards:** Stripe copies your customers' cards to Polar.
+5. **Switch billing to Polar:** the subscriptions you select stop renewing on Stripe and continue on Polar.
+6. **Reconcile and clean up:** check your application data, then remove the old Stripe code.
 
 ## 1. Move new sales to Polar
-
-**Goal:** Make Polar the billing system for every new customer.
 
 Integrate the [Polar API](/api-reference) and
 [webhooks](/integrate/webhooks/endpoints) into your application. New checkouts
@@ -63,9 +60,6 @@ your database while subscriptions still renew there.
 
 ## 2. Connect your Stripe account
 
-**Goal:** Give Polar only the access needed to prepare and perform the
-migration.
-
 Create a restricted API key in Stripe and add it to your migration in Polar.
 The Polar dashboard asks for the minimum permissions needed to read and migrate
 your billing data, then validates the account before continuing.
@@ -76,16 +70,14 @@ Nothing has moved yet. Stripe still owns every existing subscription.
 
 ## 3. Assess and import your catalog
 
-**Goal:** Decide what can move and prepare the records those subscriptions need
-in Polar.
-
 Polar assesses your recurring products, prices, customers, and subscriptions.
 You review what is ready and what needs attention, then import your selection.
 
 | After import                     | In Polar          | Still renews in |
 | -------------------------------- | ----------------- | --------------- |
-| Products and prices              | Created           | —               |
-| Customers                        | Created or reused | —               |
+| Products and prices              | Created           |                 |
+| Discounts                        | Created           |                 |
+| Customers                        | Created or reused |                 |
 | Subscriptions you plan to switch | Not created yet   | Stripe          |
 | Unsupported subscriptions        | Left alone        | Stripe          |
 
@@ -93,12 +85,10 @@ Polar does not create Polar subscriptions or change Stripe billing at this
 stage. Leave unsupported subscriptions on Stripe until you resolve them or
 choose another path.
 
-**Continue when:** You are clear on which subscriptions and related data will
-be imported.
+**Continue when:** Your selection is imported, and you know which subscriptions
+stay on Stripe.
 
 ## 4. Move saved cards
-
-**Goal:** Give Polar a payment method for the subscriptions it will renew.
 
 Follow the checklist in Polar to start an account-to-account copy in Stripe.
 Stripe sends saved card details directly to Polar's payment processor. They
@@ -112,8 +102,7 @@ Stripe accounts. See **Saved card transfer** under
 
 ## 5. Switch billing to Polar
 
-**Goal:** Make Polar responsible for future renewals of the subscriptions you
-select.
+<Warning>Switching can't be undone. Review your selection before you confirm it, and prepare Stripe and your systems as described in [Communications during the switch](#communications-during-the-switch).</Warning>
 
 Polar rechecks each selected subscription, prepares its matching Polar
 subscription, stops it on Stripe, and activates it in Polar with the same paid
@@ -167,12 +156,7 @@ automations after the switch if subscriptions remain on Stripe.
 **Continue when:** Every selected subscription shows as moved, skipped, or
 failed, and every subscription left on Stripe has a clear next action.
 
-<Warning>Switching is not reversible. Review your selection before confirming it.</Warning>
-
 ## 6. Reconcile and clean up
-
-**Goal:** Remove the old billing paths without losing access to historical
-records.
 
 Compare the migration result with your own customer and access records. Confirm
 that each subscription bills in only one place. Retire Stripe checkout and
@@ -217,7 +201,8 @@ for payments it processes.
   <Accordion title="Subscriptions that need attention">
     Polar shows why a record cannot move automatically. Common examples include:
 
-    - Multiple subscription items or a quantity greater than one
+    - More than one item, except a plan with one add-on, or a quantity other
+      than one on the plan
     - Products without a supported recurring price in your organization's
       default currency, or with ambiguous prices
     - Past-due, unpaid, or paused subscriptions
@@ -231,22 +216,19 @@ for payments it processes.
     pricing models, so if some of your prices cannot be migrated,
     [contact Polar support](/support).
 
-    Polar also rechecks subscriptions during the switch. Subscriptions due to
-    renew within 24 hours, or set to end on a date other than their period end,
-    remain on Stripe at that point. A subscription set to cancel at the end of
-    its period does not renew, so it moves even if that end is within 24 hours.
+  </Accordion>
 
+  <Accordion title="Payment methods that can't move">
     Only cards are used. A subscription paying with another method, such as
     Link, SEPA Direct Debit, or a US bank account (ACH), still moves, but Polar
-    does not charge that method. It renews with another copied card for the same customer if there is
-    one. Otherwise its first Polar renewal fails and the customer is asked to add
-    a card.
-
+    doesn't charge that method. It renews with another copied card for the same
+    customer if there is one. Otherwise its first Polar renewal fails and the
+    customer is asked to add a card.
   </Accordion>
 
   <Accordion title="Saved card transfer">
     Only the owner of your Stripe account can start the account-to-account copy.
-    In Polar, download the customer mapping file and copy the provided destination
+    In Polar, download the customer CSV and copy the provided destination
     account ID into Stripe. After starting the copy, paste the Stripe migration
     ID (`migreq_…`) into Polar.
 
@@ -290,8 +272,7 @@ for payments it processes.
 ## Coding assistant prompt
 
 Optional. If you use a coding assistant that can inspect your repository, expand
-the prompt below. It asks for a migration plan and reconciliation contract
-before any code changes. Review that plan before asking it to implement
+the prompt below. It asks for a migration plan before any code changes. Review that plan before asking it to implement
 anything. Never paste Stripe or Polar secrets into a conversation.
 
 ```markdown title="Migration assistant prompt" icon="wand-magic-sparkles" expandable
@@ -356,8 +337,9 @@ Migrations** for assessment, card transfer, and cutover.
 - Never store card details, secrets, or sensitive personal data in metadata.
 - Historical Stripe payments remain in Stripe. Never manufacture Polar orders
   for transactions Polar did not process.
-- Stripe Connect platform accounts and Stripe accounts in India cannot use
-  the automated flow. Direct those merchants to Polar support.
+- Stripe accounts in India cannot use the automated flow. Direct those
+  merchants to Polar support. For a Stripe Connect platform, only the
+  subscriptions on the platform's own Stripe account move.
 - Subscriptions sold through Stripe Managed Payments are not moved yet and
   stay on Stripe.
 - Unsupported pricing is not a dead end. Polar can adapt to new pricing

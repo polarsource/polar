@@ -36,7 +36,7 @@ const confirmed = confirm.pipe(Flag.withAlias('aladåb'))
 const name = Flag.String('name').pipe(
   Flag.optional,
   Flag.withDescription(
-    'Name of the draft catalog version this apply saves. Defaults to v{n} when published',
+    'Name of the draft catalog version. Defaults to v{n} when published',
   ),
 )
 
@@ -46,8 +46,8 @@ const applied = (
   entries: ReadonlyArray<AppliedEntry>,
 ) =>
   unchanged(entries)
-    ? ui.success(`${target(organization)} is up to date, nothing to apply`)
-    : `${ui.INDENT}${config.file} applied to ${target(organization)}: ${plural(entries.length, 'entry', 'entries')} (${tally(entries)})`
+    ? ui.success(`${target(organization)} is up to date, nothing to change`)
+    : `${ui.INDENT}${config.file} saved to ${target(organization)}: ${plural(entries.length, 'entry', 'entries')} (${tally(entries)})`
 
 const render = (
   config: LoadedConfig,
@@ -86,12 +86,12 @@ const approve = (
     if (json || !(yield* interactive)) {
       yield* say(
         next(
-          `${ui.INDENT}Review the plan, then run ${ui.command('polar config apply --confirm')}.`,
+          `${ui.INDENT}Review the changes, then run ${ui.command('polar config draft --confirm')}.`,
         ),
       )
       return yield* new BillingConfigError({
-        message: `Confirmation needed to apply to ${target(organization)}`,
-        hint: 'Pass --confirm to apply without asking, after reviewing polar config plan.',
+        message: `Confirmation needed to save the draft of ${target(organization)}`,
+        hint: 'Pass --confirm to save without asking, after reviewing polar config validate.',
       })
     }
     yield* say(nextOpen())
@@ -99,7 +99,7 @@ const approve = (
       keypress(
         [
           ...ui.boxRows(
-            `${ui.INDENT}${ui.green('y')} to apply  ${ui.red('n')} to cancel`,
+            `${ui.INDENT}${ui.green('y')} to save  ${ui.red('n')} to cancel`,
           ),
           ui.boxBottom(),
         ].join('\n'),
@@ -159,9 +159,9 @@ const save = (
   name: string | undefined,
 ) =>
   Effect.gen(function* () {
-    yield* progress.open('Apply')
+    yield* progress.open('Draft')
     yield* progress.start(
-      `Applying ${plural(changeCount(plan.entries), 'change')}`,
+      `Saving ${plural(changeCount(plan.entries), 'change')}`,
     )
     const [elapsed, result] = yield* Effect.timed(
       (yield* BillingConfig).apply(config, organization, { name }),
@@ -211,7 +211,7 @@ const execute = (
     yield* say(sections(config, plan))
     if (!(yield* approve(config, organization, plan, json, confirmed, say))) {
       return yield* new BillingConfigError({
-        message: 'Apply cancelled, nothing changed',
+        message: 'Draft cancelled, nothing changed',
       })
     }
     const result = yield* save(progress, config, organization, plan, name)
@@ -220,35 +220,35 @@ const execute = (
       : outcome(result)
   })
 
-export const apply = Command.make('apply', { file, org, confirmed, name }).pipe(
+export const draft = Command.make('draft', { file, org, confirmed, name }).pipe(
   Command.withDescription(
-    'Apply a billing config file to your organization. Products, benefits, meters and settings are saved as a draft until you publish them',
+    'Save a billing config file to the draft catalog of your organization. Nothing changes for customers until you publish it',
   ),
   Command.withExamples([
     {
-      command: 'polar config apply',
+      command: 'polar config draft',
       description:
-        'Show what applying polar.config.ts would change, then save it to the draft after confirmation',
+        'Show what polar.config.ts would change, then save it to the draft after confirmation',
     },
     {
-      command: 'polar config apply billing/polar.json',
-      description: 'Apply a specific file',
+      command: 'polar config draft billing/polar.json',
+      description: 'Save a specific file',
     },
     {
-      command: 'polar config apply --org acme',
-      description: 'Apply to another organization, by slug or ID',
+      command: 'polar config draft --org acme',
+      description: 'Save to another organization, by slug or ID',
     },
     {
-      command: 'polar config apply --confirm',
-      description: 'Apply without asking, for scripts and CI',
+      command: 'polar config draft --confirm',
+      description: 'Save without asking, for scripts and CI',
     },
     {
-      command: "polar config apply --name 'Spring launch'",
+      command: "polar config draft --name 'Spring launch'",
       description: 'Name the draft catalog version',
     },
     {
-      command: 'polar config apply --confirm --json',
-      description: 'Print what was applied as JSON, for scripts and agents',
+      command: 'polar config draft --confirm --json',
+      description: 'Print what was saved as JSON, for scripts and agents',
     },
   ]),
   output({
@@ -271,7 +271,7 @@ export const apply = Command.make('apply', { file, org, confirmed, name }).pipe(
     json: ({ config, result }) => ({ file: config.file, ...result }),
     failed: ({ config, result }) =>
       result.status === 'rejected'
-        ? new BillingConfigError({ message: `${config.file} was not applied` })
+        ? new BillingConfigError({ message: `${config.file} was not saved` })
         : undefined,
   }),
 )

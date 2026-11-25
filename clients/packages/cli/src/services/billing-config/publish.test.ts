@@ -118,7 +118,7 @@ describe('publish', () => {
     const error = await failure(run((clients) => publish(clients)(acme, draft)))
 
     expect(error.message).toBe(detail)
-    expect(error.hint).toContain('polar config apply')
+    expect(error.hint).toContain('polar config draft')
   })
 
   test('asks to retry when the draft was discarded', async () => {

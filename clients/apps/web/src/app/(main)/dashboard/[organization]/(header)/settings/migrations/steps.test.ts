@@ -40,4 +40,19 @@ describe('currentPosition', () => {
       index: 3,
     })
   })
+
+  it('puts Lemon Squeezy benefits between the import and the card move', () => {
+    const lemonSqueezy = { source_platform: 'lemon_squeezy' } as const
+    expect(
+      [
+        migration('create_catalog', lemonSqueezy),
+        migration('set_up_benefits', lemonSqueezy),
+        migration('copy_cards', lemonSqueezy),
+      ].map((m) => currentPosition(m)),
+    ).toEqual([
+      { kind: 'step', index: 2 },
+      { kind: 'step', index: 2 },
+      { kind: 'step', index: 3 },
+    ])
+  })
 })

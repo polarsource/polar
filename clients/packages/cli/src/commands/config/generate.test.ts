@@ -176,7 +176,7 @@ describe('polar config generate', () => {
     const { exit } = await run([], { meters: [{ external_Id: 'tool_call' }] })
 
     expect(failure(exit)?.hint).toBe(
-      'meters[0] has no external_id. Run polar config plan to see what to fix.',
+      'meters[0] has no external_id. Run polar config validate to see what to fix.',
     )
     await expect(read('polar_types.py')).rejects.toThrow()
   })

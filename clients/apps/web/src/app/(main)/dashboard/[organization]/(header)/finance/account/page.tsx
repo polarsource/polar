@@ -15,9 +15,7 @@ export default async function Page(props: {
   const params = await props.params
   const api = await getServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
-    api,
     params.organization,
-    false, // Don't use cache to make sure we get the latest payout account info after onboarding changes
   )
 
   const { data: reviewStatus } = await api.GET(

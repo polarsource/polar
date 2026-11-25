@@ -125,9 +125,9 @@ const callout = (
 ) => {
   const where = `**${escape(organization.name)}** in ${organization.environment}`
   if (errors(result.issues) > 0) {
-    return `> [!CAUTION]\n> \`${config.file}\` can't be applied to ${where}. Fix the errors below first.`
+    return `> [!CAUTION]\n> \`${config.file}\` can't be saved to the draft of ${where}. Fix the errors below first.`
   }
-  return `> [!NOTE]\n> Applying the config in this pull request changes billing for ${where}. Review every change below before it's applied.`
+  return `> [!NOTE]\n> Publishing the config in this pull request changes billing for ${where}. Review every change below before it's published.`
 }
 
 const metadata = (
@@ -164,7 +164,7 @@ export const planMarkdown = (
   unchanged(result.entries) && errors(result.issues) === 0
     ? undefined
     : [
-        '## Polar billing plan updated',
+        '## Polar billing config changed',
         callout(config, organization, result),
         metadata(config, organization, result),
         ...[

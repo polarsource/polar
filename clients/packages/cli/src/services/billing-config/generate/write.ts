@@ -118,7 +118,7 @@ export const write =
       if (reason !== undefined) {
         return yield* new BillingConfigError({
           message: `Could not read the names in ${config.file}`,
-          hint: `${reason} Run polar config plan to see what to fix.`,
+          hint: `${reason} Run polar config validate to see what to fix.`,
         })
       }
       const file = out ?? join(dirname(config.file), generator.file)

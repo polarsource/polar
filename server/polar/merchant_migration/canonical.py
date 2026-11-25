@@ -278,6 +278,9 @@ class CanonicalSubscription:
     # Set on a two-item subscription when the second item reads as an add-on.
     # ``price_source_id`` and the fields above then describe the plan.
     add_on: CanonicalSubscriptionAddOn | None = None
+    # Lemon Squeezy: the order item that started it, which its license key
+    # belongs to. The key itself is read at cutover, never staged.
+    order_item_source_id: str | None = None
 
     type = MerchantMigrationRecordType.subscription
 
@@ -376,6 +379,37 @@ class CanonicalBenefit:
     license_keys: CanonicalLicenseKeySettings | None = None
     files: list[CanonicalBenefitFile] = field(default_factory=list)
     links: list[CanonicalBenefitLink] = field(default_factory=list)
+    # Buyers of a one-time product have it on the source.
+    for_one_time: bool = False
+
+
+@dataclass
+class CanonicalLicenseKeyActivation:
+    """A device the key is activated on. Its id is a UUID4, so Polar keeps it
+    and the device's saved id validates on Polar as is."""
+
+    id: str
+    label: str
+
+
+@dataclass
+class CanonicalLicenseKey:
+    key: str
+    activations: list[CanonicalLicenseKeyActivation] = field(default_factory=list)
+    expires_at: datetime | None = None
+
+
+@dataclass
+class CanonicalPurchase:
+    """A paid one-time purchase whose buyer keeps the product's benefits."""
+
+    source_id: str
+    product_source_id: str
+    email: str
+    name: str | None
+    license_key: CanonicalLicenseKey | None
+    # The buyer's key was disabled or has expired: they don't get one on Polar.
+    license_key_disabled: bool = False
 
 
 @dataclass
@@ -705,6 +739,7 @@ def deserialize(
                 )
                 if add_on is not None
                 else None,
+                order_item_source_id=data.get("order_item_source_id"),
             )
         case MerchantMigrationRecordType.discount:
             return CanonicalDiscount(

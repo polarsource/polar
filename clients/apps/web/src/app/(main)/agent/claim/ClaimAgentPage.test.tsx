@@ -1,5 +1,5 @@
 import { setSessionRefreshListener } from '@/components/SessionRefresh/store'
-import { UserContextProvider } from '@/providers/auth'
+import { AuthContext } from '@/providers/auth'
 import { renderWithProviders } from '@/test-utils/render'
 import { API_URL, apiError, server } from '@/test-utils/server'
 import type { schemas } from '@polar-sh/client'
@@ -84,10 +84,7 @@ const restoreLocationAfterTest = () => {
 
 const renderPage = (resumeActionId?: string, { signedOut = false } = {}) =>
   renderWithProviders(
-    <UserContextProvider
-      user={signedOut ? undefined : user}
-      userOrganizations={[]}
-    >
+    <AuthContext value={signedOut ? undefined : user}>
       <ClaimAgentPage
         linkToken={LINK_TOKEN}
         resumeActionId={resumeActionId}
@@ -95,7 +92,7 @@ const renderPage = (resumeActionId?: string, { signedOut = false } = {}) =>
         pacingMs={0}
         autoClose={false}
       />
-    </UserContextProvider>,
+    </AuthContext>,
   )
 
 const enterCode = async (code: string) => {

@@ -31,7 +31,7 @@ from opentelemetry.sdk.trace.export import (
     SpanExporter,
     SpanExportResult,
 )
-from redis.asyncio import Redis
+from redis.asyncio import BlockingConnectionPool, Redis
 from redis.exceptions import AuthenticationError, AuthorizationError, ResponseError
 from redis.exceptions import ConnectionError as RedisConnectionError
 from redis.exceptions import TimeoutError as RedisTimeoutError
@@ -43,6 +43,7 @@ from polar.outpost import NotReadyError
 from polar.outpost.client import (
     APPLY_SNAPSHOT_SCRIPT,
     CONFIRM_SCRIPT,
+    REDIS_CONNECTIONS,
     WRITE_BUCKET_SCRIPT,
     Outpost,
     RedisReconnectBackoff,
@@ -95,8 +96,17 @@ async def redis_connection(
 ) -> collections.abc.AsyncIterator[tuple[str, Redis]]:
     server = FakeServer()
     monkeypatch.setattr(
-        "polar.outpost.client.Redis.from_url",
-        lambda url, **kwargs: FakeAsyncRedis(server=server, **kwargs),
+        "polar.outpost.client.BlockingConnectionPool.from_url",
+        lambda url, **kwargs: BlockingConnectionPool(
+            connection_class=FakeAsyncRedisConnection,
+            server=server,
+            connected=True,
+            version=(7,),
+            server_type="redis",
+            lua_modules=None,
+            client_class=Redis,
+            **kwargs,
+        ),
     )
     async with FakeAsyncRedis(server=server) as redis:
         yield "redis://localhost:6379", redis
@@ -763,7 +773,8 @@ async def test_waits_for_a_redis_connection_once_its_pool_is_full(
             for _ in range(150):
                 group.start_soon(ping)
         pool = redis.connection_pool
-        assert len(pool._available_connections) + len(pool._in_use_connections) <= 32
+        opened = len(pool._available_connections) + len(pool._in_use_connections)
+        assert opened <= REDIS_CONNECTIONS
 
 
 @pytest.mark.anyio
@@ -4000,16 +4011,16 @@ async def test_starts_once_redis_accepts_the_connection_it_first_closed(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     url, _ = redis_connection
-    ping = FakeAsyncRedis.ping
+    ping = Redis.ping
     attempts: list[None] = []
 
-    async def closed_once(redis: FakeAsyncRedis, *args: typing.Any) -> typing.Any:
+    async def closed_once(redis: Redis, *args: typing.Any) -> typing.Any:
         attempts.append(None)
         if len(attempts) == 1:
             raise RedisConnectionError("Connection closed by server.")
         return await ping(redis, *args)
 
-    monkeypatch.setattr(FakeAsyncRedis, "ping", closed_once)
+    monkeypatch.setattr(Redis, "ping", closed_once)
     async with Outpost(url, client=polar_client) as outpost:
         assert outpost.connected
     assert len(attempts) >= 2
@@ -4398,12 +4409,12 @@ async def test_measures_the_size_of_redis_from_the_instance_that_pulled_alone(
     url, _ = redis_connection
 
     # fakeredis has no INFO memory: the command still goes out, and reports nothing.
-    async def info(self: FakeAsyncRedis, section: str) -> dict[str, int]:
+    async def info(self: Redis, section: str) -> dict[str, int]:
         with contextlib.suppress(ResponseError):
             await self.execute_command("INFO", section)
         return {"used_memory": 0}
 
-    monkeypatch.setattr(FakeAsyncRedis, "info", info)
+    monkeypatch.setattr(Redis, "info", info)
     async with (
         Outpost(url, client=polar_client) as first,
         Outpost(url, client=polar_client) as second,

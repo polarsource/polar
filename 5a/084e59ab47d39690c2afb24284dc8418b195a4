@@ -1,0 +1,32 @@
+server/tests/backoffice/organizations_v2/test_endpoints.py
+  s_07d9d4d50cfb77::t_d900e2d42f93e5 13,20,373-386,392-398,402-416
+  s_07d9d4d50cfb77::t_22cb7a711079fd 387-391,399-401,417-420
+  s_07d9d4d50cfb77::t_ded87e9c2f8144 421-422
+server/polar/backoffice/organizations_v2/views/sections/payout_account_section.py
+  s_07d9d4d50cfb77::t_22cb7a711079fd 154-157
+  s_07d9d4d50cfb77::t_73a32a6d131a96 158-169
+server/polar/backoffice/organizations_v2/endpoints.py
+  s_07d9d4d50cfb77::t_849ee75607175b 4643-4645
+  s_07d9d4d50cfb77::t_d2e03171433f93 4654
+  s_07d9d4d50cfb77::t_73a32a6d131a96 4578-4580,4582-4583,4587-4588,4593-4595,4625-4626,4634,4640-4641,4661,4672
+  s_07d9d4d50cfb77::t_fd2020314f4115 4635-4639,4650,4673-4675
+  s_07d9d4d50cfb77::t_b7f633e77e4fea 24,4581,4628,4658,4669-4671,4676
+  s_07d9d4d50cfb77::t_1ff6481b6a00d3 4589,4596
+  s_07d9d4d50cfb77::t_58873f70a12566 4590,4642,4646
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5a084e59ab47d39690c2afb24284dc8418b195a4",
+  "prompts": {},
+  "sessions": {
+    "s_07d9d4d50cfb77": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a21378-62dc-7091-bf04-34976fd90520",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

@@ -859,8 +859,9 @@ def _digest(value: str) -> str:
 
 
 def _description(product_name: str, suffix: str) -> str:
-    # "Icon Links" stays as it is, not "Icon Links links".
-    if product_name.lower().rstrip("s").endswith(suffix.rstrip("s")):
+    # "Icon Links" stays as it is, not "Icon Links links". "Profile" doesn't.
+    name, stem = product_name.lower().rstrip("s"), suffix.rstrip("s")
+    if name == stem or name.endswith(f" {stem}"):
         return product_name[:BENEFIT_DESCRIPTION_MAX_LENGTH].strip()
     room = BENEFIT_DESCRIPTION_MAX_LENGTH - len(suffix) - 1
     return f"{product_name[:room].strip()} {suffix}"

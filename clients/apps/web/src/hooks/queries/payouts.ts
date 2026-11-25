@@ -26,3 +26,19 @@ export const usePayouts = (
     retry: defaultRetry,
     enabled: !!accountId,
   })
+
+export const usePayoutEstimate = (
+  organizationId: string,
+  { enabled = true }: { enabled?: boolean } = {},
+) =>
+  useQuery({
+    queryKey: ['payouts', 'estimate', { organizationId }],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/payouts/estimate', {
+          params: { query: { organization_id: organizationId } },
+        }),
+      ),
+    retry: false,
+    enabled,
+  })

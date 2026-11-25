@@ -1,18 +1,22 @@
 import AccessRestricted from '@/components/Finance/AccessRestricted'
 import { useHasPermission } from '@/hooks/permissions'
 import { useOrganizationEmail } from '@/hooks/queries'
-import { usePayouts } from '@/hooks/queries/payouts'
+import { usePayoutEstimate, usePayouts } from '@/hooks/queries/payouts'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { permissionDeniedMessage } from '@/utils/permissions'
 import { ArrowOutwardOutlined } from '@polar-sh/orbit/icons'
-import { isValidationError, schemas } from '@polar-sh/client'
+import {
+  ClientResponseError,
+  isValidationError,
+  schemas,
+} from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Button, Modal, Spinner as SpinnerNoMargin } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import { DetailRow } from '../Shared/DetailRow'
 import { SupportEmailBlocker } from './SupportEmailBlocker'
 import { toast } from '../Toast/use-toast'
@@ -24,6 +28,15 @@ const COOLDOWN_PAYOUT_STATUSES: schemas['PayoutStatus'][] = [
   'failed',
   'held',
 ]
+
+const getEstimateErrorMessage = (error: Error): string | null => {
+  const detail =
+    error instanceof ClientResponseError ? error.error.detail : undefined
+  if (isValidationError(detail)) {
+    return 'An error occurred while trying to compute the processing fees. Please try again later.'
+  }
+  return typeof detail === 'string' ? detail : null
+}
 
 interface WithdrawModalProps {
   organization: schemas['Organization']
@@ -41,10 +54,6 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
   onSuccess,
 }) => {
   const canManageFinance = useHasPermission(organization.id, 'finance:manage')
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [payoutEstimate, setPayoutEstimate] = useState<
-    schemas['PayoutEstimate'] | null
-  >(null)
   const canWithdraw = useMemo(
     () => organization.capabilities.payouts,
     [organization.capabilities.payouts],
@@ -77,52 +86,20 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
     [nextPayoutAt],
   )
 
-  const getPayoutEstimate = useCallback(async () => {
-    setPayoutEstimate(null)
-    setErrorMessage(null)
-
-    if (
-      !canManageFinance ||
-      !canWithdraw ||
-      !supportEmailVerified ||
-      isPayoutIntervalLimited
-    ) {
-      return
-    }
-
-    const { data, error } = await api.GET('/v1/payouts/estimate', {
-      params: { query: { organization_id: organization.id } },
-    })
-    if (error) {
-      if (isValidationError(error.detail)) {
-        setErrorMessage(
-          'An error occurred while trying to compute the processing fees. Please try again later.',
-        )
-      } else if (error.detail) {
-        setErrorMessage(error.detail)
-      }
-
-      return
-    }
-
-    if (data) {
-      setPayoutEstimate(data)
-    }
-  }, [
-    organization,
-    canManageFinance,
-    canWithdraw,
-    supportEmailVerified,
-    isPayoutIntervalLimited,
-  ])
-
-  /* oxlint-disable react-hooks/set-state-in-effect -- fetches payout estimate when modal opens */
-  useEffect(() => {
-    if (isShown && !isFetching) {
-      getPayoutEstimate()
-    }
-  }, [isShown, isFetching, getPayoutEstimate])
-  /* oxlint-enable react-hooks/set-state-in-effect */
+  const canEstimatePayout =
+    canManageFinance &&
+    canWithdraw &&
+    supportEmailVerified &&
+    !isPayoutIntervalLimited
+  const { data: estimate, error: estimateError } = usePayoutEstimate(
+    organization.id,
+    { enabled: isShown && !isFetching && canEstimatePayout },
+  )
+  const payoutEstimate = canEstimatePayout ? estimate : undefined
+  const errorMessage =
+    canEstimatePayout && estimateError
+      ? getEstimateErrorMessage(estimateError)
+      : null
 
   const [loading, setLoading] = useState(false)
   const onConfirm = useCallback(async () => {

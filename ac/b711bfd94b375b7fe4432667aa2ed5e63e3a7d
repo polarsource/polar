@@ -1,0 +1,49 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/ImportedHandoff.tsx
+  s_7517af2916aea6::t_c3b522184ab239 21,32-33,75,85-110,141,143,155
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/ImportedStep.tsx
+  s_7517af2916aea6::t_24db85d100066d 12-18,37
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationRow.tsx
+  s_7517af2916aea6::t_dcf3cc1acbac6b 9,22-24
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationStepper.tsx
+  s_7517af2916aea6::t_8bb28479788c91 5,21,24,28
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/[id]/MigrationDetailPage.tsx
+  s_7517af2916aea6::t_2dd2c334b5b8a1 11,143-149
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/BenefitRows.tsx
+  s_7517af2916aea6::t_ba038a06324b6d 1-85
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/benefitCopy.ts
+  s_7517af2916aea6::t_aee7d2c28b1808 1-25
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/steps.test.ts
+  s_7517af2916aea6::t_72fee85be65a1e 43-57
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/steps.ts
+  s_7517af2916aea6::t_31c8f0c28c0d9b 65-88,117,131-133,142-144
+clients/apps/web/src/hooks/queries/merchantMigrations.ts
+  s_7517af2916aea6::t_3b1abd56cf8723 180-222
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/BenefitsForm.tsx
+  s_d4a843b33596ce::t_0f4c0b1f7f03f7 1-125
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/BenefitsStep.tsx
+  s_d4a843b33596ce::t_5898e65ad26a5c 1-164
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "acb711bfd94b375b7fe4432667aa2ed5e63e3a7d",
+  "prompts": {},
+  "sessions": {
+    "s_7517af2916aea6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a211cb-d4ea-7a00-b4f1-8a0d95fbc457",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_d4a843b33596ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "12adddd7-b520-4f67-a19e-0f92eb2e092a",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

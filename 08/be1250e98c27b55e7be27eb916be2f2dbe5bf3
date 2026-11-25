@@ -1,0 +1,150 @@
+clients/apps/web/src/app/(main)/[organization]/portal/orders/[id]/page.tsx
+  h_12064c78efc6c2 86-88,93-95
+clients/apps/web/src/app/(main)/[organization]/portal/orders/page.tsx
+  h_12064c78efc6c2 86-88,93-95
+clients/apps/web/src/app/(main)/[organization]/portal/settings/page.tsx
+  h_12064c78efc6c2 3-6,84-94
+clients/apps/web/src/app/(main)/[organization]/portal/subscriptions/[id]/page.tsx
+  h_12064c78efc6c2 86-88
+clients/apps/web/src/app/(main)/[organization]/portal/wallet/page.tsx
+  h_12064c78efc6c2 81-83,88-90
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/products/versions/VersionsPage.tsx
+  h_12064c78efc6c2 3,80-82,87-107,109-110
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/products/versions/VersionsTab.tsx
+  h_12064c78efc6c2 47-54,86-88
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/products/versions/[id]/VersionDiff.tsx
+  h_12064c78efc6c2 4,204-218,220-221,223,225-226,228-233,235-236,238,240-249,310-315,360,363
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/products/versions/[id]/VersionPage.tsx
+  h_12064c78efc6c2 241-242
+clients/apps/web/src/components/Benefit/BenefitVersionBanner.tsx
+  h_12064c78efc6c2 54
+clients/apps/web/src/components/CheckoutLinks/CheckoutLinkForm.tsx
+  h_12064c78efc6c2 206-208
+clients/apps/web/src/components/CustomerPortal/CustomerPortalSubscription.tsx
+  h_12064c78efc6c2 232-241,334-342
+clients/apps/web/src/components/CustomerPortal/CustomerSubscriptionDetails.tsx
+  h_12064c78efc6c2 4,8,10,63-65,130-139,188-193,195-202,205-215,243,250,304-312
+clients/apps/web/src/components/Layout/Dashboard/CatalogNavigation.tsx
+  h_12064c78efc6c2 100-102
+clients/apps/web/src/components/Meter/MeterVersionBanner.tsx
+  h_12064c78efc6c2 65
+clients/apps/web/src/components/Products/CatalogVersionSelect.tsx
+  h_12064c78efc6c2 99
+clients/apps/web/src/components/Products/DraftVersionBanner.tsx
+  h_12064c78efc6c2 10,15,39-41,43-59
+clients/apps/web/src/components/Products/ProductPage/ProductVersionBanner.tsx
+  h_12064c78efc6c2 98
+clients/apps/web/src/components/TrialConfiguration/TrialConfigurationForm.tsx
+  h_12064c78efc6c2 56
+dev/cli/commands/api.py
+  h_12064c78efc6c2 29-34
+dev/cli/commands/seed.py
+  h_12064c78efc6c2 11,19-20
+dev/cli/shared.py
+  h_12064c78efc6c2 111-141
+dev/cli/up_steps/11_run_migrations.py
+  h_12064c78efc6c2 11,76-81
+docs/package.json
+  h_12064c78efc6c2 17
+docs/pnpm-lock.yaml
+  h_12064c78efc6c2 191-192,523-524,528-529,613-614,911,915,921,1042,1044
+server/emails/package.json
+  h_12064c78efc6c2 22,25,31,34
+server/emails/pnpm-lock.yaml
+  h_12064c78efc6c2 186-187,190-191,211-212,214-215,629-630,632-633,638-639,644-645,651-652,658-659,665-666,672-673,678-679,687-688,693-694,699-700,705-706,711-712,717-718,723-724,729-730,736-737,743-744,750-751,757-758,764-765,771-772,778-779,785-786,791-792,797-798,803-804,809-810,815-816,821-822,827-828,833-834,839-840,845-846,851-852,858-859,865-866,872-873,879-880,886-887,893-894,900-901,907-908,913-914,919-920,925-926,941-942,1757-1758,1807-1808,1823-1824,1828,1917-1918,2594,2596,2599,2602,2605,2608,2611,2614,2617,2622,2625,2628,2631,2634,2637,2640,2643,2646,2649,2652,2655,2658,2661,2664,2667,2670,2673,2676,2679,2682,2685,2688,2691,2694,2697,2700,2703,2706,2709,2712,2715,2718,2721,2724,2727,2730,2733,2749,2753,3443,3445,3454-3461,3498,3502-3522,3524-3542,3626
+server/migrations/env.py
+  h_12064c78efc6c2 12-16
+server/polar/app.py
+  h_12064c78efc6c2 208,211
+server/polar/backoffice/components/_confirmation_dialog.py
+  h_12064c78efc6c2 83
+server/polar/backoffice/merchant_migrations/endpoints.py
+  h_12064c78efc6c2 11,39,45,387-401,481-519
+server/polar/checkout_link/app.py
+  h_12064c78efc6c2 2,24-27,41
+server/polar/merchant_migration/service.py
+  h_12064c78efc6c2 1842-1847,1849-1851,1865-1868
+server/polar/merchant_migration/tasks.py
+  h_12064c78efc6c2 2,9,12,30-37,156-168,187-188,200-220
+server/polar/observability/remote_write.py
+  h_12064c78efc6c2 256
+server/polar/redis.py
+  h_12064c78efc6c2 2,13-16,25-32,35-37,41-49,51-53,57,64-71,74-76,80-88,90,94,107-109,137,146
+server/polar/worker/_broker.py
+  h_12064c78efc6c2 24-28,226,238,250
+server/polar/worker/_debounce.py
+  h_12064c78efc6c2 4,19-20,217
+server/polar/worker/_enqueue.py
+  h_12064c78efc6c2 9,15,222-226
+server/polar/worker/_health.py
+  h_12064c78efc6c2 32,144,155
+server/polar/worker/_redis.py
+  h_12064c78efc6c2 17
+server/scripts/backfill_credit_reducer_buckets.py
+  h_12064c78efc6c2 99
+server/scripts/backfill_generated_sepa.py
+  h_12064c78efc6c2 274
+server/scripts/backfill_resend_id.py
+  h_12064c78efc6c2 115
+server/scripts/compensate_meter_credit_clawbacks.py
+  h_12064c78efc6c2 162
+server/scripts/enqueue_dummy_tasks.py
+  h_12064c78efc6c2 23
+server/scripts/reingest_missing_events.py
+  h_12064c78efc6c2 258
+server/scripts/seeds_load.py
+  h_12064c78efc6c2 113-115,132,3081-3087,3102-3108,3122-3123,3136-3142,3144-3165,3179-3180,3182-3213
+server/scripts/shell.py
+  h_12064c78efc6c2 122
+server/tests/backoffice/merchant_migrations/test_endpoints.py
+  h_12064c78efc6c2 493-515
+server/tests/benefit/strategies/test_slack_shared_channel.py
+  h_12064c78efc6c2 74,77
+server/tests/benefit/test_service.py
+  h_12064c78efc6c2 75,78,81
+server/tests/checkout_link/test_app.py
+  h_12064c78efc6c2 1-16
+server/tests/e2e/infra/task_drain.py
+  h_12064c78efc6c2 254
+server/tests/fixtures/redis.py
+  h_12064c78efc6c2 10
+server/tests/integrations/slack/test_endpoints.py
+  h_12064c78efc6c2 60
+server/tests/integrations/slack/test_service.py
+  h_12064c78efc6c2 72,75,140
+server/tests/merchant_migration/test_tasks.py
+  h_12064c78efc6c2 19-20,253,320-357
+server/tests/notifications/testdata/test_MaintainerFileFlaggedMaliciousNotification.html
+  h_12064c78efc6c2 3
+server/tests/notifications/testdata/test_MaintainerNewProductSaleNotification.html
+  h_12064c78efc6c2 3
+server/tests/notifications/testdata/test_MaintainerSubscriptionCancellationNotification.html
+  h_12064c78efc6c2 3
+server/tests/notifications/testdata/test_MaintainerSubscriptionCancellationNotification_immediately.html
+  h_12064c78efc6c2 3
+server/tests/outpost/test_stream.py
+  h_12064c78efc6c2 37-39
+server/tests/reducer/test_service.py
+  h_12064c78efc6c2 2663-2667
+server/tests/test_redis.py
+  h_12064c78efc6c2 1-3,7-8,17-21,23-30,32-34,37,39-41,47-50,53-54,56-60,62,65,69,75,78,83-86,89-90,92,94-98,101,105,110-111,113-114
+server/tests/worker/test_dummy_tasks.py
+  h_12064c78efc6c2 3,30
+server/tests/worker/test_health.py
+  h_12064c78efc6c2 304,329,351
+server/uv.lock
+  h_12064c78efc6c2 3938,3940,3942
+terraform/identity/variables.tf
+  h_12064c78efc6c2 34,36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "08be1250e98c27b55e7be27eb916be2f2dbe5bf3",
+  "prompts": {},
+  "humans": {
+    "h_12064c78efc6c2": {
+      "author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

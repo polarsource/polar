@@ -1717,6 +1717,18 @@ it("keeps the pull lock while a page outlasts its TTL", async () => {
   expect(await redis.hget(`outpost:v1:${organization}:pull`, "cursor")).toBe(`${cursor}-0`);
 });
 
+it("stops a pull that lost its lock before it counts the reset", async () => {
+  const outpost = await start();
+  const redisClient = outpost["redis"]!;
+  const set = redisClient.set.bind(redisClient);
+  vi.spyOn(redisClient, "set").mockImplementation(((lock: string, token: string) =>
+    set(lock, token, "PX", 100, "NX")) as never);
+  changesDelay = 200;
+  resetChanges = true;
+  await outpost["pull"]();
+  expect(await redis.hget(`outpost:v1:${organization}:pull`, "reset")).toBeNull();
+});
+
 it("asks for a bucket's pending events a thousand at a time", async () => {
   const outpost = await warm();
   for (let i = 0; i < 1_001; i++) await outpost.track(usage(`event-${i}`, 1));

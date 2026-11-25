@@ -2896,6 +2896,21 @@ async def test_keeps_the_pull_lock_while_a_page_outlasts_its_ttl(
 
 
 @pytest.mark.anyio
+async def test_stops_a_pull_that_lost_its_lock_before_it_counts_the_reset(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    changes: dict[str, typing.Any],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url, redis = redis_connection
+    monkeypatch.setattr("polar.outpost.client.PULL_LOCK_TTL", 0.1)
+    async with Outpost(url, client=polar_client) as outpost:
+        changes.update(delay=0.2, reset=True)
+        await outpost._pull()
+        assert await redis.hget("outpost:v1:org-1:pull", "reset") is None
+
+
+@pytest.mark.anyio
 async def test_asks_for_pending_events_a_thousand_at_a_time(
     redis_connection: tuple[str, Redis],
     polar_client: httpx2.AsyncClient,

@@ -1,0 +1,60 @@
+server/polar/models/order.py
+  s_9d4fcc69d80fc5::t_8aeee41283a386 380
+  s_9d4fcc69d80fc5::t_80bdca7600668b 38-39,359-379
+server/polar/integrations/stripe/payment.py
+  s_9d4fcc69d80fc5::t_58776e51fe2d6b 38,245,247,259-266
+server/tests/customer_portal/endpoints/test_order.py
+  s_9d4fcc69d80fc5::t_7939a957fb68ca 21,76-77,314,344-345
+  s_9d4fcc69d80fc5::t_96d344857db226 346
+  s_9d4fcc69d80fc5::t_c6ad77db0eebb3 19,204-293
+  s_9d4fcc69d80fc5::t_ff2baa04be0d2e 294
+server/tests/integrations/stripe/test_payment.py
+  s_9d4fcc69d80fc5::t_e1d7f9b1ff42ed 762
+  s_9d4fcc69d80fc5::t_a11ed5a8312e31 54,714-761
+server/tests/order/test_service.py
+  s_9d4fcc69d80fc5::t_8f9187e165fc00 6571-6620,6699-6702,6748-6751,6796-6799,6966-6969
+  s_9d4fcc69d80fc5::t_2a0ed4b0367c15 6651,6842-6845,6869-6872,6897-6900,6928-6931,7010-7013
+server/tests/models/test_order.py
+  s_9d4fcc69d80fc5::t_3b8863a90389c7 5,18-20,31,33,44,46-48,56,58,88-89,97-101,124-128
+  s_9d4fcc69d80fc5::t_60b4e86f7ff00e 13-17
+  s_9d4fcc69d80fc5::t_0dd15dd8537c52 26-29
+  s_9d4fcc69d80fc5::t_7ccea25df2108d 21-25,30,32,34-43,45,49-55,57,59-87,90-96,102-123,129-149
+server/polar/customer_portal/schemas/order.py
+  s_9d4fcc69d80fc5::t_7939a957fb68ca 64-72
+  s_9d4fcc69d80fc5::t_96d344857db226 73-75
+  s_9d4fcc69d80fc5::t_77de4f1b61617a 113-118,120-122
+server/polar/order/service.py
+  s_9d4fcc69d80fc5::t_6e46f73092373f 7,2306,2311-2312
+  s_9d4fcc69d80fc5::t_6aed937e3d1dde 2314-2333,2335,2337,2372-2375,2377,2406-2415,2417,2419-2420,2423-2433,2437,2445-2448
+clients/packages/client/src/v1.ts
+  s_9d4fcc69d80fc5::t_d3c016b443992e 21543-21552,21667,21670,21672,21675,21677,21680
+  s_9d4fcc69d80fc5::t_650f597f7a5c72 21614,21663-21666,21668-21669,21671,21673-21674,21676,21678-21679,21681-21685
+server/polar/payment_method/service.py
+  s_9d4fcc69d80fc5::t_58776e51fe2d6b 20,146
+server/tests/payment_method/test_service.py
+  s_9d4fcc69d80fc5::t_58776e51fe2d6b 13,110,296,316,342
+server/polar/customer_portal/service/order.py
+  s_9d4fcc69d80fc5::t_77de4f1b61617a 4,28,36,221-223,235-237,240-268,316-326
+  s_9d4fcc69d80fc5::t_97911589567a7d 269
+server/tests/customer_portal/service/test_order.py
+  s_9d4fcc69d80fc5::t_8709221c3213e6 11,124,269-275,277-281,289
+  s_9d4fcc69d80fc5::t_c6ad77db0eebb3 92,276,285-288
+  s_9d4fcc69d80fc5::t_2c44c69ac0fdc0 282-284
+  s_9d4fcc69d80fc5::t_e42d30b8298fb8 290-291
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0040ac20e031395e047417655d1777d610db5f07",
+  "prompts": {},
+  "sessions": {
+    "s_9d4fcc69d80fc5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20ccd-705d-7a61-9a99-612697cae1a1",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

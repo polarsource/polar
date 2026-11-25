@@ -47,6 +47,7 @@ export {
   FileText,
   Flag,
   FlaskConical,
+  Funnel,
   FunnelX,
   Gauge,
   Gift,

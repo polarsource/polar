@@ -10,6 +10,7 @@ from pytest_mock import MockerFixture
 from sqlalchemy.exc import OperationalError
 
 from polar.benefit.grant.repository import BenefitGrantRepository
+from polar.customer.repository import CustomerRepository
 from polar.enums import RecurringInterval, TaxBehavior
 from polar.kit.utils import utc_now
 from polar.member.repository import MemberRepository
@@ -416,10 +417,14 @@ class TestRun:
             subscription.customer_id
         )
         assert owner is not None
+        customer = await CustomerRepository.from_session(session).get_by_id(
+            subscription.customer_id
+        )
+        assert customer is not None
         grant = await BenefitGrantRepository.from_session(
             session
         ).get_by_benefit_and_scope(
-            subscription.customer, benefit, member=owner, subscription=subscription
+            customer, benefit, member=owner, subscription=subscription
         )
         assert grant is not None
         assert dict(grant.properties) == {"user_provided_key": "KEY-1"}

@@ -51,11 +51,17 @@ A few things don't carry over:
 
 ### Update your app before you switch
 
-A subscriber's key only reaches Polar when their subscription switches, so for a while some keys are on Lemon Squeezy and others on Polar. Before you switch any subscriptions, ship an app update that checks the key with Polar first and falls back to Lemon Squeezy:
+A subscriber's key only reaches Polar when their subscription switches, so for a while some keys are on Lemon Squeezy and others on Polar. Before you switch any subscriptions, ship an app update that checks the key with Polar first, and asks Lemon Squeezy only when Polar doesn't know the key yet:
 
 ```ts
-async function isLicenseValid(key: string, instanceId: string) {
-  const polar = await fetch(
+// Polar knows these keys, but no longer accepts them. Don't ask Lemon Squeezy.
+const REJECTED_ON_POLAR = [
+  "License key is no longer active.",
+  "License key has expired.",
+];
+
+async function validateOnPolar(key: string, activationId?: string) {
+  const response = await fetch(
     "https://api.polar.sh/v1/customer-portal/license-keys/validate",
     {
       method: "POST",
@@ -63,18 +69,32 @@ async function isLicenseValid(key: string, instanceId: string) {
       body: JSON.stringify({
         key,
         organization_id: POLAR_ORGANIZATION_ID,
-        activation_id: instanceId,
+        ...(activationId && { activation_id: activationId }),
       }),
     },
   );
-  if (polar.ok) {
-    return (await polar.json()).status === "granted";
-  }
-  if (polar.status !== 404) {
+  if (response.status !== 200 && response.status !== 404) {
     throw new Error("Couldn't reach Polar"); // Handle it as you do today.
   }
+  const body = await response.json();
+  return {
+    found: response.status === 200,
+    granted: body.status === "granted",
+    rejected: REJECTED_ON_POLAR.includes(body.detail),
+  };
+}
 
-  // Polar doesn't know this key or device yet: ask Lemon Squeezy.
+async function checkLicense(key: string, instanceId: string) {
+  const device = await validateOnPolar(key, instanceId);
+  if (device.found) return device.granted ? "valid" : "invalid";
+  if (device.rejected) return "invalid";
+
+  // Polar may have the key but not this device.
+  const keyOnly = await validateOnPolar(key);
+  if (keyOnly.found) return keyOnly.granted ? "activate_on_polar" : "invalid";
+  if (keyOnly.rejected) return "invalid";
+
+  // Polar doesn't have this key yet: ask Lemon Squeezy, as your app does today.
   const lemonSqueezy = await fetch(
     "https://api.lemonsqueezy.com/v1/licenses/validate",
     {
@@ -83,16 +103,27 @@ async function isLicenseValid(key: string, instanceId: string) {
       body: new URLSearchParams({ license_key: key, instance_id: instanceId }),
     },
   );
-  return (await lemonSqueezy.json()).valid === true;
+  return (await lemonSqueezy.json()).valid === true ? "valid" : "invalid";
 }
 ```
 
-The same saved ID works with both. Only fall back on a 404: any other error from Polar is an outage, not an unknown key.
+The same saved ID works with both. Polar answers 404 both when it doesn't know a key and when it knows the key but no longer accepts it, so the `detail` tells them apart. Never fall back to Lemon Squeezy for a key Polar rejected: after a refund or a revoke on Polar, the key often still works on Lemon Squeezy.
+
+| Situation | Polar answers | Your app |
+| --- | --- | --- |
+| Key moved, device activated before the move | `200`, `status: "granted"` | Valid. |
+| Key moved, device activated on Lemon Squeezy after the move | `404` with the device ID, `200` without it | Activate the device on Polar. |
+| Key revoked or disabled on Polar | `404`, `License key is no longer active.` | Invalid. Don't ask Lemon Squeezy. |
+| Key expired on Polar | `404`, `License key has expired.` | Invalid. Don't ask Lemon Squeezy. |
+| Key not on Polar yet, such as a subscriber before the switch | `404`, `Not found` | Ask Lemon Squeezy. |
+| Polar can't be reached | Network error or `5xx` | Handle it as an outage, not an invalid key. |
+
+Once a key is on Polar, Polar decides. Disabling the key or letting it expire on Lemon Squeezy afterwards doesn't change Polar's answer.
 
 Keep in mind:
 
 - **Ship the update early.** Polar cancels the Lemon Squeezy subscription when it switches, so an app version that only checks Lemon Squeezy can't rely on that key afterwards.
-- **New activations go to Polar.** When a device isn't activated yet, and Polar knows the key, [activate it on Polar](/features/benefits/license-keys#activate-license-keys-optional).
+- **New activations go to Polar.** When `checkLicense` returns `activate_on_polar`, or a device isn't activated anywhere yet and Polar knows the key, [activate it on Polar](/features/benefits/license-keys#activate-license-keys-optional) and save the new ID.
 - **Remove the fallback** once every subscription has switched and Lemon Squeezy has stopped processing payments.
 
 For new sales, Polar's [license key benefit](/features/benefits/license-keys) issues keys automatically after purchase, with optional activation limits and expiration.
@@ -193,9 +224,13 @@ subscriptions.
 - Never create Polar orders for Lemon Squeezy purchases. Historical orders stay
   on Lemon Squeezy; Polar gives past one-time buyers their benefits through
   its Benefits step.
-- Fall back to Lemon Squeezy only when Polar answers 404. Any other error is an
-  outage, not an invalid key: handle it the way the application already
-  handles a provider outage.
+- Ask Lemon Squeezy only when Polar doesn't know the key. Polar answers 404
+  both for an unknown key and for a key it no longer accepts (its `detail`
+  says "License key is no longer active." or "License key has expired.").
+  Never fall back for a key Polar rejected: after a refund or revoke on Polar,
+  the key often still works on Lemon Squeezy.
+- Any error other than 404 from Polar is an outage, not an invalid key:
+  handle it the way the application already handles a provider outage.
 - Never remove the Lemon Squeezy fallback before every subscription has
   switched and Lemon Squeezy has stopped processing payments.
 - Never treat webhooks as exactly-once delivery. Verify signatures, persist
@@ -249,7 +284,11 @@ Design one function the whole application uses to check a key:
    (`/v1/customer-portal/license-keys/validate`), sending the key, the Polar
    organization ID, and the saved Lemon Squeezy `instance_id` as
    `activation_id`.
-2. On a Polar 404, validate with Lemon Squeezy as the application does today.
+2. On a Polar 404, read `detail`. If Polar rejected the key (no longer
+   active, or expired), the key is invalid. Otherwise validate again without
+   `activation_id`: if Polar answers 200, the key is on Polar but this device
+   is not, so activate it on Polar. Only if Polar still doesn't know the key,
+   validate with Lemon Squeezy as the application does today.
 3. Activate a device that has no activation yet on Polar when Polar knows the
    key, and on Lemon Squeezy otherwise. Store the returned ID the same way the
    application stores `instance_id` today.

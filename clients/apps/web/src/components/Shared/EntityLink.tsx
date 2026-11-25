@@ -152,12 +152,15 @@ export const CombinedEntityLink = ({
       className={twMerge(ENTITY_CHIP_CLASS, 'gap-2 pl-1.5')}
       onClick={(event) => event.stopPropagation()}
     >
-      <Link href={first.href} className="min-w-0 py-0.5">
+      <Link href={first.href} className="flex min-w-0 py-0.5">
         <Text as="span" color={first.muted ? 'muted' : 'default'} truncate>
           {first.name}
         </Text>
       </Link>
-      <Link href={second.href} className="max-w-[45%] min-w-0 shrink-0 py-0.5">
+      <Link
+        href={second.href}
+        className="flex max-w-[45%] min-w-0 shrink-0 py-0.5"
+      >
         <Text as="span" color={second.muted ? 'muted' : 'default'} truncate>
           {second.name}
         </Text>

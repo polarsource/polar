@@ -3,6 +3,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import { type RowData } from '@tanstack/react-table'
 import {
   CondensedTableCell,
+  CondensedTableExpanderCell,
   CondensedTableLine,
   type CondensedTableInset,
 } from './columns'
@@ -23,12 +24,15 @@ interface CondensedTableSkeletonProps<T extends RowData> {
   table: CondensedTableInstance<T>
   compact?: boolean
   inset?: CondensedTableInset
+  // Leaves room for the chevron of a table whose rows open in place.
+  expandable?: boolean
 }
 
 export const CondensedTableSkeleton = <T extends RowData>({
   table,
   compact = false,
   inset = 'm',
+  expandable = false,
 }: CondensedTableSkeletonProps<T>) => {
   const rows = Array.from({ length: ROW_COUNT }, (_, index) => index)
   return (
@@ -60,6 +64,7 @@ export const CondensedTableSkeleton = <T extends RowData>({
           desktopOnly={compact}
           minHeight={ROW_MIN_HEIGHT}
         >
+          {expandable && <CondensedTableExpanderCell />}
           {table.getAllLeafColumns().map(({ id, columnDef: { meta } }) => (
             <CondensedTableCell key={id} column={meta}>
               {meta?.skeleton && (

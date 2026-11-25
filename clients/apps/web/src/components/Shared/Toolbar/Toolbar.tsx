@@ -55,7 +55,9 @@ export const Toolbar = ({
     </Box>
     <Box alignItems="center" gap="s" flexShrink={0} minHeight={32}>
       {children}
-      <ToolbarFilterMenu filters={filters} onReset={onReset} />
+      {filters.length > 0 && (
+        <ToolbarFilterMenu filters={filters} onReset={onReset} />
+      )}
       <ToolbarActionsMenu groups={actions} />
     </Box>
   </Box>

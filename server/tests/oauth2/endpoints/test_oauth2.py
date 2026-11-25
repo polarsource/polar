@@ -759,6 +759,58 @@ class TestOAuth2Authorize:
 
     @pytest.mark.auth
     @pytest.mark.parametrize("prompt", [None, "none", "consent"])
+    async def test_requested_scope_entirely_outside_client_scope(
+        self,
+        prompt: str | None,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user: User,
+        oauth2_client: OAuth2Client,
+        sync_session: Session,
+    ) -> None:
+        await create_oauth2_grant(
+            save_fixture,
+            client=oauth2_client,
+            user=user,
+            scopes=["openid", "profile"],
+        )
+        params = {
+            "client_id": oauth2_client.client_id,
+            "response_type": "code",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+            "scope": "user:read",
+            "sub_type": "user",
+            "state": "xyz123",
+        }
+        if prompt is not None:
+            params["prompt"] = prompt
+        response = await client.get("/v1/oauth2/authorize", params=params)
+
+        assert response.status_code == 302
+        query = parse_qs(urlparse(response.headers["location"]).query)
+        assert query["error"] == ["invalid_scope"]
+        assert query["state"] == ["xyz123"]
+        assert "code" not in query
+
+        consent = await client.post(
+            "/v1/oauth2/consent", params=params, data={"action": "allow"}
+        )
+        assert consent.status_code == 302
+        query = parse_qs(urlparse(consent.headers["location"]).query)
+        assert query["error"] == ["invalid_scope"]
+        assert "code" not in query
+
+        grant = oauth2_grant_service.get_by_sub_and_client_id(
+            sync_session,
+            sub_type=SubType.user,
+            sub_id=user.id,
+            client_id=oauth2_client.client_id,
+        )
+        assert grant is not None
+        assert set(grant.scopes) == {"openid", "profile"}
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize("prompt", [None, "none", "consent"])
     async def test_new_scope_first_party_client(
         self,
         prompt: str | None,

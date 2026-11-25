@@ -1,0 +1,41 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/benefits/BenefitsStep.tsx
+  s_587ceda2630946::t_2377d154557f26 27-28,30-31
+clients/packages/client/src/v1.ts
+  s_587ceda2630946::t_5506f152f6a328 65099-65107,65170-65178,65307,65315
+server/polar/backoffice/merchant_migrations/endpoints.py
+  s_587ceda2630946::t_d5b2f70b8e5ff9 364
+server/polar/backoffice/merchant_migrations/status.py
+  s_587ceda2630946::t_e75229355c0872 26,52-55,200,203-210
+server/polar/backoffice/merchant_migrations/views.py
+  s_587ceda2630946::t_101e4c0d6d9f15 84
+server/polar/merchant_migration/adapters/lemon_squeezy.py
+  s_587ceda2630946::t_c0ee2edd13039d 939-941
+server/polar/merchant_migration/endpoints.py
+  s_587ceda2630946::t_dcccbd958ab804 285-288,316-319,385-387,389
+server/polar/merchant_migration/service.py
+  s_587ceda2630946::t_80c6194715a52a 1287-1288,1290-1297
+server/tests/backoffice/merchant_migrations/test_endpoints.py
+  s_587ceda2630946::t_b7bd2b8d8284b7 214
+server/tests/backoffice/merchant_migrations/test_status.py
+  s_587ceda2630946::t_ecb8de7bb9f0a3 203-210,212-217
+server/tests/merchant_migration/test_lemon_squeezy_adapter.py
+  s_587ceda2630946::t_84dcdc973a1db2 13,732-747
+server/tests/merchant_migration/test_service.py
+  s_587ceda2630946::t_3614f5c55340d0 80,4969-4999
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ca0dcb127c27185c9a34603d75a09a29023a2669",
+  "prompts": {},
+  "sessions": {
+    "s_587ceda2630946": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "857c022f-2249-4a02-a91e-cde99fa20ae3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

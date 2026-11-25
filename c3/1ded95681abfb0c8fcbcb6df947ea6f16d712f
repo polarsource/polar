@@ -1,0 +1,72 @@
+server/migrations/versions/2026-11-25-1014_add_order_payment_processor_metadata.py
+  s_9d4fcc69d80fc5::t_cb2ed49613f3c7 1-3,5-11,13-19,20-24
+server/scripts/backfill_order_payment_processor_metadata.py
+  s_9d4fcc69d80fc5::t_cb2ed49613f3c7 1,3-4,12-13,19-20,34-35,37-39,46-50
+server/polar/models/order.py
+  s_9d4fcc69d80fc5::t_cb2ed49613f3c7 3
+  s_9d4fcc69d80fc5::t_8672630a90f2ea 216-217
+  s_9d4fcc69d80fc5::t_66f1d24c75772a 214
+  s_9d4fcc69d80fc5::t_a8e3589bb68035 215
+  s_9d4fcc69d80fc5::t_833d7267202868 490
+  s_9d4fcc69d80fc5::t_e098d3a52c1fb9 50,481-489
+server/migrations/versions/2026-11-25-1015_enforce_order_payment_processor_metadata_not_null.py
+  s_9d4fcc69d80fc5::t_66f1d24c75772a 1-49,51-60
+  s_9d4fcc69d80fc5::t_f68b50f6c9b5f7 50
+server/polar/customer_portal/schemas/order.py
+  s_9d4fcc69d80fc5::t_e098d3a52c1fb9 20-21,37
+server/polar/order/schemas.py
+  s_9d4fcc69d80fc5::t_e098d3a52c1fb9 29,407,411,413
+  s_9d4fcc69d80fc5::t_c33729575ddcec 401-402,404,408,410
+  s_9d4fcc69d80fc5::t_b61a81d7f54a15 398,405-406,412
+  s_9d4fcc69d80fc5::t_54ef71d5254da4 403
+  s_9d4fcc69d80fc5::t_ec99536337aff4 409
+server/polar/order/service.py
+  s_9d4fcc69d80fc5::t_c33729575ddcec 147-150,152,545,563-564,569-571,574-576,578-597,607,609,616,634,643-647,652-660,662
+  s_9d4fcc69d80fc5::t_e098d3a52c1fb9 1354-1355,1678,1681-1688,2558-2559
+  s_9d4fcc69d80fc5::t_81b6540bc06f43 59,533-535,537-538,550-551,554,557-559,565,600
+  s_9d4fcc69d80fc5::t_8a7fe102842aa9 31,132,561-562,566
+  s_9d4fcc69d80fc5::t_25ea50fae45815 151
+  s_9d4fcc69d80fc5::t_3316529f65562b 532
+  s_9d4fcc69d80fc5::t_5c7580c1b9b89d 536
+  s_9d4fcc69d80fc5::t_524b27b3c168e8 539-544
+  s_9d4fcc69d80fc5::t_83d7e790b2c31d 546-549
+  s_9d4fcc69d80fc5::t_9b3a73cbe3fc6f 552
+  s_9d4fcc69d80fc5::t_11e3f44cd61548 555-556
+  s_9d4fcc69d80fc5::t_eb3c46affcf1a9 572-573
+  s_9d4fcc69d80fc5::t_476d145a285999 577
+  s_9d4fcc69d80fc5::t_d7620a6d5d3d9a 598-599
+  s_9d4fcc69d80fc5::t_e93bcef00808df 601-606
+  s_9d4fcc69d80fc5::t_9b14545fc82d65 608
+  s_9d4fcc69d80fc5::t_ec94191ce3219d 610-615
+  s_9d4fcc69d80fc5::t_7d42a144d0175d 617-619,631-633
+  s_9d4fcc69d80fc5::t_345f818b65f241 635
+  s_9d4fcc69d80fc5::t_6d46aad6bc86ba 640-642
+  s_9d4fcc69d80fc5::t_01d81b46df60d6 648-651
+  s_9d4fcc69d80fc5::t_45d7d1f55b4d4a 661
+  s_9d4fcc69d80fc5::t_39ce7197c2b5f8 663-664
+server/polar/order/amounts.py
+  s_9d4fcc69d80fc5::t_e098d3a52c1fb9 7,9,16,42-43,129,132-136,146-147,158-160,162-163
+server/tests/order/test_service.py
+  s_9d4fcc69d80fc5::t_2da1d317a2180a 682-763
+server/tests/customer_portal/endpoints/test_order.py
+  s_9d4fcc69d80fc5::t_d17cbcc517faab 602-604
+  s_9d4fcc69d80fc5::t_03981ef7d3b5f6 651-655
+  s_9d4fcc69d80fc5::t_0f61b637910e54 633,644,657-662
+  s_9d4fcc69d80fc5::t_c3b971bf9d8466 11,15,19,24,574-601,605-632,634-643,645-650,656
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c31ded95681abfb0c8fcbcb6df947ea6f16d712f",
+  "prompts": {},
+  "sessions": {
+    "s_9d4fcc69d80fc5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20ccd-705d-7a61-9a99-612697cae1a1",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

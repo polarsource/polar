@@ -30,8 +30,7 @@ server/polar/customer_portal/endpoints/** @frankie567
 server/polar/customer_portal/schemas/** @frankie567
 server/polar/declarative_config/**
 server/polar/catalog/**
-server/polar/merchant_migration/endpoints.py
-server/polar/merchant_migration/schemas.py
+server/polar/merchant_migration/**
 
 # Authentication
 server/polar/auth/** @frankie567

@@ -744,6 +744,16 @@ class OrganizationService:
                 session, organization, new_embed_hosts
             )
 
+        removed_embed_hosts = [
+            host
+            for host in previous_embed_hosts
+            if host not in organization.embed_hosts
+        ]
+        if removed_embed_hosts:
+            await organization_domain_service.unregister_payment_method_domains(
+                session, organization, removed_embed_hosts
+            )
+
         if organization.website != previous_website:
             enqueue_job(
                 "organization.sync_payout_account_website",
@@ -802,14 +812,9 @@ class OrganizationService:
         resend_service.on_organization_status_changed(
             organization.id, previous_status, status
         )
-        if (
-            status == OrganizationStatus.ACTIVE
-            and previous_status != OrganizationStatus.ACTIVE
-        ):
-            enqueue_job(
-                "organization_domain.register_organization_payment_method_domains",
-                organization_id=organization.id,
-            )
+        organization_domain_service.on_organization_status_changed(
+            organization.id, previous_status, status
+        )
 
     async def reset_onboarding_for_review(
         self,
@@ -1024,6 +1029,9 @@ class OrganizationService:
         if organization.socials:
             update_dict["socials"] = []
 
+        await organization_domain_service.unregister_payment_method_domains(
+            session, organization
+        )
         organization = await repository.update(organization, update_dict=update_dict)
         await repository.soft_delete(organization)
         await OrganizationDomainRepository.from_session(
@@ -2771,6 +2779,10 @@ class OrganizationService:
             f"Capability '{capability}' {action}{by}",
             reason=reason,
         )
+        if capability == "checkout_payments":
+            organization_domain_service.on_organization_checkout_payments_changed(
+                organization.id, value
+            )
 
         session.add(organization)
         return organization

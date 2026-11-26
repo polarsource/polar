@@ -1569,7 +1569,7 @@ class CustomerOrderUpdate(typing.TypedDict):
     """The name of the customer that should appear on the invoice."""
 
     billing_address: typing.NotRequired[AddressInput | None]
-    """The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated."""
+    """The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated on draft orders."""
 
 
 class CustomerPaymentMethodConfirm(typing.TypedDict):
@@ -2524,7 +2524,7 @@ class OrderUpdate(typing.TypedDict):
     """The name of the customer that should appear on the invoice."""
 
     billing_address: typing.NotRequired[AddressInput | None]
-    """The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated."""
+    """The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated on draft orders."""
 
 
 class OrganizationAvatarFileCreate(typing.TypedDict):

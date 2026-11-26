@@ -10,7 +10,7 @@
 import { createPolar } from "@polar-sh/sdk/{{ version }}";
 
 const polar = createPolar({
-  accessToken: "polar_oat_xxx",
+  accessToken: "{{ access_token }}",
 });
 
 {% if pagination %}for await (const item of {{ render_call() }}) {

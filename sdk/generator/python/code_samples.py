@@ -46,6 +46,7 @@ def render_code_sample(sample: OperationSample) -> str:
     return (
         TEMPLATE.render(
             version=f"v{sample.api.version.replace('-', '_').replace('.', '_')}",
+            access_token=sample.access_token,
             call_path=f"polar.{client_path}.{method_name}",
             positional_arguments=positional_arguments,
             keyword_arguments=keyword_arguments,

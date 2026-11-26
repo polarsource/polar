@@ -1201,11 +1201,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.customer_portal.benefit_grants.iter_list(\n    page=1,\n    limit=10,\n    sorting=['product_benefit', '-granted_at'],\n):\n    print(item)\n"
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_cst_xxx\")\n\nfor item in polar.customer_portal.benefit_grants.iter_list(\n    page=1,\n    limit=10,\n    sorting=['product_benefit', '-granted_at'],\n):\n    print(item)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.customerPortal.benefitGrants.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"product_benefit\",\n      \"-granted_at\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_cst_xxx\",\n});\n\nfor await (const item of polar.customerPortal.benefitGrants.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"product_benefit\",\n      \"-granted_at\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
       }
@@ -1290,11 +1290,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.benefit_grants.get(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_cst_xxx\")\n\nresponse = polar.customer_portal.benefit_grants.get(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.benefitGrants.get(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_cst_xxx\",\n});\n\nconst response = await polar.customerPortal.benefitGrants.get(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
       },
@@ -1396,11 +1396,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.benefit_grants.update(\n    '00000000-0000-4000-8000-000000000000',\n    benefit_type='discord',\n    properties={'account_id': 'string'},\n)\nprint(response)\n"
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_cst_xxx\")\n\nresponse = polar.customer_portal.benefit_grants.update(\n    '00000000-0000-4000-8000-000000000000',\n    benefit_type='discord',\n    properties={'account_id': 'string'},\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.benefitGrants.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"benefit_type\": \"discord\",\n    \"properties\": {\n      \"account_id\": \"string\"\n    }\n  },\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_cst_xxx\",\n});\n\nconst response = await polar.customerPortal.benefitGrants.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"benefit_type\": \"discord\",\n    \"properties\": {\n      \"account_id\": \"string\"\n    }\n  },\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -1450,11 +1450,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.customers.get()\nprint(response)\n"
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_cst_xxx\")\n\nresponse = polar.customer_portal.customers.get()\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.customers.get();\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_cst_xxx\",\n});\n\nconst response = await polar.customerPortal.customers.get();\nconsole.log(response);\n"
           }
         ]
       },
@@ -1516,11 +1516,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.customers.update()\nprint(response)\n"
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_cst_xxx\")\n\nresponse = polar.customer_portal.customers.update()\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.customers.update(\n  {},\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_cst_xxx\",\n});\n\nconst response = await polar.customerPortal.customers.update(\n  {},\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -1632,11 +1632,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.customer_portal.customers.iter_list_payment_methods(\n    page=1,\n    limit=10,\n):\n    print(item)\n"
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_cst_xxx\")\n\nfor item in polar.customer_portal.customers.iter_list_payment_methods(\n    page=1,\n    limit=10,\n):\n    print(item)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.customerPortal.customers.iterListPaymentMethods(\n  {\n    \"page\": 1,\n    \"limit\": 10\n  },\n)) {\n  console.log(item);\n}\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_cst_xxx\",\n});\n\nfor await (const item of polar.customerPortal.customers.iterListPaymentMethods(\n  {\n    \"page\": 1,\n    \"limit\": 10\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
       },
@@ -1709,11 +1709,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.customers.add_payment_method(\n    confirmation_token_id='string',\n    set_default=True,\n    return_url='string',\n)\nprint(response)\n"
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_cst_xxx\")\n\nresponse = polar.customer_portal.customers.add_payment_method(\n    confirmation_token_id='string',\n    set_default=True,\n    return_url='string',\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.customers.addPaymentMethod(\n  {\n    \"confirmation_token_id\": \"string\",\n    \"set_default\": true,\n    \"return_url\": \"string\"\n  },\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_cst_xxx\",\n});\n\nconst response = await polar.customerPortal.customers.addPaymentMethod(\n  {\n    \"confirmation_token_id\": \"string\",\n    \"set_default\": true,\n    \"return_url\": \"string\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -1788,11 +1788,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.customers.confirm_payment_method(\n    setup_intent_id='string',\n    set_default=True,\n)\nprint(response)\n"
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_cst_xxx\")\n\nresponse = polar.customer_portal.customers.confirm_payment_method(\n    setup_intent_id='string',\n    set_default=True,\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.customers.confirmPaymentMethod(\n  {\n    \"setup_intent_id\": \"string\",\n    \"set_default\": true\n  },\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_cst_xxx\",\n});\n\nconst response = await polar.customerPortal.customers.confirmPaymentMethod(\n  {\n    \"setup_intent_id\": \"string\",\n    \"set_default\": true\n  },\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -1871,11 +1871,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\npolar.customer_portal.customers.delete_payment_method(\n    '00000000-0000-4000-8000-000000000000',\n)\n"
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_cst_xxx\")\n\npolar.customer_portal.customers.delete_payment_method(\n    '00000000-0000-4000-8000-000000000000',\n)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nawait polar.customerPortal.customers.deletePaymentMethod(\n  \"00000000-0000-4000-8000-000000000000\",\n);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_cst_xxx\",\n});\n\nawait polar.customerPortal.customers.deletePaymentMethod(\n  \"00000000-0000-4000-8000-000000000000\",\n);\n"
           }
         ]
       }
@@ -1937,11 +1937,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.customers.request_email_update(\n    email='customer@example.com',\n)\nprint(response)\n"
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_cst_xxx\")\n\nresponse = polar.customer_portal.customers.request_email_update(\n    email='customer@example.com',\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.customers.requestEmailUpdate(\n  {\n    \"email\": \"customer@example.com\"\n  },\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_cst_xxx\",\n});\n\nconst response = await polar.customerPortal.customers.requestEmailUpdate(\n  {\n    \"email\": \"customer@example.com\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -2229,11 +2229,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.customer_portal.customer_meters.iter_list(\n    page=1,\n    limit=10,\n    sorting=['-modified_at'],\n):\n    print(item)\n"
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_cst_xxx\")\n\nfor item in polar.customer_portal.customer_meters.iter_list(\n    page=1,\n    limit=10,\n    sorting=['-modified_at'],\n):\n    print(item)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.customerPortal.customerMeters.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"-modified_at\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_cst_xxx\",\n});\n\nfor await (const item of polar.customerPortal.customerMeters.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"-modified_at\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
       }
@@ -2317,11 +2317,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.customer_meters.get(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_cst_xxx\")\n\nresponse = polar.customer_portal.customer_meters.get(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.customerMeters.get(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_cst_xxx\",\n});\n\nconst response = await polar.customerPortal.customerMeters.get(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -2430,11 +2430,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.seats.list_seats()\nprint(response)\n"
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_cst_xxx\")\n\nresponse = polar.customer_portal.seats.list_seats()\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.seats.listSeats();\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_cst_xxx\",\n});\n\nconst response = await polar.customerPortal.seats.listSeats();\nconsole.log(response);\n"
           }
         ]
       },
@@ -2507,11 +2507,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.seats.assign_seat(\n    immediate_claim=False,\n)\nprint(response)\n"
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_cst_xxx\")\n\nresponse = polar.customer_portal.seats.assign_seat(\n    immediate_claim=False,\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.seats.assignSeat(\n  {\n    \"immediate_claim\": false\n  },\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_cst_xxx\",\n});\n\nconst response = await polar.customerPortal.seats.assignSeat(\n  {\n    \"immediate_claim\": false\n  },\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -2585,11 +2585,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.seats.revoke_seat(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_cst_xxx\")\n\nresponse = polar.customer_portal.seats.revoke_seat(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.seats.revokeSeat(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_cst_xxx\",\n});\n\nconst response = await polar.customerPortal.seats.revokeSeat(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -2666,11 +2666,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.seats.resend_invitation(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_cst_xxx\")\n\nresponse = polar.customer_portal.seats.resend_invitation(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.seats.resendInvitation(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_cst_xxx\",\n});\n\nconst response = await polar.customerPortal.seats.resendInvitation(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -2786,11 +2786,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.customer_portal.seats.iter_list_claimed_subscriptions(\n    page=1,\n    limit=10,\n):\n    print(item)\n"
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_cst_xxx\")\n\nfor item in polar.customer_portal.seats.iter_list_claimed_subscriptions(\n    page=1,\n    limit=10,\n):\n    print(item)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.customerPortal.seats.iterListClaimedSubscriptions(\n  {\n    \"page\": 1,\n    \"limit\": 10\n  },\n)) {\n  console.log(item);\n}\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_cst_xxx\",\n});\n\nfor await (const item of polar.customerPortal.seats.iterListClaimedSubscriptions(\n  {\n    \"page\": 1,\n    \"limit\": 10\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
       }
@@ -2840,11 +2840,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.customer_session.introspect()\nprint(response)\n"
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_cst_xxx\")\n\nresponse = polar.customer_portal.customer_session.introspect()\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.customerSession.introspect();\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_cst_xxx\",\n});\n\nconst response = await polar.customerPortal.customerSession.introspect();\nconsole.log(response);\n"
           }
         ]
       }
@@ -2894,11 +2894,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.customer_session.get_authenticated_user()\nprint(response)\n"
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_cst_xxx\")\n\nresponse = polar.customer_portal.customer_session.get_authenticated_user()\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.customerSession.getAuthenticatedUser();\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_cst_xxx\",\n});\n\nconst response = await polar.customerPortal.customerSession.getAuthenticatedUser();\nconsole.log(response);\n"
           }
         ]
       }
@@ -3039,11 +3039,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.customer_portal.downloadables.iter_list(\n    page=1,\n    limit=10,\n):\n    print(item)\n"
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_cst_xxx\")\n\nfor item in polar.customer_portal.downloadables.iter_list(\n    page=1,\n    limit=10,\n):\n    print(item)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.customerPortal.downloadables.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10\n  },\n)) {\n  console.log(item);\n}\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_cst_xxx\",\n});\n\nfor await (const item of polar.customerPortal.downloadables.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
       }
@@ -3196,11 +3196,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.customer_portal.license_keys.iter_list(\n    page=1,\n    limit=10,\n):\n    print(item)\n"
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_cst_xxx\")\n\nfor item in polar.customer_portal.license_keys.iter_list(\n    page=1,\n    limit=10,\n):\n    print(item)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.customerPortal.licenseKeys.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10\n  },\n)) {\n  console.log(item);\n}\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_cst_xxx\",\n});\n\nfor await (const item of polar.customerPortal.licenseKeys.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
       }
@@ -3282,11 +3282,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.license_keys.get(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_cst_xxx\")\n\nresponse = polar.customer_portal.license_keys.get(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.licenseKeys.get(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_cst_xxx\",\n});\n\nconst response = await polar.customerPortal.licenseKeys.get(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -3386,11 +3386,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.license_keys.rotate(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_cst_xxx\")\n\nresponse = polar.customer_portal.license_keys.rotate(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.licenseKeys.rotate(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_cst_xxx\",\n});\n\nconst response = await polar.customerPortal.licenseKeys.rotate(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -4172,11 +4172,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.customer_portal.orders.iter_list(\n    page=1,\n    limit=10,\n    sorting=['-created_at'],\n):\n    print(item)\n"
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_cst_xxx\")\n\nfor item in polar.customer_portal.orders.iter_list(\n    page=1,\n    limit=10,\n    sorting=['-created_at'],\n):\n    print(item)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.customerPortal.orders.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"-created_at\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_cst_xxx\",\n});\n\nfor await (const item of polar.customerPortal.orders.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"-created_at\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
       }
@@ -4256,11 +4256,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.orders.get(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_cst_xxx\")\n\nresponse = polar.customer_portal.orders.get(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.orders.get(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_cst_xxx\",\n});\n\nconst response = await polar.customerPortal.orders.get(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
       },
@@ -4346,11 +4346,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.orders.update(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_cst_xxx\")\n\nresponse = polar.customer_portal.orders.update(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.orders.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {},\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_cst_xxx\",\n});\n\nconst response = await polar.customerPortal.orders.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {},\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -4441,11 +4441,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.orders.generate_invoice(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_cst_xxx\")\n\nresponse = polar.customer_portal.orders.generate_invoice(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.orders.generateInvoice(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_cst_xxx\",\n});\n\nconst response = await polar.customerPortal.orders.generateInvoice(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
       },
@@ -4526,11 +4526,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.orders.invoice(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_cst_xxx\")\n\nresponse = polar.customer_portal.orders.invoice(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.orders.invoice(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_cst_xxx\",\n});\n\nconst response = await polar.customerPortal.orders.invoice(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -4613,11 +4613,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.orders.receipt(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_cst_xxx\")\n\nresponse = polar.customer_portal.orders.receipt(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.orders.receipt(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_cst_xxx\",\n});\n\nconst response = await polar.customerPortal.orders.receipt(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -4887,11 +4887,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nfor item in polar.customer_portal.subscriptions.iter_list(\n    page=1,\n    limit=10,\n    sorting=['-started_at'],\n):\n    print(item)\n"
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_cst_xxx\")\n\nfor item in polar.customer_portal.subscriptions.iter_list(\n    page=1,\n    limit=10,\n    sorting=['-started_at'],\n):\n    print(item)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.customerPortal.subscriptions.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"-started_at\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_cst_xxx\",\n});\n\nfor await (const item of polar.customerPortal.subscriptions.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"-started_at\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
           }
         ]
       }
@@ -4975,11 +4975,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.subscriptions.get(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_cst_xxx\")\n\nresponse = polar.customer_portal.subscriptions.get(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.subscriptions.get(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_cst_xxx\",\n});\n\nconst response = await polar.customerPortal.subscriptions.get(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
       },
@@ -5120,11 +5120,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.subscriptions.update(\n    '00000000-0000-4000-8000-000000000000',\n    product_id='00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_cst_xxx\")\n\nresponse = polar.customer_portal.subscriptions.update(\n    '00000000-0000-4000-8000-000000000000',\n    product_id='00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.subscriptions.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"product_id\": \"00000000-0000-4000-8000-000000000000\"\n  },\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_cst_xxx\",\n});\n\nconst response = await polar.customerPortal.subscriptions.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"product_id\": \"00000000-0000-4000-8000-000000000000\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
       },
@@ -5210,11 +5210,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.subscriptions.cancel(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
+            "source": "from polar.v2026_10 import Polar\n\npolar = Polar(\"polar_cst_xxx\")\n\nresponse = polar.customer_portal.subscriptions.cancel(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.subscriptions.cancel(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_cst_xxx\",\n});\n\nconst response = await polar.customerPortal.subscriptions.cancel(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -48146,7 +48146,7 @@
                 "type": "null"
               }
             ],
-            "description": "The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated."
+            "description": "The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated on draft orders."
           }
         },
         "type": "object",
@@ -66007,7 +66007,7 @@
                 "type": "null"
               }
             ],
-            "description": "The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated."
+            "description": "The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated on draft orders."
           }
         },
         "type": "object",

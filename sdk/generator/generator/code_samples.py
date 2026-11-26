@@ -46,6 +46,12 @@ class OperationSample:
     query_parameters: tuple[SampleParameter, ...]
     body: typing.Any | None
 
+    @property
+    def access_token(self) -> str:
+        if any("customer_session" in option for option in self.method.security or []):
+            return "polar_cst_xxx"
+        return "polar_oat_xxx"
+
 
 type CodeSampleRenderer = typing.Callable[[OperationSample], str]
 

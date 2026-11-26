@@ -13,9 +13,14 @@ from polar.v2027_01.errors import (
     HTTPValidationError,
     MissingInvoiceBillingDetails,
     OrderNotEligibleForInvoice,
+    PaymentError,
     ResourceNotFound,
 )
 from polar.v2027_01.inputs import (
+    CustomerOrderCreate,
+    CustomerOrderPayConfirmationToken,
+    CustomerOrderPayPaymentMethod,
+    CustomerOrderPayWithoutCredentials,
     CustomerOrderUpdate,
 )
 from polar.v2027_01.literals import (
@@ -145,6 +150,43 @@ class OrdersSync(SyncServiceBase):
                 break
             page += 1
 
+    def create(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[CustomerOrderCreate],
+    ) -> CustomerOrder:
+        """
+        Prepare a draft order for the first paid period of an ended trial.
+
+        Args:
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
+            request_access_token: Access token override for this request.
+
+            **kwargs: Request body parameters
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="POST",
+            url="/v1/customer-portal/orders/",
+            path_params={},
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+            body=kwargs,
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, CustomerOrder, method_errors)
+
     def get(
         self,
         id: str,
@@ -223,6 +265,81 @@ class OrdersSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
+            404: ResourceNotFound,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, CustomerOrder, method_errors)
+
+    @typing.overload
+    def pay(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[CustomerOrderPayPaymentMethod],
+    ) -> CustomerOrder: ...
+
+    @typing.overload
+    def pay(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[CustomerOrderPayConfirmationToken],
+    ) -> CustomerOrder: ...
+
+    @typing.overload
+    def pay(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[CustomerOrderPayWithoutCredentials],
+    ) -> CustomerOrder: ...
+
+    def pay(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Any,
+    ) -> CustomerOrder:
+        """
+        Submit payment for an order for asynchronous settlement.
+
+        Args:
+            id: The order ID.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
+            request_access_token: Access token override for this request.
+
+            **kwargs: Request body parameters
+
+        Raises:
+            PaymentError: Bad Request
+            ResourceNotFound: Order not found.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="PATCH",
+            url="/v1/customer-portal/orders/{id}/pay",
+            path_params={
+                "id": id,
+            },
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+            body=kwargs,
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            400: PaymentError,
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
@@ -467,6 +584,43 @@ class OrdersAsync(AsyncServiceBase):
                 break
             page += 1
 
+    async def create(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[CustomerOrderCreate],
+    ) -> CustomerOrder:
+        """
+        Prepare a draft order for the first paid period of an ended trial.
+
+        Args:
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
+            request_access_token: Access token override for this request.
+
+            **kwargs: Request body parameters
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="POST",
+            url="/v1/customer-portal/orders/",
+            path_params={},
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+            body=kwargs,
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, CustomerOrder, method_errors)
+
     async def get(
         self,
         id: str,
@@ -545,6 +699,81 @@ class OrdersAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
+            404: ResourceNotFound,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, CustomerOrder, method_errors)
+
+    @typing.overload
+    async def pay(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[CustomerOrderPayPaymentMethod],
+    ) -> CustomerOrder: ...
+
+    @typing.overload
+    async def pay(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[CustomerOrderPayConfirmationToken],
+    ) -> CustomerOrder: ...
+
+    @typing.overload
+    async def pay(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[CustomerOrderPayWithoutCredentials],
+    ) -> CustomerOrder: ...
+
+    async def pay(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Any,
+    ) -> CustomerOrder:
+        """
+        Submit payment for an order for asynchronous settlement.
+
+        Args:
+            id: The order ID.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
+            request_access_token: Access token override for this request.
+
+            **kwargs: Request body parameters
+
+        Raises:
+            PaymentError: Bad Request
+            ResourceNotFound: Order not found.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="PATCH",
+            url="/v1/customer-portal/orders/{id}/pay",
+            path_params={
+                "id": id,
+            },
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+            body=kwargs,
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            400: PaymentError,
             404: ResourceNotFound,
             422: HTTPValidationError,
         }

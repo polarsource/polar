@@ -10,7 +10,7 @@
 {% endmacro -%}
 from polar.{{ version }} import Polar
 
-polar = Polar("polar_oat_xxx")
+polar = Polar("{{ access_token }}")
 
 {% if pagination %}for item in {{ render_call() }}:
     print(item)

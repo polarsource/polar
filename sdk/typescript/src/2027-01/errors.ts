@@ -28,6 +28,7 @@ import type {
   OrganizationNotReadyForPayments as OrganizationNotReadyForPaymentsModel,
   PauseResumeNotAllowed as PauseResumeNotAllowedModel,
   PaymentActionRequired as PaymentActionRequiredModel,
+  PaymentError as PaymentErrorModel,
   PaymentFailed as PaymentFailedModel,
   PaymentMethodInUseByActiveSubscription as PaymentMethodInUseByActiveSubscriptionModel,
   PaymentMethodRequired as PaymentMethodRequiredModel,
@@ -528,6 +529,18 @@ export class CustomerPortalMembersUpdateMember404Error extends PolarClientError<
   ) {
     super(statusCode, error);
     this.name = "CustomerPortalMembersUpdateMember404Error";
+  }
+}
+/**
+ * Bad Request
+ */
+export class PaymentError extends PolarClientError<PaymentErrorModel> {
+  constructor(
+    public readonly statusCode: 400,
+    public readonly error: PaymentErrorModel,
+  ) {
+    super(statusCode, error);
+    this.name = "PaymentError";
   }
 }
 /**

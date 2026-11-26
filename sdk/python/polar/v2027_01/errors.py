@@ -89,6 +89,9 @@ from polar.v2027_01.outputs import (
     PaymentActionRequired as PaymentActionRequiredModel,
 )
 from polar.v2027_01.outputs import (
+    PaymentError as PaymentErrorModel,
+)
+from polar.v2027_01.outputs import (
     PaymentFailed as PaymentFailedModel,
 )
 from polar.v2027_01.outputs import (
@@ -505,6 +508,15 @@ class CustomerPortalMembersUpdateMember404Error(PolarClientError):
     error: None
 
     def __init__(self, status_code: int, error: None) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class PaymentError(PolarClientError):
+    error_type = PaymentErrorModel
+    error: PaymentErrorModel
+
+    def __init__(self, status_code: int, error: PaymentErrorModel) -> None:
         self.error = error
         super().__init__(status_code, error)
 

@@ -4835,6 +4835,8 @@ class CustomerOrder:
     next_payment_attempt_at: str | None = None
     """When the next automatic payment retry is scheduled. `null` if the order is not in dunning or all retries have been exhausted."""
 
+    tax_id: list[typing.Any] | None
+
     product: CustomerOrderProduct | None
 
     subscription: CustomerOrderSubscription | None
@@ -4844,6 +4846,14 @@ class CustomerOrder:
 
     description: str
     """A summary description of the order."""
+
+    is_payment_required: bool
+    """Whether the order has a positive amount due after discounts, taxes, and applied balance."""
+
+    is_payment_setup_required: bool
+    """Whether a payment method must be set up for future subscription charges, even if the order has no amount due."""
+
+    payment_processor_metadata: dict[str, str]
 
     refundable_amount: int
     """Amount in cents that can still be refunded (net, before taxes). Accounts for any applied customer balance and previous refunds."""
@@ -9136,6 +9146,8 @@ class OrganizationSubscriptionSettings:
     proration_behavior: PublicSubscriptionProrationBehavior | typing.Literal["auto"]
 
     benefit_revocation_grace_period: int
+
+    trial_ended_reactivation_period: int | None = None
 
     prevent_trial_abuse: bool
 

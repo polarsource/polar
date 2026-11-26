@@ -946,7 +946,7 @@ export type PaymentTrigger =
   | "retry_admin"
   | "retry_payment_alert";
 /**
- * The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role).
+ * Permission
  */
 export type Permission = "pull" | "triage" | "push" | "maintain" | "admin";
 /**
@@ -11373,6 +11373,10 @@ export interface CustomerOrder {
    */
   next_payment_attempt_at?: string | null;
   /**
+   * tax_id
+   */
+  tax_id: unknown[] | null;
+  /**
    * product
    */
   product: CustomerOrderProduct | null;
@@ -11389,6 +11393,18 @@ export interface CustomerOrder {
    */
   description: string;
   /**
+   * Whether the order has a positive amount due after discounts, taxes, and applied balance.
+   */
+  is_payment_required: boolean;
+  /**
+   * Whether a payment method must be set up for future subscription charges, even if the order has no amount due.
+   */
+  is_payment_setup_required: boolean;
+  /**
+   * payment_processor_metadata
+   */
+  payment_processor_metadata: Record<string, string>;
+  /**
    * Amount in cents that can still be refunded (net, before taxes). Accounts for any applied customer balance and previous refunds.
    */
   refundable_amount: number;
@@ -11399,6 +11415,16 @@ export interface CustomerOrder {
 }
 
 /**
+ * CustomerOrderCreate
+ */
+export interface CustomerOrderCreate {
+  /**
+   * ID of the subscription whose trial ended.
+   */
+  subscription_id: string;
+}
+
+/**
  * Order's invoice data.
  */
 export interface CustomerOrderInvoice {
@@ -11406,6 +11432,84 @@ export interface CustomerOrderInvoice {
    * The URL to the invoice.
    */
   url: string;
+}
+
+/**
+ * CustomerOrderPayConfirmationToken
+ */
+export interface CustomerOrderPayConfirmationToken {
+  /**
+   * The name of the customer that should appear on the invoice.
+   */
+  billing_name?: string | null;
+  /**
+   * The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated on draft orders.
+   */
+  billing_address?: AddressInput;
+  /**
+   * Tax ID for the billing address on a draft order. Set to null to remove it.
+   */
+  tax_id?: string | null;
+  /**
+   * Discount code to apply to the draft order. Set to null to remove it.
+   */
+  discount_code?: string | null;
+  /**
+   * payment_processor
+   */
+  payment_processor: PaymentProcessor;
+  /**
+   * confirmation_token_id
+   */
+  confirmation_token_id: string;
+}
+
+/**
+ * CustomerOrderPayPaymentMethod
+ */
+export interface CustomerOrderPayPaymentMethod {
+  /**
+   * The name of the customer that should appear on the invoice.
+   */
+  billing_name?: string | null;
+  /**
+   * The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated on draft orders.
+   */
+  billing_address?: AddressInput;
+  /**
+   * Tax ID for the billing address on a draft order. Set to null to remove it.
+   */
+  tax_id?: string | null;
+  /**
+   * Discount code to apply to the draft order. Set to null to remove it.
+   */
+  discount_code?: string | null;
+  /**
+   * payment_method_id
+   */
+  payment_method_id: string;
+}
+
+/**
+ * Pay a zero-due order that needs no payment method for future charges.
+ */
+export interface CustomerOrderPayWithoutCredentials {
+  /**
+   * The name of the customer that should appear on the invoice.
+   */
+  billing_name?: string | null;
+  /**
+   * The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated on draft orders.
+   */
+  billing_address?: AddressInput;
+  /**
+   * Tax ID for the billing address on a draft order. Set to null to remove it.
+   */
+  tax_id?: string | null;
+  /**
+   * Discount code to apply to the draft order. Set to null to remove it.
+   */
+  discount_code?: string | null;
 }
 
 /**
@@ -11639,9 +11743,17 @@ export interface CustomerOrderUpdate {
    */
   billing_name?: string | null;
   /**
-   * The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated.
+   * The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated on draft orders.
    */
   billing_address?: AddressInput;
+  /**
+   * Tax ID for the billing address on a draft order. Set to null to remove it.
+   */
+  tax_id?: string | null;
+  /**
+   * Discount code to apply to the draft order. Set to null to remove it.
+   */
+  discount_code?: string | null;
 }
 
 /**
@@ -18977,9 +19089,17 @@ export interface OrderUpdate {
    */
   billing_name?: string | null;
   /**
-   * The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated.
+   * The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated on draft orders.
    */
   billing_address?: AddressInput;
+  /**
+   * Tax ID for the billing address on a draft order. Set to null to remove it.
+   */
+  tax_id?: string | null;
+  /**
+   * Discount code to apply to the draft order. Set to null to remove it.
+   */
+  discount_code?: string | null;
 }
 
 /**
@@ -19667,6 +19787,10 @@ export interface OrganizationSubscriptionSettings {
    * benefit_revocation_grace_period
    */
   benefit_revocation_grace_period: number;
+  /**
+   * trial_ended_reactivation_period
+   */
+  trial_ended_reactivation_period?: number;
   /**
    * prevent_trial_abuse
    */
@@ -25031,6 +25155,13 @@ export type CustomerBenefitGrantUpdate =
  * CustomerCreate
  */
 export type CustomerCreate = CustomerIndividualCreate | CustomerTeamCreate;
+/**
+ * CustomerOrderPay
+ */
+export type CustomerOrderPay =
+  | CustomerOrderPayPaymentMethod
+  | CustomerOrderPayConfirmationToken
+  | CustomerOrderPayWithoutCredentials;
 /**
  * CustomerPaymentMethod
  */

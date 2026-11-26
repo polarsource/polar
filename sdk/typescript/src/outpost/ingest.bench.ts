@@ -2,6 +2,8 @@ import { Redis } from "ioredis";
 import { once } from "node:events";
 import { afterAll, beforeAll, bench, describe } from "vitest";
 
+import { Metering } from "../metering/client";
+import { RedisOutbox } from "../metering/outbox/redis";
 import { BUCKET_COUNTS, COLD_UNTIL, encodeState } from "./benchmark";
 import benchmark from "./benchmark.json";
 import { Outpost } from "./client";
@@ -11,6 +13,7 @@ import { startPolarServer, startRedisServer, type PolarServer, type RedisServer 
 const OPTIONS = { warmupTime: 500, time: 2_000 };
 // encodeState seeds every bucket with 10 events.
 const SEEDED = 10;
+const STREAM = "benchmark:metering:events";
 
 // Every event feeds `tokens`; an LLM call also feeds `calls` and `cost`.
 const REDUCERS = benchmark.ingest.reducers as Reducer[];
@@ -50,7 +53,7 @@ const stateKey = (scenario: Scenario, reducer: string) =>
 let redisServer: RedisServer;
 let redis: Redis;
 let polar: PolarServer;
-let outpost: Outpost;
+let metering: Metering;
 
 beforeAll(async () => {
   redisServer = await startRedisServer();
@@ -61,12 +64,22 @@ beforeAll(async () => {
     for (const reducer of REDUCERS)
       await redis.hset(stateKey(scenario, reducer.id), ...encodeState(scenario.buckets));
   polar = await startPolarServer(REDUCERS);
-  outpost = await new Outpost(redisServer.socket, { client: polar.client }).start();
+  metering = new Metering(
+    polar.client,
+    new RedisOutbox(redisServer.socket, { client: polar.client, stream: STREAM }),
+    new Outpost(redisServer.socket, { client: polar.client }),
+  );
+  await metering.flush();
 });
 
 // Vitest runs no hook nested in a describe during benchmarks.
 afterAll(async () => {
   try {
+    await metering.flush();
+    const stream = (await redis.xinfo("STREAM", STREAM)) as (number | string)[];
+    const queued = stream[stream.indexOf("entries-added") + 1];
+    if (queued !== SCENARIOS.reduce((total, scenario) => total + scenario.ingested, 0))
+      throw new Error(`Unexpected stream entry count: ${queued}`);
     for (const scenario of SCENARIOS) {
       const field = `bucket:${newestBucketStart(scenario)}:count`;
       for (const reducer of scenario.reducers) {
@@ -76,14 +89,14 @@ afterAll(async () => {
       }
     }
   } finally {
-    await outpost?.close();
+    await metering?.close();
     await polar?.stop();
     redis?.disconnect();
     await redisServer?.stop();
   }
 });
 
-describe("Outpost.track", () => {
+describe("Metering.track", () => {
   for (const scenario of SCENARIOS) {
     const event = {
       ...scenario.event,
@@ -94,7 +107,7 @@ describe("Outpost.track", () => {
       scenario.name,
       async () => {
         // Every call carries its own external_id, as production events do.
-        await outpost.track({ ...event, external_id: `event-${scenario.ingested}` });
+        await metering.track({ ...event, external_id: `event-${scenario.ingested}` });
         scenario.ingested += 1;
       },
       OPTIONS,

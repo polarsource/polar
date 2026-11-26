@@ -1,5 +1,6 @@
 import asyncio
 import collections.abc
+import contextlib
 import gc
 import json
 import os
@@ -78,6 +79,8 @@ def polar_server(
         body = (await receive()).get("body", b"")
         if scope["path"] == "/v1/outpost/configuration":
             response: typing.Any = {"organization_id": "org", "reducers": reducers}
+        elif scope["path"] == "/v1/events/ingest":
+            response = {"inserted": len(json.loads(body)["events"]), "duplicates": 0}
         elif scope["path"] == "/v1/outpost/meter-usage":
             response = (
                 [
@@ -116,8 +119,37 @@ def snapshot() -> dict[str, typing.Any] | None:
     return None
 
 
-# One task holds the Outpost open, since a task group must close in the task that opened it;
-# the benchmarks drive it from their own tasks on the same loop.
+T = typing.TypeVar("T")
+
+
+@contextlib.contextmanager
+def hold_open(
+    loop: asyncio.AbstractEventLoop,
+    client: contextlib.AbstractAsyncContextManager[object],
+    resource: contextlib.AbstractAsyncContextManager[T],
+) -> collections.abc.Generator[T, None, None]:
+    stop = asyncio.Event()
+    ready: asyncio.Future[T] = loop.create_future()
+
+    async def hold() -> None:
+        async with client, resource as active:
+            ready.set_result(active)
+            await stop.wait()
+
+    # An async task group must close in the task that opened it.
+    held = loop.create_task(hold())
+    loop.run_until_complete(
+        asyncio.wait({ready, held}, return_when=asyncio.FIRST_COMPLETED)
+    )
+    if held.done():
+        held.result()
+    try:
+        yield ready.result()
+    finally:
+        stop.set()
+        loop.run_until_complete(held)
+
+
 @pytest.fixture(scope="module")
 def outpost(
     loop: asyncio.AbstractEventLoop,
@@ -133,21 +165,5 @@ def outpost(
         transport=httpx2.ASGITransport(polar_server(reducers, snapshot)),
     )
     outpost = Outpost(f"unix://{redis_socket}", client=client)
-    stop = asyncio.Event()
-    ready = loop.create_future()
-
-    async def hold() -> None:
-        async with client, outpost:
-            ready.set_result(None)
-            await stop.wait()
-
-    # Telemetry records as in production, into the fake Polar's Redis.
-    held = loop.create_task(hold())
-    loop.run_until_complete(
-        asyncio.wait({ready, held}, return_when=asyncio.FIRST_COMPLETED)
-    )
-    if held.done():
-        held.result()
-    yield outpost
-    stop.set()
-    loop.run_until_complete(held)
+    with hold_open(loop, client, outpost) as active:
+        yield active

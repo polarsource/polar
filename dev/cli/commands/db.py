@@ -6,11 +6,11 @@ from typing import Annotated
 import typer
 
 from migration_drift import find_drift, roll_back
-from shared import SERVER_DIR, console, run_command
+from shared import SERVER_DIR, CommandGroup, console, run_command
 
 
 def register(app: typer.Typer, prompt_setup: callable) -> None:
-    db_app = typer.Typer(help="Database management commands")
+    db_app = typer.Typer(cls=CommandGroup, help="Database management commands")
     app.add_typer(db_app, name="db")
 
     @db_app.command("migrate")

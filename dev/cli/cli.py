@@ -40,6 +40,7 @@ from shared import (
     CLIENTS_DIR,
     ROOT_DIR,
     SERVER_DIR,
+    CommandGroup,
     Context,
     check_env_file_exists,
     check_node_modules_exists,
@@ -50,6 +51,7 @@ from shared import (
 
 app = typer.Typer(
     name="dev",
+    cls=CommandGroup,
     help="Polar Development CLI - streamline your dev environment",
     no_args_is_help=True,
     context_settings={"help_option_names": ["-h", "--help"]},

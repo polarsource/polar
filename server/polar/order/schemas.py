@@ -395,7 +395,7 @@ class OrderUpdateBase(Schema):
         MISSING,
         description=(
             "The address of the customer that should appear on the invoice. "
-            "Address fields used for tax calculation can only be updated on subscription drafts."
+            "Address fields used for tax calculation can only be updated on draft orders."
         ),
     )
     tax_id: Annotated[
@@ -404,13 +404,13 @@ class OrderUpdateBase(Schema):
         Version(starting_from=V2027_01),
     ] = Field(
         MISSING,
-        description="Tax ID for the billing address on a subscription draft. Set to null to remove it.",
+        description="Tax ID for the billing address on a draft order. Set to null to remove it.",
     )
     discount_code: Annotated[
         Omissible[str | None], EmptyStrToNoneValidator, Version(starting_from=V2027_01)
     ] = Field(
         MISSING,
-        description="Discount code to apply to the subscription draft. Set to null to remove it.",
+        description="Discount code to apply to the draft order. Set to null to remove it.",
     )
 
 

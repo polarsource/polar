@@ -103,15 +103,13 @@ const skippedLines = (skipped: InitWritten['skipped']) =>
         ),
       ]
 
-const installLines = (install: InitWritten['install']) =>
-  install === undefined
-    ? []
-    : [
-        [
-          'Package',
-          `${packageOf(install.command.split(' '))} ${install.status === 'installed' ? 'installed' : 'not installed'}`,
-        ] as const,
-      ]
+const installLines = (install: InitWritten['install']) => {
+  if (install === undefined) return []
+  const status = install.status === 'installed' ? 'installed' : 'not installed'
+  return [
+    ['Package', `${packageOf(install.command.split(' '))} ${status}`] as const,
+  ]
+}
 
 const alreadyEnabledLines = (result: InitWritten) =>
   result.already_enabled

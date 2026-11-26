@@ -60,22 +60,22 @@ const make = (interactive: boolean, layout: Layout) => {
     spinner = undefined
   })
 
+  const settled = (text: string, failed: boolean, detail?: string) => {
+    if (layout !== 'columns') {
+      return line(failed ? ui.red('✖') : ui.green('✔'), text, detail)
+    }
+    const row = failed
+      ? `${ui.INDENT}${ui.red(column(text))}${detail ?? ''}`.trimEnd()
+      : stepLine(text, detail)
+    return ui.boxRows(row).join('\n')
+  }
+
   const settle = (failed: boolean, detail?: string) =>
     Effect.gen(function* () {
       if (current === undefined) return
       const text = current
       yield* stop
-      yield* Console.log(
-        layout === 'columns'
-          ? ui
-              .boxRows(
-                failed
-                  ? `${ui.INDENT}${ui.red(column(text))}${detail ?? ''}`.trimEnd()
-                  : stepLine(text, detail),
-              )
-              .join('\n')
-          : line(failed ? ui.red('✖') : ui.green('✔'), text, detail),
-      )
+      yield* Console.log(settled(text, failed, detail))
     })
 
   let opened = false
@@ -146,15 +146,13 @@ export const withProgress = <A, E, R>(
     const stdio = yield* Stdio.Stdio
     const { progress, fail } = make(yield* stdio.stdoutIsTerminal, layout)
     return yield* run(progress).pipe(
-      Effect.onExit((exit) =>
-        Exit.isSuccess(exit)
-          ? progress.close
-          : fail(
-              ui.dim(
-                Cause.hasInterruptsOnly(exit.cause) ? 'cancelled' : 'failed',
-              ),
-            ),
-      ),
+      Effect.onExit((exit) => {
+        if (Exit.isSuccess(exit)) return progress.close
+        const reason = Cause.hasInterruptsOnly(exit.cause)
+          ? 'cancelled'
+          : 'failed'
+        return fail(ui.dim(reason))
+      }),
     )
   })
 

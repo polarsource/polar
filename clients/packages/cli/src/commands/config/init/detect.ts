@@ -26,12 +26,14 @@ export const detectFormat = (
     const detected = yield* projectsAt(fs, directory)
     const guess = prompt && detected.length > 1 ? undefined : detected[0]
     const found = detected.map(({ file }) => `a ${file}`).join(' and ')
+    const unguessed =
+      detected.length === 0
+        ? `No ${MANIFESTS.join(' or ')} found`
+        : `Found ${found}`
     yield* progress.finish(
-      guess !== undefined
-        ? `${guess.project} detected, found ${found}`
-        : detected.length === 0
-          ? `No ${MANIFESTS.join(' or ')} found`
-          : `Found ${found}`,
+      guess === undefined
+        ? unguessed
+        : `${guess.project} detected, found ${found}`,
     )
     const language = guess?.language
     if (!prompt) return language?.format

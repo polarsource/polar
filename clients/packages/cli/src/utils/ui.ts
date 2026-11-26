@@ -66,6 +66,17 @@ const BOX_MINIMUM = 20
 export const boxInner = () =>
   Math.max(Math.min(process.stdout.columns || 80, BOX_WIDTH) - 4, BOX_MINIMUM)
 
+const trackStyle = (active: string[], token: string) => {
+  const closes = CLOSES[token.slice(2, -1)]
+  if (!closes) {
+    active.push(token)
+    return
+  }
+  for (let index = active.length - 1; index >= 0; index -= 1) {
+    if (closes(Number(active[index]?.slice(2, -1)))) active.splice(index, 1)
+  }
+}
+
 const wrap = (line: string, width: number) => {
   const hanging = `${line.match(/^\s*/)?.[0] ?? ''}${INDENT}`
   const rows: string[] = []
@@ -80,32 +91,24 @@ const wrap = (line: string, width: number) => {
     limit = width
     space = undefined
   }
+  const breakRow = () => {
+    if (space) {
+      rows.push(row.slice(0, space.index))
+      carry(row.slice(space.index + 1))
+    } else {
+      rows.push(row)
+      carry('')
+    }
+  }
   for (const token of line.split(ANSI)) {
     if (ANSI.test(token)) {
-      const closes = CLOSES[token.slice(2, -1)]
-      if (closes) {
-        for (let index = active.length - 1; index >= 0; index -= 1) {
-          if (closes(Number(active[index]?.slice(2, -1)))) {
-            active.splice(index, 1)
-          }
-        }
-      } else {
-        active.push(token)
-      }
+      trackStyle(active, token)
       row += token
       continue
     }
     for (const { segment: character } of GRAPHEMES.segment(token)) {
       const size = Bun.stringWidth(character)
-      if (used + size > limit) {
-        if (space) {
-          rows.push(row.slice(0, space.index))
-          carry(row.slice(space.index + 1))
-        } else {
-          rows.push(row)
-          carry('')
-        }
-      }
+      if (used + size > limit) breakRow()
       if (character === ' ' && used > Bun.stringWidth(hanging)) {
         space = { index: row.length, used }
       }

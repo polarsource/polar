@@ -32,23 +32,18 @@ export const interactive = Effect.gen(function* () {
   return (yield* stdio.stdinIsTerminal) && (yield* stdio.stdoutIsTerminal)
 })
 
+const keyAction = (key: string): Prompt.Action<boolean, boolean> => {
+  if (key === 'y') return { _tag: 'Submit', value: true }
+  if (key === 'n' || key === 'escape') return { _tag: 'Submit', value: false }
+  return { _tag: 'Beep' }
+}
+
 export const keypress = (frame: string) =>
   Prompt.Custom<boolean, boolean>(false, {
-    render: (_, action) =>
-      Effect.succeed(
-        action._tag === 'NextFrame'
-          ? frame
-          : action._tag === 'Submit'
-            ? `${frame}\n`
-            : '',
-      ),
-    process: (input) =>
-      Effect.succeed(
-        input.key.name === 'y'
-          ? { _tag: 'Submit', value: true }
-          : input.key.name === 'n' || input.key.name === 'escape'
-            ? { _tag: 'Submit', value: false }
-            : { _tag: 'Beep' },
-      ),
+    render: (_, action) => {
+      if (action._tag === 'NextFrame') return Effect.succeed(frame)
+      return Effect.succeed(action._tag === 'Submit' ? `${frame}\n` : '')
+    },
+    process: (input) => Effect.succeed(keyAction(input.key.name)),
     clear: () => Effect.succeed(ui.clearLines(frame.split('\n').length)),
   })

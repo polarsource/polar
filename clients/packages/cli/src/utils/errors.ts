@@ -83,35 +83,30 @@ export const reportedError = (args: ReadonlyArray<string>, error: unknown) => {
   return `${errorJson(error)}\n`
 }
 
+const withHint = (title: string, hint: string | undefined): ErrorDescription =>
+  hint ? { title, hint } : { title }
+
+const describeUnknown = (error: unknown): ErrorDescription => ({
+  title:
+    error instanceof Error ? error.message : 'An unexpected error occurred',
+})
+
 export const describeError = (error: unknown): ErrorDescription => {
-  if (!isCommandError(error)) {
-    return {
-      title:
-        error instanceof Error ? error.message : 'An unexpected error occurred',
-    }
-  }
+  if (!isCommandError(error)) return describeUnknown(error)
   switch (error._tag) {
     case 'AuthError':
       return { title: error.message }
     case 'BillingConfigError':
-      return error.hint
-        ? { title: error.message, hint: error.hint }
-        : { title: error.message }
     case 'AgentSetupError':
     case 'ApiCommandError':
     case 'TriggerError':
     case 'PullRequestCommentError':
-      return error.hint
-        ? { title: error.message, hint: error.hint }
-        : { title: error.message }
-    case 'ListenError': {
-      const hint = listenHint(error.code)
-      return hint ? { title: error.message, hint } : { title: error.message }
-    }
+      return withHint(error.message, error.hint)
+    case 'ListenError':
+      return withHint(error.message, listenHint(error.code))
     case 'JsonUnsupportedError':
       return { title: error.message, hint: error.hint }
     case 'UpdateError':
-      return { title: error.message, hint: error.hint ?? releasesHint }
     case 'UpdaterError':
       return { title: error.message, hint: error.hint ?? releasesHint }
     case 'GitHubReleaseError':

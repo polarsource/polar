@@ -139,9 +139,10 @@ const mergeRecurrence = (diff: ReadonlyArray<Change>): Change[] => {
     before: new Rendered(recurrence(interval.before, count.before)),
     after: new Rendered(recurrence(interval.after, count.after)),
   }
-  return diff.flatMap((change) =>
-    change === interval ? [merged] : change === count ? [] : [change],
-  )
+  return diff.flatMap((change) => {
+    if (change === interval) return [merged]
+    return change === count ? [] : [change]
+  })
 }
 
 const merge = (
@@ -159,9 +160,10 @@ const merge = (
     return text === undefined ? null : new Rendered(text)
   }
   const merged: Change = { field, before: side('before'), after: side('after') }
-  return diff.flatMap((change) =>
-    change === parts[0] ? [merged] : parts.includes(change) ? [] : [change],
-  )
+  return diff.flatMap((change) => {
+    if (change === parts[0]) return [merged]
+    return parts.includes(change) ? [] : [change]
+  })
 }
 
 const SETTING_VALUES: Record<string, (value: string) => string> = {

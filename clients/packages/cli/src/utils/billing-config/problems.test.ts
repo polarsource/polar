@@ -79,6 +79,15 @@ describe('formatProblems for a generated config', () => {
     expect(output).toContain('help: Got 1.')
   })
 
+  test('treats a code named like a built-in object property as unknown', () => {
+    const output = stripAnsi(
+      formatProblems(generated, [{ ...invalid, code: 'constructor' }]),
+    )
+    expect(output).toContain(
+      'Invalid value for "name" at meters.tool_calls.name',
+    )
+  })
+
   test('shows the missing currency message', () => {
     const missing: ConfigIssue = {
       severity: 'error',

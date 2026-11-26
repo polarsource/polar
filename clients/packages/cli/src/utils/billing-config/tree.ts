@@ -90,15 +90,9 @@ const compared = (
   return [
     ...after.map((item): Reference => {
       const old = previous.get(item.id)
-      return {
-        ...item,
-        status:
-          old === undefined
-            ? 'added'
-            : updated.has(item.id) || old.required !== item.required
-              ? 'updated'
-              : 'kept',
-      }
+      if (old === undefined) return { ...item, status: 'added' }
+      const changed = updated.has(item.id) || old.required !== item.required
+      return { ...item, status: changed ? 'updated' : 'kept' }
     }),
     ...before
       .filter(({ id }) => !kept.has(id))

@@ -69,12 +69,12 @@ const run = async (
   againstDraft: PlanResult | BillingConfigError = { entries: [], issues: [] },
 ) => {
   const planned = vi.fn(
-    (_config: unknown, _organization: unknown, options?: CatalogOptions) =>
-      options?.catalogId === undefined
-        ? Effect.succeed(result)
-        : againstDraft instanceof BillingConfigError
-          ? Effect.fail(againstDraft)
-          : Effect.succeed(againstDraft),
+    (_config: unknown, _organization: unknown, options?: CatalogOptions) => {
+      if (options?.catalogId === undefined) return Effect.succeed(result)
+      return againstDraft instanceof BillingConfigError
+        ? Effect.fail(againstDraft)
+        : Effect.succeed(againstDraft)
+    },
   )
   const cli = runCli(validate, ['polar.json', ...args])
   const exit = await Effect.runPromiseExit(

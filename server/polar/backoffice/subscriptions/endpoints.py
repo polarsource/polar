@@ -1,7 +1,14 @@
+import builtins
 import contextlib
+import itertools
 import uuid
-from collections.abc import Generator
+from collections import defaultdict
+from collections.abc import Generator, Mapping, Sequence
+from dataclasses import dataclass
+from datetime import datetime
+from decimal import Decimal
 from typing import Annotated, Any
+from uuid import UUID
 
 from fastapi import Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator, ValidationError
@@ -10,26 +17,43 @@ from sqlalchemy.orm import contains_eager, joinedload, selectinload
 from tagflow import classes, tag, text
 
 from polar.backoffice.routing import BackofficeRouter
+from polar.billing_interval.repository import BillingIntervalRepository
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
 from polar.models import (
+    BillingInterval,
     Customer,
+    Meter,
     Order,
     Organization,
     Product,
+    ProductPriceMeteredUnit,
+    Reducer,
+    ReducerBucket,
     Subscription,
     SubscriptionMeter,
 )
+from polar.models.billing_interval import UsagePolicy
+from polar.models.reducer import ReducerKind
 from polar.models.subscription import SubscriptionStatus
 from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
+from polar.product.guard import is_metered_price
+from polar.reducer.bucket_repository import (
+    ReducerBucketRepository,
+    get_customer_identities,
+)
+from polar.reducer.repository import ReducerRepository
+from polar.reducer.service import finalize_quantity, merge_summaries
+from polar.reducer.types import UsageSummary
 from polar.subscription import sorting
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import SubscriptionUpdateContext
 from polar.subscription.service import subscription as subscription_service
 from polar.subscription.sorting import SubscriptionSortProperty
 
+from .. import formatters
 from ..components import (
     alert,
     button,
@@ -112,6 +136,292 @@ def subscription_status_badge(subscription: Subscription) -> Generator[None]:
         else:  # canceled, incomplete, incomplete_expired
             classes("badge-neutral")
         text(status.value.replace("_", " ").title())
+    yield
+
+
+@dataclass(frozen=True)
+class BucketRow:
+    bucket_start: datetime
+    bucket_end: datetime
+    generation: int
+    units: Decimal
+    credited_units: Decimal
+    status: str
+    order_id: UUID | None
+
+
+@dataclass(frozen=True)
+class StatusTotal:
+    status: str
+    order_id: UUID | None
+    units: Decimal
+    credited_units: Decimal
+    amount: int
+
+
+@dataclass(frozen=True)
+class IntervalUsage:
+    interval: BillingInterval
+    rows: Sequence[BucketRow]
+    totals: Sequence[StatusTotal]
+
+
+STATUS_ORDER = {"Billed": 0, "Unbilled": 1, "Open": 2}
+STATUS_BADGES = {
+    "Billed": "badge-success",
+    "Unbilled": "badge-warning",
+    "Open": "badge-info",
+}
+
+type BucketPair = tuple[builtins.list[ReducerBucket], builtins.list[ReducerBucket]]
+
+
+def get_bucket_status(bucket: ReducerBucket) -> tuple[str, UUID | None]:
+    if bucket.sealed_at is None:
+        return "Open", None
+    if bucket.order_id is None:
+        return "Unbilled", None
+    return "Billed", bucket.order_id
+
+
+def get_quantity(buckets: Sequence[ReducerBucket], reducer: Reducer | None) -> Decimal:
+    if not buckets or reducer is None:
+        return Decimal(0)
+    return finalize_quantity(
+        merge_summaries(
+            [
+                UsageSummary(bucket.count, bucket.sum, bucket.min, bucket.max)
+                for bucket in buckets
+            ]
+        ),
+        reducer.aggregation.func,
+    )
+
+
+def get_interval_usage(
+    interval: BillingInterval,
+    usage_buckets: Sequence[ReducerBucket],
+    credit_buckets: Sequence[ReducerBucket],
+    usage_reducer: Reducer | None,
+    credit_reducer: Reducer | None,
+) -> IntervalUsage:
+    rows: defaultdict[tuple[datetime, datetime, int, str, UUID | None], BucketPair] = (
+        defaultdict(lambda: ([], []))
+    )
+    totals: defaultdict[tuple[str, UUID | None], BucketPair] = defaultdict(
+        lambda: ([], [])
+    )
+    for index, buckets in enumerate((usage_buckets, credit_buckets)):
+        for bucket in buckets:
+            if bucket.count == 0:
+                continue
+            status = get_bucket_status(bucket)
+            rows[(bucket.bucket_start, bucket.bucket_end, bucket.generation, *status)][
+                index
+            ].append(bucket)
+            totals[status][index].append(bucket)
+
+    price = interval.product_price
+    charged = interval.usage_policy == UsagePolicy.charge
+
+    def get_total(status: str, order_id: UUID | None, pair: BucketPair) -> StatusTotal:
+        units = get_quantity(pair[0], usage_reducer)
+        credited_units = get_quantity(pair[1], credit_reducer)
+        amount = 0
+        if charged and is_metered_price(price):
+            amount, _ = price.get_amount_and_label(float(units), credited_units)
+        return StatusTotal(status, order_id, units, credited_units, amount)
+
+    return IntervalUsage(
+        interval,
+        [
+            BucketRow(
+                start,
+                end,
+                generation,
+                get_quantity(usage, usage_reducer),
+                get_quantity(credit, credit_reducer),
+                status,
+                order_id,
+            )
+            for (start, end, generation, status, order_id), (usage, credit) in sorted(
+                rows.items(), key=lambda item: item[0][:3]
+            )
+        ],
+        [
+            get_total(status, order_id, pair)
+            for (status, order_id), pair in sorted(
+                totals.items(),
+                key=lambda item: (STATUS_ORDER[item[0][0]], str(item[0][1])),
+            )
+        ],
+    )
+
+
+async def get_billing_intervals(
+    session: AsyncSession, subscription: Subscription
+) -> dict[Meter, Sequence[IntervalUsage]]:
+    intervals = await BillingIntervalRepository.from_session(
+        session
+    ).get_by_subscription_with_prices(subscription.id)
+    reducer_repository = ReducerRepository.from_session(session)
+    bucket_repository = ReducerBucketRepository.from_session(session)
+    identities = get_customer_identities(subscription.customer)
+
+    async def get_buckets(
+        reducer: Reducer | None, interval: BillingInterval
+    ) -> Sequence[ReducerBucket]:
+        if reducer is None:
+            return []
+        return await bucket_repository.get_all_by_identities_starting_within(
+            reducer, identities, interval.period_start, interval.period_end
+        )
+
+    result: dict[Meter, Sequence[IntervalUsage]] = {}
+    for meter, meter_intervals in itertools.groupby(
+        intervals, key=lambda interval: interval.meter
+    ):
+        usage_reducer = await reducer_repository.get_by_meter_and_kind(
+            meter.id, ReducerKind.usage
+        )
+        credit_reducer = await reducer_repository.get_by_meter_and_kind(
+            meter.id, ReducerKind.credit
+        )
+        result[meter] = [
+            get_interval_usage(
+                interval,
+                await get_buckets(usage_reducer, interval),
+                await get_buckets(credit_reducer, interval),
+                usage_reducer,
+                credit_reducer,
+            )
+            for interval in meter_intervals
+        ]
+    return result
+
+
+@contextlib.contextmanager
+def interval_usage_card(
+    request: Request,
+    usage: IntervalUsage,
+    orders: Mapping[UUID, Order],
+    currency: str,
+) -> Generator[None]:
+    interval = usage.interval
+    price = interval.product_price
+    charged = interval.usage_policy == UsagePolicy.charge
+    with tag.div(classes="card card-border w-full shadow-sm"):
+        with tag.div(classes="card-body gap-4"):
+            with tag.div(classes="flex flex-wrap items-center justify-between gap-2"):
+                with tag.div(classes="flex items-center gap-3"):
+                    with tag.h4(classes="card-title"):
+                        text(price.product.name)
+                    with tag.span(classes="text-sm text-gray-500"):
+                        if isinstance(price, ProductPriceMeteredUnit):
+                            text(
+                                formatters.currency(
+                                    price.unit_amount,
+                                    price.price_currency,
+                                    decimal_quantization=False,
+                                )
+                                + " / unit"
+                            )
+                        else:
+                            text(price.amount_type.replace("_", " "))
+                    with tag.div(classes="badge badge-sm"):
+                        classes("badge-success" if charged else "badge-neutral")
+                        text(interval.usage_policy)
+                with tag.div(classes="text-sm text-gray-500"):
+                    text(
+                        f"{formatters.datetime(interval.period_start)} → "
+                        + (
+                            formatters.datetime(interval.period_end)
+                            if interval.period_end
+                            else "ongoing"
+                        )
+                        + " UTC"
+                    )
+
+            if not usage.rows:
+                with tag.p(classes="text-sm text-gray-500"):
+                    text("No usage")
+            else:
+                with tag.div(
+                    classes="stats stats-vertical lg:stats-horizontal border border-base-200"
+                ):
+                    for total in usage.totals:
+                        with tag.div(classes="stat py-3"):
+                            with tag.div(classes="stat-title flex items-center gap-2"):
+                                with tag.span(classes="badge badge-sm"):
+                                    classes(STATUS_BADGES[total.status])
+                                    text(total.status)
+                            with tag.div(classes="stat-value text-2xl"):
+                                text(formatters.currency(total.amount, currency))
+                            with tag.div(classes="stat-desc"):
+                                description = f"{total.units} units"
+                                if total.credited_units:
+                                    description += f", {total.credited_units} credited"
+                                if not charged:
+                                    description += " · not charged"
+                                text(description)
+                            if total.order_id is not None:
+                                order = orders.get(total.order_id)
+                                with tag.a(
+                                    href=str(
+                                        request.url_for("orders:get", id=total.order_id)
+                                    ),
+                                    classes="stat-desc link",
+                                ):
+                                    text(f"Order {total.order_id}")
+                                if order is not None:
+                                    with tag.div(classes="stat-desc"):
+                                        text(
+                                            "Subtotal "
+                                            + formatters.currency(
+                                                order.subtotal_amount, order.currency
+                                            )
+                                        )
+
+                with tag.div(
+                    classes="overflow-x-auto rounded-box border border-base-200"
+                ):
+                    with tag.table(classes="table table-sm"):
+                        with tag.thead():
+                            with tag.tr():
+                                for header in (
+                                    "Window",
+                                    "Generation",
+                                    "Quantity",
+                                    "Credits",
+                                    "Status",
+                                ):
+                                    with tag.th():
+                                        text(header)
+                        with tag.tbody():
+                            previous_window: tuple[datetime, datetime] | None = None
+                            for row in usage.rows:
+                                window = (row.bucket_start, row.bucket_end)
+                                with tag.tr():
+                                    with tag.td(classes="font-mono text-xs"):
+                                        if window != previous_window:
+                                            text(
+                                                f"{row.bucket_start:%Y-%m-%d %H:%M:%S}"
+                                                f" – {row.bucket_end:%H:%M:%S}"
+                                            )
+                                        else:
+                                            with tag.span(classes="pl-4 text-gray-500"):
+                                                text("↳ late")
+                                    with tag.td():
+                                        text(str(row.generation))
+                                    with tag.td():
+                                        text(str(row.units))
+                                    with tag.td():
+                                        text(str(row.credited_units))
+                                    with tag.td():
+                                        with tag.span(classes="badge badge-sm"):
+                                            classes(STATUS_BADGES[row.status])
+                                            text(row.status)
+                                previous_window = window
     yield
 
 
@@ -261,6 +571,8 @@ async def get(
         .order_by(Order.created_at.desc())
     )
     orders = await order_repository.get_all(orders_statement)
+
+    billing_intervals = await get_billing_intervals(session, subscription)
 
     with layout(
         request,
@@ -437,16 +749,36 @@ async def get(
                             ).render(request, subscription):
                                 pass
 
-            with tag.div(classes="flex flex-col gap-4"):
-                with tag.h2(classes="text-2xl"):
-                    text("Meters")
-                with datatable.Datatable[SubscriptionMeter, SubscriptionSortProperty](
-                    datatable.DatatableAttrColumn("meter.name", "Meter"),
-                    datatable.DatatableAttrColumn("consumed_units", "Consumed Units"),
-                    datatable.DatatableAttrColumn("credited_units", "Credited Units"),
-                    SubscriptionMeterAmountColumn(subscription.currency),
-                ).render(request, subscription.meters):
-                    pass
+            if not billing_intervals:
+                with tag.div(classes="flex flex-col gap-4"):
+                    with tag.h2(classes="text-2xl"):
+                        text("Meters")
+                    with datatable.Datatable[
+                        SubscriptionMeter, SubscriptionSortProperty
+                    ](
+                        datatable.DatatableAttrColumn("meter.name", "Meter"),
+                        datatable.DatatableAttrColumn(
+                            "consumed_units", "Consumed Units"
+                        ),
+                        datatable.DatatableAttrColumn(
+                            "credited_units", "Credited Units"
+                        ),
+                        SubscriptionMeterAmountColumn(subscription.currency),
+                    ).render(request, subscription.meters):
+                        pass
+            else:
+                with tag.div(classes="flex flex-col gap-4"):
+                    with tag.h2(classes="text-2xl"):
+                        text("Billing Intervals")
+                    orders_by_id = {order.id: order for order in orders}
+                    for meter, usages in billing_intervals.items():
+                        with tag.h3(classes="text-lg font-semibold"):
+                            text(meter.name)
+                        for usage in usages:
+                            with interval_usage_card(
+                                request, usage, orders_by_id, subscription.currency
+                            ):
+                                pass
 
             with tag.div(classes="flex flex-col gap-4"):
                 with tag.h2(classes="text-2xl"):

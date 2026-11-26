@@ -1,5 +1,7 @@
 import uuid
 from collections.abc import AsyncGenerator
+from datetime import UTC, datetime
+from decimal import Decimal
 
 import httpx2
 import pytest
@@ -8,8 +10,17 @@ from pytest_mock import MockerFixture
 from polar.backoffice.app import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
 from polar.kit.utils import utc_now
-from polar.models import Customer, Organization, Product, Subscription
+from polar.models import (
+    BillingInterval,
+    Customer,
+    Meter,
+    Organization,
+    Product,
+    ReducerBucket,
+    Subscription,
+)
 from polar.models.backoffice_user_session import BackofficeUserSession
+from polar.models.billing_interval import UsagePolicy
 from polar.models.order import OrderStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
@@ -17,6 +28,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
     create_order,
+    create_reducer,
     create_subscription,
 )
 
@@ -64,6 +76,98 @@ class TestList:
         assert response.status_code == 200
         assert str(subscription.id) in response.text
         assert str(other_subscription.id) not in response.text
+
+
+@pytest.mark.anyio
+class TestGet:
+    async def test_renders_billing_intervals(
+        self,
+        backoffice_client: httpx2.AsyncClient,
+        save_fixture: SaveFixture,
+        product_recurring_metered: Product,
+        meter: Meter,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product_recurring_metered, customer=customer
+        )
+        await save_fixture(
+            BillingInterval(
+                organization_id=subscription.organization_id,
+                subscription=subscription,
+                customer_id=subscription.customer_id,
+                meter_id=meter.id,
+                product_price_id=product_recurring_metered.prices[0].id,
+                period_start=datetime(2026, 1, 1, tzinfo=UTC),
+                period_end=None,
+                usage_policy=UsagePolicy.trial,
+            )
+        )
+
+        response = await backoffice_client.get(f"/subscriptions/{subscription.id}")
+
+        assert response.status_code == 200
+        assert "Billing Intervals" in response.text
+        assert meter.name in response.text
+        assert "2026-01-01 00:00:00 → ongoing" in response.text
+        assert "No usage" in response.text
+        assert "Consumed Units" not in response.text
+
+    async def test_renders_generations(
+        self,
+        backoffice_client: httpx2.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product_recurring_metered: Product,
+        meter: Meter,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product_recurring_metered, customer=customer
+        )
+        await save_fixture(
+            BillingInterval(
+                organization_id=subscription.organization_id,
+                subscription=subscription,
+                customer_id=subscription.customer_id,
+                meter_id=meter.id,
+                product_price_id=product_recurring_metered.prices[0].id,
+                period_start=datetime(2026, 1, 1, tzinfo=UTC),
+                period_end=None,
+                usage_policy=UsagePolicy.charge,
+            )
+        )
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        for generation, count, sealed_at in (
+            (1, 3, datetime(2026, 1, 2, tzinfo=UTC)),
+            (2, 2, None),
+        ):
+            await save_fixture(
+                ReducerBucket(
+                    organization=organization,
+                    reducer=reducer,
+                    customer_id=customer.id,
+                    external_customer_id=None,
+                    bucket_start=datetime(2026, 1, 1, tzinfo=UTC),
+                    bucket_end=datetime(2026, 1, 1, 1, tzinfo=UTC),
+                    generation=generation,
+                    count=count,
+                    sum=Decimal(count),
+                    min=Decimal(1),
+                    max=Decimal(1),
+                    sealed_at=sealed_at,
+                )
+            )
+
+        response = await backoffice_client.get(f"/subscriptions/{subscription.id}")
+
+        assert response.status_code == 200
+        assert "$3.00" in response.text
+        assert "Unbilled" in response.text
+        assert "$2.00" in response.text
+        assert "Open" in response.text
 
 
 @pytest.mark.anyio

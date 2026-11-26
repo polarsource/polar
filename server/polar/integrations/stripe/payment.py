@@ -319,6 +319,19 @@ async def handle_failure(
             await checkout_service.handle_failure(session, checkout, payment=payment)
 
     if order is not None:
+        # Only on-session customer retries persist the current intent on the order.
+        if trigger == PaymentTrigger.retry_customer:
+            await OrderRepository.from_session(session).refresh_for_payment_update(
+                order
+            )
+            current_intent_id = order.payment_processor_metadata.get("intent_id")
+            if (
+                current_intent_id is not None
+                and intent_id is not None
+                and current_intent_id != intent_id
+            ):
+                return
+
         # Failures from triggers that don't count toward the dunning ceiling
         # also shouldn't progress the dunning state machine — otherwise a
         # one-shot recovery attempt (manual portal retry, post-card-update

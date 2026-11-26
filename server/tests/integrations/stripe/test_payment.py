@@ -198,6 +198,82 @@ class TestHandleFailure:
             assert checkout.status == CheckoutStatus.open
             assert "intent_status" not in checkout.payment_processor_metadata
 
+    @pytest.mark.parametrize(
+        ("trigger", "current_intent_id", "failure_applied"),
+        [
+            (PaymentTrigger.retry_customer, "pi_current", False),
+            (PaymentTrigger.retry_customer, "pi_failed", True),
+            (PaymentTrigger.retry_customer, None, True),
+            (PaymentTrigger.retry_dunning, "pi_current", True),
+        ],
+    )
+    @pytest.mark.parametrize(
+        "failure",
+        [
+            build_stripe_charge(
+                status="failed",
+                payment_intent="pi_failed",
+                billing_details={"email": "test@example.com"},
+                payment_method_details={"type": "card", "card": {"last4": "4242"}},
+            ),
+            build_stripe_payment_intent(
+                id="pi_failed",
+                last_payment_error={
+                    "message": "Authentication failed",
+                    "payment_method": {"type": "card", "card": {"last4": "4242"}},
+                },
+            ),
+        ],
+        ids=["charge", "payment_intent"],
+    )
+    async def test_order_failure_matches_current_customer_retry_intent(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        product: Product,
+        failure: stripe_lib.Charge | stripe_lib.PaymentIntent,
+        trigger: PaymentTrigger,
+        current_intent_id: str | None,
+        failure_applied: bool,
+    ) -> None:
+        lock_acquired_at = utc_now()
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            product=product,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            payment_lock_acquired_at=lock_acquired_at,
+        )
+        order.invoice_number = None
+        if current_intent_id is not None:
+            order.payment_processor_metadata = {"intent_id": current_intent_id}
+        await save_fixture(order)
+
+        failure.metadata = {
+            "organization_id": str(order.organization_id),
+            "order_id": str(order.id),
+            "payment_trigger": trigger,
+        }
+
+        await handle_failure(session, failure)
+        await session.refresh(order)
+
+        if failure_applied:
+            assert order.status == OrderStatus.draft
+            assert order.payment_lock_acquired_at is None
+        else:
+            assert order.status == OrderStatus.pending
+            assert order.payment_lock_acquired_at == lock_acquired_at
+        assert (
+            await PaymentRepository.from_session(session).get_by_processor_id(
+                PaymentProcessor.stripe, failure.id
+            )
+            is not None
+        )
+
     @freeze_time("2024-01-01 12:00:00")
     async def test_full_dunning_flow_with_repositories(
         self,

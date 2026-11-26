@@ -110,6 +110,24 @@ const RemovedSection = ({
   )
 }
 
+// Stable sort: items without customers keep the newest-removal-first API order
+const byCustomersCount = (a: RemovedItem, b: RemovedItem) =>
+  b.customers_count - a.customers_count
+
+const LoadError = ({ retry }: { retry: () => void }) => (
+  <Alert
+    variant="danger"
+    title="Could not load removed items"
+    actions={[{ text: 'Retry', onClick: retry }]}
+  />
+)
+
+const KeepNote = () => (
+  <Text variant="body" color="muted">
+    Customers keep removed items until they cancel or switch.
+  </Text>
+)
+
 export const RemovedTab = ({
   organization,
 }: {
@@ -121,34 +139,74 @@ export const RemovedTab = ({
     refetch,
   } = useRemovedCatalogItems(organization.id)
 
-  if (isError) {
-    return (
-      <Alert
-        variant="danger"
-        title="Could not load removed items"
-        actions={[{ text: 'Retry', onClick: () => refetch() }]}
-      />
-    )
-  }
+  if (isError) return <LoadError retry={() => refetch()} />
 
   if (!removed) return null
 
   return (
     <Box flexDirection="column" rowGap="2xl">
-      <Text variant="body" color="muted">
-        Customers keep removed items until they cancel or switch.
-      </Text>
+      <KeepNote />
       {sections.map(({ resource, title }) => (
         <RemovedSection
           key={resource}
           organization={organization}
           title={title}
-          // Stable sort: items without customers keep the newest-removal-first API order
           items={removed
             .filter((item) => item.resource === resource)
-            .sort((a, b) => b.customers_count - a.customers_count)}
+            .sort(byCustomersCount)}
         />
       ))}
+    </Box>
+  )
+}
+
+export const RemovedProducts = ({
+  organization,
+  query,
+}: {
+  organization: schemas['Organization']
+  query: string | null
+}) => {
+  const {
+    data: removed,
+    isError,
+    refetch,
+  } = useRemovedCatalogItems(organization.id)
+
+  if (isError) return <LoadError retry={() => refetch()} />
+
+  if (!removed) return null
+
+  const search = query?.toLowerCase() ?? ''
+  const items = removed
+    .filter(
+      (item) =>
+        item.resource === 'product' && item.name.toLowerCase().includes(search),
+    )
+    .sort(byCustomersCount)
+
+  if (!items.length) {
+    return (
+      <Text color="muted">
+        {query
+          ? 'No removed products match your search query'
+          : 'No products have been removed'}
+      </Text>
+    )
+  }
+
+  return (
+    <Box flexDirection="column" rowGap="l">
+      <KeepNote />
+      <List size="small">
+        {items.map((item) => (
+          <RemovedRow
+            key={item.external_id}
+            organization={organization}
+            item={item}
+          />
+        ))}
+      </List>
     </Box>
   )
 }

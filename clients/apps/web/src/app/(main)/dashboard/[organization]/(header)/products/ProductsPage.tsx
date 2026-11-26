@@ -17,6 +17,7 @@ import { useCatalogs } from '@/hooks/queries/catalogs'
 import { useProducts } from '@/hooks/queries/products'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { useSelection } from '@/hooks/useSelection'
+import { RemovedProducts } from './versions/RemovedTab'
 import { useDebouncedCallback } from '@/hooks/utils'
 import { getAPIParams } from '@/utils/datatable'
 import {
@@ -42,8 +43,20 @@ import { useSearchParams } from 'next/navigation'
 import { parseAsString, parseAsStringLiteral, useQueryStates } from 'nuqs'
 import { type MouseEvent, useCallback, useMemo, useState } from 'react'
 
-const showValues = ['all', 'active', 'archived'] as const
+const showValues = ['all', 'active', 'archived', 'removed'] as const
 type ShowValue = (typeof showValues)[number]
+
+const showOptions: Record<'classic' | 'asCode', [ShowValue, string][]> = {
+  classic: [
+    ['all', 'All'],
+    ['active', 'Active'],
+    ['archived', 'Archived'],
+  ],
+  asCode: [
+    ['active', 'Current'],
+    ['removed', 'Removed'],
+  ],
+}
 
 const filterParsers = {
   query: parseAsString,
@@ -60,10 +73,15 @@ export default function ClientPage({
       defaultSorting: [{ id: 'name', desc: false }],
     })
 
-  const [{ query, show }, setFilters] = useQueryStates(filterParsers)
+  const [{ query, show: requestedShow }, setFilters] =
+    useQueryStates(filterParsers)
 
   const searchParams = useSearchParams()
   const managedAsCode = org.feature_settings?.config_as_code_enabled ?? false
+  const options = showOptions[managedAsCode ? 'asCode' : 'classic']
+  const show = options.some(([value]) => value === requestedShow)
+    ? requestedShow
+    : 'active'
 
   const onPageChange = useCallback(
     (page: number) =>
@@ -112,7 +130,8 @@ export default function ClientPage({
 
   const { data: latestCatalogs } = useCatalogs(org.id, 1, 1)
   const draft = latestCatalogs?.items.find(({ status }) => status === 'draft')
-  const showDraftEmptyState = !!draft && !query && show !== 'archived'
+  const showDraftEmptyState =
+    !!draft && !query && show !== 'archived' && show !== 'removed'
 
   const items = useMemo(
     () =>
@@ -193,46 +212,51 @@ export default function ClientPage({
                   <SelectValue placeholder="Show archived products" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="archived">Archived</SelectItem>
+                  {options.map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-              <Select
-                value={currentSortingValue}
-                onValueChange={onSortingChange}
-              >
-                <SelectTrigger className="w-full md:max-w-fit">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="name">Name A-Z</SelectItem>
-                  <SelectItem value="-name">Name Z-A</SelectItem>
-                  <SelectItem value="-created_at">Newest</SelectItem>
-                  <SelectItem value="created_at">Oldest</SelectItem>
-                  <SelectItem value="price_amount">
-                    Price: Low to High
-                  </SelectItem>
-                  <SelectItem value="-price_amount">
-                    Price: High to Low
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              {(products.data?.pagination.total_count ?? 0) > 20 && (
+              {show !== 'removed' && (
                 <Select
-                  value={pagination.pageSize.toString()}
-                  onValueChange={onLimitChange}
+                  value={currentSortingValue}
+                  onValueChange={onSortingChange}
                 >
                   <SelectTrigger className="w-full md:max-w-fit">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="20">Show 20</SelectItem>
-                    <SelectItem value="50">Show 50</SelectItem>
-                    <SelectItem value="100">Show 100</SelectItem>
+                    <SelectItem value="name">Name A-Z</SelectItem>
+                    <SelectItem value="-name">Name Z-A</SelectItem>
+                    <SelectItem value="-created_at">Newest</SelectItem>
+                    <SelectItem value="created_at">Oldest</SelectItem>
+                    <SelectItem value="price_amount">
+                      Price: Low to High
+                    </SelectItem>
+                    <SelectItem value="-price_amount">
+                      Price: High to Low
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               )}
+              {show !== 'removed' &&
+                (products.data?.pagination.total_count ?? 0) > 20 && (
+                  <Select
+                    value={pagination.pageSize.toString()}
+                    onValueChange={onLimitChange}
+                  >
+                    <SelectTrigger className="w-full md:max-w-fit">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="20">Show 20</SelectItem>
+                      <SelectItem value="50">Show 50</SelectItem>
+                      <SelectItem value="100">Show 100</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
             </div>
             {!managedAsCode && (
               <Link
@@ -251,7 +275,9 @@ export default function ClientPage({
             )}
           </div>
         )}
-        {items.length > 0 ? (
+        {show === 'removed' ? (
+          <RemovedProducts organization={org} query={query} />
+        ) : items.length > 0 ? (
           <Pagination
             currentPage={pagination.pageIndex + 1}
             pageSize={pagination.pageSize}

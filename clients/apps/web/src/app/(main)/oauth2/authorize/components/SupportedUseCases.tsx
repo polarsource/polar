@@ -33,7 +33,7 @@ export default function SupportedUseCases() {
             <p className="dark:text-polar-500 text-sm text-gray-500">
               • Anything in our list of{' '}
               <a
-                href="https://polar.sh/legal/acceptable-use-policy"
+                href="https://polar.sh/docs/acceptable-use"
                 className="text-blue-500 underline dark:text-blue-400"
                 target="_blank"
                 rel="noopener noreferrer"

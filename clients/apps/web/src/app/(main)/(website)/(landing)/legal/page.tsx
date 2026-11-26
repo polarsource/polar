@@ -60,7 +60,7 @@ const GROUPS: LegalGroup[] = [
       {
         title: 'Acceptable Use Policy',
         description: 'Rules and restrictions for using Polar services.',
-        href: '/legal/acceptable-use-policy',
+        href: 'https://polar.sh/docs/acceptable-use',
       },
       {
         title: 'Checkout Buyer Terms',

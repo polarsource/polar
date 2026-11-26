@@ -98,6 +98,7 @@ def get_database_url(worker_id: str, driver: str = "asyncpg") -> str:
 
 
 TEMPLATE_DATABASE = os.environ.get("POLAR_TEST_DATABASE_TEMPLATE")
+SKIP_DB_DROP = os.environ.get("POLAR_TEST_SKIP_DB_DROP") == "true"
 
 ALEMBIC_CONFIG_FILE = pathlib.Path(__file__).parent.parent.parent / "alembic.ini"
 
@@ -138,9 +139,10 @@ def track_worker_id(worker_id: str) -> Iterator[None]:
     _worker_id = worker_id
     yield
     if _initialized_worker_id is not None:
-        sync_database_url = get_database_url(_initialized_worker_id, "psycopg")
-        if database_exists(sync_database_url):
-            drop_database(sync_database_url)
+        if not SKIP_DB_DROP:
+            sync_database_url = get_database_url(_initialized_worker_id, "psycopg")
+            if database_exists(sync_database_url):
+                drop_database(sync_database_url)
         _initialized_worker_id = None
     _active_engine = None
 

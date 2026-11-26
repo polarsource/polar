@@ -71,6 +71,7 @@ sdk/generator/python/template/tests/outpost/test_client.py
   s_868513325afaca::t_073c011fc8c49e 2354
   s_868513325afaca::t_9d6fd5ac6530b1 63,2323-2333,2338,2340,2342-2344,2347-2349,2351-2353,2356-2367,2369-2378
   s_868513325afaca::t_ea55b23b8c6ec2 2379-2380
+  s_868513325afaca::t_052e14be4d6db0 96-108,115,1509-1510,1512,2334-2337,2339,2341,2747-2748,2750-2751,2765-2766
 sdk/generator/python/template/polar/metering/queue/memory.py
   s_868513325afaca::t_7ff1d8d3c70509 301-303,307
   s_868513325afaca::t_6ccd21dfc33426 17-18,22,104,116,241,282,289-292,296,299-300,304-305,347-351,354,356-371,373-375,377,380,382-393
@@ -90,6 +91,7 @@ sdk/generator/python/template/README.md
   s_868513325afaca::t_359c79c3fe4522 299
   s_868513325afaca::t_d7f377657de9a4 316-317
   s_868513325afaca::t_30b342aed13d20 319-320
+  s_868513325afaca::t_b4a098cf044fcd 311
 sdk/generator/typescript/template/src/version/client.ts
   s_868513325afaca::t_5c82cc0c26170a 53-54,57
 sdk/generator/typescript/template/src/outpost/client.ts
@@ -121,6 +123,7 @@ sdk/generator/python/template/polar/metering/queue/redis.py
   s_868513325afaca::t_326e1c52b2a898 74,374,416
   s_868513325afaca::t_8572acb2daa042 82-83,109-111,113,119,154-158,160-166,173-178,180-187,189-193,195-197
   s_868513325afaca::t_82c9892e156e25 198
+  s_868513325afaca::t_052e14be4d6db0 188
 sdk/generator/typescript/template/README.md
   s_868513325afaca::t_e84d3e51aac0da 221,230,243,248-262,276,282-286
   s_868513325afaca::t_471ebc006e16aa 287

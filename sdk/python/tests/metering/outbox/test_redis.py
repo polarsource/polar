@@ -53,9 +53,9 @@ async def test_redis_outbox_retries_with_the_same_event_and_reports_acceptance(
             "redis://localhost",
             stream="test:outbox",
             client=client,
-            on_ack=on_ack,
-            on_rejected=on_rejected,
         )
+        outbox.on_ack = on_ack
+        outbox.on_rejected = on_rejected
         async with outbox:
             await outbox.enqueue({"name": "call", "external_customer_id": "alice"})
             with pytest.raises(MeteringTimeoutError):
@@ -81,6 +81,7 @@ async def test_redis_outbox_retries_with_the_same_event_and_reports_acceptance(
 @pytest.mark.anyio
 async def test_redis_outbox_reports_a_rejection_before_retiring_the_entry(
     server: FakeServer,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     rejected: list[tuple[list[EventInput], DropReason]] = []
     event: EventInput = {
@@ -115,3 +116,5 @@ async def test_redis_outbox_reports_a_rejection_before_retiring_the_entry(
 
         assert rejected == [([event], "permanent_error")] * 2
         assert await redis.xlen("test:outbox") == 0
+        assert "Redis outbox drain failed" in caplog.messages
+        assert "Reducer unavailable" in caplog.text

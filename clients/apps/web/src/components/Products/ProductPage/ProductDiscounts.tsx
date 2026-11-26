@@ -41,7 +41,6 @@ export const ProductDiscounts = ({
     organization.id,
     { limit: 100 },
   )
-  // Checkout applies a discount to every version of a config-as-code product
   const managedAsCode =
     organization.feature_settings?.config_as_code_enabled ?? false
   const { data: versions } = useSelectedProducts(

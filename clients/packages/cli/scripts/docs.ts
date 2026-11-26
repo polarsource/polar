@@ -44,6 +44,7 @@ const helpOnlyServices = Layer.mergeAll(
       catalogs: unused,
       publish: unused,
       disable: unused,
+      reset: unused,
       generate: unused,
     }),
   ),

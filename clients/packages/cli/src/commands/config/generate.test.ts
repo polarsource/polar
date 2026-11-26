@@ -42,6 +42,7 @@ const run = async (
       Effect.provideService(
         BillingConfig,
         BillingConfig.of({
+          reset: () => Effect.die('unused'),
           load: () =>
             Effect.succeed({
               file: config,

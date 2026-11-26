@@ -618,7 +618,7 @@ class SubscriptionRepository(
     ) -> Sequence[Subscription]:
         """
         Find active subscriptions with long billing cycles (> 180 days)
-        whose current_period_end is within the next 7 days,
+        whose current_period_end is within the next 30 days,
         and where no matching EmailLog row exists for dedup.
         """
         # Long billing cycle conditions:

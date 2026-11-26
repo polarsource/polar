@@ -18,8 +18,9 @@ export async function POST(req: Request) {
     new PutObjectCommand({
       Bucket: process.env.AWS_BUCKET_NAME,
       Key: crypto.randomUUID(),
-      Body: await req.text(),
-      ContentType: 'text/plain',
+      Body: new Uint8Array(await req.arrayBuffer()),
+      ContentType:
+        req.headers.get('content-type') ?? 'application/octet-stream',
     }),
   )
 

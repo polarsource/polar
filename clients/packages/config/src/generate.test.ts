@@ -707,6 +707,7 @@ test('renders settings as an object literal, a group per line', async () => {
           prevent_trial_abuse: true,
           benefit_revocation_grace_period: 0,
         },
+        customer_portal: { allow_pausing: true },
       },
       meters: [],
     }),
@@ -716,6 +717,7 @@ test('renders settings as an object literal, a group per line', async () => {
       '  settings: {',
       "    payments: { currency: 'eur', tax: 'location' },",
       "    subscriptions: { prorationBehavior: 'invoice', benefitRevocationGracePeriod: 'immediately', preventTrialAbuse: true },",
+      '    customerPortal: { allowPausing: true },',
       '  },',
     ].join('\n'),
   )

@@ -59,6 +59,16 @@ export const SettingsConfig = Schema.Struct({
       prevent_trial_abuse: Schema.optionalKey(Schema.Boolean),
     }),
   ),
+  customer_portal: Schema.optionalKey(
+    Schema.Struct({
+      allow_plan_changes: Schema.optionalKey(Schema.Boolean),
+      allow_unit_changes: Schema.optionalKey(Schema.Boolean),
+      allow_seat_management: Schema.optionalKey(Schema.Boolean),
+      allow_pausing: Schema.optionalKey(Schema.Boolean),
+      allow_email_changes: Schema.optionalKey(Schema.Boolean),
+      show_metered_usage: Schema.optionalKey(Schema.Boolean),
+    }),
+  ),
 })
 
 export type SettingsConfig = typeof SettingsConfig.Type
@@ -484,7 +494,7 @@ export const defineConfig = <
   Events extends EventDefinitions | undefined = undefined,
 >(
   input: {
-    /** Organization settings: payment defaults and how subscriptions behave. */
+    /** Organization settings: payment defaults, how subscriptions behave and what customers can do in the customer portal. */
     readonly settings?: SettingsInput
     /** The events your app sends, keyed by name. Meters count them. */
     readonly events?: (helpers: EventHelpers) => Events

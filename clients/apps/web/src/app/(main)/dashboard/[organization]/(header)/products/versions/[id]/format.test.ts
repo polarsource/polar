@@ -3,6 +3,7 @@ import { expect, it } from 'vitest'
 import {
   customFieldFields,
   meterFields,
+  customerPortalSettings,
   settingsFields,
   valueFormatter,
 } from './format'
@@ -76,7 +77,7 @@ it('reads a meter filter and aggregation as one line each', () => {
   })
 })
 
-it('names subscription settings like their config keys', () => {
+it('names settings like their config keys', () => {
   expect(
     settingsFields({
       payments: { currency: 'eur', tax: 'location' },
@@ -86,6 +87,14 @@ it('names subscription settings like their config keys', () => {
         proration_behavior: 'next_period',
         benefit_revocation_grace_period: 7,
       },
+      customer_portal: {
+        allow_plan_changes: true,
+        allow_unit_changes: false,
+        allow_seat_management: false,
+        allow_pausing: true,
+        allow_email_changes: false,
+        show_metered_usage: true,
+      },
     }),
   ).toEqual({
     default_payment_currency: 'EUR',
@@ -94,6 +103,28 @@ it('names subscription settings like their config keys', () => {
     prevent_trial_abuse: 'No',
     proration_behavior: 'Schedule for next cycle',
     benefit_revocation_grace_period: 'After 7 Days',
+    allow_plan_changes: 'Yes',
+    allow_unit_changes: 'No',
+    allow_seat_management: 'No',
+    allow_pausing: 'Yes',
+    allow_email_changes: 'No',
+    show_metered_usage: 'Yes',
+  })
+})
+
+it('reads the organization customer portal settings with their defaults', () => {
+  expect(
+    customerPortalSettings({
+      usage: { show: false },
+      subscription: { update_plan: true, update_seats: true },
+    }),
+  ).toEqual({
+    allow_plan_changes: true,
+    allow_unit_changes: false,
+    allow_seat_management: true,
+    allow_pausing: false,
+    allow_email_changes: false,
+    show_metered_usage: false,
   })
 })
 

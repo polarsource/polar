@@ -5,6 +5,7 @@ import pytest
 from httpx2 import AsyncClient
 
 from polar.kit.utils import utc_now
+from polar.kit.versioning import VERSION_HEADER, APIVersion
 from polar.member.repository import MemberRepository
 from polar.models import (
     Benefit,
@@ -21,6 +22,7 @@ from polar.models.subscription import SubscriptionStatus
 from polar.models.user_organization import OrganizationRole
 from polar.postgres import AsyncSession
 from polar.tax.tax_id import TaxIDFormat
+from polar.version import V2026_10, V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -1033,6 +1035,44 @@ class TestGetState:
             json["granted_benefits"][0]["benefit_metadata"]
             == benefit_organization.user_metadata
         )
+
+    @pytest.mark.parametrize(
+        ("cached_version", "read_version"),
+        [(V2026_10, V2027_01), (V2027_01, V2026_10)],
+        ids=["2026-10 then 2027-01", "2027-01 then 2026-10"],
+    )
+    @pytest.mark.auth
+    async def test_cache_shared_across_versions(
+        self,
+        cached_version: APIVersion,
+        read_version: APIVersion,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        response = await client.get(
+            f"/v1/customers/{customer.id}/state",
+            headers={VERSION_HEADER: str(cached_version)},
+        )
+        assert response.status_code == 200
+
+        response = await client.get(
+            f"/v1/customers/{customer.id}/state",
+            headers={VERSION_HEADER: str(read_version)},
+        )
+
+        assert response.status_code == 200
+        [subscription] = response.json()["active_subscriptions"]
+        if read_version == V2027_01:
+            assert "price_id" not in subscription
+        else:
+            assert "price_id" in subscription
 
 
 @pytest.mark.anyio

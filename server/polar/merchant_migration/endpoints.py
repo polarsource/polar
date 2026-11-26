@@ -71,6 +71,7 @@ from .service import (
     SourceAccountNotMigratable,
     SourceKeyModeMismatch,
     SourceNotConnected,
+    SourceUnavailable,
     SourceVerificationUnavailable,
     UnsupportedMigrationSource,
 )
@@ -298,6 +299,10 @@ async def export_customer_ids(
         409: {
             "description": "Only Lemon Squeezy migrations bring benefits over.",
             "model": BenefitsUnavailable.schema(),
+        },
+        502: {
+            "description": "Couldn't read the benefits from the source platform.",
+            "model": SourceUnavailable.schema(),
         },
     },
 )

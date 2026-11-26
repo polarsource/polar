@@ -39017,6 +39017,17 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** SourceUnavailable */
+    SourceUnavailable: {
+      /**
+       * Error
+       * @example SourceUnavailable
+       * @constant
+       */
+      error: 'SourceUnavailable'
+      /** Detail */
+      detail: string
+    }
     /** SourceVerificationUnavailable */
     SourceVerificationUnavailable: {
       /**
@@ -65428,6 +65439,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+      /** @description Couldn't read the benefits from the source platform. */
+      502: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SourceUnavailable']
         }
       }
     }

@@ -3,6 +3,7 @@ from typing import Any
 
 import httpx2
 import pytest
+from pytest_mock import MockerFixture
 
 from polar.enums import TaxBehavior
 from polar.merchant_migration.adapters.lemon_squeezy import (
@@ -539,6 +540,55 @@ class TestGetSourceAccount:
         await adapter.get_source_account()
 
         assert len(requests) == 2
+
+    async def test_retries_a_read_when_the_server_fails(
+        self, mocker: MockerFixture
+    ) -> None:
+        sleep = mocker.patch(
+            "polar.merchant_migration.adapters.lemon_squeezy.asyncio.sleep"
+        )
+        adapter, requests = _adapter(
+            {
+                "/v1/stores": [
+                    httpx2.Response(500),
+                    httpx2.Response(502),
+                    httpx2.Response(200, json=_page([STORE])),
+                ]
+            }
+        )
+
+        await adapter.get_source_account()
+
+        assert len(requests) == 3
+        assert sleep.await_count == 2
+
+    async def test_gives_up_when_the_server_keeps_failing(
+        self, mocker: MockerFixture
+    ) -> None:
+        mocker.patch("polar.merchant_migration.adapters.lemon_squeezy.asyncio.sleep")
+        adapter, requests = _adapter(
+            {"/v1/stores": [httpx2.Response(500) for _ in range(4)]}
+        )
+
+        with pytest.raises(httpx2.HTTPStatusError):
+            await adapter.get_source_account()
+
+        assert len(requests) == 4
+
+    async def test_does_not_retry_a_write_when_the_server_fails(self) -> None:
+        adapter, requests = _adapter(
+            {
+                "/v1/subscriptions/100": [
+                    httpx2.Response(200, json={"data": _subscription()}),
+                    httpx2.Response(500),
+                ]
+            }
+        )
+
+        with pytest.raises(httpx2.HTTPStatusError):
+            await adapter.stop_source_subscription("100", reference="ref")
+
+        assert [request.method for request in requests] == ["GET", "DELETE"]
 
 
 @pytest.mark.anyio

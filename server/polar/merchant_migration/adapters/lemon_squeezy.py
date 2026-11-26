@@ -55,6 +55,8 @@ API_BASE_URL = "https://api.lemonsqueezy.com/v1"
 PAGE_SIZE = 100
 # The API allows 300 calls a minute; a large store's full read goes over it.
 RATE_LIMIT_RETRY_DELAYS = (2, 5, 15, 30, 60)
+# Lemon Squeezy now and then answers a read with a 5xx that a second try clears.
+SERVER_ERROR_RETRY_DELAYS = (1, 2, 4)
 
 # `expired` is over; `cancelled` still runs until `ends_at` and is taken over
 # as a pending cancellation.
@@ -126,13 +128,19 @@ class LemonSqueezyAdapter:
     async def _request(
         self, method: str, path: str, params: dict[str, Any] | None = None
     ) -> httpx2.Response:
-        for delay in RATE_LIMIT_RETRY_DELAYS:
+        rate_limit_delays = list(RATE_LIMIT_RETRY_DELAYS)
+        # Only reads: a write that failed on their side may still have landed.
+        server_error_delays = list(SERVER_ERROR_RETRY_DELAYS) if method == "GET" else []
+        while True:
             response = await self._client.request(method, path, params=params)
-            if response.status_code != 429:
+            if response.status_code == 429 and rate_limit_delays:
+                delay = rate_limit_delays.pop(0)
+                retry_after = response.headers.get("Retry-After")
+                await asyncio.sleep(float(retry_after) if retry_after else delay)
+            elif response.status_code >= 500 and server_error_delays:
+                await asyncio.sleep(server_error_delays.pop(0))
+            else:
                 return response
-            retry_after = response.headers.get("Retry-After")
-            await asyncio.sleep(float(retry_after) if retry_after else delay)
-        return await self._client.request(method, path, params=params)
 
     async def _list(
         self, path: str, page: int, params: dict[str, Any] | None = None

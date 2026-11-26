@@ -94,6 +94,7 @@ from polar.merchant_migration.service import (
     SourceAccountNotMigratable,
     SourceKeyModeMismatch,
     SourceNotConnected,
+    SourceUnavailable,
     SourceVerificationUnavailable,
     UnsupportedMigrationSource,
 )
@@ -6125,6 +6126,40 @@ class TestFinishWithoutSubscriptions:
 
         with pytest.raises(MigrationOperationInProgress):
             await service.finish_without_subscriptions(
+                session, auth_subject, benefits_only_migration.id
+            )
+
+
+@pytest.mark.anyio
+class TestGetBenefits:
+    @pytest.mark.auth
+    @pytest.mark.parametrize(
+        ("status_code", "expected"),
+        [
+            (401, InvalidSourceCredentials),
+            (500, SourceUnavailable),
+        ],
+    )
+    async def test_source_failure(
+        self,
+        status_code: int,
+        expected: type[Exception],
+        mocker: MockerFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        benefits_only_migration: MerchantMigration,
+        user_organization: UserOrganization,
+    ) -> None:
+        adapter = mocker.Mock(spec=LemonSqueezyAdapter)
+        adapter.list_benefits = mocker.AsyncMock(
+            side_effect=_lemon_squeezy_http_error(status_code)
+        )
+        mocker.patch.object(
+            service, "_benefits_adapter", new=mocker.AsyncMock(return_value=adapter)
+        )
+
+        with pytest.raises(expected):
+            await service.get_benefits(
                 session, auth_subject, benefits_only_migration.id
             )
 

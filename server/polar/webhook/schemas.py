@@ -18,7 +18,6 @@ from pydantic import (
 from pydantic.json_schema import JsonSchemaValue, SkipJsonSchema
 from pydantic_core import core_schema
 
-from polar.kit.external_id import ExternalIDOutputMixin
 from polar.kit.schemas import (
     HttpsUrl,
     IDSchema,
@@ -147,7 +146,7 @@ class _AvailableAPIVersion:
 AvailableAPIVersion = Annotated[APIVersion, _AvailableAPIVersion()]
 
 
-class WebhookEndpoint(IDSchema, TimestampedSchema, ExternalIDOutputMixin):
+class WebhookEndpoint(IDSchema, TimestampedSchema):
     """
     A webhook endpoint.
     """

@@ -51,7 +51,9 @@ rows written NULL between the backfill and the deploy. Either one fails `SET NOT
 strands the schema on the previous revision.
 
 `UNMAPPED_COLUMNS` lists columns the database still holds but no model maps. `include_object`
-skips them, so `alembic check` passes between the two PRs:
+skips them, and the database indexes that cover them, so `alembic check` passes between the two
+PRs. Remove such an index from the model in the first PR; the drop migration removes it with the
+column:
 
 ```python
 UNMAPPED_COLUMNS = {("events", "ingest_sequence")}

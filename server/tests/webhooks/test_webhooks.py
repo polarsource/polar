@@ -194,7 +194,6 @@ class TestWebhookEndpointSchema:
             "events": [],
             "enabled": True,
             "secret_generated_at": None,
-            "external_id": None,
         }
         payload.update(overrides)
         return payload

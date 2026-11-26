@@ -44122,12 +44122,6 @@ export interface components {
      */
     WebhookEndpoint: {
       /**
-       * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-       * @example ext_1337
-       */
-      external_id: string | null
-      /**
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.

@@ -5,6 +5,7 @@ import commandsOnly from './rules/commands-only.js'
 import commandsOutputJson from './rules/commands-output-json.js'
 import flagConventions from './rules/flag-conventions.js'
 import noAnsiEscapes from './rules/no-ansi-escapes.js'
+import noDeepTernary from './rules/no-deep-ternary.js'
 import noDoubleCast from './rules/no-double-cast.js'
 import noEffectRunOutsideEntrypoint from './rules/no-effect-run-outside-entrypoint.js'
 import noHardcodedHosts from './rules/no-hardcoded-hosts.js'
@@ -27,6 +28,7 @@ export default {
     'commands-output-json': commandsOutputJson,
     'flag-conventions': flagConventions,
     'no-ansi-escapes': noAnsiEscapes,
+    'no-deep-ternary': noDeepTernary,
     'no-double-cast': noDoubleCast,
     'no-effect-run-outside-entrypoint': noEffectRunOutsideEntrypoint,
     'no-hardcoded-hosts': noHardcodedHosts,

@@ -1,8 +1,9 @@
 import type { StandardSchemaV1 } from '@standard-schema/spec'
 import { Predicate } from 'effect'
-import type { models } from '../sdk'
 
-export type EventMetadata = models.EventMetadataInput
+type Scalar = string | number | boolean
+
+export type EventMetadata = Readonly<Record<string, Scalar | undefined>>
 
 export type EventSchema = StandardSchemaV1<unknown, EventMetadata>
 
@@ -17,19 +18,13 @@ export type EventOutput<Schema extends StandardSchemaV1> =
   StandardSchemaV1.InferOutput<Schema>
 
 type ReservedProperty = 'name' | 'source' | 'timestamp'
-type StructuredProperty = '_cost' | '_llm'
-type Scalar = string | number | boolean
 
 type InvalidProperty<Metadata> = {
   [Key in keyof Metadata]-?: Key extends ReservedProperty
     ? Key
-    : Key extends StructuredProperty
-      ? Metadata[Key] extends EventMetadata[Key]
-        ? never
-        : Key
-      : Exclude<Metadata[Key], undefined> extends Scalar
-        ? never
-        : Key
+    : Exclude<Metadata[Key], undefined> extends Scalar
+      ? never
+      : Key
 }[keyof Metadata] &
   string
 
@@ -52,10 +47,10 @@ export type SharedEventOutput<
 > = Shared<EventOutput<Events[Name]>>
 
 export const eventKey: unique symbol = Symbol.for(
-  '~@polar-sh/polar/EventReference',
+  '~@polar-sh/config/EventReference',
 )
 export const propertyKey: unique symbol = Symbol.for(
-  '~@polar-sh/polar/PropertyReference',
+  '~@polar-sh/config/PropertyReference',
 )
 declare const valueType: unique symbol
 

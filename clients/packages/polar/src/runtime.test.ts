@@ -1,9 +1,9 @@
+import { Schema } from 'effect'
 import { afterEach, expect, expectTypeOf, test, vi } from 'vitest'
 import { z } from 'zod'
 import { EventValidationError } from './client/actor'
 import { RuntimeSDK } from './runtime'
-import { defineConfig } from './schema/config'
-import { and, eq, gte } from './schema/meter'
+import { and, defineConfig, eq, gte } from '@polar-sh/config'
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -205,4 +205,105 @@ test('access types granted metadata from the benefit declared in the config', as
   )
     .returns.resolves.extract<{ granted: true }>()
     .toEqualTypeOf<{ granted: true; metadata: { readonly limit: number } }>()
+})
+
+const events = {
+  tool_call: z.object({
+    tool: z.enum(['search', 'fetch']),
+    durationMs: z.int(),
+  }),
+  'llm.completion': Schema.toStandardSchemaV1(
+    Schema.Struct({ model: Schema.String, inputTokens: Schema.Int }),
+  ),
+  'llm.embedding': z.object({
+    model: z.string(),
+    inputTokens: z.int(),
+    dimensions: z.int(),
+  }),
+}
+
+test('RuntimeSDK rejects duplicate IDs without changing JSON serialization', () => {
+  const config = defineConfig({
+    meters: ({ meter }) => [
+      ['calls', meter('First').count()],
+      ['calls', meter('Second').count()],
+    ],
+  })
+  expect(config.toJSON().meters).toHaveLength(2)
+  expect(() => RuntimeSDK(config, { accessToken: 'test' })).toThrow(
+    'duplicate meter external IDs',
+  )
+})
+
+test('connected configs type and validate track with the declared event schemas', async () => {
+  const config = defineConfig({
+    events,
+    meters: ({ meter, events }) => ({
+      searches: meter().on(events.tool_call).count(),
+    }),
+  })
+  const customer = RuntimeSDK(config, { accessToken: 'test' }).actor({
+    customerId: 'customer-1',
+  })
+
+  expectTypeOf(customer.track<'tool_call'>)
+    .parameter(1)
+    .toEqualTypeOf<{ tool: 'search' | 'fetch'; durationMs: number }>()
+  expectTypeOf(customer.track)
+    .parameter(0)
+    .extract<string>()
+    .toEqualTypeOf<'tool_call' | 'llm.completion' | 'llm.embedding'>()
+  await expect(
+    customer.track('tool_call', { tool: 'search', durationMs: 1.5 }),
+  ).rejects.toThrow('Invalid metadata for event "tool_call"')
+
+  const untyped = RuntimeSDK(
+    defineConfig({
+      meters: ({ meter }) => ({ calls: meter('Calls').count() }),
+    }),
+    { accessToken: 'test' },
+  ).actor({ customerId: 'customer-1' })
+  expectTypeOf(untyped.track)
+    .parameter(0)
+    .extract<string>()
+    .toEqualTypeOf<string>()
+})
+
+test('RuntimeSDK exposes configured benefits by external ID', () => {
+  const config = defineConfig({
+    meters: ({ meter }) => ({ tool_call: meter().count() }),
+    benefits: ({ flag }) => ({ custom_servers: flag() }),
+  })
+  const { actor } = RuntimeSDK(config, { accessToken: 'test' })
+  expectTypeOf(actor({ customerId: 'customer-id' }).access)
+    .parameter(0)
+    .toEqualTypeOf<'custom_servers'>()
+})
+
+test('RuntimeSDK rejects duplicate benefit external IDs', () => {
+  const config = defineConfig({
+    meters: () => ({}),
+    benefits: ({ flag }) => [
+      ['flag', flag('First')],
+      ['flag', flag('Second')],
+    ],
+  })
+  expect(() => RuntimeSDK(config, { accessToken: 'test' })).toThrow(
+    'duplicate benefit external IDs',
+  )
+})
+
+test('deprecated meters stay in the client', () => {
+  const config = defineConfig({
+    meters: ({ meter }) => ({
+      apples: meter('Apples').deprecated().count(),
+      pears: meter('Pears').count(),
+    }),
+  })
+  expectTypeOf(
+    RuntimeSDK(config, { accessToken: 'test' }).actor({ customerId: 'c' })
+      .balance,
+  )
+    .parameter(0)
+    .toEqualTypeOf<'apples' | 'pears'>()
 })

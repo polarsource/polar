@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest'
 import { removeFromScript } from '@/services/billing-config/languages/typescript/remove'
 
 const script = [
-  "import { defineConfig, usd } from '@polar-sh/polar'",
+  "import { defineConfig, usd } from '@polar-sh/config'",
   '',
   'export default defineConfig({',
   '  meters: ({ meter }) => ({',
@@ -36,7 +36,7 @@ describe('removeFromScript', () => {
     expect(missing).toEqual([])
     expect(source).toBe(
       [
-        "import { defineConfig, usd } from '@polar-sh/polar'",
+        "import { defineConfig, usd } from '@polar-sh/config'",
         '',
         'export default defineConfig({',
         '  meters: ({ meter }) => ({',

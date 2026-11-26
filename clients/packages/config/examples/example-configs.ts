@@ -12,7 +12,7 @@ import {
   perMillion,
   perThousand,
   usd,
-} from '@polar-sh/polar'
+} from '@polar-sh/config'
 import { Schema } from 'effect'
 import { z } from 'zod'
 

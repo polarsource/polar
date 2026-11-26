@@ -51,7 +51,7 @@ const format = Flag.Literals('format', FORMATS).pipe(
 const skipInstall = Flag.Boolean('skip-install').pipe(
   Flag.withDefault(false),
   Flag.withDescription(
-    'Do not install the package a TypeScript config imports, @polar-sh/polar',
+    'Do not install the package a TypeScript config imports, @polar-sh/config',
   ),
 )
 

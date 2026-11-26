@@ -1,7 +1,6 @@
 import { Schema } from 'effect'
 import { expect, expectTypeOf, test } from 'vitest'
 import { z } from 'zod'
-import { RuntimeSDK } from '../runtime'
 import { flag } from './benefit'
 import { defineConfig } from './config'
 import { eq, gte } from './meter'
@@ -52,19 +51,6 @@ test('free prices use the settings currency', () => {
   expect(prices()).toEqual([
     { amount_type: 'fixed', price_currency: 'usd', price_amount: 0 },
   ])
-})
-
-test('RuntimeSDK rejects duplicate IDs without changing JSON serialization', () => {
-  const config = defineConfig({
-    meters: ({ meter }) => [
-      ['calls', meter('First').count()],
-      ['calls', meter('Second').count()],
-    ],
-  })
-  expect(config.toJSON().meters).toHaveLength(2)
-  expect(() => RuntimeSDK(config, { accessToken: 'test' })).toThrow(
-    'duplicate meter external IDs',
-  )
 })
 
 test('defineConfig rejects empty external IDs even with a valid display name', () => {
@@ -262,54 +248,6 @@ test('events must have flat metadata without reserved properties', () => {
     events: { scalar: z.string() },
     meters: () => ({}),
   })
-  defineConfig({
-    // @ts-expect-error _cost must match the cost metadata shape
-    events: { priced: z.object({ _cost: z.object({ amount: z.string() }) }) },
-    meters: () => ({}),
-  })
-  defineConfig({
-    events: {
-      priced: z.object({
-        tokens: z.int(),
-        _cost: z.object({ amount: z.number(), currency: z.literal('usd') }),
-      }),
-    },
-    meters: () => ({}),
-  })
-})
-
-test('connected configs type and validate track with the declared event schemas', async () => {
-  const config = defineConfig({
-    events,
-    meters: ({ meter, events }) => ({
-      searches: meter().on(events.tool_call).count(),
-    }),
-  })
-  const customer = RuntimeSDK(config, { accessToken: 'test' }).actor({
-    customerId: 'customer-1',
-  })
-
-  expectTypeOf(customer.track<'tool_call'>)
-    .parameter(1)
-    .toEqualTypeOf<{ tool: 'search' | 'fetch'; durationMs: number }>()
-  expectTypeOf(customer.track)
-    .parameter(0)
-    .extract<string>()
-    .toEqualTypeOf<'tool_call' | 'llm.completion' | 'llm.embedding'>()
-  await expect(
-    customer.track('tool_call', { tool: 'search', durationMs: 1.5 }),
-  ).rejects.toThrow('Invalid metadata for event "tool_call"')
-
-  const untyped = RuntimeSDK(
-    defineConfig({
-      meters: ({ meter }) => ({ calls: meter('Calls').count() }),
-    }),
-    { accessToken: 'test' },
-  ).actor({ customerId: 'customer-1' })
-  expectTypeOf(untyped.track)
-    .parameter(0)
-    .extract<string>()
-    .toEqualTypeOf<string>()
 })
 
 test('benefits serialize with meter credits linked by meter key', () => {
@@ -419,30 +357,6 @@ test('benefit descriptions must be between 3 and 42 characters', () => {
       }),
     }),
   ).toThrow()
-})
-
-test('RuntimeSDK exposes configured benefits by external ID', () => {
-  const config = defineConfig({
-    meters: ({ meter }) => ({ tool_call: meter().count() }),
-    benefits: ({ flag }) => ({ custom_servers: flag() }),
-  })
-  const { actor } = RuntimeSDK(config, { accessToken: 'test' })
-  expectTypeOf(actor({ customerId: 'customer-id' }).access)
-    .parameter(0)
-    .toEqualTypeOf<'custom_servers'>()
-})
-
-test('RuntimeSDK rejects duplicate benefit external IDs', () => {
-  const config = defineConfig({
-    meters: () => ({}),
-    benefits: ({ flag }) => [
-      ['flag', flag('First')],
-      ['flag', flag('Second')],
-    ],
-  })
-  expect(() => RuntimeSDK(config, { accessToken: 'test' })).toThrow(
-    'duplicate benefit external IDs',
-  )
 })
 
 test('products serialize prices per currency and link meters and benefits', () => {
@@ -584,7 +498,7 @@ test('products only reference declared meters and benefits', () => {
   ).toThrow('Product "pro" references unknown benefit "unknown"')
 })
 
-test('deprecated meters stay in the config and the client', () => {
+test('deprecated meters stay in the config', () => {
   const config = defineConfig({
     meters: ({ meter }) => ({
       apples: meter('Apples').deprecated().count(),
@@ -599,12 +513,6 @@ test('deprecated meters stay in the config and the client', () => {
   const [apples, pears] = config.toJSON().meters
   expect(apples).toMatchObject({ external_id: 'apples', deprecated: true })
   expect(pears).not.toHaveProperty('deprecated')
-  expectTypeOf(
-    RuntimeSDK(config, { accessToken: 'test' }).actor({ customerId: 'c' })
-      .balance,
-  )
-    .parameter(0)
-    .toEqualTypeOf<'apples' | 'pears'>()
 })
 
 test('active products and benefits cannot use a deprecated meter', () => {

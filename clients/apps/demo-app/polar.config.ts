@@ -1,4 +1,4 @@
-import { defineConfig, eur, perThousand, usd } from '@polar-sh/polar'
+import { defineConfig, eur, perThousand, usd } from '@polar-sh/config'
 import { z } from 'zod'
 
 // A Slack channel benefit needs a Slack integration installed on the

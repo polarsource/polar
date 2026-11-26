@@ -6,7 +6,7 @@ export const Visibility = Schema.Literals(['public', 'private'])
 export type Visibility = typeof Visibility.Type
 
 export const visibilityKey: unique symbol = Symbol.for(
-  '~@polar-sh/polar/Visibility',
+  '~@polar-sh/config/Visibility',
 )
 
 export type HasVisibility = {

@@ -404,7 +404,7 @@ test.each(cases)(
     })
     const exports: { default?: Config } = {}
     const require = (specifier: string) => {
-      expect(specifier).toBe('@polar-sh/polar')
+      expect(specifier).toBe('@polar-sh/config')
       return api
     }
     new Function('require', 'exports', compiled.outputText)(require, exports)
@@ -420,7 +420,7 @@ test('generated modules typecheck against the public API', async () => {
           [
             resolve(import.meta.dirname, `generated-${index}.ts`),
             (await Effect.runPromise(generateConfig(config))).replace(
-              "from '@polar-sh/polar'",
+              "from '@polar-sh/config'",
               "from './index'",
             ),
           ] as const,

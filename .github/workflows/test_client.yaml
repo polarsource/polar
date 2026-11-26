@@ -274,8 +274,8 @@ jobs:
       - name: 📦 Install the CLI dependency graph
         run: pnpm --dir ../.. install --filter @polar-sh/cli... --frozen-lockfile --ignore-scripts
 
-      - name: 🛠️ Build @polar-sh/polar
-        run: pnpm --dir ../.. --filter @polar-sh/polar build
+      - name: 🛠️ Build @polar-sh/config
+        run: pnpm --dir ../.. --filter @polar-sh/config build
 
       - name: 📦 Build binary
         run: bun build ./src/cli.ts --compile --no-compile-autoload-dotenv --no-compile-autoload-bunfig --define POLAR_CLI_BUILD='"release"' --target=bun-linux-x64 --outfile polar

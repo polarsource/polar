@@ -44,6 +44,9 @@ for field, value in pairs(fields) do
                 table.insert(dropped, field)
                 seals = true
             end
+        elseif (kind == 'confirmed' or kind == 'invalid') and tonumber(start) < cutoff then
+            table.insert(dropped, field)
+            seals = true
         end
     end
 end

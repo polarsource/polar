@@ -43,6 +43,7 @@ from .schemas import (
     SubscriptionChangeUnits,
     SubscriptionChargePreview,
     SubscriptionCreate,
+    SubscriptionCreateV2027_01,
     SubscriptionID,
     SubscriptionMeterChargePreview,
     SubscriptionUpdate,
@@ -378,7 +379,7 @@ async def create(
 )
 @version(starting_from=V2027_01)
 async def create_v2027_01(
-    subscription_create: SubscriptionCreate,
+    subscription_create: SubscriptionCreateV2027_01,
     auth_subject: auth.SubscriptionsWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> Subscription:
@@ -388,6 +389,9 @@ async def create_v2027_01(
     Supports free products and paid products with a trial that does not require
     upfront payment setup. Paid subscriptions start with the product's configured
     trial period. For other paid products, use the checkout flow.
+
+    Reference the customer by Polar ID or external ID. Reference the product by
+    Polar ID, or by external ID together with an external customer ID.
 
     No initial order will be created and no confirmation email will be sent.
     """

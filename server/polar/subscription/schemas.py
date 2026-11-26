@@ -1,6 +1,6 @@
 import inspect
 from datetime import datetime
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from fastapi import Path
 from pydantic import (
@@ -9,8 +9,10 @@ from pydantic import (
     AliasChoices,
     AliasPath,
     ConfigDict,
+    Discriminator,
     Field,
     FutureDatetime,
+    Tag,
 )
 from pydantic.json_schema import SkipJsonSchema
 
@@ -23,6 +25,7 @@ from polar.enums import (
     SubscriptionRecurringInterval,
 )
 from polar.kit.currency import PresentmentCurrency, format_currency
+from polar.kit.external_id import ExternalID
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import (
     CUSTOMER_ID_EXAMPLE,
@@ -308,6 +311,20 @@ class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, Subscription
     )
 
 
+SubscriptionCreateCurrency = Annotated[
+    Omissible[PresentmentCurrency],
+    Version(starting_from=V2027_01),
+    Field(
+        description=(
+            "The currency of the subscription. "
+            "The product must have a free price in this currency or have a trial "
+            "with no upfront payment setup required. "
+            "If not set, the organization's default currency is used."
+        ),
+    ),
+]
+
+
 class SubscriptionCreateBase(MetadataInputMixin, Schema):
     product_id: Annotated[
         UUID4,
@@ -334,18 +351,7 @@ class SubscriptionCreateBase(MetadataInputMixin, Schema):
             up_to=V2026_10,
         ),
     ]
-    currency: Annotated[
-        PresentmentCurrency | None,
-        Version(starting_from=V2027_01),
-        Field(
-            description=(
-                "The currency of the subscription. "
-                "The product must have a free price in this currency or have a trial "
-                "with no upfront payment setup required. "
-                "If not set, the organization's default currency is used."
-            ),
-        ),
-    ] = None
+    currency: SubscriptionCreateCurrency = MISSING
 
 
 class SubscriptionCreateCustomer(SubscriptionCreateBase):
@@ -372,7 +378,62 @@ class SubscriptionCreateExternalCustomer(SubscriptionCreateBase):
     )
 
 
+class SubscriptionCreateExternal(MetadataInputMixin, Schema):
+    """
+    Create a subscription using external IDs for the customer and the product.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    external_customer_id: str = Field(
+        min_length=1,
+        description=(
+            "The ID of the customer in your system to create the subscription for. "
+            "It must already exist in Polar."
+        ),
+        examples=["usr_1337"],
+    )
+    external_product_id: ExternalID = Field(
+        description=(
+            "The ID of the recurring product in your system to subscribe to. "
+            "Resolves to the current version of the product. "
+            "Must be a free product or have a trial with no upfront payment setup required. "
+            "Otherwise, the customer should go through a checkout flow."
+        ),
+        examples=["ext_1337"],
+    )
+    organization_id: OrganizationID | None = Field(
+        default=None,
+        description=(
+            "The ID of the organization owning the customer and product. "
+            "**Required unless your credential identifies one organization.** "
+            "Omit this field when using an organization token."
+        ),
+    )
+    currency: SubscriptionCreateCurrency = MISSING
+
+
 SubscriptionCreate = SubscriptionCreateCustomer | SubscriptionCreateExternalCustomer
+
+
+def _subscription_create_discriminator(v: Any) -> str:
+    if isinstance(v, dict):
+        if "external_product_id" in v:
+            return "external"
+        return "customer" if "customer_id" in v else "external_customer"
+    if isinstance(v, SubscriptionCreateExternal):
+        return "external"
+    if isinstance(v, SubscriptionCreateCustomer):
+        return "customer"
+    return "external_customer"
+
+
+SubscriptionCreateV2027_01 = Annotated[
+    Annotated[SubscriptionCreateCustomer, Tag("customer")]
+    | Annotated[SubscriptionCreateExternalCustomer, Tag("external_customer")]
+    | Annotated[SubscriptionCreateExternal, Tag("external")],
+    Discriminator(_subscription_create_discriminator),
+]
 
 
 def _discount_input(

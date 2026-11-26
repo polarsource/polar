@@ -30,7 +30,7 @@ from polar.kit.currency import (
 )
 from polar.models import Organization
 from polar.models.organization import OrganizationStatus
-from polar.product.schemas import PRODUCT_NAME_MIN_LENGTH
+from polar.product.schemas import PRODUCT_NAME_MAX_LENGTH, PRODUCT_NAME_MIN_LENGTH
 
 from .canonical import (
     CanonicalAccount,
@@ -56,6 +56,7 @@ from .canonical import (
     customer_country_fallbacks,
     discount_started_at_for,
     polar_discount_amounts,
+    polar_product_name,
     subscription_price_key,
     subscription_price_key_values,
 )
@@ -349,7 +350,7 @@ class PrecheckEngine:
         for record in record_list:
             if isinstance(record, CanonicalProduct):
                 products.append(record)
-                products_by_name.setdefault(record.name, set()).add(
+                products_by_name.setdefault(polar_product_name(record.name), set()).add(
                     record.product_source_id
                 )
                 issues.extend(self._check_product(record, default_currency))
@@ -492,7 +493,8 @@ class PrecheckEngine:
             )
             dropped = True
         if not dropped and (
-            not product.name or len(product.name.strip()) < PRODUCT_NAME_MIN_LENGTH
+            not product.name
+            or len(polar_product_name(product.name)) < PRODUCT_NAME_MIN_LENGTH
         ):
             yield PrecheckIssue(
                 level=PrecheckIssueLevel.warning,
@@ -505,6 +507,18 @@ class PrecheckEngine:
                 source_id=product.source_id,
             )
             dropped = True
+        if not dropped and polar_product_name(product.name) != product.name.strip():
+            yield PrecheckIssue(
+                level=PrecheckIssueLevel.warning,
+                code="product_name_too_long",
+                message=(
+                    f"Product '{product.name}' has a name longer than "
+                    f"{PRODUCT_NAME_MAX_LENGTH} characters. It imports with the "
+                    f"first {PRODUCT_NAME_MAX_LENGTH} characters; you can rename "
+                    "it in Polar afterwards."
+                ),
+                source_id=product.source_id,
+            )
         for price in product.prices:
             yield from self._check_price(product, price)
         # Only worth reporting on a product that would otherwise import.
@@ -1141,7 +1155,7 @@ def _duplicate_product_names(products: Sequence[CanonicalProduct]) -> set[str]:
     """
     source_ids_by_name: dict[str, set[str]] = {}
     for product in products:
-        source_ids_by_name.setdefault(product.name, set()).add(
+        source_ids_by_name.setdefault(polar_product_name(product.name), set()).add(
             product.product_source_id
         )
     return {name for name, ids in source_ids_by_name.items() if len(ids) > 1}
@@ -1188,10 +1202,10 @@ def _product_items(
             if not product.archived and imports_archived(product, default_currency)
             else None,
             Reason("duplicate_product_name", _DUPLICATE_PRODUCT_NAME_REASON)
-            if product.name in duplicate_names
+            if polar_product_name(product.name) in duplicate_names
             else None,
             Reason("product_exists_in_polar", _EXISTING_PRODUCT_NAME_REASON)
-            if product.name.lower() in existing_product_names
+            if polar_product_name(product.name).lower() in existing_product_names
             else None,
         )
         items.append(

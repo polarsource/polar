@@ -135,6 +135,7 @@ from polar.models.product_price import ProductPriceFixed
 from polar.models.subscription import SubscriptionStatus
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.postgres import AsyncSession
+from polar.product.schemas import PRODUCT_NAME_MAX_LENGTH
 from polar.product.service import product as product_service
 from polar.redis import Redis
 from polar.subscription.repository import SubscriptionRepository
@@ -2321,6 +2322,39 @@ class TestImportCatalog:
         assert after[PrecheckEntity.customers].imported == 0
         assert after[PrecheckEntity.products].imported == 0
         assert after[PrecheckEntity.subscriptions].ready == 1
+
+    @pytest.mark.auth
+    async def test_imports_a_product_with_a_name_over_the_polar_limit(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        records = _catalog_with_subscription()
+        product = next(
+            record for record in records if isinstance(record, CanonicalProduct)
+        )
+        product.name = "Live Workshop Ticket " * 5
+        migration = await _staged_migration(
+            mocker,
+            session,
+            save_fixture,
+            auth_subject,
+            organization,
+            records=records,
+        )
+
+        report = await _import_catalog(session, auth_subject, migration.id)
+
+        results = {result.entity: result for result in report.results}
+        assert results[PrecheckEntity.products].imported == 1
+        products = await _products(session, organization)
+        assert [p.name for p in products] == [
+            ("Live Workshop Ticket " * 5)[:PRODUCT_NAME_MAX_LENGTH].rstrip()
+        ]
 
     @pytest.mark.auth
     async def test_import_does_not_notify_for_each_product(

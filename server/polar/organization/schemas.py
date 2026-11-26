@@ -32,7 +32,7 @@ from polar.kit.schemas import (
     SlugValidator,
     TimestampedSchema,
 )
-from polar.kit.versioning import Omissible, QuerySchema, Version
+from polar.kit.versioning import Omissible, QuerySchema, Version, VersionedInputMixin
 from polar.models.organization import (
     OrganizationCustomerEmailSettings,
     OrganizationCustomerPortalSettings,
@@ -274,7 +274,7 @@ class OrganizationFeatureSettings(Schema):
     ] = False
 
 
-class OrganizationFeatureSettingsUpdate(Schema):
+class OrganizationFeatureSettingsUpdate(VersionedInputMixin, Schema):
     """Feature settings that organizations can update themselves.
 
     Other feature settings are managed by Polar staff: they're ignored if
@@ -329,7 +329,7 @@ class OrganizationDetailsInput(Schema):
     ) = Field(None, description="Which platform the organization is migrating from.")
 
 
-class OrganizationDetails(OrganizationDetailsInput):
+class OrganizationDetails(VersionedInputMixin, OrganizationDetailsInput):
     about: Annotated[str | None, Version(up_to=V2026_10)] = Field(
         None,
         deprecated=True,

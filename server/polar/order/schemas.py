@@ -35,7 +35,7 @@ from polar.kit.schemas import (
     TimestampedSchema,
     empty_str_to_none,
 )
-from polar.kit.versioning import Omissible, QuerySchema, Version
+from polar.kit.versioning import Omissible, QuerySchema, Version, VersionedInputMixin
 from polar.models.order import (
     OrderBillingReason,
     OrderBillingReasonInternal,
@@ -387,7 +387,7 @@ class OrderCreate(MetadataInputMixin, CustomFieldDataInputMixin):
         return self
 
 
-class OrderUpdateBase(Schema):
+class OrderUpdateBase(VersionedInputMixin, Schema):
     billing_name: str | None = Field(
         None, description="The name of the customer that should appear on the invoice."
     )

@@ -36,7 +36,13 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
-from polar.kit.versioning import Omissible, QuerySchema, Version, VersionedJsonSchema
+from polar.kit.versioning import (
+    Omissible,
+    QuerySchema,
+    Version,
+    VersionedInputMixin,
+    VersionedJsonSchema,
+)
 from polar.meter.schemas import Meter
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.openapi import destructive_when_equals
@@ -308,7 +314,7 @@ class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, Subscription
     )
 
 
-class SubscriptionCreateBase(MetadataInputMixin, Schema):
+class SubscriptionCreateBase(MetadataInputMixin, VersionedInputMixin, Schema):
     product_id: Annotated[
         UUID4,
         Field(examples=[PRODUCT_ID_EXAMPLE]),

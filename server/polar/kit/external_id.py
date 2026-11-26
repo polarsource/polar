@@ -5,7 +5,7 @@ from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from polar.kit.schemas import empty_str_to_none
-from polar.kit.versioning import Omissible, Version
+from polar.kit.versioning import Omissible, Version, VersionedInputMixin
 from polar.version import V2027_01
 
 ExternalIDColumn = Annotated[
@@ -31,7 +31,7 @@ _input_description = f"{_description} {_rule}"
 _example = "ext_1337"
 
 
-class ExternalIDInputMixin(BaseModel):
+class ExternalIDInputMixin(VersionedInputMixin):
     external_id: Annotated[
         Omissible[Annotated[ExternalID, BeforeValidator(empty_str_to_none)]],
         Version(starting_from=V2027_01),
@@ -39,7 +39,7 @@ class ExternalIDInputMixin(BaseModel):
     ] = MISSING
 
 
-class ResettableExternalIDInputMixin(BaseModel):
+class ResettableExternalIDInputMixin(VersionedInputMixin):
     external_id: Annotated[
         Omissible[Annotated[ExternalID | None, BeforeValidator(empty_str_to_none)]],
         Version(starting_from=V2027_01),

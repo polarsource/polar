@@ -1,17 +1,21 @@
 import pathlib
-from typing import Any, Literal
+from collections.abc import Iterator
+from typing import Any, Literal, get_args
 
 import pytest
 from fastapi import APIRouter as _APIRouter
 from fastapi import Query
 from fastapi.openapi.utils import get_openapi
+from fastapi.routing import APIRoute as FastAPIRoute
+from fastapi.routing import iter_route_contexts
 from httpx2 import AsyncClient
 from openapi_kit.diff import compare
 from openapi_kit.parser import OpenAPIParser
-from pydantic import Field
+from pydantic import BaseModel, Field
 
+from polar.app import app as polar_app
 from polar.kit.schemas import Schema
-from polar.kit.versioning import APIVersion
+from polar.kit.versioning import APIVersion, VersionedInputMixin, _VersionRange
 from polar.openapi import (
     VERSIONING_POLICY_URL,
     APITag,
@@ -366,3 +370,45 @@ async def test_legacy_recurring_product_price_schema(
 
     schemas = response.json()["components"]["schemas"]
     assert ("LegacyRecurringProductPrice" in schemas) is included
+
+
+def _iter_versioned_body_models(
+    annotation: Any, seen: set[type[BaseModel]]
+) -> Iterator[type[BaseModel]]:
+    if isinstance(annotation, type) and issubclass(annotation, BaseModel):
+        if annotation in seen:
+            return
+        seen.add(annotation)
+        if any(
+            isinstance(item, _VersionRange)
+            for field in annotation.model_fields.values()
+            for item in field.metadata
+        ):
+            yield annotation
+        for field in annotation.model_fields.values():
+            yield from _iter_versioned_body_models(field.annotation, seen)
+    else:
+        for arg in get_args(annotation):
+            yield from _iter_versioned_body_models(arg, seen)
+
+
+def test_versioned_body_fields_are_ignored_on_other_versions() -> None:
+    seen: set[type[BaseModel]] = set()
+    models = {
+        model
+        for route_context in iter_route_contexts(polar_app.router.routes)
+        if isinstance(route := route_context.original_route, FastAPIRoute)
+        for param in route.dependant.body_params
+        for model in _iter_versioned_body_models(param.field_info.annotation, seen)
+    }
+
+    assert models
+    unguarded = sorted(
+        f"{model.__module__}.{model.__qualname__}"
+        for model in models
+        if not issubclass(model, VersionedInputMixin)
+    )
+    assert unguarded == [], (
+        "Request bodies with `Version` fields must inherit `VersionedInputMixin`, "
+        "so versions that don't include those fields ignore them."
+    )

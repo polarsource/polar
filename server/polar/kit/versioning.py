@@ -331,21 +331,37 @@ fastapi_dependencies._get_flat_fields_from_params = _versioned_flat_fields_from_
 fastapi_openapi._get_flat_fields_from_params = _versioned_flat_fields_from_params  # type: ignore[attr-defined]
 
 
-class QuerySchema(Schema):
+def omit_unavailable_fields(model: type[BaseModel], data: typing.Any) -> typing.Any:
+    """Drop input for fields that aren't available in the active API version."""
+    version = _ACTIVE_API_VERSION.get()
+    if version is None or not isinstance(data, dict):
+        return data
+    omitted = {
+        key
+        for name, field in model.model_fields.items()
+        if _is_omitted(field.metadata, version)
+        for key in (name, field.alias, field.validation_alias)
+        if isinstance(key, str)
+    }
+    return {key: value for key, value in data.items() if key not in omitted}
+
+
+class VersionedInputMixin(BaseModel):
+    """
+    Ignore input for `Version` fields outside the active API version.
+
+    `Version` alone only hides a field from OpenAPI and `model_dump()`: without
+    this, the field is still parsed, and code reading the attribute acts on it.
+    """
+
     @model_validator(mode="before")
     @classmethod
     def _omit_unavailable_fields(cls, data: typing.Any) -> typing.Any:
-        version = _ACTIVE_API_VERSION.get()
-        if version is None or not isinstance(data, dict):
-            return data
-        omitted = {
-            key
-            for name, field in cls.model_fields.items()
-            if _is_omitted(field.metadata, version)
-            for key in (name, field.alias, field.validation_alias)
-            if isinstance(key, str)
-        }
-        return {key: value for key, value in data.items() if key not in omitted}
+        return omit_unavailable_fields(cls, data)
+
+
+class QuerySchema(VersionedInputMixin, Schema):
+    pass
 
 
 def _iter_omitted_union_members(

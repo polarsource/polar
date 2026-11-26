@@ -21,7 +21,7 @@ from polar.kit.schemas import (
     TimestampedSchema,
 )
 from polar.kit.trial import TrialConfigurationInputMixin, TrialConfigurationOutputMixin
-from polar.kit.versioning import Omissible, QuerySchema, Version
+from polar.kit.versioning import Omissible, QuerySchema, Version, VersionedInputMixin
 from polar.organization.schemas import OrganizationID
 from polar.product.schemas import (
     BenefitPublicList,
@@ -95,7 +95,9 @@ _trial_payment_setup_required_description = (
 )
 
 
-class CheckoutLinkCreateBase(TrialConfigurationInputMixin, MetadataInputMixin, Schema):
+class CheckoutLinkCreateBase(
+    TrialConfigurationInputMixin, MetadataInputMixin, VersionedInputMixin, Schema
+):
     trial_payment_setup_required: Annotated[
         bool | None,
         Version(starting_from=V2027_01),
@@ -153,7 +155,9 @@ class CheckoutLinkCreateProducts(CheckoutLinkCreateBase):
     )
 
 
-class CheckoutLinkUpdate(MetadataInputMixin, TrialConfigurationInputMixin):
+class CheckoutLinkUpdate(
+    MetadataInputMixin, TrialConfigurationInputMixin, VersionedInputMixin
+):
     """Schema to update an existing checkout link."""
 
     trial_payment_setup_required: Annotated[

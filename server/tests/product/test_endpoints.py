@@ -21,6 +21,7 @@ from polar.models.custom_field import CustomFieldType
 from polar.models.file import FileServiceTypes, ProductMediaFile
 from polar.organization_review.repository import OrganizationRiskSignalRepository
 from polar.postgres import AsyncSession
+from polar.product.repository import ProductRepository
 from polar.version import V2026_04, V2026_10, V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -946,6 +947,39 @@ class TestUpdateProduct:
 
         json = response.json()
         assert json["name"] == "Updated Name"
+
+    @pytest.mark.api_version(V2026_10)
+    @pytest.mark.auth
+    async def test_external_id_ignored_before_2027_01(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="ext_1337",
+        )
+
+        response = await client.patch(
+            f"/v1/products/{product.id}",
+            json={"name": "Updated Name", "external_id": "ext_1337"},
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["name"] == "Updated Name"
+        assert "external_id" not in json
+        updated_product = await ProductRepository.from_session(session).get_by_id(
+            product.id
+        )
+        assert updated_product is not None
+        assert updated_product.external_id is None
 
     @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth

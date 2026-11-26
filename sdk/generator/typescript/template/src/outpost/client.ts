@@ -17,8 +17,8 @@ import { createHash, randomUUID } from "node:crypto";
 import { once } from "node:events";
 import { setTimeout as sleep } from "node:timers/promises";
 
-import { CONFIRM_SCRIPT, DEFAULT_TIMEOUT, backOff, connectRedis, createRedis, extendLock, releaseLock, takeLock } from "../redis";
-import { DRAIN_INTERVAL, FLUSHER_LOCK_TTL, RedisOutbox, type Delivery } from "../metering/outbox/redis";
+import { DEFAULT_TIMEOUT, backOff, connectRedis, createRedis, extendLock, releaseLock, takeLock } from "../redis";
+import { DRAIN_INTERVAL, RedisOutbox } from "../metering/outbox/redis";
 import { type MeteringOutpost, OUTPOST } from "../metering/client";
 import { type DropReason, MeteringError, UnknownMeterError, retryAfterMs } from "../metering/errors";
 import type { EventInput } from "../metering/event";
@@ -62,6 +62,7 @@ import {
   WRITE_BUCKET_SCRIPT,
   APPLY_SNAPSHOT_SCRIPT,
   COMMIT_PULL_SCRIPT,
+  CONFIRM_SCRIPT,
 } from "./scripts";
 import {
   createMeterProvider,
@@ -175,20 +176,13 @@ const confirmArguments = (
   prefix: string,
   hotOnly: boolean,
   settlements: Settlement[],
-  delivery?: Delivery,
 ): [number, ...(string | number)[]] => [
-  2 + settlements.length * 2,
-  `${prefix}:outbox`,
-  delivery?.lockKey ?? `${prefix}:outbox`,
+  settlements.length * 2,
   ...settlements.flatMap(({ identity, bucketStart }) => [
     `${prefix}:state:${identity}`,
     `${prefix}:pending:${identity}:${bucketStart}`,
   ]),
   hotOnly ? "1" : "",
-  delivery?.token ?? "",
-  FLUSHER_LOCK_TTL,
-  delivery?.entries.length ?? 0,
-  ...(delivery?.entries ?? []),
   ...settlements.flatMap(({ bucketStart, ids }) => [bucketStart, ids.length, ...ids]),
 ];
 
@@ -429,10 +423,13 @@ export class Outpost {
       });
       // Keys carry the organization: organizations can share a Redis.
       await this.configure();
-      this.outbox = new RedisOutbox(this.redisUrl, { stream: this.outboxKey, client: this.options.client });
-      await this.outbox.attach(redis, (events, refused, delivery) =>
-        this.settleDelivery(events, refused, delivery),
-      ).catch((error: unknown) => {
+      this.outbox = new RedisOutbox(this.redisUrl, {
+        stream: this.outboxKey,
+        client: this.options.client,
+        onAck: (events) => this.onAck(events),
+        onRejected: (events, reason) => this.onRejected(events, reason),
+      });
+      await this.outbox.attach(redis).catch((error: unknown) => {
         throw redisUnavailable(error);
       });
       this._connectionId = randomUUID();
@@ -970,29 +967,26 @@ export class Outpost {
     await this.relaying;
   }
 
-  private async settleDelivery(events: EventInput[], refused: EventInput[], delivery: Delivery): Promise<void> {
-    const redis = this.requireRedis();
-    // Polar will never count a refused event: it settles everywhere, hot bucket or cold.
-    if (refused.length && events.length)
-      await redis.outpostConfirm(...confirmArguments(this.prefix, false, this.settlements(refused)));
-    await redis.outpostConfirm(
-      ...confirmArguments(
-        this.prefix,
-        events.length > 0,
-        this.settlements(events.length ? events : refused),
-        delivery,
-      ),
-    );
-    const report = async (name: string, callback: () => unknown): Promise<void> => {
-      try {
-        await callback();
-      } catch (error) {
-        console.warn(`Outpost ${name} failed: ${String(error)}`);
-      }
-    };
-    if (refused.length)
-      await report("onDropped", () => this.options.onDropped?.(refused, "permanent_error"));
-    if (events.length) await report("onDelivered", () => this.options.onDelivered?.(events));
+  private async onAck(events: EventInput[]): Promise<void> {
+    const groups = this.settlements(events);
+    if (groups.length)
+      await this.requireRedis().outpostConfirm(...confirmArguments(this.prefix, true, groups));
+    try {
+      await this.options.onDelivered?.(events);
+    } catch (error) {
+      console.warn(`Outpost onDelivered failed: ${String(error)}`);
+    }
+  }
+
+  private async onRejected(events: EventInput[], reason: DropReason): Promise<void> {
+    const groups = this.settlements(events);
+    if (groups.length)
+      await this.requireRedis().outpostConfirm(...confirmArguments(this.prefix, false, groups));
+    try {
+      await this.options.onDropped?.(events, reason);
+    } catch (error) {
+      console.warn(`Outpost onDropped failed: ${String(error)}`);
+    }
   }
 
   // The events' ids, by the (customer, reducer, bucket) whose pending usage they settle. An event

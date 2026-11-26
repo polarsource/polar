@@ -4,7 +4,6 @@ import { randomUUID } from "node:crypto";
 import { setTimeout as sleep } from "node:timers/promises";
 
 import {
-  CONFIRM_SCRIPT,
   DEFAULT_TIMEOUT,
   backOff,
   connectRedis,
@@ -26,7 +25,7 @@ import type { Outbox } from "./index";
 const OUTBOX_BATCH = {{ redis_constants.outbox_batch }};
 const FLUSHERS = {{ redis_constants.outbox_flushers }};
 const OUTBOX_CLAIM_IDLE = {{ redis_constants.outbox_claim_idle }};
-export const FLUSHER_LOCK_TTL = {{ redis_constants.outbox_flusher_lock_ttl }};
+const FLUSHER_LOCK_TTL = {{ redis_constants.outbox_flusher_lock_ttl }};
 const FLUSH_TENURE = {{ redis_constants.outbox_flush_tenure }};
 export const DRAIN_INTERVAL = {{ redis_constants.outbox_drain_interval }};
 const OUTBOX_RETRY_DELAY = {{ redis_constants.outbox_retry_delay }};
@@ -37,8 +36,18 @@ const OUTBOX_GROUP = "polar";
 const OUTBOX_BACKLOG_SCRIPT = `
 {{ redis_scripts.outbox.outbox_backlog }}`;
 
+const ACKNOWLEDGE_SCRIPT = `
+{{ redis_scripts.outbox.acknowledge }}`;
+
 interface OutboxRedis extends Redis {
-  outpostConfirm(numberOfKeys: number, ...args: (string | number)[]): Promise<number>;
+  outboxAcknowledge(
+    stream: string,
+    lockKey: string,
+    group: string,
+    token: string,
+    ttl: number,
+    ...ids: string[]
+  ): Promise<void>;
   outboxBacklog(
     key: string,
     backoffKey: string,
@@ -48,7 +57,7 @@ interface OutboxRedis extends Redis {
 }
 
 // The outbox entries a flusher delivered, and the slot it holds.
-export interface Delivery {
+interface Delivery {
   entries: string[];
   lockKey: string;
   token: string;
@@ -86,8 +95,6 @@ const holdsNoInfinity = (value: unknown): boolean => {
 };
 
 
-type Settle = (events: EventInput[], refused: EventInput[], delivery: Delivery) => Promise<void>;
-
 export interface RedisOutboxOptions extends Partial<Pick<Outbox, "onAck" | "onRejected">> {
   client: Pick<ClientBase, "sendRequest" | "buildRequest" | "parseResponse">;
   /** Use a distinct stream per Polar environment and organization. */
@@ -99,7 +106,6 @@ export class RedisOutbox implements Outbox {
   onRejected: Outbox["onRejected"];
 
   private redis?: OutboxRedis;
-  private settle?: Settle;
   private timer?: ReturnType<typeof setInterval>;
   private draining?: Promise<void>;
   private drainUntil = Infinity;
@@ -174,11 +180,10 @@ export class RedisOutbox implements Outbox {
   }
 
   /** @internal Attach to the Redis connection owned by Outpost. */
-  async attach(redis: Redis, settle?: Settle): Promise<void> {
+  async attach(redis: Redis): Promise<void> {
     this.redis = redis as OutboxRedis;
-    this.settle = settle;
     redis.defineCommand("outboxBacklog", { numberOfKeys: 2, lua: OUTBOX_BACKLOG_SCRIPT });
-    if (!settle) redis.defineCommand("outpostConfirm", { lua: CONFIRM_SCRIPT });
+    redis.defineCommand("outboxAcknowledge", { numberOfKeys: 2, lua: ACKNOWLEDGE_SCRIPT });
     await this.createOutboxGroup();
   }
 
@@ -334,8 +339,6 @@ export class RedisOutbox implements Outbox {
     }
   }
 
-  // Sends a batch to Polar, then acknowledges it and settles its events in one script. Polar
-  // refusing the batch drops it; failing to take it leaves it for the next flush.
   private async deliver(entries: [string, string[] | null][], delivery: Delivery): Promise<boolean> {
     // An entry that is not JSON can never be sent: it leaves the outbox with the batch.
     let events = entries.flatMap(([, fields]) => {
@@ -385,22 +388,16 @@ export class RedisOutbox implements Outbox {
         });
         return false;
       }
-    if (this.settle) {
-      await this.settle(events, refused, delivery);
-    } else {
-      if (refused.length) await this.onRejected?.(refused, "permanent_error");
-      if (events.length) await this.onAck?.(events);
-      await this.requireRedis().outpostConfirm(
-        2,
-        this.options.stream,
-        delivery.lockKey,
-        "",
-        delivery.token,
-        FLUSHER_LOCK_TTL,
-        delivery.entries.length,
-        ...delivery.entries,
-      );
-    }
+    if (refused.length) await this.onRejected?.(refused, "permanent_error");
+    if (events.length) await this.onAck?.(events);
+    await this.requireRedis().outboxAcknowledge(
+      this.options.stream,
+      delivery.lockKey,
+      OUTBOX_GROUP,
+      delivery.token,
+      FLUSHER_LOCK_TTL,
+      ...delivery.entries,
+    );
     return true;
   }
 }

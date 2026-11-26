@@ -17,9 +17,6 @@ const RELEASE_LOCK_SCRIPT = `
 const EXTEND_LOCK_SCRIPT = `
 {{ redis_scripts.common.extend_lock }}`;
 
-export const CONFIRM_SCRIPT = `
-{{ redis_scripts.common.confirm }}`;
-
 const reconnectDelay = (attempt: number): number =>
   Math.min(MAX_REDIS_RECONNECT_DELAY, REDIS_RECONNECT_DELAY * 2 ** (attempt - 1)) *
   (0.5 + Math.random() / 2);

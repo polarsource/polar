@@ -2168,19 +2168,13 @@ async def test_settles_an_event_once_however_many_times_confirm_names_it(
         events = [_usage("event-0", 10), _usage("event-1", 10)]
         for event in events:
             await outpost.track(event)
-        outbox = "outpost:v1:org-1:outbox"
         pending = f"outpost:v1:org-1:pending:external:alice:tokens:{BUCKET}"
         await redis.eval(
             CONFIRM_SCRIPT,
-            4,
-            outbox,
-            outbox,
+            2,
             key,
             pending,
             "",
-            "",
-            0,
-            0,
             BUCKET,
             2,
             "event-0",
@@ -2306,6 +2300,29 @@ async def test_queues_an_event_no_meter_counts(
 
 
 OUTBOX = "outpost:v1:org-1:outbox"
+
+
+@pytest.mark.anyio
+async def test_keeps_stream_entry_when_outpost_cannot_settle_delivery(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url, redis = redis_connection
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        event = _usage("event-0", 10)
+        await outpost.track(event)
+        with monkeypatch.context() as patch:
+            patch.setattr(
+                outpost,
+                "_confirm_script",
+                AsyncMock(side_effect=ResponseError("unavailable")),
+            )
+            await outpost.flush()
+            assert await _queued(redis) == [event]
+        await outpost.flush()
+        assert await redis.xlen(OUTBOX) == 0
 
 
 def _delivered(ingest: dict[str, typing.Any]) -> list[list[str]]:

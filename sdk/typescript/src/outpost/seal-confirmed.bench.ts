@@ -2,7 +2,6 @@ import { Redis } from "ioredis";
 import { once } from "node:events";
 import { afterAll, beforeAll, bench, describe } from "vitest";
 
-import { CONFIRM_SCRIPT } from "../redis";
 import {
   BUCKET_COUNTS,
   COLD_UNTIL,
@@ -13,7 +12,7 @@ import {
   pendingIds,
 } from "./benchmark";
 import { BUCKET_SIZE } from "./reducer";
-import { APPLY_SNAPSHOT_SCRIPT } from "./scripts";
+import { APPLY_SNAPSHOT_SCRIPT, CONFIRM_SCRIPT } from "./scripts";
 import { startRedisServer, type RedisServer } from "./testing";
 
 const OPTIONS = { warmupTime: 500, time: 2_000 };
@@ -62,21 +61,7 @@ describe("CONFIRM then APPLY_SNAPSHOT", () => {
             .multi()
             .hset(stateKey, ...fields)
             .hset(pendingKey, ...entries)
-            .evalsha(
-              confirmSha,
-              4,
-              "outpost:v1:outbox",
-              "outpost:v1:outbox",
-              stateKey,
-              pendingKey,
-              "",
-              "",
-              0,
-              0,
-              newestBucketStart,
-              ids.length,
-              ...ids,
-            )
+            .evalsha(confirmSha, 2, stateKey, pendingKey, "", newestBucketStart, ids.length, ...ids)
             .evalsha(applySnapshotSha, 1, stateKey, cutoff, cutoff + 1, 1000, 123456, 1, 999)
             .exec();
           for (const [error] of results ?? []) if (error) throw error;

@@ -52533,6 +52533,21 @@
               "397a17aa-15cf-4cb4-9333-18040203cf98"
             ]
           },
+          "external_benefit_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Benefit Id",
+            "description": "The external ID of the benefit concerned by this grant, if any. It stays the same across benefit versions.",
+            "examples": [
+              "premium_support"
+            ]
+          },
           "benefit_type": {
             "$ref": "#/components/schemas/BenefitType",
             "description": "The type of the benefit concerned by this grant.",
@@ -52583,6 +52598,7 @@
           "modified_at",
           "granted_at",
           "benefit_id",
+          "external_benefit_id",
           "benefit_type",
           "benefit_metadata",
           "properties"
@@ -52910,6 +52926,21 @@
               "d498a884-e2cd-4d3e-8002-f536468a8b22"
             ]
           },
+          "external_meter_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Meter Id",
+            "description": "The external ID of the meter, if any. It stays the same across meter versions.",
+            "examples": [
+              "tool_call"
+            ]
+          },
           "consumed_units": {
             "type": "number",
             "title": "Consumed Units",
@@ -52941,6 +52972,7 @@
           "created_at",
           "modified_at",
           "meter_id",
+          "external_meter_id",
           "consumed_units",
           "credited_units",
           "balance"
@@ -53167,6 +53199,21 @@
               "d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23"
             ]
           },
+          "external_product_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Product Id",
+            "description": "The external ID of the subscribed product, if any. It stays the same across product versions.",
+            "examples": [
+              "pro_monthly"
+            ]
+          },
           "discount_id": {
             "anyOf": [
               {
@@ -53241,6 +53288,7 @@
           "started_at",
           "ends_at",
           "product_id",
+          "external_product_id",
           "discount_id",
           "seats",
           "units",

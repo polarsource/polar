@@ -12,8 +12,6 @@ OnRejected = collections.abc.Callable[
 
 
 class Outbox(typing.Protocol):
-    """Delivery hooks may be replayed until the outbox retires the events."""
-
     on_ack: OnAck | None
     on_rejected: OnRejected | None
 

@@ -12,7 +12,9 @@ import type {
 } from "../../models";
 
 import {
+  CustomerPortalOrdersPay409Error,
   HTTPValidationError,
+  ManualRetryLimitExceeded,
   MissingInvoiceBillingDetails,
   OrderNotEligibleForInvoice,
   PaymentError,
@@ -218,9 +220,11 @@ export const payOrders = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
-   * @throws {PaymentError} Bad Request
+   * @throws {PaymentError} Payment failed.
    * @throws {ResourceNotFound} Order not found.
+   * @throws {CustomerPortalOrdersPay409Error} Order is not eligible for retry or payment is already in progress.
    * @throws {HTTPValidationError} Validation Error
+   * @throws {ManualRetryLimitExceeded} Manual retry limit exceeded.
    */
   return async (
     id: string,
@@ -240,9 +244,11 @@ export const payOrders = (client: ClientBase) => {
     );
     const response = await client.sendRequest(request, requestOptions);
     return client.parseResponse<CustomerOrder>(response, "json", {
-      400: PaymentError,
+      402: PaymentError,
       404: ResourceNotFound,
+      409: CustomerPortalOrdersPay409Error,
       422: HTTPValidationError,
+      429: ManualRetryLimitExceeded,
     });
   };
 };

@@ -10,7 +10,9 @@ from polar.base import (
     parse_response_json,
 )
 from polar.v2027_01.errors import (
+    CustomerPortalOrdersPay409Error,
     HTTPValidationError,
+    ManualRetryLimitExceeded,
     MissingInvoiceBillingDetails,
     OrderNotEligibleForInvoice,
     PaymentError,
@@ -319,9 +321,11 @@ class OrdersSync(SyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
-            PaymentError: Bad Request
+            PaymentError: Payment failed.
             ResourceNotFound: Order not found.
+            CustomerPortalOrdersPay409Error: Order is not eligible for retry or payment is already in progress.
             HTTPValidationError: Validation Error
+            ManualRetryLimitExceeded: Manual retry limit exceeded.
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
@@ -339,9 +343,11 @@ class OrdersSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
-            400: PaymentError,
+            402: PaymentError,
             404: ResourceNotFound,
+            409: CustomerPortalOrdersPay409Error,
             422: HTTPValidationError,
+            429: ManualRetryLimitExceeded,
         }
         return parse_response_json(response, CustomerOrder, method_errors)
 
@@ -753,9 +759,11 @@ class OrdersAsync(AsyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
-            PaymentError: Bad Request
+            PaymentError: Payment failed.
             ResourceNotFound: Order not found.
+            CustomerPortalOrdersPay409Error: Order is not eligible for retry or payment is already in progress.
             HTTPValidationError: Validation Error
+            ManualRetryLimitExceeded: Manual retry limit exceeded.
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
@@ -773,9 +781,11 @@ class OrdersAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
-            400: PaymentError,
+            402: PaymentError,
             404: ResourceNotFound,
+            409: CustomerPortalOrdersPay409Error,
             422: HTTPValidationError,
+            429: ManualRetryLimitExceeded,
         }
         return parse_response_json(response, CustomerOrder, method_errors)
 

@@ -4488,15 +4488,15 @@
               }
             }
           },
-          "400": {
+          "402": {
+            "description": "Payment failed.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PaymentError"
                 }
               }
-            },
-            "description": "Bad Request"
+            }
           },
           "404": {
             "description": "Order not found.",
@@ -4504,6 +4504,34 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Order is not eligible for retry or payment is already in progress.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/OrderNotEligibleForRetry"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PaymentAlreadyInProgress"
+                    }
+                  ],
+                  "title": "Response 409 Customer Portal:Orders:Pay"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Manual retry limit exceeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManualRetryLimitExceeded"
                 }
               }
             }
@@ -62341,6 +62369,28 @@
         ],
         "title": "ListResource[WebhookEndpoint]"
       },
+      "ManualRetryLimitExceeded": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "ManualRetryLimitExceeded",
+            "title": "Error",
+            "examples": [
+              "ManualRetryLimitExceeded"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "ManualRetryLimitExceeded"
+      },
       "Member": {
         "properties": {
           "id": {
@@ -67293,6 +67343,28 @@
         ],
         "title": "OrderNotEligibleForInvoice"
       },
+      "OrderNotEligibleForRetry": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "OrderNotEligibleForRetry",
+            "title": "Error",
+            "examples": [
+              "OrderNotEligibleForRetry"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "OrderNotEligibleForRetry"
+      },
       "OrderPaidEvent": {
         "properties": {
           "id": {
@@ -71590,6 +71662,28 @@
           "detail"
         ],
         "title": "PaymentActionRequired"
+      },
+      "PaymentAlreadyInProgress": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "PaymentAlreadyInProgress",
+            "title": "Error",
+            "examples": [
+              "PaymentAlreadyInProgress"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "PaymentAlreadyInProgress"
       },
       "PaymentError": {
         "properties": {

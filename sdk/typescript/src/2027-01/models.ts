@@ -16719,6 +16719,20 @@ export interface ListResourceWithCursorPaginationEvent {
 }
 
 /**
+ * ManualRetryLimitExceeded
+ */
+export interface ManualRetryLimitExceeded {
+  /**
+   * error
+   */
+  error: "ManualRetryLimitExceeded";
+  /**
+   * detail
+   */
+  detail: string;
+}
+
+/**
  * A member of a customer.
  */
 export interface Member {
@@ -18575,6 +18589,20 @@ export interface OrderNotEligibleForInvoice {
 }
 
 /**
+ * OrderNotEligibleForRetry
+ */
+export interface OrderNotEligibleForRetry {
+  /**
+   * error
+   */
+  error: "OrderNotEligibleForRetry";
+  /**
+   * detail
+   */
+  detail: string;
+}
+
+/**
  * An event created by Polar when an order is paid.
  */
 export interface OrderPaidEvent {
@@ -19907,6 +19935,20 @@ export interface PaymentActionRequired {
    * error
    */
   error: "PaymentActionRequired";
+  /**
+   * detail
+   */
+  detail: string;
+}
+
+/**
+ * PaymentAlreadyInProgress
+ */
+export interface PaymentAlreadyInProgress {
+  /**
+   * error
+   */
+  error: "PaymentAlreadyInProgress";
   /**
    * detail
    */

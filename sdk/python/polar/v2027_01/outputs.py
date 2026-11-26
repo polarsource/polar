@@ -7561,6 +7561,13 @@ class ListResourceWithCursorPaginationEvent:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class ManualRetryLimitExceeded:
+    error: typing.Literal["ManualRetryLimitExceeded"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class Member:
     """A member of a customer."""
 
@@ -8480,6 +8487,13 @@ class OrderNotEligibleForInvoice:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class OrderNotEligibleForRetry:
+    error: typing.Literal["OrderNotEligibleForRetry"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class OrderPaidEvent:
     """An event created by Polar when an order is paid."""
 
@@ -9171,6 +9185,13 @@ class PauseResumeNotAllowed:
 @dataclasses.dataclass(kw_only=True, slots=True)
 class PaymentActionRequired:
     error: typing.Literal["PaymentActionRequired"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class PaymentAlreadyInProgress:
+    error: typing.Literal["PaymentAlreadyInProgress"]
 
     detail: str
 

@@ -18,6 +18,7 @@ import type {
   ExpiredCheckoutError as ExpiredCheckoutErrorModel,
   HTTPValidationError as HTTPValidationErrorModel,
   InactiveSubscription as InactiveSubscriptionModel,
+  ManualRetryLimitExceeded as ManualRetryLimitExceededModel,
   MissingBillingDetails as MissingBillingDetailsModel,
   MissingInvoiceBillingDetails as MissingInvoiceBillingDetailsModel,
   NotPermitted as NotPermittedModel,
@@ -25,9 +26,11 @@ import type {
   OffSessionChargesNotEnabled as OffSessionChargesNotEnabledModel,
   OrderNotDraft as OrderNotDraftModel,
   OrderNotEligibleForInvoice as OrderNotEligibleForInvoiceModel,
+  OrderNotEligibleForRetry as OrderNotEligibleForRetryModel,
   OrganizationNotReadyForPayments as OrganizationNotReadyForPaymentsModel,
   PauseResumeNotAllowed as PauseResumeNotAllowedModel,
   PaymentActionRequired as PaymentActionRequiredModel,
+  PaymentAlreadyInProgress as PaymentAlreadyInProgressModel,
   PaymentError as PaymentErrorModel,
   PaymentFailed as PaymentFailedModel,
   PaymentMethodInUseByActiveSubscription as PaymentMethodInUseByActiveSubscriptionModel,
@@ -532,15 +535,41 @@ export class CustomerPortalMembersUpdateMember404Error extends PolarClientError<
   }
 }
 /**
- * Bad Request
+ * Payment failed.
  */
 export class PaymentError extends PolarClientError<PaymentErrorModel> {
   constructor(
-    public readonly statusCode: 400,
+    public readonly statusCode: 402,
     public readonly error: PaymentErrorModel,
   ) {
     super(statusCode, error);
     this.name = "PaymentError";
+  }
+}
+/**
+ * Order is not eligible for retry or payment is already in progress.
+ */
+export class CustomerPortalOrdersPay409Error extends PolarClientError<
+  OrderNotEligibleForRetryModel | PaymentAlreadyInProgressModel
+> {
+  constructor(
+    public readonly statusCode: 409,
+    public readonly error: OrderNotEligibleForRetryModel | PaymentAlreadyInProgressModel,
+  ) {
+    super(statusCode, error);
+    this.name = "CustomerPortalOrdersPay409Error";
+  }
+}
+/**
+ * Manual retry limit exceeded.
+ */
+export class ManualRetryLimitExceeded extends PolarClientError<ManualRetryLimitExceededModel> {
+  constructor(
+    public readonly statusCode: 429,
+    public readonly error: ManualRetryLimitExceededModel,
+  ) {
+    super(statusCode, error);
+    this.name = "ManualRetryLimitExceeded";
   }
 }
 /**

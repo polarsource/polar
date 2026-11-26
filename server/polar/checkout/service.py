@@ -1779,6 +1779,18 @@ class CheckoutService:
             checkout = await repository.get_by_client_secret(
                 client_secret, options=repository.get_eager_options()
             )
+        return self._check_client_access(checkout)
+
+    async def get_public_by_client_secret(
+        self, session: AsyncSession, client_secret: str
+    ) -> Checkout:
+        repository = CheckoutRepository.from_session(session)
+        checkout = await repository.get_by_client_secret(
+            client_secret, options=repository.get_public_eager_options()
+        )
+        return self._check_client_access(checkout)
+
+    def _check_client_access(self, checkout: Checkout | None) -> Checkout:
         if checkout is None:
             raise ResourceNotFound()
 

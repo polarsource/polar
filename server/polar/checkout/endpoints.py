@@ -289,7 +289,7 @@ async def client_get(
     session: AsyncSession = Depends(get_db_session),
 ) -> Checkout:
     """Get a checkout session by client secret."""
-    return await checkout_service.get_by_client_secret(session, client_secret)
+    return await checkout_service.get_public_by_client_secret(session, client_secret)
 
 
 @inner_router.patch(

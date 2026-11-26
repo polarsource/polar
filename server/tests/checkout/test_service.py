@@ -23,6 +23,7 @@ from polar.checkout.schemas import (
     CheckoutPriceCreate,
     CheckoutProductCreate,
     CheckoutProductsCreate,
+    CheckoutPublic,
     CheckoutUpdate,
     CheckoutUpdatePublic,
 )
@@ -58,6 +59,7 @@ from polar.kit.address import Address, AddressInput, CountryAlpha2
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
+from polar.kit.versioning import api_version_context
 from polar.models import (
     Account,
     Checkout,
@@ -89,6 +91,7 @@ from polar.models.product_price import (
     ProductPriceCustom,
     ProductPriceFixed,
     ProductPriceSeatUnit,
+    ProductPriceSource,
     ProductPriceUnit,
 )
 from polar.models.subscription import SubscriptionStatus
@@ -116,6 +119,7 @@ from polar.tax.calculation import (
 )
 from polar.tax.tax_id import TaxIDFormat
 from polar.trial_redemption.repository import TrialRedemptionRepository
+from polar.version import VERSIONS
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.events import get_all_by_name
@@ -335,6 +339,83 @@ async def checkout_custom_fields(
     save_fixture: SaveFixture, product_custom_fields: Product
 ) -> Checkout:
     return await create_checkout(save_fixture, products=[product_custom_fields])
+
+
+@pytest.fixture
+async def checkout_ad_hoc_prices(
+    save_fixture: SaveFixture, product_one_time: Product
+) -> Checkout:
+    checkout = await create_checkout(save_fixture, products=[product_one_time])
+    ad_hoc_price = ProductPriceFixed(
+        price_amount=4200,
+        price_currency="usd",
+        product=product_one_time,
+        source=ProductPriceSource.ad_hoc,
+    )
+    checkout.checkout_products[0].ad_hoc_prices.append(ad_hoc_price)
+    await save_fixture(checkout)
+    checkout.product_price = ad_hoc_price
+    checkout.amount = 4200
+    checkout.net_amount = 4200
+    await save_fixture(checkout)
+    return checkout
+
+
+@pytest.fixture
+async def checkout_discount_fixed(
+    save_fixture: SaveFixture, product: Product, discount_fixed_once: Discount
+) -> Checkout:
+    return await create_checkout(
+        save_fixture, products=[product], discount=discount_fixed_once
+    )
+
+
+@pytest.fixture
+async def checkout_trial(
+    save_fixture: SaveFixture, product_recurring_trial: Product
+) -> Checkout:
+    return await create_checkout(
+        save_fixture,
+        products=[product_recurring_trial],
+        trial_interval=TrialInterval.month,
+        trial_interval_count=1,
+    )
+
+
+@pytest.fixture
+async def checkout_metered(
+    save_fixture: SaveFixture, product_recurring_fixed_and_metered: Product
+) -> Checkout:
+    return await create_checkout(
+        save_fixture, products=[product_recurring_fixed_and_metered]
+    )
+
+
+@pytest.fixture
+async def checkout_business_customer(
+    save_fixture: SaveFixture, product: Product, customer: Customer
+) -> Checkout:
+    checkout = await create_checkout(
+        save_fixture,
+        products=[product],
+        customer=customer,
+        customer_billing_address=Address(
+            line1="1 Rue de Rivoli",
+            postal_code="75001",
+            city="Paris",
+            country=CountryAlpha2("FR"),
+        ),
+    )
+    checkout.is_business_customer = True
+    checkout.customer_billing_name = "Polar SAS"
+    checkout.customer_tax_id = ("FR61954506077", TaxIDFormat.eu_vat)
+    await save_fixture(checkout)
+    return checkout
+
+
+@pytest.fixture
+def checkout_parametrization_helper(request: pytest.FixtureRequest) -> Checkout:
+    return request.getfixturevalue(request.param)
 
 
 @pytest.fixture
@@ -3501,6 +3582,47 @@ class TestGetByClientSecret:
             await checkout_service.get_by_client_secret(
                 session, checkout_one_time_fixed.client_secret
             )
+
+
+@pytest.mark.anyio
+class TestGetPublicByClientSecret:
+    @pytest.mark.parametrize(
+        "checkout_parametrization_helper",
+        [
+            "checkout_one_time_fixed",
+            "checkout_one_time_custom",
+            "checkout_one_time_free",
+            "checkout_recurring_free",
+            "checkout_multiple_products",
+            "checkout_ad_hoc_prices",
+            "checkout_discount_fixed",
+            "checkout_discount_percentage_100_forever",
+            "checkout_trial",
+            "checkout_custom_fields",
+            "checkout_confirmed_recurring_upgrade",
+            "checkout_business_customer",
+            "checkout_metered",
+            "checkout_seat_based",
+        ],
+        indirect=True,
+    )
+    async def test_serializes_like_full_load(
+        self, session: AsyncSession, checkout_parametrization_helper: Checkout
+    ) -> None:
+        client_secret = checkout_parametrization_helper.client_secret
+
+        session.expunge_all()
+        full = CheckoutPublic.model_validate(
+            await checkout_service.get_by_client_secret(session, client_secret)
+        )
+        session.expunge_all()
+        public = CheckoutPublic.model_validate(
+            await checkout_service.get_public_by_client_secret(session, client_secret)
+        )
+
+        for version in VERSIONS:
+            with api_version_context(version):
+                assert public.model_dump(mode="json") == full.model_dump(mode="json")
 
 
 @pytest.mark.anyio

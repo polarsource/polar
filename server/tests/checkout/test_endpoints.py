@@ -1,3 +1,4 @@
+import typing
 import uuid
 from datetime import timedelta
 from types import SimpleNamespace
@@ -6,6 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
+from sqlalchemy import event as sqlalchemy_event
 
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
@@ -1247,6 +1249,22 @@ class TestClientGet:
 
         assert response.status_code == 410
 
+    async def test_blocked_organization(
+        self,
+        api_prefix: str,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        checkout_open: Checkout,
+    ) -> None:
+        checkout_open.organization.set_status(OrganizationStatus.BLOCKED)
+        await save_fixture(checkout_open.organization)
+
+        response = await client.get(
+            f"{api_prefix}/client/{checkout_open.client_secret}"
+        )
+
+        assert response.status_code == 403
+
     async def test_valid(
         self, api_prefix: str, client: AsyncClient, checkout_open: Checkout
     ) -> None:
@@ -1259,6 +1277,34 @@ class TestClientGet:
         json = response.json()
         assert json["id"] == str(checkout_open.id)
         assert "metadata" not in json
+
+    async def test_query_count(
+        self,
+        api_prefix: str,
+        session: AsyncSession,
+        client: AsyncClient,
+        checkout_multiple_products: Checkout,
+    ) -> None:
+        statements = 0
+
+        def count_statement(*args: typing.Any) -> None:
+            nonlocal statements
+            statements += 1
+
+        bind = session.sync_session.bind
+        assert bind is not None
+        sqlalchemy_event.listen(bind, "before_cursor_execute", count_statement)
+        try:
+            response = await client.get(
+                f"{api_prefix}/client/{checkout_multiple_products.client_secret}"
+            )
+        finally:
+            sqlalchemy_event.remove(bind, "before_cursor_execute", count_statement)
+
+        assert response.status_code == 200
+        # checkout, custom fields, checkout products with their ad-hoc prices,
+        # then medias, prices and benefits once for all products
+        assert statements == 6
 
     @pytest.mark.api_version(V2027_01)
     async def test_no_product_price_id_2027_01(

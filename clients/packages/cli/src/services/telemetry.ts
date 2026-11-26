@@ -13,6 +13,7 @@ import {
 } from 'effect'
 import { HttpClient, HttpClientRequest } from 'effect/http'
 import { UsedEnvironments } from '@/services/api'
+import { HiddenNames, Usage } from '@/utils/usage'
 import { VERSION } from '@/version'
 
 const OPT_OUT_VARIABLE = 'POLAR_CLI_TELEMETRY_OPTOUT'
@@ -144,6 +145,13 @@ export const redact = (text: string) =>
     )
     .slice(0, 200)
 
+const NAME_MINIMUM = 3
+
+const withoutNames = (message: string, names: ReadonlySet<string>) =>
+  [...names]
+    .filter((name) => name.length >= NAME_MINIMUM)
+    .reduce((text, name) => text.replaceAll(name, '<organization>'), message)
+
 const field = (value: unknown, key: string): unknown =>
   typeof value === 'object' && value !== null && key in value
     ? (value as Record<string, unknown>)[key]
@@ -265,6 +273,8 @@ export const layer = Layer.effect(
     const env = yield* Environment
     const build = yield* Build
     const used = yield* UsedEnvironments
+    const usage = yield* Usage
+    const hidden = yield* HiddenNames
     const projectKey = env[PROJECT_KEY_VARIABLE] || PROJECT_KEY
     const active =
       !isOptedOut(env) &&
@@ -282,11 +292,15 @@ export const layer = Layer.effect(
             distinct_id: `cli:${id}`,
             timestamp: new Date().toISOString(),
             properties: {
+              ...usage,
               command: result.command.join(' '),
               flags: result.flags,
               outcome: result.outcome,
               error: result.error ?? null,
-              error_message: result.errorMessage ?? null,
+              error_message:
+                result.errorMessage === undefined
+                  ? null
+                  : withoutNames(result.errorMessage, hidden),
               error_code: result.errorCode ?? null,
               environment: [...used].sort().join(',') || null,
               duration_ms: Math.round(result.durationMs),

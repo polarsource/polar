@@ -35,6 +35,7 @@ import { BillingConfig } from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
 import { type Progress, withProgress } from '@/utils/progress'
 import { interactive, keypress } from '@/utils/prompt'
+import { draftUsage } from '@/utils/billing-config/usage'
 import * as ui from '@/utils/ui'
 
 const confirmed = confirm.pipe(Flag.withAlias('aladåb'))
@@ -214,6 +215,7 @@ const execute = (
       organization,
       result,
       revertedDraft,
+      conflicts: conflicts.length,
     })
     if (errors(plan.issues) > 0) {
       yield* say([
@@ -331,5 +333,6 @@ export const draft = Command.make('draft', {
       }
       return undefined
     },
+    telemetry: draftUsage,
   }),
 )

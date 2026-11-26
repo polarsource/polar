@@ -32,6 +32,7 @@ import {
 } from '@/utils/flags'
 import { Output } from '@/utils/output'
 import { withProgress } from '@/utils/progress'
+import { initUsage } from '@/utils/billing-config/usage'
 import * as ui from '@/utils/ui'
 
 const file = Argument.String('file').pipe(
@@ -241,5 +242,6 @@ export const init = Command.make('init', {
             hint: 'Pass --confirm to use the suggestions, or --external-id <id>=<external ID> for each.',
           })
         : undefined,
+    telemetry: initUsage,
   }),
 )

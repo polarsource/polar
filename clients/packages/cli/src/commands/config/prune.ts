@@ -17,6 +17,7 @@ import { confirm as confirmed, configFile as file, org } from '@/utils/flags'
 import { Output } from '@/utils/output'
 import { withProgress } from '@/utils/progress'
 import { interactive } from '@/utils/prompt'
+import { pruneUsage } from '@/utils/billing-config/usage'
 import * as ui from '@/utils/ui'
 
 const reason = (entry: PruneEntry) =>
@@ -217,5 +218,6 @@ export const prune = Command.make('prune', { file, org, confirmed }).pipe(
       entries,
       removed,
     }),
+    telemetry: pruneUsage,
   }),
 )

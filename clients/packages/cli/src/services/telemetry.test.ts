@@ -25,6 +25,7 @@ import {
   type TelemetryEvent,
 } from '@/services/telemetry'
 import { fakeHttp } from '@/utils/test-utils/http'
+import { HiddenNames, Usage, type UsageValue } from '@/utils/usage'
 
 const outcome: CommandOutcome = {
   command: ['polar', 'auth', 'login'],
@@ -38,7 +39,12 @@ type Env = Record<string, string>
 const telemetry = (
   env: Env = { POLAR_CLI_POSTHOG_KEY: 'phc_test' },
   build: BuildKind = 'release',
-  { writable = true, used = new Set<PolarEnvironment>() } = {},
+  {
+    writable = true,
+    used = new Set<PolarEnvironment>(),
+    usage = {} as Record<string, UsageValue>,
+    hidden = new Set<string>(),
+  } = {},
 ) => {
   const files = new Map<string, string>()
   const events: TelemetryEvent[] = []
@@ -77,6 +83,8 @@ const telemetry = (
         Layer.succeed(Environment, env),
         Layer.succeed(Build, build),
         Layer.succeed(UsedEnvironments, used),
+        Layer.succeed(Usage, usage),
+        Layer.succeed(HiddenNames, hidden),
       ),
     ),
   )
@@ -701,5 +709,35 @@ describe('send', () => {
     await expect(run()).resolves.toBeUndefined()
     http.routes[`POST ${posthog}`] = () => new Response(null, { status: 500 })
     await expect(run()).resolves.toBeUndefined()
+  })
+})
+
+describe('command details', () => {
+  test('adds what the command reported without replacing the standard properties', async () => {
+    const { record, events } = telemetry(undefined, 'release', {
+      usage: { config_status: 'conflict', config_conflicts: 1, command: 'x' },
+    })
+    await record()
+    expect(events[0]!.properties).toMatchObject({
+      command: 'polar auth login',
+      config_status: 'conflict',
+      config_conflicts: 1,
+    })
+  })
+
+  test('keeps organization names out of the error message', async () => {
+    const { record, events } = telemetry(undefined, 'release', {
+      hidden: new Set(['Acme Inc', 'ab']),
+    })
+    await record({
+      ...outcome,
+      outcome: 'failure',
+      error: 'BillingConfigError',
+      errorMessage:
+        'The draft of Acme Inc (sandbox) has changes about lab work',
+    })
+    expect(events[0]!.properties['error_message']).toBe(
+      'The draft of <organization> (sandbox) has changes about lab work',
+    )
   })
 })

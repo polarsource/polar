@@ -41735,6 +41735,12 @@ export interface components {
        */
       product_id?: string
       /**
+       * External Product Id
+       * @description Update subscription to another product, referenced by its ID in your system. Resolves to the current version of the product. Can't be combined with `product_id`.
+       * @example ext_1337
+       */
+      external_product_id?: string
+      /**
        * Proration Behavior
        * @description Determine how to handle the proration billing. If not provided, will use the default organization setting.
        */

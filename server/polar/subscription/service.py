@@ -1971,8 +1971,7 @@ class SubscriptionService:
             else None
         )
         if proration_behavior == SubscriptionProrationBehavior.reset and (
-            not isinstance(update, SubscriptionUpdateBase)
-            or update.product_id is not MISSING
+            not isinstance(update, SubscriptionUpdateBase) or update.changes_product
         ):
             organization = subscription.organization
             if not organization.feature_settings.get(
@@ -1990,12 +1989,17 @@ class SubscriptionService:
                 )
 
         if isinstance(update, SubscriptionUpdateBase):
-            if update.product_id is not MISSING:
+            if update.changes_product:
                 subscription = await self.update_product(
                     session,
                     ctx,
                     subscription,
-                    product_id=update.product_id,
+                    product_id=None
+                    if update.product_id is MISSING
+                    else update.product_id,
+                    external_product_id=None
+                    if update.external_product_id is MISSING
+                    else update.external_product_id,
                     proration_behavior=proration_behavior,
                     discount=update.discount,
                     trial_end=None if update.trial_end is MISSING else update.trial_end,
@@ -2101,7 +2105,8 @@ class SubscriptionService:
         session: AsyncSession,
         subscription: Subscription,
         *,
-        product_id: uuid.UUID,
+        product_id: uuid.UUID | None = None,
+        external_product_id: str | None = None,
         allowed_visibilities: frozenset[Visibility] = frozenset(Visibility),
     ) -> tuple[Product, PriceSet]:
         if subscription.revoked or subscription.cancel_at_period_end:
@@ -2111,23 +2116,34 @@ class SubscriptionService:
             raise InactiveSubscription(subscription)
 
         product_repository = ProductRepository.from_session(session)
-        product = await product_repository.get_by_id_and_organization(
-            product_id,
-            subscription.product.organization_id,
-            options=(
-                undefer(Product.is_deletable),
-                *product_repository.get_eager_options(),
-            ),
+        options = (
+            undefer(Product.is_deletable),
+            *product_repository.get_eager_options(),
         )
+        loc: str
+        input_value: uuid.UUID | str
+        if external_product_id is not None:
+            loc, input_value = "external_product_id", external_product_id
+            product = await product_repository.get_by_external_id_and_organization(
+                external_product_id,
+                subscription.product.organization_id,
+                options=options,
+            )
+        else:
+            assert product_id is not None
+            loc, input_value = "product_id", product_id
+            product = await product_repository.get_by_id_and_organization(
+                product_id, subscription.product.organization_id, options=options
+            )
 
         if product is None:
             raise PolarRequestValidationError(
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "product_id"),
+                        "loc": ("body", loc),
                         "msg": "Product does not exist.",
-                        "input": product_id,
+                        "input": input_value,
                     }
                 ]
             )
@@ -2137,9 +2153,9 @@ class SubscriptionService:
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "product_id"),
+                        "loc": ("body", loc),
                         "msg": "Product is archived.",
-                        "input": product_id,
+                        "input": input_value,
                     }
                 ]
             )
@@ -2149,9 +2165,9 @@ class SubscriptionService:
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "product_id"),
+                        "loc": ("body", loc),
                         "msg": "Product is no longer sold. Use the current version.",
-                        "input": product_id,
+                        "input": input_value,
                     }
                 ]
             )
@@ -2161,9 +2177,9 @@ class SubscriptionService:
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "product_id"),
+                        "loc": ("body", loc),
                         "msg": "Product visibility is not allowed.",
-                        "input": product_id,
+                        "input": input_value,
                     }
                 ]
             )
@@ -2173,9 +2189,9 @@ class SubscriptionService:
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "product_id"),
+                        "loc": ("body", loc),
                         "msg": "Product is not recurring.",
-                        "input": product_id,
+                        "input": input_value,
                     }
                 ]
             )
@@ -2187,9 +2203,9 @@ class SubscriptionService:
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "product_id"),
+                        "loc": ("body", loc),
                         "msg": "This product doesn't have a price for the subscription currency.",
-                        "input": product_id,
+                        "input": input_value,
                     }
                 ]
             ) from e
@@ -2200,9 +2216,9 @@ class SubscriptionService:
                     [
                         {
                             "type": "value_error",
-                            "loc": ("body", "product_id"),
+                            "loc": ("body", loc),
                             "msg": "Can't update to a product with custom prices.",
-                            "input": product_id,
+                            "input": input_value,
                         }
                     ]
                 )
@@ -2215,9 +2231,9 @@ class SubscriptionService:
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "product_id"),
+                        "loc": ("body", loc),
                         "msg": "Can't switch from a seat-based to a non-seat-based product.",
-                        "input": product_id,
+                        "input": input_value,
                     }
                 ]
             )
@@ -2230,9 +2246,9 @@ class SubscriptionService:
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "product_id"),
+                        "loc": ("body", loc),
                         "msg": "Can't switch from a unit-based to a non-unit-based product.",
-                        "input": product_id,
+                        "input": input_value,
                     }
                 ]
             )
@@ -2332,7 +2348,8 @@ class SubscriptionService:
         ctx: SubscriptionUpdateContext,
         subscription: Subscription,
         *,
-        product_id: uuid.UUID,
+        product_id: uuid.UUID | None = None,
+        external_product_id: str | None = None,
         proration_behavior: ProrationBehaviorSetting | None = None,
         discount: uuid.UUID | Literal["unset"] | None = None,
         trial_end: datetime | Literal["now"] | None = None,
@@ -2345,6 +2362,7 @@ class SubscriptionService:
             session,
             subscription,
             product_id=product_id,
+            external_product_id=external_product_id,
             allowed_visibilities=allowed_visibilities,
         )
 
@@ -2396,10 +2414,10 @@ class SubscriptionService:
             )
 
             is_initial_seat_transition = self._promote_seats_for_seat_transition(
-                subscription, currency_prices, proration_behavior, product_id
+                subscription, currency_prices, proration_behavior, product.id
             )
             self._promote_units_for_unit_transition(
-                subscription, currency_prices, proration_behavior, product_id
+                subscription, currency_prices, proration_behavior, product.id
             )
 
             subscription_update_repository = SubscriptionUpdateRepository.from_session(

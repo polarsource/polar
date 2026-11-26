@@ -1,6 +1,6 @@
 import inspect
 from datetime import datetime
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, Self
 
 from fastapi import Path
 from pydantic import (
@@ -13,6 +13,7 @@ from pydantic import (
     Field,
     FutureDatetime,
     Tag,
+    model_validator,
 )
 from pydantic.json_schema import SkipJsonSchema
 
@@ -39,7 +40,12 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
-from polar.kit.versioning import Omissible, QuerySchema, Version, VersionedJsonSchema
+from polar.kit.versioning import (
+    Omissible,
+    QuerySchema,
+    Version,
+    VersionedJsonSchema,
+)
 from polar.meter.schemas import Meter
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.openapi import destructive_when_equals
@@ -454,6 +460,18 @@ class SubscriptionUpdateBase(MetadataInputMixin, Schema):
         description="Update subscription to another product.",
         examples=[PRODUCT_ID_EXAMPLE],
     )
+    external_product_id: Annotated[
+        Omissible[ExternalID],
+        Version(starting_from=V2027_01),
+        Field(
+            description=(
+                "Update subscription to another product, referenced by its ID "
+                "in your system. Resolves to the current version of the product. "
+                "Can't be combined with `product_id`."
+            ),
+            examples=["ext_1337"],
+        ),
+    ] = MISSING
     proration_behavior: Omissible[ProrationBehaviorSetting] = Field(
         default=MISSING,
         description=(
@@ -479,9 +497,19 @@ class SubscriptionUpdateBase(MetadataInputMixin, Schema):
         ),
     )
 
+    @model_validator(mode="after")
+    def _validate_product_reference(self) -> Self:
+        if self.product_id is not MISSING and self.external_product_id is not MISSING:
+            raise ValueError("product_id and external_product_id can't be set together")
+        return self
+
     @property
     def has_metadata(self) -> bool:
         return "metadata" in self.model_fields_set
+
+    @property
+    def changes_product(self) -> bool:
+        return self.product_id is not MISSING or self.external_product_id is not MISSING
 
     @property
     def discount(self) -> UUID4 | Literal["unset"] | None:

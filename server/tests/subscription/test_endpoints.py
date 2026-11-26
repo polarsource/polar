@@ -833,6 +833,87 @@ class TestSubscriptionProductUpdate:
         updated_subscription = response.json()
         assert updated_subscription["product"]["id"] == str(product_second.id)
 
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_valid_external_product_id(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+            is_current=False,
+        )
+        current = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={"external_product_id": "pro"},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["product"]["id"] == str(current.id)
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_unknown_external_product_id(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={"external_product_id": "unknown"},
+        )
+
+        assert response.status_code == 422
+        assert response.json()["detail"][0]["loc"] == ["body", "external_product_id"]
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_product_id_and_external_product_id(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        user_organization: UserOrganization,
+        product: Product,
+        product_second: Product,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={"product_id": str(product_second.id), "external_product_id": "pro"},
+        )
+
+        assert response.status_code == 422
+        assert "can't be set together" in response.json()["detail"][0]["msg"]
+
     @pytest.mark.auth
     async def test_seat_to_seat_below_target_minimum_returns_422_on_product_id(
         self,

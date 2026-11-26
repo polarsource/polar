@@ -8810,11 +8810,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.subscriptions.update(\n    '00000000-0000-4000-8000-000000000000',\n    product_id='d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23',\n)\nprint(response)\n"
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.subscriptions.update(\n    '00000000-0000-4000-8000-000000000000',\n    product_id='d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23',\n    external_product_id='ext_1337',\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.subscriptions.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"product_id\": \"d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23\"\n  },\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.subscriptions.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"product_id\": \"d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23\",\n    \"external_product_id\": \"ext_1337\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
       },
@@ -80336,6 +80336,15 @@
             "description": "Update subscription to another product.",
             "examples": [
               "d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23"
+            ]
+          },
+          "external_product_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "External Product Id",
+            "description": "Update subscription to another product, referenced by its ID in your system. Resolves to the current version of the product. Can't be combined with `product_id`.",
+            "examples": [
+              "ext_1337"
             ]
           },
           "proration_behavior": {

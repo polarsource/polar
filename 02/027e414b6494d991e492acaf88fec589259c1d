@@ -1,0 +1,21 @@
+server/tests/merchant_migration/test_canonical.py
+  s_2ee8557c758dc1::t_b24808a060b53f 448-451
+server/tests/merchant_migration/test_service.py
+  s_2ee8557c758dc1::t_e0129f999ce2ad 138,2356
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "02027e414b6494d991e492acaf88fec589259c1d",
+  "prompts": {},
+  "sessions": {
+    "s_2ee8557c758dc1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a7b50312-91ef-4d86-b2dc-efa98b4090b8",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

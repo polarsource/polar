@@ -12,7 +12,7 @@ from polar.models import Customer, Order, Organization, Product, User, UserOrgan
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderStatus
 from polar.order.service import PaymentFailed, PaymentFailedReason
-from polar.version import V2027_01
+from polar.version import V2026_10, V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -925,6 +925,131 @@ class TestCreateOrder:
         assert body["invoice_number"] is None
         assert body["customer_id"] == str(customer.id)
         assert body["product_id"] == str(product_one_time.id)
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_write}))
+    async def test_valid_external_ids(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        off_session_organization: Organization,
+        customer_external_id: Customer,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=off_session_organization,
+            recurring_interval=None,
+            external_id="topup",
+            is_current=False,
+        )
+        current = await create_product(
+            save_fixture,
+            organization=off_session_organization,
+            recurring_interval=None,
+            external_id="topup",
+        )
+
+        response = await client.post(
+            "/v1/orders/",
+            json={
+                "organization_id": str(off_session_organization.id),
+                "external_customer_id": customer_external_id.external_id,
+                "external_product_id": "topup",
+            },
+        )
+
+        assert response.status_code == 201
+        body = response.json()
+        assert body["status"] == OrderStatus.draft
+        assert body["customer_id"] == str(customer_external_id.id)
+        assert body["product_id"] == str(current.id)
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_write}))
+    async def test_unknown_external_ids(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+        off_session_organization: Organization,
+        product_one_time: Product,
+        customer_external_id: Customer,
+    ) -> None:
+        product_one_time.external_id = "topup"
+        await save_fixture(product_one_time)
+
+        unknown_product = await client.post(
+            "/v1/orders/",
+            json={
+                "organization_id": str(off_session_organization.id),
+                "external_customer_id": customer_external_id.external_id,
+                "external_product_id": "unknown",
+            },
+        )
+        unknown_customer = await client.post(
+            "/v1/orders/",
+            json={
+                "organization_id": str(off_session_organization.id),
+                "external_customer_id": "unknown",
+                "external_product_id": "topup",
+            },
+        )
+
+        assert unknown_product.status_code == 422
+        assert unknown_product.json()["detail"][0]["loc"] == [
+            "body",
+            "external_product_id",
+        ]
+        assert unknown_customer.status_code == 422
+        assert unknown_customer.json()["detail"][0]["loc"] == [
+            "body",
+            "external_customer_id",
+        ]
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_write}))
+    async def test_product_id_with_external_customer_id(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        off_session_organization: Organization,
+        product_one_time: Product,
+        customer_external_id: Customer,
+    ) -> None:
+        response = await client.post(
+            "/v1/orders/",
+            json={
+                "organization_id": str(off_session_organization.id),
+                "external_customer_id": customer_external_id.external_id,
+                "product_id": str(product_one_time.id),
+            },
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.api_version(V2026_10)
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_write}))
+    async def test_external_ids_before_2027_01(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        off_session_organization: Organization,
+        customer_external_id: Customer,
+    ) -> None:
+        response = await client.post(
+            "/v1/orders/",
+            json={
+                "organization_id": str(off_session_organization.id),
+                "external_customer_id": customer_external_id.external_id,
+                "external_product_id": "topup",
+            },
+        )
+
+        assert response.status_code == 422
+        assert {
+            (error["type"], tuple(error["loc"])) for error in response.json()["detail"]
+        } >= {("missing", ("body", "customer_id")), ("missing", ("body", "product_id"))}
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_write}))
     async def test_missing_organization_id(

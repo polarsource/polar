@@ -13,6 +13,7 @@ from polar.exceptions import ResourceNotFound
 from polar.kit.csv import CSVStreamingResponse
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
+from polar.kit.versioning import version
 from polar.models import Order
 from polar.openapi import APITag
 from polar.organization.resolver import get_payload_organization
@@ -23,6 +24,7 @@ from polar.postgres import (
     get_db_session,
 )
 from polar.routing import APIRouter
+from polar.version import V2027_01
 
 from . import auth, sorting
 from .export import (
@@ -33,6 +35,7 @@ from .export import (
 from .schemas import Order as OrderSchema
 from .schemas import (
     OrderCreate,
+    OrderCreateV2027_01,
     OrderFinalize,
     OrderID,
     OrderInvoice,
@@ -186,6 +189,43 @@ async def create(
     Create a draft order for an off-session charge against a saved payment
     method. The order is created with `status=draft` and no invoice number;
     call `POST /v1/orders/{id}/finalize` to attempt the charge.
+
+    The organization must have the `off_session_charges_enabled` feature flag.
+    """
+    organization = await get_payload_organization(session, auth_subject, order_create)
+
+    await assert_organization_permission(
+        session, auth_subject, organization.id, OrganizationPermission.sales_manage
+    )
+
+    return await order_service.create_draft_order(session, organization, order_create)
+
+
+@router.post(
+    "/",
+    name="create",
+    status_code=201,
+    summary="Create Order",
+    response_model=OrderSchema,
+    responses={
+        403: {
+            "description": "Off-session charges are not enabled for this organization.",
+            "model": OffSessionChargesNotEnabled.schema(),
+        },
+    },
+)
+@version(starting_from=V2027_01)
+async def create_v2027_01(
+    order_create: OrderCreateV2027_01,
+    auth_subject: auth.OrdersWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Order:
+    """
+    Create a draft order for an off-session charge against a saved payment
+    method. The order is created with `status=draft` and no invoice number;
+    call `POST /v1/orders/{id}/finalize` to attempt the charge.
+
+    Reference the customer and the product both by Polar ID or both by external ID.
 
     The organization must have the `off_session_charges_enabled` feature flag.
     """

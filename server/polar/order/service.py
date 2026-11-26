@@ -147,6 +147,8 @@ from .amounts import apply_wallet_balance, calculate_tax, compute_order_amounts
 from .repository import OrderRepository, order_benefits_revoked_clause
 from .schemas import (
     OrderCreate,
+    OrderCreateBase,
+    OrderCreateExternal,
     OrderInvoice,
     OrderReceipt,
     OrderUpdate,
@@ -983,7 +985,9 @@ class OrderService:
                 items.append(OrderItem.from_price(price, 0, units=units, label=label))
         return items
 
-    def _validate_purchase_amount(self, payload: OrderCreate, currency: str) -> None:
+    def _validate_purchase_amount(
+        self, payload: OrderCreateBase, currency: str
+    ) -> None:
         """
         When the merchant provides a custom `amount`, ensure a positive amount
         falls within the currency's processor bounds — otherwise the charge
@@ -1194,7 +1198,7 @@ class OrderService:
         self,
         session: AsyncSession,
         organization: Organization,
-        payload: OrderCreate,
+        payload: OrderCreate | OrderCreateExternal,
     ) -> Order:
         """
         Create a draft order for an off-session charge in `organization`. The
@@ -1210,19 +1214,40 @@ class OrderService:
             raise OffSessionChargesNotEnabled(organization.id)
 
         product_repository = ProductRepository.from_session(session)
-        product = await product_repository.get_by_id_and_organization(
-            payload.product_id,
-            organization.id,
-            options=product_repository.get_eager_options(),
-        )
+        customer_repository = CustomerRepository.from_session(session)
+        product_loc: str
+        product_input: uuid.UUID | str
+        customer_loc: str
+        customer_input: uuid.UUID | str
+        product: Product | None
+        if isinstance(payload, OrderCreateExternal):
+            product_loc, product_input = (
+                "external_product_id",
+                payload.external_product_id,
+            )
+            customer_loc = "external_customer_id"
+            customer_input = payload.external_customer_id
+            product = await product_repository.get_by_external_id_and_organization(
+                payload.external_product_id,
+                organization.id,
+                options=product_repository.get_eager_options(),
+            )
+        else:
+            product_loc, product_input = "product_id", payload.product_id
+            customer_loc, customer_input = "customer_id", payload.customer_id
+            product = await product_repository.get_by_id_and_organization(
+                payload.product_id,
+                organization.id,
+                options=product_repository.get_eager_options(),
+            )
         if product is None:
             raise PolarRequestValidationError(
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "product_id"),
+                        "loc": ("body", product_loc),
                         "msg": "Product does not exist.",
-                        "input": payload.product_id,
+                        "input": product_input,
                     }
                 ]
             )
@@ -1231,12 +1256,12 @@ class OrderService:
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "product_id"),
+                        "loc": ("body", product_loc),
                         "msg": (
                             "Subscription products are not supported by the "
                             "off-session charge API. Use a one-time product."
                         ),
-                        "input": payload.product_id,
+                        "input": product_input,
                     }
                 ]
             )
@@ -1245,12 +1270,12 @@ class OrderService:
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "product_id"),
+                        "loc": ("body", product_loc),
                         "msg": (
                             "Seat-based products are not supported by the "
                             "off-session charge API."
                         ),
-                        "input": payload.product_id,
+                        "input": product_input,
                     }
                 ]
             )
@@ -1266,9 +1291,9 @@ class OrderService:
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "product_id"),
+                        "loc": ("body", product_loc),
                         "msg": "Product has no chargeable static prices.",
-                        "input": payload.product_id,
+                        "input": product_input,
                     }
                 ]
             )
@@ -1280,28 +1305,33 @@ class OrderService:
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "product_id"),
+                        "loc": ("body", product_loc),
                         "msg": (
                             "Off-session charges only support fixed-price and "
                             "unit-based products."
                         ),
-                        "input": payload.product_id,
+                        "input": product_input,
                     }
                 ]
             )
 
-        customer_repository = CustomerRepository.from_session(session)
-        customer = await customer_repository.get_by_id_and_organization(
-            payload.customer_id, organization.id
+        customer = (
+            await customer_repository.get_by_external_id_and_organization(
+                payload.external_customer_id, organization.id
+            )
+            if isinstance(payload, OrderCreateExternal)
+            else await customer_repository.get_by_id_and_organization(
+                payload.customer_id, organization.id
+            )
         )
         if customer is None:
             raise PolarRequestValidationError(
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "customer_id"),
+                        "loc": ("body", customer_loc),
                         "msg": "Customer does not exist.",
-                        "input": payload.customer_id,
+                        "input": customer_input,
                     }
                 ]
             )
@@ -1321,12 +1351,12 @@ class OrderService:
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "product_id"),
+                        "loc": ("body", product_loc),
                         "msg": (
                             "No version of this product uses the meter versions "
                             "of the customer."
                         ),
-                        "input": payload.product_id,
+                        "input": product_input,
                     }
                 ]
             )
@@ -1446,13 +1476,13 @@ class OrderService:
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "customer_id"),
+                        "loc": ("body", customer_loc),
                         "msg": (
                             "Tax could not be calculated for this order. The "
                             "customer needs a complete, valid billing address "
                             "before an off-session charge can be created."
                         ),
-                        "input": payload.customer_id,
+                        "input": customer_input,
                     }
                 ]
             ) from e

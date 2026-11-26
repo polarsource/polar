@@ -210,7 +210,7 @@ class Order(
         TIMESTAMP(timezone=True), nullable=True, default=None, index=True
     )
 
-    payment_processor_metadata: Mapped[dict[str, Any] | None] = mapped_column(
+    payment_processor_metadata: Mapped[dict[str, Any]] = mapped_column(
         JSONB(none_as_null=True), default=dict
     )
 

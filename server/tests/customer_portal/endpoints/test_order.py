@@ -256,7 +256,7 @@ class TestConfirmRetryPayment:
         mock_payment_intent = MagicMock()
         mock_payment_intent.id = "pi_test"
         mock_payment_intent.status = "succeeded"
-        mock_payment_intent.client_secret = None
+        mock_payment_intent.client_secret = "pi_test_client_secret"
         stripe_service_mock.create_payment_intent = AsyncMock(
             return_value=mock_payment_intent
         )
@@ -314,6 +314,17 @@ class TestConfirmRetryPayment:
         assert json["error"] is None
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    @pytest.mark.parametrize(
+        ("processor_status", "error_message", "expected_error"),
+        [
+            (
+                "requires_payment_method",
+                "Your card was declined.",
+                "Your card was declined.",
+            ),
+            ("processing", None, "Payment failed"),
+        ],
+    )
     async def test_failed_payment(
         self,
         client: AsyncClient,
@@ -322,6 +333,9 @@ class TestConfirmRetryPayment:
         product: Product,
         customer: Customer,
         stripe_service_mock: MagicMock,
+        processor_status: str,
+        error_message: str | None,
+        expected_error: str,
     ) -> None:
         order = await create_order(save_fixture, product=product, customer=customer)
         order.status = OrderStatus.pending
@@ -337,10 +351,11 @@ class TestConfirmRetryPayment:
 
         mock_payment_intent = MagicMock()
         mock_payment_intent.id = "pi_test"
-        mock_payment_intent.status = "failed"
+        mock_payment_intent.status = processor_status
         mock_payment_intent.client_secret = None
-        mock_payment_intent.last_payment_error = MagicMock()
-        mock_payment_intent.last_payment_error.message = "Your card was declined."
+        mock_payment_intent.last_payment_error = (
+            MagicMock(message=error_message) if error_message is not None else None
+        )
         stripe_service_mock.create_payment_intent = AsyncMock(
             return_value=mock_payment_intent
         )
@@ -354,7 +369,7 @@ class TestConfirmRetryPayment:
         json = response.json()
         assert json["status"] == "failed"
         assert json["client_secret"] is None
-        assert json["error"] == "Your card was declined."
+        assert json["error"] == expected_error
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_stripe_error(

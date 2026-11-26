@@ -98,6 +98,7 @@ from polar.order.service import (
     OrganizationNotReadyForPayments,
     PaymentActionRequired,
     PaymentAlreadyInProgress,
+    PaymentError,
     PaymentFailed,
     PaymentFailedReason,
     RecurringProduct,
@@ -176,6 +177,7 @@ def build_stripe_payment_intent(
             "customer": customer,
             "payment_method": payment_method,
             "latest_charge": latest_charge,
+            "client_secret": None,
         },
         None,
     )
@@ -6489,7 +6491,7 @@ class TestAcquirePaymentLock:
 
 
 @pytest.mark.anyio
-class TestProcessRetryPayment:
+class TestHandleOnSessionPayment:
     @pytest.mark.parametrize("method_type", ["card", "sepa_debit"])
     async def test_saved_payment_method_types(
         self,
@@ -6519,7 +6521,7 @@ class TestProcessRetryPayment:
             build_stripe_payment_intent(status="succeeded")
         )
 
-        result = await order_service.process_retry_payment(
+        result = await order_service.handle_on_session_payment(
             session,
             order,
             None,
@@ -6527,7 +6529,7 @@ class TestProcessRetryPayment:
             payment_method_id=payment_method.id,
         )
 
-        assert result.status == "succeeded"
+        assert result.payment_processor_metadata["intent_status"] == "succeeded"
         params = stripe_service_mock.create_payment_intent.call_args.kwargs
         assert params["payment_method"] == payment_method.processor_id
         if method_type == "sepa_debit":
@@ -6540,7 +6542,7 @@ class TestProcessRetryPayment:
                 "allow_redirects": "never",
             }
 
-    async def test_process_retry_payment_success(
+    async def test_handle_on_session_payment_success(
         self,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
@@ -6571,17 +6573,22 @@ class TestProcessRetryPayment:
             return_value=mock_payment_intent
         )
 
-        result = await order_service.process_retry_payment(
+        result = await order_service.handle_on_session_payment(
             session, order, "ctoken_test", PaymentProcessor.stripe
         )
+        await session.flush()
+        await session.refresh(result, ["payment_processor_metadata"])
 
-        assert result.status == "succeeded"
-        assert result.client_secret is None
-        assert result.error is None
+        assert result.id == order.id
+        assert result.status == OrderStatus.pending
+        assert result.payment_processor_metadata == {
+            "intent_id": "pi_test",
+            "intent_status": "succeeded",
+        }
 
         stripe_service_mock.create_payment_intent.assert_called_once()
 
-    async def test_process_retry_payment_requires_action(
+    async def test_handle_on_session_payment_requires_action(
         self,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
@@ -6612,15 +6619,18 @@ class TestProcessRetryPayment:
             return_value=mock_payment_intent
         )
 
-        result = await order_service.process_retry_payment(
+        result = await order_service.handle_on_session_payment(
             session, order, "ctoken_test", PaymentProcessor.stripe
         )
 
-        assert result.status == "requires_action"
-        assert result.client_secret == "pi_test_client_secret"
-        assert result.error is None
+        assert result.status == OrderStatus.pending
+        assert result.payment_processor_metadata == {
+            "intent_id": "pi_test",
+            "intent_status": "requires_action",
+            "intent_client_secret": "pi_test_client_secret",
+        }
 
-    async def test_process_retry_payment_failed(
+    async def test_handle_on_session_payment_requires_payment_method(
         self,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
@@ -6629,7 +6639,6 @@ class TestProcessRetryPayment:
         customer: Customer,
         organization: Organization,
     ) -> None:
-        """Test failed retry payment."""
         await save_fixture(customer)
 
         subscription = await create_subscription(
@@ -6648,23 +6657,24 @@ class TestProcessRetryPayment:
 
         mock_payment_intent = MagicMock()
         mock_payment_intent.id = "pi_test"
-        mock_payment_intent.status = "failed"
+        mock_payment_intent.status = "requires_payment_method"
         mock_payment_intent.client_secret = None
-        mock_payment_intent.last_payment_error = MagicMock()
-        mock_payment_intent.last_payment_error.message = "Card was declined."
+        mock_payment_intent.last_payment_error = None
         stripe_service_mock.create_payment_intent = AsyncMock(
             return_value=mock_payment_intent
         )
 
-        result = await order_service.process_retry_payment(
+        result = await order_service.handle_on_session_payment(
             session, order, "ctoken_test", PaymentProcessor.stripe
         )
 
-        assert result.status == "failed"
-        assert result.client_secret is None
-        assert result.error == "Card was declined."
+        assert result.status == OrderStatus.pending
+        assert result.payment_processor_metadata == {
+            "intent_id": "pi_test",
+            "intent_status": "requires_payment_method",
+        }
 
-    async def test_process_retry_payment_stripe_error(
+    async def test_handle_on_session_payment_stripe_error(
         self,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
@@ -6690,21 +6700,21 @@ class TestProcessRetryPayment:
         )
         await save_fixture(order)
 
-        mock_error = MagicMock()
-        mock_error.message = "Payment method not available."
         stripe_error = stripe_lib.StripeError("Payment method not available.")
-        stripe_error.error = mock_error
+        stripe_error.error = MagicMock(
+            type="card_error", message="Payment method not available."
+        )
         stripe_service_mock.create_payment_intent = AsyncMock(side_effect=stripe_error)
 
-        result = await order_service.process_retry_payment(
-            session, order, "ctoken_test", PaymentProcessor.stripe
-        )
+        with pytest.raises(PaymentError) as exc_info:
+            await order_service.handle_on_session_payment(
+                session, order, "ctoken_test", PaymentProcessor.stripe
+            )
 
-        assert result.status == "failed"
-        assert result.client_secret is None
-        assert result.error == "Payment method not available."
+        assert exc_info.value.error_type == "card_error"
+        assert exc_info.value.error == "Payment method not available."
 
-    async def test_process_retry_payment_order_not_pending(
+    async def test_handle_on_session_payment_order_not_pending(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -6721,11 +6731,11 @@ class TestProcessRetryPayment:
         await save_fixture(order)
 
         with pytest.raises(OrderNotEligibleForRetry):
-            await order_service.process_retry_payment(
+            await order_service.handle_on_session_payment(
                 session, order, "ctoken_test", PaymentProcessor.stripe
             )
 
-    async def test_process_retry_payment_no_next_attempt(
+    async def test_handle_on_session_payment_no_next_attempt(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -6743,11 +6753,11 @@ class TestProcessRetryPayment:
         await save_fixture(order)
 
         with pytest.raises(OrderNotEligibleForRetry):
-            await order_service.process_retry_payment(
+            await order_service.handle_on_session_payment(
                 session, order, "ctoken_test", PaymentProcessor.stripe
             )
 
-    async def test_process_retry_payment_no_subscription(
+    async def test_handle_on_session_payment_no_subscription(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -6768,11 +6778,11 @@ class TestProcessRetryPayment:
         from polar.order.service import OrderNotEligibleForRetry
 
         with pytest.raises(OrderNotEligibleForRetry):
-            await order_service.process_retry_payment(
+            await order_service.handle_on_session_payment(
                 session, order, "ctoken_test", PaymentProcessor.stripe
             )
 
-    async def test_process_retry_payment_already_in_progress(
+    async def test_handle_on_session_payment_already_in_progress(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -6796,11 +6806,11 @@ class TestProcessRetryPayment:
         await save_fixture(order)
 
         with pytest.raises(PaymentAlreadyInProgress):
-            await order_service.process_retry_payment(
+            await order_service.handle_on_session_payment(
                 session, order, "ctoken_test", PaymentProcessor.stripe
             )
 
-    async def test_process_retry_payment_lock_held_on_success(
+    async def test_handle_on_session_payment_lock_held_on_success(
         self,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
@@ -6831,13 +6841,13 @@ class TestProcessRetryPayment:
             return_value=mock_payment_intent
         )
 
-        await order_service.process_retry_payment(
+        await order_service.handle_on_session_payment(
             session, order, "ctoken_test", PaymentProcessor.stripe
         )
 
         assert order.payment_lock_acquired_at is not None
 
-    async def test_process_retry_payment_manual_retry_limit_exceeded(
+    async def test_handle_on_session_payment_manual_retry_limit_exceeded(
         self,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
@@ -6872,7 +6882,7 @@ class TestProcessRetryPayment:
             )
 
         with pytest.raises(ManualRetryLimitExceeded):
-            await order_service.process_retry_payment(
+            await order_service.handle_on_session_payment(
                 session, order, "ctoken_test", PaymentProcessor.stripe
             )
 

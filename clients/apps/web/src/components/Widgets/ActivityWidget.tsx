@@ -3,11 +3,11 @@ import { resolveTimelineEventHref } from '@/components/Timeline/links'
 import { resolveTimelineEntry } from '@/components/Timeline/renderers'
 import { EventTimestamp } from '@/components/Events/EventTimestamp'
 import { useEvents, useEventTypeStats } from '@/hooks/queries/events'
-import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { useDashboardOrganization } from '@/hooks/dashboardOrganization'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { addDays, startOfDay } from 'date-fns'
-import { useContext, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ListRow } from './ListRow'
 import { WidgetContainer } from './WidgetContainer'
 import { WidgetError } from './WidgetError'
@@ -34,7 +34,7 @@ export const ActivityWidget = ({ className }: ActivityWidgetProps) => (
 )
 
 const ActivityWidgetContent = ({ className }: ActivityWidgetProps) => {
-  const { organization } = useContext(OrganizationContext)
+  const organization = useDashboardOrganization()
   const [today, setToday] = useState(() => startOfDay(new Date()))
   // Roll the count over at local midnight while the dashboard stays open.
   useEffect(() => {

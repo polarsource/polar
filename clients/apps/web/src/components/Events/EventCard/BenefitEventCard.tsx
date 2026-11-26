@@ -3,11 +3,11 @@ import {
   resolveBenefitIcon,
 } from '@/components/Benefit/utils'
 import { useBenefit } from '@/hooks/queries'
-import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { useDashboardOrganization } from '@/hooks/dashboardOrganization'
 import { schemas } from '@polar-sh/client'
 import { Status, type StatusColor } from '@polar-sh/orbit'
 import Link from 'next/link'
-import { useContext, useMemo } from 'react'
+import { useMemo } from 'react'
 import { EventCardBase } from './EventCardBase'
 import { UserEventCard } from './UserEventCard'
 
@@ -23,7 +23,7 @@ export interface BenefitGrantEventCardProps {
 }
 
 export const BenefitEventCard = ({ event }: BenefitGrantEventCardProps) => {
-  const { organization } = useContext(OrganizationContext)
+  const organization = useDashboardOrganization()
   const { data: benefit, isLoading: isLoadingBenefit } = useBenefit(
     event.metadata.benefit_id,
   )

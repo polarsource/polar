@@ -4,17 +4,16 @@ import {
   EntityLinkMenu,
   type EntityLinkMenuItem,
 } from '@/components/Shared/EntityLinkMenu'
-import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { useDashboardOrganization } from '@/hooks/dashboardOrganization'
 import { FileText, RefreshCw, ShoppingCart } from '@polar-sh/orbit/icons'
 import { endOfDay, endOfToday, max, startOfDay } from 'date-fns'
-import { useContext } from 'react'
 
 type Range = { from: Date; to: Date }
 
 // Ways to take a moment elsewhere: onto the clipboard, or into a list narrowed
 // down to what happened around it.
 export const TimestampMenu = ({ timestamp }: { timestamp: string }) => {
-  const { organization } = useContext(OrganizationContext)
+  const organization = useDashboardOrganization()
   const date = new Date(timestamp)
   const sales = `/dashboard/${organization.slug}/sales`
 

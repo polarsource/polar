@@ -1,5 +1,4 @@
 import { AccountSetupProvider } from '@/providers/accountSetup'
-import { OrganizationContextProvider } from '@/providers/maintainerOrganization'
 import { getOrganizationBySlug } from '@/utils/organization'
 import { getAuthenticatedUser } from '@/utils/user'
 import { Metadata } from 'next'
@@ -49,13 +48,5 @@ export default async function Layout(props: {
     redirect('/dashboard')
   }
 
-  return (
-    <OrganizationContextProvider
-      organization={organization}
-      organizations={organizations}
-      memberOrganizations={memberOrganizations}
-    >
-      <AccountSetupProvider>{children}</AccountSetupProvider>
-    </OrganizationContextProvider>
-  )
+  return <AccountSetupProvider>{children}</AccountSetupProvider>
 }

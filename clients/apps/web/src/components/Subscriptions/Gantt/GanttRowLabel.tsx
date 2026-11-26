@@ -7,11 +7,10 @@ import {
   useProductMenuItems,
 } from '@/components/Products/ProductEntityLink'
 import { CombinedEntityLink } from '@/components/Shared/EntityLink'
+import { useDashboardOrganization } from '@/hooks/dashboardOrganization'
 import { buildCustomerDashboardPath } from '@/utils/customer'
-import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
-import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ROW_HEIGHT } from './scale'
 
@@ -26,7 +25,7 @@ export const GanttRowLabel = ({
   className,
   onSelect,
 }: GanttRowLabelProps) => {
-  const { organization } = useContext(OrganizationContext)
+  const organization = useDashboardOrganization()
   const { customer, product } = subscription
   const customerMenuItems = useCustomerMenuItems(organization, customer, true)
   const productMenuItems = useProductMenuItems(product)

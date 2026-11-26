@@ -4,7 +4,7 @@ import LogoIcon from '@/components/Brand/logos/LogoIcon'
 import { Modal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { useAuth } from '@/hooks/auth'
-import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { useOptionalDashboardOrganization } from '@/hooks/dashboardOrganization'
 import { CONFIG } from '@/utils/config'
 import { setLastVisitedEnv, setLastVisitedOrg } from '@/utils/cookies'
 import { ViewSidebarOutlined } from '@polar-sh/orbit/icons'
@@ -12,13 +12,7 @@ import { Button } from '@polar-sh/orbit'
 import { SidebarTrigger } from '@polar-sh/ui/components/atoms/Sidebar'
 import { m } from 'motion/react'
 import { usePathname } from 'next/navigation'
-import {
-  PropsWithChildren,
-  useContext,
-  useEffect,
-  useRef,
-  type JSX,
-} from 'react'
+import { PropsWithChildren, useEffect, useRef, type JSX } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useRoute } from '../Navigation/useRoute'
 import { DashboardSidebar } from './Dashboard/DashboardSidebar'
@@ -30,8 +24,7 @@ const DashboardLayout = (
     className?: string
   }>,
 ) => {
-  const { organization, organizations, memberOrganizations } =
-    useContext(OrganizationContext)
+  const organization = useOptionalDashboardOrganization()
 
   useEffect(() => {
     setLastVisitedEnv(CONFIG.IS_SANDBOX ? 'sandbox' : 'production')
@@ -44,12 +37,7 @@ const DashboardLayout = (
     <div className="relative flex h-full w-full flex-col bg-white md:flex-row md:bg-gray-100 md:p-2 dark:bg-transparent">
       <MobileNav />
       <div className="hidden md:flex">
-        <DashboardSidebar
-          organization={organization}
-          organizations={organizations ?? []}
-          memberOrganizations={memberOrganizations ?? []}
-          type={props.type}
-        />
+        <DashboardSidebar organization={organization} type={props.type} />
       </div>
       <div
         className={twMerge(

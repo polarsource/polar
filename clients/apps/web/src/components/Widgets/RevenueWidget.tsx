@@ -1,11 +1,11 @@
 import { useMetrics } from '@/hooks/queries'
-import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { useDashboardOrganization } from '@/hooks/dashboardOrganization'
 import { formatCurrency } from '@polar-sh/currency'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { endOfMonth, format, min, startOfMonth, subMonths } from 'date-fns'
 import { toISODate } from '@/utils/metrics'
-import { useContext, useState } from 'react'
+import { useState } from 'react'
 import { MonthlyBars } from './MonthlyBars'
 import { WidgetContainer } from './WidgetContainer'
 import { WidgetLink } from './WidgetLink'
@@ -43,7 +43,7 @@ const RevenueWidget = ({ className }: RevenueWidgetProps) => (
 )
 
 const RevenueWidgetContent = ({ className }: RevenueWidgetProps) => {
-  const { organization } = useContext(OrganizationContext)
+  const organization = useDashboardOrganization()
   const [today] = useState(() => new Date())
 
   const { data, isLoading } = useMetrics({

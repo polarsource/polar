@@ -1,11 +1,11 @@
 import { useMetrics, useTopCustomers } from '@/hooks/queries'
-import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { useDashboardOrganization } from '@/hooks/dashboardOrganization'
 import { formatCurrency } from '@polar-sh/currency'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { startOfMonth, subMonths } from 'date-fns'
 import Link from 'next/link'
-import { useContext, useState } from 'react'
+import { useState } from 'react'
 import { WidgetContainer } from './WidgetContainer'
 import { WidgetError } from './WidgetError'
 import { WidgetGuard } from './WidgetGuard'
@@ -29,7 +29,7 @@ export const TopCustomersWidget = ({ className }: TopCustomersWidgetProps) => (
 )
 
 const TopCustomersWidgetContent = ({ className }: TopCustomersWidgetProps) => {
-  const { organization } = useContext(OrganizationContext)
+  const organization = useDashboardOrganization()
   const [[start, end]] = useState(() => {
     const now = new Date()
     return [startOfMonth(subMonths(now, 11)), now] as const

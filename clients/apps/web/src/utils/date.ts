@@ -1,7 +1,6 @@
-import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { useDashboardOrganization } from '@/hooks/dashboardOrganization'
 import { endOfToday, startOfDay } from 'date-fns'
 import { parseAsIsoDateTime, useQueryState } from 'nuqs'
-import { useContext } from 'react'
 
 interface DateRangeProps {
   defaultStartDate?: Date
@@ -12,7 +11,7 @@ export const useDateRange = ({
   defaultStartDate,
   defaultEndDate,
 }: DateRangeProps = {}) => {
-  const { organization } = useContext(OrganizationContext)
+  const organization = useDashboardOrganization()
   const organizationCreatedAt = startOfDay(new Date(organization.created_at))
 
   const [startDate, setStartDate] = useQueryState(

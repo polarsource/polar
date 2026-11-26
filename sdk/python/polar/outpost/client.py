@@ -301,6 +301,7 @@ OUTBOX_BATCH = 1000
 FLUSHERS = 32
 OUTBOX_CLAIM_IDLE = 60.0
 FLUSHER_LOCK_TTL = 30.0
+FLUSH_TENURE = 5.0
 DRAIN_INTERVAL = 1.0
 OUTBOX_RETRY_DELAY = 1.0
 MAX_OUTBOX_RETRY_DELAY = 60.0
@@ -885,6 +886,9 @@ class Outpost:
         self._outbox_backlog: AsyncScript | None = None
         # One drain at a time per instance; a flush during one asks for one more round.
         self._draining: anyio.Event | None = None
+        # When the drain in flight hands its slots over: never, unless a flush or a close
+        # waits on it.
+        self._drain_until = math.inf
         self._drain_again = False
         # This instance queued an event that no flusher was there to deliver: its next
         # flush drains.
@@ -1004,7 +1008,7 @@ class Outpost:
         try:
             try:
                 await self._in_flight()
-                await self._drain_outbox_quietly()
+                await self._drain_outbox_quietly(limited=True)
                 # Their last exports land in the buffer, which the shared Redis takes
                 # before it closes.
                 await self._shutdown_telemetry()
@@ -1205,7 +1209,7 @@ class Outpost:
             self._flushing[scope] = deadline
             try:
                 with anyio.fail_after(timeout):
-                    await self._drain_outbox_quietly()
+                    await self._drain_outbox_quietly(limited=True)
                 await self._in_flight(max(0.0, deadline - anyio.current_time()))
             finally:
                 del self._flushing[scope]
@@ -1678,11 +1682,13 @@ class Outpost:
             if "BUSYGROUP" not in str(error):
                 raise
 
-    async def _drain_outbox_quietly(self) -> None:
+    async def _drain_outbox_quietly(self, *, limited: bool = False) -> None:
         """Redis keeps what a drain fails to deliver: the next flush takes it. Without an
         event of its own to deliver, a flush waits for the drain in flight, if any."""
         if self._redis is None or self._failure is not None:
             return
+        if limited:
+            self._limit_drain()
         if self._undrained:
             await self._drain()
         elif self._draining is not None:
@@ -1713,7 +1719,16 @@ class Outpost:
             self._undrained = True
         finally:
             self._draining = None
+            self._drain_until = math.inf
             done.set()
+
+    def _limit_drain(self) -> None:
+        """The fleet's other instances keep writing: a drain a flush or a close waits on
+        would never end."""
+        if self._undrained or self._draining is not None:
+            self._drain_until = min(
+                self._drain_until, anyio.current_time() + FLUSH_TENURE
+            )
 
     async def _drain_on_time(self) -> None:
         """A long-running process delivers what it queued without a flush."""
@@ -1733,6 +1748,9 @@ class Outpost:
         ended: list[bytes] = []
         try:
             while True:
+                if anyio.current_time() >= self._drain_until:
+                    self._undrained = True
+                    return
                 length, delivering, retry_at = await self._outbox_backlog(
                     keys=[self._outbox_key, self._outbox_backoff_key],
                     args=[OUTBOX_GROUP, *ended],
@@ -1798,6 +1816,11 @@ class Outpost:
             start = "0"
             while True:
                 if start == ">":
+                    # Between two batches, the slot goes to the next instance that
+                    # writes.
+                    if anyio.current_time() >= self._drain_until:
+                        self._undrained = True
+                        return "drained"
                     assert self._outbox_backlog is not None
                     length, delivering, _ = await self._outbox_backlog(
                         keys=[self._outbox_key, self._outbox_backoff_key],

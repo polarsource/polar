@@ -1566,6 +1566,58 @@ it("delivers what another instance queued while it flushed", async () => {
   expect(await redis.xlen("outpost:v1:org-1:outbox")).toBe(0);
 });
 
+it("hands its slot over a few seconds into a drain a flush waits on, while the fleet writes", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  const [first, second] = [await warm(), await start()];
+  await first.track(usage("event-0", 10));
+  ingestDelay = 40;
+  let writing = true;
+  // Another instance queues events during each of the flusher's ingest round trips.
+  const writer = (async () => {
+    for (let index = 0; writing; index += 1) {
+      await second.track(usage(`other-${index}`, 1));
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+  })();
+  try {
+    let flushed = false;
+    void first.flush().then(() => (flushed = true));
+    await vi.waitFor(() => expect(ingestRequests.length).toBeGreaterThan(2));
+    vi.advanceTimersByTime({{ outpost_constants.flush_tenure }});
+    await vi.waitFor(() => expect(flushed).toBe(true), { timeout: 2_000 });
+  } finally {
+    writing = false;
+    await writer;
+  }
+  expect(delivered().flat()).toContain("event-0");
+});
+
+it("hands its slot over a few seconds into the drain of a close, with nothing of its own queued", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  const [first, second] = [await warm(), await start()];
+  // The writer leaves its events to the next drain: the closing instance delivers them.
+  clearInterval(second["drainTimer"]);
+  ingestDelay = 40;
+  let writing = true;
+  const writer = (async () => {
+    for (let index = 0; writing; index += 1) {
+      await second.track(usage(`other-${index}`, 1));
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+  })();
+  try {
+    await vi.waitFor(async () => expect(await redis.xlen("outpost:v1:org-1:outbox")).toBeGreaterThan(0));
+    let closed = false;
+    void first.close().then(() => (closed = true));
+    await vi.waitFor(() => expect(ingestRequests.length).toBeGreaterThan(2));
+    vi.advanceTimersByTime({{ outpost_constants.flush_tenure }});
+    await vi.waitFor(() => expect(closed).toBe(true), { timeout: 2_000 });
+  } finally {
+    writing = false;
+    await writer;
+  }
+});
+
 it("ignores a duplicate external_id", async () => {
   const outpost = await warm();
   await outpost.track(usage("same", 10));

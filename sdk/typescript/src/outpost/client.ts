@@ -90,6 +90,7 @@ const OUTBOX_BATCH = 1000;
 const FLUSHERS = 32;
 const OUTBOX_CLAIM_IDLE = 60000;
 const FLUSHER_LOCK_TTL = 30000;
+const FLUSH_TENURE = 5000;
 const DRAIN_INTERVAL = 1000;
 const OUTBOX_RETRY_DELAY = 1000;
 const MAX_OUTBOX_RETRY_DELAY = 60000;
@@ -439,6 +440,8 @@ export class Outpost {
   private relaying?: Promise<void>;
   private releaseFlush?: () => void;
   private draining?: Promise<void>;
+  // When the drain in flight hands its slots over: never, unless a flush or a close waits on it.
+  private drainUntil = Infinity;
   private drainAgain = false;
   // This instance queued an event that no flusher was there to deliver: its next flush drains.
   private undrained = false;
@@ -573,7 +576,10 @@ export class Outpost {
     clearInterval(this.pullTimer);
     clearInterval(this.drainTimer);
     await this.inFlight();
-    if (this.delivers) await this.drain().catch(() => {});
+    if (this.delivers) {
+      this.limitDrain();
+      await this.drain().catch(() => {});
+    }
     const redis = this.redis;
     if (redis) this.event("outpost.redis.disconnect");
     const tracerProvider = this.tracerProvider;
@@ -724,6 +730,7 @@ export class Outpost {
     const released = new Promise<void>((resolve) => (this.releaseFlush = resolve));
     // Redis keeps what a drain fails to deliver: the next flush takes it. Without an event of its
     // own to deliver, a flush waits for the drain in flight, if any.
+    if (this.delivers && (this.undrained || this.draining)) this.limitDrain();
     const draining = !this.delivers
       ? undefined
       : (this.undrained ? this.drain() : this.draining)?.catch(() => {});
@@ -1119,8 +1126,16 @@ export class Outpost {
         });
       } while (this.drainAgain);
     };
-    this.draining = drain().finally(() => (this.draining = undefined));
+    this.draining = drain().finally(() => {
+      this.draining = undefined;
+      this.drainUntil = Infinity;
+    });
     return this.draining;
+  }
+
+  // The fleet's other instances keep writing: a drain a flush or a close waits on would never end.
+  private limitDrain(): void {
+    this.drainUntil = Math.min(this.drainUntil, Date.now() + FLUSH_TENURE);
   }
 
   private async drainOutbox(): Promise<void> {
@@ -1129,6 +1144,10 @@ export class Outpost {
       // The backoff a round delivered past: the next round's read ends it.
       let ended: string[] = [];
       for (let round = 0; ; round += 1) {
+        if (Date.now() >= this.drainUntil) {
+          this.undrained = true;
+          return;
+        }
         const [length, delivering, retryAt] = await redis.outpostOutboxBacklog(
           this.outboxKey,
           this.outboxBackoffKey,
@@ -1186,6 +1205,11 @@ export class Outpost {
         );
       for (let from = "0"; ; ) {
         if (from === ">") {
+          // Between two batches, the slot goes to the next instance that writes.
+          if (Date.now() >= this.drainUntil) {
+            this.undrained = true;
+            return "drained";
+          }
           const [length, delivering] = await redis.outpostOutboxBacklog(
             this.outboxKey,
             this.outboxBackoffKey,

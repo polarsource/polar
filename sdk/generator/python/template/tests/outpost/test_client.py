@@ -2615,6 +2615,58 @@ async def test_delivers_what_another_instance_queued_while_it_flushed(
 
 
 @pytest.mark.anyio
+async def test_drains_on_a_flush_after_one_that_failed_before_it_drained(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    ingest: dict[str, typing.Any],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url, redis = redis_connection
+    monkeypatch.setattr("polar.outpost.client.FLUSH_TENURE", 0.1)
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.track(_usage("event-0", 10))
+        outpost._failure = PolarOutpostError("Polar refused the token")
+        await outpost.flush()
+        outpost._failure = None
+        await anyio.sleep(0.2)
+        await outpost.flush()
+        assert _delivered(ingest) == [["event-0"]]
+
+
+@pytest.mark.anyio
+async def test_hands_its_slot_over_a_few_seconds_into_a_drain_a_flush_waits_on(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    ingest: dict[str, typing.Any],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url, redis = redis_connection
+    monkeypatch.setattr("polar.outpost.client.FLUSH_TENURE", 0.3)
+    await _seal(redis, BUCKET)
+    async with (
+        Outpost(url, client=polar_client) as first,
+        Outpost(url, client=polar_client) as second,
+    ):
+        await first.track(_usage("event-0", 10))
+        ingest["delay"] = 0.04
+
+        async def write() -> None:
+            # Another instance queues events during each of the flusher's ingest round
+            # trips.
+            for index in itertools.count():
+                await second.track(_usage(f"other-{index}", 1))
+                await anyio.sleep(0.01)
+
+        async with anyio.create_task_group() as group:
+            group.start_soon(write)
+            with anyio.fail_after(2):
+                await first.flush()
+            group.cancel_scope.cancel()
+    assert "event-0" in [external_id for ids in _delivered(ingest) for external_id in ids]
+
+
+@pytest.mark.anyio
 async def test_ignores_a_duplicate_external_id(
     redis_connection: tuple[str, Redis], polar_client: httpx2.AsyncClient
 ) -> None:

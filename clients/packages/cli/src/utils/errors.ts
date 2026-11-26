@@ -111,7 +111,7 @@ export const describeError = (error: unknown): ErrorDescription => {
     case 'JsonUnsupportedError':
       return { title: error.message, hint: error.hint }
     case 'UpdateError':
-      return { title: error.message, hint: releasesHint }
+      return { title: error.message, hint: error.hint ?? releasesHint }
     case 'UpdaterError':
       return { title: error.message, hint: error.hint ?? releasesHint }
     case 'GitHubReleaseError':

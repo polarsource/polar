@@ -3,7 +3,8 @@ set -euo pipefail
 
 REPO="polarsource/polar"
 TAG_PREFIX="@polar-sh/cli@"
-INSTALL_DIR="/usr/local/bin"
+INSTALL_DIR="${POLAR_INSTALL_DIR:-$HOME/.polar/bin}"
+LEGACY_BINARY="/usr/local/bin/polar"
 BINARY_NAME="polar"
 
 # Colors
@@ -104,6 +105,41 @@ get_archive_name() {
   esac
 }
 
+add_to_path() {
+  case ":${PATH}:" in
+    *":${INSTALL_DIR}:"*) return 0 ;;
+  esac
+
+  local profile line folder="${INSTALL_DIR/#$HOME/\$HOME}"
+  case "$(basename "${SHELL:-}")" in
+    zsh)
+      profile="${ZDOTDIR:-$HOME}/.zshrc"
+      line="export PATH=\"${folder}:\$PATH\""
+      ;;
+    bash)
+      if [ "$(uname -s)" = "Darwin" ]; then
+        profile="$HOME/.bash_profile"
+      else
+        profile="$HOME/.bashrc"
+      fi
+      line="export PATH=\"${folder}:\$PATH\""
+      ;;
+    fish)
+      profile="$HOME/.config/fish/config.fish"
+      line="fish_add_path \"${folder}\""
+      ;;
+    *) return 0 ;;
+  esac
+
+  if ! grep -qsF -e "$folder" -e "$INSTALL_DIR" "$profile"; then
+    {
+      mkdir -p "$(dirname "$profile")" \
+        && printf '\n# Polar CLI\n%s\n' "$line" >> "$profile"
+    } 2>/dev/null || return 0
+  fi
+  echo "$profile"
+}
+
 main() {
   local platform tag version url
 
@@ -157,12 +193,17 @@ main() {
   esac
 
   info "Installing to ${INSTALL_DIR}..."
-  if [ -w "$INSTALL_DIR" ]; then
-    mv "${tmpdir}/${BINARY_NAME}" "${INSTALL_DIR}/${BINARY_NAME}"
-  else
-    sudo mv "${tmpdir}/${BINARY_NAME}" "${INSTALL_DIR}/${BINARY_NAME}"
-  fi
+  mkdir -p "$INSTALL_DIR" || error "Could not create ${INSTALL_DIR}"
+  mv "${tmpdir}/${BINARY_NAME}" "${INSTALL_DIR}/${BINARY_NAME}" \
+    || error "Could not write to ${INSTALL_DIR}"
   chmod +x "${INSTALL_DIR}/${BINARY_NAME}"
+
+  local on_path=1 profile
+  case ":${PATH}:" in
+    *":${INSTALL_DIR}:"*) ;;
+    *) on_path=0 ;;
+  esac
+  profile="$(add_to_path)"
 
   local tokens_file="${HOME}/.polar/tokens.json"
   if [ -f "$tokens_file" ]; then
@@ -171,8 +212,18 @@ main() {
 
   info "Polar CLI ${version} installed successfully!"
   echo ""
-  echo "  Run 'polar --help' to get started."
+  if [ -n "$profile" ]; then
+    echo "  Added ${INSTALL_DIR} to your PATH in ${profile}."
+    echo "  Open a new terminal or run 'source ${profile}', then run 'polar --help' to get started."
+  elif [ "$on_path" -eq 0 ]; then
+    echo "  Add ${INSTALL_DIR} to your PATH, then run 'polar --help' to get started."
+  else
+    echo "  Run 'polar --help' to get started."
+  fi
   echo ""
+  if [ -e "$LEGACY_BINARY" ] && [ "${INSTALL_DIR}/${BINARY_NAME}" != "$LEGACY_BINARY" ]; then
+    warn "An older copy is still at ${LEGACY_BINARY}. Remove it with: sudo rm ${LEGACY_BINARY}"
+  fi
 }
 
 main

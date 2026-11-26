@@ -157,6 +157,22 @@ export const useSubscriptionChargePreview = (
     enabled: options?.enabled ?? true,
   })
 
+export const useSubscriptionBillingIntervals = (
+  id: string,
+  options?: { enabled?: boolean },
+) =>
+  useQuery({
+    queryKey: ['subscriptions', { id }, 'billing-intervals'],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/subscriptions/{id}/billing-intervals', {
+          params: { path: { id } },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: options?.enabled ?? true,
+  })
+
 export const useSubscriptionMeterChargePreview = (
   id: string,
   options?: { enabled?: boolean },

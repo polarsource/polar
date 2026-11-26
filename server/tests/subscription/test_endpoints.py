@@ -1,5 +1,6 @@
 import uuid
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from unittest.mock import AsyncMock
 
 import pytest
@@ -17,17 +18,22 @@ from polar.kit.utils import utc_now
 from polar.kit.versioning import APIVersion
 from polar.kit.visibility import Visibility
 from polar.models import (
+    BillingInterval,
     Customer,
     Discount,
+    Meter,
     Organization,
     Product,
+    ReducerBucket,
     Subscription,
     UserOrganization,
 )
+from polar.models.billing_interval import UsagePolicy
 from polar.models.customer_seat import SeatStatus
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderStatus
 from polar.models.product_price import ProductPriceSeatUnit
+from polar.models.reducer import ReducerKind
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.models.subscription_meter import SubscriptionMeter
 from polar.order.service import PaymentFailed, PaymentFailedReason
@@ -46,6 +52,8 @@ from tests.fixtures.random_objects import (
     create_meter,
     create_order,
     create_product,
+    create_product_price_metered_unit,
+    create_reducer,
     create_subscription,
     create_subscription_with_seats,
 )
@@ -2505,6 +2513,269 @@ class TestGetMeterChargePreview:
         json = response.json()
         assert json["metered_amount"] == 500
         assert json["total_amount"] == 500
+
+
+START = datetime(2026, 11, 1, tzinfo=UTC)
+
+
+async def create_metered_interval(
+    save_fixture: SaveFixture,
+    *,
+    subscription: Subscription,
+    meter: Meter,
+    usage_policy: UsagePolicy = UsagePolicy.charge,
+) -> None:
+    organization = subscription.customer.organization
+    if not organization.is_reducer_billing_enabled:
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "reducer_billing_enabled": True,
+        }
+        await save_fixture(organization)
+    price = await create_product_price_metered_unit(
+        save_fixture, product=subscription.product, meter=meter, unit_amount=Decimal(30)
+    )
+    await save_fixture(
+        BillingInterval(
+            organization=organization,
+            subscription=subscription,
+            customer=subscription.customer,
+            meter=meter,
+            product_price=price,
+            period_start=START,
+            usage_policy=usage_policy,
+        )
+    )
+
+
+@pytest.mark.anyio
+class TestListBillingIntervals:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get(
+            f"/v1/subscriptions/{uuid.uuid4()}/billing-intervals"
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_reducer_billing_disabled(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        response = await client.get(
+            f"/v1/subscriptions/{subscription.id}/billing-intervals"
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_generations_by_order(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer, started_at=START
+        )
+        meter = await create_meter(save_fixture, organization=organization)
+        await create_metered_interval(
+            save_fixture, subscription=subscription, meter=meter
+        )
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        order = await create_order(save_fixture, customer=customer)
+        for bucket_start, generation, count, billed in (
+            (START, 1, 1, True),
+            (START + timedelta(minutes=5), 1, 0, True),
+            (START, 2, 2, False),
+            (START + timedelta(minutes=10), 1, 4, False),
+        ):
+            await save_fixture(
+                ReducerBucket(
+                    organization=organization,
+                    reducer=reducer,
+                    customer=customer,
+                    bucket_start=bucket_start,
+                    bucket_end=bucket_start + timedelta(minutes=5),
+                    count=count,
+                    sum=Decimal(0),
+                    generation=generation,
+                    sealed_at=START if billed else None,
+                    billed_at=START if billed else None,
+                    order_id=order.id if billed else None,
+                )
+            )
+
+        credit_reducer = await create_reducer(
+            save_fixture,
+            organization=organization,
+            meters=[meter],
+            kind=ReducerKind.credit,
+        )
+        for bucket_start, units, billed in (
+            (START, 1, True),
+            (START + timedelta(minutes=10), 2, False),
+        ):
+            await save_fixture(
+                ReducerBucket(
+                    organization=organization,
+                    reducer=credit_reducer,
+                    customer=customer,
+                    bucket_start=bucket_start,
+                    bucket_end=bucket_start + timedelta(minutes=5),
+                    count=1,
+                    sum=Decimal(units),
+                    sealed_at=START if billed else None,
+                    billed_at=START if billed else None,
+                    order_id=order.id if billed else None,
+                )
+            )
+
+        response = await client.get(
+            f"/v1/subscriptions/{subscription.id}/billing-intervals"
+        )
+
+        assert response.status_code == 200
+        [usage] = response.json()
+        assert usage["interval"]["meter"]["id"] == str(meter.id)
+        assert usage["interval"]["product"]["id"] == str(product.id)
+        assert [
+            (
+                group["period_start"],
+                group["units"],
+                group["credited_units"],
+                group["amount"],
+                [
+                    (
+                        g["generation"],
+                        g["units"],
+                        g["amount"],
+                        g["status"],
+                        g["order_id"],
+                    )
+                    for g in group["generations"]
+                ],
+            )
+            for group in usage["groups"]
+        ] == [
+            ("2026-11-01T00:10:00Z", 4, 2, 120, [(1, 4, 120, "open", None)]),
+            (
+                "2026-11-01T00:00:00Z",
+                3,
+                1,
+                90,
+                [(1, 1, 30, "billed", str(order.id)), (2, 2, 60, "open", None)],
+            ),
+        ]
+
+    @pytest.mark.auth
+    async def test_trial_not_charged(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer, started_at=START
+        )
+        meter = await create_meter(save_fixture, organization=organization)
+        await create_metered_interval(
+            save_fixture,
+            subscription=subscription,
+            meter=meter,
+            usage_policy=UsagePolicy.trial,
+        )
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        await save_fixture(
+            ReducerBucket(
+                organization=organization,
+                reducer=reducer,
+                customer=customer,
+                bucket_start=START,
+                bucket_end=START + timedelta(minutes=5),
+                count=3,
+                sum=Decimal(0),
+                sealed_at=START,
+            )
+        )
+
+        response = await client.get(
+            f"/v1/subscriptions/{subscription.id}/billing-intervals"
+        )
+
+        assert response.status_code == 200
+        [usage] = response.json()
+        [group] = usage["groups"]
+        [generation] = group["generations"]
+        assert generation["units"] == 3
+        assert generation["amount"] == 0
+        assert generation["status"] == "not_charged"
+
+    @pytest.mark.auth
+    async def test_usage_owned_by_earlier_subscription(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        earlier = await create_active_subscription(
+            save_fixture,
+            product=product_second,
+            customer=customer,
+            started_at=START - timedelta(days=1),
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer, started_at=START
+        )
+        meter = await create_meter(save_fixture, organization=organization)
+        await create_metered_interval(save_fixture, subscription=earlier, meter=meter)
+        await create_metered_interval(
+            save_fixture, subscription=subscription, meter=meter
+        )
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        await save_fixture(
+            ReducerBucket(
+                organization=organization,
+                reducer=reducer,
+                customer=customer,
+                bucket_start=START,
+                bucket_end=START + timedelta(minutes=5),
+                count=3,
+                sum=Decimal(0),
+            )
+        )
+
+        response = await client.get(
+            f"/v1/subscriptions/{subscription.id}/billing-intervals"
+        )
+
+        assert response.status_code == 200
+        [usage] = response.json()
+        assert usage["groups"] == []
 
 
 @pytest.mark.anyio

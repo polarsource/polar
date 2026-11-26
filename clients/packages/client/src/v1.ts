@@ -1900,6 +1900,28 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/subscriptions/{id}/billing-intervals': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Subscription Billing Intervals
+     * @description List the subscription's billing intervals with their usage, newest first.
+     *
+     *     **Scopes**: `subscriptions:read` `subscriptions:write`
+     */
+    get: operations['subscriptions:list_billing_intervals']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/subscriptions/{id}/cancel-preview': {
     parameters: {
       query?: never
@@ -14328,6 +14350,15 @@ export interface components {
      * @enum {string}
      */
     BillingAddressFieldMode: 'required' | 'optional' | 'disabled'
+    /**
+     * BillingIntervalGenerationStatus
+     * @enum {string}
+     */
+    BillingIntervalGenerationStatus:
+      | 'open'
+      | 'unbilled'
+      | 'billed'
+      | 'not_charged'
     /**
      * BlockingOrganization
      * @description Organization that is blocking user deletion.
@@ -39546,6 +39577,124 @@ export interface components {
       /** @description Pending subscription update that will be applied at the beginning of the next period. If `null`, there is no pending update. */
       pending_update: components['schemas']['PendingSubscriptionUpdate'] | null
     }
+    /** SubscriptionBillingInterval */
+    SubscriptionBillingInterval: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /** @description The meter of the interval. */
+      meter: components['schemas']['Meter']
+      /**
+       * Period Start
+       * Format: date-time
+       * @description The start of the interval.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      period_start: string
+      /**
+       * Period End
+       * @description The end of the interval, or `None` if it's ongoing.
+       */
+      period_end: string | null
+      /** @description How the usage is charged. */
+      usage_policy: components['schemas']['UsagePolicy']
+      /** @description The product of the interval's price. */
+      product: components['schemas']['SubscriptionBillingIntervalProduct']
+      /**
+       * Product Price
+       * @description The price of the interval.
+       */
+      product_price: components['schemas']['ProductPrice']
+    }
+    /** SubscriptionBillingIntervalGeneration */
+    SubscriptionBillingIntervalGeneration: {
+      /**
+       * Generation
+       * @description The generation number.
+       */
+      generation: number
+      /**
+       * Order Id
+       * @description The order that billed the usage, or `None` if it's not billed.
+       */
+      order_id: string | null
+      /**
+       * Units
+       * @description The usage.
+       */
+      units: number
+      /**
+       * Amount
+       * @description The usage at the interval's price before credits, in cents.
+       */
+      amount: number
+      /** @description The billing status. */
+      status: components['schemas']['BillingIntervalGenerationStatus']
+    }
+    /** SubscriptionBillingIntervalProduct */
+    SubscriptionBillingIntervalProduct: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Name
+       * @description The name of the product.
+       */
+      name: string
+    }
+    /** SubscriptionBillingIntervalUsage */
+    SubscriptionBillingIntervalUsage: {
+      /** @description The billing interval. */
+      interval: components['schemas']['SubscriptionBillingInterval']
+      /**
+       * Groups
+       * @description The usage in the interval, grouped by the first generation it belongs to.
+       */
+      groups: components['schemas']['SubscriptionBillingIntervalUsageGroup'][]
+    }
+    /** SubscriptionBillingIntervalUsageGroup */
+    SubscriptionBillingIntervalUsageGroup: {
+      /**
+       * Period Start
+       * Format: date-time
+       * @description The start of the usage.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      period_start: string
+      /**
+       * Period End
+       * Format: date-time
+       * @description The end of the usage.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      period_end: string
+      /**
+       * Units
+       * @description The usage across the generations.
+       */
+      units: number
+      /**
+       * Credited Units
+       * @description The credits the group's order applied, or the credits pending for the next order on the latest unbilled group.
+       */
+      credited_units: number
+      /**
+       * Amount
+       * @description The group's usage at the interval's price before credits, in cents.
+       */
+      amount: number
+      /**
+       * Generations
+       * @description The usage by generation and order.
+       */
+      generations: components['schemas']['SubscriptionBillingIntervalGeneration'][]
+    }
     /**
      * SubscriptionBillingPeriodUpdatedEvent
      * @description An event created by Polar when a subscription billing period is updated.
@@ -43018,6 +43167,11 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /**
+     * UsagePolicy
+     * @enum {string}
+     */
+    UsagePolicy: 'charge' | 'trial' | 'paused'
     /** UserCannotAuthenticate */
     UserCannotAuthenticate: {
       /**
@@ -52592,6 +52746,47 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['SubscriptionMeterChargePreview']
+        }
+      }
+      /** @description Subscription not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'subscriptions:list_billing_intervals': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The subscription ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SubscriptionBillingIntervalUsage'][]
         }
       }
       /** @description Subscription not found. */
@@ -75458,6 +75653,9 @@ export const benefitVisibilityValues: ReadonlyArray<
 export const billingAddressFieldModeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BillingAddressFieldMode']
 > = ['required', 'optional', 'disabled']
+export const billingIntervalGenerationStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BillingIntervalGenerationStatus']
+> = ['open', 'unbilled', 'billed', 'not_charged']
 export const body_oauth2_consentActionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['Body_oauth2_consent']['action']
 > = ['allow', 'deny']
@@ -78941,6 +79139,9 @@ export const trialIntervalValues: ReadonlyArray<
 export const uniqueAggregationFuncValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['UniqueAggregation']['func']
 > = ['unique']
+export const usagePolicyValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['UsagePolicy']
+> = ['charge', 'trial', 'paused']
 export const userDeletionBlockedReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['UserDeletionBlockedReason']
 > = ['has_active_organizations']

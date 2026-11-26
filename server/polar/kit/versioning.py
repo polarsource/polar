@@ -21,6 +21,7 @@ from fastapi.openapi import utils as fastapi_openapi
 from fastapi.routing import APIRoute, RouteContext, iter_route_contexts
 from pydantic import (
     MISSING,
+    AliasChoices,
     BaseModel,
     Field,
     GetCoreSchemaHandler,
@@ -331,7 +332,27 @@ fastapi_dependencies._get_flat_fields_from_params = _versioned_flat_fields_from_
 fastapi_openapi._get_flat_fields_from_params = _versioned_flat_fields_from_params  # type: ignore[attr-defined]
 
 
-class QuerySchema(Schema):
+def _input_keys(name: str, field: FieldInfo) -> Generator[str]:
+    yield name
+    if isinstance(field.alias, str):
+        yield field.alias
+    validation_alias = field.validation_alias
+    if isinstance(validation_alias, str):
+        yield validation_alias
+    elif isinstance(validation_alias, AliasChoices):
+        for choice in validation_alias.choices:
+            if isinstance(choice, str):
+                yield choice
+
+
+class VersionedSchema(Schema):
+    """
+    Ignore input for fields that aren't available in the active API version.
+
+    `Version()` alone only hides a field from older OpenAPI specs and from
+    `model_dump()`; without this, older versions would still parse and act on it.
+    """
+
     @model_validator(mode="before")
     @classmethod
     def _omit_unavailable_fields(cls, data: typing.Any) -> typing.Any:
@@ -342,10 +363,12 @@ class QuerySchema(Schema):
             key
             for name, field in cls.model_fields.items()
             if _is_omitted(field.metadata, version)
-            for key in (name, field.alias, field.validation_alias)
-            if isinstance(key, str)
+            for key in _input_keys(name, field)
         }
         return {key: value for key, value in data.items() if key not in omitted}
+
+
+class QuerySchema(VersionedSchema): ...
 
 
 def _iter_omitted_union_members(

@@ -7,6 +7,7 @@ from fastapi.openapi.utils import get_openapi
 from fastapi.routing import iter_route_contexts
 from fastapi.testclient import TestClient
 from pydantic import (
+    AliasChoices,
     BaseModel,
     ConfigDict,
     Discriminator,
@@ -22,6 +23,7 @@ from polar.kit.versioning import (
     QuerySchema,
     Version,
     VersionedJsonSchema,
+    VersionedSchema,
     add_versioned_routers,
     api_version_context,
     prune_version_omitted_schemas,
@@ -42,6 +44,31 @@ class VersionedQueryFilters(QuerySchema):
 
 class OtherQueryFilters(QuerySchema):
     enabled: bool = False
+
+
+class VersionedBody(VersionedSchema):
+    name: str
+    external_id: Annotated[str | None, Version(starting_from=NEXT_VERSION)] = Field(
+        default=None, validation_alias=AliasChoices("external_id", "externalId")
+    )
+
+
+@pytest.mark.parametrize(
+    ("version", "expected"),
+    [(CURRENT_VERSION, None), (NEXT_VERSION, "ext_1337"), (None, "ext_1337")],
+)
+@pytest.mark.parametrize("key", ["external_id", "externalId"])
+def test_versioned_schema_ignores_unavailable_fields(
+    version: APIVersion | None, expected: str | None, key: str
+) -> None:
+    data = {"name": "Pro", key: "ext_1337"}
+    if version is None:
+        body = VersionedBody.model_validate(data)
+    else:
+        with api_version_context(version):
+            body = VersionedBody.model_validate(data)
+
+    assert body.external_id == expected
 
 
 @pytest.fixture

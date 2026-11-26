@@ -26,9 +26,7 @@ import * as Updater from '@/services/updater'
 import * as ui from '@/utils/ui'
 import { VERSION } from '@/version'
 
-const polar = program({ preview: process.env['POLAR_PREVIEW'] === '1' })
-
-const cli = Command.run(polar, {
+const cli = Command.run(program, {
   version: VERSION.replace(/^v/, ''),
 })
 
@@ -102,7 +100,7 @@ const instrumented = Effect.gen(function* () {
     Effect.tapCause(reportError),
     Effect.onExit((exit) =>
       telemetry.record({
-        command: Telemetry.commandPath(polar, args),
+        command: Telemetry.commandPath(program, args),
         flags,
         ...Telemetry.outcomeOf(exit, flags),
         durationMs: performance.now() - startedAt,

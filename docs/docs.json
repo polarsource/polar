@@ -101,6 +101,7 @@
                     "pages": [
                       "integrate/cli/reference/auth",
                       "integrate/cli/reference/agent",
+                      "integrate/cli/reference/config",
                       "integrate/cli/reference/webhook",
                       "integrate/cli/reference/update"
                     ]

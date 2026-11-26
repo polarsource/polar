@@ -1,0 +1,378 @@
+---
+title: "polar config"
+sidebarTitle: "config"
+description: "Manage your billing configuration"
+---
+
+{/* Generated from the CLI by `pnpm --filter @polar-sh/cli docs:generate`. Do not edit by hand. */}
+
+```bash
+polar config <subcommand> [flags]
+```
+
+**Subcommands**
+
+- [`polar config init`](#polar-config-init) Create a billing config file from your organization's meters, benefits and products, and show what to do next
+- [`polar config validate`](#polar-config-validate) Check a billing config file and show what saving it to the draft would change, without changing anything
+- [`polar config draft`](#polar-config-draft) Save a billing config file to the draft catalog of your organization. Nothing changes for customers until you publish it
+- [`polar config publish`](#polar-config-publish) Make your organization's draft catalog live, so new checkouts sell its products, benefits and meters
+- [`polar config reset`](#polar-config-reset) Rewrite your billing config file to match what is on Polar: the draft if there is one, the live catalog otherwise
+- [`polar config generate`](#polar-config-generate) Write the names in a billing config (its meters, benefits, products and the events its meters count) to a file your application code imports. A misspelled name then fails in your type checker instead of at run time
+- [`polar config prune`](#polar-config-prune) Remove unused deprecated entries from a billing config file, without changing anything on Polar
+- [`polar config disable`](#polar-config-disable) Stop managing your catalog with config, so it can be edited in the dashboard again. Only possible until a second catalog is published
+
+## polar config init
+
+Create a billing config file from your organization's meters, benefits and products, and show what to do next
+
+```bash
+polar config init [flags] [<file>]
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `file` | `string` | Where to write the config. Defaults to polar.config.ts at the root of a JavaScript or TypeScript project, polar.config.json otherwise (optional) |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--org` | `string` | Organization ID or slug for this invocation only |
+| `--sandbox` | `boolean` | Use the sandbox environment |
+| `--production` | `boolean` | Use the production environment |
+| `--format` | `choice` | Write TypeScript (ts) or JSON (json). Detected from your project when omitted: ts with a package.json. In a terminal you confirm it, or choose when there is none. Outside a terminal it writes json when there is none (choices: ts, json) |
+| `--skip-install` | `boolean` | Do not install the package a TypeScript config imports, @polar-sh/config |
+| `--confirm`, `-c` | `boolean` | Use the suggested external IDs for meters, benefits and products that have none, without asking |
+| `--external-id` | `string` | Give the resource with this ID this external ID, as &lt;id&gt;=&lt;external ID&gt;. Repeat it for each resource. Without a terminal, every resource without an external ID needs one, unless you pass --confirm |
+
+**Examples**
+
+Write a config for the active organization at the root of your project
+```bash
+polar config init
+```
+
+Set up your sandbox organization, logging in first if needed
+```bash
+polar config init --sandbox
+```
+
+Write a JSON config for another organization
+```bash
+polar config init --org acme --format json
+```
+
+Use the suggested external IDs for existing resources that have none, for scripts and agents
+```bash
+polar config init --json --confirm
+```
+
+Choose the external ID of an existing resource; init --json lists the IDs that need one
+```bash
+polar config init --json --external-id <id>=pro
+```
+
+Write to a specific path and print the result as JSON, for scripts and agents
+```bash
+polar config init billing/polar.config.ts --json
+```
+
+## polar config validate
+
+Check a billing config file and show what saving it to the draft would change, without changing anything
+
+```bash
+polar config validate [flags] [<file>]
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `file` | `string` | Path to the billing config file. Defaults to the first of polar.config.ts, polar.config.mts, polar.config.cts, polar.config.js, polar.config.mjs, polar.config.cjs, polar.config.json, polar.json found in the current directory (optional) |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--org` | `string` | Organization ID or slug for this invocation only |
+| `--pr-comment` | `boolean` | Post the output as a comment on the pull request being built, using GITHUB_TOKEN |
+
+**Examples**
+
+Check polar.config.ts in the current directory
+```bash
+polar config validate
+```
+
+Check a specific file
+```bash
+polar config validate billing/polar.json
+```
+
+Check against another organization, by slug or ID
+```bash
+polar config validate --org acme
+```
+
+Print the changes and issues as JSON
+```bash
+polar config validate --json
+```
+
+Also post the changes on the pull request being built, in GitHub Actions or Buildkite
+```bash
+polar config validate --pr-comment
+```
+
+## polar config draft
+
+Save a billing config file to the draft catalog of your organization. Nothing changes for customers until you publish it
+
+```bash
+polar config draft [flags] [<file>]
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `file` | `string` | Path to the billing config file. Defaults to the first of polar.config.ts, polar.config.mts, polar.config.cts, polar.config.js, polar.config.mjs, polar.config.cjs, polar.config.json, polar.json found in the current directory (optional) |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--org` | `string` | Organization ID or slug for this invocation only |
+| `--confirm`, `-c`, `--aladåb` | `boolean` | Skip the confirmation prompt |
+| `--name` | `string` | Name of the draft catalog version. Defaults to v&#123;n&#125; when published |
+| `--force` | `boolean` | Save even when the draft on Polar has changes that are not in the file, discarding them |
+
+**Examples**
+
+Show what polar.config.ts would change, then save it to the draft after confirmation
+```bash
+polar config draft
+```
+
+Save a specific file
+```bash
+polar config draft billing/polar.json
+```
+
+Save to another organization, by slug or ID
+```bash
+polar config draft --org acme
+```
+
+Save without asking, for scripts and CI
+```bash
+polar config draft --confirm
+```
+
+Name the draft catalog version
+```bash
+polar config draft --name 'Spring launch'
+```
+
+Save the file even when the draft has changes that are not in it
+```bash
+polar config draft --force
+```
+
+Print what was saved as JSON, for scripts and agents
+```bash
+polar config draft --confirm --json
+```
+
+## polar config publish
+
+Make your organization's draft catalog live, so new checkouts sell its products, benefits and meters
+
+```bash
+polar config publish [flags] [<file>]
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `file` | `string` | Path to the billing config file. Defaults to the first of polar.config.ts, polar.config.mts, polar.config.cts, polar.config.js, polar.config.mjs, polar.config.cjs, polar.config.json, polar.json found in the current directory (optional) |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--org` | `string` | Organization ID or slug for this invocation only |
+| `--confirm`, `-c` | `boolean` | Skip the confirmation prompt |
+
+**Examples**
+
+Publish the draft after confirmation, warning about changes in polar.config.ts that the draft is missing
+```bash
+polar config publish
+```
+
+Publish the draft of another organization, by slug or ID
+```bash
+polar config publish --org acme
+```
+
+Save and publish in one go, for scripts and CI
+```bash
+polar config draft --confirm && polar config publish --confirm
+```
+
+## polar config reset
+
+Rewrite your billing config file to match what is on Polar: the draft if there is one, the live catalog otherwise
+
+```bash
+polar config reset [flags] [<file>]
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `file` | `string` | Path to the billing config file. Defaults to the first of polar.config.ts, polar.config.mts, polar.config.cts, polar.config.js, polar.config.mjs, polar.config.cjs, polar.config.json, polar.json found in the current directory (optional) |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--org` | `string` | Organization ID or slug for this invocation only |
+| `--confirm`, `-c` | `boolean` | Skip the confirmation prompt |
+
+**Examples**
+
+Replace polar.config.ts with the draft on Polar, after confirmation
+```bash
+polar config reset
+```
+
+Reset a specific file
+```bash
+polar config reset billing/polar.json
+```
+
+Reset from another organization without asking
+```bash
+polar config reset --org acme --confirm
+```
+
+## polar config generate
+
+Write the names in a billing config (its meters, benefits, products and the events its meters count) to a file your application code imports. A misspelled name then fails in your type checker instead of at run time
+
+```bash
+polar config generate [flags] [<file>]
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `file` | `string` | Path to the billing config file. Defaults to the first of polar.config.ts, polar.config.mts, polar.config.cts, polar.config.js, polar.config.mjs, polar.config.cjs, polar.config.json, polar.json found in the current directory (optional) |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--language` | `choice` | The language to generate: Python (py). When omitted it follows the file name given to --out, then the nearest project at or above the config or the current directory (choices: py) |
+| `--out` | `string` | Where to write the file. Defaults to polar_types.py next to the config. A file this command did not write is never replaced |
+| `--check` | `boolean` | Write nothing, and fail when the generated file is missing or out of date |
+
+**Examples**
+
+Write the names next to the config, in the language of the project
+```bash
+polar config generate
+```
+
+Choose where the file goes
+```bash
+polar config generate --out app/polar_types.py
+```
+
+Fail in CI when the generated file is out of date
+```bash
+polar config generate --check
+```
+
+Print what was written as JSON, for scripts and agents
+```bash
+polar config generate --json
+```
+
+## polar config prune
+
+Remove unused deprecated entries from a billing config file, without changing anything on Polar
+
+```bash
+polar config prune [flags] [<file>]
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `file` | `string` | Path to the billing config file. Defaults to the first of polar.config.ts, polar.config.mts, polar.config.cts, polar.config.js, polar.config.mjs, polar.config.cjs, polar.config.json, polar.json found in the current directory (optional) |
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--org` | `string` | Organization ID or slug for this invocation only |
+| `--confirm`, `-c` | `boolean` | Skip the confirmation prompt |
+
+**Examples**
+
+List the deprecated entries in polar.config.ts and remove the unused ones after confirmation
+```bash
+polar config prune
+```
+
+Prune a specific file
+```bash
+polar config prune billing/polar.json
+```
+
+Check usage in another organization, by slug or ID
+```bash
+polar config prune --org acme
+```
+
+Remove without asking and print the result as JSON
+```bash
+polar config prune --confirm --json
+```
+
+## polar config disable
+
+Stop managing your catalog with config, so it can be edited in the dashboard again. Only possible until a second catalog is published
+
+```bash
+polar config disable [flags]
+```
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--org` | `string` | Organization ID or slug for this invocation only |
+| `--confirm`, `-c` | `boolean` | Skip the confirmation prompt |
+
+**Examples**
+
+Disable config after confirmation
+```bash
+polar config disable
+```
+
+Disable config for another organization without asking
+```bash
+polar config disable --org acme --confirm
+```

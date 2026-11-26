@@ -31,7 +31,7 @@ const nextConfig = {
   reactCompiler: true,
   experimental: {
     useTypeScriptCli: false,
-    optimizePackageImports: ['@polar-sh/orbit/icons'],
+    optimizePackageImports: ['@polar-sh/orbit', '@polar-sh/orbit/icons'],
   },
   transpilePackages: ['shiki', '@polar-sh/checkout', '@polar-sh/orbit'],
   pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],

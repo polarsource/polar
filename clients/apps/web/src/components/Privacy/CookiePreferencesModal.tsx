@@ -6,7 +6,7 @@ import { Button } from '@polar-sh/orbit'
 import { Switch } from '@polar-sh/orbit'
 import { useState } from 'react'
 import { InlineModalHeader } from '@polar-sh/orbit'
-import { cookieConsentGiven } from './CookieConsent'
+import { cookieConsentGiven } from './cookieConsentGiven'
 
 interface CookiePreferencesModalProps {
   hide: () => void

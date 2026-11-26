@@ -41,9 +41,28 @@ def _get_test_async_session() -> Any:
     return session
 
 
+_original_get_actor = dramatiq.Broker.get_actor
+
+
+def _get_actor_lazy(self: dramatiq.Broker, actor_name: str) -> dramatiq.Actor[Any, Any]:
+    try:
+        return _original_get_actor(self, actor_name)
+    except dramatiq.ActorNotFound:
+        if self is dramatiq.get_broker():
+            import polar.tasks  # noqa: F401
+
+            return _original_get_actor(self, actor_name)
+        raise
+
+
 @pytest.fixture(scope="session", autouse=True)
 def patch_worker_middlewares_session() -> Iterator[None]:
     with (
+        patch.object(
+            dramatiq.Broker,
+            "get_actor",
+            _get_actor_lazy,
+        ),
         patch.object(
             SQLAlchemyMiddleware,
             "get_async_session",

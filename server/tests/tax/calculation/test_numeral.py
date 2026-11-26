@@ -146,7 +146,7 @@ class TestNumeralCalculateTax:
         http_mocks: dict[tuple[str, str], Mock],
         rate_type: str,
     ) -> None:
-        http_mocks["POST", "https://api.numeralhq.com/tax/calculations"] = Mock(
+        route = http_mocks["POST", "https://api.numeralhq.com/tax/calculations"] = Mock(
             return_value=httpx2.Response(
                 200,
                 json={
@@ -185,7 +185,7 @@ class TestNumeralCalculateTax:
             currency="usd",
             amount=100_00,
             tax_behavior=TaxBehavior.inclusive,
-            tax_code=TaxCode.general_electronically_supplied_services,
+            tax_code=TaxCode.live_online_seminar,
             address=sample_address,
             tax_ids=[],
             customer_exempt=False,
@@ -206,6 +206,11 @@ class TestNumeralCalculateTax:
         ]
         assert result["processor_id"] == "taxcalc_123"
         assert result["tax_behavior"] == TaxBehavior.inclusive
+        payload = json.loads(route.call_args.args[0].content)
+        assert (
+            payload["order_details"]["line_items"][0]["product_category"]
+            == "WEB_BASED_SEMINAR"
+        )
 
     async def test_multiple_breakdown(
         self, sample_address: Address, http_mocks: dict[tuple[str, str], Mock]

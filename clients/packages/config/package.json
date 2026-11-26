@@ -4,7 +4,6 @@
   "author": "Polar",
   "license": "Apache-2.0",
   "type": "module",
-  "private": true,
   "version": "0.0.0",
   "repository": {
     "type": "git",
@@ -17,6 +16,9 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=22"
   },

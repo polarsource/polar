@@ -43,6 +43,12 @@ new RuleTester().run('no-terminal-output', rule, {
       errors: [{ messageId: 'prompt' }],
     },
     {
+      name: 'prompting without the node: prefix',
+      filename: 'src/client/connect.ts',
+      code: `import { createInterface } from 'readline/promises'`,
+      errors: [{ messageId: 'prompt' }],
+    },
+    {
       name: 'loading a prompt module lazily',
       filename: 'src/client/connect.ts',
       code: `const readline = await import('node:readline')`,

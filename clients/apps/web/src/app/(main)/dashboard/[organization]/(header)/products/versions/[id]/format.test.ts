@@ -76,7 +76,7 @@ it('reads a meter filter and aggregation as one line each', () => {
   })
 })
 
-it('names settings like the settings pages', () => {
+it('names subscription settings like their config keys', () => {
   expect(
     settingsFields({
       payments: { currency: 'eur', tax: 'location' },
@@ -92,8 +92,8 @@ it('names settings like the settings pages', () => {
     default_tax_behavior: 'Location based',
     allow_multiple_subscriptions: 'Yes',
     prevent_trial_abuse: 'No',
-    proration: 'Schedule for next cycle',
-    grace_period_for_benefit_revocation: 'After 7 Days',
+    proration_behavior: 'Schedule for next cycle',
+    benefit_revocation_grace_period: 'After 7 Days',
   })
 })
 

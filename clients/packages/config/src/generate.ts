@@ -27,6 +27,12 @@ const key = (value: string): string =>
       ? value
       : literal(value)
 
+const camelCase = (value: string): string =>
+  value.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase())
+
+const gracePeriod = (days: number): string =>
+  days === 0 ? 'immediately' : `${days} ${days === 1 ? 'day' : 'days'}`
+
 const keepsOrder = (keys: ReadonlyArray<string>): boolean => {
   const objectKeys = Object.keys(
     Object.fromEntries(keys.map((name) => [name, null])),
@@ -581,7 +587,17 @@ export const generateConfig = Effect.fnUntraced(function* (input: unknown) {
       : [
           '  settings: {',
           ...Object.entries(config.settings).map(
-            ([group, fields]) => `    ${key(group)}: ${renderObject(fields)},`,
+            ([group, fields]) =>
+              `    ${key(camelCase(group))}: ${renderObject(
+                Object.fromEntries(
+                  Object.entries(fields).map(([name, value]) => [
+                    camelCase(name),
+                    name === 'benefit_revocation_grace_period'
+                      ? gracePeriod(value)
+                      : value,
+                  ]),
+                ),
+              )},`,
           ),
           '  },',
         ]

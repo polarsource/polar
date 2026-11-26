@@ -132,8 +132,9 @@ export const settingsFields = ({ payments, subscriptions }: Settings) => ({
     subscriptions.allow_multiple_subscriptions,
   ),
   prevent_trial_abuse: yesNo(subscriptions.prevent_trial_abuse),
-  proration: PRORATION_BEHAVIOR_LABELS[subscriptions.proration_behavior],
-  grace_period_for_benefit_revocation:
+  proration_behavior:
+    PRORATION_BEHAVIOR_LABELS[subscriptions.proration_behavior],
+  benefit_revocation_grace_period:
     BENEFIT_REVOCATION_GRACE_PERIOD_LABELS[
       subscriptions.benefit_revocation_grace_period
     ] ?? `After ${subscriptions.benefit_revocation_grace_period} Days`,

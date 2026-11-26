@@ -173,12 +173,17 @@ The checkout opens only on hosts listed under **Settings → Embedding**. If the
 
 ## Enable wallets in Embedded Checkout
 
-[Wallets](/features/checkout/payment-methods#cards-and-wallets) such as Apple Pay and Google Pay need your domain to be validated before they appear in an embedded checkout. On Polar's hosted checkout, they work with no setup.
+[Wallets](/features/checkout/payment-methods#cards-and-wallets) such as Apple Pay and Google Pay appear in an embedded checkout only on hosts under a [verified domain](/features/domains). On Polar's hosted checkout, they work with no setup.
 
-To enable them, [email support](mailto:support@polar.sh) with:
+To enable them:
 
-- Your organization slug
-- The domain to allow for wallet payments
+- Verify your domain under **Settings → Domains**
+- Open **Settings → Embedding**
+- Add each host that embeds the checkout, such as `shop.example.com`
+
+A wildcard entry like `*.example.com` doesn't enable wallets. Add each subdomain on its own.
+
+Each host in the list shows its wallet status. A host under a verified domain shows **Wallet payments pending** until your organization can accept payments.
 
 ## Learn more
 

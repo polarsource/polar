@@ -13,6 +13,7 @@ from polar.checkout.repository import CheckoutRepository
 from polar.checkout.schemas import CheckoutProductCreate
 from polar.checkout.service import CheckoutConfirmRateLimited
 from polar.checkout.service import checkout as checkout_service
+from polar.config import Environment, settings
 from polar.enums import SubscriptionRecurringInterval, TaxBehavior, TaxProcessor
 from polar.integrations.stripe.service import StripeService
 from polar.kit.utils import utc_now
@@ -1413,6 +1414,23 @@ class TestClientConfirm:
 
         assert response.status_code == 429
         assert response.headers["retry-after"] == "60"
+
+    async def test_invalid_confirm_keeps_email_budget(
+        self,
+        api_prefix: str,
+        mocker: MockerFixture,
+        client: AsyncClient,
+        checkout_open: Checkout,
+    ) -> None:
+        mocker.patch.object(settings, "ENV", Environment.production)
+
+        for _ in range(21):
+            response = await client.post(
+                f"{api_prefix}/client/{checkout_open.client_secret}/confirm",
+                json={"customer_email": "customer@example.com"},
+            )
+
+            assert response.status_code == 422
 
     @pytest.mark.parametrize(
         "customer_billing_address",

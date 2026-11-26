@@ -287,7 +287,7 @@
                   "merchant-of-record/review-checklist"
                 ]
               },
-              "merchant-of-record/acceptable-use/introduction",
+              "merchant-of-record/acceptable-use",
               "security",
               "support"
             ]
@@ -3023,11 +3023,11 @@
     },
     {
       "source": "/documentation/polar-as-merchant-of-record/acceptable-products-use",
-      "destination": "/merchant-of-record/acceptable-use/introduction"
+      "destination": "/merchant-of-record/acceptable-use"
     },
     {
-      "source": "/merchant-of-record/acceptable-use",
-      "destination": "/merchant-of-record/acceptable-use/introduction"
+      "source": "/merchant-of-record/acceptable-use/introduction",
+      "destination": "/merchant-of-record/acceptable-use"
     },
     {
       "source": "/documentation/polar-as-merchant-of-record/account-reviews",

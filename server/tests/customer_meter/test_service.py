@@ -28,6 +28,7 @@ from polar.models import (
     Event,
     Meter,
     Organization,
+    StagedEvent,
     User,
     UserOrganization,
 )
@@ -1540,6 +1541,110 @@ class TestGetRolloverUnits:
         )
 
         assert rollover_units == 100
+
+    async def test_counts_staged_events_on_reducer_billing(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        customer.organization.feature_settings = {"reducer_billing_enabled": True}
+        await save_fixture(customer.organization)
+
+        cutoff = utc_now()
+        await create_event(
+            save_fixture,
+            timestamp=cutoff - timedelta(seconds=3),
+            ingested_at=cutoff - timedelta(seconds=3),
+            organization=customer.organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            metadata={"units": 100, "meter_id": str(meter.id), "rollover": True},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=cutoff - timedelta(seconds=2),
+            ingested_at=cutoff - timedelta(seconds=2),
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 20, "model": "lite"},
+        )
+        for ts, tokens in ((cutoff - timedelta(seconds=1), 15), (cutoff, 50)):
+            await save_fixture(
+                StagedEvent(
+                    name=METER_TEST_EVENT,
+                    source=EventSource.user,
+                    timestamp=ts,
+                    ingested_at=ts,
+                    organization_id=customer.organization_id,
+                    customer_id=customer.id,
+                    user_metadata={"tokens": tokens, "model": "lite"},
+                )
+            )
+
+        assert (
+            await customer_meter_service.get_rollover_units(
+                session, customer, meter, cutoff=cutoff
+            )
+            == 65
+        )
+
+    async def test_counts_staged_events_non_summable_and_external_id_on_reducer_billing(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer_with_external_id: Customer,
+    ) -> None:
+        organization.feature_settings = {"reducer_billing_enabled": True}
+        await save_fixture(organization)
+        max_meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.max, property="tokens"
+            ),
+        )
+
+        now = utc_now()
+        await create_event(
+            save_fixture,
+            timestamp=now - timedelta(seconds=3),
+            ingested_at=now - timedelta(seconds=3),
+            organization=organization,
+            customer=customer_with_external_id,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            metadata={"units": 100, "meter_id": str(max_meter.id), "rollover": True},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=now - timedelta(seconds=2),
+            ingested_at=now - timedelta(seconds=2),
+            organization=organization,
+            customer=customer_with_external_id,
+            metadata={"tokens": 30},
+        )
+        await save_fixture(
+            StagedEvent(
+                name=METER_TEST_EVENT,
+                source=EventSource.user,
+                timestamp=now - timedelta(seconds=1),
+                ingested_at=now - timedelta(seconds=1),
+                organization_id=organization.id,
+                external_customer_id=customer_with_external_id.external_id,
+                user_metadata={"tokens": 45},
+            )
+        )
+
+        assert (
+            await customer_meter_service.get_rollover_units(
+                session, customer_with_external_id, max_meter
+            )
+            == 55
+        )
 
 
 @pytest.mark.anyio

@@ -40,7 +40,7 @@ from polar.meter.aggregation import (
     UniqueAggregation,
 )
 from polar.meter.repository import MeterRepository
-from polar.models import Customer, CustomerMeter, Event, Meter
+from polar.models import Customer, CustomerMeter, Event, Meter, StagedEvent
 from polar.models.event import EventSource
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession, AsyncSession
@@ -504,9 +504,15 @@ class CustomerMeterService:
 
         # Checked after locking the meter so a cycle committed concurrently is seen.
         meter_reset = await event_repository.get_latest_meter_reset(customer, meter.id)
+        reducer_billing = customer.organization.is_reducer_billing_enabled
         invoiced = await BillingEntryRepository.from_session(
             session
-        ).has_invoiced_for_event(credit.id)
+        ).has_invoiced_for_event(credit.id) or (
+            reducer_billing
+            and await reducer_service.is_credit_billed(
+                session, customer, meter.id, credit
+            )
+        )
         if invoiced or (
             meter_reset is not None and credit.ingested_at < meter_reset.timestamp
         ):
@@ -531,7 +537,9 @@ class CustomerMeterService:
             for event in credit_events
             if event.user_metadata["rollover"]
         )
-        usage_units = await self._get_usage_quantity(session, customer, meter)
+        usage_units = await self._get_consumed_units(
+            session, redis, customer, meter, reducer_billing=reducer_billing
+        )
         # Usage draws from non-rollover credits first, matching get_rollover_units.
         if credit.user_metadata["rollover"]:
             unused = min(
@@ -562,7 +570,12 @@ class CustomerMeterService:
         await event_service.create_event(session, event)
 
         _, updated = await self.update_customer_meter(
-            session, redis, customer, meter, activate_meter=True
+            session,
+            redis,
+            customer,
+            meter,
+            activate_meter=True,
+            reducer_billing=reducer_billing,
         )
         if updated:
             enqueue_job("customer.state_changed", customer.id)
@@ -587,9 +600,10 @@ class CustomerMeterService:
             return 0
 
         event_repository = EventRepository.from_session(session)
+        reducer_billing = await self._is_reducer_billing_enabled(session, customer)
 
         usage_units = await self._get_usage_quantity(
-            session, customer, meter, cutoff=cutoff
+            session, customer, meter, cutoff=cutoff, include_staged=reducer_billing
         )
 
         credit_events = await self._get_credit_events(
@@ -776,7 +790,9 @@ class CustomerMeterService:
             else:
                 if consumed_units is not None:
                     return consumed_units
-        return await self._get_usage_quantity(session, customer, meter)
+        return await self._get_usage_quantity(
+            session, customer, meter, include_staged=reducer_billing
+        )
 
     async def _get_usage_quantity(
         self,
@@ -785,6 +801,7 @@ class CustomerMeterService:
         meter: Meter,
         *,
         cutoff: datetime | None = None,
+        include_staged: bool = False,
     ) -> Decimal:
         """
         Get the aggregated usage quantity for a customer's meter.
@@ -800,8 +817,6 @@ class CustomerMeterService:
             customer, meter.id, cutoff=cutoff
         )
 
-        agg_column = func.coalesce(meter.aggregation.get_sql_column(Event), 0)
-
         by_customer_id = self._build_events_statement(
             event_repository,
             customer,
@@ -812,30 +827,48 @@ class CustomerMeterService:
             include_system_events=False,
         ).where(Event.source == EventSource.user)
 
-        if customer.external_id is None:
+        branches: list[tuple[type[Event | StagedEvent], Select[Any]]] = [
+            (Event, by_customer_id)
+        ]
+        if customer.external_id is not None:
+            by_external_id = self._build_events_statement(
+                event_repository,
+                customer,
+                meter,
+                meter_reset_event,
+                by_external_id=True,
+                cutoff=cutoff,
+                include_system_events=False,
+            ).where(Event.source == EventSource.user)
+            branches.append((Event, by_external_id))
+        if include_staged:
+            branches.append(
+                (
+                    StagedEvent,
+                    event_repository.get_staged_meter_statement(
+                        customer, meter, meter_reset_event, cutoff
+                    ),
+                )
+            )
+
+        if len(branches) == 1:
+            agg_column = func.coalesce(meter.aggregation.get_sql_column(Event), 0)
             result = await session.scalar(
                 by_customer_id.with_only_columns(agg_column, maintain_column_froms=True)
             )
             return Decimal(result or 0)
 
-        by_external_id = self._build_events_statement(
-            event_repository,
-            customer,
-            meter,
-            meter_reset_event,
-            by_external_id=True,
-            cutoff=cutoff,
-            include_system_events=False,
-        ).where(Event.source == EventSource.user)
-
         if meter.aggregation.is_summable():
             union_subquery = union_all(
-                by_customer_id.with_only_columns(
-                    agg_column.label("value"), maintain_column_froms=True
-                ),
-                by_external_id.with_only_columns(
-                    agg_column.label("value"), maintain_column_froms=True
-                ),
+                *(
+                    branch.with_only_columns(
+                        func.coalesce(meter.aggregation.get_sql_column(model), 0).label(
+                            "value"
+                        ),
+                        maintain_column_froms=True,
+                    )
+                    for model, branch in branches
+                )
             ).subquery()
 
             result = await session.scalar(
@@ -843,10 +876,13 @@ class CustomerMeterService:
             )
             return Decimal(result or 0)
 
-        raw_value_column = self._get_raw_aggregation_column(meter)
         union_subquery = union_all(
-            by_customer_id.with_only_columns(raw_value_column.label("value")),
-            by_external_id.with_only_columns(raw_value_column.label("value")),
+            *(
+                branch.with_only_columns(
+                    self._get_raw_aggregation_column(meter, model).label("value")
+                )
+                for model, branch in branches
+            )
         ).subquery()
 
         outer_agg = self._get_outer_aggregation(meter, union_subquery.c.value)
@@ -939,12 +975,14 @@ class CustomerMeterService:
             maximum=None if maximum is None else Decimal(maximum),
         )
 
-    def _get_raw_aggregation_column(self, meter: Meter) -> Any:
+    def _get_raw_aggregation_column(
+        self, meter: Meter, model: type[Event | StagedEvent] = Event
+    ) -> Any:
         if isinstance(meter.aggregation, PropertyAggregation):
-            return meter.aggregation.get_sql_value(Event)
+            return meter.aggregation.get_sql_value(model)
         elif isinstance(meter.aggregation, UniqueAggregation):
-            return get_nested_metadata_attr(Event, meter.aggregation.property)
-        return Event.id
+            return get_nested_metadata_attr(model, meter.aggregation.property)
+        return model.id
 
     def _get_outer_aggregation(self, meter: Meter, column: Any) -> Any:
         if isinstance(meter.aggregation, PropertyAggregation):

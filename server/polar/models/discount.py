@@ -16,7 +16,6 @@ from sqlalchemy import (
     String,
     Uuid,
     func,
-    text,
 )
 from sqlalchemy.dialects.postgresql import CITEXT, JSONB
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
@@ -28,7 +27,6 @@ from sqlalchemy.orm import (
 )
 
 from polar.kit.db.models import RecordModel
-from polar.kit.external_id import ExternalIDMixin
 from polar.kit.math import polar_round
 from polar.kit.metadata import MetadataMixin
 
@@ -53,7 +51,7 @@ class DiscountDuration(StrEnum):
     repeating = "repeating"
 
 
-class Discount(MetadataMixin, ExternalIDMixin, RecordModel):
+class Discount(MetadataMixin, RecordModel):
     __tablename__ = "discounts"
 
     name: Mapped[str] = mapped_column(CITEXT, nullable=False)
@@ -167,13 +165,6 @@ class Discount(MetadataMixin, ExternalIDMixin, RecordModel):
             func.lower(code),
             unique=True,
             postgresql_where="deleted_at IS NULL",
-        ),
-        Index(
-            "ix_discounts_organization_id_external_id",
-            "organization_id",
-            "external_id",
-            unique=True,
-            postgresql_where=text("deleted_at IS NULL AND external_id IS NOT NULL"),
         ),
     )
 

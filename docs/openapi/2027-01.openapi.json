@@ -14512,30 +14512,6 @@
             "description": "Filter by organization ID."
           },
           {
-            "name": "external_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "ExternalID Filter",
-              "description": "Filter by discount external ID."
-            },
-            "description": "Filter by discount external ID."
-          },
-          {
             "name": "query",
             "in": "query",
             "required": false,
@@ -14749,11 +14725,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.discounts.create(\n    external_id='ext_1337',\n    name='string',\n    type='fixed',\n    duration='once',\n    amounts={'key': 0},\n)\nprint(response)\n"
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.discounts.create(\n    name='string',\n    type='fixed',\n    duration='once',\n    amounts={'key': 0},\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.discounts.create(\n  {\n    \"external_id\": \"ext_1337\",\n    \"name\": \"string\",\n    \"type\": \"fixed\",\n    \"duration\": \"once\",\n    \"amounts\": {\n      \"key\": 0\n    }\n  },\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.discounts.create(\n  {\n    \"name\": \"string\",\n    \"type\": \"fixed\",\n    \"duration\": \"once\",\n    \"amounts\": {\n      \"key\": 0\n    }\n  },\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -14982,11 +14958,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.discounts.update(\n    '00000000-0000-4000-8000-000000000000',\n    external_id='ext_1337',\n)\nprint(response)\n"
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.discounts.update(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.discounts.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"external_id\": \"ext_1337\"\n  },\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.discounts.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {},\n);\nconsole.log(response);\n"
           }
         ]
       },
@@ -55544,15 +55520,6 @@
       },
       "DiscountFixedCreate": {
         "properties": {
-          "external_id": {
-            "type": "string",
-            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
-            "title": "External Id",
-            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.",
-            "examples": [
-              "ext_1337"
-            ]
-          },
           "metadata": {
             "additionalProperties": {
               "anyOf": [
@@ -55794,21 +55761,6 @@
             "title": "Id",
             "description": "The ID of the object."
           },
-          "external_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "External Id",
-            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
-            "examples": [
-              "ext_1337"
-            ]
-          },
           "metadata": {
             "$ref": "#/components/schemas/MetadataOutputType"
           },
@@ -55915,7 +55867,6 @@
           "created_at",
           "modified_at",
           "id",
-          "external_id",
           "metadata",
           "name",
           "code",
@@ -55982,21 +55933,6 @@
             "format": "uuid4",
             "title": "Id",
             "description": "The ID of the object."
-          },
-          "external_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "External Id",
-            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
-            "examples": [
-              "ext_1337"
-            ]
           },
           "metadata": {
             "$ref": "#/components/schemas/MetadataOutputType"
@@ -56097,7 +56033,6 @@
           "created_at",
           "modified_at",
           "id",
-          "external_id",
           "metadata",
           "name",
           "code",
@@ -56166,21 +56101,6 @@
             "format": "uuid4",
             "title": "Id",
             "description": "The ID of the object."
-          },
-          "external_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "External Id",
-            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
-            "examples": [
-              "ext_1337"
-            ]
           },
           "metadata": {
             "$ref": "#/components/schemas/MetadataOutputType"
@@ -56289,7 +56209,6 @@
           "created_at",
           "modified_at",
           "id",
-          "external_id",
           "metadata",
           "name",
           "code",
@@ -56361,21 +56280,6 @@
             "title": "Id",
             "description": "The ID of the object."
           },
-          "external_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "External Id",
-            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
-            "examples": [
-              "ext_1337"
-            ]
-          },
           "metadata": {
             "$ref": "#/components/schemas/MetadataOutputType"
           },
@@ -56476,7 +56380,6 @@
           "created_at",
           "modified_at",
           "id",
-          "external_id",
           "metadata",
           "name",
           "code",
@@ -56491,15 +56394,6 @@
       },
       "DiscountPercentageCreate": {
         "properties": {
-          "external_id": {
-            "type": "string",
-            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
-            "title": "External Id",
-            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.",
-            "examples": [
-              "ext_1337"
-            ]
-          },
           "metadata": {
             "additionalProperties": {
               "anyOf": [
@@ -56727,21 +56621,6 @@
             "title": "Id",
             "description": "The ID of the object."
           },
-          "external_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "External Id",
-            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
-            "examples": [
-              "ext_1337"
-            ]
-          },
           "metadata": {
             "$ref": "#/components/schemas/MetadataOutputType"
           },
@@ -56848,7 +56727,6 @@
           "created_at",
           "modified_at",
           "id",
-          "external_id",
           "metadata",
           "name",
           "code",
@@ -56909,21 +56787,6 @@
             "format": "uuid4",
             "title": "Id",
             "description": "The ID of the object."
-          },
-          "external_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "External Id",
-            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
-            "examples": [
-              "ext_1337"
-            ]
           },
           "metadata": {
             "$ref": "#/components/schemas/MetadataOutputType"
@@ -57024,7 +56887,6 @@
           "created_at",
           "modified_at",
           "id",
-          "external_id",
           "metadata",
           "name",
           "code",
@@ -57087,21 +56949,6 @@
             "format": "uuid4",
             "title": "Id",
             "description": "The ID of the object."
-          },
-          "external_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "External Id",
-            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
-            "examples": [
-              "ext_1337"
-            ]
           },
           "metadata": {
             "$ref": "#/components/schemas/MetadataOutputType"
@@ -57210,7 +57057,6 @@
           "created_at",
           "modified_at",
           "id",
-          "external_id",
           "metadata",
           "name",
           "code",
@@ -57276,21 +57122,6 @@
             "title": "Id",
             "description": "The ID of the object."
           },
-          "external_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "External Id",
-            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.",
-            "examples": [
-              "ext_1337"
-            ]
-          },
           "metadata": {
             "$ref": "#/components/schemas/MetadataOutputType"
           },
@@ -57391,7 +57222,6 @@
           "created_at",
           "modified_at",
           "id",
-          "external_id",
           "metadata",
           "name",
           "code",
@@ -57617,15 +57447,6 @@
       },
       "DiscountUpdate": {
         "properties": {
-          "external_id": {
-            "type": "string",
-            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
-            "title": "External Id",
-            "description": "An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.",
-            "examples": [
-              "ext_1337"
-            ]
-          },
           "metadata": {
             "additionalProperties": {
               "anyOf": [

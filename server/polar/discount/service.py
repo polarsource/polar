@@ -77,7 +77,6 @@ class DiscountService(ResourceServiceReader[Discount]):
         auth_subject: AuthSubject[User | Organization | Agent],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
-        external_id: Sequence[str] | None = None,
         query: str | None = None,
         pagination: PaginationParams,
         sorting: Sequence[Sorting[DiscountSortProperty]] = (
@@ -88,9 +87,6 @@ class DiscountService(ResourceServiceReader[Discount]):
 
         if organization_id is not None:
             statement = statement.where(Discount.organization_id.in_(organization_id))
-
-        if external_id is not None:
-            statement = statement.where(Discount.external_id.in_(external_id))
 
         if query is not None:
             statement = statement.where(
@@ -156,11 +152,6 @@ class DiscountService(ResourceServiceReader[Discount]):
                 repository, discount_create.code, organization.id
             )
 
-        if discount_create.external_id is not MISSING:
-            await self._assert_external_id_available(
-                repository, discount_create.external_id, organization.id
-            )
-
         discount_products: list[DiscountProduct] = []
         if discount_create.products:
             product_repository = ProductRepository.from_session(session)
@@ -208,10 +199,6 @@ class DiscountService(ResourceServiceReader[Discount]):
                 await self._assert_code_available(
                     repository, discount_create.code, organization.id
                 )
-            if discount_create.external_id is not MISSING:
-                await self._assert_external_id_available(
-                    repository, discount_create.external_id, organization.id
-                )
             raise
 
         if notify:
@@ -235,26 +222,6 @@ class DiscountService(ResourceServiceReader[Discount]):
                         "loc": ("body", "code"),
                         "msg": "Discount with this code already exists.",
                         "input": code,
-                    }
-                ]
-            )
-
-    async def _assert_external_id_available(
-        self,
-        repository: DiscountRepository,
-        external_id: str,
-        organization_id: uuid.UUID,
-    ) -> None:
-        if await repository.get_by_external_id_and_organization(
-            external_id, organization_id
-        ):
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "external_id"),
-                        "msg": "A discount with this external ID already exists.",
-                        "input": external_id,
                     }
                 ]
             )
@@ -315,27 +282,6 @@ class DiscountService(ResourceServiceReader[Discount]):
                         }
                     ]
                 )
-
-        if (
-            discount_update.external_id is not MISSING
-            and discount_update.external_id != discount.external_id
-        ):
-            if discount.external_id is not None:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "external_id"),
-                            "msg": "Discount external ID cannot be updated.",
-                            "input": discount_update.external_id,
-                        }
-                    ]
-                )
-            await self._assert_external_id_available(
-                DiscountRepository.from_session(session),
-                discount_update.external_id,
-                discount.organization_id,
-            )
 
         if discount.redemptions_count > 0:
             for field in DISCOUNT_LOCKED_FIELDS[discount.type]:

@@ -26,8 +26,6 @@ jobs:
         with:
           egress-policy: audit
 
-      # Events created with GITHUB_TOKEN don't trigger workflows, so the version PR
-      # is pushed and opened with an App token to get CI to run on it normally.
       - name: Generate App token
         id: app-token
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0

@@ -63,8 +63,8 @@ export const OmniSearch = ({
   )
 
   const quickActions = useMemo(
-    () => getQuickActions(organization.slug),
-    [organization.slug],
+    () => getQuickActions(organization),
+    [organization],
   )
 
   const actionResults = useMemo(() => {

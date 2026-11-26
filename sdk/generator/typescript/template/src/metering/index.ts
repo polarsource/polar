@@ -12,10 +12,10 @@ export type {
   ActorMetering,
   MeteringOptions,
   MeteringOutpost,
-  MeteringStrategy,
 } from "./client";
-export { BufferedMeteringStrategy } from "./buffered";
-export type { BufferedMeteringOptions, DropReason } from "./buffered";
+export { MemoryOutbox } from "./outbox/memory";
+export type { MemoryOutboxOptions } from "./outbox/memory";
+export type { DropReason } from "./errors";
 export type { ContextualEventInput, EventInput } from "./event";
 export type { CustomerMeter, MeterInput } from "./meter";
-export type { Outbox } from "./outbox/index";
+export type { Outbox, OutboxHooks } from "./outbox/index";

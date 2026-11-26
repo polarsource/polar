@@ -6,13 +6,10 @@ import type {
   EventInput,
 } from "./event";
 import type { CustomerMeter, MeterInput } from "./meter";
+import type { Outbox } from "./outbox/index";
 
 import { type ClientBase } from "../base";
-import {
-  BufferedMeteringStrategy,
-  type BufferedMeteringOptions,
-  type MeteringClient,
-} from "./buffered";
+import { PolarOutpostError } from "../outpost/errors";
 import {
   MeteringError,
   InvalidActorError,
@@ -22,6 +19,7 @@ import {
   waitForDelivery,
   type DeliveryOptions,
 } from "./errors";
+import { MemoryOutbox, type MeteringClient } from "./outbox/memory";
 export {
   MeteringError,
   InvalidActorError,
@@ -55,7 +53,7 @@ export interface ActorMetering {
    */
   track(event: ContextualEventInput): Promise<void>;
   /**
-   * Read this customer's meter using the parent's read strategy.
+   * Read this customer's meter.
    *
    * @param meterId Polar meter ID.
    * @returns Consumption, credits, and balance, or null if no meter is found.
@@ -63,114 +61,54 @@ export interface ActorMetering {
   meter(meterId: string): Promise<CustomerMeter | null>;
 }
 
-/**
- * Strategy contract: manage resources with start() and close().
- *
- * Strategies receive events in order. Implement actor(), meter(), or flush()
- * to opt into warmup, meter reads, or explicit draining respectively.
- */
-export interface MeteringStrategy {
-  /** Start strategy resources. */
-  start(): Promise<MeteringStrategy | void>;
-  /**
-   * Warm customer state using exactly one customer identifier.
-   *
-   * @param input Polar customer ID or customer ID in your application.
-   */
-  actor?(input: ActorInput): Promise<void>;
-  meter?(input: MeterInput & { meter_id: string }): Promise<CustomerMeter | null>;
-  /**
-   * Reject an event before any strategy accepts it.
-   *
-   * @param event Event including its customer identity.
-   */
-  validate?(event: EventInput): void;
-  /**
-   * Accept an event for this strategy.
-   *
-   * @param event Event including its customer identity.
-   */
-  track(event: EventInput): Promise<void>;
-  /** Wait until earlier events are delivered or reported as dropped. */
-  flush?(options?: DeliveryOptions): Promise<void>;
-  /** Drain pending work and release resources. */
-  close(options?: DeliveryOptions): Promise<void>;
-}
-
-// Marks an Outpost, which delivers its events itself: the metering client recognises one without
-// loading Redis.
-export const OUTPOST = Symbol.for("@polar-sh/sdk/outpost");
-
-/**
- * Creates the Outpost used by metering. Build one with `outpost()` from `@polar-sh/sdk/outpost`.
- */
 export type MeteringOutpost = (client: ClientBase) => Outpost;
 
-/** Configure the built-in strategies, or replace them with an explicit strategies list. */
-export type MeteringOptions =
-  | {
-      buffered?: BufferedMeteringOptions;
-      outpost?: MeteringOutpost;
-      strategies?: never;
-    }
-  | {
-      strategies: readonly MeteringStrategy[];
-      buffered?: never;
-      outpost?: never;
-    };
+export interface MeteringOptions {
+  outbox?: Outbox;
+  outpost?: MeteringOutpost;
+}
 
-/**
- * Dispatch events, actor warmup, and meter reads to metering strategies.
- *
- * Create with polar.metering(); the first operation starts its resources. Call close() on
- * shutdown. By default, events are buffered for HTTP delivery; with the outpost option, Outpost
- * delivers them itself instead. Accepting an event does not confirm delivery.
- */
 export class Metering {
-  readonly strategies: readonly MeteringStrategy[];
-  private readonly running: MeteringStrategy[] = [];
+  private readonly running: Pick<Outbox, "close">[] = [];
   private starting?: Promise<void>;
   private closing?: Promise<void>;
   private shutdownDeadline?: number;
   private shutdownTimedOut = false;
   private activeOperations = 0;
   private onDrained?: () => void;
-  private readonly client: ClientBase;
+  constructor(
+    private readonly client: ClientBase,
+    readonly outbox: Outbox,
+    readonly outpost?: Outpost,
+  ) {}
 
   /**
-   * Create a helper with explicit strategies.
-   *
-   * @param options.strategies Strategies to start and invoke in order.
-   * @param options.client Authenticated HTTP client.
-   */
-  constructor({
-    strategies,
-    client,
-  }: {
-    strategies: readonly MeteringStrategy[];
-    client: ClientBase;
-  }) {
-    this.strategies = strategies;
-    this.client = client;
-  }
-
-  /**
-   * Track an event. It'll be dispatched to all configured strategies.
+   * Enqueue an event and apply it to Outpost when enabled.
    *
    * @param event Event fields with exactly one customer_id or external_customer_id.
    * Member IDs must match the identifier kind. An event without a timestamp is dated now,
-   * once, before any strategy sees it.
+   * once, before the outbox sees it. A missing external ID is also assigned here.
    * @throws InvalidActorError if customer or member identifiers are inconsistent.
    */
   async track(event: EventInput): Promise<void> {
     validateActor(event);
-    const dated =
-      event.timestamp === undefined ? { ...event, timestamp: new Date().toISOString() } : event;
+    const queued = {
+      ...event,
+      timestamp: event.timestamp ?? new Date().toISOString(),
+      external_id: event.external_id || crypto.randomUUID(),
+    };
     const starting = this.begin();
     try {
       await starting;
-      for (const strategy of this.strategies) strategy.validate?.(dated);
-      for (const strategy of this.strategies) await strategy.track(dated);
+      await this.outbox.enqueue(queued);
+      try {
+        await this.outpost?.track(queued);
+      } catch (error) {
+        console.warn(
+          "Outpost failed to reduce an enqueued event",
+          error instanceof Error ? error.constructor.name : typeof error,
+        );
+      }
     } finally {
       if (--this.activeOperations === 0) this.onDrained?.();
     }
@@ -179,7 +117,7 @@ export class Metering {
   /**
    * Create customer-bound helper.
    *
-   * For strategies that support it, it warms up their state in memory.
+   * When enabled, Outpost warms up customer state.
    *
    * @param input Customer identity and optional matching member identity.
    * @returns A helper that attaches this identity to events and reads customer meters.
@@ -197,7 +135,11 @@ export class Metering {
     const starting = this.begin();
     try {
       await starting;
-      for (const strategy of this.strategies) await strategy.actor?.(identity);
+      try {
+        await this.outpost?.actor(identity);
+      } catch (error) {
+        if (!(error instanceof PolarOutpostError)) throw error;
+      }
       return {
         track: (event) => this.track({ ...event, ...identity }),
         meter: (meterId) => this.meter(meterId, identity),
@@ -223,12 +165,12 @@ export class Metering {
     const starting = this.begin();
     try {
       await starting;
-      for (const strategy of this.strategies) {
-        if (!strategy.meter) continue;
+      if (this.outpost) {
         try {
-          return await strategy.meter({ ...input, meter_id: meterId });
+          return await this.outpost.meter({ ...input, meter_id: meterId });
         } catch (error) {
-          if (!(error instanceof UnknownMeterError)) throw error;
+          if (!(error instanceof UnknownMeterError || error instanceof PolarOutpostError))
+            throw error;
         }
       }
       const request = this.client.buildRequest(
@@ -257,20 +199,10 @@ export class Metering {
     const starting = this.begin();
     try {
       await waitForDelivery(starting, timeout);
-      const results = await Promise.allSettled(
-        this.strategies.map(async (strategy) =>
-          waitForDelivery(
-            strategy.flush?.({ timeoutMs: Math.max(0, deadline - Date.now()) }) ??
-              Promise.resolve(),
-            Math.max(0, deadline - Date.now()),
-          ),
-        ),
-      );
-      const errors = results
-        .filter((result) => result.status === "rejected")
-        .map((result) => result.reason);
-      if (errors.length === 1) throw errors[0];
-      if (errors.length) throw new AggregateError(errors, "Metering flush failed");
+      const remaining = Math.max(0, deadline - Date.now());
+      await waitForDelivery(this.outbox.flush({ timeoutMs: remaining }), remaining);
+      if (this.outpost)
+        await waitForDelivery(this.outpost.flush(), Math.max(0, deadline - Date.now()));
     } finally {
       if (--this.activeOperations === 0) this.onDrained?.();
     }
@@ -289,25 +221,35 @@ export class Metering {
   private begin(): Promise<void> {
     if (this.closing) throw new MeteringError("Metering is closed");
     this.activeOperations++;
-    this.starting ??= this.startStrategies();
+    this.starting ??= this.startResources();
     return this.starting;
   }
 
-  private async startStrategies(): Promise<void> {
+  private async startResources(): Promise<void> {
+    const checkDeadline = () => {
+      if (
+        this.shutdownTimedOut ||
+        (this.shutdownDeadline !== undefined && Date.now() >= this.shutdownDeadline)
+      )
+        throw new MeteringTimeoutError(0);
+    };
     try {
-      for (const strategy of this.strategies) {
-        await strategy.start();
-        this.running.push(strategy);
-        if (
-          this.shutdownTimedOut ||
-          (this.shutdownDeadline !== undefined && Date.now() >= this.shutdownDeadline)
-        ) {
-          throw new MeteringTimeoutError(0);
-        }
+      if (this.outpost) {
+        await this.outpost.start();
+        this.running.push(this.outpost);
+        checkDeadline();
       }
+      await this.outbox.start(
+        this.outpost && {
+          onAck: this.outpost.onAck.bind(this.outpost),
+          onRejected: this.outpost.onRejected.bind(this.outpost),
+        },
+      );
+      this.running.push(this.outbox);
+      checkDeadline();
     } catch (error) {
       try {
-        await this.closeStrategies(0);
+        await this.closeResources(0);
       } catch (cleanupError) {
         throw new AggregateError([error, cleanupError], "Metering startup and cleanup failed");
       }
@@ -335,7 +277,7 @@ export class Metering {
       errors.push(error);
     }
     try {
-      await this.closeStrategies(Math.max(0, deadline - Date.now()));
+      await this.closeResources(Math.max(0, deadline - Date.now()));
     } catch (error) {
       errors.push(error);
     }
@@ -343,13 +285,13 @@ export class Metering {
     if (errors.length) throw new AggregateError(errors, "Metering close failed");
   }
 
-  private async closeStrategies(timeout: number): Promise<void> {
+  private async closeResources(timeout: number): Promise<void> {
     const deadline = Date.now() + timeout;
     const errors: unknown[] = [];
-    for (const strategy of this.running.splice(0)) {
+    for (const resource of this.running.splice(0).reverse()) {
       try {
         const remaining = Math.max(0, deadline - Date.now());
-        await waitForDelivery(strategy.close({ timeoutMs: remaining }), remaining);
+        await waitForDelivery(resource.close({ timeoutMs: remaining }), remaining);
       } catch (error) {
         errors.push(error);
       }
@@ -376,72 +318,9 @@ const validateActor = (input: {
   }
 };
 
-/**
- * Create a lazily started helper, usually via polar.metering().
- *
- * @param polar Polar client used for event delivery.
- * @param client Authenticated HTTP client used for meter reads.
- * @param options.buffered Buffer options; omitted fields use BufferedMeteringOptions defaults.
- * @param options.outpost Outpost factory from `outpost()` in `@polar-sh/sdk/outpost`, which then
- * delivers the events instead of the buffer. Disabled by default.
- * @param options.strategies Replace all default strategies. Cannot be combined with
- * buffered or outpost options, nor hold both a buffer and an Outpost.
- * @returns A helper that starts on its first operation.
- * @throws MeteringError if options conflict.
- */
 export const createMetering = (
   polar: MeteringClient,
   client: ClientBase,
   options: MeteringOptions = {},
-): Metering => {
-  if (options.strategies !== undefined) {
-    if (options.buffered !== undefined || options.outpost !== undefined) {
-      throw new MeteringError("Cannot combine strategies with buffered or outpost options");
-    }
-    if (
-      options.strategies.some((strategy) => strategy instanceof BufferedMeteringStrategy) &&
-      options.strategies.some((strategy) => OUTPOST in strategy)
-    )
-      throw new MeteringError(
-        "Outpost delivers its events itself: the buffer would send them twice",
-      );
-    return new Metering({ strategies: options.strategies, client });
-  }
-  if (!options.outpost) {
-    return new Metering({
-      strategies: [new BufferedMeteringStrategy(polar, options.buffered)],
-      client,
-    });
-  }
-  if (options.buffered !== undefined)
-    throw new MeteringError(
-      "Outpost delivers its events itself: pass buffered or outpost, not both",
-    );
-  const createOutpost = options.outpost;
-  let outpost: Outpost | undefined;
-  const strategy: MeteringStrategy = {
-    async start() {
-      outpost = createOutpost(client);
-      await outpost.start();
-    },
-    validate(event) {
-      outpost!.validate(event);
-    },
-    async track(event) {
-      await outpost!.track(event);
-    },
-    async actor(input) {
-      await outpost!.actor(input);
-    },
-    async meter(input) {
-      return outpost!.meter(input);
-    },
-    async flush() {
-      await outpost?.flush();
-    },
-    async close() {
-      await outpost?.close();
-    },
-  };
-  return new Metering({ strategies: [strategy], client });
-};
+): Metering =>
+  new Metering(client, options.outbox ?? new MemoryOutbox(polar), options.outpost?.(client));

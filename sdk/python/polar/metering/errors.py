@@ -2,6 +2,8 @@ import dataclasses
 import math
 import typing
 
+import httpx2
+
 from polar import PolarError
 from polar.metering.events import EventInput
 
@@ -13,6 +15,15 @@ class MeteringError(PolarError):
 def retry_after_seconds(retry_after: int | None) -> float | None:
     """How long Polar asked to wait before the next delivery: a second at least."""
     return None if retry_after is None else max(float(retry_after), 1.0)
+
+
+def retry_after_response(response: httpx2.Response | None) -> float | None:
+    if response is None or response.status_code != 429:
+        return None
+    retry_after = response.headers.get("Retry-After")
+    if not retry_after or not retry_after.isdecimal():
+        return None
+    return retry_after_seconds(int(retry_after))
 
 
 class InvalidActorError(MeteringError):

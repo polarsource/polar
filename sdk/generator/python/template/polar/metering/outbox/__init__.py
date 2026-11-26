@@ -1,5 +1,5 @@
 import collections.abc
-import types
+import contextlib
 import typing
 
 from polar.metering.errors import DropReason
@@ -12,17 +12,12 @@ OnRejected = collections.abc.Callable[
 
 
 class Outbox(typing.Protocol):
-    on_ack: OnAck | None
-    on_rejected: OnRejected | None
-
-    async def __aenter__(self) -> typing.Self: ...
-
-    async def __aexit__(
+    def open(
         self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: types.TracebackType | None,
-    ) -> None: ...
+        *,
+        on_ack: OnAck | None = None,
+        on_rejected: OnRejected | None = None,
+    ) -> contextlib.AbstractAsyncContextManager["Outbox"]: ...
 
     async def enqueue(self, event: EventInput) -> None: ...
 

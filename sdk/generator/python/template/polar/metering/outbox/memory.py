@@ -1,14 +1,20 @@
+import collections.abc
 import contextlib
 import dataclasses
 import math
 import random
-import types
 import typing
 
 import anyio
 import anyio.lowlevel
 
-from polar import PolarError, PolarNetworkError, PolarRateLimitError, PolarServerError
+from polar import (
+    PolarClientError,
+    PolarError,
+    PolarNetworkError,
+    PolarRateLimitError,
+    PolarServerError,
+)
 from polar.logging import get_logger
 from polar.metering.client import MeteringClient
 from polar.metering.errors import (
@@ -20,6 +26,7 @@ from polar.metering.errors import (
     validate_timeout,
 )
 from polar.metering.events import EventInput
+from polar.metering.outbox import OnAck, OnRejected
 
 log = get_logger(__name__)
 
@@ -29,29 +36,6 @@ def _jittered_delay(base: float, jitter: float = 0.1) -> float:
 
 
 RETRY_AFTER_BUDGET = 300.0
-
-
-class BufferedMeteringOptions(typing.TypedDict, total=False):
-    """Configure in-memory batching and delivery to Polar.
-
-    Attributes:
-        batch_size: Maximum events per request. Defaults to 100.
-        batch_interval: Seconds to collect a batch after its first event. Defaults to 1.
-        shutdown_timeout: Seconds allowed to drain on exit. Defaults to 30.
-        max_attempts: Total delivery attempts per batch, including the first. Defaults to 3.
-        on_delivered: Async callback for events Polar accepted.
-        on_dropped: Async callback for undelivered events and their DropReason.
-            Defaults to None; drops are always logged.
-    """
-
-    batch_size: int
-    batch_interval: float
-    shutdown_timeout: float
-    max_attempts: int
-    on_delivered: typing.Callable[[list[EventInput]], typing.Awaitable[None]] | None
-    on_dropped: (
-        typing.Callable[[list[EventInput], DropReason], typing.Awaitable[None]] | None
-    )
 
 
 @dataclasses.dataclass
@@ -77,7 +61,7 @@ class _FlushRequest:
     error: BaseException | None = None
 
 
-class BufferedMeteringStrategy:
+class MemoryOutbox:
     """Batch events in memory and deliver them through Polar's HTTP API."""
 
     def __init__(
@@ -87,12 +71,6 @@ class BufferedMeteringStrategy:
         batch_interval: float = 1.0,
         shutdown_timeout: float = 30.0,
         max_attempts: int = 3,
-        on_delivered: typing.Callable[[list[EventInput]], typing.Awaitable[None]]
-        | None = None,
-        on_dropped: typing.Callable[
-            [list[EventInput], DropReason], typing.Awaitable[None]
-        ]
-        | None = None,
     ) -> None:
         """Configure event delivery and retries.
 
@@ -102,8 +80,6 @@ class BufferedMeteringStrategy:
             batch_interval: Batch collection interval in seconds. Defaults to 1.
             shutdown_timeout: Drain deadline in seconds. Defaults to 30.
             max_attempts: Total attempts per batch. Defaults to 3.
-            on_delivered: Awaited callback for events Polar accepted.
-            on_dropped: Awaited callback for dropped events and the drop reason.
 
         Raises:
             ValueError: batch_size is not positive or shutdown_timeout is invalid.
@@ -116,8 +92,6 @@ class BufferedMeteringStrategy:
         self.batch_interval = batch_interval
         self.shutdown_timeout = shutdown_timeout
         self.max_attempts = max_attempts
-        self.on_delivered = on_delivered
-        self.on_dropped = on_dropped
         self._send_queue, self._receive_queue = anyio.create_memory_object_stream[
             _QueuedEvent | _FlushRequest
         ](math.inf)
@@ -129,45 +103,40 @@ class BufferedMeteringStrategy:
         self._failures: list[_FailedEvent] = []
         self._pending: dict[int, EventInput] = {}
         self._failure: BaseException | None = None
+        self._started = False
         self._finished = False
         self._closed = False
 
-    async def __aenter__(self) -> typing.Self:
-        if self._flush_cancel_scope is not None:
-            raise PolarError("Buffered metering has already started")
-        self._worker_task_group = await self._stack.enter_async_context(
-            anyio.create_task_group()
-        )
-        self._flush_cancel_scope = await self._worker_task_group.start(self._flush_task)
-        return self
-
-    async def __aexit__(
+    @contextlib.asynccontextmanager
+    async def open(
         self,
-        exc_type: type[BaseException] | None,
-        exc_value: BaseException | None,
-        traceback: types.TracebackType | None,
-    ) -> bool | None:
-        """Drain accepted events within shutdown_timeout and report failures."""
-        assert self._flush_cancel_scope is not None
-        request = self._barrier()
-        self._closed = True
-        self._worker_task_group.cancel_scope.shield = True
-        self._flush_cancel_scope.deadline = anyio.current_time() + self.shutdown_timeout
-        self._send_queue.close()
+        *,
+        on_ack: OnAck | None = None,
+        on_rejected: OnRejected | None = None,
+    ) -> collections.abc.AsyncGenerator[typing.Self, None]:
+        if self._started:
+            raise PolarError("Memory outbox has already started")
+        self._started = True
         try:
+            self._worker_task_group = await self._stack.enter_async_context(
+                anyio.create_task_group()
+            )
+            self._flush_cancel_scope = await self._worker_task_group.start(
+                self._flush_task, on_ack, on_rejected
+            )
+        except BaseException:
             await self._stack.aclose()
-            self._finish(request)
-            self._acknowledged = max(self._acknowledged, request.through)
-            if request.error is not None:
-                if exc_value is not None:
-                    raise BaseExceptionGroup(
-                        "Metering body and delivery failed", [exc_value, request.error]
-                    )
-                raise request.error
+            raise
+        body_error: BaseException | None = None
+        try:
+            yield self
+        except BaseException as error:
+            body_error = error
+            raise
         finally:
-            self._release(request)
+            await self._close(body_error)
 
-    async def track(
+    async def enqueue(
         self,
         event: EventInput,
     ) -> None:
@@ -180,7 +149,7 @@ class BufferedMeteringStrategy:
         if self._failure is not None:
             raise self._failure
         if self._flush_cancel_scope is None:
-            raise PolarError("Buffered metering has not started")
+            raise PolarError("Memory outbox has not started")
         self._sequence += 1
         self._send_queue.send_nowait(_QueuedEvent(self._sequence, event))
         self._pending[self._sequence] = event
@@ -203,7 +172,7 @@ class BufferedMeteringStrategy:
         """
         validate_timeout(timeout)
         if self._flush_cancel_scope is None:
-            raise PolarError("Buffered metering has not started")
+            raise PolarError("Memory outbox has not started")
         if self._closed:
             raise anyio.ClosedResourceError
         request = self._barrier()
@@ -232,6 +201,26 @@ class BufferedMeteringStrategy:
         finally:
             self._release(request)
 
+    async def _close(self, body_error: BaseException | None) -> None:
+        assert self._flush_cancel_scope is not None
+        request = self._barrier()
+        self._closed = True
+        self._worker_task_group.cancel_scope.shield = True
+        self._flush_cancel_scope.deadline = anyio.current_time() + self.shutdown_timeout
+        self._send_queue.close()
+        try:
+            await self._stack.aclose()
+            self._finish(request)
+            self._acknowledged = max(self._acknowledged, request.through)
+            if request.error is not None:
+                if body_error is not None:
+                    raise BaseExceptionGroup(
+                        "Metering body and delivery failed", [body_error, request.error]
+                    )
+                raise request.error
+        finally:
+            self._release(request)
+
     def _barrier(self) -> _FlushRequest:
         request = _FlushRequest(self._acknowledged, self._sequence)
         self._barriers.add(request)
@@ -256,13 +245,12 @@ class BufferedMeteringStrategy:
         )
         self._failures = [item for item in self._failures if item.sequence > oldest]
 
-    async def _on_dropped(self, events: list[EventInput], reason: DropReason) -> None:
-        log.warning("Dropping %s events: %s", len(events), reason)
-        if self.on_dropped is not None:
-            await self.on_dropped(events, reason)
-
     async def _flush_task(
-        self, *, task_status: anyio.abc.TaskStatus[anyio.CancelScope]
+        self,
+        on_ack: OnAck | None,
+        on_rejected: OnRejected | None,
+        *,
+        task_status: anyio.abc.TaskStatus[anyio.CancelScope],
     ) -> None:
         async with self._receive_queue:
             batch: list[_QueuedEvent] = []
@@ -314,14 +302,19 @@ class BufferedMeteringStrategy:
                                 )
                         batch = []
                         if outcome is not None:
-                            await self._on_dropped(events, outcome.reason)
-                        elif self.on_delivered is not None:
-                            await self.on_delivered(events)
+                            log.warning("Dropping %s events: %s", len(events), outcome.reason)
+                        try:
+                            if outcome is None and on_ack is not None:
+                                await on_ack(events)
+                            elif outcome is not None and outcome.reason == "permanent_error" and on_rejected is not None:
+                                await on_rejected(events, outcome.reason)
+                        except Exception as error:  # noqa: BLE001
+                            log.warning("Memory outbox delivery hook failed (%s)", type(error).__name__)
                         for request in requests:
                             self._finish(request)
                         requests = []
                 if cancel_scope.cancelled_caught:
-                    failure = TimeoutError("Buffered metering shutdown timed out")
+                    failure = TimeoutError("Memory outbox shutdown timed out")
                     if not self._pending:
                         self._failure = MeteringTimeoutError(self.shutdown_timeout)
             except BaseException as error:  # noqa: BLE001
@@ -350,19 +343,8 @@ class BufferedMeteringStrategy:
                             )
                         )
                     self._pending.clear()
-                    try:
-                        cleanup_scope = anyio.CancelScope(
-                            deadline=cancel_scope.deadline, shield=True
-                        )
-                        self._flush_cancel_scope = cleanup_scope
-                        with cleanup_scope:
-                            if pending:
-                                await self._on_dropped(pending, reason)
-                    except BaseException as callback_error:  # noqa: BLE001
-                        self._failure = BaseExceptionGroup(
-                            "Metering worker and drop callback failed",
-                            [failure, callback_error],
-                        )
+                    if pending:
+                        log.warning("Dropping %s events: %s", len(pending), reason)
                 self._finished = True
                 for request in requests:
                     self._finish(request)
@@ -374,23 +356,26 @@ class BufferedMeteringStrategy:
             try:
                 await self.polar.events.ingest(events=batch)
                 break
-            except (PolarNetworkError, PolarRateLimitError, PolarServerError) as e:
+            except PolarError as error:
+                if not (
+                    isinstance(error, (PolarNetworkError, PolarRateLimitError, PolarServerError))
+                    or isinstance(error, PolarClientError) and error.status_code == 408
+                ):
+                    return DeliveryFailure(batch, "permanent_error", error)
                 retry_after = (
-                    retry_after_seconds(e.retry_after)
-                    if isinstance(e, PolarRateLimitError)
+                    retry_after_seconds(error.retry_after)
+                    if isinstance(error, PolarRateLimitError)
                     else None
                 )
                 if retry_after is not None:
                     delay = retry_after
                     waited += delay
                     if waited > RETRY_AFTER_BUDGET:
-                        return DeliveryFailure(batch, "retry_exhausted", e)
+                        return DeliveryFailure(batch, "retry_exhausted", error)
                 else:
                     if attempt >= self.max_attempts:
-                        return DeliveryFailure(batch, "retry_exhausted", e)
+                        return DeliveryFailure(batch, "retry_exhausted", error)
                     delay = _jittered_delay(2**attempt)
                     attempt += 1
                 await anyio.sleep(delay)
-            except PolarError as error:
-                return DeliveryFailure(batch, "permanent_error", error)
         return None

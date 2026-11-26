@@ -1,0 +1,103 @@
+sdk/generator/typescript/template/src/outpost/client.test.ts
+  s_868513325afaca::t_332b4a8a58484b 1319,1322-1323
+  s_868513325afaca::t_fed2b71a82bb9e 1310-1318,1320-1321,1324-1327
+  s_868513325afaca::t_2e384bf5f53f6b 1310-1315,1317,1322,1324-1327
+sdk/generator/python/template/tests/outpost/test_client.py
+  s_868513325afaca::t_332b4a8a58484b 2200,2203-2205,2231
+  s_868513325afaca::t_5e7b24bae5e83f 2179-2199,2201-2202,2206-2230,2232-2239,3127
+  s_868513325afaca::t_56ed496e4e1021 2213-2231,2233-2239
+  s_868513325afaca::t_5117d9aa49d8ab 3127
+  s_868513325afaca::t_040297ff4e005c 2179-2195,2197-2198,2203,2206-2212
+sdk/generator/python/template/polar/outpost/client.py
+  s_868513325afaca::t_fef6707aa16059 282,286,292-293,599,613,620,630,1192,1201-1202,1633
+  s_868513325afaca::t_8b81cda815cd32 282,286,292-293,599,1633
+sdk/generator/python/template/polar/outpost/state.py
+  s_868513325afaca::t_04b11d26cb602c 5,59-60
+  s_868513325afaca::t_093ef548616f1c 5
+  s_868513325afaca::t_f28a31a72262b8 59-60
+sdk/generator/python/template/tests/benchmarks/test_scripts.py
+  s_868513325afaca::t_5ab84d0fbbdcb6 59,97,109
+  s_868513325afaca::t_6bbb5662c12c2f 59
+sdk/generator/redis/outpost/apply_snapshot.lua
+  s_868513325afaca::t_02e9dc0065fc1d 47-49
+  s_868513325afaca::t_f28a31a72262b8 47-49
+sdk/generator/redis/outpost/confirm.lua
+  s_868513325afaca::t_8407c48e27acfc 1-2,4,9,12-15,18-28,30,37,50-51,88-128,133-134,138-139
+  s_868513325afaca::t_5117d9aa49d8ab 18
+  s_868513325afaca::t_f28a31a72262b8 1-2,4,9,12-15,19-28,30,37,50-51,88-128,133-134,138-139
+sdk/generator/redis/outpost/read_states.lua
+  s_868513325afaca::t_b926fc997de839 34-35
+  s_868513325afaca::t_f28a31a72262b8 34-35
+sdk/generator/redis/outpost/write_bucket.lua
+  s_868513325afaca::t_b844670b20b501 6-8,16,18,22-23
+  s_868513325afaca::t_5117d9aa49d8ab 6
+  s_868513325afaca::t_f28a31a72262b8 7-8
+sdk/generator/typescript/template/src/outpost/client.ts
+  s_868513325afaca::t_059315049b8c4d 160,178,181,185,187,405,527,976,986-987,1328
+  s_868513325afaca::t_b24bea0fde0332 160,178,181,185,187,527,614-615,1328
+sdk/generator/typescript/template/src/outpost/scripts.bench.ts
+  s_868513325afaca::t_87087e99a4ecfe 32,74,87
+  s_868513325afaca::t_5117d9aa49d8ab 32
+sdk/generator/typescript/template/src/outpost/state.ts
+  s_868513325afaca::t_8d0817fc6107af 10-11,48
+  s_868513325afaca::t_b24bea0fde0332 10-11,48
+sdk/python/polar/outpost/client.py
+  s_868513325afaca::t_44b0a9f0683c77 267-268,335-337,345,347,351-352,382-383,385,390,393-396,399-409,411,418,431-432,469-509,514-515,519-520,573-575,647,651,657-658,964,978,985,995,1565,1574-1577,2027
+  s_868513325afaca::t_c3dc1ac1b857c9 267-268,335-337,382-383,385,390,393-396,399-409,411,418,431-432,469-509,514-515,519-520,573-575,647,651,657-658,964,2027
+sdk/python/polar/outpost/state.py
+  s_868513325afaca::t_c2ccff8312e050 5,59-62
+  s_868513325afaca::t_8cbabe5c8d9ec3 5,59-62
+sdk/python/tests/benchmarks/test_scripts.py
+  s_868513325afaca::t_a749899aba1fdc 59,97,109
+  s_868513325afaca::t_b2e3f655671234 59
+sdk/python/tests/outpost/test_client.py
+  s_868513325afaca::t_4caa4aca9ed634 2205-2265,3153-3157
+  s_868513325afaca::t_c2fc3bae5daa62 2205-2221,2223-2224,2229,2232-2257,2259-2265,3153-3157
+sdk/typescript/src/outpost/client.test.ts
+  s_868513325afaca::t_7fdba9d1558343 1343-1369
+  s_868513325afaca::t_09ef380c00a0bf 1343-1348,1350,1355,1359-1369
+sdk/typescript/src/outpost/client.ts
+  s_868513325afaca::t_729a22c538df48 169,187,190,194,196,410,530,988,998-999,1349
+  s_868513325afaca::t_01ee007254089d 169,187,190,194,196,530,619-620,1349
+sdk/typescript/src/outpost/scripts.bench.ts
+  s_868513325afaca::t_dd252839a32108 32,74,87
+  s_868513325afaca::t_eba90706cb70d9 32
+sdk/typescript/src/outpost/scripts.ts
+  s_868513325afaca::t_ce75433d3e8c13 35-36,97-99,107,109,113-114,212-214,243-244,246,251,254-257,260-270,272,279,292-293,330-370,375-376,380-381
+  s_868513325afaca::t_5a6d7eacfd969c 35-36,97-99,212-214,243-244,246,251,254-257,260-270,272,279,292-293,330-370,375-376,380-381
+sdk/typescript/src/outpost/state.ts
+  s_868513325afaca::t_2e903ecdd5c500 1,47-48
+  s_868513325afaca::t_86d1613961fa18 1,47-48
+sdk/typescript/src/metering/buffered.ts
+  s_868513325afaca::t_1d45f4c7283d81 2-3,4-8,10-18,20,22-48,50-61,71-101,105-121,123-126,128-132,135-147,149-150,154-161,163-181,183-225,227-314,316-347,350-362,375-394,396-417,423
+sdk/generator/typescript/template/src/metering/client.test.ts
+  s_868513325afaca::t_5117d9aa49d8ab 429
+sdk/generator/typescript/template/src/metering/buffered.test.ts
+  s_868513325afaca::t_2e384bf5f53f6b 1-2,4-10,14-26,28-31,33-37,39-44,46-57,59-64,66,68-87,89-93,95-96,98-132,134-138,140-144,146-180,183,186,188-189,191-196,199-202,204-222,224-227,229-244,246,248-256,258-261,263,266,268-270,272-277,279-283,285,288,290-292,294-300,302,304,307,309-310,312-318,319-325,327-331,333,336,338-339,345-350,352-360,362-374,376-378,380,382,384,389-398,401,406,408-409,411-415,417-418,422,425,427-429,431-439,442,445,448-457,459-475,477-480,482,484-504,506-509,511,513-529,531-534,536-560,562-565,567-587,589,591-598,601,603-604,606-613,622
+sdk/generator/python/template/polar/metering/__init__.py
+  s_868513325afaca::t_c74bf5f715f30e 444
+sdk/generator/typescript/template/src/metering/outbox/index.ts
+  s_868513325afaca::t_1d45f4c7283d81 4
+sdk/python/polar/metering/__init__.py
+  s_868513325afaca::t_045d64d8ff4c80 444
+sdk/typescript/src/metering/client.test.ts
+  s_868513325afaca::t_dd88200f4d2f23 473,565,655
+sdk/typescript/src/metering/outbox/index.ts
+  s_868513325afaca::t_41491c5f869b33 4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d5a04f7f290f3ec093f28af3edf898b2b9d3145b",
+  "prompts": {},
+  "sessions": {
+    "s_868513325afaca": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a2138b-136c-7cf0-b8fd-2500c8a89c9c",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

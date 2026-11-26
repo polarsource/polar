@@ -1,4 +1,5 @@
 import json
+from unittest.mock import AsyncMock
 
 import httpx2
 import pytest
@@ -45,9 +46,8 @@ async def test_redis_outbox_retries_with_the_same_event_and_reports_acceptance(
             stream="test:outbox",
             client=client,
         )
-        outbox.on_ack = on_ack
-        outbox.on_rejected = on_rejected
-        async with outbox:
+        first_ack = AsyncMock()
+        async with outbox.open(on_ack=first_ack, on_rejected=on_rejected):
             await outbox.enqueue({"name": "call", "external_customer_id": "alice"})
             with pytest.raises(MeteringTimeoutError):
                 await outbox.flush(timeout=0.1)
@@ -57,10 +57,11 @@ async def test_redis_outbox_retries_with_the_same_event_and_reports_acceptance(
             assert await redis.xlen("test:outbox") == 1
 
         await redis.hset("test:outbox:backoff", "retry_at", 0)
-        async with outbox:
+        async with outbox.open(on_ack=on_ack, on_rejected=on_rejected):
             await outbox.flush()
 
         assert len(attempts) == 2
+        first_ack.assert_not_awaited()
         assert attempts[0] == attempts[1]
         assert attempts[0]["external_id"]
         assert attempts[0]["timestamp"]
@@ -101,12 +102,7 @@ async def test_redis_outbox_reports_a_rejection_before_retiring_the_entry(
             if len(rejected) == 1:
                 raise RuntimeError("Reducer unavailable")
 
-        async with RedisOutbox(
-            "redis://localhost",
-            stream="test:outbox",
-            client=client,
-            on_rejected=on_rejected,
-        ) as outbox:
+        async with RedisOutbox('redis://localhost', stream='test:outbox', client=client).open(on_rejected=on_rejected) as outbox:
             await outbox.enqueue(event)
             await outbox.flush()
 

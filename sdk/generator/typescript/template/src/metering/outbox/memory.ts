@@ -1,12 +1,14 @@
-import type { EventInput } from "./event";
+import type { EventInput } from "../event";
+import type { Outbox, OutboxHooks } from "./index";
 
 import {
+  PolarClientError,
   PolarError,
   PolarNetworkError,
   PolarRateLimitError,
   PolarServerError,
   type RequestOptions,
-} from "../base";
+} from "../../base";
 import {
   MeteringDeliveryError,
   MeteringTimeoutError,
@@ -16,9 +18,9 @@ import {
   type DeliveryFailure,
   type DeliveryOptions,
   type DropReason,
-} from "./errors";
+} from "../errors";
 
-export type { DropReason } from "./errors";
+export type { DropReason } from "../errors";
 
 const RETRY_AFTER_BUDGET_MS = 300_000;
 
@@ -46,7 +48,7 @@ export interface MeteringClient {
 /**
  * Configure in-memory batching and delivery to Polar.
  */
-export interface BufferedMeteringOptions {
+export interface MemoryOutboxOptions {
   /**
    * Maximum events per HTTP request. Defaults to 100.
    */
@@ -59,15 +61,6 @@ export interface BufferedMeteringOptions {
    * Total delivery attempts per batch, including the first. Defaults to 3.
    */
   maxAttempts?: number;
-  /**
-   * Callback for events Polar accepted; may be async.
-   */
-  onDelivered?: (events: EventInput[]) => void | Promise<void>;
-  /**
-   * Callback for undelivered events and their DropReason; may be async.
-   * Defaults to undefined; drops are always logged and remain observable by flush().
-   */
-  onDropped?: (events: EventInput[], reason: DropReason) => void | Promise<void>;
 }
 
 interface QueuedEvent {
@@ -99,9 +92,8 @@ class FlushRequest {
 /**
  * Batch events in memory and deliver them through Polar's HTTP API.
  */
-export class BufferedMeteringStrategy {
-  private readonly options: Required<Omit<BufferedMeteringOptions, "onDelivered" | "onDropped">> &
-    Pick<BufferedMeteringOptions, "onDelivered" | "onDropped">;
+export class MemoryOutbox implements Outbox {
+  private readonly options: Required<MemoryOutboxOptions>;
   private readonly queue: (QueuedEvent | FlushRequest)[] = [];
   private readonly barriers = new Set<FlushRequest>();
   private readonly abort = new AbortController();
@@ -119,19 +111,17 @@ export class BufferedMeteringStrategy {
    * Configure event delivery and retries.
    *
    * @param polar Client exposing the events.ingest API.
-   * @param options Batch size, collection interval in milliseconds, retries, and delivery callbacks.
+   * @param options Batch size, collection interval in milliseconds, and retries.
    * @throws RangeError if the batch size, max attempts, or batch interval is invalid.
    */
   constructor(
     private readonly polar: MeteringClient,
-    options: BufferedMeteringOptions = {},
+    options: MemoryOutboxOptions = {},
   ) {
     this.options = {
       batchSize: options.batchSize ?? 100,
       batchIntervalMs: options.batchIntervalMs ?? 1000,
       maxAttempts: options.maxAttempts ?? 3,
-      onDelivered: options.onDelivered,
-      onDropped: options.onDropped,
     };
     for (const value of [this.options.batchSize, this.options.maxAttempts]) {
       if (!Number.isSafeInteger(value) || value < 1)
@@ -145,12 +135,12 @@ export class BufferedMeteringStrategy {
   /**
    * Start the background delivery worker.
    *
-   * @returns This strategy, ready to accept events.
+   * @returns This outbox, ready to accept events.
    * @throws PolarError if the worker has already started.
    */
-  async start(): Promise<this> {
-    if (this.worker) throw new PolarError("Buffered metering has already started");
-    this.worker = this.run();
+  async start(hooks: OutboxHooks = {}): Promise<this> {
+    if (this.worker) throw new PolarError("Memory outbox has already started");
+    this.worker = this.run(hooks);
     return this;
   }
 
@@ -159,7 +149,7 @@ export class BufferedMeteringStrategy {
    *
    * @param event Event including its customer identity.
    */
-  async track(event: EventInput): Promise<void> {
+  async enqueue(event: EventInput): Promise<void> {
     this.assertRunning();
     this.queue.push({ sequence: ++this.sequence, event });
     this.wake?.();
@@ -179,7 +169,7 @@ export class BufferedMeteringStrategy {
    */
   async flush(options?: DeliveryOptions): Promise<void> {
     const timeout = deliveryTimeout(options);
-    if (!this.worker || this.closing) throw new PolarError("Buffered metering is not running");
+    if (!this.worker || this.closing) throw new PolarError("Memory outbox is not running");
     const request = this.barrier();
     request.deadline = Date.now() + timeout;
     if (this.finished || this.failure) this.finish(request);
@@ -223,7 +213,7 @@ export class BufferedMeteringStrategy {
 
   private assertRunning(): void {
     if (this.failure) throw this.failure;
-    if (!this.worker || this.closing) throw new PolarError("Buffered metering is not running");
+    if (!this.worker || this.closing) throw new PolarError("Memory outbox is not running");
   }
 
   private barrier(): FlushRequest {
@@ -312,7 +302,7 @@ export class BufferedMeteringStrategy {
     }
   }
 
-  private async run(): Promise<void> {
+  private async run({ onAck, onRejected }: OutboxHooks): Promise<void> {
     let requests: FlushRequest[] = [];
     try {
       while (!this.closing || this.queue.length) {
@@ -345,8 +335,16 @@ export class BufferedMeteringStrategy {
           for (const item of this.batch) this.failures.push({ ...item, ...failure });
         }
         this.batch = [];
-        if (failure) await this.onDropped(events, failure.reason);
-        else await this.options.onDelivered?.(events);
+        if (failure) console.warn(`Dropping ${events.length} events: ${failure.reason}`);
+        try {
+          if (!failure) await onAck?.(events);
+          else if (failure.reason === "permanent_error") await onRejected?.(events, failure.reason);
+        } catch (error) {
+          console.warn(
+            "Memory outbox delivery hook failed",
+            error instanceof Error ? error.constructor.name : typeof error,
+          );
+        }
         for (const request of requests) this.finish(request);
         requests = [];
       }
@@ -360,18 +358,7 @@ export class BufferedMeteringStrategy {
       for (const item of pending) this.failures.push({ ...item, reason, cause: error });
       if (!this.abort.signal.aborted)
         this.failure = error instanceof Error ? error : new PolarError(String(error));
-      try {
-        if (pending.length)
-          await this.onDropped(
-            pending.map((item) => item.event),
-            reason,
-          );
-      } catch (callbackError) {
-        this.failure = new AggregateError(
-          [error, callbackError],
-          "Metering worker and drop callback failed",
-        );
-      }
+      if (pending.length) console.warn(`Dropping ${pending.length} events: ${reason}`);
     } finally {
       this.finished = true;
       for (const request of this.barriers) this.finish(request);
@@ -392,7 +379,8 @@ export class BufferedMeteringStrategy {
         if (
           error instanceof PolarNetworkError ||
           error instanceof PolarRateLimitError ||
-          error instanceof PolarServerError
+          error instanceof PolarServerError ||
+          (error instanceof PolarClientError && error.statusCode === 408)
         ) {
           const retryAfter = retryAfterMs(error);
           let delay: number;
@@ -414,10 +402,5 @@ export class BufferedMeteringStrategy {
         }
       }
     }
-  }
-
-  private async onDropped(events: EventInput[], reason: DropReason): Promise<void> {
-    console.warn(`Dropping ${events.length} events: ${reason}`);
-    await this.options.onDropped?.(events, reason);
   }
 }

@@ -20,13 +20,13 @@ import {
   waitForDelivery,
 } from "../errors";
 import type { EventInput } from "../event";
-import type { Outbox } from "./index";
+import type { Outbox, OutboxHooks } from "./index";
 
 const OUTBOX_BATCH = {{ redis_constants.outbox_batch }};
 const FLUSHERS = {{ redis_constants.outbox_flushers }};
 const OUTBOX_CLAIM_IDLE = {{ redis_constants.outbox_claim_idle }};
 const FLUSHER_LOCK_TTL = {{ redis_constants.outbox_flusher_lock_ttl }};
-export const DRAIN_INTERVAL = {{ redis_constants.outbox_drain_interval }};
+const DRAIN_INTERVAL = {{ redis_constants.outbox_drain_interval }};
 const OUTBOX_RETRY_DELAY = {{ redis_constants.outbox_retry_delay }};
 const MAX_OUTBOX_RETRY_DELAY = {{ redis_constants.outbox_max_retry_delay }};
 // The consumer group the flushers read the outbox through.
@@ -93,16 +93,14 @@ const holdsNoInfinity = (value: unknown): boolean => {
   return Object.values(value).every(holdsNoInfinity);
 };
 
-
-export interface RedisOutboxOptions extends Partial<Pick<Outbox, "onAck" | "onRejected">> {
+export interface RedisOutboxOptions {
   client: Pick<ClientBase, "sendRequest" | "buildRequest" | "parseResponse">;
   /** Use a distinct stream per Polar environment and organization. */
   stream: string;
 }
 
 export class RedisOutbox implements Outbox {
-  onAck: Outbox["onAck"];
-  onRejected: Outbox["onRejected"];
+  private hooks?: OutboxHooks;
 
   private redis?: OutboxRedis;
   private timer?: ReturnType<typeof setInterval>;
@@ -113,18 +111,18 @@ export class RedisOutbox implements Outbox {
   constructor(
     private readonly redisUrl: string,
     private readonly options: RedisOutboxOptions,
-  ) {
-    this.onAck = options.onAck;
-    this.onRejected = options.onRejected;
-  }
+  ) {}
 
-  async start(): Promise<this> {
+  async start(hooks: OutboxHooks = {}): Promise<this> {
     if (this.redis) throw new PolarError("Redis outbox is already connected");
     const redis = createRedis(this.redisUrl);
     this.redis = redis as OutboxRedis;
     try {
       await connectRedis(redis);
-      await this.attach(redis);
+      redis.defineCommand("outboxBacklog", { numberOfKeys: 2, lua: OUTBOX_BACKLOG_SCRIPT });
+      redis.defineCommand("outboxAcknowledge", { numberOfKeys: 2, lua: ACKNOWLEDGE_SCRIPT });
+      await this.createOutboxGroup();
+      this.hooks = hooks;
       this.timer = setInterval(() => void this.drain().catch(() => {}), DRAIN_INTERVAL);
       return this;
     } catch (error) {
@@ -134,11 +132,14 @@ export class RedisOutbox implements Outbox {
     }
   }
 
-  async close(): Promise<void> {
+  async close(options?: DeliveryOptions): Promise<void> {
+    const timeout = deliveryTimeout(options);
     clearInterval(this.timer);
     try {
-      await waitForDelivery(this.drainQueued(), deliveryTimeout()).catch(() => {});
+      const draining = this.redis && this.undrained ? this.drain() : this.draining;
+      if (draining) await waitForDelivery(draining.catch(() => {}), timeout);
     } finally {
+      this.hooks = undefined;
       this.redis?.disconnect();
       this.redis = undefined;
     }
@@ -151,7 +152,7 @@ export class RedisOutbox implements Outbox {
       timestamp: event.timestamp ?? new Date().toISOString(),
     });
     await this.requireRedis().xadd(this.options.stream, "*", "event", queued);
-    this.markQueued();
+    this.undrained = true;
   }
 
   async flush(options?: DeliveryOptions): Promise<void> {
@@ -174,25 +175,6 @@ export class RedisOutbox implements Outbox {
       if (remaining <= 0) throw new MeteringTimeoutError(timeout);
       await sleep(Math.min(DRAIN_INTERVAL, remaining));
     }
-  }
-
-  /** @internal Attach to the Redis connection owned by Outpost. */
-  async attach(redis: Redis): Promise<void> {
-    this.redis = redis as OutboxRedis;
-    redis.defineCommand("outboxBacklog", { numberOfKeys: 2, lua: OUTBOX_BACKLOG_SCRIPT });
-    redis.defineCommand("outboxAcknowledge", { numberOfKeys: 2, lua: ACKNOWLEDGE_SCRIPT });
-    await this.createOutboxGroup();
-  }
-
-  /** @internal Outpost may enqueue through its bucket script. */
-  markQueued(): void {
-    this.undrained = true;
-  }
-
-  /** @internal Preserve Outpost's best-effort drain and shutdown behavior. */
-  async drainQueued(force = false): Promise<void> {
-    if (!this.redis) return;
-    await (force || this.undrained ? this.drain() : this.draining)?.catch(() => {});
   }
 
   private requireRedis(): OutboxRedis {
@@ -369,8 +351,8 @@ export class RedisOutbox implements Outbox {
         });
         return false;
       }
-    if (refused.length) await this.onRejected?.(refused, "permanent_error");
-    if (events.length) await this.onAck?.(events);
+    if (refused.length) await this.hooks?.onRejected?.(refused, "permanent_error");
+    if (events.length) await this.hooks?.onAck?.(events);
     await this.requireRedis().outboxAcknowledge(
       this.options.stream,
       delivery.lockKey,

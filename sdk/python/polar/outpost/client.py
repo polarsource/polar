@@ -48,16 +48,11 @@ from polar.metering.client import PolarClient
 from polar.metering.errors import (
     DropReason,
     UnknownMeterError,
+    retry_after_response,
     validate_timeout,
 )
 from polar.metering.events import EventInput
 from polar.metering.meter import CustomerMeter
-from polar.metering.outbox.redis import (
-    DRAIN_INTERVAL,
-    RedisOutbox,
-    _encode_event,
-    _retry_after,
-)
 from polar.outpost.errors import (
     MissingExternalIdError,
     NotReadyError,
@@ -341,17 +336,6 @@ assert(total == total and math.abs(total) ~= math.huge, 'Aggregation values must
 if redis.call('HSETNX', KEYS[2], ARGV[3], ARGV[2]) == 0 then
     return 0
 end
--- The write that first sees an event queues it for Polar, as Polar ingests it: KEYS[4] is the
--- stream, ARGV[4] the event, or nothing for the other reducers the event matches. A flusher
--- holding the first slot, KEYS[5], reads the stream again once it lets go: it delivers the event.
--- Otherwise the write returns 2, and the instance drains the stream on its next flush.
-local written = 1
-if ARGV[4] ~= '' then
-    redis.call('XADD', KEYS[4], '*', 'event', ARGV[4])
-    if redis.call('EXISTS', KEYS[5]) == 0 then
-        written = 2
-    end
-end
 -- Every local event counts in its bucket; the pending part is what Polar has not confirmed.
 for _, prefix in ipairs({bucket, pending}) do
     redis.call('HINCRBYFLOAT', KEYS[1], prefix .. 'sum', value and ARGV[2] or '0')
@@ -372,7 +356,7 @@ end
 -- Polar's snapshot.
 redis.call('EXPIRE', KEYS[2], 3900)
 redis.call('EXPIRE', KEYS[1], 86400)
-return written
+return 1
 """
 
 WRITE_BUCKET_SHA = hashlib.sha1(WRITE_BUCKET_SCRIPT.encode()).hexdigest()
@@ -661,11 +645,6 @@ def _confirm_arguments(
 
 log = get_logger(__name__)
 
-# Called with each batch of events Polar accepted from the outbox.
-OnDelivered = typing.Callable[[list[EventInput]], typing.Awaitable[None]]
-# Called with each batch of events Polar refused, which leave the outbox.
-OnDropped = typing.Callable[[list[EventInput], DropReason], typing.Awaitable[None]]
-
 
 class Configuration(typing.TypedDict):
     organization_id: str
@@ -726,13 +705,9 @@ class Outpost:
         telemetry: bool = True,
         snapshot_timeout: float = SNAPSHOT_TIMEOUT,
         confirm_timeout: float = CONFIRM_TIMEOUT,
-        on_delivered: OnDelivered | None = None,
-        on_dropped: OnDropped | None = None,
     ) -> None:
         self.redis_url = redis_url
         self._client = client
-        self._on_delivered = on_delivered
-        self._on_dropped = on_dropped
         self._telemetry = is_telemetry_enabled(telemetry)
         self._tracer_provider: TracerProvider | None = None
         self._tracer: trace.Tracer = trace.NoOpTracer()
@@ -758,7 +733,6 @@ class Outpost:
         self._apply_snapshot: AsyncScript | None = None
         self._confirm_script: AsyncScript | None = None
         self._commit_pull: AsyncScript | None = None
-        self._outbox: RedisOutbox | None = None
         validate_timeout(snapshot_timeout)
         self._snapshot_timeout = snapshot_timeout
         self._confirm_timeout = confirm_timeout
@@ -787,16 +761,12 @@ class Outpost:
         *,
         telemetry: bool = True,
         snapshot_timeout: float = SNAPSHOT_TIMEOUT,
-        on_delivered: OnDelivered | None = None,
-        on_dropped: OnDropped | None = None,
     ) -> typing.Self:
         return cls(
             redis_url=redis_url,
             client=polar._client._client,
             telemetry=telemetry,
             snapshot_timeout=snapshot_timeout,
-            on_delivered=on_delivered,
-            on_dropped=on_dropped,
         )
 
     @_raise_redis_unavailable
@@ -836,23 +806,10 @@ class Outpost:
             self._tasks = await self._stack.enter_async_context(
                 anyio.create_task_group()
             )
-            self._outbox = RedisOutbox(
-                self.redis_url,
-                stream=self._outbox_key,
-                client=self._client,
-                on_ack=self._on_ack,
-                on_rejected=self._on_rejected,
-            )
-            await self._outbox._start(
-                self._redis,
-                self._tasks,
-                request_timeout=TIMEOUT,
-            )
             self._connection_id = str(uuid.uuid4())
             await self._load_pull()
             self._tasks.start_soon(self._pull_on_time)
             self._tasks.start_soon(self._report_on_time)
-            self._tasks.start_soon(self._drain_outbox_on_time)
         except BaseException:
             try:
                 if self._tasks is not None:
@@ -868,7 +825,6 @@ class Outpost:
                 self._apply_snapshot = None
                 self._confirm_script = None
                 self._commit_pull = None
-                self._outbox = None
                 await self._shutdown_telemetry()
             raise
         return self
@@ -884,7 +840,6 @@ class Outpost:
         try:
             try:
                 await self._in_flight()
-                await self._drain_outbox_quietly()
                 # Their last exports land in the buffer, which the shared Redis takes
                 # before it closes.
                 await self._shutdown_telemetry()
@@ -905,7 +860,6 @@ class Outpost:
             self._apply_snapshot = None
             self._confirm_script = None
             self._commit_pull = None
-            self._outbox = None
             await self._shutdown_telemetry()
 
     @property
@@ -942,29 +896,18 @@ class Outpost:
             if self._ingest_buckets is not None:
                 self._ingest_buckets.add(len(matches))
             assert self._redis is not None
-            # Polar dates the event as Outpost bucketed it.
-            queued = _encode_event(
-                {
-                    **event,
-                    "timestamp": event.get("timestamp") or parsed.timestamp.isoformat(),
-                }
-            )
             if not matches:
-                assert self._outbox is not None
-                await self._outbox._enqueue_encoded(queued)
+                return
             writes: list[list[str | int | float]] = []
-            for index, (reducer_id, value) in enumerate(matches):
+            for reducer_id, value in matches:
                 identity = f"{parsed.external_customer_id}:{reducer_id}"
                 arguments: list[str | int | float] = [
                     f"{self._prefix}:state:{identity}",
                     f"{self._prefix}:pending:{identity}:{bucket_start}",
                     f"{self._prefix}:rejected:{identity}:{bucket_start}",
-                    self._outbox_key,
-                    f"{self._outbox_key}:flusher:0",
                     bucket_start,
                     value if value is not None else "",
                     typing.cast(str, event["external_id"]),
-                    queued if index == 0 else "",
                 ]
                 writes.append(arguments)
             # Most events match one reducer: one EVALSHA writes its bucket. A pipeline only
@@ -972,14 +915,14 @@ class Outpost:
             if len(writes) == 1:
                 try:
                     results = [
-                        await self._redis.evalsha(WRITE_BUCKET_SHA, 5, *writes[0])
+                        await self._redis.evalsha(WRITE_BUCKET_SHA, 3, *writes[0])
                     ]
                 except NoScriptError as error:
                     results = [error]
             else:
                 async with self._redis.pipeline(transaction=False) as pipeline:
                     for arguments in writes:
-                        pipeline.evalsha(WRITE_BUCKET_SHA, 5, *arguments)
+                        pipeline.evalsha(WRITE_BUCKET_SHA, 3, *arguments)
                     results = await pipeline.execute(raise_on_error=False)
             first_error: Exception | None = None
             for index, (arguments, result) in enumerate(
@@ -989,7 +932,7 @@ class Outpost:
                 if isinstance(result, NoScriptError):
                     try:
                         result = results[index] = await self._redis.eval(
-                            WRITE_BUCKET_SCRIPT, 5, *arguments
+                            WRITE_BUCKET_SCRIPT, 3, *arguments
                         )
                     except RedisError as error:
                         result = error
@@ -997,9 +940,6 @@ class Outpost:
                     first_error = result
             if first_error is not None:
                 raise first_error
-            if writes and results[0] == 2:
-                assert self._outbox is not None
-                self._outbox._mark_queued()
         except BaseException:
             outcome = "error"
             raise
@@ -1076,9 +1016,7 @@ class Outpost:
                 read.outcome = "ready"
 
     async def flush(self, *, timeout: float = 30.0) -> None:
-        """Deliver the events this instance queued, and wait for the pull and the fetches
-        in flight: a serverless function must not freeze in the middle of them. A newer
-        flush that outlasts this one releases it, since it waits for the same work."""
+        """Wait for in-flight snapshot and customer fetch work."""
         deadline = anyio.current_time() + timeout
         for older, until in self._flushing.items():
             if until <= deadline:
@@ -1086,11 +1024,23 @@ class Outpost:
         with anyio.CancelScope() as scope:
             self._flushing[scope] = deadline
             try:
-                with anyio.fail_after(timeout):
-                    await self._drain_outbox_quietly()
                 await self._in_flight(max(0.0, deadline - anyio.current_time()))
             finally:
                 del self._flushing[scope]
+
+    async def on_ack(self, events: list[EventInput]) -> None:
+        assert self._confirm_script is not None
+        if groups := self._settlements(events):
+            await self._confirm_script(*_confirm_arguments(self._prefix, "ack", groups))
+
+    async def on_rejected(self, events: list[EventInput], reason: DropReason) -> None:
+        if reason != "permanent_error":
+            return
+        assert self._confirm_script is not None
+        if groups := self._settlements(events):
+            await self._confirm_script(
+                *_confirm_arguments(self._prefix, "reject", groups)
+            )
 
     async def flush_telemetry(self) -> bool:
         """Hands this instance's telemetry to the shared Redis, where the next pull
@@ -1175,11 +1125,6 @@ class Outpost:
     @property
     def _cold_lock_key(self) -> str:
         return f"{self._prefix}:cold:lock"
-
-    # The events Polar has yet to receive, in the order Outpost tracked them.
-    @property
-    def _outbox_key(self) -> str:
-        return f"{self._prefix}:outbox"
 
     @property
     def _configuration_key(self) -> str:
@@ -1500,7 +1445,7 @@ class Outpost:
                             response.is_client_error and response.status_code != 429
                         ):
                             raise
-                        wait = _retry_after(response) or delay
+                        wait = retry_after_response(response) or delay
                         if anyio.current_time() + wait >= deadline:
                             raise
                         await anyio.sleep(wait)
@@ -1538,37 +1483,6 @@ class Outpost:
                 await fetching.wait()
             async with self._applying:
                 pass
-
-    async def _drain_outbox_quietly(self) -> None:
-        if self._outbox is not None and self._failure is None:
-            await self._outbox._drain_outbox_quietly()
-
-    async def _drain_outbox_on_time(self) -> None:
-        while True:
-            await anyio.sleep(DRAIN_INTERVAL)
-            await self._drain_outbox_quietly()
-
-    async def _on_ack(self, events: list[EventInput]) -> None:
-        assert self._confirm_script is not None
-        if groups := self._settlements(events):
-            await self._confirm_script(*_confirm_arguments(self._prefix, "ack", groups))
-        if self._on_delivered is not None:
-            try:
-                await self._on_delivered(events)
-            except Exception as error:  # noqa: BLE001
-                log.warning("Outpost on_delivered failed: %s", error)
-
-    async def _on_rejected(self, events: list[EventInput], reason: DropReason) -> None:
-        assert self._confirm_script is not None
-        if reason == "permanent_error" and (groups := self._settlements(events)):
-            await self._confirm_script(
-                *_confirm_arguments(self._prefix, "reject", groups)
-            )
-        if self._on_dropped is not None:
-            try:
-                await self._on_dropped(events, reason)
-            except Exception as error:  # noqa: BLE001
-                log.warning("Outpost on_dropped failed: %s", error)
 
     def _settlements(
         self, events: collections.abc.Sequence[EventInput]

@@ -2,12 +2,7 @@ import types
 import typing
 
 from polar.base import AsyncClientBase, RequestTimeout, SyncClientBase, resolve_base_url
-from polar.metering import (
-    BufferedMeteringOptions,
-    Metering,
-    MeteringOutpostOptions,
-    MeteringStrategyProtocol,
-)
+from polar.metering import Metering, MeteringOutpostOptions, Outbox
 from polar.v2026_04.services.benefit_grants import BenefitGrantsAsync, BenefitGrantsSync
 from polar.v2026_04.services.benefits import BenefitsAsync, BenefitsSync
 from polar.v2026_04.services.checkout_links import CheckoutLinksAsync, CheckoutLinksSync
@@ -162,40 +157,24 @@ class PolarAsync:
     ) -> None:
         await self._client.__aexit__(exc_type, exc_val, exc_tb)
 
-    @typing.overload
     def metering(
         self,
         *,
-        buffered: BufferedMeteringOptions | None = None,
+        outbox: Outbox | None = None,
         outpost: MeteringOutpostOptions | bool | None = None,
-    ) -> Metering: ...
-
-    @typing.overload
-    def metering(self, *, strategies: list[MeteringStrategyProtocol]) -> Metering: ...
-
-    def metering(
-        self,
-        *,
-        buffered: BufferedMeteringOptions | None = None,
-        outpost: MeteringOutpostOptions | bool | None = None,
-        strategies: list[MeteringStrategyProtocol] | None = None,
     ) -> Metering:
-        """Create a helper for buffered event delivery and customer meter reads.
+        """Create a metering helper for event delivery and customer meter reads.
 
         Args:
-            buffered: Batch and retry options; defaults to 100 events, a 1-second
-                collection interval, a 5-second shutdown timeout, and 3 attempts.
-            outpost: True or Outpost options to enable Outpost. Disabled by default.
-                Pass False to disable; explicit options require a Redis URL.
-            strategies: Replace all defaults with custom strategies. Cannot be
-                combined with buffered or outpost.
+            outbox: Outbox used to queue and deliver events to Polar.
+                Defaults to an in-memory MemoryOutbox.
+            outpost: Set to True to enable local reduction using REDIS_URL, or
+                pass options to configure Outpost. Disabled by default.
 
         Returns:
-            An metering helper.
+            A Metering instance to use as an async context manager.
         """
-        return Metering.create(
-            self, buffered=buffered, outpost=outpost, strategies=strategies
-        )
+        return Metering.create(self, outbox=outbox, outpost=outpost)
 
 
 __all__ = ["Environment", "Polar", "PolarAsync"]

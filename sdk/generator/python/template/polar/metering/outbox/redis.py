@@ -5,7 +5,6 @@ import datetime
 import json
 import math
 import time
-import types
 import typing
 import uuid
 
@@ -28,7 +27,7 @@ from polar.logging import get_logger
 from polar.metering.client import PolarClient
 from polar.metering.errors import (
     MeteringTimeoutError,
-    retry_after_seconds,
+    retry_after_response,
     validate_timeout,
 )
 from polar.metering.events import EventInput
@@ -91,16 +90,6 @@ def _refused_indexes(response: httpx2.Response) -> set[int] | None:
     return indexes
 
 
-def _retry_after(response: httpx2.Response | None) -> float | None:
-    """How long Polar asks to wait, which only a rate limit says."""
-    if response is None or response.status_code != 429:
-        return None
-    retry_after = response.headers.get("Retry-After")
-    if not retry_after or not retry_after.isdecimal():
-        return None
-    return retry_after_seconds(int(retry_after))
-
-
 @dataclasses.dataclass
 class _Delivery:
     """The outbox entries a flusher delivered, and the slot it holds."""
@@ -123,17 +112,14 @@ class RedisOutbox:
         *,
         stream: str,
         client: httpx2.AsyncClient,
-        on_ack: OnAck | None = None,
-        on_rejected: OnRejected | None = None,
     ) -> None:
         self._redis_url = redis_url
         self._stream = stream
         self._backoff_key = f"{stream}:backoff"
         self._client = client
-        self.on_ack = on_ack
-        self.on_rejected = on_rejected
-        self._request_timeout = DEFAULT_TIMEOUT
-        self._stack = contextlib.AsyncExitStack()
+        self._opening = False
+        self._on_ack: OnAck | None = None
+        self._on_rejected: OnRejected | None = None
         self._redis: Redis | None = None
         self._tasks: anyio.abc.TaskGroup | None = None
         self._outbox_backlog: AsyncScript | None = None
@@ -149,49 +135,48 @@ class RedisOutbox:
         redis_url: str,
         *,
         stream: str,
-        on_ack: OnAck | None = None,
-        on_rejected: OnRejected | None = None,
     ) -> typing.Self:
         return cls(
             redis_url,
             stream=stream,
             client=polar._client._client,
-            on_ack=on_ack,
-            on_rejected=on_rejected,
         )
 
-    async def __aenter__(self) -> typing.Self:
-        if self._redis is not None:
+    @contextlib.asynccontextmanager
+    async def open(
+        self,
+        *,
+        on_ack: OnAck | None = None,
+        on_rejected: OnRejected | None = None,
+    ) -> collections.abc.AsyncGenerator[typing.Self, None]:
+        if self._opening:
             raise RuntimeError("Redis outbox is already running")
+        self._opening = True
         try:
-            redis = await self._stack.enter_async_context(connect_redis(self._redis_url))
-            tasks = await self._stack.enter_async_context(anyio.create_task_group())
-            await self._start(redis, tasks)
-            tasks.start_soon(self._drain_on_time)
-        except BaseException:
-            await self._stack.aclose()
+            async with connect_redis(self._redis_url) as redis:
+                await self._create_outbox_group(redis)
+                self._outbox_backlog = redis.register_script(OUTBOX_BACKLOG_SCRIPT)
+                self._acknowledge = redis.register_script(ACKNOWLEDGE_SCRIPT)
+                async with anyio.create_task_group() as tasks:
+                    self._redis = redis
+                    self._tasks = tasks
+                    self._on_ack = on_ack
+                    self._on_rejected = on_rejected
+                    tasks.start_soon(self._drain_on_time)
+                    try:
+                        yield self
+                    finally:
+                        try:
+                            with anyio.move_on_after(30):
+                                await self._drain_outbox_quietly()
+                        finally:
+                            tasks.cancel_scope.cancel()
+        finally:
             self._redis = None
             self._tasks = None
-            raise
-        return self
-
-    async def __aexit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: types.TracebackType | None,
-    ) -> None:
-        try:
-            with anyio.move_on_after(30):
-                await self._drain_outbox_quietly()
-        finally:
-            assert self._tasks is not None
-            self._tasks.cancel_scope.cancel()
-            try:
-                await self._stack.__aexit__(exc_type, exc_val, exc_tb)
-            finally:
-                self._redis = None
-                self._tasks = None
+            self._on_ack = None
+            self._on_rejected = None
+            self._opening = False
 
     async def enqueue(self, event: EventInput) -> None:
         """Persist an event with a stable ID and timestamp for delivery retries."""
@@ -224,37 +209,20 @@ class RedisOutbox:
         if scope.cancelled_caught:
             raise MeteringTimeoutError(timeout)
 
-    async def _start(
-        self,
-        redis: Redis,
-        tasks: anyio.abc.TaskGroup,
-        *,
-        request_timeout: float = DEFAULT_TIMEOUT,
-    ) -> None:
-        self._redis = redis
-        self._tasks = tasks
-        self._request_timeout = request_timeout
-        await self._create_outbox_group()
-        self._outbox_backlog = redis.register_script(OUTBOX_BACKLOG_SCRIPT)
-        self._acknowledge = redis.register_script(ACKNOWLEDGE_SCRIPT)
-
     def _require_redis(self) -> Redis:
         if self._redis is None:
-            raise RuntimeError("Use RedisOutbox inside an async with block")
+            raise RuntimeError("Use RedisOutbox inside an open() context")
         return self._redis
 
     async def _enqueue_encoded(self, event: str) -> None:
         await self._require_redis().xadd(self._stream, {"event": event})
-        self._mark_queued()
-
-    def _mark_queued(self) -> None:
         self._undrained = True
 
-    async def _create_outbox_group(self) -> None:
+    async def _create_outbox_group(self, redis: Redis) -> None:
         """A flusher reads the outbox through the group, which tracks each batch until
         Polar has it."""
         try:
-            await self._require_redis().xgroup_create(
+            await redis.xgroup_create(
                 self._stream, OUTBOX_GROUP, id="0", mkstream=True
             )
         except RedisResponseError as error:
@@ -291,7 +259,7 @@ class RedisOutbox:
                 self._undrained = False
                 await self._drain_outbox()
         # Whatever a drain raises, it must not end the task group, and with it the
-        # task that started Outpost.
+        # task that started the outbox.
         except* Exception:
             self._undrained = True
             log.exception("Redis outbox drain failed")
@@ -308,7 +276,7 @@ class RedisOutbox:
         """One flusher per OUTBOX_BATCH events waiting, up to FLUSHERS across the fleet.
         Once its flushers let go of their slots, the instance looks again: an event
         queued while they held them is not left behind."""
-        self._require_redis()
+        redis = self._require_redis()
         assert self._outbox_backlog is not None
         first = True
         # The backoff a round delivered past: the next round's read ends it.
@@ -355,7 +323,7 @@ class RedisOutbox:
             # one.
             errors = error.exceptions if isinstance(error, ExceptionGroup) else (error,)
             if any("NOGROUP" in str(each) for each in errors):
-                await self._create_outbox_group()
+                await self._create_outbox_group(redis)
             raise
 
     async def _flush_slot(self, slot: int) -> str:
@@ -459,7 +427,7 @@ class RedisOutbox:
         while events:
             try:
                 response = await self._client.post(
-                    "/v1/events/ingest", json={"events": events}, timeout=self._request_timeout
+                    "/v1/events/ingest", json={"events": events}, timeout=DEFAULT_TIMEOUT
                 )
             except httpx2.TransportError:
                 await self._back_off_outbox(None)
@@ -480,12 +448,12 @@ class RedisOutbox:
                 refused += events
                 events = []
                 break
-            await self._back_off_outbox(_retry_after(response))
+            await self._back_off_outbox(retry_after_response(response))
             return False
-        if refused and self.on_rejected is not None:
-            await self.on_rejected(refused, "permanent_error")
-        if events and self.on_ack is not None:
-            await self.on_ack(events)
+        if refused and self._on_rejected is not None:
+            await self._on_rejected(refused, "permanent_error")
+        if events and self._on_ack is not None:
+            await self._on_ack(events)
         assert self._acknowledge is not None
         await self._acknowledge(
             keys=[self._stream, delivery.lock_key],

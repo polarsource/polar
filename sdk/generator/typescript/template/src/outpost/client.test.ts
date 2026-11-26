@@ -8,6 +8,9 @@ import { createRequire } from "node:module";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ClientBase, PolarError } from "../base";
+import { Metering } from "../metering/client";
+import type { OutboxHooks } from "../metering/outbox/index";
+import { RedisOutbox } from "../metering/outbox/redis";
 import { UnknownMeterError } from "../metering/errors";
 import { NotReadyError } from "./index";
 import { createPolar } from "../{{ (ir.versions[-2] | default(ir.versions[0])).version }}/client";
@@ -129,6 +132,7 @@ let ingestStatuses: number[] = [];
 let ingestRefused = new Set<string>();
 let ingestDelay = 0;
 const outposts: Outpost[] = [];
+const redisOutboxes: RedisOutbox[] = [];
 
 const creditReducer = (id: string, meterId: string): Reducer => ({
   id,
@@ -374,6 +378,7 @@ afterEach(async () => {
   vi.restoreAllMocks();
   vi.unstubAllEnvs();
   vi.useRealTimers();
+  await Promise.all(redisOutboxes.splice(0).map((outbox) => outbox.close()));
   await Promise.all(outposts.splice(0).map((outpost) => outpost.close()));
   server.closeAllConnections();
 });
@@ -500,7 +505,7 @@ it.each([
   const outpost = await start();
   const execute = vi.spyOn(Pipeline.prototype, "exec");
   await ingest(outpost, 3);
-  expect(execute).toHaveBeenCalledOnce();
+  expect(execute).toHaveBeenCalledTimes(bucketCount ? 1 : 0);
   for (let i = 0; i < bucketCount; i++) {
     expect(await outpost.meter({ ...customer, meter_id: `meter-${i}` })).toMatchObject({
       consumed_units: 3,
@@ -1128,7 +1133,7 @@ it("keeps reducer cutoffs and meter credits independent under concurrent writes"
   expect(
     await redis.hmget(key, ...["count", "sum", "min", "max"].map((name) => `bucket:${bucket}:${name}`)),
   ).toEqual(["20", "100", "2", "8"]);
-  await first.flush();
+  await first.onAck(events.flat());
   await first.track({
     ...customer,
     name: "api",
@@ -1199,7 +1204,7 @@ it("preserves microsecond cutoffs and counts a late write as pending", async () 
   await vi.waitFor(async () => expect((await outpost.meter(meter))?.consumed_units).toBe(0));
   const settled = usage(eventId(), 2);
   await outpost.track(settled);
-  await outpost.flush();
+  await outpost.onAck([settled]);
   await outpost.track({
     ...customer,
     name: "api",
@@ -1292,16 +1297,10 @@ it("settles an event once however many times CONFIRM names it", async () => {
 });
 
 it("settles a hot bucket's events on Polar's receipt", async () => {
+  const outpost = await warm();
   const events = [usage("event-0", 10), usage("event-1", 10)];
-  const onDelivered = vi.fn(async () => {
-    expect(await redis.xlen(`outpost:v1:${organization}:outbox`)).toBe(2);
-  });
-  const outpost = await warm({ onDelivered });
   for (const event of events) await outpost.track(event);
-  await outpost.flush();
-  expect(onDelivered).toHaveBeenCalledWith(events);
-  await expect(onDelivered.mock.results[0].value).resolves.toBeUndefined();
-  expect(await redis.xlen(`outpost:v1:${organization}:outbox`)).toBe(0);
+  await outpost.onAck(events);
   expect(await redis.hget(key, `pending:${bucket}:count`)).toBeNull();
   expect(await redis.hget(key, `bucket:${bucket}:count`)).toBe("2");
   expect((await outpost.meter(meter))?.consumed_units).toBe(20);
@@ -1313,16 +1312,50 @@ it.each([false, true])("rejection wins over local reduction (before apply: %s)",
   const pending = usage("pending", 5);
   const refused = usage("refused", 8);
   await outpost.track(accepted);
-  await outpost["onAck"]([accepted]);
+  await outpost.onAck([accepted]);
   await outpost.track(pending);
-  if (early) await outpost["onRejected"]([refused], "permanent_error");
+  if (early) await outpost.onRejected([refused], "permanent_error");
   await outpost.track(refused);
-  await outpost["onRejected"]([refused], "permanent_error");
-  await outpost["onRejected"]([refused], "permanent_error");
+  await outpost.onRejected([refused], "permanent_error");
+  await outpost.onRejected([refused], "permanent_error");
   await outpost.track(refused);
   expect(await redis.hexists(`outpost:v1:org-1:rejected:external:alice:tokens:${bucket}`, "refused")).toBe(1);
   expect((await outpost.meter(meter))?.consumed_units).toBe(8);
   expect(await redis.hmget(key, `bucket:${bucket}:count`, `bucket:${bucket}:min`, `bucket:${bucket}:max`)).toEqual(["2", "3", "5"]);
+});
+
+it("uses the API when a rejected event invalidates a legacy bucket extremum", async () => {
+  reducers[0].aggregation = { func: "max", property: "tokens" };
+  await seed(0);
+  await redis.hset(key, {
+    [`bucket:${bucket}:count`]: 1,
+    [`bucket:${bucket}:sum`]: 3,
+    [`bucket:${bucket}:min`]: 3,
+    [`bucket:${bucket}:max`]: 3,
+  });
+  const local = new Outpost(redisServer.socket, { client: core, snapshotTimeout: 100 });
+  const transport = new RedisOutbox(redisServer.socket, { stream: "outpost:v1:org-1:outbox", client: core });
+  const helper = new Metering(core, transport, local);
+  const actualFetch = globalThis.fetch;
+  const apiResult = { meter_id: meter.meter_id, consumed_units: 7, credited_units: 100, balance: 93 };
+  const fetch = vi.spyOn(globalThis, "fetch").mockImplementation((url, options) =>
+    String(url).includes("/v1/customer-meters/")
+      ? Promise.resolve(new Response(JSON.stringify({ items: [apiResult] })))
+      : actualFetch(url, options),
+  );
+  try {
+    const refused = usage("refused", 8);
+    await helper.track(refused);
+    ingestRefused = new Set(["refused"]);
+    await helper.flush();
+    await expect(helper.meter(meter.meter_id, customer)).resolves.toEqual(apiResult);
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining("/v1/customer-meters/"), expect.anything());
+    const cutoff = bucket + BUCKET_SIZE;
+    await applySnapshot("external:alice:tokens", cutoff, cutoff + 1, 1, 3, 3, 3);
+    expect((await helper.meter(meter.meter_id, customer))?.consumed_units).toBe(3);
+  } finally {
+    await helper.close();
+  }
 });
 
 it("keeps a cold bucket's events pending on Polar's receipt until a snapshot counts them", async () => {
@@ -1331,7 +1364,7 @@ it("keeps a cold bucket's events pending on Polar's receipt until a snapshot cou
   for (const event of events) await outpost.track(event);
   await seal(bucket + BUCKET_SIZE);
   // Received is not counted: the snapshot that sealed the bucket did not have them.
-  await outpost.flush();
+  await outpost.onAck(events);
   expect(await redis.hget(key, `pending:${bucket}:count`)).toBe("2");
   expect((await outpost.meter(meter))?.consumed_units).toBe(20);
   ingested = new Set(["event-0", "event-1"]);
@@ -1341,61 +1374,31 @@ it("keeps a cold bucket's events pending on Polar's receipt until a snapshot cou
   expect((await outpost.meter(meter))?.consumed_units).toBe(20);
 });
 
-// The events Outpost queued for Polar, as Polar ingests them.
+// The events in the Redis outbox, as Polar ingests them.
 const queued = async (): Promise<unknown[]> =>
   (await redis.xrange("outpost:v1:org-1:outbox", "-", "+")).map(([, fields]) =>
     JSON.parse(fields[1]),
   );
 
-it("queues a tracked event for Polar", async () => {
-  const outpost = await warm();
-  await outpost.track(usage("event-1", 10));
-  expect(await queued()).toEqual([usage("event-1", 10)]);
-});
-
-it("queues an event once however many times it is tracked", async () => {
-  const outpost = await warm();
-  await outpost.track(usage("same", 10));
-  await outpost.track(usage("same", 10));
-  expect(await queued()).toEqual([usage("same", 10)]);
-});
-
-it("queues an event once when two meters count it", async () => {
-  reducers = [...reducers, { ...reducers[0], id: "requests", meter_ids: ["requests"] }];
-  const outpost = await warm();
-  await outpost.track(usage("event-1", 10));
-  expect(await queued()).toEqual([usage("event-1", 10)]);
-});
-
-it("queues an event no meter counts", async () => {
-  reducers = [
-    {
-      ...reducers[0],
-      filter: {
-        conjunction: "and",
-        clauses: [{ property: "name", operator: "eq", value: "other" }],
-      },
-    },
-    reducers[1],
-  ];
-  const outpost = await warm();
-  await outpost.track(usage("event-1", 10));
-  expect(await queued()).toEqual([usage("event-1", 10)]);
-});
+const startOutbox = async (hooks?: OutboxHooks): Promise<RedisOutbox> => {
+  const outbox = new RedisOutbox(redisServer.socket, { stream: "outpost:v1:org-1:outbox", client: core });
+  redisOutboxes.push(outbox);
+  return outbox.start(hooks);
+};
 
 // The external_ids Polar received, request by request.
 const delivered = () => ingestRequests.map((events) => events.map((event) => event.external_id));
 
 it("delivers what it queued on its own, without a flush", async () => {
-  const outpost = await warm();
-  await outpost.track(usage("event-0", 10));
+  const outpost = await startOutbox();
+  await outpost.enqueue(usage("event-0", 10));
   await vi.waitFor(() => expect(delivered()).toEqual([["event-0"]]), { timeout: 3000 });
 });
 
 it("delivers the stream to Polar in batches of a thousand, whichever instance flushes", async () => {
-  const outposts = [await warm(), await start()];
+  const outposts = [await startOutbox(), await startOutbox()];
   for (let index = 0; index < 2500; index += 1)
-    await outposts[index % 2].track(usage(`event-${index}`, 1));
+    await outposts[index % 2].enqueue(usage(`event-${index}`, 1));
   await Promise.all(outposts.map((outpost) => outpost.flush()));
   // The periodic drain may send part of the stream while it is written.
   expect(Math.max(...ingestRequests.map((events) => events.length))).toBe(1000);
@@ -1404,67 +1407,72 @@ it("delivers the stream to Polar in batches of a thousand, whichever instance fl
 });
 
 it("settles the events Polar received and reports them", async () => {
-  const onDelivered = vi.fn();
-  const outpost = await warm({ onDelivered });
+  await seed(0);
+  const outpost = new Outpost(redisServer.socket, { client: core, snapshotTimeout: 100 });
+  const transport = new RedisOutbox(redisServer.socket, { stream: "outpost:v1:org-1:outbox", client: core });
+  const helper = new Metering(core, transport, outpost);
   const events = [usage("event-0", 10), usage("event-1", 10)];
-  for (const event of events) await outpost.track(event);
-  await outpost.flush();
-  expect(ingestRequests).toEqual([events]);
-  expect(onDelivered).toHaveBeenCalledWith(events);
-  expect(await redis.hget(key, `pending:${bucket}:count`)).toBeNull();
-  expect((await outpost.meter(meter))?.consumed_units).toBe(20);
+  try {
+    for (const event of events) await helper.track(event);
+    await helper.flush();
+    expect(ingestRequests).toEqual([events]);
+    expect(await redis.hget(key, `pending:${bucket}:count`)).toBeNull();
+    expect((await outpost.meter(meter))?.consumed_units).toBe(20);
+  } finally {
+    await helper.close();
+  }
 });
 
 const BACKOFF = "outpost:v1:org-1:outbox:backoff";
 
 it.each([503, 408])("retries a batch after HTTP %i using the shared backoff", async (status) => {
-  const [outpost, other] = [await warm(), await start()];
-  await outpost.track(usage("event-0", 10));
+  const [outpost, other] = [await startOutbox(), await startOutbox()];
+  await outpost.enqueue(usage("event-0", 10));
   ingestStatuses = [status];
   const failed = Date.now();
-  await outpost.flush();
+  await outpost["drain"]();
   expect(await queued()).toEqual([usage("event-0", 10)]);
   expect(Number(await redis.hget(BACKOFF, "retry_at"))).toBeGreaterThanOrEqual(failed + 1000);
-  await other.track(usage("event-1", 10));
-  await other.flush();
+  await other.enqueue(usage("event-1", 10));
+  await other["drain"]();
   expect(ingestRequests).toHaveLength(1);
   await redis.hset(BACKOFF, "retry_at", 0);
-  await outpost.flush();
+  await outpost["drain"]();
   expect(delivered()).toEqual([["event-0"], ["event-0"], ["event-1"]]);
   expect(await redis.xlen("outpost:v1:org-1:outbox")).toBe(0);
   expect(await redis.exists(BACKOFF)).toBe(0);
 });
 
 it("sends a batch that failed on another slot again once the backoff ends", async () => {
-  const outpost = await warm();
-  clearInterval(outpost["drainTimer"]);
+  const outpost = await startOutbox();
+  clearInterval(outpost["timer"]);
   // Two full batches: two flushers, and Polar fails both.
   await Promise.all(
-    Array.from({ length: 2000 }, (_, index) => outpost.track(usage(`event-${index}`, 1))),
+    Array.from({ length: 2000 }, (_, index) => outpost.enqueue(usage(`event-${index}`, 1))),
   );
   ingestStatuses = [503, 503];
-  await outpost.flush();
+  await outpost["drain"]();
   expect(ingestRequests).toHaveLength(2);
   await redis.hset(BACKOFF, "retry_at", 0);
   // Nothing new waits, so the next drain starts one flusher: it sends both batches.
-  await outpost.flush();
+  await outpost["drain"]();
   expect(new Set(delivered().flat()).size).toBe(2000);
   expect(await redis.xlen("outpost:v1:org-1:outbox")).toBe(0);
 });
 
 it("waits as long as a Polar that rate-limits it asks", async () => {
-  const outpost = await warm();
-  await outpost.track(usage("event-0", 10));
+  const outpost = await startOutbox();
+  await outpost.enqueue(usage("event-0", 10));
   ingestStatuses = [429];
   const failed = Date.now();
-  await outpost.flush();
+  await outpost["drain"]();
   const retryAt = Number(await redis.hget(BACKOFF, "retry_at"));
   expect(retryAt).toBeGreaterThanOrEqual(failed + 30_000);
   expect(retryAt).toBeLessThanOrEqual(Date.now() + 30_000);
 });
 
 it("counts the failures flushers meet during one wait as one, and keeps the longest wait", async () => {
-  const outpost = await warm();
+  const outpost = await start();
   const failed = Date.now();
   const backOff = (first: number) => outpost["backOff"](BACKOFF, { first, max: 60_000 });
   await Promise.all(Array.from({ length: 8 }, () => backOff(1000)));
@@ -1476,13 +1484,13 @@ it("counts the failures flushers meet during one wait as one, and keeps the long
 
 it("keeps a backoff another flusher set while this one delivered", async () => {
   const later = Date.now() + 60_000;
-  const outpost = await warm({
-    onDelivered: async () => {
+  const outpost = await startOutbox({
+    onAck: async () => {
       await redis.hset(BACKOFF, "retry_at", later);
     },
   });
   await redis.hset(BACKOFF, { failures: 1, retry_at: 1 });
-  await outpost.track(usage("event-0", 10));
+  await outpost.enqueue(usage("event-0", 10));
   await outpost.flush();
   expect(await redis.hget(BACKOFF, "retry_at")).toBe(String(later));
 });
@@ -1492,97 +1500,106 @@ it.each([
   ["event", '{"external_id":"unreadable","ratio":1e999}'],
   ["other", "unreadable"],
 ])("skips an outbox entry it cannot read (%s %s), and delivers the rest", async (field, value) => {
-  const outpost = await warm();
+  const outpost = await startOutbox();
   await redis.xadd("outpost:v1:org-1:outbox", "*", field, value);
-  await outpost.track(usage("event-0", 10));
+  await outpost.enqueue(usage("event-0", 10));
   await outpost.flush();
   expect(delivered()).toEqual([["event-0"]]);
   expect(await redis.xlen("outpost:v1:org-1:outbox")).toBe(0);
 });
 
 it("delivers an event another SDK queued in a form it cannot parse", async () => {
-  const outpost = await warm();
+  const outpost = await startOutbox();
   // Another SDK takes a timestamp this one refuses.
   const foreign = { ...usage("foreign", 10), timestamp: "2026-10-12 12:00:00.123456+00" };
   await redis.xadd("outpost:v1:org-1:outbox", "*", "event", JSON.stringify(foreign));
-  await outpost.track(usage("event-0", 10));
+  await outpost.enqueue(usage("event-0", 10));
   await outpost.flush();
   expect(delivered()).toEqual([["foreign", "event-0"]]);
   expect(await redis.xlen("outpost:v1:org-1:outbox")).toBe(0);
 });
 
 it("drops only the events Polar names when it refuses a batch, and delivers the rest", async () => {
-  const [onDelivered, onDropped] = [vi.fn(), vi.fn()];
-  const outpost = await warm({ onDelivered, onDropped });
+  await seed(0);
+  const outpost = new Outpost(redisServer.socket, { client: core, snapshotTimeout: 100 });
+  const transport = new RedisOutbox(redisServer.socket, { stream: "outpost:v1:org-1:outbox", client: core });
+  const helper = new Metering(core, transport, outpost);
   const events = [usage("event-0", 10), usage("refused", 10), usage("event-1", 10)];
-  for (const event of events) await outpost.track(event);
-  ingestRefused = new Set(["refused"]);
-  await outpost.flush();
-  expect(delivered()).toEqual([
-    ["event-0", "refused", "event-1"],
-    ["event-0", "event-1"],
-  ]);
-  expect(onDropped).toHaveBeenCalledWith([events[1]], "permanent_error");
-  expect(onDelivered).toHaveBeenCalledWith([events[0], events[2]]);
-  expect(await redis.xlen("outpost:v1:org-1:outbox")).toBe(0);
-  expect(await redis.hget(key, `pending:${bucket}:count`)).toBeNull();
+  try {
+    for (const event of events) await helper.track(event);
+    ingestRefused = new Set(["refused"]);
+    await helper.flush();
+    expect(delivered()).toEqual([
+      ["event-0", "refused", "event-1"],
+      ["event-0", "event-1"],
+    ]);
+    expect(await redis.xlen("outpost:v1:org-1:outbox")).toBe(0);
+    expect(await redis.hget(key, `pending:${bucket}:count`)).toBeNull();
+  } finally {
+    await helper.close();
+  }
 });
 
 it("drops a batch Polar refuses, settles its events and reports them", async () => {
-  const onDropped = vi.fn();
-  const outpost = await warm({ onDropped });
+  await seed(0);
+  const outpost = new Outpost(redisServer.socket, { client: core, snapshotTimeout: 100 });
+  const transport = new RedisOutbox(redisServer.socket, { stream: "outpost:v1:org-1:outbox", client: core });
+  const helper = new Metering(core, transport, outpost);
   const events = [usage("event-0", 10), usage("event-1", 10)];
-  for (const event of events) await outpost.track(event);
-  ingestStatuses = [422];
-  await outpost.flush();
-  expect(onDropped).toHaveBeenCalledWith(events, "permanent_error");
-  expect(await redis.xlen("outpost:v1:org-1:outbox")).toBe(0);
-  expect(await redis.hget(key, `pending:${bucket}:count`)).toBeNull();
-  await outpost.flush();
-  expect(ingestRequests).toHaveLength(1);
+  try {
+    for (const event of events) await helper.track(event);
+    ingestStatuses = [422];
+    await helper.flush();
+    expect(await redis.xlen("outpost:v1:org-1:outbox")).toBe(0);
+    expect(await redis.hget(key, `pending:${bucket}:count`)).toBeNull();
+    await helper.flush();
+    expect(ingestRequests).toHaveLength(1);
+  } finally {
+    await helper.close();
+  }
 });
 
 it("takes back the batch of a flusher that died on the next drain once it sat idle long enough", async () => {
-  const outpost = await warm();
-  await outpost.track(usage("event-0", 10));
+  const outpost = await startOutbox();
+  await outpost.enqueue(usage("event-0", 10));
   // A flusher read the batch and froze before Polar answered.
   const stream = "outpost:v1:org-1:outbox";
   const read = await redis.xreadgroup("GROUP", "polar", "frozen", "STREAMS", stream, ">");
   const [[, entries]] = read as [string, [string, string[]][]][];
-  await outpost.flush();
+  await outpost["drain"]();
   expect(ingestRequests).toHaveLength(0);
   await redis.xclaim(stream, "polar", "frozen", 0, ...entries.map(([id]) => id), "IDLE", 60_000);
-  await outpost.track(usage("event-1", 10));
-  await outpost.flush();
+  await outpost.enqueue(usage("event-1", 10));
+  await outpost["drain"]();
   expect(delivered().flat().sort()).toEqual(["event-0", "event-1"]);
   expect(await redis.xlen(stream)).toBe(0);
 });
 
 it("sends only full batches while another flusher delivers, and the rest once none does", async () => {
-  const outpost = await warm();
+  const outpost = await startOutbox();
   const stream = "outpost:v1:org-1:outbox";
-  await outpost.track(usage("event-0", 10));
+  await outpost.enqueue(usage("event-0", 10));
   // Another flusher holds a batch in flight.
   await redis.xreadgroup("GROUP", "polar", "other", "STREAMS", stream, ">");
-  for (let index = 1; index <= 1_001; index += 1) await outpost.track(usage(`event-${index}`, 1));
-  await outpost.flush();
+  for (let index = 1; index <= 1_001; index += 1) await outpost.enqueue(usage(`event-${index}`, 1));
+  await outpost["drain"]();
   expect(delivered().map((ids) => ids.length)).toEqual([1000]);
   // The other flusher delivered its batch.
   const [[entry]] = await redis.xrange(stream, "-", "+", "COUNT", 1);
   await redis.xack(stream, "polar", entry);
   await redis.xdel(stream, entry);
-  await outpost.flush();
+  await outpost["drain"]();
   expect(delivered().map((ids) => ids.length)).toEqual([1000, 1]);
   expect(delivered()[1]).toEqual(["event-1001"]);
 });
 
 it("delivers what another instance queued while it flushed", async () => {
-  const [first, second] = [await warm(), await start()];
-  await first.track(usage("event-0", 10));
+  const [first, second] = [await startOutbox(), await startOutbox()];
+  await first.enqueue(usage("event-0", 10));
   ingestDelay = 100;
   const flushing = first.flush();
   await vi.waitFor(() => expect(ingestRequests).toHaveLength(1));
-  await second.track(usage("event-1", 10));
+  await second.enqueue(usage("event-1", 10));
   await second.flush();
   await flushing;
   expect(delivered().flat().sort()).toEqual(["event-0", "event-1"]);
@@ -2064,7 +2081,7 @@ it("gives the state a day to live, refreshed by each read, write and confirmatio
   expect(pending).toBeGreaterThan(0);
   expect(pending).toBeLessThanOrEqual(3_900);
   await redis.expire(key, 60);
-  await outpost.flush();
+  await outpost.onAck([settled]);
   expect(await redis.ttl(key)).toBeGreaterThan(60);
 });
 
@@ -2363,7 +2380,7 @@ it("fails fast while Redis is unavailable", async () => {
   expect(await readOutcomes(outpost)).toEqual([["meter", "redis_unavailable"]]);
 });
 
-it("delivers each event once, through Outpost, when the client factory starts it", async () => {
+it("delivers each event once, through the default outbox with Outpost enabled", async () => {
   const polarFetch = globalThis.fetch;
   const fetch = vi
     .spyOn(globalThis, "fetch")
@@ -2508,62 +2525,6 @@ describe("Redis cost", () => {
     const outpost = await quiet();
     await outpost.track(event());
     expect((await redisCost(() => outpost.track(event()))).commands).toEqual({ evalsha: 1 });
-  });
-
-  it("flushes a thousand events in as many commands as one", async () => {
-    await seed();
-    const outpost = await quiet();
-    const flushCost = async (events: number) => {
-      for (let index = 0; index < events; index += 1) await outpost.track(event());
-      const { commands } = await redisCost(() => outpost.flush());
-      expect(await redis.xlen("outpost:v1:org-1:outbox")).toBe(0);
-      return commands;
-    };
-    await flushCost(1);
-    expect(await flushCost(1000)).toEqual(await flushCost(1));
-  });
-
-  it("flushes twenty concurrent requests for the commands of one, and one more look at most", async () => {
-    await seed();
-    const outpost = await quiet();
-    await deliver(outpost);
-    await outpost.track(event());
-    await outpost.flush();
-    const flushCost = async (concurrent: number) => {
-      await outpost.track(event());
-      const { commands } = await redisCost(() =>
-        Promise.all(Array.from({ length: concurrent }, () => outpost.flush())),
-      );
-      return commands;
-    };
-    const { evalsha: once, ...single } = await flushCost(1);
-    const { evalsha: concurrent, ...twenty } = await flushCost(20);
-    // The flushes of one instance share its drain, which looks once more for their events.
-    expect(twenty).toEqual(single);
-    expect(concurrent - once).toBeLessThanOrEqual(1);
-  });
-
-  it("tracks and flushes in one command while another instance drains the stream", async () => {
-    await seed();
-    const [first, second] = [await quiet(), await quiet()];
-    await deliver(first);
-    await deliver(second);
-    const queued = event();
-    await first.track(queued);
-    // A duplicate queues nothing: it loads the script on the second instance's connection.
-    await second.track(queued);
-    // Polar holds the first instance's batch past the measure, which counts every connection.
-    ingestDelay = 1_000;
-    const draining = first.flush();
-    await vi.waitFor(() => expect(ingestRequests).toHaveLength(1));
-    const cost = await redisCost(async () => {
-      await second.track(event());
-      await second.flush();
-    });
-    // The instance draining reads the stream again once it lets go of its slot.
-    expect(cost.commands).toEqual({ evalsha: 1 });
-    await draining;
-    expect(ingestRequests.flat()).toHaveLength(2);
   });
 
   it("warms a known customer over eleven reducers in one command, readiness alone", async () => {

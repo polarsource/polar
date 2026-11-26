@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from "vitest";
 
-import type { EventInput } from "./event";
+import type { EventInput } from "../event";
 
 import {
   PolarClientError,
@@ -8,9 +8,9 @@ import {
   PolarRateLimitError,
   PolarServerError,
   type RequestOptions,
-} from "../base";
-import { BufferedMeteringStrategy } from "./buffered";
-import { MeteringDeliveryError, MeteringTimeoutError } from "./errors";
+} from "../../base";
+import { MeteringDeliveryError } from "../errors";
+import { MemoryOutbox } from "./memory";
 
 const events: EventInput[] = Array.from({ length: 5 }, (_, i) => ({
   name: `usage-${i}`,
@@ -24,25 +24,25 @@ afterEach(() => {
 
 it("flushes empty and bounded batches, then accepts more events", async () => {
   const ingest = vi.fn().mockResolvedValue(undefined);
-  const strategy = new BufferedMeteringStrategy(
+  const strategy = new MemoryOutbox(
     { events: { ingest } },
     { batchSize: 2, batchIntervalMs: 60_000 },
   );
   try {
-    await expect(strategy.track(events[0])).rejects.toThrow("not running");
+    await expect(strategy.enqueue(events[0])).rejects.toThrow("not running");
     await expect(strategy.flush()).rejects.toThrow("not running");
     await strategy.start();
     await expect(strategy.start()).rejects.toThrow("already started");
     await strategy.flush();
     expect(ingest).not.toHaveBeenCalled();
-    for (const event of events) await strategy.track(event);
+    for (const event of events) await strategy.enqueue(event);
     await strategy.flush();
     expect(ingest.mock.calls.map(([body]) => body.events)).toEqual([
       events.slice(0, 2),
       events.slice(2, 4),
       events.slice(4),
     ]);
-    await strategy.track(events[0]);
+    await strategy.enqueue(events[0]);
     await strategy.flush();
     expect(ingest).toHaveBeenCalledTimes(4);
     await strategy.close();
@@ -55,16 +55,13 @@ it("flushes empty and bounded batches, then accepts more events", async () => {
 it("starts the batch interval with the first event without resetting it", async () => {
   vi.useFakeTimers();
   const ingest = vi.fn().mockResolvedValue(undefined);
-  const strategy = await new BufferedMeteringStrategy(
-    { events: { ingest } },
-    { batchIntervalMs: 100 },
-  ).start();
+  const strategy = await new MemoryOutbox({ events: { ingest } }, { batchIntervalMs: 100 }).start();
   try {
     expect(vi.getTimerCount()).toBe(0);
     await vi.advanceTimersByTimeAsync(50);
-    await strategy.track(events[0]);
+    await strategy.enqueue(events[0]);
     await vi.advanceTimersByTimeAsync(50);
-    await strategy.track(events[1]);
+    await strategy.enqueue(events[1]);
     expect(ingest).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(50);
     expect(ingest).toHaveBeenCalledExactlyOnceWith(
@@ -85,16 +82,13 @@ it("keeps the newest flush boundary while a batch is in flight", async () => {
         finishDelivery = resolve;
       }),
   );
-  const strategy = await new BufferedMeteringStrategy(
-    { events: { ingest } },
-    { batchSize: 1 },
-  ).start();
+  const strategy = await new MemoryOutbox({ events: { ingest } }, { batchSize: 1 }).start();
   try {
     try {
-      await strategy.track(events[0]);
+      await strategy.enqueue(events[0]);
       await vi.waitFor(() => expect(ingest).toHaveBeenCalledOnce());
       const firstFlush = strategy.flush();
-      await strategy.track(events[1]);
+      await strategy.enqueue(events[1]);
       const secondDone = vi.fn();
       const secondFlush = strategy.flush().then(secondDone);
       const closed = vi.fn();
@@ -130,19 +124,19 @@ it.each([
           deliveries.push(resolve);
         }),
     );
-    const strategy = await new BufferedMeteringStrategy(
+    const strategy = await new MemoryOutbox(
       { events: { ingest } },
       { batchSize, batchIntervalMs: 60_000 },
     ).start();
     try {
       try {
-        await strategy.track(events[0]);
+        await strategy.enqueue(events[0]);
         const first = strategy.flush();
         await vi.waitFor(() => expect(ingest).toHaveBeenCalledOnce());
         const flushed = [1, 2, 3].map(() => vi.fn());
         const flushes: Promise<void>[] = [];
         for (const [index, event] of events.slice(1, 4).entries()) {
-          await strategy.track(event);
+          await strategy.enqueue(event);
           flushes.push(strategy.flush().then(flushed[index]));
         }
         await Promise.all([first, ...flushes.slice(0, -1)]);
@@ -178,29 +172,29 @@ it.each(["shutdown timeout", "worker error"])(
         });
       });
     });
-    const onDropped = vi.fn();
-    const strategy = await new BufferedMeteringStrategy(
+    const onRejected = vi.fn();
+    const strategy = await new MemoryOutbox(
       { events: { ingest } },
-      { batchIntervalMs: 60_000, onDropped },
-    ).start();
+      { batchIntervalMs: 60_000 },
+    ).start({ onRejected });
     try {
-      await strategy.track(events[0]);
+      await strategy.enqueue(events[0]);
       const firstFlush = strategy.flush();
       await vi.waitFor(() => expect(ingest).toHaveBeenCalledOnce());
-      await strategy.track(events[1]);
+      await strategy.enqueue(events[1]);
       const flushes = Promise.allSettled([firstFlush, strategy.flush()]);
       const error = failure === "worker error" ? "broken transport" : "shutdown timed out";
       if (failure === "worker error") {
         failDelivery(new TypeError(error));
         await expect(strategy.close()).rejects.toThrow(error);
         await expect(strategy.flush()).rejects.toThrow("not running");
-        await expect(strategy.track(events[0])).rejects.toThrow(error);
-        expect(onDropped).toHaveBeenCalledWith(events.slice(0, 2), "worker_error");
+        await expect(strategy.enqueue(events[0])).rejects.toThrow(error);
+        expect(onRejected).not.toHaveBeenCalled();
       } else {
         await expect(strategy.close({ timeoutMs: 10 })).rejects.toBeInstanceOf(
           MeteringDeliveryError,
         );
-        expect(onDropped).toHaveBeenCalledExactlyOnceWith(events.slice(0, 2), "shutdown_timeout");
+        expect(onRejected).not.toHaveBeenCalled();
       }
       const [first, second] = await flushes;
       expect(first.status).toBe("fulfilled");
@@ -220,12 +214,12 @@ it.each(["shutdown timeout", "worker error"])(
 it.each([0, 1, 5])("drains %i events in bounded batches on close", async (count) => {
   const ingest = vi.fn().mockResolvedValue(undefined);
   {
-    const strategy = await new BufferedMeteringStrategy(
+    const strategy = await new MemoryOutbox(
       { events: { ingest } },
       { batchSize: 2, batchIntervalMs: 60_000 },
     ).start();
     try {
-      for (const event of events.slice(0, count)) await strategy.track(event);
+      for (const event of events.slice(0, count)) await strategy.enqueue(event);
     } finally {
       await strategy.close().catch(() => {});
     }
@@ -242,9 +236,9 @@ it.each([
   "automatically sends with batch size $batchSize and interval $batchIntervalMs",
   async (options) => {
     const ingest = vi.fn().mockResolvedValue(undefined);
-    const strategy = await new BufferedMeteringStrategy({ events: { ingest } }, options).start();
+    const strategy = await new MemoryOutbox({ events: { ingest } }, options).start();
     try {
-      await strategy.track(events[0]);
+      await strategy.enqueue(events[0]);
       await vi.waitFor(() => expect(ingest).toHaveBeenCalledOnce());
       expect(ingest.mock.calls[0][0]).toEqual({ events: [events[0]] });
     } finally {
@@ -254,43 +248,39 @@ it.each([
 );
 
 it("honors Retry-After and preserves the batch through retries", async () => {
-  const onDropped = vi.fn();
+  const onRejected = vi.fn();
   const ingest = vi
     .fn()
     .mockRejectedValueOnce(new PolarRateLimitError(429, 0.001))
     .mockResolvedValue(undefined);
-  const strategy = await new BufferedMeteringStrategy(
-    { events: { ingest } },
-    { onDropped },
-  ).start();
+  const strategy = await new MemoryOutbox({ events: { ingest } }).start({ onRejected });
   try {
-    await strategy.track(events[0]);
+    await strategy.enqueue(events[0]);
     await strategy.flush();
     expect(ingest).toHaveBeenCalledTimes(2);
     expect(ingest.mock.calls[0]).toEqual(ingest.mock.calls[1]);
-    expect(onDropped).not.toHaveBeenCalled();
+    expect(onRejected).not.toHaveBeenCalled();
   } finally {
     await strategy.close().catch(() => {});
   }
 });
 
 it("waits at least a second on Retry-After without spending attempts", async () => {
-  const onDropped = vi.fn();
+  const onRejected = vi.fn();
   const calls: number[] = [];
   const ingest = vi.fn(async () => {
     calls.push(performance.now());
     if (calls.length === 1) throw new PolarRateLimitError(429, 0);
   });
-  const strategy = await new BufferedMeteringStrategy(
-    { events: { ingest } },
-    { maxAttempts: 1, onDropped },
-  ).start();
+  const strategy = await new MemoryOutbox({ events: { ingest } }, { maxAttempts: 1 }).start({
+    onRejected,
+  });
   try {
-    await strategy.track(events[0]);
+    await strategy.enqueue(events[0]);
     await strategy.flush();
     expect(calls).toHaveLength(2);
     expect(calls[1] - calls[0]).toBeGreaterThanOrEqual(900);
-    expect(onDropped).not.toHaveBeenCalled();
+    expect(onRejected).not.toHaveBeenCalled();
   } finally {
     await strategy.close().catch(() => {});
   }
@@ -298,17 +288,14 @@ it("waits at least a second on Retry-After without spending attempts", async () 
 
 it("drops the batch when Retry-After exceeds the wait budget", async () => {
   vi.spyOn(console, "warn").mockImplementation(() => {});
-  const onDropped = vi.fn();
+  const onRejected = vi.fn();
   const ingest = vi.fn().mockRejectedValue(new PolarRateLimitError(429, 301));
-  const strategy = await new BufferedMeteringStrategy(
-    { events: { ingest } },
-    { onDropped },
-  ).start();
+  const strategy = await new MemoryOutbox({ events: { ingest } }).start({ onRejected });
   try {
-    await strategy.track(events[0]);
+    await strategy.enqueue(events[0]);
     await expect(strategy.flush()).rejects.toBeInstanceOf(MeteringDeliveryError);
     expect(ingest).toHaveBeenCalledOnce();
-    expect(onDropped).toHaveBeenCalledExactlyOnceWith([events[0]], "retry_exhausted");
+    expect(onRejected).not.toHaveBeenCalled();
   } finally {
     await strategy.close().catch(() => {});
   }
@@ -316,6 +303,7 @@ it("drops the batch when Retry-After exceeds the wait budget", async () => {
 
 it.each([
   [new PolarNetworkError("offline"), "retry_exhausted"],
+  [new PolarClientError(408, "timed out"), "retry_exhausted"],
   [new PolarRateLimitError(429), "retry_exhausted"],
   [new PolarServerError(503, "unavailable"), "retry_exhausted"],
   [new PolarClientError(422, "invalid"), "permanent_error"],
@@ -323,32 +311,35 @@ it.each([
   vi.spyOn(console, "warn").mockImplementation(() => {});
   const ingest = vi.fn().mockRejectedValue(error);
   let finishDrop!: () => void;
-  const onDropped = vi.fn(
+  const onRejected = vi.fn(
     () =>
       new Promise<void>((resolve) => {
         finishDrop = resolve;
       }),
   );
-  const strategy = await new BufferedMeteringStrategy(
-    { events: { ingest } },
-    { maxAttempts: 1, onDropped },
-  ).start();
+  const strategy = await new MemoryOutbox({ events: { ingest } }, { maxAttempts: 1 }).start({
+    onRejected,
+  });
   try {
-    await strategy.track(events[0]);
+    await strategy.enqueue(events[0]);
     const flushed = vi.fn();
     const flushing = strategy.flush().then(flushed, (failure) => failure);
-    try {
-      await vi.waitFor(() => expect(onDropped).toHaveBeenCalledOnce());
-      expect(flushed).not.toHaveBeenCalled();
-    } finally {
-      finishDrop();
+    if (reason === "permanent_error") {
+      try {
+        await vi.waitFor(() => expect(onRejected).toHaveBeenCalledOnce());
+        expect(flushed).not.toHaveBeenCalled();
+      } finally {
+        finishDrop();
+      }
     }
     await expect(flushing).resolves.toMatchObject({
       events: [events[0]],
       failures: [{ reason, cause: error }],
     });
     expect(ingest).toHaveBeenCalledOnce();
-    expect(onDropped).toHaveBeenCalledExactlyOnceWith([events[0]], reason);
+    if (reason === "permanent_error")
+      expect(onRejected).toHaveBeenCalledExactlyOnceWith([events[0]], reason);
+    else expect(onRejected).not.toHaveBeenCalled();
   } finally {
     await strategy.close().catch(() => {});
   }
@@ -358,7 +349,7 @@ it.each([false, true])(
   "reports only unfinished events at the shutdown deadline (first dropped: %s)",
   async (dropFirst) => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
-    const onDropped = vi.fn();
+    const onRejected = vi.fn();
     const ingest = vi.fn(
       async ({ events: batch }: { events: EventInput[] }, options?: RequestOptions) => {
         if (batch[0] === events[0]) {
@@ -372,20 +363,16 @@ it.each([false, true])(
         });
       },
     );
-    const strategy = await new BufferedMeteringStrategy(
+    const strategy = await new MemoryOutbox(
       { events: { ingest } },
       {
         batchSize: 1,
-        onDropped,
       },
-    ).start();
+    ).start({ onRejected });
     try {
-      for (const event of events) await strategy.track(event);
+      for (const event of events) await strategy.enqueue(event);
       await expect(strategy.close({ timeoutMs: 10 })).rejects.toBeInstanceOf(MeteringDeliveryError);
-      expect(onDropped.mock.calls).toEqual([
-        ...(dropFirst ? [[[events[0]], "permanent_error"]] : []),
-        [events.slice(1), "shutdown_timeout"],
-      ]);
+      expect(onRejected.mock.calls).toEqual(dropFirst ? [[[events[0]], "permanent_error"]] : []);
       expect(ingest).toHaveBeenCalledTimes(2);
     } finally {
       await strategy.close().catch(() => {});
@@ -396,40 +383,43 @@ it.each([false, true])(
 it("cancels a retry wait at the shutdown deadline", async () => {
   vi.spyOn(console, "warn").mockImplementation(() => {});
   const ingest = vi.fn().mockRejectedValue(new PolarNetworkError("offline"));
-  const onDropped = vi.fn();
-  const strategy = await new BufferedMeteringStrategy(
-    { events: { ingest } },
-    {
-      onDropped,
-    },
-  ).start();
+  const onRejected = vi.fn();
+  const strategy = await new MemoryOutbox({ events: { ingest } }).start({ onRejected });
   try {
-    await strategy.track(events[0]);
+    await strategy.enqueue(events[0]);
     await expect(strategy.close({ timeoutMs: 10 })).rejects.toBeInstanceOf(MeteringDeliveryError);
     expect(ingest).toHaveBeenCalledOnce();
-    expect(onDropped).toHaveBeenCalledExactlyOnceWith([events[0]], "shutdown_timeout");
+    expect(onRejected).not.toHaveBeenCalled();
   } finally {
     await strategy.close().catch(() => {});
   }
 });
 
-it("keeps a failing onDelivered out of the delivery retries", async () => {
+it.each([false, true])("keeps delivering after a hook fails (rejected: %s)", async (rejected) => {
+  const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
   const ingest = vi.fn().mockResolvedValue(undefined);
-  const error = new PolarNetworkError("callback failed");
-  const onDelivered = vi.fn().mockRejectedValue(error);
-  const onDropped = vi.fn();
-  const strategy = await new BufferedMeteringStrategy(
-    { events: { ingest } },
-    { maxAttempts: 1, onDelivered, onDropped },
-  ).start();
+  const error = new PolarClientError(422, "invalid");
+  const hookError = new Error("private event details");
+  const onAck = vi.fn();
+  const onRejected = vi.fn().mockRejectedValueOnce(hookError);
+  if (rejected) ingest.mockRejectedValueOnce(error);
+  else onAck.mockRejectedValueOnce(hookError);
+  const outbox = await new MemoryOutbox({ events: { ingest } }).start({ onAck, onRejected });
   try {
-    await strategy.track(events[0]);
-    await expect(strategy.flush()).rejects.toBe(error);
-    await expect(strategy.close()).rejects.toBe(error);
-    expect(ingest).toHaveBeenCalledOnce();
-    expect(onDropped).not.toHaveBeenCalled();
+    await outbox.enqueue(events[0]);
+    if (rejected) {
+      await expect(outbox.flush()).rejects.toMatchObject({ cause: error });
+      expect(onRejected).toHaveBeenCalledExactlyOnceWith(events.slice(0, 1), "permanent_error");
+    } else {
+      await outbox.flush();
+      expect(onRejected).not.toHaveBeenCalled();
+    }
+    await outbox.enqueue(events[1]);
+    await outbox.flush();
+    expect(ingest).toHaveBeenCalledTimes(2);
+    expect(warn).toHaveBeenCalledWith("Memory outbox delivery hook failed", "Error");
   } finally {
-    await strategy.close().catch(() => {});
+    await outbox.close();
   }
 });
 
@@ -437,14 +427,13 @@ it("reports background drops to the newest overlapping flush, then recovers", as
   vi.spyOn(console, "warn").mockImplementation(() => {});
   const cause = new PolarClientError(422, "invalid");
   const ingest = vi.fn().mockRejectedValueOnce(cause).mockResolvedValue(undefined);
-  const onDropped = vi.fn();
-  const strategy = await new BufferedMeteringStrategy(
-    { events: { ingest } },
-    { batchSize: 1, onDropped },
-  ).start();
+  const onRejected = vi.fn();
+  const strategy = await new MemoryOutbox({ events: { ingest } }, { batchSize: 1 }).start({
+    onRejected,
+  });
   try {
-    await strategy.track(events[0]);
-    await vi.waitFor(() => expect(onDropped).toHaveBeenCalledOnce());
+    await strategy.enqueue(events[0]);
+    await vi.waitFor(() => expect(onRejected).toHaveBeenCalledOnce());
     const [older, newer] = await Promise.allSettled([strategy.flush(), strategy.flush()]);
     expect(older.status).toBe("fulfilled");
     expect(newer).toMatchObject({
@@ -455,7 +444,7 @@ it("reports background drops to the newest overlapping flush, then recovers", as
         failures: [{ reason: "permanent_error", cause }],
       },
     });
-    await strategy.track(events[1]);
+    await strategy.enqueue(events[1]);
     await strategy.flush();
     expect(ingest).toHaveBeenCalledTimes(2);
   } finally {
@@ -473,14 +462,11 @@ it("does not include later failed events in an earlier flush boundary", async ()
     .fn()
     .mockImplementationOnce(() => gate)
     .mockRejectedValue(new PolarClientError(422, "invalid"));
-  const strategy = await new BufferedMeteringStrategy(
-    { events: { ingest } },
-    { batchSize: 1 },
-  ).start();
+  const strategy = await new MemoryOutbox({ events: { ingest } }, { batchSize: 1 }).start();
   try {
-    await strategy.track(events[0]);
+    await strategy.enqueue(events[0]);
     const first = strategy.flush();
-    await strategy.track(events[1]);
+    await strategy.enqueue(events[1]);
     const second = strategy.flush().catch((error) => error);
     release();
     await first;
@@ -502,14 +488,11 @@ it("releases an older flush when a newer one starts, and reports both boundaries
     await gate;
     throw cause;
   });
-  const strategy = await new BufferedMeteringStrategy(
-    { events: { ingest } },
-    { batchSize: 1 },
-  ).start();
+  const strategy = await new MemoryOutbox({ events: { ingest } }, { batchSize: 1 }).start();
   try {
-    await strategy.track(events[0]);
+    await strategy.enqueue(events[0]);
     const older = strategy.flush().then(() => "released");
-    await strategy.track(events[1]);
+    await strategy.enqueue(events[1]);
     const newer = strategy.flush().catch((error) => error);
     const waiting = new Promise((resolve) => setTimeout(() => resolve("waiting"), 50));
     expect(await Promise.race([older, waiting])).toBe("released");
@@ -527,12 +510,12 @@ it("a newer flush with a shorter timeout does not release an older one", async (
   const gate = new Promise<void>((resolve) => {
     release = resolve;
   });
-  const strategy = await new BufferedMeteringStrategy(
+  const strategy = await new MemoryOutbox(
     { events: { ingest: () => gate } },
     { batchSize: 1 },
   ).start();
   try {
-    await strategy.track(events[0]);
+    await strategy.enqueue(events[0]);
     const olderDone = vi.fn();
     const older = strategy.flush().then(olderDone);
     await expect(strategy.flush({ timeoutMs: 10 })).rejects.toBeInstanceOf(MeteringDeliveryError);
@@ -558,12 +541,9 @@ it("a flush timeout does not cancel delivery or acknowledge unseen drops", async
     await gate;
     throw cause;
   });
-  const strategy = await new BufferedMeteringStrategy(
-    { events: { ingest } },
-    { batchSize: 1 },
-  ).start();
+  const strategy = await new MemoryOutbox({ events: { ingest } }, { batchSize: 1 }).start();
   try {
-    await strategy.track(events[0]);
+    await strategy.enqueue(events[0]);
     const timedOut = strategy.flush({ timeoutMs: 10 }).catch((error) => error);
     expect(await timedOut).toMatchObject({
       events: [events[0]],
@@ -585,9 +565,9 @@ it("an abandoned flush leaves its eventual failure observable", async () => {
   const gate = new Promise<void>((resolve) => {
     release = resolve;
   });
-  const onDropped = vi.fn();
+  const onRejected = vi.fn();
   const cause = new PolarClientError(422, "invalid");
-  const strategy = await new BufferedMeteringStrategy(
+  const strategy = await new MemoryOutbox(
     {
       events: {
         ingest: async () => {
@@ -596,13 +576,13 @@ it("an abandoned flush leaves its eventual failure observable", async () => {
         },
       },
     },
-    { batchSize: 1, onDropped },
-  ).start();
+    { batchSize: 1 },
+  ).start({ onRejected });
   try {
-    await strategy.track(events[0]);
+    await strategy.enqueue(events[0]);
     await expect(strategy.flush({ timeoutMs: 10 })).rejects.toBeInstanceOf(MeteringDeliveryError);
     release();
-    await vi.waitFor(() => expect(onDropped).toHaveBeenCalledOnce());
+    await vi.waitFor(() => expect(onRejected).toHaveBeenCalledOnce());
     await expect(strategy.flush()).rejects.toMatchObject({ events: [events[0]], cause });
     await strategy.flush();
   } finally {
@@ -611,94 +591,24 @@ it("an abandoned flush leaves its eventual failure observable", async () => {
   }
 });
 
-it.each([false, true])(
-  "reports retained failures when flush follows a worker error (callback pending: %s)",
-  async (callbackPending) => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
-    const cause = new TypeError("broken transport");
-    let release!: () => void;
-    const gate = new Promise<void>((resolve) => {
-      release = resolve;
+it("reports a worker error without calling onRejected", async () => {
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+  const cause = new TypeError("broken transport");
+  const onRejected = vi.fn();
+  const outbox = await new MemoryOutbox(
+    {
+      events: { ingest: vi.fn().mockRejectedValue(cause) },
+    },
+    { batchSize: 1 },
+  ).start({ onRejected });
+  try {
+    await outbox.enqueue(events[0]);
+    await expect(outbox.flush()).rejects.toMatchObject({
+      events: [events[0]],
+      failures: [{ reason: "worker_error", cause }],
     });
-    const onDropped = vi.fn(() => (callbackPending ? gate : undefined));
-    const strategy = await new BufferedMeteringStrategy(
-      { events: { ingest: vi.fn().mockRejectedValue(cause) } },
-      { batchSize: 1, onDropped },
-    ).start();
-    try {
-      await strategy.track(events[0]);
-      await vi.waitFor(() => expect(onDropped).toHaveBeenCalledOnce());
-      const flushing = strategy.flush({ timeoutMs: 10 });
-      const result = expect(flushing).rejects.toMatchObject({
-        events: [events[0]],
-        failures: [{ events: [events[0]], reason: "worker_error", cause }],
-      });
-      await result;
-      for (let index = 0; index < 3; index++)
-        await expect(strategy.flush({ timeoutMs: 10 })).rejects.toThrow(cause.message);
-      expect(strategy).toHaveProperty("queue", []);
-    } finally {
-      release();
-      await strategy.close({ timeoutMs: 20 }).catch(() => {});
-    }
-  },
-);
-
-it.each(["delivered", "dropped", "shutdown"] as const)(
-  "bounds shutdown when the %s callback hangs",
-  async (phase) => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
-    let release!: () => void;
-    const gate = new Promise<void>((resolve) => {
-      release = resolve;
-    });
-    let callbackStarted!: () => void;
-    const started = new Promise<void>((resolve) => {
-      callbackStarted = resolve;
-    });
-    const callback = vi.fn(() => {
-      callbackStarted();
-      return gate;
-    });
-    const cause = new PolarClientError(422, "invalid");
-    const ingest = vi.fn(async (_body: unknown, options?: RequestOptions) => {
-      if (phase === "dropped") throw cause;
-      if (phase === "shutdown")
-        await new Promise<void>((_resolve, reject) => {
-          options!.signal!.addEventListener("abort", () => reject(options!.signal!.reason), {
-            once: true,
-          });
-        });
-    });
-    const strategy = await new BufferedMeteringStrategy(
-      { events: { ingest } },
-      {
-        batchSize: 1,
-        onDelivered: phase === "delivered" ? callback : undefined,
-        onDropped: phase !== "delivered" ? callback : undefined,
-      },
-    ).start();
-    let closing: Promise<void> | undefined;
-    try {
-      await strategy.track(events[0]);
-      if (phase !== "shutdown") await started;
-      closing = strategy.close({ timeoutMs: 10 });
-      if (phase === "delivered") await expect(closing).rejects.toBeInstanceOf(MeteringTimeoutError);
-      else
-        await expect(closing).rejects.toMatchObject({
-          events: [events[0]],
-          failures: [
-            {
-              events: [events[0]],
-              reason: phase === "dropped" ? "permanent_error" : "shutdown_timeout",
-            },
-          ],
-        });
-      expect(callback).toHaveBeenCalledOnce();
-    } finally {
-      release();
-      await closing?.catch(() => {});
-    }
-  },
-  500,
-);
+    expect(onRejected).not.toHaveBeenCalled();
+  } finally {
+    await outbox.close().catch(() => {});
+  }
+});

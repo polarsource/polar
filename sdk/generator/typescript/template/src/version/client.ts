@@ -46,14 +46,10 @@ export function createPolar(options: PolarOptions) {
   return {
     ...services,
     /**
-     * Create a helper for buffered event delivery and customer meter reads.
+     * Create a helper for event delivery and customer meter reads.
      *
-     * @param options.buffered Batch and retry options; defaults to 100 events, a 1000-ms
-     * collection interval, a 5000-ms shutdown timeout, and 3 attempts.
-     * @param options.outpost Outpost from `outpost()` in `@polar-sh/sdk/outpost`. Disabled by
-     * default.
-     * @param options.strategies Replace all defaults with custom strategies. Cannot be
-     * combined with buffered or outpost.
+     * @param options.outbox Outbox used to deliver events. Defaults to MemoryOutbox.
+     * @param options.outpost Outpost from `outpost()` in `@polar-sh/sdk/outpost`. Disabled by default.
      * @returns A metering helper that starts on its first operation.
      */
     metering: (options?: MeteringOptions) => createMetering(services, client, options),

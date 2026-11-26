@@ -11,7 +11,7 @@ import {
 } from '../../Dashboard/navigation'
 import {
   useCatalogRoutes,
-  useDiscountRoutes,
+  useSalesToolRoutes,
 } from '../../Dashboard/navigationProducts'
 import Link from 'next/link'
 import { twMerge } from 'tailwind-merge'
@@ -118,21 +118,19 @@ export const CatalogNavigation = ({
   const draft = latest?.items.find(({ status }) => status === 'draft')
   const generalRoutes = useGeneralRoutes(organization)
   const organizationRoutes = useOrganizationRoutes(organization)
-  const discountRoutes = useDiscountRoutes(organization)
+  const salesToolRoutes = useSalesToolRoutes(organization)
   const catalogRoutes = useCatalogRoutes(organization)
 
-  const topRoutes = generalRoutes
-    .filter((route) => route.id !== 'new-products')
-    .flatMap((route) =>
-      route.id === 'customers' ? [route, ...discountRoutes] : [route],
-    )
+  const topRoutes = [
+    ...generalRoutes.filter((route) => route.id !== 'new-products'),
+    ...organizationRoutes,
+  ].flatMap((route) =>
+    route.id === 'settings' ? [...salesToolRoutes, route] : [route],
+  )
 
   return (
     <Box width="100%" flexDirection="column" rowGap="xl">
-      <NavList
-        routes={[...topRoutes, ...organizationRoutes]}
-        navType="organization"
-      />
+      <NavList routes={topRoutes} navType="organization" />
       <Box width="100%" flexDirection="column" rowGap="s">
         {state === 'expanded' ? (
           <CatalogLabel

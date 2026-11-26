@@ -108,7 +108,7 @@ const settingsGroupsList = (
           title: 'Custom Fields',
           link: `${base}/custom-fields`,
           icon: <TextCursorInput size="1em" />,
-          if: true,
+          if: !org?.feature_settings?.config_as_code_enabled,
         },
       ],
     },

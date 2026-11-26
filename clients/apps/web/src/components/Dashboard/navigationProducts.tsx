@@ -5,6 +5,7 @@ import {
   HistoryRounded,
   HiveOutlined,
   LinkOutlined,
+  TextCursorInput,
 } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Route, RouteWithActive, useResolveRoutes } from './navigation'
@@ -12,6 +13,7 @@ import { Route, RouteWithActive, useResolveRoutes } from './navigation'
 const PRODUCT_SECTIONS = [
   'meters',
   'benefits',
+  'custom-fields',
   'checkout-links',
   'discounts',
   'versions',
@@ -34,7 +36,13 @@ const productSectionRoute = (
   }
 }
 
-const discountRoutesList = (org?: schemas['Organization']): Route[] => [
+const salesToolRoutesList = (org?: schemas['Organization']): Route[] => [
+  productSectionRoute(
+    org,
+    'checkout-links',
+    'Checkout Links',
+    <LinkOutlined fontSize="inherit" />,
+  ),
   productSectionRoute(
     org,
     'discounts',
@@ -72,9 +80,9 @@ const catalogRoutesList = (org?: schemas['Organization']): Route[] => {
     ),
     productSectionRoute(
       org,
-      'checkout-links',
-      'Checkout Links',
-      <LinkOutlined fontSize="inherit" />,
+      'custom-fields',
+      'Custom Fields',
+      <TextCursorInput size="1em" />,
     ),
     productSectionRoute(
       org,
@@ -85,9 +93,9 @@ const catalogRoutesList = (org?: schemas['Organization']): Route[] => {
   ]
 }
 
-export const useDiscountRoutes = (
+export const useSalesToolRoutes = (
   org?: schemas['Organization'],
-): RouteWithActive[] => useResolveRoutes(discountRoutesList, org)
+): RouteWithActive[] => useResolveRoutes(salesToolRoutesList, org)
 
 export const useCatalogRoutes = (
   org?: schemas['Organization'],

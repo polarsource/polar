@@ -180,7 +180,7 @@ export async function POST(req: Request) {
 
 #### OpenAI SDK
 
-Pass an `openai` client. `client()` returns a copy of it, and every Chat Completions or Responses call made with that copy is ingested, including `parse()`, `stream()` and `runTools()`. A streamed chat completion only reports usage with `stream_options: { include_usage: true }`.
+Pass an `openai` client. `client()` returns a copy of it, and every Chat Completions or Responses call made with that copy is ingested, including `parse()`, `stream()`, `runTools()` and `responses.compact()`. OpenAI only reports the usage of a streamed chat completion when asked, so `stream_options: { include_usage: true }` is added to those requests unless you set it yourself. The stream then ends with one extra chunk whose `choices` is empty. Only the call that generates is ingested, so retrieving a response later doesn't count it again, and a background response (`background: true`) isn't ingested.
 
 ```
 pnpm add @polar-sh/ingestion openai
@@ -192,20 +192,26 @@ import { LLMStrategy } from '@polar-sh/ingestion/strategies/LLM'
 import OpenAI from 'openai'
 
 // Cents per million tokens
-const prices: Record<string, { input: number; output: number }> = {
-  'gpt-4o-2024-08-06': { input: 250, output: 1000 },
-  'gpt-4o-mini-2024-07-18': { input: 15, output: 60 },
+const prices: Record<
+  string,
+  { input: number; cachedInput: number; output: number }
+> = {
+  'gpt-4o-2024-08-06': { input: 250, cachedInput: 125, output: 1000 },
+  'gpt-4o-mini-2024-07-18': { input: 15, cachedInput: 7.5, output: 60 },
 }
 
 const llmIngestion = Ingestion({ accessToken: process.env.POLAR_ACCESS_TOKEN })
   .strategy(new LLMStrategy(new OpenAI()))
-  // The model is picked per call, and ctx.model is the dated name the API reports
+  // The model is picked per call, and ctx.model is the dated name the API reports.
+  // ctx.inputTokens includes the cached tokens, which OpenAI bills at a lower rate
   .cost((ctx) => {
     const price = prices[ctx.model]
 
     return {
       amount: price
-        ? (ctx.inputTokens * price.input + ctx.outputTokens * price.output) /
+        ? ((ctx.inputTokens - ctx.cachedInputTokens) * price.input +
+            ctx.cachedInputTokens * price.cachedInput +
+            ctx.outputTokens * price.output) /
           1_000_000
         : 0,
       currency: 'usd',

@@ -17,12 +17,14 @@ export const isOpenAI = (model: object): model is LLMStrategyOpenAI =>
 
 const CachedTokens = Schema.optional(
   Schema.NullOr(
-    Schema.Struct({ cached_tokens: Schema.optional(Schema.Number) }),
+    Schema.Struct({
+      cached_tokens: Schema.optional(Schema.NullOr(Schema.Number)),
+    }),
   ),
 )
 
 const OpenAIPayload = Schema.Struct({
-  model: Schema.String,
+  model: Schema.optional(Schema.String),
   usage: Schema.Union([
     Schema.Struct({
       prompt_tokens: Schema.Number,
@@ -41,6 +43,8 @@ const OpenAIPayload = Schema.Struct({
 
 const isOpenAIPayload = Schema.is(OpenAIPayload)
 
+const hasModel = Schema.is(Schema.Struct({ model: Schema.String }))
+
 const isOpenAIResponseEvent = Schema.is(
   Schema.Struct({ response: OpenAIPayload }),
 )
@@ -51,30 +55,72 @@ const openAIUsage = ({ usage }: typeof OpenAIPayload.Type): Usage =>
         inputTokens: usage.prompt_tokens,
         outputTokens: usage.completion_tokens,
         totalTokens: usage.total_tokens,
-        cachedInputTokens: usage.prompt_tokens_details?.cached_tokens,
+        cachedInputTokens: usage.prompt_tokens_details?.cached_tokens ?? 0,
       }
     : {
         inputTokens: usage.input_tokens,
         outputTokens: usage.output_tokens,
         totalTokens: usage.total_tokens,
-        cachedInputTokens: usage.input_tokens_details?.cached_tokens,
+        cachedInputTokens: usage.input_tokens_details?.cached_tokens ?? 0,
       }
+
+const generation = (input: string | URL | Request, init?: RequestInit) => {
+  const url = input instanceof Request ? input.url : String(input)
+  const method =
+    init?.method ?? (input instanceof Request ? input.method : 'GET')
+
+  return method.toUpperCase() === 'POST'
+    ? /\/(chat\/completions|responses(\/compact)?)$/.exec(
+        new URL(url).pathname,
+      )?.[1]
+    : undefined
+}
+
+const parse = (text: string): unknown => {
+  try {
+    return JSON.parse(text)
+  } catch {
+    return undefined
+  }
+}
+
+const isChatStream = Schema.is(
+  Schema.Struct({
+    stream: Schema.Literal(true),
+    stream_options: Schema.optional(
+      Schema.NullOr(Schema.Record(Schema.String, Schema.Unknown)),
+    ),
+  }),
+)
+
+const withUsage = (input: string | URL | Request, init?: RequestInit) => {
+  const body = typeof init?.body === 'string' ? parse(init.body) : undefined
+
+  return generation(input, init) === 'chat/completions' && isChatStream(body)
+    ? {
+        ...init,
+        body: JSON.stringify({
+          ...body,
+          stream_options: { include_usage: true, ...body.stream_options },
+        }),
+      }
+    : init
+}
 
 // The SDK's helpers (parse, stream, runTools) bypass a wrapped create(), so meter at fetch
 export const openAIClient = (client: LLMStrategyOpenAI, ingest: Ingest) => {
-  const meter = async (payload: unknown) => {
+  const meter = async (payload: unknown, request?: RequestInit) => {
     const body = isOpenAIResponseEvent(payload) ? payload.response : payload
 
-    if (isOpenAIPayload(body)) {
-      await ingest({ vendor: 'openai', model: body.model }, openAIUsage(body))
+    if (!isOpenAIPayload(body)) {
+      return
     }
-  }
 
-  const parse = (text: string): unknown => {
-    try {
-      return JSON.parse(text)
-    } catch {
-      return undefined
+    const sent = typeof request?.body === 'string' && parse(request.body)
+    const model = body.model ?? (hasModel(sent) ? sent.model : undefined)
+
+    if (model) {
+      await ingest({ vendor: 'openai', model }, openAIUsage(body))
     }
   }
 
@@ -107,10 +153,10 @@ export const openAIClient = (client: LLMStrategyOpenAI, ingest: Ingest) => {
 
   return client.withOptions({
     fetch: async (input, init) => {
-      const response = await fetch(input, init)
+      const response = await fetch(input, withUsage(input, init))
       const type = response.headers.get('content-type') ?? ''
 
-      if (!response.ok || !response.body) {
+      if (!response.ok || !response.body || !generation(input, init)) {
         return response
       }
 
@@ -128,6 +174,7 @@ export const openAIClient = (client: LLMStrategyOpenAI, ingest: Ingest) => {
             .clone()
             .json()
             .catch(() => undefined),
+          init,
         )
       }
 

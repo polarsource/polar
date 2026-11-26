@@ -61,7 +61,6 @@ const json = (body: unknown, status = 200) =>
     headers: { 'content-type': 'application/json' },
   })
 
-// Split mid-event so the strategy has to buffer across chunks
 const events = (payloads: unknown[]) => {
   const text = payloads
     .map((payload) => `data: ${JSON.stringify(payload)}\n\n`)
@@ -83,7 +82,7 @@ const events = (payloads: unknown[]) => {
 }
 
 const track = (reply: () => Response) => {
-  const fetch = vi.fn(async () => reply())
+  const fetch = vi.fn(async (_input: unknown, _init?: RequestInit) => reply())
   const llm = new LLMStrategy(
     new OpenAI({ apiKey: 'test', fetch, maxRetries: 0 }),
   )
@@ -91,6 +90,9 @@ const track = (reply: () => Response) => {
 
   return { client: llm.client({ customerId }), execute, fetch }
 }
+
+const sent = (fetch: ReturnType<typeof track>['fetch']) =>
+  JSON.parse(String(fetch.mock.calls[0]?.[1]?.body))
 
 const llm = {
   vendor: 'openai',
@@ -139,8 +141,33 @@ describe('LLMStrategy with an OpenAI client', () => {
     expect(execute).toHaveBeenCalledExactlyOnceWith(...tenTokens)
   })
 
-  it('should not ingest a streamed chat completion without usage', async () => {
-    const { client, execute } = track(() =>
+  it('should ask for the usage of a streamed chat completion', async () => {
+    const stop = [{ index: 0, delta: {}, finish_reason: 'stop' }]
+    const { client, execute, fetch } = track(() =>
+      events([
+        chunk({ role: 'assistant', content: 'Hi' }),
+        { ...chunk({}), choices: stop },
+        chunk({}, chatUsage),
+      ]),
+    )
+
+    await client.chat.completions
+      .stream({
+        model,
+        messages,
+        stream_options: { include_obfuscation: false },
+      })
+      .finalChatCompletion()
+
+    expect(sent(fetch).stream_options).toEqual({
+      include_usage: true,
+      include_obfuscation: false,
+    })
+    expect(execute).toHaveBeenCalledExactlyOnceWith(...tenTokens)
+  })
+
+  it('should not ask for usage the request turned off', async () => {
+    const { client, execute, fetch } = track(() =>
       events([chunk({ role: 'assistant', content: 'Hi' })]),
     )
 
@@ -148,6 +175,7 @@ describe('LLMStrategy with an OpenAI client', () => {
       model,
       messages,
       stream: true,
+      stream_options: { include_usage: false },
     })
     const types: string[] = []
     for await (const part of stream) {
@@ -155,6 +183,7 @@ describe('LLMStrategy with an OpenAI client', () => {
     }
 
     expect(types).toEqual(['chat.completion.chunk'])
+    expect(sent(fetch).stream_options).toEqual({ include_usage: false })
     expect(execute).not.toHaveBeenCalled()
   })
 
@@ -182,8 +211,42 @@ describe('LLMStrategy with an OpenAI client', () => {
     expect(execute).toHaveBeenCalledExactlyOnceWith(...tenTokens)
   })
 
-  it('should ingest the usage of a streamed response once', async () => {
+  it('should ingest a compaction under the model of the request', async () => {
     const { client, execute } = track(() =>
+      json({
+        id: 'cmp-1',
+        object: 'response.compaction',
+        created_at: 0,
+        output: [],
+        usage: responsesUsage,
+      }),
+    )
+
+    await client.responses.compact({ model, input: 'Hello' })
+
+    expect(execute).toHaveBeenCalledExactlyOnceWith(...tenTokens)
+  })
+
+  it('should ingest usage whose cached tokens are null', async () => {
+    const { client, execute } = track(() =>
+      json({
+        ...completion,
+        usage: { ...chatUsage, prompt_tokens_details: { cached_tokens: null } },
+      }),
+    )
+
+    await client.chat.completions.create({ model, messages })
+
+    const uncached = { ...llm, cachedInputTokens: 0 }
+
+    expect(execute).toHaveBeenCalledExactlyOnceWith(
+      { ...uncached, strategy: 'LLM', _llm: uncached },
+      { customerId },
+    )
+  })
+
+  it('should ingest the usage of a streamed response once', async () => {
+    const { client, execute, fetch } = track(() =>
       events([
         { type: 'response.created', response: response(null) },
         { type: 'response.output_text.delta', delta: 'Hi' },
@@ -206,7 +269,20 @@ describe('LLMStrategy with an OpenAI client', () => {
       'response.output_text.delta',
       'response.completed',
     ])
+    expect(sent(fetch)).toEqual({ model, input: 'Hello', stream: true })
     expect(execute).toHaveBeenCalledExactlyOnceWith(...tenTokens)
+  })
+
+  it('should not ingest a retrieved response, completion or batch', async () => {
+    const { client, execute } = track(() =>
+      json({ ...response(responsesUsage), ...completion }),
+    )
+
+    await client.responses.retrieve('resp-1')
+    await client.chat.completions.retrieve('chatcmpl-1')
+    await client.batches.retrieve('batch-1')
+
+    expect(execute).not.toHaveBeenCalled()
   })
 
   it('should not ingest a failed request', async () => {

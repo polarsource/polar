@@ -1,5 +1,5 @@
 import { SubscriptionStatus as SubscriptionStatusComponent } from '@/components/Subscriptions/SubscriptionStatus'
-import { useCatalogVersionLabels } from '@/hooks/queries/catalogs'
+import { useCatalog } from '@/hooks/queries/catalogs'
 import { useSubscriptions } from '@/hooks/queries/subscriptions'
 import { schemas } from '@polar-sh/client'
 import { Avatar } from '@polar-sh/orbit'
@@ -17,11 +17,12 @@ export const ProductSubscriptions = ({
   organization,
   product,
 }: ProductSubscriptionsProps) => {
-  const { data: versionLabels } = useCatalogVersionLabels(organization)
-  const versionName =
-    organization.feature_settings?.config_as_code_enabled && product.catalog_id
-      ? versionLabels?.get(product.catalog_id)?.name
-      : null
+  const { data: catalog } = useCatalog(
+    organization.feature_settings?.config_as_code_enabled
+      ? product.catalog_id
+      : null,
+  )
+  const versionName = catalog ? (catalog.name ?? 'Untitled') : null
   const { data: subscriptions, isLoading: subscriptionsIsLoading } =
     useSubscriptions(organization.id, {
       product_id: product.id,

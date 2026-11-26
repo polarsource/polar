@@ -1,5 +1,5 @@
 import { OrderStatus } from '@/components/Orders/OrderStatus'
-import { useCatalogVersionLabels } from '@/hooks/queries/catalogs'
+import { useCatalog } from '@/hooks/queries/catalogs'
 import { useOrders } from '@/hooks/queries/orders'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -18,11 +18,12 @@ export const ProductOrders = ({
   organization,
   product,
 }: ProductOrdersProps) => {
-  const { data: versionLabels } = useCatalogVersionLabels(organization)
-  const versionName =
-    organization.feature_settings?.config_as_code_enabled && product.catalog_id
-      ? versionLabels?.get(product.catalog_id)?.name
-      : null
+  const { data: catalog } = useCatalog(
+    organization.feature_settings?.config_as_code_enabled
+      ? product.catalog_id
+      : null,
+  )
+  const versionName = catalog ? (catalog.name ?? 'Untitled') : null
   const { data: productOrders, isLoading: productOrdersIsLoading } = useOrders(
     organization.id,
     {

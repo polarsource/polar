@@ -29,8 +29,10 @@ export type EntityKind =
   // the same reason.
   | 'reason'
 
+export type EntityIcon = typeof Package
+
 // Each kind has its own mark, which takes its color while pointed at.
-const ENTITIES: Record<EntityKind, { icon: typeof Package; hover: string }> = {
+const ENTITIES: Record<EntityKind, { icon: EntityIcon; hover: string }> = {
   product: {
     icon: Package,
     hover:
@@ -88,6 +90,7 @@ const ICON_CLASS =
 // then its name. Given menu items, an arrow after the name opens them.
 export const EntityLink = ({
   kind,
+  icon,
   href,
   menuItems,
   minimal = false,
@@ -97,6 +100,8 @@ export const EntityLink = ({
   children,
 }: {
   kind: EntityKind
+  // In place of the kind's own mark, for a kind whose entities differ.
+  icon?: EntityIcon
   href: string
   menuItems?: EntityLinkMenuItem[]
   // Leaves the mark out, where the column already says what the name is.
@@ -111,7 +116,8 @@ export const EntityLink = ({
   preview?: ReactNode
   children: ReactNode
 }) => {
-  const { icon: Icon, hover } = ENTITIES[kind]
+  const { icon: kindIcon, hover } = ENTITIES[kind]
+  const Icon = icon ?? kindIcon
   const hasMenu = menuItems != null && menuItems.length > 0
   const link = (
     <Link
@@ -159,6 +165,7 @@ export const EntityLink = ({
 
 export interface CombinedEntity {
   kind: EntityKind
+  icon?: EntityIcon
   href: string
   name: string
   menuItems?: EntityMenuAction[]
@@ -175,8 +182,8 @@ export const CombinedEntityLink = ({
   entities: [CombinedEntity, CombinedEntity]
 }) => {
   const menuItems = entities
-    .map(({ kind, name, menuItems = [] }, index) => {
-      const { icon: Icon } = ENTITIES[kind]
+    .map(({ kind, icon, name, menuItems = [] }, index) => {
+      const Icon = icon ?? ENTITIES[kind].icon
       // Keyed by place, as the two can share a name or a kind.
       return {
         key: `${kind}-${index}`,

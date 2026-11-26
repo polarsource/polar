@@ -58,6 +58,7 @@ export {
   Info,
   Key,
   KeyRound,
+  Layers2,
   Loader,
   LoaderCircle,
   LogIn,

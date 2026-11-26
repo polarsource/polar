@@ -175,7 +175,7 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
   },
   {
     id: 'new-products',
-    title: 'Products',
+    title: 'Catalog',
     icon: <HiveOutlined fontSize="inherit" />,
     link: `/dashboard/${org?.slug}/products`,
     checkIsActive: (currentRoute: string): boolean => {
@@ -187,7 +187,7 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
     ) : undefined,
     subs: [
       {
-        title: 'Catalogue',
+        title: 'Products',
         link: `/dashboard/${org?.slug}/products`,
         icon: <HiveOutlined fontSize="inherit" />,
       },

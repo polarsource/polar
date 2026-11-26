@@ -8,16 +8,20 @@ from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.integrations.stripe.service import StripeService
+from polar.kit.address import Address
 from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
 from polar.models import Customer, Organization, Product
+from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderStatus
 from polar.models.payment import PaymentStatus
 from polar.postgres import AsyncSession
+from polar.version import V2027_01
 from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_benefit,
+    create_discount,
     create_order,
     create_payment,
     create_subscription,
@@ -567,3 +571,92 @@ class TestGetOrderReceipt:
 
         assert response.status_code == 200
         assert response.json() == {"url": "https://example.com/signed-url"}
+
+
+@pytest.mark.anyio
+@pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+@pytest.mark.api_version(V2027_01)
+class TestUpdateOrder:
+    async def test_draft_billing_details_and_discount(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        product.is_tax_applicable = False
+        await save_fixture(product)
+        await create_discount(
+            save_fixture,
+            organization=product.organization,
+            type=DiscountType.percentage,
+            duration=DiscountDuration.once,
+            basis_points=2_500,
+            code="DRAFT25",
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.draft,
+            subscription=await create_subscription(
+                save_fixture, product=product, customer=customer
+            ),
+            billing_address=Address.model_validate({"country": "US"}),
+        )
+        url = f"/v1/customer-portal/orders/{order.id}"
+
+        response = await client.patch(
+            url,
+            json={
+                "billing_name": "French company",
+                "billing_address": {"country": "FR"},
+                "tax_id": "FR61954506077",
+                "discount_code": "DRAFT25",
+            },
+        )
+        assert response.status_code == 200, response.text
+        draft = response.json()
+        assert draft["status"] == OrderStatus.draft
+        assert draft["billing_name"] == "French company"
+        assert draft["billing_address"]["country"] == "FR"
+        assert draft["tax_id"] == ["FR61954506077", "eu_vat"]
+        assert draft["discount_amount"] == 250
+        assert draft["due_amount"] == 750
+
+        response = await client.patch(url, json={"tax_id": None, "discount_code": None})
+        assert response.status_code == 200, response.text
+        assert response.json()["tax_id"] is None
+        assert response.json()["discount_amount"] == 0
+        assert response.json()["due_amount"] == 1000
+
+    async def test_pending_order_rejects_repricing_fields(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            billing_address=Address.model_validate({"country": "FR"}),
+            tax_amount=200,
+        )
+
+        response = await client.patch(
+            f"/v1/customer-portal/orders/{order.id}",
+            json={
+                "tax_id": None,
+                "discount_code": None,
+                "billing_address": {"country": "US"},
+            },
+        )
+        assert response.status_code == 422, response.text
+        assert [error["loc"] for error in response.json()["detail"]] == [
+            ["body", "tax_id"],
+            ["body", "discount_code"],
+            ["body", "billing_address", "country"],
+        ]

@@ -21521,6 +21521,8 @@ export interface components {
        * @description When the next automatic payment retry is scheduled. `null` if the order is not in dunning or all retries have been exhausted.
        */
       next_payment_attempt_at?: string | null
+      /** Tax Id */
+      tax_id: [string, components['schemas']['TaxIDFormat']] | null
       product: components['schemas']['CustomerOrderProduct'] | null
       subscription: components['schemas']['CustomerOrderSubscription'] | null
       /**
@@ -21901,8 +21903,18 @@ export interface components {
        * @description The name of the customer that should appear on the invoice.
        */
       billing_name?: string | null
-      /** @description The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated. */
+      /** @description The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated on draft orders. */
       billing_address?: components['schemas']['AddressInput']
+      /**
+       * Tax Id
+       * @description Tax ID for the billing address on a draft order. Set to null to remove it.
+       */
+      tax_id?: string | null
+      /**
+       * Discount Code
+       * @description Discount code to apply to the draft order. Set to null to remove it.
+       */
+      discount_code?: string | null
     }
     /** CustomerOrganization */
     CustomerOrganization: {
@@ -31548,8 +31560,18 @@ export interface components {
        * @description The name of the customer that should appear on the invoice.
        */
       billing_name?: string | null
-      /** @description The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated. */
+      /** @description The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated on draft orders. */
       billing_address?: components['schemas']['AddressInput']
+      /**
+       * Tax Id
+       * @description Tax ID for the billing address on a draft order. Set to null to remove it.
+       */
+      tax_id?: string | null
+      /**
+       * Discount Code
+       * @description Discount code to apply to the draft order. Set to null to remove it.
+       */
+      discount_code?: string | null
     }
     /**
      * OrderVoidedEvent

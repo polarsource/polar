@@ -11184,7 +11184,7 @@
           "public"
         ],
         "summary": "Create Order",
-        "description": "Create a draft order for an off-session charge against a saved payment\nmethod. The order is created with `status=draft` and no invoice number;\ncall `POST /v1/orders/{id}/finalize` to attempt the charge.\n\nReference the customer and product by Polar ID, or both by external ID.\n\nThe organization must have the `off_session_charges_enabled` feature flag.\n\n**Scopes**: `orders:write`",
+        "description": "Create a draft order for an off-session charge against a saved payment\nmethod. The order is created with `status=draft` and no invoice number;\ncall `POST /v1/orders/{id}/finalize` to attempt the charge.\n\nReference the customer and the product both by Polar ID or both by external ID.\n\nThe organization must have the `off_session_charges_enabled` feature flag.\n\n**Scopes**: `orders:write`",
         "operationId": "orders:create",
         "security": [
           {

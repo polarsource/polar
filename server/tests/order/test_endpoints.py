@@ -1007,6 +1007,27 @@ class TestCreateOrder:
             "external_customer_id",
         ]
 
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_write}))
+    async def test_product_id_with_external_customer_id(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        off_session_organization: Organization,
+        product_one_time: Product,
+        customer_external_id: Customer,
+    ) -> None:
+        response = await client.post(
+            "/v1/orders/",
+            json={
+                "organization_id": str(off_session_organization.id),
+                "external_customer_id": customer_external_id.external_id,
+                "product_id": str(product_one_time.id),
+            },
+        )
+
+        assert response.status_code == 422
+
     @pytest.mark.api_version(V2026_10)
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_write}))
     async def test_external_ids_before_2027_01(

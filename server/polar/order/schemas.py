@@ -419,7 +419,8 @@ class OrderCreateExternal(OrderCreateBase):
 
 def _order_create_discriminator(v: Any) -> str:
     if isinstance(v, dict):
-        return "external" if "external_product_id" in v else "polar"
+        external = "external_customer_id" in v or "external_product_id" in v
+        return "external" if external else "polar"
     return "external" if isinstance(v, OrderCreateExternal) else "polar"
 
 

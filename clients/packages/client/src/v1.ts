@@ -2427,7 +2427,7 @@ export interface paths {
      *     method. The order is created with `status=draft` and no invoice number;
      *     call `POST /v1/orders/{id}/finalize` to attempt the charge.
      *
-     *     Reference the customer and product by Polar ID, or both by external ID.
+     *     Reference the customer and the product both by Polar ID or both by external ID.
      *
      *     The organization must have the `off_session_charges_enabled` feature flag.
      *

@@ -28,6 +28,7 @@ from polar.customer.service import customer as customer_service
 from polar.customer_portal.schemas.order import (
     CustomerOrderUpdate,
 )
+from polar.discount.repository import DiscountRedemptionRepository
 from polar.discount.service import discount as discount_service
 from polar.email.billing_migration import previous_billing_provider_for_notice
 from polar.email.schemas import EmailAdapter, EmailTemplate
@@ -1663,6 +1664,9 @@ class OrderService:
         invoice number is only assigned on success, so there's nothing to
         release here (cleared defensively).
         """
+        await DiscountRedemptionRepository.from_session(session).delete_by_order_id(
+            order.id
+        )
         repository = OrderRepository.from_session(session)
         return await repository.update(
             order,

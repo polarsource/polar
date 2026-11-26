@@ -17,7 +17,7 @@ from polar.enums import PaymentProcessor
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
-from polar.models import Checkout, Customer, Order, PaymentMethod, Subscription
+from polar.models import Customer, Order, PaymentMethod, Subscription
 from polar.models.organization import resolve_default_customer_email_settings
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
@@ -143,12 +143,10 @@ class PaymentMethodService:
         self,
         session: AsyncSession,
         intent: stripe_lib.Charge | stripe_lib.SetupIntent,
-        checkout: Checkout,
+        customer: Customer,
     ) -> PaymentMethod:
         stripe_payment_method = await self.resolve_from_stripe_intent(intent)
 
-        customer = checkout.customer
-        assert customer is not None
         payment_method = await self.upsert_from_stripe(
             session, customer, stripe_payment_method, flush=True
         )

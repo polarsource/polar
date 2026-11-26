@@ -32,6 +32,7 @@ from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.metadata import MetadataMixin
 from polar.kit.utils import utc_now
 from polar.models.order_item import OrderItem
+from polar.product.guard import has_future_charges
 from polar.tax.calculation import TaxBreakdownItem
 from polar.tax.tax_id import TaxID, TaxIDType
 
@@ -353,6 +354,22 @@ class Order(
     @classmethod
     def _due_amount_expression(cls) -> ColumnElement[int]:
         return func.greatest(0, cls.total_amount + cls.applied_balance_amount)
+
+    @property
+    def is_payment_required(self) -> bool:
+        return self.due_amount > 0
+
+    @property
+    def is_payment_setup_required(self) -> bool:
+        subscription = self.subscription
+        if subscription is None:
+            return False
+
+        return has_future_charges(
+            subscription.prices,
+            sum(price.amount for price in subscription.subscription_product_prices),
+            self.discount,
+        )
 
     @property
     def taxed(self) -> int:

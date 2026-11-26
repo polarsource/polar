@@ -10,7 +10,7 @@ from sqlalchemy import update
 from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
 from polar.integrations.stripe.service import StripeService
 from polar.kit.utils import utc_now
-from polar.models import Checkout, Customer, Order, Organization, PaymentMethod, Product
+from polar.models import Customer, Order, Organization, PaymentMethod, Product
 from polar.models.organization import OrganizationCustomerEmailSettings
 from polar.models.subscription import SubscriptionStatus
 from polar.payment_method.repository import PaymentMethodRepository
@@ -107,7 +107,7 @@ class TestResolveFromStripeIntent:
             )
         else:
             saved = await payment_method_service.upsert_from_stripe_intent(
-                session, intent, Checkout(customer=customer)
+                session, intent, customer
             )
         assert saved is not None
         assert saved.processor_id == generated.id
@@ -293,7 +293,7 @@ class TestUpsertFromStripeIntent:
         )
 
         payment_method = await payment_method_service.upsert_from_stripe_intent(
-            session, intent, Checkout(customer=customer)
+            session, intent, customer
         )
 
         assert customer.default_payment_method == payment_method
@@ -313,7 +313,7 @@ class TestUpsertFromStripeIntent:
         )
 
         payment_method = await payment_method_service.upsert_from_stripe_intent(
-            session, intent, Checkout(customer=customer)
+            session, intent, customer
         )
 
         assert payment_method.id != existing_default.id
@@ -339,7 +339,7 @@ class TestUpsertFromStripeIntent:
         )
 
         await payment_method_service.upsert_from_stripe_intent(
-            session, intent, Checkout(customer=customer)
+            session, intent, customer
         )
         await session.flush()
 

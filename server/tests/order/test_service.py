@@ -4467,6 +4467,7 @@ class TestHandlePayment:
         await session.flush()
 
         assert result.status == OrderStatus.paid
+        assert result.invoice_number is not None
         assert subscription.status == SubscriptionStatus.active
         assert subscription.ends_at is None
         assert subscription.current_period_start == frozen_time
@@ -4587,6 +4588,24 @@ class TestHandlePayment:
 class TestHandlePaymentFailure:
     """Test order service handle payment failure functionality"""
 
+    async def test_unnumbered_pending_order_returns_to_draft(
+        self, session: AsyncSession, save_fixture: SaveFixture, customer: Customer
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            status=OrderStatus.pending,
+            payment_lock_acquired_at=utc_now(),
+        )
+        order.invoice_number = None
+
+        result = await order_service.handle_payment_failure(
+            session, order, skip_dunning=True
+        )
+
+        assert result.status == OrderStatus.draft
+        assert result.payment_lock_acquired_at is None
+
     @freeze_time("2024-01-01 12:00:00")
     async def test_subscription_order(
         self,
@@ -4622,6 +4641,8 @@ class TestHandlePaymentFailure:
         result_order = await order_service.handle_payment_failure(session, order)
 
         # Then
+        assert result_order.status == OrderStatus.pending
+        assert result_order.invoice_number is not None
         assert result_order.next_payment_attempt_at is not None
         expected_retry_date = utc_now() + timedelta(days=2)
         assert result_order.next_payment_attempt_at == expected_retry_date
@@ -6616,6 +6637,56 @@ class TestAcquirePaymentLock:
 
 @pytest.mark.anyio
 class TestHandleOnSessionPayment:
+    async def test_setup_intent_for_zero_due_order(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture, customer=customer, product=product
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            subtotal_amount=0,
+        )
+        stripe_service_mock.create_setup_intent.return_value = (
+            stripe_lib.SetupIntent.construct_from(
+                {
+                    "id": "seti_test",
+                    "status": "requires_action",
+                    "client_secret": "seti_test_secret",
+                },
+                None,
+            )
+        )
+
+        result = await order_service.handle_on_session_payment(
+            session,
+            order,
+            confirmation_token_id="ctoken_test",
+            payment_processor=PaymentProcessor.stripe,
+            intent_type="setup",
+        )
+
+        assert result.status == OrderStatus.pending
+        assert result.payment_processor_metadata == {
+            "intent_id": "seti_test",
+            "intent_status": "requires_action",
+            "intent_client_secret": "seti_test_secret",
+        }
+        stripe_service_mock.create_payment_intent.assert_not_awaited()
+        params = stripe_service_mock.create_setup_intent.call_args.kwargs
+        assert params["confirmation_token"] == "ctoken_test"
+        assert params["usage"] == "off_session"
+        assert params["metadata"]["order_id"] == str(order.id)
+
     @pytest.mark.parametrize("method_type", ["card", "sepa_debit"])
     async def test_saved_payment_method_types(
         self,
@@ -6646,11 +6717,7 @@ class TestHandleOnSessionPayment:
         )
 
         result = await order_service.handle_on_session_payment(
-            session,
-            order,
-            None,
-            PaymentProcessor.stripe,
-            payment_method_id=payment_method.id,
+            session, order, payment_method_id=payment_method.id
         )
 
         assert result.payment_processor_metadata["intent_status"] == "succeeded"
@@ -6698,7 +6765,10 @@ class TestHandleOnSessionPayment:
         )
 
         result = await order_service.handle_on_session_payment(
-            session, order, "ctoken_test", PaymentProcessor.stripe
+            session,
+            order,
+            confirmation_token_id="ctoken_test",
+            payment_processor=PaymentProcessor.stripe,
         )
         await session.flush()
         await session.refresh(result, ["payment_processor_metadata"])
@@ -6744,7 +6814,10 @@ class TestHandleOnSessionPayment:
         )
 
         result = await order_service.handle_on_session_payment(
-            session, order, "ctoken_test", PaymentProcessor.stripe
+            session,
+            order,
+            confirmation_token_id="ctoken_test",
+            payment_processor=PaymentProcessor.stripe,
         )
 
         assert result.status == OrderStatus.pending
@@ -6789,7 +6862,10 @@ class TestHandleOnSessionPayment:
         )
 
         result = await order_service.handle_on_session_payment(
-            session, order, "ctoken_test", PaymentProcessor.stripe
+            session,
+            order,
+            confirmation_token_id="ctoken_test",
+            payment_processor=PaymentProcessor.stripe,
         )
 
         assert result.status == OrderStatus.pending
@@ -6832,7 +6908,10 @@ class TestHandleOnSessionPayment:
 
         with pytest.raises(PaymentError) as exc_info:
             await order_service.handle_on_session_payment(
-                session, order, "ctoken_test", PaymentProcessor.stripe
+                session,
+                order,
+                confirmation_token_id="ctoken_test",
+                payment_processor=PaymentProcessor.stripe,
             )
 
         assert exc_info.value.error_type == "card_error"
@@ -6856,29 +6935,10 @@ class TestHandleOnSessionPayment:
 
         with pytest.raises(OrderNotEligibleForRetry):
             await order_service.handle_on_session_payment(
-                session, order, "ctoken_test", PaymentProcessor.stripe
-            )
-
-    async def test_handle_on_session_payment_no_next_attempt(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        """Test retry payment with no next payment attempt scheduled."""
-        order = await create_order(
-            save_fixture,
-            product=product,
-            customer=customer,
-            status=OrderStatus.pending,
-            next_payment_attempt_at=None,  # No retry scheduled
-        )
-        await save_fixture(order)
-
-        with pytest.raises(OrderNotEligibleForRetry):
-            await order_service.handle_on_session_payment(
-                session, order, "ctoken_test", PaymentProcessor.stripe
+                session,
+                order,
+                confirmation_token_id="ctoken_test",
+                payment_processor=PaymentProcessor.stripe,
             )
 
     async def test_handle_on_session_payment_no_subscription(
@@ -6903,7 +6963,10 @@ class TestHandleOnSessionPayment:
 
         with pytest.raises(OrderNotEligibleForRetry):
             await order_service.handle_on_session_payment(
-                session, order, "ctoken_test", PaymentProcessor.stripe
+                session,
+                order,
+                confirmation_token_id="ctoken_test",
+                payment_processor=PaymentProcessor.stripe,
             )
 
     async def test_handle_on_session_payment_already_in_progress(
@@ -6931,7 +6994,10 @@ class TestHandleOnSessionPayment:
 
         with pytest.raises(PaymentAlreadyInProgress):
             await order_service.handle_on_session_payment(
-                session, order, "ctoken_test", PaymentProcessor.stripe
+                session,
+                order,
+                confirmation_token_id="ctoken_test",
+                payment_processor=PaymentProcessor.stripe,
             )
 
     async def test_handle_on_session_payment_lock_held_on_success(
@@ -6966,7 +7032,10 @@ class TestHandleOnSessionPayment:
         )
 
         await order_service.handle_on_session_payment(
-            session, order, "ctoken_test", PaymentProcessor.stripe
+            session,
+            order,
+            confirmation_token_id="ctoken_test",
+            payment_processor=PaymentProcessor.stripe,
         )
 
         assert order.payment_lock_acquired_at is not None
@@ -7007,7 +7076,10 @@ class TestHandleOnSessionPayment:
 
         with pytest.raises(ManualRetryLimitExceeded):
             await order_service.handle_on_session_payment(
-                session, order, "ctoken_test", PaymentProcessor.stripe
+                session,
+                order,
+                confirmation_token_id="ctoken_test",
+                payment_processor=PaymentProcessor.stripe,
             )
 
 

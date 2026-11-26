@@ -35,6 +35,7 @@ from polar.organization.repository import OrganizationRepository
 from polar.payment.service import payment as payment_service
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.postgres import AsyncSession
+from polar.subscription.service import subscription as subscription_service
 from polar.wallet.repository import WalletRepository, WalletTransactionRepository
 from polar.worker import enqueue_job
 
@@ -241,8 +242,9 @@ async def handle_success(
 
         payment_method: PaymentMethod | None = None
         if checkout.should_save_payment_method:
+            assert checkout.customer is not None
             payment_method = await payment_method_service.upsert_from_stripe_intent(
-                session, object, checkout
+                session, object, checkout.customer
             )
             await session.flush()
 
@@ -254,6 +256,14 @@ async def handle_success(
         )
 
     if order is not None:
+        if checkout is None and object.OBJECT_NAME == "setup_intent":
+            payment_method = await payment_method_service.upsert_from_stripe_intent(
+                session, object, order.customer
+            )
+            if order.subscription is not None:
+                await subscription_service.update_payment_method_from_retry(
+                    session, order.subscription, payment_method
+                )
         enqueue_job(
             "order.paid",
             order_id=order.id,

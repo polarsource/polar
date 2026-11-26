@@ -4,7 +4,7 @@ from collections.abc import AsyncIterator, Iterable, Mapping, Sequence
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from enum import StrEnum
-from typing import Any, Literal
+from typing import Any, Literal, overload
 from urllib.parse import urlencode
 
 import stripe as stripe_lib
@@ -12,6 +12,7 @@ import structlog
 from pydantic import MISSING
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import joinedload
+from stripe.params import CustomerCreateParams
 
 from polar.account.repository import AccountRepository
 from polar.auth.models import AuthSubject
@@ -534,6 +535,8 @@ class OrderService:
         session: AsyncSession,
         order: Order,
         order_update: OrderUpdate | CustomerOrderUpdate,
+        *,
+        strict_tax: bool = False,
     ) -> Order:
         if order.payment_lock_acquired_at is not None:
             raise PaymentAlreadyInProgress(order)
@@ -669,7 +672,7 @@ class OrderService:
                 tax_exempted=subscription.tax_exempted
                 if subscription is not None
                 else False,
-                allow_silent_failure=True,
+                allow_silent_failure=not strict_tax,
             )
             order.update_amounts(amounts)
             order = await repository.update(order)
@@ -2300,21 +2303,40 @@ class OrderService:
                 payment_intent.id, metadata=intent_metadata
             )
 
+    @overload
     async def handle_on_session_payment(
         self,
         session: AsyncSession,
         order: Order,
-        confirmation_token_id: str | None,
+        *,
+        confirmation_token_id: str,
         payment_processor: PaymentProcessor,
+        intent_type: Literal["payment", "setup"] = "payment",
+    ) -> Order: ...
+
+    @overload
+    async def handle_on_session_payment(
+        self,
+        session: AsyncSession,
+        order: Order,
+        *,
+        payment_method_id: uuid.UUID,
+        intent_type: Literal["payment", "setup"] = "payment",
+    ) -> Order: ...
+
+    async def handle_on_session_payment(
+        self,
+        session: AsyncSession,
+        order: Order,
+        *,
+        confirmation_token_id: str | None = None,
+        payment_processor: PaymentProcessor | None = None,
         payment_method_id: uuid.UUID | None = None,
+        intent_type: Literal["payment", "setup"] = "payment",
     ) -> Order:
-        """Submit payment on-session and let the processor webhook settle the order."""
+        """Confirm an intent on-session and let the processor webhook settle the order."""
         if order.status != OrderStatus.pending:
             log.warning("Order is not pending", order_id=order.id, status=order.status)
-            raise OrderNotEligibleForRetry(order)
-
-        if order.next_payment_attempt_at is None:
-            log.warning("Order is not eligible for retry", order_id=order.id)
             raise OrderNotEligibleForRetry(order)
 
         if order.subscription is None:
@@ -2328,21 +2350,6 @@ class OrderService:
                 lock_acquired_at=order.payment_lock_acquired_at,
             )
             raise PaymentAlreadyInProgress(order)
-
-        if payment_processor != PaymentProcessor.stripe:
-            log.warning(
-                "Invalid payment processor", payment_processor=payment_processor
-            )
-            raise OrderNotEligibleForRetry(payment_processor)
-
-        if confirmation_token_id is None and payment_method_id is None:
-            raise PaymentRetryValidationError(
-                "Either confirmation_token_id or payment_method_id must be provided"
-            )
-        if confirmation_token_id is not None and payment_method_id is not None:
-            raise PaymentRetryValidationError(
-                "Only one of confirmation_token_id or payment_method_id can be provided"
-            )
 
         payment_repository = PaymentRepository.from_session(session)
         customer_retry_count = (
@@ -2359,20 +2366,15 @@ class OrderService:
         organization = await org_repository.get_by_id(customer.organization_id)
         assert organization is not None, "Organization must exist"
 
-        if customer.stripe_customer_id is None:
-            log.warning("Customer is not a Stripe customer", customer_id=customer.id)
-            raise OrderNotEligibleForRetry(order)
-
         saved_payment_method: PaymentMethod | None = None
         if payment_method_id is not None:
             payment_method_repository = PaymentMethodRepository.from_session(session)
-            saved_payment_method = await payment_method_repository.get_by_id(
-                payment_method_id
+            saved_payment_method = (
+                await payment_method_repository.get_by_id_and_customer(
+                    payment_method_id, customer.id
+                )
             )
-            if (
-                saved_payment_method is None
-                or saved_payment_method.customer_id != customer.id
-            ):
+            if saved_payment_method is None:
                 raise PaymentRetryValidationError(
                     "Payment method does not belong to customer"
                 )
@@ -2389,44 +2391,50 @@ class OrderService:
 
         try:
             async with self.acquire_payment_lock(session, order):
-                if saved_payment_method is not None:
-                    # Using saved payment method
-                    payment_intent_params: dict[str, Any] = {
-                        "automatic_payment_methods": {
-                            "enabled": True,
-                            "allow_redirects": "never",
-                        }
+                if customer.stripe_customer_id is None:
+                    customer_params: CustomerCreateParams = {
+                        "idempotency_key": f"order-payment-customer:{customer.id}",
                     }
+                    if customer.email is not None:
+                        customer_params["email"] = customer.email
+                    stripe_customer = await stripe_service.create_customer(
+                        **customer_params
+                    )
+                    customer.stripe_customer_id = stripe_customer.id
+                    await customer_repository.update(customer)
+
+                intent_params: dict[str, Any] = {
+                    "automatic_payment_methods": {
+                        "enabled": True,
+                        "allow_redirects": "never",
+                    },
+                    "confirm": True,
+                    "customer": customer.stripe_customer_id,
+                    "description": f"{order.organization.name} — {order.description}",
+                    "metadata": metadata,
+                }
+                if saved_payment_method is not None:
+                    intent_params["payment_method"] = saved_payment_method.processor_id
                     if saved_payment_method.type == "sepa_debit":
-                        payment_intent_params = {"payment_method_types": ["sepa_debit"]}
-                    payment_intent = await stripe_service.create_payment_intent(
-                        amount=order.due_amount,
-                        currency=order.currency,
-                        payment_method=saved_payment_method.processor_id,
-                        customer=customer.stripe_customer_id,
-                        confirm=True,
-                        statement_descriptor_suffix=order.statement_descriptor_suffix,
-                        description=f"{order.organization.name} — {order.description}",
-                        metadata=metadata,
-                        **payment_intent_params,
+                        del intent_params["automatic_payment_methods"]
+                        intent_params["payment_method_types"] = ["sepa_debit"]
+                else:
+                    assert confirmation_token_id is not None
+                    intent_params["confirmation_token"] = confirmation_token_id
+
+                intent: stripe_lib.PaymentIntent | stripe_lib.SetupIntent
+                if intent_type == "setup":
+                    intent = await stripe_service.create_setup_intent(
+                        usage="off_session", **intent_params
                     )
                 else:
-                    # Using confirmation token (new payment method)
-                    assert confirmation_token_id is not None
-                    payment_intent = await stripe_service.create_payment_intent(
+                    if saved_payment_method is None:
+                        intent_params["setup_future_usage"] = "off_session"
+                    intent = await stripe_service.create_payment_intent(
                         amount=order.due_amount,
                         currency=order.currency,
-                        automatic_payment_methods={
-                            "enabled": True,
-                            "allow_redirects": "never",
-                        },
-                        confirm=True,
-                        confirmation_token=confirmation_token_id,
-                        customer=customer.stripe_customer_id,
-                        setup_future_usage="off_session",
                         statement_descriptor_suffix=order.statement_descriptor_suffix,
-                        description=f"{order.organization.name} — {order.description}",
-                        metadata=metadata,
+                        **intent_params,
                     )
 
                 processor_metadata = {
@@ -2434,16 +2442,10 @@ class OrderService:
                     for key, value in order.payment_processor_metadata.items()
                     if key not in {"intent_client_secret", "intent_error"}
                 }
-                processor_metadata["intent_id"] = payment_intent.id
-                processor_metadata["intent_status"] = payment_intent.status
-                if payment_intent.client_secret is not None:
-                    processor_metadata["intent_client_secret"] = (
-                        payment_intent.client_secret
-                    )
-                if payment_intent.status not in ("succeeded", "requires_action"):
-                    error = getattr(payment_intent, "last_payment_error", None)
-                    if error is not None and error.message:
-                        processor_metadata["intent_error"] = error.message
+                processor_metadata["intent_id"] = intent.id
+                processor_metadata["intent_status"] = intent.status
+                if intent.client_secret is not None:
+                    processor_metadata["intent_client_secret"] = intent.client_secret
                 order.payment_processor_metadata = processor_metadata
 
                 repository = OrderRepository.from_session(session)
@@ -2472,6 +2474,8 @@ class OrderService:
         update_dict: dict[str, Any] = {}
 
         if order.status == OrderStatus.pending:
+            if order.stripe_invoice_id is None:
+                order = await self._assign_invoice_number(session, order)
             update_dict["status"] = OrderStatus.paid
 
         # Clear retry attempt date on successful payment
@@ -3474,6 +3478,10 @@ class OrderService:
                 order_id=order.id,
             )
             return order
+
+        # Failing attempt to pay a draft order, revert to draft
+        if order.status == OrderStatus.pending and order.invoice_number is None:
+            return await self._revert_to_draft(session, order)
 
         # Skip dunning for manual retries - user can retry again
         if skip_dunning:

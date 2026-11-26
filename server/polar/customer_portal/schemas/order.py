@@ -1,10 +1,10 @@
 from typing import Annotated
 
-from pydantic import UUID4, AliasChoices, AliasPath, Field, model_validator
+from pydantic import UUID4, AliasChoices, AliasPath, ConfigDict, Field, model_validator
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.enums import PaymentProcessor
-from polar.kit.schemas import MultipleQueryFilter, Schema
+from polar.kit.schemas import MultipleQueryFilter, Schema, SetSchemaReference
 from polar.kit.versioning import QuerySchema, Version
 from polar.models.product import ProductBillingType
 from polar.order.schemas import OrderBase, OrderItemSchema, OrderUpdateBase
@@ -61,6 +61,18 @@ class CustomerOrder(OrderBase):
     description: str = Field(
         description="A summary description of the order.", examples=["Pro Plan"]
     )
+    is_payment_required: Annotated[bool, Version(starting_from=V2027_01)] = Field(
+        description="Whether the order has a positive amount due after discounts, taxes, and applied balance."
+    )
+    is_payment_setup_required: Annotated[bool, Version(starting_from=V2027_01)] = Field(
+        description=(
+            "Whether a payment method must be set up for future subscription charges, "
+            "even if the order has no amount due."
+        )
+    )
+    payment_processor_metadata: Annotated[
+        dict[str, str], Version(starting_from=V2027_01)
+    ]
 
 
 class CustomerOrderInvoice(Schema):
@@ -83,6 +95,33 @@ class CustomerOrderCreate(Schema):
 
 class CustomerOrderUpdate(OrderUpdateBase):
     """Schema to update an order."""
+
+
+class CustomerOrderPayPaymentMethod(CustomerOrderUpdate):
+    model_config = ConfigDict(extra="forbid")
+
+    payment_method_id: UUID4
+
+
+class CustomerOrderPayConfirmationToken(CustomerOrderUpdate):
+    model_config = ConfigDict(extra="forbid")
+
+    payment_processor: PaymentProcessor
+    confirmation_token_id: str
+
+
+class CustomerOrderPayWithoutCredentials(CustomerOrderUpdate):
+    """Pay a zero-due order that needs no payment method for future charges."""
+
+    model_config = ConfigDict(extra="forbid")
+
+
+CustomerOrderPay = Annotated[
+    CustomerOrderPayPaymentMethod
+    | CustomerOrderPayConfirmationToken
+    | CustomerOrderPayWithoutCredentials,
+    SetSchemaReference("CustomerOrderPay"),
+]
 
 
 class CustomerOrderPaymentStatus(Schema):

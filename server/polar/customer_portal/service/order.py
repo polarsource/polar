@@ -1,13 +1,14 @@
 import uuid
 from collections.abc import Sequence
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
 from sqlalchemy import UnaryExpression, asc, desc
 from sqlalchemy.orm import contains_eager
 from sqlalchemy.sql.elements import OrderByList
 
 from polar.auth.models import AuthSubject, Customer, Member
+from polar.customer.repository import CustomerRepository
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.invoice.service import invoice as invoice_service
@@ -15,6 +16,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.models import Order, Product
+from polar.models.order import OrderStatus
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.order.repository import OrderRepository
@@ -22,11 +24,16 @@ from polar.order.service import InvoiceDoesNotExist, PaymentError, ReceiptNotAll
 from polar.order.service import order as order_service
 from polar.receipt.service import receipt as receipt_service
 from polar.subscription.repository import SubscriptionRepository
+from polar.tax.calculation.base import TaxCalculationLogicalError
+from polar.worker import enqueue_job
 
 from ..repository.order import CustomerOrderRepository
 from ..schemas.order import (
     CustomerOrderInvoice,
+    CustomerOrderPay,
+    CustomerOrderPayConfirmationToken,
     CustomerOrderPaymentConfirmation,
+    CustomerOrderPayWithoutCredentials,
     CustomerOrderReceipt,
     CustomerOrderUpdate,
 )
@@ -184,6 +191,97 @@ class CustomerOrderService:
     ) -> Order:
         return await order_service.update(session, order, order_update)
 
+    async def pay(
+        self, session: AsyncSession, order: Order, order_pay: CustomerOrderPay
+    ) -> Order:
+        original_status = order.status
+        if original_status != OrderStatus.pending and (
+            original_status != OrderStatus.draft
+            or order.subscription is None
+            or order.subscription.status != SubscriptionStatus.trial_ended
+        ):
+            raise OrderNotEligibleForRetry(order)
+
+        try:
+            order = await order_service.update(
+                session, order, order_pay, strict_tax=True
+            )
+        except TaxCalculationLogicalError as e:
+            raise PolarRequestValidationError(
+                [
+                    ValidationError(
+                        type="value_error",
+                        loc=("body", "billing_address"),
+                        msg=e.message,  # pyright: ignore
+                        input=order.billing_address,
+                    )
+                ]
+            ) from e
+
+        is_payment_required = order.is_payment_required
+        needs_intent = is_payment_required or order.is_payment_setup_required
+        if needs_intent and order.billing_address is None:
+            raise PolarRequestValidationError(
+                [
+                    ValidationError(
+                        type="value_error",
+                        loc=("body", "billing_address"),
+                        msg="A billing address is required to calculate tax.",
+                        input=order.billing_address,
+                    )
+                ]
+            )
+
+        intent_type: Literal["payment", "setup"] = (
+            "payment" if is_payment_required else "setup"
+        )
+        try:
+            order.status = OrderStatus.pending
+            if not needs_intent:
+                async with order_service.acquire_payment_lock(session, order):
+                    enqueue_job("order.paid", order_id=order.id)
+            elif isinstance(order_pay, CustomerOrderPayWithoutCredentials):
+                raise PolarRequestValidationError(
+                    [
+                        ValidationError(
+                            type="missing",
+                            loc=("body",),
+                            msg="A payment method or confirmation token is required.",
+                            input=order_pay.model_dump(exclude_unset=True),
+                        )
+                    ]
+                )
+            elif isinstance(order_pay, CustomerOrderPayConfirmationToken):
+                order = await order_service.handle_on_session_payment(
+                    session,
+                    order,
+                    confirmation_token_id=order_pay.confirmation_token_id,
+                    payment_processor=PaymentProcessor.stripe,
+                    intent_type=intent_type,
+                )
+            else:
+                order = await order_service.handle_on_session_payment(
+                    session,
+                    order,
+                    payment_method_id=order_pay.payment_method_id,
+                    intent_type=intent_type,
+                )
+        except PaymentError, PolarRequestValidationError:
+            order.status = original_status
+            raise
+
+        # Update the customer's billing information
+        await CustomerRepository.from_session(session).update(
+            order.customer,
+            update_dict={
+                "billing_name": order.billing_name,
+                "billing_address": order.billing_address,
+                "tax_id": order.tax_id,
+            },
+        )
+
+        return order
+
     async def trigger_invoice_generation(
         self, session: AsyncSession, order: Order
     ) -> None:
@@ -215,13 +313,17 @@ class CustomerOrderService:
         payment_method_id: uuid.UUID | None = None,
     ) -> CustomerOrderPaymentConfirmation:
         try:
-            order = await order_service.handle_on_session_payment(
-                session,
-                order,
-                confirmation_token_id,
-                payment_processor,
-                payment_method_id,
-            )
+            if confirmation_token_id is not None:
+                order = await order_service.handle_on_session_payment(
+                    session,
+                    order,
+                    confirmation_token_id=confirmation_token_id,
+                    payment_processor=payment_processor,
+                )
+            elif payment_method_id is not None:
+                order = await order_service.handle_on_session_payment(
+                    session, order, payment_method_id=payment_method_id
+                )
         except PaymentError as e:
             return CustomerOrderPaymentConfirmation(
                 status="failed", error=e.error or "Payment failed. Please try again."

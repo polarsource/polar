@@ -1014,6 +1014,26 @@ export interface paths {
     patch: operations['customer_portal:orders:update']
     trace?: never
   }
+  '/v1/customer-portal/orders/{id}/pay': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /**
+     * Pay Order
+     * @description Submit payment for an order for asynchronous settlement.
+     */
+    patch: operations['customer_portal:orders:pay']
+    trace?: never
+  }
   '/v1/customer-portal/orders/{id}/invoice': {
     parameters: {
       query?: never
@@ -21541,6 +21561,20 @@ export interface components {
        */
       description: string
       /**
+       * Is Payment Required
+       * @description Whether the order has a positive amount due after discounts, taxes, and applied balance.
+       */
+      is_payment_required: boolean
+      /**
+       * Is Payment Setup Required
+       * @description Whether a payment method must be set up for future subscription charges, even if the order has no amount due.
+       */
+      is_payment_setup_required: boolean
+      /** Payment Processor Metadata */
+      payment_processor_metadata: {
+        [key: string]: string
+      }
+      /**
        * Refundable Amount
        * @description Amount in cents that can still be refunded (net, before taxes). Accounts for any applied customer balance and previous refunds.
        * @example 9000
@@ -21593,6 +21627,81 @@ export interface components {
        * @description The URL to the invoice.
        */
       url: string
+    }
+    CustomerOrderPay:
+      | components['schemas']['CustomerOrderPayPaymentMethod']
+      | components['schemas']['CustomerOrderPayConfirmationToken']
+      | components['schemas']['CustomerOrderPayWithoutCredentials']
+    /** CustomerOrderPayConfirmationToken */
+    CustomerOrderPayConfirmationToken: {
+      /**
+       * Billing Name
+       * @description The name of the customer that should appear on the invoice.
+       */
+      billing_name?: string | null
+      /** @description The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated on draft orders. */
+      billing_address?: components['schemas']['AddressInput']
+      /**
+       * Tax Id
+       * @description Tax ID for the billing address on a draft order. Set to null to remove it.
+       */
+      tax_id?: string | null
+      /**
+       * Discount Code
+       * @description Discount code to apply to the draft order. Set to null to remove it.
+       */
+      discount_code?: string | null
+      payment_processor: components['schemas']['PaymentProcessor']
+      /** Confirmation Token Id */
+      confirmation_token_id: string
+    }
+    /** CustomerOrderPayPaymentMethod */
+    CustomerOrderPayPaymentMethod: {
+      /**
+       * Billing Name
+       * @description The name of the customer that should appear on the invoice.
+       */
+      billing_name?: string | null
+      /** @description The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated on draft orders. */
+      billing_address?: components['schemas']['AddressInput']
+      /**
+       * Tax Id
+       * @description Tax ID for the billing address on a draft order. Set to null to remove it.
+       */
+      tax_id?: string | null
+      /**
+       * Discount Code
+       * @description Discount code to apply to the draft order. Set to null to remove it.
+       */
+      discount_code?: string | null
+      /**
+       * Payment Method Id
+       * Format: uuid4
+       */
+      payment_method_id: string
+    }
+    /**
+     * CustomerOrderPayWithoutCredentials
+     * @description Pay a zero-due order that needs no payment method for future charges.
+     */
+    CustomerOrderPayWithoutCredentials: {
+      /**
+       * Billing Name
+       * @description The name of the customer that should appear on the invoice.
+       */
+      billing_name?: string | null
+      /** @description The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated on draft orders. */
+      billing_address?: components['schemas']['AddressInput']
+      /**
+       * Tax Id
+       * @description Tax ID for the billing address on a draft order. Set to null to remove it.
+       */
+      tax_id?: string | null
+      /**
+       * Discount Code
+       * @description Discount code to apply to the draft order. Set to null to remove it.
+       */
+      discount_code?: string | null
     }
     /**
      * CustomerOrderPaymentConfirmation
@@ -49841,6 +49950,60 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['CustomerOrder']
+        }
+      }
+      /** @description Order not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_portal:orders:pay': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The order ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CustomerOrderPay']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerOrder']
+        }
+      }
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PaymentError']
         }
       }
       /** @description Order not found. */

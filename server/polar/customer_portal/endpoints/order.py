@@ -9,12 +9,13 @@ from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.kit.versioning import version
 from polar.models import Order
-from polar.openapi import APITag
+from polar.openapi import APITag, destructive
 from polar.order.schemas import OrderID
 from polar.order.service import (
     MissingInvoiceBillingDetails,
     OrderNotEligibleForInvoice,
     PaymentAlreadyInProgress,
+    PaymentError,
 )
 from polar.payment.repository import PaymentRepository
 from polar.postgres import get_db_session
@@ -27,6 +28,7 @@ from ..schemas.order import (
     CustomerOrderConfirmPayment,
     CustomerOrderCreate,
     CustomerOrderInvoice,
+    CustomerOrderPay,
     CustomerOrderPaymentConfirmation,
     CustomerOrderPaymentStatus,
     CustomerOrderReceipt,
@@ -160,6 +162,31 @@ async def update(
         raise ResourceNotFound()
 
     return await customer_order_service.update(session, order, order_update)
+
+
+@router.patch(
+    "/{id}/pay",
+    status_code=202,
+    summary="Pay Order",
+    response_model=CustomerOrder,
+    responses={400: {"model": PaymentError.schema()}, 404: OrderNotFound},
+    openapi_extra=destructive(),
+)
+@version(starting_from=V2027_01)
+async def pay(
+    id: OrderID,
+    order_pay: CustomerOrderPay,
+    auth_subject: auth.CustomerPortalUnionBillingWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Order:
+    """Submit payment for an order for asynchronous settlement."""
+    order = await customer_order_service.get_by_id(
+        session, auth_subject, id, for_update=True
+    )
+    if order is None:
+        raise ResourceNotFound()
+
+    return await customer_order_service.pay(session, order, order_pay)
 
 
 @router.post(

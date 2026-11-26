@@ -133,21 +133,12 @@ class RedisEventQueue:
         )
 
     async def flush(self, *, timeout: float = 30.0) -> None:
-        """Wait until the queued events reach a terminal delivery outcome."""
+        """Deliver this instance's events, or wait for its drain in flight: never for
+        the rest of the fleet's stream."""
         validate_timeout(timeout)
-        redis = self._require_redis()
+        self._require_redis()
         with anyio.move_on_after(timeout) as scope:
-            latest = await redis.xrevrange(self._stream, count=1)
-            if not latest:
-                return
-            end = latest[0][0]
-            assert end is not None
-            while True:
-                self._limit_drain()
-                await self._drain()
-                if not await redis.xrange(self._stream, max=end, count=1):
-                    return
-                await anyio.sleep(DRAIN_INTERVAL)
+            await self._drain_queue_quietly(limited=True)
         if scope.cancelled_caught:
             raise MeteringTimeoutError(timeout)
 

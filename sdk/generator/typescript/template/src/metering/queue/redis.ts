@@ -1,7 +1,6 @@
 import type { Redis } from "ioredis";
 
 import { randomUUID } from "node:crypto";
-import { setTimeout as sleep } from "node:timers/promises";
 
 import {
   backOff,
@@ -12,7 +11,6 @@ import {
 } from "../../redis";
 import {
   type DeliveryOptions,
-  MeteringTimeoutError,
   deliveryTimeout,
   IngestRejectedError,
   IngestRetryableError,
@@ -110,9 +108,7 @@ export class RedisEventQueue implements EventQueue {
     const timeout = deliveryTimeout(options);
     clearInterval(this.timer);
     try {
-      if (this.redis && (this.undrained || this.draining)) this.limitDrain();
-      const draining = this.redis && this.undrained ? this.drain() : this.draining;
-      if (draining) await waitForDelivery(draining.catch(() => {}), timeout);
+      if (this.redis) await this.drainOwn(timeout);
     } finally {
       this.session = undefined;
       if (this.ownsRedis) this.redis?.disconnect();
@@ -131,27 +127,18 @@ export class RedisEventQueue implements EventQueue {
   }
 
   async flush(options?: DeliveryOptions): Promise<void> {
-    const redis = this.requireRedis();
-    const timeout = deliveryTimeout(options);
-    const deadline = performance.now() + timeout;
-    const [[end] = []] = await waitForDelivery(
-      redis.xrevrange(this.options.stream, "+", "-", "COUNT", 1),
-      timeout,
-    );
-    if (end === undefined) return;
-    for (;;) {
-      this.limitDrain();
-      await waitForDelivery(this.drain().catch(() => {}), Math.max(0, deadline - performance.now()));
-      const entries = await waitForDelivery(
-        redis.xrange(this.options.stream, "-", end, "COUNT", 1),
-        Math.max(0, deadline - performance.now()),
-      );
-      if (!entries.length) return;
-      const remaining = deadline - performance.now();
-      if (remaining <= 0) throw new MeteringTimeoutError(timeout);
-      await sleep(Math.min(DRAIN_INTERVAL, remaining));
-    }
+    this.requireRedis();
+    await this.drainOwn(deliveryTimeout(options));
   }
+
+  // Redis keeps what a drain fails to deliver: the next flush takes it. Without an event of its
+  // own to deliver, a flush waits for the drain in flight, if any, never for the fleet's stream.
+  private async drainOwn(timeout: number): Promise<void> {
+    if (this.undrained || this.draining) this.limitDrain();
+    const draining = this.undrained ? this.drain() : this.draining;
+    if (draining) await waitForDelivery(draining.catch(() => {}), timeout);
+  }
+
 
   private async open(source: string | Redis, options: EventQueueStartOptions): Promise<this> {
     if (this.redis) throw new Error("Redis queue is already connected");

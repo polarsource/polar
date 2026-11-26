@@ -1,0 +1,42 @@
+sdk/generator/typescript/template/src/metering/outbox/redis.test.ts
+  s_868513325afaca::t_846635a8dd8e21 7,30-33,46,48
+sdk/generator/python/template/polar/metering/outbox/redis.py
+  s_868513325afaca::t_cbeebfff583ae5 35,139-140,311,512-515
+  s_868513325afaca::t_10147efdc3d212 309
+sdk/generator/typescript/template/src/metering/outbox/index.ts
+  s_868513325afaca::t_cbeebfff583ae5 1,5-9
+sdk/generator/typescript/template/src/metering/outbox/redis.ts
+  s_868513325afaca::t_cbeebfff583ae5 91,98-100,112-115,231,391-392
+sdk/generator/python/template/polar/metering/outbox/__init__.py
+  s_868513325afaca::t_cbeebfff583ae5 1,5,8-12,15-19
+sdk/generator/python/template/tests/metering/outbox/test_redis.py
+  s_868513325afaca::t_846635a8dd8e21 57-58,84,119-120
+sdk/python/polar/metering/outbox/__init__.py
+  s_868513325afaca::t_b24a92fff48345 1,5,8-12,15-19
+sdk/python/polar/metering/outbox/redis.py
+  s_868513325afaca::t_688bdb55dfd17a 35,252-253,424,426,632-635
+sdk/python/tests/metering/outbox/test_redis.py
+  s_868513325afaca::t_d0bc7d65b53a59 57-58,84,119-120
+sdk/typescript/src/metering/outbox/index.ts
+  s_868513325afaca::t_2e4b3f767cab26 1,5-9
+sdk/typescript/src/metering/outbox/redis.test.ts
+  s_868513325afaca::t_0e4fc25edad4a1 5,31-34,47,49
+sdk/typescript/src/metering/outbox/redis.ts
+  s_868513325afaca::t_3a628a991dc962 109,116-118,130-133,252,439-440
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cc36bdb6acec253d3ef86ad82a5a9c81f2f19eac",
+  "prompts": {},
+  "sessions": {
+    "s_868513325afaca": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a2138b-136c-7cf0-b8fd-2500c8a89c9c",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

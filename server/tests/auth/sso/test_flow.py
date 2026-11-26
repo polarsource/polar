@@ -42,7 +42,7 @@ ACCESS_TOKEN = "idp-access-token"
 DOMAIN = "example.com"
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def idp_key() -> rsa.RSAPrivateKey:
     return rsa.generate_private_key(public_exponent=65537, key_size=2048)
 

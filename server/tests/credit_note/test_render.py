@@ -7,11 +7,19 @@ from polar.credit_note.generator import CreditNote as CreditNoteDocument
 from polar.credit_note.render import (
     CreditNoteRenderError,
     CreditNoteRenderRequest,
+    _generate_pdf,
     render_credit_note_pdf,
 )
 from polar.models import CreditNote, Refund
 from polar.models.credit_note import CreditNoteReason
 from polar.models.refund import RefundStatus
+
+
+def _render_in_process(credit_note: CreditNote) -> bytes:
+    payload = CreditNoteRenderRequest(
+        credit_note=CreditNoteDocument.from_credit_note(credit_note)
+    ).model_dump_json()
+    return _generate_pdf(payload)
 
 
 @pytest.mark.anyio
@@ -22,9 +30,7 @@ class TestRenderCreditNotePDF:
         credit_note.amount = 0
         credit_note.items[0].amount = 0
 
-        pdf = await render_credit_note_pdf(
-            CreditNoteDocument.from_credit_note(credit_note)
-        )
+        pdf = _render_in_process(credit_note)
 
         text = " ".join(PdfReader(BytesIO(pdf)).pages[0].extract_text().split())
         assert (
@@ -43,9 +49,7 @@ class TestRenderCreditNotePDF:
         credit_note.items[0].amount = 0
         credit_note.items[0].description = "VAT correction for invoice INV-0001"
 
-        pdf = await render_credit_note_pdf(
-            CreditNoteDocument.from_credit_note(credit_note)
-        )
+        pdf = _render_in_process(credit_note)
 
         text = PdfReader(BytesIO(pdf)).pages[0].extract_text()
         assert "VAT correction for invoice INV-0001" in text
@@ -73,9 +77,7 @@ class TestRenderCreditNotePDF:
                 )
             ]
 
-        pdf = await render_credit_note_pdf(
-            CreditNoteDocument.from_credit_note(credit_note)
-        )
+        pdf = _render_in_process(credit_note)
 
         reader = PdfReader(BytesIO(pdf))
         text = reader.pages[0].extract_text()
@@ -97,6 +99,14 @@ class TestRenderCreditNotePDF:
             assert text.index("Refund") > text.index("Total credit")
         else:
             assert "Refund" not in text
+
+    async def test_renders_through_subprocess(self, credit_note: CreditNote) -> None:
+        pdf = await render_credit_note_pdf(
+            CreditNoteDocument.from_credit_note(credit_note)
+        )
+        text = PdfReader(BytesIO(pdf)).pages[0].extract_text()
+        assert text.splitlines()[0] == "Credit Note"
+        assert "Credit note number CN-0001" in text
 
     async def test_renderer_error(
         self, credit_note: CreditNote, monkeypatch: pytest.MonkeyPatch

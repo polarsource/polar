@@ -121,6 +121,7 @@ def email_capture() -> EmailCapture:
 def mock_email_sender(mocker: MockerFixture, email_capture: EmailCapture) -> MagicMock:
     mock = create_email_sender_mock(email_capture)
     mocker.patch("polar.email.tasks.email_sender", new=mock)
+    mocker.patch("polar.email.tasks.render_from_json", return_value="<html></html>")
     return mock
 
 

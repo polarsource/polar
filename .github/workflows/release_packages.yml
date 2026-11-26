@@ -26,8 +26,21 @@ jobs:
         with:
           egress-policy: audit
 
+      # Events created with GITHUB_TOKEN don't trigger workflows, so the version PR
+      # is pushed and opened with an App token to get CI to run on it normally.
+      - name: Generate App token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ secrets.INTERNAL_GITHUB_APP_CLIENT_ID }}
+          private-key: ${{ secrets.INTERNAL_GITHUB_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ steps.app-token.outputs.token }}
 
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
@@ -55,7 +68,7 @@ jobs:
           publish: pnpm release-packages
           cwd: ${{ github.workspace }}/clients
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS: "https://polar.sh,https://sandbox.polar.sh"
 
       - name: Release summary

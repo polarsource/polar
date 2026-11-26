@@ -1,0 +1,31 @@
+sdk/generator/python/template/tests/benchmarks/conftest.py
+  s_868513325afaca::t_dad399aadaa1a1 130
+  s_868513325afaca::t_27095b271e1f20 3,82-83,122-129,131-152,168-169
+sdk/generator/python/template/tests/benchmarks/test_ingest.py
+  s_868513325afaca::t_27095b271e1f20 6,8,13-14,16,18,27,72-90,94,102,110,122-123,134,138,144,147
+  s_868513325afaca::t_dad399aadaa1a1 115-118
+sdk/generator/typescript/template/src/outpost/ingest.bench.ts
+  s_868513325afaca::t_27095b271e1f20 5-7,17,57,68-73,79-83,93,100,111
+sdk/python/tests/benchmarks/conftest.py
+  s_868513325afaca::t_fcbfd646433b53 3,82-83,122-152,168-169
+sdk/python/tests/benchmarks/test_ingest.py
+  s_868513325afaca::t_bcab353b7acb1f 6,8,13-14,16,18,27,72-90,94,102,110,115-118,122-123,134,138,144,147
+sdk/typescript/src/outpost/ingest.bench.ts
+  s_868513325afaca::t_f875e1baf3e9b6 5-6,16,56,67-72,78-82,92,99,110
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a6f79074c0ed22e1976b3c331ce5605a07d75f0d",
+  "prompts": {},
+  "sessions": {
+    "s_868513325afaca": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a2138b-136c-7cf0-b8fd-2500c8a89c9c",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

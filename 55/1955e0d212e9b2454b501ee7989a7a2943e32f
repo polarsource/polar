@@ -1,0 +1,26 @@
+server/tests/integrations/stripe/test_payment.py
+  s_5b4119735a452f::t_5b0cd6370e98d5 201-209,229-235,237-254,260,262-271,273-276
+  s_5b4119735a452f::t_ed4ff4e86b263c 210-228,236,255-259,261,272
+server/polar/order/repository.py
+  s_5b4119735a452f::t_5b0cd6370e98d5 467,471
+  s_5b4119735a452f::t_e7f445c1eaaa90 468-470
+server/polar/integrations/stripe/payment.py
+  s_5b4119735a452f::t_5b0cd6370e98d5 334
+  s_5b4119735a452f::t_5c6d871b061a93 322-333
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "551955e0d212e9b2454b501ee7989a7a2943e32f",
+  "prompts": {},
+  "sessions": {
+    "s_5b4119735a452f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a21792-4591-7d00-9bd9-d07b0b98987d",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

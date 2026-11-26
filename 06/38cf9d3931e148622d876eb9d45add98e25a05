@@ -1,0 +1,52 @@
+server/polar/oauth2/repository.py
+  s_bd4b36d706a0a5::t_08fcbdcc3ddbcb 31
+server/tests/oauth2/service/test_oauth2_client_cleanup.py
+  s_bd4b36d706a0a5::t_08fcbdcc3ddbcb 33-41,50
+terraform/global/test.tf
+  s_bd4b36d706a0a5::t_59e1d4f2925e09 613-614,616-617
+terraform/modules/backend_environment/variables.tf
+  s_bd4b36d706a0a5::t_b184f5301d08f7 54
+terraform/global/production.tf
+  s_bd4b36d706a0a5::t_59e1d4f2925e09 707-708,710-711
+terraform/production/variables.tf
+  s_bd4b36d706a0a5::t_59e1d4f2925e09 481-484
+terraform/test/variables.tf
+  s_bd4b36d706a0a5::t_59e1d4f2925e09 400-403
+terraform/global/sandbox.tf
+  s_bd4b36d706a0a5::t_59e1d4f2925e09 571-572,574-575
+terraform/sandbox/environment.tf
+  s_bd4b36d706a0a5::t_b184f5301d08f7 25
+server/scripts/cleanup_stale_oauth2_clients.py
+  s_bd4b36d706a0a5::t_08fcbdcc3ddbcb 23,25-26
+terraform/test/vercel-services.tf
+  s_bd4b36d706a0a5::t_59e1d4f2925e09 164-165
+  s_bd4b36d706a0a5::t_cc0c582b0233d8 166-167
+server/polar/config.py
+  s_bd4b36d706a0a5::t_08fcbdcc3ddbcb 191
+terraform/test/environment.tf
+  s_bd4b36d706a0a5::t_b184f5301d08f7 26
+terraform/sandbox/variables.tf
+  s_bd4b36d706a0a5::t_59e1d4f2925e09 393-396
+terraform/modules/backend_environment/main.tf
+  s_bd4b36d706a0a5::t_59e1d4f2925e09 41
+terraform/modules/render_service/variables.tf
+  s_bd4b36d706a0a5::t_59e1d4f2925e09 128
+terraform/production/environment.tf
+  s_bd4b36d706a0a5::t_b184f5301d08f7 65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0638cf9d3931e148622d876eb9d45add98e25a05",
+  "prompts": {},
+  "sessions": {
+    "s_bd4b36d706a0a5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a21747-fac2-7282-8bb4-85b17c9dca50",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

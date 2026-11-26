@@ -1,0 +1,23 @@
+server/polar/customer_portal/service/order.py
+  s_5b4119735a452f::t_fcf09bb1b7de72 15,50-54,277,342-343
+server/polar/order/service.py
+  s_5b4119735a452f::t_fcf09bb1b7de72 356
+server/tests/customer_portal/endpoints/test_order.py
+  s_5b4119735a452f::t_fcf09bb1b7de72 226,570-599
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1f9a0282f50fcf157ae2d39a6560cbc3bb1c40c4",
+  "prompts": {},
+  "sessions": {
+    "s_5b4119735a452f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a21792-4591-7d00-9bd9-d07b0b98987d",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

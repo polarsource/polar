@@ -1,0 +1,141 @@
+sdk/generator/typescript/template/src/metering/queue/redis.test.ts
+  s_868513325afaca::t_fff9438b9b803a 1-51
+sdk/generator/typescript/template/src/metering/client.test.ts
+  s_868513325afaca::t_fff9438b9b803a 11,28,67,73,134-136,142,162,165,248-249,252
+sdk/generator/typescript/template/src/metering/queue/memory.ts
+  s_868513325afaca::t_fff9438b9b803a 1-406
+sdk/generator/typescript/emitter.py
+  s_868513325afaca::t_fff9438b9b803a 134
+sdk/generator/typescript/template/src/metering/flush.bench.ts
+  s_868513325afaca::t_fff9438b9b803a 5,13,17
+sdk/generator/python/template/polar/metering/queue/__init__.py
+  s_868513325afaca::t_fff9438b9b803a 1-24
+sdk/generator/typescript/template/src/version/client.ts
+  s_868513325afaca::t_fff9438b9b803a 51
+sdk/generator/python/template/polar/version/client.py
+  s_868513325afaca::t_fff9438b9b803a 5,88,94-95,102
+sdk/generator/python/template/polar/metering/queue/memory.py
+  s_868513325afaca::t_fff9438b9b803a 1-381
+sdk/generator/redis/queue/queue_backlog.lua
+  s_868513325afaca::t_fff9438b9b803a 1-13
+sdk/generator/typescript/template/src/portability.test.ts
+  s_868513325afaca::t_fff9438b9b803a 6
+sdk/generator/redis/constants.toml
+  s_868513325afaca::t_fff9438b9b803a 9,11-12,14,16,18,20,23-24
+sdk/generator/typescript/template/src/metering/queue/redis.ts
+  s_868513325afaca::t_fff9438b9b803a 1-366
+sdk/generator/python/emitter.py
+  s_868513325afaca::t_fff9438b9b803a 143-145,158-160
+sdk/generator/typescript/template/README.md
+  s_868513325afaca::t_fff9438b9b803a 197,230,234,236-237,240,243,247-248,251
+sdk/generator/python/template/tests/metering/queue/test_memory.py
+  s_868513325afaca::t_fff9438b9b803a 1-711
+sdk/generator/python/template/polar/metering/queue/redis.py
+  s_868513325afaca::t_fff9438b9b803a 1-467
+sdk/generator/python/template/README.md
+  s_868513325afaca::t_fff9438b9b803a 172,208,210,212,215,218-219,225,250,254-255,263,287,296
+sdk/generator/typescript/template/src/outpost/client.test.ts
+  s_868513325afaca::t_fff9438b9b803a 12-13,135,381,1337,1377,1379,1383-1386,1393,1399,1406,1412,1426,1429,1442,1447,1460,1464,1487,1502-1504,1508,1512,1515,1519,1525,1536,1546,1553,1563,1566,1579-1580,1597,1606,2383
+sdk/generator/tests/typescript/test_emitter.py
+  s_868513325afaca::t_fff9438b9b803a 44
+sdk/generator/python/template/tests/metering/queue/test_redis.py
+  s_868513325afaca::t_fff9438b9b803a 1-112
+sdk/generator/generator/emitter.py
+  s_868513325afaca::t_fff9438b9b803a 35
+sdk/generator/tests/test_outpost_scripts.py
+  s_868513325afaca::t_fff9438b9b803a 17,48,60
+sdk/generator/typescript/template/src/metering/queue/memory.test.ts
+  s_868513325afaca::t_fff9438b9b803a 1-634
+sdk/generator/python/template/tests/outpost/test_client.py
+  s_868513325afaca::t_fff9438b9b803a 44,220,2241,2245,2257-2258,2265,2268,2283,2299-2300,2313,2325-2326,2338,2349-2350,2365,2377-2378,2390,2400,2438,2453,2461-2462,2466,2476,2479,2483,2491,2496,2509-2510,2520,2533-2534,2540,2554,2559,2564,2571,2581,2584,2591,2593-2594,2608-2609,2624,4187,4193
+sdk/generator/python/template/tests/metering/test_metering.py
+  s_868513325afaca::t_fff9438b9b803a 21,23,42-43,45,54,73,77,117,150,156-159,161,167-168,172-175,180,183,201-202,215-216,228,233,237-238,250-251,254-255,260,273-274,281,289
+sdk/generator/typescript/template/src/metering/index.ts
+  s_868513325afaca::t_fff9438b9b803a 16-17,21
+sdk/generator/tests/python/test_emitter.py
+  s_868513325afaca::t_fff9438b9b803a 62,67,76
+sdk/generator/python/template/polar/metering/__init__.py
+  s_868513325afaca::t_fff9438b9b803a 30-31,124,128,133-134,142,145,148,163,171,194,209,334,337-338,340,349,388
+sdk/generator/typescript/template/package.json
+  s_868513325afaca::t_fff9438b9b803a 22-24
+sdk/generator/typescript/template/src/metering/client.ts
+  s_868513325afaca::t_fff9438b9b803a 12-13,67,72,81,90,103,202,239,243,322
+sdk/generator/typescript/template/src/metering/queue/index.ts
+  s_868513325afaca::t_fff9438b9b803a 1-14
+sdk/generator/typescript/template/tsdown.config.ts
+  s_868513325afaca::t_fff9438b9b803a 7
+sdk/python/README.md
+  s_868513325afaca::t_d8492263abb0a4 170,204,206,208,211,214-215,221,246,250-251,259,283,292
+sdk/python/polar/metering/__init__.py
+  s_868513325afaca::t_d0402995f33f08 30-31,124,128,133-134,142,145,148,163,171,196,211,339,342-343,345,354,388
+sdk/python/polar/metering/queue/__init__.py
+  s_868513325afaca::t_2754995527b4da 14,20
+sdk/python/polar/metering/queue/memory.py
+  s_868513325afaca::t_0a3154999783de 29,64,118,152,175,319,326
+sdk/python/polar/metering/queue/redis.py
+  s_868513325afaca::t_2875687661216e 34,38,40,43-45,47-49,113,120,143,171,175-176,189,232,239-240,243,248,276,278,281,291-292,296,302,304,311,317,342,358,360-361,367-368,370,376,382,385,402,414,419-420,437-438,449,472,482
+sdk/python/polar/v2026_04/client.py
+  s_868513325afaca::t_59f30447f97a2a 5,163,169-170,177
+sdk/python/polar/v2026_10/client.py
+  s_868513325afaca::t_8776ee1eaec915 5,163,169-170,177
+sdk/python/polar/v2027_01/client.py
+  s_868513325afaca::t_6da7ac237f3313 5,163,169-170,177
+sdk/python/tests/metering/queue/test_memory.py
+  s_868513325afaca::t_134a0601cdcca8 9,12,31,61,86,131,161,183,200-202,237,273,304,329,344,357,377,402,410,415,427,429-430,433,437,439-440,442,467,510,540,575,606,619-620,638,673,709,733,735-736,738
+sdk/python/tests/metering/queue/test_redis.py
+  s_868513325afaca::t_6d7bf99762fcdd 10-11,15,44,46,50-51,53,57,59-61,70,74,100,105-109,112-113
+sdk/python/tests/metering/test_metering.py
+  s_868513325afaca::t_2697a3c9f272a8 15,22,41-42,44,53,72,76,116,149,155-158,160,166-167,171-174,179,182,200-201,214-215,231,236,240-241,253-254,258,260,265,281-282,289,297
+sdk/python/tests/outpost/test_client.py
+  s_868513325afaca::t_2917afa0d52478 44,220,2266,2270,2282,2284,2294,2297,2312-2314,2330-2331,2344,2356,2358,2371,2382-2383,2398,2410-2413,2425,2435-2437,2475,2492,2500-2503,2507,2517-2519,2522,2526,2534-2536,2541,2554,2556,2567,2580,2582,2589,2603-2605,2610,2615,2622,2632-2634,2637,2643-2645,2659-2660,2675,4242-4244,4250
+sdk/typescript/README.md
+  s_868513325afaca::t_0db35aad6a440f 197,230,234,236-237,240,243,247-248,251
+sdk/typescript/package.json
+  s_868513325afaca::t_4fd12a66142be5 49,51-52,55-56
+sdk/typescript/src/2026-04/client.ts
+  s_868513325afaca::t_33e6efb9c2d2a5 89
+sdk/typescript/src/2026-10/client.ts
+  s_868513325afaca::t_f58878e89bab4b 89
+sdk/typescript/src/2027-01/client.ts
+  s_868513325afaca::t_ded38ca62cf86d 89
+sdk/typescript/src/metering/client.test.ts
+  s_868513325afaca::t_6d9173cecee131 6,28,65,71,133-135,143,163,166,249-250,253
+sdk/typescript/src/metering/client.ts
+  s_868513325afaca::t_0c8563adabb09f 9,22,67,72,81,90,103,203,242,248,326
+sdk/typescript/src/metering/flush.bench.ts
+  s_868513325afaca::t_d3c9a5388f2adc 5,13,17
+sdk/typescript/src/metering/index.ts
+  s_868513325afaca::t_65046b45ecdef9 11-12,16
+sdk/typescript/src/metering/queue/index.ts
+  s_868513325afaca::t_6d9333e40ea900 4,9-10
+sdk/typescript/src/metering/queue/memory.test.ts
+  s_868513325afaca::t_acd3e8ed430c48 13,27,58-61,88,130,179,220,242,259,278,296,323,369,390,410,412,414,417,420-421,423,425,434,468,494,516,547,573,601,608-609,615
+sdk/typescript/src/metering/queue/memory.ts
+  s_868513325afaca::t_aaa16efcfde3ff 2,51,95-96,119,138,141-142,172,216,305,344
+sdk/typescript/src/metering/queue/redis.test.ts
+  s_868513325afaca::t_019066ce404439 5,9,25,32,34-36,45,48
+sdk/typescript/src/metering/queue/redis.ts
+  s_868513325afaca::t_acd45bff272d85 7,26,28,31-34,36-38,60-61,69,77,120,126-127,129,137,140-141,143,146-148,211-213,221-222,224,230,244,246,255,261,264,269,275,291,308,310,313,318,321,326,333,336,349,365,373,408-409,415,418
+sdk/typescript/src/outpost/client.test.ts
+  s_868513325afaca::t_5599824d5e9668 10,16,136,383,1380-1381,1433,1435,1439-1441,1444-1445,1452,1458,1465,1471-1472,1488,1491,1504,1509,1522,1526,1549,1564-1566,1570,1574,1577,1581,1587-1588,1601,1611-1612,1621,1631,1634,1647-1648,1665,1674,2462
+sdk/typescript/src/portability.test.ts
+  s_868513325afaca::t_f94bc97547bd6c 6
+sdk/typescript/tsdown.config.ts
+  s_868513325afaca::t_315f7651695007 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cf6b1afa01628c8634383ab3fa1d4c29a1e249e5",
+  "prompts": {},
+  "sessions": {
+    "s_868513325afaca": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a2138b-136c-7cf0-b8fd-2500c8a89c9c",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

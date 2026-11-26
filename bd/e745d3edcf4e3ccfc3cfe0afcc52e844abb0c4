@@ -1,0 +1,19 @@
+clients/packages/client/src/v1.ts
+  s_9d4fcc69d80fc5::t_151892a91fdba8 21642,21646,21651,21665,21669,21674,21693,21697,21702
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bde745d3edcf4e3ccfc3cfe0afcc52e844abb0c4",
+  "prompts": {},
+  "sessions": {
+    "s_9d4fcc69d80fc5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20ccd-705d-7a61-9a99-612697cae1a1",
+        "model": "unknown"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

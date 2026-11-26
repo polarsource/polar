@@ -16,7 +16,6 @@ import {
 import { formatProblems } from '@/utils/billing-config/problems'
 import {
   catalogChange,
-  discardsDraft,
   draftNote,
   errors,
   unchanged,
@@ -66,6 +65,41 @@ const valueRows = (
 const ids = (input: unknown): string[] =>
   Array.isArray(input) ? input.map((id) => name(id)) : []
 
+const ENTRY_MARKS: Record<AppliedEntry['action'], string> = {
+  created: '+',
+  removed: '-',
+  updated: ' ',
+  unchanged: ' ',
+}
+
+const changeRows = (
+  {
+    field,
+    before,
+    after,
+  }: { field: string; before?: unknown; after?: unknown },
+  created: boolean,
+  width: number,
+) => {
+  const inline =
+    created ||
+    !isSet(before) ||
+    !isSet(after) ||
+    (single(before) && single(after))
+  if (!inline) {
+    return [
+      `    ${field}`,
+      ...lineDiff(valueLines(before), valueLines(after)).map(
+        ({ mark, line }) => `${mark}     ${line}`,
+      ),
+    ]
+  }
+  return [
+    ...(!created && isSet(before) ? valueRows('-', width, field, before) : []),
+    ...(isSet(after) ? valueRows('+', width, field, after) : []),
+  ]
+}
+
 const entryLines = (
   entry: AppliedEntry,
   updated: { benefits: ReadonlySet<string>; meters: ReadonlySet<string> },
@@ -97,25 +131,8 @@ const entryLines = (
       .map(({ field }) => field.length),
   )
   return [
-    `${created ? '+' : action === 'removed' ? '-' : ' '} ${name(id)}`,
-    ...changes.flatMap(({ field, before, after }) =>
-      created ||
-      !isSet(before) ||
-      !isSet(after) ||
-      (single(before) && single(after))
-        ? [
-            ...(!created && isSet(before)
-              ? valueRows('-', width, field, before)
-              : []),
-            ...(isSet(after) ? valueRows('+', width, field, after) : []),
-          ]
-        : [
-            `    ${field}`,
-            ...lineDiff(valueLines(before), valueLines(after)).map(
-              ({ mark, line }) => `${mark}     ${line}`,
-            ),
-          ],
-    ),
+    `${ENTRY_MARKS[action]} ${name(id)}`,
+    ...changes.flatMap((change) => changeRows(change, created, width)),
     ...usedMeters(entry, 'after')
       .filter((id) => updated.meters.has(id))
       .map((id) => `    meter  ${id} (updated)`),
@@ -132,6 +149,9 @@ const pendingDraft = (
     ? `\n>\n> ${escape(plain(draftNote(config.file, catalogs.draft, entries).join(' ')))}`
     : ''
 
+const conflicted = (catalogs: PlanCatalogs | undefined) =>
+  (catalogs?.draft?.conflicts.length ?? 0) > 0
+
 const callout = (
   config: LoadedConfig,
   organization: ActiveOrganization,
@@ -142,8 +162,8 @@ const callout = (
   if (errors(result.issues) > 0) {
     return `> [!CAUTION]\n> \`${config.file}\` can't be saved to the draft of ${where}. Fix the errors below first.`
   }
-  if (unchanged(result.entries)) {
-    return `> [!WARNING]\n> Saving this config to the draft discards the unpublished draft of ${where}.${pendingDraft(config, result, catalogs)}`
+  if (conflicted(catalogs)) {
+    return `> [!WARNING]\n> The unpublished draft of ${where} has changes this config doesn't. \`polar config draft\` stops until they are in the file or discarded with \`--force\`.`
   }
   return `> [!NOTE]\n> Publishing the config in this pull request changes billing for ${where}. Review every change below before it's published.${pendingDraft(config, result, catalogs)}`
 }
@@ -179,48 +199,46 @@ export const planMarkdown = (
   organization: ActiveOrganization,
   result: PlanResult,
   catalogs?: PlanCatalogs,
-) =>
-  unchanged(result.entries) &&
-  errors(result.issues) === 0 &&
-  !(catalogs?.draft && discardsDraft(catalogs.draft, result.entries))
-    ? undefined
-    : [
-        '## Polar billing config changed',
-        callout(config, organization, result, catalogs),
-        metadata(config, organization, result),
-        ...[
-          ...new Set([
-            ...Object.keys(HEADINGS),
-            ...result.entries.map(({ section }) => section),
-          ]),
-        ].flatMap((section) => {
-          const changed = result.entries.filter(
-            (entry) =>
-              entry.section === section && entry.action !== 'unchanged',
-          )
-          return changed.length === 0
-            ? []
-            : [
-                `#### ${escape(heading(section))}`,
-                codeBlock(
-                  plain(
-                    changed
-                      .flatMap((entry) =>
-                        entryLines(entry, {
-                          benefits: updatedIds(result.entries, 'benefits'),
-                          meters: updatedIds(result.entries, 'meters'),
-                        }),
-                      )
-                      .join('\n'),
-                  ),
-                  'diff',
-                ),
-              ]
-        }),
-        ...(result.issues.length > 0
-          ? [
-              '#### Problems',
-              codeBlock(plain(formatProblems(config, result.issues))),
-            ]
-          : []),
-      ].join('\n\n')
+) => {
+  const nothingToSay =
+    unchanged(result.entries) &&
+    errors(result.issues) === 0 &&
+    !conflicted(catalogs)
+  if (nothingToSay) return undefined
+  const updated = {
+    benefits: updatedIds(result.entries, 'benefits'),
+    meters: updatedIds(result.entries, 'meters'),
+  }
+  const sections = [
+    ...new Set([
+      ...Object.keys(HEADINGS),
+      ...result.entries.map(({ section }) => section),
+    ]),
+  ].flatMap((section) => {
+    const changed = result.entries.filter(
+      (entry) => entry.section === section && entry.action !== 'unchanged',
+    )
+    if (changed.length === 0) return []
+    return [
+      `#### ${escape(heading(section))}`,
+      codeBlock(
+        plain(
+          changed.flatMap((entry) => entryLines(entry, updated)).join('\n'),
+        ),
+        'diff',
+      ),
+    ]
+  })
+  return [
+    '## Polar billing config changed',
+    callout(config, organization, result, catalogs),
+    metadata(config, organization, result),
+    ...sections,
+    ...(result.issues.length > 0
+      ? [
+          '#### Problems',
+          codeBlock(plain(formatProblems(config, result.issues))),
+        ]
+      : []),
+  ].join('\n\n')
+}

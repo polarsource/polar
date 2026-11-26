@@ -17,7 +17,7 @@ import anyio.lowlevel
 import httpx2
 import pytest
 import redis.asyncio.connection as redis_connection_module
-from fakeredis import FakeAsyncRedis, FakeServer
+from fakeredis import FakeAsyncRedis, FakeAsyncRedisConnection, FakeServer
 from opentelemetry.sdk.metrics.export import (
     ExponentialHistogramDataPoint,
     MetricExporter,
@@ -31,7 +31,7 @@ from opentelemetry.sdk.trace.export import (
     SpanExporter,
     SpanExportResult,
 )
-from redis.asyncio import Redis
+from redis.asyncio import BlockingConnectionPool, Redis
 from redis.exceptions import AuthenticationError, AuthorizationError, ResponseError
 from redis.exceptions import ConnectionError as RedisConnectionError
 from redis.exceptions import TimeoutError as RedisTimeoutError
@@ -43,6 +43,7 @@ from polar.outpost import NotReadyError
 from polar.outpost.client import (
     APPLY_SNAPSHOT_SCRIPT,
     CONFIRM_SCRIPT,
+    REDIS_CONNECTIONS,
     WRITE_BUCKET_SCRIPT,
     Outpost,
     RedisReconnectBackoff,
@@ -95,8 +96,17 @@ async def redis_connection(
 ) -> collections.abc.AsyncIterator[tuple[str, Redis]]:
     server = FakeServer()
     monkeypatch.setattr(
-        "polar.outpost.client.Redis.from_url",
-        lambda url, **kwargs: FakeAsyncRedis(server=server, **kwargs),
+        "polar.outpost.client.BlockingConnectionPool.from_url",
+        lambda url, **kwargs: BlockingConnectionPool(
+            connection_class=FakeAsyncRedisConnection,
+            server=server,
+            connected=True,
+            version=(7,),
+            server_type="redis",
+            lua_modules=None,
+            client_class=Redis,
+            **kwargs,
+        ),
     )
     async with FakeAsyncRedis(server=server) as redis:
         yield "redis://localhost:6379", redis
@@ -736,6 +746,37 @@ async def test_talks_to_redis_over_one_connection(
     before = len(await redis.client_list())
     async with Outpost(url, client=polar_client):
         assert len(await redis.client_list()) == before + 1
+
+
+@pytest.mark.anyio
+async def test_waits_for_a_redis_connection_once_its_pool_is_full(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url, _ = redis_connection
+    read_response = FakeAsyncRedisConnection.read_response
+
+    # Each answer takes a moment: the commands overlap, as on a cold start.
+    async def slow(
+        connection: FakeAsyncRedisConnection, **kwargs: typing.Any
+    ) -> typing.Any:
+        await anyio.sleep(0.01)
+        return await read_response(connection, **kwargs)
+
+    monkeypatch.setattr(FakeAsyncRedisConnection, "read_response", slow)
+    async with Outpost(url, client=polar_client, telemetry=False) as outpost:
+        redis = outpost._require_redis()
+
+        async def ping() -> None:
+            await redis.ping()
+
+        async with anyio.create_task_group() as group:
+            for _ in range(150):
+                group.start_soon(ping)
+        pool = redis.connection_pool
+        opened = len(pool._available_connections) + len(pool._in_use_connections)
+        assert opened <= REDIS_CONNECTIONS
 
 
 @pytest.mark.anyio
@@ -2640,6 +2681,60 @@ async def test_delivers_what_another_instance_queued_while_it_flushed(
 
 
 @pytest.mark.anyio
+async def test_drains_on_a_flush_after_one_that_failed_before_it_drained(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    ingest: dict[str, typing.Any],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url, redis = redis_connection
+    monkeypatch.setattr("polar.outpost.client.FLUSH_TENURE", 0.1)
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.track(_usage("event-0", 10))
+        outpost._failure = PolarOutpostError("Polar refused the token")
+        await outpost.flush()
+        outpost._failure = None
+        await anyio.sleep(0.2)
+        await outpost.flush()
+        assert _delivered(ingest) == [["event-0"]]
+
+
+@pytest.mark.anyio
+async def test_hands_its_slot_over_a_few_seconds_into_a_drain_a_flush_waits_on(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    ingest: dict[str, typing.Any],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url, redis = redis_connection
+    monkeypatch.setattr("polar.outpost.client.FLUSH_TENURE", 0.3)
+    await _seal(redis, BUCKET)
+    async with (
+        Outpost(url, client=polar_client) as first,
+        Outpost(url, client=polar_client) as second,
+    ):
+        await first.track(_usage("event-0", 10))
+        ingest["delay"] = 0.04
+
+        async def write() -> None:
+            # Another instance queues events during each of the flusher's ingest round
+            # trips.
+            for index in itertools.count():
+                await second.track(_usage(f"other-{index}", 1))
+                await anyio.sleep(0.01)
+
+        async with anyio.create_task_group() as group:
+            group.start_soon(write)
+            with anyio.fail_after(2):
+                await first.flush()
+            group.cancel_scope.cancel()
+    assert "event-0" in [
+        external_id for ids in _delivered(ingest) for external_id in ids
+    ]
+
+
+@pytest.mark.anyio
 async def test_ignores_a_duplicate_external_id(
     redis_connection: tuple[str, Redis], polar_client: httpx2.AsyncClient
 ) -> None:
@@ -3997,16 +4092,16 @@ async def test_starts_once_redis_accepts_the_connection_it_first_closed(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     url, _ = redis_connection
-    ping = FakeAsyncRedis.ping
+    ping = Redis.ping
     attempts: list[None] = []
 
-    async def closed_once(redis: FakeAsyncRedis, *args: typing.Any) -> typing.Any:
+    async def closed_once(redis: Redis, *args: typing.Any) -> typing.Any:
         attempts.append(None)
         if len(attempts) == 1:
             raise RedisConnectionError("Connection closed by server.")
         return await ping(redis, *args)
 
-    monkeypatch.setattr(FakeAsyncRedis, "ping", closed_once)
+    monkeypatch.setattr(Redis, "ping", closed_once)
     async with Outpost(url, client=polar_client) as outpost:
         assert outpost.connected
     assert len(attempts) >= 2
@@ -4397,12 +4492,12 @@ async def test_measures_the_size_of_redis_from_the_instance_that_pulled_alone(
     url, _ = redis_connection
 
     # fakeredis has no INFO memory: the command still goes out, and reports nothing.
-    async def info(self: FakeAsyncRedis, section: str) -> dict[str, int]:
+    async def info(self: Redis, section: str) -> dict[str, int]:
         with contextlib.suppress(ResponseError):
             await self.execute_command("INFO", section)
         return {"used_memory": 0}
 
-    monkeypatch.setattr(FakeAsyncRedis, "info", info)
+    monkeypatch.setattr(Redis, "info", info)
     async with (
         Outpost(url, client=polar_client) as first,
         Outpost(url, client=polar_client) as second,
@@ -4474,4 +4569,52 @@ async def test_lets_the_readers_of_a_cold_customer_wait_on_its_fetch_then_read_i
 
         cost = await _cost(redis_commands, read)
     assert cost["evalsha"] + cost.get("eval", 0) <= 15
-    assert cost["exists"] <= 2 * (0.08 / 0.025 + 6)
+    assert cost["hget"] <= 2 * (0.08 / 0.025 + 6)
+
+
+@pytest.mark.anyio
+async def test_waits_on_a_cold_customers_fetch_at_the_same_cost_however_many_reads_wait(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    redis_commands: collections.Counter[str],
+    snapshots: dict[str, dict[str, typing.Any]],
+) -> None:
+    url, redis = redis_connection
+    for reducer in ("tokens", "credits"):
+        snapshots[f"external:alice:{reducer}"] = {
+            **_snapshot("alice", reducer, BUCKET + 1),
+            "delay": 0.5,
+        }
+    async with (
+        Outpost(url, client=polar_client, telemetry=False, snapshot_timeout=2) as first,
+        Outpost(
+            url, client=polar_client, telemetry=False, snapshot_timeout=2
+        ) as second,
+        anyio.create_task_group() as group,
+    ):
+        group.start_soon(
+            functools.partial(
+                first.meter, external_customer_id="alice", meter_id="meter"
+            )
+        )
+        with anyio.fail_after(5):
+            while not await redis.exists(
+                "outpost:v1:org-1:fetch:external:alice:tokens"
+            ):
+                await anyio.sleep(0.005)
+        reads: list[float | None] = []
+
+        async def read() -> None:
+            meter = await second.meter(external_customer_id="alice", meter_id="meter")
+            reads.append(None if meter is None else meter.consumed_units)
+
+        async def wait() -> None:
+            async with anyio.create_task_group() as readers:
+                for _ in range(20):
+                    readers.start_soon(read)
+
+        cost = await _cost(redis_commands, wait)
+    assert reads == [3] * 20
+    # One poller per instance: the first waits on its own fetch, the second on the first's.
+    polls = sum(cost.get(command, 0) for command in ("exists", "get", "hget"))
+    assert polls <= 2 * (0.5 / 0.025 + 2)

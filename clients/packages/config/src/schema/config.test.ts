@@ -3,6 +3,7 @@ import { expect, expectTypeOf, test } from 'vitest'
 import { z } from 'zod'
 import { flag } from './benefit'
 import { defineConfig } from './config'
+import { event, type EventHelpers } from './event'
 import { eq, gte } from './meter'
 import { eur, perThousand, usd } from './money'
 
@@ -106,20 +107,26 @@ test('defineConfig rejects invalid builder values', () => {
   ).toThrow()
 })
 
-const events = {
-  tool_call: z.object({
-    tool: z.enum(['search', 'fetch']),
-    durationMs: z.int(),
-  }),
-  'llm.completion': Schema.toStandardSchemaV1(
-    Schema.Struct({ model: Schema.String, inputTokens: Schema.Int }),
+const events = ({ event }: EventHelpers) => ({
+  tool_call: event(
+    z.object({
+      tool: z.enum(['search', 'fetch']),
+      durationMs: z.int(),
+    }),
   ),
-  'llm.embedding': z.object({
-    model: z.string(),
-    inputTokens: z.int(),
-    dimensions: z.int(),
-  }),
-}
+  'llm.completion': event(
+    Schema.toStandardSchemaV1(
+      Schema.Struct({ model: Schema.String, inputTokens: Schema.Int }),
+    ),
+  ),
+  'llm.embedding': event(
+    z.object({
+      model: z.string(),
+      inputTokens: z.int(),
+      dimensions: z.int(),
+    }),
+  ),
+})
 
 test('meters reference declared events and serialize without them', () => {
   const config = defineConfig({
@@ -228,26 +235,24 @@ test('meter rejects undeclared events and plain names at runtime', () => {
 })
 
 test('events must have flat metadata without reserved properties', () => {
-  defineConfig({
+  const typeOnly = () => {
     // @ts-expect-error nested objects are not valid metadata
-    events: { nested: z.object({ request: z.object({ id: z.string() }) }) },
-    meters: () => ({}),
-  })
-  defineConfig({
+    event(z.object({ request: z.object({ id: z.string() }) }))
     // @ts-expect-error metadata values cannot be null
-    events: { nullable: z.object({ note: z.string().nullable() }) },
-    meters: () => ({}),
-  })
-  defineConfig({
+    event(z.object({ note: z.string().nullable() }))
     // @ts-expect-error name is a reserved property
-    events: { reserved: z.object({ name: z.string() }) },
-    meters: () => ({}),
-  })
-  defineConfig({
+    event(z.object({ name: z.string() }))
+    // @ts-expect-error _llm is reserved for withTokens()
+    event(z.object({ _llm: z.string() }))
     // @ts-expect-error metadata must be an object
-    events: { scalar: z.string() },
-    meters: () => ({}),
-  })
+    event(z.string())
+    defineConfig({
+      // @ts-expect-error events are declared with event()
+      events: () => ({ plain: z.object({ tool: z.string() }) }),
+      meters: () => ({}),
+    })
+  }
+  expectTypeOf(typeOnly).toBeFunction()
 })
 
 test('benefits serialize with meter credits linked by meter key', () => {
@@ -541,7 +546,9 @@ test('active products and benefits cannot use a deprecated meter', () => {
 })
 
 test('deprecating a meter anywhere in its chain marks it deprecated', () => {
-  const events = { call: z.object({ ok: z.boolean() }) }
+  const events = ({ event }: EventHelpers) => ({
+    call: event(z.object({ ok: z.boolean() })),
+  })
   expect(() =>
     defineConfig({
       events,

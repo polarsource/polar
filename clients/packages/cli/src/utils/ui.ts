@@ -66,6 +66,17 @@ const BOX_MINIMUM = 20
 export const boxInner = () =>
   Math.max(Math.min(process.stdout.columns || 80, BOX_WIDTH) - 4, BOX_MINIMUM)
 
+const trackStyle = (active: string[], token: string) => {
+  const closes = CLOSES[token.slice(2, -1)]
+  if (!closes) {
+    active.push(token)
+    return
+  }
+  for (let index = active.length - 1; index >= 0; index -= 1) {
+    if (closes(Number(active[index]?.slice(2, -1)))) active.splice(index, 1)
+  }
+}
+
 const wrap = (line: string, width: number) => {
   const hanging = `${line.match(/^\s*/)?.[0] ?? ''}${INDENT}`
   const rows: string[] = []
@@ -80,32 +91,24 @@ const wrap = (line: string, width: number) => {
     limit = width
     space = undefined
   }
+  const breakRow = () => {
+    if (space) {
+      rows.push(row.slice(0, space.index))
+      carry(row.slice(space.index + 1))
+    } else {
+      rows.push(row)
+      carry('')
+    }
+  }
   for (const token of line.split(ANSI)) {
     if (ANSI.test(token)) {
-      const closes = CLOSES[token.slice(2, -1)]
-      if (closes) {
-        for (let index = active.length - 1; index >= 0; index -= 1) {
-          if (closes(Number(active[index]?.slice(2, -1)))) {
-            active.splice(index, 1)
-          }
-        }
-      } else {
-        active.push(token)
-      }
+      trackStyle(active, token)
       row += token
       continue
     }
     for (const { segment: character } of GRAPHEMES.segment(token)) {
       const size = Bun.stringWidth(character)
-      if (used + size > limit) {
-        if (space) {
-          rows.push(row.slice(0, space.index))
-          carry(row.slice(space.index + 1))
-        } else {
-          rows.push(row)
-          carry('')
-        }
-      }
+      if (used + size > limit) breakRow()
       if (character === ' ' && used > Bun.stringWidth(hanging)) {
         space = { index: row.length, used }
       }
@@ -117,21 +120,28 @@ const wrap = (line: string, width: number) => {
   return rows
 }
 
-export const boxTop = () => `${INDENT}${pc.dim(`╭${'─'.repeat(boxInner())}╮`)}`
+type Tint = (text: string) => string
 
-export const boxBottom = () =>
-  `${INDENT}${pc.dim(`╰${'─'.repeat(boxInner())}╯`)}`
+export const boxTop = (border: Tint = pc.dim) =>
+  `${INDENT}${border(`╭${'─'.repeat(boxInner())}╮`)}`
 
-export const boxRows = (line: string) => {
+export const boxBottom = (border: Tint = pc.dim) =>
+  `${INDENT}${border(`╰${'─'.repeat(boxInner())}╯`)}`
+
+export const boxRows = (line: string, border: Tint = pc.dim) => {
   const inner = boxInner()
   return wrap(line, inner).map(
     (row) =>
-      `${INDENT}${pc.dim('│')}${row}${' '.repeat(Math.max(inner - Bun.stringWidth(row), 0))}${pc.dim('│')}`,
+      `${INDENT}${border('│')}${row}${' '.repeat(Math.max(inner - Bun.stringWidth(row), 0))}${border('│')}`,
   )
 }
 
-export const box = (text: string) =>
-  [boxTop(), ...text.split('\n').flatMap(boxRows), boxBottom()].join('\n')
+export const box = (text: string, border: Tint = pc.dim) =>
+  [
+    boxTop(border),
+    ...text.split('\n').flatMap((line) => boxRows(line, border)),
+    boxBottom(border),
+  ].join('\n')
 
 export const truncate = (text: string, width: number) => {
   if (width <= 0) return ''

@@ -1614,6 +1614,60 @@ it("delivers what another instance queued while it flushed", async () => {
   expect(await redis.xlen("outpost:v1:org-1:outbox")).toBe(0);
 });
 
+it("hands its slot over a few seconds into a drain a flush waits on, while the fleet writes", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  const [first, second] = [await warm(), await start()];
+  await first.track(usage("event-0", 10));
+  ingestDelay = 40;
+  let writing = true;
+  // Another instance queues events during each of the flusher's ingest round trips.
+  const writer = (async () => {
+    for (let index = 0; writing; index += 1) {
+      await second.track(usage(`other-${index}`, 1));
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+  })();
+  try {
+    let flushed = false;
+    void first.flush().then(() => (flushed = true));
+    await vi.waitFor(() => expect(ingestRequests.length).toBeGreaterThan(2));
+    vi.advanceTimersByTime(5000);
+    await vi.waitFor(() => expect(flushed).toBe(true), { timeout: 2_000 });
+  } finally {
+    writing = false;
+    await writer;
+  }
+  expect(delivered().flat()).toContain("event-0");
+});
+
+it("hands its slot over a few seconds into the drain of a close, with nothing of its own queued", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  const [first, second] = [await warm(), await start()];
+  // The writer leaves its events to the next drain: the closing instance delivers them.
+  clearInterval(second["drainTimer"]);
+  ingestDelay = 40;
+  let writing = true;
+  const writer = (async () => {
+    for (let index = 0; writing; index += 1) {
+      await second.track(usage(`other-${index}`, 1));
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+  })();
+  try {
+    await vi.waitFor(async () =>
+      expect(await redis.xlen("outpost:v1:org-1:outbox")).toBeGreaterThan(0),
+    );
+    let closed = false;
+    void first.close().then(() => (closed = true));
+    await vi.waitFor(() => expect(ingestRequests.length).toBeGreaterThan(2));
+    vi.advanceTimersByTime(5000);
+    await vi.waitFor(() => expect(closed).toBe(true), { timeout: 2_000 });
+  } finally {
+    writing = false;
+    await writer;
+  }
+});
+
 it("ignores a duplicate external_id", async () => {
   const outpost = await warm();
   await outpost.track(usage("same", 10));
@@ -2715,6 +2769,29 @@ describe("Redis cost", () => {
     const cost = await redisCost(() => Promise.all([first.meter(meter), second.meter(meter)]));
     // ioredis sends a script's first call on a connection as EVAL.
     expect((cost.commands.evalsha ?? 0) + (cost.commands.eval ?? 0)).toBeLessThanOrEqual(10);
-    expect(cost.commands.exists).toBeLessThanOrEqual(2 * (200 / 25 + 2));
+    expect(cost.commands.hget).toBeLessThanOrEqual(2 * (200 / 25 + 2));
+  });
+
+  it("waits on a cold customer's fetch at the same cost, however many reads wait", async () => {
+    snapshot = aliceSnapshot;
+    reducerSnapshots = { tokens: { delay: 500 }, credits: { delay: 500 } };
+    const [first, second] = await Promise.all([
+      quiet({ snapshotTimeout: 2_000 }),
+      quiet({ snapshotTimeout: 2_000 }),
+    ]);
+    await first.actor({ external_customer_id: "bob" });
+    await second.actor({ external_customer_id: "bob" });
+    const asked = meterUsageRequests.length;
+    const fetching = first.meter(meter);
+    await vi.waitFor(() => expect(meterUsageRequests.length).toBeGreaterThan(asked));
+    let reads: Awaited<typeof fetching>[] = [];
+    const cost = await redisCost(async () => {
+      reads = await Promise.all(Array.from({ length: 20 }, () => second.meter(meter)));
+    });
+    expect(reads.map((read) => read?.consumed_units)).toEqual(Array(20).fill(3));
+    const polls = ["exists", "get", "hget"].map((command) => cost.commands[command] ?? 0);
+    // One poller per instance: the first waits on its own fetch, the second on the first's.
+    expect(polls.reduce((sum, calls) => sum + calls)).toBeLessThanOrEqual(2 * (500 / 25 + 2));
+    await fetching;
   });
 });

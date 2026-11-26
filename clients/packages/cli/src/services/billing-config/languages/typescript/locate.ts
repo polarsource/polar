@@ -135,6 +135,38 @@ const locateInObject = (
   return span(source, target.offset, target.length)
 }
 
+const locateInArray = (
+  source: string,
+  section: string,
+  entries: ReadonlyArray<unknown>,
+  {
+    index,
+    field,
+    got,
+  }: { index: number; field: Path[number] | undefined; got: unknown },
+): SourceLocation | undefined => {
+  const externalIds = entries.map(entryKey)
+  const externalId = externalIds[index]
+  if (externalId === undefined) return undefined
+  const range = entryRange(source, section, externalIds, index)
+  if (range === undefined) return undefined
+  const fieldMatch =
+    typeof field === 'string' && FIELD_PATTERNS[field]
+      ? find(source, FIELD_PATTERNS[field], range.start, range.end)
+      : undefined
+  const target =
+    (got !== undefined &&
+      find(
+        source,
+        literalPattern(got),
+        fieldMatch?.offset ?? range.start,
+        range.end,
+      )) ||
+    fieldMatch ||
+    find(source, keyPattern(externalId), range.start, range.end)
+  return target && span(source, target.offset, target.length)
+}
+
 export const locateInScript = (
   source: string,
   input: unknown,
@@ -154,25 +186,5 @@ export const locateInScript = (
       : undefined
   }
   if (!Array.isArray(entries)) return undefined
-  const externalIds = entries.map(entryKey)
-  const externalId = externalIds[index]
-  if (externalId === undefined) return undefined
-  const range = entryRange(source, section, externalIds, index)
-  if (range === undefined) return undefined
-  const field = rest[0]
-  const fieldMatch =
-    typeof field === 'string' && FIELD_PATTERNS[field]
-      ? find(source, FIELD_PATTERNS[field], range.start, range.end)
-      : undefined
-  const target =
-    (got !== undefined &&
-      find(
-        source,
-        literalPattern(got),
-        fieldMatch?.offset ?? range.start,
-        range.end,
-      )) ||
-    fieldMatch ||
-    find(source, keyPattern(externalId), range.start, range.end)
-  return target && span(source, target.offset, target.length)
+  return locateInArray(source, section, entries, { index, field: rest[0], got })
 }

@@ -38,11 +38,8 @@ export const filter = (
 ): string => {
   const clauses = (input['clauses'] as unknown[]).map((item) => {
     const value = record(item)
-    return value && 'conjunction' in value
-      ? filter(value, true)
-      : value
-        ? clause(value)
-        : JSON.stringify(item)
+    if (!value) return JSON.stringify(item)
+    return 'conjunction' in value ? filter(value, true) : clause(value)
   })
   if (clauses.length === 0) return ALL_EVENTS
   if (clauses.length === 1) return clauses[0] ?? ''

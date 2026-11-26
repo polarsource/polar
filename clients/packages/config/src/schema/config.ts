@@ -20,10 +20,11 @@ import { deprecatedKey } from './deprecation'
 import type { Deprecated } from './deprecation'
 import {
   createEventReferences,
+  event,
   type EventDefinitions,
+  type EventHelpers,
   type EventReferences,
   type EventSchemas,
-  type ValidEvents,
 } from './event'
 import { meter, MeterConfig } from './meter'
 import { Currency } from './money'
@@ -410,9 +411,8 @@ export const defineConfig = <
   input: {
     /** Organization defaults, like the payment currency and tax behavior. */
     readonly settings?: SettingsConfig
-    /** The events your app sends, with a schema for each. Meters count them. */
-    readonly events?: Events &
-      (Events extends EventDefinitions ? ValidEvents<Events> : unknown)
+    /** The events your app sends, keyed by name. Meters count them. */
+    readonly events?: (helpers: EventHelpers) => Events
     /** What usage to measure, keyed by ID. */
     readonly meters: (helpers: {
       /** Filters and aggregates your events into usage. The name defaults to its key in `meters`. */
@@ -446,7 +446,7 @@ export const defineConfig = <
       }
     >,
 ): Config<Meters, Benefits, Events> => {
-  const events = input.events as Events
+  const events = input.events?.({ event }) as Events
   const entries = toEntries(
     input.meters({
       meter: meter<DeclaredEvents<Events>>,

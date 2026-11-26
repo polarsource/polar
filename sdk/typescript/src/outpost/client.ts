@@ -90,6 +90,7 @@ const OUTBOX_BATCH = 1000;
 const FLUSHERS = 32;
 const OUTBOX_CLAIM_IDLE = 60000;
 const FLUSHER_LOCK_TTL = 30000;
+const FLUSH_TENURE = 5000;
 const DRAIN_INTERVAL = 1000;
 const OUTBOX_RETRY_DELAY = 1000;
 const MAX_OUTBOX_RETRY_DELAY = 60000;
@@ -428,6 +429,7 @@ export class Outpost {
   private readonly telemetryBuffer = new TelemetryBuffer();
   private queued: { identity: string; done: () => void }[] = [];
   private fetchTimer?: ReturnType<typeof setTimeout>;
+  private fetchedPoll?: Promise<string | null>;
   private isConfigured = false;
   private prefix = KEY_VERSION;
   private telemetryTimer?: ReturnType<typeof setInterval>;
@@ -439,6 +441,8 @@ export class Outpost {
   private relaying?: Promise<void>;
   private releaseFlush?: () => void;
   private draining?: Promise<void>;
+  // When the drain in flight hands its slots over: never, unless a flush or a close waits on it.
+  private drainUntil = Infinity;
   private drainAgain = false;
   // This instance queued an event that no flusher was there to deliver: its next flush drains.
   private undrained = false;
@@ -573,7 +577,10 @@ export class Outpost {
     clearInterval(this.pullTimer);
     clearInterval(this.drainTimer);
     await this.inFlight();
-    if (this.delivers) await this.drain().catch(() => {});
+    if (this.delivers) {
+      this.limitDrain();
+      await this.drain().catch(() => {});
+    }
     const redis = this.redis;
     if (redis) this.event("outpost.redis.disconnect");
     const tracerProvider = this.tracerProvider;
@@ -724,6 +731,7 @@ export class Outpost {
     const released = new Promise<void>((resolve) => (this.releaseFlush = resolve));
     // Redis keeps what a drain fails to deliver: the next flush takes it. Without an event of its
     // own to deliver, a flush waits for the drain in flight, if any.
+    if (this.delivers && (this.undrained || this.draining)) this.limitDrain();
     const draining = !this.delivers
       ? undefined
       : (this.undrained ? this.drain() : this.draining)?.catch(() => {});
@@ -879,42 +887,46 @@ export class Outpost {
   }
 
   // Reads the customer's states from Redis. One Polar has no snapshot of yet is asked for once,
-  // then read again once the fleet's fetch of it ends.
+  // then read again each time the fleet ends a fetch.
   private async read(customer: string, reducers: Reducer[], statistics: string[]): Promise<Read[]> {
     const deadline = Date.now() + (this.options.snapshotTimeout ?? SNAPSHOT_TIMEOUT);
-    let reads = await this.load(customer, reducers, statistics);
+    let { reads, fetched } = await this.load(customer, reducers, statistics);
     // Polar sends no snapshot without a connection.
     if (!this.connected) return reads;
     // A state confirmed before the last reset serves the read while Polar confirms it again.
-    const fetched = Promise.all(
-      reducers.map((reducer, index) =>
-        isReady(reads[index]) && !this.isStale(reads[index])
-          ? undefined
-          : this.fetch(customer, reducer),
-      ),
-    );
-    if (reads.every(isReady)) return reads;
-    await waitAtMost(fetched, deadline - Date.now());
-    const markers = reducers
-      .filter((_, index) => !isReady(reads[index]))
-      .map((reducer) => this.fetchKey(`${customer}:${reducer.id}`));
+    reducers.forEach((reducer, index) => {
+      if (!isReady(reads[index]) || this.isStale(reads[index])) void this.fetch(customer, reducer);
+    });
     for (;;) {
-      const fetching = await this.requireRunning()
-        .exists(...markers)
-        .catch((error: unknown) => {
-          throw redisUnavailable(error);
-        });
-      if (!fetching || Date.now() >= deadline) {
-        reads = await this.load(customer, reducers, statistics);
-        if (reads.every(isReady) || Date.now() >= deadline) return reads;
-      }
-      await sleep(Math.min(POLL_INTERVAL, deadline - Date.now()));
+      if (reads.every(isReady) || Date.now() >= deadline) return reads;
+      let count = fetched;
+      while (count === fetched && Date.now() < deadline) count = await this.nextFetchedCount();
+      ({ reads, fetched } = await this.load(customer, reducers, statistics));
     }
   }
 
+  // The fleet counts the batches of cold customers it fetched. One look every POLL_INTERVAL,
+  // whatever the number of reads waiting on this instance.
+  private nextFetchedCount(): Promise<string | null> {
+    this.fetchedPoll ??= sleep(POLL_INTERVAL)
+      .then(() =>
+        this.requireRunning()
+          .hget(this.pullKey, "fetched")
+          .catch((error: unknown) => {
+            throw redisUnavailable(error);
+          }),
+      )
+      .finally(() => (this.fetchedPoll = undefined));
+    return this.fetchedPoll;
+  }
+
   // One command: each reducer's state, with only the statistics the read adds up, unless Polar
-  // does not know the customer.
-  private async load(customer: string, reducers: Reducer[], statistics: string[]): Promise<Read[]> {
+  // does not know the customer, and the fleet's fetch count.
+  private async load(
+    customer: string,
+    reducers: Reducer[],
+    statistics: string[],
+  ): Promise<{ reads: Read[]; fetched: string | null }> {
     const keys = reducers.flatMap((reducer) => {
       const identity = `${customer}:${reducer.id}`;
       return [`${this.prefix}:state:${identity}`, this.missingKey(identity)];
@@ -926,10 +938,11 @@ export class Outpost {
       });
     const resets = results[reducers.length] as string | null;
     this.resets = resets === null ? null : Number(resets);
-    return reducers.map((_, index) => {
+    const reads = reducers.map((_, index): Read => {
       const [retryAt, state] = results[index] as [string | null, string[]];
       return Number(retryAt) > Date.now() ? "missing" : decodeState(state);
     });
+    return { reads, fetched: results[reducers.length + 1] as string | null };
   }
 
   private isStale(read: Read): boolean {
@@ -1075,7 +1088,10 @@ export class Outpost {
       );
     } finally {
       await this.requireRedis()
+        .pipeline()
         .del(...identities.map((identity) => this.fetchKey(identity)))
+        .hincrby(this.pullKey, "fetched", 1)
+        .exec()
         .catch(() => {});
     }
   }
@@ -1119,8 +1135,16 @@ export class Outpost {
         });
       } while (this.drainAgain);
     };
-    this.draining = drain().finally(() => (this.draining = undefined));
+    this.draining = drain().finally(() => {
+      this.draining = undefined;
+      this.drainUntil = Infinity;
+    });
     return this.draining;
+  }
+
+  // The fleet's other instances keep writing: a drain a flush or a close waits on would never end.
+  private limitDrain(): void {
+    this.drainUntil = Math.min(this.drainUntil, Date.now() + FLUSH_TENURE);
   }
 
   private async drainOutbox(): Promise<void> {
@@ -1129,6 +1153,10 @@ export class Outpost {
       // The backoff a round delivered past: the next round's read ends it.
       let ended: string[] = [];
       for (let round = 0; ; round += 1) {
+        if (Date.now() >= this.drainUntil) {
+          this.undrained = true;
+          return;
+        }
         const [length, delivering, retryAt] = await redis.outpostOutboxBacklog(
           this.outboxKey,
           this.outboxBackoffKey,
@@ -1186,6 +1214,11 @@ export class Outpost {
         );
       for (let from = "0"; ; ) {
         if (from === ">") {
+          // Between two batches, the slot goes to the next instance that writes.
+          if (Date.now() >= this.drainUntil) {
+            this.undrained = true;
+            return "drained";
+          }
           const [length, delivering] = await redis.outpostOutboxBacklog(
             this.outboxKey,
             this.outboxBackoffKey,

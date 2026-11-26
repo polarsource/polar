@@ -26,6 +26,54 @@ const typed = (input: Terminal.UserInput) =>
     ? undefined
     : Option.getOrUndefined(input.input)
 
+interface Editing {
+  readonly chars: ReadonlyArray<string>
+  readonly caret: number
+  readonly before: ReadonlyArray<string>
+  readonly after: ReadonlyArray<string>
+}
+
+type Edit = (editing: Editing) => Field | undefined
+
+const toStart: Edit = ({ chars }) => at(chars, 0)
+
+const toEnd: Edit = ({ chars }) => at(chars, chars.length)
+
+const KEYS = new Map<string, Edit>([
+  [
+    'left',
+    ({ chars, caret }) => (caret === 0 ? undefined : at(chars, caret - 1)),
+  ],
+  [
+    'right',
+    ({ chars, caret }) =>
+      caret === chars.length ? undefined : at(chars, caret + 1),
+  ],
+  ['home', toStart],
+  ['end', toEnd],
+  [
+    'backspace',
+    ({ before, after, caret }) =>
+      caret === 0
+        ? undefined
+        : at([...before.slice(0, -1), ...after], caret - 1),
+  ],
+  [
+    'delete',
+    ({ chars, before, after, caret }) =>
+      caret === chars.length
+        ? undefined
+        : at([...before, ...after.slice(1)], caret),
+  ],
+])
+
+const CTRL_KEYS = new Map<string, Edit>([
+  ['a', toStart],
+  ['e', toEnd],
+  ['u', ({ after }) => at(after, 0)],
+  ['k', ({ before, caret }) => at(before, caret)],
+])
+
 export const editField = (
   field: Field,
   input: Terminal.UserInput,
@@ -35,24 +83,8 @@ export const editField = (
   const before = chars.slice(0, caret)
   const after = chars.slice(caret)
   const { name, ctrl } = input.key
-  if (name === 'left') return caret === 0 ? undefined : at(chars, caret - 1)
-  if (name === 'right') {
-    return caret === chars.length ? undefined : at(chars, caret + 1)
-  }
-  if (name === 'home' || (ctrl && name === 'a')) return at(chars, 0)
-  if (name === 'end' || (ctrl && name === 'e')) return at(chars, chars.length)
-  if (name === 'backspace') {
-    return caret === 0
-      ? undefined
-      : at([...before.slice(0, -1), ...after], caret - 1)
-  }
-  if (name === 'delete') {
-    return caret === chars.length
-      ? undefined
-      : at([...before, ...after.slice(1)], caret)
-  }
-  if (ctrl && name === 'u') return at(after, 0)
-  if (ctrl && name === 'k') return at(before, caret)
+  const edit = (ctrl ? CTRL_KEYS.get(name) : undefined) ?? KEYS.get(name)
+  if (edit) return edit({ chars, caret, before, after })
   const character = typed(input)
   if (character === undefined || /[\p{Cc}]/u.test(character)) return undefined
   const accepted = accept(character)

@@ -1046,7 +1046,6 @@ class TestProductTransferService:
                 duration_in_months=3,
             )
         discount.code = "SAVE"
-        discount.external_id = "save-discount"
         discount.user_metadata = {"campaign": "launch"}
         discount.max_redemptions = 8
         discount.max_redemptions_per_customer = 3
@@ -1140,7 +1139,6 @@ class TestProductTransferService:
         assert discount.organization_id == organization.id
         for attribute in (
             "code",
-            "external_id",
             "user_metadata",
             "type",
             "duration",

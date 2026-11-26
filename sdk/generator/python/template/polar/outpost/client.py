@@ -20,7 +20,7 @@ from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.trace import Span, StatusCode
 from opentelemetry.util.types import AttributeValue
-from redis.asyncio import Redis
+from redis.asyncio import BlockingConnectionPool, Redis
 from redis.asyncio.retry import Retry
 from redis.backoff import EqualJitterBackoff, NoBackoff
 from redis.commands.core import AsyncScript
@@ -266,14 +266,23 @@ def _is_transient_error(error: BaseException) -> bool:
     )
 
 
+# Connections one instance opens to Redis. Past them, a command waits for a free one, up to
+# TIMEOUT: a cold start runs more commands at once than the merchant's Redis should hold
+# connections.
+REDIS_CONNECTIONS = 32
+
+
 @contextlib.asynccontextmanager
 async def connect_redis(url: str) -> collections.abc.AsyncGenerator[Redis, None]:
-    async with Redis.from_url(
+    pool = BlockingConnectionPool.from_url(
         url,
+        max_connections=REDIS_CONNECTIONS,
+        timeout=TIMEOUT,
         retry=Retry(NoBackoff(), 0),
         socket_timeout=TIMEOUT,
         socket_connect_timeout=TIMEOUT,
-    ) as redis:
+    )
+    async with Redis.from_pool(pool) as redis:
         # A connection the server closes at once, as under a burst of new ones, is tried
         # again until the timeout.
         deadline = anyio.current_time() + TIMEOUT
@@ -302,6 +311,7 @@ OUTBOX_BATCH = {{ outpost_constants.outbox_batch }}
 FLUSHERS = {{ outpost_constants.flushers }}
 OUTBOX_CLAIM_IDLE = {{ outpost_constants.outbox_claim_idle / 1000 }}
 FLUSHER_LOCK_TTL = {{ outpost_constants.flusher_lock_ttl / 1000 }}
+FLUSH_TENURE = {{ outpost_constants.flush_tenure / 1000 }}
 DRAIN_INTERVAL = {{ outpost_constants.drain_interval / 1000 }}
 OUTBOX_RETRY_DELAY = {{ outpost_constants.outbox_retry_delay / 1000 }}
 MAX_OUTBOX_RETRY_DELAY = {{ outpost_constants.max_outbox_retry_delay / 1000 }}
@@ -514,6 +524,8 @@ class Outpost:
         self._requesting: dict[str, anyio.Event] = {}
         self._telemetry_buffer = TelemetryBuffer()
         self._queued: list[str] = []
+        self._fetched_poll: anyio.Event | None = None
+        self._fetched_count: bytes | str | None = None
         self._configured = anyio.Event()
         self._apply_snapshot: AsyncScript | None = None
         self._confirm_script: AsyncScript | None = None
@@ -521,6 +533,9 @@ class Outpost:
         self._outbox_backlog: AsyncScript | None = None
         # One drain at a time per instance; a flush during one asks for one more round.
         self._draining: anyio.Event | None = None
+        # When the drain in flight hands its slots over: never, unless a flush or a close
+        # waits on it.
+        self._drain_until = math.inf
         self._drain_again = False
         # This instance queued an event that no flusher was there to deliver: its next
         # flush drains.
@@ -640,7 +655,7 @@ class Outpost:
         try:
             try:
                 await self._in_flight()
-                await self._drain_outbox_quietly()
+                await self._drain_outbox_quietly(limited=True)
                 # Their last exports land in the buffer, which the shared Redis takes
                 # before it closes.
                 await self._shutdown_telemetry()
@@ -841,7 +856,7 @@ class Outpost:
             self._flushing[scope] = deadline
             try:
                 with anyio.fail_after(timeout):
-                    await self._drain_outbox_quietly()
+                    await self._drain_outbox_quietly(limited=True)
                 await self._in_flight(max(0.0, deadline - anyio.current_time()))
             finally:
                 del self._flushing[scope]
@@ -1051,43 +1066,46 @@ class Outpost:
         self, customer: str, reducers: list[Reducer], statistics: list[str]
     ) -> list[ReducerState | None]:
         """Reads the customer's states from Redis. One Polar has no snapshot of yet is
-        asked for once, then read again once the fleet's fetch of it ends."""
+        asked for once, then read again each time the fleet ends a fetch."""
         deadline = anyio.current_time() + self._snapshot_timeout
-        states = await self._load(customer, reducers, statistics)
+        states, fetched = await self._load(customer, reducers, statistics)
         # Polar sends no snapshot without a connection.
         if not self.connected:
             return states
         # A state confirmed before the last reset serves the read while Polar confirms
         # it again.
-        fetches = [
-            self._fetch(customer, reducer)
-            for reducer, state in zip(reducers, states, strict=True)
-            if not _is_ready(state) or self._is_stale(state)
-        ]
-        if all(map(_is_ready, states)):
-            return states
-        with anyio.move_on_after(deadline - anyio.current_time()):
-            for fetched in fetches:
-                await fetched.wait()
-        markers = [
-            self._fetch_key(f"{customer}:{reducer['id']}")
-            for reducer, state in zip(reducers, states, strict=True)
-            if not _is_ready(state)
-        ]
-        redis = self._require_redis()
-        while True:
-            fetching = await redis.exists(*markers)
-            if not fetching or anyio.current_time() >= deadline:
-                states = await self._load(customer, reducers, statistics)
-                if all(map(_is_ready, states)) or anyio.current_time() >= deadline:
-                    return states
-            await anyio.sleep(min(POLL_INTERVAL, deadline - anyio.current_time()))
+        for reducer, state in zip(reducers, states, strict=True):
+            if not _is_ready(state) or self._is_stale(state):
+                self._fetch(customer, reducer)
+        while not all(map(_is_ready, states)) and anyio.current_time() < deadline:
+            count = fetched
+            while count == fetched and anyio.current_time() < deadline:
+                count = await self._next_fetched_count()
+            states, fetched = await self._load(customer, reducers, statistics)
+        return states
+
+    async def _next_fetched_count(self) -> bytes | str | None:
+        """The fleet counts the batches of cold customers it fetched. One look every
+        POLL_INTERVAL, whatever the number of reads waiting on this instance."""
+        if self._fetched_poll is not None:
+            await self._fetched_poll.wait()
+            return self._fetched_count
+        self._fetched_poll = polled = anyio.Event()
+        try:
+            await anyio.sleep(POLL_INTERVAL)
+            self._fetched_count = await self._require_running().hget(
+                self._pull_key, "fetched"
+            )
+        finally:
+            self._fetched_poll = None
+            polled.set()
+        return self._fetched_count
 
     async def _load(
         self, customer: str, reducers: list[Reducer], statistics: list[str]
-    ) -> list[ReducerState | None]:
+    ) -> tuple[list[ReducerState | None], bytes | str | None]:
         """One command: each reducer's state, with only the statistics the read adds
-        up, unless Polar does not know the customer."""
+        up, unless Polar does not know the customer, and the fleet's fetch count."""
         redis = self._require_running()
         keys = [self._pull_key]
         for reducer in reducers:
@@ -1101,13 +1119,15 @@ class Outpost:
             results = await redis.evalsha(READ_STATES_SHA, len(keys), *keys, *statistics)
         except NoScriptError:
             results = await redis.eval(READ_STATES_SCRIPT, len(keys), *keys, *statistics)
+        fetched = results.pop()
         resets = results.pop()
         self._resets = None if resets is None else int(resets)
         now = time.time() * 1000
-        return [
+        states = [
             None if retry_at and float(retry_at) > now else decode_state(state)
             for retry_at, state in results
         ]
+        return states, fetched
 
     def _is_stale(self, state: ReducerState | None) -> bool:
         return state is not None and state.confirmed_after_resets != self._resets
@@ -1282,9 +1302,10 @@ class Outpost:
                     group.start_soon(apply, snapshot)
         finally:
             with contextlib.suppress(RedisError):
-                await redis.delete(
-                    *(self._fetch_key(identity) for identity in identities)
-                )
+                async with redis.pipeline(transaction=False) as pipeline:
+                    pipeline.delete(*(self._fetch_key(identity) for identity in identities))
+                    pipeline.hincrby(self._pull_key, "fetched", 1)
+                    await pipeline.execute()
 
     async def _in_flight(self, timeout: float = 30.0) -> None:
         with anyio.fail_after(timeout):
@@ -1308,11 +1329,13 @@ class Outpost:
             if "BUSYGROUP" not in str(error):
                 raise
 
-    async def _drain_outbox_quietly(self) -> None:
+    async def _drain_outbox_quietly(self, *, limited: bool = False) -> None:
         """Redis keeps what a drain fails to deliver: the next flush takes it. Without an
         event of its own to deliver, a flush waits for the drain in flight, if any."""
         if self._redis is None or self._failure is not None:
             return
+        if limited:
+            self._limit_drain()
         if self._undrained:
             await self._drain()
         elif self._draining is not None:
@@ -1343,7 +1366,16 @@ class Outpost:
             self._undrained = True
         finally:
             self._draining = None
+            self._drain_until = math.inf
             done.set()
+
+    def _limit_drain(self) -> None:
+        """The fleet's other instances keep writing: a drain a flush or a close waits on
+        would never end."""
+        if self._undrained or self._draining is not None:
+            self._drain_until = min(
+                self._drain_until, anyio.current_time() + FLUSH_TENURE
+            )
 
     async def _drain_on_time(self) -> None:
         """A long-running process delivers what it queued without a flush."""
@@ -1363,6 +1395,9 @@ class Outpost:
         ended: list[bytes] = []
         try:
             while True:
+                if anyio.current_time() >= self._drain_until:
+                    self._undrained = True
+                    return
                 length, delivering, retry_at = await self._outbox_backlog(
                     keys=[self._outbox_key, self._outbox_backoff_key],
                     args=[OUTBOX_GROUP, *ended],
@@ -1428,6 +1463,11 @@ class Outpost:
             start = "0"
             while True:
                 if start == ">":
+                    # Between two batches, the slot goes to the next instance that
+                    # writes.
+                    if anyio.current_time() >= self._drain_until:
+                        self._undrained = True
+                        return "drained"
                     assert self._outbox_backlog is not None
                     length, delivering, _ = await self._outbox_backlog(
                         keys=[self._outbox_key, self._outbox_backoff_key],

@@ -1639,7 +1639,9 @@
                     "pages": [
                       "GET /v1/customer-portal/orders/{id}",
                       "PATCH /v1/customer-portal/orders/{id}",
+                      "PATCH /v1/customer-portal/orders/{id}/pay",
                       "GET /v1/customer-portal/orders/",
+                      "POST /v1/customer-portal/orders/",
                       "POST /v1/customer-portal/orders/{id}/invoice",
                       "GET /v1/customer-portal/orders/{id}/invoice",
                       "GET /v1/customer-portal/orders/{id}/receipt"

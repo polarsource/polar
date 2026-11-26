@@ -18,6 +18,8 @@ const isSupportedKey = (key: unknown): key is keyof typeof ACTIONS => {
 
 const emitter = new EventEmitter()
 
+const NON_RETRYABLE_STATUSES = new Set([401, 403, 404])
+
 const useSSE = (
   streamURL: string,
   token?: string,
@@ -48,6 +50,11 @@ const useSSE = (
         }
 
         emitter.emit(data.key, data.payload)
+      },
+      onResponseError: ({ response }) => {
+        if (NON_RETRYABLE_STATUSES.has(response.status)) {
+          controller.abort()
+        }
       },
     })
 

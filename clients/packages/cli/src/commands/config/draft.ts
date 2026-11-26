@@ -1,5 +1,9 @@
 import { Duration, Effect, Option } from 'effect'
 import { Command, Flag, Prompt } from 'effect/cli'
+import {
+  catalogNameConflict,
+  draftConflicts,
+} from '@/utils/billing-config/conflicts'
 import { changeCount, tally } from '@/utils/billing-config/entries'
 import { plural } from '@/utils/billing-config/problems'
 import {
@@ -9,6 +13,8 @@ import {
   next,
   nextOpen,
   overview,
+  conflictNext,
+  conflictSection,
   sections,
   target,
   unchanged,
@@ -40,6 +46,13 @@ const name = Flag.String('name').pipe(
   ),
 )
 
+const force = Flag.Boolean('force').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription(
+    'Save even when the draft on Polar has changes that are not in the file, discarding them',
+  ),
+)
+
 const applied = (
   config: LoadedConfig,
   organization: ActiveOrganization,
@@ -54,23 +67,23 @@ const render = (
   organization: ActiveOrganization,
   result: ApplyResult,
   revertedDraft: boolean,
-) =>
-  result.status === 'rejected'
-    ? [ui.blank]
-    : [
-        ...(unchanged(result.entries) ? [ui.blank] : []),
-        revertedDraft
-          ? ui.success(
-              `Changes that are no longer in ${config.file} were removed from the draft of ${target(organization)}`,
-            )
-          : applied(config, organization, result.entries),
-        ...(result.draft
-          ? next(
-              `${ui.INDENT}Products, benefits, meters and settings are saved to the draft catalog.\n${ui.INDENT}Run ${ui.command('polar config publish')} to make it live.`,
-            )
-          : []),
-        ui.blank,
-      ]
+) => {
+  if (result.status !== 'applied') return [ui.blank]
+  return [
+    ...(unchanged(result.entries) ? [ui.blank] : []),
+    revertedDraft
+      ? ui.success(
+          `Changes that are no longer in ${config.file} were removed from the draft of ${target(organization)}`,
+        )
+      : applied(config, organization, result.entries),
+    ...(result.draft
+      ? next(
+          `${ui.INDENT}Products, benefits, meters and settings are saved to the draft catalog.\n${ui.INDENT}Run ${ui.command('polar config publish')} to make it live.`,
+        )
+      : []),
+    ui.blank,
+  ]
+}
 
 const approve = (
   config: LoadedConfig,
@@ -119,16 +132,25 @@ const compare = (
     const billing = yield* BillingConfig
     const organization = yield* (yield* Organizations).resolve(org)
     const againstLive = yield* billing.plan(config, organization, { name })
-    if (!unchanged(againstLive.entries) || errors(againstLive.issues) > 0) {
-      return { organization, plan: againstLive }
-    }
+    const compared = (
+      plan: PlanResult,
+      conflicts: ReadonlyArray<AppliedEntry> = [],
+    ) => ({ organization, plan, conflicts })
+    if (errors(againstLive.issues) > 0) return compared(againstLive)
     const { draft } = yield* billing.catalogs(organization)
-    if (draft === null) return { organization, plan: againstLive }
+    if (draft === null) return compared(againstLive)
     const againstDraft = yield* billing.plan(config, organization, {
       name,
       catalogId: draft.id,
     })
-    return { organization, plan: againstDraft }
+    if (errors(againstDraft.issues) > 0) return compared(againstDraft)
+    return compared(
+      unchanged(againstLive.entries) ? againstDraft : againstLive,
+      [
+        ...draftConflicts(againstLive.entries, againstDraft.entries),
+        ...catalogNameConflict(againstLive.catalog, draft),
+      ],
+    )
   })
 
 const preflight = (
@@ -176,11 +198,12 @@ const execute = (
   org: string | undefined,
   name: string | undefined,
   confirmed: boolean,
+  force: boolean,
   say: Say['say'],
 ) =>
   Effect.gen(function* () {
     const { json } = yield* Output
-    const { config, organization, plan } = yield* preflight(
+    const { config, organization, plan, conflicts } = yield* preflight(
       progress,
       file,
       org,
@@ -199,6 +222,19 @@ const execute = (
         ...next(fixErrors(plan.issues)),
       ])
       return outcome({ status: 'rejected', issues: plan.issues })
+    }
+    if (conflicts.length > 0) {
+      yield* say(
+        conflictSection(
+          config,
+          conflicts,
+          force ? 'Discarding from the draft' : undefined,
+        ),
+      )
+      if (!force) {
+        yield* say(conflictNext(config.file))
+        return outcome({ status: 'conflict', conflicts })
+      }
     }
     if (unchanged(plan.entries)) {
       if (plan.issues.length > 0) yield* say(sections(config, plan))
@@ -220,7 +256,13 @@ const execute = (
       : outcome(result)
   })
 
-export const draft = Command.make('draft', { file, org, confirmed, name }).pipe(
+export const draft = Command.make('draft', {
+  file,
+  org,
+  confirmed,
+  name,
+  force,
+}).pipe(
   Command.withDescription(
     'Save a billing config file to the draft catalog of your organization. Nothing changes for customers until you publish it',
   ),
@@ -247,13 +289,18 @@ export const draft = Command.make('draft', { file, org, confirmed, name }).pipe(
       description: 'Name the draft catalog version',
     },
     {
+      command: 'polar config draft --force',
+      description:
+        'Save the file even when the draft has changes that are not in it',
+    },
+    {
       command: 'polar config draft --confirm --json',
       description: 'Print what was saved as JSON, for scripts and agents',
     },
   ]),
   output({
     result: ApplyOutput,
-    run: ({ file, org, confirmed, name }, { say }) =>
+    run: ({ file, org, confirmed, name, force }, { say }) =>
       withProgress(
         (progress) =>
           execute(
@@ -262,6 +309,7 @@ export const draft = Command.make('draft', { file, org, confirmed, name }).pipe(
             Option.getOrUndefined(org),
             Option.getOrUndefined(name),
             confirmed,
+            force,
             say,
           ),
         'columns',
@@ -269,9 +317,19 @@ export const draft = Command.make('draft', { file, org, confirmed, name }).pipe(
     render: ({ config, organization, result, revertedDraft }) =>
       render(config, organization, result, revertedDraft),
     json: ({ config, result }) => ({ file: config.file, ...result }),
-    failed: ({ config, result }) =>
-      result.status === 'rejected'
-        ? new BillingConfigError({ message: `${config.file} was not saved` })
-        : undefined,
+    failed: ({ config, organization, result }) => {
+      if (result.status === 'rejected') {
+        return new BillingConfigError({
+          message: `${config.file} was not saved`,
+        })
+      }
+      if (result.status === 'conflict') {
+        return new BillingConfigError({
+          message: `The draft of ${target(organization)} has changes that are not in ${config.file}`,
+          hint: 'Run polar config reset to replace the file with the draft, or polar config draft --force to replace the draft with the file.',
+        })
+      }
+      return undefined
+    },
   }),
 )

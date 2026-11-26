@@ -55,6 +55,7 @@ export const listSubscriptions = (client: ClientBase) => {
       canceled_at_before?: string | null;
       started_after?: string | null;
       started_before?: string | null;
+      query?: string | null;
       page?: number;
       limit?: number;
       sorting?: SubscriptionSortProperty[] | null;
@@ -78,6 +79,7 @@ export const listSubscriptions = (client: ClientBase) => {
       canceled_at_before: query?.canceled_at_before,
       started_after: query?.started_after,
       started_before: query?.started_before,
+      query: query?.query,
       page: query?.page ?? 1,
       limit: query?.limit ?? 10,
       sorting: query?.sorting ?? ["-started_at"],
@@ -129,6 +131,7 @@ export const iterListSubscriptions = (client: ClientBase) => {
       canceled_at_before?: string | null;
       started_after?: string | null;
       started_before?: string | null;
+      query?: string | null;
       page?: number;
       limit?: number;
       sorting?: SubscriptionSortProperty[] | null;

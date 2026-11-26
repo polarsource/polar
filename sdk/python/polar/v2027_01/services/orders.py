@@ -55,6 +55,7 @@ class OrdersSync(SyncServiceBase):
         checkout_id: str | builtins.list[str] | None = None,
         subscription_id: str | builtins.list[str] | None = None,
         status: OrderStatus | builtins.list[OrderStatus] | None = None,
+        query: str | None = None,
         created_after: str | None = None,
         created_before: str | None = None,
         page: int = 1,
@@ -80,6 +81,7 @@ class OrdersSync(SyncServiceBase):
             checkout_id: Filter by checkout ID.
             subscription_id: Filter by subscription ID.
             status: Filter by order status.
+            query: Filter by customer name, email or external ID, invoice number, or an order, customer, subscription or checkout ID.
             created_after: Only include orders created after this date
             created_before: Only include orders created before this date
             page: Page number, defaults to 1.
@@ -111,6 +113,7 @@ class OrdersSync(SyncServiceBase):
                 "checkout_id": checkout_id,
                 "subscription_id": subscription_id,
                 "status": status,
+                "query": query,
                 "created_after": created_after,
                 "created_before": created_before,
                 "page": page,
@@ -142,6 +145,7 @@ class OrdersSync(SyncServiceBase):
         checkout_id: str | builtins.list[str] | None = None,
         subscription_id: str | builtins.list[str] | None = None,
         status: OrderStatus | builtins.list[OrderStatus] | None = None,
+        query: str | None = None,
         created_after: str | None = None,
         created_before: str | None = None,
         page: int = 1,
@@ -167,6 +171,7 @@ class OrdersSync(SyncServiceBase):
             checkout_id: Filter by checkout ID.
             subscription_id: Filter by subscription ID.
             status: Filter by order status.
+            query: Filter by customer name, email or external ID, invoice number, or an order, customer, subscription or checkout ID.
             created_after: Only include orders created after this date
             created_before: Only include orders created before this date
             page: Page number, defaults to 1.
@@ -198,6 +203,7 @@ class OrdersSync(SyncServiceBase):
                 checkout_id=checkout_id,
                 subscription_id=subscription_id,
                 status=status,
+                query=query,
                 created_after=created_after,
                 created_before=created_before,
                 page=page,
@@ -605,6 +611,7 @@ class OrdersAsync(AsyncServiceBase):
         checkout_id: str | builtins.list[str] | None = None,
         subscription_id: str | builtins.list[str] | None = None,
         status: OrderStatus | builtins.list[OrderStatus] | None = None,
+        query: str | None = None,
         created_after: str | None = None,
         created_before: str | None = None,
         page: int = 1,
@@ -630,6 +637,7 @@ class OrdersAsync(AsyncServiceBase):
             checkout_id: Filter by checkout ID.
             subscription_id: Filter by subscription ID.
             status: Filter by order status.
+            query: Filter by customer name, email or external ID, invoice number, or an order, customer, subscription or checkout ID.
             created_after: Only include orders created after this date
             created_before: Only include orders created before this date
             page: Page number, defaults to 1.
@@ -661,6 +669,7 @@ class OrdersAsync(AsyncServiceBase):
                 "checkout_id": checkout_id,
                 "subscription_id": subscription_id,
                 "status": status,
+                "query": query,
                 "created_after": created_after,
                 "created_before": created_before,
                 "page": page,
@@ -692,6 +701,7 @@ class OrdersAsync(AsyncServiceBase):
         checkout_id: str | builtins.list[str] | None = None,
         subscription_id: str | builtins.list[str] | None = None,
         status: OrderStatus | builtins.list[OrderStatus] | None = None,
+        query: str | None = None,
         created_after: str | None = None,
         created_before: str | None = None,
         page: int = 1,
@@ -717,6 +727,7 @@ class OrdersAsync(AsyncServiceBase):
             checkout_id: Filter by checkout ID.
             subscription_id: Filter by subscription ID.
             status: Filter by order status.
+            query: Filter by customer name, email or external ID, invoice number, or an order, customer, subscription or checkout ID.
             created_after: Only include orders created after this date
             created_before: Only include orders created before this date
             page: Page number, defaults to 1.
@@ -748,6 +759,7 @@ class OrdersAsync(AsyncServiceBase):
                 checkout_id=checkout_id,
                 subscription_id=subscription_id,
                 status=status,
+                query=query,
                 created_after=created_after,
                 created_before=created_before,
                 page=page,

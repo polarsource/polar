@@ -39,8 +39,10 @@ const FILTERED_HINT =
 const FILTER_HINT =
   'type to filter · ↑↓ move · enter edit row · esc stop filtering'
 
-const hint = (state: State) =>
-  state.filtering ? FILTER_HINT : state.query === '' ? HINT : FILTERED_HINT
+const hint = (state: State) => {
+  if (state.filtering) return FILTER_HINT
+  return state.query === '' ? HINT : FILTERED_HINT
+}
 
 const visibleRows = (options: TableOptions, state: State) => {
   const query = state.query.trim().toLowerCase()
@@ -117,6 +119,14 @@ const rowLine = (
   return `${ui.INDENT}${pointer} ${focused ? label : ui.dim(label)}  ${valueText}${problem}`
 }
 
+const filterLine = (state: State) => {
+  const label = `${ui.INDENT}  ${ui.dim('filter')}`
+  if (state.filtering) {
+    return `${label} ${renderField({ text: state.query, back: state.back }, state.columns)}`
+  }
+  return state.query === '' ? '' : `${label} ${state.query}`
+}
+
 const frame = (options: TableOptions, state: State) => {
   const visible = visibleRows(options, state)
   const errors = options.validate(state.values)
@@ -140,9 +150,7 @@ const frame = (options: TableOptions, state: State) => {
   return [
     `${ui.INDENT}${ui.cyan('?')} ${ui.bold(options.message)}`,
     ui.step(hint(state)),
-    state.filtering || state.query !== ''
-      ? `${ui.INDENT}  ${ui.dim('filter')} ${state.filtering ? renderField({ text: state.query, back: state.back }, state.columns) : state.query}`
-      : '',
+    filterLine(state),
     ui.dim(header),
     ...page.map((index, position) =>
       rowLine(
@@ -161,33 +169,115 @@ const frame = (options: TableOptions, state: State) => {
   ].map((text) => line(text, state.columns))
 }
 
+type Result = Effect.Effect<Prompt.Action<State, ReadonlyArray<string>>>
+
+const actionsFor = (options: TableOptions, state: State) => {
+  const next = (patch: Partial<State>): Result =>
+    Effect.succeed(
+      Action.NextFrame({
+        state: scrolled(
+          { ...state, ...patch },
+          visibleRows(options, { ...state, ...patch }).length,
+        ),
+      }),
+    )
+  const edit = (index: number, patch: Partial<State>) => {
+    const pinned = { ...state, ...patch, pinned: index }
+    return next({
+      ...patch,
+      pinned: index,
+      cursor: visibleRows(options, pinned).indexOf(index),
+    })
+  }
+  const beep: Result = Effect.succeed(Action.Beep())
+  return { next, edit, beep }
+}
+
+type Actions = ReturnType<typeof actionsFor>
+
+const confirm = (
+  options: TableOptions,
+  state: State,
+  { next, beep }: Actions,
+): Result => {
+  if (state.filtering) return next({ filtering: false, back: 0 })
+  const errors = options.validate(state.values)
+  if (state.query !== '') {
+    const index = visibleRows(options, state)[state.cursor]
+    return index !== undefined && errors[index] !== undefined
+      ? beep
+      : next({ filtering: true, back: 0 })
+  }
+  return errors.every((error) => error === undefined)
+    ? Effect.succeed(Action.Submit({ value: state.values }))
+    : beep
+}
+
+const cancel = (
+  options: TableOptions,
+  state: State,
+  { next, edit, beep }: Actions,
+): Result => {
+  if (state.filtering) {
+    return next({
+      filtering: false,
+      query: '',
+      pinned: undefined,
+      cursor: 0,
+      top: 0,
+      back: 0,
+    })
+  }
+  const index = visibleRows(options, state)[state.cursor]
+  if (index === undefined) return beep
+  const values = [...state.values]
+  values[index] = options.rows[index]!.value
+  return edit(index, { values, back: 0 })
+}
+
+const typeInFilter = (
+  state: State,
+  input: Terminal.UserInput,
+  { next, beep }: Actions,
+): Result => {
+  const field = editField({ text: state.query, back: state.back }, input)
+  if (field === undefined) return beep
+  return field.text === state.query
+    ? next({ back: field.back })
+    : next({
+        query: field.text,
+        pinned: undefined,
+        back: field.back,
+        cursor: 0,
+        top: 0,
+      })
+}
+
+const typeInRow = (
+  options: TableOptions,
+  state: State,
+  input: Terminal.UserInput,
+  { edit, beep }: Actions,
+): Result => {
+  const index = visibleRows(options, state)[state.cursor]
+  if (index === undefined) return beep
+  const field = editField(
+    { text: state.values[index]!, back: state.back },
+    input,
+    options.accept,
+  )
+  if (field === undefined) return beep
+  const values = [...state.values]
+  values[index] = field.text
+  return edit(index, { values, back: field.back })
+}
+
 export const process =
   (options: TableOptions) =>
-  (
-    input: Terminal.UserInput,
-    state: State,
-  ): Effect.Effect<Prompt.Action<State, ReadonlyArray<string>>> => {
-    const count = visibleRows(options, state).length
-    const next = (patch: Partial<State>) =>
-      Effect.succeed(
-        Action.NextFrame({
-          state: scrolled(
-            { ...state, ...patch },
-            visibleRows(options, { ...state, ...patch }).length,
-          ),
-        }),
-      )
-    const beep = Effect.succeed(Action.Beep())
-    const edit = (index: number, patch: Partial<State>) => {
-      const pinned = { ...state, ...patch, pinned: index }
-      return next({
-        ...patch,
-        pinned: index,
-        cursor: visibleRows(options, pinned).indexOf(index),
-      })
-    }
+  (input: Terminal.UserInput, state: State): Result => {
+    const actions = actionsFor(options, state)
     const move = (cursor: number) =>
-      next(state.filtering ? { cursor } : { cursor, back: 0 })
+      actions.next(state.filtering ? { cursor } : { cursor, back: 0 })
     switch (input.key.name) {
       case 'up':
         return move(state.cursor - 1)
@@ -198,65 +288,17 @@ export const process =
       case 'pagedown':
         return move(state.cursor + state.height)
       case 'return':
-      case 'enter': {
-        if (state.filtering) return next({ filtering: false, back: 0 })
-        const errors = options.validate(state.values)
-        if (state.query !== '') {
-          const index = visibleRows(options, state)[state.cursor]
-          return index !== undefined && errors[index] !== undefined
-            ? beep
-            : next({ filtering: true, back: 0 })
-        }
-        const valid = errors.every((error) => error === undefined)
-        return valid
-          ? Effect.succeed(Action.Submit({ value: state.values }))
-          : beep
-      }
-      case 'escape': {
-        if (state.filtering) {
-          return next({
-            filtering: false,
-            query: '',
-            pinned: undefined,
-            cursor: 0,
-            top: 0,
-            back: 0,
-          })
-        }
-        if (count === 0) return beep
-        const index = visibleRows(options, state)[state.cursor]!
-        const values = [...state.values]
-        values[index] = options.rows[index]!.value
-        return edit(index, { values, back: 0 })
-      }
+      case 'enter':
+        return confirm(options, state, actions)
+      case 'escape':
+        return cancel(options, state, actions)
     }
     if (input.key.ctrl && input.key.name === 'f') {
-      return next({ filtering: !state.filtering, back: 0 })
+      return actions.next({ filtering: !state.filtering, back: 0 })
     }
-    if (state.filtering) {
-      const field = editField({ text: state.query, back: state.back }, input)
-      if (field === undefined) return beep
-      return field.text === state.query
-        ? next({ back: field.back })
-        : next({
-            query: field.text,
-            pinned: undefined,
-            back: field.back,
-            cursor: 0,
-            top: 0,
-          })
-    }
-    if (count === 0) return beep
-    const index = visibleRows(options, state)[state.cursor]!
-    const field = editField(
-      { text: state.values[index]!, back: state.back },
-      input,
-      options.accept,
-    )
-    if (field === undefined) return beep
-    const values = [...state.values]
-    values[index] = field.text
-    return edit(index, { values, back: field.back })
+    return state.filtering
+      ? typeInFilter(state, input, actions)
+      : typeInRow(options, state, input, actions)
   }
 
 const initial = (options: TableOptions) =>
@@ -277,17 +319,20 @@ const initial = (options: TableOptions) =>
     } satisfies State
   })
 
+const shown = (
+  options: TableOptions,
+  state: State,
+  action: Prompt.Action<State, ReadonlyArray<string>>,
+) => {
+  if (action._tag === 'Beep') return ''
+  if (action._tag === 'Submit') return `${ui.success(options.message)}\n`
+  return ui.hideCursor + frame(options, state).join('\n')
+}
+
 export const editTable = (options: TableOptions) =>
   Prompt.run(
     Prompt.Custom<State, ReadonlyArray<string>>(initial(options), {
-      render: (state, action) =>
-        Effect.succeed(
-          action._tag === 'Beep'
-            ? ''
-            : action._tag === 'Submit'
-              ? `${ui.success(options.message)}\n`
-              : ui.hideCursor + frame(options, state).join('\n'),
-        ),
+      render: (state, action) => Effect.succeed(shown(options, state, action)),
       process: process(options),
       clear: (state) =>
         Effect.succeed(ui.clearLines(frame(options, state).length)),

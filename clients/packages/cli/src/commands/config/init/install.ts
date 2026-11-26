@@ -12,14 +12,13 @@ const confirmInstall = (
   command: ReadonlyArray<string>,
   prompt: boolean,
   skip: boolean,
-) =>
-  skip
-    ? Effect.succeed(false)
-    : prompt
-      ? confirm(
-          `Install ${packageOf(command)} with ${ui.command(command.join(' '))} now?`,
-        )
-      : Effect.succeed(true)
+) => {
+  if (skip) return Effect.succeed(false)
+  if (!prompt) return Effect.succeed(true)
+  return confirm(
+    `Install ${packageOf(command)} with ${ui.command(command.join(' '))} now?`,
+  )
+}
 
 export const installPackage = (
   run: Run,

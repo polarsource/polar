@@ -59,6 +59,9 @@ from polar.v2027_01.outputs import (
     InactiveSubscription as InactiveSubscriptionModel,
 )
 from polar.v2027_01.outputs import (
+    ManualRetryLimitExceeded as ManualRetryLimitExceededModel,
+)
+from polar.v2027_01.outputs import (
     MissingBillingDetails as MissingBillingDetailsModel,
 )
 from polar.v2027_01.outputs import (
@@ -80,6 +83,9 @@ from polar.v2027_01.outputs import (
     OrderNotEligibleForInvoice as OrderNotEligibleForInvoiceModel,
 )
 from polar.v2027_01.outputs import (
+    OrderNotEligibleForRetry as OrderNotEligibleForRetryModel,
+)
+from polar.v2027_01.outputs import (
     OrganizationNotReadyForPayments as OrganizationNotReadyForPaymentsModel,
 )
 from polar.v2027_01.outputs import (
@@ -87,6 +93,12 @@ from polar.v2027_01.outputs import (
 )
 from polar.v2027_01.outputs import (
     PaymentActionRequired as PaymentActionRequiredModel,
+)
+from polar.v2027_01.outputs import (
+    PaymentAlreadyInProgress as PaymentAlreadyInProgressModel,
+)
+from polar.v2027_01.outputs import (
+    PaymentError as PaymentErrorModel,
 )
 from polar.v2027_01.outputs import (
     PaymentFailed as PaymentFailedModel,
@@ -505,6 +517,37 @@ class CustomerPortalMembersUpdateMember404Error(PolarClientError):
     error: None
 
     def __init__(self, status_code: int, error: None) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class PaymentError(PolarClientError):
+    error_type = PaymentErrorModel
+    error: PaymentErrorModel
+
+    def __init__(self, status_code: int, error: PaymentErrorModel) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class CustomerPortalOrdersPay409Error(PolarClientError):
+    error_type = OrderNotEligibleForRetryModel | PaymentAlreadyInProgressModel
+    error: OrderNotEligibleForRetryModel | PaymentAlreadyInProgressModel
+
+    def __init__(
+        self,
+        status_code: int,
+        error: OrderNotEligibleForRetryModel | PaymentAlreadyInProgressModel,
+    ) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class ManualRetryLimitExceeded(PolarClientError):
+    error_type = ManualRetryLimitExceededModel
+    error: ManualRetryLimitExceededModel
+
+    def __init__(self, status_code: int, error: ManualRetryLimitExceededModel) -> None:
         self.error = error
         super().__init__(status_code, error)
 

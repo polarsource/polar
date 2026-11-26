@@ -78,17 +78,15 @@ export const renderEvent = (
   }
 }
 
+const withScheme = (value: string) => {
+  if (/^\d+(\/|$)/.test(value)) return `http://localhost:${value}`
+  if (value.startsWith(':')) return `http://localhost${value}`
+  return /^[a-z][a-z\d+.-]*:\/\//i.test(value) ? value : `http://${value}`
+}
+
 export const forwardTarget = (input: string): URL | undefined => {
-  const value = input.trim()
-  const expanded = /^\d+(\/|$)/.test(value)
-    ? `http://localhost:${value}`
-    : value.startsWith(':')
-      ? `http://localhost${value}`
-      : /^[a-z][a-z\d+.-]*:\/\//i.test(value)
-        ? value
-        : `http://${value}`
   try {
-    const url = new URL(expanded)
+    const url = new URL(withScheme(input.trim()))
     return url.protocol === 'http:' || url.protocol === 'https:'
       ? url
       : undefined
@@ -99,12 +97,10 @@ export const forwardTarget = (input: string): URL | undefined => {
 
 type TargetStatus = 'answering' | 'refused' | 'unknownHost' | 'unknown'
 
-const statusOfError = (code: string | undefined): TargetStatus =>
-  code === 'ECONNREFUSED'
-    ? 'refused'
-    : code === 'ENOTFOUND'
-      ? 'unknownHost'
-      : 'unknown'
+const statusOfError = (code: string | undefined): TargetStatus => {
+  if (code === 'ECONNREFUSED') return 'refused'
+  return code === 'ENOTFOUND' ? 'unknownHost' : 'unknown'
+}
 
 export const probeTarget = (url: URL) =>
   Effect.callback<TargetStatus>((resume) => {

@@ -60,11 +60,7 @@ const issue = (
   const path = tag ? [...loc, tag.key] : loc
   const raw = tag ? tag.value : error.input
   const got =
-    error.type === 'missing'
-      ? undefined
-      : supplied(config, path, raw)
-        ? raw
-        : undefined
+    error.type !== 'missing' && supplied(config, path, raw) ? raw : undefined
   return {
     severity: error.severity ?? 'error',
     code: error.type,

@@ -50,6 +50,7 @@ export const listOrders = (client: ClientBase) => {
       checkout_id?: string | string[] | null;
       subscription_id?: string | string[] | null;
       status?: OrderStatus | OrderStatus[] | null;
+      query?: string | null;
       created_after?: string | null;
       created_before?: string | null;
       page?: number;
@@ -71,6 +72,7 @@ export const listOrders = (client: ClientBase) => {
       checkout_id: query?.checkout_id,
       subscription_id: query?.subscription_id,
       status: query?.status,
+      query: query?.query,
       created_after: query?.created_after,
       created_before: query?.created_before,
       page: query?.page ?? 1,
@@ -111,6 +113,7 @@ export const iterListOrders = (client: ClientBase) => {
       checkout_id?: string | string[] | null;
       subscription_id?: string | string[] | null;
       status?: OrderStatus | OrderStatus[] | null;
+      query?: string | null;
       created_after?: string | null;
       created_before?: string | null;
       page?: number;

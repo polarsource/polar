@@ -2427,6 +2427,8 @@ export interface paths {
      *     method. The order is created with `status=draft` and no invoice number;
      *     call `POST /v1/orders/{id}/finalize` to attempt the charge.
      *
+     *     Reference the customer and the product both by Polar ID or both by external ID.
+     *
      *     The organization must have the `off_session_charges_enabled` feature flag.
      *
      *     **Scopes**: `orders:write`
@@ -18580,6 +18582,10 @@ export interface components {
     ConfigSettings: {
       /** @description Payment settings. Left untouched when omitted. */
       payments?: components['schemas']['ConfigSettingsPayments'] | null
+      /** @description Subscription settings. Left untouched when omitted. */
+      subscriptions?:
+        | components['schemas']['ConfigSettingsSubscriptions']
+        | null
     }
     /** ConfigSettingsChange */
     ConfigSettingsChange: {
@@ -18606,11 +18612,51 @@ export interface components {
     /** ConfigSettingsRead */
     ConfigSettingsRead: {
       payments: components['schemas']['ConfigSettingsPaymentsRead']
+      subscriptions: components['schemas']['ConfigSettingsSubscriptionsRead']
     }
     /** ConfigSettingsResult */
     ConfigSettingsResult: {
       /** @description What applying the config does. */
       action: components['schemas']['ConfigAction']
+    }
+    /** ConfigSettingsSubscriptions */
+    ConfigSettingsSubscriptions: {
+      /**
+       * Allow Multiple Subscriptions
+       * @description Whether a customer can have several active subscriptions at once. Left untouched when omitted.
+       */
+      allow_multiple_subscriptions?: boolean | null
+      /**
+       * Proration Behavior
+       * @description How customers are billed when their subscription changes. Left untouched when omitted.
+       */
+      proration_behavior?:
+        | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
+        | null
+      /**
+       * Benefit Revocation Grace Period
+       * @description Days to wait before revoking benefits while a failed payment is retried. Left untouched when omitted.
+       */
+      benefit_revocation_grace_period?: number | null
+      /**
+       * Prevent Trial Abuse
+       * @description Whether a customer who already had a trial is refused another one. Left untouched when omitted.
+       */
+      prevent_trial_abuse?: boolean | null
+    }
+    /** ConfigSettingsSubscriptionsRead */
+    ConfigSettingsSubscriptionsRead: {
+      /** Allow Multiple Subscriptions */
+      allow_multiple_subscriptions: boolean
+      /** Proration Behavior */
+      proration_behavior:
+        | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
+      /** Benefit Revocation Grace Period */
+      benefit_revocation_grace_period: number
+      /** Prevent Trial Abuse */
+      prevent_trial_abuse: boolean
     }
     /**
      * ConfigSkippedReason
@@ -24388,12 +24434,6 @@ export interface components {
      */
     DiscountFixedCreate: {
       /**
-       * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
-       * @example ext_1337
-       */
-      external_id?: string
-      /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
        *
@@ -24508,12 +24548,6 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
-      /**
-       * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-       * @example ext_1337
-       */
-      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /**
        * Name
@@ -24593,12 +24627,6 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
-      /**
-       * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-       * @example ext_1337
-       */
-      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /**
        * Name
@@ -24682,12 +24710,6 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
-      /**
-       * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-       * @example ext_1337
-       */
-      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /**
        * Name
@@ -24769,12 +24791,6 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
-      /**
-       * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-       * @example ext_1337
-       */
-      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /**
        * Name
@@ -24824,12 +24840,6 @@ export interface components {
      * @description Schema to create a percentage discount.
      */
     DiscountPercentageCreate: {
-      /**
-       * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
-       * @example ext_1337
-       */
-      external_id?: string
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -24941,12 +24951,6 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
-      /**
-       * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-       * @example ext_1337
-       */
-      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /**
        * Name
@@ -25021,12 +25025,6 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
-      /**
-       * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-       * @example ext_1337
-       */
-      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /**
        * Name
@@ -25105,12 +25103,6 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
-      /**
-       * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-       * @example ext_1337
-       */
-      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /**
        * Name
@@ -25187,12 +25179,6 @@ export interface components {
        * @description The ID of the object.
        */
       id: string
-      /**
-       * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
-       * @example ext_1337
-       */
-      external_id: string | null
       metadata: components['schemas']['MetadataOutputType']
       /**
        * Name
@@ -25347,12 +25333,6 @@ export interface components {
      * @description Schema to update a discount.
      */
     DiscountUpdate: {
-      /**
-       * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
-       * @example ext_1337
-       */
-      external_id?: string
       /**
        * Metadata
        * @description Key-value object allowing you to store additional information.
@@ -30813,6 +30793,26 @@ export interface components {
        */
       organization_id?: string | null
       /**
+       * Currency
+       * @description The currency to charge in (ISO 4217, lowercase, e.g. `usd`). Defaults to the organization's default currency; specify it to force a different one, or when the product isn't priced in the organization's default currency.
+       */
+      currency?: string | null
+      /**
+       * Amount
+       * @description A custom amount to charge, in the smallest currency unit. Overrides the product's price; defaults to the product's configured price (0 for free products). A positive amount must be at least the currency's minimum. Can't be combined with `units`.
+       */
+      amount?: number | null
+      /**
+       * Units
+       * @description The number of units to charge for. Required when the product has unit-based pricing, and rejected otherwise. The amount comes from the price's tiers. Can't be combined with `amount`.
+       */
+      units?: number | null
+      /**
+       * Description
+       * @description A custom description for the order's line item, shown on the invoice and receipt (e.g. `5,000 tokens`). Defaults to the product name.
+       */
+      description?: string | null
+      /**
        * Customer Id
        * Format: uuid4
        * @description The ID of the customer the order is for. Must belong to the order's organization.
@@ -30824,6 +30824,42 @@ export interface components {
        * @description The ID of the one-time product to charge for. Must belong to the order's organization. Only fixed-price, free and unit-based products are supported.
        */
       product_id: string
+    }
+    /**
+     * OrderCreateExternal
+     * @description Schema to create a draft order for an off-session charge,
+     *     referencing the customer and product by their external IDs.
+     */
+    OrderCreateExternal: {
+      /**
+       * Custom Field Data
+       * @description Key-value object storing custom field values.
+       */
+      custom_field_data?: {
+        [key: string]: string | number | boolean | null
+      }
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Organization Id
+       * @description The ID of the organization the order belongs to. **Required unless you use an organization token.** The customer and product must belong to this organization.
+       */
+      organization_id?: string | null
       /**
        * Currency
        * @description The currency to charge in (ISO 4217, lowercase, e.g. `usd`). Defaults to the organization's default currency; specify it to force a different one, or when the product isn't priced in the organization's default currency.
@@ -30844,6 +30880,18 @@ export interface components {
        * @description A custom description for the order's line item, shown on the invoice and receipt (e.g. `5,000 tokens`). Defaults to the product name.
        */
       description?: string | null
+      /**
+       * External Customer Id
+       * @description The ID of the customer in your system the order is for. Must belong to the order's organization.
+       * @example usr_1337
+       */
+      external_customer_id: string
+      /**
+       * External Product Id
+       * @description The ID of the one-time product in your system to charge for. Resolves to the current version of the product. Must belong to the order's organization. Only fixed-price, free and unit-based products are supported.
+       * @example ext_1337
+       */
+      external_product_id: string
     }
     /** OrderCustomer */
     OrderCustomer: {
@@ -53676,7 +53724,9 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['OrderCreate']
+        'application/json':
+          | components['schemas']['OrderCreate']
+          | components['schemas']['OrderCreateExternal']
       }
     }
     responses: {
@@ -53687,6 +53737,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['Order']
+        }
+      }
+      /** @description Off-session charges are not enabled for this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OffSessionChargesNotEnabled']
         }
       }
       /** @description Validation Error */
@@ -57549,8 +57608,6 @@ export interface operations {
       query?: {
         /** @description Filter by organization ID. */
         organization_id?: string | string[] | null
-        /** @description Filter by discount external ID. */
-        external_id?: string | string[] | null
         /** @description Filter by name. */
         query?: string | null
         /** @description Page number, defaults to 1. */

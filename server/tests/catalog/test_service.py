@@ -233,6 +233,10 @@ class TestPublishDraft:
         assert draft.settings == {
             "default_presentment_currency": "eur",
             "default_tax_behavior": TaxBehaviorOption.exclusive,
+            "allow_multiple_subscriptions": False,
+            "proration_behavior": "prorate",
+            "benefit_revocation_grace_period": 0,
+            "prevent_trial_abuse": False,
         }
         send_mock.assert_called_once_with(
             session, organization, WebhookEventType.organization_updated, organization

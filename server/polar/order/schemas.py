@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Any, Self
 
 from fastapi import Path
 from pydantic import (
@@ -8,7 +8,10 @@ from pydantic import (
     AliasChoices,
     AliasPath,
     BeforeValidator,
+    ConfigDict,
+    Discriminator,
     Field,
+    Tag,
     computed_field,
     field_serializer,
     model_validator,
@@ -24,6 +27,7 @@ from polar.discount.schemas import DiscountMinimal
 from polar.exceptions import ResourceNotFound
 from polar.kit.address import Address, AddressInput
 from polar.kit.currency import format_currency
+from polar.kit.external_id import ExternalID
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import (
     EmptyStrToNoneValidator,
@@ -319,9 +323,7 @@ class Order(CustomFieldDataOutputMixin, MetadataOutputMixin, OrderBase):
     )
 
 
-class OrderCreate(MetadataInputMixin, CustomFieldDataInputMixin):
-    """Schema to create a draft order for an off-session charge."""
-
+class OrderCreateBase(MetadataInputMixin, CustomFieldDataInputMixin):
     organization_id: OrganizationID | None = Field(
         default=None,
         description=(
@@ -329,15 +331,6 @@ class OrderCreate(MetadataInputMixin, CustomFieldDataInputMixin):
             "**Required unless you use an organization token.** "
             "The customer and product must belong to this organization."
         ),
-    )
-    customer_id: UUID4 = Field(
-        description="The ID of the customer the order is for. "
-        "Must belong to the order's organization."
-    )
-    product_id: UUID4 = Field(
-        description="The ID of the one-time product to charge for. "
-        "Must belong to the order's organization. "
-        "Only fixed-price, free and unit-based products are supported."
     )
     currency: str | None = Field(
         None,
@@ -381,10 +374,61 @@ class OrderCreate(MetadataInputMixin, CustomFieldDataInputMixin):
     )
 
     @model_validator(mode="after")
-    def _validate_amount_and_units(self) -> "OrderCreate":
+    def _validate_amount_and_units(self) -> Self:
         if self.amount is not None and self.units is not None:
             raise ValueError("amount and units can't be set together")
         return self
+
+
+class OrderCreate(OrderCreateBase):
+    """Schema to create a draft order for an off-session charge."""
+
+    customer_id: UUID4 = Field(
+        description="The ID of the customer the order is for. "
+        "Must belong to the order's organization."
+    )
+    product_id: UUID4 = Field(
+        description="The ID of the one-time product to charge for. "
+        "Must belong to the order's organization. "
+        "Only fixed-price, free and unit-based products are supported."
+    )
+
+
+class OrderCreateExternal(OrderCreateBase):
+    """
+    Schema to create a draft order for an off-session charge,
+    referencing the customer and product by their external IDs.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    external_customer_id: str = Field(
+        min_length=1,
+        description="The ID of the customer in your system the order is for. "
+        "Must belong to the order's organization.",
+        examples=["usr_1337"],
+    )
+    external_product_id: ExternalID = Field(
+        description="The ID of the one-time product in your system to charge for. "
+        "Resolves to the current version of the product. "
+        "Must belong to the order's organization. "
+        "Only fixed-price, free and unit-based products are supported.",
+        examples=["ext_1337"],
+    )
+
+
+def _order_create_discriminator(v: Any) -> str:
+    if isinstance(v, dict):
+        external = "external_customer_id" in v or "external_product_id" in v
+        return "external" if external else "polar"
+    return "external" if isinstance(v, OrderCreateExternal) else "polar"
+
+
+OrderCreateV2027_01 = Annotated[
+    Annotated[OrderCreate, Tag("polar")]
+    | Annotated[OrderCreateExternal, Tag("external")],
+    Discriminator(_order_create_discriminator),
+]
 
 
 class OrderUpdateBase(Schema):

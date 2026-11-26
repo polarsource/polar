@@ -189,11 +189,8 @@ export const productMeters = (
 
 export const meterUnit = (input: unknown) => {
   const meter = record(input)
-  return meter?.['unit'] === 'custom'
-    ? name(meter['custom_label'])
-    : meter?.['unit'] === 'token'
-      ? 'tokens'
-      : 'units'
+  if (meter?.['unit'] === 'custom') return name(meter['custom_label'])
+  return meter?.['unit'] === 'token' ? 'tokens' : 'units'
 }
 
 export const productSentence = (input: unknown) => {
@@ -335,6 +332,13 @@ export const shownDiff = (
   return diff
 }
 
+const unitField = (meter: Record<string, unknown>) => {
+  if (meter['unit'] === 'custom') {
+    return [['unit', name(meter['custom_label'])] as const]
+  }
+  return meter['unit'] === 'token' ? [['unit', 'tokens'] as const] : []
+}
+
 export const meterSentence = (input: unknown) => {
   const meter = record(input)
   if (meter === undefined) return undefined
@@ -347,10 +351,6 @@ export const meterSentence = (input: unknown) => {
   return fields([
     ['events', events],
     ['aggregation', func === undefined ? 'count' : aggregation(func)],
-    ...(meter['unit'] === 'custom'
-      ? [['unit', name(meter['custom_label'])] as const]
-      : meter['unit'] === 'token'
-        ? [['unit', 'tokens'] as const]
-        : []),
+    ...unitField(meter),
   ])
 }

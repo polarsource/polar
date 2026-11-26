@@ -1,6 +1,6 @@
 import { expect, expectTypeOf, test } from 'vitest'
 import { z } from 'zod'
-import { createEventReferences } from './event'
+import { createEventReferences, event } from './event'
 import { metadataKey } from './metadata'
 import { and, eq, gt, gte, like, lt, meter, ne, notLike, or } from './meter'
 
@@ -66,17 +66,23 @@ test('where adds a requirement to an existing OR filter', () => {
   })
 })
 
-const toolCall = z.object({
-  tool: z.enum(['search', 'fetch']),
-  durationMs: z.int(),
-  cached: z.boolean(),
-  note: z.string().optional(),
-})
+const toolCall = event(
+  z.object({
+    tool: z.enum(['search', 'fetch']),
+    durationMs: z.int(),
+    cached: z.boolean(),
+    note: z.string().optional(),
+  }),
+)
 
 const definitions = {
   tool_call: toolCall,
   tool_retry: toolCall,
-  heartbeat: z.object({}),
+  heartbeat: event(),
+  completion: event(z.object({ feature: z.string() }))
+    .withCosts()
+    .withTokens(),
+  embedding: event().withTokens(),
 }
 
 const events = createEventReferences(definitions)
@@ -218,4 +224,52 @@ test('metadata is kept through every meter step, in any order', () => {
   expect(before).toEqual(after)
   expect(before).toEqual(last)
   expect(before[metadataKey]).toEqual({ team: 'search' })
+})
+
+test('meters on events with tokens and costs aggregate on _llm and _cost', () => {
+  const completions = meter<typeof definitions>().on(events.completion)
+  expectTypeOf(completions.sum)
+    .parameter(0)
+    .toEqualTypeOf<
+      | '_llm.input_tokens'
+      | '_llm.cached_input_tokens'
+      | '_llm.output_tokens'
+      | '_llm.total_tokens'
+      | '_cost.amount'
+    >()
+  const shared = meter<typeof definitions>().on(
+    events.completion,
+    events.embedding,
+  )
+  expectTypeOf(shared.sum)
+    .parameter(0)
+    .toEqualTypeOf<
+      | '_llm.input_tokens'
+      | '_llm.cached_input_tokens'
+      | '_llm.output_tokens'
+      | '_llm.total_tokens'
+    >()
+  expectTypeOf(meter<typeof definitions>().on(events.tool_call).sum)
+    .parameter(0)
+    .toEqualTypeOf<'durationMs'>()
+
+  expect(
+    completions
+      .where(eq(events.completion._llm.model, 'gpt-4o'))
+      .sum('_llm.total_tokens'),
+  ).toEqual(
+    meter()
+      .where(eq('name', 'completion'))
+      .where(eq('_llm.model', 'gpt-4o'))
+      .sum('_llm.total_tokens'),
+  )
+  const typeOnly = () => {
+    // @ts-expect-error total_tokens is a number
+    eq(events.completion._llm.total_tokens, 'many')
+    // @ts-expect-error _llm is not a property itself
+    eq(events.completion._llm, 'gpt-4o')
+    // @ts-expect-error embedding has no costs
+    eq(events.embedding._cost.amount, 1)
+  }
+  expectTypeOf(typeOnly).toBeFunction()
 })

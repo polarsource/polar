@@ -114,23 +114,25 @@ const render = (
   organization: ActiveOrganization,
   entries: ReadonlyArray<PruneEntry>,
   removed: boolean,
-) =>
-  removed
-    ? [
-        ui.blank,
-        ui.success(
-          `${config.file}: ${plural(entries.filter(removable).length, 'entry', 'entries')} removed, nothing changed on Polar`,
-        ),
-      ]
-    : [
-        ...report(organization, entries),
-        ui.blank,
-        ui.success(
-          entries.length === 0
-            ? `No deprecated entries in ${config.file}`
-            : 'Nothing to remove',
-        ),
-      ]
+) => {
+  if (removed) {
+    return [
+      ui.blank,
+      ui.success(
+        `${config.file}: ${plural(entries.filter(removable).length, 'entry', 'entries')} removed, nothing changed on Polar`,
+      ),
+    ]
+  }
+  return [
+    ...report(organization, entries),
+    ui.blank,
+    ui.success(
+      entries.length === 0
+        ? `No deprecated entries in ${config.file}`
+        : 'Nothing to remove',
+    ),
+  ]
+}
 
 export const prune = Command.make('prune', { file, org, confirmed }).pipe(
   Command.withDescription(

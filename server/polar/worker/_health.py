@@ -8,7 +8,6 @@ from typing import Any
 import logfire
 import redis.asyncio as async_redis
 import structlog
-import uvicorn
 from dramatiq.middleware import Middleware
 from redis import RedisError
 from sqlalchemy import text
@@ -25,7 +24,6 @@ from polar.external_event.repository import ExternalEventRepository
 from polar.kit.db.postgres import AsyncSessionMaker, create_async_sessionmaker
 from polar.kit.http import HSTSMiddleware
 from polar.kit.utils import utc_now
-from polar.logfire import configure_logfire
 from polar.logging import Logger
 from polar.logging import configure as configure_logging
 from polar.postgres import AsyncEngine, create_async_engine
@@ -184,6 +182,10 @@ def create_app(*, database: bool = True) -> Starlette:
 
 
 def _run_server(*, database: bool) -> int:
+    import uvicorn
+
+    from polar.logfire import configure_logfire
+
     log.debug("Starting exposition server...")
     configure_logfire("worker")
     configure_logging(logfire=True)

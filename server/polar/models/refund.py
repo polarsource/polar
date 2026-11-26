@@ -2,7 +2,6 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any, Literal, Self
 from uuid import UUID
 
-import stripe as stripe_lib
 from sqlalchemy import (
     BigInteger,
     Boolean,
@@ -21,6 +20,8 @@ from polar.kit.db.models import RecordModel
 from polar.kit.metadata import MetadataMixin
 
 if TYPE_CHECKING:
+    import stripe as stripe_lib
+
     from polar.models import (
         CreditNote,
         Customer,
@@ -264,7 +265,7 @@ class Refund(MetadataMixin, RecordModel):
 
     @classmethod
     def from_stripe(
-        cls, stripe_refund: stripe_lib.Refund, order: "Order", payment: "Payment"
+        cls, stripe_refund: "stripe_lib.Refund", order: "Order", payment: "Payment"
     ) -> Self:
         amount, tax_amount = order.calculate_refunded_tax_from_total(
             stripe_refund.amount
@@ -305,7 +306,7 @@ class Refund(MetadataMixin, RecordModel):
             processor_balance_transaction_id=balance_transaction_id,
         )
 
-    def apply_stripe(self, stripe_refund: stripe_lib.Refund) -> None:
+    def apply_stripe(self, stripe_refund: "stripe_lib.Refund") -> None:
         self.status = RefundStatus(stripe_refund.status or "pending")
         failure_reason = getattr(stripe_refund, "failure_reason", None)
         self.failure_reason = RefundFailureReason.from_stripe(failure_reason)

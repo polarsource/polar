@@ -4,31 +4,31 @@ import mimetypes
 from collections.abc import Iterator
 from functools import cached_property
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import parse_qs, unquote, urlparse
 from uuid import UUID
 
 import pytest
-from botocore.stub import ANY, Stubber
 from httpx2 import Response
 
 from polar.config import settings
-from polar.file.s3 import S3_SERVICES
-from polar.file.schemas import (
-    DownloadableFileCreate,
-    FileUpload,
-    ProductMediaFileCreate,
-)
-from polar.integrations.aws.s3.client import client as s3_client
-from polar.integrations.aws.s3.schemas import (
-    S3FileCreateMultipart,
-    S3FileCreatePart,
-    S3FileUploadCompletedPart,
-)
 from polar.kit.utils import generate_uuid, utc_now
 from polar.models import File, Organization
 from polar.models.file import FileServiceTypes
 from polar.postgres import AsyncSession
+
+if TYPE_CHECKING:
+    from botocore.stub import Stubber
+
+    from polar.file.schemas import (
+        DownloadableFileCreate,
+        FileUpload,
+        ProductMediaFileCreate,
+    )
+    from polar.integrations.aws.s3.schemas import (
+        S3FileCreatePart,
+        S3FileUploadCompletedPart,
+    )
 
 pwd = Path(__file__).parent.absolute()
 
@@ -72,7 +72,11 @@ class TestFile:
             raise RuntimeError("Using an unrecognizable test file")
         return mimetype
 
-    def stub_create(self, s3_stub: Stubber, service: FileServiceTypes) -> None:
+    def stub_create(self, s3_stub: "Stubber", service: FileServiceTypes) -> None:
+        from botocore.stub import ANY
+
+        from polar.file.s3 import S3_SERVICES
+
         s3_stub.add_response(
             "create_multipart_upload",
             {"UploadId": "test-upload"},
@@ -89,9 +93,9 @@ class TestFile:
         self,
         session: AsyncSession,
         organization: Organization,
-        s3_stub: Stubber,
+        s3_stub: "Stubber",
         parts: int = 1,
-    ) -> FileUpload:
+    ) -> "FileUpload":
         from polar.file.service import file as file_service
 
         self.stub_create(s3_stub, FileServiceTypes.downloadable)
@@ -103,7 +107,10 @@ class TestFile:
 
     def build_create(
         self, organization_id: UUID, parts: int = 1
-    ) -> DownloadableFileCreate:
+    ) -> "DownloadableFileCreate":
+        from polar.file.schemas import DownloadableFileCreate
+        from polar.integrations.aws.s3.schemas import S3FileCreateMultipart
+
         create_parts = []
         for i in range(parts):
             part = self.build_create_part(i + 1, parts)
@@ -121,14 +128,18 @@ class TestFile:
 
     def build_product_media_create(
         self, organization_id: UUID
-    ) -> ProductMediaFileCreate:
+    ) -> "ProductMediaFileCreate":
+        from polar.file.schemas import ProductMediaFileCreate
+
         create = self.build_create(organization_id)
         return ProductMediaFileCreate(
             service=FileServiceTypes.product_media,
             **create.model_dump(exclude={"service"}),
         )
 
-    def build_create_part(self, number: int, parts: int) -> S3FileCreatePart:
+    def build_create_part(self, number: int, parts: int) -> "S3FileCreatePart":
+        from polar.integrations.aws.s3.schemas import S3FileCreatePart
+
         chunk_size = self.size // parts
         chunk_start = (number - 1) * chunk_size
         chunk_end = number * chunk_size
@@ -149,7 +160,9 @@ class TestFile:
 
     def validate_create_response(
         self, response: Response, organization_id: UUID, parts: int = 1
-    ) -> FileUpload:
+    ) -> "FileUpload":
+        from polar.file.schemas import FileUpload
+
         assert response.status_code == 201
         data = response.json()
         valid = FileUpload(**data)
@@ -164,7 +177,12 @@ class TestFile:
         assert len(valid.upload.parts) == parts
         return valid
 
-    def completed_parts(self, created: FileUpload) -> list[S3FileUploadCompletedPart]:
+    def completed_parts(
+        self, created: "FileUpload"
+    ) -> list["S3FileUploadCompletedPart"]:
+        from polar.file.s3 import S3_SERVICES
+        from polar.integrations.aws.s3.schemas import S3FileUploadCompletedPart
+
         completed = []
         bucket = S3_SERVICES[created.service].bucket
         for part in created.upload.parts:
@@ -190,12 +208,14 @@ class TestFile:
 
     def stub_complete(
         self,
-        s3_stub: Stubber,
-        created: FileUpload,
-        parts: list[S3FileUploadCompletedPart],
+        s3_stub: "Stubber",
+        created: "FileUpload",
+        parts: list["S3FileUploadCompletedPart"],
         *,
         content_length: int | None = None,
     ) -> dict[str, Any]:
+        from polar.file.s3 import S3_SERVICES
+
         checksum = hashlib.sha256(
             b"".join(
                 hashlib.sha256(self.data[part.chunk_start : part.chunk_end]).digest()
@@ -248,13 +268,17 @@ class TestFile:
 
 
 @pytest.fixture(scope="session", autouse=True)
-def session_s3_stub() -> Iterator[Stubber]:
+def session_s3_stub() -> Iterator["Stubber"]:
+    from botocore.stub import Stubber
+
+    from polar.integrations.aws.s3.client import client as s3_client
+
     with Stubber(s3_client) as stub:
         yield stub
 
 
 @pytest.fixture
-def s3_stub(session_s3_stub: Stubber) -> Iterator[Stubber]:
+def s3_stub(session_s3_stub: "Stubber") -> Iterator["Stubber"]:
     try:
         yield session_s3_stub
         session_s3_stub.assert_no_pending_responses()

@@ -5,18 +5,19 @@ import tempfile
 from datetime import timedelta
 from enum import StrEnum
 from pathlib import Path
-from typing import Annotated, Any, Literal
+from typing import TYPE_CHECKING, Annotated, Any, Literal
 from urllib.parse import parse_qs, unquote, urlparse
 
 from annotated_types import Ge
 from pydantic import AfterValidator, DirectoryPath, SecretStr, model_validator
-from pydantic_ai.models import Model, infer_model, parse_model_id
-from pydantic_ai.providers.gateway import gateway_provider
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import URL
 
 from polar.enums import EmailSender, TaxProcessor
 from polar.kit.address import Address, CountryAlpha2
+
+if TYPE_CHECKING:
+    from pydantic_ai.models import Model
 
 # A token hash reads `<secret_id>$<digest>`. The digest is 64 characters
 HASH_SEPARATOR = "$"
@@ -941,7 +942,10 @@ class Settings(BaseSettings):
 
     def get_pydantic_gateway_model(
         self, model: str | None = None
-    ) -> tuple[Model, str, str]:
+    ) -> tuple["Model", str, str]:
+        from pydantic_ai.models import infer_model, parse_model_id
+        from pydantic_ai.providers.gateway import gateway_provider
+
         model = model or settings.PYDANTIC_AI_GATEWAY_MODEL
         model_provider, model_name = parse_model_id(model)
         assert model_provider is not None

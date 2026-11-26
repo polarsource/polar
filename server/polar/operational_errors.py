@@ -4,8 +4,6 @@ import traceback
 from collections.abc import Callable
 
 import asyncpg.exceptions
-import psycopg.errors
-import sentry_sdk
 import structlog
 from sqlalchemy.exc import DBAPIError
 
@@ -40,6 +38,8 @@ def _sql_lock_not_available_error_matcher(exc: BaseException) -> bool:
     if not isinstance(exc, DBAPIError):
         return False
 
+    import psycopg.errors
+
     cause = exc.__cause__
     while cause is not None:
         if isinstance(
@@ -55,6 +55,9 @@ def _sql_lock_not_available_error_matcher(exc: BaseException) -> bool:
 def _sql_deadlock_error_matcher(exc: BaseException) -> bool:
     if not isinstance(exc, DBAPIError):
         return False
+
+    import psycopg.errors
+
     cause = exc.__cause__
     while cause is not None:
         if isinstance(
@@ -124,6 +127,8 @@ def handle_operational_error(exc: BaseException) -> bool:
     """
     for type, matcher in _operation_error_matchers.items():
         if matcher(exc):
+            import sentry_sdk
+
             log.warning("Operational error detected", error=str(exc), type=type)
             OPERATIONAL_ERROR_TOTAL.labels(type=type).inc()
             sentry_sdk.set_level("warning")

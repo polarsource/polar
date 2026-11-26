@@ -1,5 +1,6 @@
 import hashlib
 import json
+import sys
 import time
 from collections import defaultdict
 from collections.abc import Iterator, Mapping
@@ -7,11 +8,8 @@ from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any, NamedTuple
 
 import anyio
-import boto3
 import dramatiq
 import structlog
-from botocore.config import Config
-from botocore.exceptions import ClientError
 
 from polar.config import settings
 from polar.kit.aws import get_credentials
@@ -76,7 +74,19 @@ class SQSSendError(Exception):
         super().__init__(f"Failed to send {len(failed)} message(s) to {queue_name}")
 
 
+def __getattr__(name: str) -> Any:
+    if name == "boto3":
+        import boto3
+
+        globals()[name] = boto3
+        return boto3
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
 def get_sqs_client() -> "SQSClient":
+    from botocore.config import Config
+
+    boto3 = getattr(sys.modules[__name__], "boto3")
     access_key_id, secret_access_key = get_credentials()
     # None credentials: boto3's default chain assumes the Render OIDC role (AWS_ROLE_ARN).
     return boto3.client(
@@ -96,6 +106,9 @@ def get_sqs_client() -> "SQSClient":
 
 def get_consumer_sqs_client() -> "SQSClient":
     """SQS client authenticated by the Lambda execution role (no static keys)."""
+    from botocore.config import Config
+
+    boto3 = getattr(sys.modules[__name__], "boto3")
     return boto3.client(
         "sqs",
         endpoint_url=settings.SQS_ENDPOINT_URL,
@@ -111,6 +124,9 @@ def get_consumer_sqs_client() -> "SQSClient":
 
 def get_consumer_scheduler_client() -> "EventBridgeSchedulerClient":
     """EventBridge Scheduler client authenticated by the Lambda execution role."""
+    from botocore.config import Config
+
+    boto3 = getattr(sys.modules[__name__], "boto3")
     return boto3.client(
         "scheduler",
         config=Config(
@@ -249,6 +265,8 @@ def schedule_delayed_message(
     schedule_name: str,
 ) -> None:
     """Redeliver to SQS after a delay longer than SQS's own delay cap allows."""
+    from botocore.exceptions import ClientError
+
     fire_at = datetime.now(UTC) + timedelta(seconds=delay_seconds)
     try:
         client.create_schedule(

@@ -5,7 +5,6 @@ from typing import Any, ClassVar
 import dramatiq
 import logfire
 import redis
-import sentry_sdk
 import structlog
 from apscheduler.triggers.cron import CronTrigger
 from dramatiq import middleware
@@ -106,6 +105,8 @@ class LogContextMiddleware(dramatiq.Middleware):
             correlation_id=correlation_id,
             source_correlation_id=message.options.get("source_correlation_id"),
         )
+        import sentry_sdk
+
         sentry_sdk.set_tag("correlation_id", correlation_id)
         if source_correlation_id is not None:
             sentry_sdk.set_tag("source_correlation_id", source_correlation_id)

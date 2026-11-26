@@ -4,51 +4,32 @@ import time
 import uuid
 from collections.abc import Generator
 from pathlib import Path
+from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import httpx2
 import pytest
 
 from polar.config import settings
-from polar.integrations.tinybird import service as tinybird_service
-from polar.integrations.tinybird.client import TinybirdClient
-from polar.integrations.tinybird.schemas import TinybirdEvent
-from polar.metrics import queries_tinybird
-from scripts.tinybird_test_workspace import (
-    create_workspace,
-    delete_workspace,
-    deploy_schema,
-    get_tokens,
-    wait_for_ingestion,
-)
+
+if TYPE_CHECKING:
+    from polar.integrations.tinybird.client import TinybirdClient
+    from polar.integrations.tinybird.schemas import TinybirdEvent
 
 TOKEN_ENV_VAR = "POLAR_TEST_TINYBIRD_TOKEN"
 REQUIRED_ENV_VAR = "POLAR_TEST_TINYBIRD_REQUIRED"
 TOKEN_FILE_ENV_VAR = "POLAR_TEST_TINYBIRD_TOKEN_FILE"
 
 
-class SynchronousIngestTinybirdClient(TinybirdClient):
-    """The Events API holds each write for about 4s to batch rows; an append doesn't."""
-
-    async def ingest(
-        self, datasource: str, events: list[TinybirdEvent], *, wait: bool = True
-    ) -> None:
-        if not events:
-            return
-        response = await self._write_client.post(
-            "/v0/datasources",
-            params={"name": datasource, "mode": "append", "format": "ndjson"},
-            files={"ndjson": "\n".join(json.dumps(event) for event in events)},
-        )
-        response.raise_for_status()
-
-
 def tinybird_available() -> bool:
-    return (
+    if (
         bool(os.environ.get(TOKEN_ENV_VAR))
         or os.environ.get(REQUIRED_ENV_VAR) == "true"
-        or get_tokens() is not None
-    )
+    ):
+        return True
+    from scripts.tinybird_test_workspace import get_tokens
+
+    return get_tokens() is not None
 
 
 @pytest.fixture(scope="session")
@@ -73,6 +54,14 @@ def tinybird_workspace() -> Generator[str]:
                 )
             time.sleep(0.1)
         raise RuntimeError("Timed out waiting for Tinybird workspace preparation")
+
+    from scripts.tinybird_test_workspace import (
+        create_workspace,
+        delete_workspace,
+        deploy_schema,
+        get_tokens,
+        wait_for_ingestion,
+    )
 
     host = settings.TINYBIRD_API_URL
     tokens = get_tokens(host)
@@ -108,7 +97,26 @@ def tinybird_clickhouse_token(tinybird_workspace: str) -> str:
 def tinybird_client(
     tinybird_workspace: str,
     tinybird_clickhouse_token: str,
-) -> Generator[TinybirdClient]:
+) -> Generator["TinybirdClient"]:
+    from polar.integrations.tinybird import service as tinybird_service
+    from polar.integrations.tinybird.client import TinybirdClient
+    from polar.metrics import queries_tinybird
+
+    class SynchronousIngestTinybirdClient(TinybirdClient):
+        """The Events API holds each write for about 4s to batch rows; an append doesn't."""
+
+        async def ingest(
+            self, datasource: str, events: list["TinybirdEvent"], *, wait: bool = True
+        ) -> None:
+            if not events:
+                return
+            response = await self._write_client.post(
+                "/v0/datasources",
+                params={"name": datasource, "mode": "append", "format": "ndjson"},
+                files={"ndjson": "\n".join(json.dumps(event) for event in events)},
+            )
+            response.raise_for_status()
+
     client = SynchronousIngestTinybirdClient(
         api_url=settings.TINYBIRD_API_URL,
         clickhouse_url=settings.TINYBIRD_CLICKHOUSE_URL,

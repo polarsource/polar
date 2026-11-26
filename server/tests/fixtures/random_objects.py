@@ -150,7 +150,7 @@ from polar.notification_recipient.schemas import NotificationRecipientPlatform
 from polar.oauth2.constants import CLAIM_GRANT_TYPE
 from polar.product.price_set import PriceSet
 from polar.product.tiers import SeatTierType, Tiers, TierType
-from polar.tax.calculation import TaxBreakdownItem
+from polar.tax.calculation.base import TaxBreakdownItem
 from polar.tax.tax_id import TaxID
 from tests.fixtures.database import SaveFixture
 

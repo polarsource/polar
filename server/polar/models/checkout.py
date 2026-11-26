@@ -45,7 +45,7 @@ from polar.product.guard import (
     is_discount_applicable,
     is_metered_price,
 )
-from polar.tax.calculation import TaxBreakdownItem
+from polar.tax.calculation.base import TaxBreakdownItem
 from polar.tax.tax_id import TaxID, TaxIDType
 
 from .customer import Customer

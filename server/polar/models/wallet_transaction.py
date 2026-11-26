@@ -11,7 +11,7 @@ from polar.enums import TaxProcessor
 from polar.kit.db.models import IDModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.utils import utc_now
-from polar.tax.calculation import TaxBreakdownItem
+from polar.tax.calculation.base import TaxBreakdownItem
 
 if TYPE_CHECKING:
     from .order import Order

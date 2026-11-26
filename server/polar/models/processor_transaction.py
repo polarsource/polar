@@ -1,9 +1,8 @@
 import datetime
 from enum import StrEnum
-from typing import Any, Self
+from typing import TYPE_CHECKING, Any, Self
 from uuid import UUID
 
-import stripe as stripe_lib
 from sqlalchemy import TIMESTAMP, BigInteger, String, Text, Uuid
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -11,6 +10,9 @@ from sqlalchemy.orm import Mapped, mapped_column
 from polar.kit.db.models import Model
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.utils import generate_uuid, utc_now
+
+if TYPE_CHECKING:
+    import stripe as stripe_lib
 
 
 class Processor(StrEnum):
@@ -42,7 +44,7 @@ class ProcessorTransaction(Model):
     raw: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
 
     @classmethod
-    def from_stripe(cls, bt: stripe_lib.BalanceTransaction) -> Self:
+    def from_stripe(cls, bt: "stripe_lib.BalanceTransaction") -> Self:
         return cls(
             timestamp=datetime.datetime.fromtimestamp(bt.created, tz=datetime.UTC),
             processor=Processor.stripe,

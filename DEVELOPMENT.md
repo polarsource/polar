@@ -326,8 +326,8 @@ uv run task lint_types   # mypy
 Or a single path: `POLAR_ENV=testing uv run python -m pytest tests/<module>`.
 
 `uv run task test` adds coverage and runs serially, so prefer `test_fast` locally. CI does
-neither — it shards `pytest ... -n auto --no-cov` across four jobs. Tests read the committed
-`server/.env.testing` (forced by `tests/conftest.py`), not `server/.env`, and each xdist worker
+neither — it shards the tests across four parallel jobs. Tests read the committed
+`server/.env.testing` (forced by `tests/conftest.py`), not `server/.env`, and each test worker
 gets its own `polar_test_<worker_id>` database. Export `POLAR_TEST_DATABASE_TEMPLATE=polar_test` — with
 `polar_test` created and migrated — to have workers clone that database instead of replaying
 every migration; refresh it with `POLAR_ENV=testing uv run task db_migrate` whenever you add a

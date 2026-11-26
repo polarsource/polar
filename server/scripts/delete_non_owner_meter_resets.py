@@ -66,6 +66,7 @@ RENEWAL_REASONS = (
     OrderBillingReasonInternal.subscription_create,
     OrderBillingReasonInternal.subscription_cycle,
     OrderBillingReasonInternal.subscription_cycle_after_trial,
+    OrderBillingReasonInternal.subscription_meter_cycle,
 )
 
 

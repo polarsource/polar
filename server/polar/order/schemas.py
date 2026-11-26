@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated, Any, Self
+from typing import Annotated, Self
 
 from fastapi import Path
 from pydantic import (
@@ -9,9 +9,7 @@ from pydantic import (
     AliasPath,
     BeforeValidator,
     ConfigDict,
-    Discriminator,
     Field,
-    Tag,
     computed_field,
     field_serializer,
     model_validator,
@@ -394,41 +392,60 @@ class OrderCreate(OrderCreateBase):
     )
 
 
-class OrderCreateExternal(OrderCreateBase):
+class OrderCreateV2027_01(OrderCreateBase):
     """
-    Schema to create a draft order for an off-session charge,
-    referencing the customer and product by their external IDs.
+    Schema to create a draft order for an off-session charge.
+
+    Reference the customer by `customer_id` or `external_customer_id`, and the
+    product by `product_id` or `external_product_id`.
     """
 
     model_config = ConfigDict(extra="forbid")
 
-    external_customer_id: str = Field(
+    customer_id: UUID4 | None = Field(
+        None,
+        description="The ID of the customer the order is for. "
+        "Must belong to the order's organization. "
+        "Required unless `external_customer_id` is set.",
+    )
+    external_customer_id: str | None = Field(
+        None,
         min_length=1,
         description="The ID of the customer in your system the order is for. "
-        "Must belong to the order's organization.",
+        "Must belong to the order's organization. "
+        "Required unless `customer_id` is set.",
         examples=["usr_1337"],
     )
-    external_product_id: ExternalID = Field(
+    product_id: UUID4 | None = Field(
+        None,
+        description="The ID of the one-time product to charge for. "
+        "Must belong to the order's organization. "
+        "Only fixed-price, free and unit-based products are supported. "
+        "Required unless `external_product_id` is set.",
+    )
+    external_product_id: ExternalID | None = Field(
+        None,
         description="The ID of the one-time product in your system to charge for. "
         "Resolves to the current version of the product. "
         "Must belong to the order's organization. "
-        "Only fixed-price, free and unit-based products are supported.",
+        "Only fixed-price, free and unit-based products are supported. "
+        "Required unless `product_id` is set.",
         examples=["ext_1337"],
     )
 
-
-def _order_create_discriminator(v: Any) -> str:
-    if isinstance(v, dict):
-        external = "external_customer_id" in v or "external_product_id" in v
-        return "external" if external else "polar"
-    return "external" if isinstance(v, OrderCreateExternal) else "polar"
-
-
-OrderCreateV2027_01 = Annotated[
-    Annotated[OrderCreate, Tag("polar")]
-    | Annotated[OrderCreateExternal, Tag("external")],
-    Discriminator(_order_create_discriminator),
-]
+    @model_validator(mode="after")
+    def _validate_references(self) -> Self:
+        for polar_field, external_field in (
+            ("customer_id", "external_customer_id"),
+            ("product_id", "external_product_id"),
+        ):
+            is_polar_set = getattr(self, polar_field) is not None
+            is_external_set = getattr(self, external_field) is not None
+            if is_polar_set == is_external_set:
+                raise ValueError(
+                    f"Exactly one of {polar_field} or {external_field} must be set"
+                )
+        return self
 
 
 class OrderUpdateBase(Schema):

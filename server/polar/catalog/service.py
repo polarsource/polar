@@ -155,7 +155,15 @@ SUBSCRIPTION_SETTINGS = (
     "benefit_revocation_grace_period",
     "prevent_trial_abuse",
 )
-CATALOG_SETTINGS = (*PAYMENT_SETTINGS, *SUBSCRIPTION_SETTINGS)
+PORTAL_SETTINGS = {
+    "customer_portal_usage_show": ("usage", "show"),
+    "customer_portal_subscription_update_plan": ("subscription", "update_plan"),
+    "customer_portal_subscription_update_seats": ("subscription", "update_seats"),
+    "customer_portal_subscription_update_units": ("subscription", "update_units"),
+    "customer_portal_subscription_pause": ("subscription", "pause"),
+    "customer_portal_customer_allow_email_change": ("customer", "allow_email_change"),
+}
+CATALOG_SETTINGS = (*PAYMENT_SETTINGS, *SUBSCRIPTION_SETTINGS, *PORTAL_SETTINGS)
 
 
 def _settings(organization: Organization) -> dict[str, Any]:
@@ -593,18 +601,29 @@ class CatalogService:
     ) -> None:
         """Set these settings, by `Organization` attribute name, on the
         organization."""
-        update_dict = {
-            name: value
-            for name, value in settings.items()
-            if name not in SUBSCRIPTION_SETTINGS
-        }
-        if len(update_dict) < len(settings):
+        update_dict: dict[str, Any] = {}
+        subscription_update: dict[str, Any] = {}
+        portal_update: dict[str, dict[str, Any]] = {}
+        for name, value in settings.items():
+            if name in SUBSCRIPTION_SETTINGS:
+                subscription_update[name] = value
+            elif name in PORTAL_SETTINGS:
+                group, key = PORTAL_SETTINGS[name]
+                portal_update.setdefault(group, {})[key] = value
+            else:
+                update_dict[name] = value
+        if subscription_update:
             update_dict["subscription_settings"] = {
                 **organization.subscription_settings,
+                **subscription_update,
+            }
+        if portal_update:
+            stored: dict[str, Any] = dict(organization.customer_portal_settings)
+            update_dict["customer_portal_settings"] = {
+                **stored,
                 **{
-                    name: value
-                    for name, value in settings.items()
-                    if name in SUBSCRIPTION_SETTINGS
+                    group: {**stored.get(group, {}), **values}
+                    for group, values in portal_update.items()
                 },
             }
         await OrganizationRepository.from_session(session).update(

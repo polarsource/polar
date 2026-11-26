@@ -248,6 +248,16 @@ def _settings(
                 "tax": current["default_tax_behavior"],
             },
             "subscriptions": {name: current[name] for name in SUBSCRIPTION_SETTINGS},
+            "portal": {
+                "show_usage": current["customer_portal_usage_show"],
+                "update_plan": current["customer_portal_subscription_update_plan"],
+                "update_seats": current["customer_portal_subscription_update_seats"],
+                "update_units": current["customer_portal_subscription_update_units"],
+                "pause": current["customer_portal_subscription_pause"],
+                "allow_email_change": current[
+                    "customer_portal_customer_allow_email_change"
+                ],
+            },
         }
     )
     return ConfigSettingsRead.model_validate(_dump(settings))

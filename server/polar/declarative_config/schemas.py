@@ -532,6 +532,53 @@ class ConfigSettingsSubscriptions(Schema):
     )
 
 
+class ConfigSettingsPortal(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    show_usage: bool | None = Field(
+        default=None,
+        description=(
+            "Whether customers see their metered usage in the customer portal. "
+            "Left untouched when omitted."
+        ),
+    )
+    update_plan: bool | None = Field(
+        default=None,
+        description=(
+            "Whether customers can switch their subscription to another "
+            "product. Left untouched when omitted."
+        ),
+    )
+    update_seats: bool | None = Field(
+        default=None,
+        description=(
+            "Whether customers can assign and manage seats on their "
+            "subscriptions. Left untouched when omitted."
+        ),
+    )
+    update_units: bool | None = Field(
+        default=None,
+        description=(
+            "Whether customers can change the number of units on their "
+            "subscriptions. Left untouched when omitted."
+        ),
+    )
+    pause: bool | None = Field(
+        default=None,
+        description=(
+            "Whether customers can pause and resume their subscriptions. "
+            "Left untouched when omitted."
+        ),
+    )
+    allow_email_change: bool | None = Field(
+        default=None,
+        description=(
+            "Whether customers can change their email address. "
+            "Left untouched when omitted."
+        ),
+    )
+
+
 class ConfigSettings(Schema):
     model_config = ConfigDict(extra="forbid")
 
@@ -542,6 +589,10 @@ class ConfigSettings(Schema):
     subscriptions: ConfigSettingsSubscriptions | None = Field(
         default=None,
         description="Subscription settings. Left untouched when omitted.",
+    )
+    portal: ConfigSettingsPortal | None = Field(
+        default=None,
+        description="Customer portal settings. Left untouched when omitted.",
     )
 
 
@@ -1031,9 +1082,19 @@ class ConfigSettingsSubscriptionsRead(_ConfigRead):
     prevent_trial_abuse: bool
 
 
+class ConfigSettingsPortalRead(_ConfigRead):
+    show_usage: bool
+    update_plan: bool
+    update_seats: bool
+    update_units: bool
+    pause: bool
+    allow_email_change: bool
+
+
 class ConfigSettingsRead(_ConfigRead):
     payments: ConfigSettingsPaymentsRead
     subscriptions: ConfigSettingsSubscriptionsRead
+    portal: ConfigSettingsPortalRead
 
 
 class ConfigExportDocument(_ConfigRead):

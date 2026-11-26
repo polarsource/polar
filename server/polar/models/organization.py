@@ -988,6 +988,16 @@ class Organization(RateLimitGroupMixin, RecordModel):
         return self.customer_portal_settings.get("subscription", {}).get("pause", False)
 
     @property
+    def customer_portal_usage_show(self) -> bool:
+        return self.customer_portal_settings.get("usage", {}).get("show", True)
+
+    @property
+    def customer_portal_customer_allow_email_change(self) -> bool:
+        return self.customer_portal_settings.get("customer", {}).get(
+            "allow_email_change", False
+        )
+
+    @property
     def checkout_require_3ds(self) -> bool:
         return self.checkout_settings.get("require_3ds", False)
 

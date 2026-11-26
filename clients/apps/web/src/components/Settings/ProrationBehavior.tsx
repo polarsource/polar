@@ -11,7 +11,10 @@ import { Box } from '@polar-sh/orbit/Box'
 
 type ProrationBehaviorSetting = schemas['Organization']['proration_behavior']
 
-const PRORATION_BEHAVIOR_LABELS: Record<ProrationBehaviorSetting, string> = {
+export const PRORATION_BEHAVIOR_LABELS: Record<
+  ProrationBehaviorSetting,
+  string
+> = {
   invoice: 'Prorate & charge now',
   prorate: 'Prorate on next invoice',
   next_period: 'Schedule for next cycle',

@@ -201,6 +201,7 @@ export default function VersionPage({
             currency: organization.default_presentment_currency,
             tax: organization.default_tax_behavior,
           },
+          subscriptions: organization.subscription_settings,
         })
       : undefined
   const settingsChanges: SettingChange[] =

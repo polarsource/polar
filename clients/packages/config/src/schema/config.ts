@@ -427,7 +427,7 @@ export const defineConfig = <
   Events extends EventDefinitions | undefined = undefined,
 >(
   input: {
-    /** Organization defaults, like the payment currency and tax behavior. */
+    /** Organization settings: payment defaults and how subscriptions behave. */
     readonly settings?: SettingsConfig
     /** The events your app sends, keyed by name. Meters count them. */
     readonly events?: (helpers: EventHelpers) => Events

@@ -578,7 +578,13 @@ export const generateConfig = Effect.fnUntraced(function* (input: unknown) {
   const settings =
     config.settings === undefined
       ? []
-      : [`  settings: ${renderObject(config.settings)},`]
+      : [
+          '  settings: {',
+          ...Object.entries(config.settings).map(
+            ([group, fields]) => `    ${key(group)}: ${renderObject(fields)},`,
+          ),
+          '  },',
+        ]
 
   return [
     `import { ${[...imports].join(', ')} } from '@polar-sh/config'`,

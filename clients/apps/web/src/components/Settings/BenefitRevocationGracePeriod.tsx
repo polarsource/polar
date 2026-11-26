@@ -7,7 +7,7 @@ import {
   SelectTrigger,
 } from '@polar-sh/orbit'
 
-const BENEFIT_REVOCATION_GRACE_PERIOD_LABELS: Record<number, string> = {
+export const BENEFIT_REVOCATION_GRACE_PERIOD_LABELS: Record<number, string> = {
   0: 'Immediately',
   2: 'After 2 Days',
   7: 'After 7 Days',

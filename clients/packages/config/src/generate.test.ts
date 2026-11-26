@@ -697,15 +697,26 @@ test('leaves empty metadata out of the generated code', async () => {
   expect(source).not.toContain('.metadata(')
 })
 
-test('renders settings as an object literal', async () => {
+test('renders settings as an object literal, a group per line', async () => {
   const source = await Effect.runPromise(
     generateConfig({
-      settings: { payments: { currency: 'eur', tax: 'location' } },
+      settings: {
+        payments: { currency: 'eur', tax: 'location' },
+        subscriptions: {
+          proration_behavior: 'invoice',
+          prevent_trial_abuse: true,
+        },
+      },
       meters: [],
     }),
   )
   expect(source).toContain(
-    "  settings: { payments: { currency: 'eur', tax: 'location' } },",
+    [
+      '  settings: {',
+      "    payments: { currency: 'eur', tax: 'location' },",
+      "    subscriptions: { proration_behavior: 'invoice', prevent_trial_abuse: true },",
+      '  },',
+    ].join('\n'),
   )
 })
 

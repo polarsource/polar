@@ -3,7 +3,9 @@ import {
   formatProperty,
   OPERATOR_DISPLAY_NAMES,
 } from '@/components/Meter/MeterFilterReadOnlyConfiguration'
+import { BENEFIT_REVOCATION_GRACE_PERIOD_LABELS } from '@/components/Settings/BenefitRevocationGracePeriod'
 import { taxBehaviorOptionDisplayNames } from '@/components/Settings/OrganizationPaymentSettings'
+import { PRORATION_BEHAVIOR_LABELS } from '@/components/Settings/ProrationBehavior'
 import { getUnitLabels } from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -21,6 +23,7 @@ type SelectOption = schemas['CustomFieldSelectOption']
 type Bounds = { ge?: number; le?: number }
 type Settings = {
   payments: { currency: string; tax: schemas['TaxBehaviorOption'] }
+  subscriptions: schemas['ConfigSettingsSubscriptionsRead']
 }
 
 export const plural = (count: number, noun: string) =>
@@ -120,9 +123,20 @@ export const customFieldFields = ({
   }
 }
 
-export const settingsFields = ({ payments }: Settings) => ({
+const yesNo = (value: boolean) => (value ? 'Yes' : 'No')
+
+export const settingsFields = ({ payments, subscriptions }: Settings) => ({
   default_payment_currency: payments.currency.toUpperCase(),
   default_tax_behavior: taxBehaviorOptionDisplayNames[payments.tax],
+  allow_multiple_subscriptions: yesNo(
+    subscriptions.allow_multiple_subscriptions,
+  ),
+  prevent_trial_abuse: yesNo(subscriptions.prevent_trial_abuse),
+  proration: PRORATION_BEHAVIOR_LABELS[subscriptions.proration_behavior],
+  grace_period_for_benefit_revocation:
+    BENEFIT_REVOCATION_GRACE_PERIOD_LABELS[
+      subscriptions.benefit_revocation_grace_period
+    ] ?? `After ${subscriptions.benefit_revocation_grace_period} Days`,
 })
 
 const listFieldLabels: Record<string, string> = {

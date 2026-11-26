@@ -125,7 +125,7 @@ from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
 from polar.tax.calculation import TaxCode
 from polar.tax.calculation import tax_calculation as tax_calculation_service
-from polar.tax.calculation.base import TaxCalculationLogicalError
+from polar.tax.calculation.base import InvalidTaxIDError, TaxCalculationLogicalError
 from polar.tax.tax_id import (
     IncompatibleTaxIDFormat,
     InvalidTaxID,
@@ -1155,7 +1155,12 @@ class CheckoutService:
             errors.append(
                 {
                     "type": "value_error",
-                    "loc": ("body", "customer_billing_address"),
+                    "loc": (
+                        "body",
+                        "customer_tax_id"
+                        if isinstance(e, InvalidTaxIDError)
+                        else "customer_billing_address",
+                    ),
                     "msg": e.message,  # pyright: ignore
                     "input": None,
                 }

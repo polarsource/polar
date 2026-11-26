@@ -11184,7 +11184,7 @@
           "public"
         ],
         "summary": "Create Order",
-        "description": "Create a draft order for an off-session charge against a saved payment\nmethod. The order is created with `status=draft` and no invoice number;\ncall `POST /v1/orders/{id}/finalize` to attempt the charge.\n\nThe organization must have the `off_session_charges_enabled` feature flag.\n\n**Scopes**: `orders:write`",
+        "description": "Create a draft order for an off-session charge against a saved payment\nmethod. The order is created with `status=draft` and no invoice number;\ncall `POST /v1/orders/{id}/finalize` to attempt the charge.\n\nReference the customer and product by Polar ID, or both by external ID.\n\nThe organization must have the `off_session_charges_enabled` feature flag.\n\n**Scopes**: `orders:write`",
         "operationId": "orders:create",
         "security": [
           {
@@ -11208,7 +11208,15 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/OrderCreate"
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/OrderCreate"
+                  },
+                  {
+                    "$ref": "#/components/schemas/OrderCreateExternal"
+                  }
+                ],
+                "title": "Order Create"
               }
             }
           }
@@ -66456,6 +66464,58 @@
             "title": "Organization Id",
             "description": "The ID of the organization the order belongs to. **Required unless you use an organization token.** The customer and product must belong to this organization."
           },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency",
+            "description": "The currency to charge in (ISO 4217, lowercase, e.g. `usd`). Defaults to the organization's default currency; specify it to force a different one, or when the product isn't priced in the organization's default currency."
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount",
+            "description": "A custom amount to charge, in the smallest currency unit. Overrides the product's price; defaults to the product's configured price (0 for free products). A positive amount must be at least the currency's minimum. Can't be combined with `units`."
+          },
+          "units": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units",
+            "description": "The number of units to charge for. Required when the product has unit-based pricing, and rejected otherwise. The amount comes from the price's tiers. Can't be combined with `amount`."
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "A custom description for the order's line item, shown on the invoice and receipt (e.g. `5,000 tokens`). Defaults to the product name."
+          },
           "customer_id": {
             "type": "string",
             "format": "uuid4",
@@ -66467,6 +66527,87 @@
             "format": "uuid4",
             "title": "Product Id",
             "description": "The ID of the one-time product to charge for. Must belong to the order's organization. Only fixed-price, free and unit-based products are supported."
+          }
+        },
+        "type": "object",
+        "required": [
+          "customer_id",
+          "product_id"
+        ],
+        "title": "OrderCreate",
+        "description": "Schema to create a draft order for an off-session charge."
+      },
+      "OrderCreateExternal": {
+        "properties": {
+          "custom_field_data": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Custom Field Data",
+            "description": "Key-value object storing custom field values."
+          },
+          "metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 1
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
+            },
+            "type": "object",
+            "maxProperties": 50,
+            "title": "Metadata",
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4",
+                "description": "The organization ID.",
+                "examples": [
+                  "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "The ID of the organization the order belongs to. **Required unless you use an organization token.** The customer and product must belong to this organization."
           },
           "currency": {
             "anyOf": [
@@ -66519,15 +66660,34 @@
             ],
             "title": "Description",
             "description": "A custom description for the order's line item, shown on the invoice and receipt (e.g. `5,000 tokens`). Defaults to the product name."
+          },
+          "external_customer_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "External Customer Id",
+            "description": "The ID of the customer in your system the order is for. Must belong to the order's organization.",
+            "examples": [
+              "usr_1337"
+            ]
+          },
+          "external_product_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "External Product Id",
+            "description": "The ID of the one-time product in your system to charge for. Resolves to the current version of the product. Must belong to the order's organization. Only fixed-price, free and unit-based products are supported.",
+            "examples": [
+              "ext_1337"
+            ]
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
-          "customer_id",
-          "product_id"
+          "external_customer_id",
+          "external_product_id"
         ],
-        "title": "OrderCreate",
-        "description": "Schema to create a draft order for an off-session charge."
+        "title": "OrderCreateExternal",
+        "description": "Schema to create a draft order for an off-session charge,\nreferencing the customer and product by their external IDs."
       },
       "OrderCustomer": {
         "properties": {

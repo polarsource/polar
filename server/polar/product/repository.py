@@ -74,12 +74,16 @@ class ProductRepository(
         return await self.get_one_or_none(statement)
 
     async def get_by_external_id_and_organization(
-        self, external_id: str, organization_id: UUID
+        self, external_id: str, organization_id: UUID, *, options: Options = ()
     ) -> Product | None:
-        statement = self.get_base_statement().where(
-            Product.external_id == external_id,
-            Product.organization_id == organization_id,
-            Product.is_current,
+        statement = (
+            self.get_base_statement()
+            .where(
+                Product.external_id == external_id,
+                Product.organization_id == organization_id,
+                Product.is_current,
+            )
+            .options(*options)
         )
         return await self.get_one_or_none(statement)
 

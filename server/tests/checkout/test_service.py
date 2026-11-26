@@ -110,6 +110,7 @@ from polar.product.schemas import (
 from polar.product.tiers import Tiers, TiersInput, TierType
 from polar.subscription.service import SubscriptionService
 from polar.tax.calculation import (
+    InvalidTaxIDError,
     TaxabilityReason,
     TaxCalculationLogicalError,
     TaxCalculationService,
@@ -7312,6 +7313,34 @@ class TestConfirm:
                     }
                 ),
             )
+
+    async def test_invalid_tax_id_reported_on_tax_id(
+        self,
+        calculate_tax_mock: AsyncMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_discount_percentage_100: Checkout,
+    ) -> None:
+        calculate_tax_mock.side_effect = InvalidTaxIDError()
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await checkout_service.confirm(
+                session,
+                auth_subject,
+                checkout_discount_percentage_100,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                        "customer_name": "Customer Name",
+                        "customer_email": "customer@example.com",
+                        "customer_billing_address": {"country": "FR"},
+                    }
+                ),
+            )
+
+        assert [error["loc"] for error in e.value.errors()] == [
+            ("body", "customer_tax_id")
+        ]
 
     async def test_payment_not_ready_trial_without_payment_method(
         self,

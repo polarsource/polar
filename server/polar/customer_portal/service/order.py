@@ -12,7 +12,7 @@ from polar.customer.repository import CustomerRepository
 from polar.discount.service import DiscountNotRedeemableError
 from polar.discount.service import discount as discount_service
 from polar.enums import PaymentProcessor
-from polar.exceptions import PolarRequestValidationError, ValidationError
+from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.invoice.service import invoice as invoice_service
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
@@ -45,6 +45,11 @@ from ..schemas.order import (
     CustomerOrderReceipt,
     CustomerOrderUpdate,
 )
+
+
+class PaymentRetryValidationError(PolarError):
+    def __init__(self) -> None:
+        super().__init__("Payment method does not belong to customer", 422)
 
 
 class CustomerOrderSortProperty(StrEnum):
@@ -269,7 +274,7 @@ class CustomerOrderService:
                     ValidationError(
                         type="value_error",
                         loc=("body", "payment_method_id"),
-                        msg="Payment method not found.",
+                        msg=e.message,
                         input=e.payment_method_id,
                     )
                 ]
@@ -334,6 +339,8 @@ class CustomerOrderService:
                 )
         except OrderNotEligibleForRetry as e:
             raise OrderNotEligibleForRetry(e.order, status_code=422) from e
+        except NotExistingPaymentMethod as e:
+            raise PaymentRetryValidationError() from e
         except PaymentError as e:
             return CustomerOrderPaymentConfirmation(
                 status="failed", error=e.error or "Payment failed. Please try again."

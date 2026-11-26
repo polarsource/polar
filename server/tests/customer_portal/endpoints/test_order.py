@@ -223,7 +223,7 @@ class TestPayOrder:
                 {
                     "type": "value_error",
                     "loc": ["body", "payment_method_id"],
-                    "msg": "Payment method not found.",
+                    "msg": "Payment method does not exist or doesn't belong to customer",
                     "input": payment_method_id,
                 }
             ],
@@ -567,6 +567,36 @@ class TestGetPaymentStatus:
 
 @pytest.mark.anyio
 class TestConfirmRetryPayment:
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_missing_payment_method_preserves_legacy_error(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture, customer=customer, product=product
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+        )
+
+        response = await client.post(
+            f"/v1/customer-portal/orders/{order.id}/confirm-payment",
+            json={"payment_method_id": str(uuid.uuid4())},
+        )
+
+        assert response.status_code == 422, response.text
+        assert response.json() == {
+            "error": "PaymentRetryValidationError",
+            "detail": "Payment method does not belong to customer",
+        }
+
     async def test_anonymous(
         self,
         client: AsyncClient,

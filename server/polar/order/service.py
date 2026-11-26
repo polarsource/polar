@@ -353,7 +353,7 @@ class OrderNotDraft(OrderError):
 class NotExistingPaymentMethod(OrderError):
     def __init__(self, payment_method_id: uuid.UUID) -> None:
         self.payment_method_id = payment_method_id
-        super().__init__("Payment method does not belong to customer", 422)
+        super().__init__("Payment method does not exist or doesn't belong to customer")
 
 
 class ManualRetryLimitExceeded(OrderError):

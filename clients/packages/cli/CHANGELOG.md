@@ -1,5 +1,16 @@
 # @polar-sh/cli
 
+## 3.4.1
+
+### Patch Changes
+
+- 6e47c4a: `polar agent setup` now checks the Polar skills in `.agents/skills` and `~/.agents/skills` before asking what to set up, and preselects any that are out of date, so running it again updates them.
+- 7a074d2: `polar config` no longer handles a `webhooks` section, and no longer asks for the `webhooks` scopes when a config declares one. Webhook endpoints are managed from the dashboard or the API.
+- 24419ff: `polar config init` installs `@polar-sh/config` instead of `@polar-sh/polar`, and generated TypeScript configs import `defineConfig` and its helpers from `@polar-sh/config`.
+- 384dfae: The install script now installs `polar` to `~/.polar/bin`. If `polar update` asks you to, run the install script again to move to the new location.
+- Updated dependencies [24419ff]
+  - @polar-sh/config@0.0.1
+
 ## 3.4.0
 
 ### Minor Changes

@@ -1,4 +1,5 @@
 import { OrderStatus } from '@/components/Orders/OrderStatus'
+import { useCatalog } from '@/hooks/queries/catalogs'
 import { useOrders } from '@/hooks/queries/orders'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -17,6 +18,12 @@ export const ProductOrders = ({
   organization,
   product,
 }: ProductOrdersProps) => {
+  const { data: catalog } = useCatalog(
+    organization.feature_settings?.config_as_code_enabled
+      ? product.catalog_id
+      : null,
+  )
+  const versionName = catalog ? (catalog.name ?? 'Untitled') : null
   const { data: productOrders, isLoading: productOrdersIsLoading } = useOrders(
     organization.id,
     {
@@ -34,6 +41,17 @@ export const ProductOrders = ({
           </Text>
           <p className="dark:text-polar-500 text-sm text-gray-500">
             Showing last 10 orders for {product.name}
+            {versionName && (
+              <>
+                {' on version '}
+                <Link
+                  href={`/dashboard/${organization.slug}/products/versions/${product.catalog_id}`}
+                  className="font-medium text-gray-900 hover:underline hover:decoration-current/30 hover:underline-offset-4 dark:text-white"
+                >
+                  {versionName}
+                </Link>
+              </>
+            )}
           </p>
         </div>
         <Link

@@ -33,13 +33,20 @@ export interface ProductPageProps {
 }
 
 export const ProductPage = ({ organization, product }: ProductPageProps) => {
+  const managedAsCode =
+    organization.feature_settings?.config_as_code_enabled ?? false
+  const externalId = managedAsCode ? product.external_id : null
+  const productFilter = externalId
+    ? { external_product_id: [externalId] }
+    : { product_id: [product.id] }
+
   const [allTimeStart, allTimeEnd, allTimeInterval] = getChartRangeParams(
     'all_time',
-    product.created_at,
+    externalId ? organization.created_at : product.created_at,
   )
   const { data: metrics, isLoading: metricsLoading } = useMetrics({
     organization_id: organization.id,
-    product_id: [product.id],
+    ...productFilter,
     startDate: allTimeStart,
     endDate: allTimeEnd,
     interval: allTimeInterval,
@@ -73,7 +80,7 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
     startDate: new Date(),
     endDate: new Date(),
     interval: 'day',
-    product_id: [product.id],
+    ...productFilter,
     metrics: ['revenue'],
   })
 
@@ -81,8 +88,6 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
 
   const updateProduct = useUpdateProduct(organization)
   const deleteProduct = useDeleteProduct(organization)
-  const managedAsCode =
-    organization.feature_settings?.config_as_code_enabled ?? false
   const router = useRouter()
   const safeCopy = useSafeCopy(toast)
 

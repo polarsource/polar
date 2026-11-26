@@ -346,7 +346,9 @@ class MetricsService:
                 period_dict[meta_metric.slug] = 0
             for meta_metric in filtered_post_compute:
                 period = MetricsPeriod.model_validate(period_dict)
-                period_dict[meta_metric.slug] = meta_metric.compute_from_period(period)
+                period_dict[meta_metric.slug] = meta_metric.compute_from_period(
+                    period, interval
+                )
 
             if metrics is not None:
                 all_resolved = pg_slugs | tb_slugs | meta_slugs

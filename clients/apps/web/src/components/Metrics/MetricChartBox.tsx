@@ -54,11 +54,7 @@ interface MetricChartBoxProps {
 const EXPERIMENTAL_METRICS: Record<string, { tooltip: string }> = {
   churn_rate: {
     tooltip:
-      'Churn rate values vary based on the selected time interval. For best results, use monthly or longer intervals.',
-  },
-  ltv: {
-    tooltip:
-      'LTV is based on Churn Rate, and values vary based on the selected interval. For best results, use monthly or longer intervals.',
+      'With daily or weekly intervals, each point is the churn rate over the trailing 30 days. With monthly or yearly intervals, it covers the interval itself.',
   },
 }
 

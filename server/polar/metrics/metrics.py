@@ -100,7 +100,9 @@ class TinybirdMetric(Metric, Protocol):
 
 class MetaMetric(Metric, Protocol):
     @classmethod
-    def compute_from_period(cls, period: "MetricsPeriod") -> int | float: ...
+    def compute_from_period(
+        cls, period: "MetricsPeriod", interval: TimeInterval
+    ) -> int | float: ...
 
 
 class ActiveSubscriptionsMetric(SQLMetric):
@@ -265,7 +267,9 @@ class AnnualRecurringRevenueMetric(MetaMetric):
     dependencies: ClassVar[list[str]] = ["monthly_recurring_revenue"]
 
     @classmethod
-    def compute_from_period(cls, period: "MetricsPeriod") -> int | float:
+    def compute_from_period(
+        cls, period: "MetricsPeriod", interval: TimeInterval
+    ) -> int | float:
         return (period.monthly_recurring_revenue or 0) * 12
 
     @classmethod
@@ -280,7 +284,9 @@ class CommittedAnnualRecurringRevenueMetric(MetaMetric):
     dependencies: ClassVar[list[str]] = ["committed_monthly_recurring_revenue"]
 
     @classmethod
-    def compute_from_period(cls, period: "MetricsPeriod") -> int | float:
+    def compute_from_period(
+        cls, period: "MetricsPeriod", interval: TimeInterval
+    ) -> int | float:
         return (period.committed_monthly_recurring_revenue or 0) * 12
 
     @classmethod
@@ -295,7 +301,9 @@ class CheckoutsConversionMetric(MetaMetric):
     dependencies: ClassVar[list[str]] = ["checkouts", "succeeded_checkouts"]
 
     @classmethod
-    def compute_from_period(cls, period: "MetricsPeriod") -> float:
+    def compute_from_period(
+        cls, period: "MetricsPeriod", interval: TimeInterval
+    ) -> float:
         checkouts = period.checkouts or 0
         succeeded = period.succeeded_checkouts or 0
         return succeeded / checkouts if checkouts > 0 else 0.0
@@ -334,10 +342,11 @@ class AverageRevenuePerUserMetric(SQLMetric):
     def get_sql_expression(
         cls, t: ColumnElement[datetime], i: TimeInterval, now: datetime
     ) -> ColumnElement[int]:
-        subscriber_count = func.count(t.table.c.customer_id.distinct())
-        mrr = func.coalesce(
-            func.sum(t.table.c.monthly_amount).filter(_not_in_trial(t, i)), 0
+        not_in_trial = _not_in_trial(t, i)
+        subscriber_count = func.count(t.table.c.customer_id.distinct()).filter(
+            not_in_trial
         )
+        mrr = func.coalesce(func.sum(t.table.c.monthly_amount).filter(not_in_trial), 0)
         return func.cast(
             case(
                 (subscriber_count == 0, 0),
@@ -358,7 +367,9 @@ class GrossMarginMetric(MetaMetric):
     dependencies: ClassVar[list[str]] = ["cumulative_revenue", "cumulative_costs"]
 
     @classmethod
-    def compute_from_period(cls, period: "MetricsPeriod") -> float:
+    def compute_from_period(
+        cls, period: "MetricsPeriod", interval: TimeInterval
+    ) -> float:
         revenue = period.cumulative_revenue or 0
         costs = period.cumulative_costs or 0
         return revenue - costs
@@ -375,7 +386,9 @@ class GrossMarginPercentageMetric(MetaMetric):
     dependencies: ClassVar[list[str]] = ["cumulative_revenue", "cumulative_costs"]
 
     @classmethod
-    def compute_from_period(cls, period: "MetricsPeriod") -> float:
+    def compute_from_period(
+        cls, period: "MetricsPeriod", interval: TimeInterval
+    ) -> float:
         revenue = period.cumulative_revenue or 0
         costs = period.cumulative_costs or 0
         return (revenue - costs) / revenue if revenue > 0 else 0.0
@@ -392,7 +405,9 @@ class CashflowMetric(MetaMetric):
     dependencies: ClassVar[list[str]] = ["revenue", "costs"]
 
     @classmethod
-    def compute_from_period(cls, period: "MetricsPeriod") -> float:
+    def compute_from_period(
+        cls, period: "MetricsPeriod", interval: TimeInterval
+    ) -> float:
         revenue = period.revenue or 0
         costs = period.costs or 0
         return revenue - costs
@@ -402,8 +417,6 @@ class CashflowMetric(MetaMetric):
         return cumulative_sum(periods, cls.slug)
 
 
-# TODO: Move churn rate to Tinybird — extend the metrics_cancellations pipe
-# to compute the rolling 30-day window in ClickHouse instead of PG.
 class ChurnRateMetric(SQLMetric):
     slug = "churn_rate"
     display_name = "Churn Rate"
@@ -551,7 +564,9 @@ class AverageSeatsPerCustomerMetric(MetaMetric):
     dependencies: ClassVar[list[str]] = ["seats_total", "seat_customers"]
 
     @classmethod
-    def compute_from_period(cls, period: "MetricsPeriod") -> float:
+    def compute_from_period(
+        cls, period: "MetricsPeriod", interval: TimeInterval
+    ) -> float:
         total = period.seats_total or 0
         customers = period.seat_customers or 0
         return total / customers if customers > 0 else 0.0
@@ -568,7 +583,9 @@ class SeatUtilizationRateMetric(MetaMetric):
     dependencies: ClassVar[list[str]] = ["seats_claimed", "seats_total"]
 
     @classmethod
-    def compute_from_period(cls, period: "MetricsPeriod") -> float:
+    def compute_from_period(
+        cls, period: "MetricsPeriod", interval: TimeInterval
+    ) -> float:
         claimed = period.seats_claimed or 0
         total = period.seats_total or 0
         return claimed / total if total > 0 else 0.0
@@ -576,6 +593,16 @@ class SeatUtilizationRateMetric(MetaMetric):
     @classmethod
     def get_cumulative(cls, periods: Iterable["MetricsPeriod"]) -> float:
         return float(cumulative_last(periods, cls.slug))
+
+
+_DAYS_PER_MONTH = 365.25 / 12
+_MONTHS_PER_INTERVAL: dict[TimeInterval, float] = {
+    TimeInterval.hour: 1 / (24 * _DAYS_PER_MONTH),
+    TimeInterval.day: 1 / _DAYS_PER_MONTH,
+    TimeInterval.week: 7 / _DAYS_PER_MONTH,
+    TimeInterval.month: 1,
+    TimeInterval.year: 12,
+}
 
 
 class LTVMetric(MetaMetric):
@@ -589,10 +616,14 @@ class LTVMetric(MetaMetric):
     ]
 
     @classmethod
-    def compute_from_period(cls, period: "MetricsPeriod") -> int:
+    def compute_from_period(
+        cls, period: "MetricsPeriod", interval: TimeInterval
+    ) -> int:
         arpu = period.average_revenue_per_user or 0
-        cost_per_user = period.cost_per_user or 0
+        cost_per_user = (period.cost_per_user or 0) / _MONTHS_PER_INTERVAL[interval]
         churn_rate = period.churn_rate or 0
+        if interval == TimeInterval.year:
+            churn_rate = 1 - (1 - min(churn_rate, 1)) ** (1 / 12)
 
         if churn_rate == 0:
             return 0

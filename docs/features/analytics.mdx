@@ -23,7 +23,7 @@ When you pick a date range, Polar splits it into equal-width **intervals** — o
 - **Committed Subscriptions** — Active subscriptions that have not been canceled, or whose cancellation date is after the interval. These are the subscriptions you can reasonably expect to renew.
 - **Renewed Subscriptions** — Number of orders with billing reason `subscription_cycle` in the interval — i.e. renewals on existing subscriptions.
 - **Average Revenue Per User (ARPU)** — MRR divided by the count of distinct paying subscribers in the interval (trials excluded). Returns 0 when there are no paying subscribers.
-- **Lifetime Value (LTV)** — Estimated revenue per customer over their lifetime: `(ARPU - cost per user) / churn rate`. Returns 0 when churn rate is 0.
+- **Lifetime Value (LTV)** — Estimated revenue per customer over their lifetime: `(ARPU - monthly cost per user) / monthly churn rate`. Every term is normalized to a month, so LTV is comparable across intervals: on yearly intervals the annual churn rate is converted to its monthly equivalent, and cost per user is scaled to a monthly amount for every interval. Returns 0 when churn rate is 0.
 - **New Subscriptions Revenue** — Gross revenue from the first paid order on every new subscription created in the interval.
 - **Renewed Subscriptions Revenue** — Gross revenue from subscription renewal orders in the interval.
 
@@ -31,7 +31,7 @@ When you pick a date range, Polar splits it into equal-width **intervals** — o
 
 - **Canceled Subscriptions** — Subscriptions where the customer triggered a cancellation in the interval. The subscription itself may still be active until the end of the paid period.
 - **Churned Subscriptions** — Subscriptions whose paid period actually ended inside the interval. This is "real" churn — the moment access stops.
-- **Churn Rate** — Churned subscriptions in the interval divided by the active subscription base at the start of the interval, expressed as a percentage.
+- **Churn Rate** — Subscriptions that ended in a window divided by the subscriptions active at the start of that window, expressed as a percentage. Like Churned Subscriptions, a subscription counts when its paid period actually ends, not when the customer cancels. With monthly or yearly intervals, the window is the interval itself. With daily, weekly or hourly intervals, each point covers the 30 days ending with that interval, so it always reads as a monthly churn rate.
 - **Active Subscriptions** — Same definition as in the [Subscriptions](#subscriptions) dashboard. Shown here to contextualise churn against the underlying base.
 - **Committed Subscriptions** — Same definition as in the [Subscriptions](#subscriptions) dashboard.
 - **Cancellation reasons** — Stacked chart of canceled subscriptions broken down by the reason the customer picked at cancellation: *too expensive*, *missing features*, *switched service*, *unused*, *customer service*, *low quality*, *too complex*, or *other* (free-form or no reason given).

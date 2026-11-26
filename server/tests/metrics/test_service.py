@@ -695,16 +695,16 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         auth_type="user",
     ),
     QueryCase(
-        label="churn_rate_rolling",
-        org_key="churn_rate_rolling",
+        label="churn_rate_daily",
+        org_key="churn_rate_ended",
         start_date=date(2024, 1, 1),
-        end_date=date(2024, 3, 15),
+        end_date=date(2024, 3, 31),
         interval=TimeInterval.day,
         auth_type="user",
     ),
     QueryCase(
         label="churn_rate_yearly",
-        org_key="churn_rate_rolling",
+        org_key="churn_rate_ended",
         start_date=date(2024, 1, 1),
         end_date=date(2025, 12, 31),
         interval=TimeInterval.year,
@@ -1303,9 +1303,33 @@ async def _seed_arpu(
         orders2,
         events=events,
     )
+    c3 = await create_customer(
+        save_fixture, organization=organization, email="c3@example.com"
+    )
+    sub_c3: dict[str, SubscriptionFixture] = {
+        "subscription_3": {
+            "started_at": date(2024, 1, 1),
+            "trial_start": date(2024, 1, 1),
+            "trial_end": date(2024, 3, 1),
+            "product": "monthly_subscription",
+        }
+    }
+    products3, subs3, orders3 = await _create_fixtures(
+        save_fixture, c3, organization, PRODUCTS, sub_c3, {}
+    )
+    await _append_fixture_events(
+        save_fixture,
+        organization,
+        c3,
+        products3,
+        subs3,
+        orders3,
+        events=events,
+    )
     all_product_ids = {k: v.id for k, v in products1.items()}
     all_product_ids.update({k: v.id for k, v in products2.items()})
-    return all_product_ids, {"c1": c1.id, "c2": c2.id}
+    all_product_ids.update({k: v.id for k, v in products3.items()})
+    return all_product_ids, {"c1": c1.id, "c2": c2.id, "c3": c3.id}
 
 
 async def _seed_mrr_interval_count(
@@ -1744,7 +1768,7 @@ async def _seed_churn_rate(
     return {k: v.id for k, v in products.items()}, {"customer": customer.id}
 
 
-async def _seed_churn_rate_rolling(
+async def _seed_churn_rate_ended(
     save_fixture: SaveFixture,
     organization: Organization,
     events: list[Event],
@@ -2620,11 +2644,11 @@ async def metrics_harness(
                 organization=cr_org, product_ids=p, customer_ids=c
             )
 
-            # --- churn_rate_rolling ---
-            crr_org = await make_org("churn_rate_rolling")
-            p, c = await _seed_churn_rate_rolling(save_fixture, crr_org, events)
-            organizations["churn_rate_rolling"] = OrganizationContext(
-                organization=crr_org, product_ids=p, customer_ids=c
+            # --- churn_rate_ended ---
+            cre_org = await make_org("churn_rate_ended")
+            p, c = await _seed_churn_rate_ended(save_fixture, cre_org, events)
+            organizations["churn_rate_ended"] = OrganizationContext(
+                organization=cre_org, product_ids=p, customer_ids=c
             )
 
             # --- customer_filter_external ---
@@ -3919,21 +3943,21 @@ class TestGetMetrics:
         assert len(metrics.periods) == 3
 
         jan = metrics.periods[0]
-        assert jan.active_subscriptions == 2
+        assert jan.active_subscriptions == 3
         assert jan.monthly_recurring_revenue == 183_33
         assert jan.average_revenue_per_user == 91_67
 
         feb = metrics.periods[1]
-        assert feb.active_subscriptions == 2
+        assert feb.active_subscriptions == 3
         assert feb.monthly_recurring_revenue == 183_33
         assert feb.average_revenue_per_user == 91_67
 
         mar = metrics.periods[2]
-        assert mar.active_subscriptions == 2
-        assert mar.monthly_recurring_revenue == 183_33
-        assert mar.average_revenue_per_user == 91_67
+        assert mar.active_subscriptions == 3
+        assert mar.monthly_recurring_revenue == 283_33
+        assert mar.average_revenue_per_user == 94_44
 
-        assert metrics.totals.average_revenue_per_user == 91_67
+        assert metrics.totals.average_revenue_per_user == 94_44
 
     async def test_mrr_with_recurring_interval_count_3mo(
         self,
@@ -4364,18 +4388,13 @@ class TestGetMetrics:
         assert mar.churned_subscriptions == 1
         assert mar.churn_rate == 0.5
 
-    async def test_churn_rate_rolling_window(
+    async def test_churn_rate_daily(
         self,
         metrics_harness: MetricsHarness,
         metrics_session: AsyncSession,
     ) -> None:
-        """Test that churn rate uses a rolling 30-day window.
-
-        Setup: 5 subs started Jan 1, 1 canceled on Feb 1.
-        The cancellation should affect churn_rate for exactly 30 days,
-        then fall out of the window.
-        """
-        case = QUERY_CASES_BY_LABEL["churn_rate_rolling"]
+        """5 subs started Jan 1; one canceled Feb 1 and ended Mar 1."""
+        case = QUERY_CASES_BY_LABEL["churn_rate_daily"]
         org_ctx = metrics_harness.organizations[case.org_key]
         auth_subject = _metrics_auth_subject(
             metrics_harness.user,
@@ -4397,33 +4416,19 @@ class TestGetMetrics:
 
         periods_by_date = {p.timestamp.date(): p for p in metrics.periods}
 
-        periods_by_date = {p.timestamp.date(): p for p in metrics.periods}
-
-        # Before cancellation: window [t-30d, t) has no cancellations
+        # Each daily point covers the 30 days ending with that day.
         assert periods_by_date[date(2024, 2, 1)].churn_rate == 0.0
-
-        # Next day: canceled_at (Feb 1) is now in [Jan 3, Feb 2)
-        assert periods_by_date[date(2024, 2, 2)].churn_rate == pytest.approx(0.2)
-
-        # Still in window: [Jan 31, Mar 1) includes Feb 1
+        assert periods_by_date[date(2024, 2, 29)].churn_rate == 0.0
         assert periods_by_date[date(2024, 3, 1)].churn_rate == pytest.approx(0.2)
-
-        # Last day in window: [Feb 1, Mar 2) includes Feb 1 (>= Feb 1)
-        assert periods_by_date[date(2024, 3, 2)].churn_rate == pytest.approx(0.2)
-
-        # Falls out: [Feb 2, Mar 3) does not include Feb 1
-        assert periods_by_date[date(2024, 3, 3)].churn_rate == 0.0
+        assert periods_by_date[date(2024, 3, 30)].churn_rate == pytest.approx(0.2)
+        assert periods_by_date[date(2024, 3, 31)].churn_rate == 0.0
 
     async def test_churn_rate_yearly(
         self,
         metrics_harness: MetricsHarness,
         metrics_session: AsyncSession,
     ) -> None:
-        """Test that yearly churn uses the full year, not a 30-day window.
-
-        Setup: 5 subs started Jan 1 2024, 1 canceled Feb 1 2024.
-        Yearly should count all cancellations in [t, t+1year) / active at t.
-        """
+        """5 subs started Jan 1 2024; one canceled Feb 1 and ended Mar 1 2024."""
         case = QUERY_CASES_BY_LABEL["churn_rate_yearly"]
         org_ctx = metrics_harness.organizations[case.org_key]
         auth_subject = _metrics_auth_subject(
@@ -4446,10 +4451,10 @@ class TestGetMetrics:
 
         periods_by_date = {p.timestamp.date(): p for p in metrics.periods}
 
-        # 2024: 1 canceled in [Jan 1, Jan 1 2025) / 5 active at Jan 1
+        # 2024: 1 ended in [Jan 1, Jan 1 2025) / 5 active at Jan 1
         assert periods_by_date[date(2024, 1, 1)].churn_rate == pytest.approx(0.2)
 
-        # 2025: 0 canceled in [Jan 1, Jan 1 2026) / 4 active at Jan 1
+        # 2025: 0 ended in [Jan 1, Jan 1 2026) / 4 active at Jan 1
         assert periods_by_date[date(2025, 1, 1)].churn_rate == 0.0
 
     async def test_customer_filter_with_external_customer_id(

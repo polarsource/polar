@@ -586,49 +586,29 @@ def get_churn_rate_cte(
         customer_id=customer_id,
     )
 
-    if interval == TimeInterval.year:
+    window_end = timestamp_column + interval.sql_interval()
+    if interval in {TimeInterval.year, TimeInterval.month}:
         window_start = timestamp_column
-        window_end = timestamp_column + interval.sql_interval()
     else:
-        window_start = timestamp_column - text("'30 days'::interval")
-        window_end = timestamp_column
+        window_start = window_end - text("'30 days'::interval")
+    end_date = func.coalesce(Subscription.ended_at, Subscription.ends_at)
 
-    canceled_30d = func.count(
-        case(
-            (
-                and_(
-                    Subscription.canceled_at.is_not(None),
-                    Subscription.canceled_at >= window_start,
-                    Subscription.canceled_at < window_end,
-                ),
-                Subscription.id,
-            ),
-        )
+    ended_in_window = and_(
+        end_date >= window_start,
+        end_date < window_end,
+    )
+    active_at_window_start = and_(
+        Subscription.started_at <= window_start,
+        or_(end_date.is_(None), end_date >= window_start),
     )
 
-    active_at_window_start = func.count(
-        case(
-            (
-                and_(
-                    Subscription.started_at <= window_start,
-                    or_(
-                        func.coalesce(Subscription.ended_at, Subscription.ends_at).is_(
-                            None
-                        ),
-                        func.coalesce(Subscription.ended_at, Subscription.ends_at)
-                        > window_start,
-                    ),
-                ),
-                Subscription.id,
-            ),
-        )
-    )
+    churned_count = func.count(Subscription.id).filter(ended_in_window)
+    active_count = func.count(Subscription.id).filter(active_at_window_start)
 
     churn_rate = case(
         (
-            active_at_window_start > 0,
-            func.cast(canceled_30d, Numeric)
-            / func.cast(active_at_window_start, Numeric),
+            active_count > 0,
+            func.cast(churned_count, Numeric) / func.cast(active_count, Numeric),
         ),
         else_=0,
     )
@@ -638,23 +618,7 @@ def get_churn_rate_cte(
         isouter=True,
         onclause=and_(
             Subscription.id.in_(readable_subscriptions_statement),
-            or_(
-                and_(
-                    Subscription.started_at <= window_start,
-                    or_(
-                        func.coalesce(Subscription.ended_at, Subscription.ends_at).is_(
-                            None
-                        ),
-                        func.coalesce(Subscription.ended_at, Subscription.ends_at)
-                        > window_start,
-                    ),
-                ),
-                and_(
-                    Subscription.canceled_at.is_not(None),
-                    Subscription.canceled_at >= window_start,
-                    Subscription.canceled_at < window_end,
-                ),
-            ),
+            or_(active_at_window_start, ended_in_window),
         ),
     )
 

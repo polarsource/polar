@@ -63,6 +63,7 @@ const run = async (
       Effect.provideService(
         BillingConfig,
         BillingConfig.of({
+          reset: () => Effect.die('unused'),
           generate: () => Effect.die('unused'),
           load: () =>
             entries === null

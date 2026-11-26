@@ -27,6 +27,11 @@ import { loader } from '@/services/billing-config/load'
 import { plan } from '@/services/billing-config/plan'
 import { deprecations, prune } from '@/services/billing-config/prune'
 import { catalogs, publish } from '@/services/billing-config/publish'
+import {
+  type ApproveReset,
+  type ResetResult,
+  reset,
+} from '@/services/billing-config/reset'
 import { authenticatedClient } from '@/services/client'
 import { type Ran, run } from '@/utils/run'
 
@@ -35,6 +40,7 @@ export type {
   NameResources,
   Prepared,
 } from '@/services/billing-config/init'
+export type { ResetPending, ResetResult } from '@/services/billing-config/reset'
 export {
   languageFor,
   LANGUAGES,
@@ -92,6 +98,11 @@ export class BillingConfig extends Context.Service<
     disable: (
       organization: ActiveOrganization,
     ) => Effect.Effect<void, AuthError | BillingConfigError>
+    reset: <E, R>(
+      organization: ActiveOrganization,
+      file: string | undefined,
+      approve: ApproveReset<E, R>,
+    ) => Effect.Effect<ResetResult, AuthError | BillingConfigError | E, R>
     generate: (
       config: LoadedConfig,
       options: GenerateOptions,
@@ -118,6 +129,7 @@ const make = Effect.gen(function* () {
     catalogs: catalogs(clients),
     publish: publish(clients),
     disable: disable(clients),
+    reset: reset(fs, clients),
     generate: write(fs),
   })
 })

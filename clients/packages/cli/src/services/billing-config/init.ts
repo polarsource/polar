@@ -73,12 +73,21 @@ const unsupportedResources = (
     Effect.option,
   )
 
-const exportConfig = (clients: Clients, organization: ActiveOrganization) =>
+export const exportConfig = (
+  clients: Clients,
+  organization: ActiveOrganization,
+  catalogId?: string,
+) =>
   Effect.gen(function* () {
     const response = yield* clients[organization.environment].execute(
       HttpClientRequest.get(
         yield* apiUrl(organization.environment, '/config/'),
-      ).pipe(withOrganization(organization.id)),
+      ).pipe(
+        withOrganization(organization.id),
+        HttpClientRequest.setUrlParams(
+          catalogId === undefined ? [] : [['catalog_id', catalogId]],
+        ),
+      ),
     )
     if (response.status === 409) {
       const unsupported = yield* unsupportedResources(response, organization)
@@ -220,7 +229,11 @@ const resolveTarget = (
     }
   })
 
-const write = (fs: FileSystem.FileSystem, path: string, content: string) =>
+export const writeConfig = (
+  fs: FileSystem.FileSystem,
+  path: string,
+  content: string,
+) =>
   fs.makeDirectory(dirname(path), { recursive: true }).pipe(
     Effect.andThen(fs.writeFileString(path, content)),
     Effect.mapError(
@@ -281,7 +294,7 @@ export const init =
       if (keyed.length > 0) {
         exported = yield* exportConfig(clients, organization)
       }
-      yield* write(fs, path, yield* language.render(exported.config))
+      yield* writeConfig(fs, path, yield* language.render(exported.config))
       return {
         file: display(path),
         format: language.format,

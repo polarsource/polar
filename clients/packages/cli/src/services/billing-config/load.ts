@@ -11,8 +11,14 @@ import {
   supportedFiles,
 } from '@/services/billing-config/languages'
 
-export const loader = (fs: FileSystem.FileSystem) => {
-  const findDefault = Effect.gen(function* () {
+export const findConfigFile = (fs: FileSystem.FileSystem, file?: string) =>
+  Effect.gen(function* () {
+    if (file !== undefined) {
+      if (yield* exists(fs, file)) return file
+      return yield* new BillingConfigError({
+        message: `${file} does not exist`,
+      })
+    }
     for (const name of DEFAULT_CONFIG_FILES) {
       if (yield* exists(fs, name)) return name
     }
@@ -22,14 +28,11 @@ export const loader = (fs: FileSystem.FileSystem) => {
     })
   })
 
-  return (file?: string): Effect.Effect<LoadedConfig, BillingConfigError> =>
+export const loader =
+  (fs: FileSystem.FileSystem) =>
+  (file?: string): Effect.Effect<LoadedConfig, BillingConfigError> =>
     Effect.gen(function* () {
-      const resolved = file ?? (yield* findDefault)
-      if (!(yield* exists(fs, resolved))) {
-        return yield* new BillingConfigError({
-          message: `${resolved} does not exist`,
-        })
-      }
+      const resolved = yield* findConfigFile(fs, file)
       const language = languageOf(resolved)
       if (language === undefined) {
         return yield* new BillingConfigError({
@@ -39,4 +42,3 @@ export const loader = (fs: FileSystem.FileSystem) => {
       }
       return yield* language.load(fs, resolved)
     })
-}

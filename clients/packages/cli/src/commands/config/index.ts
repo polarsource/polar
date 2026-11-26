@@ -5,6 +5,7 @@ import { generate } from '@/commands/config/generate'
 import { init } from '@/commands/config/init'
 import { prune } from '@/commands/config/prune'
 import { publish } from '@/commands/config/publish'
+import { reset } from '@/commands/config/reset'
 import { validate } from '@/commands/config/validate'
 
 export const config = Command.make('config').pipe(
@@ -14,6 +15,7 @@ export const config = Command.make('config').pipe(
     validate,
     draft,
     publish,
+    reset,
     generate,
     prune,
     disable,

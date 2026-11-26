@@ -1,0 +1,24 @@
+server/tests/customer_portal/endpoints/test_oauth_accounts.py
+  s_a9b653c35c3efa::t_c54567842f132f 155,200-202
+  s_a9b653c35c3efa::t_c1a792a8e1f11c 11,129-131,134,149-154,156-199,203
+  s_a9b653c35c3efa::t_982692589ba443 204
+server/polar/customer_portal/endpoints/oauth_accounts.py
+  s_a9b653c35c3efa::t_79612af8568b4d 1,4,14,16,28,141-144,153-155,235-239,246-248
+  s_a9b653c35c3efa::t_ae83abd243af3f 240-245
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "83ca4523473add5f9549774d18a4fd76cfbf75fb",
+  "prompts": {},
+  "sessions": {
+    "s_a9b653c35c3efa": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a21745-aa95-7521-9ecd-5f1be3763195",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

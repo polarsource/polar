@@ -4452,6 +4452,30 @@ async def test_flushes_a_thousand_events_in_as_many_commands_as_one(
 
 
 @pytest.mark.anyio
+async def test_queues_an_event_in_two_commands_and_flushes_at_no_cost_while_a_flusher_holds_the_first_slot(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    redis_commands: collections.Counter[str],
+) -> None:
+    url, redis = redis_connection
+    async with RedisEventQueue(url, stream=QUEUE).open(
+        ingest=functools.partial(_ingest_events, polar_client)
+    ) as queue:
+        # A serverless instance flushes on every request: the flusher in flight delivers
+        # its event.
+        await redis.set(f"{QUEUE}:flusher:0", "other", px=30_000)
+
+        async def enqueue_and_flush() -> None:
+            await queue.enqueue(_event())
+            await queue.flush()
+
+        assert await _cost(redis_commands, enqueue_and_flush) == {
+            "xadd": 1,
+            "exists": 1,
+        }
+
+
+@pytest.mark.anyio
 async def test_warms_a_known_customer_over_eleven_reducers_in_one_command(
     redis_connection: tuple[str, Redis],
     polar_client: httpx2.AsyncClient,

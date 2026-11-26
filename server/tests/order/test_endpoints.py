@@ -1047,6 +1047,9 @@ class TestCreateOrder:
         )
 
         assert response.status_code == 422
+        assert {
+            (error["type"], tuple(error["loc"])) for error in response.json()["detail"]
+        } >= {("missing", ("body", "customer_id")), ("missing", ("body", "product_id"))}
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_write}))
     async def test_missing_organization_id(

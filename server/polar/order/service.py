@@ -125,6 +125,7 @@ from polar.subscription.service import SubscriptionUpdateContext
 from polar.subscription.service import subscription as subscription_service
 from polar.tax.calculation import (
     CalculationExpiredError,
+    InvalidTaxIDError,
     TaxCalculationLogicalError,
     TaxCode,
 )
@@ -1441,6 +1442,21 @@ class OrderService:
                 tax_exempted=False,
                 allow_silent_failure=False,
             )
+        except InvalidTaxIDError as e:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "customer_id"),
+                        "msg": (
+                            "Tax could not be calculated for this order. The "
+                            "customer's tax ID is invalid: update or remove it "
+                            "before an off-session charge can be created."
+                        ),
+                        "input": payload.customer_id,
+                    }
+                ]
+            ) from e
         except TaxCalculationLogicalError as e:
             raise PolarRequestValidationError(
                 [

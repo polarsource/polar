@@ -942,7 +942,7 @@ export type PaymentTrigger =
   | "retry_admin"
   | "retry_payment_alert";
 /**
- * The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role).
+ * Permission
  */
 export type Permission = "pull" | "triage" | "push" | "maintain" | "admin";
 /**
@@ -10838,7 +10838,7 @@ export interface CustomerOrderUpdate {
    */
   billing_name?: string | null;
   /**
-   * The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated.
+   * The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated on draft orders.
    */
   billing_address?: AddressInput | null;
 }
@@ -18122,7 +18122,7 @@ export interface OrderUpdate {
    */
   billing_name?: string | null;
   /**
-   * The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated.
+   * The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated on draft orders.
    */
   billing_address?: AddressInput | null;
 }

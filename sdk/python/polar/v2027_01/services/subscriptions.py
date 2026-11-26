@@ -64,6 +64,7 @@ class SubscriptionsSync(SyncServiceBase):
         canceled_at_before: str | None = None,
         started_after: str | None = None,
         started_before: str | None = None,
+        query: str | None = None,
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[SubscriptionSortProperty] | None = ["-started_at"],
@@ -91,6 +92,7 @@ class SubscriptionsSync(SyncServiceBase):
             canceled_at_before: Filter by cancellation date (before or equal to).
             started_after: Only include subscriptions started after this date.
             started_before: Only include subscriptions started before this date.
+            query: Filter by customer name, email or external ID, or a subscription or customer ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
@@ -124,6 +126,7 @@ class SubscriptionsSync(SyncServiceBase):
                 "canceled_at_before": canceled_at_before,
                 "started_after": started_after,
                 "started_before": started_before,
+                "query": query,
                 "page": page,
                 "limit": limit,
                 "sorting": sorting,
@@ -157,6 +160,7 @@ class SubscriptionsSync(SyncServiceBase):
         canceled_at_before: str | None = None,
         started_after: str | None = None,
         started_before: str | None = None,
+        query: str | None = None,
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[SubscriptionSortProperty] | None = ["-started_at"],
@@ -184,6 +188,7 @@ class SubscriptionsSync(SyncServiceBase):
             canceled_at_before: Filter by cancellation date (before or equal to).
             started_after: Only include subscriptions started after this date.
             started_before: Only include subscriptions started before this date.
+            query: Filter by customer name, email or external ID, or a subscription or customer ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
@@ -217,6 +222,7 @@ class SubscriptionsSync(SyncServiceBase):
                 canceled_at_before=canceled_at_before,
                 started_after=started_after,
                 started_before=started_before,
+                query=query,
                 page=page,
                 limit=limit,
                 sorting=sorting,
@@ -544,6 +550,7 @@ class SubscriptionsAsync(AsyncServiceBase):
         canceled_at_before: str | None = None,
         started_after: str | None = None,
         started_before: str | None = None,
+        query: str | None = None,
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[SubscriptionSortProperty] | None = ["-started_at"],
@@ -571,6 +578,7 @@ class SubscriptionsAsync(AsyncServiceBase):
             canceled_at_before: Filter by cancellation date (before or equal to).
             started_after: Only include subscriptions started after this date.
             started_before: Only include subscriptions started before this date.
+            query: Filter by customer name, email or external ID, or a subscription or customer ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
@@ -604,6 +612,7 @@ class SubscriptionsAsync(AsyncServiceBase):
                 "canceled_at_before": canceled_at_before,
                 "started_after": started_after,
                 "started_before": started_before,
+                "query": query,
                 "page": page,
                 "limit": limit,
                 "sorting": sorting,
@@ -637,6 +646,7 @@ class SubscriptionsAsync(AsyncServiceBase):
         canceled_at_before: str | None = None,
         started_after: str | None = None,
         started_before: str | None = None,
+        query: str | None = None,
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[SubscriptionSortProperty] | None = ["-started_at"],
@@ -664,6 +674,7 @@ class SubscriptionsAsync(AsyncServiceBase):
             canceled_at_before: Filter by cancellation date (before or equal to).
             started_after: Only include subscriptions started after this date.
             started_before: Only include subscriptions started before this date.
+            query: Filter by customer name, email or external ID, or a subscription or customer ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
@@ -697,6 +708,7 @@ class SubscriptionsAsync(AsyncServiceBase):
                 canceled_at_before=canceled_at_before,
                 started_after=started_after,
                 started_before=started_before,
+                query=query,
                 page=page,
                 limit=limit,
                 sorting=sorting,

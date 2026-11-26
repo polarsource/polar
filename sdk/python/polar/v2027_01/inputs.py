@@ -21,6 +21,7 @@ from polar.v2027_01.literals import (
     MemberRole,
     MeterUnit,
     OrganizationSocialPlatforms,
+    PaymentProcessor,
     Permission,
     PresentmentCurrency,
     ProductVisibility,
@@ -1779,6 +1780,61 @@ class CustomerMeterCreditsIDCreate(typing.TypedDict):
     """The ID of the meter."""
 
 
+class CustomerOrderCreate(typing.TypedDict):
+    subscription_id: str
+    """ID of the subscription whose trial ended."""
+
+
+class CustomerOrderPayConfirmationToken(typing.TypedDict):
+    billing_name: typing.NotRequired[str | None]
+    """The name of the customer that should appear on the invoice."""
+
+    billing_address: typing.NotRequired[AddressInput]
+    """The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated on draft orders."""
+
+    tax_id: typing.NotRequired[str | None]
+    """Tax ID for the billing address on a draft order. Set to null to remove it."""
+
+    discount_code: typing.NotRequired[str | None]
+    """Discount code to apply to the draft order. Set to null to remove it."""
+
+    payment_processor: PaymentProcessor
+
+    confirmation_token_id: str
+
+
+class CustomerOrderPayPaymentMethod(typing.TypedDict):
+    billing_name: typing.NotRequired[str | None]
+    """The name of the customer that should appear on the invoice."""
+
+    billing_address: typing.NotRequired[AddressInput]
+    """The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated on draft orders."""
+
+    tax_id: typing.NotRequired[str | None]
+    """Tax ID for the billing address on a draft order. Set to null to remove it."""
+
+    discount_code: typing.NotRequired[str | None]
+    """Discount code to apply to the draft order. Set to null to remove it."""
+
+    payment_method_id: str
+
+
+class CustomerOrderPayWithoutCredentials(typing.TypedDict):
+    """Pay a zero-due order that needs no payment method for future charges."""
+
+    billing_name: typing.NotRequired[str | None]
+    """The name of the customer that should appear on the invoice."""
+
+    billing_address: typing.NotRequired[AddressInput]
+    """The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated on draft orders."""
+
+    tax_id: typing.NotRequired[str | None]
+    """Tax ID for the billing address on a draft order. Set to null to remove it."""
+
+    discount_code: typing.NotRequired[str | None]
+    """Discount code to apply to the draft order. Set to null to remove it."""
+
+
 class CustomerOrderUpdate(typing.TypedDict):
     """Schema to update an order."""
 
@@ -1786,7 +1842,13 @@ class CustomerOrderUpdate(typing.TypedDict):
     """The name of the customer that should appear on the invoice."""
 
     billing_address: typing.NotRequired[AddressInput]
-    """The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated."""
+    """The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated on draft orders."""
+
+    tax_id: typing.NotRequired[str | None]
+    """Tax ID for the billing address on a draft order. Set to null to remove it."""
+
+    discount_code: typing.NotRequired[str | None]
+    """Discount code to apply to the draft order. Set to null to remove it."""
 
 
 class CustomerPaymentMethodConfirm(typing.TypedDict):
@@ -2769,7 +2831,13 @@ class OrderUpdate(typing.TypedDict):
     """The name of the customer that should appear on the invoice."""
 
     billing_address: typing.NotRequired[AddressInput]
-    """The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated."""
+    """The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated on draft orders."""
+
+    tax_id: typing.NotRequired[str | None]
+    """Tax ID for the billing address on a draft order. Set to null to remove it."""
+
+    discount_code: typing.NotRequired[str | None]
+    """Discount code to apply to the draft order. Set to null to remove it."""
 
 
 class OrganizationAvatarFileCreate(typing.TypedDict):
@@ -2949,6 +3017,8 @@ class OrganizationSubscriptionSettings(typing.TypedDict):
     proration_behavior: PublicSubscriptionProrationBehavior | typing.Literal["auto"]
 
     benefit_revocation_grace_period: int
+
+    trial_ended_reactivation_period: typing.NotRequired[int]
 
     prevent_trial_abuse: bool
 
@@ -4246,6 +4316,12 @@ CustomerBenefitGrantUpdate: typing.TypeAlias = typing.Annotated[
 ]
 
 CustomerCreate: typing.TypeAlias = CustomerIndividualCreate | CustomerTeamCreate
+
+CustomerOrderPay: typing.TypeAlias = (
+    CustomerOrderPayPaymentMethod
+    | CustomerOrderPayConfirmationToken
+    | CustomerOrderPayWithoutCredentials
+)
 
 CustomerSubscriptionUpdate: typing.TypeAlias = (
     CustomerSubscriptionUpdateProduct

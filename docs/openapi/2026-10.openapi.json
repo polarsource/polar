@@ -48146,7 +48146,7 @@
                 "type": "null"
               }
             ],
-            "description": "The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated."
+            "description": "The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated on draft orders."
           }
         },
         "type": "object",
@@ -66007,7 +66007,7 @@
                 "type": "null"
               }
             ],
-            "description": "The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated."
+            "description": "The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated on draft orders."
           }
         },
         "type": "object",

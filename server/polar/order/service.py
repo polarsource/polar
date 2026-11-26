@@ -1477,13 +1477,13 @@ class OrderService:
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "customer_id"),
+                        "loc": ("body", customer_loc),
                         "msg": (
                             "Tax could not be calculated for this order. The "
                             "customer's tax ID is invalid: update or remove it "
                             "before an off-session charge can be created."
                         ),
-                        "input": payload.customer_id,
+                        "input": customer_input,
                     }
                 ]
             ) from e

@@ -432,7 +432,7 @@ jobs:
       fail-fast: false
       matrix:
         shard: ["1", "2", "3", "4", "tinybird"]
-    runs-on: ${{ matrix.shard == 'tinybird' && 'blacksmith-4vcpu-ubuntu-2404' || 'blacksmith-8vcpu-ubuntu-2404' }}
+    runs-on: blacksmith-8vcpu-ubuntu-2404
     timeout-minutes: 15
     env:
       POLAR_ENV: testing
@@ -627,7 +627,7 @@ jobs:
           POLAR_TEST_TINYBIRD_TOKEN_FILE: ${{ runner.temp }}/tinybird-token
         run: |
           uv run python -m scripts.pytest_shards --tinybird > "$RUNNER_TEMP/test-files"
-          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "tinybird and not benchmark" -n 4 --dist=loadgroup -p no:sugar -p no:cov -p no:codspeed -p no:locust -p no:split --durations=0
+          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "tinybird and not benchmark" -n 6 --dist=loadgroup -p no:sugar -p no:cov -p no:codspeed -p no:locust -p no:split --durations=0
 
       - name: 📊 Upload shard test durations
         if: github.event_name == 'push' && matrix.shard != 'tinybird'

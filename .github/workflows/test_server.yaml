@@ -438,6 +438,7 @@ jobs:
       POLAR_ENV: testing
       POLAR_EMAIL_RENDERER_BINARY_PATH: ${{ matrix.shard == 'tinybird' && '/tmp/email-renderer' || format('{0}/server/emails/bin/react-email-pkg', github.workspace) }}
       POLAR_TEST_DATABASE_TEMPLATE: polar_test
+      POLAR_TEST_SKIP_DB_DROP: "true"
       POLAR_TEST_XDIST: "true"
       POLAR_TEST_TINYBIRD_REQUIRED: ${{ matrix.shard == 'tinybird' && 'true' || 'false' }}
 

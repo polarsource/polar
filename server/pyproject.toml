@@ -112,7 +112,7 @@ api = { cmd = "env AUTHLIB_INSECURE_TRANSPORT=true uvicorn polar.app:app --reloa
 worker = { cmd = "dramatiq -p 1 -t 1 --watch polar -f polar.worker.scheduler:start polar.worker.run", help = "run worker" }
 mover = { cmd = "python -m polar.event.mover", help = "run staged events mover" }
 test = { cmd = "POLAR_ENV=testing python -m pytest --cov polar/ --cov-report=term-missing", help = "run all tests" }
-test_fast = { cmd = "POLAR_ENV=testing python -m pytest -n auto -p no:sugar --no-cov", help = "run all tests, but fast" }
+test_fast = { cmd = "POLAR_ENV=testing python -m pytest -n auto --dist=loadgroup -p no:sugar -p no:cov -p no:codspeed -p no:locust -p no:split", help = "run all tests, but fast" }
 loadtest = { cmd = "locust -f load_tests/locustfile.py --host=http://127.0.0.1:8000", help = "run load tests (interactive)" }
 loadtest_events = { cmd = "locust -f load_tests/locustfile.py --headless EventIngestionStressUser", help = "stress test event ingestion against LOAD_TEST_EVENT_INGESTION_URL, pass --users (requests/s) and --run-time" }
 lint = { cmd = "ruff format . && ruff check --fix . && task lint_ast", help = "run linters with autofix" }
@@ -120,7 +120,7 @@ lint_check = { cmd = "ruff format --check . && ruff check . && task lint_ast", h
 lint_ast = { cmd = "python -m scripts.linters", help = "run all custom AST lint rules" }
 lint_subquery = { cmd = "python -m scripts.linters --only subquery", help = "flag .subquery() calls that don't narrow columns" }
 lint_org_scope = { cmd = "python -m scripts.linters --only org-scope", help = "flag inline UserOrganization filters that bypass select_user_org_ids" }
-lint_types = { cmd = "mypy --num-workers 2 polar scripts tests benchmarks", help = "run mypy type verify" }
+lint_types = { cmd = "mypy --num-workers 4 polar scripts tests benchmarks", help = "run mypy type verify" }
 db_migrate = { cmd = "python -m scripts.db upgrade", help = "run alembic upgrade" }
 db_recreate = { cmd = "python -m scripts.db recreate", help = "drop and recreate database" }
 db_reparent = { cmd = "python -m scripts.db reparent", help = "try to auto-fix conflicting migrations" }

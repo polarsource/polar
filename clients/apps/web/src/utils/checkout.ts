@@ -17,6 +17,7 @@ const _getCheckoutById = async (
     }),
     {
       404: notFound,
+      422: notFound,
     },
   )
 }

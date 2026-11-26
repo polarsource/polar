@@ -118,6 +118,7 @@ const _getProductById = async (
     }),
     {
       404: notFound,
+      422: notFound,
     },
   )
 }

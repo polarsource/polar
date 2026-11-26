@@ -4,15 +4,28 @@ import { Pagination } from '@/components/Products/Benefits/components/Pagination
 import { EmptyState } from '@/components/Shared/EmptyState'
 import { LoadingBox } from '@/components/Shared/LoadingBox'
 import { useDiscounts } from '@/hooks/queries'
+import { useSelectedProducts } from '@/hooks/queries/products'
 import { getDiscountDisplay } from '@/utils/discount'
 import { schemas } from '@polar-sh/client'
 import { List, ListItem, Pill, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { ChevronRight, DiscountOutlined } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 
 const PAGE_SIZE = 5
+
+const getApplicableDiscounts = (
+  discounts: schemas['Discount'][],
+  productVersions: schemas['Product'][],
+) => {
+  const versionIds = new Set(productVersions.map((version) => version.id))
+  return discounts.filter(
+    (discount) =>
+      discount.products.length === 0 ||
+      discount.products.some((p) => versionIds.has(p.id)),
+  )
+}
 
 export interface ProductDiscountsProps {
   organization: schemas['Organization']
@@ -28,25 +41,31 @@ export const ProductDiscounts = ({
     organization.id,
     { limit: 100 },
   )
-
-  const applicableDiscounts = useMemo(
-    () =>
-      discountsData?.items.filter(
-        (discount) =>
-          discount.products.length === 0 ||
-          discount.products.some((p) => p.id === product.id),
-      ) ?? [],
-    [discountsData?.items, product.id],
+  // Checkout applies a discount to every version of a config-as-code product
+  const managedAsCode =
+    organization.feature_settings?.config_as_code_enabled ?? false
+  const { data: versions } = useSelectedProducts(
+    {
+      organization_id: organization.id,
+      external_id:
+        managedAsCode && product.external_id ? [product.external_id] : [],
+    },
+    { includeArchived: true, includeAllVersions: true },
+  )
+  const applicableDiscounts = getApplicableDiscounts(
+    discountsData?.items ?? [],
+    [product, ...(versions ?? [])],
   )
 
   const discountCount = applicableDiscounts.length
   const totalPages = Math.max(1, Math.ceil(discountCount / PAGE_SIZE))
   const currentPage = Math.min(page, totalPages)
 
-  const pageDiscounts = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE
-    return applicableDiscounts.slice(start, start + PAGE_SIZE)
-  }, [applicableDiscounts, currentPage])
+  const pageStart = (currentPage - 1) * PAGE_SIZE
+  const pageDiscounts = applicableDiscounts.slice(
+    pageStart,
+    pageStart + PAGE_SIZE,
+  )
 
   return (
     <Box flexDirection="column" gap="xl" minWidth={0}>

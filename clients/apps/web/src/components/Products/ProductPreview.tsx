@@ -125,11 +125,6 @@ export const ProductPreview = ({
               }
             />
             <Text color="muted">{getTraits(product)}</Text>
-            {product.description && (
-              <div className="line-clamp-2">
-                <Text color="muted">{product.description}</Text>
-              </div>
-            )}
           </EntityPreviewSection>
           <Version organization={organization} product={product} />
           {product.benefits.length > 0 && (

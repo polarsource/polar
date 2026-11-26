@@ -18580,6 +18580,10 @@ export interface components {
     ConfigSettings: {
       /** @description Payment settings. Left untouched when omitted. */
       payments?: components['schemas']['ConfigSettingsPayments'] | null
+      /** @description Subscription settings. Left untouched when omitted. */
+      subscriptions?:
+        | components['schemas']['ConfigSettingsSubscriptions']
+        | null
     }
     /** ConfigSettingsChange */
     ConfigSettingsChange: {
@@ -18606,11 +18610,51 @@ export interface components {
     /** ConfigSettingsRead */
     ConfigSettingsRead: {
       payments: components['schemas']['ConfigSettingsPaymentsRead']
+      subscriptions: components['schemas']['ConfigSettingsSubscriptionsRead']
     }
     /** ConfigSettingsResult */
     ConfigSettingsResult: {
       /** @description What applying the config does. */
       action: components['schemas']['ConfigAction']
+    }
+    /** ConfigSettingsSubscriptions */
+    ConfigSettingsSubscriptions: {
+      /**
+       * Allow Multiple Subscriptions
+       * @description Whether a customer can have several active subscriptions at once. Left untouched when omitted.
+       */
+      allow_multiple_subscriptions?: boolean | null
+      /**
+       * Proration Behavior
+       * @description How customers are billed when their subscription changes. Left untouched when omitted.
+       */
+      proration_behavior?:
+        | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
+        | null
+      /**
+       * Benefit Revocation Grace Period
+       * @description Days to wait before revoking benefits while a failed payment is retried. Left untouched when omitted.
+       */
+      benefit_revocation_grace_period?: number | null
+      /**
+       * Prevent Trial Abuse
+       * @description Whether a customer who already had a trial is refused another one. Left untouched when omitted.
+       */
+      prevent_trial_abuse?: boolean | null
+    }
+    /** ConfigSettingsSubscriptionsRead */
+    ConfigSettingsSubscriptionsRead: {
+      /** Allow Multiple Subscriptions */
+      allow_multiple_subscriptions: boolean
+      /** Proration Behavior */
+      proration_behavior:
+        | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
+      /** Benefit Revocation Grace Period */
+      benefit_revocation_grace_period: number
+      /** Prevent Trial Abuse */
+      prevent_trial_abuse: boolean
     }
     /**
      * ConfigSkippedReason

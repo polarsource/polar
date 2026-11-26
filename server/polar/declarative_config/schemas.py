@@ -30,7 +30,12 @@ from polar.custom_field.schemas import (
     Slug,
     TextPropertiesInput,
 )
-from polar.enums import MeterInterval, SubscriptionRecurringInterval, TaxBehaviorOption
+from polar.enums import (
+    MeterInterval,
+    ProrationBehaviorSetting,
+    SubscriptionRecurringInterval,
+    TaxBehaviorOption,
+)
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.external_id import ExternalID
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputType
@@ -493,12 +498,50 @@ class ConfigSettingsPayments(Schema):
     )
 
 
+class ConfigSettingsSubscriptions(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    allow_multiple_subscriptions: bool | None = Field(
+        default=None,
+        description=(
+            "Whether a customer can have several active subscriptions at "
+            "once. Left untouched when omitted."
+        ),
+    )
+    proration_behavior: ProrationBehaviorSetting | None = Field(
+        default=None,
+        description=(
+            "How customers are billed when their subscription changes. "
+            "Left untouched when omitted."
+        ),
+    )
+    benefit_revocation_grace_period: int | None = Field(
+        default=None,
+        ge=0,
+        description=(
+            "Days to wait before revoking benefits while a failed payment "
+            "is retried. Left untouched when omitted."
+        ),
+    )
+    prevent_trial_abuse: bool | None = Field(
+        default=None,
+        description=(
+            "Whether a customer who already had a trial is refused another "
+            "one. Left untouched when omitted."
+        ),
+    )
+
+
 class ConfigSettings(Schema):
     model_config = ConfigDict(extra="forbid")
 
     payments: ConfigSettingsPayments | None = Field(
         default=None,
         description="Payment settings. Left untouched when omitted.",
+    )
+    subscriptions: ConfigSettingsSubscriptions | None = Field(
+        default=None,
+        description="Subscription settings. Left untouched when omitted.",
     )
 
 
@@ -981,8 +1024,16 @@ class ConfigSettingsPaymentsRead(_ConfigRead):
     tax: TaxBehaviorOption
 
 
+class ConfigSettingsSubscriptionsRead(_ConfigRead):
+    allow_multiple_subscriptions: bool
+    proration_behavior: ProrationBehaviorSetting
+    benefit_revocation_grace_period: int
+    prevent_trial_abuse: bool
+
+
 class ConfigSettingsRead(_ConfigRead):
     payments: ConfigSettingsPaymentsRead
+    subscriptions: ConfigSettingsSubscriptionsRead
 
 
 class ConfigExportDocument(_ConfigRead):

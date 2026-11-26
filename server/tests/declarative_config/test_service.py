@@ -2273,6 +2273,10 @@ class TestApply:
         assert live.settings == {
             "default_presentment_currency": "usd",
             "default_tax_behavior": TaxBehaviorOption.exclusive,
+            "allow_multiple_subscriptions": False,
+            "proration_behavior": SubscriptionProrationBehavior.prorate,
+            "benefit_revocation_grace_period": 0,
+            "prevent_trial_abuse": False,
         }
 
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -2581,6 +2585,23 @@ class TestPlan:
         assert plan.settings is not None
         assert plan.settings.action == ConfigAction.unchanged
         assert plan.settings.diff == []
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_settings_reset_proration_not_enabled(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {"settings": {"subscriptions": {"proration_behavior": "reset"}}}
+            ),
+        )
+
+        [issue] = plan.issues
+        assert issue.severity == ConfigIssueSeverity.error
+        assert issue.type == ConfigIssueType.not_supported
+        assert issue.loc == ["body", "settings", "subscriptions", "proration_behavior"]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_settings_omitted(
@@ -5482,7 +5503,15 @@ class TestCatalogSelector:
 
 
 ROUND_TRIP_CONFIG: dict[str, Any] = {
-    "settings": {"payments": {"currency": "usd", "tax": "inclusive"}},
+    "settings": {
+        "payments": {"currency": "usd", "tax": "inclusive"},
+        "subscriptions": {
+            "allow_multiple_subscriptions": True,
+            "proration_behavior": "next_period",
+            "benefit_revocation_grace_period": 2,
+            "prevent_trial_abuse": True,
+        },
+    },
     "meters": [{**TOOL_CALLS_METER, "metadata": {"team": "billing"}}],
     "custom_fields": [
         {**COMPANY_FIELD, "metadata": {"source": "crm"}},
@@ -6580,6 +6609,59 @@ class TestCatalogDrafts:
             session, auth_subject, None, catalog_id=draft.id
         )
         assert exported.config.settings.payments.tax == TaxBehaviorOption.exclusive
+
+    async def test_subscription_settings_go_live_on_publish(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "settings": {
+                        "subscriptions": {
+                            "allow_multiple_subscriptions": False,
+                            "proration_behavior": "invoice",
+                            "benefit_revocation_grace_period": 7,
+                        }
+                    }
+                }
+            ),
+            publish=False,
+        )
+
+        draft = await CatalogRepository.from_session(session).get_draft(organization.id)
+        assert draft is not None
+        assert draft.settings == {
+            "proration_behavior": SubscriptionProrationBehavior.invoice,
+            "benefit_revocation_grace_period": 7,
+        }
+        assert organization.proration_behavior == SubscriptionProrationBehavior.prorate
+        exported = await declarative_config_service.export(
+            session, auth_subject, None, catalog_id=draft.id
+        )
+        assert exported.config.settings.subscriptions.model_dump() == {
+            "allow_multiple_subscriptions": False,
+            "proration_behavior": SubscriptionProrationBehavior.invoice,
+            "benefit_revocation_grace_period": 7,
+            "prevent_trial_abuse": False,
+        }
+
+        await catalog_service.publish_draft(session, auth_subject, organization, draft)
+
+        assert organization.subscription_settings == {
+            "allow_multiple_subscriptions": False,
+            "allow_customer_updates": True,
+            "proration_behavior": SubscriptionProrationBehavior.invoice,
+            "benefit_revocation_grace_period": 7,
+            "trial_ended_reactivation_period": 14,
+            "prevent_trial_abuse": False,
+        }
 
     async def test_reverting_settings_drops_the_draft(
         self,

@@ -25,7 +25,12 @@ import {
   CheckoutContext,
   type CheckoutContextProps,
 } from '../providers/CheckoutProvider'
-import { createCheckout } from '../test-utils/makeCheckout'
+import {
+  createCheckout,
+  createFixedPrice,
+  createMeteredPrice,
+  createSeatBasedPrice,
+} from '../test-utils/makeCheckout'
 import CheckoutForm from './CheckoutForm'
 
 const { mockLoadStripe, ElementsCapture, captureOptions } = vi.hoisted(() => {
@@ -380,6 +385,33 @@ describe('CheckoutForm', () => {
         'name',
         'billing_address.country',
         'card_details',
+      ])
+    })
+
+    it('describes other products by their default price, not a metered one', async () => {
+      const { execute } = renderWithModelContext(true, {
+        checkout: {
+          products: [
+            createCheckout().product,
+            { ...createCheckout().product, id: 'prod_team', name: 'Team' },
+          ],
+          prices: {
+            prod_1: [createFixedPrice()],
+            prod_team: [
+              createMeteredPrice({ product_id: 'prod_team' }),
+              createSeatBasedPrice({ product_id: 'prod_team' }),
+            ],
+          },
+        },
+      })
+
+      const state = JSON.parse(await execute('get_checkout_state'))
+
+      expect(state.order.other_products).toEqual([
+        expect.objectContaining({
+          id: 'prod_team',
+          price: { type: 'per_seat', price_per_seat: 1000 },
+        }),
       ])
     })
 

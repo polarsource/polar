@@ -12,8 +12,8 @@ import {
 } from '@polar-sh/ui/components/ui/radio-group'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { cn } from '@polar-sh/ui/lib/utils'
-import { useCallback, useMemo } from 'react'
-import type { ProductCheckoutPublic } from '../guards'
+import { useMemo } from 'react'
+import { getDefaultPrice, type ProductCheckoutPublic } from '../guards'
 import { capitalize, decapitalize } from '../utils/string'
 import {
   getBasePricePerUnit,
@@ -255,7 +255,6 @@ const CheckoutProductSwitcher = ({
 
   const {
     product: selectedProduct,
-    product_price: selectedPrice,
     products,
     prices: allPrices,
     currency,
@@ -276,16 +275,9 @@ const CheckoutProductSwitcher = ({
     return filtered
   }, [allPrices, currency])
 
-  const selectProduct = useCallback(
-    (value: string) => {
-      const [productId] = value.split(':')
-      const product = products.find((product) => product.id === productId)
-      if (product) {
-        update?.({ product_id: product.id })
-      }
-    },
-    [update, products],
-  )
+  const selectProduct = (productId: string) => {
+    update?.({ product_id: productId })
+  }
 
   if (products.length === 1) {
     return null
@@ -317,26 +309,28 @@ const CheckoutProductSwitcher = ({
 
   const items: {
     key: string
-    value: string
     productName: string
     product: ProductCheckoutPublic['product']
     price: schemas['ProductPrice']
     isSelected: boolean
   }[] = []
   for (const product of products) {
+    const price = getDefaultPrice(prices[product.id] ?? [])
+    if (!price) {
+      continue
+    }
     items.push({
       key: product.id,
-      value: `${product.id}:${prices[product.id][0].id}`,
       productName: product.name,
       product,
-      price: prices[product.id][0],
+      price,
       isSelected: product.id === selectedProduct.id,
     })
   }
 
   return (
     <RadioGroup
-      value={`${selectedProduct.id}:${selectedPrice.id}`}
+      value={selectedProduct.id}
       onValueChange={selectProduct}
       className="dark:border-polar-700 dark:divide-polar-700 gap-0 divide-y divide-gray-200 overflow-hidden rounded-xl border border-gray-200"
     >
@@ -351,7 +345,7 @@ const CheckoutProductSwitcher = ({
           )}
           htmlFor={`product-${item.key}`}
         >
-          <RadioGroupItem value={item.value} id={`product-${item.key}`} />
+          <RadioGroupItem value={item.key} id={`product-${item.key}`} />
           <div className="min-w-0 flex-1">
             <span className="line-clamp-2 text-sm">{item.productName}</span>
             <span className="dark:text-polar-500 block text-xs text-gray-500">

@@ -3,9 +3,11 @@ import { describe, expect, it } from 'vitest'
 import {
   createCheckout,
   createFixedPrice,
+  createMeteredPrice,
+  createMeteredTiersPrice,
   createSeatBasedPrice,
 } from './test-utils/makeCheckout'
-import { getFixedPrice, hasProductCheckout } from './guards'
+import { getDefaultPrice, getFixedPrice, hasProductCheckout } from './guards'
 
 describe('hasProductCheckout', () => {
   const baseCheckout = {
@@ -53,6 +55,30 @@ describe('hasProductCheckout', () => {
     } as unknown as schemas['CheckoutPublic']
 
     expect(hasProductCheckout(checkout)).toBe(false)
+  })
+})
+
+describe('getDefaultPrice', () => {
+  it('returns the first static price, skipping metered prices', () => {
+    const meteredPrice = createMeteredPrice({ id: 'price_metered' })
+    const seatPrice = createSeatBasedPrice({ id: 'price_seat' })
+
+    expect(getDefaultPrice([meteredPrice, seatPrice])).toBe(seatPrice)
+  })
+
+  it('returns the first price when all prices are metered', () => {
+    const meteredPrice = createMeteredPrice({ id: 'price_metered' })
+    const meteredTiersPrice = createMeteredTiersPrice({
+      id: 'price_metered_tiers',
+    })
+
+    expect(getDefaultPrice([meteredPrice, meteredTiersPrice])).toBe(
+      meteredPrice,
+    )
+  })
+
+  it('returns undefined without prices', () => {
+    expect(getDefaultPrice([])).toBeUndefined()
   })
 })
 

@@ -4,6 +4,7 @@ import {
   EntityPreview,
   EntityPreviewRow,
   EntityPreviewSection,
+  EntityPreviewSkeletonBar,
   EntityPreviewTitle,
 } from '@/components/Shared/EntityPreview'
 import { useCustomer } from '@/hooks/queries/customers'
@@ -30,7 +31,11 @@ export const CustomerPreview = ({
 }) => {
   const { data: customer, isError } = useCustomer(customerId)
   const [today] = useState(() => new Date())
-  const { revenue, orders } = useCustomerTotals(organization, customer, today)
+  const {
+    isLoading: isLoadingTotals,
+    revenue,
+    orders,
+  } = useCustomerTotals(organization, customer, today)
   const country = customer?.billing_address?.country
   return (
     <EntityPreview isLoading={!customer} isError={isError}>
@@ -46,11 +51,21 @@ export const CustomerPreview = ({
           </EntityPreviewSection>
           <EntityPreviewSection divided>
             <EntityPreviewRow label="Revenue">
-              {revenue == null
-                ? '—'
-                : formatCurrency('compact')(revenue, 'usd')}
+              {isLoadingTotals ? (
+                <EntityPreviewSkeletonBar width={56} />
+              ) : revenue == null ? (
+                '—'
+              ) : (
+                formatCurrency('compact')(revenue, 'usd')
+              )}
             </EntityPreviewRow>
-            <EntityPreviewRow label="Orders">{orders ?? '—'}</EntityPreviewRow>
+            <EntityPreviewRow label="Orders">
+              {isLoadingTotals ? (
+                <EntityPreviewSkeletonBar width={24} />
+              ) : (
+                (orders ?? '—')
+              )}
+            </EntityPreviewRow>
             <EntityPreviewRow label="First seen">
               {format(new Date(customer.created_at), 'MMM d, yyyy')}
             </EntityPreviewRow>

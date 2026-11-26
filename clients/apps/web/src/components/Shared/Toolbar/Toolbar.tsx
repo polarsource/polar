@@ -42,11 +42,13 @@ export const Toolbar = ({
       <Text as="h1" variant="body" wrap="nowrap">
         {title}
       </Text>
+      {/* The menu follows the chips, in the same place whether there are any
+          or not, so applying the first filter does not close it. */}
       {filters.length > 0 && (
-        <ToolbarFilterChips
-          filters={filters}
-          trailing={<ToolbarFilterMenu filters={filters} onReset={onReset} />}
-        />
+        <Box alignItems="center" gap="s" minWidth={0}>
+          <ToolbarFilterChips filters={filters} />
+          <ToolbarFilterMenu filters={filters} onReset={onReset} />
+        </Box>
       )}
     </Box>
     <Box alignItems="center" gap="s" flexShrink={0} minHeight={32}>

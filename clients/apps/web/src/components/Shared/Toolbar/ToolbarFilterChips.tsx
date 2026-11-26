@@ -37,53 +37,43 @@ const getValueIcons = (filter: Filter): ReactNode[] => {
 
 // One chip per filter that is away from its default, each removable. They sit
 // in the toolbar, and the row scrolls sideways when they do not fit.
-export const ToolbarFilterChips = ({
-  filters,
-  trailing,
-}: {
-  filters: Filter[]
-  // Follows the last chip, and never scrolls away.
-  trailing?: ReactNode
-}) => {
+export const ToolbarFilterChips = ({ filters }: { filters: Filter[] }) => {
   const applied = filters.filter(
     (filter) => isFilterActive(filter) && !isFilterDefaulted(filter),
   )
-  if (applied.length === 0) return trailing
+  if (applied.length === 0) return null
 
   return (
-    <Box alignItems="center" gap="s" minWidth={0}>
-      <div className="flex min-w-0 [scrollbar-width:none] items-center gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden">
-        {applied.map((filter) => (
-          <Box
-            key={filter.key}
-            alignItems="center"
-            height={CHIP_HEIGHT}
-            borderRadius="s"
-            backgroundColor="background-card"
-            overflow="hidden"
-            flexShrink={0}
-          >
-            <Box alignItems="center" gap="s" pl="s" minWidth={0}>
-              <Text variant="caption" color="muted" wrap="nowrap">
-                {filter.label}
-              </Text>
-              {getValueIcons(filter)}
-              <Text variant="caption" truncate>
-                {getValueLabel(filter)}
-              </Text>
-            </Box>
-            <button
-              type="button"
-              className={REMOVE_CLASS}
-              aria-label={`Remove ${filter.label.toLowerCase()} filter`}
-              onClick={() => clearFilter(filter)}
-            >
-              <X className="size-3.5" />
-            </button>
+    <div className="flex min-w-0 [scrollbar-width:none] items-center gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden">
+      {applied.map((filter) => (
+        <Box
+          key={filter.key}
+          alignItems="center"
+          height={CHIP_HEIGHT}
+          borderRadius="s"
+          backgroundColor="background-card"
+          overflow="hidden"
+          flexShrink={0}
+        >
+          <Box alignItems="center" gap="s" pl="s" minWidth={0}>
+            <Text variant="caption" color="muted" wrap="nowrap">
+              {filter.label}
+            </Text>
+            {getValueIcons(filter)}
+            <Text variant="caption" truncate>
+              {getValueLabel(filter)}
+            </Text>
           </Box>
-        ))}
-      </div>
-      {trailing}
-    </Box>
+          <button
+            type="button"
+            className={REMOVE_CLASS}
+            aria-label={`Remove ${filter.label.toLowerCase()} filter`}
+            onClick={() => clearFilter(filter)}
+          >
+            <X className="size-3.5" />
+          </button>
+        </Box>
+      ))}
+    </div>
   )
 }

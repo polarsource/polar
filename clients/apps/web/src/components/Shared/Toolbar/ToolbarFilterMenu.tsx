@@ -24,7 +24,7 @@ import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { type ToolbarAction } from './ToolbarActionsMenu'
 
-// Filled while the menu is open or anything is applied, in place of a badge.
+// Filled while the menu is open.
 const TRIGGER_ON_CLASS = 'dark:bg-polar-700 bg-gray-200'
 // Sized to stand beside a filter chip.
 const ADD_TRIGGER_CLASS = 'size-[26px] shrink-0 rounded-md [&_svg]:size-3.5!'

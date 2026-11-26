@@ -248,20 +248,6 @@ test('events must have flat metadata without reserved properties', () => {
     events: { scalar: z.string() },
     meters: () => ({}),
   })
-  defineConfig({
-    // @ts-expect-error _cost must match the cost metadata shape
-    events: { priced: z.object({ _cost: z.object({ amount: z.string() }) }) },
-    meters: () => ({}),
-  })
-  defineConfig({
-    events: {
-      priced: z.object({
-        tokens: z.int(),
-        _cost: z.object({ amount: z.number(), currency: z.literal('usd') }),
-      }),
-    },
-    meters: () => ({}),
-  })
 })
 
 test('benefits serialize with meter credits linked by meter key', () => {

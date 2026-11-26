@@ -1,5 +1,6 @@
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { Metadata } from 'next'
+import { redirect } from 'next/navigation'
 import CustomFieldsPage from '../../settings/custom-fields/CustomFieldsPage'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -15,6 +16,10 @@ export default async function Page(props: {
   const organization = await getOrganizationBySlugOrNotFound(
     params.organization,
   )
+
+  if (!organization.feature_settings?.config_as_code_enabled) {
+    redirect(`/dashboard/${organization.slug}/settings/custom-fields`)
+  }
 
   return <CustomFieldsPage organization={organization} />
 }

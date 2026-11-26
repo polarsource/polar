@@ -1,1 +1,21 @@
-export { default } from '../../settings/custom-fields/layout'
+import OrganizationPermissionGuard from '@/components/Auth/OrganizationPermissionGuard'
+
+export default async function Layout({
+  children,
+  params,
+}: {
+  children: React.ReactNode
+  params: Promise<{ organization: string }>
+}) {
+  const { organization } = await params
+
+  return (
+    <OrganizationPermissionGuard
+      organizationSlug={organization}
+      permission="custom_fields:read"
+      standalone
+    >
+      {children}
+    </OrganizationPermissionGuard>
+  )
+}

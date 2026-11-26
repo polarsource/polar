@@ -1,4 +1,3 @@
-import collections.abc
 import contextlib
 import dataclasses
 import datetime
@@ -61,107 +60,12 @@ end
 return {length, redis.call('XPENDING', KEYS[1], ARGV[1])[1], retry_at}
 """
 
-CONFIRM_SCRIPT = """
--- Settles groups of events, one per (state, bucket), and acknowledges the outbox entries that
--- carried them. KEYS[1] is the outbox, KEYS[2] the lock of the flusher that delivered them, then
--- each group's state and pending hash in turn. ARGV[1] is the hot-only flag, ARGV[2] and ARGV[3]
--- the lock's token and TTL, ARGV[4] the number of entries, then the entries; then each group
--- gives its bucket start, its number of ids and the ids.
-local BATCH = 1000
--- An entry is the event's value, or nothing when it only counts.
-local function value_of(entry)
-    return entry ~= '' and tonumber(entry) or nil
+ACKNOWLEDGE_SCRIPT = """
+redis.call('XACK', KEYS[1], ARGV[1], unpack(ARGV, 4))
+redis.call('XDEL', KEYS[1], unpack(ARGV, 4))
+if redis.call('GET', KEYS[2]) == ARGV[2] then
+    redis.call('PEXPIRE', KEYS[2], ARGV[3])
 end
-local function settle(state, pending_key, start, ids)
-    local bucket = 'bucket:' .. start .. ':'
-    local pending = 'pending:' .. start .. ':'
-    -- Polar received the events but no snapshot counts them yet: a cold bucket keeps them
-    -- pending for the snapshot that will, a hot one counts them whole either way.
-    if ARGV[1] == '1' then
-        local cutoff = redis.call('HGET', state, 'cold_until')
-        if cutoff and tonumber(start) < tonumber(cutoff) then
-            return 0
-        end
-    end
-    local gone, seen = {}, {}
-    local removed, sum = 0, 0
-    local current = redis.call('HMGET', state, pending .. 'min', pending .. 'max')
-    local min, max = tonumber(current[1]), tonumber(current[2])
-    local extremum = false
-    for offset = 1, #ids, BATCH do
-        local last = math.min(offset + BATCH - 1, #ids)
-        local entries = redis.call('HMGET', pending_key, unpack(ids, offset, last))
-        for i, entry in ipairs(entries) do
-            local id = ids[offset + i - 1]
-            if entry and not seen[id] then
-                seen[id] = true
-                table.insert(gone, id)
-                removed = removed + 1
-                local value = value_of(entry)
-                if value then
-                    sum = sum + value
-                    if value == min or value == max then extremum = true end
-                end
-            end
-        end
-    end
-    if removed == 0 then
-        return 0
-    end
-    for offset = 1, #gone, BATCH do
-        redis.call('HDEL', pending_key, unpack(gone, offset, math.min(offset + BATCH - 1, #gone)))
-    end
-    local count = tonumber(redis.call('HINCRBY', state, pending .. 'count', -removed))
-    redis.call('HINCRBYFLOAT', state, pending .. 'sum', -sum)
-    if count <= 0 then
-        redis.call('HDEL', state, pending .. 'count', pending .. 'sum', pending .. 'min', pending .. 'max')
-        local cutoff = redis.call('HGET', state, 'cold_until')
-        -- Polar counts the whole bucket once it is cold: the local copy has nothing left to add.
-        if cutoff and tonumber(start) < tonumber(cutoff) then
-            redis.call('HDEL', state, bucket .. 'count', bucket .. 'sum', bucket .. 'min', bucket .. 'max')
-        end
-    elseif extremum then
-        -- Extrema cannot be decremented: read them off the events still pending.
-        min, max = nil, nil
-        for _, entry in ipairs(redis.call('HVALS', pending_key)) do
-            local value = value_of(entry)
-            if value then
-                if not min or value < min then min = value end
-                if not max or value > max then max = value end
-            end
-        end
-        for func, value in pairs({min = min, max = max}) do
-            redis.call('HSET', state, pending .. func, tostring(value))
-        end
-        if not min then redis.call('HDEL', state, pending .. 'min') end
-        if not max then redis.call('HDEL', state, pending .. 'max') end
-    end
-    redis.call('EXPIRE', state, 86400)
-    return removed
-end
-local entries = tonumber(ARGV[4])
-if entries > 0 then
-    local ids = {}
-    for i = 5, 4 + entries do table.insert(ids, ARGV[i]) end
-    for offset = 1, #ids, BATCH do
-        local batch = {unpack(ids, offset, math.min(offset + BATCH - 1, #ids))}
-        redis.call('XACK', KEYS[1], 'polar', unpack(batch))
-        redis.call('XDEL', KEYS[1], unpack(batch))
-    end
-    -- The flusher holds its slot through the next batch.
-    if redis.call('GET', KEYS[2]) == ARGV[2] then
-        redis.call('PEXPIRE', KEYS[2], ARGV[3])
-    end
-end
-local removed, cursor = 0, 5 + entries
-for group = 1, (#KEYS - 2) / 2 do
-    local start, count = ARGV[cursor], tonumber(ARGV[cursor + 1])
-    local ids = {}
-    for i = cursor + 2, cursor + 1 + count do table.insert(ids, ARGV[i]) end
-    removed = removed + settle(KEYS[2 * group + 1], KEYS[2 * group + 2], start, ids)
-    cursor = cursor + 2 + count
-end
-return removed
 """
 
 # NaN and the infinities are not JSON: no flusher could send an event that holds one.
@@ -223,11 +127,6 @@ class _Delivery:
     token: str
 
 
-_Settle = collections.abc.Callable[
-    [list[EventInput], list[EventInput], _Delivery], collections.abc.Awaitable[None]
-]
-
-
 class RedisOutbox:
     """Deliver events from a Redis stream shared by workers using the same Polar account.
 
@@ -250,13 +149,12 @@ class RedisOutbox:
         self._client = client
         self.on_ack = on_ack
         self.on_rejected = on_rejected
-        self._settle: _Settle | None = None
         self._request_timeout = DEFAULT_TIMEOUT
         self._stack = contextlib.AsyncExitStack()
         self._redis: Redis | None = None
         self._tasks: anyio.abc.TaskGroup | None = None
         self._outbox_backlog: AsyncScript | None = None
-        self._confirm_script: AsyncScript | None = None
+        self._acknowledge: AsyncScript | None = None
         self._draining: anyio.Event | None = None
         self._drain_again = False
         self._undrained = False
@@ -350,17 +248,14 @@ class RedisOutbox:
         redis: Redis,
         tasks: anyio.abc.TaskGroup,
         *,
-        settle: _Settle | None = None,
         request_timeout: float = DEFAULT_TIMEOUT,
     ) -> None:
         self._redis = redis
         self._tasks = tasks
-        self._settle = settle
         self._request_timeout = request_timeout
         await self._create_outbox_group()
         self._outbox_backlog = redis.register_script(OUTBOX_BACKLOG_SCRIPT)
-        if settle is None:
-            self._confirm_script = redis.register_script(CONFIRM_SCRIPT)
+        self._acknowledge = redis.register_script(ACKNOWLEDGE_SCRIPT)
 
     def _require_redis(self) -> Redis:
         if self._redis is None:
@@ -611,22 +506,18 @@ class RedisOutbox:
                 break
             await self._back_off_outbox(_retry_after(response))
             return False
-        if self._settle is not None:
-            await self._settle(events, refused, delivery)
-        else:
-            if refused and self.on_rejected is not None:
-                await self.on_rejected(refused, "permanent_error")
-            if events and self.on_ack is not None:
-                await self.on_ack(events)
-            assert self._confirm_script is not None
-            await self._confirm_script(
-                keys=[self._stream, delivery.lock_key],
-                args=[
-                    "",
-                    delivery.token,
-                    int(FLUSHER_LOCK_TTL * 1000),
-                    len(delivery.entries),
-                    *delivery.entries,
-                ],
-            )
+        if refused and self.on_rejected is not None:
+            await self.on_rejected(refused, "permanent_error")
+        if events and self.on_ack is not None:
+            await self.on_ack(events)
+        assert self._acknowledge is not None
+        await self._acknowledge(
+            keys=[self._stream, delivery.lock_key],
+            args=[
+                OUTBOX_GROUP,
+                delivery.token,
+                int(FLUSHER_LOCK_TTL * 1000),
+                *delivery.entries,
+            ],
+        )
         return True

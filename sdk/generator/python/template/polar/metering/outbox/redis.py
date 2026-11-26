@@ -48,8 +48,8 @@ OUTBOX_GROUP = "polar"
 OUTBOX_BACKLOG_SCRIPT = """
 {{ redis_scripts.outbox.outbox_backlog }}"""
 
-CONFIRM_SCRIPT = """
-{{ redis_scripts.common.confirm }}"""
+ACKNOWLEDGE_SCRIPT = """
+{{ redis_scripts.outbox.acknowledge }}"""
 
 # NaN and the infinities are not JSON: no flusher could send an event that holds one.
 _encode_event = json.JSONEncoder(allow_nan=False).encode
@@ -110,11 +110,6 @@ class _Delivery:
     token: str
 
 
-_Settle = collections.abc.Callable[
-    [list[EventInput], list[EventInput], _Delivery], collections.abc.Awaitable[None]
-]
-
-
 class RedisOutbox:
     """Deliver events from a Redis stream shared by workers using the same Polar account.
 
@@ -137,13 +132,12 @@ class RedisOutbox:
         self._client = client
         self.on_ack = on_ack
         self.on_rejected = on_rejected
-        self._settle: _Settle | None = None
         self._request_timeout = DEFAULT_TIMEOUT
         self._stack = contextlib.AsyncExitStack()
         self._redis: Redis | None = None
         self._tasks: anyio.abc.TaskGroup | None = None
         self._outbox_backlog: AsyncScript | None = None
-        self._confirm_script: AsyncScript | None = None
+        self._acknowledge: AsyncScript | None = None
         self._draining: anyio.Event | None = None
         self._drain_again = False
         self._undrained = False
@@ -235,17 +229,14 @@ class RedisOutbox:
         redis: Redis,
         tasks: anyio.abc.TaskGroup,
         *,
-        settle: _Settle | None = None,
         request_timeout: float = DEFAULT_TIMEOUT,
     ) -> None:
         self._redis = redis
         self._tasks = tasks
-        self._settle = settle
         self._request_timeout = request_timeout
         await self._create_outbox_group()
         self._outbox_backlog = redis.register_script(OUTBOX_BACKLOG_SCRIPT)
-        if settle is None:
-            self._confirm_script = redis.register_script(CONFIRM_SCRIPT)
+        self._acknowledge = redis.register_script(ACKNOWLEDGE_SCRIPT)
 
     def _require_redis(self) -> Redis:
         if self._redis is None:
@@ -491,22 +482,18 @@ class RedisOutbox:
                 break
             await self._back_off_outbox(_retry_after(response))
             return False
-        if self._settle is not None:
-            await self._settle(events, refused, delivery)
-        else:
-            if refused and self.on_rejected is not None:
-                await self.on_rejected(refused, "permanent_error")
-            if events and self.on_ack is not None:
-                await self.on_ack(events)
-            assert self._confirm_script is not None
-            await self._confirm_script(
-                keys=[self._stream, delivery.lock_key],
-                args=[
-                    "",
-                    delivery.token,
-                    int(FLUSHER_LOCK_TTL * 1000),
-                    len(delivery.entries),
-                    *delivery.entries,
-                ],
-            )
+        if refused and self.on_rejected is not None:
+            await self.on_rejected(refused, "permanent_error")
+        if events and self.on_ack is not None:
+            await self.on_ack(events)
+        assert self._acknowledge is not None
+        await self._acknowledge(
+            keys=[self._stream, delivery.lock_key],
+            args=[
+                OUTBOX_GROUP,
+                delivery.token,
+                int(FLUSHER_LOCK_TTL * 1000),
+                *delivery.entries,
+            ],
+        )
         return True

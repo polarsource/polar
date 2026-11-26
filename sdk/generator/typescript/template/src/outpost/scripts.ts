@@ -15,3 +15,6 @@ export const COMMIT_PULL_SCRIPT = `
 
 export const APPLY_SNAPSHOT_SCRIPT = `
 {{ redis_scripts.outpost.apply_snapshot }}`;
+
+export const CONFIRM_SCRIPT = `
+{{ redis_scripts.outpost.confirm }}`;

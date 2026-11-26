@@ -1,8 +1,5 @@
--- Settles groups of events, one per (state, bucket), and acknowledges the outbox entries that
--- carried them. KEYS[1] is the outbox, KEYS[2] the lock of the flusher that delivered them, then
--- each group's state and pending hash in turn. ARGV[1] is the hot-only flag, ARGV[2] and ARGV[3]
--- the lock's token and TTL, ARGV[4] the number of entries, then the entries; then each group
--- gives its bucket start, its number of ids and the ids.
+-- KEYS holds pairs of state and pending hashes. ARGV starts with the hot-only flag,
+-- then each group gives its bucket start, its number of IDs, and the IDs.
 local BATCH = 1000
 -- An entry is the event's value, or nothing when it only counts.
 local function value_of(entry)
@@ -75,26 +72,12 @@ local function settle(state, pending_key, start, ids)
     redis.call('EXPIRE', state, 86400)
     return removed
 end
-local entries = tonumber(ARGV[4])
-if entries > 0 then
-    local ids = {}
-    for i = 5, 4 + entries do table.insert(ids, ARGV[i]) end
-    for offset = 1, #ids, BATCH do
-        local batch = {unpack(ids, offset, math.min(offset + BATCH - 1, #ids))}
-        redis.call('XACK', KEYS[1], 'polar', unpack(batch))
-        redis.call('XDEL', KEYS[1], unpack(batch))
-    end
-    -- The flusher holds its slot through the next batch.
-    if redis.call('GET', KEYS[2]) == ARGV[2] then
-        redis.call('PEXPIRE', KEYS[2], ARGV[3])
-    end
-end
-local removed, cursor = 0, 5 + entries
-for group = 1, (#KEYS - 2) / 2 do
+local removed, cursor = 0, 2
+for key = 1, #KEYS, 2 do
     local start, count = ARGV[cursor], tonumber(ARGV[cursor + 1])
     local ids = {}
     for i = cursor + 2, cursor + 1 + count do table.insert(ids, ARGV[i]) end
-    removed = removed + settle(KEYS[2 * group + 1], KEYS[2 * group + 2], start, ids)
+    removed = removed + settle(KEYS[key], KEYS[key + 1], start, ids)
     cursor = cursor + 2 + count
 end
 return removed

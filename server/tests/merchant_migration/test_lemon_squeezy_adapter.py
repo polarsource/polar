@@ -882,6 +882,48 @@ class TestListBenefits:
             ("Docs", "https://example.com")
         ]
 
+    async def test_variant_once_sold_one_time_is_for_one_time(self) -> None:
+        adapter, _ = _adapter(
+            {
+                "/v1/variants": _page(
+                    [
+                        _variant("10", 5, has_license_keys=True),
+                        _variant("14", 8, has_license_keys=True),
+                    ],
+                    included=[
+                        {
+                            "type": "products",
+                            "id": "5",
+                            "attributes": {"store_id": 1, "name": "App"},
+                        },
+                        {
+                            "type": "products",
+                            "id": "8",
+                            "attributes": {"store_id": 1, "name": "Plugin"},
+                        },
+                    ],
+                ),
+                "/v1/files": _page([]),
+                "/v1/prices": _page(
+                    [
+                        _price(
+                            "20", 10, 9900, "2025-01-01T00:00:00Z", category="one_time"
+                        ),
+                        _price("21", 10, 1000, "2025-06-01T00:00:00Z"),
+                        _price("22", 14, 1000, "2025-01-01T00:00:00Z"),
+                    ]
+                ),
+            },
+            store_id="1",
+        )
+
+        switched, subscription_only = await adapter.list_benefits()
+
+        assert switched.product_source_ids == ["10"]
+        assert switched.for_one_time
+        assert subscription_only.product_source_ids == ["14"]
+        assert not subscription_only.for_one_time
+
 
 @pytest.mark.anyio
 class TestListPurchases:

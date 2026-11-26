@@ -43,7 +43,7 @@ from polar.base import AsyncClientBase
 from polar.metering import EventInput, Metering
 from polar.metering import _ingest_events
 from polar.metering.errors import UnknownMeterError
-from polar.metering.queue.redis import RedisEventQueue
+from polar.metering.queue.redis import DRAIN_INTERVAL, RedisEventQueue
 from polar.outpost import NotReadyError
 from polar.outpost.client import (
     APPLY_SNAPSHOT_SCRIPT,
@@ -4391,6 +4391,17 @@ async def test_queues_an_event_in_two_commands_and_flushes_at_no_cost_while_a_fl
             await queue.flush()
 
         assert await _cost(redis_commands, enqueue_and_flush) == {"xadd": 1, "exists": 1}
+
+
+@pytest.mark.anyio
+async def test_sends_nothing_on_its_drain_timer_while_it_has_no_event_to_deliver(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    redis_commands: collections.Counter[str],
+) -> None:
+    url, _ = redis_connection
+    async with RedisEventQueue(url, stream=QUEUE).open(ingest=functools.partial(_ingest_events, polar_client)):
+        assert await _cost(redis_commands, lambda: anyio.sleep(1.5 * DRAIN_INTERVAL)) == {}
 
 
 @pytest.mark.anyio

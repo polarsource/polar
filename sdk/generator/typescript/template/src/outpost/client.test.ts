@@ -2632,6 +2632,14 @@ describe("Redis cost", () => {
     expect(cost.commands).toEqual({ xadd: 1, exists: 1 });
   });
 
+  it("sends nothing on its drain timer while it has no event to deliver", async () => {
+    await startQueue();
+    const cost = await redisCost(
+      () => new Promise((resolve) => setTimeout(resolve, 1.5 * {{ redis_constants.queue_drain_interval }})),
+    );
+    expect(cost.commands).toEqual({});
+  });
+
   it("warms a known customer over eleven reducers in one command, readiness alone", async () => {
     reducers = [
       ...Array.from(

@@ -1,0 +1,33 @@
+server/tests/openapi.2026-10.json
+  s_9d4fcc69d80fc5::t_7c6ffd39d33283 1
+server/polar/order/schemas.py
+  s_9d4fcc69d80fc5::t_5cf7dcaf56f106 398,407,413
+server/tests/openapi.2026-04.json
+  s_9d4fcc69d80fc5::t_7c6ffd39d33283 1
+clients/packages/client/src/v1.ts
+  s_97801ff6b081de::t_c212751b9d1a35 21906,21910,21915,31563,31567,31572
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fa0893ebba1681c282887ba269bd3972188c5d8d",
+  "prompts": {},
+  "sessions": {
+    "s_97801ff6b081de": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a216e7-8de2-72e2-8d94-64ea9e1a8d68",
+        "model": "unknown"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    },
+    "s_9d4fcc69d80fc5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20ccd-705d-7a61-9a99-612697cae1a1",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

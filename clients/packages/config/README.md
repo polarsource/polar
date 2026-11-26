@@ -3,8 +3,10 @@
 Define your Polar products, meters and benefits as code.
 
 ```sh
-npm install @polar-sh/config
+npm install @polar-sh/config zod
 ```
+
+Events are described with any [Standard Schema](https://standardschema.dev) validator. The example below uses Zod, but Valibot, ArkType and Effect Schema work too.
 
 ```ts
 // polar.config.ts

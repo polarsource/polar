@@ -626,7 +626,6 @@ class ProductTransferService:
                 name=discount.name,
                 type=discount.type,
                 code=discount.code,
-                external_id=discount.external_id,
                 user_metadata=discount.user_metadata.copy(),
                 starts_at=discount.starts_at,
                 ends_at=discount.ends_at,

@@ -15,7 +15,6 @@ from pydantic import (
 )
 
 from polar.kit.currency import PresentmentCurrency
-from polar.kit.external_id import ExternalIDInputMixin, ExternalIDOutputMixin
 from polar.kit.metadata import (
     MetadataInputMixin,
     MetadataOutputMixin,
@@ -35,17 +34,12 @@ from polar.kit.versioning import Omissible, QuerySchema, Version
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.organization.schemas import OrganizationID
 from polar.product.schemas import ProductBase
-from polar.version import V2026_10, V2027_01
+from polar.version import V2026_10
 
 
 class DiscountListParams(QuerySchema):
     organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
         None, title="OrganizationID Filter", description="Filter by organization ID."
-    )
-    external_id: Annotated[
-        MultipleQueryFilter[str] | None, Version(starting_from=V2027_01)
-    ] = Field(
-        None, title="ExternalID Filter", description="Filter by discount external ID."
     )
     query: str | None = Field(None, description="Filter by name.")
 
@@ -188,7 +182,7 @@ ProductsList = Annotated[
 ]
 
 
-class DiscountCreateBase(MetadataInputMixin, ExternalIDInputMixin, Schema):
+class DiscountCreateBase(MetadataInputMixin, Schema):
     name: Name
     code: Code = None
 
@@ -282,7 +276,7 @@ class DiscountPercentageCreate(DiscountCreateBase):
         return self
 
 
-class DiscountUpdate(MetadataInputMixin, ExternalIDInputMixin, Schema):
+class DiscountUpdate(MetadataInputMixin, Schema):
     """
     Schema to update a discount.
     """
@@ -314,9 +308,7 @@ class DiscountProduct(ProductBase, MetadataOutputMixin):
     """A product that a discount can be applied to."""
 
 
-class DiscountBase(
-    MetadataOutputMixin, ExternalIDOutputMixin, IDSchema, TimestampedSchema
-):
+class DiscountBase(MetadataOutputMixin, IDSchema, TimestampedSchema):
     name: str = Field(
         description=(
             "Name of the discount. "

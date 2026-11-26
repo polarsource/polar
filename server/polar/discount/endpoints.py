@@ -48,7 +48,6 @@ async def list(
         session,
         auth_subject,
         organization_id=filters.organization_id,
-        external_id=filters.external_id,
         query=filters.query,
         pagination=pagination,
         sorting=sorting,

@@ -55,6 +55,7 @@ async def list_webhook_endpoints(
         session,
         auth_subject,
         organization_id=filters.organization_id,
+        format=filters.format,
         pagination=pagination,
     )
     return ListResource.from_paginated_results(

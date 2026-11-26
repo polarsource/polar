@@ -2,7 +2,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Annotated, Any
 
 from annotated_types import MaxLen
-from pydantic import AfterValidator, BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy import (
     ColumnExpressionArgument,
     Dialect,
@@ -18,6 +18,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 
 from polar.kit.metadata import get_nested_metadata_attr, get_nested_metadata_value
 from polar.kit.schemas import Int32
+from polar.meter.property import PropertyPath
 
 if TYPE_CHECKING:
     from polar.models import Event
@@ -38,13 +39,8 @@ class FilterOperator(StrEnum):
     not_like = "not_like"
 
 
-def _strip_metadata_prefix(value: str) -> str:
-    prefix = "metadata."
-    return value.removeprefix(prefix)
-
-
 class FilterClause(BaseModel):
-    property: Annotated[str, AfterValidator(_strip_metadata_prefix)]
+    property: PropertyPath
     operator: FilterOperator
     value: Annotated[str, MaxLen(MAX_STRING_LENGTH)] | Int32 | bool
 

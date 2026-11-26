@@ -1,10 +1,10 @@
 import { useMetrics } from '@/hooks/queries'
-import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { useDashboardOrganization } from '@/hooks/dashboardOrganization'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { endOfMonth, format, startOfMonth, subDays, subMonths } from 'date-fns'
 import { toISODate } from '@/utils/metrics'
-import { useContext, useState } from 'react'
+import { useState } from 'react'
 import { MonthlyBars } from './MonthlyBars'
 import { WidgetContainer } from './WidgetContainer'
 import { WidgetGuard } from './WidgetGuard'
@@ -32,7 +32,7 @@ const marginPercentage = (revenue: number, costs: number) =>
   revenue > 0 ? Math.round(((revenue - costs) / revenue) * 100) : null
 
 const GrossMarginWidgetContent = ({ className }: GrossMarginWidgetProps) => {
-  const { organization } = useContext(OrganizationContext)
+  const organization = useDashboardOrganization()
   const [today] = useState(() => new Date())
 
   // Revenue is billed on each customer's anniversary while costs accrue daily,

@@ -1,13 +1,13 @@
 from datetime import date
 from typing import TYPE_CHECKING, Annotated
 
-from pydantic import UUID4, AwareDatetime, Field, create_model
+from pydantic import MISSING, UUID4, AwareDatetime, Field, create_model
 from pydantic_extra_types.timezone_name import TimeZoneName
 
 from polar.customer.schemas.customer import CustomerID
 from polar.kit.schemas import IDSchema, MultipleQueryFilter, Schema, TimestampedSchema
 from polar.kit.time_queries import TimeInterval
-from polar.kit.versioning import QuerySchema, Version
+from polar.kit.versioning import Omissible, QuerySchema, Version
 from polar.models.product import ProductBillingType
 from polar.organization.schemas import OrganizationID
 from polar.product.schemas import ProductID
@@ -145,11 +145,11 @@ class MetricDashboardCreate(Schema):
 class MetricDashboardUpdate(Schema):
     """Schema for updating a metrics dashboard."""
 
-    name: str | None = Field(
-        default=None, description="Display name for the dashboard.", min_length=1
+    name: Omissible[str] = Field(
+        default=MISSING, description="Display name for the dashboard.", min_length=1
     )
-    metrics: list[str] | None = Field(
-        default=None,
+    metrics: Omissible[list[str]] = Field(
+        default=MISSING,
         description="List of metric slugs to display in this dashboard.",
         max_length=10,
     )

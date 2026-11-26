@@ -4,7 +4,7 @@ import { withSentryConfig } from '@sentry/nextjs'
 import { themeConfig } from './shiki.config.mjs'
 import { docsCSP, ENVIRONMENT, nonEmbeddedCSP, oauth2CSP } from './src/csp.mjs'
 
-const TYPE_CHECKED_IN_CI = process.env.VERCEL === '1'
+const TYPE_CHECKED_IN_CI = process.env.VERCEL === '1' || Boolean(process.env.CI)
 
 // Vercel services deployments: deployment URLs change with
 // every deployment, so derive base from the deployment's own URL
@@ -92,6 +92,17 @@ const nextConfig = {
     return {
       beforeFiles: [
         {
+          source: '/',
+          destination: '/api/homepage',
+          has: [
+            {
+              type: 'header',
+              key: 'accept',
+              value: '.*text/markdown.*',
+            },
+          ],
+        },
+        {
           source: '/perspectives',
           destination: 'https://polar.shadowdocument.com/perspectives',
         },
@@ -101,6 +112,10 @@ const nextConfig = {
         },
       ],
       afterFiles: [
+        {
+          source: '/openapi.json',
+          destination: `${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/openapi.json`,
+        },
         {
           source: '/ingest/static/:path*',
           destination: 'https://us-assets.i.posthog.com/static/:path*',
@@ -112,6 +127,19 @@ const nextConfig = {
         {
           source: '/ingest/decide',
           destination: 'https://us.i.posthog.com/decide',
+        },
+      ],
+      fallback: [
+        {
+          source: '/:path*',
+          destination: '/api/not-found',
+          has: [
+            {
+              type: 'header',
+              key: 'accept',
+              value: '.*text/markdown.*',
+            },
+          ],
         },
       ],
     }
@@ -263,6 +291,11 @@ const nextConfig = {
       {
         source: '/dashboard/:organization/benefits',
         destination: '/dashboard/:organization/products/benefits',
+        permanent: true,
+      },
+      {
+        source: '/dashboard/:organization/settings/custom-fields',
+        destination: '/dashboard/:organization/products/custom-fields',
         permanent: true,
       },
       {

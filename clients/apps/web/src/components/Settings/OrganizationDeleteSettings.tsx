@@ -1,9 +1,9 @@
 'use client'
 
+import { useAuth } from '@/hooks/auth'
 import { useDeleteOrganization } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
-import { api } from '@/utils/client'
-import { schemas, unwrap } from '@polar-sh/client'
+import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { useRouter } from 'next/navigation'
 import { useCallback, useState } from 'react'
@@ -21,6 +21,7 @@ export default function OrganizationDeleteSettings({
   organization,
 }: OrganizationDeleteSettingsProps) {
   const router = useRouter()
+  const { userOrganizations } = useAuth()
   const deleteOrganization = useDeleteOrganization()
   const [showDeleteModal, setShowDeleteModal] = useState(false)
 
@@ -46,11 +47,11 @@ export default function OrganizationDeleteSettings({
         variant: 'success',
         duration: TOAST_LONG_DURATION,
       })
-      const orgs = await unwrap(api.GET('/v1/organizations/'))
+      const hasOtherOrganizations = userOrganizations.some(
+        ({ id }) => id !== organization.id,
+      )
       router.push(
-        orgs.items.length === 0
-          ? '/dashboard/account/preferences'
-          : '/dashboard',
+        hasOtherOrganizations ? '/dashboard' : '/dashboard/account/preferences',
       )
     } else if (data.requires_support) {
       const reasons = (data.blocked_reasons ?? [])
@@ -75,7 +76,7 @@ export default function OrganizationDeleteSettings({
       })
       setShowDeleteModal(false)
     }
-  }, [deleteOrganization, organization.id, router])
+  }, [deleteOrganization, organization.id, router, userOrganizations])
 
   return (
     <>

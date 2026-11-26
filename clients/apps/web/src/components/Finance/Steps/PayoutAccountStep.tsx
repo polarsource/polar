@@ -1,6 +1,8 @@
 'use client'
 
+import { toast } from '@/components/Toast/use-toast'
 import { usePayoutAccountSetup } from '@/hooks/usePayoutAccountSetup'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
@@ -53,8 +55,9 @@ export default function PayoutAccountStep({
       openCreate()
       return
     }
-    const link = await unwrap(
-      api.POST('/v1/payout-accounts/{id}/onboarding-link', {
+    const { data: link, error } = await api.POST(
+      '/v1/payout-accounts/{id}/onboarding-link',
+      {
         params: {
           path: { id: payoutAccount.id },
           query: {
@@ -64,8 +67,15 @@ export default function PayoutAccountStep({
             ),
           },
         },
-      }),
+      },
     )
+    if (error) {
+      toast({
+        title: 'Failed to open Stripe onboarding',
+        description: extractApiErrorMessage(error),
+      })
+      return
+    }
     window.location.href = link.url
   }, [payoutAccount, organization.slug, openCreate])
 

@@ -526,6 +526,7 @@ async def create_product(
     attached_custom_fields: Sequence[tuple[CustomField, bool]] = [],
     trial_interval: TrialInterval | None = None,
     trial_interval_count: int | None = None,
+    trial_payment_setup_required: bool = True,
     is_tax_applicable: bool = True,
     external_id: str | None = None,
     is_current: bool = True,
@@ -550,6 +551,7 @@ async def create_product(
         organization=organization,
         trial_interval=trial_interval,
         trial_interval_count=trial_interval_count,
+        trial_payment_setup_required=trial_payment_setup_required,
         external_id=external_id,
         is_current=is_current,
         catalog=catalog,
@@ -1379,6 +1381,7 @@ async def create_trialing_subscription(
     discount: Discount | None = None,
     user_metadata: dict[str, Any] | None = None,
     scheduler_locked_at: datetime | None = None,
+    payment_method: PaymentMethod | None = None,
 ) -> Subscription:
     now = utc_now()
     trial_start = now
@@ -1400,6 +1403,7 @@ async def create_trialing_subscription(
         trial_end=trial_end,
         user_metadata=user_metadata or {},
         scheduler_locked_at=scheduler_locked_at,
+        payment_method=payment_method,
     )
 
 
@@ -1808,6 +1812,7 @@ async def create_checkout_link(
     success_url: str | None = None,
     trial_interval: TrialInterval | None = None,
     trial_interval_count: int | None = None,
+    trial_payment_setup_required: bool | None = None,
     seats: int | None = None,
     units: int | None = None,
     user_metadata: dict[str, Any] | None = None,
@@ -1828,6 +1833,7 @@ async def create_checkout_link(
         discount=discount,
         trial_interval=trial_interval,
         trial_interval_count=trial_interval_count,
+        trial_payment_setup_required=trial_payment_setup_required,
         seats=seats,
         units=units,
         user_metadata=user_metadata,
@@ -2068,6 +2074,7 @@ async def create_refund(
     processor_reason: str = "requested_by_customer",
     processor_balance_transaction_id: str = "STRIPE_BALANCE_TRANSACTION_ID",
     dispute: Dispute | None = None,
+    revoke_benefits: bool = False,
 ) -> Refund:
     refund = Refund(
         status=status,
@@ -2085,6 +2092,7 @@ async def create_refund(
         processor_id=processor_id,
         processor_reason=processor_reason,
         processor_balance_transaction_id=processor_balance_transaction_id,
+        revoke_benefits=revoke_benefits,
     )
     await save_fixture(refund)
     return refund
@@ -2951,10 +2959,12 @@ async def create_email_log(
     *,
     created_at: datetime,
     status: EmailLogStatus = EmailLogStatus.sent,
+    error: str | None = None,
 ) -> EmailLog:
     email_log = EmailLog(
         created_at=created_at,
         status=status,
+        error=error,
         processor=EmailSender.resend,
         to_email_addr="customer@example.com",
         from_email_addr="acme@polar.sh",

@@ -7,6 +7,7 @@ import structlog
 from dramatiq import Retry
 from sqlalchemy.orm import joinedload, selectinload
 
+from polar.config import settings
 from polar.exceptions import PolarTaskError
 from polar.kit.utils import utc_now
 from polar.logging import Logger
@@ -41,10 +42,6 @@ from .service import order as order_service
 log: Logger = structlog.get_logger()
 
 MAX_RETRIES = 10
-
-# Lets late usage events land and reducer buckets covering the period end
-# close and sync to Postgres before the order is billed.
-SUBSCRIPTION_ORDER_GRACE_PERIOD = timedelta(minutes=15)
 
 
 class OrderTaskError(PolarTaskError): ...
@@ -90,7 +87,9 @@ class WalletTransactionDoesNotExist(OrderTaskError):
 def _defer_until_grace_period_elapsed(
     cutoff: datetime, actor_name: str, /, *args: Any, **kwargs: Any
 ) -> bool:
-    remaining_grace_period = cutoff + SUBSCRIPTION_ORDER_GRACE_PERIOD - utc_now()
+    remaining_grace_period = (
+        cutoff + settings.SUBSCRIPTION_ORDER_GRACE_PERIOD - utc_now()
+    )
     if remaining_grace_period <= timedelta(0):
         return False
     log.info(
@@ -181,6 +180,9 @@ async def create_subscription_order(
     subscription_id: Annotated[uuid.UUID, LoggableField],
     order_reason: Annotated[OrderBillingReasonInternal, LoggableField],
     cutoff: Annotated[str | None, LoggableField] = None,
+    period_start: Annotated[str | None, LoggableField] = None,
+    *,
+    force: Annotated[bool, LoggableField] = False,
 ) -> None:
     async with AsyncSessionMaker() as session:
         repository = SubscriptionRepository.from_session(session)
@@ -201,12 +203,13 @@ async def create_subscription_order(
                 if cutoff is not None
                 else subscription.current_period_start
             )
-            if _defer_until_grace_period_elapsed(
+            if not force and _defer_until_grace_period_elapsed(
                 billing_cutoff,
                 "order.create_subscription_order",
                 subscription_id,
                 order_reason,
                 cutoff=billing_cutoff.isoformat(),
+                period_start=period_start,
             ):
                 return
 
@@ -225,6 +228,11 @@ async def create_subscription_order(
                 order_reason,
                 cutoff=billing_cutoff,
                 reducer_cutoff=reducer_cutoff,
+                period_start=(
+                    datetime.fromisoformat(period_start)
+                    if period_start is not None
+                    else None
+                ),
             )
         except NoPendingBillingEntries:
             # Skip creating an order if there are no pending billing entries.
@@ -243,6 +251,7 @@ async def create_meter_cycle_order(
     cutoff: Annotated[str, LoggableField],
     price_ids: Annotated[list[uuid.UUID], LoggableField],
     product_id: Annotated[uuid.UUID, LoggableField],
+    period_start: Annotated[str | None, LoggableField] = None,
 ) -> None:
     billing_cutoff = datetime.fromisoformat(cutoff)
     if _defer_until_grace_period_elapsed(
@@ -252,6 +261,7 @@ async def create_meter_cycle_order(
         cutoff,
         price_ids,
         product_id,
+        period_start=period_start,
     ):
         return
 
@@ -278,6 +288,11 @@ async def create_meter_cycle_order(
             cutoff=billing_cutoff,
             price_ids=price_ids,
             product=product,
+            period_start=(
+                datetime.fromisoformat(period_start)
+                if period_start is not None
+                else None
+            ),
         )
 
 

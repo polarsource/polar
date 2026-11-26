@@ -3,8 +3,14 @@ name: Server
 on:
   push:
     branches: ["main"]
+    paths:
+      - "server/**"
+      - ".github/workflows/test_server.yaml"
   pull_request:
     types: [opened, synchronize, edited]
+    paths:
+      - "server/**"
+      - ".github/workflows/test_server.yaml"
   merge_group:
 
 concurrency:
@@ -20,16 +26,20 @@ jobs:
     name: "Detect changes"
     runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
-      server: ${{ steps.filter.outputs.server }}
       emails: ${{ steps.filter.outputs.emails }}
       migrations: ${{ steps.filter.outputs.migrations }}
       migration_heads: ${{ steps.filter.outputs.migration_heads }}
       tinybird: ${{ steps.filter.outputs.tinybird }}
-      env_vars: ${{ steps.filter.outputs.env_vars }}
       server_files: ${{ steps.filter.outputs.server_files }}
     steps:
-      - uses: actions/checkout@v7.0.1
-      - uses: dorny/paths-filter@v4.0.3
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: github.event_name != 'pull_request'
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter
         with:
           list-files: json
@@ -52,48 +62,64 @@ jobs:
               - '.github/workflows/test_server.yaml'
             tinybird:
               - 'server/tinybird/**'
-            env_vars:
-              - 'terraform/**'
-              - 'server/**'
-              - 'clients/**'
 
   linters:
     name: "Server: Linters 📝"
-    needs: changes
-    if: needs.changes.outputs.server == 'true'
     timeout-minutes: 15
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
 
-      # - uses: actions/cache@v4
-      #   with:
-      #     path: |
-      #       server/.mypy_cache
-      #     key: mypy-${{ runner.os }}-${{ github.sha }}
-      #     restore-keys: |
-      #       mypy-${{ runner.os }}-
-      #       mypy-
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check if server changed
+        id: merge-check
+        if: github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: |
+          if [ -n "$BASE_SHA" ] && git fetch --depth=1 origin "$BASE_SHA" && [ -z "$(git diff --name-only "$BASE_SHA" HEAD -- server/ .github/workflows/test_server.yaml)" ]; then
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 🛟 Cache mypy
+        if: steps.merge-check.outputs.should_run != 'false'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: server/.mypy_cache
+          key: mypy-v2-${{ runner.os }}-${{ hashFiles('server/pyproject.toml', 'server/uv.lock') }}-${{ github.sha }}
+          restore-keys: |
+            mypy-v2-${{ runner.os }}-${{ hashFiles('server/pyproject.toml', 'server/uv.lock') }}-
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.3.2
+        if: steps.merge-check.outputs.should_run != 'false'
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
           enable-cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v7.1.0
+        if: steps.merge-check.outputs.should_run != 'false'
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version-file: "server/pyproject.toml"
 
       - name: 🔧 uv install
+        if: steps.merge-check.outputs.should_run != 'false'
         working-directory: ./server
         run: uv sync --dev --frozen
 
       - name: 🐶 Lint Server (ruff)
+        if: steps.merge-check.outputs.should_run != 'false'
         working-directory: ./server
         run: uv run task lint_check
 
       - name: 🛟 Type Check Server (mypy)
+        if: steps.merge-check.outputs.should_run != 'false'
         working-directory: ./server
         run: uv run task lint_types
 
@@ -104,14 +130,19 @@ jobs:
     timeout-minutes: 10
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
 
-      - uses: pnpm/action-setup@v6.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           package_json_file: server/emails/package.json
 
       - name: 📬 Setup Node.js environment for server/emails
-        uses: actions/setup-node@v7.1.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: "pnpm"
@@ -145,11 +176,16 @@ jobs:
           TB_LOCAL_KAFKA: false
         options: >-
           --health-cmd "curl -sf http://127.0.0.1:7181/tokens || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-interval 1s
+          --health-timeout 2s
+          --health-retries 60
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: 🐦 Install Tinybird CLI
         run: curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
@@ -172,6 +208,11 @@ jobs:
       (github.event_name == 'pull_request' || github.event_name == 'merge_group')
     runs-on: ubuntu-latest
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
       - name: Fail if migrations changed
         if: needs.changes.outputs.migrations == 'true'
         run: |
@@ -184,6 +225,11 @@ jobs:
     if: needs.changes.outputs.migrations == 'true' && github.event_name == 'pull_request'
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
       - name: Check for disallowed files
         id: check
         env:
@@ -218,7 +264,7 @@ jobs:
           fi
 
       - name: Find existing comment
-        uses: peter-evans/find-comment@v4
+        uses: peter-evans/find-comment@b30e6a3c0ed37e7c023ccd3f1db5c6c0b0c23aad # v4.0.0
         id: fc
         with:
           issue-number: ${{ github.event.number }}
@@ -226,7 +272,7 @@ jobs:
 
       - name: Create or update failure comment
         if: steps.check.outputs.has_disallowed == 'true'
-        uses: peter-evans/create-or-update-comment@v5
+        uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9 # v5.0.0
         with:
           issue-number: ${{ github.event.number }}
           comment-id: ${{ steps.fc.outputs.comment-id }}
@@ -249,7 +295,7 @@ jobs:
 
       - name: Delete resolved comment
         if: steps.check.outputs.has_disallowed == 'false' && steps.fc.outputs.comment-id != ''
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             github.rest.issues.deleteComment({
@@ -262,85 +308,6 @@ jobs:
         if: steps.check.outputs.has_disallowed == 'true'
         run: exit 1
 
-  env-vars-check:
-    name: "Server: Env Var Check 🔑"
-    needs: changes
-    if: needs.changes.outputs.env_vars == 'true' && github.event_name == 'pull_request'
-    runs-on: blacksmith-4vcpu-ubuntu-2404
-    steps:
-      - uses: actions/checkout@v7.0.1
-
-      - name: Find POLAR_* variables nothing reads
-        id: check
-        run: |
-          STATUS=0
-          OUTPUT=$(python3 server/scripts/check_env_vars.py) || STATUS=$?
-
-          if [ "$STATUS" -gt 1 ]; then
-            echo "check_env_vars exited $STATUS" >&2
-            exit "$STATUS"
-          fi
-
-          if [ "$STATUS" -eq 0 ]; then
-            echo "has_orphans=false" >> $GITHUB_OUTPUT
-          else
-            echo "has_orphans=true" >> $GITHUB_OUTPUT
-            echo "orphans<<EOF" >> $GITHUB_OUTPUT
-            echo "$OUTPUT" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
-
-            NAMES=$(echo "$OUTPUT" | grep -oE 'POLAR_[A-Z0-9_]+' | paste -sd' ' -)
-            echo "::warning title=Provisioned but never read::$NAMES"
-            {
-              echo "## 🔑 Env Var Check"
-              echo
-              echo '```'
-              echo "$OUTPUT"
-              echo '```'
-            } >> $GITHUB_STEP_SUMMARY
-          fi
-
-      - name: Find existing comment
-        uses: peter-evans/find-comment@v4
-        id: fc
-        with:
-          issue-number: ${{ github.event.number }}
-          body-includes: "<!-- __ENV_VAR_CHECK -->"
-
-      - name: Create or update comment
-        if: steps.check.outputs.has_orphans == 'true'
-        uses: peter-evans/create-or-update-comment@v5
-        with:
-          issue-number: ${{ github.event.number }}
-          comment-id: ${{ steps.fc.outputs.comment-id }}
-          edit-mode: replace
-          body: |
-            <!-- __ENV_VAR_CHECK -->
-            ## 🔑 Env Var Check
-
-            Terraform provisions these into the app environment, and nothing reads them:
-
-            ```
-            ${{ steps.check.outputs.orphans }}
-            ```
-
-            A credential nobody reads is a credential nobody watches. Remove them from
-            `terraform/`, or add them to `ALLOWED` in `server/scripts/check_env_vars.py`
-            with a reason.
-
-            This check does not block the merge.
-
-      - name: Delete resolved comment
-        if: steps.check.outputs.has_orphans == 'false' && steps.fc.outputs.comment-id != ''
-        uses: actions/github-script@v9
-        with:
-          script: |
-            github.rest.issues.deleteComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              comment_id: ${{ steps.fc.outputs.comment-id }}
-            })
-
   migration-heads:
     name: "Server: Migration heads"
     needs: changes
@@ -351,7 +318,12 @@ jobs:
     env:
       POLAR_EMAIL_RENDERER_BINARY_PATH: "/tmp/email-renderer"
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Create mock email renderer binary
         run: touch /tmp/email-renderer
@@ -362,12 +334,12 @@ jobs:
         run: git fetch --depth=1 origin "$BASE_SHA"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.3.2
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
           enable-cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v7.1.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version-file: "server/pyproject.toml"
 
@@ -382,19 +354,20 @@ jobs:
         run: uv run python -m scripts.check_migrations --base "$BASE_SHA"
 
   test:
-    name: "Server: Tests 🐍 (${{ matrix.shard }}/2)"
-    needs: changes
-    if: needs.changes.outputs.server == 'true'
+    name: "Server: Tests 🐍 (${{ matrix.shard == 'tinybird' && 'Tinybird' || format('{0}/4', matrix.shard) }})"
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2]
+        shard: ["1", "2", "3", "4", "tinybird"]
     runs-on: blacksmith-8vcpu-ubuntu-2404
     timeout-minutes: 15
     env:
       POLAR_ENV: testing
-      POLAR_EMAIL_RENDERER_BINARY_PATH: ${{ github.workspace }}/server/emails/bin/react-email-pkg
+      POLAR_EMAIL_RENDERER_BINARY_PATH: ${{ matrix.shard == 'tinybird' && '/tmp/email-renderer' || format('{0}/server/emails/bin/react-email-pkg', github.workspace) }}
       POLAR_TEST_DATABASE_TEMPLATE: polar_test
+      POLAR_TEST_SKIP_DB_DROP: "true"
+      POLAR_TEST_XDIST: "true"
+      POLAR_TEST_TINYBIRD_REQUIRED: ${{ matrix.shard == 'tinybird' && 'true' || 'false' }}
 
     services:
       postgres:
@@ -406,24 +379,15 @@ jobs:
           POSTGRES_PORT: 5432
         options: >-
           --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-interval 1s
+          --health-timeout 2s
+          --health-retries 30
+          --tmpfs /var/lib/postgresql/18/docker:rw,size=2g
         ports:
           - 5432:5432
 
-      redis:
-        image: redis:7.4-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
-
       tinybird:
-        image: tinybirdco/tinybird-local:latest
+        image: ${{ matrix.shard == 'tinybird' && 'tinybirdco/tinybird-local:latest' || '' }}
         ports:
           - 7181:7181
           - 7182:7182
@@ -433,115 +397,312 @@ jobs:
           TB_LOCAL_KAFKA: false
         options: >-
           --health-cmd "curl -s http://127.0.0.1:7181/tokens || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-interval 1s
+          --health-timeout 2s
+          --health-retries 60
 
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check if server changed
+        id: merge-check
+        if: github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: |
+          if [ -n "$BASE_SHA" ] && git fetch --depth=1 origin "$BASE_SHA" && [ -z "$(git diff --name-only "$BASE_SHA" HEAD -- server/ .github/workflows/test_server.yaml)" ]; then
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create mock email renderer binary
+        if: steps.merge-check.outputs.should_run != 'false' && matrix.shard == 'tinybird'
+        run: touch /tmp/email-renderer
 
       - name: 📬 Restore emails renderer
         id: emails
-        uses: actions/cache@v6.1.0
+        if: steps.merge-check.outputs.should_run != 'false' && matrix.shard != 'tinybird'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: server/emails/bin
           key: emails-renderer-${{ runner.os }}-${{ hashFiles('server/emails/src/**', 'server/emails/package.json', 'server/emails/pnpm-lock.yaml', 'server/emails/tsdown.config.mjs', '.nvmrc') }}
 
-      - uses: pnpm/action-setup@v6.1.0
-        if: steps.emails.outputs.cache-hit != 'true'
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        if: steps.merge-check.outputs.should_run != 'false' && matrix.shard != 'tinybird' && steps.emails.outputs.cache-hit != 'true'
         with:
           package_json_file: server/emails/package.json
 
       - name: 📬 Setup Node.js environment for server/emails
-        if: steps.emails.outputs.cache-hit != 'true'
-        uses: actions/setup-node@v7.1.0
+        if: steps.merge-check.outputs.should_run != 'false' && matrix.shard != 'tinybird' && steps.emails.outputs.cache-hit != 'true'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: "pnpm"
           cache-dependency-path: "server/emails/pnpm-lock.yaml"
 
       - name: 📬 Build server/emails
-        if: steps.emails.outputs.cache-hit != 'true'
+        if: steps.merge-check.outputs.should_run != 'false' && matrix.shard != 'tinybird' && steps.emails.outputs.cache-hit != 'true'
         working-directory: server/emails
         run: pnpm install --frozen-lockfile && pnpm build
 
+      - name: 📬 Save emails renderer cache
+        if: steps.merge-check.outputs.should_run != 'false' && matrix.shard == '1' && steps.emails.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: server/emails/bin
+          key: emails-renderer-${{ runner.os }}-${{ hashFiles('server/emails/src/**', 'server/emails/package.json', 'server/emails/pnpm-lock.yaml', 'server/emails/tsdown.config.mjs', '.nvmrc') }}
+
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.3.2
+        if: steps.merge-check.outputs.should_run != 'false'
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
           enable-cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v7.1.0
+        if: steps.merge-check.outputs.should_run != 'false'
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version-file: "server/pyproject.toml"
 
-      - name: Cache CJK fonts
+      - name: Restore CJK fonts
         id: cjk-fonts-cache
-        uses: actions/cache@v6.1.0
+        if: steps.merge-check.outputs.should_run != 'false' && matrix.shard != 'tinybird'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: /usr/share/fonts/opentype/noto
           key: cjk-fonts-${{ runner.os }}-noto-cjk-v1
 
       - name: Install CJK fonts
-        if: steps.cjk-fonts-cache.outputs.cache-hit != 'true'
+        if: steps.merge-check.outputs.should_run != 'false' && matrix.shard != 'tinybird' && steps.cjk-fonts-cache.outputs.cache-hit != 'true'
         run: sudo apt-get update && sudo apt-get install -y fonts-noto-cjk
 
+      - name: Save CJK fonts cache
+        if: steps.merge-check.outputs.should_run != 'false' && matrix.shard == '1' && steps.cjk-fonts-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: /usr/share/fonts/opentype/noto
+          key: cjk-fonts-${{ runner.os }}-noto-cjk-v1
+
       - name: 🔧 uv install
+        if: steps.merge-check.outputs.should_run != 'false'
         working-directory: ./server
         run: |
-          uv sync --dev --frozen
+          uv sync --dev --frozen --compile-bytecode
+          uv run python -m compileall -j 0 -q polar tests
 
       - name: 🐦 Install Tinybird CLI
-        run: curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
+        if: steps.merge-check.outputs.should_run != 'false' && matrix.shard == 'tinybird'
+        run: |
+          curl -sSL https://tinybird.co/install.sh | bash
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: 🐦 Prepare Tinybird workspace
+        if: steps.merge-check.outputs.should_run != 'false' && matrix.shard == 'tinybird'
         working-directory: ./server
         run: |
-          token=$(uv run python -m scripts.tinybird_test_workspace)
-          echo "::add-mask::$token"
-          echo "POLAR_TEST_TINYBIRD_TOKEN=$token" >> "$GITHUB_ENV"
+          token_file="$RUNNER_TEMP/tinybird-token"
+          rm -f "$token_file" "$token_file.error"
+          nohup uv run python -m scripts.tinybird_test_workspace --token-file "$token_file" > "$RUNNER_TEMP/tinybird-prepare.log" 2>&1 &
 
-      - name: ⚗️ alembic migrate
-        working-directory: ./server
-        run: uv run task db_migrate
+      - name: ⚗️ Restore migrated Postgres schema
+        id: schema-cache
+        if: steps.merge-check.outputs.should_run != 'false'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/pg-schema
+          key: pg-schema-v1-pg18-${{ hashFiles('server/migrations/**/*.py') }}
 
-      - name: ⚗️ alembic check
-        working-directory: ./server
-        run: uv run alembic check
+      - name: ⚗️ Prepare Postgres database
+        if: steps.merge-check.outputs.should_run != 'false'
+        run: |
+          PG_CONTAINER=$(docker ps -q --filter ancestor=postgres:18.6-bookworm | head -n 1)
+          if [ -n "$PG_CONTAINER" ]; then
+            docker exec "$PG_CONTAINER" psql -U polar -d postgres -v ON_ERROR_STOP=1 -q \
+              -c "ALTER SYSTEM SET synchronous_commit = off" \
+              -c "ALTER SYSTEM SET autovacuum = off" \
+              -c "ALTER SYSTEM SET work_mem = '16MB'" \
+              -c "SELECT pg_reload_conf()"
+          fi
+          if [ "${{ steps.schema-cache.outputs.cache-hit }}" = "true" ] && [ -n "$PG_CONTAINER" ] && [ -f "$RUNNER_TEMP/pg-schema/schema.sql" ]; then
+            docker exec -i "$PG_CONTAINER" psql -U polar -d polar_test -v ON_ERROR_STOP=1 -q < "$RUNNER_TEMP/pg-schema/schema.sql"
+          else
+            (cd server && uv run task db_migrate)
+            if [ "${{ matrix.shard }}" = "1" ] && [ -n "$PG_CONTAINER" ]; then
+              mkdir -p "$RUNNER_TEMP/pg-schema"
+              docker exec "$PG_CONTAINER" pg_dump -U polar -d polar_test --no-owner --no-privileges > "$RUNNER_TEMP/pg-schema/schema.sql"
+            fi
+          fi
+
+      - name: ⚗️ Save migrated Postgres schema cache
+        if: steps.merge-check.outputs.should_run != 'false' && matrix.shard == '1' && steps.schema-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/pg-schema
+          key: pg-schema-v1-pg18-${{ hashFiles('server/migrations/**/*.py') }}
 
       - name: 📊 Restore test durations
-        uses: actions/cache/restore@v6.1.0
+        if: steps.merge-check.outputs.should_run != 'false' && matrix.shard != 'tinybird'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: server/.test_durations
           key: test-durations-${{ github.sha }}
           restore-keys: test-durations-
 
       - name: 🐍 Run tests (pytest)
+        if: steps.merge-check.outputs.should_run != 'false' && matrix.shard != 'tinybird'
         working-directory: ./server
-        run: uv run pytest --splits 2 --group ${{ matrix.shard }} --splitting-algorithm least_duration -n auto --dist=loadgroup --no-cov --durations=0 --store-durations
+        run: |
+          uv run python -m scripts.pytest_shards --shards 4 --shard ${{ matrix.shard }} > "$RUNNER_TEMP/test-files"
+          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "not tinybird and not benchmark" -n 8 --dist=loadgroup -p no:sugar -p no:cov -p no:codspeed -p no:locust --durations=20 --store-durations --clean-durations
 
-      - name: 💾 Save test durations
-        if: github.event_name == 'push'
-        uses: actions/cache/save@v6.1.0
+      - name: 🐦 Run Tinybird tests (pytest)
+        if: steps.merge-check.outputs.should_run != 'false' && matrix.shard == 'tinybird'
+        working-directory: ./server
+        env:
+          POLAR_TEST_TINYBIRD_TOKEN_FILE: ${{ runner.temp }}/tinybird-token
+        run: |
+          uv run python -m scripts.pytest_shards --tinybird > "$RUNNER_TEMP/test-files"
+          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "tinybird and not benchmark" -n 6 --dist=loadgroup -p no:sugar -p no:cov -p no:codspeed -p no:locust -p no:split --durations=20
+
+      - name: 📊 Upload shard test durations
+        if: steps.merge-check.outputs.should_run != 'false' && github.event_name == 'push' && matrix.shard != 'tinybird'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-durations-${{ matrix.shard }}
+          path: server/.test_durations
+          include-hidden-files: true
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 1
+
+  alembic-check:
+    name: "Server: Alembic Check ⚗️"
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 10
+    env:
+      POLAR_ENV: testing
+      POLAR_EMAIL_RENDERER_BINARY_PATH: /tmp/email-renderer
+    services:
+      postgres:
+        image: postgres:18.6-bookworm
+        env:
+          POSTGRES_USER: polar
+          POSTGRES_PASSWORD: polar
+          POSTGRES_DB: polar_test
+          POSTGRES_PORT: 5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 1s
+          --health-timeout 2s
+          --health-retries 30
+          --tmpfs /var/lib/postgresql/18/docker:rw,size=1g
+        ports:
+          - 5432:5432
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check if server changed
+        id: merge-check
+        if: github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: |
+          if [ -n "$BASE_SHA" ] && git fetch --depth=1 origin "$BASE_SHA" && [ -z "$(git diff --name-only "$BASE_SHA" HEAD -- server/ .github/workflows/test_server.yaml)" ]; then
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create mock email renderer binary
+        if: steps.merge-check.outputs.should_run != 'false'
+        run: touch /tmp/email-renderer
+
+      - name: Install uv
+        if: steps.merge-check.outputs.should_run != 'false'
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        if: steps.merge-check.outputs.should_run != 'false'
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version-file: "server/pyproject.toml"
+
+      - name: 🔧 uv install
+        if: steps.merge-check.outputs.should_run != 'false'
+        working-directory: ./server
+        run: uv sync --frozen --no-dev
+
+      - name: ⚗️ Restore migrated Postgres schema
+        id: schema-cache
+        if: steps.merge-check.outputs.should_run != 'false'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/pg-schema
+          key: pg-schema-v1-pg18-${{ hashFiles('server/migrations/**/*.py') }}
+
+      - name: ⚗️ Prepare Postgres database
+        if: steps.merge-check.outputs.should_run != 'false'
+        run: |
+          PG_CONTAINER=$(docker ps -q --filter ancestor=postgres:18.6-bookworm | head -n 1)
+          if [ "${{ steps.schema-cache.outputs.cache-hit }}" = "true" ] && [ -n "$PG_CONTAINER" ] && [ -f "$RUNNER_TEMP/pg-schema/schema.sql" ]; then
+            docker exec -i "$PG_CONTAINER" psql -U polar -d polar_test -v ON_ERROR_STOP=1 -q < "$RUNNER_TEMP/pg-schema/schema.sql"
+          else
+            (cd server && uv run task db_migrate)
+          fi
+
+      - name: ⚗️ alembic check
+        if: steps.merge-check.outputs.should_run != 'false'
+        working-directory: ./server
+        run: uv run alembic check
+
+  merge-durations:
+    name: "Server: Save Test Durations 📊"
+    needs: [test]
+    if: github.event_name == 'push' && needs.test.result == 'success'
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          enable-cache: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version-file: server/pyproject.toml
+
+      - name: 📊 Download shard test durations
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: test-durations-*
+          path: ${{ runner.temp }}/test-durations
+
+      - name: 📊 Merge shard test durations
+        run: uv run --no-project --python 3.14 server/scripts/merge_test_durations.py --expected-shards 4 --output server/.test_durations "$RUNNER_TEMP"/test-durations/*/.test_durations
+
+      - name: 💾 Save merged test durations
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: server/.test_durations
           key: test-durations-${{ github.sha }}
-
-  test-status:
-    name: "Server: Tests 🐍"
-    needs: [changes, test]
-    if: always()
-    runs-on: blacksmith-4vcpu-ubuntu-2404
-    steps:
-      - name: Check shard results
-        env:
-          RESULT: ${{ needs.test.result }}
-          CHANGES_RESULT: ${{ needs.changes.result }}
-        run: |
-          if [ "$RESULT" = "success" ]; then
-            exit 0
-          fi
-          if [ "$RESULT" = "skipped" ] && [ "$CHANGES_RESULT" = "success" ]; then
-            exit 0
-          fi
-          exit 1

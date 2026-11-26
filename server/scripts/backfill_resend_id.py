@@ -10,7 +10,7 @@ from sqlalchemy import Select, and_, func, or_, select
 from polar import tasks  # noqa: F401
 from polar.config import settings
 from polar.integrations.resend.service import ACTIVE_ORGANIZATION_STATUSES
-from polar.kit.db.postgres import create_async_sessionmaker
+from polar.kit.db.postgres import create_async_sessionmaker  # lint-skip: dry-run
 from polar.models import User
 from polar.postgres import create_async_engine
 from polar.redis import create_redis
@@ -112,7 +112,7 @@ async def enqueue_sync_users(statement: Select[UUID]) -> None:
                     await asyncio.sleep(1)
     finally:
         await engine.dispose()
-        await redis.close()
+        await redis.aclose()
 
 
 if __name__ == "__main__":

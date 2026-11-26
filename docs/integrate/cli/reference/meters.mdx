@@ -1,6 +1,7 @@
 ---
 title: "polar meters"
 sidebarTitle: "meters"
+description: "Arguments and flags for every polar meters command"
 ---
 
 {/* Generated from the CLI by `pnpm --filter @polar-sh/cli docs:generate`. Do not edit by hand. */}
@@ -60,6 +61,7 @@ polar meters get [flags] <id>
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--fields` | `string` | Only print these fields, comma-separated; use dots for nested ones, e.g. id,name,prices.price_amount |
+| `--org` | `string` | Organization ID or slug for this invocation only |
 
 ## polar meters get_external
 
@@ -80,6 +82,7 @@ polar meters get_external [flags] <external_id>
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--fields` | `string` | Only print these fields, comma-separated; use dots for nested ones, e.g. id,name,prices.price_amount |
+| `--org` | `string` | Organization ID or slug for this invocation only |
 
 ## polar meters list
 
@@ -122,6 +125,7 @@ polar meters quantities [flags] <id>
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--fields` | `string` | Only print these fields, comma-separated; use dots for nested ones, e.g. id,name,prices.price_amount |
+| `--org` | `string` | Organization ID or slug for this invocation only |
 | `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
 | `--start-timestamp` | `string` | Required. Start timestamp. |
 | `--end-timestamp` | `string` | Required. End timestamp. |
@@ -152,6 +156,7 @@ polar meters update [flags] <id>
 | --- | --- | --- |
 | `--confirm`, `-c` | `boolean` | Skip the confirmation prompt for destructive requests |
 | `--fields` | `string` | Only print these fields, comma-separated; use dots for nested ones, e.g. id,name,prices.price_amount |
+| `--org` | `string` | Organization ID or slug for this invocation only |
 | `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
 | `--metadata` | `string` | Key-value object allowing you to store additional information. JSON: &#123;"&lt;key&gt;": string \| integer \| number \| boolean&#125; |
 | `--name` | `string` | The name of the meter. Will be shown on customer's invoices and usage. |

@@ -3,7 +3,6 @@
 import { MerchantOfRecord } from './chapters/MerchantOfRecord'
 import { FieldGuide } from './chapters/FieldGuide'
 import { Meter } from './chapters/Meter'
-import { StartupProgram } from './chapters/StartupProgram'
 import { UsageBilling } from './chapters/UsageBilling'
 import { ClosingCta } from './ClosingCta'
 import { CustomerStory } from './CustomerStory'
@@ -26,7 +25,6 @@ export default function Page() {
       <FieldGuide />
       <Testimonials />
       <Pricing />
-      <StartupProgram />
       <ClosingCta />
     </div>
   )

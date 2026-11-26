@@ -5,11 +5,12 @@ import {
   BUCKET_SIZE,
   getBucketStart,
   getMatcher,
-  reduce,
+  matchEvent,
   withMatchers,
   type Reducer,
   quantity,
   emptyStatistics,
+  addStatistics,
 } from "./reducer";
 
 const event = {
@@ -49,37 +50,20 @@ describe("reduction", () => {
     ["min", -2],
     ["max", 3],
     ["avg", 0.5],
-  ] as const)("reduces %s by customer and bucket", (func, value) => {
-    const bucket = getBucketStart(event.timestamp);
-    const events = [
-      event,
-      { ...event, metadata: { tokens: -2 } },
-      { ...event, customer: "external:bob" },
-      { ...event, timestamp: event.timestamp - BUCKET_SIZE },
-    ];
-    expect(reduce(withMatchers([reducer(func)]), events, bucket)).toEqual([
-      {
-        customer: "external:alice",
-        reducer: "tokens",
-        bucketStart: bucket,
-        statistics:
-          func === "count"
-            ? { count: 2, sum: 0, min: null, max: null }
-            : { count: 2, sum: 1, min: -2, max: 3 },
-      },
-      {
-        customer: "external:bob",
-        reducer: "tokens",
-        bucketStart: bucket,
-        statistics:
-          func === "count"
-            ? { count: 1, sum: 0, min: null, max: null }
-            : { count: 1, sum: 3, min: 3, max: 3 },
-      },
-    ]);
-    expect(
-      quantity(reduce(withMatchers([reducer(func)]), events, bucket)[0].statistics, func),
-    ).toBe(value);
+  ] as const)("matches an event with the value its %s reducer adds up", (func, value) => {
+    const matchers = withMatchers([reducer(func)]);
+    const statistics = emptyStatistics();
+    for (const tokens of [3, -2]) {
+      const matches = matchEvent(matchers, { ...event, metadata: { tokens } });
+      expect(matches).toEqual([{ reducer: "tokens", value: func === "count" ? null : tokens }]);
+      addStatistics(
+        statistics,
+        func === "count"
+          ? { count: 1, sum: 0, min: null, max: null }
+          : { count: 1, sum: tokens, min: tokens, max: tokens },
+      );
+    }
+    expect(quantity(statistics, func)).toBe(value);
     expect(getBucketStart(-1)).toBe(-BUCKET_SIZE);
     const fractional = parseEvent({
       name: "api",
@@ -107,7 +91,7 @@ describe("reduction", () => {
     });
     expect(match(event)).toBe(true);
     expect(getMatcher({ property: "missing", operator: "ne", value: 1 })(event)).toBe(false);
-    expect(getMatcher({ property: "nested.flag", operator: "eq", value: 1 })(event)).toBe(true);
+    expect(getMatcher({ property: "nested.flag", operator: "eq", value: 1 })(event)).toBe(false);
     expect(getMatcher({ property: "nested.flag", operator: "gt", value: false })(event)).toBe(
       false,
     );
@@ -123,10 +107,11 @@ describe("reduction", () => {
   );
 
   it.each([
-    [true, 1, true],
-    [1, true, true],
-    [false, 0, true],
-    [0, false, true],
+    [true, true, true],
+    [true, 1, false],
+    [1, true, false],
+    [false, 0, false],
+    [0, false, false],
     [true, 2, false],
     [false, 1, false],
     ["1", 1, false],
@@ -176,21 +161,16 @@ describe("reduction", () => {
     ).toThrow();
     expect(() => customerKey({ customer_id: "a", external_customer_id: "a" })).toThrow();
     expect(
-      reduce(withMatchers([reducer("sum")]), [{ ...event, metadata: { tokens: true } }], 0),
+      matchEvent(withMatchers([reducer("sum")]), { ...event, metadata: { tokens: true } }),
     ).toEqual([]);
     expect(() =>
-      reduce(withMatchers([reducer("sum")]), [{ ...event, metadata: { tokens: Infinity } }], 0),
+      matchEvent(withMatchers([reducer("sum")]), { ...event, metadata: { tokens: Infinity } }),
     ).toThrow();
-    expect(() =>
-      reduce(
-        withMatchers([reducer("sum")]),
-        Array(2).fill({ ...event, metadata: { tokens: Number.MAX_VALUE } }),
-        0,
-      ),
-    ).toThrow();
+    const huge = { count: 1, sum: Number.MAX_VALUE, min: Number.MAX_VALUE, max: Number.MAX_VALUE };
+    expect(() => addStatistics({ ...huge }, huge)).toThrow();
   });
 
   it("matches no local event against a credit reducer", () => {
-    expect(reduce(withMatchers([{ ...reducer("sum"), kind: "credit" }]), [event], 0)).toEqual([]);
+    expect(matchEvent(withMatchers([{ ...reducer("sum"), kind: "credit" }]), event)).toEqual([]);
   });
 });

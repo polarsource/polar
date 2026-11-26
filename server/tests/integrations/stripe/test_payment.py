@@ -3,7 +3,7 @@ from datetime import timedelta
 
 import pytest
 import stripe as stripe_lib
-from freezegun import freeze_time
+import time_machine
 from pytest_mock import MockerFixture
 from sqlalchemy import delete, select
 
@@ -51,6 +51,7 @@ from tests.fixtures.random_objects import (
     create_order,
     create_organization,
     create_product,
+    create_subscription,
     create_user,
     create_wallet,
     create_wallet_transaction,
@@ -197,7 +198,83 @@ class TestHandleFailure:
             assert checkout.status == CheckoutStatus.open
             assert "intent_status" not in checkout.payment_processor_metadata
 
-    @freeze_time("2024-01-01 12:00:00")
+    @pytest.mark.parametrize(
+        ("trigger", "current_intent_id", "failure_applied"),
+        [
+            (PaymentTrigger.retry_customer, "pi_current", False),
+            (PaymentTrigger.retry_customer, "pi_failed", True),
+            (PaymentTrigger.retry_customer, None, True),
+            (PaymentTrigger.retry_dunning, "pi_current", True),
+        ],
+    )
+    @pytest.mark.parametrize(
+        "failure",
+        [
+            build_stripe_charge(
+                status="failed",
+                payment_intent="pi_failed",
+                billing_details={"email": "test@example.com"},
+                payment_method_details={"type": "card", "card": {"last4": "4242"}},
+            ),
+            build_stripe_payment_intent(
+                id="pi_failed",
+                last_payment_error={
+                    "message": "Authentication failed",
+                    "payment_method": {"type": "card", "card": {"last4": "4242"}},
+                },
+            ),
+        ],
+        ids=["charge", "payment_intent"],
+    )
+    async def test_order_failure_matches_current_customer_retry_intent(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        product: Product,
+        failure: stripe_lib.Charge | stripe_lib.PaymentIntent,
+        trigger: PaymentTrigger,
+        current_intent_id: str | None,
+        failure_applied: bool,
+    ) -> None:
+        lock_acquired_at = utc_now()
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            product=product,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            payment_lock_acquired_at=lock_acquired_at,
+        )
+        order.invoice_number = None
+        if current_intent_id is not None:
+            order.payment_processor_metadata = {"intent_id": current_intent_id}
+        await save_fixture(order)
+
+        failure.metadata = {
+            "organization_id": str(order.organization_id),
+            "order_id": str(order.id),
+            "payment_trigger": trigger,
+        }
+
+        await handle_failure(session, failure)
+        await session.refresh(order)
+
+        if failure_applied:
+            assert order.status == OrderStatus.draft
+            assert order.payment_lock_acquired_at is None
+        else:
+            assert order.status == OrderStatus.pending
+            assert order.payment_lock_acquired_at == lock_acquired_at
+        assert (
+            await PaymentRepository.from_session(session).get_by_processor_id(
+                PaymentProcessor.stripe, failure.id
+            )
+            is not None
+        )
+
+    @time_machine.travel("2024-01-01T12:00:00Z", tick=False)
     async def test_full_dunning_flow_with_repositories(
         self,
         session: AsyncSession,
@@ -371,6 +448,46 @@ class TestHandleFailureTrigger:
         )
         assert payment is not None
         assert payment.trigger == PaymentTrigger.retry_dunning
+
+    async def test_payment_retry_alert_failure_keeps_dunning_schedule(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        next_payment_attempt_at = utc_now() + timedelta(days=3)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            next_payment_attempt_at=next_payment_attempt_at,
+        )
+        charge = build_stripe_charge(
+            status="failed",
+            metadata={
+                "order_id": str(order.id),
+                "payment_trigger": "retry_payment_alert",
+                "payment_retry_alert_id": "alrt_test",
+            },
+            billing_details={"email": "test@example.com"},
+            payment_method_details={"card": {"last4": "4444"}, "type": "card"},
+        )
+
+        enqueue = mocker.patch(
+            "polar.integrations.payment_retry_alert.service.enqueue_job"
+        )
+
+        await handle_failure(session, charge)
+
+        assert order.next_payment_attempt_at == next_payment_attempt_at
+        enqueue.assert_called_once_with(
+            "payment_retry_alert.report_outcome", alert_id="alrt_test", outcome="FAILED"
+        )
 
     async def test_no_trigger_for_pre_deployment_charge(
         self,
@@ -565,6 +682,7 @@ class TestHandleSuccess:
         assert enqueue.call_args.args == ("checkout.success",)
         assert kwargs["payment_id"] is None
         assert kwargs["payment_method_id"] is not None
+        assert customer.default_payment_method_id == kwargs["payment_method_id"]
         session.expunge_all()
         await checkout_success(**kwargs)
         order = await OrderRepository.from_session(session).get_earliest_by_checkout_id(
@@ -668,6 +786,55 @@ class TestHandleSuccess:
         assert paid_order.status == OrderStatus.paid
         assert paid_order.next_payment_attempt_at is None
         assert paid_order.payment_lock_acquired_at is None
+
+    async def test_order_setup_intent_saves_payment_method(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture, customer=customer, product=product
+        )
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            product=product,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            subtotal_amount=0,
+        )
+        stripe_payment_method = build_stripe_payment_method()
+        intent = stripe_lib.SetupIntent.construct_from(
+            {
+                "id": "seti_test",
+                "metadata": {
+                    "organization_id": str(order.organization_id),
+                    "order_id": str(order.id),
+                },
+                "payment_method": stripe_payment_method,
+            },
+            None,
+        )
+        enqueue = mocker.patch("polar.integrations.stripe.payment.enqueue_job")
+
+        await handle_success(session, intent)
+        await session.flush()
+
+        method = await PaymentMethodRepository.from_session(
+            session
+        ).get_by_customer_and_processor_id(
+            customer.id, PaymentProcessor.stripe, stripe_payment_method.id
+        )
+        assert method is not None
+        assert customer.default_payment_method_id == method.id
+        assert subscription.payment_method_id == method.id
+        assert order.status == OrderStatus.pending
+        enqueue.assert_called_once_with(
+            "order.paid", order_id=order.id, payment_id=None
+        )
 
     async def test_wallet_order(
         self,

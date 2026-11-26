@@ -141,7 +141,7 @@ through linking again.
 **Stripe Tax** must be active in the sandbox, or checkout fails when it tries to price an order.
 `dev stripe` checks this and tells you if it isn't. Once active, orders are taxed at 0 until you
 add a tax registration — see
-[Testing taxes locally](https://handbook.polar.sh/engineering/oncall/developer-faq) in the handbook.
+[Testing taxes locally](https://linear.app/polarsh/document/developer-faq-7f841e231b03) in the handbook.
 
 <details>
 <summary>Manual setup, and receiving webhooks on a public URL</summary>

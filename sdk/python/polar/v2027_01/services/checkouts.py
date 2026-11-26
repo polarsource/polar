@@ -51,6 +51,8 @@ class CheckoutsSync(SyncServiceBase):
         external_customer_id: str | builtins.list[str] | None = None,
         status: CheckoutStatus | builtins.list[CheckoutStatus] | None = None,
         query: str | None = None,
+        created_after: str | None = None,
+        created_before: str | None = None,
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CheckoutSortProperty] | None = ["-created_at"],
@@ -70,10 +72,12 @@ class CheckoutsSync(SyncServiceBase):
             external_customer_id: Filter by customer external ID.
             status: Filter by checkout session status.
             query: Filter by customer email.
+            created_after: Only include checkout sessions created after this date.
+            created_before: Only include checkout sessions created before this date.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -95,6 +99,8 @@ class CheckoutsSync(SyncServiceBase):
                 "external_customer_id": external_customer_id,
                 "status": status,
                 "query": query,
+                "created_after": created_after,
+                "created_before": created_before,
                 "page": page,
                 "limit": limit,
                 "sorting": sorting,
@@ -118,6 +124,8 @@ class CheckoutsSync(SyncServiceBase):
         external_customer_id: str | builtins.list[str] | None = None,
         status: CheckoutStatus | builtins.list[CheckoutStatus] | None = None,
         query: str | None = None,
+        created_after: str | None = None,
+        created_before: str | None = None,
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CheckoutSortProperty] | None = ["-created_at"],
@@ -137,10 +145,12 @@ class CheckoutsSync(SyncServiceBase):
             external_customer_id: Filter by customer external ID.
             status: Filter by checkout session status.
             query: Filter by customer email.
+            created_after: Only include checkout sessions created after this date.
+            created_before: Only include checkout sessions created before this date.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -162,6 +172,8 @@ class CheckoutsSync(SyncServiceBase):
                 external_customer_id=external_customer_id,
                 status=status,
                 query=query,
+                created_after=created_after,
+                created_before=created_before,
                 page=page,
                 limit=limit,
                 sorting=sorting,
@@ -204,7 +216,7 @@ class CheckoutsSync(SyncServiceBase):
         **Scopes**: `checkouts:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -244,7 +256,7 @@ class CheckoutsSync(SyncServiceBase):
 
         Args:
             id: The checkout session ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -287,7 +299,7 @@ class CheckoutsSync(SyncServiceBase):
 
         Args:
             id: The checkout session ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -331,7 +343,7 @@ class CheckoutsSync(SyncServiceBase):
 
         Args:
             client_secret: The checkout session client secret.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -376,7 +388,7 @@ class CheckoutsSync(SyncServiceBase):
 
         Args:
             client_secret: The checkout session client secret.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -447,7 +459,7 @@ class CheckoutsSync(SyncServiceBase):
 
         Args:
             client_secret: The checkout session client secret.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -497,6 +509,8 @@ class CheckoutsAsync(AsyncServiceBase):
         external_customer_id: str | builtins.list[str] | None = None,
         status: CheckoutStatus | builtins.list[CheckoutStatus] | None = None,
         query: str | None = None,
+        created_after: str | None = None,
+        created_before: str | None = None,
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CheckoutSortProperty] | None = ["-created_at"],
@@ -516,10 +530,12 @@ class CheckoutsAsync(AsyncServiceBase):
             external_customer_id: Filter by customer external ID.
             status: Filter by checkout session status.
             query: Filter by customer email.
+            created_after: Only include checkout sessions created after this date.
+            created_before: Only include checkout sessions created before this date.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -541,6 +557,8 @@ class CheckoutsAsync(AsyncServiceBase):
                 "external_customer_id": external_customer_id,
                 "status": status,
                 "query": query,
+                "created_after": created_after,
+                "created_before": created_before,
                 "page": page,
                 "limit": limit,
                 "sorting": sorting,
@@ -564,6 +582,8 @@ class CheckoutsAsync(AsyncServiceBase):
         external_customer_id: str | builtins.list[str] | None = None,
         status: CheckoutStatus | builtins.list[CheckoutStatus] | None = None,
         query: str | None = None,
+        created_after: str | None = None,
+        created_before: str | None = None,
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CheckoutSortProperty] | None = ["-created_at"],
@@ -583,10 +603,12 @@ class CheckoutsAsync(AsyncServiceBase):
             external_customer_id: Filter by customer external ID.
             status: Filter by checkout session status.
             query: Filter by customer email.
+            created_after: Only include checkout sessions created after this date.
+            created_before: Only include checkout sessions created before this date.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -608,6 +630,8 @@ class CheckoutsAsync(AsyncServiceBase):
                 external_customer_id=external_customer_id,
                 status=status,
                 query=query,
+                created_after=created_after,
+                created_before=created_before,
                 page=page,
                 limit=limit,
                 sorting=sorting,
@@ -651,7 +675,7 @@ class CheckoutsAsync(AsyncServiceBase):
         **Scopes**: `checkouts:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -691,7 +715,7 @@ class CheckoutsAsync(AsyncServiceBase):
 
         Args:
             id: The checkout session ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -734,7 +758,7 @@ class CheckoutsAsync(AsyncServiceBase):
 
         Args:
             id: The checkout session ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -778,7 +802,7 @@ class CheckoutsAsync(AsyncServiceBase):
 
         Args:
             client_secret: The checkout session client secret.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -823,7 +847,7 @@ class CheckoutsAsync(AsyncServiceBase):
 
         Args:
             client_secret: The checkout session client secret.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -894,7 +918,7 @@ class CheckoutsAsync(AsyncServiceBase):
 
         Args:
             client_secret: The checkout session client secret.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters

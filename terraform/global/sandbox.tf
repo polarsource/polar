@@ -568,11 +568,11 @@ resource "tfe_variable" "vercel_mintlify_assistant_api_key_sandbox" {
   }
 }
 
-resource "tfe_variable" "vercel_mcp_oauth2_client_id_sandbox" {
-  key             = "mcp_oauth2_client_id"
+resource "tfe_variable" "protected_oauth2_client_ids_sandbox" {
+  key             = "protected_oauth2_client_ids"
   category        = "terraform"
-  description     = "MCP OAuth2 client ID for the Vercel sandbox frontend"
-  sensitive       = true
+  description     = "OAuth2 client IDs excluded from stale cleanup in sandbox"
+  hcl             = true
   variable_set_id = tfe_variable_set.sandbox.id
 
   lifecycle {
@@ -820,6 +820,14 @@ resource "tfe_variable" "planetscale_app_password_sandbox" {
   variable_set_id = tfe_variable_set.sandbox.id
 }
 
+resource "tfe_variable" "planetscale_migrator_password_sandbox" {
+  key             = "planetscale_migrator_password"
+  category        = "terraform"
+  description     = "PlanetScale migrator role password for sandbox"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+}
+
 resource "tfe_variable" "slo_report_slack_bot_token_sandbox" {
   key             = "slo_report_slack_bot_token"
   category        = "terraform"
@@ -861,6 +869,30 @@ resource "tfe_variable" "backoffice_google_hosted_domain_sandbox" {
   category        = "terraform"
   description     = "Backoffice Google Workspace hosted domain for sandbox"
   sensitive       = false
+  variable_set_id = tfe_variable_set.sandbox.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "payment_retry_alert_api_key_sandbox" {
+  key             = "payment_retry_alert_api_key"
+  category        = "terraform"
+  description     = "PaymentRetryAlert API key for sandbox"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "payment_retry_alert_webhook_secret_sandbox" {
+  key             = "payment_retry_alert_webhook_secret"
+  category        = "terraform"
+  description     = "PaymentRetryAlert webhook signing secret for sandbox"
+  sensitive       = true
   variable_set_id = tfe_variable_set.sandbox.id
 
   lifecycle {

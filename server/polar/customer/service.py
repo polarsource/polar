@@ -1,11 +1,12 @@
 import uuid
 from collections.abc import Sequence
 from datetime import datetime, timedelta
+from decimal import Decimal
 from typing import Any
 
 import structlog
-from pydantic import TypeAdapter
-from sqlalchemy import UnaryExpression, asc, desc, func, or_
+from pydantic import MISSING, TypeAdapter
+from sqlalchemy import UnaryExpression, asc, desc, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.elements import OrderByList
@@ -19,6 +20,7 @@ from polar.authz.service import (
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.config import settings
 from polar.customer_meter.repository import CustomerMeterRepository
+from polar.customer_meter.service import customer_meter as customer_meter_service
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.exceptions import PolarRequestValidationError, ValidationError
 from polar.kit.address import Address
@@ -39,6 +41,7 @@ from polar.member_session.service import member_session as member_session_servic
 from polar.models import (
     BenefitGrant,
     Customer,
+    CustomerMeter,
     Order,
     Organization,
     PaymentMethod,
@@ -109,14 +112,7 @@ class CustomerService:
             statement = apply_metadata_clause(Customer, statement, metadata)
 
         if query is not None:
-            statement = statement.where(
-                or_(
-                    Customer.email.icontains(query, autoescape=True),
-                    Customer.name.icontains(query, autoescape=True),
-                    Customer._billing_name.icontains(query, autoescape=True),
-                    Customer.external_id.istartswith(query, autoescape=True),
-                )
-            )
+            statement = statement.where(repository.get_search_clause(query))
 
         if active is not None:
             statement = statement.where(repository.get_active_clause(active))
@@ -204,8 +200,10 @@ class CustomerService:
         org_ids = await get_accessible_org_ids(
             session, auth_subject, permission=OrganizationPermission.customers_read
         )
-        statement = repository.get_statement_by_org_ids(org_ids).where(
-            Customer.id == id
+        statement = (
+            repository.get_statement_by_org_ids(org_ids)
+            .where(Customer.id == id)
+            .options(joinedload(Customer.organization))
         )
         return await repository.get_one_or_none(statement)
 
@@ -219,8 +217,10 @@ class CustomerService:
         org_ids = await get_accessible_org_ids(
             session, auth_subject, permission=OrganizationPermission.customers_read
         )
-        statement = repository.get_statement_by_org_ids(org_ids).where(
-            Customer.external_id == external_id
+        statement = (
+            repository.get_statement_by_org_ids(org_ids)
+            .where(Customer.external_id == external_id)
+            .options(joinedload(Customer.organization))
         )
         return await repository.get_one_or_none(statement)
 
@@ -454,7 +454,7 @@ class CustomerService:
         email_changed = False
 
         errors: list[ValidationError] = []
-        if customer_update.email is not None and (
+        if customer_update.email is not MISSING and (
             customer.email is None
             or customer.email.lower() != customer_update.email.lower()
         ):
@@ -475,24 +475,10 @@ class CustomerService:
             customer.email_verified = False
             email_changed = True
 
-        # Prevent setting billing address to null
-        if (
-            "billing_address" in customer_update.model_fields_set
-            and customer_update.billing_address is None
-        ):
-            errors.append(
-                {
-                    "type": "value_error",
-                    "loc": ("body", "billing_address"),
-                    "msg": "Customer billing address cannot be reset to null once set.",
-                    "input": customer_update.billing_address,
-                }
-            )
-
         # Validate external_id changes (only for CustomerUpdate schema)
         if (
             isinstance(customer_update, CustomerUpdate)
-            and "external_id" in customer_update.model_fields_set
+            and customer_update.external_id is not MISSING
             and customer.external_id != customer_update.external_id
         ):
             if customer.external_id is not None:
@@ -505,11 +491,8 @@ class CustomerService:
                         "input": customer_update.external_id,
                     }
                 )
-            elif (
-                customer_update.external_id is not None
-                and await repository.get_by_external_id_and_organization(
-                    customer_update.external_id, customer.organization_id
-                )
+            elif await repository.get_by_external_id_and_organization(
+                customer_update.external_id, customer.organization_id
             ):
                 # Setting new external_id that already exists
                 errors.append(
@@ -522,12 +505,10 @@ class CustomerService:
                 )
 
         # Prevent downgrade from team to individual
-        # NULL type is treated as 'individual' (legacy customers)
-        current_type = customer.type or CustomerType.individual
         if (
             isinstance(customer_update, CustomerUpdate)
-            and "type" in customer_update.model_fields_set
-            and current_type == CustomerType.team
+            and customer_update.type is not MISSING
+            and customer.type == CustomerType.team
             and customer_update.type != CustomerType.team
         ):
             errors.append(
@@ -542,7 +523,7 @@ class CustomerService:
         if errors:
             raise PolarRequestValidationError(errors)
 
-        if "tax_id" in customer_update.model_fields_set:
+        if customer_update.tax_id is not MISSING:
             if customer_update.tax_id is None:
                 # Explicitly clearing the tax ID.
                 customer.tax_id = None
@@ -579,7 +560,7 @@ class CustomerService:
                         ]
                     ) from e
         elif (
-            "billing_address" in customer_update.model_fields_set
+            customer_update.billing_address is not MISSING
             and customer.tax_id is not None
         ):
             # Billing address changed while an existing tax ID is set:
@@ -632,14 +613,15 @@ class CustomerService:
                             "msg": "A customer with this external ID already exists.",
                             "input": customer_update.external_id
                             if isinstance(customer_update, CustomerUpdate)
+                            and customer_update.external_id is not MISSING
                             else None,
                         }
                     ]
                 ) from e
             raise
 
-        if email_changed:
-            await member_service.sync_owner_email(session, updated_customer)
+        if email_changed or "name" in customer_update.model_fields_set:
+            await member_service.sync_owner(session, updated_customer)
 
         return updated_customer
 
@@ -649,11 +631,9 @@ class CustomerService:
         """Upgrade a customer to the 'team' type for seat-based purchases.
 
         One-way and idempotent: customers already on 'team' (or any non-individual
-        type) are left untouched. NULL type is treated as 'individual' (legacy
-        customers).
+        type) are left untouched.
         """
-        current_type = customer.type or CustomerType.individual
-        if current_type != CustomerType.individual:
+        if customer.type != CustomerType.individual:
             return customer
 
         repository = CustomerRepository.from_session(session)
@@ -757,10 +737,7 @@ class CustomerService:
         # Resolve the billing address used for tax ID validation: prefer the
         # value from this update payload (if explicitly provided and non-null),
         # otherwise fall back to the customer's existing billing address.
-        if (
-            "billing_address" in customer_update.model_fields_set
-            and customer_update.billing_address is not None
-        ):
+        if customer_update.billing_address is not MISSING:
             return customer_update.billing_address
         return customer.billing_address
 
@@ -1030,7 +1007,9 @@ class CustomerService:
         if cache:
             raw_state = await redis.get(cache_key)
             if raw_state is not None:
-                return _CustomerStateAdapter.validate_json(raw_state)
+                state = _CustomerStateAdapter.validate_json(raw_state)
+                await self._apply_reducer_units(session, redis, customer, state)
+                return state
 
         subscription_repository = SubscriptionRepository.from_session(session)
         customer.active_subscriptions = (
@@ -1046,18 +1025,47 @@ class CustomerService:
 
         customer_meter_repository = CustomerMeterRepository.from_session(session)
         customer.active_meters = await customer_meter_repository.get_all_by_customer(
-            customer.id
+            customer.id, options=(joinedload(CustomerMeter.customer),)
         )
 
         state = _CustomerStateAdapter.validate_python(customer, from_attributes=True)
 
+        # Cached with the stored units: live reducer units are applied on every read.
         await redis.set(
             cache_key,
             state.model_dump_json(),
             ex=int(timedelta(hours=1).total_seconds()),
         )
+        await self._apply_reducer_units(session, redis, customer, state)
 
         return state
+
+    async def _apply_reducer_units(
+        self,
+        session: AsyncReadSession,
+        redis: Redis,
+        customer: Customer,
+        state: CustomerState,
+    ) -> None:
+        if not customer.organization.is_reducer_billing_enabled:
+            return
+        if not state.active_meters:
+            return
+        units = await customer_meter_service.get_reducer_units(
+            session,
+            redis,
+            [(customer, meter.meter_id) for meter in state.active_meters],
+        )
+        if units is None:
+            return
+        for meter, (consumed, credited) in zip(state.active_meters, units, strict=True):
+            consumed_units = (
+                Decimal(str(meter.consumed_units)) if consumed is None else consumed
+            )
+            credited_units = meter.credited_units if credited is None else int(credited)
+            meter.consumed_units = float(consumed_units)
+            meter.credited_units = credited_units
+            meter.balance = float(credited_units - consumed_units)
 
     async def state_changed(
         self, session: AsyncSession, redis: Redis, customer: Customer

@@ -47,7 +47,7 @@ export const isTelemetryEnabled = (telemetry: boolean): boolean =>
   telemetry && process.env[TELEMETRY_ENV] !== "0";
 
 /** The serialized exports an instance holds until it hands them to the shared Redis. */
-export class Outbox {
+export class TelemetryBuffer {
   spans: Uint8Array[] = [];
   metrics: Uint8Array[] = [];
 }
@@ -57,25 +57,25 @@ const kept = (span: ReadableSpan): boolean =>
   span.status.code === SpanStatusCode.ERROR ||
   span.attributes["outpost.snapshot.delta"] === true;
 
-export class OutboxSpanExporter implements SpanExporter {
-  constructor(private readonly outbox: Outbox) {}
+export class BufferSpanExporter implements SpanExporter {
+  constructor(private readonly buffer: TelemetryBuffer) {}
 
   export(spans: ReadableSpan[], resultCallback: (result: ExportResult) => void): void {
     const exported = spans.filter(kept);
     const body = exported.length ? ProtobufTraceSerializer.serializeRequest(exported) : undefined;
-    if (body) this.outbox.spans.push(body);
+    if (body) this.buffer.spans.push(body);
     resultCallback({ code: 0 });
   }
 
   async shutdown(): Promise<void> {}
 }
 
-export class OutboxMetricExporter implements PushMetricExporter {
-  constructor(private readonly outbox: Outbox) {}
+export class BufferMetricExporter implements PushMetricExporter {
+  constructor(private readonly buffer: TelemetryBuffer) {}
 
   export(metrics: ResourceMetrics, resultCallback: (result: ExportResult) => void): void {
     const body = ProtobufMetricsSerializer.serializeRequest(metrics);
-    if (body) this.outbox.metrics.push(body);
+    if (body) this.buffer.metrics.push(body);
     resultCallback({ code: 0 });
   }
 
@@ -128,20 +128,20 @@ const resource = () =>
     "telemetry.sdk.language": "nodejs",
   });
 
-export const createTracerProvider = (outbox: Outbox): TracerProvider =>
+export const createTracerProvider = (buffer: TelemetryBuffer): TracerProvider =>
   new TracerProvider({
     resource: resource(),
     sampler: new AlwaysOnSampler(),
-    spanProcessors: [new BatchSpanProcessor({ exporter: new OutboxSpanExporter(outbox) })],
+    spanProcessors: [new BatchSpanProcessor({ exporter: new BufferSpanExporter(buffer) })],
   });
 
-export const createMeterProvider = (outbox: Outbox): MeterProvider =>
+export const createMeterProvider = (buffer: TelemetryBuffer): MeterProvider =>
   new MeterProvider({
     resource: resource(),
     views: METRIC_VIEWS,
     readers: [
       new PeriodicExportingMetricReader({
-        exporter: new OutboxMetricExporter(outbox),
+        exporter: new BufferMetricExporter(buffer),
         exportIntervalMillis: EXPORT_INTERVAL,
       }),
     ],

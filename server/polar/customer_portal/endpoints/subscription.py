@@ -1,36 +1,45 @@
-from typing import Annotated
+import uuid
+from typing import Annotated, Any
 
 import structlog
 from fastapi import Depends, Query
 
-from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.auth.models import AuthSubject
+from polar.exceptions import NotPermitted, PaymentNotReady, ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter
-from polar.models import Subscription
+from polar.kit.versioning import version
+from polar.models import Customer, Member, Subscription
 from polar.openapi import APITag
 from polar.order.service import PaymentFailed
 from polar.postgres import get_db_session
 from polar.routing import APIRouter
 from polar.subscription.schemas import (
     SubscriptionCancelPreview,
+    SubscriptionChangePreview,
     SubscriptionChargePreview,
     SubscriptionID,
     SubscriptionMeterChargePreview,
 )
 from polar.subscription.service import (
     AlreadyCanceledSubscription,
+    MissingBillingDetails,
+    NotTrialEndedSubscription,
     SubscriptionNotScheduledToCancel,
 )
 from polar.subscription.service import subscription as subscription_service
+from polar.version import V2027_01
 
 from .. import auth
 from ..schemas.subscription import (
     CustomerPortalSubscriptionListParams,
     CustomerSubscription,
+    CustomerSubscriptionChange,
     CustomerSubscriptionChangePreview,
     CustomerSubscriptionRevoke,
     CustomerSubscriptionUpdate,
+    CustomerSubscriptionUpdateV2026_10,
 )
 from ..service.subscription import (
     CustomerSubscriptionSortProperty,
@@ -206,7 +215,7 @@ async def get_cancel_preview(
 @router.post(
     "/{id}/change-preview",
     summary="Preview Subscription Change",
-    response_model=SubscriptionChargePreview,
+    response_model=CustomerSubscriptionChangePreview,
     responses={
         403: {
             "description": "Previewing this change is not allowed.",
@@ -221,10 +230,10 @@ async def get_cancel_preview(
 )
 async def preview_change(
     id: SubscriptionID,
-    change: CustomerSubscriptionChangePreview,
+    change: CustomerSubscriptionChange,
     auth_subject: auth.CustomerPortalUnionBillingWrite,
     session: AsyncSession = Depends(get_db_session),
-) -> SubscriptionChargePreview:
+) -> SubscriptionChangePreview:
     """Preview what a subscription change would cost, without applying it."""
     subscription = await customer_subscription_service.get_by_id(
         session, auth_subject, id
@@ -238,47 +247,107 @@ async def preview_change(
     )
 
 
+_UPDATE_RESPONSES: dict[int | str, dict[str, Any]] = {
+    200: {"description": "Customer subscription updated."},
+    402: {
+        "description": "Payment required to apply the subscription update.",
+        "model": PaymentFailed.schema(),
+    },
+    403: {
+        "description": (
+            "Customer subscription is already canceled "
+            "or will be at the end of the period, "
+            "the user lacks billing permissions, "
+            "or pausing/resuming is not enabled for the organization."
+        ),
+        "model": AlreadyCanceledSubscription.schema()
+        | PauseResumeNotAllowed.schema()
+        | UpdateSubscriptionPlanNotAllowed.schema()
+        | UpdateSubscriptionSeatsNotAllowed.schema()
+        | UpdateSubscriptionUnitsNotAllowed.schema(),
+    },
+    404: SubscriptionNotFound,
+    409: {
+        "description": (
+            "The subscription has no payment method to charge, "
+            "or is not scheduled to be canceled."
+        ),
+        "model": PaymentMethodRequired.schema()
+        | SubscriptionNotScheduledToCancel.schema(),
+    },
+}
+
+
 @router.patch(
     "/{id}",
     summary="Update Subscription",
     response_model=CustomerSubscription,
+    responses=_UPDATE_RESPONSES,
+)
+async def update(
+    id: SubscriptionID,
+    subscription_update: CustomerSubscriptionUpdateV2026_10,
+    auth_subject: auth.CustomerPortalUnionBillingWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Subscription:
+    """Update a subscription of the authenticated customer."""
+    return await _update(session, auth_subject, id, subscription_update)
+
+
+@router.patch(
+    "/{id}",
+    name="update",
+    summary="Update Subscription",
+    response_model=CustomerSubscription,
     responses={
-        200: {"description": "Customer subscription updated."},
-        402: {
-            "description": "Payment required to apply the subscription update.",
-            "model": PaymentFailed.schema(),
-        },
+        **_UPDATE_RESPONSES,
         403: {
             "description": (
                 "Customer subscription is already canceled "
                 "or will be at the end of the period, "
                 "the user lacks billing permissions, "
-                "or pausing/resuming is not enabled for the organization."
+                "pausing/resuming is not enabled for the organization, "
+                "or the organization can't renew subscriptions."
             ),
             "model": AlreadyCanceledSubscription.schema()
             | PauseResumeNotAllowed.schema()
             | UpdateSubscriptionPlanNotAllowed.schema()
             | UpdateSubscriptionSeatsNotAllowed.schema()
-            | UpdateSubscriptionUnitsNotAllowed.schema(),
+            | UpdateSubscriptionUnitsNotAllowed.schema()
+            | PaymentNotReady.schema(),
         },
-        404: SubscriptionNotFound,
         409: {
             "description": (
                 "The subscription has no payment method to charge, "
-                "or is not scheduled to be canceled."
+                "is not scheduled to be canceled, "
+                "or can't be reactivated: its trial hasn't ended without "
+                "converting, or the customer has no payment method or "
+                "complete billing address."
             ),
             "model": PaymentMethodRequired.schema()
-            | SubscriptionNotScheduledToCancel.schema(),
+            | SubscriptionNotScheduledToCancel.schema()
+            | NotTrialEndedSubscription.schema()
+            | MissingBillingDetails.schema(),
         },
     },
 )
-async def update(
+@version(starting_from=V2027_01)
+async def update_v2027_01(
     id: SubscriptionID,
     subscription_update: CustomerSubscriptionUpdate,
     auth_subject: auth.CustomerPortalUnionBillingWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> Subscription:
     """Update a subscription of the authenticated customer."""
+    return await _update(session, auth_subject, id, subscription_update)
+
+
+async def _update(
+    session: AsyncSession,
+    auth_subject: AuthSubject[Customer | Member],
+    id: uuid.UUID,
+    subscription_update: CustomerSubscriptionUpdate,
+) -> Subscription:
     subscription = await customer_subscription_service.get_by_id(
         session, auth_subject, id, for_update=True
     )
@@ -297,6 +366,7 @@ async def update(
                 "cancellation_reason",
                 "pause_at_period_end",
                 "resume",
+                "reactivate",
             },
             exclude_unset=True,
         ),

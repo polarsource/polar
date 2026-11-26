@@ -15,7 +15,12 @@ import { ContextCard } from '../Shared/ContextCard'
 import { DetailRow } from '../Shared/DetailRow'
 import { CustomerTimeline } from './CustomerTimeline'
 import { useSubscriptions } from '@/hooks/queries'
-import { getSubscriptionStatusBorderColor } from '../Subscriptions/utils'
+import { StatusIcon } from '../Shared/StatusIcon'
+import { getSubscriptionStatusIcon } from '../Subscriptions/SubscriptionStatusIcon'
+import {
+  getSubscriptionStatusLabel,
+  isSubscriptionWindingDown,
+} from '../Subscriptions/utils'
 
 interface CustomerContextViewProps {
   organization: schemas['Organization']
@@ -163,26 +168,16 @@ export const CustomerContextView = ({
   )
 }
 
-const STATUS_DISPLAY_NAMES: Record<schemas['SubscriptionStatus'], string> = {
-  active: 'Active',
-  trialing: 'Trialing',
-  past_due: 'Past Due',
-  paused: 'Paused',
-  unpaid: 'Unpaid',
-  canceled: 'Canceled',
-  incomplete: 'Incomplete',
-  incomplete_expired: 'Expired',
-}
-
 const STATUS_ORDER: Record<schemas['SubscriptionStatus'], number> = {
   active: 0,
   trialing: 1,
   past_due: 2,
   paused: 3,
-  unpaid: 4,
-  incomplete: 5,
-  canceled: 6,
-  incomplete_expired: 7,
+  trial_ended: 4,
+  unpaid: 5,
+  incomplete: 6,
+  canceled: 7,
+  incomplete_expired: 8,
 }
 
 const INTERVAL_LABELS: Record<schemas['RecurringInterval'], string> = {
@@ -216,10 +211,7 @@ const SubscriptionRow = ({
   subscription,
   organization,
 }: SubscriptionRowProps) => {
-  const statusColor = getSubscriptionStatusBorderColor(
-    subscription.status,
-    subscription.cancel_at_period_end,
-  )
+  const isWindingDown = isSubscriptionWindingDown(subscription)
 
   const formattedPrice =
     subscription.amount === 0
@@ -234,22 +226,17 @@ const SubscriptionRow = ({
       className="dark:hover:bg-polar-800 -mx-4 flex flex-row items-center justify-between gap-3 rounded-lg px-4 py-2 hover:bg-gray-100"
     >
       <div className="flex flex-row items-center gap-4 overflow-hidden">
-        <span
-          className={`size-2 shrink-0 rounded-full ${statusColor} border-2`}
-          title={
-            subscription.cancel_at_period_end
-              ? 'Canceling at period end'
-              : subscription.status
-          }
+        <StatusIcon
+          {...getSubscriptionStatusIcon(subscription.status, isWindingDown)}
         />
         <span className="truncate text-sm">{subscription.product.name}</span>
         <span className="dark:text-polar-500 text-sm text-gray-500">
-          {subscription.status === 'active'
+          {subscription.status === 'active' && !isWindingDown
             ? formatInterval(
                 subscription.recurring_interval,
                 subscription.recurring_interval_count,
               )
-            : STATUS_DISPLAY_NAMES[subscription.status]}
+            : getSubscriptionStatusLabel(subscription)}
         </span>
       </div>
       {formattedPrice && (

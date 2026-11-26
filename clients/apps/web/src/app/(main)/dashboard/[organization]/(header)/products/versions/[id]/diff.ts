@@ -1,10 +1,16 @@
 export type Change = 'added' | 'changed' | 'removed'
 
 export type Line = {
-  change: Change
+  change: Change | 'unchanged'
   field: string
   before?: unknown
   after?: unknown
+}
+
+export type CollapsedLine = {
+  change: 'collapsed'
+  field: string
+  lines: Line[]
 }
 
 export type Entry<T> = {
@@ -27,11 +33,14 @@ const isEmpty = (value: unknown) =>
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 
 // Prices of the same type, currency and meter read as one price that changed
+// A product's custom field reads as one that changed when only `required` differs
 const pairKey = (value: unknown) =>
   JSON.stringify(
     isObject(value) && 'amount_type' in value
       ? [value.amount_type, value.price_currency, value.meter]
-      : value,
+      : isObject(value) && 'field' in value
+        ? value.field
+        : value,
   )
 
 const diffList = (field: string, before: unknown[], after: unknown[]) => {
@@ -40,7 +49,10 @@ const diffList = (field: string, before: unknown[], after: unknown[]) => {
   )
   const lines: Line[] = []
   for (const value of before) {
-    if (after.some((other) => same(value, other))) continue
+    if (after.some((other) => same(value, other))) {
+      lines.push({ change: 'unchanged', field, before: value, after: value })
+      continue
+    }
     const index = added.findIndex((other) => pairKey(other) === pairKey(value))
     lines.push(
       index === -1
@@ -59,12 +71,30 @@ const diffList = (field: string, before: unknown[], after: unknown[]) => {
   ]
 }
 
+const unchangedValue = (field: string, value: unknown): Line[] => {
+  if (Array.isArray(value)) {
+    return value.map((item) => ({
+      change: 'unchanged',
+      field,
+      before: item,
+      after: item,
+    }))
+  }
+  if (isObject(value)) {
+    return Object.entries(value).flatMap(([key, item]) =>
+      isEmpty(item) ? [] : unchangedValue(key, item),
+    )
+  }
+  return [{ change: 'unchanged', field, before: value, after: value }]
+}
+
 export const diffValue = (
   field: string,
   before: unknown,
   after: unknown,
 ): Line[] => {
-  if (same(before, after) || (isEmpty(before) && isEmpty(after))) return []
+  if (isEmpty(before) && isEmpty(after)) return []
+  if (same(before, after)) return unchangedValue(field, after)
 
   const beforeList = before ?? []
   const afterList = after ?? []
@@ -118,8 +148,13 @@ export const diffItems = <T extends Item>(
     ])
     const lines = [...fields]
       .filter((field) => !hiddenFields.has(field))
-      // A new or removed item's name is already its header
-      .filter((field) => !(addedOrRemoved && field === nameField))
+      // The name is already the header, unless it changed
+      .filter(
+        (field) =>
+          field !== nameField ||
+          (!addedOrRemoved &&
+            !same(beforeItem[field as keyof T], afterItem[field as keyof T])),
+      )
       .flatMap((field) =>
         diffValue(
           field,
@@ -131,7 +166,7 @@ export const diffItems = <T extends Item>(
       entries.push({ key, item: afterItem!, change: 'added', lines })
     } else if (!afterItem) {
       entries.push({ key, item: beforeItem, change: 'removed', lines })
-    } else if (lines.length) {
+    } else if (lines.some(({ change }) => change !== 'unchanged')) {
       entries.push({ key, item: afterItem, change: 'changed', lines })
     } else {
       unchanged.push(afterItem)
@@ -139,3 +174,22 @@ export const diffItems = <T extends Item>(
   }
   return { entries, unchanged }
 }
+
+export const collapseUnchanged = (
+  lines: Line[],
+  isList: (field: string) => boolean,
+): (Line | CollapsedLine)[] =>
+  lines.flatMap((line, index) => {
+    if (!isList(line.field)) return [line]
+    const kept = line.change === 'unchanged' ? [] : [line]
+    if (lines[index + 1]?.field === line.field) return kept
+    const unchanged = lines.filter(
+      ({ field, change }) => field === line.field && change === 'unchanged',
+    )
+    return unchanged.length
+      ? [
+          ...kept,
+          { change: 'collapsed' as const, field: line.field, lines: unchanged },
+        ]
+      : kept
+  })

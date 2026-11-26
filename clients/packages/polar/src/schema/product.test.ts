@@ -30,6 +30,15 @@ test('recurring accepts a cadence or an interval count', () => {
     trial_interval: 'week',
     trial_interval_count: 1,
   })
+  expect(
+    product()
+      .recurring('monthly')
+      .trial(1, 'week', { requirePaymentMethod: false }).trialPeriod,
+  ).toEqual({
+    trial_interval: 'week',
+    trial_interval_count: 1,
+    trial_payment_setup_required: false,
+  })
 })
 
 test('meterCycle accepts a cadence or an interval count', () => {

@@ -86,6 +86,8 @@ export const startPolarServer = async (
         configuration_changed: false,
         next_poll_in: 30,
       });
+    if (url.pathname === "/v1/events/ingest")
+      return body({ inserted: JSON.parse(data).events.length, duplicates: 0 });
     if (url.pathname.startsWith("/v1/outpost/telemetry")) return response.writeHead(200).end();
     response.writeHead(404).end();
   });

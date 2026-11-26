@@ -7,8 +7,8 @@ from typing import Annotated
 from urllib.parse import parse_qs, quote, urlencode, urlparse, urlunparse
 
 import anyio
-import httpcore
-import httpx
+import httpcore2
+import httpx2
 from fastapi import Depends, Query, Request
 from pydantic import AfterValidator, HttpUrl, PlainSerializer
 from safe_redirect_url import url_has_allowed_host_and_scheme
@@ -81,7 +81,7 @@ async def resolve_and_validate_ip(hostname: str) -> list[str]:
     return ips
 
 
-class _SSRFSafeNetworkBackend(httpcore.AsyncNetworkBackend):
+class _SSRFSafeNetworkBackend(httpcore2.AsyncNetworkBackend):
     """Resolve and validate the host, then connect to the validated IP.
 
     The URL keeps its hostname, so the `Host` header, TLS SNI and certificate
@@ -90,7 +90,7 @@ class _SSRFSafeNetworkBackend(httpcore.AsyncNetworkBackend):
     """
 
     def __init__(self) -> None:
-        self._backend = httpcore.AnyIOBackend()
+        self._backend = httpcore2.AnyIOBackend()
 
     async def connect_tcp(
         self,
@@ -98,15 +98,17 @@ class _SSRFSafeNetworkBackend(httpcore.AsyncNetworkBackend):
         port: int,
         timeout: float | None = None,
         local_address: str | None = None,
-        socket_options: Iterable[httpcore.SOCKET_OPTION] | None = None,
-    ) -> httpcore.AsyncNetworkStream:
+        socket_options: Iterable[httpcore2.SOCKET_OPTION] | None = None,
+    ) -> httpcore2.AsyncNetworkStream:
         try:
             with anyio.fail_after(timeout):
                 ips = await resolve_and_validate_ip(host)
         except TimeoutError as e:
-            raise httpcore.ConnectTimeout(f"DNS resolution timed out for {host}") from e
+            raise httpcore2.ConnectTimeout(
+                f"DNS resolution timed out for {host}"
+            ) from e
 
-        error: httpcore.ConnectError | None = None
+        error: httpcore2.ConnectError | None = None
         for ip in ips:
             try:
                 return await self._backend.connect_tcp(
@@ -116,7 +118,7 @@ class _SSRFSafeNetworkBackend(httpcore.AsyncNetworkBackend):
                     local_address=local_address,
                     socket_options=socket_options,
                 )
-            except httpcore.ConnectError as e:
+            except httpcore2.ConnectError as e:
                 error = e
         assert error is not None
         raise error
@@ -125,7 +127,7 @@ class _SSRFSafeNetworkBackend(httpcore.AsyncNetworkBackend):
         await self._backend.sleep(seconds)
 
 
-class SSRFSafeTransport(httpx.AsyncHTTPTransport):
+class SSRFSafeTransport(httpx2.AsyncHTTPTransport):
     """HTTPX transport that refuses to connect to private/reserved IPs.
 
     Every connection, including the ones made while following redirects, is
@@ -134,14 +136,15 @@ class SSRFSafeTransport(httpx.AsyncHTTPTransport):
     the proxy's address.
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self, *, max_keepalive_connections: int = 20, keepalive_expiry: float = 5.0
+    ) -> None:
         super().__init__()
-        # Same limits as HTTPX's defaults
-        self._pool = httpcore.AsyncConnectionPool(
-            ssl_context=httpx.create_ssl_context(),
+        self._pool = httpcore2.AsyncConnectionPool(
+            ssl_context=httpx2.create_ssl_context(),
             max_connections=100,
-            max_keepalive_connections=20,
-            keepalive_expiry=5.0,
+            max_keepalive_connections=max_keepalive_connections,
+            keepalive_expiry=keepalive_expiry,
             network_backend=_SSRFSafeNetworkBackend(),
         )
 
@@ -163,7 +166,7 @@ async def check_url_reachable(
     reachable. We use GET rather than HEAD because some sites block HEAD requests.
     """
     try:
-        async with httpx.AsyncClient(
+        async with httpx2.AsyncClient(
             transport=SSRFSafeTransport(),
             follow_redirects=True,
             timeout=timeout,
@@ -176,11 +179,11 @@ async def check_url_reachable(
         )
     except SSRFBlockedError as e:
         return UrlReachability(reachable=False, error=str(e))
-    except httpx.TimeoutException:
+    except httpx2.TimeoutException:
         return UrlReachability(reachable=False, error="Request timed out")
-    except httpx.InvalidURL as e:
+    except httpx2.InvalidURL as e:
         return UrlReachability(reachable=False, error=f"Invalid URL: {e}")
-    except httpx.HTTPError:
+    except httpx2.HTTPError:
         return UrlReachability(reachable=False, error="Unable to reach URL")
 
 

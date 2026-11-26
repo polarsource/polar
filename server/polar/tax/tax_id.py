@@ -114,7 +114,7 @@ class TaxIDFormat(StrEnum):
     vn_tin = "vn_tin"
     za_vat = "za_vat"
 
-    # Additional tax ID formats that are not supported by Stripe but are used for validation purposes only.
+    # Additional tax ID formats used for validation purposes only.
     mu_tan = "mu_tan"
 
     def is_stripe_supported(self) -> bool:
@@ -124,6 +124,9 @@ class TaxIDFormat(StrEnum):
         Returns:
             True if the tax ID format is supported by Stripe, False otherwise.
         """
+        return self not in {self.mu_tan}
+
+    def is_numeral_supported(self) -> bool:
         return self not in {self.mu_tan}
 
 

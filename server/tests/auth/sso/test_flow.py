@@ -1,12 +1,13 @@
 import base64
 from collections.abc import AsyncIterator
 from typing import Any
+from unittest.mock import Mock
 from urllib.parse import parse_qs, urlsplit
 
 import httpx
+import httpx2
 import jwt
 import pytest
-import respx
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi import FastAPI
@@ -41,7 +42,7 @@ ACCESS_TOKEN = "idp-access-token"
 DOMAIN = "example.com"
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def idp_key() -> rsa.RSAPrivateKey:
     return rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
@@ -49,13 +50,13 @@ def idp_key() -> rsa.RSAPrivateKey:
 @pytest.fixture
 async def sso_client(
     app: FastAPI, session: AsyncSession
-) -> AsyncIterator[httpx.AsyncClient]:
-    # A 127.0.0.1 base URL keeps the session/state cookies non-Secure so httpx
+) -> AsyncIterator[httpx2.AsyncClient]:
+    # A 127.0.0.1 base URL keeps the session/state cookies non-Secure so httpx2
     # carries them across the redirect hops over plain http.
     async with IsolatedSessionTestClient(
         session=session,
         auto_expunge=False,
-        transport=httpx.ASGITransport(app=app),
+        transport=httpx2.ASGITransport(app=app),
         base_url="http://127.0.0.1",
     ) as client:
         yield client
@@ -144,29 +145,29 @@ async def create_sso_connection(
     return connection
 
 
-def _state_from_redirect(response: httpx.Response) -> str:
+def _state_from_redirect(response: httpx2.Response) -> str:
     query = urlsplit(response.headers["location"]).query
     return parse_qs(query)["state"][0]
 
 
 async def drive_to_callback(
-    client: httpx.AsyncClient,
+    client: httpx2.AsyncClient,
     session: AsyncSession,
-    mock: respx.MockRouter,
+    oauth_http_mocks: dict[tuple[str, str], Mock],
     idp_key: rsa.RSAPrivateKey,
     *,
     slug: str,
     connection_id: object,
     email: str,
     email_verified: bool = True,
-) -> httpx.Response:
+) -> httpx2.Response:
     """Run start → authorize → callback against the mock IdP, returning the
     callback response (a redirect to the frontend on success, or an error
     redirect on rejection)."""
-    mock.get(f"{ISSUER}/.well-known/openid-configuration").mock(
+    oauth_http_mocks["GET", f"{ISSUER}/.well-known/openid-configuration"] = Mock(
         return_value=httpx.Response(200, json=_discovery_document())
     )
-    mock.get(f"{ISSUER}/jwks").mock(
+    oauth_http_mocks["GET", f"{ISSUER}/jwks"] = Mock(
         return_value=httpx.Response(200, json=_public_jwks(idp_key))
     )
 
@@ -183,7 +184,7 @@ async def drive_to_callback(
     nonce = result.scalar_one().nonce
     assert nonce is not None
 
-    mock.post(f"{ISSUER}/token").mock(
+    oauth_http_mocks["POST", f"{ISSUER}/token"] = Mock(
         return_value=httpx.Response(
             200,
             json={
@@ -230,7 +231,8 @@ async def _get_membership(
 class TestSSOAuthorize:
     async def test_authorization_parameters_are_appended(
         self,
-        sso_client: httpx.AsyncClient,
+        oauth_http_mocks: dict[tuple[str, str], Mock],
+        sso_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
         user: User,
@@ -240,14 +242,13 @@ class TestSSOAuthorize:
             save_fixture, organization, authorization_parameters={"hd": "polar.sh"}
         )
 
-        with respx.mock(assert_all_mocked=False) as mock:
-            mock.get(f"{ISSUER}/.well-known/openid-configuration").mock(
-                return_value=httpx.Response(200, json=_discovery_document())
-            )
-            await sso_client.post(f"/v1/auth/{organization.slug}/start", json={})
-            authorize = await sso_client.get(
-                f"/v1/auth/{organization.slug}/sso/{connection.id}/authorize"
-            )
+        oauth_http_mocks["GET", f"{ISSUER}/.well-known/openid-configuration"] = Mock(
+            return_value=httpx.Response(200, json=_discovery_document())
+        )
+        await sso_client.post(f"/v1/auth/{organization.slug}/start", json={})
+        authorize = await sso_client.get(
+            f"/v1/auth/{organization.slug}/sso/{connection.id}/authorize"
+        )
 
         assert authorize.status_code == 303
         query = parse_qs(urlsplit(authorize.headers["location"]).query)
@@ -259,7 +260,8 @@ class TestSSOAuthorize:
 class TestSSOLoginFlow:
     async def test_login_mints_session_scoped_to_organization(
         self,
-        sso_client: httpx.AsyncClient,
+        oauth_http_mocks: dict[tuple[str, str], Mock],
+        sso_client: httpx2.AsyncClient,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
@@ -269,20 +271,19 @@ class TestSSOLoginFlow:
     ) -> None:
         connection = await create_sso_connection(save_fixture, organization)
 
-        with respx.mock(assert_all_mocked=False) as mock:
-            callback = await drive_to_callback(
-                sso_client,
-                session,
-                mock,
-                idp_key,
-                slug=organization.slug,
-                connection_id=connection.id,
-                email=user.email,
-            )
-            assert callback.status_code == 303
-            assert f"/auth/sso/{organization.slug}" in callback.headers["location"]
+        callback = await drive_to_callback(
+            sso_client,
+            session,
+            oauth_http_mocks,
+            idp_key,
+            slug=organization.slug,
+            connection_id=connection.id,
+            email=user.email,
+        )
+        assert callback.status_code == 303
+        assert f"/auth/sso/{organization.slug}" in callback.headers["location"]
 
-            await sso_client.get(f"/v1/auth/{organization.slug}/complete")
+        await sso_client.get(f"/v1/auth/{organization.slug}/complete")
 
         user_session = (
             (
@@ -309,7 +310,8 @@ class TestSSOLoginFlow:
 
     async def test_global_complete_keeps_sso_session_scoped(
         self,
-        sso_client: httpx.AsyncClient,
+        oauth_http_mocks: dict[tuple[str, str], Mock],
+        sso_client: httpx2.AsyncClient,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
@@ -321,19 +323,18 @@ class TestSSOLoginFlow:
         # pages do) must still mint an org-scoped session for an SSO login.
         connection = await create_sso_connection(save_fixture, organization)
 
-        with respx.mock(assert_all_mocked=False) as mock:
-            callback = await drive_to_callback(
-                sso_client,
-                session,
-                mock,
-                idp_key,
-                slug=organization.slug,
-                connection_id=connection.id,
-                email=user.email,
-            )
-            assert callback.status_code == 303
+        callback = await drive_to_callback(
+            sso_client,
+            session,
+            oauth_http_mocks,
+            idp_key,
+            slug=organization.slug,
+            connection_id=connection.id,
+            email=user.email,
+        )
+        assert callback.status_code == 303
 
-            await sso_client.get("/v1/auth/complete")
+        await sso_client.get("/v1/auth/complete")
 
         user_session = (
             (
@@ -360,7 +361,8 @@ class TestSSOLoginFlow:
 
     async def test_rejects_unverified_email(
         self,
-        sso_client: httpx.AsyncClient,
+        oauth_http_mocks: dict[tuple[str, str], Mock],
+        sso_client: httpx2.AsyncClient,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
@@ -370,24 +372,24 @@ class TestSSOLoginFlow:
     ) -> None:
         connection = await create_sso_connection(save_fixture, organization)
 
-        with respx.mock(assert_all_mocked=False) as mock:
-            callback = await drive_to_callback(
-                sso_client,
-                session,
-                mock,
-                idp_key,
-                slug=organization.slug,
-                connection_id=connection.id,
-                email=user.email,
-                email_verified=False,
-            )
+        callback = await drive_to_callback(
+            sso_client,
+            session,
+            oauth_http_mocks,
+            idp_key,
+            slug=organization.slug,
+            connection_id=connection.id,
+            email=user.email,
+            email_verified=False,
+        )
 
         assert "error=" in callback.headers["location"]
         assert await _user_session_count(session, user) == 0
 
     async def test_rejects_when_membership_revoked_before_complete(
         self,
-        sso_client: httpx.AsyncClient,
+        oauth_http_mocks: dict[tuple[str, str], Mock],
+        sso_client: httpx2.AsyncClient,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
@@ -397,30 +399,29 @@ class TestSSOLoginFlow:
     ) -> None:
         connection = await create_sso_connection(save_fixture, organization)
 
-        with respx.mock(assert_all_mocked=False) as mock:
-            callback = await drive_to_callback(
-                sso_client,
-                session,
-                mock,
-                idp_key,
-                slug=organization.slug,
-                connection_id=connection.id,
-                email=user.email,
-            )
-            assert callback.status_code == 303
+        callback = await drive_to_callback(
+            sso_client,
+            session,
+            oauth_http_mocks,
+            idp_key,
+            slug=organization.slug,
+            connection_id=connection.id,
+            email=user.email,
+        )
+        assert callback.status_code == 303
 
-            # Membership is revoked between the callback and completion.
-            await session.delete(user_organization)
-            await session.flush()
+        # Membership is revoked between the callback and completion.
+        await session.delete(user_organization)
+        await session.flush()
 
-            complete = await sso_client.get(f"/v1/auth/{organization.slug}/complete")
-            assert "error=" in complete.headers["location"]
+        complete = await sso_client.get(f"/v1/auth/{organization.slug}/complete")
+        assert "error=" in complete.headers["location"]
 
         assert await _user_session_count(session, user) == 0
 
     async def test_rejects_session_bound_to_other_organization(
         self,
-        sso_client: httpx.AsyncClient,
+        sso_client: httpx2.AsyncClient,
         organization: Organization,
         organization_second: Organization,
     ) -> None:
@@ -440,7 +441,8 @@ NEWCOMER_EMAIL = f"newcomer@{DOMAIN}"
 class TestSSOJITProvisioning:
     async def test_provisions_unknown_email(
         self,
-        sso_client: httpx.AsyncClient,
+        oauth_http_mocks: dict[tuple[str, str], Mock],
+        sso_client: httpx2.AsyncClient,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
@@ -448,19 +450,18 @@ class TestSSOJITProvisioning:
     ) -> None:
         connection = await create_sso_connection(save_fixture, organization)
 
-        with respx.mock(assert_all_mocked=False) as mock:
-            callback = await drive_to_callback(
-                sso_client,
-                session,
-                mock,
-                idp_key,
-                slug=organization.slug,
-                connection_id=connection.id,
-                email=NEWCOMER_EMAIL,
-            )
-            assert callback.status_code == 303
+        callback = await drive_to_callback(
+            sso_client,
+            session,
+            oauth_http_mocks,
+            idp_key,
+            slug=organization.slug,
+            connection_id=connection.id,
+            email=NEWCOMER_EMAIL,
+        )
+        assert callback.status_code == 303
 
-            await sso_client.get(f"/v1/auth/{organization.slug}/complete")
+        await sso_client.get(f"/v1/auth/{organization.slug}/complete")
 
         user = await _get_user_by_email(session, NEWCOMER_EMAIL)
         assert user is not None
@@ -495,7 +496,8 @@ class TestSSOJITProvisioning:
 
     async def test_provisions_existing_user_without_membership(
         self,
-        sso_client: httpx.AsyncClient,
+        oauth_http_mocks: dict[tuple[str, str], Mock],
+        sso_client: httpx2.AsyncClient,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
@@ -504,19 +506,18 @@ class TestSSOJITProvisioning:
     ) -> None:
         connection = await create_sso_connection(save_fixture, organization)
 
-        with respx.mock(assert_all_mocked=False) as mock:
-            callback = await drive_to_callback(
-                sso_client,
-                session,
-                mock,
-                idp_key,
-                slug=organization.slug,
-                connection_id=connection.id,
-                email=user_second.email,
-            )
-            assert callback.status_code == 303
+        callback = await drive_to_callback(
+            sso_client,
+            session,
+            oauth_http_mocks,
+            idp_key,
+            slug=organization.slug,
+            connection_id=connection.id,
+            email=user_second.email,
+        )
+        assert callback.status_code == 303
 
-            await sso_client.get(f"/v1/auth/{organization.slug}/complete")
+        await sso_client.get(f"/v1/auth/{organization.slug}/complete")
 
         membership = await _get_membership(session, user_second, organization)
         assert membership is not None
@@ -524,7 +525,8 @@ class TestSSOJITProvisioning:
 
     async def test_keeps_existing_member_role(
         self,
-        sso_client: httpx.AsyncClient,
+        oauth_http_mocks: dict[tuple[str, str], Mock],
+        sso_client: httpx2.AsyncClient,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
@@ -537,17 +539,16 @@ class TestSSOJITProvisioning:
 
         connection = await create_sso_connection(save_fixture, organization)
 
-        with respx.mock(assert_all_mocked=False) as mock:
-            callback = await drive_to_callback(
-                sso_client,
-                session,
-                mock,
-                idp_key,
-                slug=organization.slug,
-                connection_id=connection.id,
-                email=user.email,
-            )
-            assert callback.status_code == 303
+        callback = await drive_to_callback(
+            sso_client,
+            session,
+            oauth_http_mocks,
+            idp_key,
+            slug=organization.slug,
+            connection_id=connection.id,
+            email=user.email,
+        )
+        assert callback.status_code == 303
 
         membership = await _get_membership(session, user, organization)
         assert membership is not None
@@ -555,7 +556,8 @@ class TestSSOJITProvisioning:
 
     async def test_rejects_unverified_email_before_provisioning(
         self,
-        sso_client: httpx.AsyncClient,
+        oauth_http_mocks: dict[tuple[str, str], Mock],
+        sso_client: httpx2.AsyncClient,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
@@ -563,24 +565,24 @@ class TestSSOJITProvisioning:
     ) -> None:
         connection = await create_sso_connection(save_fixture, organization)
 
-        with respx.mock(assert_all_mocked=False) as mock:
-            callback = await drive_to_callback(
-                sso_client,
-                session,
-                mock,
-                idp_key,
-                slug=organization.slug,
-                connection_id=connection.id,
-                email=NEWCOMER_EMAIL,
-                email_verified=False,
-            )
+        callback = await drive_to_callback(
+            sso_client,
+            session,
+            oauth_http_mocks,
+            idp_key,
+            slug=organization.slug,
+            connection_id=connection.id,
+            email=NEWCOMER_EMAIL,
+            email_verified=False,
+        )
 
         assert "error=" in callback.headers["location"]
         assert await _get_user_by_email(session, NEWCOMER_EMAIL) is None
 
     async def test_rejects_email_outside_verified_domains(
         self,
-        sso_client: httpx.AsyncClient,
+        oauth_http_mocks: dict[tuple[str, str], Mock],
+        sso_client: httpx2.AsyncClient,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
@@ -589,23 +591,23 @@ class TestSSOJITProvisioning:
         victim = await create_user(save_fixture, email="victim@elsewhere.test")
         connection = await create_sso_connection(save_fixture, organization)
 
-        with respx.mock(assert_all_mocked=False) as mock:
-            callback = await drive_to_callback(
-                sso_client,
-                session,
-                mock,
-                idp_key,
-                slug=organization.slug,
-                connection_id=connection.id,
-                email=victim.email,
-            )
+        callback = await drive_to_callback(
+            sso_client,
+            session,
+            oauth_http_mocks,
+            idp_key,
+            slug=organization.slug,
+            connection_id=connection.id,
+            email=victim.email,
+        )
 
         assert "error=" in callback.headers["location"]
         assert await _get_membership(session, victim, organization) is None
 
     async def test_rejects_unverified_domain(
         self,
-        sso_client: httpx.AsyncClient,
+        oauth_http_mocks: dict[tuple[str, str], Mock],
+        sso_client: httpx2.AsyncClient,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
@@ -616,16 +618,15 @@ class TestSSOJITProvisioning:
             OrganizationDomain(organization=organization, domain="pending.test")
         )
 
-        with respx.mock(assert_all_mocked=False) as mock:
-            callback = await drive_to_callback(
-                sso_client,
-                session,
-                mock,
-                idp_key,
-                slug=organization.slug,
-                connection_id=connection.id,
-                email="newcomer@pending.test",
-            )
+        callback = await drive_to_callback(
+            sso_client,
+            session,
+            oauth_http_mocks,
+            idp_key,
+            slug=organization.slug,
+            connection_id=connection.id,
+            email="newcomer@pending.test",
+        )
 
         assert "error=" in callback.headers["location"]
         assert await _get_user_by_email(session, "newcomer@pending.test") is None

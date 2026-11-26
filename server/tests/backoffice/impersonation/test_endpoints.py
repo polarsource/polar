@@ -1,11 +1,11 @@
 from collections.abc import AsyncIterator
 
-import httpx
+import httpx2
 import pytest
 
 from polar.auth.scope import READ_ONLY_SCOPES, Scope
 from polar.auth.service import auth as auth_service
-from polar.backoffice import app as backoffice_app
+from polar.backoffice.app import app as backoffice_app
 from polar.backoffice.auth.service import create_user_session
 from polar.config import settings
 from polar.models import BackofficeUser, Organization, User, UserOrganization
@@ -18,15 +18,15 @@ DASHBOARD_HOST = "polar.test"
 @pytest.fixture
 async def client(
     session: AsyncSession, monkeypatch: pytest.MonkeyPatch
-) -> AsyncIterator[httpx.AsyncClient]:
+) -> AsyncIterator[httpx2.AsyncClient]:
     monkeypatch.setattr(settings, "BACKOFFICE_HOST", BACKOFFICE_HOST)
     monkeypatch.setattr(settings, "FRONTEND_BASE_URL", f"https://{DASHBOARD_HOST}")
     monkeypatch.setattr(settings, "USER_SESSION_COOKIE_DOMAIN", DASHBOARD_HOST)
     monkeypatch.setitem(
         backoffice_app.dependency_overrides, get_db_session, lambda: session
     )
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=backoffice_app),
+    async with httpx2.AsyncClient(
+        transport=httpx2.ASGITransport(app=backoffice_app),
         base_url=f"https://{BACKOFFICE_HOST}",
     ) as client:
         yield client
@@ -37,7 +37,7 @@ class TestImpersonation:
     @pytest.mark.parametrize("has_dashboard_session", [True, False])
     async def test_swap_and_restore_dashboard_session(
         self,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         session: AsyncSession,
         backoffice_user: BackofficeUser,
         organization: Organization,

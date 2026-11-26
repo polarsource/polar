@@ -1,11 +1,11 @@
 'use client'
 
 import { OrderStatus } from '@/components/Orders/OrderStatus'
-import { ProductVersionLabel } from '@/components/Products/ProductVersionLabel'
+import { CatalogVersionLabel } from '@/components/Products/CatalogVersionLabel'
 import { useOrders } from '@/hooks/queries/orders'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
-import { Button, DataTable, Text } from '@polar-sh/orbit'
+import { Button, DataTable, Text, Truncated } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Link from 'next/link'
@@ -41,17 +41,14 @@ export const CustomerOrdersTable = ({
                 href={`/dashboard/${organization.slug}/sales/${original.id}`}
                 key={original.id}
               >
-                <Box
-                  as="span"
-                  display="inline-flex"
-                  alignItems="center"
-                  columnGap="s"
-                >
-                  {original.description}
+                <Box alignItems="center" columnGap="s" minWidth={0}>
+                  <Truncated>
+                    <Text as="span">{original.description}</Text>
+                  </Truncated>
                   {original.product && (
-                    <ProductVersionLabel
+                    <CatalogVersionLabel
                       organization={organization}
-                      product={original.product}
+                      version={original.product}
                     />
                   )}
                 </Box>

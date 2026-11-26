@@ -12,6 +12,7 @@ import {
   DataTable,
   type DataTableColumnDef,
   Status,
+  Truncated,
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import {
@@ -101,7 +102,9 @@ export const OrganizationSeatTable = ({
             {
               accessorKey: 'customer_email',
               header: 'Email',
-              cell: ({ row }) => row.original.customer_email || '—',
+              cell: ({ row }) => (
+                <Truncated>{row.original.customer_email || '—'}</Truncated>
+              ),
             },
             {
               accessorKey: 'status',

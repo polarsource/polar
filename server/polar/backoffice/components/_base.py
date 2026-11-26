@@ -68,8 +68,8 @@ def base(request: Request, title_parts: Sequence[str]) -> Generator[None]:
                     end
                 end
 
-                behavior CopyToClipboard(text)
-                    on click call navigator.clipboard.writeText(text)
+                behavior CopyToClipboard
+                    on click call navigator.clipboard.writeText(@data-clipboard-text)
                     then add @disabled to me
                     then toggle .hidden on <div /> in me
                     then wait 5s

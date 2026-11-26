@@ -77,6 +77,25 @@ test('defineConfig rejects empty external IDs even with a valid display name', (
   ).toThrow()
 })
 
+test('external IDs allow letters, digits, "_", "-", "." and ":" only', () => {
+  const define = (key: string) => () =>
+    defineConfig({
+      meters: ({ meter }) => ({ [key]: meter('Requests').count() }),
+    })
+
+  for (const key of [
+    'calls',
+    'api_calls-v2',
+    'confirmix.plan.free',
+    'a1:month',
+  ]) {
+    expect(define(key)).not.toThrow()
+  }
+  for (const key of ['tool calls', 'a/b', '_calls', '..', 'pró']) {
+    expect(define(key)).toThrow('Use only letters, digits')
+  }
+})
+
 test('short meter keys require an explicit display name', () => {
   expect(() =>
     defineConfig({ meters: ({ meter }) => ({ x: meter().count() }) }),
@@ -329,6 +348,32 @@ test('benefits serialize with meter credits linked by meter key', () => {
         meter: 'tool_call',
         units: 50,
         rollover: true,
+      },
+    },
+  ])
+})
+
+test('slack channels serialize with their defaults', () => {
+  const config = defineConfig({
+    meters: () => ({}),
+    benefits: ({ slackChannel }) => ({
+      slack: slackChannel('Slack Channel')
+        .integration('0d8f6f0c-2f55-4f7a-9d6d-3f1c2a4b5c6d')
+        .channel('acme-{customer_name}'),
+    }),
+  })
+  expect(config.toJSON().benefits).toEqual([
+    {
+      external_id: 'slack',
+      type: 'slack_shared_channel',
+      description: 'Slack Channel',
+      properties: {
+        slack_integration_id: '0d8f6f0c-2f55-4f7a-9d6d-3f1c2a4b5c6d',
+        channel_name_template: 'acme-{customer_name}',
+        private: true,
+        welcome_message: null,
+        archive_on_revoke: true,
+        team_invitees: [],
       },
     },
   ])
@@ -800,74 +845,6 @@ test('defineConfig rejects amounts with more decimals than the currency', () => 
   ).toThrow()
 })
 
-test('webhooks serialize with their format, events and pinned API version', () => {
-  const config = defineConfig({
-    meters: () => ({}),
-    webhooks: ({ endpoint, slack, discord }) => ({
-      app: endpoint('https://app.test/api/polar/webhooks')
-        .on('order.paid', 'subscription.canceled')
-        .handle(async () => () => {}),
-      sales: slack('https://hooks.slack.com/services/T0/B0/token').on(
-        'order.paid',
-      ),
-      ops: discord('https://discord.com/api/webhooks/1/token').on(
-        'subscription.revoked',
-      ),
-    }),
-  })
-  expect(config.toJSON().webhooks).toEqual([
-    {
-      external_id: 'app',
-      url: 'https://app.test/api/polar/webhooks',
-      format: 'raw',
-      events: ['order.paid', 'subscription.canceled'],
-      api_version: '2027-01',
-    },
-    {
-      external_id: 'sales',
-      url: 'https://hooks.slack.com/services/T0/B0/token',
-      format: 'slack',
-      events: ['order.paid'],
-      api_version: '2027-01',
-    },
-    {
-      external_id: 'ops',
-      url: 'https://discord.com/api/webhooks/1/token',
-      format: 'discord',
-      events: ['subscription.revoked'],
-      api_version: '2027-01',
-    },
-  ])
-})
-
-test('webhooks with handlers must each read a different secret', () => {
-  const handler = async () => () => {}
-  expect(() =>
-    defineConfig({
-      meters: () => ({}),
-      webhooks: ({ endpoint }) => ({
-        app: endpoint('https://app.test/a').on('order.paid').handle(handler),
-        billing: endpoint('https://app.test/b')
-          .on('order.paid')
-          .handle(handler),
-      }),
-    }),
-  ).toThrow('more than one reads POLAR_WEBHOOK_SECRET')
-  expect(() =>
-    defineConfig({
-      meters: () => ({}),
-      webhooks: ({ endpoint }) => ({
-        app: endpoint('https://app.test/a').on('order.paid').handle(handler),
-        billing: endpoint('https://app.test/b')
-          .on('order.paid')
-          .secret('BILLING_WEBHOOK_SECRET')
-          .handle(handler),
-        unhandled: endpoint('https://app.test/c').on('order.paid'),
-      }),
-    }),
-  ).not.toThrow()
-})
-
 test('meters, benefits and products serialize their metadata', () => {
   const config = defineConfig({
     meters: ({ meter }) => ({
@@ -957,4 +934,129 @@ test('metadata follows the API limits', () => {
       ),
     ).toJSON().meters[0]?.metadata,
   ).toHaveProperty('key49', 49)
+})
+
+test('products ask for declared custom fields in order', () => {
+  const config = defineConfig({
+    meters: () => ({}),
+    customFields: ({ text, checkbox }) => ({
+      company: text(),
+      terms: checkbox('Terms'),
+    }),
+    products: ({ product, fixed }) => ({
+      pro: product('Pro')
+        .prices(fixed().amount(usd(10)))
+        .once()
+        .customFields((optional) => ['terms', optional('company')]),
+      plain: product('Plain')
+        .prices(fixed().amount(usd(5)))
+        .once(),
+    }),
+  }).toJSON()
+
+  expect(config.custom_fields).toEqual([
+    { type: 'text', slug: 'company', name: 'company', properties: {} },
+    { type: 'checkbox', slug: 'terms', name: 'Terms', properties: {} },
+  ])
+  expect(config.products?.[0]?.custom_fields).toEqual([
+    { field: 'terms', required: true },
+    { field: 'company', required: false },
+  ])
+  expect(config.products?.[1]).not.toHaveProperty('custom_fields')
+
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
+      customFields: ({ text }) => ({ company: text() }),
+      products: ({ product, free }) => ({
+        pro: product()
+          .prices(free())
+          .once()
+          .customFields((optional) => [
+            // @ts-expect-error undeclared custom field
+            optional('vat'),
+          ]),
+        plain: product().prices(free()).once().customFields([
+          // @ts-expect-error undeclared custom field
+          'vat',
+        ]),
+      }),
+    }),
+  ).toThrow('Product "pro" references unknown custom field "vat".')
+})
+
+test('custom field helpers catch mistakes early', () => {
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
+      customFields: ({ text }) => ({
+        // @ts-expect-error keys can only use a-z, 0-9, - and _
+        teamSize: text(),
+      }),
+    }),
+  ).toThrow('Use only lowercase letters, digits, "-" and "_"')
+
+  void (() =>
+    defineConfig({
+      meters: () => ({}),
+      customFields: ({ checkbox, select }) => ({
+        // @ts-expect-error a select needs its options
+        size: select('Size'),
+        // @ts-expect-error a checkbox has no placeholder
+        terms: checkbox('Terms').placeholder('x'),
+      }),
+    }))
+
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
+      customFields: ({ text }) => ({
+        company: text().minLength(10).maxLength(5),
+      }),
+    }),
+  ).toThrow('The max length must not be less than the min length')
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
+      customFields: ({ number }) => ({ seats: number().min(10).max(5) }),
+    }),
+  ).toThrow('The max must not be before the min')
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
+      customFields: ({ date }) => ({
+        start: date().min('2026-12-31').max('2026-01-01'),
+      }),
+    }),
+  ).toThrow('The max must not be before the min')
+
+  for (const invalid of ['soon', '2026-02-30', '2026-1-1']) {
+    expect(() =>
+      defineConfig({
+        meters: () => ({}),
+        customFields: ({ date }) => ({
+          // @ts-expect-error not a YYYY-MM-DD date
+          start: date().min(invalid),
+        }),
+      }),
+    ).toThrow(`Invalid date "${invalid}", use YYYY-MM-DD.`)
+  }
+
+  void (() =>
+    defineConfig({
+      meters: () => ({}),
+      customFields: ({ date }) => ({
+        // @ts-expect-error a Date depends on the timezone it was made in
+        start: date().min(new Date()),
+      }),
+    }))
+
+  expect(
+    defineConfig({
+      meters: () => ({}),
+      customFields: ({ date }) => ({
+        start: date().min('2026-01-01').max('2026-12-31'),
+      }),
+    }).toJSON().custom_fields?.[0]?.properties,
+  ).toEqual({ ge: 1767225600, le: 1798675200 })
 })

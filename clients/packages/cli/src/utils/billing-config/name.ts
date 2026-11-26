@@ -11,11 +11,14 @@ import {
 } from '@/utils/billing-config/catalog'
 import {
   displayName,
+  EXTERNAL_ID_RULE,
+  isExternalId,
   takenKeys,
   typedKey,
   type Unkeyed,
 } from '@/utils/billing-config/keys'
 import { plural } from '@/utils/billing-config/problems'
+import { counts } from '@/utils/billing-config/review'
 import type { Progress } from '@/utils/progress'
 import { select } from '@/utils/prompt'
 import { editTable } from '@/utils/table-prompt'
@@ -42,6 +45,12 @@ export const parseExternalIds = (values: ReadonlyArray<string>) =>
         return yield* new BillingConfigError({
           message: `--external-id ${value} is not <id>=<external ID>`,
           hint: 'Run polar config init --json to list the IDs that need one.',
+        })
+      }
+      if (!isExternalId(key)) {
+        return yield* new BillingConfigError({
+          message: `--external-id ${value} is not a valid external ID`,
+          hint: `External IDs ${EXTERNAL_ID_RULE}.`,
         })
       }
       given.set(id, key)
@@ -78,6 +87,7 @@ const problems =
     values.map((value, index) => {
       const key = value.trim()
       if (key === '') return 'enter an external ID'
+      if (!isExternalId(key)) return EXTERNAL_ID_RULE
       const { resource } = editable[index]!
       const others = [
         ...fixed,
@@ -226,7 +236,9 @@ export const nameResources =
     Effect.gen(function* () {
       yield* checkGiven(resources, given)
       if (resources.length === 0) {
-        yield* progress.finish()
+        yield* progress.finish(
+          counts(catalog.config).join(', ') || 'nothing in it yet',
+        )
         yield* progress.start('Writing config')
         return [] as ExternalIdAssignment[]
       }

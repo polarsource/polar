@@ -18,6 +18,7 @@ import {
   withDefaultCurrency,
 } from '@/services/billing-config/api'
 import { issues } from '@/services/billing-config/issues'
+import { withSuggestions } from '@/services/billing-config/suggest'
 
 export const plan =
   (clients: Clients) =>
@@ -30,8 +31,8 @@ export const plan =
       const response = yield* post(
         clients,
         options.catalogId === undefined
-          ? '/config/plan'
-          : `/config/plan?catalog_id=${options.catalogId}`,
+          ? '/config/validate'
+          : `/config/validate?catalog_id=${options.catalogId}`,
         config,
         organization,
         options,
@@ -46,7 +47,12 @@ export const plan =
             entries(body.changes, body.settings, body.removed),
           ),
           ...(body.catalog ? { catalog: body.catalog } : {}),
-          issues: issues(config, body.issues),
+          issues: yield* withSuggestions(
+            clients,
+            organization,
+            config,
+            issues(config, body.issues),
+          ),
         } satisfies PlanResult
       }
       if (response.status === 422) {
@@ -54,7 +60,12 @@ export const plan =
           yield* HttpClientResponse.schemaBodyJson(ValidationErrors)(response)
         return {
           entries: [],
-          issues: issues(config, detail),
+          issues: yield* withSuggestions(
+            clients,
+            organization,
+            config,
+            issues(config, detail),
+          ),
         } satisfies PlanResult
       }
       return yield* unexpected(

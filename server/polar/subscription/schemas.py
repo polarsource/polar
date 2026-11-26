@@ -4,6 +4,7 @@ from typing import Annotated, Literal
 
 from fastapi import Path
 from pydantic import (
+    MISSING,
     UUID4,
     AliasChoices,
     AliasPath,
@@ -16,7 +17,11 @@ from pydantic.json_schema import SkipJsonSchema
 from polar.custom_field.data import CustomFieldDataOutputMixin
 from polar.customer.schemas.customer import CustomerBase, CustomerID, ExternalCustomerID
 from polar.discount.schemas import DiscountID, DiscountMinimal
-from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
+from polar.enums import (
+    ProrationBehaviorSetting,
+    SubscriptionProrationBehavior,
+    SubscriptionRecurringInterval,
+)
 from polar.kit.currency import PresentmentCurrency, format_currency
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import (
@@ -31,7 +36,7 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
-from polar.kit.versioning import QuerySchema, Version, VersionedJsonSchema
+from polar.kit.versioning import Omissible, QuerySchema, Version, VersionedJsonSchema
 from polar.meter.schemas import Meter
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.openapi import destructive_when_equals
@@ -304,20 +309,39 @@ class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, Subscription
 
 
 class SubscriptionCreateBase(MetadataInputMixin, Schema):
-    product_id: UUID4 = Field(
-        description=(
-            "The ID of the recurring product to subscribe to. "
-            "Must be a free product, otherwise the customer should go through a checkout flow."
+    product_id: Annotated[
+        UUID4,
+        Field(examples=[PRODUCT_ID_EXAMPLE]),
+        VersionedJsonSchema(
+            lambda schema: {
+                **schema,
+                "description": (
+                    "The ID of the recurring product to subscribe to. "
+                    "Must be a free product or have a trial with no upfront payment setup required. "
+                    "Otherwise, the customer should go through a checkout flow."
+                ),
+            },
+            starting_from=V2027_01,
         ),
-        examples=[PRODUCT_ID_EXAMPLE],
-    )
+        VersionedJsonSchema(
+            lambda schema: {
+                **schema,
+                "description": (
+                    "The ID of the recurring product to subscribe to. "
+                    "Must be a free product, otherwise the customer should go through a checkout flow."
+                ),
+            },
+            up_to=V2026_10,
+        ),
+    ]
     currency: Annotated[
         PresentmentCurrency | None,
         Version(starting_from=V2027_01),
         Field(
             description=(
                 "The currency of the subscription. "
-                "The product must have a free price in this currency. "
+                "The product must have a free price in this currency or have a trial "
+                "with no upfront payment setup required. "
                 "If not set, the organization's default currency is used."
             ),
         ),
@@ -351,31 +375,41 @@ class SubscriptionCreateExternalCustomer(SubscriptionCreateBase):
 SubscriptionCreate = SubscriptionCreateCustomer | SubscriptionCreateExternalCustomer
 
 
+def _discount_input(
+    discount_id: UUID4 | None, fields_set: set[str]
+) -> UUID4 | Literal["unset"] | None:
+    if discount_id is not None:
+        return discount_id
+    if "discount_id" in fields_set:
+        return "unset"
+    return None
+
+
 class SubscriptionUpdateBase(MetadataInputMixin, Schema):
     model_config = ConfigDict(extra="forbid")
 
-    product_id: UUID4 | None = Field(
-        default=None,
+    product_id: Omissible[UUID4] = Field(
+        default=MISSING,
         description="Update subscription to another product.",
         examples=[PRODUCT_ID_EXAMPLE],
     )
-    proration_behavior: SubscriptionProrationBehavior | None = Field(
-        default=None,
+    proration_behavior: Omissible[ProrationBehaviorSetting] = Field(
+        default=MISSING,
         description=(
             "Determine how to handle the proration billing. "
             "If not provided, will use the default organization setting."
         ),
     )
-    discount_id: UUID4 | None = Field(
-        default=None,
+    discount_id: Omissible[UUID4 | None] = Field(
+        default=MISSING,
         description=(
             "Update the subscription to apply a new discount. "
             "If set to `null`, the discount will be removed."
             " The change will be applied on the next billing cycle."
         ),
     )
-    trial_end: FutureDatetime | Literal["now"] | None = Field(
-        default=None,
+    trial_end: Omissible[FutureDatetime | Literal["now"]] = Field(
+        default=MISSING,
         description=(
             "Set or extend the trial period of the subscription. "
             "If set to `now`, the trial will end immediately and the first "
@@ -385,24 +419,14 @@ class SubscriptionUpdateBase(MetadataInputMixin, Schema):
     )
 
     @property
-    def has_product(self) -> bool:
-        return self.product_id is not None
-
-    @property
-    def has_trial_end(self) -> bool:
-        return self.trial_end is not None
-
-    @property
     def has_metadata(self) -> bool:
         return "metadata" in self.model_fields_set
 
     @property
     def discount(self) -> UUID4 | Literal["unset"] | None:
-        if self.discount_id is not None:
-            return self.discount_id
-        if "discount_id" in self.model_fields_set:
-            return "unset"
-        return None
+        if self.discount_id is MISSING:
+            return None
+        return "unset" if self.discount_id is None else self.discount_id
 
 
 class SubscriptionUpdateSeats(Schema):
@@ -412,8 +436,8 @@ class SubscriptionUpdateSeats(Schema):
         description="Update the number of seats for this subscription.",
         ge=1,
     )
-    proration_behavior: SubscriptionProrationBehavior | None = Field(
-        default=None,
+    proration_behavior: Omissible[ProrationBehaviorSetting] = Field(
+        default=MISSING,
         description=(
             "Determine how to handle the proration billing. "
             "If not provided, will use the default organization setting."
@@ -428,8 +452,8 @@ class SubscriptionUpdateUnits(Schema):
         description="Update the number of units for this subscription.",
         ge=1,
     )
-    proration_behavior: SubscriptionProrationBehavior | None = Field(
-        default=None,
+    proration_behavior: Omissible[ProrationBehaviorSetting] = Field(
+        default=MISSING,
         description=(
             "Determine how to handle the proration billing. "
             "If not provided, will use the default organization setting."
@@ -633,6 +657,17 @@ class SubscriptionChargePreview(Schema):
     )
 
 
+class SubscriptionChangePreview(SubscriptionChargePreview):
+    """Preview of what a subscription change would cost, without applying it."""
+
+    proration_behavior: SubscriptionProrationBehavior = Field(
+        description=(
+            "How the change would be billed, resolved from the requested "
+            "or organization setting."
+        )
+    )
+
+
 class SubscriptionMeterChargePreview(Schema):
     """Preview of the metered usage billed at the end of the current meter cycle."""
 
@@ -667,30 +702,41 @@ class SubscriptionCancelPreview(Schema):
     )
 
 
-class SubscriptionChangePreviewProduct(Schema):
+class SubscriptionChangeProduct(Schema):
     model_config = ConfigDict(extra="forbid")
 
     product_id: UUID4 = Field(
         description="Preview a change of the subscription to this product.",
         examples=[PRODUCT_ID_EXAMPLE],
     )
-    proration_behavior: SubscriptionProrationBehavior | None = Field(
+    proration_behavior: ProrationBehaviorSetting | None = Field(
         default=None,
         description=(
             "Determine how to handle the proration billing. "
             "If not provided, will use the default organization setting."
         ),
     )
+    discount_id: UUID4 | None = Field(
+        default=None,
+        description=(
+            "Preview the change with this discount applied. "
+            "If set to `null`, preview it with the current discount removed."
+        ),
+    )
+
+    @property
+    def discount(self) -> UUID4 | Literal["unset"] | None:
+        return _discount_input(self.discount_id, self.model_fields_set)
 
 
-class SubscriptionChangePreviewSeats(Schema):
+class SubscriptionChangeSeats(Schema):
     model_config = ConfigDict(extra="forbid")
 
     seats: Int32 = Field(
         description="Preview a change of the subscription to this number of seats.",
         ge=1,
     )
-    proration_behavior: SubscriptionProrationBehavior | None = Field(
+    proration_behavior: ProrationBehaviorSetting | None = Field(
         default=None,
         description=(
             "Determine how to handle the proration billing. "
@@ -699,14 +745,14 @@ class SubscriptionChangePreviewSeats(Schema):
     )
 
 
-class SubscriptionChangePreviewUnits(Schema):
+class SubscriptionChangeUnits(Schema):
     model_config = ConfigDict(extra="forbid")
 
     units: Int32 = Field(
         description="Preview a change of the subscription to this number of units.",
         ge=1,
     )
-    proration_behavior: SubscriptionProrationBehavior | None = Field(
+    proration_behavior: ProrationBehaviorSetting | None = Field(
         default=None,
         description=(
             "Determine how to handle the proration billing. "
@@ -715,11 +761,9 @@ class SubscriptionChangePreviewUnits(Schema):
     )
 
 
-SubscriptionChangePreview = Annotated[
-    SubscriptionChangePreviewProduct
-    | SubscriptionChangePreviewSeats
-    | SubscriptionChangePreviewUnits,
-    SetSchemaReference("SubscriptionChangePreview"),
+SubscriptionChange = Annotated[
+    SubscriptionChangeProduct | SubscriptionChangeSeats | SubscriptionChangeUnits,
+    SetSchemaReference("SubscriptionChange"),
 ]
 
 
@@ -731,7 +775,7 @@ SubscriptionBulkUpdateID = Annotated[
 class SubscriptionBulkUpdateCreate(Schema):
     model_config = ConfigDict(extra="forbid")
 
-    product_external_id: str = Field(
+    external_product_id: str = Field(
         min_length=1,
         description=(
             "`external_id` of the product whose subscriptions move, in any version."
@@ -749,7 +793,7 @@ class SubscriptionBulkUpdateCreate(Schema):
 
 class SubscriptionBulkUpdate(IDSchema, TimestampedSchema):
     organization_id: UUID4 = Field(description="The organization ID.")
-    product_external_id: str = Field(
+    external_product_id: str = Field(
         validation_alias="source_external_id",
         description="`external_id` of the product whose subscriptions move.",
     )
@@ -821,4 +865,8 @@ class SubscriptionListParams(QuerySchema):
     )
     started_before: datetime | None = Field(
         None, description="Only include subscriptions started before this date."
+    )
+    query: Annotated[str | None, Version(starting_from=V2027_01)] = Field(
+        None,
+        description="Filter by customer name, email or external ID, or a subscription or customer ID.",
     )

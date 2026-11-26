@@ -1,146 +1,140 @@
 ---
 title: "Subscriptions"
-sidebarTitle: "Introduction"
-description: "Recurring revenue on top of your products."
+sidebarTitle: "Overview"
+description: "How subscriptions start, renew and notify customers, and the organization settings that shape them. Read before managing subscriptions."
 ---
 
-A **subscription** is the recurring relationship between a customer and one of your [products](/features/products). It's created automatically whenever a customer checks out a product that has a recurring price, and it keeps generating orders on each renewal until the customer or you decide to end it.
+A **subscription** is the recurring relationship between a customer and one of your recurring [products](/features/products). Each renewal creates a new order and charges the customer's saved payment method, until you or the customer end it.
 
-## How subscriptions work
+Statuses, renewals and when benefits are revoked are covered in [Orders & subscriptions](/concepts/orders-and-subscriptions). This page covers how subscriptions start and the settings around them.
 
-1. **A customer subscribes.** When a customer completes a [checkout](/features/checkout/session) for a product that has a recurring price, Polar creates a `subscription` and the first [order](/features/orders).
-2. **Polar renews it automatically.** At the end of each billing period, Polar advances the subscription to the next cycle and creates a new order, then attempts to charge the customer's default payment method. If the payment fails, the subscription moves to `past_due` and Polar runs an automated [payment recovery flow](/features/subscriptions/failed-payments).
-3. **Benefits stay in sync.** As long as the subscription is active or trialing, the customer keeps access to all the [benefits](/features/benefits/introduction) attached to the product. When the subscription ends, those benefits are revoked.
-4. **Customers self-serve from the portal.** The [Customer Portal](/features/customer-portal/introduction) lets customers update their payment method, download invoices, cancel, and — if you allow it — change plans or manage seats.
+## How a subscription starts
 
-## Recurring pricing
+- **Through checkout.** The default, and the only way for most paid products. A customer completes a [Checkout Session](/features/checkout/session) or [Checkout Link](/features/checkout/links) for a recurring product, and Polar creates the subscription and its first order.
+- **Through the API.** [Create Subscription](/api-reference/current/subscriptions/create-subscription) subscribes an existing customer to a **free** recurring product. No order is created and no confirmation email is sent. Use it to give every signup a subscription from day one.
 
-Subscriptions are driven entirely by the way you price the underlying product. Recurring pricing is configured when you [create a product](/features/products#pricing):
+<CodeGroup>
+```typescript TypeScript
+const subscription = await polar.subscriptions.create({
+  product_id: freeProductId,
+  external_customer_id: "user_123",
+});
+```
 
-- **Billing interval.** Daily, weekly, monthly or yearly.
-- **Interval count.** The number of units per cycle. Setting this to `2` with a `month` interval gives you "every 2 months".
-- **Pricing type.** Fixed, pay-what-you-want, or free. Free recurring products are still modeled as subscriptions — they just never generate a payment.
-- **Currency.** A product can have prices in multiple currencies; the subscription locks in the currency used at checkout.
+```python Python
+subscription = polar.subscriptions.create(
+    product_id=free_product_id,
+    external_customer_id="user_123",
+)
+```
+
+```bash cURL
+export SUBSCRIPTION_ID=$(curl -s -X POST https://sandbox-api.polar.sh/v1/subscriptions/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "product_id": "'"$FREE_PRODUCT_ID"'",
+    "external_customer_id": "user_123"
+  }' | jq -r .id)
+```
+</CodeGroup>
+
+The customer must already exist. Pass `customer_id` instead of `external_customer_id` if you store Polar customer IDs.
+
+<Note>API only. Not available from the CLI or MCP server.</Note>
 
 <Note>
-  The billing interval and pricing type are fixed once a product is created. If
-  you need a different interval (for example, a yearly plan next to a monthly
-  one), create a separate product and show both at checkout. See
-  [Products → Variants](/features/products#variants).
+  Available from API version 2027-01: [Create Subscription](/api-reference/next/subscriptions/create-subscription) also accepts paid products whose trial doesn't require a card up front. The subscription starts in its trial, and the request returns `409` if the customer already has an active subscription or has already used a trial. See [Trials](/features/subscriptions/trials#card-up-front-or-card-less).
 </Note>
+
+## Pricing
+
+A subscription follows the pricing of its product: the billing interval (**Every** N days, weeks, months or years), and fixed, seat, unit or metered prices. See [Products](/concepts/products) for the price types and how they combine.
+
+The billing interval is fixed once a product is created. To offer monthly and yearly plans, create two products. The subscription keeps the currency it was created in.
+
+## Multiple subscriptions per customer
+
+By default, a customer can have one active subscription in your organization. To let customers hold several at once, turn on **Settings → Subscriptions → Allow multiple subscriptions**. The API field is `subscription_settings.allow_multiple_subscriptions` on the organization.
 
 ## Renewal reminders
 
-For subscriptions on long billing cycles — six months or more — Polar emails the customer **7 days before the renewal date** to let them know an upcoming charge is coming. This helps with regulations (like the EU's Consumer Rights Directive) that require advance notice on long-interval renewals, and avoids surprise charges that often end in chargebacks.
+For billing cycles of six months or more, Polar emails the customer 7 days before the renewal. Some regulations require this advance notice, and it heads off chargebacks from forgotten renewals.
 
-The threshold is six months, however it is expressed: yearly plans, monthly plans with an interval of 6 or more, weekly plans of 25 or more, and daily plans of 180 or more all get the reminder. Reminders are skipped for free subscriptions and for subscriptions already scheduled to cancel at period end.
+These intervals get a reminder:
 
-You can turn renewal reminders off under [**Settings → Customer Notifications**](https://polar.sh/to/dashboard/settings/customer-notifications) if you prefer to handle that communication yourself.
+| Interval | Reminder when the interval count is |
+| --- | --- |
+| Year | 1 or more |
+| Month | 6 or more |
+| Week | 25 or more |
+| Day | 180 or more |
 
-## Cancellation
+Free subscriptions and subscriptions set to cancel at period end don't get one. Turn reminders off under **Settings → Customer Notifications → Renewals → Renewal reminder**.
 
-A subscription can end in one of two ways, both available to you and your customers:
+## Customer notification emails
 
-- **Cancel at period end** — the subscription keeps working until `current_period_end`, then transitions to `canceled`. You can reverse this (uncancel) until the end date is reached.
-- **Revoke immediately** — the subscription moves to `canceled` right away and benefits are revoked. This is irreversible.
+Polar emails your customers when their subscription changes. Each email can be turned off under **Settings → Customer Notifications**, for example when you send your own.
 
-See [Managing subscriptions](/features/subscriptions/manage) for how to perform these actions and everything else merchants can do from the dashboard or the API.
+| Group | Email | Sent when |
+| --- | --- | --- |
+| Purchases | **Subscription confirmation** | A subscription starts |
+| Trials | **Trial conversion reminder** | A trial is about to end. See [Trials](/features/subscriptions/trials#reminders) |
+| Trials | **Trial converted** | A trial ends and the subscription becomes paid |
+| Renewals | **Renewal reminder** | A long billing cycle is about to renew |
+| Renewals | **Subscription cycled** | A subscription renews or is invoiced for usage |
+| Renewals | **Card expiring** | The card backing an active subscription is about to expire |
+| Renewals | **Subscription past due** | A renewal payment failed. See [Failed payments](/features/subscriptions/failed-payments) |
+| Subscription changes | **Subscription updated** | The subscription moves to a different product |
+| Subscription changes | **Subscription paused** / **Subscription resumed** | The subscription is paused or resumed |
+| Subscription changes | **Subscription canceled** / **Subscription uncanceled** | A cancellation is scheduled or reversed |
+| Subscription changes | **Subscription revoked** | A canceled subscription ends |
 
-## Creating subscriptions
+Your own team's notifications are separate. See [Notifications](/features/notifications).
 
-There are two ways a subscription can come into existence:
+## Webhooks
 
-- **Through checkout.** The default. Works for any paid recurring product. See [Checkout](/features/checkout/session).
-- **Through the API, for free recurring products only.** You can call [Create Subscription](/api-reference/current/subscriptions/create-subscription) to subscribe an existing customer to a free product — no order, no email, no charge. This is useful for freemium onboarding flows where you want every signup to have a subscription tied to it from day one. Paid products always go through checkout so that Polar can collect and validate the payment method.
+Every change sends a webhook: `subscription.created`, `subscription.active`, `subscription.updated`, `subscription.cycled`, `subscription.past_due`, `subscription.canceled`, `subscription.uncanceled`, `subscription.paused`, `subscription.resumed` and `subscription.revoked`. See [Webhook events](/integrate/webhooks/events).
 
-## Next steps
+To check access, read [customer state](/integrate/customer-state) rather than tracking each event.
 
-<CardGroup cols={2}>
-  <Card
-    title="Managing subscriptions"
-    icon="sliders"
-    href="/features/subscriptions/manage"
-  >
-    Change plans, seats, trials, billing dates, cancel or revoke — from the
-    dashboard or the API.
-  </Card>
-  <Card
-    title="Proration"
-    icon="scale-balanced"
-    href="/features/subscriptions/proration"
-  >
-    Control how the price difference is handled when a subscription is upgraded
-    or downgraded.
-  </Card>
-  <Card
-    title="Recovering failed payments"
-    icon="credit-card"
-    href="/features/subscriptions/failed-payments"
-  >
-    How Polar retries failed renewals and when benefits are revoked.
-  </Card>
-  <Card
-    title="Subscriptions API"
-    icon="code"
-    href="/api-reference/current/subscriptions/list-subscriptions"
-  >
-    List, create, update, and revoke subscriptions programmatically.
-  </Card>
-</CardGroup>
+## Find subscriptions
 
-## FAQ
+- Open **Sales → Subscriptions**
+- Use **Search subscriptions**, or filter by **Status** or **Cancellation reason**
+- Switch between the timeline and table views, and **Sort** by **Newest**, **Next renewal** or **Highest amount**
+- Select a subscription to see its orders, scheduled changes and **Activity**
 
-<AccordionGroup>
-  <Accordion title="What's the difference between a subscription and a product?">
-    A product is the thing you're selling — name, description, benefits,
-    pricing. A subscription is one specific customer's ongoing relationship
-    with that product.
+The statuses in the dashboard map to the API's `status`: **Trialing** (`trialing`), **Active** (`active`), **Past due** (`past_due`), **Paused** (`paused`), **Trial ended** (`trial_ended`), **Canceled** (`canceled`), **Incomplete** (`incomplete`) and **Unpaid** (`unpaid`). An active subscription set to end shows as **Canceling**, and one set to pause as **Pausing**. See [Orders & subscriptions](/concepts/orders-and-subscriptions) for what each means.
 
-    Polar treats one-time purchases and recurring subscriptions as the same
-    kind of object (both are "products"); the only difference is whether the
-    price is recurring. See [Products](/features/products) for the full model.
-  </Accordion>
-  <Accordion title="Can a customer have more than one active subscription?">
-    By default, no — a customer can only have one active subscription per
-    organization at a time. This keeps the common case simple.
+From the CLI, use `polar subscriptions list`. See [From the CLI or your agent](#from-the-cli-or-your-agent).
 
-    If your product genuinely needs multiple parallel subscriptions per
-    customer, you can opt in under **Organization Settings → Subscriptions**
-    by toggling on **Allow multiple subscriptions**.
-  </Accordion>
-  <Accordion title="When is a customer actually charged?">
-    At the end of each billing cycle. When a subscription renews, Polar
-    advances the cycle, creates a new order with tax and any applicable
-    discount, and charges the customer's default payment method. If the
-    charge fails the subscription moves to `past_due` and Polar starts the
-    [payment recovery flow](/features/subscriptions/failed-payments).
+## Export subscriptions
 
-    The first charge happens at checkout (or when the [trial](/features/subscriptions/trials)
-    ends, if one is configured).
-  </Accordion>
-  <Accordion title="Can I change the price of an existing subscription?">
-    Not the amount on an existing subscription directly — subscriptions lock
-    in the price they were created with so existing subscribers aren't
-    surprised by changes.
+Open **Sales → Subscriptions**, then choose **Export CSV** from the actions menu in the toolbar. Pick the columns and download the file.
 
-    If you update the price on a product, the change applies only to **new**
-    subscriptions. To move an existing subscriber to different pricing,
-    either create a new product and run an [update to switch them to
-    it](/features/subscriptions/manage#change-the-plan), or ask them to
-    change plans themselves from the Customer Portal.
-  </Accordion>
-  <Accordion title="What happens to benefits when a subscription is canceled?">
-    Benefits are tied to the subscription's status, not to the cancellation
-    action itself:
+<Note>Dashboard only. Not available from the CLI or MCP server.</Note>
 
-    - If you **cancel at period end**, the customer keeps their benefits
-      until `current_period_end` — they paid for that period.
-    - If you **revoke immediately**, the subscription becomes `canceled`
-      right away and all benefits are revoked.
-    - If a renewal payment can't be recovered after Polar's retries, the
-      subscription moves to `unpaid` and benefits are revoked the same way
-      as a revoke — subject to the optional
-      [grace period](/features/subscriptions/failed-payments#benefit-revocation-grace-period)
-      you can configure on your organization.
-  </Accordion>
-</AccordionGroup>
+## From the CLI or your agent
+
+| Task | CLI | MCP operation |
+| --- | --- | --- |
+| List active subscriptions | `polar subscriptions list --status active` | `subscriptions_list` |
+| List a product's subscriptions | `polar subscriptions list --product-id <id>` | `subscriptions_list` |
+| Get a subscription | `polar subscriptions get <id>` | `subscriptions_get` |
+| Change a subscription | `polar subscriptions update <id>` | `subscriptions_update` |
+| End a subscription now | `polar subscriptions revoke <id>` | `subscriptions_revoke` |
+
+See the [CLI reference](/integrate/cli/reference/subscriptions) and the [MCP server](/integrate/mcp).
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Orders & subscriptions](/concepts/orders-and-subscriptions) | Statuses, renewals and when benefits are revoked |
+| [Managing subscriptions](/features/subscriptions/manage) | Change plans, seats, trials and billing dates; pause, cancel or revoke |
+| [Proration](/features/subscriptions/proration) | How mid-cycle changes are billed |
+| [Trials](/features/subscriptions/trials) | Free trials, with or without a card up front |
+| [Failed payments](/features/subscriptions/failed-payments) | Retries, grace periods and recovery |
+| [Subscriptions API](/api-reference/current/subscriptions/list-subscriptions) | API reference |

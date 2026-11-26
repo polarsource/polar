@@ -65,6 +65,7 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
   const {
     counts,
     attentionCount,
+    paymentMethods,
     isLoading: countsLoading,
     isError: countsError,
   } = useRecordSummary(migrationId, pollMs)
@@ -123,9 +124,9 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
     operation?.stalled === true
   const refreshError = rerunPrecheck.isError
     ? rerunPrecheck.error?.message ||
-      "We couldn't start the refresh from Stripe. Please try again."
+      "We couldn't start the refresh. Please try again."
     : operation?.kind !== 'import' && operation?.status === 'failed'
-      ? operation.error || "We couldn't refresh from Stripe. Please try again."
+      ? operation.error || "We couldn't refresh your catalog. Please try again."
       : undefined
   const importFailed =
     operation?.kind === 'import' &&
@@ -165,7 +166,9 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
       onFilterChange={onFilterChange}
       counts={counts}
       attentionCount={attentionCount}
+      paymentMethods={paymentMethods}
       hasConnectedAccounts={migration?.source?.has_connected_accounts === true}
+      hasBenefitsStep={migration?.source_platform === 'lemon_squeezy'}
       rows={records.data?.items ?? []}
       page={page}
       pageSize={pageSize}

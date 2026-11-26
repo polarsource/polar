@@ -156,7 +156,7 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
         benefit_grant: BenefitGrant,
         benefit_grant_update: CustomerBenefitGrantUpdate,
     ) -> BenefitGrant:
-        if benefit_grant.is_revoked:
+        if benefit_grant.is_revoked or benefit_grant.manually_revoked_at is not None:
             raise NotPermitted("Cannot update a revoked benefit grant.")
 
         if benefit_grant_update.benefit_type != benefit_grant.benefit.type:
@@ -190,7 +190,9 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
                     member_repository = MemberRepository.from_session(session)
                     member = await member_repository.get_by_id(benefit_grant.member_id)
                     if member is not None:
-                        oauth_account = member.get_oauth_account(account_id, platform)
+                        oauth_account = await member.get_oauth_account(
+                            account_id, platform
+                        )
 
                 # Fall back to customer
                 if oauth_account is None:
@@ -199,7 +201,9 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
                         benefit_grant.customer_id
                     )
                     assert customer is not None
-                    oauth_account = customer.get_oauth_account(account_id, platform)
+                    oauth_account = await customer.get_oauth_account(
+                        account_id, platform
+                    )
 
                 if oauth_account is None:
                     raise PolarRequestValidationError(

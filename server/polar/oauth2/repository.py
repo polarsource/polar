@@ -2,7 +2,7 @@ import time
 from datetime import datetime, timedelta
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, and_, delete, func, or_, select, update
+from sqlalchemy import ColumnElement, and_, delete, false, func, or_, select, update
 from sqlalchemy.orm import joinedload
 
 from polar.config import settings
@@ -18,6 +18,10 @@ from polar.models import (
 
 
 def stale_oauth2_client(cutoff: datetime) -> ColumnElement[bool]:
+    protected_client_ids = settings.PROTECTED_OAUTH2_CLIENT_IDS
+    if protected_client_ids is None:
+        return false()
+
     has_tokens = (
         select(OAuth2Token.id)
         .where(OAuth2Token.client_id == OAuth2Client.client_id)
@@ -28,9 +32,7 @@ def stale_oauth2_client(cutoff: datetime) -> ColumnElement[bool]:
         OAuth2Client.agent_id.is_(None),
         OAuth2Client.created_at < cutoff - timedelta(days=7),
         OAuth2Client.first_party.is_(False),
-        *(OAuth2Client.client_id != settings.MCP_OAUTH2_CLIENT_ID,)
-        if settings.MCP_OAUTH2_CLIENT_ID
-        else (),
+        OAuth2Client.client_id.not_in(protected_client_ids),
         ~has_tokens,
     )
 

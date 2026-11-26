@@ -55,6 +55,8 @@ async def list(
         organization_id=filters.organization_id,
         query=filters.query,
         type=filters.type,
+        catalog_id=filters.catalog_id,
+        catalog_status=filters.catalog_status,
         pagination=pagination,
         sorting=sorting,
     )

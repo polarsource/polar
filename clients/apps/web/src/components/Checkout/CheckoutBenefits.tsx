@@ -2,12 +2,14 @@ import { useCustomerBenefitGrants } from '@/hooks/queries/customerPortal'
 import { useCustomerSSE } from '@/hooks/sse'
 import { createClientSideAPI } from '@/utils/client'
 import type { ProductCheckoutPublic } from '@polar-sh/checkout/guards'
+import { UnauthorizedResponseError } from '@polar-sh/client'
 import {
   DEFAULT_LOCALE,
   useTranslations,
   type AcceptedLocale,
 } from '@polar-sh/i18n'
 import { List, ListItem } from '@polar-sh/orbit'
+import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { BenefitGrant } from '../Benefit/BenefitGrant'
 import { SpinnerNoMargin } from '@polar-sh/orbit'
@@ -26,11 +28,30 @@ const CheckoutBenefits = ({
   maxWaitingTimeMs = 15000,
 }: CheckoutBenefitsProps) => {
   const t = useTranslations(locale)
+  const router = useRouter()
   const api = createClientSideAPI(customerSessionToken)
-  const { data: benefitGrants, refetch } = useCustomerBenefitGrants(api, {
-    checkout_id: checkout.id,
-  })
   const expectedBenefits = checkout.product.benefits.length
+  const {
+    data: benefitGrants,
+    error,
+    refetch,
+  } = useCustomerBenefitGrants(
+    api,
+    { checkout_id: checkout.id },
+    {
+      refetchInterval: (data) =>
+        data && data.items.length >= expectedBenefits
+          ? false
+          : maxWaitingTimeMs,
+    },
+  )
+
+  const sessionExpired = error instanceof UnauthorizedResponseError
+  useEffect(() => {
+    if (sessionExpired) {
+      router.refresh()
+    }
+  }, [sessionExpired, router])
 
   const customerEvents = useCustomerSSE(customerSessionToken)
   useEffect(() => {
@@ -39,16 +60,6 @@ const CheckoutBenefits = ({
       customerEvents.off('benefit.granted', refetch)
     }
   }, [customerEvents, refetch])
-
-  useEffect(() => {
-    if (benefitGrants && benefitGrants.items.length >= expectedBenefits) {
-      return
-    }
-    const intervalId = setInterval(() => {
-      refetch()
-    }, maxWaitingTimeMs)
-    return () => clearInterval(intervalId)
-  }, [benefitGrants, expectedBenefits, maxWaitingTimeMs, refetch])
 
   if (expectedBenefits === 0) {
     return null

@@ -3,6 +3,8 @@ from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 
+from polar.meter.aggregation import AggregationFunction
+
 
 @dataclass(frozen=True)
 class UsageWindow:
@@ -25,3 +27,10 @@ class UsageSummary:
 class WindowUsage:
     window: UsageWindow
     summary: UsageSummary
+
+
+@dataclass(frozen=True)
+class MeterUsage:
+    function: AggregationFunction
+    windows: tuple[WindowUsage, ...]
+    credits: Decimal

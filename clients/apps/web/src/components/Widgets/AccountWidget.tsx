@@ -1,12 +1,12 @@
+import { EventTimestamp } from '@/components/Events/EventTimestamp'
 import { useOrganizationAccount, useTransactionsSummary } from '@/hooks/queries'
 import { usePayouts } from '@/hooks/queries/payouts'
-import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { useDashboardOrganization } from '@/hooks/dashboardOrganization'
 import { PayoutStatusIcon } from '@/components/Payouts/PayoutStatus'
 import { ClientResponseError } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { useContext } from 'react'
 import { WidgetContainer } from './WidgetContainer'
 import { WidgetLink } from './WidgetLink'
 import { WidgetGuard, WidgetRestricted } from './WidgetGuard'
@@ -28,7 +28,7 @@ export const AccountWidget = ({ className }: AccountWidgetProps) => (
 )
 
 const AccountWidgetContent = ({ className }: AccountWidgetProps) => {
-  const { organization: org } = useContext(OrganizationContext)
+  const org = useDashboardOrganization()
 
   const { data: account, error: accountError } = useOrganizationAccount(org.id)
   const { data: summary } = useTransactionsSummary(account?.id ?? '')
@@ -82,19 +82,13 @@ const AccountWidgetContent = ({ className }: AccountWidgetProps) => {
               borderStyle="solid"
               borderColor="border-secondary"
             >
-              <Text color="muted">
-                {new Date(payout.created_at).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric',
-                })}
-              </Text>
-              <Box alignItems="center" columnGap="m" flexShrink={0}>
+              <Box alignItems="center" columnGap="m" minWidth={0}>
                 <PayoutStatusIcon payout={payout} />
                 <Text tabularNums>
                   {formatCurrency('compact')(payout.amount, payout.currency)}
                 </Text>
               </Box>
+              <EventTimestamp timestamp={payout.created_at} muted align="end" />
             </Box>
           ))}
         </Box>

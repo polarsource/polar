@@ -12,7 +12,7 @@ import { authenticatedClient } from '@/services/client'
 import { fakeHttp } from '@/utils/test-utils/http'
 import { fakeAuth } from '@/utils/test-utils/services'
 
-const planUrl = 'https://sandbox-api.polar.sh/v1/config/plan'
+const planUrl = 'https://sandbox-api.polar.sh/v1/config/validate'
 const organizationUrl = 'https://sandbox-api.polar.sh/v1/organizations/org-1'
 
 const acme: ActiveOrganization = {
@@ -126,6 +126,78 @@ describe('plan', () => {
         location: { line: 5, column: 52, length: 2 },
       },
     ])
+  })
+
+  test('suggests the name a misspelled event or reference was meant to be', async () => {
+    api.routes[`POST ${planUrl}`] = Response.json({
+      changes: [],
+      issues: [
+        {
+          severity: 'warning',
+          type: 'unknown_event',
+          loc: ['body', 'meters', 0, 'filter', 'clauses', 0, 'value'],
+          msg: 'No events with this name have been received yet.',
+          input: 'tool_cal',
+        },
+        {
+          severity: 'error',
+          type: 'unknown_reference',
+          loc: ['body', 'benefits', 0, 'meter_id'],
+          msg: 'No meter in this config has this external_id.',
+          input: 'tool-call',
+        },
+        {
+          severity: 'error',
+          type: 'unknown_reference',
+          loc: ['body', 'products', 0, 'benefits', 0],
+          msg: 'No benefit in this config has this external_id.',
+          input: 'tool-call',
+        },
+      ],
+    })
+    const names = `GET https://sandbox-api.polar.sh/v1/events/names?organization_id=org-1&source=user&limit=100`
+    api.routes[`${names}&page=1`] = Response.json({
+      items: [{ name: 'storage' }],
+      pagination: { max_page: 2 },
+    })
+    api.routes[`${names}&page=2`] = Response.json({
+      items: [{ name: 'tool_call' }],
+      pagination: { max_page: 2 },
+    })
+
+    const result = await run(await write(source))
+
+    expect(result.issues.map(({ suggestion }) => suggestion)).toEqual([
+      'tool_call',
+      'tool-calls',
+      undefined,
+    ])
+  })
+
+  test('suggests the slug a misspelled custom field was meant to be', async () => {
+    api.routes[`POST ${planUrl}`] = Response.json({
+      changes: [],
+      issues: [
+        {
+          severity: 'error',
+          type: 'unknown_reference',
+          loc: ['body', 'products', 0, 'custom_fields', 0, 'field'],
+          msg: 'No custom field in this config has this slug.',
+          input: 'compnay',
+        },
+      ],
+    })
+    const config = JSON.stringify({
+      custom_fields: [{ slug: 'company' }],
+      products: [{ external_id: 'pro', custom_fields: [{ field: 'compnay' }] }],
+    })
+
+    const [issue] = (await run(await write(config))).issues
+
+    expect(issue).toMatchObject({
+      path: 'products.pro.custom_fields.0.field',
+      suggestion: 'company',
+    })
   })
 
   test('lists removals, in place of the deprecated entry', async () => {

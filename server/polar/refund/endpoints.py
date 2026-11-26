@@ -11,7 +11,7 @@ from polar.routing import APIRouter
 from . import auth
 from .schemas import Refund as RefundSchema
 from .schemas import RefundCreate, RefundListParams
-from .service import RefundedAlready
+from .service import RefundedAlready, RefundPaymentAlreadyRefundedByStripe
 from .service import refund as refund_service
 from .sorting import RefundListSorting
 
@@ -60,6 +60,10 @@ async def list(
         403: {
             "description": "Order is already fully refunded.",
             "model": RefundedAlready.schema(),
+        },
+        409: {
+            "description": "Stripe already refunded the payment at its own expense.",
+            "model": RefundPaymentAlreadyRefundedByStripe.schema(),
         },
     },
 )

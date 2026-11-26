@@ -1,4 +1,4 @@
-"""Run the custom AST lint rules over polar/ with a single shared parse.
+"""Run the custom AST lint rules over polar/ and scripts/, one parse per file.
 
 Each rule lives in its own module and registers a `Rule` with a name (for
 `--only`), a skip code, and a `check(tree)` callable. Suppress a violation
@@ -11,7 +11,7 @@ import ast
 import sys
 from pathlib import Path
 
-from . import frontend_url, hash_secret, org_scope, subquery
+from . import dry_run, frontend_url, hash_secret, org_scope, subquery, table_column
 from .base import Rule, line_has_skip
 
 RULES: tuple[Rule, ...] = (
@@ -19,6 +19,8 @@ RULES: tuple[Rule, ...] = (
     org_scope.RULE,
     frontend_url.RULE,
     hash_secret.RULE,
+    table_column.RULE,
+    dry_run.RULE,
 )
 
 
@@ -43,31 +45,33 @@ def main() -> int:
             return 2
         rules = tuple(rule for rule in RULES if rule.name in names)
 
-    root = Path(__file__).resolve().parents[2] / "polar"
-    if not root.exists():
-        print(f"error: {root} not found", file=sys.stderr)
-        return 2
-
+    server = Path(__file__).resolve().parents[2]
     checked = 0
     violations: list[tuple[Path, int, str, str]] = []
-    for path in sorted(root.rglob("*.py")):
-        if "migrations" in path.parts:
-            continue
-        checked += 1
-        source = path.read_text(encoding="utf-8")
-        try:
-            tree = ast.parse(source, filename=str(path))
-        except SyntaxError as exc:
-            violations.append(
-                (path, exc.lineno or 0, "syntax", f"syntax error: {exc.msg}")
-            )
-            continue
-        source_lines = source.splitlines()
-        for rule in rules:
-            for lineno, message in rule.check(tree):
-                if line_has_skip(source_lines, lineno, rule.skip_code):
-                    continue
-                violations.append((path, lineno, rule.name, message))
+    for root_name in sorted({rule.root for rule in rules}):
+        root = server / root_name
+        if not root.exists():
+            print(f"error: {root} not found", file=sys.stderr)
+            return 2
+        root_rules = [rule for rule in rules if rule.root == root_name]
+        for path in sorted(root.rglob("*.py")):
+            if "migrations" in path.parts:
+                continue
+            checked += 1
+            source = path.read_text(encoding="utf-8")
+            try:
+                tree = ast.parse(source, filename=str(path))
+            except SyntaxError as exc:
+                violations.append(
+                    (path, exc.lineno or 0, "syntax", f"syntax error: {exc.msg}")
+                )
+                continue
+            source_lines = source.splitlines()
+            for rule in root_rules:
+                for lineno, message in rule.check(tree):
+                    if line_has_skip(source_lines, lineno, rule.skip_code):
+                        continue
+                    violations.append((path, lineno, rule.name, message))
 
     if violations:
         violations.sort(key=lambda v: (v[0], v[1]))

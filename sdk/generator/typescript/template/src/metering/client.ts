@@ -1,4 +1,4 @@
-import type { OutpostOptions } from "../outpost/client";
+import type { Outpost } from "../outpost/client";
 import type {
   ContextualEventInput,
   EventCustomerInput,
@@ -97,19 +97,20 @@ export interface MeteringStrategy {
   close(options?: DeliveryOptions): Promise<void>;
 }
 
+// Marks an Outpost, which delivers its events itself: the metering client recognises one without
+// loading Redis.
+export const OUTPOST = Symbol.for("@polar-sh/sdk/outpost");
+
 /**
- * Configure the optional Outpost strategy.
+ * Creates the Outpost used by metering. Build one with `outpost()` from `@polar-sh/sdk/outpost`.
  */
-export type MeteringOutpostOptions = Omit<OutpostOptions, "client"> & {
-  /** Redis connection URL. Defaults to the REDIS_URL environment variable. */
-  redisUrl?: string;
-};
+export type MeteringOutpost = (client: ClientBase) => Outpost;
 
 /** Configure the built-in strategies, or replace them with an explicit strategies list. */
 export type MeteringOptions =
   | {
       buffered?: BufferedMeteringOptions;
-      outpost?: boolean | MeteringOutpostOptions;
+      outpost?: MeteringOutpost;
       strategies?: never;
     }
   | {
@@ -122,8 +123,8 @@ export type MeteringOptions =
  * Dispatch events, actor warmup, and meter reads to metering strategies.
  *
  * Create with polar.metering(); the first operation starts its resources. Call close() on
- * shutdown. By default, events are buffered for HTTP delivery, with Outpost added
- * when the outpost option is set. Accepting an event does not confirm delivery.
+ * shutdown. By default, events are buffered for HTTP delivery; with the outpost option, Outpost
+ * delivers them itself instead. Accepting an event does not confirm delivery.
  */
 export class Metering {
   readonly strategies: readonly MeteringStrategy[];
@@ -381,12 +382,12 @@ const validateActor = (input: {
  * @param polar Polar client used for event delivery.
  * @param client Authenticated HTTP client used for meter reads.
  * @param options.buffered Buffer options; omitted fields use BufferedMeteringOptions defaults.
- * @param options.outpost true or Outpost options to enable Outpost, which then requires
- * redisUrl or REDIS_URL. Disabled by default.
+ * @param options.outpost Outpost factory from `outpost()` in `@polar-sh/sdk/outpost`, which then
+ * delivers the events instead of the buffer. Disabled by default.
  * @param options.strategies Replace all default strategies. Cannot be combined with
- * buffered or outpost options.
+ * buffered or outpost options, nor hold both a buffer and an Outpost.
  * @returns A helper that starts on its first operation.
- * @throws MeteringError if options conflict or Outpost has no Redis URL.
+ * @throws MeteringError if options conflict.
  */
 export const createMetering = (
   polar: MeteringClient,
@@ -397,67 +398,43 @@ export const createMetering = (
     if (options.buffered !== undefined || options.outpost !== undefined) {
       throw new MeteringError("Cannot combine strategies with buffered or outpost options");
     }
+    if (
+      options.strategies.some((strategy) => strategy instanceof BufferedMeteringStrategy) &&
+      options.strategies.some((strategy) => OUTPOST in strategy)
+    )
+      throw new MeteringError("Outpost delivers its events itself: the buffer would send them twice");
     return new Metering({ strategies: options.strategies, client });
   }
-  const { redisUrl: configuredRedisUrl, ...outpostOptions } =
-    options.outpost === true ? {} : options.outpost || {};
-  const redisUrl = configuredRedisUrl ?? process.env.REDIS_URL;
-  if (options.outpost && !redisUrl) {
-    throw new MeteringError("Outpost requires redisUrl or REDIS_URL");
+  if (!options.outpost) {
+    return new Metering({ strategies: [new BufferedMeteringStrategy(polar, options.buffered)], client });
   }
-  let buffered = options.buffered;
-  const strategies: MeteringStrategy[] = [];
-  if (options.outpost && redisUrl) {
-    let outpost: import("../outpost/client").Outpost | undefined;
-
-    // Polar received the delivered events: they settle where their bucket is hot. It will
-    // never count the dropped ones: they settle everywhere.
-    const settle = async (events: EventInput[], dropped: boolean): Promise<void> => {
-      try {
-        await (dropped ? outpost?.confirm(events) : outpost?.acknowledge(events));
-      } catch (error) {
-        console.warn(`Could not settle ${events.length} events in Outpost: ${String(error)}`);
-      }
-    };
-    buffered = {
-      ...options.buffered,
-      async onDelivered(events) {
-        await settle(events, false);
-        await options.buffered?.onDelivered?.(events);
-      },
-      async onDropped(events, reason) {
-        await settle(events, true);
-        await options.buffered?.onDropped?.(events, reason);
-      },
-    };
-    strategies.push({
-      async start() {
-        const { Outpost } = await import("../outpost/client");
-        outpost = new Outpost(redisUrl, { ...outpostOptions, client });
-        await outpost.start();
-      },
-      validate(event) {
-        outpost!.validate(event);
-      },
-      async track(event) {
-        await outpost!.track(event);
-      },
-      async actor(input) {
-        await outpost!.actor(input);
-      },
-      async meter(input) {
-        return outpost!.meter(input);
-      },
-      async flush() {
-        await outpost?.flush();
-      },
-      async close() {
-        await outpost?.close();
-      },
-    });
-  }
-  return new Metering({
-    strategies: [new BufferedMeteringStrategy(polar, buffered), ...strategies],
-    client,
-  });
+  if (options.buffered !== undefined)
+    throw new MeteringError("Outpost delivers its events itself: pass buffered or outpost, not both");
+  const createOutpost = options.outpost;
+  let outpost: Outpost | undefined;
+  const strategy: MeteringStrategy = {
+    async start() {
+      outpost = createOutpost(client);
+      await outpost.start();
+    },
+    validate(event) {
+      outpost!.validate(event);
+    },
+    async track(event) {
+      await outpost!.track(event);
+    },
+    async actor(input) {
+      await outpost!.actor(input);
+    },
+    async meter(input) {
+      return outpost!.meter(input);
+    },
+    async flush() {
+      await outpost?.flush();
+    },
+    async close() {
+      await outpost?.close();
+    },
+  };
+  return new Metering({ strategies: [strategy], client });
 };

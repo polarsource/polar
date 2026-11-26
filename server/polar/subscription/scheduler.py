@@ -225,3 +225,33 @@ class SubscriptionResumeJobStore(_SubscriptionScheduleJobStore):
             )
             .order_by(Subscription.resumes_at.asc())
         )
+
+
+class SubscriptionTrialEndedJobStore(_SubscriptionScheduleJobStore):
+    """Triggers ``subscription.cancel_expired_trial_ended`` at each trial_ended
+    subscription's ``ends_at``."""
+
+    job_id_prefix = "subscriptions:trial_ended"
+    actor_name = "subscription.cancel_expired_trial_ended"
+
+    @property
+    def trigger_column(self) -> ColumnElement[datetime.datetime | None]:
+        return cast(ColumnElement[datetime.datetime | None], Subscription.ends_at)
+
+    @staticmethod
+    def scheduling_statement() -> Select[Subscription]:
+        """Served by ``ix_subscriptions_trial_ended_schedule``."""
+        return (
+            select(Subscription)
+            .join(Customer, onclause=Customer.id == Subscription.customer_id)
+            .join(Organization, onclause=Organization.id == Customer.organization_id)
+            .where(
+                ~Customer.is_deleted,
+                ~Organization.is_deleted,
+                ~Subscription.is_deleted,
+                Subscription.scheduler_locked_at.is_(None),
+                Subscription.status == SubscriptionStatus.trial_ended,
+                Subscription.ends_at.is_not(None),
+            )
+            .order_by(Subscription.ends_at.asc())
+        )

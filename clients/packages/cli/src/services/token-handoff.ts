@@ -21,11 +21,17 @@ export const sdkHint = (environment: PolarEnvironment) =>
   Effect.gen(function* () {
     switch (environment) {
       case 'production':
-        return undefined
+        return []
       case 'sandbox':
-        return "This is a sandbox token. Pass server: 'sandbox' to your Polar SDK."
+        return [
+          'The token only works on sandbox, and the Polar SDK calls production by default.',
+          "Pass environment: 'sandbox' when you create the SDK client.",
+        ]
       case 'local':
-        return `This is a local token. Pass serverURL: '${yield* apiOrigin('local')}' to your Polar SDK.`
+        return [
+          'The token only works on your local server, and the Polar SDK calls production by default.',
+          `Pass baseUrl: '${yield* apiOrigin('local')}' when you create the SDK client.`,
+        ]
     }
   })
 

@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING, Any, Self
 from uuid import UUID
 
 from alembic_utils.pg_function import PGFunction
@@ -32,6 +32,7 @@ from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.metadata import MetadataMixin
 from polar.kit.utils import utc_now
 from polar.models.order_item import OrderItem
+from polar.product.guard import has_future_charges
 from polar.tax.calculation import TaxBreakdownItem
 from polar.tax.tax_id import TaxID, TaxIDType
 
@@ -47,6 +48,7 @@ if TYPE_CHECKING:
         ProductPrice,
         Subscription,
     )
+    from polar.order.amounts import OrderAmounts
 
 
 class OrderBillingReason(StrEnum):
@@ -210,6 +212,10 @@ class Order(
         TIMESTAMP(timezone=True), nullable=True, default=None, index=True
     )
 
+    payment_processor_metadata: Mapped[dict[str, Any]] = mapped_column(
+        JSONB(none_as_null=True), default=dict
+    )
+
     payment_lock_acquired_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
@@ -350,6 +356,22 @@ class Order(
         return func.greatest(0, cls.total_amount + cls.applied_balance_amount)
 
     @property
+    def is_payment_required(self) -> bool:
+        return self.due_amount > 0
+
+    @property
+    def is_payment_setup_required(self) -> bool:
+        subscription = self.subscription
+        if subscription is None:
+            return False
+
+        return has_future_charges(
+            subscription.prices,
+            sum(price.amount for price in subscription.subscription_product_prices),
+            self.discount,
+        )
+
+    @property
     def taxed(self) -> int:
         return self.tax_amount > 0
 
@@ -472,6 +494,16 @@ class Order(
         ratio = self.tax_amount / self.net_amount
         tax_amount = round(refund_amount * ratio)
         return min(tax_amount, self.refundable_tax_amount)
+
+    def update_amounts(self, amounts: "OrderAmounts") -> None:
+        self.subtotal_amount = amounts.subtotal_amount
+        self.discount_amount = amounts.discount_amount
+        self.tax_amount = amounts.tax_amount
+        self.net_amount = amounts.net_amount
+        self.tax_processor = amounts.tax_processor
+        self.tax_behavior = amounts.tax_behavior
+        self.tax_calculation_processor_id = amounts.tax_calculation_processor_id
+        self.tax_breakdown = list(amounts.tax_breakdown)
 
 
 orders_search_vector_update_function = PGFunction(

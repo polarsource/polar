@@ -2,7 +2,7 @@ import { useAuth } from '@/hooks/auth'
 import { OrganizationPermission } from '@/hooks/queries/roles'
 
 // Permissions are embedded on the user's organizations in the authenticated
-// payload (`x-polar-user`), so the check is synchronous — no query, no loading
+// user (`/v1/users/me`), so the check is synchronous — no query, no loading
 // state, and no flash before a definitive grant/denial.
 export const useHasPermission = (
   organizationId: string | undefined,
@@ -12,12 +12,4 @@ export const useHasPermission = (
   if (!organizationId) return false
   const organization = userOrganizations.find((o) => o.id === organizationId)
   return organization?.permissions.includes(permission) ?? false
-}
-
-export const useIsManagedAsCode = (
-  organizationId: string | undefined,
-): boolean => {
-  const { userOrganizations } = useAuth()
-  const organization = userOrganizations.find((o) => o.id === organizationId)
-  return organization?.feature_settings?.config_as_code_enabled ?? false
 }

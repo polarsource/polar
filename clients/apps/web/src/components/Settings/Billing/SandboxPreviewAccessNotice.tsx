@@ -7,7 +7,6 @@ import { schemas } from '@polar-sh/client'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { CheckOutlined } from '@polar-sh/orbit/icons'
-import { useRouter } from 'next/navigation'
 
 /**
  * Sandbox replacement for the billing page.
@@ -22,7 +21,6 @@ export const SandboxPreviewAccessNotice = ({
 }: {
   organization: schemas['Organization']
 }) => {
-  const router = useRouter()
   const enablePreviewAccess = useEnableOrganizationPreviewAccess(
     organization.id,
   )
@@ -38,11 +36,7 @@ export const SandboxPreviewAccessNotice = ({
         description: extractApiErrorMessage(error, 'Please try again.'),
         variant: 'error',
       })
-      return
     }
-    // Refresh the server-rendered organization so the button reflects the
-    // newly enabled preview access.
-    router.refresh()
   }
 
   return (

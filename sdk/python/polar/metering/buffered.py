@@ -16,6 +16,7 @@ from polar.metering.errors import (
     DropReason,
     MeteringDeliveryError,
     MeteringTimeoutError,
+    retry_after_seconds,
     validate_timeout,
 )
 from polar.metering.events import EventInput
@@ -70,6 +71,8 @@ class _FlushRequest:
     after: int
     through: int
     active: bool = True
+    released: bool = False
+    deadline: float = math.inf
     completed: anyio.Event = dataclasses.field(default_factory=anyio.Event)
     error: BaseException | None = None
 
@@ -185,9 +188,11 @@ class BufferedMeteringStrategy:
     async def flush(self, *, timeout: float = 30.0) -> None:
         """Confirm earlier events or raise their unacknowledged delivery failures.
 
-        Overlapping callers each observe failures within their queue boundary.
-        A timeout or caller cancellation leaves outcomes observable by a later
-        flush and does not cancel background delivery or other callers.
+        A newer flush releases the ones still waiting that it outlasts, and reports
+        their failures instead: one waiter keeps a serverless function alive, and the
+        others return without waiting for Polar. Cancelling the newer flush does not
+        resume the ones it released. A timeout or caller cancellation leaves outcomes
+        observable by a later flush and does not cancel background delivery.
 
         Args:
             timeout: Maximum wait in seconds. Defaults to 30.
@@ -202,16 +207,25 @@ class BufferedMeteringStrategy:
         if self._closed:
             raise anyio.ClosedResourceError
         request = self._barrier()
+        request.deadline = anyio.current_time() + timeout
         try:
             if self._finished:
                 self._finish(request)
             else:
                 self._send_queue.send_nowait(request)
+            for older in self._barriers:
+                if older is request or older.deadline > request.deadline:
+                    continue
+                if not older.completed.is_set():
+                    older.released = True
+                    older.completed.set()
             with anyio.move_on_after(timeout) as scope:
                 await request.completed.wait()
                 await anyio.lowlevel.checkpoint_if_cancelled()
             if scope.cancelled_caught:
                 raise MeteringTimeoutError(timeout)
+            if request.released:
+                return
             self._acknowledged = max(self._acknowledged, request.through)
             if request.error is not None:
                 raise request.error
@@ -276,7 +290,8 @@ class BufferedMeteringStrategy:
                                     else:
                                         message = await self._receive_queue.receive()
                                     if isinstance(message, _FlushRequest):
-                                        requests.append(message)
+                                        if not message.released:
+                                            requests.append(message)
                                     else:
                                         batch.append(message)
                         except anyio.WouldBlock:
@@ -360,8 +375,13 @@ class BufferedMeteringStrategy:
                 await self.polar.events.ingest(events=batch)
                 break
             except (PolarNetworkError, PolarRateLimitError, PolarServerError) as e:
-                if isinstance(e, PolarRateLimitError) and e.retry_after is not None:
-                    delay = max(float(e.retry_after), 1.0)
+                retry_after = (
+                    retry_after_seconds(e.retry_after)
+                    if isinstance(e, PolarRateLimitError)
+                    else None
+                )
+                if retry_after is not None:
+                    delay = retry_after
                     waited += delay
                     if waited > RETRY_AFTER_BUDGET:
                         return DeliveryFailure(batch, "retry_exhausted", e)

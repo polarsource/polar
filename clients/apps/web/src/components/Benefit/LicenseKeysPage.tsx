@@ -5,7 +5,6 @@ import LicenseKeyStatusSelect, {
   LicenseKeyStatusFilter,
 } from '@/components/Benefit/LicenseKeys/LicenseKeyStatusSelect'
 import { LicenseKeysList } from '@/components/Benefit/LicenseKeys/LicenseKeysList'
-import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { toast } from '@/components/Toast/use-toast'
 import {
   useLicenseKey,
@@ -56,7 +55,7 @@ export const LicenseKeysPage = ({
     string | null
   >(deepLinkedLicenseKeyId ?? null)
   const [licenseKeyModalView, setLicenseKeyModalView] = useState<
-    'details' | 'rotate' | null
+    'details' | null
   >(deepLinkedLicenseKeyId ? 'details' : null)
 
   const { data: licenseKeys, isLoading } = useOrganizationLicenseKeys({
@@ -88,19 +87,6 @@ export const LicenseKeysPage = ({
     setSelectedLicenseKeyId(null)
     setDeepLinkParam(null)
   }, [setLicenseKeyModalView, setSelectedLicenseKeyId, setDeepLinkParam])
-
-  const openRotateConfirm = useCallback(() => {
-    if (rotateLicenseKey.isPending) {
-      return
-    }
-    setLicenseKeyModalView('rotate')
-  }, [rotateLicenseKey.isPending, setLicenseKeyModalView])
-
-  const closeRotateConfirm = useCallback(() => {
-    setLicenseKeyModalView((currentView) =>
-      currentView === 'rotate' ? 'details' : currentView,
-    )
-  }, [setLicenseKeyModalView])
 
   const handleRotate = useCallback(async () => {
     if (!selectedLicenseKeyId || rotateLicenseKey.isPending) {
@@ -153,10 +139,7 @@ export const LicenseKeysPage = ({
             setPagination={setPagination}
             setSorting={setSorting}
             onSelectLicenseKey={(licenseKey) => {
-              if (
-                rotateLicenseKey.isPending ||
-                licenseKeyModalView === 'rotate'
-              ) {
+              if (rotateLicenseKey.isPending) {
                 return
               }
               setSelectedLicenseKeyId(licenseKey.id)
@@ -172,21 +155,12 @@ export const LicenseKeysPage = ({
                   organization={organization}
                   licenseKey={selectedLicenseKey}
                   onClose={closeLicenseKeyModal}
-                  onRotate={openRotateConfirm}
+                  onRotate={handleRotate}
                 />
               ) : null
             }
             isShown={licenseKeyModalView === 'details'}
             hide={closeLicenseKeyModal}
-          />
-          <ConfirmModal
-            isShown={licenseKeyModalView === 'rotate'}
-            hide={closeRotateConfirm}
-            title="Rotate this license key?"
-            description="A new key will be generated for this customer. The previous key stops validating immediately. Share the new key with your customer, or have them copy it from the customer portal."
-            destructive
-            destructiveText="Rotate"
-            onConfirm={handleRotate}
           />
         </Box>
       </TabsContent>

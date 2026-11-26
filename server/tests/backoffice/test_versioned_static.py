@@ -1,10 +1,10 @@
 from collections.abc import AsyncGenerator
 from pathlib import Path
 
-import httpx
+import httpx2
 import pytest
 
-from polar.backoffice import app as backoffice_app
+from polar.backoffice.app import app as backoffice_app
 from polar.backoffice.versioned_static import get_file_version
 
 STATIC_DIRECTORY = (
@@ -13,9 +13,9 @@ STATIC_DIRECTORY = (
 
 
 @pytest.fixture
-async def backoffice_client() -> AsyncGenerator[httpx.AsyncClient]:
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=backoffice_app), base_url="http://test"
+async def backoffice_client() -> AsyncGenerator[httpx2.AsyncClient]:
+    async with httpx2.AsyncClient(
+        transport=httpx2.ASGITransport(app=backoffice_app), base_url="http://test"
     ) as client:
         yield client
 
@@ -23,7 +23,7 @@ async def backoffice_client() -> AsyncGenerator[httpx.AsyncClient]:
 @pytest.mark.anyio
 class TestFileResponse:
     async def test_current_version_is_cached_immutably(
-        self, backoffice_client: httpx.AsyncClient
+        self, backoffice_client: httpx2.AsyncClient
     ) -> None:
         version = get_file_version(str(STATIC_DIRECTORY), "logo.light.svg")
 
@@ -44,7 +44,7 @@ class TestFileResponse:
         ],
     )
     async def test_other_requests_revalidate(
-        self, params: dict[str, str], backoffice_client: httpx.AsyncClient
+        self, params: dict[str, str], backoffice_client: httpx2.AsyncClient
     ) -> None:
         response = await backoffice_client.get("/static/logo.light.svg", params=params)
 
@@ -55,7 +55,7 @@ class TestFileResponse:
 @pytest.mark.anyio
 class TestCall:
     async def test_compresses_static_files(
-        self, backoffice_client: httpx.AsyncClient
+        self, backoffice_client: httpx2.AsyncClient
     ) -> None:
         response = await backoffice_client.get(
             "/static/logo.light.svg", headers={"Accept-Encoding": "gzip"}

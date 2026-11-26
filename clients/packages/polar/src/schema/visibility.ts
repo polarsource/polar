@@ -15,7 +15,9 @@ export type HasVisibility = {
 
 export interface VisibilityBuilder {
   readonly [visibilityKey]: Visibility
+  /** Hides it from the customer portal. */
   private(): this
+  /** Shows it in the customer portal. This is the default. */
   public(): this
 }
 

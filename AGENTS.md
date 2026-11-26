@@ -18,6 +18,9 @@ per-area `AGENTS.md` linked from the Architecture and Conventions sections befor
   `gh pr create`. Run the `open-pr` skill only when the user names it (`/open-pr`):
   it runs lint, type-check, tests and two review passes, and takes several minutes.
   Do not mark a PR ready for review unless told so.
+- This is an open source repository: PR titles, descriptions and comments are public.
+  Never include numbers from production (e.g. how many customers, orders or
+  organizations are affected), or other PII or internal business data.
 
 ## Architecture
 
@@ -48,6 +51,7 @@ polar/
 ├── sdk/                    # SDKs and generators
 │   ├── generator/              # Internal SDK code generator
 │   ├── python/                 # Generated Python SDK
+│   ├── typescript/             # Generated TypeScript SDK
 │   └── overlays/               # OpenAPI Overlay tweaks for Speakeasy-generated SDKs
 ├── .agents/                # Agent Skills (Cursor, Claude, Codex)
 └── .claude/                # Claude Code config (settings, hooks). skills/ → ../.agents/skills
@@ -55,6 +59,12 @@ polar/
 
 The TypeScript API client is generated from the backend's OpenAPI schema. After changing the
 API, run `pnpm run generate` in `clients/packages/client`.
+
+**Never edit `sdk/python/` or `sdk/typescript/` directly.** Every file in them is generated, and
+the SDK release deletes both directories and regenerates them. A direct edit, even to a
+hand-written-looking file like `src/metering/buffered.ts` or a new test, is silently reverted on
+the next release. Change the template in `sdk/generator/{python,typescript}/template/` (or the
+emitter), then regenerate. See `sdk/generator/AGENTS.md`.
 
 ## Setup
 
@@ -153,16 +163,32 @@ Detailed, review-enforced patterns live next to the code — read the relevant f
 **i18n:** add new translatable strings only to `clients/packages/i18n/src/locales/en.ts` — a CI
 job auto-translates the rest. Don't edit other locale files. (More in `clients/AGENTS.md`.)
 
+**Effect** (`clients/apps/mcp`, `clients/packages/{cli,polar,ingestion}`, `sdk/cli-commands`,
+`sdk/generator/cli_commands/template`): don't write Effect from memory. Before writing or changing
+Effect code, search the Effect and opencode sources for the established pattern (errors, services
+and layers, schemas, CLI, HTTP, testing). Clone them if missing (`git -C <dir> pull` refreshes them):
+
+```bash
+mkdir -p ~/.local/share/effect-solutions
+[ -d ~/.local/share/effect-solutions/effect ] || git clone --depth 1 https://github.com/effect-ts/effect ~/.local/share/effect-solutions/effect
+[ -d ~/.local/share/effect-solutions/opencode ] || git clone --depth 1 https://github.com/anomalyco/opencode ~/.local/share/effect-solutions/opencode
+```
+
+Start with Effect's `LLMS.md` and `ai-docs/src/` (e.g. `01_effect/04_errors`), and
+`packages/core/src/` in opencode. The Effect checkout tracks `main` (Effect 4) and may be newer
+than the version pinned here: confirm every API against the package's installed
+`node_modules/effect` before using it.
+
 ## Architecture Decisions (ADRs)
 
 Significant, cross-cutting, or hard-to-reverse decisions are recorded as short ADRs in
-`handbook/engineering/decisions/` (see the [index](handbook/engineering/decisions/index.mdx)).
+`adr/` (see the [index](adr/README.md)).
 Treat **Accepted** ADRs as binding:
 
 - Before changing a load-bearing pattern, check for a relevant ADR (grep that directory).
 - If code contradicts an Accepted ADR, flag it and cite the id (e.g. "violates ADR-0002").
 - If a change makes a significant decision no ADR covers, propose a new one from
-  `handbook/engineering/decisions/template.mdx` rather than losing the rationale in the diff.
+  `adr/template.md` rather than losing the rationale in the diff.
 - **ADR-0012:** AI API prompts send only the fields the feature needs. Do not
   dump a whole org, customer, or payment object into a model call.
 
@@ -176,14 +202,15 @@ directory. Invoke as `/name` in Cursor and Claude Code, or `$name` in Codex.
 
 ## Documentation
 
-- **Handbook**: https://handbook.polar.sh/engineering/
-- **Design docs**: `handbook/engineering/design-documents/` — write one only when
+- Keep the security policy in `docs/security.mdx` and `SECURITY.md` in sync. Apply policy edits to both files in the same change.
+- **Handbook**: [Engineering Handbook](https://linear.app/polarsh/document/engineering-handbook-438113df8882)
+- **Design docs**: [Design documents](https://linear.app/polarsh/document/design-documents-1b03e0f6e82b) — write one only when
   Polar stores or processes new data, changes login or permissions, adds a
-  new system, or adds a third-party tool that can see Polar data. Not every
-  new API endpoint. Copy `template.mdx`.
-  https://handbook.polar.sh/engineering/design-documents/
-- **API guidelines**: https://handbook.polar.sh/engineering/rest-api-guidelines
-- **User/developer docs**: `docs/` (Mintlify) — `cd docs && pnpm dev` to serve locally.
+  new system, or adds a third-party tool that can see Polar data. Start from the
+  [design document template](https://linear.app/polarsh/document/design-document-template-02c5d83b61b2).
+- **API guidelines**: [REST API Guidelines](https://linear.app/polarsh/document/rest-api-guidelines-65841b9f4bcc)
+- **User/developer docs**: `docs/` (Mintlify) — `cd docs && pnpm dev` to serve locally. Read the
+  `docs-writing` skill before writing or editing a page.
 
 Mintlify API reference is generated from committed `docs/openapi/{version}.openapi.json`. After
 changing public endpoints or webhooks, from `sdk/generator/`:
@@ -206,9 +233,10 @@ Add new operations and webhooks to the matching groups in `docs/docs.json`; that
 
 ## Driving the local UI
 
-**Login.** Email OTP codes are printed in the API pane / log (`LOGIN CODE: …`). Grab with
-`tmux capture-pane -t polar:services.0 -p | grep -a "LOGIN CODE" | tail -1`. `admin@polar.sh`
-is the conventional test account.
+**Login.** Enter the email on the login page, then run `dev otp` to print a code for that
+sign-in (`dev otp <email>` when several are waiting). It issues a new code, so the one in the
+API log (`LOGIN CODE: …`) stops working. `admin@polar.sh` is the conventional test account.
+The `local-login` skill has the full steps.
 
 **Onboarding gotcha.** The org-creation wizard's "Launch Dashboard" button only submits once the
 Product step's required fields are filled (description ≥30 chars, ≥1 selling category, ≥1 pricing
@@ -219,24 +247,21 @@ model). The AUP AI check auto-APPROVEs when `PYDANTIC_AI_GATEWAY_API_KEY` is uns
 Running in Claude Code on the web or a Cursor Cloud VM? Read `dev/CLOUD_AGENTS.md` first: it
 covers the `SessionStart` hook, the pnpm shim, Docker caveats and the `dev` start sequence.
 
-## Temporary eMudhra CA mitigations — recheck October 23, 2026
+## Temporary eMudhra CA mitigations — recheck December 10, 2026
 
-On or after **2026-10-23**, recheck the [upstream disclosure](https://emudhra.we-have-a-problem.com/)
-and the certificate stores shipped by our actual base images, runtimes and Stripe SDK.
+On or after **2026-12-10**, recheck the [upstream disclosure](https://emudhra.we-have-a-problem.com/)
+and the certificate stores shipped by our actual base images and runtimes.
 If upstream fixes cover every affected path, remove the manual mitigations consistently:
 the `sed` root exclusions and `trust extract` blocklists in Dockerfiles under `server/`,
 `dev/docker/` and `infra/`, the EC2 host mitigations in `terraform/modules/`
-(e.g. `ec2_tailscale/tailscale-init.sh` and `planetscale_migration/user-data.sh`),
-plus the Stripe workaround that sets
-`stripe_lib.ca_bundle_path = certifi.where()` in `polar.integrations.stripe` before platform
-and merchant migration HTTP clients are constructed. Remove that override only after
-Stripe's own bundle is verified safe for both client paths. Keep patched dependency
-versions and security minimums.
+(e.g. `ec2_tailscale/tailscale-init.sh.tftpl` and `planetscale_migration/user-data.sh`).
+Keep patched dependency versions and security minimums, including Stripe Python 14.4.2
+or later for the SDK's bundled roots.
 
 Before removing a mitigation, verify the replacement without that workaround rejects all
-twelve compromised test chains from the disclosure while legitimate, credential-free HTTPS
-connections still succeed. Check build stages, API/workers, Lambda, merchant migration clients,
-Node and EC2 hosts separately; one updated trust store does not establish protection
+compromised test chains from the disclosure while legitimate, credential-free HTTPS
+connections still succeed. Check build stages, API/workers, Lambda, Node and EC2 hosts
+separately; one updated trust store does not establish protection
 for the others.
 If upstream coverage is incomplete, retain the necessary workarounds and update this note
 with the remaining gaps and a new review date. Update regression tests alongside any cleanup.

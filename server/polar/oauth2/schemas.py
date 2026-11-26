@@ -27,7 +27,7 @@ from .sub_type import SubType
 
 def _is_localhost(host: str) -> bool:
     try:
-        return ipaddress.IPv4Address(host).is_private
+        return ipaddress.IPv4Address(host).is_loopback
     except ValueError:
         return host == "localhost" or host.endswith(".localhost")
 

@@ -3,10 +3,11 @@
 import { ExportModal } from '@/components/Export/ExportModal'
 import { ExportColumnGroup } from '@/components/Export/ExportColumns'
 import { downloadCsvExport } from '@/components/Export/utils'
+import { type CancellationReason } from '@/components/Metrics/cancellations/constants'
 import { schemas } from '@polar-sh/client'
 import React from 'react'
-import { type ProductFilter } from './SubscriptionsProductSelect'
-import { SubscriptionStatusFilter } from './SubscriptionStatusSelect'
+import { type ProductFilter } from '@/components/Products/ProductSelect'
+import { type SelectableSubscriptionStatus } from './selectableStatuses'
 
 type ExportColumn = schemas['SubscriptionExportColumn']
 
@@ -68,8 +69,11 @@ const defaultColumns: ExportColumn[] = [
 interface ExportSubscriptionsModalProps {
   organization: schemas['Organization']
   product: ProductFilter
-  status: SubscriptionStatusFilter
+  status: SelectableSubscriptionStatus[] | null
   cancelAtPeriodEnd?: boolean | null
+  customerId?: string[] | null
+  discountId?: string[] | null
+  cancellationReason?: CancellationReason[] | null
   isShown: boolean
   hide: () => void
 }
@@ -79,6 +83,9 @@ const ExportSubscriptionsModal: React.FC<ExportSubscriptionsModalProps> = ({
   product,
   status,
   cancelAtPeriodEnd,
+  customerId,
+  discountId,
+  cancellationReason,
   isShown,
   hide,
 }) => (
@@ -95,17 +102,26 @@ const ExportSubscriptionsModal: React.FC<ExportSubscriptionsModalProps> = ({
         selection,
         (search, { dateRange, timezone }) => {
           search.set('organization_id', organization.id)
-          if (product.product_id) {
-            search.append('product_id', product.product_id)
+          for (const id of product.product_id ?? []) {
+            search.append('product_id', id)
           }
-          if (product.external_product_id) {
-            search.append('external_product_id', product.external_product_id)
+          for (const id of product.external_product_id ?? []) {
+            search.append('external_product_id', id)
           }
-          if (status !== 'any') {
-            search.append('status', status)
+          for (const value of status ?? []) {
+            search.append('status', value)
           }
           if (cancelAtPeriodEnd !== null && cancelAtPeriodEnd !== undefined) {
             search.set('cancel_at_period_end', String(cancelAtPeriodEnd))
+          }
+          for (const id of customerId ?? []) {
+            search.append('customer_id', id)
+          }
+          for (const id of discountId ?? []) {
+            search.append('discount_id', id)
+          }
+          for (const reason of cancellationReason ?? []) {
+            search.append('customer_cancellation_reason', reason)
           }
           search.set('started_after', dateRange.from.toISOString())
           search.set('started_before', dateRange.to.toISOString())

@@ -2,7 +2,8 @@ import pytest
 
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.strategies import BenefitActionRequiredError
-from polar.models import BenefitGrant, Customer, Organization, Payment, Product
+from polar.kit.utils import utc_now
+from polar.models import BenefitGrant, Customer, Member, Organization, Payment, Product
 from polar.models.benefit import BenefitType
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -35,6 +36,28 @@ async def pending_grant(
 
 @pytest.mark.anyio
 class TestListErroredByCustomerAndBenefitType:
+    async def test_manually_suppressed_grant_is_skipped_for_oauth_recovery(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        member_owner: Member,
+        pending_grant: BenefitGrant,
+    ) -> None:
+        pending_grant.member = member_owner
+        pending_grant.manually_revoked_at = utc_now()
+        await save_fixture(pending_grant)
+
+        repository = BenefitGrantRepository.from_session(session)
+        assert not await repository.list_errored_by_customer_and_benefit_type(
+            customer, BenefitType.github_repository, BenefitActionRequiredError.__name__
+        )
+        assert not await repository.list_errored_by_member_and_benefit_type(
+            member_owner,
+            BenefitType.github_repository,
+            BenefitActionRequiredError.__name__,
+        )
+
     @pytest.mark.parametrize("revoke_benefits", [False, True])
     async def test_refunded_order(
         self,

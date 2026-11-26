@@ -46,7 +46,7 @@ const UncancelSubscriptionButton = ({
       loading={uncancelSubscription.isPending || paymentMethodsPending}
       disabled={uncancelSubscription.isPending || paymentMethodsPending}
     >
-      Uncancel
+      Keep subscription
     </Button>
   )
 }

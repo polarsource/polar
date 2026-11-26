@@ -30,7 +30,6 @@ from polar.notifications.notification import NotificationType
 from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
 from polar.order.tasks import (
-    SUBSCRIPTION_ORDER_GRACE_PERIOD,
     OrderDoesNotExist,
     create_meter_cycle_order,
     create_subscription_order,
@@ -55,12 +54,14 @@ from tests.fixtures.random_objects import (
 
 @pytest.mark.anyio
 class TestCreateSubscriptionOrder:
+    @pytest.mark.parametrize("force", [False, True])
     async def test_uses_cutoff_from_job_payload(
         self,
         save_fixture: SaveFixture,
         product: Product,
         organization: Organization,
         mocker: MockerFixture,
+        force: bool,
     ) -> None:
         customer = await create_customer(save_fixture, organization=organization)
         subscription = await create_subscription(
@@ -69,7 +70,11 @@ class TestCreateSubscriptionOrder:
             customer=customer,
             status=SubscriptionStatus.active,
         )
-        cutoff = subscription.current_period_start - timedelta(days=1)
+        cutoff = (
+            utc_now() + timedelta(days=1)
+            if force
+            else subscription.current_period_start - timedelta(days=1)
+        )
         create_order_mock = mocker.patch.object(
             order_service, "create_subscription_order", new=AsyncMock()
         )
@@ -78,6 +83,7 @@ class TestCreateSubscriptionOrder:
             subscription.id,
             OrderBillingReasonInternal.subscription_cycle,
             cutoff.isoformat(),
+            force=force,
         )
 
         create_order_mock.assert_awaited_once_with(
@@ -86,6 +92,7 @@ class TestCreateSubscriptionOrder:
             OrderBillingReasonInternal.subscription_cycle,
             cutoff=cutoff,
             reducer_cutoff=cutoff,
+            period_start=None,
         )
 
     async def test_cancel_settles_without_cutoff_except_reducer(
@@ -102,7 +109,9 @@ class TestCreateSubscriptionOrder:
             customer=customer,
             status=SubscriptionStatus.canceled,
         )
-        cutoff = utc_now() - SUBSCRIPTION_ORDER_GRACE_PERIOD - timedelta(minutes=1)
+        cutoff = (
+            utc_now() - settings.SUBSCRIPTION_ORDER_GRACE_PERIOD - timedelta(minutes=1)
+        )
         create_order_mock = mocker.patch.object(
             order_service, "create_subscription_order", new=AsyncMock()
         )
@@ -119,6 +128,7 @@ class TestCreateSubscriptionOrder:
             OrderBillingReasonInternal.subscription_cancel,
             cutoff=None,
             reducer_cutoff=cutoff,
+            period_start=None,
         )
 
     @pytest.mark.parametrize(
@@ -160,10 +170,11 @@ class TestCreateSubscriptionOrder:
             subscription.id,
             order_reason,
             cutoff=cutoff.isoformat(),
+            period_start=None,
             delay=ANY,
         )
         delay = enqueue_job_mock.call_args.kwargs["delay"]
-        expected = SUBSCRIPTION_ORDER_GRACE_PERIOD - timedelta(minutes=5)
+        expected = settings.SUBSCRIPTION_ORDER_GRACE_PERIOD - timedelta(minutes=5)
         assert 0 < delay <= expected.total_seconds() * 1000
 
 
@@ -192,6 +203,7 @@ class TestCreateMeterCycleOrder:
             cutoff.isoformat(),
             price_ids,
             product_id,
+            period_start=None,
             delay=ANY,
         )
 
@@ -210,7 +222,9 @@ class TestCreateMeterCycleOrder:
             status=SubscriptionStatus.active,
         )
         price_ids = [uuid.uuid4()]
-        cutoff = utc_now() - SUBSCRIPTION_ORDER_GRACE_PERIOD - timedelta(minutes=1)
+        cutoff = (
+            utc_now() - settings.SUBSCRIPTION_ORDER_GRACE_PERIOD - timedelta(minutes=1)
+        )
         settle_mock = mocker.patch.object(
             order_service, "settle_meter_cycle_order", new=AsyncMock()
         )
@@ -220,7 +234,7 @@ class TestCreateMeterCycleOrder:
         )
 
         settle_mock.assert_awaited_once_with(
-            ANY, ANY, cutoff=cutoff, price_ids=price_ids, product=ANY
+            ANY, ANY, cutoff=cutoff, price_ids=price_ids, product=ANY, period_start=None
         )
         assert settle_mock.call_args.kwargs["product"].id == product.id
 

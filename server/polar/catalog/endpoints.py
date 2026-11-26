@@ -1,3 +1,4 @@
+import builtins
 from typing import Annotated
 
 from fastapi import Depends, Query
@@ -5,7 +6,6 @@ from pydantic import UUID4
 
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.models import Catalog
 from polar.openapi import APITag
 from polar.postgres import (
     AsyncReadSession,
@@ -17,8 +17,14 @@ from polar.routing import APIRouter
 
 from . import auth
 from .schemas import Catalog as CatalogSchema
-from .schemas import CatalogListParams, CatalogVersion
-from .service import CatalogNotDraft, CatalogNotFound
+from .schemas import (
+    CatalogListParams,
+    CatalogUpdate,
+    CatalogVersion,
+    RemovedCatalogItem,
+    RemovedCatalogItemsParams,
+)
+from .service import CatalogMissingCurrency, CatalogNotDraft, CatalogNotFound
 from .service import catalog as catalog_service
 
 router = APIRouter(prefix="/catalogs", tags=["catalogs", APITag.private])
@@ -45,10 +51,32 @@ async def list(
         published_before=filters.published_before,
         pagination=pagination,
     )
+    changes = await catalog_service.get_changes(session, results)
     return ListResource.from_paginated_results(
-        [CatalogSchema.model_validate(result) for result in results],
+        [
+            CatalogSchema.model_validate_overlay(result, changes=changes[result.id])
+            for result in results
+        ],
         count,
         pagination,
+    )
+
+
+@router.get(
+    "/removed",
+    summary="List Removed Catalog Items",
+    response_model=builtins.list[RemovedCatalogItem],
+)
+async def list_removed(
+    filters: Annotated[RemovedCatalogItemsParams, Query()],
+    auth_subject: auth.CatalogRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> builtins.list[RemovedCatalogItem]:
+    """List the products and benefits a published catalog listed but the live
+    one doesn't, newest removal first. They're deprecated while customers still
+    use them, and removed once nobody does."""
+    return await catalog_service.list_removed(
+        session, auth_subject, filters.organization_id
     )
 
 
@@ -68,12 +96,37 @@ async def get(
     id: UUID4,
     auth_subject: auth.CatalogRead,
     session: AsyncReadSession = Depends(get_db_read_session),
-) -> Catalog:
+) -> CatalogVersion:
     """Get a catalog version and the products in it."""
     catalog = await catalog_service.get(session, auth_subject, id)
     if catalog is None:
         raise ResourceNotFound()
-    return catalog
+    changes = await catalog_service.get_changes(session, [catalog])
+    return CatalogVersion.model_validate_overlay(catalog, changes=changes[catalog.id])
+
+
+@router.patch(
+    "/{id}",
+    summary="Update Catalog",
+    response_model=CatalogSchema,
+    responses={
+        404: {
+            "description": "No catalog with this ID.",
+            "model": CatalogNotFound.schema(),
+        },
+    },
+)
+async def update(
+    id: UUID4,
+    catalog_update: CatalogUpdate,
+    auth_subject: auth.CatalogWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> CatalogSchema:
+    """Update a catalog."""
+    catalog = await catalog_service.get_for_write(session, auth_subject, id)
+    catalog = await catalog_service.update(session, catalog, catalog_update)
+    changes = await catalog_service.get_changes(session, [catalog])
+    return CatalogSchema.model_validate_overlay(catalog, changes=changes[catalog.id])
 
 
 @router.post(
@@ -86,8 +139,11 @@ async def get(
             "model": CatalogNotFound.schema(),
         },
         409: {
-            "description": "The catalog isn't a draft.",
-            "model": CatalogNotDraft.schema(),
+            "description": (
+                "The catalog isn't a draft, or publishing it would leave an "
+                "active product without a price in the default currency."
+            ),
+            "model": CatalogNotDraft.schema() | CatalogMissingCurrency.schema(),
         },
     },
 )
@@ -95,13 +151,16 @@ async def publish(
     id: UUID4,
     auth_subject: auth.CatalogWrite,
     session: AsyncSession = Depends(get_db_session),
-) -> Catalog:
+) -> CatalogSchema:
     """Publish the draft catalog. Its new products and benefits replace the live
     ones for new sales. Existing customers stay on their versions until moved.
 
-    Requires `products:write`, and `benefits:write` when the draft changes
-    benefits."""
+    Requires `products:write`, `benefits:write` when the draft changes
+    benefits, `meters:write` when it changes meters, and `organizations:write`
+    when it changes settings."""
     draft = await catalog_service.get_draft_for_write(session, auth_subject, id)
-    return await catalog_service.publish_draft(
+    catalog = await catalog_service.publish_draft(
         session, auth_subject, draft.organization, draft
     )
+    changes = await catalog_service.get_changes(session, [catalog])
+    return CatalogSchema.model_validate_overlay(catalog, changes=changes[catalog.id])

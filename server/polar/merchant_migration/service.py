@@ -1,9 +1,11 @@
+from collections import Counter
 from collections.abc import AsyncGenerator, AsyncIterator, Sequence
 from dataclasses import replace
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, NamedTuple, TypedDict
-from uuid import UUID
+from uuid import UUID, uuid4
 
+import httpx2
 import stripe as stripe_lib
 import structlog
 
@@ -11,6 +13,7 @@ from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
 from polar.auth.scope import Scope
 from polar.authz.service import assert_organization_permission
+from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.config import settings
 from polar.customer.repository import CustomerRepository, CustomerStripeIdentity
 from polar.exceptions import NotPermitted, PolarError
@@ -27,6 +30,7 @@ from polar.models import (
     PaymentMethod,
 )
 from polar.models.merchant_migration import (
+    COPIED_CARD_SOURCES,
     MERCHANT_MIGRATION_FINISHED_STEPS,
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
@@ -45,19 +49,23 @@ from polar.models.merchant_migration_record import (
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession
 from polar.product.repository import ProductRepository
+from polar.redis import Redis
 from polar.worker import can_retry, enqueue_job
 
 from . import pan_transfer
-from .adapters import PaginatedSourceAdapter, StripeAdapter
+from .adapters import LemonSqueezyAdapter, PaginatedSourceAdapter, StripeAdapter
+from .benefits import MigrationBenefits, list_proposals
 from .canonical import (
     CanonicalCustomer,
     CanonicalPaymentMethod,
     CanonicalProduct,
     CanonicalRecord,
     CanonicalSubscription,
+    PaymentMethodAssessment,
     deserialize,
     serialize,
 )
+from .card_status import MerchantMigrationCardStatus, card_status
 from .cards import (
     AmbiguousCopiedCard,
     PaymentMethodMapping,
@@ -93,14 +101,23 @@ from .repository import (
     MerchantMigrationRepository,
 )
 from .schemas import (
+    MerchantMigrationBenefit,
+    MerchantMigrationBenefitFile,
+    MerchantMigrationBenefitProduct,
+    MerchantMigrationBenefits,
+    MerchantMigrationBenefitsCreate,
+    MerchantMigrationCardStatusCount,
     MerchantMigrationCreate,
     MerchantMigrationCutoverReport,
     MerchantMigrationImportReport,
+    MerchantMigrationLemonSqueezyCreate,
+    MerchantMigrationPaymentMethodCount,
     MerchantMigrationRecordItem,
     MerchantMigrationRecordSummary,
     MerchantMigrationRecordSummaryEntity,
     MerchantMigrationRecordTaxUpdate,
     MerchantMigrationRecordUpdate,
+    MerchantMigrationStripeCreate,
     MerchantMigrationTaxBehaviorUpdateResult,
     PanTransferChecklist,
     PrecheckEntity,
@@ -118,13 +135,20 @@ IMPORTABLE_STEPS = {
 }
 
 _IMPORT_TASK = "merchant_migration.import_catalog"
+_BENEFITS_TASK = "merchant_migration.set_up_benefits"
+# The set-up actor's time limit: a run copies all of one benefit's files.
+BENEFITS_RUN_LIMIT = timedelta(hours=1)
+_BENEFITS_FAILURE = (
+    "Some benefits may already exist. Try again to finish the rest, "
+    "or contact support if it keeps failing."
+)
 # None is a pre-check started before operations recorded their kind.
 _PRECHECK_KINDS = {None, MerchantMigrationOperationKind.precheck}
 _IMPORT_FAILURE = "We couldn't prepare these subscriptions. Please try again."
 _STALLED_CUTOVER_ERROR = "Switch stalled with no progress; start it again to resume."
 _FINISHED_CUTOVER_ERROR = (
-    "This migration is finished and its Stripe key is deleted. "
-    "Start a new migration to switch the subscriptions still on Stripe."
+    "This migration is finished and its API key is deleted. "
+    "Start a new migration to switch the subscriptions still on the source."
 )
 _STALLED_OPERATION_ERROR = (
     "The last migration job stalled. Start it again, then try once it finishes."
@@ -194,6 +218,16 @@ class StripeSourceCredentials(TypedDict):
     has_connected_accounts: bool
 
 
+class LemonSqueezySourceCredentials(TypedDict):
+    """Shape of ``MerchantMigration.source_credentials`` for a Lemon Squeezy
+    source. Only ``api_key_encrypted`` is a secret."""
+
+    api_key_encrypted: str
+    store_id: str
+    store_name: str | None
+    livemode: bool
+
+
 class MerchantMigrationNotFound(MerchantMigrationError):
     def __init__(self) -> None:
         super().__init__("Merchant migration not found.", 404)
@@ -220,13 +254,13 @@ class MerchantMigrationNotEnabled(MerchantMigrationError):
 
 class OrganizationNotOnboarded(MerchantMigrationError):
     def __init__(self) -> None:
-        super().__init__("Finish onboarding before migrating from Stripe.", 403)
+        super().__init__("Finish onboarding before starting a migration.", 403)
 
 
 class InvalidSourceCredentials(MerchantMigrationError):
     def __init__(self) -> None:
         super().__init__(
-            "The provided Stripe API key is invalid.",
+            "The provided API key is invalid.",
             400,
         )
 
@@ -243,7 +277,7 @@ class MissingStripeScopes(MerchantMigrationError):
 class SourceVerificationUnavailable(MerchantMigrationError):
     def __init__(self) -> None:
         super().__init__(
-            "We couldn't verify the Stripe key right now. Please try again.",
+            "We couldn't verify the API key right now. Please try again.",
             502,
         )
 
@@ -251,8 +285,42 @@ class SourceVerificationUnavailable(MerchantMigrationError):
 class SourceAccountAlreadyMigrated(MerchantMigrationError):
     def __init__(self) -> None:
         super().__init__(
-            "This Stripe account is already used by another organization's "
+            "This account is already used by another organization's "
             "merchant migration.",
+            409,
+        )
+
+
+class BenefitsUnavailable(MerchantMigrationError):
+    def __init__(self) -> None:
+        super().__init__(
+            "Only Lemon Squeezy migrations bring license keys and files over.", 409
+        )
+
+
+class BenefitsNotReady(MerchantMigrationError):
+    def __init__(self) -> None:
+        super().__init__(
+            "Import your catalog before setting up benefits, and set them up "
+            "before moving cards.",
+            409,
+        )
+
+
+_BEFORE_BENEFITS = frozenset(
+    {
+        MerchantMigrationStep.source_setup,
+        MerchantMigrationStep.pre_check,
+        MerchantMigrationStep.create_catalog,
+    }
+)
+
+
+class MigrationNotFinishable(MerchantMigrationError):
+    def __init__(self) -> None:
+        super().__init__(
+            "Only a migration setting up benefits, with no subscriptions to "
+            "move, can finish here.",
             409,
         )
 
@@ -323,11 +391,21 @@ class SourceAccountNotMigratable(BlockedByPrecheck):
 
 
 class SourceKeyModeMismatch(MerchantMigrationError):
-    def __init__(self, *, expect_live: bool) -> None:
+    def __init__(
+        self,
+        *,
+        expect_live: bool,
+        source_platform: MerchantMigrationSourcePlatform,
+    ) -> None:
         mode = "live" if expect_live else "test"
+        example = (
+            f" (e.g. `rk_{mode}_…`)"
+            if source_platform == MerchantMigrationSourcePlatform.stripe
+            else ""
+        )
         super().__init__(
-            f"This Polar environment needs a {mode}-mode Stripe key "
-            f"(e.g. `rk_{mode}_…`), so the migration runs against {mode} data.",
+            f"This Polar environment needs a {mode}-mode {source_platform.label} "
+            f"API key{example}, so the migration runs against {mode} data.",
             400,
         )
 
@@ -374,6 +452,24 @@ def _staged_payment_method(
     when a customer has more than one."""
     staged = _staged_subscription(record)
     return staged.payment_method if staged is not None else None
+
+
+def _count_payment_methods(
+    items: Sequence[MerchantMigrationRecordItem],
+) -> list[MerchantMigrationPaymentMethodCount]:
+    counts = Counter(
+        item.payment_method_assessment
+        for item in items
+        if item.payment_method_assessment is not None
+        and item.status == PrecheckRecordStatus.importable
+    )
+    return [
+        MerchantMigrationPaymentMethodCount(
+            assessment=assessment, count=counts[assessment]
+        )
+        for assessment in PaymentMethodAssessment
+        if counts[assessment]
+    ]
 
 
 def _summarize_entities(
@@ -439,6 +535,20 @@ def _is_live_key(api_key: str) -> bool:
     return api_key.startswith(("rk_live_", "sk_live_"))
 
 
+def _new_migration(
+    organization: Organization,
+    source_platform: MerchantMigrationSourcePlatform,
+) -> MerchantMigration:
+    """The id is generated up front: the credentials are encrypted with it as
+    context, so they're set before the single INSERT."""
+    return MerchantMigration(
+        id=MerchantMigration.generate_id(),
+        organization=organization,
+        source_platform=source_platform,
+        step=MerchantMigrationStep.source_setup,
+    )
+
+
 class MerchantMigrationService:
     async def get(
         self,
@@ -493,14 +603,36 @@ class MerchantMigrationService:
             raise NotPermitted()
         if organization.status not in RENEWAL_ENABLED_STATUSES:
             raise OrganizationNotOnboarded()
-        if create_schema.source_platform != MerchantMigrationSourcePlatform.stripe:
-            raise UnsupportedMigrationSource(create_schema.source_platform)
+        match create_schema:
+            case MerchantMigrationStripeCreate():
+                migration = await self._connect_stripe(
+                    session, organization, create_schema
+                )
+            case MerchantMigrationLemonSqueezyCreate():
+                migration = await self._connect_lemon_squeezy(
+                    session, organization, create_schema
+                )
+        repository = MerchantMigrationRepository.from_session(session)
+        migration = await repository.create(migration, flush=True)
+        enqueue_job(
+            "merchant_migration.notify_created", merchant_migration_id=migration.id
+        )
+        return await self._queue_precheck(session, migration)
 
+    async def _connect_stripe(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        create_schema: MerchantMigrationStripeCreate,
+    ) -> MerchantMigration:
         # The key's mode must match the Polar environment, so a live switch never
         # runs against Stripe test data (and a sandbox run never touches live data).
         expect_live = settings.is_production()
         if _is_live_key(create_schema.api_key) != expect_live:
-            raise SourceKeyModeMismatch(expect_live=expect_live)
+            raise SourceKeyModeMismatch(
+                expect_live=expect_live,
+                source_platform=MerchantMigrationSourcePlatform.stripe,
+            )
 
         adapter = StripeAdapter(create_schema.api_key)
         try:
@@ -521,14 +653,7 @@ class MerchantMigrationService:
         if blockers:
             raise SourceAccountNotMigratable(blockers)
 
-        # Pre-generate the id so the credentials (encrypted with it as context) can
-        # be set before the row is inserted — one INSERT instead of INSERT+UPDATE.
-        migration = MerchantMigration(
-            id=MerchantMigration.generate_id(),
-            organization_id=create_schema.organization_id,
-            source_platform=create_schema.source_platform,
-            step=MerchantMigrationStep.source_setup,
-        )
+        migration = _new_migration(organization, create_schema.source_platform)
         stripe_account_id = await adapter.get_account_id()
         migration.source_credentials = dict(
             await self._build_stripe_credentials(
@@ -541,17 +666,66 @@ class MerchantMigrationService:
         repository = MerchantMigrationRepository.from_session(session)
         if stripe_account_id is None:
             raise MissingStripeScopes(["Accounts"])
-        await repository.lock_stripe_account(stripe_account_id)
-        if await repository.stripe_account_id_exists(
+        await repository.lock_source_account(
+            MerchantMigrationSourcePlatform.stripe, stripe_account_id
+        )
+        if await repository.source_account_exists(
+            MerchantMigrationSourcePlatform.stripe,
             stripe_account_id,
             exclude_organization_id=create_schema.organization_id,
         ):
             raise SourceAccountAlreadyMigrated()
-        migration = await repository.create(migration, flush=True)
-        enqueue_job(
-            "merchant_migration.notify_created", merchant_migration_id=migration.id
+        return migration
+
+    async def _connect_lemon_squeezy(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        create_schema: MerchantMigrationLemonSqueezyCreate,
+    ) -> MerchantMigration:
+        adapter = LemonSqueezyAdapter(create_schema.api_key, create_schema.store_id)
+        expect_live = settings.is_production()
+        try:
+            livemode = await adapter.is_live_key()
+            if livemode != expect_live:
+                raise SourceKeyModeMismatch(
+                    expect_live=expect_live,
+                    source_platform=MerchantMigrationSourcePlatform.lemon_squeezy,
+                )
+            store = await adapter.resolve_store()
+            source_account = await adapter.get_source_account()
+        except httpx2.HTTPStatusError as e:
+            if e.response.status_code in (401, 403):
+                raise InvalidSourceCredentials() from e
+            raise SourceVerificationUnavailable() from e
+        except httpx2.HTTPError as e:
+            raise SourceVerificationUnavailable() from e
+        blockers = account_blockers(source_account)
+        if blockers:
+            raise SourceAccountNotMigratable(blockers)
+
+        migration = _new_migration(organization, create_schema.source_platform)
+        migration.source_credentials = dict(
+            LemonSqueezySourceCredentials(
+                api_key_encrypted=await self._encrypt_api_key(
+                    migration, create_schema.api_key
+                ),
+                store_id=store["id"],
+                store_name=store["attributes"].get("name"),
+                livemode=livemode,
+            )
         )
-        return await self._queue_precheck(session, migration)
+        repository = MerchantMigrationRepository.from_session(session)
+        await repository.lock_source_account(
+            MerchantMigrationSourcePlatform.lemon_squeezy, store["id"]
+        )
+        if await repository.source_account_exists(
+            MerchantMigrationSourcePlatform.lemon_squeezy,
+            store["id"],
+            exclude_organization_id=create_schema.organization_id,
+        ):
+            raise SourceAccountAlreadyMigrated()
+        return migration
 
     async def start_precheck(
         self,
@@ -866,6 +1040,245 @@ class MerchantMigrationService:
         await repository.update(migration, update_dict=update_dict, flush=True)
         return report
 
+    async def get_benefits(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        migration_id: UUID,
+    ) -> MerchantMigrationBenefits:
+        """What the source gives buyers, read live from the source."""
+        migration = await self._get_manageable(session, auth_subject, migration_id)
+        proposals = await list_proposals(
+            session, migration.organization_id, await self._benefits_adapter(migration)
+        )
+        product_ids = {
+            product_id for proposal in proposals for product_id in proposal.product_ids
+        }
+        names = await ProductRepository.from_session(session).get_names_by_ids(
+            migration.organization_id, product_ids
+        )
+        operation = migration.operation
+        past_buyers_granted = None
+        if (
+            operation is not None
+            and operation.kind == MerchantMigrationOperationKind.benefits
+            and (operation.cursor or {}).get("past_purchases_granted")
+        ):
+            # Only what the run gave: the merchant can grant these by hand after.
+            past_buyers_granted = await BenefitGrantRepository.from_session(
+                session
+            ).count_customers_granted_manually(
+                [proposal.created.id for proposal in proposals if proposal.created],
+                granted_before=operation.last_progress_at or utc_now(),
+            )
+        return MerchantMigrationBenefits(
+            past_buyers_granted=past_buyers_granted,
+            items=[
+                MerchantMigrationBenefit(
+                    id=proposal.source.source_id,
+                    type=proposal.source.type,
+                    description=proposal.source.description,
+                    activation_limit=settings.activation_limit if settings else None,
+                    expires_ttl=settings.expires_ttl if settings else None,
+                    expires_timeframe=settings.expires_timeframe if settings else None,
+                    files=[
+                        MerchantMigrationBenefitFile(name=file.name, size=file.size)
+                        for file in proposal.source.files
+                    ],
+                    link_titles=[link.title for link in proposal.source.links],
+                    products=[
+                        MerchantMigrationBenefitProduct(
+                            id=product_id, name=names[product_id]
+                        )
+                        for product_id in proposal.product_ids
+                        if product_id in names
+                    ],
+                    benefit_id=proposal.created.id if proposal.created else None,
+                    for_one_time=proposal.source.for_one_time,
+                )
+                for proposal in proposals
+                for settings in [proposal.source.license_keys]
+            ],
+        )
+
+    async def set_up_benefits(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        migration_id: UUID,
+        benefits_create: MerchantMigrationBenefitsCreate,
+    ) -> MerchantMigration:
+        """Queue creating the selected benefits. An empty selection skips the
+        step. Safe to repeat: created benefits are found by their source key."""
+        migration = await self._get_manageable(
+            session, auth_subject, migration_id, for_update=True
+        )
+        await self._benefits_adapter(migration)
+        # A stalled import still counts: once this leaves `create_catalog` the
+        # import can't be retried. A set-up run can be replaced only once its
+        # job is surely gone: a run copying files reads as stalled long before,
+        # and it may also have waited in the queue.
+        operation = migration.operation
+        if (
+            operation is not None
+            and operation.is_active
+            and (
+                operation.kind != MerchantMigrationOperationKind.benefits
+                or operation.last_progress_at is None
+                or utc_now() - operation.last_progress_at < 2 * BENEFITS_RUN_LIMIT
+            )
+        ):
+            raise MigrationOperationInProgress()
+        if migration.step not in (
+            MerchantMigrationStep.create_catalog,
+            MerchantMigrationStep.set_up_benefits,
+        ):
+            raise BenefitsNotReady()
+
+        # Skipping clears a failed run, so the step reads as done.
+        new_operation = (
+            MerchantMigrationOperation(
+                status=MerchantMigrationOperationStatus.pending,
+                kind=MerchantMigrationOperationKind.benefits,
+                cursor={
+                    "benefit_ids": benefits_create.ids,
+                    "grant_past_purchases": benefits_create.grant_past_purchases,
+                    "run": str(uuid4()),
+                },
+                last_progress_at=utc_now(),
+            )
+            if benefits_create.ids
+            else None
+        )
+        repository = MerchantMigrationRepository.from_session(session)
+        await repository.update(
+            migration,
+            update_dict={
+                "step": MerchantMigrationStep.set_up_benefits,
+                "operation": new_operation,
+            },
+        )
+        if new_operation is not None:
+            enqueue_job(
+                _BENEFITS_TASK,
+                merchant_migration_id=migration.id,
+                run=(new_operation.cursor or {})["run"],
+            )
+        return migration
+
+    async def execute_benefits(
+        self, session: AsyncSession, redis: Redis, migration_id: UUID, run: str
+    ) -> None:
+        """Create one benefit per run, then grant past purchases in a last run.
+        Re-enqueues until both are done.
+
+        The migration row is locked only at the end: copying a benefit's files
+        can take long, and the dashboard reads and writes the row meanwhile.
+        ``run`` is the run this job belongs to: a job of a replaced run, or its
+        retry, stops."""
+        migration = await self._load(session, migration_id)
+        if migration is None or not self._is_benefits_run(migration, run):
+            return
+        repository = MerchantMigrationRepository.from_session(session)
+        operation = migration.operation
+        assert operation is not None
+
+        cursor = dict(operation.cursor or {})
+        selected = set(cursor.get("benefit_ids", []))
+        try:
+            async with session.begin_nested():
+                organization = await self._get_organization(session, migration)
+                benefits = MigrationBenefits(
+                    session,
+                    redis,
+                    organization,
+                    await self._benefits_adapter(migration),
+                )
+                more = await benefits.create_next(selected)
+                if not more and cursor.get("grant_past_purchases"):
+                    next_page = await benefits.grant_purchases(
+                        selected, int(cursor.get("purchases_page", 1))
+                    )
+                    if next_page is None:
+                        cursor["grant_past_purchases"] = False
+                        cursor["past_purchases_granted"] = True
+                    else:
+                        cursor["purchases_page"] = next_page
+        except PolarError as error:
+            log.warning(
+                "merchant_migration.benefits_failed",
+                merchant_migration_id=migration_id,
+                error_type=type(error).__name__,
+            )
+            await repository.refresh_for_update(migration)
+            if self._is_benefits_run(migration, run):
+                await self._fail_operation(
+                    session, migration, error.message, flush=True
+                )
+            return
+        except Exception:
+            log.exception(
+                "merchant_migration.benefits_failed",
+                merchant_migration_id=migration_id,
+            )
+            if can_retry():
+                raise RuntimeError("merchant_migration.benefits_failed") from None
+            await repository.refresh_for_update(migration)
+            if self._is_benefits_run(migration, run):
+                await self._fail_operation(
+                    session, migration, _BENEFITS_FAILURE, flush=True
+                )
+            return
+
+        await repository.refresh_for_update(migration)
+        # A newer run replaced this one: leave it alone.
+        if not self._is_benefits_run(migration, run):
+            return
+        operation = migration.operation
+        assert operation is not None
+        if more or cursor.get("grant_past_purchases"):
+            await repository.update(
+                migration,
+                update_dict={
+                    "operation": operation.model_copy(
+                        update={
+                            "status": MerchantMigrationOperationStatus.running,
+                            "cursor": cursor,
+                            "last_progress_at": utc_now(),
+                        }
+                    )
+                },
+            )
+            enqueue_job(_BENEFITS_TASK, merchant_migration_id=migration.id, run=run)
+            return
+        await repository.update(
+            migration,
+            update_dict={
+                "operation": self._done_operation(migration).model_copy(
+                    update={"cursor": cursor}
+                )
+            },
+            flush=True,
+        )
+
+    def _is_benefits_run(self, migration: MerchantMigration, run: str) -> bool:
+        operation = migration.operation
+        return (
+            operation is not None
+            and operation.is_active
+            and operation.kind == MerchantMigrationOperationKind.benefits
+            and (operation.cursor or {}).get("run") == run
+        )
+
+    async def _benefits_adapter(
+        self, migration: MerchantMigration
+    ) -> LemonSqueezyAdapter:
+        if migration.source_platform != MerchantMigrationSourcePlatform.lemon_squeezy:
+            raise BenefitsUnavailable()
+        adapter = await self._build_adapter(migration)
+        assert isinstance(adapter, LemonSqueezyAdapter)
+        return adapter
+
     async def get_pan_transfer(
         self,
         session: AsyncReadSession,
@@ -912,19 +1325,25 @@ class MerchantMigrationService:
         )
         if migration.pan_transfer_steps:
             raise PanTransferAlreadyStarted()
-        if migration.step != MerchantMigrationStep.create_catalog:
+        ready_step = (
+            MerchantMigrationStep.set_up_benefits
+            if migration.source_platform
+            == MerchantMigrationSourcePlatform.lemon_squeezy
+            else MerchantMigrationStep.create_catalog
+        )
+        if migration.step != ready_step:
             raise PanTransferNotReady()
-        # Stalled counts too: once this leaves `create_catalog` the import can't
-        # be retried, and whatever it hadn't prepared would never be switched.
-        if migration.operation is not None and migration.operation.is_active:
-            raise MigrationOperationInProgress()
+        self._ensure_ready_to_leave(migration)
         # The first step tells the merchant which Stripe account to send the cards
         # to. Without it configured we'd mark that step done while showing them
         # nothing, and they'd address the transfer to no one.
         if not settings.MERCHANT_MIGRATION_DESTINATION_STRIPE_ACCOUNT_ID:
             raise PanTransferUnavailable()
 
-        steps = pan_transfer.build(migration.pan_transfer_method)
+        steps = pan_transfer.build(
+            migration.pan_transfer_method,
+            provider_starts_copy=migration.provider_starts_copy,
+        )
         step = MerchantMigrationStep.copy_cards
         if await self._cards_already_on_polar(session, migration):
             steps = pan_transfer.skip_to(
@@ -942,6 +1361,61 @@ class MerchantMigrationService:
         self._enqueue_waiting_for_ops(migration, steps)
         return self._checklist(migration, steps)
 
+    async def finish_without_subscriptions(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        migration_id: UUID,
+    ) -> MerchantMigration:
+        """Complete a migration that only brought benefits over. Card movement
+        and the switch exist for subscriptions, so with none to move they'd
+        leave the merchant on steps with nothing to do."""
+        migration = await self._get_manageable(
+            session, auth_subject, migration_id, for_update=True
+        )
+        if migration.source_platform != MerchantMigrationSourcePlatform.lemon_squeezy:
+            raise BenefitsUnavailable()
+        if migration.step in _BEFORE_BENEFITS:
+            raise BenefitsNotReady()
+        if migration.step != MerchantMigrationStep.set_up_benefits:
+            raise MigrationNotFinishable()
+        self._ensure_ready_to_leave(migration)
+        # The same classification the review counts come from, so the button
+        # and this check agree on what can still move.
+        subscriptions = await self._classify_staged(
+            session, migration, [PrecheckEntity.subscriptions]
+        )
+        if any(
+            item.status == PrecheckRecordStatus.importable for item in subscriptions
+        ):
+            raise MigrationNotFinishable()
+
+        log.info("merchant_migration.completed", merchant_migration_id=migration.id)
+        repository = MerchantMigrationRepository.from_session(session)
+        await repository.update(
+            migration,
+            update_dict={
+                "step": MerchantMigrationStep.completed,
+                "source_credentials": self._without_source_key(migration),
+            },
+        )
+        return migration
+
+    def _ensure_ready_to_leave(self, migration: MerchantMigration) -> None:
+        # Stalled counts too: once this leaves `create_catalog` the import can't
+        # be retried, and whatever it hadn't prepared would never be switched.
+        operation = migration.operation
+        if operation is not None and operation.is_active:
+            raise MigrationOperationInProgress()
+        # Moving on would leave the step, and a failed run with it: it could
+        # never be retried. Skipping the step ends the run instead.
+        if (
+            operation is not None
+            and operation.kind == MerchantMigrationOperationKind.benefits
+            and operation.status == MerchantMigrationOperationStatus.failed
+        ):
+            raise BenefitsNotReady()
+
     async def _cards_already_on_polar(
         self, session: AsyncSession, migration: MerchantMigration
     ) -> bool:
@@ -949,7 +1423,10 @@ class MerchantMigrationService:
         Polar, typically moved by an earlier migration of the same account. The
         switch moves a subscription without a card, so one missing card keeps
         the checklist."""
-        if migration.pan_transfer_method != pan_transfer.PanTransferMethod.pan_copy:
+        if (
+            migration.source_platform != MerchantMigrationSourcePlatform.stripe
+            or migration.pan_transfer_method != pan_transfer.PanTransferMethod.pan_copy
+        ):
             return False
         return await MerchantMigrationRecordRepository.from_session(
             session
@@ -1095,12 +1572,9 @@ class MerchantMigrationService:
         customer_repository = CustomerRepository.from_session(session)
         payment_methods: MappedPaymentMethods = {}
         for mapping in mappings:
-            customer_record = await record_repository.get_imported_customer_dependency(
-                migration.organization_id, mapping.customer_id
+            customer = await self._mapped_customer(
+                record_repository, customer_repository, migration, mapping.customer_id
             )
-            if customer_record is None or customer_record.target_id is None:
-                continue
-            customer = await customer_repository.get_by_id(customer_record.target_id)
             if customer is None:
                 continue
             payment_method = await link_mapped_payment_method(
@@ -1114,6 +1588,27 @@ class MerchantMigrationService:
                 payment_method
             )
         return payment_methods
+
+    async def _mapped_customer(
+        self,
+        record_repository: MerchantMigrationRecordRepository,
+        customer_repository: CustomerRepository,
+        migration: MerchantMigration,
+        stripe_customer_id: str,
+    ) -> Customer | None:
+        """The Polar customer a mapping row's Stripe customer moved into. A Stripe
+        source's customer is staged under that id; any other source's customer
+        took it as its Stripe customer at import."""
+        customer_record = await record_repository.get_imported_customer_dependency(
+            migration.organization_id, stripe_customer_id
+        )
+        if customer_record is not None and customer_record.target_id is not None:
+            return await customer_repository.get_by_id(customer_record.target_id)
+        if migration.source_platform == MerchantMigrationSourcePlatform.stripe:
+            return None
+        return await customer_repository.get_by_stripe_customer_id_and_organization(
+            stripe_customer_id, migration.organization_id
+        )
 
     async def _rewrite_staged_payment_methods(
         self,
@@ -1148,9 +1643,7 @@ class MerchantMigrationService:
                 "merchant_migration.missing", merchant_migration_id=migration_id
             )
             return
-        if pan_transfer.stripe_mapping_applied(
-            migration.pan_transfer_method, migration.pan_transfer_steps
-        ):
+        if migration.exact_card_mapping:
             await repository.refresh_for_update(migration)
             await self._complete_step(session, migration, STEP_VERIFY_CARDS)
             return
@@ -1428,11 +1921,16 @@ class MerchantMigrationService:
             flush=flush,
         )
 
-    async def close_idle(
-        self, session: AsyncSession, migration_id: UUID, *, idle_since: datetime
+    async def close(
+        self,
+        session: AsyncSession,
+        migration_id: UUID,
+        *,
+        idle_since: datetime | None = None,
     ) -> bool:
-        """Take one bounded step towards closing a migration with no activity
-        since ``idle_since``, and return whether it changed anything.
+        """Take one bounded step towards closing a migration, and return whether
+        it changed anything. With ``idle_since``, only a migration with no
+        activity since then is closed; without it, Polar staff close it now.
 
         First delete the records never imported, one batch per call. Then, in a
         single call, delete the stored source key and mark the migration
@@ -1446,7 +1944,10 @@ class MerchantMigrationService:
         if (
             migration is None
             or migration.step in MERCHANT_MIGRATION_FINISHED_STEPS
-            or (migration.modified_at or migration.created_at) >= idle_since
+            or (
+                idle_since is not None
+                and (migration.modified_at or migration.created_at) >= idle_since
+            )
             or self._operation_blocks_new_work(migration)
         ):
             return False
@@ -1576,6 +2077,18 @@ class MerchantMigrationService:
         # scopes to the selection via `_finish_cutover`.
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         counts = await record_repository.count_cutover_statuses(migration.id)
+        pending = counts.get(None, 0)
+        card_counts = Counter(
+            card_status(method_metadata)
+            for method_metadata in (
+                await record_repository.copied_cards(
+                    migration.id, exact=migration.exact_card_mapping, pending_only=True
+                )
+            ).values()
+        )
+        card_counts[MerchantMigrationCardStatus.no_card] = pending - sum(
+            card_counts.values()
+        )
         operation = migration.operation
         if operation is not None and operation.is_stalled():
             operation = self._failed_operation(migration, _STALLED_CUTOVER_ERROR)
@@ -1588,6 +2101,13 @@ class MerchantMigrationService:
             moved=counts.get(MerchantMigrationCutoverStatus.moved, 0),
             skipped=counts.get(MerchantMigrationCutoverStatus.skipped, 0),
             failed=counts.get(MerchantMigrationCutoverStatus.failed, 0),
+            card_statuses=[
+                MerchantMigrationCardStatusCount(
+                    status=status, count=card_counts[status]
+                )
+                for status in MerchantMigrationCardStatus
+                if card_counts[status] > 0
+            ],
         )
 
     def _build_selection(
@@ -1870,16 +2390,17 @@ class MerchantMigrationService:
         if not any(item.entity == PrecheckEntity.subscriptions for item in items):
             return
         record_repository = MerchantMigrationRecordRepository.from_session(session)
-        covered = await record_repository.payment_method_coverage(
-            migration.id,
-            exact=pan_transfer.stripe_mapping_applied(
-                migration.pan_transfer_method, migration.pan_transfer_steps
-            ),
+        cards = await record_repository.copied_cards(
+            migration.id, exact=migration.exact_card_mapping
         )
         for item in items:
             if item.entity != PrecheckEntity.subscriptions or item.record_id is None:
                 continue
-            item.has_payment_method = item.record_id in covered
+            item.card_status = card_status(cards.get(item.record_id))
+            item.has_payment_method = item.card_status not in (
+                MerchantMigrationCardStatus.no_card,
+                MerchantMigrationCardStatus.india_card,
+            )
 
     async def _classify_staged(
         self,
@@ -1984,7 +2505,7 @@ class MerchantMigrationService:
     async def _existing_polar_customers(
         self, session: AsyncReadSession, migration: MerchantMigration
     ) -> dict[str, CustomerStripeIdentity]:
-        if migration.source_platform != MerchantMigrationSourcePlatform.stripe:
+        if migration.source_platform not in COPIED_CARD_SOURCES:
             return {}
         return await CustomerRepository.from_session(
             session
@@ -2008,6 +2529,7 @@ class MerchantMigrationService:
                 for item in items
                 if item.reason_level == PrecheckReasonLevel.action_required
             ),
+            payment_methods=_count_payment_methods(items),
         )
 
     def _attach_record_ids(
@@ -2121,17 +2643,31 @@ class MerchantMigrationService:
     async def _build_adapter(
         self, migration: MerchantMigration
     ) -> PaginatedSourceAdapter:
-        if migration.source_platform != MerchantMigrationSourcePlatform.stripe:
-            raise UnsupportedMigrationSource(migration.source_platform)
-        return StripeAdapter(await self._decrypt_stripe_api_key(migration))
+        match migration.source_platform:
+            case MerchantMigrationSourcePlatform.stripe:
+                return StripeAdapter(await self._decrypt_api_key(migration))
+            case MerchantMigrationSourcePlatform.lemon_squeezy:
+                return LemonSqueezyAdapter(
+                    await self._decrypt_api_key(migration),
+                    migration.source_credentials.get("store_id"),
+                )
+            case _:
+                raise UnsupportedMigrationSource(migration.source_platform)
 
-    async def _decrypt_stripe_api_key(self, migration: MerchantMigration) -> str:
+    async def _decrypt_api_key(self, migration: MerchantMigration) -> str:
         encrypted = migration.source_credentials.get("api_key_encrypted")
         if not encrypted:
             raise SourceNotConnected()
         return await EncryptedString(
             encrypted, SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT
         ).decrypt(id=str(migration.id))
+
+    async def _encrypt_api_key(self, migration: MerchantMigration, api_key: str) -> str:
+        encrypted = await EncryptedString.encrypt(
+            api_key,
+            context={**SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT, "id": str(migration.id)},
+        )
+        return encrypted.encrypted_value
 
     async def _build_stripe_credentials(
         self,
@@ -2141,12 +2677,8 @@ class MerchantMigrationService:
         *,
         has_connected_accounts: bool,
     ) -> StripeSourceCredentials:
-        encrypted = await EncryptedString.encrypt(
-            api_key,
-            context={**SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT, "id": str(migration.id)},
-        )
         return StripeSourceCredentials(
-            api_key_encrypted=encrypted.encrypted_value,
+            api_key_encrypted=await self._encrypt_api_key(migration, api_key),
             stripe_user_id=stripe_account_id,
             livemode=_is_live_key(api_key),
             has_connected_accounts=has_connected_accounts,

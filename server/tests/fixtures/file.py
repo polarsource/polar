@@ -10,7 +10,7 @@ from uuid import UUID
 
 import pytest
 from botocore.stub import ANY, Stubber
-from httpx import Response
+from httpx2 import Response
 
 from polar.config import settings
 from polar.file.s3 import S3_SERVICES
@@ -19,7 +19,6 @@ from polar.file.schemas import (
     FileUpload,
     ProductMediaFileCreate,
 )
-from polar.file.service import file as file_service
 from polar.integrations.aws.s3.client import client as s3_client
 from polar.integrations.aws.s3.schemas import (
     S3FileCreateMultipart,
@@ -93,6 +92,8 @@ class TestFile:
         s3_stub: Stubber,
         parts: int = 1,
     ) -> FileUpload:
+        from polar.file.service import file as file_service
+
         self.stub_create(s3_stub, FileServiceTypes.downloadable)
         return await file_service.generate_presigned_upload(
             session,
@@ -192,6 +193,8 @@ class TestFile:
         s3_stub: Stubber,
         created: FileUpload,
         parts: list[S3FileUploadCompletedPart],
+        *,
+        content_length: int | None = None,
     ) -> dict[str, Any]:
         checksum = hashlib.sha256(
             b"".join(
@@ -209,6 +212,7 @@ class TestFile:
             {
                 **object_params,
                 "UploadId": created.upload.id,
+                "MpuObjectSize": created.size,
                 "MultipartUpload": {
                     "Parts": [
                         {
@@ -224,7 +228,7 @@ class TestFile:
         )
         head = {
             "ContentType": self.mime_type,
-            "ContentLength": self.size,
+            "ContentLength": self.size if content_length is None else content_length,
             "ETag": '"completed-upload"',
             "LastModified": utc_now(),
             "VersionId": "uploaded-version",
@@ -243,11 +247,19 @@ class TestFile:
         return head
 
 
-@pytest.fixture(autouse=True)
-def s3_stub() -> Iterator[Stubber]:
+@pytest.fixture(scope="session", autouse=True)
+def session_s3_stub() -> Iterator[Stubber]:
     with Stubber(s3_client) as stub:
         yield stub
-        stub.assert_no_pending_responses()
+
+
+@pytest.fixture
+def s3_stub(session_s3_stub: Stubber) -> Iterator[Stubber]:
+    try:
+        yield session_s3_stub
+        session_s3_stub.assert_no_pending_responses()
+    finally:
+        getattr(session_s3_stub, "_queue").clear()
 
 
 async def uploaded_fixture(

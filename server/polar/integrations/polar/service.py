@@ -18,7 +18,7 @@ from polar.email.sender import Attachment, enqueue_email_template
 from polar.integrations.plain.service import plain as plain_service
 from polar.kit.concurrency import create_task_group
 from polar.models.member import MemberRole
-from polar.models.organization import SupportTier
+from polar.models.organization import OrganizationStatus, SupportTier
 from polar.models.user_organization import OrganizationRole
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession, AsyncSession
@@ -200,6 +200,14 @@ class PolarSelfService:
         enqueue_job(
             "polar_self.delete_customer",
             external_id=str(organization_id),
+        )
+
+    def enqueue_revoke_subscription(self, *, organization_id: uuid.UUID) -> None:
+        if not self.is_configured:
+            return
+        enqueue_job(
+            "polar_self.revoke_subscription",
+            external_customer_id=str(organization_id),
         )
 
     def enqueue_track_organization_review_usage(
@@ -875,9 +883,11 @@ class PolarSelfService:
                 )
 
     async def handle_subscription_revoked_event(
-        self, payload: WebhookSubscriptionRevokedPayload
+        self, session: AsyncReadSession, payload: WebhookSubscriptionRevokedPayload
     ) -> None:
         subscription = payload.data
+        if await self._is_organization_denied(session, subscription):
+            return
         context = await self._resolve_subscription_email_context(subscription)
         if context is None:
             return
@@ -931,6 +941,22 @@ class PolarSelfService:
             subscription.product.name if subscription.product is not None else "Polar"
         )
         return recipients, product_name
+
+    async def _is_organization_denied(
+        self, session: AsyncReadSession, subscription: "Subscription"
+    ) -> bool:
+        try:
+            organization_id = self._resolve_organization_id(subscription.customer)
+        except PolarSelfWebhookError:
+            return False
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(
+            organization_id, include_blocked=True
+        )
+        return (
+            organization is not None
+            and organization.status == OrganizationStatus.DENIED
+        )
 
     async def _require_approval(
         self,

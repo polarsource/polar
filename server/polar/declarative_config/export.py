@@ -4,6 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, TypeAdapter, ValidationError
 from sqlalchemy import Select
+from sqlalchemy.orm import selectinload
 
 from polar.benefit.repository import BenefitRepository
 from polar.benefit.strategies.meter_credit.properties import (
@@ -11,13 +12,17 @@ from polar.benefit.strategies.meter_credit.properties import (
 )
 from polar.catalog.repository import (
     CatalogBenefitRepository,
+    CatalogCustomFieldRepository,
+    CatalogMeterRepository,
     CatalogProductRepository,
 )
 from polar.catalog.service import catalog as catalog_service
+from polar.custom_field.repository import CustomFieldRepository
 from polar.meter.repository import MeterRepository
 from polar.models import (
     Benefit,
     Catalog,
+    CustomField,
     Meter,
     Organization,
     Product,
@@ -29,10 +34,13 @@ from polar.product.repository import ProductRepository
 
 from .schemas import (
     MAXIMUM_BENEFITS,
+    MAXIMUM_CUSTOM_FIELDS,
     MAXIMUM_METERS,
     MAXIMUM_PRODUCTS,
     ConfigBenefit,
     ConfigBenefitRead,
+    ConfigCustomField,
+    ConfigCustomFieldRead,
     ConfigExport,
     ConfigExportCatalog,
     ConfigExportDocument,
@@ -54,14 +62,13 @@ EXPORTED_SECTIONS = ("settings", "meters", "benefits", "products")
 
 _config_benefit = TypeAdapter[ConfigBenefit](ConfigBenefit)
 _benefit_read = TypeAdapter[ConfigBenefitRead](ConfigBenefitRead)
+_config_custom_field = TypeAdapter[ConfigCustomField](ConfigCustomField)
+_custom_field_read = TypeAdapter[ConfigCustomFieldRead](ConfigCustomFieldRead)
 
 
 class _Exportable(Protocol):
     @property
     def id(self) -> UUID: ...
-
-    @property
-    def external_id(self) -> str | None: ...
 
 
 def _dump(config: BaseModel) -> dict[str, Any]:
@@ -75,6 +82,7 @@ async def _export_section[ModelT: _Exportable, EntryT](
     maximum: int,
     skipped: list[ConfigSkippedResource],
     *,
+    key: Callable[[ModelT], str | None],
     name: Callable[[ModelT], str],
     archived: Callable[[ModelT], bool],
     entry: Callable[[ModelT], EntryT | None],
@@ -92,9 +100,10 @@ async def _export_section[ModelT: _Exportable, EntryT](
     skipped_count = 0
     async for model in models:
         reason: ConfigSkippedReason | None = None
+        model_key = key(model)
         if archived(model):
             reason = ConfigSkippedReason.archived
-        elif model.external_id is None:
+        elif model_key is None:
             reason = ConfigSkippedReason.missing_external_id
         elif len(entries) >= maximum:
             reason = ConfigSkippedReason.over_limit
@@ -107,7 +116,7 @@ async def _export_section[ModelT: _Exportable, EntryT](
                 reason = ConfigSkippedReason.invalid
             else:
                 entries.append(exported)
-                external_ids[str(model.id)] = model.external_id
+                external_ids[str(model.id)] = model_key
         if reason is not None and skipped_count < maximum:
             skipped_count += 1
             skipped.append(
@@ -152,15 +161,30 @@ def _benefit_entry(
         properties = cast(BenefitMeterCreditProperties, benefit.properties)
         if str(properties["meter_id"]) not in meter_external_ids:
             return None
+    if benefit.type in (BenefitType.meter_credit, BenefitType.slack_shared_channel):
         data["properties"] = benefit_properties(benefit, meter_external_ids)
     config = _config_benefit.validate_python(data)
     return _benefit_read.validate_python(_dump(config))
+
+
+def _custom_field_entry(custom_field: CustomField) -> ConfigCustomFieldRead:
+    config = _config_custom_field.validate_python(
+        {
+            "type": custom_field.type,
+            "slug": custom_field.slug,
+            "name": custom_field.name,
+            "properties": custom_field.properties,
+            "metadata": custom_field.user_metadata,
+        }
+    )
+    return _custom_field_read.validate_python(_dump(config))
 
 
 def _product_entry(
     product: Product,
     meter_external_ids: dict[str, str],
     benefit_external_ids: dict[str, str],
+    custom_field_slugs: Collection[str] | None,
     *,
     deprecated: bool,
 ) -> ConfigProductRead | None:
@@ -172,6 +196,11 @@ def _product_entry(
     ]
     if None in prices or None in benefits:
         return None
+    if custom_field_slugs is not None and any(
+        attached.custom_field.slug not in custom_field_slugs
+        for attached in product.attached_custom_fields
+    ):
+        return None
     config = ConfigProduct.model_validate(
         {
             "external_id": product.external_id,
@@ -182,24 +211,42 @@ def _product_entry(
             "recurring_interval_count": product.recurring_interval_count,
             "trial_interval": product.trial_interval,
             "trial_interval_count": product.trial_interval_count,
+            "trial_payment_setup_required": product.trial_interval is None
+            or product.trial_payment_setup_required,
             "meter_interval": product.meter_interval,
             "meter_interval_count": product.meter_interval_count,
             "prices": prices,
             "benefits": benefits,
+            "custom_fields": [
+                {"field": attached.custom_field.slug, "required": attached.required}
+                for attached in product.attached_custom_fields
+            ],
             "metadata": product.user_metadata,
         }
     )
+    entry = _dump(config)
+    if custom_field_slugs is None:
+        del entry["custom_fields"]
     return ConfigProductRead.model_validate(
-        {**_dump(config), "deprecated": True if deprecated else None}
+        {
+            **entry,
+            "trial_payment_setup_required": (
+                None if config.trial_payment_setup_required else False
+            ),
+            "deprecated": True if deprecated else None,
+        }
     )
 
 
-def _settings(organization: Organization) -> ConfigSettingsRead:
+def _settings(
+    organization: Organization, catalog: Catalog | None
+) -> ConfigSettingsRead:
+    current = catalog_service.get_settings(organization, catalog)
     settings = ConfigSettings.model_validate(
         {
             "payments": {
-                "currency": organization.default_presentment_currency,
-                "tax": organization.default_tax_behavior,
+                "currency": current["default_presentment_currency"],
+                "tax": current["default_tax_behavior"],
             }
         }
     )
@@ -233,22 +280,46 @@ async def _chain[T](*iterators: AsyncIterator[T]) -> AsyncIterator[T]:
 
 
 async def export_config(
-    session: AsyncReadSession, organization: Organization, catalog: Catalog | None
+    session: AsyncReadSession,
+    organization: Organization,
+    catalog: Catalog | None,
+    *,
+    include_custom_fields: bool = True,
 ) -> ConfigExport:
     skipped: list[ConfigSkippedResource] = []
 
     meter_repository = MeterRepository.from_session(session)
+    meters_statement = meter_repository.get_organization_statement(organization.id)
+    if (
+        catalog is not None
+        and catalog.status != CatalogStatus.live
+        and await catalog_service.lists_meters(session, catalog)
+    ):
+        meters_statement = CatalogMeterRepository.from_session(
+            session
+        ).get_meters_statement(catalog.id)
     meters, meter_external_ids = await _export_section(
         ConfigResource.meter,
-        meter_repository.stream(
-            meter_repository.get_organization_statement(organization.id)
-        ),
+        meter_repository.stream(meters_statement),
         MAXIMUM_METERS,
         skipped,
+        key=lambda meter: meter.external_id,
         name=lambda meter: meter.name,
         archived=lambda meter: meter.archived_at is not None,
         entry=_meter_entry,
     )
+    # Products still in use may bill previous versions of the exported meters.
+    exported_meters = set(meter_external_ids.values())
+    meter_external_ids = {
+        **{
+            id: external_id
+            for id, external_id in (
+                await meter_repository.get_external_ids_by_id(organization.id)
+            ).items()
+            if external_id in exported_meters
+        },
+        **meter_external_ids,
+    }
 
     benefit_repository = BenefitRepository.from_session(session)
     benefits_statement = benefit_repository.get_organization_statement(organization.id)
@@ -264,11 +335,38 @@ async def export_config(
         benefit_repository.stream(benefits_statement),
         MAXIMUM_BENEFITS,
         skipped,
+        key=lambda benefit: benefit.external_id,
         name=lambda benefit: benefit.description,
         archived=lambda benefit: False,
         entry=lambda benefit: _benefit_entry(benefit, meter_external_ids),
     )
 
+    custom_fields: list[ConfigCustomFieldRead] | None = None
+    custom_field_slugs: Collection[str] | None = None
+    if include_custom_fields:
+        custom_field_repository = CustomFieldRepository.from_session(session)
+        custom_fields_statement = custom_field_repository.get_current_statement(
+            organization.id
+        )
+        if (
+            catalog is not None
+            and catalog.status != CatalogStatus.live
+            and await catalog_service.lists_custom_fields(session, catalog)
+        ):
+            custom_fields_statement = CatalogCustomFieldRepository.from_session(
+                session
+            ).get_custom_fields_statement(catalog.id)
+        custom_fields, exported_slugs = await _export_section(
+            ConfigResource.custom_field,
+            custom_field_repository.stream(custom_fields_statement),
+            MAXIMUM_CUSTOM_FIELDS,
+            skipped,
+            key=lambda custom_field: custom_field.slug,
+            name=lambda custom_field: custom_field.name,
+            archived=lambda custom_field: False,
+            entry=_custom_field_entry,
+        )
+        custom_field_slugs = set(exported_slugs.values())
     # Products still in use may grant previous versions of the exported benefits.
     exported_benefits = set(benefit_external_ids.values())
     benefit_external_ids = {
@@ -304,11 +402,18 @@ async def export_config(
     products, _ = await _export_section(
         ConfigResource.product,
         _chain(
-            product_repository.stream(products_statement),
-            product_repository.stream(deprecated_statement),
+            product_repository.stream(
+                products_statement.options(selectinload(Product.attached_custom_fields))
+            ),
+            product_repository.stream(
+                deprecated_statement.options(
+                    selectinload(Product.attached_custom_fields)
+                )
+            ),
         ),
         MAXIMUM_PRODUCTS,
         skipped,
+        key=lambda product: product.external_id,
         name=lambda product: product.name,
         details=lambda product: {
             "recurring_interval": product.recurring_interval,
@@ -325,6 +430,7 @@ async def export_config(
             product,
             meter_external_ids,
             benefit_external_ids,
+            custom_field_slugs,
             deprecated=product.external_id not in catalog_external_ids,
         ),
     )
@@ -332,8 +438,9 @@ async def export_config(
     return ConfigExport(
         enabled=organization.is_config_as_code_enabled,
         config=ConfigExportDocument(
-            settings=_settings(organization),
+            settings=_settings(organization, catalog),
             meters=meters,
+            custom_fields=custom_fields,
             benefits=benefits,
             products=products,
         ),

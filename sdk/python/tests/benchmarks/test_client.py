@@ -1,7 +1,7 @@
 import pytest
 from pytest_codspeed import BenchmarkFixture
 
-from polar.outpost.client import consumed_units, decode_state
+from polar.outpost.state import consumed_units, decode_state
 from tests.benchmarks import BUCKET_COUNTS, encode_state
 
 pytestmark = pytest.mark.benchmark

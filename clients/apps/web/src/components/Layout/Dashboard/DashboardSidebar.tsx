@@ -13,6 +13,7 @@ import {
 } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Avatar, Button } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import {
   Sidebar,
   SidebarContent,
@@ -47,16 +48,13 @@ import { useOrganizationSubscription } from '@/hooks/queries'
 export const DashboardSidebar = ({
   type = 'organization',
   organization,
-  organizations,
-  memberOrganizations,
 }: {
   type?: 'organization' | 'account'
   organization?: schemas['Organization']
-  organizations: schemas['Organization'][]
-  memberOrganizations: schemas['MemberOrganization'][]
 }) => {
   const router = useRouter()
-  const { currentUser } = useAuth()
+  const { currentUser, userOrganizations: organizations } = useAuth()
+  const memberOrganizations = currentUser?.member_organizations ?? []
   const logout = useLogout()
 
   const [searchOpen, setSearchOpen] = useState(false)
@@ -228,46 +226,49 @@ export const DashboardSidebar = ({
                 <DropdownMenuContent
                   side="top"
                   align="center"
-                  className="w-(--radix-popper-anchor-width) min-w-[200px]"
+                  collisionPadding={8}
+                  className="flex max-h-(--radix-dropdown-menu-content-available-height) w-(--radix-popper-anchor-width) min-w-[200px] flex-col"
                 >
-                  {organizations.map((org) => (
-                    <DropdownMenuItem
-                      key={org.id}
-                      className="flex flex-row items-center gap-x-2"
-                      onClick={() => navigateToOrganization(org)}
-                    >
-                      <Avatar
-                        name={org.name}
-                        avatar_url={org.avatar_url}
-                        className="h-6 w-6"
-                      />
-                      <span className="min-w-0 truncate">{org.name}</span>
-                    </DropdownMenuItem>
-                  ))}
-                  {signInOrganizations.map((org) => (
-                    <DropdownMenuItem
-                      key={org.id}
-                      className="flex flex-row items-center gap-x-2"
-                      onClick={() => signInToOrganization(org)}
-                    >
-                      <Avatar
-                        name={org.name}
-                        avatar_url={org.avatar_url}
-                        className="h-6 w-6"
-                      />
-                      <span className="min-w-0 truncate">{org.name}</span>
-                      <span className="dark:bg-polar-700 ml-auto flex shrink-0 items-center gap-x-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500 dark:text-gray-400">
-                        {org.requires_sso ? (
-                          <>
-                            <LockOutlined fontSize="inherit" />
-                            SSO
-                          </>
-                        ) : (
-                          'Sign in'
-                        )}
-                      </span>
-                    </DropdownMenuItem>
-                  ))}
+                  <Box flexDirection="column" minHeight={0} overflowY="auto">
+                    {organizations.map((org) => (
+                      <DropdownMenuItem
+                        key={org.id}
+                        className="flex flex-row items-center gap-x-2"
+                        onClick={() => navigateToOrganization(org)}
+                      >
+                        <Avatar
+                          name={org.name}
+                          avatar_url={org.avatar_url}
+                          className="h-6 w-6"
+                        />
+                        <span className="min-w-0 truncate">{org.name}</span>
+                      </DropdownMenuItem>
+                    ))}
+                    {signInOrganizations.map((org) => (
+                      <DropdownMenuItem
+                        key={org.id}
+                        className="flex flex-row items-center gap-x-2"
+                        onClick={() => signInToOrganization(org)}
+                      >
+                        <Avatar
+                          name={org.name}
+                          avatar_url={org.avatar_url}
+                          className="h-6 w-6"
+                        />
+                        <span className="min-w-0 truncate">{org.name}</span>
+                        <span className="dark:bg-polar-700 ml-auto flex shrink-0 items-center gap-x-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500 dark:text-gray-400">
+                          {org.requires_sso ? (
+                            <>
+                              <LockOutlined fontSize="inherit" />
+                              SSO
+                            </>
+                          ) : (
+                            'Sign in'
+                          )}
+                        </span>
+                      </DropdownMenuItem>
+                    ))}
+                  </Box>
                   <DropdownMenuSeparator />
                   {!currentUser?.organization_scoped && (
                     <DropdownMenuItem

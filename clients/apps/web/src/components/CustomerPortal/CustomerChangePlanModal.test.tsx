@@ -54,15 +54,21 @@ const subscription = {
 } as unknown as schemas['CustomerSubscription']
 
 const organization = {
-  proration_behavior: 'invoice',
+  proration_behavior: 'prorate',
 } as unknown as schemas['CustomerOrganization']
 
 const mockPreview = (
-  preview: { total_amount: number; due_amount: number } | undefined,
+  preview:
+    | {
+        total_amount: number
+        due_amount: number
+        proration_behavior?: schemas['SubscriptionProrationBehavior']
+      }
+    | undefined,
   state: { isFetching?: boolean; isError?: boolean } = {},
 ) =>
   vi.mocked(useCustomerSubscriptionChangePreview).mockReturnValue({
-    data: preview,
+    data: preview && { proration_behavior: 'invoice', ...preview },
     isFetching: state.isFetching ?? false,
     isError: state.isError ?? false,
   } as unknown as ReturnType<typeof useCustomerSubscriptionChangePreview>)
@@ -70,18 +76,22 @@ const mockPreview = (
 const immediateCycleNotice =
   /charged immediately|credit on your next invoice|from your balance/
 
+const renderModal = (isShown = true) => (
+  <CustomerChangePlanModal
+    isShown={isShown}
+    api={{} as Client}
+    organization={organization}
+    products={[currentProduct, seatOnlyYearlyProduct]}
+    subscription={subscription}
+    hide={vi.fn()}
+    onUserSubscriptionUpdate={vi.fn()}
+  />
+)
+
 const renderAndSelectSeatPlan = () => {
-  render(
-    <CustomerChangePlanModal
-      api={{} as Client}
-      organization={organization}
-      products={[currentProduct, seatOnlyYearlyProduct]}
-      subscription={subscription}
-      hide={vi.fn()}
-      onUserSubscriptionUpdate={vi.fn()}
-    />,
-  )
+  const result = render(renderModal())
   fireEvent.click(screen.getByText('Team Yearly'))
+  return result
 }
 
 describe('CustomerChangePlanModal', () => {
@@ -103,7 +113,6 @@ describe('CustomerChangePlanModal', () => {
       {},
       'subscription-1',
       'product-seats-yearly',
-      true,
     )
     expect(
       screen.getByText(
@@ -135,6 +144,28 @@ describe('CustomerChangePlanModal', () => {
   })
 
   it.each([
+    [
+      'prorate',
+      'Your next invoice will include the new plan plus the proration for the current period.',
+    ],
+    ['next_period', 'The new plan will be applied on your next billing cycle.'],
+  ] as const)(
+    'follows the %s behavior the server previews',
+    (prorationBehavior, message) => {
+      mockPreview({
+        total_amount: 12000,
+        due_amount: 12000,
+        proration_behavior: prorationBehavior,
+      })
+
+      renderAndSelectSeatPlan()
+
+      expect(screen.getByText(message)).toBeTruthy()
+      expect(screen.queryByText(immediateCycleNotice)).toBeNull()
+    },
+  )
+
+  it.each([
     ['loading', undefined, {}],
     [
       'refetching',
@@ -152,4 +183,30 @@ describe('CustomerChangePlanModal', () => {
       expect(screen.queryByText(immediateCycleNotice)).toBeNull()
     },
   )
+
+  it('selects a plan with the keyboard', () => {
+    mockPreview(undefined)
+
+    render(renderModal())
+
+    const option = screen.getByRole('radio', { name: /Team Yearly/ })
+    expect(option.tabIndex).toBe(0)
+
+    fireEvent.keyDown(option, { key: ' ' })
+    expect(option.getAttribute('aria-checked')).toBe('true')
+  })
+
+  it('clears the selected plan when the dialog is reopened', () => {
+    mockPreview(undefined)
+
+    const { rerender } = renderAndSelectSeatPlan()
+    rerender(renderModal(false))
+    rerender(renderModal(true))
+
+    expect(
+      screen
+        .getByRole('radio', { name: /Team Yearly/ })
+        .getAttribute('aria-checked'),
+    ).toBe('false')
+  })
 })

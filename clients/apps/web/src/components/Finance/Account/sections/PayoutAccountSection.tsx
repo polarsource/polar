@@ -3,6 +3,7 @@
 import { toast } from '@/components/Toast/use-toast'
 import { useOrganization } from '@/hooks/queries'
 import { usePayoutAccountSetup } from '@/hooks/usePayoutAccountSetup'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import { api } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
@@ -75,7 +76,10 @@ export const PayoutAccountSection = ({
       setResumeLoading(false)
       toast({
         title: 'Could not resume payout setup',
-        description: 'Please try again from Manage payout accounts.',
+        description:
+          error && 'error' in error && error.error === 'PayoutAccountRejected'
+            ? extractApiErrorMessage(error)
+            : 'Please try again from Manage payout accounts.',
       })
       openManage()
       return

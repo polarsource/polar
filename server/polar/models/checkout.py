@@ -1,8 +1,9 @@
+import hashlib
 import uuid
 from collections.abc import Sequence
 from datetime import datetime, timedelta
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any, TypedDict
+from typing import TYPE_CHECKING, Any, Literal, TypedDict
 from uuid import UUID
 
 from sqlalchemy import (
@@ -27,13 +28,20 @@ from polar.checkout.payment_methods import get_payment_method_types, get_payment
 from polar.config import settings
 from polar.custom_field.data import CustomFieldDataMixin
 from polar.enums import PaymentProcessor, TaxBehavior, TaxProcessor
-from polar.kit.address import Address, AddressType
+from polar.kit.address import (
+    CITY_REQUIRED_COUNTRIES,
+    POSTAL_CODE_REQUIRED_COUNTRIES,
+    STATE_REQUIRED_COUNTRIES,
+    Address,
+    AddressType,
+)
 from polar.kit.db.models import OrganizationCreatedAtIndexMixin, RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.metadata import MetadataColumn, MetadataMixin
 from polar.kit.trial import TrialConfigurationMixin, TrialInterval
 from polar.kit.utils import utc_now
 from polar.product.guard import (
+    has_future_charges,
     is_discount_applicable,
     is_metered_price,
 )
@@ -41,7 +49,7 @@ from polar.tax.calculation import TaxBreakdownItem
 from polar.tax.tax_id import TaxID, TaxIDType
 
 from .customer import Customer
-from .discount import Discount, DiscountDuration, DiscountPercentage
+from .discount import Discount
 from .organization import Organization
 from .product import Product
 from .product_price import ProductPrice
@@ -93,14 +101,34 @@ class CheckoutBillingAddressFields(TypedDict):
     line2: BillingAddressFieldMode
 
 
+CheckoutAgentChannel = Literal["shared_payment_token"]
+
+
 class CheckoutAnalyticsMetadata(TypedDict, total=False):
     opened_at: str
     distinct_id: str | None
+    agent_channel: CheckoutAgentChannel
+
+
+US_SHORT_BILLING_ADDRESS_EXPERIMENT = "checkout_us_short_billing_address"
 
 
 # Payment methods for which the processor requires a full billing address
 # to process the payment, regardless of the customer's country.
 FULL_BILLING_ADDRESS_PAYMENT_METHODS: frozenset[str] = frozenset({"upi"})
+# Countries where checkout shows the full billing address form. Elsewhere,
+# only the fields the country requires are shown.
+FULL_BILLING_ADDRESS_FORM_COUNTRIES: frozenset[str] = frozenset({"US", "BR"})
+
+
+def _get_billing_address_field_mode(
+    *, required: bool, displayed: bool
+) -> BillingAddressFieldMode:
+    if required:
+        return BillingAddressFieldMode.required
+    if displayed:
+        return BillingAddressFieldMode.optional
+    return BillingAddressFieldMode.disabled
 
 
 class Checkout(
@@ -166,6 +194,10 @@ class Checkout(
 
     analytics_metadata: Mapped[CheckoutAnalyticsMetadata | None] = mapped_column(
         JSONB, nullable=True, default=None
+    )
+
+    customer_signals: Mapped[dict[str, Any] | None] = mapped_column(
+        JSONB(none_as_null=True), nullable=True, default=None
     )
 
     allow_discount_codes: Mapped[bool] = mapped_column(
@@ -386,29 +418,22 @@ class Checkout(
         return self.total_amount > 0 and self.trial_end is None
 
     @property
+    def has_future_charges(self) -> bool:
+        if self.product is None or not self.product.is_recurring:
+            return False
+        return has_future_charges(
+            self.product_prices_currency or [], self.amount, self.discount
+        )
+
+    @property
     def is_payment_setup_required(self) -> bool:
-        if self.product is None:
+        if self.product is None or not self.has_future_charges:
             return False
-
-        if self.is_free_product_price:
-            return False
-
-        # PWYW set to `0`, with an extra guard for metered prices
-        # (those will still require a payment on next cycle)
-        if self.amount == 0 and not self.has_metered_prices:
-            return False
-
-        # A 100% forever percentage discount makes the subscription entirely free
-        # (including metered usage), so no payment setup is needed.
-        if (
-            self.discount is not None
-            and self.discount.duration == DiscountDuration.forever
-            and isinstance(self.discount, DiscountPercentage)
-            and self.discount.basis_points == 10_000
-        ):
-            return False
-
-        return self.product.is_recurring
+        if self.trial_end is None:
+            return True
+        if self.trial_payment_setup_required is not None:
+            return self.trial_payment_setup_required
+        return self.product.trial_payment_setup_required
 
     @property
     def should_save_payment_method(self) -> bool:
@@ -457,47 +482,77 @@ class Checkout(
         )
 
     @property
-    def customer_billing_address_fields(self) -> CheckoutCustomerBillingAddressFields:
+    def _billing_address_country(self) -> str | None:
         address = self.customer_billing_address
-        country = address.country if address else None
-        is_us = country == "US"
-        require_billing_address = self.is_billing_address_required or is_us
+        return address.country if address else None
+
+    @property
+    def us_short_billing_address_variant(
+        self,
+    ) -> Literal["control", "treatment"] | None:
+        address = self.customer_billing_address
+        is_eligible = (
+            settings.is_production()
+            and address is not None
+            and address.country == "US"
+            and address.line1 is None
+            and address.city is None
+            and not self.is_billing_address_required
+        )
+        if not is_eligible:
+            return None
+        key = f"{US_SHORT_BILLING_ADDRESS_EXPERIMENT}:{self.id}".encode()
+        return "treatment" if hashlib.sha256(key).digest()[0] % 2 else "control"
+
+    @property
+    def _has_short_us_billing_address(self) -> bool:
+        return self.us_short_billing_address_variant == "treatment"
+
+    @property
+    def customer_billing_address_fields(self) -> CheckoutCustomerBillingAddressFields:
+        country = self._billing_address_country
+        is_us_with_full_address = (
+            country == "US" and not self._has_short_us_billing_address
+        )
+        require_billing_address = (
+            self.is_billing_address_required or is_us_with_full_address
+        )
         return {
             "country": True,
-            "state": country in {"US", "CA"},
+            "state": country in STATE_REQUIRED_COUNTRIES,
             "line1": require_billing_address,
             "line2": False,
-            "city": require_billing_address,
-            "postal_code": require_billing_address,
+            "city": require_billing_address or country in CITY_REQUIRED_COUNTRIES,
+            "postal_code": require_billing_address
+            or country in POSTAL_CODE_REQUIRED_COUNTRIES,
         }
 
     @property
     def billing_address_fields(self) -> CheckoutBillingAddressFields:
-        address = self.customer_billing_address
-        country = address.country if address else None
-        is_us = country == "US"
-        require_billing_address = self.is_billing_address_required or is_us
+        country = self._billing_address_country
+        required_fields = self.customer_billing_address_fields
+        is_full_form_country = (
+            country in FULL_BILLING_ADDRESS_FORM_COUNTRIES
+            and not self._has_short_us_billing_address
+        )
+        displayed = self.is_billing_address_required or is_full_form_country
         return {
             "country": BillingAddressFieldMode.required,
-            "state": BillingAddressFieldMode.required
-            if country in {"US", "CA"}
-            else (
-                BillingAddressFieldMode.optional
-                if require_billing_address
-                else BillingAddressFieldMode.disabled
+            "state": _get_billing_address_field_mode(
+                required=required_fields["state"], displayed=displayed
             ),
-            "line1": BillingAddressFieldMode.required
-            if require_billing_address
-            else BillingAddressFieldMode.disabled,
-            "line2": BillingAddressFieldMode.optional
-            if require_billing_address
-            else BillingAddressFieldMode.disabled,
-            "city": BillingAddressFieldMode.required
-            if require_billing_address
-            else BillingAddressFieldMode.disabled,
-            "postal_code": BillingAddressFieldMode.required
-            if require_billing_address
-            else BillingAddressFieldMode.disabled,
+            "line1": _get_billing_address_field_mode(
+                required=required_fields["line1"], displayed=displayed
+            ),
+            "line2": _get_billing_address_field_mode(
+                required=False, displayed=displayed
+            ),
+            "city": _get_billing_address_field_mode(
+                required=required_fields["city"], displayed=displayed
+            ),
+            "postal_code": _get_billing_address_field_mode(
+                required=required_fields["postal_code"], displayed=displayed
+            ),
         }
 
     @property

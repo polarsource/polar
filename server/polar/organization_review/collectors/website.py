@@ -4,7 +4,7 @@ import re
 from dataclasses import dataclass, field
 from urllib.parse import urljoin, urlparse
 
-import httpx
+import httpx2
 import structlog
 import trafilatura
 from pydantic_ai import Agent, RunContext
@@ -76,7 +76,7 @@ Keep it factual and under 500 words. Skip sections with no relevant info.
 class WebsiteDeps:
     """Shared dependencies for the website agent's page-visiting tools."""
 
-    client: httpx.AsyncClient
+    client: httpx2.AsyncClient
     allowed_domain: str
     pages_visited: list[WebsitePage] = field(default_factory=list)
     pages_navigated: int = 0
@@ -400,7 +400,7 @@ async def _run_website_agent(
     # Strip www. so redirects between www and non-www are both allowed
     allowed_domain = allowed_domain.removeprefix("www.")
 
-    async with httpx.AsyncClient(
+    async with httpx2.AsyncClient(
         transport=SSRFSafeTransport(),
         follow_redirects=False,
         timeout=PAGE_TIMEOUT_MS / 1000,

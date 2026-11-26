@@ -93,6 +93,17 @@ class OrderRepository(
 ):
     model = Order
 
+    async def has_draft_for_subscription(self, subscription_id: UUID) -> bool:
+        statement = select(
+            self.get_base_statement()
+            .where(
+                Order.subscription_id == subscription_id,
+                Order.status == OrderStatus.draft,
+            )
+            .exists()
+        )
+        return bool(await self.session.scalar(statement))
+
     async def get_revenue_by_customer(
         self,
         organization_id: UUID,
@@ -452,6 +463,11 @@ class OrderRepository(
         # https://github.com/sqlalchemy/sqlalchemy/commit/67f62aac5b49b6d048ca39019e5bd123d3c9cfb2
         result = cast(CursorResult[Order], await self.session.execute(statement))
         return result.rowcount > 0
+
+    async def refresh_for_payment_update(self, order: Order) -> None:
+        await self.session.refresh(
+            order, with_for_update={"of": Order, "key_share": True}
+        )
 
     async def release_payment_lock(self, order: Order) -> Order:
         """Release a payment lock for an order."""

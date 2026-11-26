@@ -10,6 +10,7 @@ import pytest
 from pydantic import ValidationError
 from pytest_mock import MockerFixture
 from redis.exceptions import ConnectionError as RedisConnectionError
+from sqlalchemy import event as sqlalchemy_event
 from sqlalchemy import func, select
 
 from polar.auth.models import AuthSubject, is_user
@@ -62,6 +63,7 @@ from polar.order.service import order as order_service
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from polar.reducer.redis_store import get_reducer_bucket_key
+from polar.reducer.repository import ReducerRepository
 from polar.reducer.service import (
     REDUCER_BUCKET_SIZE,
     get_reducer_bucket_start,
@@ -628,13 +630,13 @@ class TestListNames:
 @pytest.mark.anyio
 class TestIngest:
     @pytest.fixture(autouse=True, params=[False, True], ids=["events", "staged_events"])
-    async def staged_events_ingest(
+    async def reducer_billing(
         self,
         request: pytest.FixtureRequest,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> bool:
-        organization.feature_settings = {"staged_events_ingest_enabled": request.param}
+        organization.feature_settings = {"reducer_billing_enabled": request.param}
         await save_fixture(organization)
         return request.param
 
@@ -793,6 +795,85 @@ class TestIngest:
         errors = e.value.errors()
         assert len(errors) == 2
 
+    @pytest.mark.auth
+    async def test_customer_id_from_other_accessible_organization(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        organization_second: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await save_fixture(
+            UserOrganization(
+                user=auth_subject.subject, organization=organization_second
+            )
+        )
+        customer_organization_second = await create_customer(
+            save_fixture, organization=organization_second
+        )
+
+        ingest = EventsIngest(
+            events=[
+                EventCreateCustomer(
+                    name="test",
+                    customer_id=customer_organization_second.id,
+                    organization_id=organization.id,
+                ),
+            ]
+        )
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await event_service.ingest(session, auth_subject, ingest)
+
+        errors = e.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["loc"] == ("body", "events", 0, "customer_id")
+
+    @pytest.mark.auth
+    async def test_member_id_from_other_accessible_organization(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        organization_second: Organization,
+        user_organization: UserOrganization,
+        customer: Customer,
+    ) -> None:
+        await save_fixture(
+            UserOrganization(
+                user=auth_subject.subject, organization=organization_second
+            )
+        )
+        customer_organization_second = await create_customer(
+            save_fixture, organization=organization_second
+        )
+        member_organization_second = await create_member(
+            save_fixture,
+            customer=customer_organization_second,
+            organization=organization_second,
+        )
+
+        ingest = EventsIngest(
+            events=[
+                EventCreateCustomer(
+                    name="test",
+                    customer_id=customer.id,
+                    member_id=member_organization_second.id,
+                    organization_id=organization.id,
+                ),
+            ]
+        )
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await event_service.ingest(session, auth_subject, ingest)
+
+        errors = e.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["loc"] == ("body", "events", 0, "member_id")
+
     @pytest.mark.parametrize("count", [0, 1, 500])
     @pytest.mark.auth
     async def test_valid_user(
@@ -863,6 +944,33 @@ class TestIngest:
             for call in enqueue_events_mock.call_args_list
             for event_id in call.args
         } == {event.id for event in events}
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_reducer_billing_doesnt_create_meter_events(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "reducer_billing_enabled": True,
+        }
+        await save_fixture(organization)
+        create_meter_events = mocker.spy(event_service, "_create_meter_events")
+        ingest = EventsIngest(
+            events=[
+                EventCreateExternalCustomer(name="test", external_customer_id="test")
+            ]
+        )
+
+        await event_service.ingest(session, auth_subject, ingest)
+        await event_service.move_staged_events(session, 1000)
+
+        assert len(await get_all_by_organization(session, organization.id)) == 1
+        create_meter_events.assert_not_called()
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_rollup_reducer_buckets(
@@ -1689,6 +1797,44 @@ class TestCreateEvent:
             customer.id, meter.id, at=event.timestamp
         )
 
+    async def test_meter_reset_logs_a_change_of_the_usage(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer_external_id: Customer,
+        meter: Meter,
+    ) -> None:
+        customer = customer_external_id
+        await reducer_service.sync_meter(session, meter)
+        usage = await ReducerRepository.from_session(session).get_by_meter_and_kind(
+            meter.id, ReducerKind.usage
+        )
+        assert usage is not None
+        enqueue_outpost_event = mocker.patch(
+            "polar.reducer.service.enqueue_outpost_event"
+        )
+
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.meter_reset,
+                customer,
+                organization,
+                {"meter_id": str(meter.id)},
+            ),
+        )
+
+        assert [
+            (event["customer_id"], event["external_customer_id"])
+            for (_, event), _ in enqueue_outpost_event.call_args_list
+            if event["reducer_id"] == usage.id
+        ] == [
+            (customer.id, None),
+            (None, customer.external_id),
+            (customer.id, customer.external_id),
+        ]
+
     async def test_meter_reset_of_a_deleted_customer(
         self,
         mocker: MockerFixture,
@@ -1781,6 +1927,40 @@ class TestMoveStagedEvents:
             select(func.count()).select_from(StagedEvent)
         )
         assert staged_events == 0
+
+    async def test_reducer_billing_doesnt_create_meter_events(
+        self,
+        mocker: MockerFixture,
+        enqueue_events_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        organization.feature_settings = {"reducer_billing_enabled": True}
+        await save_fixture(organization)
+        ingested_at = utc_now() - timedelta(minutes=1)
+        await save_fixture(
+            StagedEvent(
+                name=METER_TEST_EVENT,
+                source=EventSource.user,
+                timestamp=ingested_at,
+                ingested_at=ingested_at,
+                organization_id=organization.id,
+                external_customer_id="test",
+                user_metadata={"tokens": 1},
+            )
+        )
+
+        create_meter_events = mocker.spy(event_service, "_create_meter_events")
+
+        assert await event_service.move_staged_events(session, 1000) == 1
+
+        create_meter_events.assert_not_called()
+        meter_events = await session.scalar(
+            select(func.count()).select_from(MeterEvent)
+        )
+        assert meter_events == 0
 
     async def test_limit(
         self,
@@ -2579,6 +2759,103 @@ class TestIngested:
         await session.refresh(customer_meter)
         assert customer_meter.activated_at is not None
 
+    async def test_activates_customers_sharing_an_external_id_across_organizations(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        customer_meters: list[CustomerMeter] = []
+        event_ids: list[uuid.UUID] = []
+        for org in (organization, organization_second):
+            customer = await create_customer(
+                save_fixture, organization=org, external_id="SHARED_EXTERNAL_ID"
+            )
+            meter = await create_meter(save_fixture, organization=org, id=uuid.uuid4())
+            customer_meter = CustomerMeter(
+                customer=customer, meter=meter, activated_at=None
+            )
+            await save_fixture(customer_meter)
+            customer_meters.append(customer_meter)
+            event = await create_event(
+                save_fixture,
+                organization=org,
+                external_customer_id="SHARED_EXTERNAL_ID",
+                source=EventSource.user,
+            )
+            event_ids.append(event.id)
+
+        await event_service.ingested(session, event_ids)
+
+        for customer_meter in customer_meters:
+            await session.refresh(customer_meter)
+            assert customer_meter.activated_at is not None
+
+    async def test_activation_queries_do_not_scale_with_customers(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            filter=Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="model", operator=FilterOperator.eq, value="lite"
+                    )
+                ],
+            ),
+        )
+
+        async def count_events_queries(customer_count: int) -> int:
+            customer_meters: list[CustomerMeter] = []
+            event_ids: list[uuid.UUID] = []
+            for _ in range(customer_count):
+                customer = await create_customer(
+                    save_fixture,
+                    organization=organization,
+                    email=f"{uuid.uuid4()}@example.com",
+                )
+                customer_meter = CustomerMeter(
+                    customer=customer, meter=meter, activated_at=None
+                )
+                await save_fixture(customer_meter)
+                customer_meters.append(customer_meter)
+                event = await create_event(
+                    save_fixture,
+                    customer=customer,
+                    organization=organization,
+                    source=EventSource.user,
+                    metadata={"model": "lite"},
+                )
+                event_ids.append(event.id)
+
+            count = 0
+
+            def on_execute(*args: Any) -> None:
+                nonlocal count
+                if "FROM events" in args[2]:
+                    count += 1
+
+            bind = session.sync_session.bind
+            assert bind is not None
+            sqlalchemy_event.listen(bind, "before_cursor_execute", on_execute)
+            try:
+                await event_service.ingested(session, event_ids)
+            finally:
+                sqlalchemy_event.remove(bind, "before_cursor_execute", on_execute)
+
+            for customer_meter in customer_meters:
+                await session.refresh(customer_meter)
+                assert customer_meter.activated_at is not None
+            return count
+
+        assert await count_events_queries(1) == await count_events_queries(3)
+
     # async def test_creates_meter_events_for_matching_events(
     #     self,
     #     save_fixture: SaveFixture,
@@ -2716,6 +2993,55 @@ class TestIngestedFirstUserEventAt:
             for call in enqueue_job_mock.call_args_list
             if call.args[0] == "customer.resolve_first_user_event_at"
         ]
+
+    async def test_skips_customers_with_an_earlier_first_user_event(
+        self,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        customer.first_user_event_at = utc_now() - timedelta(days=1)
+        await save_fixture(customer)
+        event = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.user,
+        )
+
+        await event_service.ingested(session, [event.id])
+
+        assert not [
+            call
+            for call in enqueue_job_mock.call_args_list
+            if call.args[0] == "customer.resolve_first_user_event_at"
+        ]
+
+    async def test_enqueues_for_events_before_the_first_user_event(
+        self,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        customer.first_user_event_at = utc_now()
+        await save_fixture(customer)
+        event = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.user,
+            timestamp=utc_now() - timedelta(days=1),
+        )
+
+        await event_service.ingested(session, [event.id])
+
+        enqueue_job_mock.assert_any_call(
+            "customer.resolve_first_user_event_at", customer.id
+        )
 
 
 @pytest.mark.anyio

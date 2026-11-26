@@ -96,7 +96,7 @@ export function ReviewRecordModal({
             ) : null}
             {facts.customerId ? (
               <DetailCell
-                label="Stripe customer ID"
+                label="Source customer ID"
                 value={facts.customerId}
                 monospace
               />
@@ -117,7 +117,7 @@ export function ReviewRecordModal({
             ) : null}
             {facts.productId ? (
               <DetailCell
-                label="Stripe product ID"
+                label="Source product ID"
                 value={facts.productId}
                 monospace
               />
@@ -142,7 +142,7 @@ export function ReviewRecordModal({
             ) : null}
             {facts.automaticTax ? (
               <DetailCell
-                label="Stripe automatic tax"
+                label="Automatic tax at source"
                 value={facts.automaticTax}
               />
             ) : null}
@@ -150,7 +150,7 @@ export function ReviewRecordModal({
               <DetailCell label="Last run" value="Failed" />
             ) : null}
             <DetailCell
-              label="Stripe subscription ID"
+              label="Source subscription ID"
               value={facts.sourceId}
               monospace
             />
@@ -161,7 +161,7 @@ export function ReviewRecordModal({
               label="Status"
               value={<ReviewStatusIndicator row={row} />}
             />
-            <DetailCell label="Stripe ID" value={facts.sourceId} monospace />
+            <DetailCell label="Source ID" value={facts.sourceId} monospace />
           </RecordCard>
         )}
       </Box>

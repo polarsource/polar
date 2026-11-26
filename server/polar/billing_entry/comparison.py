@@ -8,6 +8,7 @@ from decimal import Decimal
 import structlog
 from sqlalchemy import and_, false, or_
 
+from polar.billing_interval.repository import BillingIntervalRepository
 from polar.billing_interval.service import billing_interval as billing_interval_service
 from polar.billing_interval.service import select_settlement_windows
 from polar.event.repository import EventRepository
@@ -17,8 +18,12 @@ from polar.models.reducer import ReducerKind
 from polar.postgres import AsyncSession
 from polar.reducer.bucket_repository import ReducerBucketRepository
 from polar.reducer.repository import ReducerRepository
+from polar.reducer.service import REDUCER_BUCKET_SIZE
 
 log = structlog.get_logger(__name__)
+
+EXPLAIN_STATEMENT_TIMEOUT = "5s"
+"""Below the driver's command timeout, which breaks the order's transaction."""
 
 
 @dataclasses.dataclass(frozen=True)
@@ -115,7 +120,12 @@ async def compare(
     if reducer.matches(legacy):
         return Comparison(legacy=legacy, reducer=reducer, adjustments={})
     try:
-        async with session.begin_nested():
+        async with (
+            BillingIntervalRepository.from_session(session).local_statement_timeout(
+                EXPLAIN_STATEMENT_TIMEOUT
+            ),
+            session.begin_nested(),
+        ):
             adjustments = {
                 **await _get_usage_adjustments(
                     session,
@@ -206,15 +216,19 @@ async def _get_carried_over_usage(
     )
     if reducer is None:
         return 0.0
+    repository = EventRepository.from_session(session)
     return await meter_service.get_quantity(
         session,
         meter,
-        EventRepository.from_session(session)
-        .get_by_order_item_entries_statement(order_item_ids)
-        .where(
+        repository.get_by_order_item_entries_statement(order_item_ids).where(
             ReducerBucketRepository.from_session(
                 session
-            ).get_event_billed_by_other_order_clause(reducer, order_id)
+            ).get_event_billed_by_other_order_clause(
+                reducer,
+                order_id,
+                await repository.get_order_item_entries_identities(order_item_ids),
+                bucket_size=REDUCER_BUCKET_SIZE,
+            )
         ),
     )
 

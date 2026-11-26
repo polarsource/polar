@@ -3,6 +3,9 @@ from __future__ import annotations
 import typing
 
 from polar.base import AsyncServiceBase, SyncServiceBase
+{% for import_name in imports.base %}
+from polar.base import {{ import_name }}
+{% endfor %}
 {% if service.methods %}
 from polar.base import RequestTimeout
 {% endif %}
@@ -161,7 +164,7 @@ Args:
     {{ param.parameter_name }}:{% if param.description %} {{ param.description }}{% endif %}
 
 {% endfor %}
-    request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+    request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
     request_access_token: Access token override for this request.
 
 {% if method.body %}
@@ -299,7 +302,7 @@ Args:
     {{ param.parameter_name }}:{% if param.description %} {{ param.description }}{% endif %}
 
 {% endfor %}
-    request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+    request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
     request_access_token: Access token override for each request.
 
 {% if method.body %}
@@ -452,7 +455,7 @@ Args:
     {{ param.parameter_name }}:{% if param.description %} {{ param.description }}{% endif %}
 
 {% endfor %}
-    request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+    request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
     request_access_token: Access token override for this request.
 
 {% if method.body %}
@@ -587,7 +590,7 @@ Raises:
 {% endfor %}{% for param in method.query_params %}
     {{ param.parameter_name }}:{% if param.description %} {{ param.description }}{% endif %}
 
-{% endfor %}    request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+{% endfor %}    request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
     request_access_token: Access token override for each request.
 
 {% if method.body %}

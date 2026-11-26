@@ -11,7 +11,7 @@ from typing import Any
 
 import pytest
 from fastapi import FastAPI
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 

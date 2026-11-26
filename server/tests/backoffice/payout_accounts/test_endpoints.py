@@ -1,11 +1,11 @@
 import uuid
 from collections.abc import AsyncGenerator
 
-import httpx
+import httpx2
 import pytest
 from pytest_mock import MockerFixture
 
-from polar.backoffice import app as backoffice_app
+from polar.backoffice.app import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
 from polar.models import Organization, PayoutAccount, User
 from polar.models.backoffice_user_session import BackofficeUserSession
@@ -21,13 +21,13 @@ from tests.fixtures.random_objects import (
 @pytest.fixture
 async def backoffice_client(
     session: AsyncSession, backoffice_user_session: BackofficeUserSession
-) -> AsyncGenerator[httpx.AsyncClient]:
+) -> AsyncGenerator[httpx2.AsyncClient]:
     backoffice_app.dependency_overrides[get_db_session] = lambda: session
     backoffice_app.dependency_overrides[get_db_read_session] = lambda: session
     backoffice_app.dependency_overrides[get_admin] = lambda: backoffice_user_session
     try:
-        async with httpx.AsyncClient(
-            transport=httpx.ASGITransport(app=backoffice_app),
+        async with httpx2.AsyncClient(
+            transport=httpx2.ASGITransport(app=backoffice_app),
             base_url="http://test",
         ) as client:
             yield client
@@ -41,7 +41,7 @@ async def backoffice_client(
 class TestList:
     async def test_lists_payout_account(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         stripe_payout_account: PayoutAccount,
     ) -> None:
         response = await backoffice_client.get("/payout-accounts/")
@@ -51,7 +51,7 @@ class TestList:
 
     async def test_search_by_email(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
         user: User,
@@ -71,7 +71,7 @@ class TestList:
 
     async def test_search_by_stripe_id(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
         user: User,
@@ -89,7 +89,7 @@ class TestList:
 
     async def test_search_by_organization_id(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         stripe_payout_account: PayoutAccount,
         organization: Organization,
     ) -> None:
@@ -104,7 +104,7 @@ class TestList:
 @pytest.mark.anyio
 class TestGet:
     async def test_returns_404_for_unknown_id(
-        self, backoffice_client: httpx.AsyncClient
+        self, backoffice_client: httpx2.AsyncClient
     ) -> None:
         response = await backoffice_client.get(f"/payout-accounts/{uuid.uuid4()}")
 
@@ -112,7 +112,7 @@ class TestGet:
 
     async def test_shows_payout_account_details(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         stripe_payout_account: PayoutAccount,
     ) -> None:
         response = await backoffice_client.get(
@@ -128,7 +128,7 @@ class TestGet:
 @pytest.mark.anyio
 class TestDelete:
     async def test_returns_404_for_unknown_id(
-        self, backoffice_client: httpx.AsyncClient
+        self, backoffice_client: httpx2.AsyncClient
     ) -> None:
         response = await backoffice_client.get(
             f"/payout-accounts/{uuid.uuid4()}/delete"
@@ -138,7 +138,7 @@ class TestDelete:
 
     async def test_get_renders_confirmation_modal(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
         user: User,
@@ -156,7 +156,7 @@ class TestDelete:
 
     async def test_post_deletes_orphaned_payout_account(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         mocker: MockerFixture,
         save_fixture: SaveFixture,
         organization: Organization,
@@ -184,7 +184,7 @@ class TestDelete:
 
     async def test_post_refuses_a_paid_out_payout_account(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         mocker: MockerFixture,
         save_fixture: SaveFixture,
         organization: Organization,
@@ -213,7 +213,7 @@ class TestDelete:
 
     async def test_post_refuses_when_still_linked_to_organization(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         mocker: MockerFixture,
         save_fixture: SaveFixture,
         organization: Organization,

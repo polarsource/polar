@@ -190,6 +190,34 @@ class TestVerify:
 
 
 @pytest.mark.anyio
+class TestMarkVerified:
+    async def test_no_email(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
+        with pytest.raises(OrganizationEmailMissing):
+            await organization_email_service.mark_verified(session, organization)
+
+    async def test_pending_code(
+        self,
+        session: AsyncSession,
+        organization_with_email: Organization,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        await organization_email_service.send_code(session, organization_with_email)
+
+        current = await organization_email_service.mark_verified(
+            session, organization_with_email
+        )
+
+        assert current.verified_at is not None
+        assert current.code_hash is None
+        assert current.expires_at is None
+        assert await organization_email_service.is_verified(
+            session, organization_with_email
+        )
+
+
+@pytest.mark.anyio
 class TestIsVerified:
     async def test_no_row(
         self, session: AsyncSession, organization_with_email: Organization

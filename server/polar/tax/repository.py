@@ -97,7 +97,12 @@ class TaxJurisdictionRepository(RepositoryBase[Transaction]):
                 order_by_clauses.append(clause_function(order_count_column))
             elif criterion == TaxJurisdictionSortProperty.country:
                 order_by_clauses.append(clause_function(Transaction.tax_country))
-        statement = statement.order_by(*order_by_clauses)
+        statement = statement.order_by(
+            *order_by_clauses,
+            Transaction.tax_country.asc(),
+            state_column.asc(),
+            Transaction.currency.asc(),
+        )
 
         return statement
 

@@ -9,6 +9,8 @@ from reauth.exceptions import ReauthException
 
 from polar.backoffice_user.repository import BackofficeUserRepository
 from polar.config import settings
+from polar.kit.http import is_localhost
+from polar.models import BackofficeUser
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 
@@ -28,6 +30,7 @@ from .service import (
     AUTHENTICATION_TOKEN_PREFIX,
     BackofficeAuthenticationSessionService,
     create_user_session,
+    get_return_url,
     get_user_session,
     get_user_session_token,
     set_cookie,
@@ -39,13 +42,27 @@ router = BackofficeRouter(prefix="/auth", tags=[APITag.private])
 @router.get("/", name="backoffice:auth")
 async def index(
     request: Request,
+    return_to: str | None = None,
     session: AsyncSession = Depends(get_db_session),
     state_service: BackofficeOAuth2StateService = Depends(
         get_backoffice_oauth2_state_service
     ),
 ) -> RedirectResponse:
     if await get_user_session(request, session) is not None:
-        return RedirectResponse(settings.generate_backoffice_url("/"), status_code=303)
+        return RedirectResponse(get_return_url(return_to), status_code=303)
+
+    if (
+        settings.is_development()
+        and settings.BACKOFFICE_DEVELOPMENT_MODE
+        and is_localhost(request)
+        and not settings.BACKOFFICE_GOOGLE_CLIENT_ID
+    ):
+        user = await BackofficeUserRepository.from_session(session).provision(
+            "development", "admin@polar.sh"
+        )
+        if user is None:
+            raise HTTPException(403, "Backoffice account is disabled")
+        return await _sign_in(request, session, user, return_to)
 
     async with google_factor(state_service) as factor:
         authentication = BackofficeAuthenticationSessionService(
@@ -59,6 +76,7 @@ async def index(
                 nonce=secrets.token_urlsafe(32),
                 code_challenge_method="S256",
                 authentication_session_token_hash=auth_session.token_hash,
+                return_to=return_to,
             )
         except (ReauthException, httpx.HTTPError) as e:
             raise HTTPException(502, "Google sign-in is unavailable") from e
@@ -134,12 +152,23 @@ async def callback(
 
     await authentication.advance(auth_session, user.id, factor)
     await authentication.complete(auth_session)
+    return await _sign_in(
+        request, session, user, (oauth_state.context or {}).get("return_to")
+    )
+
+
+async def _sign_in(
+    request: Request,
+    session: AsyncSession,
+    user: BackofficeUser,
+    return_to: str | None,
+) -> RedirectResponse:
     old_token = get_user_session_token(request)
     if old_token is not None:
         await BackofficeUserSessionRepository.from_session(session).revoke(old_token)
     user_token = await create_user_session(session, user)
 
-    response = RedirectResponse(settings.generate_backoffice_url("/"), status_code=303)
+    response = RedirectResponse(get_return_url(return_to), status_code=303)
     set_cookie(
         request, response, settings.BACKOFFICE_AUTHENTICATION_SESSION_COOKIE_KEY, "", 0
     )

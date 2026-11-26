@@ -1,4 +1,3 @@
-import { useAuth } from '@/hooks'
 import { useUpdateOrganization } from '@/hooks/queries'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useListKeys } from '@/hooks/useListKeys'
@@ -32,7 +31,6 @@ import {
   FormField,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { useRouter } from 'next/navigation'
 import React, { useCallback, useId } from 'react'
 import { FileRejection } from 'react-dropzone'
 import { useForm, useFormContext, useWatch } from 'react-hook-form'
@@ -502,16 +500,14 @@ const OrganizationProfileSettings: React.FC<
     default_presentment_currency: schemas['PresentmentCurrency']
     country?: schemas['CountryAlpha2Input']
   }
-  const router = useRouter()
 
   const form = useForm<schemas['OrganizationUpdate']>({
     defaultValues: {
       ...organization,
+      feature_settings: undefined,
     },
   })
   const { setError } = form
-
-  const { currentUser } = useAuth()
 
   const updateOrganization = useUpdateOrganization()
 
@@ -537,7 +533,6 @@ const OrganizationProfileSettings: React.FC<
     const { data, error } = await updateOrganization.mutateAsync({
       id: organization.id,
       body: cleanedBody,
-      userId: currentUser?.id,
     })
 
     if (error) {
@@ -562,11 +557,9 @@ const OrganizationProfileSettings: React.FC<
       return
     }
 
-    // Refresh the router to get the updated organization data from the server
-    router.refresh()
-
     return {
       ...data,
+      feature_settings: undefined,
       default_presentment_currency:
         data.default_presentment_currency as schemas['PresentmentCurrency'],
       country: data.country as schemas['CountryAlpha2Input'] | undefined,

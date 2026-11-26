@@ -120,6 +120,7 @@ class OrganizationEmailService:
             ),
             to_email_addr=organization.email,
             subject=f"Your code to verify the support email of {organization.name}",
+            unsuppress=True,
         )
         return current
 
@@ -140,6 +141,30 @@ class OrganizationEmailService:
         candidates = get_token_hash_candidates(code.strip().upper()).values()
         if not any(hmac.compare_digest(current.code_hash, c) for c in candidates):
             raise InvalidVerificationCode()
+
+        return await repository.update(
+            current,
+            update_dict={
+                "verified_at": utc_now(),
+                "code_hash": None,
+                "expires_at": None,
+            },
+        )
+
+    async def mark_verified(
+        self, session: AsyncSession, organization: Organization
+    ) -> OrganizationEmail:
+        if organization.email is None:
+            raise OrganizationEmailMissing()
+
+        repository = OrganizationEmailRepository.from_session(session)
+        current = await repository.get_latest_by_organization(organization.id)
+        if current is None or current.email != organization.email:
+            current = await repository.create(
+                OrganizationEmail(organization=organization, email=organization.email)
+            )
+        if current.verified_at is not None:
+            return current
 
         return await repository.update(
             current,

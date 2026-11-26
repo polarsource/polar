@@ -1,3 +1,4 @@
+import { SupportEmailVerification } from '@/components/Payouts/SupportEmailVerification'
 import { Banner } from '@/components/Shared/Banner'
 import { DetailRow, Details } from '@/components/Shared/Details'
 import { SlideToAction } from '@/components/Shared/SlideToAction'
@@ -9,9 +10,11 @@ import {
   usePayoutEstimate,
   useTransactionsSummary,
 } from '@/hooks/polar/finance'
+import { useOrganizationEmail } from '@/hooks/polar/organizationEmail'
 import { useOrders } from '@/hooks/polar/orders'
 import { useStoreReview } from '@/hooks/useStoreReview'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
+import { capture } from '@/utils/posthog'
 import { formatCurrency } from '@polar-sh/currency'
 import { Stack, useRouter } from 'expo-router'
 import React, { useContext, useMemo } from 'react'
@@ -20,7 +23,11 @@ import { SafeAreaView } from 'react-native'
 export default function Index() {
   const { organization } = useContext(OrganizationContext)
   const { data: account } = useOrganizationAccount(organization?.id)
-  const { data: estimate } = usePayoutEstimate(organization?.id)
+  const { data: supportEmail } = useOrganizationEmail(organization?.id)
+  const supportEmailVerified = supportEmail?.verified === true
+  const { data: estimate } = usePayoutEstimate(
+    supportEmailVerified ? organization?.id : undefined,
+  )
   const { data: summary } = useTransactionsSummary(account?.id)
   const { nextPayoutAt, isFetching: isNextPayoutAtFetching } =
     useNextPayoutAt(account)
@@ -42,7 +49,7 @@ export default function Index() {
   const showWithdrawSlider =
     isWithdrawPending ||
     isWithdrawSuccess ||
-    (nextPayoutAt === null && !isNextPayoutAtFetching)
+    (supportEmailVerified && nextPayoutAt === null && !isNextPayoutAtFetching)
 
   return (
     <>
@@ -65,29 +72,37 @@ export default function Index() {
             )}.`}
           />
         ) : null}
-        <Details>
-          <DetailRow
-            label="Amount"
-            value={formatCurrency('accounting')(
-              estimate?.gross_amount ?? 0,
-              summary?.balance.currency ?? 'usd',
-            )}
+        {organization && supportEmail && !supportEmail.verified ? (
+          <SupportEmailVerification
+            organizationId={organization.id}
+            status={supportEmail}
           />
-          <DetailRow
-            label="Fees"
-            value={formatCurrency('accounting')(
-              estimate?.fees_amount ?? 0,
-              summary?.balance.currency ?? 'usd',
-            )}
-          />
-          <DetailRow
-            label="Net"
-            value={formatCurrency('accounting')(
-              estimate?.net_amount ?? 0,
-              summary?.balance.currency ?? 'usd',
-            )}
-          />
-        </Details>
+        ) : null}
+        {supportEmailVerified ? (
+          <Details>
+            <DetailRow
+              label="Amount"
+              value={formatCurrency('accounting')(
+                estimate?.gross_amount ?? 0,
+                summary?.balance.currency ?? 'usd',
+              )}
+            />
+            <DetailRow
+              label="Fees"
+              value={formatCurrency('accounting')(
+                estimate?.fees_amount ?? 0,
+                summary?.balance.currency ?? 'usd',
+              )}
+            />
+            <DetailRow
+              label="Net"
+              value={formatCurrency('accounting')(
+                estimate?.net_amount ?? 0,
+                summary?.balance.currency ?? 'usd',
+              )}
+            />
+          </Details>
+        ) : null}
         {showWithdrawSlider ? (
           <SlideToAction
             text="Slide To Withdraw"
@@ -95,6 +110,7 @@ export default function Index() {
             successText="Withdrawal Complete!"
             onSlideComplete={async () => {
               await withdrawFunds()
+              capture('app:finance:payout:create')
             }}
             onFinish={() => {
               if (shouldShow(hasOrders)) {

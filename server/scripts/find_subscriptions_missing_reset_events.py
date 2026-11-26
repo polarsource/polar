@@ -41,7 +41,7 @@ import typer
 from sqlalchemy import String, cast, select
 
 from polar.event.system import SystemEvent
-from polar.kit.db.postgres import create_async_sessionmaker
+from polar.kit.db.postgres import create_async_sessionmaker  # lint-skip: dry-run
 from polar.models import BillingEntry, Event, Subscription
 from polar.models.billing_entry import BillingEntryType
 from polar.models.event import EventSource

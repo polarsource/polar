@@ -4,7 +4,7 @@ import { afterAll, beforeAll, bench, describe } from "vitest";
 
 import { BUCKET_COUNTS, COLD_UNTIL, encodeState } from "./benchmark";
 import { BUCKET_SIZE } from "./reducer";
-import { APPLY_SNAPSHOT_SCRIPT, READ_STATE_SCRIPT, WRITE_BUCKET_SCRIPT } from "./scripts";
+import { APPLY_SNAPSHOT_SCRIPT, WRITE_BUCKET_SCRIPT } from "./scripts";
 import { startRedisServer, type RedisServer } from "./testing";
 
 const OPTIONS = { warmupTime: 500, time: 2_000 };
@@ -18,21 +18,28 @@ const keyOf = (buckets: number) => stateKey(identityOf(buckets));
 // An event of 7 units in the given bucket: what WRITE_BUCKET takes after the key count. Each
 // call brings a new external_id, as events do; the same one would be a duplicate and write nothing.
 let sequence = 0;
-const writeArgs = (identity: string, bucketStart: number) => [
+// What track queues for Polar with an event's first write.
+const queuedEvent = JSON.stringify({
+  name: "api_call",
+  external_customer_id: "alice",
+  external_id: "event",
+  timestamp: "2026-10-12T12:00:00.000Z",
+  metadata: { tokens: 7 },
+});
+const writeArgs = (identity: string, bucketStart: number, queued = true) => [
   stateKey(identity),
   `outpost:v1:pending:${identity}:${bucketStart}`,
+  "outpost:v1:outbox",
+  "outpost:v1:outbox:flusher:0",
   bucketStart,
-  1,
-  7,
-  7,
   7,
   `event-${++sequence}`,
+  queued ? queuedEvent : "",
 ];
 
 let redisServer: RedisServer;
 let redis: Redis;
 let writeBucketSha: string;
-let readStateSha: string;
 let applySnapshotSha: string;
 
 const seedState = async (identity: string, buckets: number): Promise<void> => {
@@ -45,7 +52,6 @@ beforeAll(async () => {
   await once(redis, "ready");
   // The client loads each script once and calls it by hash.
   writeBucketSha = (await redis.script("LOAD", WRITE_BUCKET_SCRIPT)) as string;
-  readStateSha = (await redis.script("LOAD", READ_STATE_SCRIPT)) as string;
   applySnapshotSha = (await redis.script("LOAD", APPLY_SNAPSHOT_SCRIPT)) as string;
   for (const buckets of BUCKET_COUNTS) await seedState(identityOf(buckets), buckets);
   for (const reducer of REDUCERS) await seedState(`external:alice:${reducer}`, 1);
@@ -64,7 +70,7 @@ describe("WRITE_BUCKET", () => {
       async () => {
         await redis.evalsha(
           writeBucketSha,
-          2,
+          4,
           ...writeArgs(identityOf(buckets), newestBucketStart),
         );
       },
@@ -75,27 +81,15 @@ describe("WRITE_BUCKET", () => {
     "write one event to three reducers",
     async () => {
       const pipeline = redis.pipeline();
-      for (const reducer of REDUCERS) {
+      for (const [index, reducer] of REDUCERS.entries()) {
         const identity = `external:alice:${reducer}`;
-        pipeline.evalsha(writeBucketSha, 2, ...writeArgs(identity, COLD_UNTIL));
+        pipeline.evalsha(writeBucketSha, 4, ...writeArgs(identity, COLD_UNTIL, index === 0));
       }
       const results = await pipeline.exec();
       for (const [error] of results ?? []) if (error) throw error;
     },
     OPTIONS,
   );
-});
-
-describe("READ_STATE", () => {
-  for (const buckets of BUCKET_COUNTS) {
-    bench(
-      `read a ${buckets}-bucket state`,
-      async () => {
-        await redis.evalsha(readStateSha, 1, keyOf(buckets));
-      },
-      OPTIONS,
-    );
-  }
 });
 
 describe("APPLY_SNAPSHOT", () => {

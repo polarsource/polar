@@ -8,6 +8,14 @@ resource "tfe_variable" "planetscale_app_password_test" {
   variable_set_id = tfe_variable_set.test.id
 }
 
+resource "tfe_variable" "planetscale_migrator_password_test" {
+  key             = "planetscale_migrator_password"
+  category        = "terraform"
+  description     = "PlanetScale migrator role password for test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
 data "tfe_project" "test" {
   name         = "test"
   organization = "polar-sh"
@@ -602,11 +610,11 @@ resource "tfe_variable" "vercel_sentry_auth_token_test" {
   }
 }
 
-resource "tfe_variable" "vercel_mcp_oauth2_client_id_test" {
-  key             = "mcp_oauth2_client_id"
+resource "tfe_variable" "protected_oauth2_client_ids_test" {
+  key             = "protected_oauth2_client_ids"
   category        = "terraform"
-  description     = "MCP OAuth2 client ID for the Vercel test frontend"
-  sensitive       = true
+  description     = "OAuth2 client IDs excluded from stale cleanup in test"
+  hcl             = true
   variable_set_id = tfe_variable_set.test.id
 
   lifecycle {
@@ -851,6 +859,30 @@ resource "tfe_variable" "backoffice_google_hosted_domain_test" {
   category        = "terraform"
   description     = "Backoffice Google Workspace hosted domain for test"
   sensitive       = false
+  variable_set_id = tfe_variable_set.test.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "payment_retry_alert_api_key_test" {
+  key             = "payment_retry_alert_api_key"
+  category        = "terraform"
+  description     = "PaymentRetryAlert API key for test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "payment_retry_alert_webhook_secret_test" {
+  key             = "payment_retry_alert_webhook_secret"
+  category        = "terraform"
+  description     = "PaymentRetryAlert webhook signing secret for test"
+  sensitive       = true
   variable_set_id = tfe_variable_set.test.id
 
   lifecycle {

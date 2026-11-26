@@ -1,7 +1,7 @@
 import asyncio
 from urllib.parse import urlparse
 
-import httpx
+import httpx2
 import structlog
 
 from polar.kit.http import (
@@ -109,7 +109,7 @@ async def _validate_url_host(url: str) -> None:
 
 
 async def _resolve_redirect(
-    client: httpx.AsyncClient,
+    client: httpx2.AsyncClient,
     semaphore: asyncio.Semaphore,
     url: str,
 ) -> UrlRedirectInfo:
@@ -163,7 +163,7 @@ async def _resolve_redirect(
                 hops=hops[:-1],
                 redirected=redirected,
             )
-        except httpx.TimeoutException:
+        except httpx2.TimeoutException:
             return UrlRedirectInfo(original_url=url, error="timeout")
         except Exception:
             return UrlRedirectInfo(original_url=url, error="connection_error")
@@ -226,7 +226,7 @@ async def resolve_url_redirects(urls: list[str]) -> list[UrlRedirectInfo]:
     semaphore = asyncio.Semaphore(_MAX_CONCURRENT)
 
     # Pass 1: GET requests (fast)
-    async with httpx.AsyncClient(
+    async with httpx2.AsyncClient(
         transport=SSRFSafeTransport(),
         follow_redirects=False,  # We follow manually to validate each hop
         timeout=_REDIRECT_TIMEOUT,

@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from sqlalchemy import select
 
 from polar.agent.identity_assertion import decode_identity_assertion

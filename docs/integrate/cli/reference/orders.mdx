@@ -1,6 +1,7 @@
 ---
 title: "polar orders"
 sidebarTitle: "orders"
+description: "Arguments and flags for every polar orders command"
 ---
 
 {/* Generated from the CLI by `pnpm --filter @polar-sh/cli docs:generate`. Do not edit by hand. */}
@@ -37,6 +38,7 @@ polar orders generate_invoice [flags] <id>
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--fields` | `string` | Only print these fields, comma-separated; use dots for nested ones, e.g. id,name,prices.price_amount |
+| `--org` | `string` | Organization ID or slug for this invocation only |
 
 ## polar orders get
 
@@ -57,6 +59,7 @@ polar orders get [flags] <id>
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--fields` | `string` | Only print these fields, comma-separated; use dots for nested ones, e.g. id,name,prices.price_amount |
+| `--org` | `string` | Organization ID or slug for this invocation only |
 
 ## polar orders invoice
 
@@ -77,6 +80,7 @@ polar orders invoice [flags] <id>
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--fields` | `string` | Only print these fields, comma-separated; use dots for nested ones, e.g. id,name,prices.price_amount |
+| `--org` | `string` | Organization ID or slug for this invocation only |
 
 ## polar orders list
 
@@ -122,6 +126,12 @@ polar orders receipt [flags] <id>
 | --- | --- | --- |
 | `id` | `string` |  |
 
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--org` | `string` | Organization ID or slug for this invocation only |
+
 ## polar orders update
 
 Update an order.
@@ -141,6 +151,7 @@ polar orders update [flags] <id>
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--fields` | `string` | Only print these fields, comma-separated; use dots for nested ones, e.g. id,name,prices.price_amount |
+| `--org` | `string` | Organization ID or slug for this invocation only |
 | `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
 | `--billing-name` | `string` | The name of the customer that should appear on the invoice. |
-| `--billing-address` | `string` | The address of the customer that should appear on the invoice. Country and state fields cannot be updated. JSON: &#123;"country": "AD" \| "AE" \| "AF" \| "AG" \| "AI" \| ..., ...&#125; |
+| `--billing-address` | `string` | The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated. JSON: &#123;"country": "AD" \| "AE" \| "AF" \| "AG" \| "AI" \| ..., ...&#125; |

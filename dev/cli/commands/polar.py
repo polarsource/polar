@@ -1,12 +1,15 @@
 """Run the Polar CLI from source in the current directory."""
 
 import os
+import subprocess
 
 import typer
 
-from shared import CLIENTS_DIR, check_command_exists, console
+from shared import CLIENTS_DIR, ROOT_DIR, check_command_exists, console
 
 CLI_ENTRY = CLIENTS_DIR / "packages" / "cli" / "src" / "cli.ts"
+INSTALL = ROOT_DIR / "dev" / "cli" / "install"
+ALIAS_MODES = {"--link": [], "--unlink": ["--repo-only"]}
 
 
 def register(app: typer.Typer, prompt_setup: callable) -> None:
@@ -19,8 +22,14 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
 
         Examples:
           dev polar auth login --local
-          dev polar config plan
+          dev polar config validate
+          dev polar --link      Make `dev polar` work in any directory
+          dev polar --unlink    Make `dev` work inside the Polar repo only
         """
+        if len(ctx.args) == 1 and ctx.args[0] in ALIAS_MODES:
+            raise typer.Exit(
+                subprocess.run([str(INSTALL), *ALIAS_MODES[ctx.args[0]]]).returncode
+            )
         if not check_command_exists("bun"):
             console.print("[red]bun not found. Install it from https://bun.sh[/red]")
             raise typer.Exit(1)

@@ -10,7 +10,7 @@
     "gen:icons": "node scripts/extract-icon-usage.mjs",
     "format": "oxfmt ./src",
     "format:check": "oxfmt --check ./src",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "next typegen && tsc --noEmit"
   },
   "engines": {
     "node": "=24"
@@ -19,7 +19,7 @@
     "@polar-sh/orbit": "workspace:*",
     "@polar-sh/ui": "workspace:*",
     "@stylexjs/stylex": "catalog:",
-    "next": "^16.4.4",
+    "next": "^16.4.6",
     "next-themes": "catalog:",
     "react": "19.3.0",
     "react-dom": "19.3.0",

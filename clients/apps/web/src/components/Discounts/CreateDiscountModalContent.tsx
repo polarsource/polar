@@ -36,13 +36,14 @@ const CreateDiscountModalContent = ({
   const { errors } = useFormState({ control })
 
   const onSubmit: SubmitHandler<DiscountFormValues> = useCallback(
-    async ({ amountsByCurrency, ...discountCreate }) => {
+    async ({ amountsByCurrency, duration_in_months, ...discountCreate }) => {
       const amounts = Object.fromEntries(
         amountsByCurrency.map(({ currency, amount }) => [currency, amount]),
       )
 
       const { data: discount, error } = await createDiscount.mutateAsync({
         ...discountCreate,
+        ...(discountCreate.duration === 'repeating' && { duration_in_months }),
         amounts,
       } as schemas['DiscountCreate'])
 

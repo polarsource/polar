@@ -3,7 +3,6 @@ import { useModal } from '@/components/Modal/useModal'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import { toast } from '@/components/Toast/use-toast'
 import { useSafeCopy } from '@/hooks/clipboard'
-import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useDeleteProduct, useMetrics, useUpdateProduct } from '@/hooks/queries'
 import { apiErrorToast, extractApiErrorMessage } from '@/utils/api/errors'
 import { getChartRangeParams } from '@/utils/metrics'
@@ -34,13 +33,20 @@ export interface ProductPageProps {
 }
 
 export const ProductPage = ({ organization, product }: ProductPageProps) => {
+  const managedAsCode =
+    organization.feature_settings?.config_as_code_enabled ?? false
+  const externalId = managedAsCode ? product.external_id : null
+  const productFilter = externalId
+    ? { external_product_id: [externalId] }
+    : { product_id: [product.id] }
+
   const [allTimeStart, allTimeEnd, allTimeInterval] = getChartRangeParams(
     'all_time',
-    product.created_at,
+    externalId ? organization.created_at : product.created_at,
   )
   const { data: metrics, isLoading: metricsLoading } = useMetrics({
     organization_id: organization.id,
-    product_id: [product.id],
+    ...productFilter,
     startDate: allTimeStart,
     endDate: allTimeEnd,
     interval: allTimeInterval,
@@ -74,7 +80,7 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
     startDate: new Date(),
     endDate: new Date(),
     interval: 'day',
-    product_id: [product.id],
+    ...productFilter,
     metrics: ['revenue'],
   })
 
@@ -82,7 +88,6 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
 
   const updateProduct = useUpdateProduct(organization)
   const deleteProduct = useDeleteProduct(organization)
-  const managedAsCode = useIsManagedAsCode(organization.id)
   const router = useRouter()
   const safeCopy = useSafeCopy(toast)
 

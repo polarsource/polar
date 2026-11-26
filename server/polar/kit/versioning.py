@@ -20,11 +20,14 @@ from fastapi.dependencies import utils as fastapi_dependencies
 from fastapi.openapi import utils as fastapi_openapi
 from fastapi.routing import APIRoute, RouteContext, iter_route_contexts
 from pydantic import (
+    MISSING,
     BaseModel,
     Field,
     GetCoreSchemaHandler,
     GetJsonSchemaHandler,
     TypeAdapter,
+    ValidationError,
+    ValidatorFunctionWrapHandler,
     model_validator,
 )
 from pydantic.fields import FieldInfo
@@ -126,6 +129,15 @@ _ACTIVE_API_VERSION = contextvars.ContextVar[APIVersion | None](
 @contextlib.contextmanager
 def api_version_context(version: APIVersion) -> Generator[None]:
     token = _ACTIVE_API_VERSION.set(version)
+    try:
+        yield
+    finally:
+        _ACTIVE_API_VERSION.reset(token)
+
+
+@contextlib.contextmanager
+def all_api_versions() -> Generator[None]:
+    token = _ACTIVE_API_VERSION.set(None)
     try:
         yield
     finally:
@@ -238,6 +250,47 @@ class VersionedJsonSchema:
         if version is not None and self.version_range.includes(version):
             return self.override(schema)
         return schema
+
+
+class _Omissible(VersionedJsonSchema):
+    def __get_pydantic_core_schema__(
+        self, source_type: typing.Any, handler: GetCoreSchemaHandler
+    ) -> CoreSchema:
+        return core_schema.no_info_wrap_validator_function(
+            self._null_to_missing, handler(source_type)
+        )
+
+    def _null_to_missing(
+        self, value: typing.Any, handler: ValidatorFunctionWrapHandler
+    ) -> typing.Any:
+        version = _ACTIVE_API_VERSION.get()
+        if (
+            value is None
+            and version is not None
+            and self.version_range.includes(version)
+        ):
+            try:
+                return handler(value)
+            except ValidationError:
+                return MISSING
+        return handler(value)
+
+
+def _add_legacy_null(schema: JsonSchemaValue) -> JsonSchemaValue:
+    null_schema = {"type": "null"}
+    if null_schema in schema.get("anyOf", []):
+        return schema
+    return {"anyOf": [schema, null_schema]}
+
+
+_omissible = _Omissible(
+    _add_legacy_null,
+    up_to=APIVersion(2026, 10),
+)
+
+_OmissibleValue = typing.TypeVar("_OmissibleValue")
+# An implicit alias keeps fields inline in OpenAPI.
+Omissible: typing.TypeAlias = typing.Annotated[_OmissibleValue | MISSING, _omissible]  # noqa: UP040
 
 
 def _iter_model_classes(
@@ -582,10 +635,21 @@ def add_versioned_routers(
 
     for version in supported_versions:
         version_route_contexts = routes_for_version(api_route_contexts, version)
+        openapi_endpoint = _create_openapi_endpoint(
+            version, version_route_contexts, webhooks
+        )
         app.add_api_route(
             f"/{version}/openapi.json",
-            _create_openapi_endpoint(version, version_route_contexts, webhooks),
+            openapi_endpoint,
             methods=["GET"],
             include_in_schema=False,
             name=f"openapi:{version}",
         )
+        if version == default_version:
+            app.add_api_route(
+                "/openapi.json",
+                openapi_endpoint,
+                methods=["GET"],
+                include_in_schema=False,
+                name="openapi",
+            )

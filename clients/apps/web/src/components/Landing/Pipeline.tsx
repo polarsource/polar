@@ -149,7 +149,7 @@ export const Pipeline = () => {
             key={marketIndex}
             className="flex flex-1 [animation:appear_360ms_cubic-bezier(0.2,0.8,0.2,1)_both] flex-col gap-6"
           >
-            <Text variant="heading-xs" tabularNums>
+            <Text variant="heading-xs" as="p" tabularNums>
               {market.total}
             </Text>
             <Box flexDirection="column" rowGap="s">
@@ -170,6 +170,7 @@ export const Pipeline = () => {
             </Text>
             <Text
               variant="heading-xxs"
+              as="p"
               color={settled ? 'default' : 'muted'}
               tabularNums
             >

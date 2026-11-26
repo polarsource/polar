@@ -19,7 +19,7 @@ import {
 } from 'date-fns'
 import * as React from 'react'
 
-import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { useDashboardOrganization } from '@/hooks/dashboardOrganization'
 import { CalendarMonthOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import FormattedInterval from '@polar-sh/ui/components/atoms/FormattedInterval'
@@ -30,7 +30,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@polar-sh/ui/components/ui/popover'
-import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export const dateRangeIntervals = (
@@ -126,7 +125,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
   additionalIntervals,
   selectedInterval,
 }) => {
-  const { organization } = useContext(OrganizationContext)
+  const organization = useDashboardOrganization()
   const interval =
     selectedInterval !== undefined
       ? [
@@ -231,7 +230,7 @@ const DateRangeIntervals = ({
   onIntervalChange,
   additionalIntervals,
 }: DateRangeIntervalProps) => {
-  const { organization } = useContext(OrganizationContext)
+  const organization = useDashboardOrganization()
   const allIntervals = [
     ...(additionalIntervals ?? []),
     ...dateRangeIntervals(organization),

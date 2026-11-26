@@ -6,12 +6,15 @@ from generator.ir import (
     APIIR,
     APIVersion,
     ArrayType,
+    EnumRef,
     ErrorResponse,
+    LiteralType,
     MapType,
     ModelRef,
     NullableType,
     Service,
     TypeRef,
+    UnionDiscriminator,
     UnionRef,
     UnionType,
 )
@@ -25,7 +28,7 @@ from python.utils import format_default_value, format_default_value_dataclass
 from typescript.types import collect_enum_names
 
 EMITTER_DIRECTORY = pathlib.Path(__file__).parent
-BENCHMARK_DATA = EMITTER_DIRECTORY.parent / "benchmarks" / "outpost.json"
+BENCHMARK_DATA_DIRECTORY = EMITTER_DIRECTORY.parent / "benchmarks"
 
 
 def _collect_type_ref_names(
@@ -127,6 +130,7 @@ class PythonEmitter(EmitterBase):
                 "SKILL.md",
             ),
             ("polar", "base.py"),
+            ("polar", "_httpx_compat.py"),
             ("polar", "py.typed"),
             ("polar", "webhooks.py"),
             ("polar", "logging.py"),
@@ -140,6 +144,8 @@ class PythonEmitter(EmitterBase):
             ("polar", "outpost", "event.py"),
             ("polar", "outpost", "reducer.py"),
             ("polar", "outpost", "client.py"),
+            ("polar", "outpost", "errors.py"),
+            ("polar", "outpost", "state.py"),
             ("polar", "outpost", "telemetry.py"),
             ("tests", "__init__.py"),
             ("tests", "test_base.py"),
@@ -177,7 +183,22 @@ class PythonEmitter(EmitterBase):
                 self.get_context(),
             )
         self.copy_file(
-            BENCHMARK_DATA, root_directory / "tests" / "benchmarks" / "benchmark.json"
+            BENCHMARK_DATA_DIRECTORY / "outpost.json",
+            root_directory / "tests" / "benchmarks" / "benchmark.json",
+        )
+        benchmarks_dir = root_directory / "tests" / "benchmarks"
+        self.copy_file(
+            BENCHMARK_DATA_DIRECTORY / "customers.json",
+            benchmarks_dir / "customers.json",
+        )
+        self.copy_file(
+            BENCHMARK_DATA_DIRECTORY / "customer-server.mjs",
+            benchmarks_dir / "customer-server.mjs",
+        )
+        self.render_file(
+            "tests/benchmarks/test_requests.py",
+            benchmarks_dir / "test_requests.py",
+            self.get_version_context(self.ir.versions[-1]),
         )
 
         for api in self.ir.versions:
@@ -201,6 +222,7 @@ class PythonEmitter(EmitterBase):
                 version_dir / "literals.py",
                 {
                     **self.get_version_context(api),
+                    "open_enum_names": self._get_open_enum_names(api),
                 },
             )
             self.render_file(
@@ -235,6 +257,24 @@ class PythonEmitter(EmitterBase):
                     **self.get_version_context(api),
                     "imports": self._get_webhook_imports(api),
                     "enum_imports": self._get_webhook_enum_imports(api),
+                    "webhook_union": UnionType(
+                        kind="union",
+                        variants=[
+                            ModelRef(kind="model", name=model.name)
+                            for model in api.webhooks
+                        ],
+                        discriminator=UnionDiscriminator(
+                            property_name="type",
+                            mapping={
+                                field.type.value: model.name
+                                for model in api.webhooks
+                                for field in model.fields
+                                if field.name == "type"
+                                and isinstance(field.type, LiteralType)
+                                and isinstance(field.type.value, str)
+                            },
+                        ),
+                    ),
                 },
             )
             errors = self._collect_all_errors(api)
@@ -297,6 +337,46 @@ class PythonEmitter(EmitterBase):
                 "imports": self._get_service_imports(service, api),
             },
         )
+
+    def _get_open_enum_names(self, api: APIVersion) -> set[str]:
+        models = api.input_models + api.output_models + api.webhooks
+        unions = [
+            *api.input_unions,
+            *api.output_unions,
+            *(
+                field.type
+                for model in models
+                for field in model.fields
+                if isinstance(field.type, UnionType)
+            ),
+        ]
+        discriminator_fields = {
+            (model_name, union.discriminator.property_name)
+            for union in unions
+            if union.discriminator is not None
+            for model_name in (
+                *union.discriminator.mapping.values(),
+                *(
+                    variant.name
+                    for variant in union.variants
+                    if isinstance(variant, ModelRef)
+                ),
+            )
+        }
+        discriminator_enums = {
+            field.type.name
+            for model in models
+            for field in model.fields
+            if isinstance(field.type, EnumRef)
+            and (model.name, field.name) in discriminator_fields
+        }
+        # OpenAPI omits the callable discriminator that combines these fields.
+        discriminator_enums.update({"DiscountType", "DiscountDuration"})
+        return {
+            enum.name
+            for enum in api.enums
+            if enum.type == "string" and enum.name not in discriminator_enums
+        }
 
     def _get_input_enum_imports(self, api: APIVersion) -> set[str]:
         enum_imports: set[str] = set()
@@ -367,9 +447,20 @@ class PythonEmitter(EmitterBase):
             "output": set(),
             "enum": set(),
             "errors": set(),
+            "base": set(),
         }
 
         for method in service.methods:
+            if any(
+                "_Discriminator(" in convert_type_to_annotation(type_ref)
+                for type_ref in (
+                    method.body,
+                    method.response,
+                    *(param.type for param in method.path_params + method.query_params),
+                    method.pagination.item_schema if method.pagination else None,
+                )
+            ):
+                imports["base"].add("_Discriminator")
             # Collect input imports from body
             if method.body is not None:
                 imports["input"].update(
@@ -407,4 +498,5 @@ class PythonEmitter(EmitterBase):
             "output": sorted(imports["output"]),
             "enum": sorted(imports["enum"]),
             "errors": sorted(imports["errors"]),
+            "base": sorted(imports["base"]),
         }

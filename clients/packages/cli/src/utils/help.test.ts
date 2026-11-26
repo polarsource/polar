@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { Effect } from 'effect'
 import { CliConfig, Command, Flag, GlobalFlag } from 'effect/cli'
-import { Help } from '@/utils/help'
+import { EnvironmentVariables, Help } from '@/utils/help'
 import { runCli, stripAnsi } from '@/utils/test-utils/cli'
 
 const create = Command.make('create', {
@@ -10,12 +10,21 @@ const create = Command.make('create', {
 const list = Command.make('list', {}).pipe(
   Command.withDescription('List widgets'),
 )
+const token = {
+  name: 'WIDGET_TOKEN',
+  description: 'Token to use instead of logging in',
+}
 const widgets = Command.make('widgets').pipe(
   Command.withDescription('Manage widgets'),
+  Command.annotate(EnvironmentVariables, [token]),
   Command.withSubcommands([create, list]),
 )
 const root = Command.make('polar').pipe(
   Command.withDescription('Polar CLI'),
+  Command.annotate(EnvironmentVariables, [
+    token,
+    { name: 'WIDGET_OPTOUT', description: 'Turn off telemetry' },
+  ]),
   Command.withSubcommands([{ group: 'API RESOURCES', commands: [widgets] }]),
 )
 
@@ -48,6 +57,19 @@ describe('--help', () => {
     expect(output).toMatch(/--name string\s+Name of the widget/)
     expect(output).toContain('polar widgets list')
     expect(occurrences(output, 'GLOBAL FLAGS')).toBe(1)
+  })
+
+  test('lists the environment variables of a command before its index', async () => {
+    const root = await help(['--help'])
+    expect(root).toMatch(
+      /ENVIRONMENT\n {2}WIDGET_TOKEN {3}Token to use instead of logging in\n {2}WIDGET_OPTOUT {2}Turn off telemetry\n\nAPI RESOURCES/,
+    )
+
+    const group = await help(['widgets', '--help'])
+    expect(group).toMatch(
+      /ENVIRONMENT\n {2}WIDGET_TOKEN {2}Token to use instead of logging in\n?$/,
+    )
+    expect(group).not.toContain('WIDGET_OPTOUT')
   })
 
   test('shows the usual help for a single command', async () => {

@@ -1,5 +1,6 @@
 import collections.abc
 import itertools
+import json
 
 import pytest
 from pytest_codspeed import BenchmarkFixture
@@ -7,7 +8,6 @@ from redis import Redis
 
 from polar.outpost.client import (
     APPLY_SNAPSHOT_SCRIPT,
-    READ_STATE_SCRIPT,
     WRITE_BUCKET_SCRIPT,
 )
 from polar.outpost.reducer import BUCKET_SIZE
@@ -37,18 +37,32 @@ def key_of(buckets: int) -> str:
 _ids = itertools.count(1)
 
 
-def write_args(identity: str, bucket_start: int) -> list[str | int]:
+# What track queues for Polar with an event's first write.
+QUEUED_EVENT = json.dumps(
+    {
+        "name": "api_call",
+        "external_customer_id": "alice",
+        "external_id": "event",
+        "timestamp": "2026-10-12T12:00:00+00:00",
+        "metadata": {"tokens": 7},
+    }
+)
+
+
+def write_args(
+    identity: str, bucket_start: int, queued: bool = True
+) -> list[str | int]:
     pending_key = f"outpost:v1:pending:{identity}:{bucket_start}"
     return [
         state_key(identity),
         pending_key,
+        "outpost:v1:outbox",
+        "outpost:v1:outbox:flusher:0",
         bucket_start,
     ] + [
-        1,
-        7,
-        7,
         7,
         f"event-{next(_ids)}",
+        QUEUED_EVENT if queued else "",
     ]
 
 
@@ -79,7 +93,7 @@ def test_write_bucket_one_event(
     identity = identity_of(buckets)
 
     def write() -> None:
-        redis.evalsha(sha, 2, *write_args(identity, newest_bucket_start))
+        redis.evalsha(sha, 4, *write_args(identity, newest_bucket_start))
 
     benchmark(write)
 
@@ -89,18 +103,12 @@ def test_write_bucket_three_reducers(benchmark: BenchmarkFixture, redis: Redis) 
 
     def write() -> None:
         pipeline = redis.pipeline(transaction=False)
-        for reducer in REDUCERS:
+        for index, reducer in enumerate(REDUCERS):
             identity = f"external:alice:{reducer}"
-            pipeline.evalsha(sha, 2, *write_args(identity, COLD_UNTIL))
+            pipeline.evalsha(sha, 4, *write_args(identity, COLD_UNTIL, index == 0))
         pipeline.execute()
 
     benchmark(write)
-
-
-@pytest.mark.parametrize("buckets", BUCKET_COUNTS)
-def test_read_state(benchmark: BenchmarkFixture, redis: Redis, buckets: int) -> None:
-    sha = redis.script_load(READ_STATE_SCRIPT)
-    benchmark(redis.evalsha, sha, 1, key_of(buckets))
 
 
 @pytest.mark.parametrize("buckets", BUCKET_COUNTS)

@@ -1,8 +1,12 @@
+from types import SimpleNamespace
+from typing import Any
+
 import pytest
 
 from polar.checkout.payment_methods import (
     PaymentMethodRule,
     PaymentMode,
+    get_payment_method_country,
     get_payment_method_types,
     get_payment_mode,
 )
@@ -141,3 +145,36 @@ def test_get_payment_method_types_amount_limits(
         )
         == expected
     )
+
+
+@pytest.mark.parametrize(
+    ("payment_method_preview", "expected"),
+    [
+        pytest.param(
+            SimpleNamespace(type="card", card=SimpleNamespace(country="SE")),
+            "SE",
+            id="card",
+        ),
+        pytest.param(
+            SimpleNamespace(
+                type="sepa_debit", sepa_debit=SimpleNamespace(country="DE")
+            ),
+            "DE",
+            id="other method with a country",
+        ),
+        pytest.param(
+            SimpleNamespace(type="bancontact", bancontact=SimpleNamespace()),
+            "BE",
+            id="implied country",
+        ),
+        pytest.param(
+            SimpleNamespace(type="link", link=SimpleNamespace()),
+            None,
+            id="no country",
+        ),
+    ],
+)
+def test_get_payment_method_country(
+    payment_method_preview: Any, expected: str | None
+) -> None:
+    assert get_payment_method_country(payment_method_preview) == expected

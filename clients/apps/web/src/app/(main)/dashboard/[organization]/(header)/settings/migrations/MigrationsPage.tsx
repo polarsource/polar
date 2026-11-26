@@ -56,7 +56,7 @@ export default function MigrationsPage({ organization }: Props) {
         {!canCreate && (
           <Alert
             variant="warning"
-            title="Finish onboarding before migrating from Stripe."
+            title="Finish onboarding before migrating."
             description="Migrations open once your organization has completed onboarding."
             actions={[
               {
@@ -80,7 +80,7 @@ export default function MigrationsPage({ organization }: Props) {
           <EmptyState
             icon={<Download />}
             title="No migrations"
-            description="Start a migration to move your Stripe billing to Polar."
+            description="Start a migration to move your billing to Polar."
           />
         ) : (
           <SettingsGroup>

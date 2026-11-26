@@ -123,6 +123,7 @@ locals {
   app_access_read_write_delete = concat(local.app_access_read_write, [
     "s3:DeleteObject",
     "s3:DeleteObjectVersion",
+    "s3:AbortMultipartUpload",
   ])
 
   app_access_actions = {

@@ -3,6 +3,7 @@ from decimal import Decimal
 
 import pytest
 from pytest_mock import MockerFixture
+from sqlalchemy import func, select
 
 from polar.billing_entry.comparison import Adjustment, Quantities, compare, explain
 from polar.enums import SubscriptionRecurringInterval
@@ -55,11 +56,13 @@ async def create_billed_usage(
     tokens: int,
     timestamp: datetime,
     ingested_at: datetime,
+    external: bool,
 ) -> None:
     event = await create_event(
         save_fixture,
         organization=customer.organization,
-        customer=customer,
+        customer=None if external else customer,
+        external_customer_id=customer.external_id if external else None,
         timestamp=timestamp,
         ingested_at=ingested_at,
         metadata={"tokens": tokens},
@@ -81,14 +84,18 @@ async def create_billed_usage(
 
 @pytest.mark.anyio
 class TestCompare:
+    @pytest.mark.parametrize("external", [False, True])
     async def test_carries_over_only_usage_billed_by_an_earlier_reducer_bill(
         self,
+        external: bool,
         mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
         customer: Customer,
     ) -> None:
+        customer.external_id = "external"
+        await save_fixture(customer)
         meter = await create_meter(
             save_fixture,
             organization=organization,
@@ -133,6 +140,7 @@ class TestCompare:
             tokens=10,
             timestamp=reset_at - timedelta(minutes=1),
             ingested_at=reset_at + timedelta(minutes=5),
+            external=external,
         )
         await create_billed_usage(
             save_fixture,
@@ -143,6 +151,7 @@ class TestCompare:
             tokens=5,
             timestamp=reset_at - timedelta(minutes=2),
             ingested_at=previous_sealed_at + timedelta(milliseconds=500),
+            external=external,
         )
         await create_billed_usage(
             save_fixture,
@@ -153,6 +162,7 @@ class TestCompare:
             tokens=7,
             timestamp=reset_at + timedelta(hours=1),
             ingested_at=reset_at + timedelta(hours=1),
+            external=external,
         )
         for generation, sealed_at, billed_at, billing_order in (
             (1, previous_sealed_at, previous_sealed_at + timedelta(seconds=1), None),
@@ -163,7 +173,8 @@ class TestCompare:
                 ReducerBucket(
                     organization=organization,
                     reducer=reducer,
-                    customer_id=customer.id,
+                    customer_id=None if external else customer.id,
+                    external_customer_id=customer.external_id if external else None,
                     bucket_start=reset_at - timedelta(minutes=5),
                     bucket_end=reset_at,
                     generation=generation,
@@ -192,3 +203,59 @@ class TestCompare:
             "carried_over_usage": Adjustment(usage=Decimal(10))
         }
         assert comparison.match is True
+
+    async def test_slow_explanation_leaves_the_session_usable(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.sum, property="tokens"
+            ),
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(100), None, "usd")],
+        )
+        subscription = await create_active_subscription(
+            save_fixture, customer=customer, product=product
+        )
+        order = await create_order(save_fixture, customer=customer)
+        mocker.patch(
+            "polar.billing_entry.comparison.EXPLAIN_STATEMENT_TIMEOUT", "100ms"
+        )
+
+        async def sleep(
+            session: AsyncSession, *args: object, **kwargs: object
+        ) -> dict[str, Adjustment]:
+            await session.execute(select(func.pg_sleep(5)))
+            return {}
+
+        mocker.patch(
+            "polar.billing_entry.comparison._get_usage_adjustments", side_effect=sleep
+        )
+        log_exception = mocker.patch("polar.billing_entry.comparison.log.exception")
+
+        comparison = await compare(
+            session,
+            subscription,
+            meter,
+            order.id,
+            [],
+            legacy=Quantities(usage=Decimal(22), credits=Decimal(0), net=Decimal(22)),
+            reducer=Quantities(usage=Decimal(12), credits=Decimal(0), net=Decimal(12)),
+            cutoff=utc_now(),
+        )
+
+        log_exception.assert_called_once()
+        assert comparison.adjustments == {}
+        assert (await session.execute(select(1))).scalar_one() == 1

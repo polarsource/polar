@@ -1,7 +1,7 @@
 import uuid
 from collections.abc import Sequence
 
-from pydantic import BaseModel
+from pydantic import MISSING, BaseModel
 from sqlalchemy import case, delete
 
 from polar.auth.models import Agent, AuthSubject
@@ -186,7 +186,7 @@ class BenefitService:
             )
 
         if (
-            create_schema.external_id is not None
+            create_schema.external_id is not MISSING
             and await repository.get_by_external_id_and_organization(
                 create_schema.external_id, organization.id
             )
@@ -288,7 +288,7 @@ class BenefitService:
             )
 
         if (
-            "external_id" in benefit_update.model_fields_set
+            benefit_update.external_id is not MISSING
             and benefit_update.external_id != benefit.external_id
         ):
             repository = BenefitRepository.from_session(session)
@@ -303,11 +303,8 @@ class BenefitService:
                         }
                     ]
                 )
-            if (
-                benefit_update.external_id is not None
-                and await repository.get_by_external_id_and_organization(
-                    benefit_update.external_id, benefit.organization_id
-                )
+            if await repository.get_by_external_id_and_organization(
+                benefit_update.external_id, benefit.organization_id
             ):
                 raise PolarRequestValidationError(
                     [
@@ -346,10 +343,8 @@ class BenefitService:
                 )
             update_dict["visibility"] = benefit.type.resolve_visibility(visibility)
 
-        properties_update: BaseModel | None = getattr(
-            benefit_update, "properties", None
-        )
-        if properties_update is not None:
+        properties_update: BaseModel | MISSING = benefit_update.properties
+        if properties_update is not MISSING:
             benefit_strategy = get_benefit_strategy(benefit.type, session, redis)
             update_dict["properties"] = await benefit_strategy.validate_properties(
                 auth_subject,

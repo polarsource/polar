@@ -66,6 +66,10 @@ class Context:
     skip_integrations: bool = False
     database_name: str | None = None
     state: dict = field(default_factory=dict)
+    failure_reason: str | None = None
+
+
+last_command_interrupted = False
 
 
 def run_command(
@@ -98,8 +102,41 @@ def run_command(
     except subprocess.TimeoutExpired:
         return None
     except KeyboardInterrupt:
+        global last_command_interrupted
+        last_command_interrupted = True
         console.print("\n[yellow]Interrupted[/yellow]")
         return None
+
+
+def link_polar_self(keep_valid: bool = False) -> bool:
+    """Point the API's own Polar integration at the seeded Polar organization.
+
+    Returns whether new values reached the env files. With `keep_valid`, a token the database
+    still accepts is left alone, since a new one breaks a running API until it restarts.
+    """
+    command = ["uv", "run", "python", "-m", "scripts.seeds_load", "polar-self-env"]
+    if keep_valid:
+        command.append("--keep-valid")
+    result = run_command(command, cwd=SERVER_DIR, capture=True)
+    if not result or result.returncode != 0:
+        return False
+
+    values = dict(
+        line.strip().split("=", 1)
+        for line in result.stdout.splitlines()
+        if line.startswith("POLAR_") and "=" in line
+    )
+    if not values:
+        return False
+    update_secrets(values)
+    rebuilt = run_command([str(ROOT_DIR / "dev" / "setup-environment")], capture=True)
+    if not rebuilt or rebuilt.returncode != 0:
+        console.print(
+            "  [yellow]Saved a new Polar self-integration token, but the env files could not be rebuilt.[/yellow]"
+        )
+        console.print("  [yellow]Run dev/setup-environment by hand to see why.[/yellow]")
+        return False
+    return True
 
 
 def check_command_exists(cmd: str) -> bool:

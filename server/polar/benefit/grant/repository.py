@@ -1,8 +1,9 @@
 from collections.abc import Sequence
+from datetime import datetime
 from typing import Unpack
 from uuid import UUID
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, SQLColumnExpression, exists, func, or_, select
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.authz.types import AccessibleOrganizationID
@@ -18,12 +19,16 @@ from polar.models import (
     Benefit,
     BenefitGrant,
     Customer,
+    CustomerSeat,
     Member,
+    Order,
     Product,
     ProductBenefit,
+    Subscription,
 )
 from polar.models.benefit import BenefitType
-from polar.models.benefit_grant import BenefitGrantScope
+from polar.models.benefit_grant import BenefitGrantScope, BenefitGrantScopeArgs
+from polar.models.customer_seat import SeatStatus
 from polar.order.repository import order_benefits_revoked_clause
 
 from .sorting import BenefitGrantSortProperty
@@ -59,19 +64,89 @@ class BenefitGrantRepository(
             BenefitGrant.customer_id == customer.id,
             BenefitGrant.benefit_id == benefit.id,
             BenefitGrant.member_id == (member.id if member else None),
-            ~BenefitGrant.is_deleted,
             BenefitGrant.scope == scope,
         )
         if for_update:
-            statement = statement.with_for_update(of=BenefitGrant)
+            statement = statement.with_for_update(of=BenefitGrant).execution_options(
+                populate_existing=True
+            )
         return await self.get_one_or_none(statement)
+
+    async def get_for_fulfillment(
+        self, grant_id: UUID, *, customer_id: UUID, benefit_id: UUID
+    ) -> BenefitGrant | None:
+        statement = (
+            self.get_base_statement()
+            .where(
+                BenefitGrant.id == grant_id,
+                BenefitGrant.customer_id == customer_id,
+                BenefitGrant.benefit_id == benefit_id,
+            )
+            .options(*self.get_eager_options())
+            .with_for_update(of=BenefitGrant)
+            .execution_options(populate_existing=True)
+        )
+        return await self.get_one_or_none(statement)
+
+    async def get_readable_for_update(
+        self, grant_id: UUID, org_ids: set[AccessibleOrganizationID]
+    ) -> BenefitGrant | None:
+        statement = (
+            self.get_statement_by_org_ids(org_ids)
+            .where(BenefitGrant.id == grant_id)
+            .options(*self.get_eager_options())
+            .with_for_update(of=BenefitGrant)
+            .execution_options(populate_existing=True)
+        )
+        return await self.get_one_or_none(statement)
+
+    async def is_scope_active(
+        self,
+        *,
+        customer_id: UUID,
+        benefit_id: UUID,
+        member_id: UUID | None,
+        **scope: Unpack[BenefitGrantScopeArgs],
+    ) -> bool:
+        purchase: type[Subscription | Order]
+        eligible_purchase: SQLColumnExpression[bool]
+        if (purchase_id := scope.get("subscription_id")) is not None:
+            purchase = Subscription
+            eligible_purchase = Subscription.active
+            seat_scope = CustomerSeat.subscription_id == purchase_id
+        elif (purchase_id := scope.get("order_id")) is not None:
+            purchase = Order
+            eligible_purchase = Order.paid & ~order_benefits_revoked_clause(purchase_id)
+            seat_scope = CustomerSeat.order_id == purchase_id
+        else:
+            return False
+
+        claimed_seat = exists().where(
+            seat_scope,
+            CustomerSeat.customer_id == customer_id,
+            CustomerSeat.member_id == member_id,
+            CustomerSeat.status == SeatStatus.claimed,
+            ~CustomerSeat.is_deleted,
+        )
+        statement = (
+            select(purchase.id)
+            .join(ProductBenefit, ProductBenefit.product_id == purchase.product_id)
+            .where(
+                purchase.id == purchase_id,
+                ~purchase.is_deleted,
+                eligible_purchase,
+                ProductBenefit.benefit_id == benefit_id,
+                or_(purchase.seats.is_(None), claimed_seat),
+            )
+        )
+        return (await self.session.execute(select(statement.exists()))).scalar_one()
 
     async def list_granted_by_scope(
         self, **scope: Unpack[BenefitGrantScope]
     ) -> Sequence[BenefitGrant]:
         statement = self.get_base_statement().where(
             BenefitGrant.scope == scope,
-            BenefitGrant.is_granted,
+            BenefitGrant.is_granted_and_unsuppressed,
             ~BenefitGrant.is_deleted,
         )
         return await self.get_all(statement)
@@ -105,7 +180,7 @@ class BenefitGrantRepository(
             self.get_base_statement()
             .where(
                 BenefitGrant.benefit_id == benefit.id,
-                BenefitGrant.is_granted,
+                BenefitGrant.is_granted_and_unsuppressed,
                 ~BenefitGrant.is_deleted,
             )
             .options(*options)
@@ -135,6 +210,24 @@ class BenefitGrantRepository(
             for external_id, count in result.tuples()
             if external_id is not None
         }
+
+    async def count_customers_granted_manually(
+        self, benefit_ids: Sequence[UUID], *, granted_before: datetime
+    ) -> int:
+        """Customers holding one of these benefits outside a subscription or an
+        order, counting grants still being fulfilled but not revoked ones."""
+        if not benefit_ids:
+            return 0
+        statement = select(func.count(BenefitGrant.customer_id.distinct())).where(
+            BenefitGrant.benefit_id.in_(benefit_ids),
+            BenefitGrant.subscription_id.is_(None),
+            BenefitGrant.order_id.is_(None),
+            BenefitGrant.created_at <= granted_before,
+            BenefitGrant.revoked_at.is_(None),
+            BenefitGrant.manually_revoked_at.is_(None),
+            ~BenefitGrant.is_deleted,
+        )
+        return (await self.session.execute(statement)).scalar_one()
 
     async def list_granted_by_customer(
         self,
@@ -196,7 +289,7 @@ class BenefitGrantRepository(
             .where(
                 BenefitGrant.benefit_id == benefit.id,
                 BenefitGrant.customer_id == customer.id,
-                BenefitGrant.is_granted,
+                BenefitGrant.is_granted_and_unsuppressed,
                 ~BenefitGrant.is_deleted,
             )
             .options(*options)
@@ -221,6 +314,7 @@ class BenefitGrantRepository(
                 ~BenefitGrant.is_revoked,
                 ~BenefitGrant.is_deleted,
                 BenefitGrant.error.is_not(None),
+                BenefitGrant.manually_revoked_at.is_(None),
                 BenefitGrant.error["type"].as_string() == error_type,
                 ~order_benefits_revoked_clause(BenefitGrant.order_id),
             )
@@ -243,6 +337,7 @@ class BenefitGrantRepository(
                 ~BenefitGrant.is_revoked,
                 ~BenefitGrant.is_deleted,
                 BenefitGrant.error.is_not(None),
+                BenefitGrant.manually_revoked_at.is_(None),
                 BenefitGrant.error["type"].as_string() == error_type,
                 ~order_benefits_revoked_clause(BenefitGrant.order_id),
             )
@@ -282,6 +377,7 @@ class BenefitGrantRepository(
         benefit_id: UUID | None = None,
         customer_id: UUID | None = None,
         for_update: bool = False,
+        options: Options = (),
     ) -> BenefitGrant | None:
         filters = [
             BenefitGrant.properties[key].as_string() == value,
@@ -296,10 +392,13 @@ class BenefitGrantRepository(
             self.get_base_statement()
             .join(Benefit, BenefitGrant.benefit_id == Benefit.id)
             .where(*filters)
+            .options(*options)
             .limit(1)
         )
         if for_update:
-            statement = statement.with_for_update(of=BenefitGrant)
+            statement = statement.with_for_update(of=BenefitGrant).execution_options(
+                populate_existing=True
+            )
         return await self.get_one_or_none(statement)
 
     async def list_by_property_and_organization(
@@ -348,7 +447,11 @@ class BenefitGrantRepository(
         return result.scalar_one()
 
     async def list_outdated_grants(
-        self, product: Product, **scope: Unpack[BenefitGrantScope]
+        self,
+        product: Product,
+        *,
+        member_id: UUID | None = None,
+        **scope: Unpack[BenefitGrantScope],
     ) -> Sequence[BenefitGrant]:
         product_benefits_statement = (
             select(Benefit.id)
@@ -358,8 +461,26 @@ class BenefitGrantRepository(
         statement = self.get_base_statement().where(
             BenefitGrant.scope == scope,
             BenefitGrant.benefit_id.not_in(product_benefits_statement),
-            BenefitGrant.is_granted,
+            ~BenefitGrant.is_revoked,
             ~BenefitGrant.is_deleted,
+        )
+        if member_id is not None:
+            statement = statement.where(BenefitGrant.member_id == member_id)
+        return await self.get_all(statement)
+
+    async def list_unrevoked_by_benefit(
+        self, benefit_id: UUID
+    ) -> Sequence[BenefitGrant]:
+        statement = self.get_base_statement().where(
+            BenefitGrant.benefit_id == benefit_id, ~BenefitGrant.is_revoked
+        )
+        return await self.get_all(statement)
+
+    async def list_unrevoked_by_customer(
+        self, customer_id: UUID
+    ) -> Sequence[BenefitGrant]:
+        statement = self.get_base_statement().where(
+            BenefitGrant.customer_id == customer_id, ~BenefitGrant.is_revoked
         )
         return await self.get_all(statement)
 

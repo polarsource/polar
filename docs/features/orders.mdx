@@ -1,189 +1,220 @@
 ---
 title: "Orders"
-description: "Every paid transaction on Polar is an order."
+description: "Find orders, edit billing details, get invoices and receipts, export orders and inspect payment attempts."
 ---
 
-An **order** is the record of a single paid transaction on Polar. Every successful checkout, subscription cycle, and subscription change generates an order — it's where the money, the tax, the invoice, and the link back to the [product](/features/products) and [customer](/features/customer-management) live.
+An **order** is the record of a single charge: the amounts, the tax, the invoice and the product and customer it belongs to. Polar creates one for every purchase, subscription start, renewal, charged plan change and [meter cycle](/features/usage-based-billing/billing#meter-cycle). See [Orders & subscriptions](/concepts/orders-and-subscriptions) for billing reasons and statuses.
 
-If [subscriptions](/features/subscriptions/introduction) are the _relationship_ with a customer, orders are the _individual payments_ inside that relationship.
+The code examples use API version `2026-10` and the sandbox.
 
-## When orders are created
+## Find an order
 
-Polar creates an order in all of these cases:
+Orders are listed under **Sales → Orders** in the dashboard. Filter by customer, product, subscription, status or date.
 
-- **One-time purchase** — when a customer checks out a non-recurring product.
-- **Subscription created** — the initial order generated when a customer subscribes.
-- **Subscription renewal** — every billing cycle of an active subscription.
-- **Subscription change** — when a plan or seat update is prorated with `invoice` behavior and charges the difference immediately. See [Proration](/features/subscriptions/proration).
-- **Usage charge** — at the end of each meter period, for products with a [meter cycle](/features/usage-based-billing/billing#meter-cycle) shorter than the billing interval.
+<Tabs>
+  <Tab title="Dashboard">
+    - Open **Sales → Orders**
+    - Filter by customer, product or status
+    - Select an order to see its amounts, customer, payment attempts, refunds and disputes
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar orders list --external-customer-id user_123 --status paid
+    ```
 
-Each order carries a `billing_reason` that tells you which of these it is: `purchase`, `subscription_create`, `subscription_cycle`, `subscription_update`, or `subscription_meter_cycle`.
+    See [`polar orders`](/integrate/cli/reference/orders).
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    List the paid orders for customer user_123 in my Polar sandbox.
+    ```
 
-## Arbitrary charges
+    Uses the `orders_list` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
 
-Sometimes you need to charge a customer an amount that doesn't originate from a checkout or a subscription renewal — a usage overage, a one-off professional-services fee, or a manual top-up. Polar lets you run these **off-session charges** against a customer's saved payment method, without the customer being present.
-
-<Note>
-  Off-session charges are currently in preview. You'll only be able to run off-session charges if
-  you are on a paid plan.
-</Note>
-
-An off-session charge is a two-step flow: you create a **draft order**, then **finalize** it to attempt the charge. Both endpoints require the `orders:write` scope and the sales-management permission on the organization.
-
-### 1. Create a draft order
-
-`POST /v1/orders/` creates an order in `draft` status with no invoice number — nothing is charged yet. You reference an existing customer and a one-time product, and optionally override the amount and description:
-
-<ParamField body="customer_id" type="string" required>
-  The customer to charge. Must belong to the organization.
-</ParamField>
-
-<ParamField body="product_id" type="string" required>
-  A one-time product to charge for. Only fixed-price, free and unit-based products are supported.
-</ParamField>
-
-<ParamField body="units" type="integer">
-  The number of units to charge for. Required for unit-based products, rejected for any other pricing. 
-
-  The quantity shows on the invoice line, e.g. `Acme Credits (500 credits)`, unless `description` replaces the text.
-</ParamField>
-
-<ParamField body="amount" type="integer">
-  A custom amount in the smallest currency unit (e.g. `2500` for $25.00). Overrides the product's price; defaults to it. Can't be combined with `units`.
-</ParamField>
-
-<ParamField body="currency" type="string">
-  ISO 4217, lowercase (e.g. `usd`). Defaults to the organization's currency.
-</ParamField>
-
-<ParamField body="description" type="string">
-  The line-item text shown on the invoice and receipt. Defaults to the product name.
-</ParamField>
-
-<ParamField body="organization_id" type="string">
-  Required unless you authenticate with an organization token.
-</ParamField>
-
-The customer must have a complete billing address (so Polar can calculate tax) and at least one saved payment method.
-
-```bash cURL
-curl --request POST \
-  --url https://api.polar.sh/v1/orders/ \
-  --header 'Authorization: Bearer <YOUR_BEARER_TOKEN_HERE>' \
-  --header 'Content-Type: application/json' \
-  --data '{
-    "customer_id": "<customer_id>",
-    "product_id": "<product_id>",
-    "amount": 2500,
-    "description": "5,000 extra tokens"
-  }'
+<CodeGroup>
+```typescript TypeScript
+const orders = await polar.orders.list({
+  external_customer_id: "user_123",
+  status: "paid",
+});
 ```
 
-The response is the draft order, including its `id`. Creating a draft fires the `order.created` webhook but does not yet email the customer.
-
-### 2. Finalize and charge
-
-`POST /v1/orders/{id}/finalize` synchronously attempts the off-session charge. By default it uses the customer's default payment method; pass `payment_method_id` to charge a specific one.
-
-```bash cURL
-curl --request POST \
-  --url https://api.polar.sh/v1/orders/<order_id>/finalize \
-  --header 'Authorization: Bearer <YOUR_BEARER_TOKEN_HERE>' \
-  --header 'Content-Type: application/json' \
-  --data '{}'
+```python Python
+orders = polar.orders.list(external_customer_id="user_123", status="paid")
 ```
 
-On success, the order transitions to `paid`, an invoice number is assigned, any [benefits](/features/benefits/introduction) attached to the product are granted, the customer is emailed their confirmation, and the [`order.paid`](/api-reference/current/order_paid) webhook fires.
+```bash cURL
+curl -G https://sandbox-api.polar.sh/v1/orders/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  --data-urlencode "external_customer_id=user_123" \
+  --data-urlencode "status=paid"
+```
+</CodeGroup>
 
-If the charge fails, the API returns an error and the order is reverted to `draft` so you can fix the problem and finalize the same order again — no invoice number is consumed by a failed attempt:
+| Dashboard | API `status` |
+| --- | --- |
+| **Draft** | `draft` |
+| **Pending** | `pending` |
+| **Paid** | `paid` |
+| **Refunded** | `refunded` |
+| **Partially refunded** | `partially_refunded` |
+| **Void** | `void` |
 
-| Status | When                                                                                                                                      |
-| ------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `402`  | The card was declined, the customer has no payment method, or the charge needs a 3DS / SCA challenge that can't be completed off-session. |
-| `403`  | Off-session charges aren't enabled for the organization, or its account can't currently accept payments.                                  |
-| `412`  | The order is no longer in `draft` status (for example, it was already finalized).                                                         |
-
-## Order status
-
-An order moves through a small set of statuses over its lifetime:
-
-| Status               | Meaning                                                                                  |
-| -------------------- | ---------------------------------------------------------------------------------------- |
-| `pending`            | The order has been created and Polar is attempting to collect payment.                   |
-| `paid`               | The payment succeeded.                                                                   |
-| `refunded`           | The order has been fully refunded.                                                       |
-| `partially_refunded` | Part of the order has been refunded. See [Refunds](/features/refunds).                   |
-| `void`               | The order will not be collected (for example, it's been voided after repeated failures). |
-
-Free orders — those with a total of zero, typically from a $0 subscription or a 100% discount — are marked `paid` immediately with no payment step.
+Free orders, with a total of 0, are `paid` right away with no payment step.
 
 ## What's on an order
 
-Every order carries:
+- **Amounts**: `subtotal_amount`, `discount_amount`, `net_amount`, `tax_amount` and `total_amount` in cents, with the `currency`.
+- **Billing details**: `billing_name` and `billing_address`.
+- **Tax**: the rate and amount collected. Polar handles the tax as your [Merchant of Record](/merchant-of-record/introduction).
+- **Links** to the product, customer, discount and, for renewals, the subscription.
+- **`billing_reason`**: why the order was created.
+- **`custom_field_data`**: values from your [checkout fields](/features/custom-fields).
+- **`metadata`**: your own key-value data.
 
-- **Amounts**: subtotal, discount, tax, net, and total, with the currency it was billed in.
-- **Billing details**: customer billing name and address (editable until the invoice is generated).
-- **Tax details**: taxability reason, tax rate, and the amount collected — useful if you're operating as merchant of record on your own, or reconciling against Polar's [MoR tax handling](/merchant-of-record/introduction).
-- **A link to the product and customer**, and to the subscription if the order came from a subscription.
-- **The invoice**, once it's been generated.
-- **[Custom field data](/features/custom-fields)** captured at checkout.
+## Edit billing details
+
+You can change the billing name and address on an order. Address fields used to calculate tax can't change. Generating the invoice again picks up the new details.
+
+<Tabs>
+  <Tab title="Dashboard">
+    - Open the order under **Sales → Orders**
+    - Open the actions menu and click **Edit Invoice**, or **Download Invoice** if no invoice exists yet
+    - Change the **Billing name** or **Billing address**
+    - Click **Update invoice**, or **Generate invoice** the first time
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar orders update <order_id> --billing-name "Acme Inc."
+    ```
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Set the billing name on order <order_id> to Acme Inc. in my Polar sandbox.
+    ```
+
+    Uses the `orders_update` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+Over the API, send `billing_name` or `billing_address` to [Update Order](/api-reference/current/orders/update-order).
 
 ## Invoices
 
-Polar generates a PDF invoice for every paid order. You can:
+Polar can produce a PDF invoice for every paid order. In the dashboard, open the order, then click **Download Invoice** in its actions menu. The first time, Polar asks for the billing details and generates it. **Edit Invoice** in the same menu changes them later.
 
-- **Download it** from the order detail page in the dashboard.
-- **Trigger generation** programmatically via [Generate Order Invoice](/api-reference/current/orders/generate-order-invoice), then fetch the URL with [Get Order Invoice](/api-reference/current/orders/get-order-invoice).
+Over the API, generate it, then fetch its URL:
 
-Customers can download and edit their own invoices — adding a company name, VAT number, or billing address — from the [Customer Portal](/features/customer-portal/introduction), without pulling you into a support thread.
+<CodeGroup>
+```typescript TypeScript
+await polar.orders.generateInvoice(orderId);
+const invoice = await polar.orders.invoice(orderId);
+console.log(invoice.url);
+```
+
+```python Python
+polar.orders.generate_invoice(order_id)
+invoice = polar.orders.invoice(order_id)
+print(invoice.url)
+```
+
+```bash cURL
+curl -X POST "https://sandbox-api.polar.sh/v1/orders/$ORDER_ID/invoice" \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10"
+
+curl "https://sandbox-api.polar.sh/v1/orders/$ORDER_ID/invoice" \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10"
+```
+</CodeGroup>
+
+From the CLI: `polar orders generate_invoice <order_id>`, then `polar orders invoice <order_id>`.
+
+Generation returns `202 Accepted` and runs in the background. If the invoice isn't ready yet, retry the fetch shortly after. Check `is_invoice_generated` on the order.
 
 <Note>
-  Once an invoice has been generated, its billing details are frozen. If you need to correct a name
-  or address after the fact, the customer should edit their invoice from the Customer Portal, which
-  regenerates it.
+  Customers can correct their name, company, tax ID or address from the [Customer Portal](/features/customer-portal/introduction), which regenerates the invoice.
 </Note>
 
 ## Receipts
 
-A **receipt** is the proof of payment for an order — what was charged, how, and what's been refunded since. Polar issues one for every paid order and assigns a per-customer number in the form `RCPT-{customer-id}-{NNNN}`.
+A **receipt** is the proof of payment for an order. Polar issues one for every paid order, numbered per customer as `RCPT-{customer-id}-{NNNN}`. It shows:
 
-Each receipt includes:
+- The payment method (for example `Visa 4242`), the date paid and the amount.
+- Any customer balance applied to the order.
+- Any refunds, with dates and amounts.
+- The same line items, taxes, totals and invoice number as the invoice.
 
-- The **payment method** used (e.g. `Visa — 4242`), the **date paid**, and the **amount**.
-- Any **customer balance** applied to the order.
-- Any **refunds** issued against the order, with dates and amounts.
-- The same line items, taxes, totals, and linked invoice number as the order's invoice.
+In the dashboard, open the order and click **Download Receipt** in its actions menu. From the CLI, run `polar orders receipt <order_id>`. Over the API, use [Get Order Receipt](/api-reference/current/orders/get-order-receipt). Customers get a **Download receipt** button on each paid order in the Customer Portal.
 
-You can **download receipts** from the order detail page in the dashboard, and customers download receipts from the [Customer Portal](/features/customer-portal/introduction) — a **Download Receipt** button appears on each paid order. Programmatically, use [Get Order Receipt](/api-reference/current/orders/get-order-receipt) for the merchant API or its [customer-portal counterpart](/api-reference/current/customer_portal/get-order-receipt).
+The order and subscription emails link to the receipt in the Customer Portal. If you turn one of those emails off in [Customer notifications](/features/notifications#customer-notifications), the receipt still exists, but the customer isn't emailed about it.
 
-The first request for a given order may return `202 Accepted` while the PDF renders. Retry shortly after for a presigned download URL. The Customer Portal handles this for you.
+The first request may return `202 Accepted` while the PDF renders. Retry shortly after to get a download URL.
 
-## Refunds
+## Export orders
 
-Orders can be refunded in full or in part from the dashboard, or programmatically via the [Refunds API](/api-reference/current/refunds/create-refund). Refunds are a separate resource linked to the order — see [Refunds](/features/refunds) for the rules around what's refundable and how it interacts with payouts.
+Download orders as CSV from **Sales → Orders**: open the actions menu in the toolbar, click **Export CSV** and pick the columns to include. Over the API, call [Export Orders](/api-reference/current/orders/export-orders) with optional `product_id`, `status`, `created_after`, `created_before`, `timezone` and `columns` filters.
+
+<Note>
+  Export is dashboard or API only. Not available from the CLI or MCP server.
+</Note>
+
+## Payment attempts
+
+Each attempt to charge an order is a **payment**, with a `status` of `pending`, `succeeded` or `failed`. A failed payment carries `decline_reason` and `decline_message`. Use it to see why a renewal failed.
+
+In the dashboard, open the order. Its **Payment attempts** section lists each attempt with its method and status. From the CLI:
+
+```bash
+polar payments list --order-id <order_id> --status failed
+```
+
+With an agent, use the `payments_list` and `payments_get` operations. See [List Payments](/api-reference/current/payments/list-payments).
+
+When a renewal payment fails, Polar retries it on a schedule. Customers can also retry it themselves from the Customer Portal, up to 5 times. See [Failed payments](/features/subscriptions/failed-payments).
+
+## Charge outside checkout
+
+To charge a customer's saved payment method for a one-off amount, create a draft order and finalize it. See [Off-session charges](/features/off-session-charges).
+
+## Refunds and disputes
+
+Refund an order in full or in part with **Refund order** on its page, or over the API. See [Refunds](/features/refunds). If a customer disputes the charge with their bank, see [Disputes](/features/disputes).
 
 ## Webhooks
 
-If you're integrating orders into your own system, Polar emits an event on every state transition:
+| Event | When |
+| --- | --- |
+| `order.created` | An order is created. It may not be paid yet |
+| `order.paid` | The order is paid. Most integrations act on this one |
+| `order.updated` | The order changed, for example its status or billing details |
+| `order.refunded` | A refund was issued on the order |
 
-- [`order.created`](/api-reference/current/order_created) — a new order exists (not necessarily paid yet).
-- [`order.paid`](/api-reference/current/order_paid) — the order has been collected. This is the one most integrations care about.
-- [`order.updated`](/api-reference/current/order_updated) — something changed on the order.
-- [`order.refunded`](/api-reference/current/order_refunded) — a refund was issued against the order.
+Check `billing_reason` to tell a purchase from a renewal. See [Webhook events](/integrate/webhooks/events).
 
-## Next steps
+## From the CLI or your agent
 
-<CardGroup cols={2}>
-  <Card title="Subscriptions" icon="rotate" href="/features/subscriptions/introduction">
-    The recurring relationship that generates most orders.
-  </Card>
-  <Card title="Refunds" icon="arrow-rotate-left" href="/features/refunds">
-    How to refund an order, fully or partially.
-  </Card>
-  <Card title="Orders API" icon="code" href="/api-reference/current/orders/list-orders">
-    List and fetch orders, update billing details, and generate invoices.
-  </Card>
-  <Card title="Customer Portal" icon="user" href="/features/customer-portal/introduction">
-    Where customers view their own orders and download invoices and receipts.
-  </Card>
-</CardGroup>
+| Task | CLI | MCP operation |
+| --- | --- | --- |
+| List orders | `polar orders list` | `orders_list` |
+| Get an order | `polar orders get <id>` | `orders_get` |
+| Edit billing details | `polar orders update <id>` | `orders_update` |
+| Generate an invoice | `polar orders generate_invoice <id>` | `orders_generate_invoice` |
+| Get the invoice | `polar orders invoice <id>` | `orders_invoice` |
+| Get the receipt | `polar orders receipt <id>` | `orders_receipt` |
+| List payment attempts | `polar payments list --order-id <id>` | `payments_list` |
+
+Creating, finalizing and exporting orders are API only.
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Orders & subscriptions](/concepts/orders-and-subscriptions) | Billing reasons and order statuses |
+| [Off-session charges](/features/off-session-charges) | Charge a saved payment method outside checkout |
+| [Refunds](/features/refunds) | Full and partial refunds |
+| [Orders API](/api-reference/current/orders/list-orders) | List, update and export orders, and get invoices and receipts |

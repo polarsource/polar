@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from sqlalchemy import (
@@ -12,13 +12,14 @@ from sqlalchemy import (
     Uuid,
     text,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 
 if TYPE_CHECKING:
-    from polar.models import CatalogBenefit, CatalogProduct, Organization
+    from polar.models import CatalogBenefit, CatalogMeter, CatalogProduct, Organization
 
 
 class CatalogStatus(StrEnum):
@@ -59,6 +60,10 @@ class Catalog(RecordModel):
     published_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
+    # Organization settings by attribute name. Drafts hold only changed ones.
+    settings: Mapped[dict[str, Any] | None] = mapped_column(
+        JSONB, nullable=True, default=None
+    )
 
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
@@ -91,5 +96,18 @@ class Catalog(RecordModel):
                 "CatalogBenefit.deleted_at.is_(None))"
             ),
             order_by="CatalogBenefit.external_id",
+            viewonly=True,
+        )
+
+    @declared_attr
+    def meter_members(cls) -> Mapped[list["CatalogMeter"]]:
+        return relationship(
+            "CatalogMeter",
+            lazy="raise",
+            primaryjoin=(
+                "and_(CatalogMeter.catalog_id == Catalog.id, "
+                "CatalogMeter.deleted_at.is_(None))"
+            ),
+            order_by="CatalogMeter.external_id",
             viewonly=True,
         )

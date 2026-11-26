@@ -16,7 +16,7 @@ export const Banner = ({ title, description, children }: BannerProps) => {
       gap="spacing-16"
       backgroundColor="card"
     >
-      <Box flex={1} gap="spacing-6">
+      <Box gap="spacing-6">
         <Text variant="bodySmall">{title}</Text>
         <Text variant="bodySmall" color="subtext">
           {description}

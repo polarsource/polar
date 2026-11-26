@@ -2,6 +2,7 @@ import { McpServer } from '@modelcontextprotocol/server'
 import { Effect } from 'effect'
 import { version } from '../package.json'
 import type { ToolMode } from './clients'
+import { registerEvents } from './events'
 import { instructionsFor } from './instructions'
 import { RequestLog } from './log'
 import type { PolarApiOutboundProps } from './outbound'
@@ -28,6 +29,9 @@ export const createServer = Effect.fn('createServer')(function* (
     yield* registerExecuteTool(server, props)
   }
   yield* registerDocsTools(server)
+  if (!props.readOnly) {
+    yield* registerEvents(server, props)
+  }
   if (telemetry) {
     yield* registerFeedbackTool(server)
   }

@@ -1,4 +1,5 @@
 import collections.abc
+import contextlib
 import copy
 import datetime
 import functools
@@ -13,8 +14,9 @@ from unittest.mock import DEFAULT, AsyncMock
 
 import anyio
 import anyio.lowlevel
-import httpx
+import httpx2
 import pytest
+import redis.asyncio.connection as redis_connection_module
 from fakeredis import FakeAsyncRedis, FakeServer
 from opentelemetry.sdk.metrics.export import (
     ExponentialHistogramDataPoint,
@@ -37,21 +39,23 @@ from redis.exceptions import TimeoutError as RedisTimeoutError
 from polar import __version__
 from polar.metering import EventInput
 from polar.metering.errors import UnknownMeterError
+from polar.outpost import NotReadyError
 from polar.outpost.client import (
     APPLY_SNAPSHOT_SCRIPT,
+    CONFIRM_SCRIPT,
     WRITE_BUCKET_SCRIPT,
-    MissingExternalIdError,
     Outpost,
-    PolarOutpostError,
     RedisReconnectBackoff,
-    UnavailableRedisError,
-    _is_connection_error,
-    _NotReadyError,
-    _number,
-    decode_state,
+    _is_transient_error,
     is_sampled,
 )
+from polar.outpost.errors import (
+    MissingExternalIdError,
+    PolarOutpostError,
+    UnavailableRedisError,
+)
 from polar.outpost.reducer import BUCKET_SIZE, get_bucket_start
+from polar.outpost.state import _number, decode_state
 from polar.outpost.telemetry import SAMPLE_RATE_ATTRIBUTE, TELEMETRY_ENV
 
 _ids = itertools.count(1)
@@ -100,7 +104,9 @@ async def redis_connection(
 
 @pytest.fixture(autouse=True)
 def short_snapshot_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("polar.outpost.client.SNAPSHOT_TIMEOUT", 0.1)
+    defaults = Outpost.__init__.__kwdefaults__
+    assert defaults is not None
+    monkeypatch.setitem(defaults, "snapshot_timeout", 0.1)
 
 
 @pytest.fixture(autouse=True)
@@ -116,7 +122,7 @@ def exported_spans(monkeypatch: pytest.MonkeyPatch) -> list[ReadableSpan]:
 
     monkeypatch.delenv(TELEMETRY_ENV, raising=False)
     monkeypatch.setattr(
-        "polar.outpost.telemetry.OutboxSpanExporter", lambda *_: Exporter()
+        "polar.outpost.telemetry.BufferSpanExporter", lambda *_: Exporter()
     )
     monkeypatch.setattr(
         "polar.outpost.telemetry.BatchSpanProcessor", SimpleSpanProcessor
@@ -147,7 +153,7 @@ def exported_metrics(monkeypatch: pytest.MonkeyPatch) -> list[MetricsData]:
             pass
 
     monkeypatch.setattr(
-        "polar.outpost.telemetry.OutboxMetricExporter", lambda *_: Exporter()
+        "polar.outpost.telemetry.BufferMetricExporter", lambda *_: Exporter()
     )
     return exported
 
@@ -223,6 +229,7 @@ def changes() -> dict[str, typing.Any]:
         "configuration_changed": False,
         "cursor": 0,
         "status": 200,
+        "delay": 0,
     }
 
 
@@ -275,6 +282,13 @@ def meter_usage() -> dict[str, typing.Any]:
     }
 
 
+# Each ingest request's events, the statuses Polar answers the next ones with, and how long
+# it holds each answer back in seconds.
+@pytest.fixture
+def ingest() -> dict[str, typing.Any]:
+    return {"requests": [], "statuses": [], "delay": 0, "refused": set()}
+
+
 # Polar's side of Outpost: the configuration, the snapshots, the confirmations and the changes.
 # A snapshot's "delay" holds its answer back, in seconds.
 @pytest.fixture
@@ -290,7 +304,8 @@ async def polar_client(
     meter_usage: dict[str, typing.Any],
     telemetry_requests: list[tuple[str, bytes]],
     telemetry_status: dict[str, float],
-) -> collections.abc.AsyncIterator[httpx.AsyncClient]:
+    ingest: dict[str, typing.Any],
+) -> collections.abc.AsyncIterator[httpx2.AsyncClient]:
     def identity(body: dict[str, typing.Any]) -> str:
         kind = "customer" if "customer_id" in body else "external"
         identifier = body.get("customer_id", body.get("external_customer_id"))
@@ -313,12 +328,16 @@ async def polar_client(
         json_body = b"json" in dict(scope["headers"]).get(b"content-type", b"")
         body: typing.Any = json.loads(data) if data and json_body else None
 
-        async def respond(answer: typing.Any, status: int = 200) -> None:
+        async def respond(
+            answer: typing.Any,
+            status: int = 200,
+            headers: tuple[tuple[bytes, bytes], ...] = (),
+        ) -> None:
             await send(
                 {
                     "type": "http.response.start",
                     "status": status,
-                    "headers": [(b"content-type", b"application/json")],
+                    "headers": [(b"content-type", b"application/json"), *headers],
                 }
             )
             await send(
@@ -366,7 +385,8 @@ async def polar_client(
                 return await respond({}, meter_usage["status"])
             if meter_usage["failures"]:
                 meter_usage["failures"] -= 1
-                return await respond({}, 503)
+                # A proxy's wait is not Polar's: only a rate limit sets the pace.
+                return await respond({}, 503, ((b"retry-after", b"30"),))
             meter_usage["in_flight"] += 1
             meter_usage["most_in_flight"] = max(
                 meter_usage["most_in_flight"], meter_usage["in_flight"]
@@ -399,6 +419,29 @@ async def polar_client(
                     },
                 }
             )
+        if route == "POST /v1/events/ingest":
+            ingest["requests"].append(body["events"])
+            # Polar's validation names each event it refuses by its index.
+            refused = [
+                {
+                    "type": "value_error",
+                    "loc": ["body", "events", index, "timestamp"],
+                    "msg": "Refused",
+                }
+                for index, event in enumerate(body["events"])
+                if event["external_id"] in ingest["refused"]
+            ]
+            if refused:
+                return await respond(
+                    {"error": "RequestValidationError", "detail": refused}, 422
+                )
+            status = ingest["statuses"].pop(0) if ingest["statuses"] else 200
+            await anyio.sleep(ingest["delay"])
+            return await respond(
+                {"inserted": len(body["events"]), "duplicates": 0},
+                status,
+                ((b"retry-after", b"30"),) if status == 429 else (),
+            )
         if route == "GET /v1/outpost/changes":
             query = urllib.parse.parse_qs(scope["query_string"].decode())
             polar_requests.append((route, query.get("cursor", [None])[0]))
@@ -416,13 +459,14 @@ async def polar_client(
                 "next_poll_in": 30,
             }
             changes.update(changes=[], reset=False, configuration_changed=False)
+            await anyio.sleep(changes["delay"])
             return await respond(page)
         await respond({}, 404)
 
-    async with httpx.AsyncClient(
+    async with httpx2.AsyncClient(
         base_url="http://polar.test",
         headers={"Authorization": "Bearer test-token"},
-        transport=httpx.ASGITransport(app),
+        transport=httpx2.ASGITransport(app),
     ) as client:
         yield client
 
@@ -438,7 +482,7 @@ async def _deliver(
 @pytest.mark.anyio
 async def test_ingest_accepts_single_events(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
 ) -> None:
     url, redis = redis_connection
     events: list[EventInput] = [
@@ -458,7 +502,7 @@ async def test_ingest_accepts_single_events(
     ]
     async with Outpost(url, client=polar_client) as outpost:
         for event in events:
-            assert await outpost.track(event) is None
+            await outpost.track(event)
     field = f"bucket:{BUCKET}:sum"
     assert (
         await redis.hget("outpost:v1:org-1:state:external:alice:tokens", field) == b"3"
@@ -475,7 +519,7 @@ async def test_ingest_accepts_single_events(
 
 @pytest.mark.anyio
 async def test_ingest_requires_external_id(
-    redis_connection: tuple[str, Redis], polar_client: httpx.AsyncClient
+    redis_connection: tuple[str, Redis], polar_client: httpx2.AsyncClient
 ) -> None:
     url, _ = redis_connection
     async with Outpost(url, client=polar_client) as outpost:
@@ -487,7 +531,7 @@ async def test_ingest_requires_external_id(
 @pytest.mark.parametrize(("bucket_count", "fail"), [(0, False), (3, False), (3, True)])
 async def test_ingest_pipelines_buckets(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     configuration: dict[str, typing.Any],
     monkeypatch: pytest.MonkeyPatch,
     bucket_count: int,
@@ -575,7 +619,7 @@ async def test_ingest_pipelines_buckets(
 @pytest.mark.parametrize("flush_scripts", [False, True])
 async def test_ingest_writes_a_single_bucket_without_a_pipeline(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     flush_scripts: bool,
 ) -> None:
     url, redis = redis_connection
@@ -618,7 +662,7 @@ async def test_ingest_writes_a_single_bucket_without_a_pipeline(
 @pytest.mark.anyio
 async def test_keeps_an_instance_id_while_started(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
 ) -> None:
     url, _ = redis_connection
     outpost = Outpost(url, client=polar_client)
@@ -638,7 +682,7 @@ async def test_keeps_an_instance_id_while_started(
 )
 async def test_customer_meter_reads_at_once_on_the_writer_and_its_peers(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     func: str,
     expected: int,
     polar_requests: list[tuple[str, typing.Any]],
@@ -685,8 +729,8 @@ async def test_customer_meter_reads_at_once_on_the_writer_and_its_peers(
 
 
 @pytest.mark.anyio
-async def test_talks_to_redis_over_one_connection_with_no_subscriber(
-    redis_connection: tuple[str, Redis], polar_client: httpx.AsyncClient
+async def test_talks_to_redis_over_one_connection(
+    redis_connection: tuple[str, Redis], polar_client: httpx2.AsyncClient
 ) -> None:
     url, redis = redis_connection
     before = len(await redis.client_list())
@@ -696,7 +740,7 @@ async def test_talks_to_redis_over_one_connection_with_no_subscriber(
 
 @pytest.mark.anyio
 async def test_reads_another_instances_write_at_once(
-    redis_connection: tuple[str, Redis], polar_client: httpx.AsyncClient
+    redis_connection: tuple[str, Redis], polar_client: httpx2.AsyncClient
 ) -> None:
     url, redis = redis_connection
     await redis.hset(
@@ -716,7 +760,7 @@ async def test_reads_another_instances_write_at_once(
 @pytest.mark.anyio
 async def test_bucket_ownership_and_internal_customer(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
 ) -> None:
     url, redis = redis_connection
     await redis.hset(
@@ -763,7 +807,7 @@ async def test_bucket_ownership_and_internal_customer(
 @pytest.mark.anyio
 async def test_reports_a_missing_snapshot_and_an_unknown_meter(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
 ) -> None:
     url, _ = redis_connection
     async with Outpost(url, client=polar_client) as outpost:
@@ -771,14 +815,36 @@ async def test_reports_a_missing_snapshot_and_an_unknown_meter(
         await outpost.actor(external_customer_id="alice")
         with pytest.raises(UnknownMeterError):
             await outpost.meter(external_customer_id="alice", meter_id="unknown")
-        with pytest.raises(PolarOutpostError, match="snapshot is not ready"):
+        with pytest.raises(NotReadyError, match="snapshot is not ready"):
             await outpost.meter(external_customer_id="alice", meter_id="meter")
+
+
+@pytest.mark.anyio
+async def test_a_cold_read_waits_for_its_snapshot_as_long_as_snapshot_timeout(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+) -> None:
+    url, _ = redis_connection
+    async with Outpost(url, client=polar_client, snapshot_timeout=0.05) as outpost:
+        with anyio.fail_after(1), pytest.raises(NotReadyError):
+            await outpost.meter(external_customer_id="alice", meter_id="meter")
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("snapshot_timeout", [float("nan"), float("inf"), -1])
+async def test_refuses_a_snapshot_timeout_no_read_could_wait_out(
+    polar_client: httpx2.AsyncClient, snapshot_timeout: float
+) -> None:
+    with pytest.raises(ValueError, match="finite and non-negative"):
+        Outpost(
+            "redis://localhost", client=polar_client, snapshot_timeout=snapshot_timeout
+        )
 
 
 @pytest.mark.anyio
 async def test_concurrent_writers_count_a_repeated_event_once(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
 ) -> None:
     url, redis = redis_connection
     event: EventInput = {
@@ -806,7 +872,7 @@ async def test_concurrent_writers_count_a_repeated_event_once(
 @pytest.mark.anyio
 async def test_snapshot_arrives_through_a_pull(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     changes: dict[str, typing.Any],
 ) -> None:
     url, redis = redis_connection
@@ -899,13 +965,14 @@ async def test_changes_nothing_for_an_older_snapshot_or_one_already_applied(
 @pytest.mark.anyio
 async def test_pulls_a_snapshot_once_for_the_whole_fleet(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     polar_requests: list[tuple[str, typing.Any]],
     changes: dict[str, typing.Any],
 ) -> None:
     url, redis = redis_connection
     key = "outpost:v1:org-1:state:external:alice:tokens"
     await redis.hset(key, mapping={"cold_until": BUCKET, "cold:sum": 10})
+    await _credit(redis, 100)
     async with (
         Outpost(url, client=polar_client) as first,
         Outpost(url, client=polar_client) as second,
@@ -939,7 +1006,7 @@ async def test_pulls_a_snapshot_once_for_the_whole_fleet(
 @pytest.mark.anyio
 async def test_moves_the_cursor_once_a_page_is_applied(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     polar_requests: list[tuple[str, typing.Any]],
     changes: dict[str, typing.Any],
     monkeypatch: pytest.MonkeyPatch,
@@ -981,7 +1048,7 @@ async def test_moves_the_cursor_once_a_page_is_applied(
 @pytest.mark.anyio
 async def test_skips_a_pulled_snapshot_of_a_customer_nobody_reads(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     changes: dict[str, typing.Any],
 ) -> None:
     url, redis = redis_connection
@@ -993,7 +1060,7 @@ async def test_skips_a_pulled_snapshot_of_a_customer_nobody_reads(
 @pytest.mark.anyio
 async def test_keeps_two_organizations_apart_on_one_redis(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     changes: dict[str, typing.Any],
 ) -> None:
     url, redis = redis_connection
@@ -1002,7 +1069,7 @@ async def test_keeps_two_organizations_apart_on_one_redis(
     await _credit(redis, 100)
     async with (
         Outpost(url, client=polar_client) as first,
-        httpx.AsyncClient(
+        httpx2.AsyncClient(
             base_url=polar_client.base_url,
             headers={"Authorization": "Bearer org-2-token"},
             transport=polar_client._transport,
@@ -1022,7 +1089,7 @@ async def test_keeps_two_organizations_apart_on_one_redis(
 @pytest.mark.anyio
 async def test_serves_a_state_a_reset_left_unconfirmed_while_polar_confirms_it(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     changes: dict[str, typing.Any],
     meter_usage: dict[str, typing.Any],
@@ -1052,7 +1119,7 @@ async def test_serves_a_state_a_reset_left_unconfirmed_while_polar_confirms_it(
 @pytest.mark.anyio
 async def test_asks_polar_again_for_a_snapshot_it_asked_for_before_a_reset(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     changes: dict[str, typing.Any],
     polar_requests: list[tuple[str, typing.Any]],
@@ -1086,9 +1153,44 @@ async def test_asks_polar_again_for_a_snapshot_it_asked_for_before_a_reset(
 
 
 @pytest.mark.anyio
+async def test_releases_an_older_flush_when_a_newer_one_starts(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    snapshots: dict[str, dict[str, typing.Any]],
+    polar_requests: list[tuple[str, typing.Any]],
+) -> None:
+    url, _ = redis_connection
+    snapshots["external:alice:tokens"] = {**ALICE_SNAPSHOT, "delay": 0.5}
+    snapshots["external:alice:credits"] = ALICE_CREDITS
+    done: list[str] = []
+
+    async def flush(name: str) -> None:
+        await outpost.flush()
+        done.append(name)
+
+    async with Outpost(url, client=polar_client) as outpost:
+        async with anyio.create_task_group() as group:
+            group.start_soon(
+                functools.partial(outpost.actor, external_customer_id="alice")
+            )
+            with anyio.fail_after(1):
+                while not any(
+                    route == "POST /v1/outpost/meter-usage"
+                    for route, _ in polar_requests
+                ):
+                    await anyio.lowlevel.checkpoint()
+            group.start_soon(flush, "older")
+            await anyio.sleep(0.05)
+            group.start_soon(flush, "newer")
+            await anyio.sleep(0.1)
+            assert done == ["older"]
+        assert done == ["older", "newer"]
+
+
+@pytest.mark.anyio
 async def test_reads_a_customer_polar_no_longer_knows_after_a_reset_as_unknown(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     changes: dict[str, typing.Any],
 ) -> None:
@@ -1119,7 +1221,7 @@ async def test_reads_a_customer_polar_no_longer_knows_after_a_reset_as_unknown(
 @pytest.mark.anyio
 async def test_asks_polar_again_on_the_next_read_for_a_state_it_could_not_revalidate(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     changes: dict[str, typing.Any],
     meter_usage: dict[str, typing.Any],
@@ -1146,7 +1248,7 @@ async def test_asks_polar_again_on_the_next_read_for_a_state_it_could_not_revali
 @pytest.mark.anyio
 async def test_fetches_the_configuration_again_when_polar_changed_it(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     configuration: dict[str, typing.Any],
     snapshots: dict[str, dict[str, typing.Any]],
     changes: dict[str, typing.Any],
@@ -1172,7 +1274,7 @@ async def test_fetches_the_configuration_again_when_polar_changed_it(
 @pytest.mark.anyio
 async def test_reads_the_configuration_another_instance_kept_in_redis_without_asking_polar(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     polar_requests: list[tuple[str, typing.Any]],
 ) -> None:
     url, _ = redis_connection
@@ -1184,7 +1286,7 @@ async def test_reads_the_configuration_another_instance_kept_in_redis_without_as
 @pytest.mark.anyio
 async def test_reloads_the_configuration_another_instance_pulled(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     configuration: dict[str, typing.Any],
     snapshots: dict[str, dict[str, typing.Any]],
     changes: dict[str, typing.Any],
@@ -1217,7 +1319,7 @@ async def test_reloads_the_configuration_another_instance_pulled(
 @pytest.mark.anyio
 async def test_reloads_a_configuration_another_instance_pulled_while_this_one_started(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     configuration: dict[str, typing.Any],
     snapshots: dict[str, dict[str, typing.Any]],
     monkeypatch: pytest.MonkeyPatch,
@@ -1258,7 +1360,7 @@ async def test_reloads_a_configuration_another_instance_pulled_while_this_one_st
 @pytest.mark.anyio
 async def test_keeps_its_configuration_while_the_stored_one_is_gone_without_asking_polar(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     configuration_status: dict[str, float],
     polar_requests: list[tuple[str, typing.Any]],
     clock: types.SimpleNamespace,
@@ -1282,7 +1384,7 @@ async def test_keeps_its_configuration_while_the_stored_one_is_gone_without_aski
 @pytest.mark.anyio
 async def test_keeps_the_organizations_configuration_a_pull_wrote_while_another_instance_started(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     configuration: dict[str, typing.Any],
     configuration_status: dict[str, float],
     changes: dict[str, typing.Any],
@@ -1290,7 +1392,7 @@ async def test_keeps_the_organizations_configuration_a_pull_wrote_while_another_
 ) -> None:
     url, redis = redis_connection
     async with (
-        httpx.AsyncClient(
+        httpx2.AsyncClient(
             base_url=polar_client.base_url,
             headers={"Authorization": "Bearer other-token"},
             transport=polar_client._transport,
@@ -1335,14 +1437,14 @@ async def test_keeps_the_organizations_configuration_a_pull_wrote_while_another_
 @pytest.mark.anyio
 async def test_reloads_a_configuration_another_token_of_the_organization_pulled(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     configuration: dict[str, typing.Any],
     snapshots: dict[str, dict[str, typing.Any]],
     changes: dict[str, typing.Any],
 ) -> None:
     url, _ = redis_connection
     async with (
-        httpx.AsyncClient(
+        httpx2.AsyncClient(
             base_url=polar_client.base_url,
             headers={"Authorization": "Bearer other-token"},
             transport=polar_client._transport,
@@ -1369,7 +1471,7 @@ async def test_reloads_a_configuration_another_token_of_the_organization_pulled(
 @pytest.mark.anyio
 async def test_sends_the_fleets_telemetry_in_one_relay_of_each_kind_after_a_pull(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     telemetry_requests: list[tuple[str, bytes]],
 ) -> None:
     url, _ = redis_connection
@@ -1379,8 +1481,8 @@ async def test_sends_the_fleets_telemetry_in_one_relay_of_each_kind_after_a_pull
         Outpost(url, client=polar_client) as third,
     ):
         for index, outpost in enumerate((first, second, third)):
-            outpost._outbox.add("spans", f"spans-{index};".encode())
-            outpost._outbox.add("metrics", f"metrics-{index};".encode())
+            outpost._telemetry_buffer.add("spans", f"spans-{index};".encode())
+            outpost._telemetry_buffer.add("metrics", f"metrics-{index};".encode())
             await outpost.flush_telemetry()
         await first._pull()
         await first.flush()
@@ -1393,14 +1495,14 @@ async def test_sends_the_fleets_telemetry_in_one_relay_of_each_kind_after_a_pull
 @pytest.mark.anyio
 async def test_keeps_the_fleets_telemetry_for_the_next_pull_when_polar_fails_the_relay(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     telemetry_requests: list[tuple[str, bytes]],
     telemetry_status: dict[str, float],
 ) -> None:
     url, _ = redis_connection
     async with Outpost(url, client=polar_client) as outpost:
-        outpost._outbox.add("spans", b"spans;")
-        outpost._outbox.add("metrics", b"metrics;")
+        outpost._telemetry_buffer.add("spans", b"spans;")
+        outpost._telemetry_buffer.add("metrics", b"metrics;")
         await outpost.flush_telemetry()
         telemetry_status["status"] = 503
         await outpost._pull()
@@ -1418,20 +1520,18 @@ async def test_keeps_the_fleets_telemetry_for_the_next_pull_when_polar_fails_the
 @pytest.mark.anyio
 async def test_lets_a_read_that_waits_for_a_pull_go_before_the_telemetry_relay_ends(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     telemetry_requests: list[tuple[str, bytes]],
     telemetry_status: dict[str, float],
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     url, redis = redis_connection
-    monkeypatch.setattr("polar.outpost.client.SNAPSHOT_TIMEOUT", 2)
     await redis.hset(
         "outpost:v1:org-1:state:external:alice:tokens",
         mapping={"cold_until": BUCKET, "cold:sum": 10},
     )
     await _credit(redis, 100)
-    async with Outpost(url, client=polar_client) as outpost:
-        outpost._outbox.add("spans", b"spans;")
+    async with Outpost(url, client=polar_client, snapshot_timeout=2) as outpost:
+        outpost._telemetry_buffer.add("spans", b"spans;")
         await outpost.flush_telemetry()
         telemetry_status["delay"] = 0.5
         started = anyio.current_time()
@@ -1444,7 +1544,7 @@ async def test_lets_a_read_that_waits_for_a_pull_go_before_the_telemetry_relay_e
 @pytest.mark.anyio
 async def test_keeps_the_exports_written_while_a_relay_is_in_flight(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     telemetry_requests: list[tuple[str, bytes]],
     telemetry_status: dict[str, float],
     monkeypatch: pytest.MonkeyPatch,
@@ -1453,7 +1553,7 @@ async def test_keeps_the_exports_written_while_a_relay_is_in_flight(
     monkeypatch.setattr("polar.outpost.client.TELEMETRY_CAP", 3)
     async with Outpost(url, client=polar_client) as outpost:
         for index in range(3):
-            outpost._outbox.add("spans", f"old-{index};".encode())
+            outpost._telemetry_buffer.add("spans", f"old-{index};".encode())
         await outpost.flush_telemetry()
         telemetry_status["delay"] = 0.2
         async with anyio.create_task_group() as tasks:
@@ -1461,7 +1561,7 @@ async def test_keeps_the_exports_written_while_a_relay_is_in_flight(
             with anyio.fail_after(1):
                 while not telemetry_requests:
                     await anyio.sleep(0.01)
-            outpost._outbox.add("spans", b"new;")
+            outpost._telemetry_buffer.add("spans", b"new;")
             await outpost.flush_telemetry()
         await outpost.flush()
         assert await redis.lrange("outpost:v1:org-1:telemetry:spans", 0, -1) == [
@@ -1472,45 +1572,30 @@ async def test_keeps_the_exports_written_while_a_relay_is_in_flight(
 @pytest.mark.anyio
 async def test_keeps_its_telemetry_for_the_next_flush_when_redis_fails_the_write(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     url, redis = redis_connection
+    spans = "outpost:v1:org-1:telemetry:spans"
 
-    class FailingPipeline:
-        async def __aenter__(self) -> typing.Self:
-            return self
-
-        async def __aexit__(self, *args: object) -> None:
-            pass
-
-        def rpush(self, *args: object) -> None:
-            pass
-
-        def ltrim(self, *args: object) -> None:
-            pass
-
-        async def execute(self) -> None:
-            raise RedisConnectionError("Connection closed by server.")
+    async def fail(*args: object) -> None:
+        raise RedisConnectionError("Connection closed by server.")
 
     async with Outpost(url, client=polar_client) as outpost:
         assert outpost._redis is not None
-        monkeypatch.setattr(
-            outpost._redis, "pipeline", lambda **kwargs: FailingPipeline()
-        )
-        outpost._outbox.add("spans", b"spans;")
+        monkeypatch.setattr(outpost._redis, "evalsha", fail)
+        outpost._telemetry_buffer.add("spans", b"spans;")
         await outpost.flush_telemetry()
-        monkeypatch.delattr(outpost._redis, "pipeline")
+        assert await redis.llen(spans) == 0
+        monkeypatch.delattr(outpost._redis, "evalsha")
         await outpost.flush_telemetry()
-        assert await redis.lrange("outpost:v1:org-1:telemetry:spans", 0, -1) == [
-            b"spans;"
-        ]
+        assert await redis.lrange(spans, 0, -1) == [b"spans;"]
 
 
 @pytest.mark.anyio
 async def test_marks_the_spans_its_sample_keeps_with_the_sample_rate(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     exported_spans: list[ReadableSpan],
 ) -> None:
@@ -1529,7 +1614,7 @@ async def test_marks_the_spans_its_sample_keeps_with_the_sample_rate(
 @pytest.mark.anyio
 async def test_pulls_in_the_background_once_due_and_waits_for_it_once_stale(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     polar_requests: list[tuple[str, typing.Any]],
     clock: types.SimpleNamespace,
@@ -1554,7 +1639,7 @@ async def test_pulls_in_the_background_once_due_and_waits_for_it_once_stale(
 @pytest.mark.anyio
 async def test_applies_a_pulled_pages_customers_side_by_side(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     changes: dict[str, typing.Any],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1596,7 +1681,7 @@ async def test_applies_a_pulled_pages_customers_side_by_side(
 @pytest.mark.anyio
 async def test_waits_for_a_stale_pull_at_most_its_snapshot_timeout(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     clock: types.SimpleNamespace,
     monkeypatch: pytest.MonkeyPatch,
@@ -1620,7 +1705,7 @@ async def test_waits_for_a_stale_pull_at_most_its_snapshot_timeout(
 @pytest.mark.anyio
 async def test_backs_off_after_a_failed_pull_and_serves_reads_meanwhile(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     polar_requests: list[tuple[str, typing.Any]],
     changes: dict[str, typing.Any],
@@ -1661,7 +1746,7 @@ async def test_backs_off_after_a_failed_pull_and_serves_reads_meanwhile(
 @pytest.mark.anyio
 async def test_waits_for_a_backoff_another_instance_set(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     polar_requests: list[tuple[str, typing.Any]],
 ) -> None:
     url, redis = redis_connection
@@ -1677,7 +1762,7 @@ async def test_waits_for_a_backoff_another_instance_set(
 @pytest.mark.anyio
 async def test_holds_the_whole_fleet_back_after_a_failed_pull(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     polar_requests: list[tuple[str, typing.Any]],
     changes: dict[str, typing.Any],
@@ -1712,7 +1797,7 @@ async def test_holds_the_whole_fleet_back_after_a_failed_pull(
 @pytest.mark.anyio
 async def test_reads_again_once_redis_reconnects(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
 ) -> None:
     url, redis = redis_connection
     server: FakeServer = redis.connection_pool.connection_kwargs["server"]
@@ -1737,18 +1822,16 @@ async def test_reads_again_once_redis_reconnects(
 @pytest.mark.anyio
 async def test_asks_polar_only_while_the_shared_redis_has_no_snapshot(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     polar_requests: list[tuple[str, typing.Any]],
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     url, _ = redis_connection
-    monkeypatch.setattr("polar.outpost.client.SNAPSHOT_TIMEOUT", 1)
     snapshots["external:alice:tokens"] = ALICE_SNAPSHOT
     snapshots["external:alice:credits"] = ALICE_CREDITS
-    async with Outpost(url, client=polar_client) as first:
+    async with Outpost(url, client=polar_client, snapshot_timeout=1) as first:
         assert await _consumed(first) == 3
-        async with Outpost(url, client=polar_client) as second:
+        async with Outpost(url, client=polar_client, snapshot_timeout=1) as second:
             assert await _consumed(second) == 3
     assert sorted(
         body["reducer_id"]
@@ -1759,12 +1842,10 @@ async def test_asks_polar_only_while_the_shared_redis_has_no_snapshot(
 @pytest.mark.anyio
 async def test_keeps_the_cold_fetch_lock_another_instance_took_once_its_own_expired(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     url, redis = redis_connection
-    monkeypatch.setattr("polar.outpost.client.SNAPSHOT_TIMEOUT", 1)
     snapshots["external:alice:tokens"] = {**ALICE_SNAPSHOT, "delay": 0.1}
     snapshots["external:alice:credits"] = ALICE_CREDITS
     lock = "outpost:v1:org-1:cold:lock"
@@ -1773,7 +1854,7 @@ async def test_keeps_the_cold_fetch_lock_another_instance_took_once_its_own_expi
     async def consume(outpost: Outpost) -> None:
         read.append(await _consumed(outpost))
 
-    async with Outpost(url, client=polar_client) as outpost:
+    async with Outpost(url, client=polar_client, snapshot_timeout=1) as outpost:
         async with anyio.create_task_group() as tasks:
             tasks.start_soon(consume, outpost)
             with anyio.fail_after(1):
@@ -1790,13 +1871,11 @@ async def test_keeps_the_cold_fetch_lock_another_instance_took_once_its_own_expi
 @pytest.mark.anyio
 async def test_lets_one_instance_of_the_fleet_ask_polar_for_a_cold_customer(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     polar_requests: list[tuple[str, typing.Any]],
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     url, _ = redis_connection
-    monkeypatch.setattr("polar.outpost.client.SNAPSHOT_TIMEOUT", 1)
     snapshots["external:alice:tokens"] = {**ALICE_SNAPSHOT, "delay": 0.1}
     snapshots["external:alice:credits"] = {**ALICE_CREDITS, "delay": 0.1}
     read: list[int | float] = []
@@ -1805,9 +1884,9 @@ async def test_lets_one_instance_of_the_fleet_ask_polar_for_a_cold_customer(
         read.append(await _consumed(outpost))
 
     async with (
-        Outpost(url, client=polar_client) as first,
-        Outpost(url, client=polar_client) as second,
-        Outpost(url, client=polar_client) as third,
+        Outpost(url, client=polar_client, snapshot_timeout=1) as first,
+        Outpost(url, client=polar_client, snapshot_timeout=1) as second,
+        Outpost(url, client=polar_client, snapshot_timeout=1) as third,
         anyio.create_task_group() as tasks,
     ):
         for outpost in (first, second, third):
@@ -1819,7 +1898,7 @@ async def test_lets_one_instance_of_the_fleet_ask_polar_for_a_cold_customer(
 @pytest.mark.anyio
 async def test_independent_reducers_concurrent_statistics_and_meter_credits(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     configuration: dict[str, typing.Any],
 ) -> None:
     url, redis = redis_connection
@@ -1893,6 +1972,7 @@ async def test_independent_reducers_concurrent_statistics_and_meter_credits(
             f"outpost:v1:org-1:state:{identity}",
             *(f"bucket:{BUCKET}:{name}" for name in ("count", "sum", "min", "max")),
         ) == [b"20", b"100", b"2", b"8"]
+        await first.flush()
         await first.track(
             {
                 "name": "call",
@@ -1902,7 +1982,6 @@ async def test_independent_reducers_concurrent_statistics_and_meter_credits(
                 "metadata": {"tokens": 4},
             }
         )
-        await first.confirm(events)
         await seal("tokens", BUCKET + BUCKET_SIZE, 21, 22, 120, 2, 15)
         await seal("credits", BUCKET + BUCKET_SIZE, 21, 2, 150, 50, 100)
         # Every event in the bucket is confirmed: Polar counts it, the local copy is gone.
@@ -1947,12 +2026,12 @@ async def _seal(redis: Redis, cutoff: int, count: int = 0, total: int = 0) -> No
     await _credit(redis, 100)
 
 
-def _usage(external_id: str, tokens: int) -> EventInput:
+def _usage(external_id: str, tokens: int, timestamp: str = TIMESTAMP) -> EventInput:
     return {
         "name": "call",
         "external_customer_id": "alice",
         "external_id": external_id,
-        "timestamp": TIMESTAMP,
+        "timestamp": timestamp,
         "metadata": {"tokens": tokens},
     }
 
@@ -1965,7 +2044,7 @@ async def _consumed(outpost: Outpost) -> int | float:
 
 @pytest.mark.anyio
 async def test_keeps_local_events_when_bucket_goes_cold(
-    redis_connection: tuple[str, Redis], polar_client: httpx.AsyncClient
+    redis_connection: tuple[str, Redis], polar_client: httpx2.AsyncClient
 ) -> None:
     url, redis = redis_connection
     await _seal(redis, BUCKET)
@@ -1980,7 +2059,7 @@ async def test_keeps_local_events_when_bucket_goes_cold(
 
 @pytest.mark.anyio
 async def test_counts_a_late_write_into_a_cold_bucket(
-    redis_connection: tuple[str, Redis], polar_client: httpx.AsyncClient
+    redis_connection: tuple[str, Redis], polar_client: httpx2.AsyncClient
 ) -> None:
     url, redis = redis_connection
     await _seal(redis, BUCKET)
@@ -1992,29 +2071,25 @@ async def test_counts_a_late_write_into_a_cold_bucket(
 
 
 @pytest.mark.anyio
-async def test_confirms_ingested_events_and_keeps_the_rest_pending(
-    redis_connection: tuple[str, Redis], polar_client: httpx.AsyncClient
+async def test_counts_an_event_from_before_1970(
+    redis_connection: tuple[str, Redis], polar_client: httpx2.AsyncClient
 ) -> None:
     url, redis = redis_connection
-    key = "outpost:v1:org-1:state:external:alice:tokens"
     await _seal(redis, BUCKET)
     async with Outpost(url, client=polar_client) as outpost:
         await outpost.actor(external_customer_id="alice")
-        events = [_usage(f"event-{index}", 10) for index in range(10)]
-        for event in events:
-            await outpost.track(event)
-        await outpost.confirm(events[:4])
-        await _seal(redis, BUCKET + BUCKET_SIZE, 4, 40)
-        assert await _consumed(outpost) == 100
-    assert await redis.hget(key, f"bucket:{BUCKET}:count") == b"10"
-    assert await redis.hget(key, f"pending:{BUCKET}:count") == b"6"
+        await outpost.track(_usage("old", 5, "1969-12-31T23:59:59Z"))
+        assert await _consumed(outpost) == 5
 
 
 @pytest.mark.anyio
 async def test_keeps_the_pending_extrema_of_the_events_still_pending(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     configuration: dict[str, typing.Any],
+    snapshots: dict[str, dict[str, typing.Any]],
+    changes: dict[str, typing.Any],
+    ingested: set[str],
 ) -> None:
     url, redis = redis_connection
     key = "outpost:v1:org-1:state:external:alice:tokens"
@@ -2027,15 +2102,23 @@ async def test_keeps_the_pending_extrema_of_the_events_still_pending(
             await outpost.track(event)
         assert await redis.hget(key, f"pending:{BUCKET}:min") == b"3"
         assert await redis.hget(key, f"pending:{BUCKET}:max") == b"9"
-        await outpost.confirm([events[1], events[0]])
-    assert await redis.hget(key, f"pending:{BUCKET}:min") == b"5"
-    assert await redis.hget(key, f"pending:{BUCKET}:max") == b"5"
-    assert await redis.hget(key, f"pending:{BUCKET}:count") == b"1"
+        ingested.update(["high", "low"])
+        sealing = {**_sealing(2, 12), "min": 3, "max": 9}
+        snapshots["external:alice:tokens"] = sealing
+        await _deliver(outpost, changes, sealing)
+
+        async def one_pending() -> bool:
+            return await _pending_count(redis) == b"1"
+
+        await _wait_for(one_pending)
+        assert await redis.hget(key, f"pending:{BUCKET}:min") == b"5"
+        assert await redis.hget(key, f"pending:{BUCKET}:max") == b"5"
+        assert await redis.hget(key, f"pending:{BUCKET}:count") == b"1"
 
 
 @pytest.mark.anyio
-async def test_settles_an_event_once_however_many_times_a_confirmation_names_it(
-    redis_connection: tuple[str, Redis], polar_client: httpx.AsyncClient
+async def test_settles_an_event_once_however_many_times_confirm_names_it(
+    redis_connection: tuple[str, Redis], polar_client: httpx2.AsyncClient
 ) -> None:
     url, redis = redis_connection
     key = "outpost:v1:org-1:state:external:alice:tokens"
@@ -2045,37 +2128,31 @@ async def test_settles_an_event_once_however_many_times_a_confirmation_names_it(
         events = [_usage("event-0", 10), _usage("event-1", 10)]
         for event in events:
             await outpost.track(event)
-        await outpost.confirm([events[0], events[0]])
-    assert await redis.hget(key, f"pending:{BUCKET}:count") == b"1"
-    assert await redis.hget(key, f"pending:{BUCKET}:sum") == b"10"
-
-
-@pytest.mark.anyio
-async def test_settles_an_event_the_previous_sdk_version_left_pending(
-    redis_connection: tuple[str, Redis], polar_client: httpx.AsyncClient
-) -> None:
-    url, redis = redis_connection
-    key = "outpost:v1:org-1:state:external:alice:tokens"
-    await _seal(redis, BUCKET)
-    async with Outpost(url, client=polar_client) as outpost:
-        await outpost.actor(external_customer_id="alice")
-        await outpost.track(_usage("new", 10))
-        # What WRITE_BUCKET used to store per event: count, sum, min and max, as strings.
-        await redis.hset(
-            f"outpost:v1:org-1:pending:external:alice:tokens:{BUCKET}",
-            "old",
-            '["1","7","7","7"]',
+        outbox = "outpost:v1:org-1:outbox"
+        pending = f"outpost:v1:org-1:pending:external:alice:tokens:{BUCKET}"
+        await redis.eval(
+            CONFIRM_SCRIPT,
+            4,
+            outbox,
+            outbox,
+            key,
+            pending,
+            "",
+            "",
+            0,
+            0,
+            BUCKET,
+            2,
+            "event-0",
+            "event-0",
         )
-        await redis.hincrby(key, f"pending:{BUCKET}:count", 1)
-        await redis.hincrbyfloat(key, f"pending:{BUCKET}:sum", 7)
-        await outpost.confirm([_usage("old", 7)])
-    assert await redis.hget(key, f"pending:{BUCKET}:count") == b"1"
-    assert await redis.hget(key, f"pending:{BUCKET}:sum") == b"10"
+        assert await redis.hget(key, f"pending:{BUCKET}:count") == b"1"
+        assert await redis.hget(key, f"pending:{BUCKET}:sum") == b"10"
 
 
 @pytest.mark.anyio
 async def test_settles_a_hot_buckets_events_on_polars_receipt(
-    redis_connection: tuple[str, Redis], polar_client: httpx.AsyncClient
+    redis_connection: tuple[str, Redis], polar_client: httpx2.AsyncClient
 ) -> None:
     url, redis = redis_connection
     key = "outpost:v1:org-1:state:external:alice:tokens"
@@ -2085,7 +2162,7 @@ async def test_settles_a_hot_buckets_events_on_polars_receipt(
         events = [_usage("event-0", 10), _usage("event-1", 10)]
         for event in events:
             await outpost.track(event)
-        await outpost.acknowledge(events)
+        await outpost.flush()
         assert await _consumed(outpost) == 20
     assert await redis.hget(key, f"pending:{BUCKET}:count") is None
     assert await redis.hget(key, f"bucket:{BUCKET}:count") == b"2"
@@ -2093,7 +2170,11 @@ async def test_settles_a_hot_buckets_events_on_polars_receipt(
 
 @pytest.mark.anyio
 async def test_keeps_a_cold_buckets_events_pending_on_polars_receipt(
-    redis_connection: tuple[str, Redis], polar_client: httpx.AsyncClient
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    snapshots: dict[str, dict[str, typing.Any]],
+    changes: dict[str, typing.Any],
+    ingested: set[str],
 ) -> None:
     url, redis = redis_connection
     key = "outpost:v1:org-1:state:external:alice:tokens"
@@ -2105,17 +2186,462 @@ async def test_keeps_a_cold_buckets_events_pending_on_polars_receipt(
             await outpost.track(event)
         await _seal(redis, BUCKET + BUCKET_SIZE)
         # Received is not counted: the snapshot that sealed the bucket did not have them.
-        await outpost.acknowledge(events)
+        await outpost.flush()
         assert await redis.hget(key, f"pending:{BUCKET}:count") == b"2"
         assert await _consumed(outpost) == 20
-        await outpost.confirm(events)
+        ingested.update(["event-0", "event-1"])
+        sealing = {
+            **_sealing(2, 20),
+            "cold_until": BUCKET + 2 * BUCKET_SIZE,
+            "version": 1791807000000006,
+        }
+        snapshots["external:alice:tokens"] = sealing
+        await _deliver(outpost, changes, sealing)
+
+        async def none_pending() -> bool:
+            return await _pending_count(redis) is None
+
+        await _wait_for(none_pending)
+        assert await _consumed(outpost) == 20
+
+
+async def _queued(redis: Redis) -> list[typing.Any]:
+    entries = await redis.xrange("outpost:v1:org-1:outbox") or []
+    return [json.loads(fields[b"event"]) for _, fields in entries if fields]
+
+
+@pytest.mark.anyio
+async def test_queues_a_tracked_event_for_polar(
+    redis_connection: tuple[str, Redis], polar_client: httpx2.AsyncClient
+) -> None:
+    url, redis = redis_connection
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.track(_usage("event-1", 10))
+        assert await _queued(redis) == [_usage("event-1", 10)]
+
+
+@pytest.mark.anyio
+async def test_queues_an_event_once_however_many_times_it_is_tracked(
+    redis_connection: tuple[str, Redis], polar_client: httpx2.AsyncClient
+) -> None:
+    url, redis = redis_connection
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.track(_usage("same", 10))
+        await outpost.track(_usage("same", 10))
+        assert await _queued(redis) == [_usage("same", 10)]
+
+
+@pytest.mark.anyio
+async def test_queues_an_event_once_when_two_meters_count_it(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    configuration: dict[str, typing.Any],
+) -> None:
+    url, redis = redis_connection
+    configuration["reducers"].append(
+        {**configuration["reducers"][0], "id": "requests", "meter_ids": ["requests"]}
+    )
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.track(_usage("event-1", 10))
+        assert await _queued(redis) == [_usage("event-1", 10)]
+
+
+@pytest.mark.anyio
+async def test_queues_an_event_no_meter_counts(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    configuration: dict[str, typing.Any],
+) -> None:
+    url, redis = redis_connection
+    configuration["reducers"][0]["filter"] = {
+        "conjunction": "and",
+        "clauses": [{"property": "name", "operator": "eq", "value": "other"}],
+    }
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.track(_usage("event-1", 10))
+        assert await _queued(redis) == [_usage("event-1", 10)]
+
+
+OUTBOX = "outpost:v1:org-1:outbox"
+
+
+def _delivered(ingest: dict[str, typing.Any]) -> list[list[str]]:
+    """The external_ids Polar received, request by request."""
+    return [[event["external_id"] for event in events] for events in ingest["requests"]]
+
+
+@pytest.mark.anyio
+async def test_delivers_what_it_queued_on_its_own_without_a_flush(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    ingest: dict[str, typing.Any],
+) -> None:
+    url, redis = redis_connection
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.track(_usage("event-0", 10))
+        with anyio.fail_after(3):
+            while not ingest["requests"]:
+                await anyio.sleep(0.05)
+        assert _delivered(ingest) == [["event-0"]]
+
+
+@pytest.mark.anyio
+async def test_delivers_the_stream_in_batches_of_a_thousand_whichever_instance_flushes(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    ingest: dict[str, typing.Any],
+) -> None:
+    url, redis = redis_connection
+    await _seal(redis, BUCKET)
+    async with (
+        Outpost(url, client=polar_client) as first,
+        Outpost(url, client=polar_client) as second,
+    ):
+        outposts = (first, second)
+        for index in range(2500):
+            await outposts[index % 2].track(_usage(f"event-{index}", 1))
+        async with anyio.create_task_group() as group:
+            for outpost in outposts:
+                group.start_soon(outpost.flush)
+    # The periodic drain may send part of the stream while it is written.
+    assert max(len(events) for events in ingest["requests"]) == 1000
+    assert (
+        len({external_id for ids in _delivered(ingest) for external_id in ids}) == 2500
+    )
+    assert await redis.xlen(OUTBOX) == 0
+
+
+@pytest.mark.anyio
+async def test_settles_the_events_polar_received_and_reports_them(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    ingest: dict[str, typing.Any],
+) -> None:
+    url, redis = redis_connection
+    on_delivered = AsyncMock()
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client, on_delivered=on_delivered) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        events = [_usage("event-0", 10), _usage("event-1", 10)]
+        for event in events:
+            await outpost.track(event)
+        await outpost.flush()
+        assert ingest["requests"] == [events]
+        on_delivered.assert_awaited_once_with(events)
+        key = "outpost:v1:org-1:state:external:alice:tokens"
         assert await redis.hget(key, f"pending:{BUCKET}:count") is None
-        assert await _consumed(outpost) == 0
+        assert await _consumed(outpost) == 20
+
+
+BACKOFF = "outpost:v1:org-1:outbox:backoff"
+
+
+@pytest.mark.anyio
+async def test_keeps_a_batch_polar_fails_to_take_and_the_fleet_waits_to_send_it_again(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    ingest: dict[str, typing.Any],
+) -> None:
+    url, redis = redis_connection
+    await _seal(redis, BUCKET)
+    async with (
+        Outpost(url, client=polar_client) as outpost,
+        Outpost(url, client=polar_client) as other,
+    ):
+        await outpost.track(_usage("event-0", 10))
+        ingest["statuses"] = [503]
+        # Redis stores whole milliseconds.
+        failed = int(time.time() * 1000)
+        await outpost.flush()
+        assert await _queued(redis) == [_usage("event-0", 10)]
+        assert float(await redis.hget(BACKOFF, "retry_at") or 0) >= failed + 1000
+        await other.track(_usage("event-1", 10))
+        await other.flush()
+        assert len(ingest["requests"]) == 1
+        await redis.hset(BACKOFF, "retry_at", 0)
+        await outpost.flush()
+        assert _delivered(ingest) == [["event-0"], ["event-0"], ["event-1"]]
+        assert await redis.xlen(OUTBOX) == 0
+        assert not await redis.exists(BACKOFF)
+
+
+@pytest.mark.anyio
+async def test_sends_a_batch_that_failed_on_another_slot_again_once_the_backoff_ends(
+    monkeypatch: pytest.MonkeyPatch,
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    ingest: dict[str, typing.Any],
+) -> None:
+    url, redis = redis_connection
+    monkeypatch.setattr("polar.outpost.client.DRAIN_INTERVAL", 60)
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        # Two full batches: two flushers, and Polar fails both.
+        for index in range(2000):
+            await outpost.track(_usage(f"event-{index}", 1))
+        ingest["statuses"] = [503, 503]
+        await outpost.flush()
+        assert len(ingest["requests"]) == 2
+        await redis.hset(BACKOFF, "retry_at", 0)
+        # Nothing new waits, so the next drain starts one flusher: it sends both
+        # batches.
+        await outpost.flush()
+        assert len({id for batch in _delivered(ingest) for id in batch}) == 2000
+        assert await redis.xlen(OUTBOX) == 0
+
+
+@pytest.mark.anyio
+async def test_waits_as_long_as_a_polar_that_rate_limits_it_asks(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    ingest: dict[str, typing.Any],
+) -> None:
+    url, redis = redis_connection
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.track(_usage("event-0", 10))
+        ingest["statuses"] = [429]
+        # Redis stores whole milliseconds.
+        failed = int(time.time() * 1000)
+        await outpost.flush()
+        retry_at = float(await redis.hget(BACKOFF, "retry_at") or 0)
+        assert failed + 30_000 <= retry_at <= time.time() * 1000 + 30_000
+
+
+@pytest.mark.anyio
+async def test_counts_the_failures_of_one_wait_as_one_and_keeps_the_longest_wait(
+    redis_connection: tuple[str, Redis], polar_client: httpx2.AsyncClient
+) -> None:
+    url, redis = redis_connection
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        # Redis stores whole milliseconds.
+        failed = int(time.time() * 1000)
+        for _ in range(8):
+            await outpost._back_off(BACKOFF, first=1, maximum=60)
+        assert float(await redis.hget(BACKOFF, "retry_at") or 0) < failed + 2000
+        await outpost._back_off(BACKOFF, first=30, maximum=60)
+        await outpost._back_off(BACKOFF, first=1, maximum=60)
+        assert float(await redis.hget(BACKOFF, "retry_at") or 0) >= failed + 30_000
+
+
+@pytest.mark.anyio
+async def test_keeps_a_backoff_another_flusher_set_while_this_one_delivered(
+    redis_connection: tuple[str, Redis], polar_client: httpx2.AsyncClient
+) -> None:
+    url, redis = redis_connection
+    later = int(time.time() * 1000) + 60_000
+
+    async def on_delivered(events: list[EventInput]) -> None:
+        await redis.hset(BACKOFF, "retry_at", later)
+
+    await _seal(redis, BUCKET)
+    await redis.hset(BACKOFF, mapping={"failures": 1, "retry_at": 1})
+    async with Outpost(url, client=polar_client, on_delivered=on_delivered) as outpost:
+        await outpost.track(_usage("event-0", 10))
+        await outpost.flush()
+        assert await redis.hget(BACKOFF, "retry_at") == str(later).encode()
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("event", '{"external_id":"unreadable","ratio":NaN}'),
+        ("event", '{"external_id":"unreadable","ratio":1e999}'),
+        ("other", "unreadable"),
+    ],
+)
+async def test_skips_an_outbox_entry_it_cannot_read_and_delivers_the_rest(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    ingest: dict[str, typing.Any],
+    field: str,
+    value: str,
+) -> None:
+    url, redis = redis_connection
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        await redis.xadd(OUTBOX, {field: value})
+        await outpost.track(_usage("event-0", 10))
+        await outpost.flush()
+        assert _delivered(ingest) == [["event-0"]]
+        assert await redis.xlen(OUTBOX) == 0
+
+
+@pytest.mark.anyio
+async def test_delivers_an_event_another_sdk_queued_in_a_form_it_cannot_parse(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    ingest: dict[str, typing.Any],
+) -> None:
+    url, redis = redis_connection
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        # Another SDK takes a timestamp this one refuses.
+        foreign = _usage("foreign", 10, timestamp="2026-10-12t12:00:00z")
+        await redis.xadd(OUTBOX, {"event": json.dumps(foreign)})
+        await outpost.track(_usage("event-0", 10))
+        await outpost.flush()
+        assert _delivered(ingest) == [["foreign", "event-0"]]
+        assert await redis.xlen(OUTBOX) == 0
+
+
+@pytest.mark.anyio
+async def test_refuses_to_track_a_number_json_cannot_carry(
+    redis_connection: tuple[str, Redis], polar_client: httpx2.AsyncClient
+) -> None:
+    url, redis = redis_connection
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        event = _usage("event-0", 10)
+        event["metadata"] = {"tokens": 10, "ratio": float("nan")}
+        with pytest.raises(ValueError, match="JSON"):
+            await outpost.track(event)
+        assert await redis.xlen(OUTBOX) == 0
+        assert await _pending_count(redis) is None
+
+
+@pytest.mark.anyio
+async def test_drops_only_the_events_polar_names_and_delivers_the_rest(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    ingest: dict[str, typing.Any],
+) -> None:
+    url, redis = redis_connection
+    on_delivered, on_dropped = AsyncMock(), AsyncMock()
+    await _seal(redis, BUCKET)
+    async with Outpost(
+        url, client=polar_client, on_delivered=on_delivered, on_dropped=on_dropped
+    ) as outpost:
+        events = [_usage("event-0", 10), _usage("refused", 10), _usage("event-1", 10)]
+        for event in events:
+            await outpost.track(event)
+        ingest["refused"] = {"refused"}
+        await outpost.flush()
+        assert _delivered(ingest) == [
+            ["event-0", "refused", "event-1"],
+            ["event-0", "event-1"],
+        ]
+        on_dropped.assert_awaited_once_with([events[1]], "permanent_error")
+        on_delivered.assert_awaited_once_with([events[0], events[2]])
+        assert await redis.xlen(OUTBOX) == 0
+        assert await _pending_count(redis) is None
+
+
+@pytest.mark.anyio
+async def test_drops_a_batch_polar_refuses_settles_its_events_and_reports_them(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    ingest: dict[str, typing.Any],
+) -> None:
+    url, redis = redis_connection
+    on_dropped = AsyncMock()
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client, on_dropped=on_dropped) as outpost:
+        events = [_usage("event-0", 10), _usage("event-1", 10)]
+        for event in events:
+            await outpost.track(event)
+        ingest["statuses"] = [422]
+        await outpost.flush()
+        on_dropped.assert_awaited_once_with(events, "permanent_error")
+        assert await redis.xlen(OUTBOX) == 0
+        key = "outpost:v1:org-1:state:external:alice:tokens"
+        assert await redis.hget(key, f"pending:{BUCKET}:count") is None
+        await outpost.flush()
+        assert len(ingest["requests"]) == 1
+
+
+@pytest.mark.anyio
+async def test_takes_back_the_batch_of_a_flusher_that_died_on_the_next_drain(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    ingest: dict[str, typing.Any],
+) -> None:
+    url, redis = redis_connection
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.track(_usage("event-0", 10))
+        # A flusher read the batch and froze before Polar answered.
+        [[_, entries]] = typing.cast(
+            list[typing.Any],
+            await redis.xreadgroup("polar", "frozen", {OUTBOX: ">"}, count=1000),
+        )
+        await outpost.flush()
+        assert ingest["requests"] == []
+        await redis.xclaim(
+            OUTBOX, "polar", "frozen", 0, [entry for entry, _ in entries], idle=60_000
+        )
+        await outpost.track(_usage("event-1", 10))
+        await outpost.flush()
+        assert sorted(
+            external_id for ids in _delivered(ingest) for external_id in ids
+        ) == ["event-0", "event-1"]
+        assert await redis.xlen(OUTBOX) == 0
+
+
+@pytest.mark.anyio
+async def test_sends_only_full_batches_while_another_flusher_delivers(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    ingest: dict[str, typing.Any],
+) -> None:
+    url, redis = redis_connection
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.track(_usage("event-0", 10))
+        # Another flusher holds a batch in flight.
+        await redis.xreadgroup("polar", "other", {OUTBOX: ">"})
+        for index in range(1, 1002):
+            await outpost.track(_usage(f"event-{index}", 1))
+        await outpost.flush()
+        assert [len(ids) for ids in _delivered(ingest)] == [1000]
+        # The other flusher delivered its batch, and the rest goes.
+        [[entry, _]] = typing.cast(
+            list[typing.Any], await redis.xrange(OUTBOX, count=1)
+        )
+        await redis.xack(OUTBOX, "polar", entry)
+        await redis.xdel(OUTBOX, entry)
+        await outpost.flush()
+        assert [len(ids) for ids in _delivered(ingest)] == [1000, 1]
+        assert _delivered(ingest)[1] == ["event-1001"]
+
+
+@pytest.mark.anyio
+async def test_delivers_what_another_instance_queued_while_it_flushed(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    ingest: dict[str, typing.Any],
+) -> None:
+    url, redis = redis_connection
+    await _seal(redis, BUCKET)
+    async with (
+        Outpost(url, client=polar_client) as first,
+        Outpost(url, client=polar_client) as second,
+    ):
+        await first.track(_usage("event-0", 10))
+        ingest["delay"] = 0.1
+        async with anyio.create_task_group() as group:
+            group.start_soon(first.flush)
+            with anyio.fail_after(1):
+                while not ingest["requests"]:
+                    await anyio.sleep(0.01)
+            await second.track(_usage("event-1", 10))
+            await second.flush()
+    assert sorted(external_id for ids in _delivered(ingest) for external_id in ids) == [
+        "event-0",
+        "event-1",
+    ]
+    assert await redis.xlen(OUTBOX) == 0
 
 
 @pytest.mark.anyio
 async def test_ignores_a_duplicate_external_id(
-    redis_connection: tuple[str, Redis], polar_client: httpx.AsyncClient
+    redis_connection: tuple[str, Redis], polar_client: httpx2.AsyncClient
 ) -> None:
     url, redis = redis_connection
     key = "outpost:v1:org-1:state:external:alice:tokens"
@@ -2125,26 +2651,7 @@ async def test_ignores_a_duplicate_external_id(
         await outpost.track(_usage("same", 10))
         await outpost.track(_usage("same", 10))
         assert await _consumed(outpost) == 10
-    assert await redis.hget(key, f"pending:{BUCKET}:count") == b"1"
-
-
-@pytest.mark.anyio
-async def test_drops_a_cold_bucket_once_every_event_is_confirmed(
-    redis_connection: tuple[str, Redis], polar_client: httpx.AsyncClient
-) -> None:
-    url, redis = redis_connection
-    key = "outpost:v1:org-1:state:external:alice:tokens"
-    await _seal(redis, BUCKET)
-    async with Outpost(url, client=polar_client) as outpost:
-        await outpost.actor(external_customer_id="alice")
-        events = [_usage("event-1", 10), _usage("event-2", 10)]
-        for event in events:
-            await outpost.track(event)
-        await outpost.confirm(events)
-        await _seal(redis, BUCKET + BUCKET_SIZE, 2, 20)
-        assert await _consumed(outpost) == 20
-    assert await redis.hget(key, f"bucket:{BUCKET}:sum") is None
-    assert await redis.hget(key, f"pending:{BUCKET}:sum") is None
+        assert await redis.hget(key, f"pending:{BUCKET}:count") == b"1"
 
 
 # Before applying a snapshot that seals a bucket, the client asks Polar which of the bucket's
@@ -2180,7 +2687,7 @@ async def _wait_for(
 @pytest.mark.anyio
 async def test_settles_the_pending_events_the_snapshot_counts(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     polar_requests: list[tuple[str, typing.Any]],
     changes: dict[str, typing.Any],
@@ -2217,7 +2724,7 @@ async def test_settles_the_pending_events_the_snapshot_counts(
 @pytest.mark.anyio
 async def test_applies_the_snapshot_polar_read_with_its_confirmation(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     changes: dict[str, typing.Any],
     ingested: set[str],
@@ -2249,7 +2756,7 @@ async def test_applies_the_snapshot_polar_read_with_its_confirmation(
 @pytest.mark.anyio
 async def test_drops_a_cold_bucket_once_polar_confirmed_every_pending_event(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     changes: dict[str, typing.Any],
     ingested: set[str],
@@ -2276,7 +2783,7 @@ async def test_drops_a_cold_bucket_once_polar_confirmed_every_pending_event(
 @pytest.mark.anyio
 async def test_confirms_once_per_reducer_whatever_its_meters(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     configuration: dict[str, typing.Any],
     snapshots: dict[str, dict[str, typing.Any]],
     polar_requests: list[tuple[str, typing.Any]],
@@ -2308,7 +2815,7 @@ async def test_confirms_once_per_reducer_whatever_its_meters(
 @pytest.mark.anyio
 async def test_applies_a_snapshot_polar_did_not_confirm_in_time(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     polar_requests: list[tuple[str, typing.Any]],
     changes: dict[str, typing.Any],
     confirmations: dict[str, bool],
@@ -2335,9 +2842,40 @@ async def test_applies_a_snapshot_polar_did_not_confirm_in_time(
 
 
 @pytest.mark.anyio
+async def test_asks_polar_again_at_the_next_read_about_a_snapshot_it_did_not_confirm(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    snapshots: dict[str, dict[str, typing.Any]],
+    changes: dict[str, typing.Any],
+    confirmations: dict[str, bool],
+    ingested: set[str],
+) -> None:
+    url, redis = redis_connection
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client, confirm_timeout=0.05) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        for index in range(3):
+            await outpost.track(_usage(f"event-{index}", 10))
+            ingested.add(f"event-{index}")
+        confirmations["answer"] = False
+        snapshots["external:alice:tokens"] = _sealing(3, 30)
+        await _deliver(outpost, changes, _sealing(3, 30))
+
+        async def consumed(units: int) -> bool:
+            return await _consumed(outpost) == units
+
+        await _wait_for(functools.partial(consumed, 60))
+        # No change of this customer follows, so no pull brings its snapshot back: its
+        # reads do.
+        confirmations["answer"] = True
+        await _wait_for(functools.partial(consumed, 30))
+        assert await _pending_count(redis) is None
+
+
+@pytest.mark.anyio
 async def test_keeps_the_pull_lock_while_a_page_outlasts_its_ttl(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     changes: dict[str, typing.Any],
     confirmations: dict[str, bool],
     monkeypatch: pytest.MonkeyPatch,
@@ -2358,9 +2896,42 @@ async def test_keeps_the_pull_lock_while_a_page_outlasts_its_ttl(
 
 
 @pytest.mark.anyio
+async def test_stops_a_pull_that_lost_its_lock_before_it_counts_the_reset(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    changes: dict[str, typing.Any],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url, redis = redis_connection
+    monkeypatch.setattr("polar.outpost.client.PULL_LOCK_TTL", 0.1)
+    async with Outpost(url, client=polar_client) as outpost:
+        changes.update(delay=0.2, reset=True)
+        await outpost._pull()
+        assert await redis.hget("outpost:v1:org-1:pull", "reset") is None
+
+
+@pytest.mark.anyio
+async def test_stops_a_pull_that_lost_its_lock_while_it_fetched_the_configuration(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    changes: dict[str, typing.Any],
+    configuration_status: dict[str, float],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url, redis = redis_connection
+    monkeypatch.setattr("polar.outpost.client.PULL_LOCK_TTL", 0.1)
+    async with Outpost(url, client=polar_client) as outpost:
+        revision = await redis.hget("outpost:v1:org-1:pull", "configuration")
+        configuration_status["delay"] = 0.2
+        changes["configuration_changed"] = True
+        await outpost._pull()
+        assert await redis.hget("outpost:v1:org-1:pull", "configuration") == revision
+
+
+@pytest.mark.anyio
 async def test_asks_for_pending_events_a_thousand_at_a_time(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     polar_requests: list[tuple[str, typing.Any]],
     changes: dict[str, typing.Any],
@@ -2381,7 +2952,7 @@ async def test_asks_for_pending_events_a_thousand_at_a_time(
 
 @pytest.mark.anyio
 async def test_forgets_pending_events_an_hour_after_their_bucket_was_sealed(
-    redis_connection: tuple[str, Redis], polar_client: httpx.AsyncClient
+    redis_connection: tuple[str, Redis], polar_client: httpx2.AsyncClient
 ) -> None:
     url, redis = redis_connection
     key = "outpost:v1:org-1:state:external:alice:tokens"
@@ -2408,7 +2979,7 @@ async def test_cutoff_keeps_microsecond_precision(
         pending_key = f"outpost:v1:org-1:pending:{identity}:{bucket_start}"
         await write(
             keys=[key, pending_key],
-            args=[bucket_start, 1, tokens, tokens, tokens, external_id],
+            args=[bucket_start, tokens, external_id, ""],
         )
 
     await track(BUCKET, 2, "first")
@@ -2434,7 +3005,7 @@ async def test_cutoff_keeps_microsecond_precision(
 @pytest.mark.anyio
 async def test_telemetry_spans(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     exported_spans: list[ReadableSpan],
     exported_metrics: list[MetricsData],
@@ -2500,7 +3071,7 @@ async def test_telemetry_spans(
 @pytest.mark.parametrize(("telemetry", "environment"), [(False, None), (True, "0")])
 async def test_telemetry_opt_out(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     exported_spans: list[ReadableSpan],
     monkeypatch: pytest.MonkeyPatch,
     telemetry: bool,
@@ -2520,7 +3091,7 @@ async def test_telemetry_opt_out(
 @pytest.mark.anyio
 async def test_flush_telemetry_exports_buffered_spans(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     exported_spans: list[ReadableSpan],
     exported_metrics: list[MetricsData],
     monkeypatch: pytest.MonkeyPatch,
@@ -2546,7 +3117,7 @@ async def test_flush_telemetry_exports_buffered_spans(
 )
 async def test_snapshot_reports_local_value(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     changes: dict[str, typing.Any],
     exported_spans: list[ReadableSpan],
     snapshot_sum: int,
@@ -2602,7 +3173,7 @@ async def test_snapshot_reports_local_value(
 @pytest.mark.anyio
 async def test_snapshot_reports_a_cold_bucket_by_its_pending_part(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     changes: dict[str, typing.Any],
     exported_spans: list[ReadableSpan],
 ) -> None:
@@ -2663,7 +3234,7 @@ async def test_snapshot_reports_a_cold_bucket_by_its_pending_part(
 @pytest.mark.anyio
 async def test_snapshot_reports_the_local_value_before_confirmed_events_settled(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     changes: dict[str, typing.Any],
     ingested: set[str],
@@ -2706,7 +3277,7 @@ async def test_snapshot_reports_the_local_value_before_confirmed_events_settled(
 @pytest.mark.anyio
 async def test_state_lives_a_day_refreshed_by_reads_writes_and_confirmations(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
 ) -> None:
     url, redis = redis_connection
@@ -2732,14 +3303,14 @@ async def test_state_lives_a_day_refreshed_by_reads_writes_and_confirmations(
         pending = f"outpost:v1:org-1:pending:external:alice:tokens:{get_bucket_start(written)}"
         assert 0 < await redis.ttl(pending) <= 3_900
         await redis.expire(key, 60)
-        await outpost.confirm([event])
+        await outpost.flush()
         assert await redis.ttl(key) > 60
 
 
 @pytest.mark.anyio
 async def test_fails_when_polar_refuses_a_pull(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     refusal: dict[str, int | None],
 ) -> None:
     url, _ = redis_connection
@@ -2752,10 +3323,31 @@ async def test_fails_when_polar_refuses_a_pull(
 
 
 @pytest.mark.anyio
+async def test_resumes_once_a_pull_succeeds_after_polar_refused_one(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    refusal: dict[str, int | None],
+) -> None:
+    url, redis = redis_connection
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        refusal["status"] = 401
+        await outpost._pull()
+        with pytest.raises(PolarOutpostError, match="refused"):
+            await outpost.track(_usage("event-0", 10))
+        refusal["status"] = None
+        # Once the pull's backoff ends, the next pull succeeds and ends the failure.
+        with anyio.fail_after(5):
+            while not outpost.connected:
+                await anyio.sleep(0.05)
+        await outpost.track(_usage("event-0", 10))
+
+
+@pytest.mark.anyio
 @pytest.mark.parametrize(("status", "connected"), [(422, False), (429, True)])
 async def test_fails_when_polar_rejects_a_pull_unless_it_only_slows_it_down(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     changes: dict[str, typing.Any],
     status: int,
     connected: bool,
@@ -2770,7 +3362,7 @@ async def test_fails_when_polar_rejects_a_pull_unless_it_only_slows_it_down(
 @pytest.mark.anyio
 async def test_fails_to_start_when_polar_refuses_outpost(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     refusal: dict[str, int | None],
 ) -> None:
     url, _ = redis_connection
@@ -2801,14 +3393,14 @@ async def test_fails_to_start_when_polar_refuses_outpost(
 def test_connection_errors(error: Exception, retryable: bool, nested: bool) -> None:
     if nested:
         error = ExceptionGroup("outer", [ExceptionGroup("inner", [error])])
-    assert _is_connection_error(error) is retryable
+    assert _is_transient_error(error) is retryable
 
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("error_type", [RedisConnectionError, RedisTimeoutError])
 async def test_snapshot_redis_error_keeps_serving(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     monkeypatch: pytest.MonkeyPatch,
     error_type: type[Exception],
@@ -2825,7 +3417,7 @@ async def test_snapshot_redis_error_keeps_serving(
         monkeypatch.setattr(outpost, "_apply_snapshot", apply_snapshot)
         await outpost.actor(external_customer_id="alice")
         await outpost.actor(external_customer_id="alice")
-        # Asked again, the snapshot can arrive after the test's short SNAPSHOT_TIMEOUT.
+        # Asked again, the snapshot can arrive after the test's short snapshot timeout.
         with anyio.fail_after(1):
             while True:
                 try:
@@ -2833,7 +3425,7 @@ async def test_snapshot_redis_error_keeps_serving(
                         meter_id="meter", external_customer_id="alice"
                     )
                     break
-                except _NotReadyError:
+                except NotReadyError:
                     pass
         assert meter is not None and meter.consumed_units == 3
         await outpost.track(
@@ -2889,7 +3481,7 @@ def read_outcomes(exported: list[MetricsData]) -> list[tuple[str, typing.Any]]:
 @pytest.mark.anyio
 async def test_cold_read_waits_for_the_snapshot(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     exported_metrics: list[MetricsData],
 ) -> None:
@@ -2910,7 +3502,7 @@ async def test_cold_read_waits_for_the_snapshot(
 @pytest.mark.anyio
 async def test_balance_is_the_credit_reducer_total_minus_usage(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
 ) -> None:
     url, _ = redis_connection
@@ -2936,7 +3528,7 @@ async def test_balance_is_the_credit_reducer_total_minus_usage(
 @pytest.mark.parametrize(("version_offset", "credited"), [(1, 25), (-1, 10)])
 async def test_a_pulled_credit_snapshot_updates_the_balance_unless_older(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     changes: dict[str, typing.Any],
     exported_spans: list[ReadableSpan],
@@ -2973,7 +3565,7 @@ async def test_a_pulled_credit_snapshot_updates_the_balance_unless_older(
 @pytest.mark.anyio
 async def test_meter_without_a_credit_reducer_reads_no_credits(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     configuration: dict[str, typing.Any],
     snapshots: dict[str, dict[str, typing.Any]],
     exported_metrics: list[MetricsData],
@@ -2991,7 +3583,7 @@ async def test_meter_without_a_credit_reducer_reads_no_credits(
 @pytest.mark.anyio
 async def test_local_events_never_land_in_a_credit_reducer(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     configuration: dict[str, typing.Any],
 ) -> None:
     url, redis = redis_connection
@@ -3023,7 +3615,7 @@ async def test_local_events_never_land_in_a_credit_reducer(
 @pytest.mark.anyio
 async def test_unknown_meter_is_refused(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     exported_metrics: list[MetricsData],
 ) -> None:
     url, _ = redis_connection
@@ -3036,7 +3628,7 @@ async def test_unknown_meter_is_refused(
 @pytest.mark.anyio
 async def test_failed_read_is_an_error(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     exported_metrics: list[MetricsData],
 ) -> None:
     url, _ = redis_connection
@@ -3051,7 +3643,7 @@ async def test_failed_read_is_an_error(
 @pytest.mark.anyio
 async def test_unknown_customer_reads_none(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     exported_metrics: list[MetricsData],
 ) -> None:
@@ -3072,7 +3664,7 @@ async def test_unknown_customer_reads_none(
 @pytest.mark.anyio
 async def test_missing_snapshot_times_out(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     exported_metrics: list[MetricsData],
 ) -> None:
     url, _ = redis_connection
@@ -3088,16 +3680,18 @@ async def test_missing_snapshot_times_out(
 
 @pytest.mark.anyio
 @pytest.mark.parametrize(
-    ("delay", "credited", "outcome"), [(0.05, 200, "ready"), (0.5, 0, "not_ready")]
+    ("delay", "credited", "outcome"),
+    # A balance without its credits would read as overdrawn: the read fails instead.
+    [(0.05, 200, "ready"), (0.5, None, "not_ready")],
 )
 async def test_cold_read_waits_for_its_own_meter(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     configuration: dict[str, typing.Any],
     snapshots: dict[str, dict[str, typing.Any]],
     exported_metrics: list[MetricsData],
     delay: float,
-    credited: int,
+    credited: int | None,
     outcome: str,
 ) -> None:
     url, redis = redis_connection
@@ -3121,22 +3715,25 @@ async def test_cold_read_waits_for_its_own_meter(
         "delay": delay,
     }
     async with Outpost(url, client=polar_client) as outpost:
-        meter = await outpost.meter(meter_id="shared", external_customer_id="alice")
-    assert meter is not None
-    assert meter.credited_units == credited
+        read = outpost.meter(meter_id="shared", external_customer_id="alice")
+        if credited is None:
+            with pytest.raises(PolarOutpostError, match="snapshot is not ready"):
+                await read
+        else:
+            meter = await read
+            assert meter is not None
+            assert meter.credited_units == credited
     assert read_outcomes(exported_metrics) == [("meter", outcome)]
 
 
 @pytest.mark.anyio
 async def test_asks_polar_in_one_request_for_the_cold_customers_the_whole_fleet_reads(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     meter_usage: dict[str, typing.Any],
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     url, _ = redis_connection
-    monkeypatch.setattr("polar.outpost.client.SNAPSHOT_TIMEOUT", 1)
     customers = ["alice", "bob", "carol"]
     for customer in customers:
         snapshots[f"external:{customer}:tokens"] = {
@@ -3148,9 +3745,9 @@ async def test_asks_polar_in_one_request_for_the_cold_customers_the_whole_fleet_
             "external_customer_id": customer,
         }
     async with (
-        Outpost(url, client=polar_client) as first,
-        Outpost(url, client=polar_client) as second,
-        Outpost(url, client=polar_client) as third,
+        Outpost(url, client=polar_client, snapshot_timeout=1) as first,
+        Outpost(url, client=polar_client, snapshot_timeout=1) as second,
+        Outpost(url, client=polar_client, snapshot_timeout=1) as third,
     ):
         await first._pull()
         async with anyio.create_task_group() as tasks:
@@ -3168,16 +3765,14 @@ async def test_asks_polar_in_one_request_for_the_cold_customers_the_whole_fleet_
 @pytest.mark.anyio
 async def test_asks_polar_again_for_a_batch_of_cold_customers_a_passing_error_failed(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     meter_usage: dict[str, typing.Any],
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     url, _ = redis_connection
-    monkeypatch.setattr("polar.outpost.client.SNAPSHOT_TIMEOUT", 2)
     snapshots["external:alice:tokens"] = ALICE_SNAPSHOT
     snapshots["external:alice:credits"] = ALICE_CREDITS
-    async with Outpost(url, client=polar_client) as outpost:
+    async with Outpost(url, client=polar_client, snapshot_timeout=2) as outpost:
         await outpost._pull()
         meter_usage["failures"] = 1
         assert await _consumed(outpost) == 3
@@ -3187,12 +3782,11 @@ async def test_asks_polar_again_for_a_batch_of_cold_customers_a_passing_error_fa
 @pytest.mark.anyio
 async def test_applies_the_cold_customers_it_asked_polar_for_side_by_side(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     url, _ = redis_connection
-    monkeypatch.setattr("polar.outpost.client.SNAPSHOT_TIMEOUT", 2)
     customers = [f"customer-{index}" for index in range(10)]
     for customer in customers:
         snapshots[f"external:{customer}:tokens"] = {
@@ -3225,7 +3819,7 @@ async def test_applies_the_cold_customers_it_asked_polar_for_side_by_side(
             await outpost.meter(external_customer_id=customer, meter_id="meter")
         )
 
-    async with Outpost(url, client=polar_client) as outpost:
+    async with Outpost(url, client=polar_client, snapshot_timeout=2) as outpost:
         await outpost._pull()
         async with anyio.create_task_group() as tasks:
             for customer in customers:
@@ -3238,13 +3832,12 @@ async def test_applies_the_cold_customers_it_asked_polar_for_side_by_side(
 @pytest.mark.anyio
 async def test_asks_polar_for_a_few_batches_of_cold_customers_at_once(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     meter_usage: dict[str, typing.Any],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     url, _ = redis_connection
-    monkeypatch.setattr("polar.outpost.client.SNAPSHOT_TIMEOUT", 2)
     monkeypatch.setattr("polar.outpost.client.SNAPSHOT_BATCH", 4)
     customers = [f"customer-{index}" for index in range(3)]
     for customer in customers:
@@ -3257,7 +3850,7 @@ async def test_asks_polar_for_a_few_batches_of_cold_customers_at_once(
             **ALICE_CREDITS,
             "external_customer_id": customer,
         }
-    async with Outpost(url, client=polar_client) as outpost:
+    async with Outpost(url, client=polar_client, snapshot_timeout=2) as outpost:
         await outpost._pull()
         async with anyio.create_task_group() as tasks:
             for customer in customers:
@@ -3273,7 +3866,7 @@ async def test_asks_polar_for_a_few_batches_of_cold_customers_at_once(
 @pytest.mark.anyio
 async def test_reads_a_customer_a_pull_found_before_its_miss_backs_off(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     changes: dict[str, typing.Any],
 ) -> None:
     url, redis = redis_connection
@@ -3298,7 +3891,7 @@ async def test_reads_a_customer_a_pull_found_before_its_miss_backs_off(
 @pytest.mark.anyio
 async def test_unknown_customer_reads_its_value_once_created(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     clock: types.SimpleNamespace,
 ) -> None:
@@ -3322,7 +3915,7 @@ async def test_unknown_customer_reads_its_value_once_created(
 @pytest.mark.anyio
 async def test_asks_polar_about_an_unknown_customer_once_per_backoff(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     polar_requests: list[tuple[str, typing.Any]],
     clock: types.SimpleNamespace,
@@ -3359,7 +3952,7 @@ async def test_asks_polar_about_an_unknown_customer_once_per_backoff(
 @pytest.mark.anyio
 async def test_redis_errors_raise_outpost_errors(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     exported_metrics: list[MetricsData],
     monkeypatch: pytest.MonkeyPatch,
@@ -3400,7 +3993,7 @@ async def test_redis_errors_raise_outpost_errors(
 @pytest.mark.anyio
 async def test_starts_once_redis_accepts_the_connection_it_first_closed(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     url, _ = redis_connection
@@ -3422,7 +4015,7 @@ async def test_starts_once_redis_accepts_the_connection_it_first_closed(
 @pytest.mark.anyio
 async def test_redis_unavailable_at_startup(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr("polar.outpost.client.TIMEOUT", 0.3)
@@ -3437,7 +4030,7 @@ async def test_redis_unavailable_at_startup(
 @pytest.mark.anyio
 async def test_redis_outage_fails_fast(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     exported_metrics: list[MetricsData],
 ) -> None:
     url, redis = redis_connection
@@ -3463,7 +4056,7 @@ def test_decode_state_rejects_unparsable_values(value: str) -> None:
 @pytest.mark.anyio
 async def test_stored_values_parse_the_same_with_and_without_json(
     redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
+    polar_client: httpx2.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
 ) -> None:
     url, redis = redis_connection
@@ -3507,3 +4100,378 @@ async def test_stored_values_parse_the_same_with_and_without_json(
         for field, value in stored.items():
             assert isinstance(value, bytes)
             assert (field, _number(value.decode())) == (field, json.loads(value))
+
+
+# The commands Outpost sent Redis, as Redis Cloud counts its ops: a script once, whatever it runs.
+@pytest.fixture
+def redis_commands(monkeypatch: pytest.MonkeyPatch) -> collections.Counter[str]:
+    sent: collections.Counter[str] = collections.Counter()
+    pack_command = redis_connection_module.AbstractConnection.pack_command
+
+    def counting(self: typing.Any, *args: typing.Any) -> typing.Any:
+        sent[str(args[0]).lower()] += 1
+        return pack_command(self, *args)
+
+    monkeypatch.setattr(
+        redis_connection_module.AbstractConnection, "pack_command", counting
+    )
+    return sent
+
+
+async def _cost(
+    redis_commands: collections.Counter[str],
+    run: collections.abc.Callable[[], collections.abc.Awaitable[typing.Any]],
+) -> dict[str, int]:
+    redis_commands.clear()
+    await run()
+    return dict(redis_commands)
+
+
+async def _seed(redis: Redis) -> None:
+    await redis.hset(
+        "outpost:v1:org-1:state:external:alice:tokens",
+        mapping={"cold_until": BUCKET, "cold:count": 10, "cold:sum": 10},
+    )
+    await _credit(redis, 100)
+
+
+def _event(customer: str = "alice") -> EventInput:
+    return {
+        "name": "api_call",
+        "external_id": f"event-{next(_ids)}",
+        "external_customer_id": customer,
+        "timestamp": TIMESTAMP,
+        "metadata": {"tokens": 1},
+    }
+
+
+def _snapshot(customer: str, reducer: str, version: int) -> dict[str, typing.Any]:
+    return {
+        "customer_id": None,
+        "external_customer_id": customer,
+        "reducer_id": reducer,
+        "cold_until": BUCKET,
+        "version": version,
+        "count": 1,
+        "sum": 3,
+        "min": 3,
+        "max": 3,
+    }
+
+
+@pytest.mark.anyio
+async def test_reads_a_meter_in_one_command(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    redis_commands: collections.Counter[str],
+) -> None:
+    url, redis = redis_connection
+    await _seed(redis)
+    async with Outpost(url, client=polar_client, telemetry=False) as outpost:
+
+        async def read() -> None:
+            await outpost.meter(external_customer_id="alice", meter_id="meter")
+
+        await read()
+        assert await _cost(redis_commands, read) == {"evalsha": 1}
+
+
+@pytest.mark.anyio
+async def test_tracks_an_event_in_one_command(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    redis_commands: collections.Counter[str],
+) -> None:
+    url, redis = redis_connection
+    await _seed(redis)
+    async with Outpost(url, client=polar_client, telemetry=False) as outpost:
+        warm, measured = _event(), _event()
+        await outpost.track(warm)
+        assert await _cost(redis_commands, lambda: outpost.track(measured)) == {
+            "evalsha": 1
+        }
+
+
+@pytest.mark.anyio
+async def test_flushes_a_thousand_events_in_as_many_commands_as_one(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    redis_commands: collections.Counter[str],
+) -> None:
+    url, redis = redis_connection
+    await _seed(redis)
+    async with Outpost(url, client=polar_client, telemetry=False) as outpost:
+
+        async def flush_cost(events: int) -> dict[str, int]:
+            for _ in range(events):
+                await outpost.track(_event())
+            cost = await _cost(redis_commands, outpost.flush)
+            assert await redis.xlen("outpost:v1:org-1:outbox") == 0
+            return cost
+
+        await flush_cost(1)
+        assert await flush_cost(1000) == await flush_cost(1)
+
+
+@pytest.mark.anyio
+async def test_flushes_twenty_concurrent_requests_for_the_commands_of_one(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    redis_commands: collections.Counter[str],
+) -> None:
+    url, redis = redis_connection
+    await _seed(redis)
+    async with Outpost(url, client=polar_client, telemetry=False) as outpost:
+        await outpost.track(_event())
+        await outpost.flush()
+
+        async def flush_cost(concurrent: int) -> dict[str, int]:
+            await outpost.track(_event())
+
+            async def flush_all() -> None:
+                async with anyio.create_task_group() as group:
+                    for _ in range(concurrent):
+                        group.start_soon(outpost.flush)
+
+            return await _cost(redis_commands, flush_all)
+
+        single = await flush_cost(1)
+        twenty = await flush_cost(20)
+        # The flushes of one instance share its drain, which looks once more for their
+        # events.
+        assert {**twenty, "evalsha": 0} == {**single, "evalsha": 0}
+        assert twenty["evalsha"] - single["evalsha"] <= 1
+
+
+@pytest.mark.anyio
+async def test_tracks_and_flushes_in_one_command_while_another_instance_drains(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    redis_commands: collections.Counter[str],
+    ingest: dict[str, typing.Any],
+) -> None:
+    url, redis = redis_connection
+    await _seed(redis)
+    async with (
+        Outpost(url, client=polar_client, telemetry=False) as first,
+        Outpost(url, client=polar_client, telemetry=False) as second,
+    ):
+        queued = _event()
+        await first.track(queued)
+        # A duplicate queues nothing: it loads the script on the second instance's
+        # connection.
+        await second.track(queued)
+        # Polar holds the first instance's batch past the measure, which counts every
+        # connection.
+        ingest["delay"] = 1.0
+        async with anyio.create_task_group() as group:
+            group.start_soon(first.flush)
+            with anyio.fail_after(1):
+                while not ingest["requests"]:
+                    await anyio.sleep(0.01)
+
+            async def track_and_flush() -> None:
+                await second.track(_event())
+                await second.flush()
+
+            # The instance draining reads the stream again once it lets go of its slot.
+            assert await _cost(redis_commands, track_and_flush) == {"evalsha": 1}
+        assert sum(len(events) for events in ingest["requests"]) == 2
+
+
+@pytest.mark.anyio
+async def test_warms_a_known_customer_over_eleven_reducers_in_one_command(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    redis_commands: collections.Counter[str],
+    configuration: dict[str, typing.Any],
+    snapshots: dict[str, dict[str, typing.Any]],
+) -> None:
+    url, _ = redis_connection
+    usage, credit = configuration["reducers"]
+    configuration["reducers"] = [
+        {**usage, "id": f"tokens-{index}", "meter_ids": [f"meter-{index}"]}
+        for index in range(10)
+    ] + [credit]
+    for reducer in configuration["reducers"]:
+        for customer in ("alice", "bob"):
+            snapshots[f"external:{customer}:{reducer['id']}"] = _snapshot(
+                customer, reducer["id"], BUCKET + 1
+            )
+    async with Outpost(url, client=polar_client, telemetry=False) as outpost:
+        await outpost.actor(external_customer_id="bob")
+        await outpost.actor(external_customer_id="alice")
+        assert await _cost(
+            redis_commands, lambda: outpost.actor(external_customer_id="alice")
+        ) == {"evalsha": 1}
+
+
+@pytest.mark.anyio
+async def test_pulls_and_applies_a_snapshot_in_six_commands(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    redis_commands: collections.Counter[str],
+    changes: dict[str, typing.Any],
+) -> None:
+    url, redis = redis_connection
+    await _seed(redis)
+    async with Outpost(url, client=polar_client, telemetry=False) as outpost:
+        await outpost.meter(external_customer_id="alice", meter_id="meter")
+        await _deliver(outpost, changes, _snapshot("alice", "tokens", BUCKET + 4))
+        changes["changes"].append(_snapshot("alice", "tokens", BUCKET + 5))
+        assert await _cost(redis_commands, outpost._pull) == {
+            "hget": 2,
+            "set": 1,
+            "evalsha": 3,
+        }
+
+
+@pytest.mark.anyio
+async def test_applies_each_snapshot_of_a_page_in_two_commands(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    redis_commands: collections.Counter[str],
+    changes: dict[str, typing.Any],
+) -> None:
+    url, redis = redis_connection
+    customers = ("alice", "bob", "carol")
+    for customer in customers:
+        await redis.hset(
+            f"outpost:v1:org-1:state:external:{customer}:tokens", "cold_until", BUCKET
+        )
+    async with Outpost(url, client=polar_client, telemetry=False) as outpost:
+        # A first page opens the connections the snapshots apply over side by side.
+        await _deliver(
+            outpost,
+            changes,
+            *(_snapshot(customer, "tokens", BUCKET + 4) for customer in customers),
+        )
+        changes["changes"].extend(
+            _snapshot(customer, "tokens", BUCKET + 5) for customer in customers
+        )
+        assert await _cost(redis_commands, outpost._pull) == {
+            "hget": 2,
+            "set": 1,
+            "evalsha": 1 + 2 * len(customers),
+        }
+
+
+@pytest.mark.anyio
+async def test_lets_the_instances_that_lose_the_pull_go_on_without_polling_its_lock(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    redis_commands: collections.Counter[str],
+    changes: dict[str, typing.Any],
+) -> None:
+    url, redis = redis_connection
+    async with (
+        Outpost(url, client=polar_client, telemetry=False) as first,
+        Outpost(url, client=polar_client, telemetry=False) as second,
+        Outpost(url, client=polar_client, telemetry=False) as third,
+    ):
+        # Due, not stale: no read waits for the pull. A stale one still makes the losers wait.
+        await redis.hset(
+            "outpost:v1:org-1:pull", "pulled_at", time.time() * 1000 - 31_000
+        )
+        changes["delay"] = 0.2
+
+        async def refresh() -> None:
+            async with anyio.create_task_group() as group:
+                for outpost in (first, second, third):
+                    group.start_soon(outpost._refresh)
+            # The pulls run in the background: the winner's ends after Polar answers.
+            await anyio.sleep(0.3)
+
+        cost = await _cost(redis_commands, refresh)
+    assert cost["set"] == 3
+    assert "exists" not in cost
+
+
+@pytest.mark.anyio
+async def test_measures_the_size_of_redis_from_the_instance_that_pulled_alone(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    redis_commands: collections.Counter[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url, _ = redis_connection
+
+    # fakeredis has no INFO memory: the command still goes out, and reports nothing.
+    async def info(self: FakeAsyncRedis, section: str) -> dict[str, int]:
+        with contextlib.suppress(ResponseError):
+            await self.execute_command("INFO", section)
+        return {"used_memory": 0}
+
+    monkeypatch.setattr(FakeAsyncRedis, "info", info)
+    async with (
+        Outpost(url, client=polar_client) as first,
+        Outpost(url, client=polar_client) as second,
+        Outpost(url, client=polar_client) as third,
+    ):
+
+        async def pull() -> None:
+            async with anyio.create_task_group() as group:
+                for outpost in (first, second, third):
+                    group.start_soon(outpost._pull)
+            # The instance that pulled measures Redis in the background.
+            await anyio.sleep(0.1)
+
+        cost = await _cost(redis_commands, pull)
+    assert (cost["info"], cost["dbsize"]) == (1, 1)
+
+
+@pytest.mark.anyio
+async def test_pushes_an_instances_telemetry_in_one_command(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    redis_commands: collections.Counter[str],
+) -> None:
+    url, redis = redis_connection
+    async with Outpost(url, client=polar_client) as outpost:
+
+        async def push(name: str) -> None:
+            outpost._telemetry_buffer.add("spans", f"{name}-span;".encode())
+            outpost._telemetry_buffer.add("metrics", f"{name}-metric;".encode())
+            await outpost._push_telemetry()
+
+        await push("first")
+        assert await _cost(redis_commands, lambda: push("second")) == {"evalsha": 1}
+        for kind in ("span", "metric"):
+            assert await redis.lrange(f"outpost:v1:org-1:telemetry:{kind}s", 0, -1) == [
+                f"first-{kind};".encode(),
+                f"second-{kind};".encode(),
+            ]
+
+
+@pytest.mark.anyio
+async def test_lets_the_readers_of_a_cold_customer_wait_on_its_fetch_then_read_it_once(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    redis_commands: collections.Counter[str],
+    snapshots: dict[str, dict[str, typing.Any]],
+) -> None:
+    url, _ = redis_connection
+    for reducer in ("tokens", "credits"):
+        snapshots[f"external:alice:{reducer}"] = {
+            **_snapshot("alice", reducer, BUCKET + 1),
+            "delay": 0.08,
+        }
+    async with (
+        Outpost(url, client=polar_client, telemetry=False) as first,
+        Outpost(url, client=polar_client, telemetry=False) as second,
+    ):
+
+        async def read() -> None:
+            async with anyio.create_task_group() as group:
+                for outpost in (first, second):
+                    group.start_soon(
+                        functools.partial(
+                            outpost.meter,
+                            external_customer_id="alice",
+                            meter_id="meter",
+                        )
+                    )
+
+        cost = await _cost(redis_commands, read)
+    assert cost["evalsha"] + cost.get("eval", 0) <= 15
+    assert cost["exists"] <= 2 * (0.08 / 0.025 + 6)

@@ -1,8 +1,10 @@
 from collections.abc import Sequence
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import Select, and_, or_, select, update
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import joinedload
 
 from polar.email.deduplication import payment_method_expiration_reminder_key_sql
@@ -71,6 +73,37 @@ class PaymentMethodRepository(
             .options(*options)
         )
         return await self.get_one_or_none(statement)
+
+    async def insert_on_conflict_do_nothing(
+        self,
+        *,
+        customer_id: UUID,
+        processor: PaymentProcessor,
+        processor_id: str,
+        type: str,
+        method_metadata: dict[str, Any],
+    ) -> None:
+        """
+        Atomically insert a payment method, ignoring it if it already exists.
+
+        Closes the race between SELECT and INSERT when the same payment method
+        is saved concurrently (e.g. duplicate confirm calls, or confirm racing
+        with a webhook).
+        """
+        statement = (
+            pg_insert(PaymentMethod)
+            .values(
+                customer_id=customer_id,
+                processor=processor,
+                processor_id=processor_id,
+                type=type,
+                method_metadata=method_metadata,
+            )
+            .on_conflict_do_nothing(
+                index_elements=["processor", "processor_id", "customer_id"]
+            )
+        )
+        await self.session.execute(statement)
 
     def get_by_customer_statement(self, customer_id: UUID) -> Select[PaymentMethod]:
         return self.get_base_statement().where(PaymentMethod.customer_id == customer_id)

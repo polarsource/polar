@@ -2,7 +2,7 @@ import json
 from decimal import Decimal
 from typing import Any, NewType
 
-from sqlalchemy import Connection, Engine, event
+from sqlalchemy import Engine
 from sqlalchemy import create_engine as _create_engine
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 from sqlalchemy.ext.asyncio import AsyncSession as _AsyncSession
@@ -56,21 +56,36 @@ def create_async_engine(
     connect_timeout: float | None = None,
     statement_cache_size: int = 100,
     prepared_statement_cache_size: int = 0,
+    query_cache_size: int = 128,
     debug: bool = False,
     ssl: str | None = None,
 ) -> AsyncEngine:
-    connect_args: dict[str, Any] = {
-        "statement_cache_size": statement_cache_size,
-        "prepared_statement_cache_size": prepared_statement_cache_size,
-    }
-    if application_name is not None:
-        connect_args["server_settings"] = {"application_name": application_name}
-    if command_timeout is not None:
-        connect_args["command_timeout"] = command_timeout
-    if connect_timeout is not None:
-        connect_args["timeout"] = connect_timeout
-    if ssl is not None:
-        connect_args["ssl"] = ssl
+    connect_args: dict[str, Any]
+    if dsn.startswith("postgresql+psycopg"):
+        connect_args = {"prepare_threshold": None}
+        if application_name is not None:
+            connect_args["application_name"] = application_name
+        if command_timeout is not None:
+            connect_args["options"] = (
+                f"-c statement_timeout={int(command_timeout * 1000)}"
+            )
+        if connect_timeout is not None:
+            connect_args["connect_timeout"] = int(connect_timeout)
+        if ssl is not None:
+            connect_args["sslmode"] = ssl
+    else:
+        connect_args = {
+            "statement_cache_size": statement_cache_size,
+            "prepared_statement_cache_size": prepared_statement_cache_size,
+        }
+        if application_name is not None:
+            connect_args["server_settings"] = {"application_name": application_name}
+        if command_timeout is not None:
+            connect_args["command_timeout"] = command_timeout
+        if connect_timeout is not None:
+            connect_args["timeout"] = connect_timeout
+        if ssl is not None:
+            connect_args["ssl"] = ssl
 
     return _create_async_engine(
         dsn,
@@ -81,7 +96,8 @@ def create_async_engine(
         pool_pre_ping=pool_pre_ping,
         pool_logging_name=pool_logging_name,
         json_serializer=json_serializer,
-        query_cache_size=128,
+        query_cache_size=query_cache_size,
+        hide_parameters=not debug,
     )
 
 
@@ -92,7 +108,6 @@ def create_sync_engine(
     pool_logging_name: str | None = None,
     pool_size: int | None = None,
     pool_recycle: int | None = None,
-    command_timeout: float | None = None,
     connect_timeout: float | None = None,
     debug: bool = False,
     sslmode: str | None = None,
@@ -104,26 +119,15 @@ def create_sync_engine(
         connect_args["connect_timeout"] = int(connect_timeout)
     if sslmode is not None:
         connect_args["sslmode"] = sslmode
-    engine = _create_engine(
+    return _create_engine(
         dsn,
         echo=debug,
         connect_args=connect_args,
         pool_size=pool_size,
         pool_recycle=pool_recycle,
         pool_logging_name=pool_logging_name,
+        hide_parameters=not debug,
     )
-    if command_timeout is not None:
-        statement_timeout_ms = int(command_timeout * 1000)
-
-        def set_statement_timeout(connection: Connection) -> None:
-            # SET LOCAL stays on the transaction's backend with PgBouncer pooling.
-            connection.exec_driver_sql(
-                f"SET LOCAL statement_timeout = {statement_timeout_ms}"
-            )
-
-        event.listen(engine, "begin", set_statement_timeout)
-
-    return engine
 
 
 type AsyncSessionMaker = async_sessionmaker[AsyncSession]

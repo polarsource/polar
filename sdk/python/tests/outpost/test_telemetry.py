@@ -11,16 +11,16 @@ from opentelemetry.trace import StatusCode
 
 from polar.outpost.telemetry import (
     SAMPLE_RATE_ATTRIBUTE,
-    Outbox,
-    OutboxSpanExporter,
+    BufferSpanExporter,
+    TelemetryBuffer,
     create_meter_provider,
 )
 
 
 def test_keeps_the_spans_with_an_error_a_drift_or_the_sample_rate() -> None:
-    outbox = Outbox()
+    buffer = TelemetryBuffer()
     provider = TracerProvider()
-    provider.add_span_processor(SimpleSpanProcessor(OutboxSpanExporter(outbox)))
+    provider.add_span_processor(SimpleSpanProcessor(BufferSpanExporter(buffer)))
     tracer = provider.get_tracer("test")
     tracer.start_span("outpost.routine").end()
     tracer.start_span("outpost.sampled", attributes={SAMPLE_RATE_ATTRIBUTE: 10}).end()
@@ -33,7 +33,7 @@ def test_keeps_the_spans_with_an_error_a_drift_or_the_sample_rate() -> None:
     provider.shutdown()
 
     # Each export stays its own message; concatenated, they read as one.
-    spans, _ = outbox.take()
+    spans, _ = buffer.take()
     request = ExportTraceServiceRequest()
     request.ParseFromString(b"".join(spans))
     names = {
@@ -46,12 +46,12 @@ def test_keeps_the_spans_with_an_error_a_drift_or_the_sample_rate() -> None:
 
 
 def test_keeps_metrics_in_the_outbox_as_deltas() -> None:
-    outbox = Outbox()
-    provider = create_meter_provider(outbox)
+    buffer = TelemetryBuffer()
+    provider = create_meter_provider(buffer)
     provider.get_meter("test").create_counter("outpost.test").add(1)
     provider.shutdown()
 
-    _, metrics = outbox.take()
+    _, metrics = buffer.take()
     request = ExportMetricsServiceRequest()
     request.ParseFromString(b"".join(metrics))
     metric = request.resource_metrics[0].scope_metrics[0].metrics[0]

@@ -37,6 +37,7 @@ export const CustomerOverview = ({
       <CustomerOrdersTable organization={organization} customer={customer} />
       <CustomerPaymentsTable organization={organization} customer={customer} />
       <CustomerBenefitGrantsTable
+        key={customer.id}
         organization={organization}
         customer={customer}
       />

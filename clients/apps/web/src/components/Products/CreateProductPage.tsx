@@ -27,7 +27,6 @@ import * as Sentry from '@sentry/nextjs'
 import { Alert, Button } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Form } from '@polar-sh/ui/components/ui/form'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 import type { FieldErrors } from 'react-hook-form'
@@ -36,8 +35,8 @@ import { DashboardBody } from '../Layout/DashboardLayout'
 import { getStatusRedirect } from '../Toast/utils'
 import { Benefits } from './Benefits/Benefits'
 import { duplicateProductMedia } from './duplicateMedia'
+import { ManageWithAgentButton } from './ManageWithAgent'
 import ProductForm from './ProductForm/ProductForm'
-import { WandSparkles as Wand2Icon } from '@polar-sh/orbit/icons'
 export interface CreateProductPageProps {
   organization: schemas['Organization']
   sourceProduct?: schemas['Product']
@@ -270,12 +269,7 @@ export const CreateProductPage = ({
       className="gap-y-16"
       header={
         !sourceProduct ? (
-          <Link href={`/dashboard/${organization.slug}/products/new/ai`}>
-            <Button variant="secondary">
-              <Wand2Icon className="mr-2" />
-              Create with AI
-            </Button>
-          </Link>
+          <ManageWithAgentButton organization={organization} />
         ) : undefined
       }
     >

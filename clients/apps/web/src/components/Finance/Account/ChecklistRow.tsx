@@ -4,14 +4,14 @@ import { LoadingBox } from '@/components/Shared/LoadingBox'
 import { ORGANIZATION_ACCESS_TOKEN_RESUME_PARAM } from '@/components/Settings/organizationAccessTokenContinuation'
 import { useOrganizationDomains } from '@/hooks/queries'
 import { useAccountSetup } from '@/providers/accountSetup'
-import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { useDashboardOrganization } from '@/hooks/dashboardOrganization'
 import { schemas } from '@polar-sh/client'
 import { Pill, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
 import { AnimatePresence, m } from 'motion/react'
 import { useSearchParams } from 'next/navigation'
-import { useContext, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { StatusIcon } from './StatusIcon'
 import { COMMON_REASON_LABELS, STEP_CONFIG } from './sections'
 import {
@@ -44,7 +44,7 @@ const collapsedActionLabel = (
 }
 
 export const ChecklistRow = ({ step, isLoading }: Props) => {
-  const { organization } = useContext(OrganizationContext)
+  const organization = useDashboardOrganization()
   const { targetStepKey, setTargetStepKey } = useAccountSetup()
   const searchParams = useSearchParams()
   const isTokenCreationResume =

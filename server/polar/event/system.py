@@ -30,6 +30,9 @@ class SystemEvent(StrEnum):
     benefit_cycled = "benefit.cycled"
     benefit_updated = "benefit.updated"
     benefit_revoked = "benefit.revoked"
+    benefit_manually_granted = "benefit.manually_granted"
+    benefit_manually_revoked = "benefit.manually_revoked"
+    benefit_unrevoked = "benefit.unrevoked"
     subscription_created = "subscription.created"
     subscription_updated = "subscription.updated"
     subscription_canceled = "subscription.canceled"
@@ -68,6 +71,9 @@ SYSTEM_EVENT_LABELS: dict[str, str] = {
     "benefit.cycled": "Benefit Cycled",
     "benefit.updated": "Benefit Updated",
     "benefit.revoked": "Benefit Revoked",
+    "benefit.manually_granted": "Benefit Manually Granted",
+    "benefit.manually_revoked": "Benefit Manually Revoked",
+    "benefit.unrevoked": "Benefit Unrevoked",
     "subscription.created": "Subscription Created",
     "subscription.updated": "Subscription Updated",
     "subscription.canceled": "Subscription Canceled",
@@ -726,6 +732,19 @@ def build_system_event(
 @overload
 def build_system_event(
     name: Literal[SystemEvent.benefit_revoked],
+    customer: Customer,
+    organization: Organization,
+    metadata: BenefitGrantMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[
+        SystemEvent.benefit_manually_granted,
+        SystemEvent.benefit_manually_revoked,
+        SystemEvent.benefit_unrevoked,
+    ],
     customer: Customer,
     organization: Organization,
     metadata: BenefitGrantMetadata,

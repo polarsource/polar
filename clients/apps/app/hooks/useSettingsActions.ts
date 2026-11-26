@@ -1,6 +1,7 @@
 import { useLogout } from '@/hooks/auth'
 import { useDeleteOrganization } from '@/hooks/polar/organizations'
 import { useDeleteUser } from '@/hooks/polar/users'
+import { capture } from '@/utils/posthog'
 import { schemas } from '@polar-sh/client'
 import { useCallback, useState } from 'react'
 import { Alert, Linking } from 'react-native'
@@ -90,6 +91,7 @@ export const useSettingsActions = ({
       }
 
       if (data?.deleted) {
+        capture('app:user:account:delete')
         logout()
       } else {
         setIsDeletingAccount(false)

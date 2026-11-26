@@ -2,6 +2,7 @@ import inspect
 from typing import Annotated, Literal
 
 from pydantic import (
+    MISSING,
     UUID4,
     AliasChoices,
     AliasPath,
@@ -11,6 +12,7 @@ from pydantic import (
 )
 from pydantic.json_schema import SkipJsonSchema
 
+from polar.enums import SubscriptionProrationBehavior
 from polar.kit.schemas import (
     IDSchema,
     Int32,
@@ -19,7 +21,7 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
-from polar.kit.versioning import QuerySchema, Version
+from polar.kit.versioning import Omissible, QuerySchema, Version
 from polar.meter.schemas import NAME_DESCRIPTION as METER_NAME_DESCRIPTION
 from polar.models.subscription import CustomerCancellationReason
 from polar.product.schemas import (
@@ -33,9 +35,10 @@ from polar.product.schemas import (
 from polar.subscription.schemas import (
     PendingSubscriptionUpdate,
     SubscriptionBase,
+    SubscriptionChargePreview,
     SubscriptionMeterBase,
 )
-from polar.version import V2026_10
+from polar.version import V2026_10, V2027_01
 
 from .organization import CustomerOrganization
 
@@ -66,6 +69,9 @@ class CustomerSubscription(SubscriptionBase):
         deprecated="Use `customer_id`.",
     )
     product: CustomerSubscriptionProduct
+    payment_method_id: Annotated[UUID4 | None, Version(starting_from=V2027_01)] = Field(
+        description="ID of the payment method pinned to the subscription, if any."
+    )
 
     price: Annotated[SkipJsonSchema[ProductPrice], Version(up_to=V2026_10)] = Field(
         deprecated="Use `prices` instead.",
@@ -115,7 +121,7 @@ class CustomerSubscriptionUpdateUnits(Schema):
     )
 
 
-class CustomerSubscriptionChangePreviewProduct(Schema):
+class CustomerSubscriptionChangeProduct(Schema):
     model_config = ConfigDict(extra="forbid")
 
     product_id: UUID4 = Field(
@@ -123,7 +129,7 @@ class CustomerSubscriptionChangePreviewProduct(Schema):
     )
 
 
-class CustomerSubscriptionChangePreviewSeats(Schema):
+class CustomerSubscriptionChangeSeats(Schema):
     model_config = ConfigDict(extra="forbid")
 
     seats: Int32 = Field(
@@ -132,7 +138,7 @@ class CustomerSubscriptionChangePreviewSeats(Schema):
     )
 
 
-class CustomerSubscriptionChangePreviewUnits(Schema):
+class CustomerSubscriptionChangeUnits(Schema):
     model_config = ConfigDict(extra="forbid")
 
     units: Int32 = Field(
@@ -141,19 +147,27 @@ class CustomerSubscriptionChangePreviewUnits(Schema):
     )
 
 
-CustomerSubscriptionChangePreview = Annotated[
-    CustomerSubscriptionChangePreviewProduct
-    | CustomerSubscriptionChangePreviewSeats
-    | CustomerSubscriptionChangePreviewUnits,
-    SetSchemaReference("CustomerSubscriptionChangePreview"),
+CustomerSubscriptionChange = Annotated[
+    CustomerSubscriptionChangeProduct
+    | CustomerSubscriptionChangeSeats
+    | CustomerSubscriptionChangeUnits,
+    SetSchemaReference("CustomerSubscriptionChange"),
 ]
+
+
+class CustomerSubscriptionChangePreview(SubscriptionChargePreview):
+    """Preview of what a subscription change would cost, without applying it."""
+
+    proration_behavior: Annotated[
+        SubscriptionProrationBehavior, Version(starting_from=V2027_01)
+    ] = Field(description="How the change would be billed.")
 
 
 class CustomerSubscriptionCancel(Schema):
     model_config = ConfigDict(extra="forbid")
 
-    cancel_at_period_end: bool | None = Field(
-        None,
+    cancel_at_period_end: Omissible[bool] = Field(
+        MISSING,
         description=inspect.cleandoc(
             """
         Cancel an active subscription once the current period ends.
@@ -228,11 +242,30 @@ class CustomerSubscriptionResume(Schema):
     )
 
 
+class CustomerSubscriptionReactivate(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    reactivate: Literal[True] = Field(
+        description="Reactivate a subscription whose trial ended."
+    )
+
+
 class CustomerSubscriptionUpdateClear(Schema):
     model_config = ConfigDict(extra="forbid")
 
     pending_update: None = Field(description="Clear the pending subscription update.")
 
+
+CustomerSubscriptionUpdateV2026_10 = Annotated[
+    CustomerSubscriptionUpdateProduct
+    | CustomerSubscriptionUpdateSeats
+    | CustomerSubscriptionUpdateUnits
+    | CustomerSubscriptionCancel
+    | CustomerSubscriptionPause
+    | CustomerSubscriptionResume
+    | CustomerSubscriptionUpdateClear,
+    SetSchemaReference("CustomerSubscriptionUpdate"),
+]
 
 CustomerSubscriptionUpdate = Annotated[
     CustomerSubscriptionUpdateProduct
@@ -241,6 +274,7 @@ CustomerSubscriptionUpdate = Annotated[
     | CustomerSubscriptionCancel
     | CustomerSubscriptionPause
     | CustomerSubscriptionResume
+    | CustomerSubscriptionReactivate
     | CustomerSubscriptionUpdateClear,
     SetSchemaReference("CustomerSubscriptionUpdate"),
 ]

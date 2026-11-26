@@ -1,5 +1,6 @@
 'use client'
 
+import { useDashboardOrganization } from '@/hooks/dashboardOrganization'
 import { enums, schemas } from '@polar-sh/client'
 import {
   Select,
@@ -44,6 +45,11 @@ const ALL_AGGREGATION_FUNCTIONS: AggregationFunction[] = [
 
 const MeterFormAggregation = () => {
   const { control } = useFormContext<schemas['MeterCreate']>()
+  const organization = useDashboardOrganization()
+  const aggregationFunctions = organization.feature_settings
+    ?.reducer_billing_enabled
+    ? ALL_AGGREGATION_FUNCTIONS.filter((fn) => fn !== 'unique')
+    : ALL_AGGREGATION_FUNCTIONS
   const func = useWatch({ control, name: 'aggregation.func' })
   const needsProperty = func && func !== 'count'
 
@@ -65,7 +71,7 @@ const MeterFormAggregation = () => {
                   <SelectValue placeholder="Select a function" />
                 </SelectTrigger>
                 <SelectContent>
-                  {ALL_AGGREGATION_FUNCTIONS.map((fn) => (
+                  {aggregationFunctions.map((fn) => (
                     <SelectItem key={fn} value={fn}>
                       {AGGREGATION_LABELS[fn]}
                     </SelectItem>

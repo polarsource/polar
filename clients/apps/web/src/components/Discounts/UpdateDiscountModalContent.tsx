@@ -72,7 +72,9 @@ const UpdateDiscountForm = ({
       const { data: updatedDiscount, error } = await updateDiscount.mutateAsync(
         {
           ...safeUpdate,
-          amounts: isDiscountFixed(discount) ? amounts : null,
+          amounts: isDiscountFixed(discount) ? amounts : undefined,
+          duration_in_months: safeUpdate['duration_in_months'] ?? undefined,
+          external_id: safeUpdate['external_id'] ?? undefined,
         } as schemas['DiscountUpdate'],
       )
 

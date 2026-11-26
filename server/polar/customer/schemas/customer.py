@@ -1,10 +1,14 @@
+import re
 from datetime import datetime
 from typing import Annotated, Literal
 
 from annotated_types import MaxLen
 from fastapi import Path
 from pydantic import (
+    MISSING,
     UUID4,
+    AfterValidator,
+    BeforeValidator,
     Discriminator,
     Field,
     Tag,
@@ -31,9 +35,10 @@ from polar.kit.schemas import (
     Schema,
     SetSchemaReference,
     TimestampedSchema,
+    empty_str_to_none,
 )
 from polar.kit.time_queries import TimeInterval
-from polar.kit.versioning import QuerySchema
+from polar.kit.versioning import Omissible, QuerySchema
 from polar.member import MemberOwnerCreate
 from polar.models.customer import CustomerType
 from polar.organization.schemas import OrganizationID
@@ -60,17 +65,30 @@ _email_example = "customer@example.com"
 _name_description = "The name of the customer."
 _name_example = "John Doe"
 
+_URL_SCHEME_PATTERN = re.compile(r"https?://", re.IGNORECASE)
+
+
+def _reject_url_in_name(value: str | None) -> str | None:
+    if value is not None and _URL_SCHEME_PATTERN.search(value):
+        raise ValueError("The name can't contain URLs.")
+    return value
+
+
+NoURLValidator = AfterValidator(_reject_url_in_name)
+
 CustomerNameInput = Annotated[
     str,
     MaxLen(256),
     Field(description=_name_description, examples=[_name_example]),
     EmptyStrToNoneValidator,
+    NoURLValidator,
 ]
 
 CustomerBillingNameInput = Annotated[
     str,
     MaxLen(256),
     EmptyStrToNoneValidator,
+    NoURLValidator,
 ]
 
 
@@ -151,23 +169,23 @@ CustomerCreate = Annotated[
 
 
 class CustomerUpdateBase(MetadataInputMixin, Schema):
-    email: EmailStrDNS | None = Field(
-        default=None, description=_email_description, examples=[_email_example]
+    email: Omissible[EmailStrDNS] = Field(
+        default=MISSING, description=_email_description, examples=[_email_example]
     )
     name: CustomerNameInput | None = None
-    billing_address: AddressInput | None = None
-    tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
+    billing_address: Omissible[AddressInput] = MISSING
+    tax_id: Annotated[Omissible[str | None], EmptyStrToNoneValidator] = MISSING
     locale: Locale | None = None
 
 
 class CustomerUpdate(CustomerUpdateBase):
-    external_id: Annotated[str | None, EmptyStrToNoneValidator] = Field(
-        default=None,
+    external_id: Omissible[Annotated[str, BeforeValidator(empty_str_to_none)]] = Field(
+        default=MISSING,
         description=_external_id_description,
         examples=[_external_id_example],
     )
-    type: CustomerType | None = Field(
-        default=None,
+    type: Omissible[CustomerType] = Field(
+        default=MISSING,
         description=(
             "The customer type. "
             "Can only be upgraded from 'individual' to 'team', never downgraded."

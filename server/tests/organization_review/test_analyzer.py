@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
-import httpx
+import httpx2
 import pytest
 from pydantic_ai.exceptions import (
     ConcurrencyLimitExceeded,
@@ -476,8 +476,8 @@ class TestAnalyzeReraisesOnError:
                 model_name="gpt-5.5",
                 body={"message": "service unavailable"},
             ),
-            httpx.ConnectError("connection refused"),
-            httpx.ReadTimeout("upstream slow"),
+            httpx2.ConnectError("connection refused"),
+            httpx2.ReadTimeout("upstream slow"),
             UnexpectedModelBehavior("output schema violation"),
             ConcurrencyLimitExceeded("backpressure"),
             # Per-run timeout (asyncio.wait_for raises TimeoutError)

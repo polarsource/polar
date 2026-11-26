@@ -7,7 +7,10 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import joinedload
 
 from polar import tasks  # noqa: F401
-from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
+from polar.kit.db.postgres import (  # lint-skip: dry-run
+    AsyncSession,
+    create_async_sessionmaker,
+)
 from polar.models import CustomerMeter, MeterReducer, Reducer, ReducerBucket
 from polar.models.reducer import ReducerKind
 from polar.postgres import create_async_engine
@@ -93,7 +96,7 @@ async def backfill(
                 after = last
                 typer.echo(f"Rebuilt up to customer meter {last}")
     finally:
-        await redis.close()
+        await redis.aclose()
         await engine.dispose()
 
 

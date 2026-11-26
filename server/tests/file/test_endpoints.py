@@ -6,7 +6,7 @@ from io import BytesIO
 import pytest
 from botocore.response import StreamingBody
 from botocore.stub import Stubber
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.exceptions import BadRequest
@@ -111,6 +111,7 @@ class TestEndpoints:
         assert record.is_uploaded is False
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.parametrize("size_mismatch", [False, True])
     async def test_complete_multipart_upload(
         self,
         client: AsyncClient,
@@ -118,10 +119,23 @@ class TestEndpoints:
         organization: Organization,
         logo_jpg: TestFile,
         s3_stub: Stubber,
+        size_mismatch: bool,
     ) -> None:
         created = await logo_jpg.create(session, organization, s3_stub, parts=2)
         parts = logo_jpg.completed_parts(created)
-        head = logo_jpg.stub_complete(s3_stub, created, parts)
+        head = logo_jpg.stub_complete(
+            s3_stub, created, parts, content_length=created.size + int(size_mismatch)
+        )
+        if size_mismatch:
+            s3_stub.add_response(
+                "delete_object",
+                {},
+                {
+                    "Bucket": S3_SERVICES[created.service].bucket,
+                    "Key": created.path,
+                    "VersionId": head["VersionId"],
+                },
+            )
 
         response = await client.post(
             f"/v1/files/{created.id}/uploaded",
@@ -130,14 +144,45 @@ class TestEndpoints:
             ).model_dump(mode="json"),
         )
 
-        assert response.status_code == 200
         repository = FileRepository.from_session(session)
         record = await repository.get_by_id(created.id)
         assert record
+        if size_mismatch:
+            assert response.status_code == 403
+            assert record.is_uploaded is False
+            return
+
+        assert response.status_code == 200
         assert record.is_uploaded is True
         assert record.storage_version == head["VersionId"]
         assert record.checksum_etag == head["ETag"]
         assert record.checksum_sha256_hex == logo_jpg.hex
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_rejects_upload_path_for_another_file(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        organization: Organization,
+        logo_jpg: TestFile,
+        s3_stub: Stubber,
+    ) -> None:
+        target = await logo_jpg.create(session, organization, s3_stub)
+        other = await logo_jpg.create(session, organization, s3_stub)
+
+        response = await client.post(
+            f"/v1/files/{target.id}/uploaded",
+            json=FileUploadCompleted(
+                id=other.upload.id,
+                path=other.path,
+                parts=logo_jpg.completed_parts(other),
+            ).model_dump(mode="json"),
+        )
+
+        assert response.status_code == 403
+        record = await FileRepository.from_session(session).get_by_id(target.id)
+        assert record
+        assert record.is_uploaded is False
 
 
 @pytest.mark.anyio
@@ -148,11 +193,8 @@ class TestSVGSanitization:
         organization: Organization,
         file: TestFile,
         s3_stub: Stubber,
-        declared_size: int | None = None,
     ) -> tuple[File, FileUploadCompleted]:
         create_schema = file.build_product_media_create(organization.id)
-        if declared_size is not None:
-            create_schema = create_schema.model_copy(update={"size": declared_size})
         file.stub_create(s3_stub, create_schema.service)
         created = await file_service.generate_presigned_upload(
             session, organization=organization, create_schema=create_schema
@@ -261,24 +303,14 @@ class TestSVGSanitization:
         assert completed.checksum_sha256_hex == malicious_svg.hex
         assert completed.is_uploaded
 
-    @pytest.mark.parametrize(
-        ("asset", "declared_size", "error"),
-        [
-            ("malformed.svg", None, "Invalid SVG file"),
-            ("malicious.svg", 1, "larger than its declared size"),
-        ],
-    )
-    async def test_rejects_invalid_upload(
+    async def test_rejects_malformed_svg(
         self,
         session: AsyncSession,
         organization: Organization,
         s3_stub: Stubber,
-        asset: str,
-        declared_size: int | None,
-        error: str,
     ) -> None:
         record, completed_schema = await self._upload(
-            session, organization, TestFile(asset), s3_stub, declared_size
+            session, organization, TestFile("malformed.svg"), s3_stub
         )
         s3_stub.add_response(
             "delete_object",
@@ -286,7 +318,7 @@ class TestSVGSanitization:
             {"Bucket": S3_SERVICES[record.service].bucket, "Key": record.path},
         )
 
-        with pytest.raises(BadRequest, match=error):
+        with pytest.raises(BadRequest, match="Invalid SVG file"):
             await file_service.complete_upload(
                 session, file=record, completed_schema=completed_schema
             )

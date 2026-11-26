@@ -5,7 +5,7 @@ from decimal import Decimal
 
 import pytest
 from pytest_codspeed import BenchmarkFixture
-from sqlalchemy import update
+from sqlalchemy import text, update
 
 from polar.customer_meter.service import customer_meter as customer_meter_service
 from polar.event.repository import EventRepository
@@ -82,8 +82,12 @@ def test_update_customer_meter_100k_events(
             await reducer_service.rollup(
                 session, redis, organization.id, [Event(**row) for row in rows]
             )
+            # An earlier benchmark's ANALYZE can leave events counted as empty, and
+            # each insert would then check its root_id by scanning the whole table.
+            if bucket == 0:
+                await session.execute(text("ANALYZE events"))
         await customer_meter_service.update_customer_meter(
-            session, customer, meter, activate_meter=True
+            session, redis, customer, meter, activate_meter=True
         )
         await session.flush()
         return customer, meter
@@ -107,7 +111,9 @@ def test_update_customer_meter_100k_events(
 
     def balance() -> tuple[CustomerMeter | None, bool]:
         return run(
-            customer_meter_service.update_customer_meter(session, customer, meter)
+            customer_meter_service.update_customer_meter(
+                session, redis, customer, meter
+            )
         )
 
     begin()

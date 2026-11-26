@@ -1,13 +1,14 @@
 from collections.abc import Collection, Sequence
+from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Select, delete, or_, select
+from sqlalchemy import Select, delete, exists, or_, select
 from sqlalchemy.orm import joinedload
 
 from polar.kit.repository import RepositoryBase
 from polar.kit.repository.base import Options
 from polar.meter.repository import MeterRepository
-from polar.models import Meter, MeterReducer, Reducer
+from polar.models import Event, Meter, MeterReducer, Reducer, StagedEvent
 from polar.models.reducer import ReducerKind
 
 
@@ -106,5 +107,24 @@ class ReducerRepository(RepositoryBase[Reducer]):
             self.get_active_statement(kinds)
             .where(Reducer.organization_id == organization_id)
             .options(*options)
+        )
+        return await self.get_all(statement)
+
+    async def get_all_active_with_events(
+        self, kinds: Collection[ReducerKind], start: datetime, end: datetime
+    ) -> Sequence[Reducer]:
+        """Reducers of the kinds used by at least one active meter, in organizations
+        with events in the range, including those still in `staged_events`."""
+        statement = self.get_active_statement(kinds).where(
+            or_(
+                *(
+                    exists().where(
+                        model.organization_id == Reducer.organization_id,
+                        model.timestamp >= start,
+                        model.timestamp < end,
+                    )
+                    for model in (Event, StagedEvent)
+                )
+            )
         )
         return await self.get_all(statement)

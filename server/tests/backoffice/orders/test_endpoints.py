@@ -1,11 +1,11 @@
 import uuid
 from collections.abc import AsyncGenerator
 
-import httpx
+import httpx2
 import pytest
 from pytest_mock import MockerFixture
 
-from polar.backoffice import app as backoffice_app
+from polar.backoffice.app import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
 from polar.kit.address import Address, CountryAlpha2
 from polar.models import Customer, Order, Product
@@ -23,7 +23,7 @@ from tests.fixtures.random_objects import (
 @pytest.fixture
 async def backoffice_client(
     session: AsyncSession, backoffice_user_session: BackofficeUserSession
-) -> AsyncGenerator[httpx.AsyncClient]:
+) -> AsyncGenerator[httpx2.AsyncClient]:
     overrides = {
         get_db_session: lambda: session,
         get_db_read_session: lambda: session,
@@ -31,8 +31,8 @@ async def backoffice_client(
     }
     backoffice_app.dependency_overrides.update(overrides)
     try:
-        async with httpx.AsyncClient(
-            transport=httpx.ASGITransport(app=backoffice_app), base_url="http://test"
+        async with httpx2.AsyncClient(
+            transport=httpx2.ASGITransport(app=backoffice_app), base_url="http://test"
         ) as client:
             yield client
     finally:
@@ -65,7 +65,7 @@ class TestRefund:
     )
     async def test_tax_id_validation_error(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         order: Order,
         save_fixture: SaveFixture,
         mocker: MockerFixture,
@@ -97,7 +97,7 @@ class TestRefund:
 
     async def test_dynamic_form(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         order: Order,
         save_fixture: SaveFixture,
     ) -> None:
@@ -129,7 +129,7 @@ class TestRefund:
     )
     async def test_refund_split(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         order: Order,
         mocker: MockerFixture,
         reason: str,
@@ -168,7 +168,7 @@ class TestRefund:
     )
     async def test_invalid_tax_refund(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         order: Order,
         mocker: MockerFixture,
         data: dict[str, str],
@@ -180,7 +180,7 @@ class TestRefund:
 
     async def test_vat_refund_updates_customer(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         order: Order,
         save_fixture: SaveFixture,
         mocker: MockerFixture,
@@ -208,7 +208,7 @@ class TestRefund:
 class TestCreditNote:
     async def test_credit_note_actions(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         order: Order,
         save_fixture: SaveFixture,
         mocker: MockerFixture,

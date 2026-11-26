@@ -1,130 +1,136 @@
-import {
-  Grid,
-  Text,
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@polar-sh/orbit'
+import { ENTITY_CHIP_CLASS } from '@/components/Shared/EntityLink'
+import { Text, Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ReactNode, useEffect, useState } from 'react'
+import { type ReactNode } from 'react'
+import { twMerge } from 'tailwind-merge'
+import { TimestampDetails, useNow } from './TimestampDetails'
+import {
+  formatDay,
+  formatEventTimestamp,
+  formatRelativeShort,
+  formatTimeOfDay,
+} from './timestampFormat'
+import { TimestampMenu } from './TimestampMenu'
 
-const UNITS = [
-  { label: 'day', seconds: 86_400 },
-  { label: 'hour', seconds: 3_600 },
-  { label: 'minute', seconds: 60 },
-  { label: 'second', seconds: 1 },
-]
+// How a moment is written out:
+// - date: Jan 15, 2026
+// - datetime: Jan 15, 2026 10:00
+// - precise: Jan 15, 10:00:05
+// - relative: 3h ago
+export type TimestampFormat = 'date' | 'datetime' | 'precise' | 'relative'
 
-const plural = (count: number, label: string) =>
-  `${count} ${label}${count === 1 ? '' : 's'}`
+// A relative time only changes by the minute.
+const RELATIVE_REFRESH = 60_000
 
-const formatRelative = (date: Date, now: number) => {
-  const diff = Math.round((now - date.getTime()) / 1000)
-  const elapsed = Math.abs(diff)
-  const index = UNITS.findIndex((unit) => elapsed >= unit.seconds)
-  if (index < 0) return 'just now'
-  const major = UNITS[index]
-  const majorCount = Math.floor(elapsed / major.seconds)
-  const parts = [plural(majorCount, major.label)]
-  const minor = UNITS[index + 1]
-  if (minor) {
-    const minorCount = Math.floor(
-      (elapsed - majorCount * major.seconds) / minor.seconds,
-    )
-    if (minorCount > 0) parts.push(plural(minorCount, minor.label))
-  }
-  const text = parts.join(', ')
-  return diff >= 0 ? `${text} ago` : `in ${text}`
-}
-
-const formatDate = (date: Date, timeZone?: string) =>
-  date.toLocaleDateString('en-US', { dateStyle: 'long', timeZone })
-
-const formatTime = (date: Date, timeZone?: string) =>
-  date.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    second: '2-digit',
-    timeZone,
-  })
-
-const offsetLabel = (date: Date) =>
-  new Intl.DateTimeFormat('en-US', { timeZoneName: 'shortOffset' })
-    .formatToParts(date)
-    .find((part) => part.type === 'timeZoneName')?.value ?? 'Local'
-
-const useNow = () => {
-  const [now, setNow] = useState(() => Date.now())
-  useEffect(() => {
-    const interval = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(interval)
-  }, [])
-  return now
-}
-
-const ZoneRow = ({
-  label,
-  date,
-  timeZone,
-}: {
-  label: string
-  date: Date
-  timeZone?: string
-}) => (
-  <>
-    <Text variant="caption" color="muted" monospace>
-      {label}
-    </Text>
-    <Text>{formatDate(date, timeZone)}</Text>
-    <Box justifyContent="end">
-      <Text color="muted" tabularNums>
-        {formatTime(date, timeZone)}
-      </Text>
-    </Box>
-  </>
-)
-
-const TimestampDetails = ({ date }: { date: Date }) => {
-  const now = useNow()
-  const local = offsetLabel(date)
-  const isUtc = date.getTimezoneOffset() === 0
-
+const RelativeLabel = ({ date, muted }: { date: Date; muted: boolean }) => {
+  const now = useNow(RELATIVE_REFRESH)
   return (
-    <Box flexDirection="column" gap="m" padding="xs">
-      <Text color="muted">{formatRelative(date, now)}</Text>
-      <Grid
-        templateColumns="auto 1fr auto"
-        columnGap="m"
-        rowGap="s"
-        alignItems="center"
-      >
-        <ZoneRow label="UTC" date={date} timeZone="UTC" />
-        {!isUtc && <ZoneRow label={local} date={date} />}
-      </Grid>
-    </Box>
+    <Text color={muted ? 'muted' : 'default'} tabularNums>
+      {formatRelativeShort(date, now)}
+    </Text>
   )
 }
 
+const TimestampLabel = ({
+  timestamp,
+  format,
+  muted,
+}: {
+  timestamp: string
+  format: TimestampFormat
+  muted: boolean
+}) => {
+  const date = new Date(timestamp)
+  const color = muted ? 'muted' : 'default'
+  if (format === 'relative') return <RelativeLabel date={date} muted={muted} />
+  if (format === 'precise') {
+    return (
+      <Text color={color} tabularNums>
+        {formatEventTimestamp(timestamp)}
+      </Text>
+    )
+  }
+  if (format === 'datetime') {
+    return (
+      <Box alignItems="baseline" columnGap="s">
+        <Text color={color} tabularNums>
+          {formatDay(date)}
+        </Text>
+        <Text color="muted" tabularNums>
+          {formatTimeOfDay(date)}
+        </Text>
+      </Box>
+    )
+  }
+  return (
+    <Text color={color} tabularNums>
+      {formatDay(date)}
+    </Text>
+  )
+}
+
+// A timestamp is never cut short, and its chip can be all its container holds,
+// where a width limit would cut the highlight short of the text.
+const CHIP_CLASS = twMerge(ENTITY_CHIP_CLASS, 'max-w-none shrink-0')
+const TRIGGER_CLASS =
+  'inline-flex min-w-0 cursor-default py-0.5 whitespace-nowrap'
+
+// A moment in time, written in the given format. It lights up like an entity
+// link when pointed at and says more about itself in a tooltip. The arrow
+// beside it opens ways to copy it and to filter lists by it.
 export const EventTimestamp = ({
   timestamp,
+  format = 'date',
+  muted = false,
   focusable = true,
+  align = 'start',
   children,
 }: {
   timestamp: string
+  format?: TimestampFormat
+  muted?: boolean
   focusable?: boolean
-  children: ReactNode
+  // The side the timestamp is flush with. The arrow takes the other one, so
+  // the room kept for it does not push the text off its edge.
+  align?: 'start' | 'end'
+  // In place of the format, for a moment that needs writing some other way.
+  children?: ReactNode
 }) => (
-  <Tooltip delayDuration={300}>
-    <TooltipTrigger asChild>
-      <span
-        className="inline-flex max-w-full min-w-0"
-        tabIndex={focusable ? 0 : undefined}
+  <span className={twMerge(CHIP_CLASS, align === 'end' && 'flex-row-reverse')}>
+    <Tooltip delayDuration={300}>
+      <TooltipTrigger asChild>
+        <span
+          className={`${TRIGGER_CLASS} ${align === 'end' ? 'pr-1.5 pl-1' : 'pr-1 pl-1.5'}`}
+          tabIndex={focusable ? 0 : undefined}
+        >
+          {children ?? (
+            <TimestampLabel
+              timestamp={timestamp}
+              format={format}
+              muted={muted}
+            />
+          )}
+        </span>
+      </TooltipTrigger>
+      {/* Above, so it covers neither the arrow nor the rest of the row. */}
+      <TooltipContent
+        side="top"
+        align={align === 'end' ? 'end' : 'start'}
+        className="p-3"
       >
-        {children}
-      </span>
-    </TooltipTrigger>
-    <TooltipContent side="left" align="center" className="p-3">
-      <TimestampDetails date={new Date(timestamp)} />
-    </TooltipContent>
-  </Tooltip>
+        <TimestampDetails date={new Date(timestamp)} />
+      </TooltipContent>
+    </Tooltip>
+    {/* The menu can sit inside a row that is a link or selects on click.
+        Neither should happen for a click that was meant for the menu. */}
+    <span
+      className="flex self-stretch"
+      onClick={(event) => {
+        event.preventDefault()
+        event.stopPropagation()
+      }}
+    >
+      <TimestampMenu timestamp={timestamp} />
+    </span>
+  </span>
 )

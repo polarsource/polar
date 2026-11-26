@@ -1,19 +1,12 @@
+import { type CondensedTableColumn } from '@/components/Shared/CondensedTable'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { twMerge } from 'tailwind-merge'
 import { EventTimestamp } from './EventTimestamp'
+import { formatEventTimestamp } from './timestampFormat'
 
-export const formatEventTimestamp = (timestamp: string) =>
-  new Date(timestamp).toLocaleString('en-US', {
-    month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  })
+export { formatEventTimestamp }
 
 export const eventCustomerLabel = (event: schemas['Event']) =>
   event.customer?.name ??
@@ -38,96 +31,92 @@ export const formatTokens = (tokens: number) =>
     maximumFractionDigits: 1,
   }).format(tokens)
 
-export const EventLogRow = ({
-  event,
-  selected,
-  onSelect,
-}: {
-  event: schemas['Event']
-  selected: boolean
-  onSelect: () => void
-}) => {
+export const eventLogColumns: CondensedTableColumn<schemas['Event']>[] = [
+  {
+    id: 'time',
+    header: 'Time',
+    meta: {
+      width: 128,
+      skeleton: [104],
+    },
+    cell: ({ row: { original: event } }) => (
+      <EventTimestamp
+        timestamp={event.timestamp}
+        format="precise"
+        muted
+        focusable={false}
+      />
+    ),
+  },
+  {
+    id: 'event',
+    header: 'Event',
+    meta: {
+      grow: 2,
+      minWidth: 120,
+      skeleton: [140, 180, 120, 200, 160, 110, 190, 150, 130, 170],
+    },
+    cell: ({ row: { original: event } }) => (
+      <>
+        <Text truncate>{event.label}</Text>
+        {event.child_count > 0 && (
+          <Text color="muted" tabularNums>
+            +{event.child_count}
+          </Text>
+        )}
+      </>
+    ),
+  },
+  {
+    id: 'customer',
+    header: 'Customer',
+    meta: {
+      skeleton: [90, 70, 100, 80, 60],
+    },
+    cell: ({ row: { original: event } }) => (
+      <Text color="muted" truncate>
+        {eventCustomerLabel(event) ?? '—'}
+      </Text>
+    ),
+  },
+  {
+    id: 'tokens',
+    header: 'Tokens',
+    meta: {
+      width: 72,
+      align: 'end',
+    },
+    cell: ({ row: { original: event } }) => {
+      const llm = eventLLM(event)
+      return (
+        <Text color="muted" tabularNums>
+          {llm ? formatTokens(llm.total_tokens) : ''}
+        </Text>
+      )
+    },
+  },
+  {
+    id: 'cost',
+    header: 'Cost',
+    meta: {
+      width: 88,
+      align: 'end',
+    },
+    cell: ({ row: { original: event } }) => (
+      <Text color="muted" tabularNums>
+        {eventCost(event) ?? ''}
+      </Text>
+    ),
+  },
+]
+
+export const EventLogCompactRow = ({ event }: { event: schemas['Event'] }) => {
   const customer = eventCustomerLabel(event)
   const cost = eventCost(event)
-  const llm = eventLLM(event)
-
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      aria-current={selected}
-      data-event-id={event.id}
-      className={twMerge(
-        'w-full cursor-pointer text-left',
-        selected
-          ? 'dark:bg-polar-800 bg-gray-100'
-          : 'dark:hover:bg-polar-800/50 hover:bg-gray-50',
-      )}
-    >
-      <Box
-        display={{ base: 'flex', md: 'none' }}
-        flexDirection="column"
-        gap="xs"
-        paddingHorizontal="m"
-        paddingVertical="s"
-        borderBottomWidth={1}
-        borderStyle="solid"
-        borderColor="border-secondary"
-      >
-        <Box alignItems="center" justifyContent="between" gap="m">
-          <Box alignItems="center" gap="s" minWidth={0}>
-            <Text truncate>{event.label}</Text>
-            {event.child_count > 0 && (
-              <Text color="muted" tabularNums>
-                +{event.child_count}
-              </Text>
-            )}
-          </Box>
-          {cost && (
-            <Box flexShrink={0}>
-              <Text color="muted" tabularNums>
-                {cost}
-              </Text>
-            </Box>
-          )}
-        </Box>
+    <>
+      <Box alignItems="center" justifyContent="between" gap="m">
         <Box alignItems="center" gap="s" minWidth={0}>
-          <Box flexShrink={0}>
-            <Text variant="caption" color="muted" tabularNums>
-              {formatEventTimestamp(event.timestamp)}
-            </Text>
-          </Box>
-          {customer && (
-            <Text variant="caption" color="muted" truncate>
-              · {customer}
-            </Text>
-          )}
-        </Box>
-      </Box>
-      <Box
-        display={{ base: 'none', md: 'flex' }}
-        alignItems="center"
-        gap="l"
-        paddingHorizontal="m"
-        paddingVertical="s"
-        borderBottomWidth={1}
-        borderStyle="solid"
-        borderColor="border-secondary"
-      >
-        <Box width={128} flexShrink={0}>
-          <EventTimestamp timestamp={event.timestamp} focusable={false}>
-            <Text color="muted" tabularNums truncate>
-              {formatEventTimestamp(event.timestamp)}
-            </Text>
-          </EventTimestamp>
-        </Box>
-        <Box
-          flexGrow={2}
-          flexBasis={0}
-          minWidth={120}
-          alignItems="center"
-          gap="s"
-        >
           <Text truncate>{event.label}</Text>
           {event.child_count > 0 && (
             <Text color="muted" tabularNums>
@@ -135,50 +124,26 @@ export const EventLogRow = ({
             </Text>
           )}
         </Box>
-        <Box flexGrow={1} flexBasis={0} minWidth={0}>
-          <Text color="muted" truncate>
-            {customer ?? '—'}
-          </Text>
-        </Box>
-        <Box width={72} flexShrink={0} justifyContent="end">
-          <Text color="muted" tabularNums>
-            {llm ? formatTokens(llm.total_tokens) : ''}
-          </Text>
-        </Box>
-        <Box width={88} flexShrink={0} justifyContent="end">
-          <Text color="muted" tabularNums>
-            {cost ?? ''}
-          </Text>
-        </Box>
+        {cost && (
+          <Box flexShrink={0}>
+            <Text color="muted" tabularNums>
+              {cost}
+            </Text>
+          </Box>
+        )}
       </Box>
-    </button>
+      <Box alignItems="center" gap="s" minWidth={0}>
+        <Box flexShrink={0}>
+          <Text variant="caption" color="muted" tabularNums>
+            {formatEventTimestamp(event.timestamp)}
+          </Text>
+        </Box>
+        {customer && (
+          <Text variant="caption" color="muted" truncate>
+            · {customer}
+          </Text>
+        )}
+      </Box>
+    </>
   )
 }
-
-export const EventLogHeader = () => (
-  <Box
-    display={{ base: 'none', md: 'flex' }}
-    gap="l"
-    paddingHorizontal="m"
-    paddingVertical="s"
-    borderBottomWidth={1}
-    borderStyle="solid"
-    borderColor="border-primary"
-  >
-    <Box width={128} flexShrink={0}>
-      <Text color="muted">Time</Text>
-    </Box>
-    <Box flexGrow={2} flexBasis={0} minWidth={120}>
-      <Text color="muted">Event</Text>
-    </Box>
-    <Box flexGrow={1} flexBasis={0} minWidth={0}>
-      <Text color="muted">Customer</Text>
-    </Box>
-    <Box width={72} flexShrink={0} justifyContent="end">
-      <Text color="muted">Tokens</Text>
-    </Box>
-    <Box width={88} flexShrink={0} justifyContent="end">
-      <Text color="muted">Cost</Text>
-    </Box>
-  </Box>
-)

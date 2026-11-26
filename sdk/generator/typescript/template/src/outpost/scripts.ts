@@ -1,11 +1,20 @@
-export const READ_STATE_SCRIPT = `
-{{ outpost_scripts.read_state }}`;
+export const READ_STATES_SCRIPT = `
+{{ outpost_scripts.read_states }}`;
+
+export const PREPARE_SNAPSHOT_SCRIPT = `
+{{ outpost_scripts.prepare_snapshot }}`;
+
+export const PUSH_TELEMETRY_SCRIPT = `
+{{ outpost_scripts.push_telemetry }}`;
 
 export const WRITE_BUCKET_SCRIPT = `
 {{ outpost_scripts.write_bucket }}`;
 
 export const CONFIRM_SCRIPT = `
 {{ outpost_scripts.confirm }}`;
+
+export const OUTBOX_BACKLOG_SCRIPT = `
+{{ outpost_scripts.outbox_backlog }}`;
 
 export const RELEASE_LOCK_SCRIPT = `
 {{ outpost_scripts.release_lock }}`;

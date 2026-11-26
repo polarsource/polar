@@ -7,6 +7,7 @@ import type { CustomerMeter } from "./meter";
 
 import { ClientBase, PolarError, PolarNetworkError } from "../base";
 import { createPolar } from "../{{ (ir.versions[-2] | default(ir.versions[0])).version }}/client";
+import { outpost, type OutpostFactoryOptions } from "../outpost/client";
 import { BufferedMeteringStrategy } from "./buffered";
 import { UnknownMeterError } from "./errors";
 import {
@@ -16,7 +17,6 @@ import {
   InvalidActorError,
   type ActorInput,
   type MeteringStrategy,
-  type MeteringOutpostOptions,
 } from "./client";
 
 const client = new ClientBase({
@@ -391,16 +391,13 @@ it("creates buffered metering using the configured HTTP client", async () => {
   });
 });
 
-it.each<[string | undefined, boolean | MeteringOutpostOptions | undefined, string | undefined]>([
+it.each<[string | undefined, OutpostFactoryOptions | undefined, string | undefined]>([
   [undefined, undefined, undefined],
-  ["", undefined, undefined],
   ["redis://environment:6379", undefined, undefined],
-  ["redis://environment:6379", true, "redis://environment:6379"],
   ["redis://environment:6379", {}, "redis://environment:6379"],
-  ["redis://environment:6379", false, undefined],
   [undefined, { redisUrl: "redis://explicit:6379" }, "redis://explicit:6379"],
   ["redis://environment:6379", { redisUrl: "redis://explicit:6379" }, "redis://explicit:6379"],
-])("resolves Outpost configuration: %s, %j", async (environment, outpost, expectedUrl) => {
+])("resolves Outpost configuration: %s, %j", async (environment, options, expectedUrl) => {
   vi.stubEnv("REDIS_URL", environment);
   const { Outpost } = await import("../outpost/client");
   const start = vi
@@ -409,13 +406,16 @@ it.each<[string | undefined, boolean | MeteringOutpostOptions | undefined, strin
       return this;
     });
   const close = vi.spyOn(Outpost.prototype, "close").mockResolvedValue(undefined);
-  const metering = createPolar({ accessToken: "token" }).metering({ outpost });
+  const metering = createPolar({ accessToken: "token" }).metering({
+    outpost: options && outpost(options),
+  });
   try {
     vi.stubEnv("REDIS_URL", "redis://changed:6379");
     await metering.flush();
     await metering.close();
-    expect(metering.strategies[0]).toBeInstanceOf(BufferedMeteringStrategy);
-    expect(metering.strategies).toHaveLength(expectedUrl ? 2 : 1);
+    // Outpost delivers its events itself: the buffer would send each one twice.
+    expect(metering.strategies).toHaveLength(1);
+    expect(metering.strategies[0] instanceof BufferedMeteringStrategy).toBe(!expectedUrl);
     if (expectedUrl) {
       expect(start.mock.instances[0]).toMatchObject({ redisUrl: expectedUrl });
       expect(close).toHaveBeenCalledOnce();
@@ -427,16 +427,15 @@ it.each<[string | undefined, boolean | MeteringOutpostOptions | undefined, strin
   }
 });
 
-it.each<true | MeteringOutpostOptions>([true, {}, { redisUrl: "" }])(
+it.each<OutpostFactoryOptions>([{}, { redisUrl: "" }])(
   "rejects Outpost without a Redis URL: %j",
-  (outpost) => {
-    expect(() => createPolar({ accessToken: "token" }).metering({ outpost })).toThrow(
-      "Outpost requires redisUrl or REDIS_URL",
-    );
+  (options) => {
+    vi.stubEnv("REDIS_URL", undefined);
+    expect(() => outpost(options)).toThrow("Outpost requires redisUrl or REDIS_URL");
   },
 );
 
-it.each([{ buffered: {} }, { outpost: false as const }])(
+it.each([{ buffered: {} }, { outpost: outpost({ redisUrl: "redis://localhost:6379" }) }])(
   "rejects combining strategies with built-in options: %j",
   (options) => {
     expect(() =>
@@ -496,83 +495,41 @@ it("forwards buffer options and reports failed delivery", async () => {
   expect(send).toHaveBeenCalledOnce();
 });
 
-it("confirms events in Outpost once Polar accepts or drops them", async () => {
-  vi.spyOn(console, "warn").mockImplementation(() => {});
+it("runs Outpost alone, on its own batches, and refuses buffer options beside it", async () => {
   const { Outpost } = await import("../outpost/client");
-  vi.spyOn(Outpost.prototype, "start").mockImplementation(
-    async function (this: InstanceType<typeof Outpost>) {
-      return this;
-    },
-  );
-  vi.spyOn(Outpost.prototype, "close").mockResolvedValue(undefined);
-  vi.spyOn(Outpost.prototype, "track").mockResolvedValue(undefined);
-  const acknowledge = vi.spyOn(Outpost.prototype, "acknowledge").mockResolvedValue(undefined);
-  const confirm = vi.spyOn(Outpost.prototype, "confirm").mockResolvedValue(undefined);
   const polar = createPolar({ accessToken: "token" });
-  const accepted = { ...event, external_id: "accepted", timestamp: "2026-10-22T08:00:00Z" };
-  const dropped = { ...accepted, external_id: "dropped" };
-  vi.spyOn(polar.events, "ingest").mockImplementation(async ({ events }) => {
-    if (events[0].external_id === "dropped") throw new PolarError("rejected");
-    return {} as never;
-  });
   const onDelivered = vi.fn();
-  const onDropped = vi.fn();
-  const metering = polar.metering({
-    buffered: { batchSize: 1, maxAttempts: 1, onDelivered, onDropped },
-    outpost: { redisUrl: "redis://localhost:6379", telemetry: false },
+  const create = outpost({ redisUrl: "redis://localhost:6379", telemetry: false, onDelivered });
+  expect(() => polar.metering({ buffered: {}, outpost: create })).toThrow(MeteringError);
+  const start = vi.spyOn(Outpost.prototype, "start").mockImplementation(async function (this: InstanceType<typeof Outpost>) {
+    return this;
   });
+  vi.spyOn(Outpost.prototype, "close").mockResolvedValue(undefined);
+  const metering = polar.metering({ outpost: create });
   try {
-    await metering.track(accepted);
-    await metering.track(dropped);
-    await expect(metering.flush()).rejects.toBeInstanceOf(MeteringDeliveryError);
-    // Received events settle where their bucket is hot; dropped ones settle everywhere.
-    expect(acknowledge).toHaveBeenCalledExactlyOnceWith([accepted]);
-    expect(confirm).toHaveBeenCalledExactlyOnceWith([dropped]);
-    expect(onDelivered).toHaveBeenCalledExactlyOnceWith([accepted]);
-    expect(onDropped).toHaveBeenCalledExactlyOnceWith([dropped], "permanent_error");
+    await metering.flush();
+    expect(metering.strategies).toHaveLength(1);
+    expect(metering.strategies[0]).not.toBeInstanceOf(BufferedMeteringStrategy);
+    expect(start.mock.instances[0]).toMatchObject({ options: { onDelivered } });
   } finally {
     await metering.close();
   }
 });
 
-it("drains the buffer into Outpost before closing it", async () => {
-  const calls: string[] = [];
+it("refuses the buffer beside Outpost as explicit strategies", async () => {
   const { Outpost } = await import("../outpost/client");
-  vi.spyOn(Outpost.prototype, "start").mockImplementation(
-    async function (this: InstanceType<typeof Outpost>) {
-      return this;
-    },
-  );
-  vi.spyOn(Outpost.prototype, "close").mockImplementation(async () => {
-    calls.push("close");
-  });
-  vi.spyOn(Outpost.prototype, "track").mockResolvedValue(undefined);
-  vi.spyOn(Outpost.prototype, "acknowledge").mockImplementation(async () => {
-    calls.push("acknowledge");
-  });
   const polar = createPolar({ accessToken: "token" });
-  vi.spyOn(polar.events, "ingest").mockResolvedValue({} as never);
-  const metering = polar.metering({
-    outpost: { redisUrl: "redis://localhost:6379", telemetry: false },
-  });
-  try {
-    await metering.track({ ...event, external_id: "last" });
-    await metering.close();
-    expect(calls).toEqual(["acknowledge", "close"]);
-  } finally {
-    await metering.close();
-  }
+  const strategies = [new BufferedMeteringStrategy(polar), new Outpost("redis://localhost:6379", { client })];
+  expect(() => polar.metering({ strategies })).toThrow(MeteringError);
 });
 
-it("propagates Outpost startup failures and closes the buffer", async () => {
+it("propagates Outpost startup failures", async () => {
   vi.stubEnv("REDIS_URL", "redis://environment:6379");
   const { Outpost } = await import("../outpost/client");
   vi.spyOn(Outpost.prototype, "start").mockRejectedValue(new Error("Redis unavailable"));
-  const close = vi.spyOn(BufferedMeteringStrategy.prototype, "close");
   await expect(
-    createPolar({ accessToken: "token" }).metering({ outpost: true }).flush(),
+    createPolar({ accessToken: "token" }).metering({ outpost: outpost() }).flush(),
   ).rejects.toThrow("Redis unavailable");
-  expect(close).toHaveBeenCalledOnce();
 });
 
 it("forwards Outpost options and actor warmup", async () => {
@@ -587,7 +544,11 @@ it("forwards Outpost options and actor warmup", async () => {
   const meter = vi.spyOn(Outpost.prototype, "meter").mockResolvedValue(null);
   const polar = createPolar({ accessToken: "token" });
   const metering = polar.metering({
-    outpost: { redisUrl: "redis://localhost:6379", telemetry: false, snapshotTimeout: 250 },
+    outpost: outpost({
+      redisUrl: "redis://localhost:6379",
+      telemetry: false,
+      snapshotTimeout: 250,
+    }),
   });
   try {
     await metering.flush();
@@ -920,7 +881,7 @@ it("closing an unused helper does not start resources", async () => {
   expect(strategy.close).not.toHaveBeenCalled();
 });
 
-it("overlapping public flushes both observe a previous background drop", async () => {
+it("overlapping public flushes report a previous background drop to the newest", async () => {
   vi.spyOn(console, "warn").mockImplementation(() => {});
   const polar = createPolar({ accessToken: "token" });
   const cause = new PolarNetworkError("offline");
@@ -930,13 +891,12 @@ it("overlapping public flushes both observe a previous background drop", async (
   try {
     await metering.track(event);
     await vi.waitFor(() => expect(onDropped).toHaveBeenCalledOnce());
-    const results = await Promise.allSettled([metering.flush(), metering.flush()]);
-    expect(results).toHaveLength(2);
-    for (const result of results)
-      expect(result).toMatchObject({
-        status: "rejected",
-        reason: { cause, events: [expect.objectContaining(event)] },
-      });
+    const [older, newer] = await Promise.allSettled([metering.flush(), metering.flush()]);
+    expect(older.status).toBe("fulfilled");
+    expect(newer).toMatchObject({
+      status: "rejected",
+      reason: { cause, events: [expect.objectContaining(event)] },
+    });
     await metering.flush();
   } finally {
     await metering.close();

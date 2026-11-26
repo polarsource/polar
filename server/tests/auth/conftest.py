@@ -1,6 +1,6 @@
 from collections.abc import AsyncIterator
 
-import httpx
+import httpx2
 import pytest
 from fastapi import FastAPI
 
@@ -11,11 +11,11 @@ from tests.fixtures.base import IsolatedSessionTestClient
 @pytest.fixture
 async def login_client(
     app: FastAPI, session: AsyncSession
-) -> AsyncIterator[httpx.AsyncClient]:
+) -> AsyncIterator[httpx2.AsyncClient]:
     async with IsolatedSessionTestClient(
         session=session,
         auto_expunge=False,
-        transport=httpx.ASGITransport(app=app),
+        transport=httpx2.ASGITransport(app=app),
         base_url="http://127.0.0.1",
     ) as client:
         yield client

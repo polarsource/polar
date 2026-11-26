@@ -10,8 +10,16 @@ from polar.benefit.strategies.meter_credit.schemas import (
     BenefitMeterCreditCreateProperties,
     BenefitMeterCreditUpdate,
 )
+from polar.benefit.strategies.slack_shared_channel.schemas import (
+    BenefitSlackSharedChannelCreate,
+    BenefitSlackSharedChannelUpdate,
+)
 
-from .schemas import ConfigBenefit, ConfigBenefitMeterCredit
+from .schemas import (
+    ConfigBenefit,
+    ConfigBenefitMeterCredit,
+    ConfigBenefitSlackSharedChannel,
+)
 
 
 def _meter_credit_properties(
@@ -29,7 +37,20 @@ def benefit_create(
     benefit_config: ConfigBenefit,
     organization_id: UUID | None,
     meter_ids: dict[str, UUID],
-) -> BenefitFeatureFlagCreate | BenefitMeterCreditCreate:
+) -> (
+    BenefitFeatureFlagCreate
+    | BenefitMeterCreditCreate
+    | BenefitSlackSharedChannelCreate
+):
+    if isinstance(benefit_config, ConfigBenefitSlackSharedChannel):
+        return BenefitSlackSharedChannelCreate(
+            type=benefit_config.type,
+            description=benefit_config.description,
+            metadata=benefit_config.metadata,
+            visibility=benefit_config.visibility,
+            organization_id=organization_id,
+            properties=benefit_config.properties,
+        )
     if isinstance(benefit_config, ConfigBenefitMeterCredit):
         return BenefitMeterCreditCreate(
             type=benefit_config.type,
@@ -51,11 +72,19 @@ def benefit_create(
 
 def benefit_update(
     benefit_config: ConfigBenefit, meter_ids: dict[str, UUID]
-) -> BenefitFeatureFlagUpdate | BenefitMeterCreditUpdate:
+) -> (
+    BenefitFeatureFlagUpdate
+    | BenefitMeterCreditUpdate
+    | BenefitSlackSharedChannelUpdate
+):
     fields = benefit_config.model_dump(
         include={"description", "visibility"}
         | ({"metadata"} & benefit_config.model_fields_set)
     )
+    if isinstance(benefit_config, ConfigBenefitSlackSharedChannel):
+        return BenefitSlackSharedChannelUpdate(
+            type=benefit_config.type, **fields, properties=benefit_config.properties
+        )
     if isinstance(benefit_config, ConfigBenefitMeterCredit):
         return BenefitMeterCreditUpdate(
             type=benefit_config.type,

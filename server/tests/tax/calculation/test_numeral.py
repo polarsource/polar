@@ -1,10 +1,10 @@
 import json
 import uuid
 from datetime import UTC, datetime
+from unittest.mock import Mock
 
-import httpx
+import httpx2
 import pytest
-import respx
 
 from polar.enums import TaxBehavior
 from polar.kit.address import Address, CountryAlpha2
@@ -38,7 +38,6 @@ def sample_address() -> Address:
 
 
 @pytest.mark.anyio
-@pytest.mark.respx(base_url="https://api.numeralhq.com")
 class TestNumeralCalculateTax:
     @pytest.mark.parametrize(
         ("note", "customer_exempt", "tax_ids", "expected_reason"),
@@ -69,40 +68,43 @@ class TestNumeralCalculateTax:
     async def test_taxability_reason(
         self,
         sample_address: Address,
-        respx_mock: respx.MockRouter,
+        http_mocks: dict[tuple[str, str], Mock],
         note: str,
         customer_exempt: bool,
         tax_ids: list[tuple[str, TaxIDFormat]],
         expected_reason: TaxabilityReason,
     ) -> None:
-        route = respx_mock.post("/tax/calculations").respond(
-            json={
-                "id": "taxcalc_123",
-                "object": "tax.calculation",
-                "customer_currency_code": "USD",
-                "tax_included_in_amount": False,
-                "total_tax_amount": 0,
-                "total_amount_excluding_tax": 100_00,
-                "total_amount_including_tax": 100_00,
-                "effective_tax_rate": 0,
-                "line_items": [
-                    {
-                        "product": {"reference_product_id": "prod_123"},
-                        "tax_jurisdictions": [
-                            {
-                                "tax_rate": 0,
-                                "rate_type": "VAT",
-                                "fee_amount": 0,
-                                "tax_due_decimal": 0,
-                                "tax_authority_name": "FR",
-                                "tax_authority_type": "Country",
-                                "tax_type": "VAT",
-                                "note": note,
-                            }
-                        ],
-                    }
-                ],
-            }
+        route = http_mocks["POST", "https://api.numeralhq.com/tax/calculations"] = Mock(
+            return_value=httpx2.Response(
+                200,
+                json={
+                    "id": "taxcalc_123",
+                    "object": "tax.calculation",
+                    "customer_currency_code": "USD",
+                    "tax_included_in_amount": False,
+                    "total_tax_amount": 0,
+                    "total_amount_excluding_tax": 100_00,
+                    "total_amount_including_tax": 100_00,
+                    "effective_tax_rate": 0,
+                    "line_items": [
+                        {
+                            "product": {"reference_product_id": "prod_123"},
+                            "tax_jurisdictions": [
+                                {
+                                    "tax_rate": 0,
+                                    "rate_type": "VAT",
+                                    "fee_amount": 0,
+                                    "tax_due_decimal": 0,
+                                    "tax_authority_name": "FR",
+                                    "tax_authority_type": "Country",
+                                    "tax_type": "VAT",
+                                    "note": note,
+                                }
+                            ],
+                        }
+                    ],
+                },
+            )
         )
 
         result = await numeral_tax_service.calculate(
@@ -119,7 +121,7 @@ class TestNumeralCalculateTax:
         assert result["tax_breakdown"][0]["taxability_reason"] == expected_reason
         assert result["tax_breakdown"][0]["display_name"] == "VAT"
         assert result["tax_breakdown"][0]["subdivision"] is None
-        request = route.calls.last.request
+        request = route.call_args.args[0]
         assert request.headers["X-API-Version"] == "2026-11-01"
         payload = json.loads(request.content)
         assert payload["customer"]["tax_ids"] == [
@@ -139,37 +141,43 @@ class TestNumeralCalculateTax:
         ],
     )
     async def test_inclusive(
-        self, sample_address: Address, respx_mock: respx.MockRouter, rate_type: str
+        self,
+        sample_address: Address,
+        http_mocks: dict[tuple[str, str], Mock],
+        rate_type: str,
     ) -> None:
-        respx_mock.post("/tax/calculations").respond(
-            json={
-                "id": "taxcalc_123",
-                "object": "tax_calculation",
-                "customer_currency_code": "USD",
-                "tax_included_in_amount": False,
-                "total_tax_amount": 16_67,
-                "total_amount_excluding_tax": 83_33,
-                "total_amount_including_tax": 100_00,
-                "line_items": [
-                    {
-                        "product": {
-                            "reference_product_id": "prod_123",
-                        },
-                        "tax_jurisdictions": [
-                            {
-                                "tax_rate": 0.2,
-                                "rate_type": rate_type,
-                                "fee_amount": 0,
-                                "tax_due_decimal": 16_67,
-                                "tax_authority_name": "Texas",
-                                "tax_authority_type": "",
-                                "tax_type": "SALES",
-                                "note": "",
+        http_mocks["POST", "https://api.numeralhq.com/tax/calculations"] = Mock(
+            return_value=httpx2.Response(
+                200,
+                json={
+                    "id": "taxcalc_123",
+                    "object": "tax_calculation",
+                    "customer_currency_code": "USD",
+                    "tax_included_in_amount": False,
+                    "total_tax_amount": 16_67,
+                    "total_amount_excluding_tax": 83_33,
+                    "total_amount_including_tax": 100_00,
+                    "line_items": [
+                        {
+                            "product": {
+                                "reference_product_id": "prod_123",
                             },
-                        ],
-                    }
-                ],
-            }
+                            "tax_jurisdictions": [
+                                {
+                                    "tax_rate": 0.2,
+                                    "rate_type": rate_type,
+                                    "fee_amount": 0,
+                                    "tax_due_decimal": 16_67,
+                                    "tax_authority_name": "Texas",
+                                    "tax_authority_type": "",
+                                    "tax_type": "SALES",
+                                    "note": "",
+                                },
+                            ],
+                        }
+                    ],
+                },
+            )
         )
 
         result = await numeral_tax_service.calculate(
@@ -200,57 +208,60 @@ class TestNumeralCalculateTax:
         assert result["tax_behavior"] == TaxBehavior.inclusive
 
     async def test_multiple_breakdown(
-        self, sample_address: Address, respx_mock: respx.MockRouter
+        self, sample_address: Address, http_mocks: dict[tuple[str, str], Mock]
     ) -> None:
-        respx_mock.post("/tax/calculations").respond(
-            json={
-                "id": "taxcalc_123",
-                "object": "tax_calculation",
-                "customer_currency_code": "USD",
-                "tax_included_in_amount": False,
-                "total_tax_amount": 813,
-                "total_amount_excluding_tax": 100_00,
-                "total_amount_including_tax": 108_13,
-                "line_items": [
-                    {
-                        "product": {
-                            "reference_product_id": "prod_123",
-                        },
-                        "tax_jurisdictions": [
-                            {
-                                "tax_rate": 0.0625,
-                                "rate_type": "general state sales tax",
-                                "fee_amount": 0,
-                                "tax_due_decimal": 625,
-                                "tax_authority_name": "Texas",
-                                "tax_authority_type": "state",
-                                "tax_type": "SALES",
-                                "note": "",
+        http_mocks["POST", "https://api.numeralhq.com/tax/calculations"] = Mock(
+            return_value=httpx2.Response(
+                200,
+                json={
+                    "id": "taxcalc_123",
+                    "object": "tax_calculation",
+                    "customer_currency_code": "USD",
+                    "tax_included_in_amount": False,
+                    "total_tax_amount": 813,
+                    "total_amount_excluding_tax": 100_00,
+                    "total_amount_including_tax": 108_13,
+                    "line_items": [
+                        {
+                            "product": {
+                                "reference_product_id": "prod_123",
                             },
-                            {
-                                "tax_rate": 0.015,
-                                "rate_type": "general county local sales tax",
-                                "fee_amount": 0,
-                                "tax_due_decimal": 150,
-                                "tax_authority_name": "Anderson",
-                                "tax_authority_type": "county",
-                                "tax_type": "SALES",
-                                "note": "",
-                            },
-                            {
-                                "tax_rate": 0.00375,
-                                "rate_type": "test sales tax",
-                                "fee_amount": 0,
-                                "tax_due_decimal": 38,
-                                "tax_authority_name": "Foobar",
-                                "tax_authority_type": "other",
-                                "tax_type": "SALES",
-                                "note": "",
-                            },
-                        ],
-                    }
-                ],
-            }
+                            "tax_jurisdictions": [
+                                {
+                                    "tax_rate": 0.0625,
+                                    "rate_type": "general state sales tax",
+                                    "fee_amount": 0,
+                                    "tax_due_decimal": 625,
+                                    "tax_authority_name": "Texas",
+                                    "tax_authority_type": "state",
+                                    "tax_type": "SALES",
+                                    "note": "",
+                                },
+                                {
+                                    "tax_rate": 0.015,
+                                    "rate_type": "general county local sales tax",
+                                    "fee_amount": 0,
+                                    "tax_due_decimal": 150,
+                                    "tax_authority_name": "Anderson",
+                                    "tax_authority_type": "county",
+                                    "tax_type": "SALES",
+                                    "note": "",
+                                },
+                                {
+                                    "tax_rate": 0.00375,
+                                    "rate_type": "test sales tax",
+                                    "fee_amount": 0,
+                                    "tax_due_decimal": 38,
+                                    "tax_authority_name": "Foobar",
+                                    "tax_authority_type": "other",
+                                    "tax_type": "SALES",
+                                    "note": "",
+                                },
+                            ],
+                        }
+                    ],
+                },
+            )
         )
 
         result = await numeral_tax_service.calculate(
@@ -317,34 +328,37 @@ class TestNumeralCalculateTax:
     async def test_jurisdiction_amount(
         self,
         sample_address: Address,
-        respx_mock: respx.MockRouter,
+        http_mocks: dict[tuple[str, str], Mock],
         tax_rate: float,
         tax_due_decimal: float,
         fee_amount: float,
         expected_jurisdiction_amount: float,
         expected_total_amount: int,
     ) -> None:
-        respx_mock.post("/tax/calculations").respond(
-            json={
-                "id": "taxcalc_123",
-                "total_tax_amount": expected_total_amount,
-                "line_items": [
-                    {
-                        "tax_jurisdictions": [
-                            {
-                                "tax_rate": tax_rate,
-                                "tax_due_decimal": tax_due_decimal,
-                                "fee_amount": fee_amount,
-                                "rate_type": "Sales Tax",
-                                "tax_authority_name": "State Tax",
-                                "tax_authority_type": "STATE",
-                                "tax_type": "SALES",
-                                "note": "",
-                            }
-                        ]
-                    }
-                ],
-            }
+        http_mocks["POST", "https://api.numeralhq.com/tax/calculations"] = Mock(
+            return_value=httpx2.Response(
+                200,
+                json={
+                    "id": "taxcalc_123",
+                    "total_tax_amount": expected_total_amount,
+                    "line_items": [
+                        {
+                            "tax_jurisdictions": [
+                                {
+                                    "tax_rate": tax_rate,
+                                    "tax_due_decimal": tax_due_decimal,
+                                    "fee_amount": fee_amount,
+                                    "rate_type": "Sales Tax",
+                                    "tax_authority_name": "State Tax",
+                                    "tax_authority_type": "STATE",
+                                    "tax_type": "SALES",
+                                    "note": "",
+                                }
+                            ]
+                        }
+                    ],
+                },
+            )
         )
         result = await numeral_tax_service.calculate(
             identifier=uuid.uuid4(),
@@ -370,19 +384,21 @@ class TestNumeralCalculateTax:
             (400, "INVALID_TAX_ID", InvalidTaxIDError),
             (429, "ERROR", TaxCalculationTechnicalError),
             (500, "ERROR", TaxCalculationTechnicalError),
-            (400, "ERROR", httpx.HTTPStatusError),
+            (400, "ERROR", httpx2.HTTPStatusError),
         ],
     )
     async def test_error(
         self,
         sample_address: Address,
-        respx_mock: respx.MockRouter,
+        http_mocks: dict[tuple[str, str], Mock],
         status: int,
         error_type: str,
         expected_error: type[Exception],
     ) -> None:
-        respx_mock.post("/tax/calculations").respond(
-            status, json={"code": status, "type": error_type, "message": "Error"}
+        http_mocks["POST", "https://api.numeralhq.com/tax/calculations"] = Mock(
+            return_value=httpx2.Response(
+                status, json={"code": status, "type": error_type, "message": "Error"}
+            )
         )
         with pytest.raises(expected_error):
             await numeral_tax_service.calculate(
@@ -397,21 +413,27 @@ class TestNumeralCalculateTax:
             )
 
     async def test_unsupported_country(
-        self, sample_address: Address, respx_mock: respx.MockRouter
+        self, http_mocks: dict[tuple[str, str], Mock]
     ) -> None:
-        respx_mock.post("/tax/calculations").respond(
-            400, json={"code": 400, "type": "INVALID_COUNTRY_CODE", "message": "Error"}
+        route = http_mocks["POST", "https://api.numeralhq.com/tax/calculations"] = Mock(
+            return_value=httpx2.Response(
+                400,
+                json={"code": 400, "type": "INVALID_COUNTRY_CODE", "message": "Error"},
+            )
         )
         result = await numeral_tax_service.calculate(
             identifier=uuid.uuid4(),
-            currency="usd",
+            currency="mur",
             amount=100_00,
             tax_behavior=TaxBehavior.exclusive,
             tax_code=TaxCode.general_electronically_supplied_services,
-            address=sample_address,
-            tax_ids=[],
+            address=Address(country=CountryAlpha2("MU")),
+            tax_ids=[("28392339", TaxIDFormat.mu_tan)],
             customer_exempt=False,
         )
+        payload = json.loads(route.call_args.args[0].content)
+        assert payload["customer"]["tax_ids"] == []
+        assert payload["customer"]["type"] == "BUSINESS"
         assert result["processor_id"] is None
         assert result["amount"] == 0
         assert (
@@ -489,12 +511,13 @@ class TestNumeralCalculateTax:
 
 
 @pytest.mark.anyio
-@pytest.mark.respx(base_url="https://api.numeralhq.com")
 class TestNumeralRecord:
-    async def test_record(self, respx_mock: respx.MockRouter) -> None:
-        route = respx_mock.post("/tax/transactions").respond(json={"id": "tr_123"})
+    async def test_record(self, http_mocks: dict[tuple[str, str], Mock]) -> None:
+        route = http_mocks["POST", "https://api.numeralhq.com/tax/transactions"] = Mock(
+            return_value=httpx2.Response(200, json={"id": "tr_123"})
+        )
         assert await numeral_tax_service.record("calc_123", "order_123") == "tr_123"
-        assert json.loads(route.calls.last.request.content) == {
+        assert json.loads(route.call_args.args[0].content) == {
             "calculation_id": "calc_123",
             "reference_order_id": "order_123",
         }
@@ -505,15 +528,19 @@ class TestNumeralRecord:
     )
     async def test_error(
         self,
-        respx_mock: respx.MockRouter,
+        http_mocks: dict[tuple[str, str], Mock],
         error_type: str,
         expected_error: type[Exception],
     ) -> None:
-        respx_mock.post("/tax/transactions").respond(
-            400, json={"code": 400, "type": error_type, "message": "Error"}
+        http_mocks["POST", "https://api.numeralhq.com/tax/transactions"] = Mock(
+            return_value=httpx2.Response(
+                400, json={"code": 400, "type": error_type, "message": "Error"}
+            )
         )
         if error_type == "CALCULATION_EXPIRED":
-            respx_mock.get("/tax/transactions").respond(json={"transactions": []})
+            http_mocks["GET", "https://api.numeralhq.com/tax/transactions"] = Mock(
+                return_value=httpx2.Response(200, json={"transactions": []})
+            )
         with pytest.raises(expected_error):
             await numeral_tax_service.record("calc_123", "order_123")
 
@@ -527,18 +554,22 @@ class TestNumeralRecord:
     )
     async def test_retry_recovers_recorded_transaction(
         self,
-        respx_mock: respx.MockRouter,
+        http_mocks: dict[tuple[str, str], Mock],
         error_type: str,
     ) -> None:
         recorded_transaction = {"id": "tr_123"}
-        record = respx_mock.post("/tax/transactions")
+        record = http_mocks["POST", "https://api.numeralhq.com/tax/transactions"] = (
+            Mock(return_value=httpx2.Response(200))
+        )
         record.side_effect = [
-            httpx.Response(200, json=recorded_transaction),
-            httpx.Response(400, json={"type": error_type}),
+            httpx2.Response(200, json=recorded_transaction),
+            httpx2.Response(400, json={"type": error_type}),
         ]
-        lookup = respx_mock.get(
-            "/tax/transactions", params={"reference_order_id": "order_123"}
-        ).respond(json={"transactions": [recorded_transaction]})
+        lookup = http_mocks["GET", "https://api.numeralhq.com/tax/transactions"] = Mock(
+            return_value=httpx2.Response(
+                200, json={"transactions": [recorded_transaction]}
+            )
+        )
 
         first = await numeral_tax_service.record("calc_123", "order_123")
         retry = await numeral_tax_service.record(
@@ -549,35 +580,43 @@ class TestNumeralRecord:
         assert first == retry == "tr_123"
         assert record.call_count == 2
         assert lookup.call_count == 1
+        assert dict(lookup.call_args.args[0].url.params) == {
+            "reference_order_id": "order_123"
+        }
 
     @pytest.mark.parametrize("transaction_count", [0, 2])
     async def test_duplicate_requires_one_existing_transaction(
         self,
-        respx_mock: respx.MockRouter,
+        http_mocks: dict[tuple[str, str], Mock],
         transaction_count: int,
     ) -> None:
-        respx_mock.post("/tax/transactions").respond(
-            400, json={"type": "TRANSACTION_ALREADY_EXISTS"}
+        http_mocks["POST", "https://api.numeralhq.com/tax/transactions"] = Mock(
+            return_value=httpx2.Response(
+                400, json={"type": "TRANSACTION_ALREADY_EXISTS"}
+            )
         )
-        respx_mock.get("/tax/transactions").respond(
-            json={"transactions": [{"id": "tr_123"}] * transaction_count}
+        http_mocks["GET", "https://api.numeralhq.com/tax/transactions"] = Mock(
+            return_value=httpx2.Response(
+                200, json={"transactions": [{"id": "tr_123"}] * transaction_count}
+            )
         )
         with pytest.raises(TaxRecordError):
             await numeral_tax_service.record("calc_123", "order_123")
 
     async def test_lookup_failure_does_not_recalculate(
-        self, respx_mock: respx.MockRouter
+        self, http_mocks: dict[tuple[str, str], Mock]
     ) -> None:
-        respx_mock.post("/tax/transactions").respond(
-            400, json={"type": "CALCULATION_EXPIRED"}
+        http_mocks["POST", "https://api.numeralhq.com/tax/transactions"] = Mock(
+            return_value=httpx2.Response(400, json={"type": "CALCULATION_EXPIRED"})
         )
-        respx_mock.get("/tax/transactions").respond(503)
+        http_mocks["GET", "https://api.numeralhq.com/tax/transactions"] = Mock(
+            return_value=httpx2.Response(503)
+        )
         with pytest.raises(TaxRecordError):
             await numeral_tax_service.record("calc_123", "order_123")
 
 
 @pytest.mark.anyio
-@pytest.mark.respx(base_url="https://api.numeralhq.com")
 class TestNumeralBackfill:
     @pytest.mark.parametrize(
         ("country", "state", "postal_code", "expected_postal_code"),
@@ -589,15 +628,15 @@ class TestNumeralBackfill:
     )
     async def test_postal_code(
         self,
-        respx_mock: respx.MockRouter,
+        http_mocks: dict[tuple[str, str], Mock],
         country: str,
         state: str,
         postal_code: str | None,
         expected_postal_code: str,
     ) -> None:
-        route = respx_mock.post("/tax/manual_line_items").respond(
-            json={"line_item_id": "order_123"}
-        )
+        route = http_mocks[
+            "POST", "https://api.numeralhq.com/tax/manual_line_items"
+        ] = Mock(return_value=httpx2.Response(200, json={"line_item_id": "order_123"}))
         result = await numeral_tax_service.backfill(
             amount=599,
             tax_amount=78,
@@ -611,7 +650,7 @@ class TestNumeralBackfill:
         )
 
         assert result == "order_123"
-        payload = json.loads(route.calls.last.request.content)
+        payload = json.loads(route.call_args.args[0].content)
         assert payload["address_postal_code"] == expected_postal_code
         assert payload["address_province"] == state
         assert payload["line_items"][0]["sales"] == 599
@@ -636,26 +675,29 @@ class TestNumeralBackfill:
                 400,
                 "ERROR",
                 "address_postal_code is required for Canadian addresses",
-                httpx.HTTPStatusError,
+                httpx2.HTTPStatusError,
             ),
             (
                 500,
                 "ERROR",
                 "Country code must be one of: US, CA",
-                httpx.HTTPStatusError,
+                httpx2.HTTPStatusError,
             ),
         ],
     )
     async def test_error(
         self,
-        respx_mock: respx.MockRouter,
+        http_mocks: dict[tuple[str, str], Mock],
         status: int,
         error_type: str,
         message: str,
         expected_error: type[Exception],
     ) -> None:
-        respx_mock.post("/tax/manual_line_items").respond(
-            status, json={"code": status, "type": error_type, "message": message}
+        http_mocks["POST", "https://api.numeralhq.com/tax/manual_line_items"] = Mock(
+            return_value=httpx2.Response(
+                status,
+                json={"code": status, "type": error_type, "message": message},
+            )
         )
         with pytest.raises(expected_error):
             await numeral_tax_service.backfill(
@@ -670,29 +712,35 @@ class TestNumeralBackfill:
 
 
 @pytest.mark.anyio
-@pytest.mark.respx(base_url="https://api.numeralhq.com")
 class TestNumeralRevert:
-    async def test_full(self, respx_mock: respx.MockRouter) -> None:
-        route = respx_mock.post("/tax/refunds").respond(json={"id": "ref_123"})
+    async def test_full(self, http_mocks: dict[tuple[str, str], Mock]) -> None:
+        route = http_mocks["POST", "https://api.numeralhq.com/tax/refunds"] = Mock(
+            return_value=httpx2.Response(200, json={"id": "ref_123"})
+        )
         assert await numeral_tax_service.revert("tr_123", "refund_123") == "ref_123"
-        assert json.loads(route.calls.last.request.content) == {
+        assert json.loads(route.call_args.args[0].content) == {
             "transaction_id": "tr_123",
             "type": "full",
         }
 
-    async def test_partial(self, respx_mock: respx.MockRouter) -> None:
-        respx_mock.get("/tax/transactions/tr_123").respond(
-            json={
-                "id": "tr_123",
-                "line_items": [{"product": {"reference_product_id": "prod_123"}}],
-            }
+    async def test_partial(self, http_mocks: dict[tuple[str, str], Mock]) -> None:
+        http_mocks["GET", "https://api.numeralhq.com/tax/transactions/tr_123"] = Mock(
+            return_value=httpx2.Response(
+                200,
+                json={
+                    "id": "tr_123",
+                    "line_items": [{"product": {"reference_product_id": "prod_123"}}],
+                },
+            )
         )
-        route = respx_mock.post("/tax/refunds").respond(json={"id": "ref_123"})
+        route = http_mocks["POST", "https://api.numeralhq.com/tax/refunds"] = Mock(
+            return_value=httpx2.Response(200, json={"id": "ref_123"})
+        )
         assert (
             await numeral_tax_service.revert("tr_123", "refund_123", 1200, 200)
             == "ref_123"
         )
-        assert json.loads(route.calls.last.request.content) == {
+        assert json.loads(route.call_args.args[0].content) == {
             "transaction_id": "tr_123",
             "type": "partial",
             "line_items": [

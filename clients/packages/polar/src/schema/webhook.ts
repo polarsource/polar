@@ -1,5 +1,6 @@
 import { Schema } from 'effect'
 import type { webhooks } from '../sdk'
+import { ExternalId } from './external-id'
 import {
   runtimeConfig,
   type DefinedConfig,
@@ -71,7 +72,7 @@ type WebhookFormat = typeof WebhookFormat.Type
 export const WEBHOOK_API_VERSION = '2027-01'
 
 export const WebhookEndpointConfig = Schema.Struct({
-  external_id: Schema.String.check(Schema.isMinLength(1)),
+  external_id: ExternalId,
   url: Schema.String,
   format: WebhookFormat,
   events: Schema.Array(

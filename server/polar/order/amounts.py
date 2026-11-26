@@ -4,14 +4,16 @@ from dataclasses import dataclass
 import structlog
 
 from polar.enums import TaxBehavior, TaxBehaviorOption, TaxProcessor
+from polar.kit.address import Address
 from polar.logging import Logger
-from polar.models import Customer, Discount, OrderItem, Product, Subscription
+from polar.models import Discount, OrderItem, Product
 from polar.tax.calculation import (
     TaxBreakdownItem,
     TaxCalculation,
     TaxCalculationLogicalError,
 )
 from polar.tax.calculation import tax_calculation as tax_calculation_service
+from polar.tax.tax_id import TaxID
 
 log: Logger = structlog.get_logger()
 
@@ -37,7 +39,8 @@ async def calculate_tax(
     taxable_amount: int,
     tax_behavior_option: TaxBehaviorOption,
     currency: str,
-    customer: Customer,
+    billing_address: Address | None,
+    tax_id: TaxID | None,
     product: Product,
     tax_exempted: bool,
     allow_silent_failure: bool = True,
@@ -48,9 +51,6 @@ async def calculate_tax(
     int,
     Sequence[TaxBreakdownItem],
 ]:
-    billing_address = customer.billing_address
-    tax_id = customer.tax_id
-
     tax_processor: TaxProcessor | None = None
     tax_behavior: TaxBehavior | None = None
     tax_calculation: TaxCalculation | None = None
@@ -88,7 +88,6 @@ async def calculate_tax(
             log.warning(
                 "Failed to calculate tax for subscription order due to invalid or incomplete address",
                 reference=reference,
-                customer_id=customer.id,
             )
             tax_amount = 0
             tax_calculation_processor_id = None
@@ -124,15 +123,18 @@ async def calculate_tax(
 
 
 async def compute_order_amounts(
-    subscription: Subscription,
     items: Sequence[OrderItem],
     *,
     reference: str,
+    currency: str,
     discount: Discount | None,
     product: Product,
+    billing_address: Address | None,
+    tax_id: TaxID | None,
+    tax_behavior_option: TaxBehaviorOption,
+    tax_exempted: bool,
+    allow_silent_failure: bool = True,
 ) -> OrderAmounts:
-    customer = subscription.customer
-
     subtotal_amount = sum(item.amount for item in items)
 
     discount_amount = 0
@@ -141,15 +143,8 @@ async def compute_order_amounts(
         # use "last month's" discount and so this month's discount
         # shouldn't apply to those.
         discountable_amount = sum(item.amount for item in items if item.discountable)
-        discount_amount = discount.get_discount_amount(
-            discountable_amount, subscription.currency
-        )
+        discount_amount = discount.get_discount_amount(discountable_amount, currency)
 
-    tax_behavior_option = (
-        subscription.tax_behavior.to_option()
-        if subscription.tax_behavior is not None
-        else customer.organization.default_tax_behavior
-    )
     (
         tax_processor,
         tax_behavior,
@@ -160,10 +155,12 @@ async def compute_order_amounts(
         reference=reference,
         taxable_amount=subtotal_amount - discount_amount,
         tax_behavior_option=tax_behavior_option,
-        currency=subscription.currency,
-        customer=customer,
+        currency=currency,
+        billing_address=billing_address,
+        tax_id=tax_id,
         product=product,
-        tax_exempted=subscription.tax_exempted,
+        tax_exempted=tax_exempted,
+        allow_silent_failure=allow_silent_failure,
     )
 
     net_amount = (

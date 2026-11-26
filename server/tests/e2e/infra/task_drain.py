@@ -5,12 +5,8 @@ Reads Dramatiq messages from Redis and executes the corresponding task
 functions inline, allowing synchronous verification of async side effects.
 """
 
-import asyncio
-import importlib
 import json
-import logging
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any, Protocol
 
 import dramatiq
@@ -23,8 +19,6 @@ from polar.kit.db.postgres import AsyncSession
 from polar.redis import Redis
 from polar.worker import JobQueueManager
 from polar.worker._enqueue import _job_queue_manager
-
-logger = logging.getLogger(__name__)
 
 # Canary: fail at import time if Dramatiq changes the CurrentMessage API
 assert hasattr(CurrentMessage, "_MESSAGE"), (
@@ -57,7 +51,6 @@ QUEUE_NAMES = (
     "invoices_and_receipts",
 )
 MAX_DRAIN_ITERATIONS = 200
-MAX_UNWRAP_DEPTH = 10
 
 
 @dataclass
@@ -93,67 +86,6 @@ class TaskDrainError(Exception):
             f"{len(failures)} background task(s) failed: {names}\n"
             + "\n".join(f"  {name}: {exc}" for name, exc in failures)
         )
-
-
-def _discover_task_modules() -> None:
-    """Import all ``tasks.py`` modules under ``polar/`` so actors register with the broker."""
-    polar_root = Path(__file__).resolve().parents[2] / "polar"
-    for tasks_file in polar_root.rglob("tasks.py"):
-        # Skip test files, __pycache__, and hidden directories
-        if any(
-            part.startswith((".", "__")) or part == "tests" for part in tasks_file.parts
-        ):
-            continue
-        module_path = (
-            str(tasks_file.relative_to(polar_root.parent))
-            .replace("/", ".")
-            .removesuffix(".py")
-        )
-        try:
-            importlib.import_module(module_path)
-        except Exception:
-            logger.warning(
-                "Failed to import task module %s", module_path, exc_info=True
-            )
-
-
-def _unwrap_to_coroutine(fn: Any, actor_name: str) -> Any:
-    """Unwrap decorator layers until we reach the async function.
-
-    Dramatiq's async_to_sync and our worker.actor() decorator both use
-    functools.wraps, which sets __wrapped__. We need to get past
-    async_to_sync to reach our _wrapped_fn (which is async and handles
-    JobQueueManager for sub-task flushing).
-    """
-    for _ in range(MAX_UNWRAP_DEPTH):
-        if asyncio.iscoroutinefunction(fn):
-            return fn
-        if hasattr(fn, "__wrapped__"):
-            fn = fn.__wrapped__
-        else:
-            break
-    raise TypeError(
-        f"Actor {actor_name!r}: could not unwrap to a coroutine function "
-        f"after {MAX_UNWRAP_DEPTH} levels. Got {type(fn).__name__}."
-    )
-
-
-def build_actor_registry() -> dict[str, Any]:
-    """
-    Build a mapping from actor_name to the original async function.
-
-    Auto-discovers all task modules under polar/, then unwraps each
-    registered actor to get the async function callable from tests.
-    """
-    _discover_task_modules()
-
-    registry: dict[str, Any] = {}
-    broker = dramatiq.get_broker()
-    for actor_name in broker.get_declared_actors():
-        actor_obj = broker.get_actor(actor_name)
-        fn = _unwrap_to_coroutine(actor_obj.fn, actor_name)
-        registry[actor_name] = fn
-    return registry
 
 
 class TaskDrain:
@@ -251,6 +183,7 @@ class TaskDrain:
             raw_message_id = await self._redis.lpop(redis_key)
             if raw_message_id is None:
                 continue
+            assert not isinstance(raw_message_id, list)
 
             message_id = (
                 raw_message_id.decode()

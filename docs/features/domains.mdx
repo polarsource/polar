@@ -1,0 +1,42 @@
+---
+title: "Domains"
+description: "Verify that your organization owns a domain with a DNS TXT record, for SSO, embedded checkout and account reviews."
+---
+
+A **verified domain** is a domain your organization has proven it owns, by adding a DNS TXT record. Polar uses it to:
+
+- **Enable [Single Sign-On](/features/sso).** You can only add an SSO connection, or enforce SSO, once you've verified a domain. Accounts with an email on that domain are treated as company-managed.
+- **Allow [embedded checkout](/features/checkout/embed) on your sites.** Verifying `example.com` adds `example.com` and `*.example.com` to your embed hosts. See [Settings → Embedding](/features/settings#embedding).
+- **Support your [account review](/merchant-of-record/account-reviews).** A verified domain for your website shows the review that you own it.
+
+<Note>Dashboard only. Domains aren't available from the CLI or MCP server. Only Admins and the Owner can manage them.</Note>
+
+## Verify a domain
+
+1. Open [**Settings → Domains**](https://polar.sh/to/dashboard/settings/domains).
+2. Enter the domain, such as `example.com`, without `https://` or a path.
+3. Click **Add**. The domain shows as **Pending verification**, with a TXT record **Name** and **Value**.
+4. In your DNS provider, add a TXT record with that name and value. The name is `_polar-challenge.` followed by your domain, for example `_polar-challenge.example.com`.
+5. Back in Polar, click **Verify**.
+
+Once Polar finds the record, the domain shows **Verified on** and the date. If it doesn't find it yet, wait a few minutes for DNS to propagate and click **Verify** again.
+
+You can also verify your website's domain from the website item on [**Finance → Account**](/merchant-of-record/review-checklist#add-your-product-website). Click **Get DNS record**, add the record, then click **Verify**.
+
+## Keep the record in place
+
+Leave the TXT record in your DNS after verification. Polar checks it again during account reviews. If the record is gone, the domain goes back to unverified, and every Admin and the Owner get an email saying the domain is no longer verified. Add the record again and click **Verify** to restore it.
+
+## Limits
+
+- A domain can be verified by one organization only. Adding a domain that another organization already verified fails at the **Verify** step.
+- You can't add the same domain to your organization twice.
+- To remove a domain, click the **×** next to it. Removing a domain doesn't remove it from your embed hosts.
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Single Sign-On](/features/sso) | Let your team sign in through your identity provider |
+| [Embedded checkout](/features/checkout/embed) | Embed checkout on your site |
+| [Settings](/features/settings) | Every organization setting in one place |

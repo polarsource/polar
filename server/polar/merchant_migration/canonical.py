@@ -47,6 +47,7 @@ class CanonicalPaymentMethodType(StrEnum):
     sepa_debit = "sepa_debit"
     bacs_debit = "bacs_debit"
     link = "link"
+    paypal = "paypal"
     other = "other"
 
     @property
@@ -57,6 +58,7 @@ class CanonicalPaymentMethodType(StrEnum):
             CanonicalPaymentMethodType.sepa_debit,
             CanonicalPaymentMethodType.bacs_debit,
             CanonicalPaymentMethodType.link,
+            CanonicalPaymentMethodType.paypal,
             CanonicalPaymentMethodType.other,
         }
 
@@ -74,6 +76,35 @@ class CanonicalPaymentMethod:
     billing_country: str | None = None
     # Card issuer country (`card.country`). Weaker than billing_country; hint only.
     card_country: str | None = None
+
+
+class PaymentMethodAssessment(StrEnum):
+    """What the source says about charging a subscription's method on Polar,
+    before any card has been copied."""
+
+    copyable = "copyable"
+    # India requires an issuer mandate for recurring charges, and it stays
+    # with the source account: the card copies but its renewals decline.
+    india_card = "india_card"
+    paypal = "paypal"
+    not_copyable = "not_copyable"
+    missing = "missing"
+
+
+def assess_payment_method(
+    payment_method: CanonicalPaymentMethod | None,
+) -> PaymentMethodAssessment:
+    if payment_method is None:
+        return PaymentMethodAssessment.missing
+    if payment_method.type == CanonicalPaymentMethodType.paypal:
+        return PaymentMethodAssessment.paypal
+    if payment_method.type.requires_reentry:
+        return PaymentMethodAssessment.not_copyable
+    # The issuer country decides; sources that don't expose it leave the
+    # cardholder's country as the closest signal.
+    if (payment_method.card_country or payment_method.billing_country) == "IN":
+        return PaymentMethodAssessment.india_card
+    return PaymentMethodAssessment.copyable
 
 
 @dataclass
@@ -123,8 +154,21 @@ class CanonicalCustomer:
     tax_id: TaxID | None = None
     tax_id_dropped: bool = False
     tax_exempt: bool = False
+    # The Stripe customer holding the source's saved cards. A card copy keeps
+    # this id, so the Polar customer takes it to reach the copied cards.
+    stripe_customer_id: str | None = None
 
     type = MerchantMigrationRecordType.customer
+
+    @property
+    def copied_stripe_customer_id(self) -> str | None:
+        """Stripe records staged before `stripe_customer_id` existed carry it as
+        their source id."""
+        if self.stripe_customer_id is not None:
+            return self.stripe_customer_id
+        if self.source_id.startswith("cus_"):
+            return self.source_id
+        return None
 
 
 @dataclass
@@ -234,6 +278,9 @@ class CanonicalSubscription:
     # Set on a two-item subscription when the second item reads as an add-on.
     # ``price_source_id`` and the fields above then describe the plan.
     add_on: CanonicalSubscriptionAddOn | None = None
+    # Lemon Squeezy: the order item that started it, which its license key
+    # belongs to. The key itself is read at cutover, never staged.
+    order_item_source_id: str | None = None
 
     type = MerchantMigrationRecordType.subscription
 
@@ -291,6 +338,78 @@ class CanonicalDiscount:
     product_source_ids: list[str] = field(default_factory=list)
 
     type = MerchantMigrationRecordType.discount
+
+
+CanonicalBenefitType = Literal["license_keys", "downloadables", "custom"]
+
+
+@dataclass
+class CanonicalBenefitFile:
+    source_id: str
+    name: str
+    size: int
+
+
+@dataclass
+class CanonicalBenefitLink:
+    title: str
+    url: str
+
+
+@dataclass
+class CanonicalLicenseKeySettings:
+    activation_limit: int | None
+    # Both None when keys never expire.
+    expires_ttl: int | None
+    expires_timeframe: Literal["day", "month", "year"] | None
+
+
+@dataclass
+class CanonicalBenefit:
+    """Access a source product gives, offered to become a Polar benefit.
+
+    Not staged on the ledger: it's read from the source when the merchant sets
+    benefits up. ``source_id`` is stable across reads, so a retry finds the
+    benefit it already created."""
+
+    source_id: str
+    type: CanonicalBenefitType
+    description: str
+    product_source_ids: list[str]
+    license_keys: CanonicalLicenseKeySettings | None = None
+    files: list[CanonicalBenefitFile] = field(default_factory=list)
+    links: list[CanonicalBenefitLink] = field(default_factory=list)
+    # Buyers of a one-time product have it on the source.
+    for_one_time: bool = False
+
+
+@dataclass
+class CanonicalLicenseKeyActivation:
+    """A device the key is activated on. Its id is a UUID4, so Polar keeps it
+    and the device's saved id validates on Polar as is."""
+
+    id: str
+    label: str
+
+
+@dataclass
+class CanonicalLicenseKey:
+    key: str
+    activations: list[CanonicalLicenseKeyActivation] = field(default_factory=list)
+    expires_at: datetime | None = None
+
+
+@dataclass
+class CanonicalPurchase:
+    """A paid one-time purchase whose buyer keeps the product's benefits."""
+
+    source_id: str
+    product_source_id: str
+    email: str
+    name: str | None
+    license_key: CanonicalLicenseKey | None
+    # The buyer's key was disabled or has expired: they don't get one on Polar.
+    license_key_disabled: bool = False
 
 
 @dataclass
@@ -483,7 +602,7 @@ def serialize(record: CanonicalRecord) -> dict[str, Any]:
     return jsonable_encoder(record)
 
 
-def _parse_datetime(value: str | None) -> datetime | None:
+def parse_datetime(value: str | None) -> datetime | None:
     return datetime.fromisoformat(value) if value else None
 
 
@@ -517,7 +636,7 @@ def deserialize(
                         amount=price["amount"],
                         pricing_scheme=CanonicalPricingScheme(price["pricing_scheme"]),
                         is_default=price.get("is_default", False),
-                        created_at=_parse_datetime(price.get("created_at")),
+                        created_at=parse_datetime(price.get("created_at")),
                         active=price.get("active", True),
                     )
                     for price in data["prices"]
@@ -545,6 +664,7 @@ def deserialize(
                 ),
                 tax_id_dropped=data.get("tax_id_dropped", False),
                 tax_exempt=data.get("tax_exempt", False),
+                stripe_customer_id=data.get("stripe_customer_id"),
             )
         case MerchantMigrationRecordType.subscription:
             payment_method = data["payment_method"]
@@ -555,8 +675,8 @@ def deserialize(
                 price_source_id=data["price_source_id"],
                 status=CanonicalSubscriptionStatus(data["status"]),
                 collection_method=CanonicalCollectionMethod(data["collection_method"]),
-                current_period_start=_parse_datetime(data["current_period_start"]),
-                current_period_end=_parse_datetime(data["current_period_end"]),
+                current_period_start=parse_datetime(data["current_period_start"]),
+                current_period_end=parse_datetime(data["current_period_end"]),
                 trialing=data["trialing"],
                 paused_collection=data["paused_collection"],
                 line_item_count=data["line_item_count"],
@@ -576,14 +696,14 @@ def deserialize(
                 has_discount=data.get("has_discount", False)
                 or bool(data.get("discount_source_ids")),
                 discount_source_ids=list(data.get("discount_source_ids") or []),
-                discount_started_at=_parse_datetime(data.get("discount_started_at")),
+                discount_started_at=parse_datetime(data.get("discount_started_at")),
                 discount_starts={
                     source_id: started_at
                     for source_id, raw in (data.get("discount_starts") or {}).items()
-                    if (started_at := _parse_datetime(raw)) is not None
+                    if (started_at := parse_datetime(raw)) is not None
                 },
                 customer_discount_source_id=data.get("customer_discount_source_id"),
-                customer_discount_started_at=_parse_datetime(
+                customer_discount_started_at=parse_datetime(
                     data.get("customer_discount_started_at")
                 ),
                 discount_block=data.get("discount_block"),
@@ -591,11 +711,11 @@ def deserialize(
                 cancel_at_period_end_known=data.get(
                     "cancel_at_period_end_known", False
                 ),
-                cancel_at=_parse_datetime(data.get("cancel_at")),
+                cancel_at=parse_datetime(data.get("cancel_at")),
                 has_scheduled_changes=data.get("has_scheduled_changes", False),
-                canceled_at=_parse_datetime(data.get("canceled_at")),
+                canceled_at=parse_datetime(data.get("canceled_at")),
                 cancellation_reason=data.get("cancellation_reason"),
-                trial_end=_parse_datetime(data.get("trial_end")),
+                trial_end=parse_datetime(data.get("trial_end")),
                 stopped_for_migration=data.get("stopped_for_migration", False),
                 latest_invoice_unpaid=data.get("latest_invoice_unpaid", False),
                 anchor_day=data.get("anchor_day"),
@@ -619,6 +739,7 @@ def deserialize(
                 )
                 if add_on is not None
                 else None,
+                order_item_source_id=data.get("order_item_source_id"),
             )
         case MerchantMigrationRecordType.discount:
             return CanonicalDiscount(
@@ -631,7 +752,7 @@ def deserialize(
                 amounts=dict(data["amounts"]),
                 code=data["code"],
                 extra_codes=data["extra_codes"],
-                ends_at=_parse_datetime(data["ends_at"]),
+                ends_at=parse_datetime(data["ends_at"]),
                 max_redemptions=data["max_redemptions"],
                 product_source_ids=list(data["product_source_ids"]),
             )

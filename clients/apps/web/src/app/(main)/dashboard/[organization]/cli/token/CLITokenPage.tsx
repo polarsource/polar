@@ -10,14 +10,14 @@ import { useResumeOrganizationAccessTokenCreation } from '@/components/Settings/
 import { useSubmitOrganizationAccessToken } from '@/components/Settings/useSubmitOrganizationAccessToken'
 import { toast } from '@/components/Toast/use-toast'
 import { useAuth } from '@/hooks/auth'
-import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { useDashboardOrganization } from '@/hooks/dashboardOrganization'
 import { schemas } from '@polar-sh/client'
 import { Alert, Avatar, Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useSearchParams } from 'next/navigation'
-import { useCallback, useContext, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import {
   getCLICancelURL,
@@ -34,7 +34,7 @@ type Step =
   | { name: 'created'; token: string }
 
 export default function CLITokenPage() {
-  const { organization } = useContext(OrganizationContext)
+  const organization = useDashboardOrganization()
   const { currentUser } = useAuth()
   const searchParams = useSearchParams()
   const handoff = useMemo(() => getCLIHandoff(searchParams), [searchParams])
@@ -59,7 +59,7 @@ export default function CLITokenPage() {
       }
       setStep({ name: 'sending' })
       try {
-        window.location.assign(await getCLITokenURL(handoff, created))
+        window.location.replace(await getCLITokenURL(handoff, created))
       } catch {
         toast({
           title: 'Could not send the token to the CLI',

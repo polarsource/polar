@@ -2,30 +2,39 @@ import builtins
 import hashlib
 import json
 import uuid
+from collections import defaultdict
 from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy.orm import selectinload
 
 from polar.auth.models import Agent, AuthSubject, User
 from polar.auth.permission import OrganizationPermission
 from polar.auth.scope import Scope
-from polar.authz.service import get_accessible_org_ids
+from polar.authz.service import assert_organization_permission, get_accessible_org_ids
 from polar.authz.types import AccessibleOrganizationID
+from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.repository import BenefitRepository
 from polar.checkout_link.repository import CheckoutLinkRepository
-from polar.exceptions import PolarError
+from polar.custom_field.repository import CustomFieldRepository
+from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
+from polar.meter.repository import MeterRepository
+from polar.meter.service import meter as meter_service
 from polar.models import (
     Benefit,
     Catalog,
     CatalogBenefit,
+    CatalogCustomField,
+    CatalogMeter,
     CatalogProduct,
+    CustomField,
+    Meter,
     Organization,
     Product,
-    ProductCustomField,
     ProductMedia,
 )
 from polar.models.catalog import CatalogStatus
@@ -39,44 +48,81 @@ from polar.webhook.service import webhook as webhook_service
 
 from .repository import (
     CatalogBenefitRepository,
+    CatalogCustomFieldRepository,
+    CatalogMembership,
+    CatalogMeterRepository,
     CatalogProductRepository,
     CatalogRepository,
+)
+from .schemas import (
+    CatalogChanges,
+    CatalogUpdate,
+    RemovedCatalogItem,
+    RemovedCatalogItemResource,
+    RemovedCatalogItemStatus,
+    RemovedCatalogItemVersion,
 )
 
 
 @dataclass
 class CatalogEntries:
-    """A catalog's contents by `external_id`. Products and benefits have
-    separate `external_id` namespaces."""
+    """A catalog's contents by `external_id`, and custom fields by `slug`.
+    Each resource has its own namespace."""
 
     products: dict[str, str] = field(default_factory=dict)
     benefits: dict[str, str] = field(default_factory=dict)
+    meters: dict[str, str] = field(default_factory=dict)
+    custom_fields: dict[str, str] = field(default_factory=dict)
 
     def __bool__(self) -> bool:
-        return bool(self.products or self.benefits)
+        return bool(self.products or self.benefits or self.meters or self.custom_fields)
 
     def updated(
-        self,
-        definitions: "CatalogEntries",
-        removed_products: Collection[str],
-        removed_benefits: Collection[str],
+        self, definitions: "CatalogEntries", removed: "CatalogRemovals"
     ) -> "CatalogEntries":
         return CatalogEntries(
             products={
-                **{k: v for k, v in self.products.items() if k not in removed_products},
+                **{k: v for k, v in self.products.items() if k not in removed.products},
                 **definitions.products,
             },
             benefits={
-                **{k: v for k, v in self.benefits.items() if k not in removed_benefits},
+                **{k: v for k, v in self.benefits.items() if k not in removed.benefits},
                 **definitions.benefits,
             },
+            meters={
+                **{k: v for k, v in self.meters.items() if k not in removed.meters},
+                **definitions.meters,
+            },
+            custom_fields={
+                **{
+                    k: v
+                    for k, v in self.custom_fields.items()
+                    if k not in removed.custom_fields
+                },
+                **definitions.custom_fields,
+            },
         )
+
+
+@dataclass(frozen=True)
+class CatalogRemovals:
+    """The keys leaving the catalog."""
+
+    products: Collection[str] = ()
+    benefits: Collection[str] = ()
+    meters: Collection[str] = ()
+    custom_fields: Collection[str] = ()
+
+    def __bool__(self) -> bool:
+        return bool(self.products or self.benefits or self.meters or self.custom_fields)
 
 
 def compute_version_hash(
     parent_hash: str | None,
     entries: Mapping[str, str],
     benefits: Mapping[str, str] | None = None,
+    meters: Mapping[str, str] | None = None,
+    custom_fields: Mapping[str, str] | None = None,
 ) -> str:
     """Hash a catalog like a git commit: its parent's version hash, plus what it contains."""
     lines = [
@@ -85,15 +131,122 @@ def compute_version_hash(
     ]
     if benefits:
         lines.append(json.dumps({"benefits": benefits}, sort_keys=True))
+    if meters:
+        lines.append(json.dumps({"meters": meters}, sort_keys=True))
+    if custom_fields:
+        lines.append(json.dumps({"custom_fields": custom_fields}, sort_keys=True))
     return hashlib.sha256("\n".join(lines).encode()).hexdigest()
 
 
 def hash_entries(parent_hash: str | None, entries: CatalogEntries) -> str:
-    return compute_version_hash(parent_hash, entries.products, entries.benefits)
+    return compute_version_hash(
+        parent_hash,
+        entries.products,
+        entries.benefits,
+        entries.meters,
+        entries.custom_fields,
+    )
 
 
-def _benefit_ids(benefits: Mapping[str, Benefit]) -> dict[str, uuid.UUID]:
-    return {external_id: benefit.id for external_id, benefit in benefits.items()}
+CATALOG_SETTINGS = ("default_presentment_currency", "default_tax_behavior")
+
+
+def _settings(organization: Organization) -> dict[str, Any]:
+    return {name: getattr(organization, name) for name in CATALOG_SETTINGS}
+
+
+def _ids(rows: Mapping[str, Benefit | Meter | CustomField]) -> dict[str, uuid.UUID]:
+    return {external_id: row.id for external_id, row in rows.items()}
+
+
+@dataclass
+class CatalogMembers:
+    products: dict[str, Product] = field(default_factory=dict)
+    benefits: dict[str, Benefit] = field(default_factory=dict)
+    meters: dict[str, Meter] = field(default_factory=dict)
+    custom_fields: dict[str, CustomField] = field(default_factory=dict)
+
+
+@dataclass
+class _RemovedMembership:
+    first: int
+    last: int
+    membership: CatalogMembership
+
+
+def _removed_memberships(
+    catalogs: Sequence[Catalog], memberships: Sequence[CatalogMembership]
+) -> dict[str, _RemovedMembership]:
+    """Keys listed by a published catalog but not by the live one, the last of
+    `catalogs`, with the positions of the first and last catalogs that list them."""
+    positions = {catalog.id: position for position, catalog in enumerate(catalogs)}
+    live = len(catalogs) - 1
+    removed: dict[str, _RemovedMembership] = {}
+    for membership in memberships:
+        position = positions[membership.catalog_id]
+        entry = removed.setdefault(
+            membership.external_id, _RemovedMembership(position, position, membership)
+        )
+        entry.first = min(entry.first, position)
+        if position >= entry.last:
+            entry.last = position
+            entry.membership = membership
+    return {key: entry for key, entry in removed.items() if entry.last != live}
+
+
+def _removed_items(
+    resource: RemovedCatalogItemResource,
+    catalogs: Sequence[Catalog],
+    removed: Mapping[str, _RemovedMembership],
+    customers: Mapping[str, int],
+) -> list[RemovedCatalogItem]:
+    items: list[RemovedCatalogItem] = []
+    for external_id, entry in removed.items():
+        customers_count = customers.get(external_id, 0)
+        items.append(
+            RemovedCatalogItem(
+                resource=resource,
+                external_id=external_id,
+                name=entry.membership.name,
+                status=RemovedCatalogItemStatus.deprecated
+                if customers_count
+                else RemovedCatalogItemStatus.removed,
+                customers_count=customers_count,
+                last_item_id=entry.membership.item_id,
+                first_catalog=RemovedCatalogItemVersion.model_validate(
+                    catalogs[entry.first]
+                ),
+                last_catalog=RemovedCatalogItemVersion.model_validate(
+                    catalogs[entry.last]
+                ),
+                removed_in_catalog=RemovedCatalogItemVersion.model_validate(
+                    catalogs[entry.last + 1]
+                ),
+            )
+        )
+    return items
+
+
+CatalogKeys = Mapping[tuple[RemovedCatalogItemResource, str], uuid.UUID]
+
+
+def _catalog_changes(
+    catalog: Catalog,
+    members: Mapping[uuid.UUID, CatalogKeys],
+) -> CatalogChanges | None:
+    """Compare a catalog's keys with its parent's: a key listing another item
+    is a new version of it."""
+    if catalog.parent_id is None:
+        return None
+    before = members.get(catalog.parent_id, {})
+    after = members.get(catalog.id, {})
+    return CatalogChanges(
+        added_count=len(after.keys() - before.keys()),
+        changed_count=sum(
+            before[key] != item_id for key, item_id in after.items() if key in before
+        ),
+        removed_count=len(before.keys() - after.keys()),
+    )
 
 
 class CatalogNotFound(PolarError):
@@ -104,6 +257,15 @@ class CatalogNotFound(PolarError):
 class CatalogNotDraft(PolarError):
     def __init__(self, id: uuid.UUID) -> None:
         super().__init__(f"The catalog {id} isn't a draft.", 409)
+
+
+class CatalogMissingCurrency(PolarError):
+    def __init__(self, currency: str, products: Sequence[Product]) -> None:
+        super().__init__(
+            f"Every active product must have a price in {currency.upper()}. "
+            f"Missing on: {', '.join(product.name for product in products)}.",
+            409,
+        )
 
 
 class CatalogService:
@@ -150,11 +312,122 @@ class CatalogService:
             .options(
                 selectinload(Catalog.product_members),
                 selectinload(Catalog.benefit_members),
+                selectinload(Catalog.meter_members),
             )
         )
         return await repository.get_one_or_none(statement)
 
-    async def get_draft_for_write(
+    async def get_changes(
+        self, session: AsyncReadSession, catalogs: Sequence[Catalog]
+    ) -> dict[uuid.UUID, CatalogChanges | None]:
+        catalog_ids = builtins.list(
+            {catalog.id for catalog in catalogs}
+            | {catalog.parent_id for catalog in catalogs if catalog.parent_id}
+        )
+        members: defaultdict[
+            uuid.UUID, dict[tuple[RemovedCatalogItemResource, str], uuid.UUID]
+        ] = defaultdict(dict)
+        for resource, memberships in (
+            (
+                RemovedCatalogItemResource.product,
+                await CatalogProductRepository.from_session(session).get_memberships(
+                    catalog_ids
+                ),
+            ),
+            (
+                RemovedCatalogItemResource.benefit,
+                await CatalogBenefitRepository.from_session(session).get_memberships(
+                    catalog_ids
+                ),
+            ),
+            (
+                RemovedCatalogItemResource.meter,
+                await CatalogMeterRepository.from_session(session).get_memberships(
+                    catalog_ids
+                ),
+            ),
+        ):
+            for membership in memberships:
+                members[membership.catalog_id][(resource, membership.external_id)] = (
+                    membership.item_id
+                )
+        return {catalog.id: _catalog_changes(catalog, members) for catalog in catalogs}
+
+    async def list_removed(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization | Agent],
+        organization_id: uuid.UUID,
+    ) -> builtins.list[RemovedCatalogItem]:
+        if organization_id not in await self._get_readable_org_ids(
+            session, auth_subject
+        ):
+            return []
+        catalogs = await CatalogRepository.from_session(session).get_published(
+            organization_id
+        )
+        if not catalogs or catalogs[-1].status != CatalogStatus.live:
+            return []
+        catalog_ids = [catalog.id for catalog in catalogs]
+
+        products = _removed_memberships(
+            catalogs,
+            await CatalogProductRepository.from_session(session).get_memberships(
+                catalog_ids
+            ),
+        )
+        product_customers = await ProductRepository.from_session(
+            session
+        ).count_customers_by_external_ids(organization_id, builtins.list(products))
+        benefits = _removed_memberships(
+            catalogs,
+            await CatalogBenefitRepository.from_session(session).get_memberships(
+                catalog_ids
+            ),
+        )
+        benefit_customers = await BenefitGrantRepository.from_session(
+            session
+        ).count_granted_customers_by_benefit_external_ids(
+            organization_id, builtins.list(benefits)
+        )
+        meters = _removed_memberships(
+            catalogs,
+            await CatalogMeterRepository.from_session(session).get_memberships(
+                catalog_ids
+            ),
+        )
+        meter_customers = await MeterRepository.from_session(
+            session
+        ).count_billed_customers_by_external_ids(organization_id, builtins.list(meters))
+
+        return sorted(
+            [
+                *_removed_items(
+                    RemovedCatalogItemResource.product,
+                    catalogs,
+                    products,
+                    product_customers,
+                ),
+                *_removed_items(
+                    RemovedCatalogItemResource.benefit,
+                    catalogs,
+                    benefits,
+                    benefit_customers,
+                ),
+                *_removed_items(
+                    RemovedCatalogItemResource.meter,
+                    catalogs,
+                    meters,
+                    meter_customers,
+                ),
+            ],
+            key=lambda item: (
+                -item.removed_in_catalog.published_at.timestamp(),
+                item.external_id,
+            ),
+        )
+
+    async def get_for_write(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization | Agent],
@@ -168,9 +441,42 @@ class CatalogService:
         ).get_by_id_with_organization(set(org_ids), id)
         if catalog is None or not catalog.organization.is_config_as_code_enabled:
             raise CatalogNotFound(id)
+        return catalog
+
+    async def get_draft_for_write(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization | Agent],
+        id: uuid.UUID,
+    ) -> Catalog:
+        catalog = await self.get_for_write(session, auth_subject, id)
         if catalog.status != CatalogStatus.draft:
             raise CatalogNotDraft(id)
         return catalog
+
+    async def update(
+        self, session: AsyncSession, catalog: Catalog, catalog_update: CatalogUpdate
+    ) -> Catalog:
+        repository = CatalogRepository.from_session(session)
+        # A concurrent publish could turn the draft live after it was loaded.
+        await repository.lock(catalog.organization_id)
+        await repository.refresh(catalog)
+        if catalog.deleted_at is not None:
+            raise CatalogNotFound(catalog.id)
+        if catalog_update.name is None and catalog.status != CatalogStatus.draft:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "name"),
+                        "msg": "A published catalog needs a name.",
+                        "input": catalog_update.name,
+                    }
+                ]
+            )
+        return await repository.update(
+            catalog, update_dict={"name": catalog_update.name}, flush=True
+        )
 
     async def _get_readable_org_ids(
         self,
@@ -242,6 +548,106 @@ class CatalogService:
             if benefit.external_id is not None
         }
 
+    async def lists_meters(self, session: AsyncReadSession, catalog: Catalog) -> bool:
+        """Whether the catalog records its meters, as `lists_benefits` does for
+        benefits. A draft without meters that was saved before the first catalog
+        listing meters was published predates meter versioning, and keeps the
+        live meters."""
+        repository = CatalogMeterRepository.from_session(session)
+        first = await repository.get_first_published_at(catalog.organization_id)
+        if catalog.status == CatalogStatus.draft:
+            saved_at = catalog.modified_at or catalog.created_at
+            return (
+                first is not None and first <= saved_at
+            ) or await repository.has_members(catalog.id)
+        return first is not None and (
+            catalog.published_at is None or catalog.published_at >= first
+        )
+
+    def get_settings(
+        self, organization: Organization, catalog: Catalog | None
+    ) -> dict[str, Any]:
+        """Settings of a catalog, by `Organization` attribute name: a draft's
+        changes or an archived catalog's snapshot over the organization's."""
+        settings = _settings(organization)
+        if (
+            catalog is not None
+            and catalog.status != CatalogStatus.live
+            and catalog.settings is not None
+        ):
+            settings.update(catalog.settings)
+        return settings
+
+    async def get_catalog_meters(
+        self,
+        session: AsyncReadSession,
+        organization: Organization,
+        catalog: Catalog | None,
+    ) -> dict[str, Meter]:
+        """Meters of a catalog, by `external_id`.
+
+        A catalog published before meters were versioned has the current
+        meters, as does no catalog before the first publish.
+        """
+        if catalog is not None and await self.lists_meters(session, catalog):
+            return {
+                member.external_id: member.meter
+                for member in await CatalogMeterRepository.from_session(
+                    session
+                ).get_all_by_catalog(catalog.id)
+            }
+        return {
+            meter.external_id: meter
+            for meter in await MeterRepository.from_session(
+                session
+            ).get_catalog_baseline(organization.id)
+            if meter.external_id is not None
+        }
+
+    async def lists_custom_fields(
+        self, session: AsyncReadSession, catalog: Catalog
+    ) -> bool:
+        """Whether the catalog records its custom fields, as `lists_benefits` does
+        for benefits. A draft without custom fields that was saved before the
+        first catalog listing custom fields was published predates custom field
+        versioning, and keeps the current custom fields."""
+        repository = CatalogCustomFieldRepository.from_session(session)
+        first = await repository.get_first_published_at(catalog.organization_id)
+        if catalog.status == CatalogStatus.draft:
+            saved_at = catalog.modified_at or catalog.created_at
+            return (
+                first is not None and first <= saved_at
+            ) or await repository.has_members(catalog.id)
+        return first is not None and (
+            catalog.published_at is None or catalog.published_at >= first
+        )
+
+    async def get_catalog_custom_fields(
+        self,
+        session: AsyncReadSession,
+        organization: Organization,
+        catalog: Catalog | None,
+    ) -> dict[str, CustomField]:
+        """Custom fields of a catalog, by `slug`.
+
+        A catalog published before custom fields were versioned has the current
+        custom fields, as does no catalog before the first publish.
+        """
+        if catalog is not None and await self.lists_custom_fields(session, catalog):
+            return {
+                member.slug: member.custom_field
+                for member in await CatalogCustomFieldRepository.from_session(
+                    session
+                ).get_all_by_catalog(catalog.id)
+            }
+        repository = CustomFieldRepository.from_session(session)
+        return {
+            custom_field.slug: custom_field
+            for custom_field in await repository.get_all(
+                repository.get_current_statement(organization.id)
+            )
+        }
+
     async def get_live_entries(
         self,
         session: AsyncReadSession,
@@ -276,6 +682,18 @@ class CatalogService:
                     await self.get_catalog_benefits(session, organization, live)
                 ).items()
             },
+            meters={
+                external_id: str(meter.id)
+                for external_id, meter in (
+                    await self.get_catalog_meters(session, organization, live)
+                ).items()
+            },
+            custom_fields={
+                slug: str(custom_field.id)
+                for slug, custom_field in (
+                    await self.get_catalog_custom_fields(session, organization, live)
+                ).items()
+            },
         )
         if live is not None:
             return live.version_hash, entries
@@ -289,18 +707,16 @@ class CatalogService:
         organization: Organization,
         live: Catalog | None,
         definitions: CatalogEntries,
-        removed_products: Collection[str],
-        removed_benefits: Collection[str],
+        removed: CatalogRemovals,
+        settings: Mapping[str, Any],
     ) -> tuple[str | None, str | None]:
         """Return the live version hash, and the version hash of the catalog these
-        new product and benefit definitions, without the removed entries, would
-        publish."""
+        new definitions, without the removed entries and with these settings
+        changes, would publish."""
         before, entries = await self.get_live_entries(session, organization, live)
-        if not definitions and not removed_products and not removed_benefits:
+        if not definitions and not removed and not settings:
             return before, before
-        return before, hash_entries(
-            before, entries.updated(definitions, removed_products, removed_benefits)
-        )
+        return before, hash_entries(before, entries.updated(definitions, removed))
 
     async def get_default_name(
         self,
@@ -336,6 +752,10 @@ class CatalogService:
             organization.id
         )
         benefits = await self.get_catalog_benefits(session, organization, None)
+        meters = await self.get_catalog_meters(session, organization, None)
+        custom_fields = await self.get_catalog_custom_fields(
+            session, organization, None
+        )
 
         catalog = await repository.create(
             Catalog(
@@ -344,18 +764,23 @@ class CatalogService:
                 version_hash=version_hash,
                 status=CatalogStatus.live,
                 published_at=utc_now(),
+                settings=_settings(organization),
             ),
             flush=True,
         )
         await self._add_members(
             session,
             catalog,
-            {
-                product.external_id: product
-                for product in products
-                if product.external_id is not None
-            },
-            benefits,
+            CatalogMembers(
+                products={
+                    product.external_id: product
+                    for product in products
+                    if product.external_id is not None
+                },
+                benefits=benefits,
+                meters=meters,
+                custom_fields=custom_fields,
+            ),
         )
         return catalog
 
@@ -364,52 +789,61 @@ class CatalogService:
         session: AsyncReadSession,
         organization: Organization,
         live: Catalog | None,
-        new_products: Mapping[str, Product],
-        new_benefits: Mapping[str, Benefit],
-        removed: Collection[str],
-        removed_benefits: Collection[str],
-    ) -> tuple[dict[str, Product], dict[str, Benefit]]:
-        products = (
-            {}
-            if live is None
+        new: CatalogMembers,
+        removed: CatalogRemovals,
+    ) -> CatalogMembers:
+        members = await self._get_members(session, organization, live)
+        for external_id in removed.products:
+            members.products.pop(external_id)
+        for external_id in removed.benefits:
+            members.benefits.pop(external_id)
+        for external_id in removed.meters:
+            members.meters.pop(external_id)
+        for slug in removed.custom_fields:
+            members.custom_fields.pop(slug)
+        return CatalogMembers(
+            products={**members.products, **new.products},
+            benefits={**members.benefits, **new.benefits},
+            meters={**members.meters, **new.meters},
+            custom_fields={**members.custom_fields, **new.custom_fields},
+        )
+
+    async def _get_members(
+        self,
+        session: AsyncReadSession,
+        organization: Organization,
+        catalog: Catalog | None,
+    ) -> CatalogMembers:
+        return CatalogMembers(
+            products={}
+            if catalog is None
             else {
                 member.external_id: member.product
                 for member in await CatalogProductRepository.from_session(
                     session
-                ).get_all_by_catalog(live.id)
-            }
+                ).get_all_by_catalog(catalog.id)
+            },
+            benefits=await self.get_catalog_benefits(session, organization, catalog),
+            meters=await self.get_catalog_meters(session, organization, catalog),
+            custom_fields=await self.get_catalog_custom_fields(
+                session, organization, catalog
+            ),
         )
-        benefits = await self.get_catalog_benefits(session, organization, live)
-        for external_id in removed:
-            products.pop(external_id)
-        for external_id in removed_benefits:
-            benefits.pop(external_id)
-        return {**products, **new_products}, {**benefits, **new_benefits}
 
     async def publish(
         self,
         session: AsyncSession,
         organization: Organization,
         live: Catalog | None,
-        new_products: Mapping[str, Product],
-        new_benefits: Mapping[str, Benefit],
+        new: CatalogMembers,
         version_hash: str,
-        removed: Collection[str],
-        removed_benefits: Collection[str],
+        removed: CatalogRemovals,
         name: str | None = None,
     ) -> Catalog:
         repository = CatalogRepository.from_session(session)
         await repository.lock(organization.id)
-        products, benefits = await self._next_members(
-            session,
-            organization,
-            live,
-            new_products,
-            new_benefits,
-            removed,
-            removed_benefits,
-        )
-        await self._replace_live(session, organization, live, products, benefits)
+        members = await self._next_members(session, organization, live, new, removed)
+        await self._replace_live(session, organization, live, members)
         catalog = await repository.create(
             Catalog(
                 organization=organization,
@@ -420,10 +854,11 @@ class CatalogService:
                 parent=live,
                 status=CatalogStatus.live,
                 published_at=utc_now(),
+                settings=_settings(organization),
             ),
             flush=True,
         )
-        await self._add_members(session, catalog, products, benefits)
+        await self._add_members(session, catalog, members)
         return catalog
 
     async def save_draft(
@@ -431,31 +866,23 @@ class CatalogService:
         session: AsyncSession,
         organization: Organization,
         live: Catalog | None,
-        new_products: Mapping[str, Product],
-        new_benefits: Mapping[str, Benefit],
+        new: CatalogMembers,
         version_hash: str,
-        removed: Collection[str],
-        removed_benefits: Collection[str],
+        removed: CatalogRemovals,
+        settings: Mapping[str, Any],
         name: str | None = None,
     ) -> Catalog:
         """Make the organization's draft the next catalog these changes publish.
 
-        The new rows aren't current, so live keeps selling until the draft is
-        published. An existing draft is replaced, and keeps its ID: drafts are
+        The new rows aren't current and the draft keeps the settings changes
+        without applying them, so live keeps selling as it does until the draft
+        is published. An existing draft is replaced, and keeps its ID: drafts are
         only created here, under the catalog lock, so an organization has at most
         one.
         """
         repository = CatalogRepository.from_session(session)
         await repository.lock(organization.id)
-        products, benefits = await self._next_members(
-            session,
-            organization,
-            live,
-            new_products,
-            new_benefits,
-            removed,
-            removed_benefits,
-        )
+        members = await self._next_members(session, organization, live, new, removed)
         draft = await repository.get_draft(organization.id)
         if draft is None:
             draft = await repository.create(
@@ -467,20 +894,27 @@ class CatalogService:
                 session,
                 draft,
                 keep={
-                    *(product.id for product in products.values()),
-                    *(benefit.id for benefit in benefits.values()),
+                    *(product.id for product in members.products.values()),
+                    *(benefit.id for benefit in members.benefits.values()),
+                    *(meter.id for meter in members.meters.values()),
+                    *(
+                        custom_field.id
+                        for custom_field in members.custom_fields.values()
+                    ),
                 },
             )
         await repository.update(
             draft,
             update_dict={
-                "name": name,
+                # Keep a name given from the dashboard when the config has none
+                "name": name if name is not None else draft.name,
                 "version_hash": version_hash,
                 "parent": live,
+                "settings": dict(settings),
             },
             flush=True,
         )
-        await self._add_members(session, draft, products, benefits)
+        await self._add_members(session, draft, members)
         return draft
 
     async def discard_draft(self, session: AsyncSession, draft: Catalog) -> None:
@@ -500,46 +934,96 @@ class CatalogService:
     ) -> Catalog:
         """Make the draft live: its new rows become current, the live rows it
         replaces or leaves out stop being current, and checkout links follow
-        the new product rows.
+        the new product rows. Its new meters start matching events, and the
+        organization takes the settings it changes.
 
-        A draft that changes benefits also needs `benefits:write`, as applying
-        them does."""
+        A draft that changes benefits, meters or custom fields also needs
+        `benefits:write`, `meters:write` or `custom_fields:write`, and one that
+        changes settings needs `organizations:write` and permission to manage
+        the organization, as applying them does."""
         repository = CatalogRepository.from_session(session)
         await repository.lock(organization.id)
         await self._assert_still_draft(session, draft)
         live = await repository.get_live(organization.id)
 
-        products = {
-            member.external_id: member.product
-            for member in await CatalogProductRepository.from_session(
-                session
-            ).get_all_by_catalog(draft.id)
-        }
-        benefits = await self.get_catalog_benefits(session, organization, draft)
-        live_benefits = await self.get_catalog_benefits(session, organization, live)
-        if (
-            _benefit_ids(benefits) != _benefit_ids(live_benefits)
-            and Scope.benefits_write not in auth_subject.scopes
+        members = await self._get_members(session, organization, draft)
+        live_members = await self._get_members(session, organization, live)
+        rows: Mapping[str, Benefit | Meter | CustomField]
+        live_rows: Mapping[str, Benefit | Meter | CustomField]
+        for scope, rows, live_rows in (
+            (Scope.benefits_write, members.benefits, live_members.benefits),
+            (Scope.meters_write, members.meters, live_members.meters),
+            (
+                Scope.custom_fields_write,
+                members.custom_fields,
+                live_members.custom_fields,
+            ),
         ):
-            raise InsufficientScopeError({str(Scope.benefits_write)})
-        await self._replace_live(session, organization, live, products, benefits)
+            if _ids(rows) != _ids(live_rows) and scope not in auth_subject.scopes:
+                raise InsufficientScopeError({str(scope)})
+        settings = {
+            name: value
+            for name, value in (draft.settings or {}).items()
+            if getattr(organization, name) != value
+        }
+        if settings:
+            if Scope.organizations_write not in auth_subject.scopes:
+                raise InsufficientScopeError({str(Scope.organizations_write)})
+            await assert_organization_permission(
+                session,
+                auth_subject,
+                organization.id,
+                OrganizationPermission.organization_manage,
+            )
+        await self._replace_live(session, organization, live, members)
         product_repository = ProductRepository.from_session(session)
-        for product in products.values():
+        for product in members.products.values():
             if product.catalog_id == draft.id:
                 await product_repository.update(
                     product, update_dict={"is_current": True}, flush=True
                 )
         benefit_repository = BenefitRepository.from_session(session)
-        for benefit in benefits.values():
+        for benefit in members.benefits.values():
             if benefit.catalog_id == draft.id:
                 await benefit_repository.update(
                     benefit, update_dict={"is_current": True}, flush=True
                 )
+        meter_repository = MeterRepository.from_session(session)
+        for meter in members.meters.values():
+            if meter.catalog_id == draft.id:
+                await meter_repository.update(
+                    meter, update_dict={"is_current": True}, flush=True
+                )
+                await meter_service.activate(session, meter)
+        custom_field_repository = CustomFieldRepository.from_session(session)
+        for custom_field in members.custom_fields.values():
+            if custom_field.catalog_id == draft.id:
+                await custom_field_repository.update(
+                    custom_field, update_dict={"is_current": True}, flush=True
+                )
+        if settings:
+            await OrganizationRepository.from_session(session).update(
+                organization, update_dict=settings
+            )
+            await webhook_service.send(
+                session,
+                organization,
+                WebhookEventType.organization_updated,
+                organization,
+            )
+        missing_currency = await product_repository.get_products_without_currency(
+            organization.id, organization.default_presentment_currency
+        )
+        if missing_currency:
+            raise CatalogMissingCurrency(
+                organization.default_presentment_currency, missing_currency
+            )
         return await repository.update(
             draft,
             update_dict={
                 "status": CatalogStatus.live,
                 "published_at": utc_now(),
+                "settings": _settings(organization),
                 "name": draft.name
                 or await self.get_default_name(session, organization),
             },
@@ -551,10 +1035,9 @@ class CatalogService:
         session: AsyncSession,
         organization: Organization,
         live: Catalog | None,
-        products: Mapping[str, Product],
-        benefits: Mapping[str, Benefit],
+        members: CatalogMembers,
     ) -> None:
-        replaced = await self._retire(session, organization, live, products, benefits)
+        replaced = await self._retire(session, organization, live, members)
         await self._repoint_checkout_links(session, replaced)
         if live is not None:
             await CatalogRepository.from_session(session).update(
@@ -566,8 +1049,7 @@ class CatalogService:
         session: AsyncSession,
         organization: Organization,
         live: Catalog | None,
-        products: Mapping[str, Product],
-        benefits: Mapping[str, Benefit],
+        members: CatalogMembers,
     ) -> Sequence[tuple[Product, Product]]:
         """Stop selling the live rows the next catalog replaces or leaves out.
         Return the replaced products with their replacement.
@@ -581,7 +1063,7 @@ class CatalogService:
         for member in await CatalogProductRepository.from_session(
             session
         ).get_all_by_catalog(live.id):
-            product = products.get(member.external_id)
+            product = members.products.get(member.external_id)
             if product is not None and product.id == member.product_id:
                 continue
             was_current = member.product.is_current
@@ -596,7 +1078,7 @@ class CatalogService:
         for external_id, benefit in (
             await self.get_catalog_benefits(session, organization, live)
         ).items():
-            next_benefit = benefits.get(external_id)
+            next_benefit = members.benefits.get(external_id)
             if next_benefit is not None and next_benefit.id == benefit.id:
                 continue
             was_current = benefit.is_current
@@ -607,6 +1089,29 @@ class CatalogService:
                 await webhook_service.send(
                     session, organization, WebhookEventType.benefit_updated, benefit
                 )
+        meter_repository = MeterRepository.from_session(session)
+        for external_id, meter in (
+            await self.get_catalog_meters(session, organization, live)
+        ).items():
+            next_meter = members.meters.get(external_id)
+            if next_meter is not None and next_meter.id == meter.id:
+                continue
+            await meter_repository.update(
+                meter, update_dict={"is_current": False}, flush=True
+            )
+        custom_field_repository = CustomFieldRepository.from_session(session)
+        for slug, custom_field in (
+            await self.get_catalog_custom_fields(session, organization, live)
+        ).items():
+            next_custom_field = members.custom_fields.get(slug)
+            if (
+                next_custom_field is not None
+                and next_custom_field.id == custom_field.id
+            ):
+                continue
+            await custom_field_repository.update(
+                custom_field, update_dict={"is_current": False}, flush=True
+            )
         return replaced
 
     async def _repoint_checkout_links(
@@ -648,20 +1153,42 @@ class CatalogService:
                 and benefit_member.benefit_id not in keep
             ):
                 await benefit_repository.soft_delete(benefit_member.benefit)
+        catalog_meter_repository = CatalogMeterRepository.from_session(session)
+        meter_repository = MeterRepository.from_session(session)
+        for meter_member in await catalog_meter_repository.get_all_by_catalog(draft.id):
+            if (
+                meter_member.meter.catalog_id == draft.id
+                and meter_member.meter_id not in keep
+            ):
+                await meter_repository.update(
+                    meter_member.meter, update_dict={"deleted_at": utc_now()}
+                )
+        catalog_custom_field_repository = CatalogCustomFieldRepository.from_session(
+            session
+        )
+        custom_field_repository = CustomFieldRepository.from_session(session)
+        for (
+            custom_field_member
+        ) in await catalog_custom_field_repository.get_all_by_catalog(draft.id):
+            if (
+                custom_field_member.custom_field.catalog_id == draft.id
+                and custom_field_member.custom_field_id not in keep
+            ):
+                await custom_field_repository.soft_delete(
+                    custom_field_member.custom_field
+                )
         await catalog_product_repository.delete_by_catalog(draft.id)
         await catalog_benefit_repository.delete_by_catalog(draft.id)
+        await catalog_meter_repository.delete_by_catalog(draft.id)
+        await catalog_custom_field_repository.delete_by_catalog(draft.id)
 
     async def _add_members(
-        self,
-        session: AsyncSession,
-        catalog: Catalog,
-        products: Mapping[str, Product],
-        benefits: Mapping[str, Benefit],
+        self, session: AsyncSession, catalog: Catalog, members: CatalogMembers
     ) -> None:
         """Make the catalog list these rows. Rows not in a catalog yet were
         created in it."""
         catalog_product_repository = CatalogProductRepository.from_session(session)
-        for external_id, product in products.items():
+        for external_id, product in members.products.items():
             if product.catalog_id is None:
                 product.catalog = catalog
             await catalog_product_repository.create(
@@ -670,12 +1197,37 @@ class CatalogService:
                 )
             )
         catalog_benefit_repository = CatalogBenefitRepository.from_session(session)
-        for external_id, benefit in benefits.items():
+        for external_id, benefit in members.benefits.items():
             if benefit.catalog_id is None:
                 benefit.catalog = catalog
             await catalog_benefit_repository.create(
                 CatalogBenefit(
                     catalog=catalog, benefit=benefit, external_id=external_id
+                )
+            )
+        catalog_meter_repository = CatalogMeterRepository.from_session(session)
+        for external_id, meter in members.meters.items():
+            # A draft lists the live meters too: only its new versions belong to it.
+            if meter.catalog_id is None and (
+                catalog.status != CatalogStatus.draft or not meter.is_current
+            ):
+                meter.catalog = catalog
+            await catalog_meter_repository.create(
+                CatalogMeter(catalog=catalog, meter=meter, external_id=external_id)
+            )
+        catalog_custom_field_repository = CatalogCustomFieldRepository.from_session(
+            session
+        )
+        for slug, custom_field in members.custom_fields.items():
+            # A draft lists the current custom fields too: only its new versions
+            # belong to it.
+            if custom_field.catalog_id is None and (
+                catalog.status != CatalogStatus.draft or not custom_field.is_current
+            ):
+                custom_field.catalog = catalog
+            await catalog_custom_field_repository.create(
+                CatalogCustomField(
+                    catalog=catalog, custom_field=custom_field, slug=slug
                 )
             )
 
@@ -687,14 +1239,6 @@ class CatalogService:
         new_product.product_medias = [
             ProductMedia(file=media.file, order=media.order)
             for media in product.product_medias
-        ]
-        new_product.attached_custom_fields = [
-            ProductCustomField(
-                custom_field=field.custom_field,
-                order=field.order,
-                required=field.required,
-            )
-            for field in product.attached_custom_fields
         ]
 
 

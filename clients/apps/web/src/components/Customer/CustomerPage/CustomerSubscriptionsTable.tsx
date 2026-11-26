@@ -1,11 +1,11 @@
 'use client'
 
-import { ProductVersionLabel } from '@/components/Products/ProductVersionLabel'
+import { CatalogVersionLabel } from '@/components/Products/CatalogVersionLabel'
 import AmountLabel from '@/components/Shared/AmountLabel'
 import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
 import { useSubscriptions } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
-import { Button, DataTable, Text } from '@polar-sh/orbit'
+import { Button, DataTable, Text, Truncated } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 
@@ -39,16 +39,13 @@ export const CustomerSubscriptionsTable = ({
             header: 'Product Name',
             accessorKey: 'product.name',
             cell: ({ row: { original } }) => (
-              <Box
-                as="span"
-                display="inline-flex"
-                alignItems="center"
-                columnGap="s"
-              >
-                {original.product.name}
-                <ProductVersionLabel
+              <Box alignItems="center" columnGap="s" minWidth={0}>
+                <Truncated>
+                  <Text as="span">{original.product.name}</Text>
+                </Truncated>
+                <CatalogVersionLabel
                   organization={organization}
-                  product={original.product}
+                  version={original.product}
                 />
               </Box>
             ),

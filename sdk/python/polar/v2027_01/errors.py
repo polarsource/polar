@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from polar.base import PolarClientError
 from polar.v2027_01.outputs import (
+    AlreadyActiveSubscription as AlreadyActiveSubscriptionModel,
+)
+from polar.v2027_01.outputs import (
     AlreadyCanceledSubscription as AlreadyCanceledSubscriptionModel,
 )
 from polar.v2027_01.outputs import (
@@ -15,6 +18,9 @@ from polar.v2027_01.outputs import (
 )
 from polar.v2027_01.outputs import (
     BadRequest as BadRequestModel,
+)
+from polar.v2027_01.outputs import (
+    BenefitGrantAlreadyExists as BenefitGrantAlreadyExistsModel,
 )
 from polar.v2027_01.outputs import (
     CannotCreateOrganizationError as CannotCreateOrganizationErrorModel,
@@ -53,13 +59,16 @@ from polar.v2027_01.outputs import (
     InactiveSubscription as InactiveSubscriptionModel,
 )
 from polar.v2027_01.outputs import (
-    ManualRetryLimitExceeded as ManualRetryLimitExceededModel,
+    MissingBillingDetails as MissingBillingDetailsModel,
 )
 from polar.v2027_01.outputs import (
     MissingInvoiceBillingDetails as MissingInvoiceBillingDetailsModel,
 )
 from polar.v2027_01.outputs import (
     NotPermitted as NotPermittedModel,
+)
+from polar.v2027_01.outputs import (
+    NotTrialEndedSubscription as NotTrialEndedSubscriptionModel,
 )
 from polar.v2027_01.outputs import (
     OffSessionChargesNotEnabled as OffSessionChargesNotEnabledModel,
@@ -71,9 +80,6 @@ from polar.v2027_01.outputs import (
     OrderNotEligibleForInvoice as OrderNotEligibleForInvoiceModel,
 )
 from polar.v2027_01.outputs import (
-    OrderNotEligibleForRetry as OrderNotEligibleForRetryModel,
-)
-from polar.v2027_01.outputs import (
     OrganizationNotReadyForPayments as OrganizationNotReadyForPaymentsModel,
 )
 from polar.v2027_01.outputs import (
@@ -81,9 +87,6 @@ from polar.v2027_01.outputs import (
 )
 from polar.v2027_01.outputs import (
     PaymentActionRequired as PaymentActionRequiredModel,
-)
-from polar.v2027_01.outputs import (
-    PaymentAlreadyInProgress as PaymentAlreadyInProgressModel,
 )
 from polar.v2027_01.outputs import (
     PaymentFailed as PaymentFailedModel,
@@ -107,6 +110,9 @@ from polar.v2027_01.outputs import (
     RefundedAlready as RefundedAlreadyModel,
 )
 from polar.v2027_01.outputs import (
+    RefundPaymentAlreadyRefundedByStripe as RefundPaymentAlreadyRefundedByStripeModel,
+)
+from polar.v2027_01.outputs import (
     ResourceNotFound as ResourceNotFoundModel,
 )
 from polar.v2027_01.outputs import (
@@ -123,6 +129,9 @@ from polar.v2027_01.outputs import (
 )
 from polar.v2027_01.outputs import (
     SubscriptionNotScheduledToCancel as SubscriptionNotScheduledToCancelModel,
+)
+from polar.v2027_01.outputs import (
+    TrialAlreadyRedeemed as TrialAlreadyRedeemedModel,
 )
 from polar.v2027_01.outputs import (
     Unauthorized as UnauthorizedModel,
@@ -147,17 +156,6 @@ class HTTPValidationError(PolarClientError):
         super().__init__(status_code, error)
 
 
-class CannotCreateOrganizationError(PolarClientError):
-    error_type = CannotCreateOrganizationErrorModel
-    error: CannotCreateOrganizationErrorModel
-
-    def __init__(
-        self, status_code: int, error: CannotCreateOrganizationErrorModel
-    ) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
 class ResourceNotFound(PolarClientError):
     error_type = ResourceNotFoundModel
     error: ResourceNotFoundModel
@@ -167,289 +165,11 @@ class ResourceNotFound(PolarClientError):
         super().__init__(status_code, error)
 
 
-class OrganizationsUpdate403Error(PolarClientError):
-    error_type = NotPermittedModel | DisputeAutoAcceptNotEnabledModel
-    error: NotPermittedModel | DisputeAutoAcceptNotEnabledModel
-
-    def __init__(
-        self,
-        status_code: int,
-        error: NotPermittedModel | DisputeAutoAcceptNotEnabledModel,
-    ) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
-class OrganizationsUpdate409Error(PolarClientError):
-    error_type = SSOEnforcementRequiresConnectionModel | SSORequiresVerifiedDomainModel
-    error: SSOEnforcementRequiresConnectionModel | SSORequiresVerifiedDomainModel
-
-    def __init__(
-        self,
-        status_code: int,
-        error: SSOEnforcementRequiresConnectionModel | SSORequiresVerifiedDomainModel,
-    ) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
-class AlreadyCanceledSubscription(PolarClientError):
-    error_type = AlreadyCanceledSubscriptionModel
-    error: AlreadyCanceledSubscriptionModel
-
-    def __init__(
-        self, status_code: int, error: AlreadyCanceledSubscriptionModel
-    ) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
-class SubscriptionLocked(PolarClientError):
-    error_type = SubscriptionLockedModel
-    error: SubscriptionLockedModel
-
-    def __init__(self, status_code: int, error: SubscriptionLockedModel) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
-class SubscriptionsUpdate402Error(PolarClientError):
-    error_type = PaymentFailedModel | PaymentActionRequiredModel
-    error: PaymentFailedModel | PaymentActionRequiredModel
-
-    def __init__(
-        self, status_code: int, error: PaymentFailedModel | PaymentActionRequiredModel
-    ) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
-class SubscriptionsUpdate403Error(PolarClientError):
-    error_type = (
-        AlreadyCanceledSubscriptionModel
-        | InactiveSubscriptionModel
-        | PaymentNotReadyModel
-    )
-    error: (
-        AlreadyCanceledSubscriptionModel
-        | InactiveSubscriptionModel
-        | PaymentNotReadyModel
-    )
-
-    def __init__(
-        self,
-        status_code: int,
-        error: AlreadyCanceledSubscriptionModel
-        | InactiveSubscriptionModel
-        | PaymentNotReadyModel,
-    ) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
-class SubscriptionsUpdate409Error(PolarClientError):
-    error_type = SubscriptionLockedModel | SubscriptionNotScheduledToCancelModel
-    error: SubscriptionLockedModel | SubscriptionNotScheduledToCancelModel
-
-    def __init__(
-        self,
-        status_code: int,
-        error: SubscriptionLockedModel | SubscriptionNotScheduledToCancelModel,
-    ) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
 class NotPermitted(PolarClientError):
     error_type = NotPermittedModel
     error: NotPermittedModel
 
     def __init__(self, status_code: int, error: NotPermittedModel) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
-class AmbiguousExternalWebhookEndpointID(PolarClientError):
-    error_type = AmbiguousExternalWebhookEndpointIDModel
-    error: AmbiguousExternalWebhookEndpointIDModel
-
-    def __init__(
-        self, status_code: int, error: AmbiguousExternalWebhookEndpointIDModel
-    ) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
-class ProductNotDeletable(PolarClientError):
-    error_type = ProductNotDeletableModel
-    error: ProductNotDeletableModel
-
-    def __init__(self, status_code: int, error: ProductNotDeletableModel) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
-class OrdersFinalize402Error(PolarClientError):
-    error_type = PaymentFailedModel | PaymentActionRequiredModel
-    error: PaymentFailedModel | PaymentActionRequiredModel
-
-    def __init__(
-        self, status_code: int, error: PaymentFailedModel | PaymentActionRequiredModel
-    ) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
-class OrdersFinalize403Error(PolarClientError):
-    error_type = OffSessionChargesNotEnabledModel | OrganizationNotReadyForPaymentsModel
-    error: OffSessionChargesNotEnabledModel | OrganizationNotReadyForPaymentsModel
-
-    def __init__(
-        self,
-        status_code: int,
-        error: OffSessionChargesNotEnabledModel | OrganizationNotReadyForPaymentsModel,
-    ) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
-class OrderNotDraft(PolarClientError):
-    error_type = OrderNotDraftModel
-    error: OrderNotDraftModel
-
-    def __init__(self, status_code: int, error: OrderNotDraftModel) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
-class OrderNotEligibleForInvoice(PolarClientError):
-    error_type = OrderNotEligibleForInvoiceModel
-    error: OrderNotEligibleForInvoiceModel
-
-    def __init__(
-        self, status_code: int, error: OrderNotEligibleForInvoiceModel
-    ) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
-class MissingInvoiceBillingDetails(PolarClientError):
-    error_type = MissingInvoiceBillingDetailsModel
-    error: MissingInvoiceBillingDetailsModel
-
-    def __init__(
-        self, status_code: int, error: MissingInvoiceBillingDetailsModel
-    ) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
-class RefundedAlready(PolarClientError):
-    error_type = RefundedAlreadyModel
-    error: RefundedAlreadyModel
-
-    def __init__(self, status_code: int, error: RefundedAlreadyModel) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
-class DisputeNotOpenError(PolarClientError):
-    error_type = DisputeNotOpenErrorModel
-    error: DisputeNotOpenErrorModel
-
-    def __init__(self, status_code: int, error: DisputeNotOpenErrorModel) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
-class CheckoutsUpdate403Error(PolarClientError):
-    error_type = CheckoutForbiddenErrorModel
-    error: CheckoutForbiddenErrorModel
-
-    def __init__(self, status_code: int, error: CheckoutForbiddenErrorModel) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
-class ExpiredCheckoutError(PolarClientError):
-    error_type = ExpiredCheckoutErrorModel
-    error: ExpiredCheckoutErrorModel
-
-    def __init__(self, status_code: int, error: ExpiredCheckoutErrorModel) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
-class CheckoutsClientUpdate403Error(PolarClientError):
-    error_type = CheckoutForbiddenErrorModel
-    error: CheckoutForbiddenErrorModel
-
-    def __init__(self, status_code: int, error: CheckoutForbiddenErrorModel) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
-class CheckoutLocked(PolarClientError):
-    error_type = CheckoutLockedModel
-    error: CheckoutLockedModel
-
-    def __init__(self, status_code: int, error: CheckoutLockedModel) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
-class CheckoutsClientConfirm400Error(PolarClientError):
-    error_type = CheckoutPaymentErrorModel
-    error: CheckoutPaymentErrorModel
-
-    def __init__(self, status_code: int, error: CheckoutPaymentErrorModel) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
-class CheckoutsClientConfirm403Error(PolarClientError):
-    error_type = CheckoutForbiddenErrorModel
-    error: CheckoutForbiddenErrorModel
-
-    def __init__(self, status_code: int, error: CheckoutForbiddenErrorModel) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
-class Unauthorized(PolarClientError):
-    error_type = UnauthorizedModel
-    error: UnauthorizedModel
-
-    def __init__(self, status_code: int, error: UnauthorizedModel) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
-class RotateNotPermitted(PolarClientError):
-    error_type = RotateNotPermittedModel
-    error: RotateNotPermittedModel
-
-    def __init__(self, status_code: int, error: RotateNotPermittedModel) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
-class BadRequest(PolarClientError):
-    error_type = BadRequestModel
-    error: BadRequestModel
-
-    def __init__(self, status_code: int, error: BadRequestModel) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
-class AmbiguousExternalCustomerID(PolarClientError):
-    error_type = AmbiguousExternalCustomerIDModel
-    error: AmbiguousExternalCustomerIDModel
-
-    def __init__(
-        self, status_code: int, error: AmbiguousExternalCustomerIDModel
-    ) -> None:
         self.error = error
         super().__init__(status_code, error)
 
@@ -645,6 +365,33 @@ class CustomerPortalSeatsListClaimedSubscriptions401Error(PolarClientError):
         super().__init__(status_code, error)
 
 
+class Unauthorized(PolarClientError):
+    error_type = UnauthorizedModel
+    error: UnauthorizedModel
+
+    def __init__(self, status_code: int, error: UnauthorizedModel) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class RotateNotPermitted(PolarClientError):
+    error_type = RotateNotPermittedModel
+    error: RotateNotPermittedModel
+
+    def __init__(self, status_code: int, error: RotateNotPermittedModel) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class BadRequest(PolarClientError):
+    error_type = BadRequestModel
+    error: BadRequestModel
+
+    def __init__(self, status_code: int, error: BadRequestModel) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
 class CustomerPortalMembersListMembers401Error(PolarClientError):
     error_type = None
     error: None
@@ -762,29 +509,35 @@ class CustomerPortalMembersUpdateMember404Error(PolarClientError):
         super().__init__(status_code, error)
 
 
-class PaymentAlreadyInProgress(PolarClientError):
-    error_type = PaymentAlreadyInProgressModel
-    error: PaymentAlreadyInProgressModel
+class OrderNotEligibleForInvoice(PolarClientError):
+    error_type = OrderNotEligibleForInvoiceModel
+    error: OrderNotEligibleForInvoiceModel
 
-    def __init__(self, status_code: int, error: PaymentAlreadyInProgressModel) -> None:
+    def __init__(
+        self, status_code: int, error: OrderNotEligibleForInvoiceModel
+    ) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class OrderNotEligibleForRetry(PolarClientError):
-    error_type = OrderNotEligibleForRetryModel
-    error: OrderNotEligibleForRetryModel
+class MissingInvoiceBillingDetails(PolarClientError):
+    error_type = MissingInvoiceBillingDetailsModel
+    error: MissingInvoiceBillingDetailsModel
 
-    def __init__(self, status_code: int, error: OrderNotEligibleForRetryModel) -> None:
+    def __init__(
+        self, status_code: int, error: MissingInvoiceBillingDetailsModel
+    ) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
-class ManualRetryLimitExceeded(PolarClientError):
-    error_type = ManualRetryLimitExceededModel
-    error: ManualRetryLimitExceededModel
+class AlreadyCanceledSubscription(PolarClientError):
+    error_type = AlreadyCanceledSubscriptionModel
+    error: AlreadyCanceledSubscriptionModel
 
-    def __init__(self, status_code: int, error: ManualRetryLimitExceededModel) -> None:
+    def __init__(
+        self, status_code: int, error: AlreadyCanceledSubscriptionModel
+    ) -> None:
         self.error = error
         super().__init__(status_code, error)
 
@@ -805,6 +558,7 @@ class CustomerPortalSubscriptionsUpdate403Error(PolarClientError):
         | UpdateSubscriptionPlanNotAllowedModel
         | UpdateSubscriptionSeatsNotAllowedModel
         | UpdateSubscriptionUnitsNotAllowedModel
+        | PaymentNotReadyModel
     )
     error: (
         AlreadyCanceledSubscriptionModel
@@ -812,6 +566,7 @@ class CustomerPortalSubscriptionsUpdate403Error(PolarClientError):
         | UpdateSubscriptionPlanNotAllowedModel
         | UpdateSubscriptionSeatsNotAllowedModel
         | UpdateSubscriptionUnitsNotAllowedModel
+        | PaymentNotReadyModel
     )
 
     def __init__(
@@ -821,21 +576,333 @@ class CustomerPortalSubscriptionsUpdate403Error(PolarClientError):
         | PauseResumeNotAllowedModel
         | UpdateSubscriptionPlanNotAllowedModel
         | UpdateSubscriptionSeatsNotAllowedModel
-        | UpdateSubscriptionUnitsNotAllowedModel,
+        | UpdateSubscriptionUnitsNotAllowedModel
+        | PaymentNotReadyModel,
     ) -> None:
         self.error = error
         super().__init__(status_code, error)
 
 
 class CustomerPortalSubscriptionsUpdate409Error(PolarClientError):
-    error_type = PaymentMethodRequiredModel | SubscriptionNotScheduledToCancelModel
-    error: PaymentMethodRequiredModel | SubscriptionNotScheduledToCancelModel
+    error_type = (
+        PaymentMethodRequiredModel
+        | SubscriptionNotScheduledToCancelModel
+        | NotTrialEndedSubscriptionModel
+        | MissingBillingDetailsModel
+    )
+    error: (
+        PaymentMethodRequiredModel
+        | SubscriptionNotScheduledToCancelModel
+        | NotTrialEndedSubscriptionModel
+        | MissingBillingDetailsModel
+    )
 
     def __init__(
         self,
         status_code: int,
-        error: PaymentMethodRequiredModel | SubscriptionNotScheduledToCancelModel,
+        error: PaymentMethodRequiredModel
+        | SubscriptionNotScheduledToCancelModel
+        | NotTrialEndedSubscriptionModel
+        | MissingBillingDetailsModel,
     ) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class AmbiguousExternalCustomerID(PolarClientError):
+    error_type = AmbiguousExternalCustomerIDModel
+    error: AmbiguousExternalCustomerIDModel
+
+    def __init__(
+        self, status_code: int, error: AmbiguousExternalCustomerIDModel
+    ) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class CheckoutsUpdate403Error(PolarClientError):
+    error_type = CheckoutForbiddenErrorModel
+    error: CheckoutForbiddenErrorModel
+
+    def __init__(self, status_code: int, error: CheckoutForbiddenErrorModel) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class ExpiredCheckoutError(PolarClientError):
+    error_type = ExpiredCheckoutErrorModel
+    error: ExpiredCheckoutErrorModel
+
+    def __init__(self, status_code: int, error: ExpiredCheckoutErrorModel) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class CheckoutsClientUpdate403Error(PolarClientError):
+    error_type = CheckoutForbiddenErrorModel
+    error: CheckoutForbiddenErrorModel
+
+    def __init__(self, status_code: int, error: CheckoutForbiddenErrorModel) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class CheckoutLocked(PolarClientError):
+    error_type = CheckoutLockedModel
+    error: CheckoutLockedModel
+
+    def __init__(self, status_code: int, error: CheckoutLockedModel) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class CheckoutsClientConfirm400Error(PolarClientError):
+    error_type = CheckoutPaymentErrorModel
+    error: CheckoutPaymentErrorModel
+
+    def __init__(self, status_code: int, error: CheckoutPaymentErrorModel) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class CheckoutsClientConfirm403Error(PolarClientError):
+    error_type = CheckoutForbiddenErrorModel
+    error: CheckoutForbiddenErrorModel
+
+    def __init__(self, status_code: int, error: CheckoutForbiddenErrorModel) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class SubscriptionsCreate409Error(PolarClientError):
+    error_type = AlreadyActiveSubscriptionModel | TrialAlreadyRedeemedModel
+    error: AlreadyActiveSubscriptionModel | TrialAlreadyRedeemedModel
+
+    def __init__(
+        self,
+        status_code: int,
+        error: AlreadyActiveSubscriptionModel | TrialAlreadyRedeemedModel,
+    ) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class SubscriptionLocked(PolarClientError):
+    error_type = SubscriptionLockedModel
+    error: SubscriptionLockedModel
+
+    def __init__(self, status_code: int, error: SubscriptionLockedModel) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class SubscriptionsUpdate402Error(PolarClientError):
+    error_type = PaymentFailedModel | PaymentActionRequiredModel
+    error: PaymentFailedModel | PaymentActionRequiredModel
+
+    def __init__(
+        self, status_code: int, error: PaymentFailedModel | PaymentActionRequiredModel
+    ) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class SubscriptionsUpdate403Error(PolarClientError):
+    error_type = (
+        AlreadyCanceledSubscriptionModel
+        | InactiveSubscriptionModel
+        | PaymentNotReadyModel
+    )
+    error: (
+        AlreadyCanceledSubscriptionModel
+        | InactiveSubscriptionModel
+        | PaymentNotReadyModel
+    )
+
+    def __init__(
+        self,
+        status_code: int,
+        error: AlreadyCanceledSubscriptionModel
+        | InactiveSubscriptionModel
+        | PaymentNotReadyModel,
+    ) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class SubscriptionsUpdate409Error(PolarClientError):
+    error_type = SubscriptionLockedModel | SubscriptionNotScheduledToCancelModel
+    error: SubscriptionLockedModel | SubscriptionNotScheduledToCancelModel
+
+    def __init__(
+        self,
+        status_code: int,
+        error: SubscriptionLockedModel | SubscriptionNotScheduledToCancelModel,
+    ) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class ProductNotDeletable(PolarClientError):
+    error_type = ProductNotDeletableModel
+    error: ProductNotDeletableModel
+
+    def __init__(self, status_code: int, error: ProductNotDeletableModel) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class OrdersFinalize402Error(PolarClientError):
+    error_type = PaymentFailedModel | PaymentActionRequiredModel
+    error: PaymentFailedModel | PaymentActionRequiredModel
+
+    def __init__(
+        self, status_code: int, error: PaymentFailedModel | PaymentActionRequiredModel
+    ) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class OrdersFinalize403Error(PolarClientError):
+    error_type = OffSessionChargesNotEnabledModel | OrganizationNotReadyForPaymentsModel
+    error: OffSessionChargesNotEnabledModel | OrganizationNotReadyForPaymentsModel
+
+    def __init__(
+        self,
+        status_code: int,
+        error: OffSessionChargesNotEnabledModel | OrganizationNotReadyForPaymentsModel,
+    ) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class OrderNotDraft(PolarClientError):
+    error_type = OrderNotDraftModel
+    error: OrderNotDraftModel
+
+    def __init__(self, status_code: int, error: OrderNotDraftModel) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class CannotCreateOrganizationError(PolarClientError):
+    error_type = CannotCreateOrganizationErrorModel
+    error: CannotCreateOrganizationErrorModel
+
+    def __init__(
+        self, status_code: int, error: CannotCreateOrganizationErrorModel
+    ) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class OrganizationsUpdate403Error(PolarClientError):
+    error_type = NotPermittedModel | DisputeAutoAcceptNotEnabledModel
+    error: NotPermittedModel | DisputeAutoAcceptNotEnabledModel
+
+    def __init__(
+        self,
+        status_code: int,
+        error: NotPermittedModel | DisputeAutoAcceptNotEnabledModel,
+    ) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class OrganizationsUpdate409Error(PolarClientError):
+    error_type = SSOEnforcementRequiresConnectionModel | SSORequiresVerifiedDomainModel
+    error: SSOEnforcementRequiresConnectionModel | SSORequiresVerifiedDomainModel
+
+    def __init__(
+        self,
+        status_code: int,
+        error: SSOEnforcementRequiresConnectionModel | SSORequiresVerifiedDomainModel,
+    ) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class CustomerMetersCredits409Error(PolarClientError):
+    error_type = (
+        CustomerMeterCreditExternalIDConflictModel | AmbiguousExternalCustomerIDModel
+    )
+    error: CustomerMeterCreditExternalIDConflictModel | AmbiguousExternalCustomerIDModel
+
+    def __init__(
+        self,
+        status_code: int,
+        error: CustomerMeterCreditExternalIDConflictModel
+        | AmbiguousExternalCustomerIDModel,
+    ) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class CustomerMeterCreditNotReversible(PolarClientError):
+    error_type = CustomerMeterCreditNotReversibleModel
+    error: CustomerMeterCreditNotReversibleModel
+
+    def __init__(
+        self, status_code: int, error: CustomerMeterCreditNotReversibleModel
+    ) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class AmbiguousExternalMeterID(PolarClientError):
+    error_type = AmbiguousExternalMeterIDModel
+    error: AmbiguousExternalMeterIDModel
+
+    def __init__(self, status_code: int, error: AmbiguousExternalMeterIDModel) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class DisputeNotOpenError(PolarClientError):
+    error_type = DisputeNotOpenErrorModel
+    error: DisputeNotOpenErrorModel
+
+    def __init__(self, status_code: int, error: DisputeNotOpenErrorModel) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class RefundedAlready(PolarClientError):
+    error_type = RefundedAlreadyModel
+    error: RefundedAlreadyModel
+
+    def __init__(self, status_code: int, error: RefundedAlreadyModel) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class RefundPaymentAlreadyRefundedByStripe(PolarClientError):
+    error_type = RefundPaymentAlreadyRefundedByStripeModel
+    error: RefundPaymentAlreadyRefundedByStripeModel
+
+    def __init__(
+        self, status_code: int, error: RefundPaymentAlreadyRefundedByStripeModel
+    ) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class AmbiguousExternalWebhookEndpointID(PolarClientError):
+    error_type = AmbiguousExternalWebhookEndpointIDModel
+    error: AmbiguousExternalWebhookEndpointIDModel
+
+    def __init__(
+        self, status_code: int, error: AmbiguousExternalWebhookEndpointIDModel
+    ) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class BenefitGrantAlreadyExists(PolarClientError):
+    error_type = BenefitGrantAlreadyExistsModel
+    error: BenefitGrantAlreadyExistsModel
+
+    def __init__(self, status_code: int, error: BenefitGrantAlreadyExistsModel) -> None:
         self.error = error
         super().__init__(status_code, error)
 
@@ -1016,41 +1083,5 @@ class EventTypesUpdate404Error(PolarClientError):
     error: None
 
     def __init__(self, status_code: int, error: None) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
-class AmbiguousExternalMeterID(PolarClientError):
-    error_type = AmbiguousExternalMeterIDModel
-    error: AmbiguousExternalMeterIDModel
-
-    def __init__(self, status_code: int, error: AmbiguousExternalMeterIDModel) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
-class CustomerMetersCredits409Error(PolarClientError):
-    error_type = (
-        CustomerMeterCreditExternalIDConflictModel | AmbiguousExternalCustomerIDModel
-    )
-    error: CustomerMeterCreditExternalIDConflictModel | AmbiguousExternalCustomerIDModel
-
-    def __init__(
-        self,
-        status_code: int,
-        error: CustomerMeterCreditExternalIDConflictModel
-        | AmbiguousExternalCustomerIDModel,
-    ) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
-class CustomerMeterCreditNotReversible(PolarClientError):
-    error_type = CustomerMeterCreditNotReversibleModel
-    error: CustomerMeterCreditNotReversibleModel
-
-    def __init__(
-        self, status_code: int, error: CustomerMeterCreditNotReversibleModel
-    ) -> None:
         self.error = error
         super().__init__(status_code, error)

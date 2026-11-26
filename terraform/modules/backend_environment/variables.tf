@@ -30,6 +30,7 @@ variable "backend_config" {
     environment                                      = optional(string, null)
     database_statement_cache_size                    = optional(number, null)
     database_prepared_statement_cache_size           = optional(number, null)
+    organization_access_token_cache_ttl_seconds      = optional(number, null)
     base_url                                         = string
     backoffice_host                                  = optional(string, null)
     checkout_link_host                               = optional(string, null)
@@ -50,37 +51,40 @@ variable "backend_config" {
     tax_processors                                   = optional(string, "[\"stripe\"]")
     tax_record_processor                             = optional(string, "stripe")
     customer_portal_url_overrides                    = optional(string, "{}")
+    protected_oauth2_client_ids                      = list(string)
     plain_default_tier_external_id                   = optional(string, "")
     linear_team_id                                   = optional(string, "")
     linear_payout_amount_mismatch_template_id        = optional(string, "")
     merchant_migration_destination_stripe_account_id = optional(string, "")
+    customer_meter_units_from_reducer                = optional(bool, false)
   })
 }
 
 variable "backend_secrets" {
   type = object({
-    mcp_oauth2_client_id           = string
-    stripe_publishable_key         = string
-    discord_bot_token              = string
-    discord_client_id              = string
-    discord_client_secret          = string
-    discord_proxy_url              = optional(string, "")
-    posthog_project_api_key        = optional(string, "")
-    resend_api_key                 = string
-    resend_active_users_segment_id = optional(string, "")
-    resend_webhook_secret          = optional(string, "")
-    logo_dev_publishable_key       = optional(string, "")
-    sentry_dsn                     = string
-    plain_request_signing_secret   = optional(string, "")
-    plain_token                    = optional(string, "")
-    plain_chat_secret              = optional(string, "")
-    app_review_email               = optional(string, "")
-    app_review_otp_code            = optional(string, "")
-    chargeback_stop_webhook_secret = optional(string, "")
-    numeral_api_key                = optional(string, "")
-    firecrawl_api_key              = optional(string, "")
-    linear_api_key                 = optional(string, "")
-    turnstile_secret               = string
+    stripe_publishable_key             = string
+    discord_bot_token                  = string
+    discord_client_id                  = string
+    discord_client_secret              = string
+    discord_proxy_url                  = optional(string, "")
+    posthog_project_api_key            = optional(string, "")
+    resend_api_key                     = string
+    resend_active_users_segment_id     = optional(string, "")
+    resend_webhook_secret              = optional(string, "")
+    logo_dev_publishable_key           = optional(string, "")
+    sentry_dsn                         = string
+    plain_request_signing_secret       = optional(string, "")
+    plain_token                        = optional(string, "")
+    plain_chat_secret                  = optional(string, "")
+    app_review_email                   = optional(string, "")
+    app_review_otp_code                = optional(string, "")
+    chargeback_stop_webhook_secret     = optional(string, "")
+    payment_retry_alert_api_key        = optional(string, "")
+    payment_retry_alert_webhook_secret = optional(string, "")
+    numeral_api_key                    = optional(string, "")
+    firecrawl_api_key                  = optional(string, "")
+    linear_api_key                     = optional(string, "")
+    turnstile_secret                   = string
   })
   sensitive = true
 }

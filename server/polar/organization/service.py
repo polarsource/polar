@@ -11,7 +11,7 @@ from uuid import UUID
 import email_validator
 import stripe as stripe_lib
 import structlog
-from pydantic import BaseModel, Field, TypeAdapter
+from pydantic import MISSING, BaseModel, Field, TypeAdapter
 from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy.exc import IntegrityError
 
@@ -61,6 +61,7 @@ from polar.models import (
 from polar.models.benefit import BenefitType
 from polar.models.member import MemberRole
 from polar.models.organization import (
+    DEFAULT_TRIAL_ENDED_REACTIVATION_PERIOD,
     FIRST_REVIEW_THRESHOLD_CENTS,
     STATUS_CAPABILITIES,
     CapabilityName,
@@ -83,6 +84,9 @@ from polar.organization_access_token.repository import (
     OrganizationAccessTokenRepository,
 )
 from polar.organization_domain.repository import OrganizationDomainRepository
+from polar.organization_domain.service import (
+    organization_domain as organization_domain_service,
+)
 from polar.organization_email.service import (
     organization_email as organization_email_service,
 )
@@ -499,10 +503,15 @@ class OrganizationService:
             # Meter cycling is GA, but API versions up to 2026-10 still expose the
             # flag. Drop this once those versions no longer read it.
             "meter_cycling_enabled": True,
+            "reducer_billing_enabled": True,
         }
-        if is_agent(auth_subject):
-            create_data["feature_settings"]["config_as_code_enabled"] = True
-
+        if "subscription_settings" in create_data:
+            create_data["subscription_settings"] = {
+                "trial_ended_reactivation_period": (
+                    DEFAULT_TRIAL_ENDED_REACTIVATION_PERIOD
+                ),
+                **create_data["subscription_settings"],
+            }
         if settings.is_sandbox():
             create_data["status"] = OrganizationStatus.ACTIVE
             create_data["capabilities"] = {
@@ -541,6 +550,15 @@ class OrganizationService:
             )
             if agent is None:
                 raise CannotCreateOrganizationError(_AGENT_ONE_ORGANIZATION_MESSAGE)
+            posthog.agent_event(
+                agent,
+                "organization",
+                "create",
+                {
+                    "organization_id": str(organization.id),
+                    "organization_slug": organization.slug,
+                },
+            )
             return organization
 
         assert is_user(auth_subject)
@@ -619,15 +637,15 @@ class OrganizationService:
         if organization.onboarded_at is None:
             organization.onboarded_at = datetime.now(UTC)
 
-        if update_schema.feature_settings is not None:
+        if update_schema.feature_settings is not MISSING:
             organization.feature_settings = {
                 **organization.feature_settings,
                 **update_schema.feature_settings.model_dump(
-                    mode="json", exclude_unset=True, exclude_none=True
+                    mode="json", exclude_unset=True
                 ),
             }
 
-        if update_schema.subscription_settings is not None:
+        if update_schema.subscription_settings is not MISSING:
             if (
                 update_schema.subscription_settings.get("proration_behavior")
                 == SubscriptionProrationBehavior.reset
@@ -651,9 +669,14 @@ class OrganizationService:
                         }
                     ]
                 )
-            organization.subscription_settings = update_schema.subscription_settings
+            organization.subscription_settings = {
+                "trial_ended_reactivation_period": (
+                    organization.trial_ended_reactivation_period
+                ),
+                **update_schema.subscription_settings,
+            }
 
-        if update_schema.dispute_settings is not None:
+        if update_schema.dispute_settings is not MISSING:
             if (
                 update_schema.dispute_settings.auto_accept_below_amount is not None
                 and not organization.is_dispute_auto_accept_enabled
@@ -669,13 +692,13 @@ class OrganizationService:
                 },
             )
 
-        if update_schema.customer_portal_settings is not None:
+        if update_schema.customer_portal_settings is not MISSING:
             organization.customer_portal_settings = _merge_customer_portal_settings(
                 organization.customer_portal_settings,
                 update_schema.customer_portal_settings,
             )
 
-        if update_schema.default_presentment_currency is not None:
+        if update_schema.default_presentment_currency is not MISSING:
             await self._validate_currency_change(
                 session, organization, update_schema.default_presentment_currency
             )
@@ -697,18 +720,39 @@ class OrganizationService:
             },
         )
 
-        if update_schema.details:
+        if update_schema.details is not MISSING:
             organization.details = cast(
                 OrganizationDetails, update_schema.details.model_dump()
             )
 
         previous_website = organization.website
         previous_email = organization.email
+        previous_embed_hosts = organization.embed_hosts
 
         organization = await repository.update(organization, update_dict=update_dict)
 
         if organization.email != previous_email:
             await organization_email_service.track_change(session, organization)
+
+        new_embed_hosts = [
+            host
+            for host in organization.embed_hosts
+            if host not in previous_embed_hosts
+        ]
+        if new_embed_hosts:
+            await organization_domain_service.register_payment_method_domains(
+                session, organization, new_embed_hosts
+            )
+
+        removed_embed_hosts = [
+            host
+            for host in previous_embed_hosts
+            if host not in organization.embed_hosts
+        ]
+        if removed_embed_hosts:
+            await organization_domain_service.unregister_payment_method_domains(
+                session, organization, removed_embed_hosts
+            )
 
         if organization.website != previous_website:
             enqueue_job(
@@ -766,6 +810,9 @@ class OrganizationService:
         previous_status = organization.status
         organization.set_status(status)
         resend_service.on_organization_status_changed(
+            organization.id, previous_status, status
+        )
+        organization_domain_service.on_organization_status_changed(
             organization.id, previous_status, status
         )
 
@@ -982,6 +1029,9 @@ class OrganizationService:
         if organization.socials:
             update_dict["socials"] = []
 
+        await organization_domain_service.unregister_payment_method_domains(
+            session, organization
+        )
         organization = await repository.update(organization, update_dict=update_dict)
         await repository.soft_delete(organization)
         await OrganizationDomainRepository.from_session(
@@ -1337,6 +1387,11 @@ class OrganizationService:
                 "payout.release_held_payouts",
                 account_id=confirmed.account_id,
             )
+        if confirmed is not None:
+            enqueue_job(
+                "organization_domain.register_organization_payment_method_domains",
+                organization_id=confirmed.id,
+            )
 
         return confirmed
 
@@ -1607,6 +1662,7 @@ class OrganizationService:
         session.add(organization)
 
         self._enqueue_cancel_pending_payouts(organization)
+        polar_self_service.enqueue_revoke_subscription(organization_id=organization.id)
         if stripe_reject_reason is not None:
             self._enqueue_reject_stripe_account(organization, stripe_reject_reason)
 
@@ -1783,7 +1839,7 @@ class OrganizationService:
     ) -> Sequence[Organization]:
         """Enqueue a per-org cancellation job for each organization denied,
         blocked, or offboarded past the cancellation delay that still has
-        billable subscriptions. Returns the organizations enqueued.
+        billable or paused subscriptions. Returns the organizations enqueued.
         """
         repository = OrganizationRepository.from_session(session)
         cutoff = (
@@ -2666,26 +2722,6 @@ class OrganizationService:
 
         return review
 
-    async def mark_ai_onboarding_complete(
-        self, session: AsyncSession, organization: Organization
-    ) -> Organization:
-        """Mark the AI onboarding as completed for this organization.
-
-        Only sets the timestamp if it hasn't been set before, to capture the first completion.
-        """
-        if organization.ai_onboarding_completed_at is not None:
-            return organization
-
-        repository = OrganizationRepository.from_session(session)
-        organization = await repository.update(
-            organization,
-            update_dict={
-                "onboarded_at": datetime.now(UTC),
-                "ai_onboarding_completed_at": datetime.now(UTC),
-            },
-        )
-        return organization
-
     async def enable_preview_access(
         self, session: AsyncSession, organization: Organization
     ) -> Organization:
@@ -2743,6 +2779,10 @@ class OrganizationService:
             f"Capability '{capability}' {action}{by}",
             reason=reason,
         )
+        if capability == "checkout_payments":
+            organization_domain_service.on_organization_checkout_payments_changed(
+                organization.id, value
+            )
 
         session.add(organization)
         return organization

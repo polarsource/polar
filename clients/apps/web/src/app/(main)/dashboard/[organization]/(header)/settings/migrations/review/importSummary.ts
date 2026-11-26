@@ -47,8 +47,11 @@ export function importedCountsText(counts: ImportedCounts): string {
     plural(counts.discounts, 'discount'),
     plural(counts.customers, 'customer'),
   ].filter((part) => part !== null)
-  if (parts.length === 0) return ''
-  if (parts.length === 1) return parts[0]
+  return joinList(parts)
+}
+
+export function joinList(parts: string[]): string {
+  if (parts.length <= 1) return parts[0] ?? ''
   return `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`
 }
 

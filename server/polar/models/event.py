@@ -62,10 +62,9 @@ class CustomerComparator(Relationship.Comparator[Customer]):
                     and_(
                         Event.external_customer_id.is_not(None),
                         Event.external_customer_id == other.external_id,
-                        Event.organization_id == other.organization_id,
                     ),
                 )
-            return clause
+            return and_(Event.organization_id == other.organization_id, clause)
 
         raise NotImplementedError()
 
@@ -132,11 +131,6 @@ class Event(Model, MetadataMixin):
             literal_column("ingested_at DESC"),
         ),
         Index(
-            "ix_events_external_customer_id_pattern",
-            "external_customer_id",
-            postgresql_ops={"external_customer_id": "text_pattern_ops"},
-        ),
-        Index(
             "ix_events_organization_id_source_id",
             "organization_id",
             "source",
@@ -193,7 +187,7 @@ class Event(Model, MetadataMixin):
     )
     name: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
     source: Mapped[EventSource] = mapped_column(
-        String, nullable=False, default=EventSource.system, index=True
+        String, nullable=False, default=EventSource.system
     )
 
     customer_id: Mapped[UUID | None] = mapped_column(
@@ -204,11 +198,7 @@ class Event(Model, MetadataMixin):
         String, nullable=True, index=True
     )
 
-    member_id: Mapped[UUID | None] = mapped_column(
-        Uuid,
-        nullable=True,
-        index=True,
-    )
+    member_id: Mapped[UUID | None] = mapped_column(Uuid, nullable=True)
 
     external_member_id: Mapped[str | None] = mapped_column(String, nullable=True)
 
@@ -240,11 +230,11 @@ class Event(Model, MetadataMixin):
         return relationship(
             Customer,
             primaryjoin=(
+                "and_("
+                "Event.organization_id == Customer.organization_id,"
                 "or_("
                 "Event.customer_id == Customer.id,"
-                "and_("
-                "Event.external_customer_id == Customer.external_id,"
-                "Event.organization_id == Customer.organization_id"
+                "Event.external_customer_id == Customer.external_id"
                 ")"
                 ")"
             ),

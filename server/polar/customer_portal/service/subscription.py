@@ -22,7 +22,7 @@ from polar.models import (
 )
 from polar.models.subscription import CustomerCancellationReason
 from polar.payment_method.service import payment_method as payment_method_service
-from polar.subscription.schemas import SubscriptionChargePreview
+from polar.subscription.schemas import SubscriptionChangePreview
 from polar.subscription.service import (
     AlreadyCanceledSubscription,
     SubscriptionUpdateContext,
@@ -30,10 +30,11 @@ from polar.subscription.service import (
 from polar.subscription.service import subscription as subscription_service
 
 from ..schemas.subscription import (
-    CustomerSubscriptionChangePreview,
-    CustomerSubscriptionChangePreviewSeats,
-    CustomerSubscriptionChangePreviewUnits,
+    CustomerSubscriptionChange,
+    CustomerSubscriptionChangeSeats,
+    CustomerSubscriptionChangeUnits,
     CustomerSubscriptionPause,
+    CustomerSubscriptionReactivate,
     CustomerSubscriptionResume,
     CustomerSubscriptionUpdate,
     CustomerSubscriptionUpdateClear,
@@ -255,6 +256,14 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
 
             return await self.resume(session, subscription)
 
+        if isinstance(updates, CustomerSubscriptionReactivate):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                return await subscription_service.reactivate_ended_trial(
+                    session, ctx, subscription
+                )
+
         cancel = updates.cancel_at_period_end is True
         uncancel = updates.cancel_at_period_end is False
         if not (cancel or uncancel):
@@ -275,10 +284,10 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
         session: AsyncSession,
         subscription: Subscription,
         *,
-        change: CustomerSubscriptionChangePreview,
-    ) -> SubscriptionChargePreview:
+        change: CustomerSubscriptionChange,
+    ) -> SubscriptionChangePreview:
         organization = subscription.product.organization
-        if isinstance(change, CustomerSubscriptionChangePreviewSeats):
+        if isinstance(change, CustomerSubscriptionChangeSeats):
             if not organization.customer_portal_subscription_update_seats:
                 raise UpdateSubscriptionSeatsNotAllowed()
             return await subscription_service.calculate_change_preview(
@@ -287,7 +296,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
                 seats=change.seats,
             )
 
-        if isinstance(change, CustomerSubscriptionChangePreviewUnits):
+        if isinstance(change, CustomerSubscriptionChangeUnits):
             if not organization.customer_portal_subscription_update_units:
                 raise UpdateSubscriptionUnitsNotAllowed()
             return await subscription_service.calculate_change_preview(

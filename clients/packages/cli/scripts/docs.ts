@@ -13,6 +13,7 @@ import { Organizations } from '@/services/organizations'
 import { TokenHandoff } from '@/services/token-handoff'
 import { Trigger } from '@/services/trigger'
 import { Updater } from '@/services/updater'
+import { environmentVariables } from '@/utils/help'
 import { captureConsole } from '@/utils/test-utils/cli'
 import { fakeAuth, fakeOrganizations } from '@/utils/test-utils/services'
 
@@ -38,10 +39,12 @@ const helpOnlyServices = Layer.mergeAll(
       apply: unused,
       init: unused,
       install: unused,
+      deprecations: unused,
       prune: unused,
       catalogs: unused,
       publish: unused,
       disable: unused,
+      generate: unused,
     }),
   ),
   Layer.succeed(Organizations, fakeOrganizations().organizations),
@@ -121,6 +124,19 @@ const argRows = (args: ReadonlyArray<HelpDoc.ArgDoc>) =>
     `${describe(arg.description)}${arg.required ? '' : ' (optional)'}`,
   ])
 
+const environmentTable = (doc: HelpDoc.HelpDoc) => {
+  const variables = environmentVariables(doc.annotations)
+  return variables.length
+    ? table(
+        ['Variable', 'Description'],
+        variables.map(({ name, description }) => [
+          code(name),
+          cell(text(description)),
+        ]),
+      )
+    : ''
+}
+
 const anchor = (path: string[]) => path.join('-')
 
 const renderCommand = (
@@ -145,6 +161,8 @@ const renderCommand = (
       table(['Flag', 'Type', 'Description'], flagRows(doc.flags)),
     )
   }
+  const environment = environmentTable(doc)
+  if (environment) sections.push('**Environment variables**', environment)
   if (doc.subcommands?.length) {
     sections.push(
       '**Subcommands**',
@@ -181,6 +199,17 @@ const renderGlobalFlags = (doc: HelpDoc.HelpDoc) =>
         table(['Flag', 'Type', 'Description'], flagRows(doc.globalFlags)),
       ].join('\n\n')
     : ''
+
+const renderEnvironment = (doc: HelpDoc.HelpDoc) => {
+  const environment = environmentTable(doc)
+  return environment
+    ? [
+        '## Environment variables',
+        'The CLI reads these from your environment.',
+        environment,
+      ].join('\n\n')
+    : ''
+}
 
 const helpFor = (path: string[]) =>
   Effect.gen(function* () {
@@ -243,7 +272,9 @@ const commandPage = (command: CommandTree) =>
       frontmatter({
         title: own!.join(' '),
         sidebarTitle: command.name,
-        ...(doc.description ? { description: doc.description } : {}),
+        description:
+          doc.description ||
+          `Arguments and flags for every ${own!.join(' ')} command`,
       }),
       GENERATED,
       ...sections,
@@ -269,6 +300,7 @@ const overviewPage = (doc: HelpDoc.HelpDoc) =>
         .join('\n'),
     ]),
     renderGlobalFlags(doc),
+    renderEnvironment(doc),
   )
 
 const navigationGroup = (existing: ReadonlyArray<unknown>) => ({

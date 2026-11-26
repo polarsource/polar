@@ -2,7 +2,12 @@ import { getQueryClient } from '@/utils/api/query'
 import { runBulk } from '@/utils/bulk'
 import { api } from '@/utils/client'
 import { operations, schemas, unwrap } from '@polar-sh/client'
-import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+} from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export const useProducts = (
@@ -11,8 +16,10 @@ export const useProducts = (
     NonNullable<operations['products:list']['parameters']['query']>,
     'organization_id'
   >,
+  { enabled = true }: { enabled?: boolean } = {},
 ) =>
   useQuery({
+    enabled,
     queryKey: ['products', { organizationId, ...(parameters || {}) }],
     queryFn: () =>
       unwrap(
@@ -32,6 +39,36 @@ export const useProducts = (
       ),
     retry: defaultRetry,
     placeholderData: keepPreviousData,
+  })
+
+export const useInfiniteProducts = (
+  organizationId: string,
+  parameters?: Omit<
+    NonNullable<operations['products:list']['parameters']['query']>,
+    'organization_id' | 'page'
+  >,
+) =>
+  useInfiniteQuery({
+    queryKey: ['products', { organizationId, infinite: true, ...parameters }],
+    queryFn: ({ pageParam }) =>
+      unwrap(
+        api.GET('/v1/products/', {
+          params: {
+            query: {
+              organization_id: organizationId,
+              catalog_status: 'live' as const,
+              is_archived: false,
+              ...parameters,
+              page: pageParam,
+            },
+          },
+        }),
+      ),
+    retry: defaultRetry,
+    placeholderData: keepPreviousData,
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, _allPages, lastPageParam) =>
+      lastPageParam >= lastPage.pagination.max_page ? null : lastPageParam + 1,
   })
 
 // One product per external_id, preferring the current version, then the newest.

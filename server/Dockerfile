@@ -79,7 +79,9 @@ COPY --from=uv /uv /uvx /bin/
 COPY --from=tailscale /usr/local/bin/tailscaled /usr/local/bin/tailscale /usr/local/bin/containerboot /usr/local/bin/
 COPY --from=build-backoffice-proxy /usr/bin/caddy /usr/local/bin/caddy
 
+# Empty PYTHONTZPATH makes zoneinfo use the tzdata package pinned in uv.lock
 ENV PYTHONUNBUFFERED=1 \
+  PYTHONTZPATH="" \
   UV_COMPILE_BYTECODE=1 \
   UV_LINK_MODE=copy \
   UV_NO_SYNC=1 \
@@ -97,7 +99,8 @@ RUN --mount=type=bind,source=uv.lock,target=uv.lock \
   && update-ca-certificates \
   && uv sync --no-group dev --frozen \
   && uv tool install tinybird --python 3.13 \
-  && apt-get autoremove -y build-essential
+  && apt-get autoremove -y build-essential git \
+  && rm -rf /var/lib/apt/lists/*
 
 # Copy build artifacts in their own layers before the source, so they keep their
 # digests and are not re-uploaded when only the source changes.
@@ -120,6 +123,7 @@ CMD ["uv", "run", "uvicorn", "polar.app:app", \
 
 FROM public.ecr.aws/lambda/python:3.14 AS lambda-base
 
+ARG DNF_REFRESH_DATE
 RUN dnf upgrade -y --releasever=latest \
   && dnf clean all \
   && rm /usr/local/bin/aws-lambda-rie
@@ -161,6 +165,9 @@ COPY --from=build-emails-bin /app/bin/react-email-pkg /app/server/
 COPY --from=build-backoffice /app/static /app/server/polar/backoffice/static
 COPY . /app/server/
 
+# Lambda's filesystem is read-only, so without precompiled bytecode every cold start recompiles polar/.
+RUN python3 -m compileall -q -j 0 --invalidation-mode unchecked-hash /app/server/polar
+
 COPY --from=tailscale /usr/local/bin/tailscaled /usr/local/bin/tailscale /var/runtime/
 
 WORKDIR /app/server
@@ -180,6 +187,7 @@ ENV RELEASE_VERSION=${RELEASE_VERSION} \
   LAMBDA_TASK_ROOT=/app/server \
   PATH="/app/server/.venv/bin:$PATH" \
   PYTHONPATH="/app/server:/app/server/.venv/lib/python3.14/site-packages" \
+  PYTHONTZPATH="" \
   POLAR_EMAIL_RENDERER_BINARY_PATH=/app/server/react-email-pkg \
   POLAR_IP_GEOLOCATION_DATABASE_DIRECTORY_PATH=/data \
   POLAR_IP_GEOLOCATION_DATABASE_NAME=country_asn.mmdb

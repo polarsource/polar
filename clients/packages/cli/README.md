@@ -16,6 +16,9 @@ macOS and Linux:
 curl -fsSL https://polar.sh/install.sh | bash
 ```
 
+The installer puts `polar` in `~/.polar/bin` and adds that folder to your
+`PATH`. Open a new terminal to pick it up.
+
 Windows, from PowerShell. Only x64 is supported:
 
 ```powershell

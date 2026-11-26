@@ -7,7 +7,7 @@ crypto and no I/O: on load it boxes the stored ciphertext into an
 explicit ``await`` calls that go through a :class:`KeyProvider` chosen by config.
 
 See the design document for the full rationale:
-``handbook/engineering/design-documents/secrets-encryption.mdx``.
+<https://linear.app/polarsh/document/secrets-encryption-e53b64456f92>.
 """
 
 import asyncio

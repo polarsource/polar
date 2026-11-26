@@ -1,4 +1,4 @@
-import { Effect, Option, Stdio } from 'effect'
+import { Effect, Option } from 'effect'
 import { Command, Prompt } from 'effect/cli'
 import type { ActiveOrganization } from '@/schemas/Auth'
 import {
@@ -13,6 +13,7 @@ import {
 import { BillingConfig } from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
 import {
+  draftedChanges,
   errors,
   next,
   nextOpen,
@@ -25,6 +26,7 @@ import { formatTree } from '@/utils/billing-config/tree'
 import { confirm as confirmed, configFile as file, org } from '@/utils/flags'
 import { Output } from '@/utils/output'
 import { withProgress } from '@/utils/progress'
+import { interactive, keypress } from '@/utils/prompt'
 import * as ui from '@/utils/ui'
 
 const label = (catalog: Catalog | null, fallback: string) =>
@@ -48,14 +50,6 @@ interface Drift {
   readonly entries: ReadonlyArray<AppliedEntry>
 }
 
-// Meters, settings and webhooks apply right away, only products and benefits wait in the draft
-const drifted = (entries: ReadonlyArray<AppliedEntry>) =>
-  entries.filter(
-    (entry) =>
-      (entry.section === 'products' || entry.section === 'benefits') &&
-      entry.action !== 'unchanged',
-  )
-
 const report = (drift: Drift | null) =>
   drift === null || drift.entries.length === 0
     ? []
@@ -65,32 +59,6 @@ const report = (drift: Drift | null) =>
       )
 
 const warning = ui.bold(ui.yellow('Warning:'))
-
-const interactive = Effect.gen(function* () {
-  const stdio = yield* Stdio.Stdio
-  return (yield* stdio.stdinIsTerminal) && (yield* stdio.stdoutIsTerminal)
-})
-
-const keypress = (frame: string) =>
-  Prompt.Custom<boolean, boolean>(false, {
-    render: (_, action) =>
-      Effect.succeed(
-        action._tag === 'NextFrame'
-          ? frame
-          : action._tag === 'Submit'
-            ? `${frame}\n`
-            : '',
-      ),
-    process: (input) =>
-      Effect.succeed(
-        input.key.name === 'y'
-          ? { _tag: 'Submit', value: true }
-          : input.key.name === 'n' || input.key.name === 'escape'
-            ? { _tag: 'Submit', value: false }
-            : { _tag: 'Beep' },
-      ),
-    clear: () => Effect.succeed(ui.clearLines(frame.split('\n').length)),
-  })
 
 const approve = (
   organization: ActiveOrganization,
@@ -115,7 +83,7 @@ const approve = (
             ...(drift && drift.entries.length > 0
               ? [
                   `${ui.INDENT}${warning} ${drift.config.file} has changes that are not in the draft.`,
-                  `${ui.INDENT}Run ${ui.command('polar config apply')} first to include them.`,
+                  `${ui.INDENT}Run ${ui.command('polar config draft')} first to include them.`,
                   '',
                   `${ui.INDENT}Publishing makes the draft live for new checkouts.`,
                 ]
@@ -153,14 +121,14 @@ const render = (
         ui.blank,
         ui.success(`No draft to publish for ${target(organization)}`),
         ...next(
-          `${ui.INDENT}Run ${ui.command('polar config apply')} to save product and benefit changes to a draft.`,
+          `${ui.INDENT}Run ${ui.command('polar config draft')} to save product, benefit and meter changes to a draft.`,
         ),
         ui.blank,
       ]
 
 export const publish = Command.make('publish', { file, org, confirmed }).pipe(
   Command.withDescription(
-    "Make your organization's draft catalog live, so new checkouts sell its products and benefits",
+    "Make your organization's draft catalog live, so new checkouts sell its products, benefits and meters",
   ),
   Command.withExamples([
     {
@@ -173,7 +141,7 @@ export const publish = Command.make('publish', { file, org, confirmed }).pipe(
       description: 'Publish the draft of another organization, by slug or ID',
     },
     {
-      command: 'polar config apply --confirm && polar config publish --confirm',
+      command: 'polar config draft --confirm && polar config publish --confirm',
       description: 'Save and publish in one go, for scripts and CI',
     },
   ]),
@@ -212,11 +180,11 @@ export const publish = Command.make('publish', { file, org, confirmed }).pipe(
                           errors(plan.issues) > 0
                             ? new BillingConfigError({
                                 message: `Could not compare ${config.file} with the draft, it has ${plural(errors(plan.issues), 'error')}`,
-                                hint: `Run polar config plan to see them, then fix ${config.file}.`,
+                                hint: `Run polar config validate to see them, then fix ${config.file}.`,
                               })
                             : Effect.succeed<Drift>({
                                 config,
-                                entries: drifted(plan.entries),
+                                entries: draftedChanges(plan.entries),
                               }),
                         ),
                       ),

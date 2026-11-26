@@ -1,6 +1,7 @@
 import { Effect } from 'effect'
 import { validateConfig } from './schema/config'
 import type { BenefitConfig } from './schema/benefit'
+import type { CustomFieldConfig } from './schema/customField'
 import type { Metadata } from './schema/metadata'
 import type { MeterConfig, MeterFilter } from './schema/meter'
 import { majorAmount, scaleRate } from './schema/money'
@@ -25,6 +26,31 @@ const key = (value: string): string =>
     : IDENTIFIER.test(value)
       ? value
       : literal(value)
+
+const keepsOrder = (keys: ReadonlyArray<string>): boolean => {
+  const objectKeys = Object.keys(
+    Object.fromEntries(keys.map((name) => [name, null])),
+  )
+  return (
+    objectKeys.length === keys.length &&
+    objectKeys.every((name, index) => name === keys[index])
+  )
+}
+
+const renderPairs = (pairs: ReadonlyArray<readonly [string, string]>) =>
+  keepsOrder(pairs.map(([name]) => name))
+    ? `{ ${pairs.map(([name, value]) => `${key(name)}: ${literal(value)}`).join(', ')} }`
+    : `[${pairs.map(([name, value]) => `[${literal(name)}, ${literal(value)}]`).join(', ')}]`
+
+type Plain = string | number | boolean | { readonly [name: string]: Plain }
+
+const renderObject = (value: { readonly [name: string]: Plain }): string => {
+  const entries = Object.entries(value).map(
+    ([name, item]) =>
+      `${key(name)}: ${typeof item === 'object' ? renderObject(item) : literal(item)}`,
+  )
+  return entries.length === 0 ? '{}' : `{ ${entries.join(', ')} }`
+}
 
 const renderMetadata = (metadata: Metadata | undefined): string[] =>
   metadata === undefined || Object.keys(metadata).length === 0
@@ -71,7 +97,11 @@ const renderMeter = (meter: MeterConfig, imports: Set<string>): string => {
   }
 
   if (meter.unit === 'custom') {
-    lines.push(`.unit("custom", ${literal(meter.custom_label)})`)
+    const multiplier =
+      meter.custom_multiplier === undefined
+        ? ''
+        : `, ${meter.custom_multiplier}`
+    lines.push(`.unit("custom", ${literal(meter.custom_label)}${multiplier})`)
   } else if (meter.unit === 'token') {
     lines.push('.unit("token")')
   }
@@ -104,6 +134,25 @@ const renderBenefit = (
       ...renderDeprecated(benefit.deprecated),
     ].join('\n')
   }
+  if (benefit.type === 'slack_shared_channel') {
+    helpers.add('slackChannel')
+    const properties = benefit.properties
+    return [
+      `slackChannel(${name})`,
+      `.integration(${literal(properties.slack_integration_id)})`,
+      `.channel(${literal(properties.channel_name_template)})`,
+      ...(properties.private ? [] : ['.publicChannel()']),
+      ...(properties.welcome_message
+        ? [`.welcome(${literal(properties.welcome_message)})`]
+        : []),
+      ...(properties.archive_on_revoke ? [] : ['.keepOnRevoke()']),
+      ...(properties.team_invitees.length === 0
+        ? []
+        : [`.invite(${properties.team_invitees.map(literal).join(', ')})`]),
+      ...renderMetadata(benefit.metadata),
+      ...renderDeprecated(benefit.deprecated),
+    ].join('\n')
+  }
   helpers.add('credits')
   const { meter, units, rollover } = benefit.properties
   return [
@@ -114,6 +163,53 @@ const renderBenefit = (
     ...renderMetadata(benefit.metadata),
     ...renderVisibility(benefit.visibility),
     ...renderDeprecated(benefit.deprecated),
+  ].join('\n')
+}
+
+const dateText = (seconds: number | undefined): string | undefined =>
+  seconds === undefined
+    ? undefined
+    : new Date(seconds * 1000).toISOString().slice(0, 10)
+
+const call = (method: string, value: string | number | undefined): string[] =>
+  value === undefined ? [] : [`.${method}(${literal(value)})`]
+
+const renderCustomField = (
+  field: CustomFieldConfig,
+  helpers: Set<string>,
+): string => {
+  helpers.add(field.type)
+  return [
+    field.type === 'select'
+      ? `select(${literal(field.name)}, ${renderPairs(
+          field.properties.options.map(({ value, label }) => [value, label]),
+        )})`
+      : `${field.type}(${literal(field.name)})`,
+    ...call('label', field.properties.form_label),
+    ...call('help', field.properties.form_help_text),
+    ...(field.type === 'checkbox'
+      ? []
+      : call('placeholder', field.properties.form_placeholder)),
+    ...(field.type === 'text'
+      ? [
+          ...call('minLength', field.properties.min_length),
+          ...call('maxLength', field.properties.max_length),
+          ...(field.properties.textarea === true ? ['.textarea()'] : []),
+        ]
+      : []),
+    ...(field.type === 'number'
+      ? [
+          ...call('min', field.properties.ge),
+          ...call('max', field.properties.le),
+        ]
+      : []),
+    ...(field.type === 'date'
+      ? [
+          ...call('min', dateText(field.properties.ge)),
+          ...call('max', dateText(field.properties.le)),
+        ]
+      : []),
+    ...renderMetadata(field.metadata),
   ].join('\n')
 }
 
@@ -377,6 +473,7 @@ const renderProduct =
       recurring_interval_count: count,
       trial_interval: trialInterval,
       trial_interval_count: trialCount,
+      trial_payment_setup_required: trialPaymentRequired,
       meter_interval: meterInterval,
       meter_interval_count: meterCount,
     } = product
@@ -401,12 +498,22 @@ const renderProduct =
       trialInterval !== undefined &&
       trialCount !== undefined
         ? [
-            `.trial(${literal(trialCount)}, ${plural(trialInterval, trialCount)})`,
+            `.trial(${literal(trialCount)}, ${plural(trialInterval, trialCount)}${trialPaymentRequired === false ? ', { requirePaymentMethod: false }' : ''})`,
           ]
         : []),
       ...(product.benefits.length === 0
         ? []
         : [`.grants([${product.benefits.map(literal).join(', ')}])`]),
+      ...(product.custom_fields === undefined ||
+      product.custom_fields.length === 0
+        ? []
+        : [
+            `.customFields(${product.custom_fields.every(({ required }) => required) ? '' : '(optional) => '}[${product.custom_fields
+              .map(({ field, required }) =>
+                required ? literal(field) : `optional(${literal(field)})`,
+              )
+              .join(', ')}])`,
+          ]),
       ...renderMetadata(product.metadata),
       ...(product.description === undefined
         ? []
@@ -422,13 +529,9 @@ const renderEntries = <Resource extends { readonly external_id: string }>(
   render: (resource: Resource, helpers: Set<string>) => string,
 ): string[] => {
   const helpers = new Set<string>()
-  const ids = resources.map((resource) => resource.external_id)
-  const objectKeys = Object.keys(
-    Object.fromEntries(ids.map((id) => [id, null])),
+  const useEntries = !keepsOrder(
+    resources.map((resource) => resource.external_id),
   )
-  const useEntries =
-    objectKeys.length !== ids.length ||
-    objectKeys.some((id, index) => id !== ids[index])
   const lines = resources.map((resource) => {
     const expression = render(resource, helpers).replaceAll('\n', '\n      ')
     return useEntries
@@ -452,6 +555,17 @@ export const generateConfig = Effect.fnUntraced(function* (input: unknown) {
     helpers.add('meter')
     return renderMeter(meter, imports)
   })
+  const customFields =
+    config.custom_fields === undefined
+      ? []
+      : renderEntries(
+          'customFields',
+          config.custom_fields.map((field) => ({
+            ...field,
+            external_id: field.slug,
+          })),
+          renderCustomField,
+        )
   const benefits =
     config.benefits === undefined
       ? []
@@ -464,7 +578,7 @@ export const generateConfig = Effect.fnUntraced(function* (input: unknown) {
   const settings =
     config.settings === undefined
       ? []
-      : [`  settings: ${JSON.stringify(config.settings)},`]
+      : [`  settings: ${renderObject(config.settings)},`]
 
   return [
     `import { ${[...imports].join(', ')} } from '@polar-sh/polar'`,
@@ -472,6 +586,7 @@ export const generateConfig = Effect.fnUntraced(function* (input: unknown) {
     'export default defineConfig({',
     ...settings,
     ...meters,
+    ...customFields,
     ...benefits,
     ...products,
     '})',

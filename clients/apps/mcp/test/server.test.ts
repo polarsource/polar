@@ -212,6 +212,9 @@ test('code mode is the default for every client; ?codemode=false selects operati
     destructiveHint: true,
     idempotentHint: false,
   })
+  expect(annotations('orders_update').destructiveHint).toBe(true)
+  expect(annotations('checkout_links_update').destructiveHint).toBe(true)
+  expect(annotations('checkout_links_create').destructiveHint).toBe(false)
   expect(annotations('benefit_grants_list').readOnlyHint).toBe(true)
   expect(annotations('webhooks_create_webhook_endpoint').openWorldHint).toBe(
     true,

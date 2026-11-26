@@ -11,7 +11,7 @@ import {
 } from '@/hooks/queries/events'
 import { useMetrics } from '@/hooks/queries/metrics'
 import { buildEventDashboardPath } from '@/utils/event'
-import { fromISODate, toISODate } from '@/utils/metrics'
+import { fromISODate, toISODate, parseAsISODateString } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Avatar, Text } from '@polar-sh/orbit'
@@ -53,11 +53,11 @@ export default function ClientPage({
 }: ClientPageProps) {
   const [startDateISOString, setStartDateISOString] = useQueryState(
     'startDate',
-    parseAsString.withDefault(getDefaultStartDate()),
+    parseAsISODateString.withDefault(getDefaultStartDate()),
   )
   const [endDateISOString, setEndDateISOString] = useQueryState(
     'endDate',
-    parseAsString.withDefault(getDefaultEndDate()),
+    parseAsISODateString.withDefault(getDefaultEndDate()),
   )
 
   const dateRange = useMemo(

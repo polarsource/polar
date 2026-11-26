@@ -1,6 +1,7 @@
 from typing import Annotated, Any, Literal
 
 from pydantic import (
+    MISSING,
     UUID4,
     AfterValidator,
     BeforeValidator,
@@ -16,6 +17,7 @@ from polar.kit.schemas import (
     Schema,
     TimestampedSchema,
 )
+from polar.kit.versioning import Omissible
 from polar.models.organization_sso_connection import (
     OIDCAuthMethod,
     OrganizationSSOConnectionType,
@@ -154,9 +156,10 @@ class OrganizationSSOConnectionUpdate(Schema):
         default=None,
         description="Human-friendly label for the connection, shown on the login page.",
     )
-    configuration: OIDCConfiguration | None = Field(
-        default=None, description="Provider-specific configuration of the connection."
+    configuration: Omissible[OIDCConfiguration] = Field(
+        default=MISSING,
+        description="Provider-specific configuration of the connection.",
     )
-    enabled: bool | None = Field(
-        default=None, description="Whether the connection can be used to sign in."
+    enabled: Omissible[bool] = Field(
+        default=MISSING, description="Whether the connection can be used to sign in."
     )

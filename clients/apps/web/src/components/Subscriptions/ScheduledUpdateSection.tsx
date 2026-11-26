@@ -3,14 +3,14 @@
 import { DetailCell, DetailGrid } from '@/components/Orders/OrderSection'
 import { useProduct } from '@/hooks/queries'
 import { useClearPendingSubscriptionUpdate } from '@/hooks/queries/subscriptions'
-import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { useDashboardOrganization } from '@/hooks/dashboardOrganization'
 import { schemas } from '@polar-sh/client'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { ArrowUpRight as ArrowUpRightIcon } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
-import { useContext, useState } from 'react'
+import { useState } from 'react'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 
 export const ScheduledUpdateSection = ({
@@ -20,7 +20,7 @@ export const ScheduledUpdateSection = ({
   pendingUpdate: schemas['PendingSubscriptionUpdate']
   subscription: schemas['Subscription']
 }) => {
-  const { organization } = useContext(OrganizationContext)
+  const organization = useDashboardOrganization()
   const { data: newProduct } = useProduct(pendingUpdate.product_id ?? undefined)
   const clearPendingUpdate = useClearPendingSubscriptionUpdate(subscription.id)
   const [showConfirmModal, setShowConfirmModal] = useState(false)

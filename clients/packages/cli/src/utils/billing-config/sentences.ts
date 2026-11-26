@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'node:util'
 import type { AppliedEntry } from '@/schemas/BillingConfig'
 import {
   ALL_EVENTS,
@@ -138,6 +139,28 @@ const unitFacts = (
   ]
 }
 
+const meteredPrices = (product: Record<string, unknown>) => [
+  ...prices(product, 'metered_unit'),
+  ...prices(product, 'metered_tiers'),
+]
+
+type Side = 'before' | 'after'
+
+const diffMeters = (change: AppliedEntry['diff'][number], side: Side) => {
+  const value = change[side]
+  if (change.field === 'prices') {
+    return meteredPrices({ prices: value }).map((price) => name(price['meter']))
+  }
+  const meter =
+    change.field === 'properties' ? record(value)?.['meter'] : undefined
+  return meter === undefined ? [] : [name(meter)]
+}
+
+export const usedMeters = ({ action, diff }: AppliedEntry, side: Side) =>
+  action === 'updated'
+    ? [...new Set(diff.flatMap((change) => diffMeters(change, side)))]
+    : []
+
 export const productMeters = (
   input: unknown,
   unitOf: (meter: string) => string,
@@ -145,10 +168,7 @@ export const productMeters = (
   const product = record(input)
   if (product === undefined) return []
   const byMeter = new Map<string, Record<string, unknown>[]>()
-  for (const price of [
-    ...prices(product, 'metered_unit'),
-    ...prices(product, 'metered_tiers'),
-  ]) {
+  for (const price of meteredPrices(product)) {
     const id = name(price['meter'])
     byMeter.set(id, [...(byMeter.get(id) ?? []), price])
   }
@@ -208,6 +228,13 @@ export const benefitSentence = (input: unknown) => {
       ...visibility,
     ])
   }
+  if (benefit['type'] === 'slack_shared_channel' && properties !== undefined) {
+    return fields([
+      ['type', 'Slack channel'],
+      ['channel', name(properties['channel_name_template'])],
+      ...visibility,
+    ])
+  }
   return fields([
     [
       'type',
@@ -232,12 +259,94 @@ const shownUrl = (url: unknown, format: unknown) =>
     ? url
     : new Rendered(webhookUrl(url, format))
 
+// A changed meter re-sends the prices and properties that use it as they were
+const changed = ({ before, after }: AppliedEntry['diff'][number]) =>
+  !isDeepStrictEqual(before, after)
+
+const FIELD_PROPERTIES: Record<string, string> = {
+  form_label: 'label',
+  form_help_text: 'help',
+  form_placeholder: 'placeholder',
+  min_length: 'min length',
+  max_length: 'max length',
+  ge: 'min',
+  le: 'max',
+}
+
+const propertyValue = (property: string, value: unknown, type: unknown) => {
+  if (value === undefined || value === null) return value
+  if (property === 'options' && Array.isArray(value)) {
+    return new Rendered(
+      value
+        .map(record)
+        .map(
+          (option) => `${name(option?.['value'])} → ${name(option?.['label'])}`,
+        )
+        .join('\n'),
+    )
+  }
+  if (type === 'date' && typeof value === 'number') {
+    return new Rendered(new Date(value * 1000).toISOString().slice(0, 10))
+  }
+  if (typeof value === 'boolean') return new Rendered(value ? 'yes' : 'no')
+  return value
+}
+
+const propertyText = (property: string, value: unknown, type: unknown) => {
+  const shown = propertyValue(property, value, type)
+  return shown instanceof Rendered
+    ? shown.text.replaceAll('\n', ', ')
+    : name(shown)
+}
+
+export const customFieldSentence = (input: unknown) => {
+  const field = record(input)
+  if (field === undefined) return undefined
+  return fields([
+    ['type', name(field['type'])],
+    ['name', name(field['name'])],
+    ...Object.entries(record(field['properties']) ?? {})
+      .filter(([, value]) => isSet(value))
+      .map(
+        ([key, value]) =>
+          [
+            FIELD_PROPERTIES[key] ?? key,
+            propertyText(key, value, field['type']),
+          ] as const,
+      ),
+  ])
+}
+
+// A custom field's properties show as one row each, with readable names.
+const customFieldProperties = (
+  change: AppliedEntry['diff'][number],
+  type: unknown,
+): AppliedEntry['diff'] => {
+  const before = record(change.before) ?? {}
+  const after = record(change.after) ?? {}
+  return [...new Set([...Object.keys(before), ...Object.keys(after)])]
+    .filter((key) => !isDeepStrictEqual(before[key], after[key]))
+    .map((key) => ({
+      field: FIELD_PROPERTIES[key] ?? key,
+      before: propertyValue(key, before[key], type),
+      after: propertyValue(key, after[key], type),
+    }))
+}
+
 // Webhook URLs in a diff are redacted by the format on their own side.
 export const shownDiff = (
   section: string,
-  diff: AppliedEntry['diff'],
+  raw: AppliedEntry['diff'],
   document: unknown,
 ): AppliedEntry['diff'] => {
+  const diff = raw.filter(changed)
+  if (section === 'custom_fields') {
+    return diff.flatMap((change) =>
+      change.field === 'properties'
+        ? customFieldProperties(change, record(document)?.['type'])
+        : [change],
+    )
+  }
   if (section !== 'webhooks') return diff
   const format = diff.find((change) => change.field === 'format')
   const before =

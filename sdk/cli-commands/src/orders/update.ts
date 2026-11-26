@@ -9,6 +9,7 @@ import {
   mergeInput,
   jsonFlag,
   nullableStringFlag,
+  org,
 } from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['orders']['update']>[1]>
@@ -17,6 +18,7 @@ export const command = Command.make(
   'update',
   {
     fields,
+    org,
     path: {
       id: Argument.String('id'),
     },
@@ -31,7 +33,7 @@ export const command = Command.make(
       billing_address: jsonFlag('billing-address').pipe(
         Flag.optional,
         Flag.withDescription(
-          'The address of the customer that should appear on the invoice. Country and state fields cannot be updated. JSON: {"country": "AD" | "AE" | "AF" | "AG" | "AI" | ..., ...}',
+          'The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated. JSON: {"country": "AD" | "AE" | "AF" | "AG" | "AI" | ..., ...}',
         ),
       ),
     },
@@ -48,6 +50,7 @@ export const command = Command.make(
         method: 'PATCH',
         requiresConfirmation: false,
         confirm: false,
+        organizationId: config.org,
         fields: config.fields,
         invoke: (client) => client.orders.update(config.path.id, body),
       })

@@ -3,7 +3,7 @@ from sqlalchemy import select, update
 
 from polar.models import Checkout
 from polar.models.checkout import CheckoutStatus
-from scripts.helper import (
+from scripts.helper import (  # lint-skip: dry-run
     configure_script_logging,
     limit_bindparam,
     run_batched_update,

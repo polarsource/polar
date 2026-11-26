@@ -1,7 +1,6 @@
 from datetime import timedelta
 
 import pytest
-from freezegun import freeze_time
 
 from polar.kit.utils import utc_now
 from polar.models import Customer, Product
@@ -18,7 +17,7 @@ from tests.fixtures.random_objects import create_order, create_payment
 
 
 @pytest.mark.anyio
-@freeze_time("2026-11-02 12:00:00")
+@pytest.mark.time_machine("2026-11-02T12:00:00Z", tick=False)
 class TestCheck:
     @pytest.mark.parametrize(
         "case",

@@ -245,18 +245,29 @@ export const currency =
     }
   }
 
+/** US dollars: `usd(10)` is $10.00. */
 export const usd = currency('usd')
+/** Euros: `eur(10)` is €10.00. */
 export const eur = currency('eur')
 /** Turkish lira: `try` is a reserved word. */
 export const lira = currency('try')
+/** British pounds: `gbp(10)` is £10.00. */
 export const gbp = currency('gbp')
+/** Israeli new shekels: `ils(10)` is ₪10.00. */
 export const ils = currency('ils')
+/** Indian rupees: `inr(10)` is ₹10.00. */
 export const inr = currency('inr')
+/** Australian dollars: `aud(10)` is A$10.00. */
 export const aud = currency('aud')
+/** Canadian dollars: `cad(10)` is C$10.00. */
 export const cad = currency('cad')
+/** Japanese yen: `jpy(1000)` is ¥1,000. */
 export const jpy = currency('jpy')
+/** Swiss francs: `chf(10)` is CHF 10.00. */
 export const chf = currency('chf')
+/** South Korean won: `krw(1000)` is ₩1,000. */
 export const krw = currency('krw')
+/** Brazilian reals: `brl(10)` is R$10.00. */
 export const brl = currency('brl')
 
 /**

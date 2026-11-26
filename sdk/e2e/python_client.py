@@ -5,7 +5,7 @@ import sys
 import typing
 
 import anyio
-import httpx
+import httpx2
 from polar.base import PolarError
 from polar.outpost import Outpost
 
@@ -27,7 +27,7 @@ async def read_lines(fd: int) -> typing.AsyncIterator[bytes]:
 async def main() -> None:
     redis_url, base_url = sys.argv[1:]
     async with (
-        httpx.AsyncClient(
+        httpx2.AsyncClient(
             base_url=base_url, headers={"Authorization": "Bearer harness-token"}
         ) as client,
         Outpost(redis_url, client=client, telemetry=False) as outpost,
@@ -43,10 +43,6 @@ async def main() -> None:
                 if operation == "ingest":
                     for event in command["arguments"]["events"]:
                         await outpost.track(event)
-                    print(json.dumps({"result": None}), flush=True)
-                    continue
-                if operation == "confirm":
-                    await outpost.confirm(command["arguments"]["events"])
                     print(json.dumps({"result": None}), flush=True)
                     continue
                 methods = {

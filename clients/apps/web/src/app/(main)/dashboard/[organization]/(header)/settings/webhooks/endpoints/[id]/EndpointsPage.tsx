@@ -17,11 +17,10 @@ import {
   useResetSecretWebhookEndpoint,
   useWebhookEndpoint,
 } from '@/hooks/queries'
-import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { operations, schemas } from '@polar-sh/client'
-import { Button, Switch, Text } from '@polar-sh/orbit'
+import { Button, Status, Switch, Text } from '@polar-sh/orbit'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import { useParams, useRouter } from 'next/navigation'
 import { parseAsArrayOf, parseAsString, useQueryStates } from 'nuqs'
@@ -54,7 +53,6 @@ export default function ClientPage({
   const { data: endpoint } = useWebhookEndpoint(id)
 
   const editWebhookEndpoint = useEditWebhookEndpoint()
-  const managedAsCode = useIsManagedAsCode(organization.id)
   const handleToggleEnabled = useCallback(
     async (enabled: boolean) => {
       if (!endpoint) return
@@ -144,23 +142,29 @@ export default function ClientPage({
     return null
   }
 
+  const isMCPSubscription = endpoint.format === 'mcp'
+
   return (
     <DashboardBody
       wrapperClassName="max-w-(--breakpoint-md)!"
       title="Webhook"
       header={
         <div className="flex items-center gap-2">
-          <Button variant="secondary" onClick={showResetModal}>
-            Reset Secret
-          </Button>
-          {!managedAsCode && (
-            <Button variant="destructive" onClick={showArchiveModal}>
-              Delete
+          {!isMCPSubscription && (
+            <Button variant="secondary" onClick={showResetModal}>
+              Reset Secret
             </Button>
           )}
+          <Button variant="destructive" onClick={showArchiveModal}>
+            Delete
+          </Button>
         </div>
       }
-      contextView={<WebhookContextView endpoint={endpoint} />}
+      contextView={
+        isMCPSubscription ? undefined : (
+          <WebhookContextView endpoint={endpoint} />
+        )
+      }
       contextViewTitle="Webhook"
       className="gap-y-8"
       wide
@@ -180,6 +184,16 @@ export default function ClientPage({
               <h3 className="text-lg break-words">{endpoint.url}</h3>
             )}
             <Text color="muted">API version {endpoint.api_version}</Text>
+            {isMCPSubscription && (
+              <>
+                <Status size="small" color="blue" status="MCP subscription" />
+                <Text color="muted">
+                  Created by an MCP client subscribing to{' '}
+                  {endpoint.events.join(', ')}. The client manages it, so you
+                  can only disable or delete it here.
+                </Text>
+              </>
+            )}
             <WebhookSigningSchemeStatus
               organizationCreatedAt={organization.created_at}
               usesStandardWebhookSignature={
@@ -194,7 +208,6 @@ export default function ClientPage({
             <Switch
               checked={endpoint.enabled}
               onCheckedChange={handleToggleEnabled}
-              disabled={managedAsCode}
               aria-labelledby="webhook-status-label"
             />
           </div>

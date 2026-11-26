@@ -40,7 +40,11 @@ const UpdateBenefitModalContent = ({
 }: UpdateBenefitModalContentProps) => {
   const router = useRouter()
   const defaultValues = useMemo((): BenefitUpdateForm => {
-    const values = { ...benefit, metadata: metadataToEntries(benefit.metadata) }
+    const values = {
+      ...benefit,
+      external_id: benefit.external_id ?? undefined,
+      metadata: metadataToEntries(benefit.metadata),
+    }
     if (!isBenefitVisibilityConfigurable(benefit.type)) {
       // oxlint-disable-next-line typescript/no-unused-vars
       const { visibility, ...valuesWithoutVisibility } = values

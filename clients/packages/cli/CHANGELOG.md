@@ -1,5 +1,27 @@
 # @polar-sh/cli
 
+## 3.4.0
+
+### Minor Changes
+
+- eb975dc: Accept `--org` on `polar auth token`, so a token that can see several organizations can pick the one to create an access token for.
+
+### Patch Changes
+
+- a8698e4: Document token authentication in the help. `polar --help` and `polar auth --help` list `POLAR_ACCESS_TOKEN` and `POLAR_ENVIRONMENT` in a new ENVIRONMENT section, `polar auth token` explains that it gives your app its own organization access token approved by a human in the browser, and "Not logged in" messages mention setting `POLAR_ACCESS_TOKEN`.
+- 5be63f5: `polar auth token` now says which organization and environment the token was created for, and explains how to use a sandbox token with the SDK.
+- 273d629: `polar config validate` now says what it compares against. The Catalog row shows the live catalog (`v3 (live) → v4 (draft)`, or `no live catalog → v1 (draft)`). When an unpublished draft exists, validate says whether it already has the file's changes. It then suggests `polar config publish`, `polar config draft` before publishing, or `polar config draft` to discard a draft the file no longer matches. Webhook changes are reported separately, because `polar config draft` makes them right away. `--json` adds `live` and `draft`. The draft's `drift` lists the changes the draft is missing. `--pr-comment` notes the draft too.
+
+## 3.3.0
+
+### Minor Changes
+
+- 2f25731: Accept `--org` on every API command that acts on an organization, and let `polar auth org <id-or-slug>` set the active organization without the interactive picker.
+
+### Patch Changes
+
+- 139b067: Suggest the right command for common guesses such as `polar login` and `polar auth status`, accept `--fields items.id` on list commands, and accept a JSON or comma-separated list of IDs on repeatable flags.
+
 ## 3.2.0
 
 ### Minor Changes

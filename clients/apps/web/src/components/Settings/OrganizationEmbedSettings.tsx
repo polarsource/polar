@@ -11,9 +11,10 @@ import { Text } from '@polar-sh/orbit/Text'
 import { X } from '@polar-sh/orbit/icons'
 import React, { useCallback, useState } from 'react'
 import { toast } from '../Toast/use-toast'
+import { EmbedHostWalletStatus } from './EmbedHostWalletStatus'
 import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
-const NO_SHARED: string[] = []
+const NO_HOSTS: string[] = []
 
 interface OrganizationEmbedSettingsProps {
   organization: schemas['Organization']
@@ -30,8 +31,12 @@ const OrganizationEmbedSettings: React.FC<OrganizationEmbedSettingsProps> = ({
 
   const updateOrganization = useUpdateOrganization()
   const { data: embedStatus } = useOrganizationEmbedStatus(organization.id)
-  const shared = embedStatus?.shared_hosts ?? NO_SHARED
+  const shared = embedStatus?.shared_hosts ?? NO_HOSTS
   const sharedHosts = new Set(shared)
+  const walletHosts = new Set(embedStatus?.wallet_hosts ?? NO_HOSTS)
+  const pendingWalletHosts = new Set(
+    embedStatus?.pending_wallet_hosts ?? NO_HOSTS,
+  )
 
   const save = useCallback(
     async (embed_hosts: string[]) => {
@@ -115,7 +120,18 @@ const OrganizationEmbedSettings: React.FC<OrganizationEmbedSettingsProps> = ({
                   borderRadius="s"
                 >
                   <Box flexDirection="column">
-                    <Text variant="body">{host}</Text>
+                    <Box alignItems="center" gap="s">
+                      <Text variant="body">{host}</Text>
+                      {embedStatus ? (
+                        <EmbedHostWalletStatus
+                          host={host}
+                          hasWalletPayments={walletHosts.has(host)}
+                          hasPendingWalletPayments={pendingWalletHosts.has(
+                            host,
+                          )}
+                        />
+                      ) : null}
+                    </Box>
                     {sharedHosts.has(host) ? (
                       <Text variant="caption" color="warning">
                         {`${host.replace('*.', '')} hosts other people's sites. Any of them can embed your checkout.`}

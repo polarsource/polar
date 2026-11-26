@@ -19,7 +19,7 @@ import {
   KeyboardArrowRightOutlined,
 } from '@polar-sh/orbit/icons'
 import { operations, schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { Button, Text, Truncated } from '@polar-sh/orbit'
 import {
   DataTable,
   DataTableCellContext,
@@ -171,7 +171,13 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
         if (delivery.isSubRow) {
           return null
         }
-        return <pre>{delivery.webhook_event.type}</pre>
+        return (
+          <Truncated>
+            <Text as="span" monospace>
+              {delivery.webhook_event.type}
+            </Text>
+          </Truncated>
+        )
       },
     },
     {

@@ -37,9 +37,10 @@ from .schemas import (
     SubscriptionBulkUpdateCreate,
     SubscriptionBulkUpdateID,
     SubscriptionCancelPreview,
+    SubscriptionChange,
     SubscriptionChangePreview,
-    SubscriptionChangePreviewSeats,
-    SubscriptionChangePreviewUnits,
+    SubscriptionChangeSeats,
+    SubscriptionChangeUnits,
     SubscriptionChargePreview,
     SubscriptionCreate,
     SubscriptionID,
@@ -47,11 +48,13 @@ from .schemas import (
     SubscriptionUpdate,
 )
 from .service import (
+    AlreadyActiveSubscription,
     AlreadyCanceledSubscription,
     InactiveSubscription,
     SubscriptionLocked,
     SubscriptionNotScheduledToCancel,
     SubscriptionUpdateContext,
+    TrialAlreadyRedeemed,
 )
 from .service import subscription as subscription_service
 
@@ -103,6 +106,7 @@ async def list(
         canceled_at_before=filters.canceled_at_before,
         started_after=filters.started_after,
         started_before=filters.started_before,
+        query=filters.query,
         metadata=metadata,
         pagination=pagination,
         sorting=sorting,
@@ -115,7 +119,10 @@ async def list(
 
 
 @router.get(
-    "/export", summary="Export Subscriptions", response_class=CSVStreamingResponse
+    "/export",
+    summary="Export Subscriptions",
+    response_class=CSVStreamingResponse,
+    tags=[APITag.private],
 )
 async def export(
     auth_subject: auth.SubscriptionsRead,
@@ -276,7 +283,7 @@ async def get_cancel_preview(
 @router.post(
     "/{id}/change-preview",
     summary="Preview Subscription Change",
-    response_model=SubscriptionChargePreview,
+    response_model=SubscriptionChangePreview,
     responses={
         403: {"model": AlreadyCanceledSubscription.schema()},
         404: SubscriptionNotFound,
@@ -285,10 +292,10 @@ async def get_cancel_preview(
 )
 async def preview_change(
     id: SubscriptionID,
-    change: SubscriptionChangePreview,
+    change: SubscriptionChange,
     auth_subject: auth.SubscriptionsWrite,
     session: AsyncSession = Depends(get_db_session),
-) -> SubscriptionChargePreview:
+) -> SubscriptionChangePreview:
     """
     Preview what a subscription change would cost, without applying it.
 
@@ -306,7 +313,7 @@ async def preview_change(
         OrganizationPermission.sales_manage,
     )
 
-    if isinstance(change, SubscriptionChangePreviewSeats):
+    if isinstance(change, SubscriptionChangeSeats):
         return await subscription_service.calculate_change_preview(
             session,
             subscription,
@@ -314,7 +321,7 @@ async def preview_change(
             proration_behavior=change.proration_behavior,
         )
 
-    if isinstance(change, SubscriptionChangePreviewUnits):
+    if isinstance(change, SubscriptionChangeUnits):
         return await subscription_service.calculate_change_preview(
             session,
             subscription,
@@ -327,6 +334,7 @@ async def preview_change(
         subscription,
         product_id=change.product_id,
         proration_behavior=change.proration_behavior,
+        discount=change.discount,
     )
 
 
@@ -347,6 +355,39 @@ async def create(
 
     This endpoint only allows to create subscription on free products.
     For paid products, use the checkout flow.
+
+    No initial order will be created and no confirmation email will be sent.
+    """
+    return await subscription_service.create(
+        session, subscription_create, auth_subject, allow_trial=False
+    )
+
+
+@router.post(
+    "/",
+    name="create",
+    response_model=SubscriptionSchema,
+    status_code=201,
+    summary="Create Subscription",
+    responses={
+        201: {"description": "Subscription created."},
+        409: {
+            "model": AlreadyActiveSubscription.schema() | TrialAlreadyRedeemed.schema()
+        },
+    },
+)
+@version(starting_from=V2027_01)
+async def create_v2027_01(
+    subscription_create: SubscriptionCreate,
+    auth_subject: auth.SubscriptionsWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Subscription:
+    """
+    Create a subscription programmatically.
+
+    Supports free products and paid products with a trial that does not require
+    upfront payment setup. Paid subscriptions start with the product's configured
+    trial period. For other paid products, use the checkout flow.
 
     No initial order will be created and no confirmation email will be sent.
     """

@@ -23,6 +23,7 @@ When rebasing a PR that adds a migration, rename the file so its `YYYY-MM-DD-HHM
 ## Module Structure
 
 Each module in `polar/` follows this structure:
+
 ```
 polar/{module}/
 ├── __init__.py
@@ -88,6 +89,7 @@ helpers are the single point where session/token org-scoping is enforced, so an
 inline subquery silently bypasses it. Enforced by `uv run task lint_org_scope`.
 
 **Key methods from base:**
+
 - `get_base_statement()` - Returns `select(self.model)`
 - `get_one(statement)` - Single result, raises if not found
 - `get_one_or_none(statement)` - Single result or None (calls `.unique()` — safe with `joinedload`)
@@ -101,6 +103,8 @@ inline subquery silently bypasses it. Enforced by `uv run task lint_org_scope`.
 **Repository methods use `self.session`, not a `session` parameter.** Once constructed via `from_session(session)`, the session lives on the instance. Don't add a `session` arg to repository methods — pass domain args only. Use `self.session.execute(...)` for raw queries (writes, refreshes), or the base helpers above for selects.
 
 **Subqueries must project explicit columns.** `select(Model).subquery()` re-materializes every mapped column — `deferred=True` does NOT propagate. For count subqueries, use `count_subquery(statement)` from `polar.kit.pagination`; otherwise narrow with `.with_only_columns(...)` before calling `.subquery()`. Enforced by `uv run task lint_subquery`.
+
+**Columns mapped on subclasses only go through `with_polymorphic`.** With single-table inheritance (`ProductPrice`), `ProductPriceMeteredUnit.meter_id` adds that subclass's discriminator filter and silently drops the sibling types. Don't work around it with `ProductPrice.__table__.c.meter_id`; query `price = with_polymorphic(ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers])` and use `price.ProductPriceMeteredUnit.meter_id`. Enforced by `uv run task lint_ast` (`table-column`).
 
 ## Service Pattern
 
@@ -144,6 +148,7 @@ resource = ResourceService()
 ```
 
 **CRITICAL: Never call `session.commit()`**
+
 - API: Session commits at end of request automatically
 - Workers: Session commits at end of task automatically
 - Use `session.flush()` if you need data visible before request ends
@@ -164,7 +169,7 @@ default it to `None`; do not duplicate the endpoint just to add a query paramete
 `QuerySchema` hides unavailable fields from OpenAPI and ignores their input before
 validation. Keep parameters with `Query(include_in_schema=False)` outside the model:
 FastAPI currently loses that flag when flattening model fields.
-See the handbook's [API versioning guide](../handbook/engineering/backend-development/api-versioning.mdx#adding-a-query-parameter).
+See the handbook's [API versioning guide](https://linear.app/polarsh/document/api-versioning-875f1388daeb).
 
 ```python
 # polar/{module}/schemas.py
@@ -274,12 +279,16 @@ dependencies from `polar/auth/dependencies.py` instead of defining your own: `We
 
 ```python
 # polar/{module}/schemas.py
+from pydantic import MISSING, Field
+
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
+from polar.kit.versioning import Omissible
 
 
 class ResourceBase(Schema):
     name: str = Field(description="Resource name")
     slug: str = Field(description="URL-friendly identifier")
+    description: str | None = Field(None, description="Optional resource description")
 
 
 class Resource(IDSchema, TimestampedSchema, ResourceBase):
@@ -291,12 +300,18 @@ class ResourceCreate(ResourceBase):
 
 
 class ResourceUpdate(Schema):
-    name: str | None = None
-    slug: str | None = None
+    name: Omissible[str] = MISSING
+    description: Omissible[str | None] = MISSING
 ```
 
 - The read schema gets `id` from `IDSchema`; don't redeclare `id: UUID4`.
-- Every field on an update schema is optional with a `None` default.
+- Use `Omissible[T] = MISSING` for update fields that callers can omit. Use
+  `Omissible[T | None] = MISSING` when callers can explicitly clear the value with null.
+- For API versions before 2027-01, `Omissible[T]` treats explicit null as omission when
+  `T` rejects null. From 2027-01 onward, those fields reject null.
+- In update logic, check `value is not MISSING` for individual fields. For bulk updates,
+  `model_dump()` skips `MISSING` and preserves explicit `None`. A legacy null normalized
+  to `MISSING` can still appear in `model_fields_set`.
 - Type fields with their enum (`status: ResourceStatus`), not `str`.
 
 ## Background Tasks
@@ -393,12 +408,15 @@ class TestListResources:
 Cross-cutting patterns the team enforces in code review. New backend code is expected to follow them.
 
 ### Imports
+
 Keep `import` statements at module top, never inside functions or methods. Import models from
 `polar.models`, services from their module, and use FastAPI dependency injection for sessions,
 repositories, and services.
 
 ### Service singletons & imports
+
 Name the singleton the bare domain noun in its module; importers alias it with a `_service` suffix:
+
 ```python
 # service.py
 appeal_case = AppealCaseService()
@@ -407,24 +425,32 @@ from polar.organization_review.appeal_case import appeal_case as appeal_case_ser
 ```
 
 ### Creating ORM objects — pass objects, not ids
+
 Set the related ORM object, not its foreign-key id: it's type-safe and populates the relationship in-session.
+
 ```python
 SupportCaseMessage(case=case, author_user=user)  # ✅
 SupportCaseMessage(case_id=case.id, author_user_id=user.id)  # ❌
 ```
+
 Add the `relationship()` to the model if it doesn't exist yet.
 
 ### Relationships are `lazy="raise"`
+
 All relationships use `lazy="raise"`: accessing an unloaded one raises instead of silently emitting a query (no async lazy-load `MissingGreenlet`, no N+1). Eager-load what the request needs:
+
 ```python
 select(X).options(joinedload(X.rel))  # or selectinload / contains_eager
 ```
+
 (Populating a backref into an unloaded collection — e.g. `case=case` — is passive and does **not** trigger the raise.)
 
 Exception: a relationship may always eager-load (`lazy="selectin"`/`"joined"`) when there's a legitimate reason to — typically many-to-many association tables.
 
 ### Errors → status-coded `PolarError`, not validation errors
-Logical/conflict errors are `PolarError` subclasses carrying their own `status_code` (409 conflict, 404 not found; 422 is for request-payload validation only); the global exception handler renders them. Don't catch and re-raise as `PolarRequestValidationError` — that's only for request-*payload* validation (→ 422). Declare them on the endpoint's `responses=` so the OpenAPI client gets the schema:
+
+Logical/conflict errors are `PolarError` subclasses carrying their own `status_code` (409 conflict, 404 not found; 422 is for request-payload validation only); the global exception handler renders them. Don't catch and re-raise as `PolarRequestValidationError` — that's only for request-_payload_ validation (→ 422). Declare them on the endpoint's `responses=` so the OpenAPI client gets the schema:
+
 ```python
 class CaseClosedError(PolarError):
     def __init__(self) -> None:
@@ -432,6 +458,7 @@ class CaseClosedError(PolarError):
 
 @router.post(..., responses={409: {"model": CaseClosedError.schema()}})
 ```
+
 Always set a proper `status_code` for errors that are normal business operations. The default (500) is still rendered correctly by the handler, **but** Sentry reports it as a hard error — so an expected conflict would page you as if it were a crash.
 
 (Don't add a content-less `422: {"description": ...}` override — it clobbers FastAPI's default `HTTPValidationError` and breaks the generated client.)
@@ -439,7 +466,9 @@ Always set a proper `status_code` for errors that are normal business operations
 Only declare errors the endpoint itself raises. Don't add the global authentication and permission errors (`401 Unauthorized`, `403` from the authenticator's scope check) to `responses=`: they apply to every authenticated route, so documenting them belongs in one global OpenAPI change (tracked in ENG-14), not per endpoint. This holds even if an automated reviewer asks for them.
 
 ### Endpoints return ORM models
-Set `response_model` and return the ORM object; FastAPI serializes it via `from_attributes`. Don't hand-build the read schema — except when a field is *derived* and not on the model (then `Schema.model_validate({...})`).
+
+Set `response_model` and return the ORM object; FastAPI serializes it via `from_attributes`. Don't hand-build the read schema — except when a field is _derived_ and not on the model (then `Schema.model_validate({...})`).
+
 ```python
 @router.post(..., response_model=ResourceSchema)
 async def create(...) -> Resource:   # ORM model, not the schema
@@ -447,6 +476,7 @@ async def create(...) -> Resource:   # ORM model, not the schema
 ```
 
 ### Destructive MCP and CLI operations
+
 Write endpoints, or request fields, that delete, revoke, archive, disable, rotate credentials or move
 money must be marked with the helpers in `polar/openapi.py`: `openapi_extra=destructive()` on the
 route, or `json_schema_extra=destructive_when_equals(...)` / `destructive_when_one_of(...)` on the
@@ -460,6 +490,7 @@ are marked with `openapi_extra=open_world()`, which drives the MCP `openWorldHin
 ## Tax ID Validation
 
 When adding or modifying tax ID validators in `polar/tax/tax_id.py`:
+
 - Keep validators minimal — no lengthy docstrings; the code should be self-explanatory.
 - Follow existing patterns (e.g. `CLTINValidator`, `TRTINValidator`).
 - Use the `stdnum` library when a module exists for the tax ID type.

@@ -25,17 +25,13 @@ from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.repository import CheckoutRepository
 from polar.config import settings
 from polar.customer.schemas.state import CustomerState
-from polar.declarative_config.guard import (
-    DeclarativeConfigManaged,
-    assert_catalog_editable,
-)
 from polar.email.schemas import EmailAdapter
 from polar.email.sender import enqueue_email_template
 from polar.exceptions import PolarError, PolarRequestValidationError, ResourceNotFound
 from polar.kit.crypto import generate_token
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
-from polar.kit.utils import utc_now
+from polar.kit.utils import generate_uuid, utc_now
 from polar.logging import Logger
 from polar.models import (
     Benefit,
@@ -109,6 +105,15 @@ class AmbiguousExternalWebhookEndpointID(WebhookError):
         )
 
 
+class MCPWebhookEndpointReadOnly(WebhookError):
+    def __init__(self) -> None:
+        super().__init__(
+            "This endpoint is an MCP event subscription managed by the MCP client. "
+            "It can only be enabled, disabled or deleted.",
+            403,
+        )
+
+
 class EventDoesNotExist(WebhookError):
     def __init__(self, event_id: UUID) -> None:
         self.event_id = event_id
@@ -130,6 +135,7 @@ class WebhookService:
         auth_subject: AuthSubject[User | Organization],
         *,
         organization_id: Sequence[UUID] | None,
+        format: Sequence[WebhookFormat] | None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[WebhookEndpoint], int]:
         repository = WebhookEndpointRepository.from_session(session)
@@ -144,6 +150,9 @@ class WebhookService:
             statement = statement.where(
                 WebhookEndpoint.organization_id.in_(organization_id)
             )
+
+        if format is not None:
+            statement = statement.where(WebhookEndpoint.format.in_(format))
 
         return await repository.paginate(
             statement, limit=pagination.limit, page=pagination.page
@@ -187,8 +196,6 @@ class WebhookService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         create_schema: WebhookEndpointCreate,
-        *,
-        declarative_config: bool = False,
     ) -> WebhookEndpoint:
         repository = WebhookEndpointRepository.from_session(session)
         organization = await get_payload_organization(
@@ -200,8 +207,6 @@ class WebhookService:
             organization.id,
             OrganizationPermission.organization_manage,
         )
-        if not declarative_config and organization.is_config_as_code_enabled:
-            raise DeclarativeConfigManaged()
         secret: str
         secret_generated_at: datetime.datetime | None
         if (
@@ -215,10 +220,13 @@ class WebhookService:
             secret = generate_webhook_secret()
             secret_generated_at = utc_now()
 
+        id = WebhookEndpoint.generate_id()
         endpoint = await repository.create(
             WebhookEndpoint(
                 **create_schema.model_dump(exclude={"secret"}, by_alias=True),
+                id=id,
                 secret=secret,
+                secret_encrypted=await WebhookEndpoint.encrypt_secret(id, secret),
                 secret_generated_at=secret_generated_at,
                 organization=organization,
             )
@@ -233,13 +241,13 @@ class WebhookService:
         *,
         endpoint: WebhookEndpoint,
         update_schema: WebhookEndpointUpdate,
-        declarative_config: bool = False,
     ) -> WebhookEndpoint:
         await assert_resource_permission(
             session, auth_subject, endpoint, OrganizationPermission.organization_manage
         )
-        if not declarative_config:
-            await assert_catalog_editable(session, endpoint.organization_id)
+        update_dict = update_schema.model_dump()
+        if endpoint.format == WebhookFormat.mcp and update_dict.keys() - {"enabled"}:
+            raise MCPWebhookEndpointReadOnly()
         repository = WebhookEndpointRepository.from_session(session)
 
         is_enabling = update_schema.enabled is True and not endpoint.enabled
@@ -258,8 +266,10 @@ class WebhookService:
                     ]
                 ) from e
 
-        update_dict = update_schema.model_dump(exclude_unset=True, exclude_none=True)
         if "secret" in update_dict:
+            update_dict["secret_encrypted"] = await WebhookEndpoint.encrypt_secret(
+                endpoint.id, update_dict["secret"]
+            )
             update_dict["secret_generated_at"] = None
 
         return await repository.update(
@@ -277,11 +287,17 @@ class WebhookService:
         await assert_resource_permission(
             session, auth_subject, endpoint, OrganizationPermission.organization_manage
         )
+        if endpoint.format == WebhookFormat.mcp:
+            raise MCPWebhookEndpointReadOnly()
         repository = WebhookEndpointRepository.from_session(session)
+        secret = generate_webhook_secret()
         return await repository.update(
             endpoint,
             update_dict={
-                "secret": generate_webhook_secret(),
+                "secret": secret,
+                "secret_encrypted": await WebhookEndpoint.encrypt_secret(
+                    endpoint.id, secret
+                ),
                 "secret_generated_at": utc_now(),
             },
         )
@@ -296,7 +312,6 @@ class WebhookService:
         await assert_resource_permission(
             session, auth_subject, endpoint, OrganizationPermission.organization_manage
         )
-        await assert_catalog_editable(session, endpoint.organization_id)
         repository = WebhookEndpointRepository.from_session(session)
         return await repository.soft_delete(endpoint)
 
@@ -471,13 +486,22 @@ class WebhookService:
         if len(recent_outcomes) >= settings.WEBHOOK_FAILURE_THRESHOLD and all(
             succeeded is False for succeeded in recent_outcomes
         ):
+            webhook_endpoint_repository = WebhookEndpointRepository.from_session(
+                session
+            )
+            if endpoint.format == WebhookFormat.mcp:
+                log.warning(
+                    "Deleting MCP subscription due to consecutive failures",
+                    webhook_endpoint_id=endpoint.id,
+                    failure_count=len(recent_outcomes),
+                )
+                await webhook_endpoint_repository.soft_delete(endpoint)
+                return
+
             log.warning(
                 "Disabling webhook endpoint due to consecutive failures",
                 webhook_endpoint_id=endpoint.id,
                 failure_count=len(recent_outcomes),
-            )
-            webhook_endpoint_repository = WebhookEndpointRepository.from_session(
-                session
             )
             await webhook_endpoint_repository.update(
                 endpoint, update_dict={"enabled": False}, flush=True
@@ -951,11 +975,15 @@ class WebhookService:
             session, event=event, target=target
         ):
             endpoint_payload = payload.model_copy(
-                update={"api_version": endpoint.api_version}
+                update={
+                    "api_version": endpoint.api_version,
+                    "event_id": generate_uuid(),
+                }
             )
             try:
                 payload_data = endpoint_payload.get_payload(endpoint.format, target)
                 event_type = WebhookEvent(
+                    id=endpoint_payload.event_id,
                     created_at=endpoint_payload.timestamp,
                     webhook_endpoint=endpoint,
                     type=event,
@@ -1047,6 +1075,10 @@ class WebhookService:
         statement = select(WebhookEndpoint).where(
             ~WebhookEndpoint.is_deleted,
             WebhookEndpoint.enabled,
+            or_(
+                WebhookEndpoint.expires_at.is_(None),
+                WebhookEndpoint.expires_at > utc_now(),
+            ),
             WebhookEndpoint.events.bool_op("@>")(text(f"'[\"{event}\"]'")),
             WebhookEndpoint.organization_id == target.id,
         )

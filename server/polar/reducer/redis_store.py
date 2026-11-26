@@ -76,40 +76,64 @@ async def get_bucket_totals(
     identities: Sequence[tuple[uuid.UUID | None, str | None]],
 ) -> list[tuple[int, Decimal, Decimal | None, Decimal | None]]:
     """count, sum, min and max of each of the identities' buckets."""
-    async with redis.pipeline(transaction=False) as pipe:
-        for bucket_start in bucket_starts:
-            for customer_id, external_customer_id in identities:
-                key = get_reducer_bucket_key(
-                    reducer_id, bucket_start, customer_id, external_customer_id
-                )
-                match func:
-                    case AggregationFunction.cnt | AggregationFunction.sum:
-                        await pipe.get(key)
-                    case AggregationFunction.avg:
-                        await pipe.hmget(key, ["count", "sum"])
-                    case AggregationFunction.min:
-                        await pipe.zscore(key, "min")
-                    case AggregationFunction.max:
-                        await pipe.zscore(key, "max")
-        results = await pipe.execute()
-
-    totals: list[tuple[int, Decimal, Decimal | None, Decimal | None]] = []
-    for result in results:
-        match func:
-            case AggregationFunction.cnt:
-                totals.append((int(result or 0), Decimal(0), None, None))
-            case AggregationFunction.sum:
-                totals.append((0, _to_decimal(result) or Decimal(0), None, None))
-            case AggregationFunction.avg:
-                count, total = result
-                totals.append(
-                    (int(count or 0), _to_decimal(total) or Decimal(0), None, None)
-                )
-            case AggregationFunction.min:
-                totals.append((0, Decimal(0), _to_decimal(result), None))
-            case AggregationFunction.max:
-                totals.append((0, Decimal(0), None, _to_decimal(result)))
+    [totals] = await get_many_bucket_totals(
+        redis, [(reducer_id, func, bucket_starts, identities)]
+    )
     return totals
+
+
+async def get_many_bucket_totals(
+    redis: Redis,
+    requests: Sequence[
+        tuple[
+            uuid.UUID,
+            AggregationFunction,
+            Sequence[datetime],
+            Sequence[tuple[uuid.UUID | None, str | None]],
+        ]
+    ],
+) -> list[list[tuple[int, Decimal, Decimal | None, Decimal | None]]]:
+    """`get_bucket_totals` of each reducer, function, bucket starts and identities,
+    in one round trip."""
+    async with redis.pipeline(transaction=False) as pipe:
+        for reducer_id, func, bucket_starts, identities in requests:
+            for bucket_start in bucket_starts:
+                for customer_id, external_customer_id in identities:
+                    key = get_reducer_bucket_key(
+                        reducer_id, bucket_start, customer_id, external_customer_id
+                    )
+                    match func:
+                        case AggregationFunction.cnt | AggregationFunction.sum:
+                            await pipe.get(key)
+                        case AggregationFunction.avg:
+                            await pipe.hmget(key, ["count", "sum"])
+                        case AggregationFunction.min:
+                            await pipe.zscore(key, "min")
+                        case AggregationFunction.max:
+                            await pipe.zscore(key, "max")
+        results = iter(await pipe.execute())
+
+    all_totals: list[list[tuple[int, Decimal, Decimal | None, Decimal | None]]] = []
+    for _, func, bucket_starts, identities in requests:
+        totals: list[tuple[int, Decimal, Decimal | None, Decimal | None]] = []
+        for _ in range(len(bucket_starts) * len(identities)):
+            result = next(results)
+            match func:
+                case AggregationFunction.cnt:
+                    totals.append((int(result or 0), Decimal(0), None, None))
+                case AggregationFunction.sum:
+                    totals.append((0, _to_decimal(result) or Decimal(0), None, None))
+                case AggregationFunction.avg:
+                    count, total = result
+                    totals.append(
+                        (int(count or 0), _to_decimal(total) or Decimal(0), None, None)
+                    )
+                case AggregationFunction.min:
+                    totals.append((0, Decimal(0), _to_decimal(result), None))
+                case AggregationFunction.max:
+                    totals.append((0, Decimal(0), None, _to_decimal(result)))
+        all_totals.append(totals)
+    return all_totals
 
 
 def _to_decimal(value: str | bytes | float | None) -> Decimal | None:

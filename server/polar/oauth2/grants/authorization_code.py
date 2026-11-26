@@ -6,6 +6,7 @@ import structlog
 from authlib.oauth2.rfc6749.errors import (
     AccessDeniedError,
     InvalidRequestError,
+    InvalidScopeError,
     OAuth2Error,
 )
 from authlib.oauth2.rfc6749.grants import (
@@ -89,6 +90,9 @@ class AuthorizationCodeGrant(
         self._hooks["before_validate_authorization_request_payload"] = {
             self.before_validate_authorization_request_payload
         }
+        self._hooks["after_validate_authorization_request_payload"] = {
+            self.after_validate_authorization_request_payload
+        }
 
     def before_validate_authorization_request_payload(
         self, grant: "typing.Self", redirect_uri: str
@@ -101,6 +105,16 @@ class AuthorizationCodeGrant(
         scope: str | None = payload.data.get("scope")
         if scope is None:
             self.request.payload.data["scope"] = self.request.client.scope
+
+    def after_validate_authorization_request_payload(
+        self, grant: "typing.Self", result: None
+    ) -> None:
+        """
+        Reject requests whose scope resolves to nothing once filtered
+        by the client's allowed scope: authlib only rejects `None`.
+        """
+        if not self.request.scope:
+            raise InvalidScopeError()
 
     def create_authorization_response(
         self, redirect_uri: str, grant_user: User | None
@@ -139,7 +153,7 @@ class AuthorizationCodeGrant(
             code=get_token_hash(code),
             client_id=payload.client_id,
             sub_type=self.sub_type,
-            scope=payload.scope,
+            scope=request.scope,
             redirect_uri=payload.redirect_uri,
             nonce=nonce,
             code_challenge=code_challenge,
@@ -317,7 +331,7 @@ class ValidateSubAndPrompt:
                 sub_type=grant.sub_type,
                 sub_id=grant.sub.id,
                 client_id=grant.client.client_id,
-                scope=payload.scope,
+                scope=grant.request.scope,
             )
 
         # If the prompt is "none", the sub must be authenticated and have granted the requested scope

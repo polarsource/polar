@@ -51,25 +51,25 @@ describe('reviewStatus', () => {
   })
 
   describe("won't import", () => {
-    it('shows "Stays on Stripe" (red) when precheck status is skipped', () => {
+    it('shows "Not moving" (red) when precheck status is skipped', () => {
       expect(
         reviewStatus(row({ status: 'skipped', import_status: null })),
-      ).toMatchObject({ label: 'Stays on Stripe', color: 'red' })
+      ).toMatchObject({ label: 'Not moving', color: 'red' })
     })
 
-    it('shows "Stays on Stripe" (red) when precheck status is skipped and import is pending', () => {
+    it('shows "Not moving" (red) when precheck status is skipped and import is pending', () => {
       expect(
         reviewStatus(row({ status: 'skipped', import_status: 'pending' })),
-      ).toMatchObject({ label: 'Stays on Stripe', color: 'red' })
+      ).toMatchObject({ label: 'Not moving', color: 'red' })
     })
 
     // Regression test for the reported bug: a record classified `importable`
     // by precheck but skipped at import time (e.g. its dependency wasn't
-    // selected) must show "Stays on Stripe", not "Ready".
-    it('shows "Stays on Stripe" (red) when import_status is skipped even if status is importable', () => {
+    // selected) must show "Not moving", not "Ready".
+    it('shows "Not moving" (red) when import_status is skipped even if status is importable', () => {
       expect(
         reviewStatus(row({ status: 'importable', import_status: 'skipped' })),
-      ).toMatchObject({ label: 'Stays on Stripe', color: 'red' })
+      ).toMatchObject({ label: 'Not moving', color: 'red' })
     })
   })
 
@@ -100,10 +100,10 @@ describe('reviewStatus', () => {
   })
 
   describe('moving subscriptions', () => {
-    it('shows "Ready" for a pending subscription with a card', () => {
+    it('shows "Ready to prepare" for a pending subscription with a card', () => {
       expect(
         reviewStatus(row({ status: 'importable', import_status: 'pending' })),
-      ).toMatchObject({ label: 'Ready' })
+      ).toMatchObject({ label: 'Ready to prepare' })
     })
 
     it('shows "Prepared" once dependencies are prepared', () => {
@@ -131,7 +131,7 @@ describe('reviewStatus', () => {
       ).toMatchObject({ label: 'Needs a card', color: 'yellow' })
     })
 
-    it('shows "Ready" for an info-level reason that does not need attention', () => {
+    it('shows "Ready to prepare" for an info-level reason that does not need attention', () => {
       expect(
         reviewStatus(
           row({
@@ -140,7 +140,7 @@ describe('reviewStatus', () => {
             reason_level: 'info',
           }),
         ),
-      ).toMatchObject({ label: 'Ready' })
+      ).toMatchObject({ label: 'Ready to prepare' })
     })
 
     it.each(['link', null] as const)(
@@ -197,7 +197,7 @@ describe('reviewStatus', () => {
     it('drops the payment method for rows that stay on Stripe', () => {
       expect(
         reviewStatus(row({ status: 'skipped', payment_method_type: 'link' })),
-      ).toMatchObject({ label: 'Stays on Stripe', paymentMethod: null })
+      ).toMatchObject({ label: 'Not moving', paymentMethod: null })
     })
   })
 

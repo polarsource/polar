@@ -4,6 +4,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.customer_meter.repository import CustomerMeterRepository
+from polar.kit.utils import utc_now
 from polar.meter.aggregation import (
     AggregationFunction,
     PropertyAggregation,
@@ -101,3 +102,35 @@ class TestGetOrCreate:
 
         assert customer_meter == concurrent
         assert get_for_update.call_count == 2
+
+
+@pytest.mark.anyio
+class TestGetUnactivatedMeters:
+    async def test_excludes_archived_and_deleted_meters(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        live, archived, deleted = [
+            await create_meter(
+                save_fixture,
+                organization=organization,
+                id=uuid.uuid4(),
+                archived_at=archived_at,
+                deleted_at=deleted_at,
+            )
+            for archived_at, deleted_at in [
+                (None, None),
+                (utc_now(), None),
+                (None, utc_now()),
+            ]
+        ]
+        for meter in (live, archived, deleted):
+            await save_fixture(CustomerMeter(customer=customer, meter=meter))
+
+        repository = CustomerMeterRepository.from_session(session)
+        meters = await repository.get_unactivated_meters({customer.id})
+
+        assert meters == [live]

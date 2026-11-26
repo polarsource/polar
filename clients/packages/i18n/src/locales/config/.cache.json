@@ -408,7 +408,10 @@
     "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
     "checkout.orderSummary": "Order summary",
     "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again.",
-    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again."
+    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again.",
+    "checkout.pricing.units.range": "{min} - {max} {unitLabelPlural}",
+    "checkout.pricing.units.minimum": "Minimum {min} {unitLabelPlural}",
+    "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}"
   },
   "sv": {
     "checkout.footer.poweredBy": "Powered by",
@@ -612,7 +615,10 @@
     "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
     "checkout.orderSummary": "Order summary",
     "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again.",
-    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again."
+    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again.",
+    "checkout.pricing.units.range": "{min} - {max} {unitLabelPlural}",
+    "checkout.pricing.units.minimum": "Minimum {min} {unitLabelPlural}",
+    "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}"
   },
   "es": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1222,7 +1228,10 @@
     "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
     "checkout.orderSummary": "Order summary",
     "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again.",
-    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again."
+    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again.",
+    "checkout.pricing.units.range": "{min} - {max} {unitLabelPlural}",
+    "checkout.pricing.units.minimum": "Minimum {min} {unitLabelPlural}",
+    "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}"
   },
   "it": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1617,7 +1626,10 @@
     "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
     "checkout.orderSummary": "Order summary",
     "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again.",
-    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again."
+    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again.",
+    "checkout.pricing.units.range": "{min} - {max} {unitLabelPlural}",
+    "checkout.pricing.units.minimum": "Minimum {min} {unitLabelPlural}",
+    "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}"
   },
   "pt": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1813,7 +1825,10 @@
     "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
     "checkout.orderSummary": "Order summary",
     "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again.",
-    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again."
+    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again.",
+    "checkout.pricing.units.range": "{min} - {max} {unitLabelPlural}",
+    "checkout.pricing.units.minimum": "Minimum {min} {unitLabelPlural}",
+    "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}"
   },
   "pt-PT": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2009,7 +2024,10 @@
     "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
     "checkout.orderSummary": "Order summary",
     "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again.",
-    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again."
+    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again.",
+    "checkout.pricing.units.range": "{min} - {max} {unitLabelPlural}",
+    "checkout.pricing.units.minimum": "Minimum {min} {unitLabelPlural}",
+    "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}"
   },
   "ja": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2802,6 +2820,9 @@
     "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
     "embedPaymentMethod.errors.unauthorized": "Session expired.",
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "embedPaymentMethod.errors.unknown": "Something went wrong.",
+    "checkout.pricing.units.range": "{min} - {max} {unitLabelPlural}",
+    "checkout.pricing.units.minimum": "Minimum {min} {unitLabelPlural}",
+    "checkout.pricing.units.maximum": "Maximum {max} {unitLabelPlural}"
   }
 }

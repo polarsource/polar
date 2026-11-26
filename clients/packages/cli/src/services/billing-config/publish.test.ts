@@ -107,6 +107,20 @@ describe('publish', () => {
     )
   })
 
+  test('says which products miss a price in the default currency', async () => {
+    const detail =
+      'Every active product must have a price in USD. Missing on: Pro Plan.'
+    api.routes[`POST ${publishUrl}`] = Response.json(
+      { error: 'CatalogMissingCurrency', detail },
+      { status: 409 },
+    )
+
+    const error = await failure(run((clients) => publish(clients)(acme, draft)))
+
+    expect(error.message).toBe(detail)
+    expect(error.hint).toContain('polar config draft')
+  })
+
   test('asks to retry when the draft was discarded', async () => {
     api.routes[`POST ${publishUrl}`] = Response.json(
       { error: 'CatalogNotFound', detail: 'No catalog.' },
@@ -145,5 +159,22 @@ describe('publish', () => {
     const error = await failure(run((clients) => publish(clients)(acme, draft)))
 
     expect(error.hint).toBe('The token needs the products:write scope.')
+  })
+
+  test('asks for the scope the API says is missing', async () => {
+    api.routes[`POST ${publishUrl}`] = Response.json(
+      { error: 'insufficient_scope' },
+      {
+        status: 403,
+        headers: {
+          'WWW-Authenticate':
+            'Bearer realm="polar", scope="organizations:write", error="insufficient_scope"',
+        },
+      },
+    )
+
+    const error = await failure(run((clients) => publish(clients)(acme, draft)))
+
+    expect(error.hint).toBe('The token needs the organizations:write scope.')
   })
 })

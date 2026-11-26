@@ -1,13 +1,13 @@
 from collections.abc import Sequence
 from datetime import datetime
 from enum import StrEnum
-from typing import Any, Self
+from typing import Annotated, Any, Literal, Self
 
-from pydantic import UUID4, ConfigDict, Field, model_validator
+from pydantic import UUID4, ConfigDict, Discriminator, Field, model_validator
 
 from polar.enums import TaxBehavior
 from polar.kit.address import Address, AddressInput
-from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
+from polar.kit.schemas import IDSchema, Schema, SetSchemaReference, TimestampedSchema
 from polar.kit.versioning import QuerySchema
 from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
@@ -23,15 +23,23 @@ from polar.models.merchant_migration_record import (
 )
 from polar.organization.schemas import OrganizationID
 
-from .canonical import CanonicalPaymentMethodType
+from .canonical import (
+    CanonicalBenefitType,
+    CanonicalPaymentMethodType,
+    PaymentMethodAssessment,
+)
+from .card_status import MerchantMigrationCardStatus
 from .pan_transfer import PanTransferMethod, PanTransferStep
 
 
-class MerchantMigrationCreate(Schema):
+class MerchantMigrationCreateBase(Schema):
     organization_id: UUID4 = Field(
         description="The organization the migration belongs to."
     )
-    source_platform: MerchantMigrationSourcePlatform = Field(
+
+
+class MerchantMigrationStripeCreate(MerchantMigrationCreateBase):
+    source_platform: Literal[MerchantMigrationSourcePlatform.stripe] = Field(
         description="The provider to migrate the billing from.",
     )
     api_key: str = Field(
@@ -43,6 +51,34 @@ class MerchantMigrationCreate(Schema):
             "migration is saved."
         ),
     )
+
+
+class MerchantMigrationLemonSqueezyCreate(MerchantMigrationCreateBase):
+    source_platform: Literal[MerchantMigrationSourcePlatform.lemon_squeezy] = Field(
+        description="The provider to migrate the billing from.",
+    )
+    api_key: str = Field(
+        min_length=1,
+        description=(
+            "A Lemon Squeezy API key. It is validated against the store before the "
+            "migration is saved."
+        ),
+    )
+    store_id: str | None = Field(
+        None,
+        min_length=1,
+        description=(
+            "The Lemon Squeezy store to migrate. Required when the API key can "
+            "read more than one store."
+        ),
+    )
+
+
+MerchantMigrationCreate = Annotated[
+    MerchantMigrationStripeCreate | MerchantMigrationLemonSqueezyCreate,
+    Discriminator("source_platform"),
+    SetSchemaReference("MerchantMigrationCreate"),
+]
 
 
 class PrecheckIssueLevel(StrEnum):
@@ -240,6 +276,13 @@ class MerchantMigrationRecordItem(Schema):
             "Null for non-subscription rows or when the source reported none."
         ),
     )
+    card_status: MerchantMigrationCardStatus | None = Field(
+        description=(
+            "Whether the card Polar would charge for this subscription can take a "
+            "renewal, read from the copied card as it is now. None for "
+            "non-subscription rows."
+        ),
+    )
     has_payment_method: bool | None = Field(
         description=(
             "Whether Polar already has a card to charge for this subscription's "
@@ -250,6 +293,13 @@ class MerchantMigrationRecordItem(Schema):
         description=(
             "The type of payment method the subscription renews with on the "
             "source. Null for non-subscription rows, or when the source has none."
+        ),
+    )
+    payment_method_assessment: PaymentMethodAssessment | None = Field(
+        description=(
+            "Whether the source's payment method can be charged on Polar once "
+            "copied, as far as the source can tell before the copy. None for "
+            "non-subscription rows."
         ),
     )
     dependencies_imported: bool | None = Field(
@@ -322,6 +372,13 @@ class MerchantMigrationRecordSummaryEntity(PrecheckEntitySummary):
     )
 
 
+class MerchantMigrationPaymentMethodCount(Schema):
+    assessment: PaymentMethodAssessment = Field(
+        description="What the source says about charging the method on Polar."
+    )
+    count: int = Field(description="How many moving subscriptions it applies to.")
+
+
 class MerchantMigrationRecordSummary(Schema):
     """Every count the review UI needs, from one classification pass."""
 
@@ -333,6 +390,12 @@ class MerchantMigrationRecordSummary(Schema):
             "How many records the pre-check flagged for the merchant to fix, "
             "across entities. Classification only, so a flagged record that has "
             "since been imported still counts."
+        )
+    )
+    payment_methods: list[MerchantMigrationPaymentMethodCount] = Field(
+        description=(
+            "How the subscriptions that will move split by payment method "
+            "assessment. Assessments with no subscriptions are left out."
         )
     )
 
@@ -392,6 +455,13 @@ class MerchantMigrationCutoverRequest(Schema):
     )
 
 
+class MerchantMigrationCardStatusCount(Schema):
+    status: MerchantMigrationCardStatus = Field(
+        description="Whether the card Polar would charge can take a renewal."
+    )
+    count: int = Field(description="How many subscriptions it applies to.")
+
+
 class MerchantMigrationCutoverReport(Schema):
     """Where the switch has got to, for the imported subscriptions."""
 
@@ -405,6 +475,12 @@ class MerchantMigrationCutoverReport(Schema):
     moved: int = Field(description="Now billed by Polar.")
     skipped: int = Field(description="Left on the source.")
     failed: int = Field(description="Hit an unexpected error.")
+    card_statuses: list[MerchantMigrationCardStatusCount] = Field(
+        description=(
+            "How the subscriptions not switched yet split by whether their card "
+            "can take a renewal. Statuses with no subscriptions are left out."
+        )
+    )
 
 
 class PanTransferStepComplete(Schema):
@@ -438,6 +514,72 @@ class PanTransferChecklist(Schema):
     )
     steps: Sequence[PanTransferStep] = Field(
         description="The ordered checklist. Titles and guidance live in the client, keyed by `key`."
+    )
+
+
+class MerchantMigrationBenefitFile(Schema):
+    name: str = Field(description="The file name.")
+    size: int = Field(description="Size in bytes.")
+
+
+class MerchantMigrationBenefitProduct(Schema):
+    id: UUID4 = Field(description="The imported Polar product.")
+    name: str = Field(description="The product name.")
+
+
+class MerchantMigrationBenefit(Schema):
+    id: str = Field(
+        description="Stable key for this source benefit. Send it back to create it."
+    )
+    type: CanonicalBenefitType = Field(description="The Polar benefit type it becomes.")
+    description: str = Field(description="The name the benefit gets on Polar.")
+    activation_limit: int | None = Field(
+        description="License keys only: how many devices a key activates. None is no limit."
+    )
+    expires_ttl: int | None = Field(
+        description="License keys only: how long a key lasts. None when it never expires."
+    )
+    expires_timeframe: Literal["day", "month", "year"] | None = Field(
+        description="License keys only: the unit of `expires_ttl`."
+    )
+    files: Sequence[MerchantMigrationBenefitFile] = Field(
+        description="File downloads only: the files Polar copies."
+    )
+    link_titles: Sequence[str] = Field(
+        description="Custom only: the titles of the links buyers get in a note."
+    )
+    products: Sequence[MerchantMigrationBenefitProduct] = Field(
+        description="Imported products that get this benefit."
+    )
+    benefit_id: UUID4 | None = Field(description="The Polar benefit, once created.")
+    for_one_time: bool = Field(
+        description="Buyers of one-time products have it on the source."
+    )
+
+
+class MerchantMigrationBenefits(Schema):
+    items: Sequence[MerchantMigrationBenefit] = Field(
+        description="What the source gives buyers, as Polar benefits."
+    )
+    past_buyers_granted: int | None = Field(
+        description=(
+            "How many past one-time buyers hold these benefits, once the latest "
+            "set-up run gave them out. None before that, and again once a later "
+            "step runs."
+        )
+    )
+
+
+class MerchantMigrationBenefitsCreate(Schema):
+    ids: list[str] = Field(
+        description="`id`s of the benefits to create, from the list. Empty skips this step."
+    )
+    grant_past_purchases: bool = Field(
+        default=False,
+        description=(
+            "Also give one-time buyers the benefits of what they bought, "
+            "keeping their license keys."
+        ),
     )
 
 
@@ -475,8 +617,9 @@ class MerchantMigration(IDSchema, TimestampedSchema):
     source: dict[str, Any] | None = Field(
         description=(
             "Non-secret metadata about the connected source. The shape varies by "
-            "provider (e.g. Stripe exposes `stripe_user_id`, `livemode`, "
-            "`has_connected_accounts`)."
+            "provider: Stripe exposes `stripe_user_id`, `livemode` and "
+            "`has_connected_accounts`; Lemon Squeezy exposes `store_id` and "
+            "`store_name`."
         ),
     )
     operation: MerchantMigrationOperation | None = Field(

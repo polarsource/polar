@@ -1,4 +1,5 @@
 import { Data, Schema } from 'effect'
+import { ActiveOrganization } from '@/schemas/Auth'
 
 export const NO_CONFIG_FILE =
   'No billing config file found in the current directory'
@@ -6,6 +7,22 @@ export const NO_CONFIG_FILE =
 export const FORMATS = ['ts', 'json'] as const
 export const Format = Schema.Literals(FORMATS)
 export type Format = typeof Format.Type
+
+export const CONFIG_FILES: Record<Format, ReadonlyArray<string>> = {
+  ts: [
+    'polar.config.ts',
+    'polar.config.mts',
+    'polar.config.cts',
+    'polar.config.js',
+    'polar.config.mjs',
+    'polar.config.cjs',
+  ],
+  json: ['polar.config.json', 'polar.json'],
+}
+
+export const DEFAULT_CONFIG_FILES: ReadonlyArray<string> = FORMATS.flatMap(
+  (format) => CONFIG_FILES[format],
+)
 
 const IssueSeverity = Schema.Literals(['error', 'warning'])
 
@@ -37,6 +54,7 @@ type FieldChange = typeof FieldChange.Type
 
 export const ConfigResource = Schema.Literals([
   'meter',
+  'custom_field',
   'benefit',
   'product',
   'webhook',
@@ -141,6 +159,7 @@ export const ConfigIssue = Schema.Struct({
   path: Schema.String,
   message: Schema.String,
   got: Schema.optional(Schema.String),
+  suggestion: Schema.optional(Schema.String),
   location: Schema.optional(SourceLocation),
 })
 export type ConfigIssue = typeof ConfigIssue.Type
@@ -166,9 +185,24 @@ export const ApplyResult = Schema.Union([
 ])
 export type ApplyResult = typeof ApplyResult.Type
 
+// `drift` lists the planned changes the draft lacks, null when it could not be compared
+export const PlanDraft = Schema.Struct({
+  ...Catalog.fields,
+  drift: Schema.NullOr(Schema.Array(AppliedEntry)),
+})
+export type PlanDraft = typeof PlanDraft.Type
+
+export const PlanCatalogs = Schema.Struct({
+  live: Schema.NullOr(Catalog),
+  draft: Schema.NullOr(PlanDraft),
+})
+export type PlanCatalogs = typeof PlanCatalogs.Type
+
 export const PlanOutput = Schema.Struct({
   file: Schema.String,
   ...PlanResult.fields,
+  live: Schema.optionalKey(PlanCatalogs.fields.live),
+  draft: Schema.optionalKey(PlanCatalogs.fields.draft),
 })
 
 export const ApplyOutput = Schema.Union(
@@ -245,6 +279,33 @@ export const InitResult = Schema.Struct({
   ),
 })
 export type InitResult = typeof InitResult.Type
+
+export const InitWritten = Schema.Struct({
+  status: Schema.Literal('written'),
+  ...InitResult.fields,
+  organization: ActiveOrganization,
+  org: Schema.optionalKey(Schema.String),
+  caller: Schema.optionalKey(Schema.String),
+  agents: Schema.optionalKey(
+    Schema.Struct({
+      names: Schema.Array(Schema.String),
+      ready: Schema.Boolean,
+    }),
+  ),
+  next: Schema.Array(Schema.String),
+})
+export type InitWritten = typeof InitWritten.Type
+
+export const InitRequired = Schema.Struct({
+  status: Schema.Literal('external_ids_required'),
+  organization: ActiveOrganization,
+  external_ids: Schema.Array(ExternalIdAssignment),
+  next: Schema.Array(Schema.String),
+})
+export type InitRequired = typeof InitRequired.Type
+
+export const InitOutput = Schema.Union([InitWritten, InitRequired])
+export type InitOutput = typeof InitOutput.Type
 
 export interface LoadedConfig {
   readonly file: string

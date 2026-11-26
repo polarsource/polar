@@ -16,6 +16,8 @@ from polar.merchant_migration.service import (
 )
 from polar.merchant_migration.slack import SlackAlertInProgress
 from polar.merchant_migration.tasks import (
+    MerchantMigrationNotClosed,
+    merchant_migration_close,
     merchant_migration_close_idle,
     merchant_migration_notify_created,
     merchant_migration_notify_waiting_for_ops,
@@ -248,7 +250,7 @@ class TestCloseIdle:
         self, worker_session: AsyncSession, idle_migration: MerchantMigration
     ) -> None:
         idle_since = utc_now() - settings.MERCHANT_MIGRATION_IDLE_RETENTION_PERIOD
-        await merchant_migration_service.close_idle(
+        await merchant_migration_service.close(
             worker_session, idle_migration.id, idle_since=idle_since
         )
         await worker_session.flush()
@@ -315,3 +317,41 @@ class TestCloseIdle:
         assert idle_migration.step == step
         assert idle_migration.source_credentials.get("api_key_encrypted")
         assert len(await record_source_ids(worker_session, idle_migration)) == 5
+
+
+@pytest.mark.anyio
+class TestClose:
+    async def test_closes_an_active_migration(
+        self,
+        worker_session: AsyncSession,
+        save_fixture: SaveFixture,
+        idle_migration: MerchantMigration,
+    ) -> None:
+        idle_migration.modified_at = utc_now()
+        await save_fixture(idle_migration)
+
+        await merchant_migration_close(idle_migration.id)
+
+        await worker_session.flush()
+        await worker_session.refresh(idle_migration)
+        assert idle_migration.step == MerchantMigrationStep.closed
+        assert "api_key_encrypted" not in idle_migration.source_credentials
+        assert await record_source_ids(worker_session, idle_migration) == {
+            "cus_imported",
+            "cus_skipped",
+        }
+
+    async def test_retries_while_an_operation_runs(
+        self,
+        worker_session: AsyncSession,
+        save_fixture: SaveFixture,
+        idle_migration: MerchantMigration,
+    ) -> None:
+        idle_migration.operation = MerchantMigrationOperation(
+            status=MerchantMigrationOperationStatus.running,
+            last_progress_at=utc_now(),
+        )
+        await save_fixture(idle_migration)
+
+        with pytest.raises(MerchantMigrationNotClosed):
+            await merchant_migration_close(idle_migration.id)

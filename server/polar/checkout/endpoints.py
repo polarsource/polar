@@ -11,6 +11,7 @@ from polar.authz.service import assert_resource_permission
 from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
 from polar.exceptions import NotPermitted, PaymentNotReady, ResourceNotFound
+from polar.kit.http import get_ip_address
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import (
     SetSchemaReference,
@@ -138,6 +139,8 @@ async def list(
         external_customer_id=filters.external_customer_id,
         status=filters.status,
         query=filters.query,
+        created_after=filters.created_after,
+        created_before=filters.created_before,
         pagination=pagination,
         sorting=sorting,
     )
@@ -366,9 +369,11 @@ async def client_update_v2027_01(
     },
 )
 async def client_confirm(
+    request: Request,
     client_secret: CheckoutClientSecret,
     checkout_confirm: legacy_schemas.CheckoutConfirm,
     auth_subject: auth.CheckoutWeb,
+    ip_geolocation_client: ip_geolocation.IPGeolocationClient,
     session: AsyncSession = Depends(get_db_session),
     redis: Redis = Depends(get_redis),
 ) -> Checkout:
@@ -381,7 +386,13 @@ async def client_confirm(
         session, client_secret, for_update=True
     )
     return await checkout_service.confirm(
-        session, redis, auth_subject, checkout, checkout_confirm
+        session,
+        redis,
+        auth_subject,
+        checkout,
+        checkout_confirm,
+        ip_geolocation_client,
+        get_ip_address(request),
     )
 
 
@@ -402,9 +413,11 @@ async def client_confirm(
 )
 @version(starting_from=V2027_01)
 async def client_confirm_v2027_01(
+    request: Request,
     client_secret: CheckoutClientSecret,
     checkout_confirm: CheckoutConfirm,
     auth_subject: auth.CheckoutWeb,
+    ip_geolocation_client: ip_geolocation.IPGeolocationClient,
     session: AsyncSession = Depends(get_db_session),
     redis: Redis = Depends(get_redis),
 ) -> Checkout:
@@ -417,7 +430,13 @@ async def client_confirm_v2027_01(
         session, client_secret, for_update=True
     )
     return await checkout_service.confirm(
-        session, redis, auth_subject, checkout, checkout_confirm
+        session,
+        redis,
+        auth_subject,
+        checkout,
+        checkout_confirm,
+        ip_geolocation_client,
+        get_ip_address(request),
     )
 
 

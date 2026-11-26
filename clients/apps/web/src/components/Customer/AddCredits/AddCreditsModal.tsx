@@ -1,5 +1,6 @@
 'use client'
 
+import { CatalogVersionLabel } from '@/components/Products/CatalogVersionLabel'
 import { toast } from '@/components/Toast/use-toast'
 import { useCreditCustomerMeter } from '@/hooks/queries/customerMeters'
 import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
@@ -56,6 +57,7 @@ export const AddCreditsModal = ({
   const { options, isLoading } = useMeterCreditOptions(
     organization.id,
     customer,
+    meterId,
   )
   const creditCustomerMeter = useCreditCustomerMeter()
   const form = useForm<AddCreditsForm>({
@@ -144,8 +146,14 @@ export const AddCreditsModal = ({
                   <SelectContent>
                     {options.map(({ meter, productName }) => (
                       <SelectItem key={meter.id} value={meter.id}>
-                        {meter.name}
-                        {productName && ` · ${productName}`}
+                        <Box alignItems="center" columnGap="s">
+                          {meter.name}
+                          {productName && ` · ${productName}`}
+                          <CatalogVersionLabel
+                            organization={organization}
+                            version={meter}
+                          />
+                        </Box>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -207,9 +215,10 @@ export const AddCreditsModal = ({
               </Text>
               .{' '}
               {values.rollover
-                ? "Credits don't expire"
-                : 'Unused credits expire at the end of the billing period'}{' '}
-              and can&apos;t be removed once added.
+                ? "Credits don't expire."
+                : 'Unused credits expire at the end of the billing period.'}{' '}
+              You can reverse unused credits within 7 days, in the same billing
+              period.
             </Text>
             <Box columnGap="s" justifyContent="end">
               <Button variant="ghost" onClick={onClose}>

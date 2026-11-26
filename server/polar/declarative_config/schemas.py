@@ -7,6 +7,7 @@ from pydantic import (
     UUID4,
     AfterValidator,
     BaseModel,
+    BeforeValidator,
     ConfigDict,
     Discriminator,
     Field,
@@ -17,8 +18,21 @@ from polar.benefit.strategies.base.schemas import (
     BENEFIT_DESCRIPTION_MAX_LENGTH,
     BENEFIT_DESCRIPTION_MIN_LENGTH,
 )
+from polar.benefit.strategies.slack_shared_channel.schemas import (
+    BenefitSlackSharedChannelCreateProperties,
+)
+from polar.custom_field.schemas import (
+    CheckboxPropertiesInput,
+    DatePropertiesInput,
+    Name,
+    NumberPropertiesInput,
+    SelectPropertiesInput,
+    Slug,
+    TextPropertiesInput,
+)
 from polar.enums import MeterInterval, SubscriptionRecurringInterval, TaxBehaviorOption
 from polar.kit.currency import PresentmentCurrency
+from polar.kit.external_id import ExternalID
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputType
 from polar.kit.schemas import IDSchema, Int32, Schema, SetSchemaReference
 from polar.kit.trial import TrialConfigurationInputMixin, TrialInterval
@@ -30,6 +44,14 @@ from polar.meter.schemas import MeterCreateBase
 from polar.meter.unit import MeterUnit
 from polar.models.benefit import BenefitType, BenefitVisibility
 from polar.models.catalog import CatalogStatus
+from polar.models.custom_field import (
+    CustomFieldCheckboxProperties,
+    CustomFieldDateProperties,
+    CustomFieldNumberProperties,
+    CustomFieldSelectProperties,
+    CustomFieldTextProperties,
+    CustomFieldType,
+)
 from polar.models.product import ProductVisibility
 from polar.models.product_price import ProductPriceAmountType
 from polar.organization.schemas import OrganizationID
@@ -47,8 +69,8 @@ from polar.product.schemas import (
 from polar.product.tiers import TiersInput, TierType
 from polar.webhook.schemas import (
     AvailableAPIVersion,
+    CreatableEndpointFormat,
     EndpointEvents,
-    EndpointFormat,
     EndpointURL,
 )
 
@@ -56,6 +78,7 @@ MAXIMUM_METERS = 100
 MAXIMUM_BENEFITS = 100
 MAXIMUM_PRODUCTS = 100
 MAXIMUM_WEBHOOK_ENDPOINTS = 25
+MAXIMUM_CUSTOM_FIELDS = 100
 
 
 class ConfigDeprecationMixin(BaseModel):
@@ -73,9 +96,8 @@ class ConfigDeprecationMixin(BaseModel):
 class ConfigMeter(ConfigDeprecationMixin, MeterCreateBase):
     model_config = ConfigDict(extra="forbid")
 
-    external_id: str = Field(
+    external_id: ExternalID = Field(
         ...,
-        min_length=1,
         description=(
             "Your identifier for the meter. "
             "Used to match the config entry with an existing meter."
@@ -99,6 +121,11 @@ ProductReference = Annotated[
     ),
 ]
 
+CustomFieldReference = Annotated[
+    Slug,
+    Field(description="The `slug` of a custom field declared in the same config."),
+]
+
 BenefitReference = Annotated[
     str,
     Field(
@@ -111,9 +138,8 @@ BenefitReference = Annotated[
 class ConfigBenefitBase(ConfigDeprecationMixin, MetadataInputMixin, Schema):
     model_config = ConfigDict(extra="forbid")
 
-    external_id: str = Field(
+    external_id: ExternalID = Field(
         ...,
-        min_length=1,
         description="Your identifier for the benefit, used to match it.",
     )
     description: str = Field(
@@ -153,13 +179,36 @@ class ConfigBenefitMeterCredit(ConfigBenefitBase):
     properties: ConfigBenefitMeterCreditProperties
 
 
+class ConfigBenefitSlackSharedChannelProperties(
+    BenefitSlackSharedChannelCreateProperties
+):
+    model_config = ConfigDict(extra="forbid")
+
+
+class ConfigBenefitSlackSharedChannel(ConfigBenefitBase):
+    type: Literal[BenefitType.slack_shared_channel]
+    visibility: Literal[Visibility.public] = Field(
+        default=Visibility.public,
+        description=(
+            "Always `public`: customers set up their channel in the customer portal."
+        ),
+    )
+    properties: ConfigBenefitSlackSharedChannelProperties
+
+
 ConfigBenefit = Annotated[
-    ConfigBenefitFeatureFlag | ConfigBenefitMeterCredit,
+    ConfigBenefitFeatureFlag
+    | ConfigBenefitMeterCredit
+    | ConfigBenefitSlackSharedChannel,
     Discriminator("type"),
     SetSchemaReference("ConfigBenefit"),
 ]
 
-CONFIG_BENEFIT_TYPES = (BenefitType.feature_flag, BenefitType.meter_credit)
+CONFIG_BENEFIT_TYPES = (
+    BenefitType.feature_flag,
+    BenefitType.meter_credit,
+    BenefitType.slack_shared_channel,
+)
 
 
 class ConfigProductPriceSeatBased(ProductPriceSeatBasedCreate):
@@ -244,14 +293,23 @@ ConfigProductPrice = Annotated[
 ]
 
 
+class ConfigProductCustomField(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    field: CustomFieldReference
+    required: bool = Field(
+        default=False,
+        description="Whether customers must fill in the field at checkout.",
+    )
+
+
 class ConfigProduct(
     ConfigDeprecationMixin, MetadataInputMixin, TrialConfigurationInputMixin, Schema
 ):
     model_config = ConfigDict(extra="forbid")
 
-    external_id: str = Field(
+    external_id: ExternalID = Field(
         ...,
-        min_length=1,
         description="Your identifier for the product, used to match it.",
     )
     name: ProductName
@@ -289,6 +347,16 @@ class ConfigProduct(
         le=999,
         description="Meter cycle length in intervals. Defaults to 1.",
     )
+    # Export sends null for the default.
+    trial_payment_setup_required: Annotated[
+        bool, BeforeValidator(lambda v: True if v is None else v)
+    ] = Field(
+        default=True,
+        description=(
+            "Whether customers need a payment method to start the trial. "
+            "Defaults to `true`."
+        ),
+    )
     prices: list[ConfigProductPrice] = Field(
         min_length=1, description="The prices of the product."
     )
@@ -296,9 +364,20 @@ class ConfigProduct(
         default_factory=list,
         description="The benefits granted by the product.",
     )
+    custom_fields: list[ConfigProductCustomField] = Field(
+        default_factory=list,
+        description=(
+            "Custom fields asked at checkout, in this order. "
+            "Leaving it empty removes them from the product. "
+            "Ignored when the config omits `custom_fields`: the product keeps "
+            "its custom fields."
+        ),
+    )
 
     @model_validator(mode="after")
     def validate_recurring(self) -> Self:
+        if not self.trial_payment_setup_required and self.trial_interval is None:
+            raise ValueError("Only products with a trial can skip the payment method.")
         if self.recurring_interval is None:
             if self.recurring_interval_count is not None:
                 raise ValueError(
@@ -356,17 +435,64 @@ class ConfigProduct(
 class ConfigWebhookEndpoint(Schema):
     model_config = ConfigDict(extra="forbid")
 
-    external_id: str = Field(
+    external_id: ExternalID = Field(
         ...,
-        min_length=1,
         description="Your identifier for the webhook endpoint, used to match it.",
     )
     url: EndpointURL
-    format: EndpointFormat
+    format: CreatableEndpointFormat
     events: EndpointEvents = Field(min_length=1)
     api_version: AvailableAPIVersion = Field(
         description="The API version that'll be used in event payloads."
     )
+
+
+class ConfigCustomFieldBase(MetadataInputMixin, Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    slug: Slug
+    name: Name
+
+    # Custom fields are matched by slug, other resources by external_id.
+    @property
+    def external_id(self) -> str:
+        return self.slug
+
+
+class ConfigCustomFieldText(ConfigCustomFieldBase):
+    type: Literal[CustomFieldType.text]
+    properties: TextPropertiesInput
+
+
+class ConfigCustomFieldNumber(ConfigCustomFieldBase):
+    type: Literal[CustomFieldType.number]
+    properties: NumberPropertiesInput
+
+
+class ConfigCustomFieldDate(ConfigCustomFieldBase):
+    type: Literal[CustomFieldType.date]
+    properties: DatePropertiesInput
+
+
+class ConfigCustomFieldCheckbox(ConfigCustomFieldBase):
+    type: Literal[CustomFieldType.checkbox]
+    properties: CheckboxPropertiesInput
+
+
+class ConfigCustomFieldSelect(ConfigCustomFieldBase):
+    type: Literal[CustomFieldType.select]
+    properties: SelectPropertiesInput
+
+
+ConfigCustomField = Annotated[
+    ConfigCustomFieldText
+    | ConfigCustomFieldNumber
+    | ConfigCustomFieldDate
+    | ConfigCustomFieldCheckbox
+    | ConfigCustomFieldSelect,
+    Discriminator("type"),
+    SetSchemaReference("ConfigCustomField"),
+]
 
 
 class ConfigSettingsPayments(Schema):
@@ -451,12 +577,20 @@ class Config(Schema):
             "omitted, are left untouched."
         ),
     )
-    webhooks: list[ConfigWebhookEndpoint] = Field(
+    custom_fields: list[ConfigCustomField] = Field(
         default_factory=list,
-        max_length=MAXIMUM_WEBHOOK_ENDPOINTS,
+        max_length=MAXIMUM_CUSTOM_FIELDS,
         description=(
-            "Webhook endpoints to create or update, matched by `external_id`. "
-            "Existing endpoints that aren't listed are left untouched."
+            "Custom fields to create or update, matched by `slug`. "
+            "A change creates a new version of the field, and of every product "
+            "in `products` asking for it. Earlier versions keep the field as it "
+            "was. "
+            "Omitted `metadata` is left untouched. "
+            "Changing a slug creates a new field. "
+            "Existing custom fields that aren't listed leave the catalog, and "
+            "their answers are kept. Custom fields that pulling the config "
+            "doesn't export are left untouched. "
+            "All custom fields are left untouched when `custom_fields` is omitted."
         ),
     )
     organization_id: OrganizationID | None = Field(
@@ -477,8 +611,10 @@ class ConfigIssueType(StrEnum):
     currency_changed = "currency_changed"
     deprecated_reference = "deprecated_reference"
     duplicate_external_id = "duplicate_external_id"
+    duplicate_slug = "duplicate_slug"
     interval_changed = "interval_changed"
     invalid_prices = "invalid_prices"
+    limit_exceeded = "limit_exceeded"
     meter_cycle_unused = "meter_cycle_unused"
     meter_locked = "meter_locked"
     missing_currency = "missing_currency"
@@ -508,6 +644,7 @@ class ConfigAction(StrEnum):
 
 
 class ConfigResource(StrEnum):
+    custom_field = "custom_field"
     meter = "meter"
     benefit = "benefit"
     product = "product"
@@ -516,7 +653,9 @@ class ConfigResource(StrEnum):
 
 class ConfigResult(Schema):
     resource: ConfigResource = Field(description="The type of resource.")
-    external_id: str = Field(description="The resource's `external_id`.")
+    external_id: str = Field(
+        description="The resource's `external_id`, or `slug` for a custom field."
+    )
     action: ConfigAction = Field(description="What applying the config does.")
 
 
@@ -559,7 +698,9 @@ class ConfigRemovalReason(StrEnum):
 
 class ConfigRemoval(Schema):
     resource: ConfigResource = Field(description="The type of resource.")
-    external_id: str = Field(description="The resource's `external_id`.")
+    external_id: str = Field(
+        description="The resource's `external_id`, or `slug` for a custom field."
+    )
     reason: ConfigRemovalReason = Field(
         description=(
             "`missing` when the config doesn't list the resource, "
@@ -689,8 +830,28 @@ class ConfigBenefitMeterCreditRead(_ConfigRead):
     properties: ConfigBenefitMeterCreditPropertiesRead
 
 
+class ConfigBenefitSlackSharedChannelPropertiesRead(_ConfigRead):
+    slack_integration_id: UUID4
+    channel_name_template: str
+    private: bool
+    welcome_message: str | None
+    archive_on_revoke: bool
+    team_invitees: list[str]
+
+
+class ConfigBenefitSlackSharedChannelRead(_ConfigRead):
+    type: Literal[BenefitType.slack_shared_channel]
+    external_id: str
+    description: str
+    visibility: BenefitVisibility
+    metadata: MetadataOutputType
+    properties: ConfigBenefitSlackSharedChannelPropertiesRead
+
+
 ConfigBenefitRead = Annotated[
-    ConfigBenefitFeatureFlagRead | ConfigBenefitMeterCreditRead,
+    ConfigBenefitFeatureFlagRead
+    | ConfigBenefitMeterCreditRead
+    | ConfigBenefitSlackSharedChannelRead,
     Discriminator("type"),
     SetSchemaReference("ConfigBenefitRead"),
 ]
@@ -759,6 +920,53 @@ ConfigProductPriceRead = Annotated[
 ]
 
 
+class _ConfigCustomFieldReadBase(_ConfigRead):
+    slug: str
+    name: str
+    metadata: MetadataOutputType
+
+
+class ConfigCustomFieldTextRead(_ConfigCustomFieldReadBase):
+    type: Literal[CustomFieldType.text]
+    properties: CustomFieldTextProperties
+
+
+class ConfigCustomFieldNumberRead(_ConfigCustomFieldReadBase):
+    type: Literal[CustomFieldType.number]
+    properties: CustomFieldNumberProperties
+
+
+class ConfigCustomFieldDateRead(_ConfigCustomFieldReadBase):
+    type: Literal[CustomFieldType.date]
+    properties: CustomFieldDateProperties
+
+
+class ConfigCustomFieldCheckboxRead(_ConfigCustomFieldReadBase):
+    type: Literal[CustomFieldType.checkbox]
+    properties: CustomFieldCheckboxProperties
+
+
+class ConfigCustomFieldSelectRead(_ConfigCustomFieldReadBase):
+    type: Literal[CustomFieldType.select]
+    properties: CustomFieldSelectProperties
+
+
+ConfigCustomFieldRead = Annotated[
+    ConfigCustomFieldTextRead
+    | ConfigCustomFieldNumberRead
+    | ConfigCustomFieldDateRead
+    | ConfigCustomFieldCheckboxRead
+    | ConfigCustomFieldSelectRead,
+    Discriminator("type"),
+    SetSchemaReference("ConfigCustomFieldRead"),
+]
+
+
+class ConfigProductCustomFieldRead(_ConfigRead):
+    field: str
+    required: bool
+
+
 class ConfigProductRead(_ConfigRead):
     external_id: str
     name: str
@@ -768,10 +976,20 @@ class ConfigProductRead(_ConfigRead):
     recurring_interval_count: int | None
     trial_interval: TrialInterval | None
     trial_interval_count: int | None
+    trial_payment_setup_required: Literal[False] | None = Field(
+        description=(
+            "`false` when customers can start the trial without a payment method."
+        ),
+    )
     meter_interval: MeterInterval | None
     meter_interval_count: int | None
     prices: list[ConfigProductPriceRead]
     benefits: list[str]
+    custom_fields: list[ConfigProductCustomFieldRead] | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        description="Omitted when the token can't read custom fields.",
+    )
     metadata: MetadataOutputType
     deprecated: Literal[True] | None = Field(
         description=(
@@ -793,6 +1011,11 @@ class ConfigSettingsRead(_ConfigRead):
 class ConfigExportDocument(_ConfigRead):
     settings: ConfigSettingsRead
     meters: list[ConfigMeterRead]
+    custom_fields: list[ConfigCustomFieldRead] | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        description="Omitted when the token can't read custom fields.",
+    )
     benefits: list[ConfigBenefitRead]
     products: list[ConfigProductRead]
 
@@ -869,8 +1092,8 @@ class ConfigExternalIDAssignment(Schema):
         ConfigResource.meter, ConfigResource.benefit, ConfigResource.product
     ] = Field(description="The type of resource.")
     id: UUID4 = Field(description="The ID of a resource without an `external_id`.")
-    external_id: str = Field(
-        min_length=1, description="The `external_id` to give the resource."
+    external_id: ExternalID = Field(
+        description="The `external_id` to give the resource."
     )
 
 

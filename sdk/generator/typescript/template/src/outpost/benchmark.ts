@@ -9,7 +9,7 @@ export const {
 } = benchmark;
 export const REDUCER = benchmark.reducer as Reducer;
 export const CREDIT_REDUCER = benchmark.credit_reducer as Reducer;
-// Events pending in one bucket: a batch the buffer just delivered, and a backlog after a 429.
+// Events pending in one bucket: a batch a flusher just delivered, and a backlog after a 429.
 export const PENDING_COUNTS = [1, 100, 1000];
 // What WRITE_BUCKET stores per event: its value.
 const PENDING_ENTRY = "7";

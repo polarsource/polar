@@ -14,7 +14,8 @@ import { CopyButton } from './CopyButton'
 import { Field } from './EventDetailField'
 import { useEventDetailFields } from './EventDetailFields'
 import { EventCostComparison, useEventCostSamples } from './EventCostComparison'
-import { EventDetailSkeleton, SkeletonBar } from './EventDetailSkeleton'
+import { SkeletonBar } from '@/components/Shared/SkeletonBar'
+import { EventDetailSkeleton } from './EventDetailSkeleton'
 import { EventLLMFields } from './EventLLMFields'
 import {
   eventCost,
@@ -24,7 +25,7 @@ import {
 } from './EventLogRow'
 import { EventTimestamp } from './EventTimestamp'
 
-const IconButton = ({
+export const IconButton = ({
   label,
   onClick,
   disabled,
@@ -48,7 +49,7 @@ const IconButton = ({
   </Button>
 )
 
-const Section = ({
+export const Section = ({
   title,
   action,
   children,
@@ -160,9 +161,7 @@ const EventDetails = ({
           </Text>
         </Field>
         <Field label="Time">
-          <EventTimestamp timestamp={event.timestamp}>
-            <Text tabularNums>{formatEventTimestamp(event.timestamp)}</Text>
-          </EventTimestamp>
+          <EventTimestamp timestamp={event.timestamp} format="precise" />
         </Field>
         <Field label="Source">
           <Text>{event.source === 'system' ? 'System' : 'User'}</Text>

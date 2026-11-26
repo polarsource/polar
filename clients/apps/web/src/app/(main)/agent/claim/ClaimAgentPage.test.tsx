@@ -1,12 +1,12 @@
 import { setSessionRefreshListener } from '@/components/SessionRefresh/store'
-import { UserContextProvider } from '@/providers/auth'
-import { stubLocationAssign } from '@/test-utils/location'
+import { AuthContext } from '@/providers/auth'
 import { renderWithProviders } from '@/test-utils/render'
 import { API_URL, apiError, server } from '@/test-utils/server'
 import type { schemas } from '@polar-sh/client'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { beforeAll, describe, expect, it, onTestFinished, vi } from 'vitest'
+import AgentClaimSuccess from './AgentClaimSuccess'
 import ClaimAgentPage from './ClaimAgentPage'
 
 const LINK_TOKEN = 'polar_acl_123'
@@ -75,19 +75,24 @@ const preview: schemas['AgentClaimPreview'] = {
   organization: claim.organization,
 }
 
+const currentPath = () => `${window.location.pathname}${window.location.search}`
+
+const restoreLocationAfterTest = () => {
+  const original = currentPath()
+  onTestFinished(() => window.history.replaceState(null, '', original))
+}
+
 const renderPage = (resumeActionId?: string, { signedOut = false } = {}) =>
   renderWithProviders(
-    <UserContextProvider
-      user={signedOut ? undefined : user}
-      userOrganizations={[]}
-    >
+    <AuthContext value={signedOut ? undefined : user}>
       <ClaimAgentPage
         linkToken={LINK_TOKEN}
         resumeActionId={resumeActionId}
         authenticationSession={null}
         pacingMs={0}
+        autoClose={false}
       />
-    </UserContextProvider>,
+    </AuthContext>,
   )
 
 const enterCode = async (code: string) => {
@@ -126,7 +131,7 @@ describe('ClaimAgentPage', () => {
 
   it('accepts the words however they are typed', async () => {
     const confirmations = serveClaim()
-    stubLocationAssign()
+    restoreLocationAfterTest()
     renderPage()
 
     await enterCode('  Amber River LEMON ')
@@ -140,7 +145,7 @@ describe('ClaimAgentPage', () => {
 
   it('shows the organization and claims it with the code', async () => {
     const confirmations = serveClaim()
-    const assign = stubLocationAssign()
+    restoreLocationAfterTest()
     const { posthog } = renderPage()
 
     expect(
@@ -154,15 +159,24 @@ describe('ClaimAgentPage', () => {
 
     await enterCode('amber-river-lemon')
 
-    await waitFor(() => expect(assign).toHaveBeenCalledWith('/dashboard/acme'))
+    expect(await screen.findByText('Acme is yours')).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'Switch back to Claude to continue. It will pick up where it left off.',
+      ),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: 'Go to dashboard' }),
+    ).toHaveAttribute('href', '/dashboard/acme')
+    expect(currentPath()).toBe('/agent/claim/done?organization=acme')
     expect(confirmations).toEqual([
       { link_token: LINK_TOKEN, code: 'amber-river-lemon' },
     ])
-    expect(screen.getByText('Transferring ownership…')).toBeInTheDocument()
     expect(posthog.events.map(({ event }) => event)).toEqual([
       'dashboard:agent:claim:view',
       'dashboard:agent:code:submit',
       'dashboard:agent:claim:complete',
+      'dashboard:agent:claim_success:view',
     ])
     expect(posthog.events[0]?.properties).toEqual({
       signed_in: true,
@@ -187,12 +201,16 @@ describe('ClaimAgentPage', () => {
 
   it('claims an agent that built no organization', async () => {
     serveClaim(() => HttpResponse.json({ ...claim, organization: null }))
-    const assign = stubLocationAssign()
+    restoreLocationAfterTest()
     renderPage()
 
     await enterCode('amber-river-lemon')
 
-    await waitFor(() => expect(assign).toHaveBeenCalledWith('/dashboard'))
+    expect(await screen.findByText('Setup complete')).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: 'Go to dashboard' }),
+    ).toHaveAttribute('href', '/dashboard')
+    expect(currentPath()).toBe('/agent/claim/done')
   })
 
   it('keeps the form after a wrong code', async () => {
@@ -213,14 +231,14 @@ describe('ClaimAgentPage', () => {
 
   it('keeps the form when rate limited', async () => {
     serveClaim(undefined, () => new HttpResponse(null, { status: 429 }))
-    const assign = stubLocationAssign()
+    const path = currentPath()
     renderPage()
 
     await enterCode('wrong-wrong-wrong')
 
     expect(await screen.findByText(/Too many attempts/)).toBeInTheDocument()
     expect(screen.getByLabelText('Claim code')).toBeInTheDocument()
-    expect(assign).not.toHaveBeenCalled()
+    expect(currentPath()).toBe(path)
   })
 
   it.each([
@@ -290,12 +308,12 @@ describe('ClaimAgentPage', () => {
         : apiError(403, 'SessionNotFreshError'),
     )
     const actionId = await requireFreshSignIn()
-    const assign = stubLocationAssign()
 
     fresh = true
     renderPage(actionId)
 
-    await waitFor(() => expect(assign).toHaveBeenCalledWith('/dashboard/acme'))
+    expect(await screen.findByText('Acme is yours')).toBeInTheDocument()
+    expect(currentPath()).toBe('/agent/claim/done?organization=acme')
     expect(confirmations).toEqual([
       { link_token: LINK_TOKEN, code: 'amber-river-lemon' },
       { link_token: LINK_TOKEN, code: 'amber-river-lemon' },
@@ -320,5 +338,90 @@ describe('ClaimAgentPage', () => {
     ).toBeInTheDocument()
     expect(sessionStorage).toHaveLength(0)
     expect(confirmations).toHaveLength(1)
+  })
+})
+
+describe('AgentClaimSuccess', () => {
+  it('sends the human back to their agent after a reload', async () => {
+    const { posthog } = renderWithProviders(
+      <AgentClaimSuccess organization={claim.organization} />,
+    )
+
+    expect(screen.getByText('Acme is yours')).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'Switch back to your agent to continue. It will pick up where it left off.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getByText('You can close this tab.')).toBeInTheDocument()
+
+    const dashboardLink = screen.getByRole('link', { name: 'Go to dashboard' })
+    dashboardLink.addEventListener('click', (event) => event.preventDefault())
+    fireEvent.click(dashboardLink)
+
+    await waitFor(() =>
+      expect(posthog.events).toEqual([
+        {
+          event: 'dashboard:agent:claim_success:view',
+          properties: { organization_id: 'org_1', has_agent_name: false },
+        },
+        {
+          event: 'dashboard:agent:dashboard_link:click',
+          properties: { organization_id: 'org_1' },
+        },
+      ]),
+    )
+  })
+
+  const renderCountdown = () => {
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    const close = vi.spyOn(window, 'close').mockImplementation(() => {})
+    onTestFinished(() => close.mockRestore())
+    const rendered = renderWithProviders(
+      <AgentClaimSuccess
+        organization={claim.organization}
+        agentName="Claude"
+        autoClose
+      />,
+    )
+    return { close, ...rendered }
+  }
+
+  const tick = (seconds: number) =>
+    act(() => {
+      vi.advanceTimersByTime(seconds * 1000)
+    })
+
+  it('counts down, then falls back when the browser keeps the tab open', () => {
+    const { close } = renderCountdown()
+
+    expect(
+      screen.getByText('This page will close in 5 seconds…'),
+    ).toBeInTheDocument()
+    tick(4)
+    expect(
+      screen.getByText('This page will close in 1 second…'),
+    ).toBeInTheDocument()
+    tick(1)
+    tick(0)
+
+    expect(close).toHaveBeenCalledOnce()
+    expect(screen.getByText('You can close this tab.')).toBeInTheDocument()
+  })
+
+  it('stops counting once the human heads to the dashboard', () => {
+    const { close } = renderCountdown()
+    const dashboardLink = screen.getByRole('link', { name: 'Go to dashboard' })
+    dashboardLink.addEventListener('click', (event) => event.preventDefault())
+
+    tick(2)
+    fireEvent.click(dashboardLink)
+    tick(10)
+
+    expect(close).not.toHaveBeenCalled()
+    expect(screen.getByText('You can close this tab.')).toBeInTheDocument()
   })
 })

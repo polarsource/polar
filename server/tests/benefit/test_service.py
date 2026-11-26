@@ -64,24 +64,21 @@ async def create_slack_integration(
         display_name="Test",
         slack_app_id="A0TESTAPPID",
         client_id="100.200",
-        client_secret="cs-test",
-        signing_secret="ss-test",
         team_id="T1",
         team_name="Test team",
         bot_user_id="U1",
-        bot_token="xoxb-test-token",
         authed_user_id="U2",
         scopes=["channels:manage"],
     )
     integration.id = SlackApp.generate_id()
     integration.client_secret_encrypted = await SlackApp.encrypt_client_secret(
-        integration.id, integration.client_secret
+        integration.id, "cs-test"
     )
     integration.signing_secret_encrypted = await SlackApp.encrypt_signing_secret(
-        integration.id, integration.signing_secret
+        integration.id, "ss-test"
     )
     integration.bot_token_encrypted = await SlackApp.encrypt_bot_token(
-        integration.id, integration.bot_token
+        integration.id, "xoxb-test-token"
     )
     await save_fixture(integration)
     return integration

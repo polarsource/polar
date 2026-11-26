@@ -173,6 +173,9 @@ export const useEventDetailFields = (
     case 'benefit.cycled':
     case 'benefit.updated':
     case 'benefit.revoked':
+    case 'benefit.manually_granted':
+    case 'benefit.manually_revoked':
+    case 'benefit.unrevoked':
       if (!benefit) return { isLoading, fields: [] }
       return {
         isLoading,

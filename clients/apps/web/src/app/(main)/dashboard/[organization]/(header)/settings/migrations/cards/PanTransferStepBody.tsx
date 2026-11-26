@@ -3,6 +3,8 @@
 import { schemas } from '@polar-sh/client'
 import { Alert, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import type { MigrationSource } from '../sources'
+import { LemonSqueezyRequestCopyStep } from './LemonSqueezyRequestCopyStep'
 import { OpsUpdate } from './OpsUpdate'
 import { StepCopy } from './panTransferCopy'
 import { PanTransferStepForm } from './PanTransferStepForm'
@@ -15,6 +17,7 @@ interface Props {
   copy: StepCopy
   destinationAccountId: string | null
   migrationId: string
+  source: MigrationSource
   sourceStripeAccountId?: string
 }
 
@@ -23,9 +26,23 @@ export function PanTransferStepBody({
   copy,
   destinationAccountId,
   migrationId,
+  source,
   sourceStripeAccountId,
 }: Props) {
-  if (step.key === START_COPY_STEP_KEY) {
+  if (source === 'lemon_squeezy') {
+    // Lemon Squeezy starts the copy itself, so its start_copy step is only a
+    // wait for the migreq id and renders as a plain step.
+    if (step.key === 'request_copy') {
+      return (
+        <LemonSqueezyRequestCopyStep
+          step={step}
+          copy={copy}
+          destinationAccountId={destinationAccountId}
+          migrationId={migrationId}
+        />
+      )
+    }
+  } else if (step.key === START_COPY_STEP_KEY) {
     return (
       <StartCopyStep
         step={step}

@@ -3,6 +3,7 @@ from typing import Annotated
 
 from fastapi import Path
 from pydantic import (
+    MISSING,
     UUID4,
     AliasChoices,
     AliasPath,
@@ -25,6 +26,7 @@ from polar.kit.address import Address, AddressInput
 from polar.kit.currency import format_currency
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import (
+    EmptyStrToNoneValidator,
     IDSchema,
     Int32,
     MergeJSONSchema,
@@ -33,7 +35,7 @@ from polar.kit.schemas import (
     TimestampedSchema,
     empty_str_to_none,
 )
-from polar.kit.versioning import QuerySchema, Version
+from polar.kit.versioning import Omissible, QuerySchema, Version
 from polar.models.order import (
     OrderBillingReason,
     OrderBillingReasonInternal,
@@ -389,12 +391,26 @@ class OrderUpdateBase(Schema):
     billing_name: str | None = Field(
         None, description="The name of the customer that should appear on the invoice."
     )
-    billing_address: AddressInput | None = Field(
-        None,
+    billing_address: Omissible[AddressInput] = Field(
+        MISSING,
         description=(
             "The address of the customer that should appear on the invoice. "
-            "Country and state fields cannot be updated."
+            "Address fields used for tax calculation can only be updated on draft orders."
         ),
+    )
+    tax_id: Annotated[
+        Omissible[str | None],
+        EmptyStrToNoneValidator,
+        Version(starting_from=V2027_01),
+    ] = Field(
+        MISSING,
+        description="Tax ID for the billing address on a draft order. Set to null to remove it.",
+    )
+    discount_code: Annotated[
+        Omissible[str | None], EmptyStrToNoneValidator, Version(starting_from=V2027_01)
+    ] = Field(
+        MISSING,
+        description="Discount code to apply to the draft order. Set to null to remove it.",
     )
 
 
@@ -470,6 +486,10 @@ class OrderListParams(QuerySchema):
     )
     status: MultipleQueryFilter[OrderStatus] | None = Field(
         None, title="Status Filter", description="Filter by order status."
+    )
+    query: Annotated[str | None, Version(starting_from=V2027_01)] = Field(
+        None,
+        description="Filter by customer name, email or external ID, invoice number, or an order, customer, subscription or checkout ID.",
     )
     created_after: datetime | None = Field(
         None,

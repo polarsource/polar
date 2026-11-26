@@ -30,11 +30,11 @@ from .service import (
     ConfigAsCodeNotEnabled,
     ConfigBenefitConflict,
     ConfigCatalogPublished,
+    ConfigCustomFieldConflict,
     ConfigInvalid,
     ConfigMeterConflict,
     ConfigProductConflict,
     ConfigUnsupportedResources,
-    ConfigWebhookConflict,
 )
 from .service import declarative_config as declarative_config_service
 
@@ -86,15 +86,13 @@ async def export(
     """
     Export the organization's current config as a declarative config document.
 
-    With `catalog_id`, products come from that catalog version. Settings, meters
-    and benefits aren't versioned, so they're always the current ones.
+    With `catalog_id`, the config comes from that catalog version.
 
     `config` has the shape plan and apply accept, without `organization_id`:
     planning it for the same organization without edits reports no changes.
     Resources without an `external_id`, archived ones, ones config can't express
     (or that reference a skipped resource), and ones beyond the config limit are
-    listed in `skipped`, up to the config limit per section. Webhook endpoints
-    are not exported.
+    listed in `skipped`, up to the config limit per section.
 
     Works before config as code is enabled, so the catalog can be reviewed
     before `init`; `enabled` says whether it is.
@@ -180,8 +178,8 @@ async def disable(
     dashboard and API again.
 
     The draft catalog is discarded, and the live catalog is removed: its
-    products and benefits stay as they are. So do meters, settings and webhook
-    endpoints applied in the meantime.
+    products and benefits stay as they are. So do meters and settings applied
+    in the meantime.
 
     Only possible while at most one catalog was published.
     """
@@ -189,11 +187,11 @@ async def disable(
 
 
 @router.post(
-    "/apply",
+    "/draft",
     response_model=ConfigApplyResult,
-    summary="Apply Config",
+    summary="Draft Config",
     responses={
-        200: {"description": "Config applied."},
+        200: {"description": "Config saved to the draft catalog."},
         401: {"description": "Not authenticated.", "model": Unauthorized.schema()},
         403: {
             "description": (
@@ -212,53 +210,45 @@ async def disable(
             | ConfigMeterConflict.schema()
             | ConfigBenefitConflict.schema()
             | ConfigProductConflict.schema()
-            | ConfigWebhookConflict.schema(),
+            | ConfigCustomFieldConflict.schema(),
         },
     },
 )
-async def apply(
+async def draft(
     config: Config,
     auth_subject: ConfigWrite,
-    publish: bool = Query(
-        False,
-        description=(
-            "Publish the product and benefit changes. By default, they're saved "
-            "in the organization's draft catalog, to publish later. With `true`, "
-            "they go live and a pending draft is discarded. Meters, settings and "
-            "webhooks aren't versioned, so they apply right away."
-        ),
-    ),
     session: AsyncSession = Depends(get_db_session),
     redis: Redis = Depends(get_redis),
 ) -> ConfigApplyResult:
     """
-    Apply a declarative config document to the organization.
+    Save a declarative config document to the organization's draft catalog.
+    Nothing changes for customers until the draft is published.
 
-    Meters, benefits, products and webhook endpoints are matched by
+    Meters, benefits and products are matched by
     `external_id`: missing ones are created, and changed ones are updated.
     Deprecated products are neither created nor updated.
     Deprecated products, and products that `config pull` exports but the config
-    doesn't list, are left out of the published catalog. Other products, and all
+    doesn't list, are left out of the catalog. Other products, and all
     products when `products` is omitted, are left untouched. A product that
     isn't listed but has a billable subscription or a pending subscription
-    update must be marked deprecated instead, or nothing is applied.
+    update must be marked deprecated instead, or nothing is saved.
     Other resources that aren't listed are left untouched.
-    `settings` are applied first, so products can be priced in a new
+    `settings` go live with the catalog, so products can be priced in a new
     `payments.currency` in the same config. Every active product must have a price in
-    the resulting currency, or nothing is applied.
-    Everything is applied in one transaction.
+    the resulting currency, or nothing is saved.
+    Everything is saved in one transaction.
 
     Each section requires the write scope for its resource.
     """
     return await declarative_config_service.apply(
-        session, redis, auth_subject, config, publish=publish
+        session, redis, auth_subject, config, publish=False
     )
 
 
 @router.post(
-    "/plan",
+    "/validate",
     response_model=ConfigPlan,
-    summary="Plan Config",
+    summary="Validate Config",
     responses={
         200: {"description": "Config checked."},
         401: {"description": "Not authenticated.", "model": Unauthorized.schema()},
@@ -273,21 +263,22 @@ async def apply(
         404: CatalogNotFoundResponse,
     },
 )
-async def plan(
+async def validate(
     config: Config,
     auth_subject: ConfigRead,
     catalog_id: CatalogQuery = None,
     session: AsyncSession = Depends(get_db_session),
 ) -> ConfigPlan:
     """
-    Preview what applying a declarative config document would do, without applying it.
+    Check a declarative config document and preview what saving it to the draft
+    would change, without changing anything.
 
     Returns the action for each resource, and every issue: `error` issues make
-    apply fail, `warning` issues don't.
+    draft fail, `warning` issues don't.
 
-    With the ID of an archived catalog, products are compared to that version
-    instead of the live one. The plan then shows the changes from that version,
-    not what apply would do, and the response's `catalog` is None.
+    With the ID of an archived catalog, the result shows the changes from that
+    version instead of the live one, without settings, and the response's
+    `catalog` is None.
 
     Each section requires the read or write scope for its resource.
     """

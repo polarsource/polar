@@ -1,13 +1,13 @@
 import { eventCustomerLabel } from '@/components/Events/EventLogRow'
 import { resolveTimelineEventHref } from '@/components/Timeline/links'
 import { resolveTimelineEntry } from '@/components/Timeline/renderers'
-import { formatRelativeTime } from '@/components/Timeline/TimelineItem'
+import { EventTimestamp } from '@/components/Events/EventTimestamp'
 import { useEvents, useEventTypeStats } from '@/hooks/queries/events'
-import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { useDashboardOrganization } from '@/hooks/dashboardOrganization'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { addDays, startOfDay } from 'date-fns'
-import { useContext, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ListRow } from './ListRow'
 import { WidgetContainer } from './WidgetContainer'
 import { WidgetError } from './WidgetError'
@@ -34,7 +34,7 @@ export const ActivityWidget = ({ className }: ActivityWidgetProps) => (
 )
 
 const ActivityWidgetContent = ({ className }: ActivityWidgetProps) => {
-  const { organization } = useContext(OrganizationContext)
+  const organization = useDashboardOrganization()
   const [today, setToday] = useState(() => startOfDay(new Date()))
   // Roll the count over at local midnight while the dashboard stays open.
   useEffect(() => {
@@ -109,16 +109,23 @@ const ActivityWidgetContent = ({ className }: ActivityWidgetProps) => {
             <ListRow
               key={event.id}
               href={resolveTimelineEventHref(event, organization.slug)}
+              trailing={
+                <EventTimestamp
+                  timestamp={event.timestamp}
+                  format="relative"
+                  muted
+                  align="end"
+                />
+              }
             >
               <Box alignItems="baseline" columnGap="s" minWidth={0}>
                 <Text truncate>{entry?.title}</Text>
-                <Text color="muted" truncate>
-                  {eventCustomerLabel(event) ?? entry?.summary}
-                </Text>
+                <Box minWidth={0} flexShrink={100}>
+                  <Text color="muted" truncate>
+                    {eventCustomerLabel(event) ?? entry?.summary}
+                  </Text>
+                </Box>
               </Box>
-              <Text color="muted" tabularNums>
-                {formatRelativeTime(event.timestamp)}
-              </Text>
             </ListRow>
           ))}
         </Box>

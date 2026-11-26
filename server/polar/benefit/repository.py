@@ -31,6 +31,29 @@ class BenefitRepository(
 ):
     model = Benefit
 
+    async def get_for_manual_grant(
+        self,
+        organization_id: UUID,
+        *,
+        benefit_id: UUID | None = None,
+        external_id: str | None = None,
+    ) -> Benefit | None:
+        statement = (
+            self.get_base_statement()
+            .where(
+                Benefit.organization_id == organization_id,
+                ~Benefit.catalog.has(Catalog.status == CatalogStatus.draft),
+            )
+            .options(*self.get_eager_options())
+        )
+        if benefit_id is not None:
+            statement = statement.where(Benefit.id == benefit_id)
+        else:
+            statement = statement.where(
+                Benefit.external_id == external_id, Benefit.is_current
+            )
+        return await self.get_one_or_none(statement)
+
     async def count_by_organization_id(self, organization_id: UUID) -> int:
         return await self.count(
             self.get_base_statement().where(Benefit.organization_id == organization_id)
@@ -48,6 +71,20 @@ class BenefitRepository(
             .join(ProductBenefit, onclause=ProductBenefit.benefit_id == Benefit.id)
             .where(Benefit.id == id, ProductBenefit.product_id == product_id)
             .options(*options)
+        )
+        return await self.get_one_or_none(statement)
+
+    async def get_by_product_and_type(
+        self, product_id: UUID, benefit_type: BenefitType
+    ) -> Benefit | None:
+        statement = (
+            self.get_base_statement()
+            .join(ProductBenefit, onclause=ProductBenefit.benefit_id == Benefit.id)
+            .where(
+                ProductBenefit.product_id == product_id, Benefit.type == benefit_type
+            )
+            .order_by(ProductBenefit.order)
+            .limit(1)
         )
         return await self.get_one_or_none(statement)
 
@@ -105,6 +142,23 @@ class BenefitRepository(
             .distinct(Benefit.external_id)
             .order_by(Benefit.external_id, Benefit.created_at.desc(), Benefit.id.desc())
             .options(undefer(Benefit.external_id), *self.get_eager_options())
+        )
+        return await self.get_all(statement)
+
+    async def get_current_meter_credits_by_meters(
+        self, organization_id: UUID, meter_ids: Sequence[UUID]
+    ) -> Sequence[Benefit]:
+        statement = (
+            self.get_base_statement()
+            .where(
+                Benefit.organization_id == organization_id,
+                Benefit.type == BenefitType.meter_credit,
+                Benefit.properties["meter_id"]
+                .as_string()
+                .in_([str(meter_id) for meter_id in meter_ids]),
+                Benefit.is_current,
+            )
+            .options(undefer(Benefit.external_id))
         )
         return await self.get_all(statement)
 

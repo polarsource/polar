@@ -1,38 +1,91 @@
 ---
-title: "Organization Access Tokens"
-sidebarTitle: "Organization Access Tokens"
+title: "Access tokens"
+sidebarTitle: "Access tokens"
+description: "Create, scope, store and revoke an organization access token so your server, scripts or CI can call the Polar API."
 ---
 
-<Info>
-    All bearer tokens should be kept private and never shared or exposed in client-side code.
-</Info>
+An **organization access token** (OAT) lets your server call the Polar API for **one** organization. Tokens start with `polar_oat_` and carry the scopes you choose when you create them.
 
-Organization Access Tokens (OAT) are tied to **one** of your organization.
+<Warning>
+  Anyone with a token can act on behalf of your organization within its scopes. Keep tokens on your server or in a secret store. Never put them in client-side code or commit them.
+</Warning>
 
-You can create them from your organization settings as follows:
+A token belongs to one environment. Create it in the [sandbox](/integrate/sandbox) for `https://sandbox-api.polar.sh`, and again in production for `https://api.polar.sh`.
 
-<Steps>
-    <Step title="Go to Organization Settings">
+## Create a token
 
-        Open [**Settings → Access Tokens**](https://polar.sh/to/dashboard/settings/access-tokens) for your organization in the Polar dashboard.
+<Tabs>
+  <Tab title="Dashboard">
+    - Open [**Settings → Access Tokens**](https://polar.sh/to/dashboard/settings/access-tokens)
+    - Click **Create token**
+    - Enter a **Name**, such as `app-production`
+    - Choose an **Expiration**: 1 to 365 days, or **No expiration**
+    - Select the **Scopes** your app needs
+    - Copy the token. You won't be able to see it again
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    echo "POLAR_ACCESS_TOKEN=$(polar auth token)" >> .env.local
+    ```
 
-        <img height="200" src="/assets/integrate/authentication/settings.png" />
+    Creates a token for the active organization: the CLI opens the token page in the dashboard and prints the token when you click **Create and send to CLI**. Preselect scopes with `--scope`, repeated. See [`polar auth token`](/integrate/cli/reference/auth#polar-auth-token).
+  </Tab>
+</Tabs>
 
-    </Step>
-    <Step title="Create an access token">
+<Note>Not available from the MCP server.</Note>
 
-        Click **Create token**
+## Use a token
 
-    </Step>
-    <Step title="Configure the token details">
-    
-        - **Give your token a name**: Choose a descriptive name so you remember what this token is used for.
+Send it as a bearer token:
 
-        - **Set an expiration date**: Decide how long the token should be valid.
+<CodeGroup>
+```typescript TypeScript
+import { createPolar } from "@polar-sh/sdk/2026-10";
 
-        - **Select the required scopes**: Pick the permissions your token needs.
+const polar = createPolar({
+  accessToken: process.env.POLAR_ACCESS_TOKEN!,
+  environment: "sandbox",
+});
+```
 
-        <img height="200" src="/assets/integrate/authentication/oat-configuration.png" />
+```python Python
+import os
 
-    </Step>
-</Steps>
+from polar.v2026_10 import Polar
+
+polar = Polar(
+    os.environ["POLAR_ACCESS_TOKEN"],
+    environment="sandbox",
+)
+```
+
+```bash cURL
+curl https://sandbox-api.polar.sh/v1/products/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10"
+```
+</CodeGroup>
+
+Because a token belongs to one organization, you don't pass an organization ID when you create resources with it.
+
+The same token works for the [Polar CLI](/integrate/cli/authentication#ci-and-headless-use) in CI (`POLAR_ACCESS_TOKEN`) and for [headless MCP clients](/integrate/mcp#headless-agents-and-ci).
+
+## Scopes
+
+Give each token only the scopes it needs. Scopes come in `read` and `write` pairs per resource, such as `products:read` and `products:write`. A request outside the token's scopes fails with `403`.
+
+You can change a token's name and scopes later from **Settings → Access Tokens**.
+
+## Revoke or replace a token
+
+To revoke a token, open **Settings → Access Tokens** and click **Revoke** next to it. Requests with it fail right away.
+
+Tokens can't be rotated in place. To replace one, create a new token, deploy it, then revoke the old one.
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Sandbox](/integrate/sandbox) | Test with a sandbox token before production |
+| [CLI authentication](/integrate/cli/authentication) | Sessions, `polar auth token` and CI |
+| [API reference](/api-reference/current/introduction) | Every endpoint and the scope it needs |

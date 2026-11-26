@@ -20,18 +20,17 @@ resource "aws_secretsmanager_secret_version" "ec2_tailscale" {
 module "ec2_tailscale" {
   source = "../modules/ec2_tailscale"
 
-  name                       = "polar-sandbox-aws-router"
-  subnet_id                  = module.vpc.secondary_private_subnet_ids[0]
-  advertise_routes           = module.vpc.secondary_private_subnet_cidr_blocks
-  advertise_tags             = ["tag:router", "tag:sandbox"]
-  tailscale_oauth_secret_arn = aws_secretsmanager_secret.ec2_tailscale.arn
-  tailscale_version          = var.tailscale_version
-  permissions_boundary_arn   = data.aws_iam_policy.permission_boundary.arn
+  name                        = "polar-sandbox-aws-router"
+  subnet_id                   = module.vpc.public_subnet_ids[0]
+  associate_public_ip_address = true
+  advertise_routes            = module.vpc.secondary_private_subnet_cidr_blocks
+  advertise_tags              = ["tag:router", "tag:sandbox"]
+  tailscale_oauth_secret_arn  = aws_secretsmanager_secret_version.ec2_tailscale.arn
+  tailscale_version           = var.tailscale_version
+  permissions_boundary_arn    = data.aws_iam_policy.permission_boundary.arn
 
   tags = {
     Environment = "sandbox"
     Service     = "tailscale-router"
   }
-
-  depends_on = [module.vpc, aws_secretsmanager_secret_version.ec2_tailscale]
 }

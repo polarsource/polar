@@ -1,7 +1,9 @@
 import { Box } from '@/components/Shared/Box'
 import { fontAssets } from '@/design-system/fonts'
 import theme from '@/design-system/theme'
+import { useScreenTracking } from '@/hooks/useScreenTracking'
 import { SessionProvider } from '@/providers/SessionProvider'
+import { posthog } from '@/utils/posthog'
 import { ExtensionStorage } from '@bacons/apple-targets'
 import NetInfo from '@react-native-community/netinfo'
 import * as Sentry from '@sentry/react-native'
@@ -11,6 +13,7 @@ import { onlineManager } from '@tanstack/react-query'
 import { useFonts } from 'expo-font'
 import { Slot } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
+import { PostHogProvider } from 'posthog-react-native'
 import React, { useCallback, useEffect } from 'react'
 import { AppState } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
@@ -64,6 +67,11 @@ onlineManager.setEventListener((setOnline) => {
   })
 })
 
+function ScreenTracking() {
+  useScreenTracking()
+  return null
+}
+
 export default Sentry.wrap(function RootLayout() {
   const [fontsLoaded] = useFonts(fontAssets)
 
@@ -91,20 +99,23 @@ export default Sentry.wrap(function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <ThemeProvider theme={theme}>
-          <SessionProvider>
-            <Box
-              flex={1}
-              backgroundColor="background"
-              onLayout={onLayoutRootView}
-            >
-              <Slot />
-            </Box>
-          </SessionProvider>
-        </ThemeProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <PostHogProvider client={posthog} autocapture={{ captureScreens: false }}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <ThemeProvider theme={theme}>
+            <SessionProvider>
+              <ScreenTracking />
+              <Box
+                flex={1}
+                backgroundColor="background"
+                onLayout={onLayoutRootView}
+              >
+                <Slot />
+              </Box>
+            </SessionProvider>
+          </ThemeProvider>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </PostHogProvider>
   )
 })

@@ -10,6 +10,7 @@ from polar.models.subscription import SubscriptionStatus
 from polar.subscription.scheduler import (
     SubscriptionJobStore,
     SubscriptionResumeJobStore,
+    SubscriptionTrialEndedJobStore,
     _next_run_time,
     _SubscriptionScheduleJobStore,
 )
@@ -70,8 +71,66 @@ async def test_cycle_scheduler_only_selects_due_billable_subscriptions(
 
 
 @pytest.mark.anyio
+async def test_trial_ended_scheduler_only_selects_due_trial_ended_subscriptions(
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    product: Product,
+    customer: Customer,
+) -> None:
+    now = utc_now()
+
+    due = await create_subscription(
+        save_fixture,
+        product=product,
+        customer=customer,
+        status=SubscriptionStatus.trial_ended,
+        ends_at=now - timedelta(hours=1),
+    )
+    await create_subscription(
+        save_fixture,
+        product=product,
+        customer=customer,
+        status=SubscriptionStatus.trial_ended,
+        ends_at=now + timedelta(days=1),
+    )
+    await create_subscription(
+        save_fixture,
+        product=product,
+        customer=customer,
+        status=SubscriptionStatus.trial_ended,
+        ends_at=now - timedelta(hours=1),
+        scheduler_locked_at=now,
+    )
+    deleted = await create_subscription(
+        save_fixture,
+        product=product,
+        customer=customer,
+        status=SubscriptionStatus.trial_ended,
+        ends_at=now - timedelta(hours=1),
+    )
+    deleted.deleted_at = now
+    await save_fixture(deleted)
+    await create_subscription(
+        save_fixture,
+        product=product,
+        customer=customer,
+        status=SubscriptionStatus.active,
+        ends_at=now - timedelta(hours=1),
+    )
+
+    statement = (
+        SubscriptionTrialEndedJobStore.scheduling_statement()
+        .where(Subscription.ends_at <= now)
+        .with_only_columns(Subscription.id)
+    )
+    result = await session.execute(statement)
+    assert set(result.scalars()) == {due.id}
+
+
+@pytest.mark.anyio
 @pytest.mark.parametrize(
-    "store_class", [SubscriptionJobStore, SubscriptionResumeJobStore]
+    "store_class",
+    [SubscriptionJobStore, SubscriptionResumeJobStore, SubscriptionTrialEndedJobStore],
 )
 async def test_get_due_jobs_does_not_raise(
     store_class: type[_SubscriptionScheduleJobStore],

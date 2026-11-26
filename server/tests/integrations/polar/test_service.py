@@ -40,9 +40,10 @@ from polar.integrations.polar.exceptions import (
 )
 from polar.integrations.polar.service import polar_self
 from polar.models.member import MemberRole
-from polar.models.organization import Organization, SupportTier
+from polar.models.organization import Organization, OrganizationStatus, SupportTier
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.version import CURRENT_API_VERSION
+from tests.fixtures.database import SaveFixture
 
 SELF_ORG_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
 ORG_A = uuid.UUID("00000000-0000-0000-0000-00000000000a")
@@ -2646,14 +2647,17 @@ def _make_subscription_past_due_payload(
 
 
 def _make_subscription_revoked_payload(
-    **kwargs: Any,
+    *, external_customer_id: str | None = None, **kwargs: Any
 ) -> WebhookSubscriptionRevokedPayload:
+    data = dataclasses.asdict(_make_subscription(**kwargs))
+    if external_customer_id is not None:
+        data["customer"]["external_id"] = external_customer_id
     return deserialize(
         {
             "type": "subscription.revoked",
             "timestamp": "2026-01-01T00:00:00Z",
             "api_version": str(CURRENT_API_VERSION),
-            "data": dataclasses.asdict(_make_subscription(**kwargs)),
+            "data": data,
         },
         WebhookSubscriptionRevokedPayload,
     )
@@ -2819,36 +2823,39 @@ class TestHandleSubscriptionPastDueEvent:
 class TestHandleSubscriptionRevokedEvent:
     async def test_skips_free_subscription(
         self,
+        session: AsyncSession,
         subscription_webhook_client_mock: MagicMock,
         enqueue_email_mock: MagicMock,
     ) -> None:
         payload = _make_subscription_revoked_payload(amount=0)
 
-        await polar_self.handle_subscription_revoked_event(payload)
+        await polar_self.handle_subscription_revoked_event(session, payload)
 
         subscription_webhook_client_mock.list_billing_contacts.assert_not_awaited()
         enqueue_email_mock.assert_not_called()
 
     async def test_skips_when_no_billing_contacts(
         self,
+        session: AsyncSession,
         subscription_webhook_client_mock: MagicMock,
         enqueue_email_mock: MagicMock,
     ) -> None:
         subscription_webhook_client_mock.list_billing_contacts.return_value = []
         payload = _make_subscription_revoked_payload(amount=2000)
 
-        await polar_self.handle_subscription_revoked_event(payload)
+        await polar_self.handle_subscription_revoked_event(session, payload)
 
         enqueue_email_mock.assert_not_called()
 
     async def test_sends_email_to_billing_contacts(
         self,
+        session: AsyncSession,
         subscription_webhook_client_mock: MagicMock,
         enqueue_email_mock: MagicMock,
     ) -> None:
         payload = _make_subscription_revoked_payload(amount=2000)
 
-        await polar_self.handle_subscription_revoked_event(payload)
+        await polar_self.handle_subscription_revoked_event(session, payload)
 
         subscription_webhook_client_mock.list_billing_contacts.assert_awaited_once_with(
             customer_id=_CUSTOMER_ID
@@ -2861,8 +2868,28 @@ class TestHandleSubscriptionRevokedEvent:
         assert kwargs["to_email_addr"] == "billing@example.com"
         assert kwargs["subject"] == "Your Pro subscription has ended"
 
+    async def test_skips_when_organization_denied(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        subscription_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        organization.status = OrganizationStatus.DENIED
+        await save_fixture(organization)
+        payload = _make_subscription_revoked_payload(
+            amount=2000, external_customer_id=str(organization.id)
+        )
+
+        await polar_self.handle_subscription_revoked_event(session, payload)
+
+        subscription_webhook_client_mock.list_billing_contacts.assert_not_awaited()
+        enqueue_email_mock.assert_not_called()
+
     async def test_skips_in_sandbox(
         self,
+        session: AsyncSession,
         subscription_webhook_client_mock: MagicMock,
         enqueue_email_mock: MagicMock,
         mocker: MockerFixture,
@@ -2873,7 +2900,7 @@ class TestHandleSubscriptionRevokedEvent:
         )
         payload = _make_subscription_revoked_payload(amount=2000)
 
-        await polar_self.handle_subscription_revoked_event(payload)
+        await polar_self.handle_subscription_revoked_event(session, payload)
 
         subscription_webhook_client_mock.list_billing_contacts.assert_not_awaited()
         enqueue_email_mock.assert_not_called()

@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock
 from zoneinfo import ZoneInfo
 
 import pytest
-from pydantic import ValidationError
+from pydantic import MISSING, ValidationError
 from pytest_mock import MockerFixture
 from sqlalchemy import select
 
@@ -244,6 +244,34 @@ class TestCreate:
 
         assert e.value.errors()[0]["loc"] == ("body", "external_id")
 
+    @pytest.mark.parametrize("reducer_billing", [True, False])
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_unique_aggregation(
+        self,
+        reducer_billing: bool,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {"reducer_billing_enabled": reducer_billing}
+        await save_fixture(organization)
+        meter_create = MeterCreate(
+            name="Meter",
+            filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
+            aggregation=UniqueAggregation(property="user_id"),
+        )
+
+        if not reducer_billing:
+            meter = await meter_service.create(session, meter_create, auth_subject)
+            assert meter.aggregation == meter_create.aggregation
+            return
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await meter_service.create(session, meter_create, auth_subject)
+
+        assert e.value.errors()[0]["loc"] == ("body", "aggregation")
+
 
 @pytest.mark.anyio
 class TestUpdate:
@@ -329,6 +357,8 @@ class TestUpdate:
         meter = await create_meter(
             save_fixture, organization=organization, last_billed_event=None
         )
+        original_filter = meter.filter
+        original_aggregation = meter.aggregation
         original_reducer = None
         if has_reducer:
             original_reducer = Reducer(
@@ -343,10 +373,14 @@ class TestUpdate:
             session, meter, meter_update, auth_subject
         )
 
-        if meter_update.filter:
-            assert updated_meter.filter == meter_update.filter
-        if meter_update.aggregation:
-            assert updated_meter.aggregation == meter_update.aggregation
+        assert updated_meter.filter == (
+            original_filter if meter_update.filter is MISSING else meter_update.filter
+        )
+        assert updated_meter.aggregation == (
+            original_aggregation
+            if meter_update.aggregation is MISSING
+            else meter_update.aggregation
+        )
         reducer = (
             await session.scalars(
                 select(Reducer)
@@ -442,6 +476,36 @@ class TestUpdate:
             )
 
         assert e.value.errors()[0]["loc"] == ("body", "external_id")
+
+    @pytest.mark.parametrize("reducer_billing", [True, False])
+    @pytest.mark.auth
+    async def test_unique_aggregation(
+        self,
+        reducer_billing: bool,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {"reducer_billing_enabled": reducer_billing}
+        await save_fixture(organization)
+        meter = await create_meter(save_fixture, organization=organization)
+        meter_update = MeterUpdate(  # pyright: ignore
+            aggregation=UniqueAggregation(property="user_id")
+        )
+
+        if not reducer_billing:
+            meter = await meter_service.update(
+                session, meter, meter_update, auth_subject
+            )
+            assert meter.aggregation == meter_update.aggregation
+            return
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await meter_service.update(session, meter, meter_update, auth_subject)
+
+        assert e.value.errors()[0]["loc"] == ("body", "aggregation")
 
     @pytest.mark.auth
     async def test_same_external_id(
@@ -1472,6 +1536,37 @@ class TestGetQuantity:
         quantity = await meter_service.get_quantity(session, meter, events_statement)
 
         assert quantity == 30.0
+
+    async def test_sums_exactly(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+    ) -> None:
+        for cost in (0.1, 0.2, -0.3):
+            await create_event(
+                save_fixture,
+                organization=customer.organization,
+                customer=customer,
+                metadata={"cost": cost},
+            )
+        meter = await create_meter(
+            save_fixture,
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.sum, property="cost"
+            ),
+            organization=customer.organization,
+        )
+
+        quantity = await meter_service.get_quantity(
+            session,
+            meter,
+            EventRepository.from_session(session)
+            .get_base_statement()
+            .where(Event.organization_id == customer.organization_id),
+        )
+
+        assert quantity == 0.0
 
 
 @pytest.fixture

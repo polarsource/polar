@@ -15,6 +15,7 @@ from .billing_interval import BillingInterval
 from .campaign import Campaign
 from .catalog import Catalog
 from .catalog_benefit import CatalogBenefit
+from .catalog_custom_field import CatalogCustomField
 from .catalog_meter import CatalogMeter
 from .catalog_product import CatalogProduct
 from .checkout import Checkout
@@ -118,6 +119,7 @@ from .product_price import (
 from .reducer import Reducer
 from .reducer_bucket import ReducerBucket
 from .refund import Refund
+from .scheduled_cron import ScheduledCron
 from .slack_app import SlackApp
 from .staged_event import StagedEvent
 from .subscription import Subscription
@@ -164,6 +166,7 @@ __all__ = [
     "Campaign",
     "Catalog",
     "CatalogBenefit",
+    "CatalogCustomField",
     "CatalogMeter",
     "CatalogProduct",
     "Checkout",
@@ -266,6 +269,7 @@ __all__ = [
     "ReducerBucket",
     "Refund",
     "ReviewAppealSupportCase",
+    "ScheduledCron",
     "SeatStatus",
     "SlackApp",
     "StagedEvent",

@@ -10,6 +10,7 @@ from polar.models.organization import Organization
 SECTION_SCOPES = {
     "settings": (Scope.organizations_read, Scope.organizations_write),
     "meters": (Scope.meters_read, Scope.meters_write),
+    "custom_fields": (Scope.custom_fields_read, Scope.custom_fields_write),
     "benefits": (Scope.benefits_read, Scope.benefits_write),
     "products": (Scope.products_read, Scope.products_write),
     "webhooks": (Scope.webhooks_read, Scope.webhooks_write),

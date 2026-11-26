@@ -1,10 +1,11 @@
 import uuid
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
 from polar.auth.models import AuthSubject
 from polar.kit.utils import utc_now
+from polar.kit.versioning import APIVersion
 from polar.models import (
     Organization,
     OrganizationDomain,
@@ -18,6 +19,7 @@ from polar.models.organization_sso_connection import (
     OrganizationSSOConnectionType,
 )
 from polar.sso.schemas import RESERVED_AUTHORIZATION_PARAMETERS
+from polar.version import V2026_10, V2027_01
 from tests.fixtures.database import SaveFixture
 
 
@@ -607,8 +609,10 @@ class TestUpdateSSOConnection:
         assert response.json()["name"] == "Acme SSO"
 
     @pytest.mark.auth
-    async def test_null_configuration_is_ignored(
+    @pytest.mark.api_version(V2026_10, V2027_01)
+    async def test_null_configuration(
         self,
+        api_version: APIVersion,
         client: AsyncClient,
         organization: Organization,
         sso_enabled_organization: Organization,
@@ -619,14 +623,21 @@ class TestUpdateSSOConnection:
             f"/v1/organizations/{organization.id}/sso-connections/{sso_connection.id}",
             json={"name": "Acme SSO", "configuration": None},
         )
-        assert response.status_code == 200
-        json = response.json()
-        assert json["name"] == "Acme SSO"
-        assert json["configuration"]["issuer"] == "https://idp.example.com"
+        if api_version == V2026_10:
+            assert response.status_code == 200
+            assert response.json()["name"] == "Acme SSO"
+            assert (
+                response.json()["configuration"]["issuer"] == "https://idp.example.com"
+            )
+        else:
+            assert response.status_code == 422
+            assert response.json()["detail"][0]["loc"] == ["body", "configuration"]
 
     @pytest.mark.auth
-    async def test_null_enabled_is_ignored(
+    @pytest.mark.api_version(V2026_10, V2027_01)
+    async def test_null_enabled(
         self,
+        api_version: APIVersion,
         client: AsyncClient,
         organization: Organization,
         sso_enabled_organization: Organization,
@@ -637,8 +648,12 @@ class TestUpdateSSOConnection:
             f"/v1/organizations/{organization.id}/sso-connections/{sso_connection.id}",
             json={"enabled": None},
         )
-        assert response.status_code == 200
-        assert response.json()["enabled"] is True
+        if api_version == V2026_10:
+            assert response.status_code == 200
+            assert response.json()["enabled"] is True
+        else:
+            assert response.status_code == 422
+            assert response.json()["detail"][0]["loc"] == ["body", "enabled"]
 
     @pytest.mark.auth
     async def test_not_existing(

@@ -2,6 +2,7 @@ import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { CATALOG_READ_STALLED } from '../catalogReadCopy'
 import {
+  CATALOG_CONTINUE_ERROR_TITLE,
   CATALOG_EMPTY_COPY,
   CATALOG_READ_ERROR_TITLE,
   CATALOG_REFRESH_COPY,
@@ -14,6 +15,9 @@ interface Props {
   rerunning?: boolean
   readError?: string
   stalled?: boolean
+  onContinue?: () => void
+  continuing?: boolean
+  continueError?: string
 }
 
 export function CatalogEmptyPanel({
@@ -22,9 +26,15 @@ export function CatalogEmptyPanel({
   rerunning = false,
   readError,
   stalled = false,
+  onContinue,
+  continuing = false,
+  continueError,
 }: Props) {
   const refreshing = rerunning && !stalled
-  const failed = Boolean(readError) && !rerunning
+  const canContinue = kind === 'benefits_only' && onContinue !== undefined
+  const continueFailure = canContinue ? continueError : undefined
+  const error = readError ?? continueFailure
+  const failed = Boolean(error) && !rerunning
   const { title, description } = rerunning
     ? {
         title: CATALOG_REFRESH_COPY.title,
@@ -34,7 +44,9 @@ export function CatalogEmptyPanel({
       }
     : readError
       ? { title: CATALOG_READ_ERROR_TITLE, description: readError }
-      : CATALOG_EMPTY_COPY[kind]
+      : continueFailure
+        ? { title: CATALOG_CONTINUE_ERROR_TITLE, description: continueFailure }
+        : CATALOG_EMPTY_COPY[kind]
 
   return (
     <Box
@@ -55,16 +67,27 @@ export function CatalogEmptyPanel({
         </Text>
         <Text color="muted">{description}</Text>
       </Box>
-      {onRerunPrecheck && (
-        <Button
-          size="sm"
-          variant="secondary"
-          onClick={onRerunPrecheck}
-          disabled={refreshing}
-        >
-          {refreshing ? 'Refreshing…' : 'Refresh from Stripe'}
-        </Button>
-      )}
+      <Box alignItems="center" columnGap="s" rowGap="s" flexWrap="wrap">
+        {onRerunPrecheck && (
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={onRerunPrecheck}
+            disabled={refreshing || continuing}
+          >
+            {refreshing ? 'Refreshing…' : 'Refresh catalog'}
+          </Button>
+        )}
+        {canContinue && (
+          <Button
+            size="sm"
+            onClick={onContinue}
+            disabled={continuing || refreshing}
+          >
+            {continuing ? 'Continuing…' : 'Continue to benefits'}
+          </Button>
+        )}
+      </Box>
     </Box>
   )
 }

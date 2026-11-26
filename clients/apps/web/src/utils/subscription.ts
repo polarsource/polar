@@ -18,6 +18,7 @@ const _getSubscriptionById = async (
     }),
     {
       404: notFound,
+      422: notFound,
     },
   )
 }

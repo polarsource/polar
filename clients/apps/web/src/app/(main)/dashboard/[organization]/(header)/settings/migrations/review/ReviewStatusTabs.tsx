@@ -16,7 +16,7 @@ const OPTIONS: { value: ReviewFilter; label: string }[] = [
   { value: 'to_prepare', label: 'To prepare' },
   { value: 'ready', label: 'Ready to switch' },
   { value: 'attention', label: 'Needs attention' },
-  { value: 'skipped', label: 'Stays on Stripe' },
+  { value: 'skipped', label: 'Not moving' },
 ]
 
 export const EMPTY_MESSAGES: Record<ReviewFilter, string> = {
@@ -24,7 +24,7 @@ export const EMPTY_MESSAGES: Record<ReviewFilter, string> = {
   to_prepare: 'No subscriptions need preparation.',
   ready: 'No subscriptions are ready to switch.',
   attention: 'Nothing needs attention.',
-  skipped: 'Nothing is staying on Stripe.',
+  skipped: 'Everything can move.',
 }
 
 interface Props {

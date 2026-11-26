@@ -217,9 +217,13 @@ def test_cold_usage(
     def read() -> tuple[typing.Any, typing.Any]:
         return run(
             reducer_service.get_cold_usage(
-                session, reducer, [(None, "customer-0")], since=since
+                session,
+                reducer.organization_id,
+                [(reducer.id, (None, "customer-0"))],
+                since=since,
+                customers={},
             )
-        )[(None, "customer-0")]
+        )[(reducer.id, (None, "customer-0"))]
 
     cold_until, (count, _, _, _) = read()
     assert cold_until == newest_start + REDUCER_BUCKET_SIZE

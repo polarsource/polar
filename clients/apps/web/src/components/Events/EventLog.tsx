@@ -1,70 +1,49 @@
+import {
+  CondensedTable,
+  CondensedTableHeader,
+  CondensedTableSkeleton,
+  useCondensedTable,
+  type CondensedTableInstance,
+} from '@/components/Shared/CondensedTable'
 import { schemas } from '@polar-sh/client'
-import { Box } from '@polar-sh/orbit/Box'
-import { useEffect } from 'react'
-import { EventLogRow } from './EventLogRow'
+import { EventLogCompactRow, eventLogColumns } from './EventLogRow'
 
-const isTyping = (target: EventTarget | null) =>
-  target instanceof HTMLElement &&
-  (target.isContentEditable ||
-    ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
+type EventLogTable = CondensedTableInstance<schemas['Event']>
+
+export const useEventLogTable = (events: schemas['Event'][]): EventLogTable =>
+  useCondensedTable({
+    columns: eventLogColumns,
+    rows: events,
+    getRowId: (event) => event.id,
+  })
+
+export const EventLogHeader = ({ table }: { table: EventLogTable }) => (
+  <CondensedTableHeader table={table} compact />
+)
+
+export const EventLogSkeleton = ({ table }: { table: EventLogTable }) => (
+  <CondensedTableSkeleton table={table} compact />
+)
 
 export const EventLog = ({
-  events,
+  table,
   selectedEventId,
   onSelect,
   onStep,
   onClose,
 }: {
-  events: schemas['Event'][]
+  table: EventLogTable
   selectedEventId: string | null
   onSelect: (id: string) => void
   onStep: (id: string) => void
   onClose: () => void
-}) => {
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (isTyping(e.target) || e.metaKey || e.ctrlKey || e.altKey) return
-      if (e.key === 'Escape' && selectedEventId) {
-        onClose()
-        return
-      }
-      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
-      const index = events.findIndex((event) => event.id === selectedEventId)
-      const next =
-        e.key === 'ArrowDown'
-          ? events[index + 1]
-          : index > 0
-            ? events[index - 1]
-            : undefined
-      if (!next) return
-      e.preventDefault()
-      onStep(next.id)
-      document
-        .querySelector(`[data-event-id="${next.id}"]`)
-        ?.scrollIntoView({ block: 'nearest' })
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [events, selectedEventId, onStep, onClose])
-
-  const isSelectedLoaded = events.some((event) => event.id === selectedEventId)
-  useEffect(() => {
-    if (!isSelectedLoaded) return
-    document
-      .querySelector(`[data-event-id="${selectedEventId}"]`)
-      ?.scrollIntoView({ block: 'nearest' })
-  }, [selectedEventId, isSelectedLoaded])
-
-  return (
-    <Box flexDirection="column">
-      {events.map((event) => (
-        <EventLogRow
-          key={event.id}
-          event={event}
-          selected={event.id === selectedEventId}
-          onSelect={() => onSelect(event.id)}
-        />
-      ))}
-    </Box>
-  )
-}
+}) => (
+  <CondensedTable
+    table={table}
+    selectedId={selectedEventId}
+    onSelect={onSelect}
+    onStep={onStep}
+    onClose={onClose}
+    renderCompact={(event) => <EventLogCompactRow event={event} />}
+  />
+)

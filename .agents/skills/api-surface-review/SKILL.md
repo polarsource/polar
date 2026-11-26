@@ -110,7 +110,7 @@ Only the parts `AGENTS.md` does not already cover:
 - List endpoints return every resource the subject can access, with no filter applied by
   default. Flag any implicit narrowing in the list statement (`status != draft`,
   `is_archived = false`, `active = true`, …) and ask for an explicit query filter instead.
-  Source: `handbook/engineering/backend-development/rest-api-guidelines.mdx`, *List
+  Source: [REST API Guidelines](https://linear.app/polarsh/document/rest-api-guidelines-65841b9f4bcc), *List
   endpoints*. A design document that says otherwise does not override this. Flag the
   conflict as a Question.
 - Removing an endpoint and updating its frontend caller in one PR is a deploy hazard →

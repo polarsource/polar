@@ -1,11 +1,9 @@
 'use client'
 
-import { useLiveCatalog } from '@/hooks/queries/catalogs'
+import { useCatalogs, useLiveCatalog } from '@/hooks/queries/catalogs'
 import { schemas } from '@polar-sh/client'
 import { Text, Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { LockOutlined } from '@polar-sh/orbit/icons'
-import PolarTimeAgo from '@polar-sh/ui/components/atoms/PolarTimeAgo'
 import { useSidebar } from '@polar-sh/ui/components/atoms/Sidebar'
 import {
   useGeneralRoutes,
@@ -13,76 +11,77 @@ import {
 } from '../../Dashboard/navigation'
 import {
   useCatalogRoutes,
-  useDiscountRoutes,
+  useSalesToolRoutes,
 } from '../../Dashboard/navigationProducts'
 import Link from 'next/link'
+import { twMerge } from 'tailwind-merge'
+import { PANEL_CLASS } from '../../Shared/Toolbar/ToolbarFilterMenu'
+import { CatalogHoverCard, DraftGlyph, versionsHref } from './CatalogHoverCard'
 import { NavList } from './NavList'
-
-const LiveCatalogDetails = ({ catalog }: { catalog: schemas['Catalog'] }) => (
-  <Box
-    flexDirection="column"
-    rowGap="xs"
-    padding="m"
-    maxWidth={240}
-    minWidth={0}
-  >
-    <Text variant="label" truncate>
-      {catalog.name ?? 'Untitled'}
-    </Text>
-    <Text variant="caption" color="muted">
-      Published{' '}
-      <PolarTimeAgo
-        date={new Date(catalog.published_at ?? catalog.created_at)}
-      />
-    </Text>
-    <Box alignItems="center" columnGap="xs" color="text-tertiary">
-      <LockOutlined fontSize="inherit" />
-      <Text as="span" variant="caption" color="inherit">
-        Managed in code
-      </Text>
-    </Box>
-  </Box>
-)
 
 const CatalogVersionChip = ({
   organization,
-  catalog,
+  live,
+  draft,
 }: {
   organization: schemas['Organization']
-  catalog: schemas['Catalog']
+  live: schemas['Catalog'] | null | undefined
+  draft: schemas['Catalog'] | null | undefined
 }) => (
   <Tooltip delayDuration={150}>
     <TooltipTrigger asChild>
       <Link
-        href={`/dashboard/${organization.slug}/products/versions`}
+        href={versionsHref(
+          organization,
+          live ? undefined : (draft ?? undefined),
+        )}
         className="flex min-w-0"
+        aria-label={
+          live && draft
+            ? `${live.name ?? 'Untitled'}, unpublished draft`
+            : undefined
+        }
       >
         <Box
           as="span"
           display="flex"
+          alignItems="center"
+          columnGap="xs"
           minWidth={0}
           color={{ base: 'text-tertiary', hover: 'text-primary' }}
           transitionProperty="colors"
           transitionDuration="fast"
         >
+          {!live && draft ? <DraftGlyph size={10} /> : null}
           <Text as="span" variant="caption" color="inherit" truncate>
-            {catalog.name ?? 'Untitled'}
+            {(live ?? draft)?.name ?? 'Untitled'}
           </Text>
+          {live && draft ? <DraftGlyph size={10} /> : null}
         </Box>
       </Link>
     </TooltipTrigger>
-    <TooltipContent side="right" align="start" sideOffset={8} className="p-0">
-      <LiveCatalogDetails catalog={catalog} />
+    <TooltipContent
+      side="right"
+      align="start"
+      sideOffset={8}
+      className={twMerge(
+        PANEL_CLASS,
+        'origin-(--radix-tooltip-content-transform-origin) p-0',
+      )}
+    >
+      <CatalogHoverCard organization={organization} live={live} draft={draft} />
     </TooltipContent>
   </Tooltip>
 )
 
 const CatalogLabel = ({
   organization,
-  catalog,
+  live,
+  draft,
 }: {
   organization: schemas['Organization']
-  catalog: schemas['Catalog'] | null | undefined
+  live: schemas['Catalog'] | null | undefined
+  draft: schemas['Catalog'] | null | undefined
 }) => (
   <Box
     alignItems="center"
@@ -96,8 +95,14 @@ const CatalogLabel = ({
     <Text as="span" variant="label" color="inherit">
       Catalog
     </Text>
-    {catalog ? (
-      <CatalogVersionChip organization={organization} catalog={catalog} />
+    {live || draft ? (
+      <Box maxWidth="50%" minWidth={0}>
+        <CatalogVersionChip
+          organization={organization}
+          live={live}
+          draft={draft}
+        />
+      </Box>
     ) : null}
   </Box>
 )
@@ -109,26 +114,30 @@ export const CatalogNavigation = ({
 }) => {
   const { state } = useSidebar()
   const { data: liveCatalog } = useLiveCatalog(organization.id, true)
+  const { data: latest } = useCatalogs(organization.id, 1, 1)
+  const draft = latest?.items.find(({ status }) => status === 'draft')
   const generalRoutes = useGeneralRoutes(organization)
   const organizationRoutes = useOrganizationRoutes(organization)
-  const discountRoutes = useDiscountRoutes(organization)
+  const salesToolRoutes = useSalesToolRoutes(organization)
   const catalogRoutes = useCatalogRoutes(organization)
 
-  const topRoutes = generalRoutes
-    .filter((route) => route.id !== 'new-products')
-    .flatMap((route) =>
-      route.id === 'customers' ? [route, ...discountRoutes] : [route],
-    )
+  const topRoutes = [
+    ...generalRoutes.filter((route) => route.id !== 'new-products'),
+    ...organizationRoutes,
+  ].flatMap((route) =>
+    route.id === 'settings' ? [...salesToolRoutes, route] : [route],
+  )
 
   return (
     <Box width="100%" flexDirection="column" rowGap="xl">
-      <NavList
-        routes={[...topRoutes, ...organizationRoutes]}
-        navType="organization"
-      />
+      <NavList routes={topRoutes} navType="organization" />
       <Box width="100%" flexDirection="column" rowGap="s">
         {state === 'expanded' ? (
-          <CatalogLabel organization={organization} catalog={liveCatalog} />
+          <CatalogLabel
+            organization={organization}
+            live={liveCatalog}
+            draft={draft}
+          />
         ) : null}
         <NavList routes={catalogRoutes} navType="organization" />
       </Box>

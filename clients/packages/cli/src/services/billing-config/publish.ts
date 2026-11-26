@@ -1,4 +1,4 @@
-import { Effect } from 'effect'
+import { Effect, Schema } from 'effect'
 import { HttpClientRequest, HttpClientResponse } from 'effect/http'
 import type { ActiveOrganization } from '@/schemas/Auth'
 import {
@@ -9,6 +9,7 @@ import {
 } from '@/schemas/BillingConfig'
 import {
   type Clients,
+  errorName,
   transportErrors,
   unexpected,
 } from '@/services/billing-config/api'
@@ -18,6 +19,8 @@ const requestErrors = {
   HttpClientError: transportErrors.HttpClientError,
   SchemaError: transportErrors.SchemaError,
 }
+
+const Refusal = Schema.Struct({ detail: Schema.String })
 
 const execute = (
   clients: Clients,
@@ -70,6 +73,17 @@ export const publish =
       if (response.status === 200) {
         return yield* HttpClientResponse.schemaBodyJson(Catalog)(response)
       }
+      if (
+        response.status === 409 &&
+        (yield* errorName(response)) === 'CatalogMissingCurrency'
+      ) {
+        const { detail } =
+          yield* HttpClientResponse.schemaBodyJson(Refusal)(response)
+        return yield* new BillingConfigError({
+          message: detail,
+          hint: 'Add the missing prices to your config file, or set payments.currency to a currency they all have, then run polar config draft.',
+        })
+      }
       // The API answers 404 both for a discarded draft and for a caller without products:manage
       const gone =
         response.status === 409 ||
@@ -87,5 +101,12 @@ export const publish =
           hint: 'Publishing needs permission to manage products in this organization.',
         })
       }
-      return yield* unexpected(response, organization, ['products:write'])
+      // Benefit, meter and settings changes need their own scope: the API names the missing one
+      const scope =
+        response.headers['www-authenticate']?.match(/scope="([^"]+)"/)?.[1]
+      return yield* unexpected(
+        response,
+        organization,
+        scope?.split(' ') ?? ['products:write'],
+      )
     }).pipe(Effect.scoped, Effect.catchTags(requestErrors))

@@ -1,14 +1,22 @@
-from uuid import UUID
+from collections import defaultdict
+from uuid import uuid4
+
+from sqlalchemy.orm import undefer
 
 from polar.benefit.repository import BenefitRepository
-from polar.catalog.repository import CatalogBenefitRepository, CatalogProductRepository
-from polar.models import Benefit, Catalog, Product
+from polar.catalog.repository import (
+    CatalogBenefitRepository,
+    CatalogCustomFieldRepository,
+    CatalogMeterRepository,
+    CatalogProductRepository,
+)
+from polar.catalog.service import CatalogMembers
+from polar.models import Catalog, Product
 from polar.postgres import AsyncSession
 from polar.product.repository import ProductRepository
 
 from . import products
-from .schemas import Config
-from .validation import ProductChange
+from .validation import ConfigChanges, ProductChange
 
 _INTERVAL_FIELDS = (
     "recurring_interval",
@@ -18,42 +26,7 @@ _INTERVAL_FIELDS = (
 )
 
 
-async def rows(
-    session: AsyncSession, draft: Catalog, config: Config
-) -> tuple[dict[str, Benefit], dict[str, Product]]:
-    """The rows the draft created, by `external_id`. Applying to the draft
-    again updates them in place."""
-    benefits = await CatalogBenefitRepository.from_session(
-        session
-    ).get_benefits_by_external_ids(
-        draft.id,
-        [benefit.external_id for benefit in config.benefits],
-        options=BenefitRepository.from_session(session).get_eager_options(),
-    )
-    draft_products = await CatalogProductRepository.from_session(
-        session
-    ).get_products_by_external_ids(
-        draft.id,
-        [product.external_id for product in config.products],
-        options=ProductRepository.from_session(session).get_eager_options(),
-    )
-    return (
-        {
-            benefit.external_id: benefit
-            for benefit in benefits
-            if benefit.external_id is not None and benefit.catalog_id == draft.id
-        },
-        {
-            product.external_id: product
-            for product in draft_products
-            if product.external_id is not None and product.catalog_id == draft.id
-        },
-    )
-
-
-def keeps_intervals(
-    change: ProductChange, draft_product: Product, meter_ids: dict[str, UUID]
-) -> bool:
+def _keeps_intervals(change: ProductChange, draft_product: Product) -> bool:
     """Whether the draft's row can take the config in place: a product's
     intervals can't be updated.
 
@@ -63,9 +36,66 @@ def keeps_intervals(
     expected = (
         change.existing
         if change.existing is not None
-        else products.product_create(change.config, None, meter_ids)
+        else products.product_create(change.config, None, defaultdict(uuid4), None)
     )
     return all(
         getattr(draft_product, name) == getattr(expected, name, None)
         for name in _INTERVAL_FIELDS
+    )
+
+
+async def rows(
+    session: AsyncSession, draft: Catalog, changes: ConfigChanges
+) -> CatalogMembers:
+    """The rows the draft created, by `external_id`. Applying to the draft
+    again updates them in place."""
+    benefits = await CatalogBenefitRepository.from_session(
+        session
+    ).get_benefits_by_external_ids(
+        draft.id,
+        [change.config.external_id for change in changes.benefits],
+        options=BenefitRepository.from_session(session).get_eager_options(),
+    )
+    product_changes = {change.config.external_id: change for change in changes.products}
+    draft_products = await CatalogProductRepository.from_session(
+        session
+    ).get_products_by_external_ids(
+        draft.id,
+        list(product_changes),
+        options=(
+            undefer(Product.is_deletable),
+            *ProductRepository.from_session(session).get_eager_options(),
+        ),
+    )
+    meter_external_ids = {change.config.external_id for change in changes.meters}
+    custom_field_slugs = {change.config.slug for change in changes.custom_fields}
+    return CatalogMembers(
+        products={
+            product.external_id: product
+            for product in draft_products
+            if product.external_id is not None
+            and product.catalog_id == draft.id
+            and _keeps_intervals(product_changes[product.external_id], product)
+        },
+        benefits={
+            benefit.external_id: benefit
+            for benefit in benefits
+            if benefit.external_id is not None and benefit.catalog_id == draft.id
+        },
+        meters={
+            member.external_id: member.meter
+            for member in await CatalogMeterRepository.from_session(
+                session
+            ).get_all_by_catalog(draft.id)
+            if member.external_id in meter_external_ids
+            and member.meter.catalog_id == draft.id
+        },
+        custom_fields={
+            member.slug: member.custom_field
+            for member in await CatalogCustomFieldRepository.from_session(
+                session
+            ).get_all_by_catalog(draft.id)
+            if member.slug in custom_field_slugs
+            and member.custom_field.catalog_id == draft.id
+        },
     )

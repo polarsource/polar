@@ -3,7 +3,9 @@ import { schemas } from '@polar-sh/client'
 import { Grid } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { ProductBenefits } from './ProductBenefits'
+import { ProductCustomFields } from './ProductCustomFields'
 import { ProductDiscounts } from './ProductDiscounts'
+import { ProductMeters } from './ProductMeters'
 import { ProductOrders } from './ProductOrders'
 import { ProductSubscriptions } from './ProductSubscriptions'
 
@@ -67,7 +69,11 @@ export const ProductOverview = ({
       <ProductOrders organization={organization} product={product} />
 
       {product.is_archived ? (
-        <ProductBenefits organization={organization} product={product} />
+        <>
+          <ProductBenefits organization={organization} product={product} />
+          <ProductMeters organization={organization} product={product} />
+          <ProductCustomFields organization={organization} product={product} />
+        </>
       ) : (
         <Grid
           templateColumns={{ base: '1fr', md: 'repeat(2, minmax(0, 1fr))' }}
@@ -76,6 +82,8 @@ export const ProductOverview = ({
         >
           <ProductBenefits organization={organization} product={product} />
           <ProductDiscounts organization={organization} product={product} />
+          <ProductMeters organization={organization} product={product} />
+          <ProductCustomFields organization={organization} product={product} />
         </Grid>
       )}
     </Box>

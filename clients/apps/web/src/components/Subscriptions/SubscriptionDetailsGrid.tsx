@@ -1,10 +1,10 @@
 'use client'
 
 import { DetailCell, DetailGrid } from '@/components/Orders/OrderSection'
-import { ProductVersionLabel } from '@/components/Products/ProductVersionLabel'
+import { CatalogVersionLabel } from '@/components/Products/CatalogVersionLabel'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
-import { Text, TextArea } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { ArrowUpRight as ArrowUpRightIcon } from '@polar-sh/orbit/icons'
@@ -12,7 +12,7 @@ import Link from 'next/link'
 import { ScheduledUpdateSection } from './ScheduledUpdateSection'
 import { SubscriptionStatus } from './SubscriptionStatus'
 
-const formatRecurringSchedule = (
+export const formatRecurringSchedule = (
   interval: schemas['RecurringInterval'],
   intervalCount: number | null,
 ): string => {
@@ -46,6 +46,71 @@ const CANCELLATION_REASONS: Record<string, string> = {
   other: 'Other',
 }
 
+// Why the customer canceled, in words. Null when they gave no reason.
+export const getCancellationReason = (
+  subscription: schemas['Subscription'],
+): string | null => {
+  const reason = subscription.customer_cancellation_reason
+  return reason ? (CANCELLATION_REASONS[reason] ?? reason) : null
+}
+
+export interface SubscriptionKeyDate {
+  label: string
+  // Null for a pause with no date set to end it.
+  datetime: string | null
+}
+
+// The dates that say where a subscription is in its life, in the order they
+// are shown.
+export const getSubscriptionKeyDates = (
+  subscription: schemas['Subscription'],
+): SubscriptionKeyDate[] => {
+  const trialEnd =
+    subscription.status === 'trialing' ? subscription.trial_end : null
+
+  let nextEvent: string | undefined
+  if (subscription.ended_at) {
+    nextEvent = undefined
+  } else if (subscription.ends_at) {
+    nextEvent = subscription.ends_at
+  } else if (
+    subscription.status !== 'paused' &&
+    subscription.current_period_end
+  ) {
+    nextEvent = subscription.current_period_end
+  }
+  // While trialing the API holds `trial_end` and the next event on the same
+  // date, so the two would repeat each other under different labels.
+  if (nextEvent === trialEnd) {
+    nextEvent = undefined
+  }
+
+  const dates: SubscriptionKeyDate[] = [
+    { label: 'Started', datetime: subscription.started_at },
+  ]
+  if (trialEnd) dates.push({ label: 'Trial ends', datetime: trialEnd })
+  if (nextEvent) {
+    dates.push({
+      label: subscription.ends_at
+        ? 'Ending date'
+        : subscription.pause_at_period_end
+          ? 'Pauses on'
+          : 'Renewal date',
+      datetime: nextEvent,
+    })
+  }
+  if (subscription.status === 'paused' && subscription.paused_at) {
+    dates.push({ label: 'Paused on', datetime: subscription.paused_at })
+  }
+  if (subscription.status === 'paused' || subscription.pause_at_period_end) {
+    dates.push({ label: 'Resumes on', datetime: subscription.resumes_at })
+  }
+  if (subscription.ended_at) {
+    dates.push({ label: 'Ended', datetime: subscription.ended_at })
+  }
+  return dates
+}
+
 export const SubscriptionDetailsGrid = ({
   subscription,
   product,
@@ -57,149 +122,19 @@ export const SubscriptionDetailsGrid = ({
 }) => {
   const productName = product?.name ?? subscription.product.name
 
-  const trialEndDatetime =
-    subscription.status === 'trialing' ? subscription.trial_end : null
-
-  let nextEventDatetime: string | undefined
-  let cancellationDate: string | undefined
-  if (subscription.ended_at) {
-    cancellationDate = subscription.ended_at
-  } else if (subscription.ends_at) {
-    nextEventDatetime = subscription.ends_at
-    cancellationDate = subscription.ends_at
-  } else if (
-    subscription.status !== 'paused' &&
-    subscription.current_period_end
-  ) {
-    nextEventDatetime = subscription.current_period_end
-  }
-
-  // While trialing the API holds `trial_end` and the next event on the same
-  // date, so the cell below would repeat the trial cell under another label.
-  if (nextEventDatetime === trialEndDatetime) {
-    nextEventDatetime = undefined
-  }
-
-  const cancellationReason = subscription.customer_cancellation_reason
+  const cancellationReason = getCancellationReason(subscription)
   const cancellationComment = subscription.customer_cancellation_comment
 
   return (
     <>
-      <DetailGrid>
-        <DetailCell
-          label="Product"
-          value={
-            <Link
-              href={`/dashboard/${organization.slug}/products/${subscription.product.id}`}
-            >
-              <Box
-                as="span"
-                display="inline-flex"
-                alignItems="center"
-                columnGap="s"
-              >
-                <Text as="span" variant="body" truncate>
-                  {productName}
-                </Text>
-                <ProductVersionLabel
-                  organization={organization}
-                  product={product ?? subscription.product}
-                />
-                <Box as="span" display="inline-flex">
-                  <ArrowUpRightIcon size={16} />
-                </Box>
-              </Box>
-            </Link>
-          }
-        />
-        <DetailCell
-          label="Status"
-          value={<SubscriptionStatus subscription={subscription} />}
-        />
-        <DetailCell
-          label="Billing schedule"
-          value={formatRecurringSchedule(
-            subscription.recurring_interval,
-            subscription.recurring_interval_count,
-          )}
-        />
-        <DetailCell
-          label="Started"
-          value={
-            <Text variant="body" as="span">
-              <FormattedDateTime datetime={subscription.created_at} />
-            </Text>
-          }
-        />
-        {trialEndDatetime && (
+      {/* From lg up these sit in the panel beside the page. */}
+      <Box display={{ base: 'block', lg: 'none' }}>
+        <DetailGrid>
           <DetailCell
-            label="Trial ends"
+            label="Product"
             value={
-              <Text variant="body" as="span">
-                <FormattedDateTime datetime={trialEndDatetime} />
-              </Text>
-            }
-          />
-        )}
-        {nextEventDatetime && (
-          <DetailCell
-            label={
-              subscription.ends_at
-                ? 'Ending date'
-                : subscription.pause_at_period_end
-                  ? 'Pauses on'
-                  : 'Renewal date'
-            }
-            value={
-              <Text variant="body" as="span">
-                <FormattedDateTime datetime={nextEventDatetime} />
-              </Text>
-            }
-          />
-        )}
-        {subscription.status === 'paused' && subscription.paused_at && (
-          <DetailCell
-            label="Paused on"
-            value={
-              <Text variant="body" as="span">
-                <FormattedDateTime datetime={subscription.paused_at} />
-              </Text>
-            }
-          />
-        )}
-        {(subscription.status === 'paused' ||
-          subscription.pause_at_period_end) && (
-          <DetailCell
-            label="Resumes on"
-            value={
-              subscription.resumes_at ? (
-                <Text variant="body" as="span">
-                  <FormattedDateTime datetime={subscription.resumes_at} />
-                </Text>
-              ) : (
-                <Text variant="body" as="span" color="muted">
-                  Until resumed
-                </Text>
-              )
-            }
-          />
-        )}
-        {subscription.ended_at && (
-          <DetailCell
-            label="Ended"
-            value={
-              <Text variant="body" as="span">
-                <FormattedDateTime datetime={subscription.ended_at} />
-              </Text>
-            }
-          />
-        )}
-        <DetailCell
-          label="Discount"
-          value={
-            subscription.discount ? (
               <Link
-                href={`/dashboard/${organization.slug}/products/discounts?query=${subscription.discount.code}`}
+                href={`/dashboard/${organization.slug}/products/${subscription.product.id}`}
               >
                 <Box
                   as="span"
@@ -208,28 +143,101 @@ export const SubscriptionDetailsGrid = ({
                   columnGap="s"
                 >
                   <Text as="span" variant="body" truncate>
-                    {subscription.discount.name}
+                    {productName}
                   </Text>
+                  <CatalogVersionLabel
+                    organization={organization}
+                    version={product ?? subscription.product}
+                  />
                   <Box as="span" display="inline-flex">
                     <ArrowUpRightIcon size={16} />
                   </Box>
                 </Box>
               </Link>
-            ) : undefined
-          }
-        />
-        <DetailCell
-          label="Amount"
-          value={
-            subscription.amount
-              ? formatCurrency('compact')(
-                  subscription.amount,
-                  subscription.currency,
+            }
+          />
+          <DetailCell
+            label="Status"
+            value={<SubscriptionStatus subscription={subscription} />}
+          />
+          <DetailCell
+            label="Billing schedule"
+            value={formatRecurringSchedule(
+              subscription.recurring_interval,
+              subscription.recurring_interval_count,
+            )}
+          />
+          {getSubscriptionKeyDates(subscription).map(({ label, datetime }) => (
+            <DetailCell
+              key={label}
+              label={label}
+              value={
+                datetime ? (
+                  <Text variant="body" as="span">
+                    <FormattedDateTime datetime={datetime} />
+                  </Text>
+                ) : (
+                  <Text variant="body" as="span" color="muted">
+                    Until resumed
+                  </Text>
                 )
-              : undefined
-          }
-        />
-      </DetailGrid>
+              }
+            />
+          ))}
+          <DetailCell
+            label="Discount"
+            value={
+              subscription.discount ? (
+                <Link
+                  href={`/dashboard/${organization.slug}/products/discounts?query=${subscription.discount.code}`}
+                >
+                  <Box
+                    as="span"
+                    display="inline-flex"
+                    alignItems="center"
+                    columnGap="s"
+                  >
+                    <Text as="span" variant="body" truncate>
+                      {subscription.discount.name}
+                    </Text>
+                    <Box as="span" display="inline-flex">
+                      <ArrowUpRightIcon size={16} />
+                    </Box>
+                  </Box>
+                </Link>
+              ) : undefined
+            }
+          />
+          <DetailCell
+            label="Amount"
+            value={
+              subscription.amount
+                ? formatCurrency('compact')(
+                    subscription.amount,
+                    subscription.currency,
+                  )
+                : undefined
+            }
+          />
+          {cancellationReason && (
+            <DetailCell
+              label="Cancellation reason"
+              value={cancellationReason}
+            />
+          )}
+          {cancellationComment && (
+            <DetailCell
+              label="Cancellation comment"
+              value={
+                <Text variant="body" wrap="pretty">
+                  {cancellationComment}
+                </Text>
+              }
+              fullWidth
+            />
+          )}
+        </DetailGrid>
+      </Box>
 
       {subscription.pending_update && (
         <Box
@@ -243,48 +251,6 @@ export const SubscriptionDetailsGrid = ({
             pendingUpdate={subscription.pending_update}
             subscription={subscription}
           />
-        </Box>
-      )}
-
-      {cancellationDate && (
-        <Box
-          flexDirection="column"
-          rowGap="xl"
-          borderTopWidth={1}
-          borderStyle="solid"
-          borderColor="border-primary"
-          paddingTop="4xl"
-        >
-          <Text variant="heading-xxs" as="h3">
-            Cancellation details
-          </Text>
-          <DetailGrid>
-            <DetailCell
-              label="Ends"
-              value={
-                <Text variant="body" as="span">
-                  <FormattedDateTime datetime={cancellationDate} />
-                </Text>
-              }
-            />
-            <DetailCell
-              label="Reason"
-              value={
-                cancellationReason
-                  ? (CANCELLATION_REASONS[cancellationReason] ??
-                    cancellationReason)
-                  : undefined
-              }
-            />
-          </DetailGrid>
-          {cancellationComment && (
-            <TextArea
-              tabIndex={-1}
-              readOnly
-              resizable={false}
-              value={cancellationComment}
-            />
-          )}
         </Box>
       )}
     </>

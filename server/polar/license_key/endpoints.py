@@ -8,13 +8,15 @@ from polar.authz.service import (
     assert_resource_permission,
     get_accessible_org_ids,
 )
-from polar.exceptions import ResourceNotFound
+from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
+from polar.kit.versioning import version
 from polar.models import LicenseKey, LicenseKeyActivation
 from polar.openapi import APITag, cli_preview, destructive
 from polar.postgres import get_db_read_session, get_db_session
 from polar.routing import APIRouter
+from polar.version import V2027_01
 
 from . import auth
 from .repository import LicenseKeyRepository
@@ -136,6 +138,32 @@ async def update(
     )
     updated = await license_key_service.update(session, license_key=lk, updates=updates)
     return updated
+
+
+@router.patch(
+    "/{id}",
+    summary="Update License Key",
+    name="update",
+    response_model=LicenseKeyRead,
+    tags=[APITag.mcp, APITag.cli],
+    responses={
+        401: UnauthorizedResponse,
+        403: {
+            "description": "Cannot reactivate a license key for a manually revoked benefit grant.",
+            "model": NotPermitted.schema(),
+        },
+        404: NotFoundResponse,
+    },
+)
+@version(starting_from=V2027_01)
+async def update_v2027_01(
+    auth_subject: auth.LicenseKeysWrite,
+    id: UUID4,
+    updates: LicenseKeyUpdate,
+    session: AsyncSession = Depends(get_db_session),
+) -> LicenseKey:
+    """Update a license key."""
+    return await update(auth_subject, id, updates, session)
 
 
 @router.post(

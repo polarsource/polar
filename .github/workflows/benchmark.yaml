@@ -71,8 +71,9 @@ env:
 
 # Instruction counts, on the runners the rest of CI uses, for the pure CPU benchmarks: wall time
 # would add noise, not information. Real time, on CodSpeed's dedicated ARM64 machines, for the
-# Redis benchmarks, whose cost is in another process, and the warm reads, which a few simulated
-# calls would measure cold.
+# Redis benchmarks, whose cost is in another process, the warm reads, which a few simulated
+# calls would measure cold, the flush, whose cost is the wait for Polar, and SDK request
+# throughput.
 jobs:
   changes:
     name: Detect changes
@@ -87,11 +88,16 @@ jobs:
       sdk: ${{ steps.filter.outputs.sdk }}
       walltime: ${{ steps.filter.outputs.walltime }}
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # The macro runner minutes are metered: real time runs on every SDK change except the
-      # ones that cannot reach a benchmark, that is the generated API clients, the tests and
-      # the docs. The weekly run on main catches anything this misses.
-      - uses: dorny/paths-filter@v4.0.3
+      # ones that cannot reach a benchmark, such as the unit tests and docs. The weekly run
+      # on main catches anything this misses.
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter
         with:
           # The default quantifier ignores the `!` patterns.
@@ -121,11 +127,9 @@ jobs:
               - '.github/workflows/benchmark.yaml'
             walltime:
               - 'sdk/typescript/**'
-              - '!sdk/typescript/src/20*/**'
               - '!sdk/typescript/**/*.test.ts'
               - '!sdk/typescript/README.md'
               - 'sdk/python/**'
-              - '!sdk/python/polar/v20*/**'
               - '!sdk/python/tests/ingestion/**'
               - '!sdk/python/tests/metering/**'
               - '!sdk/python/tests/outpost/**'
@@ -143,15 +147,20 @@ jobs:
       run:
         working-directory: sdk/typescript
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@v6.1.0
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           package_json_file: sdk/typescript/package.json
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7.1.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -161,11 +170,11 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run benchmarks
-        uses: CodSpeedHQ/action@v5
+        uses: CodSpeedHQ/action@af75f77f17a054769abefaa42fe8dc2975469b5f # v5.6.3
         with:
           mode: simulation
           working-directory: sdk/typescript
-          run: pnpm vitest bench --run --exclude src/outpost/scripts.bench.ts --exclude src/outpost/seal.bench.ts --exclude src/outpost/confirm.bench.ts --exclude src/outpost/seal-confirmed.bench.ts --exclude src/outpost/ingest.bench.ts --exclude src/outpost/read.bench.ts --exclude src/outpost/read-buckets.bench.ts
+          run: pnpm vitest bench --run --exclude src/metering/flush.bench.ts --exclude src/outpost/scripts.bench.ts --exclude src/outpost/seal.bench.ts --exclude src/outpost/confirm.bench.ts --exclude src/outpost/seal-confirmed.bench.ts --exclude src/outpost/ingest.bench.ts --exclude src/outpost/read.bench.ts --exclude src/outpost/read-buckets.bench.ts --exclude src/requests.bench.ts
 
   python-simulation:
     name: Python SDK (simulation)
@@ -177,15 +186,20 @@ jobs:
       run:
         working-directory: sdk/python
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.3.2
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
           enable-cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v7.1.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ${{ env.UV_PYTHON }}
 
@@ -193,11 +207,11 @@ jobs:
         run: uv sync --frozen --all-extras
 
       - name: Run benchmarks
-        uses: CodSpeedHQ/action@v5
+        uses: CodSpeedHQ/action@af75f77f17a054769abefaa42fe8dc2975469b5f # v5.6.3
         with:
           mode: simulation
           working-directory: sdk/python
-          run: uv run --no-sync pytest tests/benchmarks --ignore=tests/benchmarks/test_scripts.py --ignore=tests/benchmarks/test_seal.py --ignore=tests/benchmarks/test_confirm.py --ignore=tests/benchmarks/test_seal_confirmed.py --ignore=tests/benchmarks/test_ingest.py --ignore=tests/benchmarks/test_read.py --ignore=tests/benchmarks/test_read_buckets.py -m benchmark --codspeed
+          run: uv run --no-sync pytest tests/benchmarks --ignore=tests/benchmarks/test_scripts.py --ignore=tests/benchmarks/test_seal.py --ignore=tests/benchmarks/test_confirm.py --ignore=tests/benchmarks/test_seal_confirmed.py --ignore=tests/benchmarks/test_ingest.py --ignore=tests/benchmarks/test_read.py --ignore=tests/benchmarks/test_read_buckets.py --ignore=tests/benchmarks/test_requests.py -m benchmark --codspeed
 
   # Both SDKs in one job: the macro runner minutes are metered, and the setup is most of them.
   walltime:
@@ -207,15 +221,20 @@ jobs:
     runs-on: codspeed-macro
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@v6.1.0
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           package_json_file: sdk/typescript/package.json
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7.1.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -226,12 +245,12 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.3.2
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
           enable-cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v7.1.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ${{ env.UV_PYTHON }}
 
@@ -240,24 +259,24 @@ jobs:
         run: uv sync --frozen --all-extras
 
       - name: Install Redis
-        uses: shogo82148/actions-setup-redis@v1.60.0
+        uses: shogo82148/actions-setup-redis@d566e806806d1bac2b414538d57b2b7f721e1d83 # v1.60.0
         with:
           redis-version: "7.4"
           auto-start: false
 
       - name: Run TypeScript benchmarks
-        uses: CodSpeedHQ/action@v5
+        uses: CodSpeedHQ/action@af75f77f17a054769abefaa42fe8dc2975469b5f # v5.6.3
         with:
           mode: walltime
           working-directory: sdk/typescript
-          run: pnpm vitest bench --run src/outpost/scripts.bench.ts src/outpost/seal.bench.ts src/outpost/confirm.bench.ts src/outpost/seal-confirmed.bench.ts src/outpost/ingest.bench.ts src/outpost/read.bench.ts src/outpost/read-buckets.bench.ts
+          run: pnpm vitest bench --run src/metering/flush.bench.ts src/outpost/scripts.bench.ts src/outpost/seal.bench.ts src/outpost/confirm.bench.ts src/outpost/seal-confirmed.bench.ts src/outpost/ingest.bench.ts src/outpost/read.bench.ts src/outpost/read-buckets.bench.ts src/requests.bench.ts
 
       - name: Run Python benchmarks
-        uses: CodSpeedHQ/action@v5
+        uses: CodSpeedHQ/action@af75f77f17a054769abefaa42fe8dc2975469b5f # v5.6.3
         with:
           mode: walltime
           working-directory: sdk/python
-          run: uv run --no-sync pytest tests/benchmarks/test_scripts.py tests/benchmarks/test_seal.py tests/benchmarks/test_confirm.py tests/benchmarks/test_seal_confirmed.py tests/benchmarks/test_ingest.py tests/benchmarks/test_read.py tests/benchmarks/test_read_buckets.py -m benchmark --codspeed
+          run: uv run --no-sync pytest tests/benchmarks/test_scripts.py tests/benchmarks/test_seal.py tests/benchmarks/test_confirm.py tests/benchmarks/test_seal_confirmed.py tests/benchmarks/test_ingest.py tests/benchmarks/test_read.py tests/benchmarks/test_read_buckets.py tests/benchmarks/test_requests.py -m benchmark --codspeed
 
   server:
     name: Server (walltime)
@@ -273,7 +292,12 @@ jobs:
       POLAR_ENV: testing
       POLAR_EMAIL_RENDERER_BINARY_PATH: /tmp/email-renderer
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # Host networking: a published port goes through docker-proxy, the largest source of
       # walltime variance for I/O-bound benchmarks. Durability is irrelevant here. Autovacuum would
@@ -294,12 +318,12 @@ jobs:
           docker logs postgres; docker logs redis; exit 1
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.3.2
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
           enable-cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v7.1.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version-file: server/.python-version
 
@@ -311,7 +335,7 @@ jobs:
         run: touch /tmp/email-renderer
 
       - name: Run benchmarks
-        uses: CodSpeedHQ/action@v5
+        uses: CodSpeedHQ/action@af75f77f17a054769abefaa42fe8dc2975469b5f # v5.6.3
         with:
           mode: walltime
           working-directory: server

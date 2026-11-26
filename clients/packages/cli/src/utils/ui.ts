@@ -222,25 +222,27 @@ export const codeFrame = (source: string, options: CodeFrameOptions) => {
   const last = Math.min(location.line + 1, lines.length)
   const gutterWidth = String(last).length
   const blank = ' '.repeat(gutterWidth)
-  const row = (number: number) =>
-    `${pc.dim(`${String(number).padStart(gutterWidth)} │`)} ${expandTabs(lines[number - 1] ?? '')}`
+  const gutter = (number: number) =>
+    pc.dim(`${String(number).padStart(gutterWidth)} │`)
+  const context = (number: number) =>
+    `${gutter(number)} ${pc.dim(expandTabs(lines[number - 1] ?? ''))}`
   const length = Math.max(location.length, 1)
   const middle = Math.floor((length - 1) / 2)
   const underline = `${'─'.repeat(middle)}┬${'─'.repeat(length - middle - 1)}`
   const target = lines[location.line - 1] ?? ''
-  const offset = ' '.repeat(
-    expandTabs(target.slice(0, Math.max(location.column - 1, 0))).length,
-  )
+  const start = Math.max(location.column - 1, 0)
+  const before = expandTabs(target.slice(0, start))
+  const offset = ' '.repeat(before.length)
   const frame = [
     `${blank} ${pc.dim(`╭─[${file}:${location.line}:${location.column}]`)}`,
     ...Array.from({ length: location.line - first }, (_, index) =>
-      row(first + index),
+      context(first + index),
     ),
-    row(location.line),
+    `${gutter(location.line)} ${before}${pc.bold(color(expandTabs(target.slice(start, start + length))))}${expandTabs(target.slice(start + length))}`,
     `${blank} ${pc.dim('·')} ${offset}${color(underline)}`,
-    `${blank} ${pc.dim('·')} ${offset}${' '.repeat(middle)}${color('╰──')} ${label}`,
+    `${blank} ${pc.dim('·')} ${offset}${' '.repeat(middle)}${color(`╰── ${label}`)}`,
     ...Array.from({ length: last - location.line }, (_, index) =>
-      row(location.line + 1 + index),
+      context(location.line + 1 + index),
     ),
     `${blank} ${pc.dim('╰────')}`,
   ]

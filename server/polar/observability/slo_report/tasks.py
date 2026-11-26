@@ -4,7 +4,7 @@ Scheduled task for weekly SLO report.
 Runs every Monday at 9 AM UTC and sends the report to Slack.
 """
 
-import httpx
+import httpx2
 import structlog
 
 from polar.config import Environment, settings
@@ -74,13 +74,13 @@ async def slo_report_send_weekly() -> None:
     except GrafanaCloudAPIError as e:
         log.error("slo_report_grafana_error", error=str(e))
         raise
-    except httpx.HTTPStatusError as e:
+    except httpx2.HTTPStatusError as e:
         log.error(
             "slo_report_slack_error",
             status_code=e.response.status_code,
         )
         raise
-    except httpx.HTTPError:
+    except httpx2.HTTPError:
         log.error("slo_report_slack_error")
         raise
     except Exception as e:

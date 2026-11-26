@@ -63,6 +63,13 @@ def set_cookie(
     )
 
 
+def get_return_url(return_to: str | None) -> str:
+    base = urlsplit(settings.generate_backoffice_url("/"))
+    if return_to is None or not return_to.startswith(base.path):
+        return base.geturl()
+    return f"{base.scheme}://{base.netloc}{return_to}"
+
+
 def get_user_session_token(request: Request) -> str | None:
     token = request.cookies.get(settings.BACKOFFICE_USER_SESSION_COOKIE_KEY, "")
     if token.startswith(USER_SESSION_TOKEN_PREFIX) and token.isascii():

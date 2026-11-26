@@ -239,6 +239,62 @@ describe('formatTree', () => {
     )
   })
 
+  test('shows the benefits and products that use an updated meter', () => {
+    const properties = { meter: 'tool_call', units: 1000, rollover: false }
+    const prices = [
+      ...(input.products[1]?.prices ?? []),
+      {
+        amount_type: 'metered_unit',
+        price_currency: 'usd',
+        meter: 'storage',
+        unit_amount: '0.5',
+      },
+    ]
+    const output = stripAnsi(
+      formatTree(input, [
+        entry('meters', 'tool_call', 'updated', [
+          { field: 'name', before: 'tool_call', after: 'Tool calls' },
+        ]),
+        entry('benefits', 'tool_calls', 'updated', [
+          {
+            field: 'properties',
+            before: properties,
+            after: { rollover: false, units: 1000, meter: 'tool_call' },
+          },
+        ]),
+        entry('meters', 'storage', 'created'),
+        entry('products', 'pro', 'updated', [
+          { field: 'prices', before: input.products[1]?.prices, after: prices },
+          {
+            field: 'benefits',
+            before: ['custom_servers', 'tool_calls'],
+            after: ['custom_servers', 'tool_calls'],
+          },
+        ]),
+      ]),
+    )
+    expect(output).toBe(
+      [
+        '  meters',
+        '  ~ tool_call',
+        '      name  "tool_call" → "Tool calls"',
+        '  + storage',
+        '',
+        '  benefits',
+        '  ~ tool_calls',
+        '      └ ~ meter tool_call',
+        '',
+        '  products',
+        '  ~ pro',
+        '      prices (USD per storage)  unset → $5 per 1,000',
+        '      ├ ~ meter tool_call',
+        '      ├ + meter storage',
+        '      ├ = benefit custom_servers',
+        '      └ ~ benefit tool_calls',
+      ].join('\n'),
+    )
+  })
+
   test('shows a created benefit as private only when it is', () => {
     const output = stripAnsi(
       formatTree(
@@ -273,6 +329,36 @@ describe('formatTree', () => {
         '  + tool_calls',
         '      meter    tool_call',
         '      credits  1,000',
+      ].join('\n'),
+    )
+  })
+
+  test('shows the channel template of a created Slack channel benefit', () => {
+    const output = stripAnsi(
+      formatTree(
+        {
+          ...input,
+          benefits: [
+            {
+              external_id: 'slack',
+              description: 'Slack Channel',
+              type: 'slack_shared_channel',
+              properties: {
+                slack_integration_id: '0d8f6f0c-2f55-4f7a-9d6d-3f1c2a4b5c6d',
+                channel_name_template: 'acme-{customer_name}',
+              },
+            },
+          ],
+        },
+        [entry('benefits', 'slack', 'created', [])],
+      ),
+    )
+    expect(output).toBe(
+      [
+        '  benefits',
+        '  + slack',
+        '      type     Slack channel',
+        '      channel  acme-{customer_name}',
       ].join('\n'),
     )
   })
@@ -765,6 +851,130 @@ describe('formatTree', () => {
         '      $10 per month',
         '      └ + meter tool_call',
         '            $5 per 1,000 tool calls',
+      ].join('\n'),
+    )
+  })
+
+  test('lists custom fields one setting per row, and the products a changed one is attached to', () => {
+    const output = stripAnsi(
+      formatTree(
+        {
+          meters: [],
+          custom_fields: [
+            {
+              type: 'text',
+              slug: 'company',
+              name: 'Company',
+              properties: { form_label: 'Company name', textarea: true },
+            },
+            {
+              type: 'select',
+              slug: 'size',
+              name: 'Size',
+              properties: { options: [] },
+            },
+            { type: 'date', slug: 'start', name: 'Start', properties: {} },
+          ],
+          products: [
+            {
+              external_id: 'pro',
+              name: 'Pro',
+              prices: [],
+              benefits: [],
+              custom_fields: [
+                { field: 'company', required: true },
+                { field: 'size', required: false },
+              ],
+            },
+          ],
+        },
+        [
+          entry('custom_fields', 'company', 'created', [
+            { field: 'type', after: 'text' },
+            { field: 'name', after: 'Company' },
+            {
+              field: 'properties',
+              after: { form_label: 'Company name', textarea: true },
+            },
+          ]),
+          entry('custom_fields', 'size', 'updated', [
+            {
+              field: 'properties',
+              before: {
+                options: [
+                  { value: 'small', label: '1-10' },
+                  { value: 'large', label: '50+' },
+                ],
+              },
+              after: {
+                options: [
+                  { value: 'small', label: '1-10' },
+                  { value: 'large', label: '100+' },
+                ],
+              },
+            },
+          ]),
+          entry('custom_fields', 'start', 'updated', [
+            { field: 'properties', before: {}, after: { ge: 1767225600 } },
+          ]),
+          {
+            ...entry('custom_fields', 'vat', 'removed'),
+            reason: 'missing',
+          },
+          entry('products', 'pro', 'updated', [
+            {
+              field: 'custom_fields',
+              before: [
+                { field: 'company', required: false },
+                { field: 'vat', required: false },
+              ],
+              after: [
+                { field: 'company', required: true },
+                { field: 'size', required: false },
+              ],
+            },
+          ]),
+          entry('products', 'team', 'updated', [
+            {
+              field: 'custom_fields',
+              before: [
+                { field: 'start', required: true },
+                { field: 'size', required: false },
+              ],
+              after: [
+                { field: 'start', required: true },
+                { field: 'size', required: false },
+              ],
+            },
+          ]),
+        ],
+      ),
+    )
+    expect(output).toBe(
+      [
+        '  custom_fields',
+        '  + company',
+        '      type      text',
+        '      name      Company',
+        '      label     Company name',
+        '      textarea  yes',
+        '  ~ size',
+        '      options',
+        '          small → 1-10',
+        '        - large → 50+',
+        '        + large → 100+',
+        '  ~ start',
+        '      min  unset → 2026-01-01',
+        '  - vat  not in config',
+        '',
+        '  products',
+        '  ~ pro',
+        '      ├ ~ custom field company',
+        '      ├ + custom field size optional',
+        '      └ - custom field vat optional',
+        '  ~ team',
+        '      ├ ~ custom field start',
+        '      └ ~ custom field size optional',
       ].join('\n'),
     )
   })

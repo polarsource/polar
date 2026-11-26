@@ -55,11 +55,17 @@ def test_apply_snapshot_after_confirm(
         pipeline.hset(pending_key, items=entries)
         pipeline.evalsha(
             confirm_sha,
-            2,
+            4,
+            "outpost:v1:outbox",
+            "outpost:v1:outbox",
             state_key,
             pending_key,
-            newest_bucket_start,
             "",
+            "",
+            0,
+            0,
+            newest_bucket_start,
+            len(ids),
             *ids,
         )
         pipeline.evalsha(

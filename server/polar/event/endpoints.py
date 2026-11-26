@@ -58,6 +58,7 @@ from .schemas import Event as EventSchema
 from .service import event as event_service
 
 router = APIRouter(prefix="/events", tags=["events", APITag.public])
+ingest_router = APIRouter(prefix="/events", tags=["events", APITag.public])
 
 
 EventNotFound = {"description": "Event not found.", "model": ResourceNotFound.schema()}
@@ -427,7 +428,7 @@ async def get(
     return event
 
 
-@router.post("/ingest", summary="Ingest Events")
+@ingest_router.post("/ingest", summary="Ingest Events")
 async def ingest(
     ingest: EventsIngest,
     auth_subject: auth.EventWrite,
@@ -438,7 +439,7 @@ async def ingest(
     return await event_service.ingest(session, auth_subject, ingest, redis=redis)
 
 
-@router.post(
+@ingest_router.post(
     "/ingest",
     name="ingest",
     summary="Ingest Events",

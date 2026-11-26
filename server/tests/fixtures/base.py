@@ -1,22 +1,19 @@
 from collections.abc import AsyncGenerator
 from typing import Any
 
-import httpx
+import httpx2
 import pytest
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from starlette.types import Receive, Scope, Send
 
-from polar.app import app as polar_app
-from polar.auth.dependencies import _auth_subject_factory_cache
 from polar.auth.models import AuthSubject, Subject
-from polar.checkout.ip_geolocation import _get_client_dependency
 from polar.kit.versioning import VERSION_HEADER, APIVersion
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.redis import Redis, get_redis
 
 
-class IsolatedSessionTestClient(httpx.AsyncClient):
+class IsolatedSessionTestClient(httpx2.AsyncClient):
     """
     Test client that mimics production behavior by clearing session before requests.
 
@@ -34,7 +31,7 @@ class IsolatedSessionTestClient(httpx.AsyncClient):
         self._session = session
         self._auto_expunge = auto_expunge
 
-    async def request(self, *args: Any, **kwargs: Any) -> httpx.Response:
+    async def request(self, *args: Any, **kwargs: Any) -> httpx2.Response:
         """Expunge session before each request to simulate production."""
         if self._auto_expunge:
             self._session.expunge_all()
@@ -45,6 +42,10 @@ class IsolatedSessionTestClient(httpx.AsyncClient):
 async def app(
     auth_subject: AuthSubject[Subject], session: AsyncSession, redis: Redis
 ) -> AsyncGenerator[FastAPI]:
+    from polar.app import app as polar_app
+    from polar.auth.dependencies import _auth_subject_factory_cache
+    from polar.checkout.ip_geolocation import _get_client_dependency
+
     polar_app.dependency_overrides[get_db_session] = lambda: session
     polar_app.dependency_overrides[get_db_read_session] = lambda: session
     polar_app.dependency_overrides[get_redis] = lambda: redis
@@ -64,7 +65,7 @@ async def client(
     auth_subject: AuthSubject[Subject],
     request: pytest.FixtureRequest,
     api_version: APIVersion | None,
-) -> AsyncGenerator[httpx.AsyncClient]:
+) -> AsyncGenerator[httpx2.AsyncClient]:
     # Check if test wants to keep session state (opt-out)
     keep_state = request.node.get_closest_marker("keep_session_state") is not None
     auto_expunge = not keep_state
@@ -80,7 +81,7 @@ async def client(
     async with IsolatedSessionTestClient(
         session=session,
         auto_expunge=auto_expunge,
-        transport=httpx.ASGITransport(app=app_with_state),
+        transport=httpx2.ASGITransport(app=app_with_state),
         base_url="http://test",
         headers={VERSION_HEADER: str(api_version)} if api_version is not None else {},
     ) as client:

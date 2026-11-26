@@ -12,6 +12,9 @@ concurrency:
   group: deploy-image-resizer
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     name: "Build & Deploy Lambda@Edge"
@@ -20,15 +23,20 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.3.2
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
           enable-cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v7.1.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version-file: "lambda/image-resizer/pyproject.toml"
 
@@ -41,13 +49,13 @@ jobs:
             --python-platform x86_64-manylinux2014 \
             --only-binary=:all: \
             --python-version 3.13 \
-            pillow 'certifi>=2026.10.19'
+            'pillow>=13.0.0' 'certifi>=2026.10.19'
           cp handler.py package/
           cd package
           zip -r ../package.zip .
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v6.3.0
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           role-to-assume: arn:aws:iam::975049931254:role/github-actions-image-resizer
           aws-region: us-east-1

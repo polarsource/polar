@@ -1,6 +1,10 @@
 import { defineConfig, eur, perThousand, usd } from '@polar-sh/polar'
 import { z } from 'zod'
 
+// A Slack channel benefit needs a Slack integration installed on the
+// organization, so it is only declared when its ID is set.
+const slackIntegrationId = process.env.POLAR_SLACK_INTEGRATION_ID
+
 export default defineConfig({
   events: {
     tool_call: z.object({
@@ -19,7 +23,7 @@ export default defineConfig({
       .unit('custom', 'tool calls')
       .count(),
   }),
-  benefits: ({ flag, credits }) => ({
+  benefits: ({ flag, credits, slackChannel }) => ({
     custom_servers: flag('Custom servers').metadata({ tag: 'primary' }),
     tool_calls: credits('Included tool calls').meter('tool_call').units(1200),
     free_tool_calls: credits('Free tool calls').meter('tool_call').units(5),
@@ -36,6 +40,16 @@ export default defineConfig({
       .meter('tool_call')
       .units(1000)
       .rollover(),
+    ...(slackIntegrationId && {
+      support_channel: slackChannel('Support channel')
+        .integration(slackIntegrationId)
+        .channel('demo-{customer_name}')
+        .welcome('Welcome! Ask us anything here.'),
+    }),
+  }),
+  customFields: ({ text, checkbox }) => ({
+    company: text('Company').placeholder('Acme Inc.'),
+    terms: checkbox('Terms').label('I accept the terms of service'),
   }),
   products: ({ product, free, fixed, seats, units, tier, meter }) => ({
     free: product('Free')
@@ -53,7 +67,8 @@ export default defineConfig({
           .min(1),
       )
       .recurring('monthly')
-      .grants(['custom_servers']),
+      .grants(['custom_servers'])
+      .customFields((optional) => ['terms', optional('company')]),
     servers: product('Servers')
       .prices(
         units()
@@ -95,7 +110,11 @@ export default defineConfig({
       )
       .recurring('monthly')
       // .trial(14, 'days')
-      .grants(['custom_servers', 'tool_calls']),
+      .grants([
+        'custom_servers',
+        'tool_calls',
+        ...(slackIntegrationId ? (['support_channel'] as const) : []),
+      ]),
     topup_100: product('100 tool calls')
       .prices(fixed().amount(usd(9), eur(5)).tax('inclusive'))
       .once()

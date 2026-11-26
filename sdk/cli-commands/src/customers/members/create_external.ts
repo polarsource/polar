@@ -9,6 +9,7 @@ import {
   mergeInput,
   missingFlags,
   nullableStringFlag,
+  org,
 } from '../../inputs'
 
 type Body = NonNullable<
@@ -19,6 +20,7 @@ export const command = Command.make(
   'create_external',
   {
     fields,
+    org,
     path: {
       external_id: Argument.String('external_id'),
     },
@@ -67,6 +69,7 @@ export const command = Command.make(
         method: 'POST',
         requiresConfirmation: false,
         confirm: false,
+        organizationId: config.org,
         fields: config.fields,
         invoke: (client) =>
           client.customers.members.createExternal(

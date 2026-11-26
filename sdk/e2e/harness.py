@@ -79,14 +79,6 @@ class IngestStep(TimelineStep):
     operation: typing.ClassVar[typing.Literal["ingest"]] = "ingest"
 
 
-# Polar ingested these events: the client stops counting them as pending.
-@dataclasses.dataclass(frozen=True)
-class ConfirmStep(TimelineStep):
-    client: str
-    arguments: IngestArguments
-    operation: typing.ClassVar[typing.Literal["confirm"]] = "confirm"
-
-
 @dataclasses.dataclass(frozen=True)
 class ReadStep(TimelineStep):
     client: str
@@ -147,7 +139,6 @@ class IngestedStep(TimelineStep):
 
 Step: typing.TypeAlias = (
     IngestStep
-    | ConfirmStep
     | ReadStep
     | ActorStep
     | RestartStep
@@ -164,6 +155,7 @@ class Scenario:
     configuration: ScenarioConfiguration
     snapshots: list[Snapshot]
     steps: list[Step]
+    initial_reads: tuple[ReadStep, ...] = ()
 
 
 class ClientError(Exception):
@@ -340,8 +332,9 @@ async def run(
     namespace = uuid.uuid4().hex
     customers = set()
     payloads = [*scenario.snapshots]
-    for step in scenario.steps:
-        if isinstance(step, IngestStep | ConfirmStep):
+    steps = (*scenario.initial_reads, *scenario.steps)
+    for step in steps:
+        if isinstance(step, IngestStep):
             payloads.extend(step.arguments["events"])
         elif not isinstance(step, RestartStep | RedisStep):
             payloads.append(step.arguments)
@@ -382,9 +375,7 @@ async def run(
         clients: dict[str, Process] = {}
         contexts: dict[str, typing.Any] = {}
         client_names = dict.fromkeys(
-            step.client
-            for step in scenario.steps
-            if step.client not in ("polar", "redis")
+            step.client for step in steps if step.client not in ("polar", "redis")
         )
         locks = {name: anyio.Lock() for name in [*client_names, "polar", "redis"]}
 
@@ -480,6 +471,9 @@ async def run(
                 await anyio.sleep(0.02)
 
         try:
+            for step in scenario.initial_reads:
+                await execute(step)
+            started = anyio.current_time()
             async with anyio.create_task_group() as tasks:
                 for step in scenario.steps:
                     tasks.start_soon(execute, step)

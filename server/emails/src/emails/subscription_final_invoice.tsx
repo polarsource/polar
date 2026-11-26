@@ -30,7 +30,8 @@ export function SubscriptionFinalInvoice({
         <Text as="span" weight="medium">
           {product.name}
         </Text>{' '}
-        subscription has ended. Your final invoice is attached.
+        subscription has ended.
+        {order.is_invoice_generated && ' Your final invoice is attached.'}
         {order.receipt_number && (
           <>
             {' '}

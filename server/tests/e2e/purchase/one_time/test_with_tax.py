@@ -8,7 +8,7 @@ recorded on the order. Uses exclusive tax (added on top of price).
 from unittest.mock import MagicMock
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
 from polar.enums import TaxBehavior, TaxProcessor
 from polar.kit.db.postgres import AsyncSession

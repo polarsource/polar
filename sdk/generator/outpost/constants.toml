@@ -13,7 +13,23 @@ snapshot_timeout = 5000
 confirm_timeout = 2000
 # Pending ids per confirm request: Polar refuses a bigger one.
 confirm_batch = 1000
-# How often an instance reports the size of its Redis to telemetry.
+# Events per ingest request a flusher sends Polar.
+outbox_batch = 1000
+# Flushers that drain the outbox at once, across instances: one for each OUTBOX_BATCH events
+# waiting. The ceiling bounds the requests one organization sends Polar at once; the backoff,
+# not the ceiling, holds the fleet back when Polar cannot keep up.
+flushers = 32
+# How long a batch sits unacknowledged before a flusher takes it from one that froze.
+outbox_claim_idle = 60000
+# How long a flusher holds its slot; each batch it delivers extends it.
+flusher_lock_ttl = 30000
+# How often a long-running instance drains the events it queued, without a flush.
+drain_interval = 1000
+# How long the fleet waits to send the outbox again after Polar failed to take a batch, when
+# Polar does not say; each failure in a row doubles it, up to the maximum.
+outbox_retry_delay = 1000
+max_outbox_retry_delay = 60000
+# How often an instance pushes its telemetry exports to Redis.
 report_interval = 30000
 # One span in this many goes to Polar for the others; spans with an error or a drift always go.
 span_sample_rate = 10

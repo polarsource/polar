@@ -4,7 +4,6 @@ from polar.outpost.client import Snapshot
 from polar.outpost.reducer import BUCKET_SIZE, Reducer
 
 from harness import (
-    ConfirmStep,
     DisconnectStep,
     ExternalCustomerID,
     ExternalCustomerMeterRequest,
@@ -104,12 +103,6 @@ def emit(
     )
 
 
-# Polar ingested the events of these steps, as the snapshot that follows accounts for.
-def confirm(at: float, client: str, *steps: IngestStep) -> ConfirmStep:
-    events = [event for step in steps for event in step.arguments["events"]]
-    return ConfirmStep(at, client, {"events": events})
-
-
 # Polar stored the events of these steps: it confirms them to a client applying a snapshot.
 def ingested(at: float, *steps: IngestStep) -> IngestedStep:
     events = [event for step in steps for event in step.arguments["events"]]
@@ -200,7 +193,7 @@ SCENARIOS = [
             seven := emit(0.2, "writer", 7),
             expect(0.3, "reader", 7),
             emit(0.4, "reader", 4, timestamp="2026-10-12T12:05:00Z"),
-            confirm(0.45, "writer", seven),
+            ingested(0.45, seven),
             SnapshotStep(
                 0.5,
                 {
@@ -280,20 +273,6 @@ SCENARIOS = [
             credits(150, meter_id="average-meter"),
         ],
         [
-            expect(0, "writer", 20),
-            expect(0, "reader", 20),
-            ReadStep(
-                0,
-                "reader",
-                {**CUSTOMER, "meter_id": "shared"},
-                {"consumed_units": 20, "credited_units": 200, "balance": 180},
-            ),
-            ReadStep(
-                0,
-                "reader",
-                {**CUSTOMER, "meter_id": "average-meter"},
-                {"consumed_units": 10, "credited_units": 150, "balance": 140},
-            ),
             two := emit(0.2, "writer", 2),
             eight := emit(0.2, "reader", 8),
             expect(0.3, "reader", 30),
@@ -304,7 +283,7 @@ SCENARIOS = [
                 {"consumed_units": 7.5},
             ),
             emit(0.4, "writer", 4, timestamp="2026-10-12T12:05:00Z"),
-            confirm(0.45, "writer", two, eight),
+            ingested(0.45, two, eight),
             SnapshotStep(
                 0.5,
                 {
@@ -363,6 +342,22 @@ SCENARIOS = [
             RestartStep(1.3, "reader"),
             expect(1.6, "reader", 44),
         ],
+        initial_reads=(
+            expect(0, "writer", 20),
+            expect(0, "reader", 20),
+            ReadStep(
+                0,
+                "reader",
+                {**CUSTOMER, "meter_id": "shared"},
+                {"consumed_units": 20, "credited_units": 200, "balance": 180},
+            ),
+            ReadStep(
+                0,
+                "reader",
+                {**CUSTOMER, "meter_id": "average-meter"},
+                {"consumed_units": 10, "credited_units": 150, "balance": 140},
+            ),
+        ),
     ),
     Scenario(
         "cold read waits for the first snapshot",
@@ -394,7 +389,7 @@ SCENARIOS = [
             DisconnectStep(0.4),
             three := emit(0.5, "reader", 3),
             expect(0.6, "writer", 10),
-            confirm(1.4, "writer", seven, three),
+            ingested(1.4, seven, three),
             SnapshotStep(
                 1.5,
                 {

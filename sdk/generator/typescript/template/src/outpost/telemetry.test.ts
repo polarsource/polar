@@ -11,9 +11,9 @@ import { ClientBase } from "../base";
 import { VERSION } from "../version";
 import {
   createMeterProvider,
-  Outbox,
-  OutboxMetricExporter,
-  OutboxSpanExporter,
+  TelemetryBuffer,
+  BufferMetricExporter,
+  BufferSpanExporter,
   relay,
   SAMPLE_RATE_ATTRIBUTE,
 } from "./telemetry";
@@ -55,9 +55,9 @@ it("relays a body without reading OTEL_EXPORTER_OTLP_*", async () => {
 });
 
 it("keeps the spans with an error, a drift or the sample rate", async () => {
-  const outbox = new Outbox();
+  const buffer = new TelemetryBuffer();
   const provider = new TracerProvider({
-    spanProcessors: [new SimpleSpanProcessor({ exporter: new OutboxSpanExporter(outbox) })],
+    spanProcessors: [new SimpleSpanProcessor({ exporter: new BufferSpanExporter(buffer) })],
   });
   const tracer = provider.getTracer("test");
   tracer.startSpan("outpost.routine").end();
@@ -68,25 +68,25 @@ it("keeps the spans with an error, a drift or the sample rate", async () => {
   failed.end();
   await provider.shutdown();
 
-  const exported = Buffer.concat(outbox.spans).toString();
+  const exported = Buffer.concat(buffer.spans).toString();
   for (const name of ["outpost.sampled", "outpost.drift", "outpost.failed"])
     expect(exported).toContain(name);
   expect(exported).not.toContain("outpost.routine");
 });
 
-it("keeps metrics in the outbox", async () => {
-  const outbox = new Outbox();
-  const provider = createMeterProvider(outbox);
+it("keeps metrics in the buffer", async () => {
+  const buffer = new TelemetryBuffer();
+  const provider = createMeterProvider(buffer);
   provider.getMeter("test").createCounter("outpost.test").add(1);
   await provider.shutdown();
 
-  const exported = Buffer.concat(outbox.metrics).toString();
+  const exported = Buffer.concat(buffer.metrics).toString();
   expect(exported).toContain("outpost.test");
   expect(exported).toContain(VERSION);
 });
 
 it("exports metrics as deltas", () => {
-  const exporter = new OutboxMetricExporter(new Outbox());
+  const exporter = new BufferMetricExporter(new TelemetryBuffer());
   for (const instrument of [InstrumentType.COUNTER, InstrumentType.HISTOGRAM])
     expect(exporter.selectAggregationTemporality(instrument)).toBe(AggregationTemporality.DELTA);
 });

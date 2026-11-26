@@ -28,7 +28,8 @@ export function SubscriptionUsageInvoice({
         <Text as="span" weight="medium">
           {product.name}
         </Text>{' '}
-        subscription. Your invoice is attached.
+        subscription.
+        {order.is_invoice_generated && ' Your invoice is attached.'}
         {order.receipt_number && (
           <>
             {' '}

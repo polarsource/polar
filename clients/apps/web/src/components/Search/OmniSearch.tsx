@@ -5,7 +5,8 @@ import {
   useOrganizationRoutes,
 } from '@/components/Dashboard/navigation'
 import { useSettingsRoutes } from '@/components/Dashboard/navigationSettings'
-import { getServerURL } from '@/utils/api'
+import { useSearch } from '@/hooks/queries/search'
+import useDebounce from '@/utils/useDebounce'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import {
@@ -18,7 +19,7 @@ import {
 import * as Dialog from '@radix-ui/react-dialog'
 import { LoaderCircle as Loader2 } from '@polar-sh/orbit/icons'
 import { useRouter } from 'next/navigation'
-import { useEffect, useEffectEvent, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Result } from './components/Result'
 import { getQuickActions } from './quickActions'
@@ -37,9 +38,16 @@ export const OmniSearch = ({
 }: OmniSearchProps) => {
   const router = useRouter()
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<SearchResult[]>([])
-  const [loading, setLoading] = useState(false)
-  const [hasSearched, setHasSearched] = useState(false)
+  const debouncedQuery = useDebounce(query, 400).trim()
+  const {
+    data: searchData,
+    isError,
+    isFetching,
+  } = useSearch(organization.id, debouncedQuery)
+  const results: SearchResult[] = (debouncedQuery && searchData?.results) || []
+  const hasSearched = !!debouncedQuery && (!!searchData || isError)
+  const isFetchingDelayed = useDebounce(isFetching, 150)
+  const loading = isFetching && isFetchingDelayed
 
   const generalRoutes = useGeneralRoutes(organization)
   const orgRoutes = useOrganizationRoutes(organization)
@@ -55,8 +63,8 @@ export const OmniSearch = ({
   )
 
   const quickActions = useMemo(
-    () => getQuickActions(organization.slug),
-    [organization.slug],
+    () => getQuickActions(organization),
+    [organization],
   )
 
   const actionResults = useMemo(() => {
@@ -101,65 +109,7 @@ export const OmniSearch = ({
     return pages.slice(0, 5)
   }, [query, allRoutes])
 
-  const performSearch = useEffectEvent(
-    async (searchQuery: string, signal: AbortSignal) => {
-      if (!searchQuery.trim()) {
-        setResults([])
-        setHasSearched(false)
-        return
-      }
-
-      const loadingTimer = setTimeout(() => setLoading(true), 150)
-      try {
-        const url = new URL(
-          `${getServerURL()}/v1/search`,
-          window.location.origin,
-        )
-        url.searchParams.set('organization_id', organization.id)
-        url.searchParams.set('query', searchQuery)
-        url.searchParams.set('limit', '5')
-
-        const response = await fetch(url.toString(), {
-          credentials: 'include',
-          signal,
-        })
-
-        if (!response.ok) {
-          throw new Error('Search failed')
-        }
-
-        const data = await response.json()
-        setResults(data.results as SearchResult[])
-        setHasSearched(true)
-      } catch (error) {
-        if (error instanceof Error && error.name === 'AbortError') {
-          return
-        }
-        console.error('Search error:', error)
-        setResults([])
-        setHasSearched(true)
-      } finally {
-        clearTimeout(loadingTimer)
-        setLoading(false)
-      }
-    },
-  )
-
-  const combinedResults = useMemo(() => {
-    return [...actionResults, ...pageResults, ...results]
-  }, [actionResults, pageResults, results])
-
-  useEffect(() => {
-    const controller = new AbortController()
-    const debounce = setTimeout(() => {
-      performSearch(query, controller.signal)
-    }, 400)
-
-    return () => {
-      clearTimeout(debounce)
-      controller.abort()
-    }
-  }, [query, organization.id])
+  const combinedResults = [...actionResults, ...pageResults, ...results]
 
   const handleSelect = (result: SearchResult) => {
     let path = ''
@@ -209,19 +159,15 @@ export const OmniSearch = ({
     }
   }
 
-  const groupedResults: Record<string, SearchResult[]> = useMemo(
-    () =>
-      combinedResults.reduce(
-        (acc, result) => {
-          if (!acc[result.type]) {
-            acc[result.type] = []
-          }
-          acc[result.type].push(result)
-          return acc
-        },
-        {} as Record<string, SearchResult[]>,
-      ),
-    [combinedResults],
+  const groupedResults = combinedResults.reduce(
+    (acc, result) => {
+      if (!acc[result.type]) {
+        acc[result.type] = []
+      }
+      acc[result.type].push(result)
+      return acc
+    },
+    {} as Record<string, SearchResult[]>,
   )
 
   const renderResult = (result: SearchResult) => {

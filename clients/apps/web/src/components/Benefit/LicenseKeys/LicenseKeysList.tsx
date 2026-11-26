@@ -1,6 +1,7 @@
 import { DataTableSortingState } from '@/utils/datatable'
 import { schemas } from '@polar-sh/client'
-import { Avatar } from '@polar-sh/orbit'
+import { Avatar, Truncated } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import {
   DataTable,
   DataTableColumnDef,
@@ -48,7 +49,7 @@ export const LicenseKeysList = ({
       ),
       cell: ({ row: { original: licenseKey } }) => {
         return (
-          <div className="flex flex-row items-center gap-x-3">
+          <Box alignItems="center" columnGap="m" minWidth={0}>
             <Avatar
               className="h-10 w-10"
               avatar_url={licenseKey.customer.avatar_url}
@@ -56,13 +57,17 @@ export const LicenseKeysList = ({
                 licenseKey.customer.email ?? licenseKey.customer.name ?? '—'
               }
             />
-            <div className="flex flex-col">
-              <span className="text-sm">{licenseKey.customer.name}</span>
-              <span className="dark:text-polar-500 text-xs text-gray-500">
-                {licenseKey.customer.email ?? '—'}
-              </span>
-            </div>
-          </div>
+            <Box flexDirection="column" minWidth={0}>
+              <Truncated>
+                <span className="text-sm">{licenseKey.customer.name}</span>
+              </Truncated>
+              <Truncated>
+                <span className="dark:text-polar-500 text-xs text-gray-500">
+                  {licenseKey.customer.email ?? '—'}
+                </span>
+              </Truncated>
+            </Box>
+          </Box>
         )
       },
     },
@@ -70,11 +75,13 @@ export const LicenseKeysList = ({
       id: 'license_key',
       enableSorting: false,
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="License Key" />
+        <DataTableColumnHeader column={column} title="License key" />
       ),
       cell: ({ row: { original: licenseKey } }) => {
         return (
-          <span className="font-mono text-xs">{licenseKey.display_key}</span>
+          <Truncated>
+            <span className="font-mono text-xs">{licenseKey.display_key}</span>
+          </Truncated>
         )
       },
     },

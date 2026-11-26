@@ -6,6 +6,9 @@
   "license": "Apache-2.0",
   "type": "module",
   "private": true,
+  "sideEffects": [
+    "**/*.stylex.ts"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/polarsource/polar.git",

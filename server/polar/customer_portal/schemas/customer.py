@@ -1,6 +1,6 @@
 from typing import Annotated, Literal
 
-from pydantic import UUID4, AfterValidator, Discriminator, Field, TypeAdapter
+from pydantic import MISSING, UUID4, AfterValidator, Discriminator, Field, TypeAdapter
 
 from polar.customer.schemas.customer import CustomerBillingNameInput
 from polar.kit.address import Address, AddressInput
@@ -14,6 +14,7 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
+from polar.kit.versioning import Omissible
 from polar.models.customer import CustomerType
 from polar.payment_method.schemas import (
     PaymentMethodCard,
@@ -49,10 +50,10 @@ class CustomerPortalEmbedPolicy(Schema):
 
 
 class CustomerPortalCustomerUpdate(Schema):
-    billing_name: CustomerBillingNameInput | None = None
-    billing_address: AddressInput | None = None
-    tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
-    default_payment_method_id: UUID4 | None = None
+    billing_name: Omissible[CustomerBillingNameInput] = MISSING
+    billing_address: Omissible[AddressInput] = MISSING
+    tax_id: Annotated[Omissible[str | None], EmptyStrToNoneValidator] = MISSING
+    default_payment_method_id: Omissible[UUID4] = MISSING
 
 
 CustomerPaymentMethod = Annotated[

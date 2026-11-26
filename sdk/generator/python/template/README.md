@@ -121,7 +121,8 @@ customer_state = polar.customers.get_state_external(
 )
 ```
 
-Pass an `httpx.Timeout` instance to configure connect, read, write, and pool timeouts separately.
+Pass an `httpx2.Timeout` or `httpx.Timeout` instance to configure connect, read, write, and pool timeouts separately.
+If your application uses `httpx`, declare it as a direct dependency.
 
 ## Organizations
 
@@ -209,7 +210,11 @@ In high throughput scenarios, Outpost can return you accurate meter reads only m
 
 Outpost needs an `external_id` on every event; `track()` rejects an event without one.
 
-An event counts locally until Polar confirms it stored it, or until the buffer gives it up, so a meter read never loses an event Polar is still ingesting.
+A first read of a customer waits up to `snapshot_timeout` for Polar's snapshot. If it does not arrive in time, the read raises `NotReadyError` from `polar.outpost`; the next read asks again.
+
+An event counts locally until Polar confirms it stored it, or refuses it, so a meter read never loses an event Polar is still ingesting.
+
+Outpost delivers the events itself, instead of the buffer: it queues them in Redis and sends them to Polar in batches of up to 1,000 events, shared by every client, on `flush()` and every second on a long-running server. Pass `buffered` or `outpost`, not both.
 
 Pass a dictionary instead of `True` to configure it.
 
@@ -224,8 +229,11 @@ Leaving the context drains the queue within `shutdown_timeout` (30 seconds by de
 raises if any earlier, unacknowledged events could not be confirmed.
 
 In serverless environments such as Vercel or AWS Lambda, await `flush(timeout=30)` before
-returning from each request. It confirms events queued before the call without closing the
-shared helper. Concurrent handlers share HTTP batches.
+returning from each request, so the function does not freeze with events in the queue. It
+waits for events queued before the call without closing the shared helper. A newer flush
+releases older ones whose deadline is no later than its own and waits for their events too,
+so concurrent handlers do not each wait for a round trip to Polar. Concurrent handlers share
+HTTP batches.
 
 ```python
 async def handle_request() -> dict[str, bool]:
@@ -243,11 +251,12 @@ async def handle_request() -> dict[str, bool]:
     return {"ok": True}
 ```
 
-A successful `flush()` confirms delivery. Failed delivery raises `MeteringDeliveryError`,
-importable from `polar.metering`. Its `events` contains the unconfirmed events; each item in
+A `flush()` confirms delivery unless a newer flush released it. Failed delivery raises
+`MeteringDeliveryError`, importable from `polar.metering`. Its `events` contains the unconfirmed events; each item in
 `failures` includes `events`, a `reason`, and the original `cause`. Drops are still logged
 and passed to `on_dropped`. A completed flush acknowledges the reported failures, so a later
-flush reports only subsequent outcomes. Overlapping flushes each observe their own boundary.
+flush reports only subsequent outcomes. The newest overlapping flush reports the failures of
+the ones it released.
 Periodically flush long-running helpers to observe failures and release their retained records.
 
 If the wait expires, `flush()` raises `MeteringTimeoutError`. Timeout and caller cancellation
@@ -282,10 +291,13 @@ The metering helper buffers events in memory and sends them in batches to Polar.
 
 #### Outpost
 
-| Option      | Default                          | Meaning                                   |
-| ----------- | -------------------------------- | ----------------------------------------- |
-| `redis_url` | `REDIS_URL` environment variable | Redis instance used by Outpost.           |
-| `telemetry` | `True`                           | Send Outpost metrics and traces to Polar. |
+| Option         | Default                          | Meaning                                                  |
+| -------------- | -------------------------------- | -------------------------------------------------------- |
+| `redis_url`    | `REDIS_URL` environment variable | Redis instance used by Outpost.                          |
+| `telemetry`    | `True`                           | Send Outpost metrics and traces to Polar.                |
+| `snapshot_timeout` | `5`                          | Seconds a cold read waits for its initial snapshot.      |
+| `on_delivered` | `None`                           | Async callback receiving the events Polar accepted.      |
+| `on_dropped`   | `None`                           | Async callback receiving the refused events and reason.  |
 
 Telemetry can also be disabled with the `POLAR_OUTPOST_TELEMETRY=0` environment variable.
 

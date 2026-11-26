@@ -53,11 +53,17 @@ describe("CONFIRM", () => {
           .hset(pendingKey, ...entries)
           .evalsha(
             confirmSha,
-            2,
+            4,
+            "outpost:v1:outbox",
+            "outpost:v1:outbox",
             stateKey,
             pendingKey,
-            COLD_UNTIL,
             "",
+            "",
+            0,
+            0,
+            COLD_UNTIL,
+            ids.length,
             ...ids,
           )
           .exec();

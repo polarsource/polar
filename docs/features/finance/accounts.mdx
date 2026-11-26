@@ -1,51 +1,63 @@
 ---
-title: "Payout Accounts"
-sidebarTitle: "Payout Accounts"
-description: "Connect a Stripe Connect Express account to receive your earnings"
+title: "Payout accounts"
+sidebarTitle: "Payout accounts"
+description: "Connect, switch or remove the Stripe Connect Express account Polar pays your earnings to."
 ---
 
-A **payout account** is the external account Polar uses to send you your earnings. As the [Merchant of Record](/merchant-of-record/introduction), Polar collects the money from your customers, then [transfers your balance](/features/finance/payouts) — minus our fees — to your payout account. From there, the funds are deposited into your bank account.
+A **payout account** is the external account Polar sends your earnings to. As the [Merchant of Record](/merchant-of-record/introduction), Polar collects the money from your customers, then [pays out your balance](/features/finance/payouts), minus fees, to your payout account. From there, the funds go to your bank account.
 
 Polar uses [Stripe Connect Express](https://stripe.com/connect) for payout accounts.
 
-You need to connect a payout account **before Polar can accept money on your behalf**. We don't want to collect funds from your customers that we wouldn't be able to pay out to you, so a working payout account is a prerequisite to going live.
+You need a payout account **before Polar can accept payments on your behalf**. Polar won't collect money from your customers that it can't pay out to you, so a working payout account is part of the [review checklist](/merchant-of-record/review-checklist#connect-a-payout-account).
 
-## Connecting a Payout Account
+<Note>Dashboard only. Payout accounts aren't available from the CLI or MCP server. Only Admins and the Owner can manage them.</Note>
 
-1. Open the [**Finance → Account**](https://polar.sh/to/dashboard/finance/account) page in your Polar dashboard.
-2. Click **Continue with account setup**.
+## Connect a payout account
+
+1. Open [**Finance → Account**](https://polar.sh/to/dashboard/finance/account).
+2. Click **Connect payout account**.
 3. Select your country:
-    - If this is a personal account, pick your **country of residence**.
-    - If this is a business or organization, pick the **country of tax residency**.
-4. You will be redirected to Stripe to complete onboarding. Stripe will ask for your identity details, business information (if applicable), and the bank account you want to be paid out to.
+    - For a personal account, pick your **country of residence**.
+    - For a business, pick the **country of tax residency**.
+4. Complete onboarding on Stripe. Stripe asks for your identity, business details if any, and the bank account you want to be paid to.
 5. Once Stripe confirms your account, you're ready to receive payouts.
 
-The user who completes onboarding becomes the **owner** of the payout account. They own the underlying Stripe account and are the legal recipient of the funds.
+The member who completes onboarding becomes the **owner** of the payout account. They own the underlying Stripe account and are the legal recipient of the funds.
 
-## Managing Your Account
+## Manage your payout accounts
 
 From [**Finance → Account → Manage payout accounts**](https://polar.sh/to/dashboard/finance/account) you can:
 
-- **Open in Stripe** — jump into the Stripe-hosted dashboard to update your bank account and business details.
-- **Make Active** — switch the organization to a payout account you own that isn't linked to any organization.
-- **Add Payout Account** — start onboarding for a new payout account (for example, in a different country).
-- **Delete** — remove a payout account you no longer use. You can only delete an account that is not linked to any organization, has no pending payouts, and has a zero Stripe balance.
+- **Open in Stripe:** update your bank account and business details on Stripe.
+- **Make Active:** switch the organization to another payout account you own that isn't linked to an organization.
+- **Add Payout Account:** start onboarding for a new payout account, for example in a different country.
+- **Delete:** remove a payout account you no longer use. You can only delete one that isn't linked to an organization, has no pending payouts and has a zero Stripe balance.
 
-## Country & Currency Requirements
+Switching to another payout account cancels any payout still [held for review](/features/finance/payouts#payout-statuses) against the previous account. The amount returns to your balance, and you can request it again.
 
-Stripe Connect requires the bank account you connect to be in the **same country as the business** and to use that country's **local currency**. This is a Stripe (and underlying banking network) requirement that Polar cannot override.
+## Country and currency requirements
+
+Stripe Connect requires the bank account to be in the **same country as the business** and to use that country's **local currency**. This is a Stripe and banking network requirement that Polar can't override.
 
 <AccordionGroup>
-  <Accordion title="Can I have my company registered in Ireland but use a US bank account for payouts?">
-    No. Stripe Connect requires a bank account in the same country as the business, in the local currency. An Irish company must connect an Irish (EUR) bank account; a US company must connect a US (USD) bank account, and so on.
+  <Accordion title="Can my company be registered in Ireland but use a US bank account for payouts?">
+    No. Stripe Connect requires a bank account in the same country as the business, in the local currency. An Irish company must connect an Irish (EUR) bank account, a US company a US (USD) bank account, and so on.
   </Accordion>
-  <Accordion title="Can I use Wise, Payoneer, Revolut, or another virtual account to receive payouts?">
-    Only if the virtual account provides a real bank account in the same country as your registered business, in the local currency, and is accepted by Stripe. Most multi-currency or "borderless" accounts (Wise, Payoneer, Revolut, etc.) do not satisfy Stripe's verification for Connect payouts. If Stripe rejects the account during onboarding, you'll need to use a domestic bank account instead.
+  <Accordion title="Can I use Wise, Payoneer, Revolut or another virtual account?">
+    Only if it provides a real bank account in the same country as your registered business, in the local currency, and Stripe accepts it. Most multi-currency accounts don't pass Stripe's verification for Connect payouts. If Stripe rejects the account during onboarding, use a domestic bank account instead.
   </Accordion>
   <Accordion title="My business is in country A but I live in country B. Which one do I pick?">
-    Pick the country where the business is legally registered for tax purposes. For a personal account, pick your country of residence.
+    Pick the country where the business is registered for tax purposes. For a personal account, pick your country of residence.
   </Accordion>
   <Accordion title="My country isn't in the list. Can I still receive payouts?">
-    Polar supports the countries listed in our [supported countries for payouts](/merchant-of-record/supported-countries#payouts). If yours isn't listed during onboarding, we can't currently issue payouts there.
+    No. Polar can pay out to the [supported countries](/merchant-of-record/supported-countries#payouts) only. If yours isn't listed during onboarding, Polar can't pay out there yet.
   </Accordion>
 </AccordionGroup>
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Balance and payouts](/features/finance/payouts) | Withdraw your balance, fees and payout statuses |
+| [Supported countries](/merchant-of-record/supported-countries) | Countries Polar can pay out to |
+| [Review checklist](/merchant-of-record/review-checklist) | What you need before you can accept payments |

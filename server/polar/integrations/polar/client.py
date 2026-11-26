@@ -19,6 +19,7 @@ from polar.config import settings
 from polar.exceptions import PolarError as InternalPolarError
 from polar.v2026_04 import PolarAsync as PolarSDK
 from polar.v2026_04.errors import (
+    AlreadyCanceledSubscription,
     HTTPValidationError,
     OrderNotEligibleForInvoice,
     ResourceNotFound,
@@ -214,6 +215,25 @@ class PolarSelfClient:
                 _raise_error(span, e, "cancel_subscription")
             except PolarNetworkError as e:
                 _raise_network_error(span, e, "cancel_subscription")
+
+    async def revoke_subscription(self, *, subscription_id: str) -> None:
+        with logfire.span(
+            "polar.revoke_subscription",
+            subscription_id=subscription_id,
+        ) as span:
+            try:
+                await _retry_network_error(
+                    lambda: self._sdk.subscriptions.revoke(subscription_id)
+                )
+            except AlreadyCanceledSubscription:
+                span.set_attribute("already_canceled", True)
+            except (PolarClientError, PolarServerError) as e:
+                if e.status_code == 404:
+                    span.set_attribute("not_found", True)
+                    return
+                _raise_error(span, e, "revoke_subscription")
+            except PolarNetworkError as e:
+                _raise_network_error(span, e, "revoke_subscription")
 
     async def uncancel_subscription(self, *, subscription_id: str) -> Subscription:
         with logfire.span(

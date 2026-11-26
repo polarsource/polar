@@ -733,7 +733,7 @@ class TinybirdEventsQuery:
                 return false()
             return self._ch_comparison(events_table.c.source, clause)
         if clause.property == "timestamp":
-            if not isinstance(clause.value, int):
+            if type(clause.value) is not int:
                 return false()
             return self._ch_comparison(
                 func.toUnixTimestamp(events_table.c.timestamp), clause

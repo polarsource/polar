@@ -4,7 +4,7 @@ from uuid import UUID
 
 import pytest
 from authlib.oauth2.rfc7523.jwt_bearer import JWT_BEARER_GRANT_TYPE
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
 from sqlalchemy.orm import joinedload
 
@@ -17,7 +17,7 @@ from polar.agent.service import CLAIM_TOKEN_TTL, CLAIM_TTL
 from polar.agent.words import WORDS
 from polar.auth.models import AuthSubject
 from polar.auth.scope import CLAIMED_AGENT_SCOPES, UNCLAIMED_AGENT_SCOPES
-from polar.config import settings
+from polar.config import Environment, settings
 from polar.kit.crypto import get_token_hash
 from polar.kit.email import mask_email
 from polar.kit.utils import utc_now
@@ -452,3 +452,33 @@ class TestAuthMd:
         assert "POST http://test/v1/agent/identity\n" in response.text
         assert "POST http://test/v1/agent/identity/claim\n" in response.text
         assert "POST http://test/v1/oauth2/token\n" in response.text
+        assert (
+            f"{settings.FRONTEND_BASE_URL}/dashboard/<organization slug>/cli/token?"
+            in response.text
+        )
+
+    @pytest.mark.parametrize(
+        ("environment", "expected", "unexpected"),
+        [
+            (Environment.sandbox, "This is Polar's sandbox", "account review"),
+            (
+                Environment.production,
+                "/dashboard/<organization slug>/finance/account",
+                "sandbox",
+            ),
+        ],
+    )
+    async def test_payments_per_environment(
+        self,
+        environment: Environment,
+        expected: str,
+        unexpected: str,
+        client: AsyncClient,
+        mocker: MockerFixture,
+    ) -> None:
+        mocker.patch.object(settings, "ENV", environment)
+
+        response = await client.get("/auth.md")
+
+        assert expected in response.text
+        assert unexpected not in response.text

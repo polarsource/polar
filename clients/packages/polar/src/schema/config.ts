@@ -1,12 +1,21 @@
 import { Schema } from 'effect'
 import { runtimeConfig } from './runtime'
-import { BenefitConfig, flag, credits } from './benefit'
+import { BenefitConfig, flag, credits, slackChannel } from './benefit'
 import {
   metadataKey,
   type DeclaredMetadata,
   type MetadataShape,
 } from './metadata'
 import type { BenefitDefinition, BenefitHelpers } from './benefit'
+import {
+  checkbox,
+  CustomFieldConfig,
+  date,
+  number,
+  select,
+  text,
+} from './customField'
+import type { CustomFieldDefinition, CustomFieldHelpers } from './customField'
 import { deprecatedKey } from './deprecation'
 import type { Deprecated } from './deprecation'
 import {
@@ -23,15 +32,7 @@ import { fixed, free, metered, seats, TaxBehavior, tier, units } from './price'
 import { product, ProductConfig, productPrices } from './product'
 import type { ProductDefinition, ProductHelpers } from './product'
 import { visibilityKey } from './visibility'
-import {
-  discord,
-  endpoint,
-  HandledWebhookEndpoint,
-  slack,
-  WEBHOOK_API_VERSION,
-  WebhookEndpointConfig,
-} from './webhook'
-import type { WebhookEntries, WebhookHelpers } from './webhook'
+import type { WebhookEntries } from './webhook'
 
 export const SettingsConfig = Schema.Struct({
   payments: Schema.optionalKey(
@@ -47,9 +48,9 @@ export type SettingsConfig = typeof SettingsConfig.Type
 export const PolarConfig = Schema.Struct({
   settings: Schema.optionalKey(SettingsConfig),
   meters: Schema.Array(MeterConfig),
+  custom_fields: Schema.optionalKey(Schema.Array(CustomFieldConfig)),
   benefits: Schema.optionalKey(Schema.Array(BenefitConfig)),
   products: Schema.optionalKey(Schema.Array(ProductConfig)),
-  webhooks: Schema.optionalKey(Schema.Array(WebhookEndpointConfig)),
 })
 
 export type PolarConfig = typeof PolarConfig.Type
@@ -92,7 +93,7 @@ const validateProductNaming = validateNaming('product', 3, 64)
 
 const assertKnown = (
   owner: string,
-  kind: 'meter' | 'benefit' | 'product',
+  kind: 'meter' | 'benefit' | 'product' | 'custom field',
   ids: ReadonlySet<string>,
   references: ReadonlyArray<string>,
 ) => {
@@ -225,13 +226,53 @@ type ConnectedBenefit<Definition> =
 type DeclaredEvents<Events extends EventDefinitions | undefined> =
   Events extends EventDefinitions ? Events : Record<never, never>
 
+type CustomFieldEntries =
+  | Readonly<Record<string, CustomFieldDefinition>>
+  | ReadonlyArray<readonly [slug: string, field: CustomFieldDefinition]>
+
+type CustomFieldKey<CustomFields extends CustomFieldEntries> =
+  CustomFields extends ReadonlyArray<
+    readonly [infer Key, CustomFieldDefinition]
+  >
+    ? Key & string
+    : keyof CustomFields & string
+
+type SlugCharacters = 'abcdefghijklmnopqrstuvwxyz0123456789-_'
+
+type IsSlug<Key extends string> = string extends Key
+  ? true
+  : Key extends `${infer Character}${infer Rest}`
+    ? SlugCharacters extends `${string}${Character}${string}`
+      ? Rest extends ''
+        ? true
+        : IsSlug<Rest>
+      : false
+    : false
+
+type ValidCustomFields<CustomFields extends CustomFieldEntries> = ValidEntries<
+  CustomFields,
+  {
+    [Key in CustomFieldKey<CustomFields>]: IsSlug<Key> extends true
+      ? unknown
+      : DeprecationError<`Custom field key '${Key}' can only use lowercase letters, numbers, - and _.`>
+  }
+>
+
+type CustomFieldsInput<CustomFields extends CustomFieldEntries> = (
+  helpers: CustomFieldHelpers,
+) => CustomFields & ValidCustomFields<CustomFields>
+
 type ProductEntries<
   Meter extends string = string,
   Benefit extends string = string,
+  Field extends string = string,
 > =
-  | Readonly<Record<string, ProductDefinition<Meter, Benefit>>>
+  | Readonly<Record<string, ProductDefinition<Meter, Benefit, Benefit, Field>>>
   | ReadonlyArray<
-      readonly [externalId: string, product: ProductDefinition<Meter, Benefit>]
+      readonly [
+        externalId: string,
+        product: ProductDefinition<Meter, Benefit, Benefit, Field>,
+      ]
     >
 
 type ProductGrant<Product> =
@@ -344,8 +385,13 @@ type ProductsInput<
   Meters extends MeterEntries,
   Benefits extends BenefitEntries,
   Products extends ProductEntries,
+  CustomFields extends CustomFieldEntries,
 > = (
-  helpers: ProductHelpers<MeterKey<Meters>, BenefitKey<Benefits>>,
+  helpers: ProductHelpers<
+    MeterKey<Meters>,
+    BenefitKey<Benefits>,
+    CustomFieldKey<CustomFields>
+  >,
 ) => Products &
   ValidProducts<
     Products,
@@ -358,36 +404,57 @@ type ProductsInput<
 // given, this repeats its key as required.
 type Present<Entries, Section> = [Entries] extends [never] ? unknown : Section
 
+/** Declares your Polar setup as code: meters, benefits and products. */
 export const defineConfig = <
   const Meters extends MeterEntries,
   const Benefits extends BenefitEntries<MeterKey<Meters>> = never,
+  const CustomFields extends CustomFieldEntries = never,
   const Products extends ProductEntries<
     MeterKey<Meters>,
-    BenefitKey<Benefits>
+    BenefitKey<Benefits>,
+    CustomFieldKey<CustomFields>
   > = never,
   Events extends EventDefinitions | undefined = undefined,
-  const Webhooks extends WebhookEntries = Record<never, never>,
 >(
   input: {
+    /** Organization defaults, like the payment currency and tax behavior. */
     readonly settings?: SettingsConfig
+    /** The events your app sends, with a schema for each. Meters count them. */
     readonly events?: Events &
       (Events extends EventDefinitions ? ValidEvents<Events> : unknown)
+    /** What usage to measure, keyed by ID. */
     readonly meters: (helpers: {
+      /** Filters and aggregates your events into usage. The name defaults to its key in `meters`. */
       readonly meter: typeof meter<DeclaredEvents<Events>>
+      /** Your events and their properties, like `events.call.duration_ms`, for `.on()` and filters. */
       readonly events: EventReferences<DeclaredEvents<Events>>
     }) => Meters
+    /** Questions checkout asks, keyed by slug. Products choose which to ask. */
+    readonly customFields?: CustomFieldsInput<CustomFields>
+    /** What customers get, keyed by ID. Products grant them. */
     readonly benefits?: BenefitsInput<Meters, Benefits>
-    readonly products?: ProductsInput<Meters, Benefits, Products>
-    readonly webhooks?: (helpers: WebhookHelpers) => Webhooks
+    /** What customers buy, keyed by ID. */
+    readonly products?: ProductsInput<Meters, Benefits, Products, CustomFields>
   } & Present<
     Benefits,
     { readonly benefits: BenefitsInput<Meters, Benefits> }
   > &
     Present<
+      CustomFields,
+      { readonly customFields: CustomFieldsInput<CustomFields> }
+    > &
+    Present<
       Products,
-      { readonly products: ProductsInput<Meters, Benefits, Products> }
+      {
+        readonly products: ProductsInput<
+          Meters,
+          Benefits,
+          Products,
+          CustomFields
+        >
+      }
     >,
-): Config<Meters, Benefits, Events, Webhooks> => {
+): Config<Meters, Benefits, Events> => {
   const events = input.events as Events
   const entries = toEntries(
     input.meters({
@@ -401,7 +468,7 @@ export const defineConfig = <
       definition[deprecatedKey] ? [external_id] : [],
     ),
   )
-  const benefits = input.benefits?.({ flag, credits })
+  const benefits = input.benefits?.({ flag, credits, slackChannel })
   const benefitEntries =
     benefits === undefined ? [] : toEntries<BenefitDefinition>(benefits)
   const benefitIds = new Set(benefitEntries.map(([external_id]) => external_id))
@@ -410,6 +477,18 @@ export const defineConfig = <
       definition[deprecatedKey] ? [external_id] : [],
     ),
   )
+  const customFields = input.customFields?.({
+    text,
+    number,
+    date,
+    checkbox,
+    select,
+  })
+  const customFieldEntries =
+    customFields === undefined
+      ? []
+      : toEntries<CustomFieldDefinition>(customFields)
+  const customFieldSlugs = new Set(customFieldEntries.map(([slug]) => slug))
   const products = input.products?.({
     product,
     free,
@@ -421,19 +500,6 @@ export const defineConfig = <
   })
   const productEntries =
     products === undefined ? [] : toEntries<ProductDefinition>(products)
-  const webhooks = input.webhooks?.({ endpoint, slack, discord })
-  const webhookEntries = Object.entries(webhooks ?? {})
-  const secretEnvs = webhookEntries.flatMap(([, webhook]) =>
-    webhook instanceof HandledWebhookEndpoint ? [webhook.secretEnv] : [],
-  )
-  const sharedSecret = secretEnvs.find(
-    (env, index) => secretEnvs.indexOf(env) !== index,
-  )
-  if (sharedSecret !== undefined) {
-    throw new Error(
-      `Webhooks with handlers each get their own signing secret, but more than one reads ${sharedSecret}. Give each a different .secret().`,
-    )
-  }
   const config = Schema.decodeUnknownSync(PolarConfig, {
     errors: 'all',
     onExcessProperty: 'error',
@@ -457,6 +523,17 @@ export const defineConfig = <
         }
       },
     ),
+    ...(customFields !== undefined && {
+      custom_fields: customFieldEntries.map(
+        ([slug, { name, type, properties, [metadataKey]: metadata }]) => ({
+          type,
+          slug,
+          name: name ?? slug,
+          properties,
+          ...(metadata !== undefined && { metadata }),
+        }),
+      ),
+    }),
     ...(benefits !== undefined && {
       benefits: benefitEntries.map(
         ([
@@ -507,6 +584,12 @@ export const defineConfig = <
         const deprecated = definition[deprecatedKey]
         assertKnown(owner, 'meter', meterIds, meterReferences)
         assertKnown(owner, 'benefit', benefitIds, definition.benefits)
+        assertKnown(
+          owner,
+          'custom field',
+          customFieldSlugs,
+          definition.fieldList.map(({ field }) => field),
+        )
         if (!deprecated) {
           assertNotDeprecated(
             owner,
@@ -536,6 +619,9 @@ export const defineConfig = <
           ...(definition[metadataKey] !== undefined && {
             metadata: definition[metadataKey],
           }),
+          ...(definition.fieldList.length > 0 && {
+            custom_fields: definition.fieldList,
+          }),
           ...(definition.descriptionText !== undefined && {
             description: definition.descriptionText,
           }),
@@ -546,20 +632,14 @@ export const defineConfig = <
         }
       }),
     }),
-    ...(webhooks !== undefined && {
-      webhooks: webhookEntries.map(
-        ([external_id, { url, format, events }]) => ({
-          external_id,
-          url,
-          format,
-          events,
-          api_version: WEBHOOK_API_VERSION,
-        }),
-      ),
-    }),
   })
 
-  type Connected = ConnectedConfig<Meters, Benefits, Events, Webhooks>
+  type Connected = ConnectedConfig<
+    Meters,
+    Benefits,
+    Events,
+    Record<never, never>
+  >
   return {
     toJSON: () => structuredClone(config),
     [runtimeConfig]: () =>
@@ -567,7 +647,7 @@ export const defineConfig = <
         ...(events !== undefined && { events }),
         meters: byExternalId('meter', config.meters),
         benefits: byExternalId('benefit', config.benefits ?? []),
-        webhooks: Object.fromEntries(webhookEntries),
+        webhooks: {},
       }) as Connected,
   }
 }

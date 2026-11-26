@@ -1,6 +1,7 @@
 import { schemas } from '@polar-sh/client'
-import { Text } from '@polar-sh/orbit'
+import { Alert, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { cardStatusSummaryText } from './cardStatus'
 import { SWITCH_INTRO } from './switchCopy'
 
 const numberFormat = new Intl.NumberFormat('en-US')
@@ -18,8 +19,9 @@ export function SwitchSummary({
   ]
   const left = report.skipped + report.failed
   if (left > 0) {
-    parts.push(`${numberFormat.format(left)} left on Stripe`)
+    parts.push(`${numberFormat.format(left)} not switched`)
   }
+  const cardSummary = cardStatusSummaryText(report.card_statuses ?? [])
 
   return (
     <Box flexDirection="column" rowGap="xs">
@@ -27,6 +29,15 @@ export function SwitchSummary({
       <Text variant="caption" tabularNums>
         {parts.join('  ·  ')}
       </Text>
+      {cardSummary && (
+        <Box paddingTop="s">
+          <Alert
+            variant="warning"
+            title="Some subscriptions can't be charged"
+            description={cardSummary}
+          />
+        </Box>
+      )}
     </Box>
   )
 }

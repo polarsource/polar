@@ -15,6 +15,7 @@ import { useTheme } from '@/design-system/useTheme'
 import { useCustomers } from '@/hooks/polar/customers'
 import { useCreateNotificationRecipient } from '@/hooks/polar/notifications'
 import { useOrders } from '@/hooks/polar/orders'
+import { getPushNotificationsOptedOut } from '@/hooks/pushNotificationOptOut'
 import { useSubscriptions } from '@/hooks/polar/subscriptions'
 import { useHomeHeaderHeight } from '@/hooks/useHomeHeaderHeight'
 import { useStoreReview } from '@/hooks/useStoreReview'
@@ -105,9 +106,15 @@ function HomeContent() {
     useCreateNotificationRecipient()
 
   useEffect(() => {
-    if (expoPushToken) {
-      createNotificationRecipient(expoPushToken)
+    if (!expoPushToken) {
+      return
     }
+
+    getPushNotificationsOptedOut().then((optedOut) => {
+      if (!optedOut) {
+        createNotificationRecipient(expoPushToken)
+      }
+    })
   }, [expoPushToken, createNotificationRecipient])
 
   const { requestReview, shouldShow } = useStoreReview()

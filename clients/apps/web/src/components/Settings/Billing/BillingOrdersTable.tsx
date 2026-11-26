@@ -5,7 +5,7 @@ import { toast } from '@/components/Toast/use-toast'
 import { FileDownloadOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
-import { Text } from '@polar-sh/orbit'
+import { Text, Truncated } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { DataTable, DataTableColumnDef } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
@@ -101,7 +101,9 @@ export const BillingOrdersTable = ({
       header: 'Description',
       size: 240,
       cell: ({ row: { original } }) => (
-        <Text as="span">{formatDescription(original)}</Text>
+        <Truncated>
+          <Text as="span">{formatDescription(original)}</Text>
+        </Truncated>
       ),
     },
     {

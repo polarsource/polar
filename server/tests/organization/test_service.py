@@ -216,7 +216,10 @@ class TestCreate:
 
         assert organization.name == "My New Organization"
         assert organization.slug == slug
-        assert organization.feature_settings == {"meter_cycling_enabled": True}
+        assert organization.feature_settings == {
+            "meter_cycling_enabled": True,
+            "reducer_billing_enabled": True,
+        }
 
         user_organization = await user_organization_service.get_by_user_and_org(
             session, auth_subject.subject.id, organization.id
@@ -226,6 +229,31 @@ class TestCreate:
 
         enqueue_job_mock.assert_called_once_with(
             "organization.created", organization_id=organization.id
+        )
+
+    @pytest.mark.auth
+    async def test_subscription_settings_without_trial_ended_reactivation_period(
+        self, auth_subject: AuthSubject[User], session: AsyncSession
+    ) -> None:
+        organization = await organization_service.create(
+            session,
+            OrganizationCreate(
+                name="My New Organization",
+                slug="my-new-organization",
+                subscription_settings=OrganizationSubscriptionSettings(
+                    allow_multiple_subscriptions=True,
+                    proration_behavior=SubscriptionProrationBehavior.invoice,
+                    benefit_revocation_grace_period=0,
+                    prevent_trial_abuse=False,
+                    allow_customer_updates=True,
+                ),
+            ),
+            auth_subject,
+        )
+
+        assert organization.allow_multiple_subscriptions is True
+        assert (
+            organization.subscription_settings["trial_ended_reactivation_period"] == 14
         )
 
     @pytest.mark.auth
@@ -283,6 +311,7 @@ class TestCreate:
         assert organization.feature_settings == {
             "checkout_localization_enabled": True,
             "meter_cycling_enabled": True,
+            "reducer_billing_enabled": True,
         }
 
     @pytest.mark.auth
@@ -361,9 +390,7 @@ class TestCreate:
         create_customer_mock = mocker.patch(
             "polar.organization.service.polar_self_service.enqueue_create_customer"
         )
-        posthog_mock = mocker.patch(
-            "polar.organization.service.posthog.auth_subject_event"
-        )
+        posthog_mock = mocker.patch("polar.organization.service.posthog")
 
         organization = await organization_service.create(
             session,
@@ -372,9 +399,19 @@ class TestCreate:
         )
 
         assert agent.organization_id == organization.id
+        posthog_mock.agent_event.assert_called_once_with(
+            agent,
+            "organization",
+            "create",
+            {
+                "organization_id": str(organization.id),
+                "organization_slug": "agent-organization",
+            },
+        )
+        posthog_mock.user_event.assert_not_called()
         assert organization.account is not None
         await session.refresh(organization)
-        assert organization.is_config_as_code_enabled
+        assert not organization.is_config_as_code_enabled
         assert (
             await user_organization_service.get_member_count(session, organization.id)
             == 0
@@ -383,7 +420,6 @@ class TestCreate:
         enqueue_job_mock.assert_called_once_with(
             "organization.created", organization_id=organization.id
         )
-        posthog_mock.assert_not_called()
 
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
     async def test_agent_create_fails_when_a_concurrent_create_linked_an_organization_first(
@@ -758,6 +794,88 @@ async def test_get_next_invoice_number_multiple_customers(
     await session.refresh(customer2)
     assert customer.invoice_next_number == 3
     assert customer2.invoice_next_number == 2
+
+
+@pytest.mark.anyio
+class TestUpdateEmbedHosts:
+    @pytest.mark.auth
+    async def test_registers_new_hosts_under_verified_domain(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.embed_hosts = ["acme.com"]
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization, domain="acme.com", verified_at=utc_now()
+            )
+        )
+        enqueue_job_mock = mocker.patch("polar.organization_domain.service.enqueue_job")
+
+        await organization_service.update(
+            session,
+            organization,
+            OrganizationUpdate(
+                embed_hosts=["acme.com", "shop.acme.com", "*.acme.com", "other.com"]
+            ),
+        )
+
+        enqueue_job_mock.assert_called_once_with(
+            "organization_domain.register_payment_method_domains",
+            domains=["shop.acme.com"],
+        )
+
+    @pytest.mark.auth
+    async def test_pending_domain_not_registered(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization,
+                domain="acme.com",
+                verification_record_value="TOKEN",
+            )
+        )
+        enqueue_job_mock = mocker.patch("polar.organization_domain.service.enqueue_job")
+
+        await organization_service.update(
+            session, organization, OrganizationUpdate(embed_hosts=["shop.acme.com"])
+        )
+
+        enqueue_job_mock.assert_not_called()
+
+    @pytest.mark.auth
+    async def test_unregisters_removed_hosts(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.embed_hosts = ["acme.com", "shop.acme.com"]
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization, domain="acme.com", verified_at=utc_now()
+            )
+        )
+        enqueue_job_mock = mocker.patch("polar.organization_domain.service.enqueue_job")
+
+        await organization_service.update(
+            session, organization, OrganizationUpdate(embed_hosts=["acme.com"])
+        )
+
+        enqueue_job_mock.assert_called_once_with(
+            "organization_domain.unregister_payment_method_domains",
+            domains=["shop.acme.com"],
+        )
 
 
 @pytest.mark.anyio
@@ -1212,6 +1330,24 @@ class TestConfirmOrganizationReviewed:
         assert result.initially_reviewed_at == initially_reviewed_at
         assert result.next_review_threshold == 15000
 
+    async def test_registers_payment_method_domains(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        organization.status = OrganizationStatus.REVIEW
+
+        await organization_service.confirm_organization_reviewed(
+            session, organization, 15000
+        )
+
+        enqueue_job_mock.assert_any_call(
+            "organization_domain.register_organization_payment_method_domains",
+            organization_id=organization.id,
+        )
+
     @pytest.mark.parametrize(
         "status", [OrganizationStatus.REVIEW, OrganizationStatus.SNOOZED]
     )
@@ -1540,6 +1676,21 @@ class TestDenyOrganization:
             call.args and call.args[0] == "payout_account.reject_stripe_account"
             for call in enqueue_job_mock.call_args_list
         )
+
+    async def test_enqueues_polar_self_subscription_revocation(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.REVIEW
+        enqueue_revoke_mock = mocker.patch(
+            "polar.organization.service.polar_self_service.enqueue_revoke_subscription"
+        )
+
+        await organization_service.deny_organization(session, organization)
+
+        enqueue_revoke_mock.assert_called_once_with(organization_id=organization.id)
 
 
 @pytest.mark.anyio
@@ -4673,6 +4824,30 @@ class TestSoftDeleteOrganization:
             )
         )
 
+    async def test_unregisters_payment_method_domains(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.organization.service.polar_self_service")
+        organization.embed_hosts = ["acme.com"]
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization, domain="acme.com", verified_at=utc_now()
+            )
+        )
+        enqueue_job_mock = mocker.patch("polar.organization_domain.service.enqueue_job")
+
+        await organization_service.soft_delete_organization(session, organization)
+
+        enqueue_job_mock.assert_called_once_with(
+            "organization_domain.unregister_payment_method_domains",
+            domains=["acme.com"],
+        )
+
 
 @pytest.mark.anyio
 class TestUpdateFeatureSettings:
@@ -6032,6 +6207,37 @@ class TestSetCapability:
         assert result.capabilities["payouts"] is False
         assert result.capabilities["checkout_payments"] is True
 
+    @pytest.mark.parametrize(
+        ("value", "job"),
+        [
+            (
+                False,
+                "organization_domain.unregister_organization_payment_method_domains",
+            ),
+            (True, "organization_domain.register_organization_payment_method_domains"),
+        ],
+    )
+    async def test_checkout_payments_updates_payment_method_domains(
+        self,
+        value: bool,
+        job: str,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization_domain.service.enqueue_job")
+        organization.set_status(OrganizationStatus.ACTIVE)
+        organization.capabilities = {
+            **organization.capabilities,
+            "checkout_payments": not value,
+        }
+
+        await organization_service.set_capability(
+            session, organization, "checkout_payments", value, reason="Test"
+        )
+
+        enqueue_job_mock.assert_called_once_with(job, organization_id=organization.id)
+
     async def test_appends_internal_note_with_reason(
         self,
         session: AsyncSession,
@@ -6341,4 +6547,29 @@ class TestSetStatus:
         assert organization.status == OrganizationStatus.DENIED
         on_status_changed.assert_called_once_with(
             organization.id, OrganizationStatus.ACTIVE, OrganizationStatus.DENIED
+        )
+
+    async def test_approval_registers_payment_method_domains(
+        self, mocker: MockerFixture, organization: Organization
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization_domain.service.enqueue_job")
+        organization.status = OrganizationStatus.REVIEW
+
+        organization_service.set_status(organization, OrganizationStatus.ACTIVE)
+
+        enqueue_job_mock.assert_called_once_with(
+            "organization_domain.register_organization_payment_method_domains",
+            organization_id=organization.id,
+        )
+
+    async def test_leaving_active_unregisters_payment_method_domains(
+        self, mocker: MockerFixture, organization: Organization
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization_domain.service.enqueue_job")
+
+        organization_service.set_status(organization, OrganizationStatus.DENIED)
+
+        enqueue_job_mock.assert_called_once_with(
+            "organization_domain.unregister_organization_payment_method_domains",
+            organization_id=organization.id,
         )

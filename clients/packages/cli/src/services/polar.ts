@@ -37,19 +37,14 @@ interface UseOptions<V extends ApiVersion> {
   apiVersion?: V | undefined
 }
 
-const OrganizationNotAccessible = Schema.Struct({
-  error: Schema.Literal('RequestedOrganizationNotAccessible'),
-})
+const ApiErrorName = Schema.Struct({ error: Schema.String })
 
-const isOrganizationNotAccessible = (body: unknown) =>
-  Option.isSome(
+const apiErrorOf = (body: unknown) =>
+  Option.getOrUndefined(
     Schema.decodeUnknownOption(
-      Schema.Union([
-        OrganizationNotAccessible,
-        Schema.fromJsonString(OrganizationNotAccessible),
-      ]),
+      Schema.Union([ApiErrorName, Schema.fromJsonString(ApiErrorName)]),
     )(body),
-  )
+  )?.error
 
 const ValidationIssue = Schema.Struct({
   loc: Schema.Array(Schema.Union([Schema.String, Schema.Finite])),
@@ -181,7 +176,7 @@ export const make = Effect.gen(function* () {
                 typeof error.statusCode === 'number'
                   ? error.statusCode
                   : undefined,
-              organizationNotAccessible: isOrganizationNotAccessible(body),
+              apiError: apiErrorOf(body),
               detail: detailOf(body),
               errorName: error instanceof Error ? error.name : typeof error,
             }
@@ -212,14 +207,18 @@ export const make = Effect.gen(function* () {
             case 403:
               return new AuthError({
                 statusCode: error.statusCode,
-                message: error.organizationNotAccessible
-                  ? `Organization ${requestOptions.organizationId} is not accessible with this credential. Check --org or run ${orgCommand}.`
-                  : 'Access denied. Check the token permissions (organizations:read is required to list organizations).',
+                message:
+                  error.apiError === 'RequestedOrganizationNotAccessible'
+                    ? `Organization ${requestOptions.organizationId} is not accessible with this credential. Check --org or run ${orgCommand}.`
+                    : 'Access denied. Check the token permissions (organizations:read is required to list organizations).',
               })
             case 404:
               return new AuthError({
                 statusCode: error.statusCode,
-                message: `${error.detail ?? 'Not found'} in ${environment}. Check the ID, or run ${orgCommand} to switch if it belongs to another organization.`,
+                message:
+                  error.apiError === 'InvoiceDoesNotExist'
+                    ? `${error.detail ?? 'No invoice exists for this order.'} Run polar orders generate_invoice <id> to create it, then run polar orders invoice <id> again after a few seconds.`
+                    : `${error.detail ?? 'Not found'} in ${environment}. Check the ID, or run ${orgCommand} to switch if it belongs to another organization.`,
               })
             default:
               return new AuthError({

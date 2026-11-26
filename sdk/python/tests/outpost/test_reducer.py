@@ -11,7 +11,7 @@ from polar.outpost.reducer import (
     Reducer,
     get_bucket_start,
     get_matcher,
-    reduce,
+    match_event,
     with_matchers,
 )
 
@@ -22,7 +22,7 @@ TIMESTAMP = datetime.datetime(2026, 10, 12, 12, 4, 59, tzinfo=datetime.UTC)
     ("func", "expected"),
     [("count", 3), ("sum", -2), ("min", -5), ("max", 3), ("avg", -2 / 3)],
 )
-def test_reduce_buckets(
+def test_matches_events_with_the_value_their_reducer_adds_up(
     func: typing.Literal["count", "sum", "max", "min", "avg"], expected: float
 ) -> None:
     reducer: Reducer = {
@@ -33,43 +33,19 @@ def test_reduce_buckets(
         if func == "count"
         else {"func": func, "property": "tokens"},
     }
-    events = [
-        Event("call", "customer", TIMESTAMP, {"tokens": value}) for value in [-5, 0, 3]
-    ]
-    events.append(Event("call", "other", TIMESTAMP, {"tokens": 2}))
-    events.append(
-        Event(
-            "call", "customer", TIMESTAMP + datetime.timedelta(seconds=1), {"tokens": 4}
-        )
-    )
-    events.append(
-        Event(
-            "call",
-            "customer",
-            TIMESTAMP - datetime.timedelta(minutes=5),
-            {"tokens": 99},
-        )
-    )
-    bucket_start = get_bucket_start(TIMESTAMP)
-
-    updates = reduce(
-        with_matchers([reducer]),
-        events,
-        oldest_bucket_start=bucket_start,
-    )
-
-    assert updates == {
-        ("customer", "usage", bucket_start): BucketStatistics(count=3)
-        if func == "count"
-        else BucketStatistics(count=3, sum=-2, min=-5, max=3),
-        ("other", "usage", bucket_start): BucketStatistics(count=1)
-        if func == "count"
-        else BucketStatistics(count=1, sum=2, min=2, max=2),
-        ("customer", "usage", bucket_start + BUCKET_SIZE): BucketStatistics(count=1)
-        if func == "count"
-        else BucketStatistics(count=1, sum=4, min=4, max=4),
-    }
-    assert updates[("customer", "usage", bucket_start)].quantity(func) == expected
+    matchers = with_matchers([reducer])
+    statistics = BucketStatistics()
+    for tokens in [-5, 0, 3]:
+        event = Event("call", "customer", TIMESTAMP, {"tokens": tokens})
+        [(reducer_id, value)] = match_event(matchers, event)
+        assert reducer_id == "usage"
+        if func == "count":
+            assert value is None
+            statistics.count += 1
+        else:
+            assert value == tokens
+            statistics.add_value(tokens)
+    assert statistics.quantity(func) == expected
 
 
 @pytest.mark.parametrize("func", ["count", "sum", "min", "max", "avg"])
@@ -120,11 +96,13 @@ def test_empty_conjunction_matches_every_event(
 @pytest.mark.parametrize(
     ("actual", "expected", "equal"),
     [
-        (True, 1, True),
-        (1, True, True),
-        (False, 0, True),
-        (0, False, True),
-        (True, 1.0, True),
+        (True, True, True),
+        (1, 1.0, True),
+        (True, 1, False),
+        (1, True, False),
+        (False, 0, False),
+        (0, False, False),
+        (True, 1.0, False),
         (True, 2, False),
         (False, 1, False),
         ("1", 1, False),
@@ -203,18 +181,19 @@ def test_non_numeric_aggregation_is_skipped(value: object) -> None:
         "filter": {"conjunction": "and", "clauses": []},
         "aggregation": {"func": "sum", "property": "tokens"},
     }
-    assert (
-        reduce(
-            with_matchers([reducer]),
-            [Event("call", "customer", TIMESTAMP, {"tokens": value})],
-            oldest_bucket_start=0,
-        )
-        == {}
-    )
+    event = Event("call", "customer", TIMESTAMP, {"tokens": value})
+    assert match_event(with_matchers([reducer]), event) == []
 
 
-@pytest.mark.parametrize("values", [[float("nan")], [float("inf")], [1e308, 1e308]])
-def test_non_finite_aggregation_is_rejected(values: list[float]) -> None:
+def test_statistics_reject_a_total_too_large_to_hold() -> None:
+    statistics = BucketStatistics()
+    statistics.add_value(1e308)
+    with pytest.raises(ValueError, match="finite"):
+        statistics.add_value(1e308)
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf")])
+def test_non_finite_aggregation_is_rejected(value: float) -> None:
     reducer: Reducer = {
         "id": "tokens",
         "kind": "usage",
@@ -222,13 +201,9 @@ def test_non_finite_aggregation_is_rejected(values: list[float]) -> None:
         "aggregation": {"func": "sum", "property": "tokens"},
     }
     with pytest.raises(ValueError, match="finite"):
-        reduce(
+        match_event(
             with_matchers([reducer]),
-            [
-                Event("call", "customer", TIMESTAMP, {"tokens": value})
-                for value in values
-            ],
-            oldest_bucket_start=0,
+            Event("call", "customer", TIMESTAMP, {"tokens": value}),
         )
 
 
@@ -253,11 +228,4 @@ def test_credit_reducers_match_no_local_event() -> None:
     }
     event = Event("call", "customer", TIMESTAMP, {"units": 1})
 
-    assert (
-        reduce(
-            with_matchers([reducer]),
-            [event],
-            oldest_bucket_start=get_bucket_start(TIMESTAMP),
-        )
-        == {}
-    )
+    assert match_event(with_matchers([reducer]), event) == []

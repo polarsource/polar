@@ -704,11 +704,11 @@ resource "tfe_variable" "vercel_attio_design_partner_list_id_production" {
   }
 }
 
-resource "tfe_variable" "vercel_mcp_oauth2_client_id_production" {
-  key             = "mcp_oauth2_client_id"
+resource "tfe_variable" "protected_oauth2_client_ids_production" {
+  key             = "protected_oauth2_client_ids"
   category        = "terraform"
-  description     = "MCP OAuth2 client ID for the Vercel production frontend"
-  sensitive       = true
+  description     = "OAuth2 client IDs excluded from stale cleanup in production"
+  hcl             = true
   variable_set_id = tfe_variable_set.production.id
 
   lifecycle {
@@ -996,6 +996,14 @@ resource "tfe_variable" "planetscale_app_password_production" {
   variable_set_id = tfe_variable_set.production.id
 }
 
+resource "tfe_variable" "planetscale_migrator_password_production" {
+  key             = "planetscale_migrator_password"
+  category        = "terraform"
+  description     = "PlanetScale migrator role password for production"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}
+
 resource "tfe_variable" "backoffice_google_client_id_production" {
   key             = "backoffice_google_client_id"
   category        = "terraform"
@@ -1025,6 +1033,30 @@ resource "tfe_variable" "backoffice_google_hosted_domain_production" {
   category        = "terraform"
   description     = "Backoffice Google Workspace hosted domain for production"
   sensitive       = false
+  variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "payment_retry_alert_api_key_production" {
+  key             = "payment_retry_alert_api_key"
+  category        = "terraform"
+  description     = "PaymentRetryAlert API key for production"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "payment_retry_alert_webhook_secret_production" {
+  key             = "payment_retry_alert_webhook_secret"
+  category        = "terraform"
+  description     = "PaymentRetryAlert webhook signing secret for production"
+  sensitive       = true
   variable_set_id = tfe_variable_set.production.id
 
   lifecycle {

@@ -544,3 +544,39 @@ class TestGetSubscriptionsNeedingTrialConversionReminder:
         )
 
         assert result == []
+
+
+@pytest.mark.anyio
+class TestExistsLiveByCustomerAndProduct:
+    @pytest.mark.parametrize(
+        ("status", "expected"),
+        [
+            (SubscriptionStatus.active, True),
+            (SubscriptionStatus.paused, True),
+            (SubscriptionStatus.trial_ended, True),
+            (SubscriptionStatus.canceled, False),
+            (SubscriptionStatus.unpaid, False),
+            (SubscriptionStatus.incomplete, False),
+        ],
+    )
+    async def test_status(
+        self,
+        status: SubscriptionStatus,
+        expected: bool,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        await create_subscription(
+            save_fixture, product=product, customer=customer, status=status
+        )
+
+        repository = SubscriptionRepository.from_session(session)
+
+        assert (
+            await repository.exists_live_by_customer_and_product(
+                customer.id, product.id
+            )
+            is expected
+        )

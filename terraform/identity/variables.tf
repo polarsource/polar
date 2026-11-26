@@ -31,7 +31,7 @@ variable "ssosync_schedule_expression" {
 }
 
 variable "ssosync_version" {
-  description = "Pinned ssosync SAR version; null uses the latest."
+  description = "Pinned ssosync SAR version."
   type        = string
-  default     = null
+  default     = "2.12.2"
 }

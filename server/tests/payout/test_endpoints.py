@@ -2,7 +2,7 @@ import uuid
 
 import pytest
 from fastapi import FastAPI
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.models import Organization, Payout, User, UserOrganization

@@ -1,6 +1,5 @@
 import contextlib
 import contextvars
-from collections.abc import Callable
 from typing import Any, ClassVar
 
 import dramatiq
@@ -22,7 +21,11 @@ from polar.config import settings
 from polar.logging import CorrelationID, Logger
 from polar.observability.task_logging import set_sentry_task_context, task_log_context
 from polar.operational_errors import handle_operational_error
-from polar.redis import REDIS_RETRY_ON_ERRROR, SyncFailoverRedis
+from polar.redis import (
+    REDIS_CONNECTION_OPTIONS,
+    REDIS_RETRY_ON_ERRROR,
+    SyncFailoverRedis,
+)
 
 from . import _sqs
 from ._asyncio import MonitoredAsyncIO
@@ -72,7 +75,7 @@ class SchedulerMiddleware(dramatiq.Middleware):
     """Middleware to manage scheduled jobs using APScheduler."""
 
     def __init__(self) -> None:
-        self.cron_triggers: list[tuple[Callable[..., Any], CronTrigger]] = []
+        self.cron_triggers: list[tuple[str, CronTrigger]] = []
 
     @property
     def actor_options(self) -> set[str]:
@@ -82,7 +85,7 @@ class SchedulerMiddleware(dramatiq.Middleware):
         self, broker: dramatiq.Broker, actor: dramatiq.Actor[Any, Any]
     ) -> None:
         if cron_trigger := actor.options.get("cron_trigger"):
-            self.cron_triggers.append((actor.send, cron_trigger))
+            self.cron_triggers.append((actor.actor_name, cron_trigger))
 
 
 scheduler_middleware = SchedulerMiddleware()
@@ -220,6 +223,7 @@ def get_broker(*, database: bool = True) -> dramatiq.Broker:
         retry_on_error=REDIS_RETRY_ON_ERRROR,
         socket_timeout=10,
         socket_connect_timeout=3,
+        **REDIS_CONNECTION_OPTIONS,
     )
 
     result_backend = ResultsBackend(
@@ -231,6 +235,7 @@ def get_broker(*, database: bool = True) -> dramatiq.Broker:
                 retry_on_error=REDIS_RETRY_ON_ERRROR,
                 socket_timeout=10,
                 socket_connect_timeout=3,
+                **REDIS_CONNECTION_OPTIONS,
             )
         ),
     )
@@ -242,6 +247,7 @@ def get_broker(*, database: bool = True) -> dramatiq.Broker:
                 retry_on_error=REDIS_RETRY_ON_ERRROR,
                 socket_timeout=10,
                 socket_connect_timeout=3,
+                **REDIS_CONNECTION_OPTIONS,
             )
         )
     )

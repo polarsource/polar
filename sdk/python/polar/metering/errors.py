@@ -10,6 +10,11 @@ class MeteringError(PolarError):
     """Base error for metering configuration and operations."""
 
 
+def retry_after_seconds(retry_after: int | None) -> float | None:
+    """How long Polar asked to wait before the next delivery: a second at least."""
+    return None if retry_after is None else max(float(retry_after), 1.0)
+
+
 class InvalidActorError(MeteringError):
     """Raised when customer or member identifiers are inconsistent."""
 

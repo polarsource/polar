@@ -1,5 +1,3 @@
-import { setTimeout as sleep } from "node:timers/promises";
-
 import type { EventInput } from "./event";
 
 import {
@@ -13,6 +11,7 @@ import {
   MeteringDeliveryError,
   MeteringTimeoutError,
   deliveryTimeout,
+  retryAfterMs,
   waitForDelivery,
   type DeliveryFailure,
   type DeliveryOptions,
@@ -22,6 +21,21 @@ import {
 export type { DropReason } from "./errors";
 
 const RETRY_AFTER_BUDGET_MS = 300_000;
+
+function sleep(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) return reject(signal.reason);
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(signal.reason);
+    };
+    const timer = setTimeout(() => {
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
+}
 
 export interface MeteringClient {
   events: {
@@ -70,6 +84,7 @@ class FlushRequest {
   resolve!: () => void;
   reject!: (error: unknown) => void;
   active = true;
+  deadline = Infinity;
   readonly completed = new Promise<void>((resolve, reject) => {
     this.resolve = resolve;
     this.reject = reject;
@@ -153,9 +168,10 @@ export class BufferedMeteringStrategy {
   /**
    * Wait for events queued before this call and report unacknowledged delivery failures.
    *
-   * Overlapping flushes each observe failures within their queue boundary. A completed
-   * flush acknowledges those outcomes; a timeout leaves them observable by a later flush
-   * and does not cancel background delivery or other callers.
+   * A newer flush releases the ones still waiting that it outlasts, and reports their failures
+   * instead: one waiter keeps a serverless function alive, and the others return without
+   * waiting for Polar. A completed flush acknowledges those outcomes; a timeout leaves them observable
+   * by a later flush and does not cancel background delivery.
    *
    * @param options Maximum wait in milliseconds; defaults to 30000.
    * @throws MeteringDeliveryError if earlier events were dropped or remain pending at the deadline.
@@ -165,10 +181,16 @@ export class BufferedMeteringStrategy {
     const timeout = deliveryTimeout(options);
     if (!this.worker || this.closing) throw new PolarError("Buffered metering is not running");
     const request = this.barrier();
+    request.deadline = Date.now() + timeout;
     if (this.finished || this.failure) this.finish(request);
     else {
       this.queue.push(request);
       this.wake?.();
+    }
+    for (const older of this.barriers) {
+      if (older === request || older.deadline > request.deadline) continue;
+      older.resolve();
+      this.release(older);
     }
     const timer = setTimeout(() => {
       request.reject(this.timeoutError(request, timeout, "flush_timeout"));
@@ -314,8 +336,8 @@ export class BufferedMeteringStrategy {
           }
           const next = this.queue.shift();
           if (next === undefined) break;
-          if (next instanceof FlushRequest) requests.push(next);
-          else this.batch.push(next);
+          if (!(next instanceof FlushRequest)) this.batch.push(next);
+          else if (next.active) requests.push(next);
         }
         const events = this.batch.map((item) => item.event);
         const failure = await this.processBatch(events);
@@ -372,10 +394,10 @@ export class BufferedMeteringStrategy {
           error instanceof PolarRateLimitError ||
           error instanceof PolarServerError
         ) {
-          const retryAfter = error instanceof PolarRateLimitError ? error.retryAfter : null;
+          const retryAfter = retryAfterMs(error);
           let delay: number;
-          if (retryAfter !== null && Number.isFinite(retryAfter) && retryAfter >= 0) {
-            delay = Math.max(retryAfter, 1) * 1000;
+          if (retryAfter !== null) {
+            delay = retryAfter;
             waited += delay;
             if (waited > RETRY_AFTER_BUDGET_MS) return { reason: "retry_exhausted", cause: error };
           } else {
@@ -384,7 +406,7 @@ export class BufferedMeteringStrategy {
             delay = 2 ** attempt * 1000 * (1 + (Math.random() * 2 - 1) * 0.1);
             attempt++;
           }
-          await sleep(Math.min(delay, 2_147_483_647), undefined, { signal: this.abort.signal });
+          await sleep(Math.min(delay, 2_147_483_647), this.abort.signal);
         } else if (error instanceof PolarError) {
           return { reason: "permanent_error", cause: error };
         } else {

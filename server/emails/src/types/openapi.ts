@@ -1926,8 +1926,13 @@ export interface components {
        * @description Avatar URL shown in checkout, customer portal, emails etc.
        */
       avatar_url: string | null
-      /** @description Proration behavior applied when customer updates their subscription from the portal. */
-      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /**
+       * Proration Behavior
+       * @description Proration behavior applied when customer updates their subscription from the portal.
+       */
+      proration_behavior:
+        | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
       /**
        * Allow Customer Updates
        * @description Whether customers can update their subscriptions from the customer portal.
@@ -2472,12 +2477,6 @@ export interface components {
        */
       merchant_migration_enabled: boolean
       /**
-       * Staged Events Ingest Enabled
-       * @description If this organization's ingested events are queued in `staged_events` and moved to `events` out of band.
-       * @default false
-       */
-      staged_events_ingest_enabled: boolean
-      /**
        * Config As Code Enabled
        * @description If this organization can manage its configuration from a declarative config document.
        * @default false
@@ -2573,13 +2572,12 @@ export interface components {
     OrganizationSubscriptionSettings: {
       /** Allow Multiple Subscriptions */
       allow_multiple_subscriptions: boolean
-      /**
-       * PublicSubscriptionProrationBehavior
-       * @enum {string}
-       */
-      proration_behavior: 'invoice' | 'prorate' | 'next_period'
+      /** Proration Behavior */
+      proration_behavior: ('invoice' | 'prorate' | 'next_period') | 'auto'
       /** Benefit Revocation Grace Period */
       benefit_revocation_grace_period: number
+      /** Trial Ended Reactivation Period */
+      trial_ended_reactivation_period?: number
       /** Prevent Trial Abuse */
       prevent_trial_abuse: boolean
       /** Allow Customer Updates */
@@ -3358,6 +3356,7 @@ export interface components {
       | 'canceled'
       | 'unpaid'
       | 'paused'
+      | 'trial_ended'
     /** SubscriptionTrialConversionReminderEmail */
     SubscriptionTrialConversionReminderEmail: {
       /**
@@ -3411,6 +3410,16 @@ export interface components {
       previous_billing_provider: string | null
       /** Trial End Date */
       trial_end_date: string
+      /**
+       * Payment Method Required
+       * @default true
+       */
+      payment_method_required: boolean
+      /**
+       * Billing Address Required
+       * @default false
+       */
+      billing_address_required: boolean
     }
     /** SubscriptionUncanceledEmail */
     SubscriptionUncanceledEmail: {

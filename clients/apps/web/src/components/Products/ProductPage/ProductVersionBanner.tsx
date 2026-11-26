@@ -1,10 +1,14 @@
-import { useIsManagedAsCode } from '@/hooks/permissions'
-import { useCatalog, useLiveCatalog } from '@/hooks/queries/catalogs'
+import {
+  useCatalog,
+  useLiveCatalog,
+  useRemovedCatalogItems,
+} from '@/hooks/queries/catalogs'
 import { useProducts } from '@/hooks/queries/products'
 import { useSubscriptions } from '@/hooks/queries/subscriptions'
 import { schemas } from '@polar-sh/client'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { DraftVersionBanner } from '../DraftVersionBanner'
 
@@ -38,7 +42,8 @@ export const ProductVersionBanner = ({
   organization: schemas['Organization']
   product: schemas['Product']
 }) => {
-  const managedAsCode = useIsManagedAsCode(organization.id)
+  const managedAsCode =
+    organization.feature_settings?.config_as_code_enabled ?? false
   const { data: catalog } = useCatalog(
     managedAsCode ? product.catalog_id : null,
   )
@@ -90,6 +95,7 @@ const DraftProductBanner = ({
   return (
     <DraftVersionBanner
       organization={organization}
+      resource="product"
       draftId={draftId}
       currentHref={
         current
@@ -115,6 +121,7 @@ const OlderVersionBanner = ({
   const { data: liveCatalog } = useLiveCatalog(organization.id, true)
   const { data: currentProducts } = useProducts(organization.id, {
     external_id: externalId,
+    catalog_status: 'live',
     limit: 1,
   })
   const { data: subscriptions } = useSubscriptions(organization.id, {
@@ -125,23 +132,17 @@ const OlderVersionBanner = ({
   const current = currentProducts?.items[0]
 
   if (!current) {
-    return null
+    return currentProducts ? (
+      <RemovedItemBanner
+        organization={organization}
+        resource="product"
+        externalId={externalId}
+      />
+    ) : null
   }
 
   return (
-    <Box
-      flexDirection={{ base: 'column', md: 'row' }}
-      alignItems={{ base: 'start', md: 'center' }}
-      justifyContent="between"
-      columnGap="2xl"
-      rowGap="l"
-      paddingVertical="l"
-      paddingHorizontal="xl"
-      borderRadius="l"
-      borderWidth={1}
-      borderStyle="solid"
-      borderColor="border-primary"
-    >
+    <BannerFrame>
       <Box flexDirection="column" rowGap="xs" minWidth={0}>
         <Text variant="title">You&apos;re viewing an older version</Text>
         <Text color="muted">
@@ -175,6 +176,93 @@ const OlderVersionBanner = ({
           View current version
         </Button>
       </Box>
-    </Box>
+    </BannerFrame>
   )
 }
+
+const removedCopy = {
+  product: "New customers can't buy it.",
+  benefit: "New customers don't get it.",
+  meter: "New subscriptions don't bill it.",
+} as const
+
+export const RemovedItemBanner = ({
+  organization,
+  resource,
+  externalId,
+}: {
+  organization: schemas['Organization']
+  resource: schemas['RemovedCatalogItemResource']
+  externalId: string
+}) => {
+  const router = useRouter()
+  const { data: removedItems } = useRemovedCatalogItems(organization.id)
+  const item = removedItems?.find(
+    (removed) =>
+      removed.resource === resource && removed.external_id === externalId,
+  )
+  if (!item) {
+    return null
+  }
+  const removedIn = item.removed_in_catalog
+  return (
+    <BannerFrame>
+      <Box flexDirection="column" rowGap="xs" minWidth={0}>
+        <Text variant="title">This {resource} has been removed</Text>
+        <Text color="muted">
+          Removed in{' '}
+          <Text as="span" color="default">
+            <Link
+              href={`/dashboard/${organization.slug}/products/versions/${removedIn.id}`}
+              className="hover:underline hover:decoration-current/30 hover:underline-offset-4"
+            >
+              {removedIn.name ?? 'Untitled'}
+            </Link>
+          </Text>
+          . {removedCopy[resource]}
+        </Text>
+      </Box>
+      <Box
+        alignItems="center"
+        flexWrap="wrap"
+        columnGap="2xl"
+        rowGap="l"
+        flexShrink={0}
+      >
+        <Stat
+          label="Removed"
+          value={formatPublishedAt(removedIn.published_at)}
+        />
+        <Stat label="Customers" value={item.customers_count.toLocaleString()} />
+        <Button
+          variant="secondary"
+          onClick={() =>
+            router.push(
+              `/dashboard/${organization.slug}/products/versions?tab=removed`,
+            )
+          }
+        >
+          View removed {resource}s
+        </Button>
+      </Box>
+    </BannerFrame>
+  )
+}
+
+const BannerFrame = ({ children }: { children: React.ReactNode }) => (
+  <Box
+    flexDirection={{ base: 'column', md: 'row' }}
+    alignItems={{ base: 'start', md: 'center' }}
+    justifyContent="between"
+    columnGap="2xl"
+    rowGap="l"
+    paddingVertical="l"
+    paddingHorizontal="xl"
+    borderRadius="l"
+    borderWidth={1}
+    borderStyle="solid"
+    borderColor="border-primary"
+  >
+    {children}
+  </Box>
+)

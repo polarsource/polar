@@ -7,10 +7,17 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models.base import RecordModel
+from polar.kit.encryption import EncryptedString, EncryptedStringType
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 
 if TYPE_CHECKING:
     from .organization import Organization
+
+
+ORGANIZATION_SSO_CONNECTION_CLIENT_SECRET_CONTEXT = {
+    "table": "organization_sso_connections",
+    "column": "client_secret",
+}
 
 
 class OrganizationSSOConnectionType(StrEnum):
@@ -49,4 +56,27 @@ class OrganizationSSOConnection(RecordModel):
         StringEnum(OrganizationSSOConnectionType), nullable=False
     )
     configuration: Mapped[OIDCConfiguration] = mapped_column(JSONB, nullable=False)
+    client_secret_encrypted: Mapped[EncryptedString | None] = mapped_column(
+        EncryptedStringType(ORGANIZATION_SSO_CONNECTION_CLIENT_SECRET_CONTEXT),
+        nullable=True,
+    )
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+    @classmethod
+    async def encrypt_client_secret(
+        cls, id: UUID, client_secret: str | None
+    ) -> EncryptedString | None:
+        if client_secret is None:
+            return None
+        return await EncryptedString.encrypt(
+            client_secret,
+            context={
+                **ORGANIZATION_SSO_CONNECTION_CLIENT_SECRET_CONTEXT,
+                "id": str(id),
+            },
+        )
+
+    async def get_client_secret(self) -> str | None:
+        if self.client_secret_encrypted is None:
+            return self.configuration.get("client_secret")
+        return await self.client_secret_encrypted.decrypt(id=str(self.id))

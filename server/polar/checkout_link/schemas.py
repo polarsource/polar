@@ -1,6 +1,6 @@
 from typing import Annotated, Literal
 
-from pydantic import UUID4, AliasPath, Field, computed_field
+from pydantic import MISSING, UUID4, AliasPath, Field, computed_field
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.config import settings
@@ -21,7 +21,7 @@ from polar.kit.schemas import (
     TimestampedSchema,
 )
 from polar.kit.trial import TrialConfigurationInputMixin, TrialConfigurationOutputMixin
-from polar.kit.versioning import QuerySchema, Version
+from polar.kit.versioning import Omissible, QuerySchema, Version
 from polar.organization.schemas import OrganizationID
 from polar.product.schemas import (
     BenefitPublicList,
@@ -31,7 +31,7 @@ from polar.product.schemas import (
     ProductPrice,
     ProductPriceList,
 )
-from polar.version import V2026_10
+from polar.version import V2026_10, V2027_01
 
 SuccessURL = Annotated[
     SuccessUrl | None,
@@ -88,7 +88,19 @@ _units_description = (
 )
 
 
+_trial_payment_setup_required_description = (
+    "Whether customers must provide a payment method to start a trial. "
+    "If `false`, customers can start a trial without entering payment details. "
+    "If `null`, the product's setting is used."
+)
+
+
 class CheckoutLinkCreateBase(TrialConfigurationInputMixin, MetadataInputMixin, Schema):
+    trial_payment_setup_required: Annotated[
+        bool | None,
+        Version(starting_from=V2027_01),
+        Field(description=_trial_payment_setup_required_description),
+    ] = None
     payment_processor: Literal[PaymentProcessor.stripe] = Field(
         description="Payment processor to use. Currently only Stripe is supported."
     )
@@ -144,25 +156,33 @@ class CheckoutLinkCreateProducts(CheckoutLinkCreateBase):
 class CheckoutLinkUpdate(MetadataInputMixin, TrialConfigurationInputMixin):
     """Schema to update an existing checkout link."""
 
-    products: list[UUID4] | None = Field(
-        default=None,
+    trial_payment_setup_required: Annotated[
+        bool | None,
+        Version(starting_from=V2027_01),
+        Field(description=_trial_payment_setup_required_description),
+    ] = None
+
+    products: Omissible[list[UUID4]] = Field(
+        default=MISSING,
         description="List of products that will be available to select at checkout.",
         min_length=1,
     )
     label: str | None = None
-    allow_discount_codes: bool | None = Field(
-        default=None, description=_allow_discount_codes_description
+    allow_discount_codes: Omissible[bool] = Field(
+        default=MISSING, description=_allow_discount_codes_description
     )
-    require_billing_address: bool | None = Field(
-        default=None, description=_require_billing_address_description
+    require_billing_address: Omissible[bool] = Field(
+        default=MISSING, description=_require_billing_address_description
     )
-    discount_id: UUID4 | None = Field(
-        default=None, description=_discount_id_description
+    discount_id: Omissible[UUID4 | None] = Field(
+        default=MISSING, description=_discount_id_description
     )
-    seats: Int32 | None = Field(
-        default=None, ge=1, le=10000, description=_seats_description
+    seats: Omissible[Int32 | None] = Field(
+        default=MISSING, ge=1, le=10000, description=_seats_description
     )
-    units: Int32 | None = Field(default=None, ge=1, description=_units_description)
+    units: Omissible[Int32 | None] = Field(
+        default=MISSING, ge=1, description=_units_description
+    )
     success_url: SuccessURL = None
     return_url: ReturnURL = None
 
@@ -171,6 +191,11 @@ class CheckoutLinkBase(
     MetadataOutputMixin, TrialConfigurationOutputMixin, TimestampedSchema, IDSchema
 ):
     payment_processor: PaymentProcessor = Field(description="Payment processor used.")
+    trial_payment_setup_required: Annotated[
+        bool | None,
+        Version(starting_from=V2027_01),
+        Field(description=_trial_payment_setup_required_description),
+    ]
     client_secret: str = Field(
         description="Client secret used to access the checkout link."
     )

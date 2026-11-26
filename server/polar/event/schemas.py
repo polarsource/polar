@@ -1,6 +1,6 @@
 import re
 from collections.abc import Sequence
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from typing import Annotated, Literal, NotRequired, Self
 
@@ -73,11 +73,12 @@ from polar.kit.schemas import (
     SetSchemaReference,
 )
 from polar.kit.time_queries import TimeInterval
-from polar.kit.versioning import QuerySchema
+from polar.kit.versioning import QuerySchema, Version
 from polar.meter.filter import Filter
 from polar.meter.schemas import MeterID
 from polar.models.event import EventSource
 from polar.organization.schemas import OrganizationID
+from polar.version import V2027_01
 
 _NAME_DESCRIPTION = "The name of the event."
 _SOURCE_DESCRIPTION = (
@@ -91,10 +92,14 @@ def default_timestamp_factory() -> datetime:
     return datetime.now(UTC)
 
 
+# How far the sender's clock may run ahead of ours.
+TIMESTAMP_AHEAD_TOLERANCE = timedelta(seconds=5)
+
+
 def is_past_timestamp(timestamp: datetime) -> datetime:
     # Convert to UTC
     timestamp = timestamp.astimezone(UTC)
-    if timestamp > datetime.now(UTC):
+    if timestamp > datetime.now(UTC) + TIMESTAMP_AHEAD_TOLERANCE:
         raise ValueError("Timestamp must be in the past.")
     return timestamp
 
@@ -358,6 +363,39 @@ class BenefitRevokedEvent(SystemEventBase):
     """An event created by Polar when a benefit is revoked from a customer."""
 
     name: Literal[SystemEventEnum.benefit_revoked] = Field(
+        description=_NAME_DESCRIPTION
+    )
+    metadata: BenefitGrantMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
+class BenefitManuallyGrantedEvent(SystemEventBase):
+    """An event created by Polar when a benefit grant is created manually."""
+
+    name: Literal[SystemEventEnum.benefit_manually_granted] = Field(
+        description=_NAME_DESCRIPTION
+    )
+    metadata: BenefitGrantMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
+class BenefitManuallyRevokedEvent(SystemEventBase):
+    """An event created by Polar when a benefit grant is manually revoked."""
+
+    name: Literal[SystemEventEnum.benefit_manually_revoked] = Field(
+        description=_NAME_DESCRIPTION
+    )
+    metadata: BenefitGrantMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
+class BenefitUnrevokedEvent(SystemEventBase):
+    """An event created by Polar when a manual revocation is cleared."""
+
+    name: Literal[SystemEventEnum.benefit_unrevoked] = Field(
         description=_NAME_DESCRIPTION
     )
     metadata: BenefitGrantMetadata = Field(
@@ -701,6 +739,9 @@ SystemEvent = Annotated[
     | BenefitCycledEvent
     | BenefitUpdatedEvent
     | BenefitRevokedEvent
+    | Annotated[BenefitManuallyGrantedEvent, Version(starting_from=V2027_01)]
+    | Annotated[BenefitManuallyRevokedEvent, Version(starting_from=V2027_01)]
+    | Annotated[BenefitUnrevokedEvent, Version(starting_from=V2027_01)]
     | SubscriptionCreatedEvent
     | SubscriptionUpdatedEvent
     | SubscriptionCycledEvent

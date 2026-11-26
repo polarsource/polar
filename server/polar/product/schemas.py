@@ -5,6 +5,7 @@ from decimal import Decimal
 from typing import Annotated, Any, Literal, Self
 
 from pydantic import (
+    MISSING,
     UUID4,
     AfterValidator,
     AwareDatetime,
@@ -59,7 +60,7 @@ from polar.kit.schemas import (
     TimestampedSchema,
 )
 from polar.kit.trial import TrialConfigurationInputMixin, TrialConfigurationOutputMixin
-from polar.kit.versioning import QuerySchema, Version
+from polar.kit.versioning import Omissible, QuerySchema, Version
 from polar.kit.visibility import Visibility
 from polar.meter.unit import MeterUnit
 from polar.models import Benefit as BenefitModel
@@ -606,6 +607,12 @@ ProductPriceCreateList = Annotated[
     list[ProductPriceCreate], Field(min_length=1), PRICE_CREATE_LIST_SCHEMA
 ]
 
+TRIAL_PAYMENT_SETUP_REQUIRED_DESCRIPTION = (
+    "Whether customers must provide a payment method to start a trial. "
+    "If `false`, customers can start a trial without entering payment details."
+)
+
+
 PRODUCT_CREATE_PRICES_DESCRIPTION = (
     "List of available prices for this product. "
     "It may combine at most one fixed price with one seat-based price "
@@ -646,6 +653,11 @@ class ProductCreateBase(MetadataInputMixin, ExternalIDInputMixin, Schema):
 
 
 class ProductCreateRecurring(TrialConfigurationInputMixin, ProductCreateBase):
+    trial_payment_setup_required: Annotated[
+        bool,
+        Version(starting_from=V2027_01),
+        Field(description=TRIAL_PAYMENT_SETUP_REQUIRED_DESCRIPTION),
+    ] = True
     recurring_interval: SubscriptionRecurringInterval = Field(
         description="The recurring interval of the product.",
     )
@@ -760,30 +772,10 @@ class ProductUpdate(
     Schema to update a product.
     """
 
-    name: ProductName | None = None
+    name: Omissible[ProductName] = MISSING
     description: ProductDescription = None
-    recurring_interval: SubscriptionRecurringInterval | None = Field(
-        default=None,
-        description=(
-            "The recurring interval of the product. "
-            "If `None`, the product is a one-time purchase. "
-            "**Can only be set on legacy recurring products. "
-            "Once set, it can't be changed.**"
-        ),
-    )
-    recurring_interval_count: int | None = Field(
-        default=None,
-        ge=1,
-        le=999,
-        description=(
-            "Number of interval units of the subscription. "
-            "If this is set to 1 the charge will happen every interval (e.g. every month), "
-            "if set to 2 it will be every other month, and so on. "
-            "Once set, it can't be changed.**"
-        ),
-    )
-    is_archived: bool | None = Field(
-        default=None,
+    is_archived: Omissible[bool] = Field(
+        default=MISSING,
         json_schema_extra=destructive_when_equals(True),
         description=(
             "Whether the product is archived. "
@@ -792,22 +784,27 @@ class ProductUpdate(
             "and subscriptions will continue normally."
         ),
     )
-    visibility: ProductVisibility | None = Field(
-        default=None,
+    visibility: Omissible[ProductVisibility] = Field(
+        default=MISSING,
         description="The visibility of the product.",
     )
-    prices: list[ProductPriceUpdate] | None = Field(
-        default=None, description=PRODUCT_UPDATE_PRICES_DESCRIPTION
+    prices: Omissible[list[ProductPriceUpdate]] = Field(
+        default=MISSING, description=PRODUCT_UPDATE_PRICES_DESCRIPTION
     )
-    medias: list[UUID4] | None = Field(
-        default=None,
+    medias: Omissible[list[UUID4]] = Field(
+        default=MISSING,
         description=(
             "List of file IDs. "
             "Each one must be on the same organization as the product, "
             "of type `product_media` and correctly uploaded."
         ),
     )
-    attached_custom_fields: AttachedCustomFieldListCreate | None = None
+    attached_custom_fields: Omissible[AttachedCustomFieldListCreate] = MISSING
+    trial_payment_setup_required: Annotated[
+        Omissible[bool],
+        Version(starting_from=V2027_01),
+        Field(description=TRIAL_PAYMENT_SETUP_REQUIRED_DESCRIPTION),
+    ] = MISSING
 
 
 class ProductBenefitsUpdate(Schema):
@@ -1187,8 +1184,21 @@ class ProductVersionOutputMixin(BaseModel):
     ]
 
 
+class ProductTrialOutputMixin(BaseModel):
+    trial_payment_setup_required: Annotated[
+        bool,
+        BeforeValidator(lambda v: True if v is None else v),
+        Version(starting_from=V2027_01),
+        Field(description=TRIAL_PAYMENT_SETUP_REQUIRED_DESCRIPTION),
+    ]
+
+
 class Product(
-    MetadataOutputMixin, ExternalIDOutputMixin, ProductVersionOutputMixin, ProductBase
+    MetadataOutputMixin,
+    ExternalIDOutputMixin,
+    ProductVersionOutputMixin,
+    ProductTrialOutputMixin,
+    ProductBase,
 ):
     """
     A product.

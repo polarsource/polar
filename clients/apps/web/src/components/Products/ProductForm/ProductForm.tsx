@@ -37,6 +37,10 @@ export type ProductFormType = Omit<
   schemas['ProductCreate'] | schemas['ProductUpdate'],
   'metadata' | 'prices'
 > &
+  Pick<
+    schemas['ProductCreate'],
+    'recurring_interval' | 'recurring_interval_count'
+  > &
   ProductFullMediasMixin &
   ProductMeterCycleMixin &
   MetadataFormValues & {

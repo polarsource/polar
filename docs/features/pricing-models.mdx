@@ -1,0 +1,158 @@
+---
+title: "Pricing models"
+sidebarTitle: "Overview"
+description: "Every pricing model Polar supports, from one-time purchases and flat subscriptions to seats, credits and pure usage, and which prices and benefits build each one."
+---
+
+A **pricing model** on Polar is a product's prices plus, optionally, a [Meter Credits benefit](/features/usage-based-billing/credits). There is no separate plan or pricing object to configure. You pick a billing cycle, add one or more prices, and attach the benefits.
+
+Four price types cover every model:
+
+| Price type | The customer pays | When | See |
+| --- | --- | --- | --- |
+| Fixed | A set amount, or nothing | Up front, once or every cycle | [Fixed pricing](/features/fixed-pricing) |
+| Seat-based | Per seat, with optional tiers | Up front | [Seat-based pricing](/features/seat-based-pricing) |
+| Unit-based | Per unit the buyer picks, with optional tiers | Up front | [Unit-based pricing](/features/unit-based-pricing) |
+| Metered | Per unit of recorded usage, with optional tiers and a cap | After each cycle | [Usage-based pricing](/features/usage-based-billing/billing) |
+
+Any of them works on a **one-time** or **recurring** product, except metered prices, which need a recurring product.
+
+## Common models
+
+| Model | Billing cycle | Prices | Benefits |
+| --- | --- | --- | --- |
+| [One-time purchase](#one-time-purchase) | One-time | Fixed | Any |
+| [Flat subscription](#flat-subscription) | Recurring | Fixed | Any |
+| [Free tier](#free-tier) | Either | Fixed at 0 | Any |
+| [Team plan](#team-plan) | Either | Seat-based, optional fixed base fee | Granted per member |
+| [Per-unit](#per-unit) | Either | Unit-based, optional fixed base fee | Any |
+| [Subscription with credits](#subscription-with-credits) | Recurring | Fixed, optional metered for overage | Meter Credits |
+| [Credit packs](#credit-packs) | One-time | Fixed | Meter Credits |
+| [Base fee plus usage](#base-fee-plus-usage) | Recurring | Fixed and metered | Any |
+| [Pure usage](#pure-usage) | Recurring | Metered only | Any |
+
+The `prices` arrays below are what you send to `POST /v1/products/` or `polar products create --prices`. Amounts are in cents. Metered rates are decimal strings in cents per unit.
+
+### One-time purchase
+
+The customer pays once and keeps the benefits for good. Use it for licenses, downloads, templates and lifetime deals.
+
+```json
+[{ "amount_type": "fixed", "price_amount": 4900 }]
+```
+
+Leave out `recurring_interval`. See [Fixed pricing](/features/fixed-pricing#sell-a-one-time-purchase).
+
+### Flat subscription
+
+The classic SaaS plan: the same amount every month or year. Set `recurring_interval: "month"` with the same price. For monthly and yearly options, create two products. See [Fixed pricing](/features/fixed-pricing#sell-a-subscription).
+
+```json
+[{ "amount_type": "fixed", "price_amount": 2000 }]
+```
+
+### Free tier
+
+A fixed price of 0. The customer still checks out, becomes a [customer](/concepts/customers) and gets the benefits, so your app reads access the same way for free and paid plans. Checkout skips payment details when nothing is due. See [Free products](/features/fixed-pricing#free-products).
+
+```json
+[{ "amount_type": "fixed", "price_amount": 0 }]
+```
+
+### Team plan
+
+One customer buys seats and assigns them to members. Each member who claims a seat gets the benefits. Add a fixed price for a platform fee on top of the seats. See [Seat-based pricing](/features/seat-based-pricing).
+
+```json
+[
+  { "amount_type": "fixed", "price_amount": 5000 },
+  { "amount_type": "seat_based", "seat_tiers": { "tiers": [{ "min_seats": 1, "max_seats": null, "price_per_seat": 1000 }] } }
+]
+```
+
+### Per-unit
+
+The buyer picks a quantity at checkout, such as devices, servers or gigabytes, and pays for it up front. Unlike seats, the customer receives the benefits once, whatever the quantity. See [Unit-based pricing](/features/unit-based-pricing).
+
+### Subscription with credits
+
+A flat plan that includes usage, such as $20/month with 1M AI tokens. Attach a [Meter Credits benefit](/features/usage-based-billing/credits) to a flat subscription and the customer's balance is topped up every cycle.
+
+What happens when credits run out depends on the prices:
+
+- **With a metered price** on the same meter, usage beyond the credits is billed as overage after the cycle.
+- **Without one**, usage is never charged. Polar keeps counting and the balance goes negative. Your app decides whether to stop serving requests.
+
+```json
+[
+  { "amount_type": "fixed", "price_amount": 2000 },
+  { "amount_type": "metered_unit", "meter_id": "<meter_id>", "unit_amount": "0.002" }
+]
+```
+
+<Warning>
+  Polar doesn't block usage when a balance runs out. Check the balance in your app through [customer state](/integrate/customer-state).
+</Warning>
+
+### Credit packs
+
+Prepaid usage on a one-time product, such as $10 for 500 credits. The Meter Credits benefit grants the units once on purchase. Customers buy another pack to top up. There's no overage, since one-time products can't have metered prices, so your app enforces the limit.
+
+```json
+[{ "amount_type": "fixed", "price_amount": 1000 }]
+```
+
+### Base fee plus usage
+
+A fixed amount every cycle plus everything used on top, billed after the cycle. Add a `cap_amount` to the metered price to limit what a customer can be billed per cycle. See [Usage-based pricing](/features/usage-based-billing/billing).
+
+```json
+[
+  { "amount_type": "fixed", "price_amount": 2000 },
+  { "amount_type": "metered_unit", "meter_id": "<meter_id>", "unit_amount": "0.002", "cap_amount": 10000 }
+]
+```
+
+### Pure usage
+
+Pay as you go: a recurring product with only metered prices. Nothing is charged at checkout. Polar saves the payment method and invoices the usage at the end of each cycle. Add several metered prices, one per meter, to bill on more than one dimension, such as input and output tokens.
+
+```json
+[{ "amount_type": "metered_unit", "meter_id": "<meter_id>", "unit_amount": "0.002" }]
+```
+
+Read [Usage: events & meters](/concepts/usage) first. Metered prices need events and a meter before they can bill anything.
+
+## Combining rules
+
+A product can hold several prices, within these rules:
+
+- At most one fixed, one seat-based and one unit-based price per currency.
+- Seat-based and unit-based prices can't be combined.
+- A free price can't be combined with seat-based or unit-based prices.
+- Any number of metered prices can be added, one per meter, on recurring products only.
+- Every currency on a product must have the same set of price types.
+
+See [Combining prices](/concepts/products#combining-prices).
+
+## Choosing a model
+
+- **Charging for access?** Start with a [flat subscription](#flat-subscription) or a [one-time purchase](#one-time-purchase).
+- **Selling to teams where each person needs their own access?** Use a [team plan](#team-plan).
+- **Your costs grow with usage?** Bill it with a metered price, either [on top of a base fee](#base-fee-plus-usage) or [alone](#pure-usage).
+- **Customers want a predictable bill?** Include usage as [credits](#subscription-with-credits) and cap or bill the overage.
+
+You can change prices later. Existing subscribers keep the price they signed up at until you move them. See [Change the price](/features/fixed-pricing#change-the-price).
+
+<Visibility for="agents">
+  Build a model by combining `prices` on one product (`amount_type`: `fixed`, `seat_based`, `unit_based`, `metered_unit`, `metered_tiers`) with benefits attached via `POST /v1/products/{id}/benefits`. Included usage is a `meter_credit` benefit with `properties: { meter_id, units, rollover }`. Metered prices require `recurring_interval`. Create products in the sandbox until the user says otherwise.
+</Visibility>
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Products & prices](/concepts/products) | Price types, billing cycles and combining rules |
+| [Usage: events & meters](/concepts/usage) | How events become billable usage |
+| [Credits](/features/usage-based-billing/credits) | Include prepaid usage with the Meter Credits benefit |
+| [Products](/features/products) | Create, configure and archive products |

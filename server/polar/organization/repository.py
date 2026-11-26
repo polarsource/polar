@@ -314,18 +314,18 @@ class OrganizationRepository(
         self, cutoff: datetime, *, limit: int = CANCEL_SUBSCRIPTIONS_BATCH_SIZE
     ) -> Sequence[Organization]:
         """Orgs denied, blocked, or offboarded past the cutoff that still have a
-        billable subscription to cancel.
+        cancelable (billable or paused) subscription.
 
         The ``EXISTS`` gate makes the scan idempotent: once an org's
         subscriptions are all cancelled it drops out and is not re-enqueued.
         Falls back to ``created_at`` when ``status_updated_at`` is unset, so a
         terminal org with a legacy null timestamp is still wound down.
         """
-        has_billable_subscription = (
+        has_cancelable_subscription = (
             select(Subscription.id)
             .where(
                 Subscription.organization_id == Organization.id,
-                Subscription.status.in_(SubscriptionStatus.billable_statuses()),
+                Subscription.status.in_(SubscriptionStatus.cancelable_statuses()),
                 Subscription.ended_at.is_(None),
                 Subscription.deleted_at.is_(None),
             )
@@ -340,7 +340,7 @@ class OrganizationRepository(
             .where(
                 Organization.status.in_(SUBSCRIPTION_CANCELLATION_STATUSES),
                 status_entered_at <= cutoff,
-                has_billable_subscription,
+                has_cancelable_subscription,
             )
             .order_by(status_entered_at.asc())
             .limit(limit)

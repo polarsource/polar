@@ -48,8 +48,10 @@ from .canonical import (
     CanonicalSubscription,
     CanonicalSubscriptionAddOn,
     CanonicalSubscriptionStatus,
+    PaymentMethodAssessment,
     PriceKey,
     SubscriptionDiscountBlock,
+    assess_payment_method,
     canonical_price_key,
     customer_country_fallbacks,
     discount_started_at_for,
@@ -158,7 +160,8 @@ _MISSING_EMAIL_REASON = (
     "The source customer has no email, so it can't be imported into Polar."
 )
 _SUBSCRIPTION_PRODUCT_MISSING_REASON = (
-    "This subscription's price wasn't in the catalog Polar read from Stripe. "
+    "This subscription's price wasn't in the catalog Polar read from the "
+    "source. "
     "That usually means the product was deleted. It stays on the source."
 )
 _SUBSCRIPTION_CUSTOMER_REASON = (
@@ -166,8 +169,8 @@ _SUBSCRIPTION_CUSTOMER_REASON = (
 )
 _CUSTOMER_SUBSCRIBED_ON_POLAR_REASON = (
     "This customer already has a subscription on Polar. Moving this one too "
-    "would bill them twice, so it stays on Stripe. If it's a duplicate, cancel "
-    "it on Stripe. If they should keep both, contact Polar support."
+    "would bill them twice, so it stays on the source. If it's a duplicate, "
+    "cancel it on the source. If they should keep both, contact Polar support."
 )
 _CUSTOMER_STRIPE_ID_CONFLICT_REASON = (
     "A Polar customer with this email is already tied to a different Stripe "
@@ -196,9 +199,9 @@ _TAX_EXEMPT_REASON = (
     "their first renewal on Polar. Let them know before you migrate."
 )
 _TAX_BEHAVIOR_UNSPECIFIED_REASON = (
-    "The Stripe price doesn't say whether tax is included, so Stripe Tax used "
-    "your account's default. Polar will treat it as tax-inclusive. Check that "
-    "matches what the customer paid, and change it here if not."
+    "The source doesn't say whether this price includes tax. Polar will treat "
+    "it as tax-inclusive. Check that matches what the customer paid, and "
+    "change it here if not."
 )
 _TRIALING_REASON = "On trial. Billing resumes on Polar when the trial ends."
 _PAYMENT_REENTRY_REASON = (
@@ -211,6 +214,12 @@ _PAYMENT_METHOD_MISSING_REASON = (
     "The source has no payment method for this subscription. It still moves "
     "to Polar, but its next renewal fails and goes to dunning unless the "
     "customer adds one first."
+)
+_PAYMENT_INDIA_CARD_REASON = (
+    "This looks like an India-issued card. India requires a mandate for "
+    "recurring charges, and it doesn't move with the card. The subscription "
+    "still moves to Polar, but its next renewal is likely to fail and go to "
+    "dunning unless the customer adds another payment method first."
 )
 _SUBSCRIPTION_DISCOUNT_REASON = (
     "This subscription's coupon isn't one Polar can import, so it stays on the "
@@ -655,7 +664,8 @@ class PrecheckEngine:
                 level=PrecheckIssueLevel.warning,
                 code="customer_missing_country",
                 message=(
-                    f"{count} customers have no billing country on Stripe. Polar "
+                    f"{count} customers have no billing country on the source. "
+                    "Polar "
                     "will use a payment-method country when available; otherwise "
                     "they import without a country and tax isn't calculated."
                 ),
@@ -997,11 +1007,15 @@ def payment_method_reason(
 
     Never a reason to skip: the switch moves it either way, and a first renewal
     that can't be charged goes to dunning like any other."""
-    if payment_method is None:
-        return Reason("payment_method_missing", _PAYMENT_METHOD_MISSING_REASON)
-    if payment_method.type.requires_reentry:
-        return Reason("payment_method_requires_reentry", _PAYMENT_REENTRY_REASON)
-    return None
+    match assess_payment_method(payment_method):
+        case PaymentMethodAssessment.missing:
+            return Reason("payment_method_missing", _PAYMENT_METHOD_MISSING_REASON)
+        case PaymentMethodAssessment.paypal | PaymentMethodAssessment.not_copyable:
+            return Reason("payment_method_requires_reentry", _PAYMENT_REENTRY_REASON)
+        case PaymentMethodAssessment.india_card:
+            return Reason("payment_method_india_card", _PAYMENT_INDIA_CARD_REASON)
+        case PaymentMethodAssessment.copyable:
+            return None
 
 
 def _drop_reason(issues: Iterable[PrecheckIssue], codes: set[str]) -> Reason | None:
@@ -1044,6 +1058,7 @@ def _item(
     discount_code: str | None = None,
     cancels_at_period_end: bool | None = None,
     payment_method_type: CanonicalPaymentMethodType | None = None,
+    payment_method_assessment: PaymentMethodAssessment | None = None,
 ) -> MerchantMigrationRecordItem:
     """One review row. ``skip`` means it won't import; ``note`` only annotates a
     row that will."""
@@ -1084,8 +1099,10 @@ def _item(
         tax_behavior=tax_behavior,
         discount_name=discount_name,
         discount_code=discount_code,
+        card_status=None,
         has_payment_method=None,
         payment_method_type=payment_method_type,
+        payment_method_assessment=payment_method_assessment,
         dependencies_imported=None,
         cancels_at_period_end=cancels_at_period_end,
     )
@@ -1406,6 +1423,9 @@ def _subscription_items(
                     if subscription.payment_method is not None
                     else None
                 ),
+                payment_method_assessment=assess_payment_method(
+                    subscription.payment_method
+                ),
             )
         )
     return items
@@ -1703,10 +1723,12 @@ def plan_customer_imports(
             )
         else:
             polar = existing.get(customer.email.lower())
+            stripe_customer_id = customer.copied_stripe_customer_id
             if (
                 polar is not None
                 and polar.stripe_customer_id is not None
-                and polar.stripe_customer_id != customer.source_id
+                and stripe_customer_id is not None
+                and polar.stripe_customer_id != stripe_customer_id
             ):
                 plans[customer.source_id] = stripe_id_conflict_reason(polar)
             else:

@@ -7,7 +7,7 @@ import structlog
 import typer
 from sqlalchemy import select
 
-from polar.kit.db.postgres import create_async_sessionmaker
+from polar.kit.db.postgres import create_async_sessionmaker  # lint-skip: dry-run
 from polar.models import Customer
 from polar.postgres import create_async_engine
 from polar.tax.tax_id import InvalidTaxID, validate_tax_id

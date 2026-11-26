@@ -1,5 +1,6 @@
 import json
 import typing
+import uuid
 from datetime import datetime, timedelta
 from decimal import Decimal
 
@@ -176,6 +177,116 @@ def test_request_meter_usage(
     snapshots = request()
     assert len(snapshots) == 3
     assert all(snapshot.customer_exists for snapshot in snapshots)
+    analyze(run, session)
+    benchmark(request)
+
+
+# An organization with many meters: the customers' buckets on each meter's reducer.
+async def seed_reducers(
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    organization: Organization,
+    reducers: int,
+    customers: int = 10,
+) -> list[Reducer]:
+    current = get_reducer_bucket_start(utc_now())
+    seeded_customers = [
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            email=f"customer-{index}@example.com",
+            external_id=f"customer-{index}",
+        )
+        for index in range(customers)
+    ]
+    seeded = []
+    for _ in range(reducers):
+        meter = await create_meter(
+            save_fixture, organization=organization, id=uuid.uuid4()
+        )
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        session.add_all(
+            ReducerBucket(
+                organization=organization,
+                reducer=reducer,
+                customer=customer,
+                bucket_start=current - (slot + 1) * REDUCER_BUCKET_SIZE,
+                bucket_end=current - slot * REDUCER_BUCKET_SIZE,
+                count=1,
+                sum=Decimal(1),
+                min=Decimal(1),
+                max=Decimal(1),
+                sealed_at=None if slot < 100 else current,
+            )
+            for customer in seeded_customers
+            for slot in range(110)
+        )
+        seeded.append(reducer)
+    await session.flush()
+    return seeded
+
+
+# A cold customer's first read asks for every reducer of the organization at once.
+@pytest.mark.parametrize("reducers", [1, 10, 50])
+def test_request_meter_usage_of_every_reducer(
+    benchmark: BenchmarkFixture,
+    run: Run[typing.Any],
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    organization: Organization,
+    reducers: int,
+) -> None:
+    seeded = run(seed_reducers(session, save_fixture, organization, reducers))
+    payloads = [
+        ExternalCustomerMeterUsageIdentity(
+            reducer_id=reducer.id, external_customer_id="customer-0"
+        )
+        for reducer in seeded
+    ]
+
+    def request() -> list[Snapshot]:
+        return run(
+            outpost_service.get_requested_meter_usage(session, organization, payloads)
+        )
+
+    snapshots = request()
+    assert len(snapshots) == 3 * reducers
+    # One identity per reducer holds the customer's usage.
+    assert sum(1 for snapshot in snapshots if snapshot.count) == reducers
+    analyze(run, session)
+    benchmark(request)
+
+
+# A cold start asks for many customers of one reducer at once, up to a full batch.
+@pytest.mark.parametrize("customers", [1, 100, 500])
+def test_request_meter_usage_of_many_customers(
+    benchmark: BenchmarkFixture,
+    run: Run[typing.Any],
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    organization: Organization,
+    customers: int,
+) -> None:
+    [reducer] = run(
+        seed_reducers(session, save_fixture, organization, 1, customers=customers)
+    )
+    payloads = [
+        ExternalCustomerMeterUsageIdentity(
+            reducer_id=reducer.id, external_customer_id=f"customer-{index}"
+        )
+        for index in range(customers)
+    ]
+
+    def request() -> list[Snapshot]:
+        return run(
+            outpost_service.get_requested_meter_usage(session, organization, payloads)
+        )
+
+    snapshots = request()
+    assert len(snapshots) == 3 * customers
+    assert sum(1 for snapshot in snapshots if snapshot.count) == customers
     analyze(run, session)
     benchmark(request)
 

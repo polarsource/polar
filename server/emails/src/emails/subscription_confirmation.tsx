@@ -34,7 +34,7 @@ export function SubscriptionConfirmation({
         <Text as="span" weight="medium">
           {product.name}
         </Text>
-        . Your invoice is attached.
+        .{order.is_invoice_generated && ' Your invoice is attached.'}
         {order.receipt_number && (
           <>
             {' '}

@@ -2,12 +2,18 @@
 
 import { useCustomerBenefitGrants } from '@/hooks/queries/customerPortal'
 import { Client } from '@polar-sh/client'
-import { Input } from '@polar-sh/orbit'
-import { List, ListItem } from '@polar-sh/orbit'
-import { LoaderCircle as Loader2, Search } from '@polar-sh/orbit/icons'
+import { Input, SpinnerNoMargin } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
+import { Search } from '@polar-sh/orbit/icons'
 import { useCallback, useState } from 'react'
 import { BenefitGrant } from '../Benefit/BenefitGrant'
 import { Pagination } from './Pagination'
+import {
+  PortalCard,
+  PortalCardList,
+  PortalEmptyState,
+  PortalSection,
+} from './PortalPrimitives'
 
 export interface CustomerPortalGrantsComplexProps {
   api: Client
@@ -51,63 +57,69 @@ export const CustomerPortalGrantsComplex = ({
   })
 
   const grants = benefitGrants?.items ?? []
+  const isBusy = isLoading || isFetching
   const pagination = benefitGrants?.pagination
 
   return (
-    <div className="flex w-full flex-col gap-4">
-      <h3 className="text-xl">Benefit Grants</h3>
-
-      {/* Search box */}
-      <Input
-        preSlot={<Search className="h-4 w-4" />}
-        placeholder="Search benefit grants..."
-        value={searchQuery}
-        onChange={onSearchChange}
-      />
-
-      {/* Grants list with loading overlay */}
-      <div className="relative">
-        {grants.length === 0 && !isLoading ? (
-          <div className="dark:border-polar-700 dark:text-polar-500 rounded-xl border border-gray-200 py-8 text-center text-sm text-gray-500">
-            No benefit grants found
-          </div>
-        ) : (
-          <div className="flex flex-col gap-4">
-            <List>
-              {grants.map((benefitGrant) => (
-                <ListItem
-                  key={benefitGrant.id}
-                  className="py-6 hover:bg-transparent dark:hover:bg-transparent"
-                >
-                  <BenefitGrant
-                    api={api}
-                    benefitGrant={benefitGrant}
-                    allowLicenseKeyRotation={true}
-                  />
-                </ListItem>
-              ))}
-            </List>
-          </div>
-        )}
-
-        {/* Loading overlay */}
-        {(isLoading || isFetching) && (
-          <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-white/50 dark:bg-black/50">
-            <Loader2 className="dark:text-polar-500 h-5 w-5 animate-spin text-gray-500" />
-          </div>
-        )}
-      </div>
-
-      {/* Pagination controls */}
-      {pagination && pagination.max_page > 1 && (
-        <div className="flex justify-end">
+    <PortalSection
+      title="Benefits"
+      actions={
+        pagination && pagination.max_page > 1 ? (
           <Pagination
             page={currentPage}
             totalPages={pagination.max_page}
             onPageChange={setCurrentPage}
           />
-        </div>
-      )}
-    </div>
+        ) : undefined
+      }
+    >
+      <Input
+        preSlot={<Search className="h-4 w-4" />}
+        placeholder="Search benefits"
+        value={searchQuery}
+        onChange={onSearchChange}
+      />
+
+      <Box position="relative" flexDirection="column" aria-busy={isBusy}>
+        <Box
+          flexDirection="column"
+          opacity={isBusy ? 0.5 : 1}
+          pointerEvents={isBusy ? 'none' : 'auto'}
+          transitionProperty="opacity"
+          transitionDuration="fast"
+        >
+          {isLoading && grants.length === 0 ? (
+            <Box paddingVertical="3xl" />
+          ) : grants.length === 0 ? (
+            <PortalEmptyState title="No benefits found" />
+          ) : (
+            <PortalCardList>
+              {grants.map((benefitGrant) => (
+                <Box as="li" display="block" key={benefitGrant.id}>
+                  <PortalCard>
+                    <BenefitGrant
+                      api={api}
+                      benefitGrant={benefitGrant}
+                      allowLicenseKeyRotation={true}
+                    />
+                  </PortalCard>
+                </Box>
+              ))}
+            </PortalCardList>
+          )}
+        </Box>
+        {isBusy && (
+          <Box
+            position="absolute"
+            inset="none"
+            alignItems="center"
+            justifyContent="center"
+            color="text-secondary"
+          >
+            <SpinnerNoMargin />
+          </Box>
+        )}
+      </Box>
+    </PortalSection>
   )
 }

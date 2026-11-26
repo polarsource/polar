@@ -6,6 +6,7 @@ import {
   type SessionData,
 } from '@/auth/refresher'
 import { useStorageState } from '@/hooks/storage'
+import { posthog } from '@/utils/posthog'
 import { ExtensionStorage } from '@bacons/apple-targets'
 import {
   createContext,
@@ -63,6 +64,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
   const setSession = useCallback(
     (data: SessionData | null) => {
       if (!data) {
+        posthog.reset()
         setAccessTokenStorage(null)
         setRefreshTokenStorage(null)
         setExpiresAtStorage(null)

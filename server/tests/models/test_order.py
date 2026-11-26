@@ -2,6 +2,7 @@ import pytest
 
 from polar.enums import TaxBehavior
 from polar.models import Customer, OrderItem, Product
+from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderStatus
 from polar.models.product_price import (
     ProductPriceFixed,
@@ -9,7 +10,170 @@ from polar.models.product_price import (
     ProductPriceUnit,
 )
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_order
+from tests.fixtures.random_objects import (
+    create_discount,
+    create_order,
+    create_product_price_seat_unit,
+    create_subscription,
+)
+
+
+@pytest.mark.anyio
+class TestIsPaymentRequired:
+    async def test_positive_amount_due(
+        self, save_fixture: SaveFixture, customer: Customer
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            status=OrderStatus.pending,
+            subtotal_amount=1000,
+        )
+
+        assert order.is_payment_required
+
+    async def test_balance_covers_amount_due(
+        self, save_fixture: SaveFixture, customer: Customer
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            status=OrderStatus.pending,
+            subtotal_amount=1000,
+            applied_balance_amount=-1000,
+        )
+
+        assert not order.is_payment_required
+
+
+@pytest.mark.anyio
+class TestIsPaymentSetupRequired:
+    async def test_one_time_order(
+        self, save_fixture: SaveFixture, customer: Customer, product_one_time: Product
+    ) -> None:
+        order = await create_order(
+            save_fixture, customer=customer, product=product_one_time
+        )
+
+        assert not order.is_payment_setup_required
+
+    async def test_full_discount_for_first_period(
+        self, save_fixture: SaveFixture, customer: Customer, product: Product
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture, customer=customer, product=product
+        )
+        discount = await create_discount(
+            save_fixture,
+            organization=product.organization,
+            type=DiscountType.percentage,
+            duration=DiscountDuration.once,
+            basis_points=10_000,
+        )
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            product=product,
+            subscription=subscription,
+            status=OrderStatus.draft,
+            subtotal_amount=1000,
+            discount_amount=1000,
+            discount=discount,
+        )
+
+        assert order.is_payment_setup_required
+
+    async def test_full_discount_forever(
+        self, save_fixture: SaveFixture, customer: Customer, product: Product
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture, customer=customer, product=product
+        )
+        discount = await create_discount(
+            save_fixture,
+            organization=product.organization,
+            type=DiscountType.percentage,
+            duration=DiscountDuration.forever,
+            basis_points=10_000,
+        )
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            product=product,
+            subscription=subscription,
+            status=OrderStatus.draft,
+            subtotal_amount=1000,
+            discount_amount=1000,
+            discount=discount,
+        )
+
+        assert not order.is_payment_setup_required
+
+    async def test_free_subscription(
+        self,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product_recurring_free_price: Product,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture, customer=customer, product=product_recurring_free_price
+        )
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            product=product_recurring_free_price,
+            subscription=subscription,
+            status=OrderStatus.draft,
+            subtotal_amount=0,
+        )
+
+        assert not order.is_payment_setup_required
+
+    async def test_subscription_with_free_first_seat(
+        self, save_fixture: SaveFixture, customer: Customer, product: Product
+    ) -> None:
+        price = await create_product_price_seat_unit(
+            save_fixture,
+            product=product,
+            tiers=[
+                {"min_seats": 1, "max_seats": 1, "price_per_seat": 0},
+                {"min_seats": 2, "max_seats": None, "price_per_seat": 1000},
+            ],
+        )
+        subscription = await create_subscription(
+            save_fixture, customer=customer, product=product, prices=[price], seats=1
+        )
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            product=product,
+            subscription=subscription,
+            status=OrderStatus.draft,
+            subtotal_amount=0,
+        )
+
+        assert not order.is_payment_required
+        assert order.is_payment_setup_required
+
+    async def test_metered_subscription(
+        self,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product_recurring_metered: Product,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture, customer=customer, product=product_recurring_metered
+        )
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            product=product_recurring_metered,
+            subscription=subscription,
+            status=OrderStatus.draft,
+            subtotal_amount=0,
+        )
+
+        assert order.is_payment_setup_required
 
 
 @pytest.mark.parametrize(

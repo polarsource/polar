@@ -6,6 +6,8 @@ import typing
 import typing_extensions
 {% endif %}
 
+from polar.base import _Discriminator
+
 {% if input_enum_imports %}
 from polar.{{ version }}.literals import (
 {% for enum_name in input_enum_imports %}
@@ -45,11 +47,7 @@ class {{ model.name }}({% if model.additional_properties %}typing_extensions.Typ
 
 {% for union in api.input_unions %}
 {% if union.variants %}
-{{ union.name }}: typing.TypeAlias = (
-{% for variant in union.variants %}
-    {{ variant | type_annotation }}{% if not loop.last %} |{% endif %}
-{% endfor %}
-)
+{{ union.name }}: typing.TypeAlias = {{ union | type_annotation }}
 {% if union.description %}
 """{{ union.description }}"""
 {% endif %}

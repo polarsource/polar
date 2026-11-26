@@ -96,14 +96,7 @@ const ChangeEmailForm = ({ customer }: ChangeEmailFormProps) => {
             </p>
           )}
         </div>
-        <div className="flex gap-x-2">
-          <Button
-            type="submit"
-            loading={emailUpdateRequest.isPending}
-            disabled={emailUpdateRequest.isPending}
-          >
-            Send Verification
-          </Button>
+        <div className="flex justify-end gap-x-2">
           <Button
             type="button"
             variant="ghost"
@@ -112,7 +105,14 @@ const ChangeEmailForm = ({ customer }: ChangeEmailFormProps) => {
               reset()
             }}
           >
-            Nevermind
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            loading={emailUpdateRequest.isPending}
+            disabled={emailUpdateRequest.isPending}
+          >
+            Send verification
           </Button>
         </div>
       </form>
@@ -133,7 +133,7 @@ const ChangeEmailForm = ({ customer }: ChangeEmailFormProps) => {
           variant="secondary"
           onClick={() => setIsEditing(true)}
         >
-          Request Email Change
+          Change email
         </Button>
       </div>
     </div>

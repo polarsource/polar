@@ -20,7 +20,6 @@ import {
   Send,
   Settings2,
   ShieldCheck,
-  TextCursorInput,
   User,
   Users,
   Wallet,
@@ -103,13 +102,6 @@ const settingsGroupsList = (
         section('disputes', <Flag size="1em" />),
         section('customer-portal', <CircleUserRound size="1em" />),
         section('customer-notifications', <Mail size="1em" />),
-        {
-          id: 'settings-custom-fields',
-          title: 'Custom Fields',
-          link: `${base}/custom-fields`,
-          icon: <TextCursorInput size="1em" />,
-          if: true,
-        },
       ],
     },
     {

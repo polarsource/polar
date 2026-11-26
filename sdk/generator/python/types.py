@@ -5,6 +5,7 @@ from generator.ir import (
     LiteralType,
     MapType,
     ModelRef,
+    NamedUnion,
     NullableType,
     PrimitiveType,
     TypeRef,
@@ -57,7 +58,7 @@ def collect_enum_imports(
 
 
 def convert_type_to_annotation(
-    type_ref: TypeRef | None, *, ref_suffix: str = ""
+    type_ref: TypeRef | NamedUnion | None, *, ref_suffix: str = ""
 ) -> str:
     if isinstance(type_ref, PrimitiveType):
         return _convert_primitive_type(type_ref)
@@ -93,14 +94,31 @@ def convert_type_to_annotation(
             return f"dict[{key_type}, {value_type}]"
         return f"dict[str, {value_type}]"
 
-    if isinstance(type_ref, UnionType):
+    if isinstance(type_ref, (UnionType, NamedUnion)):
         if len(type_ref.variants) == 0:
             return "typing.Any"
         variant_strs = [
             convert_type_to_annotation(v, ref_suffix=ref_suffix)
             for v in type_ref.variants
         ]
-        return " | ".join(variant_strs)
+        union = " | ".join(variant_strs)
+        if type_ref.discriminator is None:
+            return union
+        mapping = dict(type_ref.discriminator.mapping)
+        mapped_models = set(mapping.values())
+        for variant in type_ref.variants:
+            if (
+                isinstance(variant, (ModelRef, UnionRef))
+                and variant.name not in mapped_models
+            ):
+                mapping.setdefault(variant.name, variant.name)
+        variants = "".join(
+            f"({tag!r}, {model}{ref_suffix})," for tag, model in mapping.items()
+        )
+        return (
+            f"typing.Annotated[{union}, "
+            f"_Discriminator({type_ref.discriminator.property_name!r}, ({variants}))]"
+        )
 
     return "None"
 

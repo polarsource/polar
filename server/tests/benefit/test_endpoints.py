@@ -2,7 +2,7 @@ import uuid
 from typing import Any
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
 from polar.auth.scope import Scope
 from polar.kit.utils import utc_now

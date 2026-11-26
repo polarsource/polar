@@ -4,7 +4,7 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
-import httpx
+import httpx2
 import pytest
 from logfire._internal.forwarding import ForwardExportRequestResponse
 from opentelemetry.proto.collector.metrics.v1.metrics_service_pb2 import (
@@ -18,6 +18,7 @@ from pytest_mock import MockerFixture
 from sqlalchemy import event as sqlalchemy_event
 
 from polar.auth.scope import Scope
+from polar.event.system import SystemEvent
 from polar.kit.utils import utc_now
 from polar.meter.aggregation import UniqueAggregation
 from polar.models import (
@@ -57,7 +58,7 @@ async def _append_change(
 
 
 async def _get_changes(
-    client: httpx.AsyncClient, cursor: str | None = None, **params: typing.Any
+    client: httpx2.AsyncClient, cursor: str | None = None, **params: typing.Any
 ) -> dict[str, typing.Any]:
     response = await client.get(
         "/v1/outpost/changes",
@@ -95,14 +96,14 @@ async def _save_synced_bucket(
 
 @pytest.mark.anyio
 class TestChanges:
-    async def test_anonymous(self, client: httpx.AsyncClient) -> None:
+    async def test_anonymous(self, client: httpx2.AsyncClient) -> None:
         response = await client.get("/v1/outpost/changes")
 
         assert response.status_code == 401
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_without_cursor(
-        self, client: httpx.AsyncClient, redis: Redis, organization: Organization
+        self, client: httpx2.AsyncClient, redis: Redis, organization: Organization
     ) -> None:
         await _append_change(redis, organization, {"type": "configuration"})
 
@@ -110,14 +111,15 @@ class TestChanges:
 
         assert changes["changes"] == []
         assert changes["has_more"] is False
-        assert changes["reset"] is False
-        assert changes["configuration_changed"] is False
+        # The changes before the first cursor are not served: the client starts over.
+        assert changes["reset"] is True
+        assert changes["configuration_changed"] is True
         assert changes["next_poll_in"] == 30
         assert (await _get_changes(client, changes["cursor"]))["changes"] == []
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_idle_poll_reads_no_reducer(
-        self, mocker: MockerFixture, client: httpx.AsyncClient
+        self, mocker: MockerFixture, client: httpx2.AsyncClient
     ) -> None:
         cursor = (await _get_changes(client))["cursor"]
         get_reducers = mocker.spy(
@@ -134,7 +136,7 @@ class TestChanges:
         self,
         save_fixture: SaveFixture,
         mocker: MockerFixture,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         redis: Redis,
         organization: Organization,
         customer_external_id: Customer,
@@ -182,7 +184,7 @@ class TestChanges:
     async def test_change_cold_usage(
         self,
         save_fixture: SaveFixture,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         redis: Redis,
         organization: Organization,
         customer_external_id: Customer,
@@ -259,7 +261,7 @@ class TestChanges:
     async def test_change_split_half_synced(
         self,
         save_fixture: SaveFixture,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         redis: Redis,
         organization: Organization,
         customer_external_id: Customer,
@@ -317,7 +319,7 @@ class TestChanges:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         redis: Redis,
         organization: Organization,
         customer_external_id: Customer,
@@ -368,7 +370,7 @@ class TestChanges:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         redis: Redis,
         organization: Organization,
         meter: Meter,
@@ -428,7 +430,7 @@ class TestChanges:
     async def test_credit_change_for_each_identity(
         self,
         save_fixture: SaveFixture,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         redis: Redis,
         organization: Organization,
         customer_external_id: Customer,
@@ -486,7 +488,7 @@ class TestChanges:
     async def test_limit(
         self,
         save_fixture: SaveFixture,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         redis: Redis,
         organization: Organization,
         meter: Meter,
@@ -517,7 +519,7 @@ class TestChanges:
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_configuration_changed(
-        self, client: httpx.AsyncClient, redis: Redis, organization: Organization
+        self, client: httpx2.AsyncClient, redis: Redis, organization: Organization
     ) -> None:
         cursor = (await _get_changes(client))["cursor"]
         await _append_change(redis, organization, {"type": "configuration"})
@@ -529,14 +531,28 @@ class TestChanges:
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_reset_when_the_cursor_is_too_old(
-        self, client: httpx.AsyncClient, redis: Redis, organization: Organization
+        self, client: httpx2.AsyncClient, redis: Redis, organization: Organization
     ) -> None:
         await _append_change(redis, organization, {"type": "configuration"})
 
         changes = await _get_changes(client, "1-0")
 
         assert changes["reset"] is True
-        assert changes["configuration_changed"] is False
+        # The new cursor is past the configuration change: the reset reports it.
+        assert changes["configuration_changed"] is True
+        assert (await _get_changes(client, changes["cursor"]))["reset"] is False
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_reset_when_the_cursor_is_ahead_of_the_clock(
+        self, client: httpx2.AsyncClient, redis: Redis, organization: Organization
+    ) -> None:
+        seconds, _ = await redis.time()
+        await _append_change(redis, organization, {"type": "configuration"})
+
+        changes = await _get_changes(client, f"{(seconds + 60) * 1000}-0")
+
+        assert changes["reset"] is True
+        assert changes["configuration_changed"] is True
         assert (await _get_changes(client, changes["cursor"]))["reset"] is False
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
@@ -544,7 +560,9 @@ class TestChanges:
         "cursor",
         ["not-a-cursor", f"{2**64}-0", f"0-{2**64}"],
     )
-    async def test_invalid_cursor(self, client: httpx.AsyncClient, cursor: str) -> None:
+    async def test_invalid_cursor(
+        self, client: httpx2.AsyncClient, cursor: str
+    ) -> None:
         response = await client.get("/v1/outpost/changes", params={"cursor": cursor})
 
         assert response.status_code == 422
@@ -558,7 +576,7 @@ class TestRequests:
         AuthSubjectFixture(subject="customer"),
         AuthSubjectFixture(subject="agent"),
     )
-    async def test_unauthorized_subject(self, client: httpx.AsyncClient) -> None:
+    async def test_unauthorized_subject(self, client: httpx2.AsyncClient) -> None:
         response = await client.get("/v1/outpost/configuration")
 
         assert response.status_code == 401
@@ -567,7 +585,7 @@ class TestRequests:
     async def test_configuration(
         self,
         save_fixture: SaveFixture,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         organization: Organization,
         meter: Meter,
     ) -> None:
@@ -596,7 +614,7 @@ class TestRequests:
     async def test_configuration_every_kind(
         self,
         save_fixture: SaveFixture,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         organization: Organization,
         meter: Meter,
     ) -> None:
@@ -624,7 +642,7 @@ class TestRequests:
     async def test_meter_usage(
         self,
         save_fixture: SaveFixture,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         organization: Organization,
         customer_external_id: Customer,
         meter: Meter,
@@ -676,11 +694,74 @@ class TestRequests:
         assert (internal["count"], internal["sum"]) == (0, 0.0)
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_meter_usage_since_the_latest_reset(
+        self,
+        save_fixture: SaveFixture,
+        client: httpx2.AsyncClient,
+        organization: Organization,
+        customer_external_id: Customer,
+        meter: Meter,
+    ) -> None:
+        customer = customer_external_id
+        assert customer.external_id is not None
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        # The seal of the usage before a reset runs minutes after it: until then its
+        # buckets are unsealed, and the snapshot leaves them out all the same.
+        current_start = get_reducer_bucket_start(utc_now())
+        reset_at = current_start - timedelta(minutes=20)
+        for bucket_start, count in (
+            (reset_at - timedelta(minutes=10), 7),
+            (reset_at + timedelta(minutes=5), 2),
+        ):
+            await save_fixture(
+                ReducerBucket(
+                    organization=organization,
+                    reducer=reducer,
+                    external_customer_id=customer.external_id,
+                    bucket_start=bucket_start,
+                    bucket_end=bucket_start + timedelta(minutes=5),
+                    count=count,
+                    sum=Decimal(0),
+                    synced_at=bucket_start + timedelta(minutes=5),
+                )
+            )
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_reset,
+            timestamp=reset_at,
+            metadata={"meter_id": str(meter.id)},
+        )
+
+        response = await client.post(
+            "/v1/outpost/meter-usage",
+            json={
+                "identities": [
+                    {
+                        "reducer_id": str(reducer.id),
+                        "external_customer_id": customer.external_id,
+                    }
+                ]
+            },
+        )
+
+        assert response.status_code == 200
+        counts = {
+            (payload["customer_id"], payload["external_customer_id"]): payload["count"]
+            for payload in response.json()
+        }
+        assert counts[(None, customer.external_id)] == 2
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     @pytest.mark.parametrize("customer_key", ["customer_id", "external_customer_id"])
     async def test_meter_usage_credit(
         self,
         save_fixture: SaveFixture,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         organization: Organization,
         customer_external_id: Customer,
         meter: Meter,
@@ -746,7 +827,7 @@ class TestRequests:
     async def test_meter_usage_unknown_customer(
         self,
         save_fixture: SaveFixture,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         organization: Organization,
         meter: Meter,
     ) -> None:
@@ -773,7 +854,7 @@ class TestRequests:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         organization: Organization,
         meter: Meter,
     ) -> None:
@@ -837,21 +918,119 @@ class TestRequests:
         }
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-    async def test_meter_usage_unknown_reducer(self, client: httpx.AsyncClient) -> None:
+    async def test_meter_usage_queries_do_not_grow_with_the_reducers(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        client: httpx2.AsyncClient,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        meters = [meter] + [
+            await create_meter(
+                save_fixture, organization=organization, id=uuid.uuid4(), name=name
+            )
+            for name in ("Requests", "Images")
+        ]
+        usage_reducers = [
+            await create_reducer(save_fixture, organization=organization, meters=[m])
+            for m in meters
+        ]
+        credit_reducer = await create_reducer(
+            save_fixture,
+            organization=organization,
+            meters=[meter],
+            kind=ReducerKind.credit,
+        )
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            external_id="alice",
+            email="alice@example.com",
+        )
+        for value, reducer in enumerate(usage_reducers, start=1):
+            await _save_synced_bucket(
+                save_fixture, organization, reducer, "alice", value
+            )
+        queries = 0
+
+        def count_query(*args: typing.Any) -> None:
+            nonlocal queries
+            queries += 1
+
+        bind = session.sync_session.bind
+        assert bind is not None
+        answers = []
+        for reducers in (
+            usage_reducers[:1] + [credit_reducer],
+            usage_reducers + [credit_reducer],
+        ):
+            queries = 0
+            sqlalchemy_event.listen(bind, "before_cursor_execute", count_query)
+            try:
+                response = await client.post(
+                    "/v1/outpost/meter-usage",
+                    json={
+                        "identities": [
+                            {
+                                "reducer_id": str(reducer.id),
+                                "external_customer_id": "alice",
+                            }
+                            for reducer in reducers
+                        ]
+                    },
+                )
+            finally:
+                sqlalchemy_event.remove(bind, "before_cursor_execute", count_query)
+            assert response.status_code == 200
+            answers.append((response.json(), queries))
+
+        [(_, two), (snapshots, four)] = answers
+        assert four == two
+        assert {
+            snapshot["reducer_id"]: snapshot["sum"]
+            for snapshot in snapshots
+            if snapshot["customer_id"] is None
+        } == {
+            **{
+                str(reducer.id): float(value)
+                for value, reducer in enumerate(usage_reducers, start=1)
+            },
+            str(credit_reducer.id): 0.0,
+        }
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_meter_usage_unknown_reducer(
+        self,
+        save_fixture: SaveFixture,
+        client: httpx2.AsyncClient,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+
+        # A reducer Polar does not know does not cost the other identities of the
+        # request their snapshots.
         response = await client.post(
             "/v1/outpost/meter-usage",
             json={
                 "identities": [
-                    {"reducer_id": str(uuid.uuid4()), "external_customer_id": "alice"}
+                    {"reducer_id": str(uuid.uuid4()), "external_customer_id": "alice"},
+                    {"reducer_id": str(reducer.id), "external_customer_id": "alice"},
                 ]
             },
         )
 
-        assert response.status_code == 404
+        assert response.status_code == 200
+        assert [snapshot["reducer_id"] for snapshot in response.json()] == [
+            str(reducer.id)
+        ]
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_meter_usage_too_many_identities(
-        self, client: httpx.AsyncClient
+        self, client: httpx2.AsyncClient
     ) -> None:
         identity = {"reducer_id": str(uuid.uuid4()), "external_customer_id": "alice"}
         response = await client.post(
@@ -864,7 +1043,7 @@ class TestRequests:
     async def test_confirm(
         self,
         save_fixture: SaveFixture,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         organization: Organization,
         meter: Meter,
     ) -> None:
@@ -945,7 +1124,7 @@ class TestRequests:
     async def test_confirm_split_bucket(
         self,
         save_fixture: SaveFixture,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         organization: Organization,
         meter: Meter,
     ) -> None:
@@ -982,6 +1161,7 @@ class TestRequests:
                 save_fixture,
                 organization=organization,
                 timestamp=timestamp,
+                ingested_at=timestamp,
                 external_customer_id="alice",
                 external_id=external_id,
             )
@@ -1007,7 +1187,7 @@ class TestRequests:
     async def test_confirm_bucket_not_synced(
         self,
         save_fixture: SaveFixture,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         organization: Organization,
         meter: Meter,
     ) -> None:
@@ -1019,6 +1199,7 @@ class TestRequests:
             save_fixture,
             organization=organization,
             timestamp=bucket_start + timedelta(seconds=1),
+            ingested_at=bucket_start + timedelta(seconds=1),
             external_customer_id="alice",
             external_id="ingested",
         )
@@ -1043,10 +1224,57 @@ class TestRequests:
         )
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_confirm_event_ingested_after_its_bucket_closed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        client: httpx2.AsyncClient,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        synced_end = await _save_synced_bucket(
+            save_fixture, organization, reducer, "alice", 1
+        )
+        # Ingest adds an event of a closed bucket to its row at once, and no sync
+        # visits that bucket again: the snapshot counts the event, so it is confirmed.
+        bucket_start = synced_end - timedelta(minutes=20)
+        event = await create_event(
+            save_fixture,
+            organization=organization,
+            timestamp=bucket_start + timedelta(seconds=1),
+            external_customer_id="alice",
+            external_id="late",
+        )
+        await reducer_service.rollup(session, redis, organization.id, [event])
+        await session.flush()
+
+        response = await client.post(
+            "/v1/outpost/confirm",
+            json={
+                "reducer_id": str(reducer.id),
+                "external_customer_id": "alice",
+                "bucket_start": to_epoch_microseconds(bucket_start),
+                "ids": ["late"],
+            },
+        )
+
+        assert response.status_code == 200
+        confirmation = response.json()
+        assert confirmation["snapshot"]["cold_until"] == to_epoch_microseconds(
+            synced_end
+        )
+        assert confirmation["snapshot"]["count"] == 2
+        assert confirmation["ids"] == ["late"]
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_confirm_bucket_start_out_of_range(
         self,
         save_fixture: SaveFixture,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         organization: Organization,
         meter: Meter,
     ) -> None:
@@ -1067,7 +1295,7 @@ class TestRequests:
         assert response.status_code == 422
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-    async def test_confirm_too_many_ids(self, client: httpx.AsyncClient) -> None:
+    async def test_confirm_too_many_ids(self, client: httpx2.AsyncClient) -> None:
         response = await client.post(
             "/v1/outpost/confirm",
             json={
@@ -1093,7 +1321,7 @@ def _export_request(**attributes: str) -> ExportTraceServiceRequest:
 
 @pytest.mark.anyio
 class TestTelemetry:
-    async def test_anonymous(self, client: httpx.AsyncClient) -> None:
+    async def test_anonymous(self, client: httpx2.AsyncClient) -> None:
         response = await client.post(
             "/v1/outpost/telemetry",
             content=_export_request().SerializeToString(),
@@ -1105,7 +1333,7 @@ class TestTelemetry:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.events_read})
     )
-    async def test_insufficient_scope(self, client: httpx.AsyncClient) -> None:
+    async def test_insufficient_scope(self, client: httpx2.AsyncClient) -> None:
         response = await client.post(
             "/v1/outpost/telemetry",
             content=_export_request().SerializeToString(),
@@ -1117,7 +1345,7 @@ class TestTelemetry:
         assert 'scope="events:write"' in response.headers["WWW-Authenticate"]
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-    async def test_invalid_body(self, client: httpx.AsyncClient) -> None:
+    async def test_invalid_body(self, client: httpx2.AsyncClient) -> None:
         response = await client.post(
             "/v1/outpost/telemetry",
             content=b"not protobuf",
@@ -1130,7 +1358,7 @@ class TestTelemetry:
     async def test_forwards_with_organization(
         self,
         mocker: MockerFixture,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         organization: Organization,
     ) -> None:
         forward_mock = mocker.patch(
@@ -1177,7 +1405,7 @@ def _metrics_request(**attributes: str) -> ExportMetricsServiceRequest:
 
 @pytest.mark.anyio
 class TestTelemetryMetrics:
-    async def test_anonymous(self, client: httpx.AsyncClient) -> None:
+    async def test_anonymous(self, client: httpx2.AsyncClient) -> None:
         response = await client.post(
             "/v1/outpost/telemetry/metrics",
             content=_metrics_request().SerializeToString(),
@@ -1187,7 +1415,7 @@ class TestTelemetryMetrics:
         assert response.status_code == 401
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-    async def test_invalid_body(self, client: httpx.AsyncClient) -> None:
+    async def test_invalid_body(self, client: httpx2.AsyncClient) -> None:
         response = await client.post(
             "/v1/outpost/telemetry/metrics",
             content=b"not protobuf",
@@ -1200,7 +1428,7 @@ class TestTelemetryMetrics:
     async def test_forwards_with_organization(
         self,
         mocker: MockerFixture,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         organization: Organization,
     ) -> None:
         forward_mock = mocker.patch(

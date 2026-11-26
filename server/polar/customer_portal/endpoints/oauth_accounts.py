@@ -123,7 +123,7 @@ async def callback(
 ) -> RedirectResponse:
     try:
         state_data = await jwt.decode(token=state, type="customer_oauth")
-    except jwt.DecodeError as e:
+    except (jwt.DecodeError, jwt.ExpiredSignatureError) as e:
         raise NotPermitted("Invalid state") from e
 
     customer_repository = CustomerRepository.from_session(session)
@@ -278,11 +278,11 @@ async def callback(
 
     # Store OAuth account on member or customer
     if member is not None:
-        member.set_oauth_account(oauth_account, platform)
+        await member.set_oauth_account(oauth_account, platform)
         member_repository = MemberRepository.from_session(session)
         await member_repository.update(member)
     else:
-        customer.set_oauth_account(oauth_account, platform)
+        await customer.set_oauth_account(oauth_account, platform)
         await customer_repository.update(customer)
 
     platform_benefit_type = {

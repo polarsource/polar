@@ -1,6 +1,8 @@
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import Select, update
+from sqlalchemy.orm import contains_eager
 
 from polar.kit.repository import (
     RepositoryBase,
@@ -8,7 +10,7 @@ from polar.kit.repository import (
     RepositorySoftDeletionMixin,
 )
 from polar.kit.utils import utc_now
-from polar.models import OrganizationDomain
+from polar.models import Organization, OrganizationDomain
 
 
 class OrganizationDomainRepository(
@@ -31,6 +33,22 @@ class OrganizationDomainRepository(
         return self.get_statement_by_organization(organization_id).where(
             OrganizationDomain.verified_at.is_not(None)
         )
+
+    async def get_all_verified_for_paying_organizations(
+        self, domains: Sequence[str]
+    ) -> Sequence[OrganizationDomain]:
+        statement = (
+            self.get_base_statement()
+            .join(OrganizationDomain.organization)
+            .where(
+                OrganizationDomain.domain.in_(domains),
+                OrganizationDomain.verified_at.is_not(None),
+                Organization.can_accept_payments,
+                Organization.deleted_at.is_(None),
+            )
+            .options(contains_eager(OrganizationDomain.organization))
+        )
+        return await self.get_all(statement)
 
     async def get_by_organization_and_id(
         self, organization_id: UUID, id: UUID

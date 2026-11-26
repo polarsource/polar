@@ -3,6 +3,7 @@ from typing import Annotated, Literal, TypedDict
 
 from pydantic import UUID4, Discriminator, EmailStr, Field, TypeAdapter
 
+from polar.benefit.strategies.base.schemas import BenefitGrantManualTimestamps
 from polar.benefit.strategies.custom.properties import BenefitGrantCustomProperties
 from polar.benefit.strategies.custom.schemas import BenefitCustomSubscriber
 from polar.benefit.strategies.discord.properties import BenefitGrantDiscordProperties
@@ -58,7 +59,9 @@ from polar.subscription.schemas import SubscriptionID
 from .customer import CustomerPortalCustomer, CustomerPortalOAuthAccount
 
 
-class CustomerBenefitGrantBase(IDSchema, TimestampedSchema):
+class CustomerBenefitGrantBase(
+    IDSchema, TimestampedSchema, BenefitGrantManualTimestamps
+):
     granted_at: datetime | None
     revoked_at: datetime | None
     customer_id: UUID4

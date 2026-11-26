@@ -137,7 +137,8 @@ On long-running servers such as Express, the buffer sends batches by size or int
 Call `await metering.close()` during graceful shutdown to drain events and release resources.
 Closing stops new operations and is idempotent; a closed helper cannot be reused.
 
-In serverless handlers, wait for delivery before returning:
+In serverless handlers, flush before returning so the function does not freeze with events
+in the queue:
 
 ```typescript
 export async function POST() {
@@ -162,17 +163,19 @@ export async function POST() {
 }
 ```
 
-The response can return before delivery is confirmed. Await `flush()` in the handler
-itself when the response needs to confirm Polar accepted the events. The callback
-still counts toward the route's maximum duration.
+The response can return before delivery is confirmed. The callback still counts toward the
+route's maximum duration.
 
-`flush()` waits for events queued before its call. Concurrent requests share HTTP batches;
-calling `flush()` does not close the helper or create a separate buffer. Later events are
-outside that flush's boundary. This is a shared queue barrier, not request-specific delivery.
+`flush()` waits for events queued before its call, unless a newer flush starts whose deadline
+is no earlier than its own: the newer one releases it and waits for its events too. One waiter
+keeps a serverless function alive, so concurrent requests do not each stay open for a round
+trip to Polar. A resolved `flush()` therefore does not prove Polar accepted the request's events
+when other requests flush at the same time. Concurrent requests share HTTP batches; calling
+`flush()` does not close the helper or create a separate buffer. This is a shared queue barrier, not request-specific delivery.
 
 Dropped events are retained for reporting until a completed flush or close acknowledges them.
-Every overlapping flush reports failures within its boundary, including background drops from
-before the flush. After reporting a failure, later flushes can succeed for healthy traffic.
+The newest overlapping flush reports failures within its boundary, including background drops
+from before the flush. After reporting a failure, later flushes can succeed for healthy traffic.
 Long-running applications should periodically flush to observe failures and release their
 retained event records. Callbacks alone do not acknowledge failures.
 
@@ -214,10 +217,26 @@ if (meter !== null) console.log(meter.consumed_units, meter.credited_units, mete
 
 ### Local reduction with Outpost
 
-Pass `outpost: true` to `polar.metering()` to enable Redis-backed local reduction, using
-`REDIS_URL`. Pass an object to configure it. This provides low-latency meter reads across
-clients. Every Outpost event requires an `external_id`; `track()` rejects events without one.
-An event counts locally until Polar confirms storage or the buffer gives it up.
+Pass `outpost()` from `@polar-sh/sdk/outpost` to `polar.metering()` to enable Redis-backed
+local reduction. This provides low-latency meter reads across clients. Outpost requires the
+optional `ioredis` and `@opentelemetry/*` peer dependencies; the rest of the SDK does not.
+
+```typescript
+import { outpost } from "@polar-sh/sdk/outpost";
+
+const metering = polar.metering({ outpost: outpost() });
+```
+
+`outpost()` uses `REDIS_URL` and throws if it is unset. Pass options to configure it, such as
+`outpost({ redisUrl: "redis://localhost:6379" })`. Every Outpost event requires an
+`external_id`; `track()` rejects events without one. An event counts locally until Polar confirms
+storage or refuses it. A first read of a customer waits up to `snapshotTimeout` for Polar's
+snapshot. If it does not arrive in time, the read throws `NotReadyError` from
+`@polar-sh/sdk/outpost`; the next read asks again.
+
+Outpost delivers the events itself, instead of the buffer: it queues them in Redis and sends them
+to Polar in batches of up to 1,000 events, shared by every client, on `flush()` and every second on a
+long-running server. Pass `buffered` or `outpost`, not both.
 
 ### Options
 
@@ -238,7 +257,8 @@ An event counts locally until Polar confirms storage or the buffer gives it up.
 | `redisUrl` | `REDIS_URL` environment variable | Redis instance used by Outpost. |
 | `telemetry` | `true` | Send Outpost metrics and traces to Polar. |
 | `snapshotTimeout` | `5000` | Milliseconds a cold read waits for its initial snapshot. |
-| `confirmTimeout` | `2000` | Milliseconds a snapshot waits for Polar to confirm events. |
+| `onDelivered` | `undefined` | Callback for events Polar accepted; may be async. |
+| `onDropped` | `undefined` | Callback for events Polar refused and their reason; may be async. |
 
 Telemetry can also be disabled with `POLAR_OUTPOST_TELEMETRY=0`.
 

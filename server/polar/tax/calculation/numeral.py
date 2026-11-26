@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Literal, NotRequired, TypedDict
 
-import httpx
+import httpx2
 import logfire
 import structlog
 from opentelemetry import trace
@@ -174,8 +174,13 @@ def _build_numeral_tax_breakdown(
 
 class NumeralTaxService(TaxServiceProtocol):
     def __init__(self) -> None:
-        self.client = httpx.AsyncClient(
+        self.client = httpx2.AsyncClient(
             base_url="https://api.numeralhq.com",
+            limits=httpx2.Limits(
+                max_connections=100,
+                max_keepalive_connections=20,
+                keepalive_expiry=30.0,
+            ),
             headers={
                 "X-API-Version": NUMERAL_API_VERSION,
                 "Authorization": f"Bearer {settings.NUMERAL_API_KEY}",
@@ -230,7 +235,9 @@ class NumeralTaxService(TaxServiceProtocol):
                 "address": payload_address,
                 "type": customer_type,
                 "tax_ids": [
-                    {"type": format, "value": value} for value, format in tax_ids
+                    {"type": format, "value": value}
+                    for value, format in tax_ids
+                    if format.is_numeral_supported()
                 ],
             },
             "order_details": {
@@ -250,7 +257,7 @@ class NumeralTaxService(TaxServiceProtocol):
         try:
             response = await self.client.post("/tax/calculations", json=payload)
             response.raise_for_status()
-        except httpx.HTTPStatusError as e:
+        except httpx2.HTTPStatusError as e:
             if e.response.is_server_error:
                 log.debug(
                     "Numeral tax calculation server error",
@@ -301,7 +308,7 @@ class NumeralTaxService(TaxServiceProtocol):
                 identifier=identifier,
             )
             raise
-        except httpx.RequestError as e:
+        except httpx2.RequestError as e:
             log.debug("Numeral tax calculation request error: %s", str(e))
             raise TaxCalculationTechnicalError(str(e)) from e
 
@@ -344,7 +351,7 @@ class NumeralTaxService(TaxServiceProtocol):
                 },
             )
             response.raise_for_status()
-        except httpx.HTTPStatusError as e:
+        except httpx2.HTTPStatusError as e:
             if e.response.is_server_error:
                 log.warning(
                     "Numeral tax record server error",
@@ -390,7 +397,7 @@ class NumeralTaxService(TaxServiceProtocol):
                 "/tax/transactions", params={"reference_order_id": reference}
             )
             response.raise_for_status()
-        except httpx.HTTPError as e:
+        except httpx2.HTTPError as e:
             raise TaxRecordError() from e
 
         result: NumeralTaxTransactionListResponse = response.json()
@@ -503,7 +510,7 @@ class NumeralTaxService(TaxServiceProtocol):
         )
         try:
             response.raise_for_status()
-        except httpx.HTTPStatusError as e:
+        except httpx2.HTTPStatusError as e:
             if e.response.status_code == 400:
                 error: NumeralErrorResponse = e.response.json()
                 if error.get("type") == "INVALID_COUNTRY_CODE" or (

@@ -698,10 +698,6 @@ export type CustomerSubscriptionSortProperty =
  */
 export type CustomerType = "individual" | "team";
 /**
- * CustomerWalletSortProperty
- */
-export type CustomerWalletSortProperty = "created_at" | "-created_at" | "balance" | "-balance";
-/**
  * DiscountDuration
  */
 export type DiscountDuration = "once" | "forever" | "repeating";
@@ -787,6 +783,10 @@ export type FilterConjunction = "and" | "or";
  * FilterOperator
  */
 export type FilterOperator = "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "like" | "not_like";
+/**
+ * The format of the webhook payload.
+ */
+export type Format = "raw" | "discord" | "slack";
 /**
  * Func
  */
@@ -939,7 +939,8 @@ export type PaymentTrigger =
   | "retry_dunning"
   | "retry_customer"
   | "retry_payment_method_update"
-  | "retry_admin";
+  | "retry_admin"
+  | "retry_payment_alert";
 /**
  * The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role).
  */
@@ -1225,32 +1226,6 @@ export type Status = "granted" | "disabled";
  */
 export type SubType = "user" | "organization";
 /**
- * SubscriptionExportColumn
- */
-export type SubscriptionExportColumn =
-  | "email"
-  | "started_at"
-  | "product"
-  | "amount"
-  | "currency"
-  | "status"
-  | "recurring_interval"
-  | "customer_name"
-  | "billing_name"
-  | "billing_country"
-  | "net_amount"
-  | "discount"
-  | "seats"
-  | "current_period_start"
-  | "current_period_end"
-  | "cancel_at_period_end"
-  | "canceled_at"
-  | "ends_at"
-  | "ended_at"
-  | "cancellation_reason"
-  | "trial_start"
-  | "trial_end";
-/**
  * SubscriptionProrationBehavior
  */
 export type SubscriptionProrationBehavior = "invoice" | "prorate" | "next_period" | "reset";
@@ -1287,7 +1262,8 @@ export type SubscriptionStatus =
   | "past_due"
   | "canceled"
   | "unpaid"
-  | "paused";
+  | "paused"
+  | "trial_ended";
 /**
  * TaxBehavior
  */
@@ -1971,7 +1947,7 @@ export type WebhookEventType =
 /**
  * WebhookFormat
  */
-export type WebhookFormat = "raw" | "discord" | "slack";
+export type WebhookFormat = "raw" | "discord" | "slack" | "mcp";
 
 /**
  * Address
@@ -10622,24 +10598,6 @@ export interface CustomerOrder {
 }
 
 /**
- * Schema to confirm a retry payment using either a saved payment method or a new confirmation token.
- */
-export interface CustomerOrderConfirmPayment {
-  /**
-   * ID of the Stripe confirmation token for new payment methods.
-   */
-  confirmation_token_id?: string | null;
-  /**
-   * ID of an existing saved payment method.
-   */
-  payment_method_id?: string | null;
-  /**
-   * Payment processor used.
-   */
-  payment_processor?: PaymentProcessor;
-}
-
-/**
  * Order's invoice data.
  */
 export interface CustomerOrderInvoice {
@@ -10647,38 +10605,6 @@ export interface CustomerOrderInvoice {
    * The URL to the invoice.
    */
   url: string;
-}
-
-/**
- * Response after confirming a retry payment.
- */
-export interface CustomerOrderPaymentConfirmation {
-  /**
-   * Payment status after confirmation.
-   */
-  status: string;
-  /**
-   * Client secret for handling additional actions.
-   */
-  client_secret?: string | null;
-  /**
-   * Error message if confirmation failed.
-   */
-  error?: string | null;
-}
-
-/**
- * Payment status for an order.
- */
-export interface CustomerOrderPaymentStatus {
-  /**
-   * Current payment status.
-   */
-  status: string;
-  /**
-   * Error message if payment failed.
-   */
-  error?: string | null;
 }
 
 /**
@@ -10912,7 +10838,7 @@ export interface CustomerOrderUpdate {
    */
   billing_name?: string | null;
   /**
-   * The address of the customer that should appear on the invoice. Country and state fields cannot be updated.
+   * The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated.
    */
   billing_address?: AddressInput | null;
 }
@@ -12769,38 +12695,6 @@ export interface CustomerUpdatedMetadata {
 }
 
 /**
- * A wallet represents your balance with an organization.
-
-You can top-up your wallet and use the balance to pay for usage.
- */
-export interface CustomerWallet {
-  /**
-   * The ID of the object.
-   */
-  id: string;
-  /**
-   * Creation timestamp of the object.
-   */
-  created_at: string;
-  /**
-   * Last modification timestamp of the object.
-   */
-  modified_at: string | null;
-  /**
-   * The ID of the customer that owns the wallet.
-   */
-  customer_id: string;
-  /**
-   * The current balance of the wallet, in cents.
-   */
-  balance: number;
-  /**
-   * The currency of the wallet.
-   */
-  currency: string;
-}
-
-/**
  * DiscountFixedCreate
  */
 export interface DiscountFixedCreate {
@@ -14218,7 +14112,7 @@ export interface EventTypeUpdate {
    */
   label: string;
   /**
-   * Property path to extract dynamic label from event metadata (e.g., 'subject' or 'metadata.subject').
+   * Property path to extract a dynamic label from event metadata (e.g., 'subject' or 'metadata.subject'). Set to `null` to clear it.
    */
   label_property_selector?: string | null;
 }
@@ -15638,20 +15532,6 @@ export interface ListResourceCustomerSubscription {
 }
 
 /**
- * ListResourceCustomerWallet
- */
-export interface ListResourceCustomerWallet {
-  /**
-   * items
-   */
-  items: CustomerWallet[];
-  /**
-   * pagination
-   */
-  pagination: Pagination;
-}
-
-/**
  * ListResourceDiscount
  */
 export interface ListResourceDiscount {
@@ -15929,20 +15809,6 @@ export interface ListResourceWithCursorPaginationEvent {
    * pagination
    */
   pagination: CursorPagination;
-}
-
-/**
- * ManualRetryLimitExceeded
- */
-export interface ManualRetryLimitExceeded {
-  /**
-   * error
-   */
-  error: "ManualRetryLimitExceeded";
-  /**
-   * detail
-   */
-  detail: string;
 }
 
 /**
@@ -16394,68 +16260,6 @@ export interface Metric {
    * Type of the metric, useful to know the unit or format of the value.
    */
   type: MetricType;
-}
-
-/**
- * Schema for creating a metrics dashboard.
- */
-export interface MetricDashboardCreate {
-  /**
-   * Display name for the dashboard.
-   */
-  name: string;
-  /**
-   * List of metric slugs to display in this dashboard.
-   */
-  metrics?: string[];
-  /**
-   * The ID of the organization owning this dashboard. **Required unless you use an organization token.**
-   */
-  organization_id?: string | null;
-}
-
-/**
- * A user-defined metrics dashboard.
- */
-export interface MetricDashboardSchema {
-  /**
-   * Creation timestamp of the object.
-   */
-  created_at: string;
-  /**
-   * Last modification timestamp of the object.
-   */
-  modified_at: string | null;
-  /**
-   * The ID of the object.
-   */
-  id: string;
-  /**
-   * Display name for the dashboard.
-   */
-  name: string;
-  /**
-   * List of metric slugs displayed in this dashboard.
-   */
-  metrics: string[];
-  /**
-   * The ID of the organization owning this dashboard.
-   */
-  organization_id: string;
-}
-
-/**
- * Schema for updating a metrics dashboard.
- */
-export interface MetricDashboardUpdate {
-  /**
-   * Display name for the dashboard.
-   */
-  name?: string | null;
-  /**
-   * List of metric slugs to display in this dashboard.
-   */
-  metrics?: string[] | null;
 }
 
 /**
@@ -17812,20 +17616,6 @@ export interface OrderNotEligibleForInvoice {
 }
 
 /**
- * OrderNotEligibleForRetry
- */
-export interface OrderNotEligibleForRetry {
-  /**
-   * error
-   */
-  error: "OrderNotEligibleForRetry";
-  /**
-   * detail
-   */
-  detail: string;
-}
-
-/**
  * An event created by Polar when an order is paid.
  */
 export interface OrderPaidEvent {
@@ -18332,7 +18122,7 @@ export interface OrderUpdate {
    */
   billing_name?: string | null;
   /**
-   * The address of the customer that should appear on the invoice. Country and state fields cannot be updated.
+   * The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated.
    */
   billing_address?: AddressInput | null;
 }
@@ -19158,20 +18948,6 @@ export interface PaymentActionRequired {
    * error
    */
   error: "PaymentActionRequired";
-  /**
-   * detail
-   */
-  detail: string;
-}
-
-/**
- * PaymentAlreadyInProgress
- */
-export interface PaymentAlreadyInProgress {
-  /**
-   * error
-   */
-  error: "PaymentAlreadyInProgress";
   /**
    * detail
    */
@@ -20839,14 +20615,6 @@ You can store up to **50 key-value pairs**.
    */
   description?: string | null;
   /**
-   * The recurring interval of the product. If `None`, the product is a one-time purchase. **Can only be set on legacy recurring products. Once set, it can't be changed.**
-   */
-  recurring_interval?: RecurringInterval | null;
-  /**
-   * Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. Once set, it can't be changed.**
-   */
-  recurring_interval_count?: number | null;
-  /**
    * Whether the product is archived. If `true`, the product won't be available for purchase anymore. Existing customers will still have access to their benefits, and subscriptions will continue normally.
    */
   is_archived?: boolean | null;
@@ -20878,6 +20646,14 @@ You can store up to **50 key-value pairs**.
    * attached_custom_fields
    */
   attached_custom_fields?: AttachedCustomFieldCreate[] | null;
+  /**
+   * The recurring interval of the product. If `None`, the product is a one-time purchase. **Can only be set on legacy recurring products. Once set, it can't be changed.**
+   */
+  recurring_interval?: RecurringInterval | null;
+  /**
+   * Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. Once set, it can't be changed.**
+   */
+  recurring_interval_count?: number | null;
 }
 
 /**
@@ -21066,6 +20842,20 @@ export interface RefundDispute {
    * The ID of the payment associated with the dispute.
    */
   payment_id: string;
+}
+
+/**
+ * RefundPaymentAlreadyRefundedByStripe
+ */
+export interface RefundPaymentAlreadyRefundedByStripe {
+  /**
+   * error
+   */
+  error: "RefundPaymentAlreadyRefundedByStripe";
+  /**
+   * detail
+   */
+  detail: string;
 }
 
 /**
@@ -23306,7 +23096,7 @@ You can store up to **50 key-value pairs**.
   /**
    * Set or extend the trial period of the subscription. If set to `now`, the trial will end immediately and the first billing cycle will be charged synchronously. The subscription remains trialing if the payment fails.
    */
-  trial_end?: string | "now" | null;
+  trial_end?: (string | "now") | null;
 }
 
 /**
@@ -24128,7 +23918,7 @@ export interface WebhookEndpointCreate {
   /**
    * The format of the webhook payload.
    */
-  format: WebhookFormat;
+  format: Format;
   /**
    * The events that will trigger the webhook.
    */
@@ -24148,7 +23938,7 @@ export interface WebhookEndpointUpdate {
    */
   url?: string | null;
   /**
-   * An optional name for the webhook endpoint to help organize and identify it.
+   * An optional name for the webhook endpoint. Set to `null` to clear it.
    */
   name?: string | null;
   /**
@@ -24158,7 +23948,7 @@ export interface WebhookEndpointUpdate {
   /**
    * format
    */
-  format?: WebhookFormat | null;
+  format?: ("raw" | "discord" | "slack") | null;
   /**
    * events
    */

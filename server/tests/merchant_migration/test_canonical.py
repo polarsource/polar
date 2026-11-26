@@ -131,6 +131,7 @@ class TestSerialize:
             "tax_id": None,
             "tax_id_dropped": False,
             "tax_exempt": False,
+            "stripe_customer_id": None,
         }
 
 

@@ -33,6 +33,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from polar.config import settings
 from polar.kit.address import Address, AddressType
 from polar.kit.db.models import RecordModel
+from polar.kit.encryption import EncryptedString
 from polar.kit.metadata import MetadataMixin
 from polar.tax.tax_id import TaxID, TaxIDType
 
@@ -67,6 +68,11 @@ class CustomerOAuthPlatform(StrEnum):
     def get_account_key(self, account_id: str) -> str:
         return f"{self.value}:{account_id}"
 
+    @classmethod
+    def parse_account_key(cls, account_key: str) -> tuple["CustomerOAuthPlatform", str]:
+        platform, account_id = account_key.split(":", 1)
+        return cls(platform), account_id
+
     def get_account_id(self, data: dict[str, Any]) -> str:
         if self == CustomerOAuthPlatform.github:
             return str(data["id"])
@@ -80,6 +86,10 @@ class CustomerOAuthPlatform(StrEnum):
         if self == CustomerOAuthPlatform.discord:
             return data["username"]
         raise NotImplementedError()
+
+    @property
+    def keeps_tokens(self) -> bool:
+        return self == CustomerOAuthPlatform.discord
 
 
 @dataclasses.dataclass
@@ -95,6 +105,54 @@ class CustomerOAuthAccount:
         if self.expires_at is None:
             return False
         return time.time() > self.expires_at
+
+
+OAUTH_ACCOUNT_TOKEN_FIELDS = ("access_token", "refresh_token")
+
+
+def _oauth_account_token_context(
+    table: str, account_key: str, field: str
+) -> dict[str, str]:
+    return {"table": table, "column": f"oauth_accounts.{field}", "account": account_key}
+
+
+async def encrypt_oauth_account(
+    table: str,
+    owner_id: UUID,
+    oauth_account: CustomerOAuthAccount,
+    platform: CustomerOAuthPlatform,
+) -> dict[str, Any]:
+    data = dataclasses.asdict(oauth_account)
+    if not platform.keeps_tokens:
+        return data
+    account_key = platform.get_account_key(oauth_account.account_id)
+    for field in OAUTH_ACCOUNT_TOKEN_FIELDS:
+        token = data[field]
+        if token is None:
+            continue
+        encrypted = await EncryptedString.encrypt(
+            token,
+            context={
+                **_oauth_account_token_context(table, account_key, field),
+                "id": str(owner_id),
+            },
+        )
+        data[f"{field}_encrypted"] = encrypted.encrypted_value
+    return data
+
+
+async def decrypt_oauth_account(
+    table: str, owner_id: UUID, account_key: str, data: dict[str, Any]
+) -> CustomerOAuthAccount:
+    data = dict(data)
+    for field in OAUTH_ACCOUNT_TOKEN_FIELDS:
+        encrypted = data.pop(f"{field}_encrypted", None)
+        if encrypted is None:
+            continue
+        data[field] = await EncryptedString(
+            encrypted, _oauth_account_token_context(table, account_key, field)
+        ).decrypt(id=str(owner_id))
+    return CustomerOAuthAccount(**data)
 
 
 class CustomerType(StrEnum):
@@ -265,25 +323,11 @@ class Customer(MetadataMixin, RecordModel):
     a seat-based product. Individual customers can transition to a team customer by
     purchasing a seat-based product. This transition is only one-way.
     """
-    _type: Mapped[CustomerType | None] = mapped_column(
-        "type",
+    type: Mapped[CustomerType] = mapped_column(
         String,
-        nullable=True,
+        nullable=False,
         default=CustomerType.individual,
     )
-
-    @hybrid_property
-    def type(self) -> CustomerType:
-        return self._type or CustomerType.individual
-
-    @type.inplace.setter
-    def _type_setter(self, value: CustomerType | None) -> None:
-        self._type = value
-
-    @type.inplace.expression
-    @classmethod
-    def _type_expression(cls) -> ColumnElement[str]:
-        return cls._type  # type: ignore[return-value]
 
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
@@ -356,24 +400,29 @@ class Customer(MetadataMixin, RecordModel):
     def _can_authenticate_expression(cls) -> ColumnElement[bool]:
         return ~cls.is_deleted
 
-    def get_oauth_account(
+    async def get_oauth_account(
         self, account_id: str, platform: CustomerOAuthPlatform
     ) -> CustomerOAuthAccount | None:
-        oauth_account_data = self._oauth_accounts.get(
-            platform.get_account_key(account_id)
-        )
+        account_key = platform.get_account_key(account_id)
+        oauth_account_data = self._oauth_accounts.get(account_key)
         if oauth_account_data is None:
             return None
 
-        return CustomerOAuthAccount(**oauth_account_data)
+        return await decrypt_oauth_account(
+            self.__tablename__, self.id, account_key, oauth_account_data
+        )
 
-    def set_oauth_account(
+    async def set_oauth_account(
         self, oauth_account: CustomerOAuthAccount, platform: CustomerOAuthPlatform
     ) -> None:
+        if self.id is None:
+            self.id = self.generate_id()
         account_key = platform.get_account_key(oauth_account.account_id)
         self._oauth_accounts = {
             **self._oauth_accounts,
-            account_key: dataclasses.asdict(oauth_account),
+            account_key: await encrypt_oauth_account(
+                self.__tablename__, self.id, oauth_account, platform
+            ),
         }
 
     def remove_oauth_account(

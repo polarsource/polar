@@ -7,23 +7,28 @@ from polar.exceptions import ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter
+from polar.kit.versioning import version
 from polar.models import Order
-from polar.openapi import APITag
+from polar.openapi import APITag, destructive
 from polar.order.schemas import OrderID
 from polar.order.service import (
     MissingInvoiceBillingDetails,
     OrderNotEligibleForInvoice,
     PaymentAlreadyInProgress,
+    PaymentError,
 )
 from polar.payment.repository import PaymentRepository
 from polar.postgres import get_db_session
 from polar.routing import APIRouter
+from polar.version import V2027_01
 
 from .. import auth
 from ..schemas.order import (
     CustomerOrder,
     CustomerOrderConfirmPayment,
+    CustomerOrderCreate,
     CustomerOrderInvoice,
+    CustomerOrderPay,
     CustomerOrderPaymentConfirmation,
     CustomerOrderPaymentStatus,
     CustomerOrderReceipt,
@@ -100,6 +105,24 @@ async def list(
     )
 
 
+@router.post(
+    "/",
+    status_code=201,
+    summary="Create Order",
+    response_model=CustomerOrder,
+)
+@version(starting_from=V2027_01)
+async def create(
+    order_create: CustomerOrderCreate,
+    auth_subject: auth.CustomerPortalUnionBillingWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Order:
+    """Prepare a draft order for the first paid period of an ended trial."""
+    return await customer_order_service.create(
+        session, auth_subject, order_create.subscription_id
+    )
+
+
 @router.get(
     "/{id}",
     summary="Get Order",
@@ -139,6 +162,31 @@ async def update(
         raise ResourceNotFound()
 
     return await customer_order_service.update(session, order, order_update)
+
+
+@router.patch(
+    "/{id}/pay",
+    status_code=202,
+    summary="Pay Order",
+    response_model=CustomerOrder,
+    responses={400: {"model": PaymentError.schema()}, 404: OrderNotFound},
+    openapi_extra=destructive(),
+)
+@version(starting_from=V2027_01)
+async def pay(
+    id: OrderID,
+    order_pay: CustomerOrderPay,
+    auth_subject: auth.CustomerPortalUnionBillingWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Order:
+    """Submit payment for an order for asynchronous settlement."""
+    order = await customer_order_service.get_by_id(
+        session, auth_subject, id, for_update=True
+    )
+    if order is None:
+        raise ResourceNotFound()
+
+    return await customer_order_service.pay(session, order, order_pay)
 
 
 @router.post(
@@ -225,6 +273,7 @@ async def receipt(
     summary="Get Order Payment Status",
     response_model=CustomerOrderPaymentStatus,
     responses={404: OrderNotFound},
+    tags=[APITag.private],
 )
 async def get_payment_status(
     id: OrderID,
@@ -271,6 +320,7 @@ async def get_payment_status(
             "model": ManualRetryLimitExceeded.schema(),
         },
     },
+    tags=[APITag.private],
 )
 async def confirm_retry_payment(
     id: OrderID,

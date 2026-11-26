@@ -10,6 +10,7 @@ import {
   mergeInput,
   jsonFlag,
   nullableStringFlag,
+  org,
 } from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['meters']['update']>[1]>
@@ -19,6 +20,7 @@ export const command = Command.make(
   {
     confirm,
     fields,
+    org,
     path: {
       id: Argument.String('id'),
     },
@@ -99,6 +101,7 @@ export const command = Command.make(
         method: 'PATCH',
         requiresConfirmation: confirmationInput['is_archived'] === true,
         confirm: config.confirm,
+        organizationId: config.org,
         fields: config.fields,
         preview: {
           fields: [

@@ -7,6 +7,9 @@ from polar.checkout.repository import CheckoutRepository
 from polar.checkout.service import NotConfirmedCheckout
 from polar.checkout.service import checkout as checkout_service
 from polar.exceptions import PolarError
+from polar.integrations.payment_retry_alert.service import (
+    payment_retry_alert as payment_retry_alert_service,
+)
 from polar.integrations.stripe.service import (
     STRIPE_METADATA_PAYMENT_TRIGGER,
 )
@@ -32,6 +35,7 @@ from polar.organization.repository import OrganizationRepository
 from polar.payment.service import payment as payment_service
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.postgres import AsyncSession
+from polar.subscription.service import subscription as subscription_service
 from polar.wallet.repository import WalletRepository, WalletTransactionRepository
 from polar.worker import enqueue_job
 
@@ -215,6 +219,7 @@ async def handle_success(
         payment = await payment_service.upsert_from_stripe_charge(
             session, object, organization, checkout, wallet, order, trigger=trigger
         )
+        payment_retry_alert_service.enqueue_outcome_report(object.metadata, payment)
 
     if checkout is not None:
         if object.OBJECT_NAME == "setup_intent":
@@ -237,8 +242,9 @@ async def handle_success(
 
         payment_method: PaymentMethod | None = None
         if checkout.should_save_payment_method:
+            assert checkout.customer is not None
             payment_method = await payment_method_service.upsert_from_stripe_intent(
-                session, object, checkout
+                session, object, checkout.customer
             )
             await session.flush()
 
@@ -250,6 +256,14 @@ async def handle_success(
         )
 
     if order is not None:
+        if checkout is None and object.OBJECT_NAME == "setup_intent":
+            payment_method = await payment_method_service.upsert_from_stripe_intent(
+                session, object, order.customer
+            )
+            if order.subscription is not None:
+                await subscription_service.update_payment_method_from_retry(
+                    session, order.subscription, payment_method
+                )
         enqueue_job(
             "order.paid",
             order_id=order.id,
@@ -292,6 +306,9 @@ async def handle_failure(
     elif object.OBJECT_NAME == "setup_intent":
         intent_id = object.id
 
+    if payment is not None:
+        payment_retry_alert_service.enqueue_outcome_report(object.metadata, payment)
+
     if checkout is not None:
         current_intent_id = checkout.payment_processor_metadata.get("intent_id")
         if (
@@ -302,6 +319,19 @@ async def handle_failure(
             await checkout_service.handle_failure(session, checkout, payment=payment)
 
     if order is not None:
+        # Only on-session customer retries persist the current intent on the order.
+        if trigger == PaymentTrigger.retry_customer:
+            await OrderRepository.from_session(session).refresh_for_payment_update(
+                order
+            )
+            current_intent_id = order.payment_processor_metadata.get("intent_id")
+            if (
+                current_intent_id is not None
+                and intent_id is not None
+                and current_intent_id != intent_id
+            ):
+                return
+
         # Failures from triggers that don't count toward the dunning ceiling
         # also shouldn't progress the dunning state machine — otherwise a
         # one-shot recovery attempt (manual portal retry, post-card-update

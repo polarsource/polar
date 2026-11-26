@@ -1,60 +1,237 @@
 ---
-title: "Customer Management"
-sidebarTitle: "Customer Management"
-description: "Get insights on your customers and sales"
+title: "Manage customers"
+sidebarTitle: "Manage customers"
+description: "Create, find, edit, delete and anonymize customers from the dashboard, CLI, your agent or the API, and know which webhooks fire."
 ---
 
-<img
-  className="block dark:hidden"
-  src="/assets/features/customer-management/details.light.png"
-/>
-<img
-  className="hidden dark:block"
-  src="/assets/features/customer-management/details.dark.png"
-/>
+A **customer** is the person or team that buys from you. Polar creates one when someone completes a checkout, and you can create them ahead of time. See [Customers](/concepts/customers) for how customers map to your users, and [Customer state](/integrate/customer-state) to check what a customer can access.
 
-## Managing Customers
+## Create a customer
 
-Polar has a built in feature to view and manage your Customers.
+Create a customer when a user signs up, with your user ID as `external_id`. Usage, free plans and the [Customer Portal](/features/customer-portal/introduction) then work before the first purchase.
 
-Everyone who has ever purchased something from you will be recorded as a Customer to your Organization. You’re able to see past orders and their ongoing subscriptions, as well as some additional metrics.
+<Tabs>
+  <Tab title="Dashboard">
+    - Open **Customers**
+    - Click **+**
+    - Fill in **Name**, **Email** and **External ID**, and optionally **Metadata**
+    - Click **Create Customer**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar customers create --email jane@example.com --external-id user_123
+    ```
+
+    See [`polar customers`](/integrate/cli/reference/customers).
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Create a customer jane@example.com with external ID user_123 in my Polar sandbox.
+    ```
+
+    Uses the `customers_create` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+From your backend:
+
+<CodeGroup>
+```typescript TypeScript
+const customer = await polar.customers.create({
+  email: "jane@example.com",
+  external_id: "user_123",
+  metadata: { plan_source: "signup" },
+});
+```
+
+```python Python
+customer = polar.customers.create(
+    email="jane@example.com",
+    external_id="user_123",
+    metadata={"plan_source": "signup"},
+)
+```
+
+```bash cURL
+curl -X POST https://sandbox-api.polar.sh/v1/customers/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "jane@example.com",
+    "external_id": "user_123",
+    "metadata": { "plan_source": "signup" }
+  }'
+```
+</CodeGroup>
+
+The examples use the sandbox and API version `2026-10`. The email is unique within your organization.
 
 ## External ID
 
-Quite often, you'll have our own users management system in your application, where your customer already have an ID. To ease reconciliation between Polar and your system, we have a dedicated [`external_id`](/api-reference/current/customers/get-customer-by-external-id#response-external-id) field on Customers. It's unique across your organization and can't be changed once set.
+Set `external_id` to your user's ID, so you never need to store Polar's customer ID. It's unique within your organization and can't be changed once set. Every customer endpoint has an `_external` variant that takes it, like `polar customers get_external user_123`. See [External ID](/concepts/customers#external-id).
 
-We have dedicated API endpoints that work with the `external_id` field, so you don't even have to store the internal Polar ID in your system.
+## Individuals and teams
 
-<Card
-  title="Get Customer by External ID"
-  icon="link"
-  href="/api-reference/current/customers/get-customer-by-external-id"
-  horizontal
-></Card>
-<Card
-  title="Update Customer by External ID"
-  icon="link"
-  href="/api-reference/current/customers/update-customer-by-external-id"
-  horizontal
-></Card>
-<Card
-  title="Delete Customer by External ID"
-  icon="link"
-  href="/api-reference/current/customers/delete-customer-by-external-id"
-  horizontal
-></Card>
+A customer's `type` is `individual` (the default) or `team`. A team separates who pays from who uses the product, through **members** with the roles **Owner** (`owner`), **Billing Manager** (`billing_manager`) and **Member** (`member`).
 
-## Metadata
+- Creating a customer also creates its `owner` member, from the customer's email and name, or from the `owner` you pass.
+- A team customer can be created without an email if you pass an `owner` with one.
+- An individual can be upgraded to a team. A team can't go back.
 
-You may set additional metadata on Customers. This can be very useful to store additional data about your customer you want to be available through our API and webhooks.
+Members are managed under the customer's **Members** tab, with `polar customers members`, or the [members API](/api-reference/current/customers/list-members). See [Seat-based pricing](/features/seat-based-pricing).
 
-<img
-  className="block dark:hidden"
-  src="/assets/features/customer-management/edit.light.png"
-/>
-<img
-  className="hidden dark:block"
-  src="/assets/features/customer-management/edit.dark.png"
-/>
+## Customer fields
 
-It can be set through the dashboard or through the [API](/api-reference/current/customers/update-customer#body-metadata). It can also be pre-set when creating a Checkout Session by using the [`customer_metadata`](/api-reference/current/checkouts/create-checkout-session#body-customer-metadata) field. This way, after a successful checkout, the metadata will automatically be set on the newly created Customer.
+**Name**, **Email**, **External ID** and **Metadata** are editable in the dashboard. The rest are set at checkout or over the API.
+
+| Dashboard | API field | Notes |
+| --- | --- | --- |
+| **Email** | `email` | Unique within your organization. Optional for teams with an owner. |
+| **External ID** | `external_id` | Your user ID. Set once. |
+| **Name** | `name`, `billing_name` | `billing_name` appears on invoices and falls back to `name`. |
+| | `billing_address`, `tax_id` | Usually collected at checkout. |
+| | `locale` | The customer's language, used by [localization](/features/checkout/localization). |
+| **Metadata** | `metadata` | Your own key-value data. Up to 50 keys, keys up to 40 characters, string values up to 500 characters. |
+| | `type` | `individual` or `team`. |
+| | `email_verified` | Whether the customer verified their email. |
+| | `default_payment_method_id` | The saved method used for renewals. |
+| | `first_user_event_at` | When the first usage event arrived for this customer. |
+
+To set metadata on customers created by checkout, pass `customer_metadata` on the [Checkout Session](/features/checkout/session#metadata).
+
+## Find and edit customers
+
+<Tabs>
+  <Tab title="Dashboard">
+    - Open **Customers** and use **Search Customers**
+    - Filter with **All**, **Active** or **Inactive**
+    - Select a customer, open the **⋮** menu and click **Edit Customer**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar customers list --query jane
+    polar customers update_external user_123 --name "Jane Doe" --metadata '{"plan_source":"signup"}'
+    ```
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Rename the customer with external ID user_123 to Jane Doe in my Polar sandbox.
+    ```
+
+    Uses the `customers_update_external` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+**Active** customers have at least one **Trialing**, **Active** or **Past due** subscription (`--active=true` in the CLI).
+
+## The customer page
+
+The customer page has these tabs:
+
+- **Overview**: subscriptions, orders, payments and benefit grants
+- **Usage**: consumption per meter. Open a meter for its credit history
+- **Events**: the customer's usage events
+- **Members**: shown for team customers
+
+The **⋮** menu in the header has:
+
+| Action | What it does |
+| --- | --- |
+| **Copy Customer Portal** | Copies a pre-authenticated [portal link](/features/customer-portal/navigate-customers), valid for one hour |
+| **Contact Customer** | Opens an email to the customer |
+| **Edit Customer** | Changes **Name**, **Email**, **External ID** and **Metadata** |
+| **Add Credits** | Credits units to a meter. See [Credits](/features/usage-based-billing/credits) |
+| **Delete Customer** | Deletes the customer. See below |
+
+On the **Overview** tab, **Grant benefit** grants a benefit outside of a purchase.
+
+To export every customer as CSV, open the menu above the customer list and click **Export Customers**. Exporting is dashboard only.
+
+## Delete a customer
+
+Deleting a customer can't be undone. It immediately:
+
+- Cancels their active subscriptions
+- Revokes their benefits
+- Clears their `external_id`
+
+Their information is kept on past orders and subscriptions.
+
+**Anonymize** to also remove personal data, for example for a GDPR erasure request. Polar replaces the email with a hash, hashes the name and billing name, clears the billing address and removes connected OAuth accounts. For a business with a tax ID, the name is kept.
+
+<Warning>
+  The dashboard's **Delete Customer** doesn't anonymize. To anonymize, use the API, the CLI or your agent with `anonymize=true`.
+</Warning>
+
+<Tabs>
+  <Tab title="Dashboard">
+    - Open the customer
+    - Open the **⋮** menu and click **Delete Customer**
+    - Type the customer's email to confirm
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar customers delete_external user_123 --anonymize
+    ```
+
+    Asks for confirmation. Add `--confirm` to skip it in scripts.
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Delete and anonymize the customer with external ID user_123 in my Polar sandbox.
+    ```
+
+    Uses the `customers_delete_external` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+<CodeGroup>
+```typescript TypeScript
+await polar.customers.deleteExternal("user_123", { anonymize: true });
+```
+
+```python Python
+polar.customers.delete_external("user_123", anonymize=True)
+```
+
+```bash cURL
+curl -X DELETE "https://sandbox-api.polar.sh/v1/customers/external/user_123?anonymize=true" \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10"
+```
+</CodeGroup>
+
+## Webhooks
+
+| Event | When |
+| --- | --- |
+| `customer.created` | A customer is created, by you or by a checkout |
+| `customer.updated` | A customer's details change |
+| `customer.deleted` | A customer is deleted |
+| `customer.state_changed` | Also sent with each of the three above, and whenever subscriptions, benefits or meters change. See [Customer state](/integrate/customer-state) |
+| `member.created`, `member.updated`, `member.deleted` | A team member changes |
+
+## From the CLI or your agent
+
+| Task | CLI | MCP operation |
+| --- | --- | --- |
+| Create a customer | `polar customers create` | `customers_create` |
+| List or search | `polar customers list` | `customers_list` |
+| Get by external ID | `polar customers get_external <external_id>` | `customers_get_external` |
+| Update by external ID | `polar customers update_external <external_id>` | `customers_update_external` |
+| Delete (and anonymize) | `polar customers delete_external <external_id> --anonymize` | `customers_delete_external` |
+| Read the customer state | `polar customers get_state_external <external_id>` | `customers_get_state_external` |
+| List saved payment methods | `polar customers list_payment_methods_external <external_id>` | `customers_list_payment_methods_external` |
+| Manage team members | `polar customers members list <customer_id>` | `customers_members_list` |
+
+Each command also has a variant that takes Polar's customer ID: `get`, `update`, `delete`, `get_state`, `list_payment_methods`.
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Customers](/concepts/customers) | External IDs, customer state, individuals and teams |
+| [Customer state](/integrate/customer-state) | Check what a customer can access |
+| [Customer analytics](/features/customer-analytics) | Top customers, at-risk customers and cost drivers |
+| [Customers API](/api-reference/current/customers/list-customers) | API reference |

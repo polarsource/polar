@@ -61,6 +61,8 @@ export const EditCustomerModal = ({
   const handleUpdateCustomer = (customerUpdate: CustomerUpdateForm) => {
     const data = {
       ...customerUpdate,
+      email: customerUpdate.email || undefined,
+      external_id: customerUpdate.external_id || undefined,
       metadata: entriesToMetadata(customerUpdate.metadata),
     }
 

@@ -1,7 +1,8 @@
 import uuid
 
 import pytest
-from httpx import AsyncClient
+import stripe as stripe_lib
+from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.auth.scope import READ_ONLY_SCOPES
@@ -93,6 +94,24 @@ class TestCreatePayoutAccount:
         )
 
         assert response.status_code == 422
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
+    async def test_member_without_finance_permission(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization_second: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/payout-accounts/",
+            json={
+                "type": "stripe",
+                "country": "US",
+                "organization_id": str(organization.id),
+            },
+        )
+
+        assert response.status_code == 403
 
     @pytest.mark.auth(AuthSubjectFixture(scopes=READ_ONLY_SCOPES))
     async def test_impersonation_session_blocked(
@@ -256,6 +275,62 @@ class TestOnboardingLink:
         )
 
         assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_rejected_account_returns_conflict(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        mocker: MockerFixture,
+    ) -> None:
+        payout_account = await create_payout_account(save_fixture, organization, user)
+        mocker.patch.object(
+            stripe_lib.AccountLink,
+            "create_async",
+            side_effect=stripe_lib.InvalidRequestError(
+                "An account link cannot be created for this account because the account has been rejected. Check the status of the account in your Stripe dashboard.",
+                param=None,
+                http_status=400,
+                headers={"request-id": "req_test"},
+            ),
+        )
+
+        response = await client.post(
+            f"/v1/payout-accounts/{payout_account.id}/onboarding-link",
+            params={"return_path": "/finance/account"},
+        )
+
+        assert response.status_code == 409
+        assert response.json() == {
+            "error": "PayoutAccountRejected",
+            "detail": "Stripe rejected this payout account. Check your Stripe dashboard for details.",
+        }
+
+    @pytest.mark.auth
+    async def test_unexpected_stripe_error_is_raised(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        mocker: MockerFixture,
+    ) -> None:
+        payout_account = await create_payout_account(save_fixture, organization, user)
+        mocker.patch.object(
+            stripe_lib.AccountLink,
+            "create_async",
+            side_effect=stripe_lib.InvalidRequestError(
+                "Invalid return URL", param="return_url", http_status=400
+            ),
+        )
+
+        with pytest.raises(stripe_lib.InvalidRequestError, match="Invalid return URL"):
+            await client.post(
+                f"/v1/payout-accounts/{payout_account.id}/onboarding-link",
+                params={"return_path": "/finance/account"},
+            )
 
 
 @pytest.mark.anyio

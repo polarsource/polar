@@ -213,8 +213,14 @@ class RedisEventQueue:
         return self._redis
 
     async def _enqueue_encoded(self, event: str) -> None:
-        await self._require_redis().xadd(self._stream, {"event": event})
-        self._undrained = True
+        # A flusher holding the first slot reads the stream again once it lets go: it
+        # delivers the event. Otherwise the instance drains the stream on its next flush.
+        async with self._require_redis().pipeline(transaction=False) as pipeline:
+            pipeline.xadd(self._stream, {"event": event})
+            pipeline.exists(f"{self._stream}:flusher:0")
+            _, held = await pipeline.execute()
+        if not held:
+            self._undrained = True
 
     async def _create_queue_group(self, redis: Redis) -> None:
         """A flusher reads the queue through the group, which tracks each batch until

@@ -174,7 +174,7 @@ export const PayoutAccountSection = ({
             </Button>
           ) : (
             <Button onClick={openCreate}>
-              Connect payout account
+              Create payout account
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           )

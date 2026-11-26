@@ -1,4 +1,10 @@
-export type { EventMetadata } from './schema/event'
+export type {
+  CostMetadata,
+  EventDefinition,
+  EventHelpers,
+  EventMetadata,
+  LLMMetadata,
+} from './schema/event'
 export {
   and,
   or,

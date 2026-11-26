@@ -6,17 +6,19 @@ import { z } from 'zod'
 const slackIntegrationId = process.env.POLAR_SLACK_INTEGRATION_ID
 
 export default defineConfig({
-  events: {
-    tool_call: z.object({
-      tool: z.string(),
-      // Could split meter into meter per server, billed differently
-      server: z.enum(['builtin', 'custom']),
-      // Could filter the meter to only bill for successful calls
-      success: z.boolean(),
-      // Could sum to a compute-time meter to bill by duration
-      duration_ms: z.int(),
-    }),
-  },
+  events: ({ event }) => ({
+    tool_call: event(
+      z.object({
+        tool: z.string(),
+        // Could split meter into meter per server, billed differently
+        server: z.enum(['builtin', 'custom']),
+        // Could filter the meter to only bill for successful calls
+        success: z.boolean(),
+        // Could sum to a compute-time meter to bill by duration
+        duration_ms: z.int(),
+      }),
+    ),
+  }),
   meters: ({ meter, events }) => ({
     tool_call: meter('Tool calls!')
       .on(events.tool_call)

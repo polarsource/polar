@@ -1,4 +1,10 @@
-export type { EventInput, EventMetadata, EventSchema } from './schema/event'
+export type {
+  CostMetadata,
+  EventInput,
+  EventMetadata,
+  EventSchema,
+  LLMMetadata,
+} from './schema/event'
 export type { Metadata } from './schema/metadata'
 export type {
   MeterAggregation,

@@ -27,12 +27,12 @@ from polar._redis import (
 from polar.logging import get_logger
 from polar.metering.client import PolarClient
 from polar.metering.errors import (
-    DropReason,
     MeteringTimeoutError,
     retry_after_seconds,
     validate_timeout,
 )
 from polar.metering.events import EventInput
+from polar.metering.outbox import OnAck, OnRejected
 
 log = get_logger(__name__)
 
@@ -110,10 +110,6 @@ class _Delivery:
     token: str
 
 
-OnAck = collections.abc.Callable[[list[EventInput]], collections.abc.Awaitable[None]]
-OnRejected = collections.abc.Callable[
-    [list[EventInput], DropReason], collections.abc.Awaitable[None]
-]
 _Settle = collections.abc.Callable[
     [list[EventInput], list[EventInput], _Delivery], collections.abc.Awaitable[None]
 ]
@@ -139,8 +135,8 @@ class RedisOutbox:
         self._stream = stream
         self._backoff_key = f"{stream}:backoff"
         self._client = client
-        self._on_ack = on_ack
-        self._on_rejected = on_rejected
+        self.on_ack = on_ack
+        self.on_rejected = on_rejected
         self._settle: _Settle | None = None
         self._request_timeout = DEFAULT_TIMEOUT
         self._stack = contextlib.AsyncExitStack()
@@ -305,8 +301,9 @@ class RedisOutbox:
                 await self._drain_outbox()
         # Whatever a drain raises, it must not end the task group, and with it the
         # task that started Outpost.
-        except* Exception:  # noqa: BLE001
+        except* Exception:
             self._undrained = True
+            log.exception("Redis outbox drain failed")
         finally:
             self._draining = None
             done.set()
@@ -497,10 +494,10 @@ class RedisOutbox:
         if self._settle is not None:
             await self._settle(events, refused, delivery)
         else:
-            if refused and self._on_rejected is not None:
-                await self._on_rejected(refused, "permanent_error")
-            if events and self._on_ack is not None:
-                await self._on_ack(events)
+            if refused and self.on_rejected is not None:
+                await self.on_rejected(refused, "permanent_error")
+            if events and self.on_ack is not None:
+                await self.on_ack(events)
             assert self._confirm_script is not None
             await self._confirm_script(
                 keys=[self._stream, delivery.lock_key],

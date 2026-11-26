@@ -18,7 +18,6 @@ import {
 } from "../../redis";
 import {
   type DeliveryOptions,
-  type DropReason,
   MeteringTimeoutError,
   deliveryTimeout,
   retryAfterMs,
@@ -106,17 +105,16 @@ const holdsNoInfinity = (value: unknown): boolean => {
 
 type Settle = (events: EventInput[], refused: EventInput[], delivery: Delivery) => Promise<void>;
 
-export interface RedisOutboxOptions {
+export interface RedisOutboxOptions extends Partial<Pick<Outbox, "onAck" | "onRejected">> {
   client: Pick<ClientBase, "sendRequest" | "buildRequest" | "parseResponse">;
   /** Use a distinct stream per Polar environment and organization. */
   stream: string;
-  /** May be replayed if the stream entries have not been acknowledged. */
-  onAck?: (events: EventInput[]) => void | Promise<void>;
-  /** May be replayed if the stream entries have not been acknowledged. */
-  onRejected?: (events: EventInput[], reason: DropReason) => void | Promise<void>;
 }
 
 export class RedisOutbox implements Outbox {
+  onAck: Outbox["onAck"];
+  onRejected: Outbox["onRejected"];
+
   private redis?: OutboxRedis;
   private settle?: Settle;
   private timer?: ReturnType<typeof setInterval>;
@@ -127,7 +125,10 @@ export class RedisOutbox implements Outbox {
   constructor(
     private readonly redisUrl: string,
     private readonly options: RedisOutboxOptions,
-  ) {}
+  ) {
+    this.onAck = options.onAck;
+    this.onRejected = options.onRejected;
+  }
 
   async start(): Promise<this> {
     if (this.redis) throw new PolarError("Redis outbox is already connected");
@@ -244,6 +245,7 @@ export class RedisOutbox implements Outbox {
         this.undrained = false;
         await this.drainOutbox().catch((error: unknown) => {
           this.undrained = true;
+          console.warn("Redis outbox drain failed", error);
           throw error;
         });
       } while (this.drainAgain);
@@ -415,8 +417,8 @@ export class RedisOutbox implements Outbox {
     if (this.settle) {
       await this.settle(events, refused, delivery);
     } else {
-      if (refused.length) await this.options.onRejected?.(refused, "permanent_error");
-      if (events.length) await this.options.onAck?.(events);
+      if (refused.length) await this.onRejected?.(refused, "permanent_error");
+      if (events.length) await this.onAck?.(events);
       await this.requireRedis().outpostConfirm(
         2,
         this.options.stream,

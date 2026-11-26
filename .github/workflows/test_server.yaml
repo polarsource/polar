@@ -489,7 +489,7 @@ jobs:
       - name: 📬 Restore emails renderer
         id: emails
         if: matrix.shard != 'tinybird'
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: server/emails/bin
           key: emails-renderer-${{ runner.os }}-${{ hashFiles('server/emails/src/**', 'server/emails/package.json', 'server/emails/pnpm-lock.yaml', 'server/emails/tsdown.config.mjs', '.nvmrc') }}
@@ -512,6 +512,14 @@ jobs:
         working-directory: server/emails
         run: pnpm install --frozen-lockfile && pnpm build
 
+      - name: 📬 Save emails renderer cache
+        if: matrix.shard == '1' && steps.emails.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: server/emails/bin
+          key: emails-renderer-${{ runner.os }}-${{ hashFiles('server/emails/src/**', 'server/emails/package.json', 'server/emails/pnpm-lock.yaml', 'server/emails/tsdown.config.mjs', '.nvmrc') }}
+
       - name: Install uv
         uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
@@ -522,10 +530,10 @@ jobs:
         with:
           python-version-file: "server/pyproject.toml"
 
-      - name: Cache CJK fonts
+      - name: Restore CJK fonts
         id: cjk-fonts-cache
         if: matrix.shard != 'tinybird'
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: /usr/share/fonts/opentype/noto
           key: cjk-fonts-${{ runner.os }}-noto-cjk-v1
@@ -533,6 +541,14 @@ jobs:
       - name: Install CJK fonts
         if: matrix.shard != 'tinybird' && steps.cjk-fonts-cache.outputs.cache-hit != 'true'
         run: sudo apt-get update && sudo apt-get install -y fonts-noto-cjk
+
+      - name: Save CJK fonts cache
+        if: matrix.shard == '1' && steps.cjk-fonts-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: /usr/share/fonts/opentype/noto
+          key: cjk-fonts-${{ runner.os }}-noto-cjk-v1
 
       - name: 🔧 uv install
         working-directory: ./server
@@ -554,9 +570,9 @@ jobs:
           rm -f "$token_file" "$token_file.error"
           nohup uv run python -m scripts.tinybird_test_workspace --token-file "$token_file" > "$RUNNER_TEMP/tinybird-prepare.log" 2>&1 &
 
-      - name: ⚗️ Cache migrated Postgres schema
+      - name: ⚗️ Restore migrated Postgres schema
         id: schema-cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/pg-schema
           key: pg-schema-v1-pg18-${{ hashFiles('server/migrations/**/*.py') }}
@@ -575,11 +591,19 @@ jobs:
             docker exec -i "$PG_CONTAINER" psql -U polar -d polar_test -v ON_ERROR_STOP=1 -q < "$RUNNER_TEMP/pg-schema/schema.sql"
           else
             (cd server && uv run task db_migrate)
-            if [ -n "$PG_CONTAINER" ]; then
+            if [ "${{ matrix.shard }}" = "1" ] && [ -n "$PG_CONTAINER" ]; then
               mkdir -p "$RUNNER_TEMP/pg-schema"
               docker exec "$PG_CONTAINER" pg_dump -U polar -d polar_test --no-owner --no-privileges > "$RUNNER_TEMP/pg-schema/schema.sql"
             fi
           fi
+
+      - name: ⚗️ Save migrated Postgres schema cache
+        if: matrix.shard == '1' && steps.schema-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/pg-schema
+          key: pg-schema-v1-pg18-${{ hashFiles('server/migrations/**/*.py') }}
 
       - name: ⚗️ alembic check
         if: matrix.shard == '1'

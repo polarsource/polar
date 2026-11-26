@@ -30,7 +30,7 @@ export const ProductCustomFields = ({
         {product.attached_custom_fields.map(({ custom_field, required }) => (
           <Link
             key={custom_field.id}
-            href={`/dashboard/${organization.slug}/settings/custom-fields`}
+            href={`/dashboard/${organization.slug}/products/custom-fields`}
           >
             <ListItem size="small">
               <Box minWidth={0} flexGrow={1} alignItems="center" columnGap="m">

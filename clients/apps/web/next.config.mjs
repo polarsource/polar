@@ -294,6 +294,11 @@ const nextConfig = {
         permanent: true,
       },
       {
+        source: '/dashboard/:organization/settings/custom-fields',
+        destination: '/dashboard/:organization/products/custom-fields',
+        permanent: true,
+      },
+      {
         source: '/dashboard/:organization/products/overview',
         destination: '/dashboard/:organization/products',
         permanent: true,

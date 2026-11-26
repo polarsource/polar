@@ -150,6 +150,8 @@ from .schemas import (
     OrderCreate,
     OrderCreateBase,
     OrderCreateV2027_01,
+    OrderExternalCustomerIDReference,
+    OrderExternalProductIDReference,
     OrderInvoice,
     OrderReceipt,
     OrderUpdate,
@@ -1219,20 +1221,17 @@ class OrderService:
         product_loc: str
         product_input: uuid.UUID | str
         product: Product | None
-        external_product_id = (
-            payload.external_product_id
-            if isinstance(payload, OrderCreateV2027_01)
-            else None
-        )
-        if external_product_id is not None:
-            product_loc, product_input = "external_product_id", external_product_id
+        if isinstance(payload, OrderExternalProductIDReference):
+            product_loc, product_input = (
+                "external_product_id",
+                payload.external_product_id,
+            )
             product = await product_repository.get_by_external_id_and_organization(
-                external_product_id,
+                payload.external_product_id,
                 organization.id,
                 options=product_repository.get_eager_options(),
             )
         else:
-            assert payload.product_id is not None
             product_loc, product_input = "product_id", payload.product_id
             product = await product_repository.get_by_id_and_organization(
                 payload.product_id,
@@ -1317,18 +1316,15 @@ class OrderService:
         customer_loc: str
         customer_input: uuid.UUID | str
         customer: Customer | None
-        external_customer_id = (
-            payload.external_customer_id
-            if isinstance(payload, OrderCreateV2027_01)
-            else None
-        )
-        if external_customer_id is not None:
-            customer_loc, customer_input = "external_customer_id", external_customer_id
+        if isinstance(payload, OrderExternalCustomerIDReference):
+            customer_loc, customer_input = (
+                "external_customer_id",
+                payload.external_customer_id,
+            )
             customer = await customer_repository.get_by_external_id_and_organization(
-                external_customer_id, organization.id
+                payload.external_customer_id, organization.id
             )
         else:
-            assert payload.customer_id is not None
             customer_loc, customer_input = "customer_id", payload.customer_id
             customer = await customer_repository.get_by_id_and_organization(
                 payload.customer_id, organization.id

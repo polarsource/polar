@@ -30760,13 +30760,10 @@ export interface components {
       | 'subscription_update'
       | 'subscription_meter_cycle'
     /**
-     * OrderCreateV2027_01
+     * OrderCreate
      * @description Schema to create a draft order for an off-session charge.
-     *
-     *     Reference the customer by `customer_id` or `external_customer_id`, and the
-     *     product by `product_id` or `external_product_id`.
      */
-    OrderCreateV2027_01: {
+    OrderCreate: {
       /**
        * Custom Field Data
        * @description Key-value object storing custom field values.
@@ -30818,26 +30815,220 @@ export interface components {
       description?: string | null
       /**
        * Customer Id
-       * @description The ID of the customer the order is for. Must belong to the order's organization. Required unless `external_customer_id` is set.
+       * Format: uuid4
+       * @description The ID of the customer the order is for. Must belong to the order's organization.
        */
-      customer_id?: string | null
-      /**
-       * External Customer Id
-       * @description The ID of the customer in your system the order is for. Must belong to the order's organization. Required unless `customer_id` is set.
-       * @example usr_1337
-       */
-      external_customer_id?: string | null
+      customer_id: string
       /**
        * Product Id
-       * @description The ID of the one-time product to charge for. Must belong to the order's organization. Only fixed-price, free and unit-based products are supported. Required unless `external_product_id` is set.
+       * Format: uuid4
+       * @description The ID of the one-time product to charge for. Must belong to the order's organization. Only fixed-price, free and unit-based products are supported.
        */
-      product_id?: string | null
+      product_id: string
+    }
+    /**
+     * OrderCreateExternal
+     * @description Schema to create a draft order for an off-session charge,
+     *     referencing the customer and product by their external IDs.
+     */
+    OrderCreateExternal: {
+      /**
+       * Custom Field Data
+       * @description Key-value object storing custom field values.
+       */
+      custom_field_data?: {
+        [key: string]: string | number | boolean | null
+      }
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Organization Id
+       * @description The ID of the organization the order belongs to. **Required unless you use an organization token.** The customer and product must belong to this organization.
+       */
+      organization_id?: string | null
+      /**
+       * Currency
+       * @description The currency to charge in (ISO 4217, lowercase, e.g. `usd`). Defaults to the organization's default currency; specify it to force a different one, or when the product isn't priced in the organization's default currency.
+       */
+      currency?: string | null
+      /**
+       * Amount
+       * @description A custom amount to charge, in the smallest currency unit. Overrides the product's price; defaults to the product's configured price (0 for free products). A positive amount must be at least the currency's minimum. Can't be combined with `units`.
+       */
+      amount?: number | null
+      /**
+       * Units
+       * @description The number of units to charge for. Required when the product has unit-based pricing, and rejected otherwise. The amount comes from the price's tiers. Can't be combined with `amount`.
+       */
+      units?: number | null
+      /**
+       * Description
+       * @description A custom description for the order's line item, shown on the invoice and receipt (e.g. `5,000 tokens`). Defaults to the product name.
+       */
+      description?: string | null
+      /**
+       * External Customer Id
+       * @description The ID of the customer in your system the order is for. Must belong to the order's organization.
+       * @example usr_1337
+       */
+      external_customer_id: string
       /**
        * External Product Id
-       * @description The ID of the one-time product in your system to charge for. Resolves to the current version of the product. Must belong to the order's organization. Only fixed-price, free and unit-based products are supported. Required unless `product_id` is set.
+       * @description The ID of the one-time product in your system to charge for. Resolves to the current version of the product. Must belong to the order's organization. Only fixed-price, free and unit-based products are supported.
        * @example ext_1337
        */
-      external_product_id?: string | null
+      external_product_id: string
+    }
+    /**
+     * OrderCreateExternalCustomer
+     * @description Schema to create a draft order for an off-session charge,
+     *     referencing the customer by its external ID.
+     */
+    OrderCreateExternalCustomer: {
+      /**
+       * Custom Field Data
+       * @description Key-value object storing custom field values.
+       */
+      custom_field_data?: {
+        [key: string]: string | number | boolean | null
+      }
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Organization Id
+       * @description The ID of the organization the order belongs to. **Required unless you use an organization token.** The customer and product must belong to this organization.
+       */
+      organization_id?: string | null
+      /**
+       * Currency
+       * @description The currency to charge in (ISO 4217, lowercase, e.g. `usd`). Defaults to the organization's default currency; specify it to force a different one, or when the product isn't priced in the organization's default currency.
+       */
+      currency?: string | null
+      /**
+       * Amount
+       * @description A custom amount to charge, in the smallest currency unit. Overrides the product's price; defaults to the product's configured price (0 for free products). A positive amount must be at least the currency's minimum. Can't be combined with `units`.
+       */
+      amount?: number | null
+      /**
+       * Units
+       * @description The number of units to charge for. Required when the product has unit-based pricing, and rejected otherwise. The amount comes from the price's tiers. Can't be combined with `amount`.
+       */
+      units?: number | null
+      /**
+       * Description
+       * @description A custom description for the order's line item, shown on the invoice and receipt (e.g. `5,000 tokens`). Defaults to the product name.
+       */
+      description?: string | null
+      /**
+       * External Customer Id
+       * @description The ID of the customer in your system the order is for. Must belong to the order's organization.
+       * @example usr_1337
+       */
+      external_customer_id: string
+      /**
+       * Product Id
+       * Format: uuid4
+       * @description The ID of the one-time product to charge for. Must belong to the order's organization. Only fixed-price, free and unit-based products are supported.
+       */
+      product_id: string
+    }
+    /**
+     * OrderCreateExternalProduct
+     * @description Schema to create a draft order for an off-session charge,
+     *     referencing the product by its external ID.
+     */
+    OrderCreateExternalProduct: {
+      /**
+       * Custom Field Data
+       * @description Key-value object storing custom field values.
+       */
+      custom_field_data?: {
+        [key: string]: string | number | boolean | null
+      }
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Organization Id
+       * @description The ID of the organization the order belongs to. **Required unless you use an organization token.** The customer and product must belong to this organization.
+       */
+      organization_id?: string | null
+      /**
+       * Currency
+       * @description The currency to charge in (ISO 4217, lowercase, e.g. `usd`). Defaults to the organization's default currency; specify it to force a different one, or when the product isn't priced in the organization's default currency.
+       */
+      currency?: string | null
+      /**
+       * Amount
+       * @description A custom amount to charge, in the smallest currency unit. Overrides the product's price; defaults to the product's configured price (0 for free products). A positive amount must be at least the currency's minimum. Can't be combined with `units`.
+       */
+      amount?: number | null
+      /**
+       * Units
+       * @description The number of units to charge for. Required when the product has unit-based pricing, and rejected otherwise. The amount comes from the price's tiers. Can't be combined with `amount`.
+       */
+      units?: number | null
+      /**
+       * Description
+       * @description A custom description for the order's line item, shown on the invoice and receipt (e.g. `5,000 tokens`). Defaults to the product name.
+       */
+      description?: string | null
+      /**
+       * Customer Id
+       * Format: uuid4
+       * @description The ID of the customer the order is for. Must belong to the order's organization.
+       */
+      customer_id: string
+      /**
+       * External Product Id
+       * @description The ID of the one-time product in your system to charge for. Resolves to the current version of the product. Must belong to the order's organization. Only fixed-price, free and unit-based products are supported.
+       * @example ext_1337
+       */
+      external_product_id: string
     }
     /** OrderCustomer */
     OrderCustomer: {
@@ -53670,7 +53861,11 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['OrderCreateV2027_01']
+        'application/json':
+          | components['schemas']['OrderCreate']
+          | components['schemas']['OrderCreateExternalCustomer']
+          | components['schemas']['OrderCreateExternalProduct']
+          | components['schemas']['OrderCreateExternal']
       }
     }
     responses: {

@@ -6869,7 +6869,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/v1/config/apply': {
+  '/v1/config/draft': {
     parameters: {
       query?: never
       header?: never
@@ -6879,35 +6879,36 @@ export interface paths {
     get?: never
     put?: never
     /**
-     * Apply Config
-     * @description Apply a declarative config document to the organization.
+     * Draft Config
+     * @description Save a declarative config document to the organization's draft catalog.
+     *     Nothing changes for customers until the draft is published.
      *
      *     Meters, benefits and products are matched by
      *     `external_id`: missing ones are created, and changed ones are updated.
      *     Deprecated products are neither created nor updated.
      *     Deprecated products, and products that `config pull` exports but the config
-     *     doesn't list, are left out of the published catalog. Other products, and all
+     *     doesn't list, are left out of the catalog. Other products, and all
      *     products when `products` is omitted, are left untouched. A product that
      *     isn't listed but has a billable subscription or a pending subscription
-     *     update must be marked deprecated instead, or nothing is applied.
+     *     update must be marked deprecated instead, or nothing is saved.
      *     Other resources that aren't listed are left untouched.
      *     `settings` go live with the catalog, so products can be priced in a new
      *     `payments.currency` in the same config. Every active product must have a price in
-     *     the resulting currency, or nothing is applied.
-     *     Everything is applied in one transaction.
+     *     the resulting currency, or nothing is saved.
+     *     Everything is saved in one transaction.
      *
      *     Each section requires the write scope for its resource.
      *
      *     **Scopes**: `benefits:write` `custom_fields:write` `meters:write` `organizations:write` `products:write` `webhooks:write`
      */
-    post: operations['config:apply']
+    post: operations['config:draft']
     delete?: never
     options?: never
     head?: never
     patch?: never
     trace?: never
   }
-  '/v1/config/plan': {
+  '/v1/config/validate': {
     parameters: {
       query?: never
       header?: never
@@ -6917,13 +6918,14 @@ export interface paths {
     get?: never
     put?: never
     /**
-     * Plan Config
-     * @description Preview what applying a declarative config document would do, without applying it.
+     * Validate Config
+     * @description Check a declarative config document and preview what saving it to the draft
+     *     would change, without changing anything.
      *
      *     Returns the action for each resource, and every issue: `error` issues make
-     *     apply fail, `warning` issues don't.
+     *     draft fail, `warning` issues don't.
      *
-     *     With the ID of an archived catalog, the plan shows the changes from that
+     *     With the ID of an archived catalog, the result shows the changes from that
      *     version instead of the live one, without settings, and the response's
      *     `catalog` is None.
      *
@@ -6931,7 +6933,7 @@ export interface paths {
      *
      *     **Scopes**: `benefits:read` `benefits:write` `custom_fields:read` `custom_fields:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
      */
-    post: operations['config:plan']
+    post: operations['config:validate']
     delete?: never
     options?: never
     head?: never
@@ -67188,12 +67190,9 @@ export interface operations {
       }
     }
   }
-  'config:apply': {
+  'config:draft': {
     parameters: {
-      query?: {
-        /** @description Publish the catalog changes. By default, product, benefit, meter and settings changes are saved in the organization's draft catalog, to publish later. With `true`, they go live and a pending draft is discarded. */
-        publish?: boolean
-      }
+      query?: never
       header?: never
       path?: never
       cookie?: never
@@ -67204,7 +67203,7 @@ export interface operations {
       }
     }
     responses: {
-      /** @description Config applied. */
+      /** @description Config saved to the draft catalog. */
       200: {
         headers: {
           [name: string]: unknown
@@ -67258,7 +67257,7 @@ export interface operations {
       }
     }
   }
-  'config:plan': {
+  'config:validate': {
     parameters: {
       query?: {
         /** @description ID of a catalog, published or draft. Defaults to the live catalog. */

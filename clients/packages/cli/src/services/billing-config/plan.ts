@@ -31,8 +31,8 @@ export const plan =
       const response = yield* post(
         clients,
         options.catalogId === undefined
-          ? '/config/plan'
-          : `/config/plan?catalog_id=${options.catalogId}`,
+          ? '/config/validate'
+          : `/config/validate?catalog_id=${options.catalogId}`,
         config,
         organization,
         options,

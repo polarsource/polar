@@ -12,7 +12,7 @@ import { authenticatedClient } from '@/services/client'
 import { fakeHttp } from '@/utils/test-utils/http'
 import { fakeAuth } from '@/utils/test-utils/services'
 
-const applyUrl = 'https://sandbox-api.polar.sh/v1/config/apply?publish=false'
+const applyUrl = 'https://sandbox-api.polar.sh/v1/config/draft'
 
 const acme: ActiveOrganization = {
   id: 'org-1',

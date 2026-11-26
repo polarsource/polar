@@ -98,9 +98,6 @@ locals {
     SENTRY_AUTH_TOKEN = {
       value = var.sentry_auth_token
     }
-    MCP_OAUTH2_CLIENT_ID = {
-      value = var.mcp_oauth2_client_id
-    }
     MCP_OAUTH2_CLIENT_SECRET = {
       value = var.mcp_oauth2_client_secret
     }
@@ -162,6 +159,10 @@ locals {
     }
     POLAR_CUSTOMER_PORTAL_URL_OVERRIDES = {
       value     = var.customer_portal_url_overrides
+      sensitive = false
+    }
+    POLAR_PROTECTED_OAUTH2_CLIENT_IDS = {
+      value     = jsonencode(var.protected_oauth2_client_ids)
       sensitive = false
     }
     POLAR_PLAIN_DEFAULT_TIER_EXTERNAL_ID = {

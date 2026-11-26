@@ -51,6 +51,7 @@ variable "backend_config" {
     tax_processors                                   = optional(string, "[\"stripe\"]")
     tax_record_processor                             = optional(string, "stripe")
     customer_portal_url_overrides                    = optional(string, "{}")
+    protected_oauth2_client_ids                      = list(string)
     plain_default_tier_external_id                   = optional(string, "")
     linear_team_id                                   = optional(string, "")
     linear_payout_amount_mismatch_template_id        = optional(string, "")
@@ -61,7 +62,6 @@ variable "backend_config" {
 
 variable "backend_secrets" {
   type = object({
-    mcp_oauth2_client_id               = string
     stripe_publishable_key             = string
     discord_bot_token                  = string
     discord_client_id                  = string

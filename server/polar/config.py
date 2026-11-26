@@ -188,7 +188,7 @@ class Settings(BaseSettings):
     APP_REVIEW_EMAIL: str | None = None
     APP_REVIEW_OTP_CODE: str | None = None
 
-    MCP_OAUTH2_CLIENT_ID: str | None = None
+    PROTECTED_OAUTH2_CLIENT_IDS: list[str] | None = None
 
     # OAuth2 session state
     OAUTH2_SESSION_STATE_TTL: timedelta = timedelta(minutes=10)

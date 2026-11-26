@@ -568,11 +568,11 @@ resource "tfe_variable" "vercel_mintlify_assistant_api_key_sandbox" {
   }
 }
 
-resource "tfe_variable" "vercel_mcp_oauth2_client_id_sandbox" {
-  key             = "mcp_oauth2_client_id"
+resource "tfe_variable" "protected_oauth2_client_ids_sandbox" {
+  key             = "protected_oauth2_client_ids"
   category        = "terraform"
-  description     = "MCP OAuth2 client ID for the Vercel sandbox frontend"
-  sensitive       = true
+  description     = "OAuth2 client IDs excluded from stale cleanup in sandbox"
+  hcl             = true
   variable_set_id = tfe_variable_set.sandbox.id
 
   lifecycle {

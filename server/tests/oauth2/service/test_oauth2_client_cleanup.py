@@ -15,6 +15,22 @@ from tests.oauth2.conftest import create_oauth2_token
 
 @pytest.mark.anyio
 class TestDeleteStale:
+    async def test_skips_cleanup_without_configured_protected_ids(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+    ) -> None:
+        mocker.patch.object(settings, "PROTECTED_OAUTH2_CLIENT_IDS", None)
+        cutoff = utc_now()
+        stale = OAuth2Client(client_id="stale", created_at=cutoff - timedelta(days=8))
+        await save_fixture(stale)
+
+        repository = OAuth2ClientRepository.from_session(session)
+        assert await repository.count_stale(cutoff) == 0
+        assert await repository.delete_stale(cutoff) == 0
+        assert list(await session.scalars(select(OAuth2Client.id))) == [stale.id]
+
     async def test_deletes_only_old_unowned_clients_without_tokens(
         self,
         session: AsyncSession,
@@ -30,8 +46,15 @@ class TestDeleteStale:
         agent_owned = agent.oauth2_client
         agent_owned.created_at = old
         token_client = OAuth2Client(client_id="with-token", created_at=old)
-        mcp_client = OAuth2Client(client_id="dashboard-mcp", created_at=old)
-        mocker.patch.object(settings, "MCP_OAUTH2_CLIENT_ID", mcp_client.client_id)
+        protected_clients = [
+            OAuth2Client(client_id="protected-one", created_at=old),
+            OAuth2Client(client_id="protected-two", created_at=old),
+        ]
+        mocker.patch.object(
+            settings,
+            "PROTECTED_OAUTH2_CLIENT_IDS",
+            [client.client_id for client in protected_clients],
+        )
         first_party = OAuth2Client(
             client_id="first-party", created_at=old, first_party=True
         )
@@ -40,7 +63,7 @@ class TestDeleteStale:
             user_owned,
             agent_owned,
             token_client,
-            mcp_client,
+            *protected_clients,
             first_party,
         ]
         for client in [stale, *preserved]:

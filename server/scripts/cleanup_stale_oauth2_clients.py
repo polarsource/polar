@@ -20,9 +20,10 @@ async def cleanup_stale_oauth2_clients(
 ) -> None:
     """Clear the backlog of stale OAuth2 clients in batches."""
     configure_script_logging()
-    if not settings.MCP_OAUTH2_CLIENT_ID:
+    if settings.PROTECTED_OAUTH2_CLIENT_IDS is None:
         typer.echo(
-            "Set POLAR_MCP_OAUTH2_CLIENT_ID to protect the MCP client.", err=True
+            "Set POLAR_PROTECTED_OAUTH2_CLIENT_IDS to a JSON array of protected client IDs.",
+            err=True,
         )
         raise typer.Exit(1)
 

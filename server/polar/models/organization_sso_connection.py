@@ -7,10 +7,17 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models.base import RecordModel
+from polar.kit.encryption import EncryptedString, EncryptedStringType
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 
 if TYPE_CHECKING:
     from .organization import Organization
+
+
+ORGANIZATION_SSO_CONNECTION_CLIENT_SECRET_CONTEXT = {
+    "table": "organization_sso_connections",
+    "column": "client_secret",
+}
 
 
 class OrganizationSSOConnectionType(StrEnum):
@@ -49,4 +56,8 @@ class OrganizationSSOConnection(RecordModel):
         StringEnum(OrganizationSSOConnectionType), nullable=False
     )
     configuration: Mapped[OIDCConfiguration] = mapped_column(JSONB, nullable=False)
+    client_secret_encrypted: Mapped[EncryptedString | None] = mapped_column(
+        EncryptedStringType(ORGANIZATION_SSO_CONNECTION_CLIENT_SECRET_CONTEXT),
+        nullable=True,
+    )
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)

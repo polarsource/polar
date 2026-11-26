@@ -6,13 +6,19 @@ from sqlalchemy import CHAR, ForeignKey, Integer, SmallInteger, String, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
 from polar.kit.db.models import RecordModel
+from polar.kit.encryption import EncryptedString, EncryptedStringType
+
+TOTP_ENROLLMENT_SECRET_CONTEXT = {"table": "totp_enrollments", "column": "secret"}
 
 
 class TOTPEnrollment(RecordModel):
     __tablename__ = "totp_enrollments"
 
     enabled: Mapped[bool] = mapped_column(nullable=False)
-    secret: Mapped[str] = mapped_column(CHAR(32), nullable=False)
+    secret: Mapped[str] = mapped_column(CHAR(32), nullable=True)
+    secret_encrypted: Mapped[EncryptedString | None] = mapped_column(
+        EncryptedStringType(TOTP_ENROLLMENT_SECRET_CONTEXT), nullable=True
+    )
     algorithm: Mapped[TOTPAlgorithm] = mapped_column(String, nullable=False)
     code_length: Mapped[int] = mapped_column(SmallInteger, nullable=False)
     time_step: Mapped[int] = mapped_column(Integer, nullable=False)

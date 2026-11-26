@@ -286,6 +286,12 @@ class TestPrecheckEngine:
         assert "product_name_too_long" in codes(report, PrecheckIssueLevel.warning)
         assert plan_product_imports([product], "usd")[product.source_id].skip is None
 
+    async def test_name_too_short_once_cut_is_dropped(self) -> None:
+        product = build_product(name="AB" + " " * 65 + "CD")
+        report = await run([product])
+        assert "product_name_too_short" in codes(report, PrecheckIssueLevel.warning)
+        assert plan_product_imports([product], "usd")[product.source_id].skip
+
     async def test_short_name_does_not_double_report_with_one_time(self) -> None:
         # A one-time product is already dropped for a more fundamental reason;
         # the name check must not add a redundant warning.
@@ -422,6 +428,23 @@ class TestPrecheckEngine:
         )
         assert "duplicate_product_name" in codes(report, PrecheckIssueLevel.warning)
         assert report.can_start is True
+
+    async def test_names_that_match_once_cut_warn_as_duplicates(self) -> None:
+        report = await run(
+            [
+                build_product(
+                    source_id="prod_1:month:1",
+                    product_source_id="prod_1",
+                    name="A" * 64 + " monthly",
+                ),
+                build_product(
+                    source_id="prod_2:month:1",
+                    product_source_id="prod_2",
+                    name="A" * 64 + " yearly",
+                ),
+            ]
+        )
+        assert "duplicate_product_name" in codes(report, PrecheckIssueLevel.warning)
 
     async def test_existing_polar_product_warns_without_blocking(self) -> None:
         report = await run(

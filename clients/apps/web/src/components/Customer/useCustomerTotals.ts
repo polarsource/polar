@@ -7,14 +7,14 @@ import { differenceInDays } from 'date-fns'
 const MAX_MONTHLY_DAYS = 365 * 4 - 1
 
 // What a customer has brought in since they were first seen. Both are
-// undefined until loaded.
+// undefined until loaded, and after a failed load.
 export const useCustomerTotals = (
   organization: schemas['Organization'],
   customer: { id: string; created_at: string } | undefined,
   today: Date,
 ) => {
   const startDate = new Date(customer?.created_at ?? today)
-  const { data: metrics } = useMetrics(
+  const { data: metrics, isPending } = useMetrics(
     {
       startDate,
       endDate: today,
@@ -28,6 +28,7 @@ export const useCustomerTotals = (
     customer !== undefined,
   )
   return {
+    isLoading: isPending,
     revenue: metrics?.periods.at(-1)?.cumulative_revenue,
     orders: metrics?.periods.reduce(
       (total, period) => total + (period.orders ?? 0),

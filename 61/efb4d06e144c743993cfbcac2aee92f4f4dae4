@@ -1,0 +1,31 @@
+server/polar/order/service.py
+  s_5b4119735a452f::t_dd82b9094616b2 237,240,296,353-356,2383
+server/polar/customer_portal/endpoints/order.py
+  s_5b4119735a452f::t_dd82b9094616b2 15,18,40,170-182
+server/tests/customer_portal/service/test_order.py
+  s_5b4119735a452f::t_be5aa61d6ab3bf 15
+  s_5b4119735a452f::t_dd82b9094616b2 28
+server/polar/customer_portal/service/order.py
+  s_5b4119735a452f::t_dd82b9094616b2 15,25-31,265-276,335-336
+server/tests/customer_portal/endpoints/test_order.py
+  s_5b4119735a452f::t_be5aa61d6ab3bf 158-184,189-250,255-259
+  s_5b4119735a452f::t_ada473d8af89eb 185-188,251-254
+clients/packages/client/src/v1.ts
+  s_5b4119735a452f::t_56e743312e927d 50000-50001,50018-50028,50038-50046
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "61efb4d06e144c743993cfbcac2aee92f4f4dae4",
+  "prompts": {},
+  "sessions": {
+    "s_5b4119735a452f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a21792-4591-7d00-9bd9-d07b0b98987d",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

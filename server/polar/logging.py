@@ -1,7 +1,9 @@
 import contextvars
 import logging.config
+import logging.handlers
 import typing
 import uuid
+from pathlib import Path
 from typing import Any
 
 import structlog
@@ -13,6 +15,8 @@ from polar.observability.task_logging import TaskLogFilter
 Logger = structlog.stdlib.BoundLogger
 
 get_logger = logging.getLogger
+
+DEVELOPMENT_LOG_DIR = Path(__file__).parent.parent / ".logs"
 
 
 def _map_critical_to_fatal(
@@ -152,6 +156,38 @@ class Development(Logging[structlog.dev.ConsoleRenderer]):
     def get_renderer(cls) -> structlog.dev.ConsoleRenderer:
         return structlog.dev.ConsoleRenderer(colors=True)
 
+    @classmethod
+    def add_file_handler(cls, log_file: Path) -> None:
+        """Also write every record to `log_file`, one JSON object per line, for `dev logs`."""
+        log_file.parent.mkdir(exist_ok=True)
+        handler = logging.handlers.RotatingFileHandler(
+            log_file, maxBytes=20_000_000, backupCount=1
+        )
+        handler.setLevel(cls.get_level())
+        handler.addFilter(TaskLogFilter())
+        handler.setFormatter(
+            structlog.stdlib.ProcessorFormatter(
+                processors=[
+                    structlog.stdlib.ProcessorFormatter.remove_processors_meta,
+                    structlog.processors.ExceptionRenderer(
+                        structlog.tracebacks.ExceptionDictTransformer(show_locals=False)
+                    ),
+                    structlog.processors.JSONRenderer(),
+                ],
+                foreign_pre_chain=[
+                    structlog.contextvars.merge_contextvars,
+                    structlog.stdlib.add_log_level,
+                    structlog.stdlib.add_logger_name,
+                    structlog.stdlib.PositionalArgumentsFormatter(),
+                    structlog.stdlib.ExtraAdder(),
+                    cls.timestamper,
+                    structlog.processors.UnicodeDecoder(),
+                    structlog.processors.StackInfoRenderer(),
+                ],
+            )
+        )
+        logging.getLogger().addHandler(handler)
+
 
 class Production(Logging[structlog.processors.JSONRenderer]):
     @classmethod
@@ -159,11 +195,13 @@ class Production(Logging[structlog.processors.JSONRenderer]):
         return structlog.processors.JSONRenderer()
 
 
-def configure(*, logfire: bool = False) -> None:
+def configure(*, logfire: bool = False, process: str | None = None) -> None:
     if settings.is_testing():
         Development.configure(logfire=False)
     elif settings.is_development():
         Development.configure(logfire=logfire)
+        if process is not None:
+            Development.add_file_handler(DEVELOPMENT_LOG_DIR / f"{process}.log")
     else:
         Production.configure(logfire=logfire)
 

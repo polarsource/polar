@@ -293,7 +293,7 @@ def create_app(
 if not settings.is_testing():
     configure_sentry()
     configure_logfire("server")
-    configure_logging(logfire=True)
+    configure_logging(logfire=True, process="api")
     configure_posthog()
 else:
     configure_logging(logfire=False)

@@ -21639,16 +21639,16 @@ export interface components {
        * @description The name of the customer that should appear on the invoice.
        */
       billing_name?: string | null
-      /** @description The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated on subscription drafts. */
+      /** @description The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated on draft orders. */
       billing_address?: components['schemas']['AddressInput']
       /**
        * Tax Id
-       * @description Tax ID for the billing address on a subscription draft. Set to null to remove it.
+       * @description Tax ID for the billing address on a draft order. Set to null to remove it.
        */
       tax_id?: string | null
       /**
        * Discount Code
-       * @description Discount code to apply to the subscription draft. Set to null to remove it.
+       * @description Discount code to apply to the draft order. Set to null to remove it.
        */
       discount_code?: string | null
       payment_processor: components['schemas']['PaymentProcessor']
@@ -21662,16 +21662,16 @@ export interface components {
        * @description The name of the customer that should appear on the invoice.
        */
       billing_name?: string | null
-      /** @description The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated on subscription drafts. */
+      /** @description The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated on draft orders. */
       billing_address?: components['schemas']['AddressInput']
       /**
        * Tax Id
-       * @description Tax ID for the billing address on a subscription draft. Set to null to remove it.
+       * @description Tax ID for the billing address on a draft order. Set to null to remove it.
        */
       tax_id?: string | null
       /**
        * Discount Code
-       * @description Discount code to apply to the subscription draft. Set to null to remove it.
+       * @description Discount code to apply to the draft order. Set to null to remove it.
        */
       discount_code?: string | null
       /**
@@ -21690,16 +21690,16 @@ export interface components {
        * @description The name of the customer that should appear on the invoice.
        */
       billing_name?: string | null
-      /** @description The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated on subscription drafts. */
+      /** @description The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be updated on draft orders. */
       billing_address?: components['schemas']['AddressInput']
       /**
        * Tax Id
-       * @description Tax ID for the billing address on a subscription draft. Set to null to remove it.
+       * @description Tax ID for the billing address on a draft order. Set to null to remove it.
        */
       tax_id?: string | null
       /**
        * Discount Code
-       * @description Discount code to apply to the subscription draft. Set to null to remove it.
+       * @description Discount code to apply to the draft order. Set to null to remove it.
        */
       discount_code?: string | null
     }

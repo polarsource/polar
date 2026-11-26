@@ -32,7 +32,11 @@ from polar.models import (
 )
 from polar.models.benefit import BenefitType
 from polar.models.billing_entry import BillingEntryType
-from polar.models.customer import CustomerType
+from polar.models.customer import (
+    CustomerOAuthAccount,
+    CustomerOAuthPlatform,
+    CustomerType,
+)
 from polar.models.customer_seat import SeatStatus
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.downloadable import DownloadableStatus
@@ -359,8 +363,11 @@ class TestProductTransferService:
         )
         owner._oauth_accounts = {
             "github:123": {"account_id": "123", "access_token": "test-token"},
-            "discord:123": {"account_id": "123", "access_token": "discord-token"},
         }
+        await owner.set_oauth_account(
+            CustomerOAuthAccount(account_id="123", access_token="discord-token"),
+            CustomerOAuthPlatform.discord,
+        )
         target_customer = None
         target_member = None
         if target_match:
@@ -475,10 +482,14 @@ class TestProductTransferService:
             assert copied_owner.id == target_member.id
             assert copied_owner.role == MemberRole.billing_manager
             assert copied_owner.external_id == owner.external_id
-            assert copied_owner.oauth_accounts == {
-                "github:123": {"account_id": "123", "access_token": "target-token"},
-                "github:456": {"account_id": "456", "access_token": "other-token"},
-                "discord:123": {"account_id": "123", "access_token": "discord-token"},
+            assert copied_owner.oauth_accounts.keys() == {
+                "github:123",
+                "github:456",
+                "discord:123",
+            }
+            assert copied_owner.oauth_accounts["github:123"] == {
+                "account_id": "123",
+                "access_token": "target-token",
             }
             assert service.transfer_stats["members_reused"] == 1
             assert service.transfer_stats["members_copied"] == 1
@@ -486,8 +497,13 @@ class TestProductTransferService:
             assert copied_owner.email == owner.email
             assert copied_owner.name == owner.name
             assert copied_owner.external_id == owner.external_id
-            assert copied_owner.oauth_accounts == owner.oauth_accounts
+            assert copied_owner.oauth_accounts.keys() == owner.oauth_accounts.keys()
             assert copied_owner.role == MemberRole.owner
+        copied_discord = await copied_owner.get_oauth_account(
+            "123", CustomerOAuthPlatform.discord
+        )
+        assert copied_discord is not None
+        assert copied_discord.access_token == "discord-token"
         assert all(m.organization_id == organization_second.id for m in copied_members)
         assert next(
             m for m in copied_members if m.email == deleted_member.email

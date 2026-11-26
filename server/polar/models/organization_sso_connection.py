@@ -61,3 +61,22 @@ class OrganizationSSOConnection(RecordModel):
         nullable=True,
     )
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+    @classmethod
+    async def encrypt_client_secret(
+        cls, id: UUID, client_secret: str | None
+    ) -> EncryptedString | None:
+        if client_secret is None:
+            return None
+        return await EncryptedString.encrypt(
+            client_secret,
+            context={
+                **ORGANIZATION_SSO_CONNECTION_CLIENT_SECRET_CONTEXT,
+                "id": str(id),
+            },
+        )
+
+    async def get_client_secret(self) -> str | None:
+        if self.client_secret_encrypted is None:
+            return self.configuration.get("client_secret")
+        return await self.client_secret_encrypted.decrypt(id=str(self.id))

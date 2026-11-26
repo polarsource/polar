@@ -220,10 +220,13 @@ class WebhookService:
             secret = generate_webhook_secret()
             secret_generated_at = utc_now()
 
+        id = WebhookEndpoint.generate_id()
         endpoint = await repository.create(
             WebhookEndpoint(
                 **create_schema.model_dump(exclude={"secret"}, by_alias=True),
+                id=id,
                 secret=secret,
+                secret_encrypted=await WebhookEndpoint.encrypt_secret(id, secret),
                 secret_generated_at=secret_generated_at,
                 organization=organization,
             )
@@ -264,6 +267,9 @@ class WebhookService:
                 ) from e
 
         if "secret" in update_dict:
+            update_dict["secret_encrypted"] = await WebhookEndpoint.encrypt_secret(
+                endpoint.id, update_dict["secret"]
+            )
             update_dict["secret_generated_at"] = None
 
         return await repository.update(
@@ -284,10 +290,14 @@ class WebhookService:
         if endpoint.format == WebhookFormat.mcp:
             raise MCPWebhookEndpointReadOnly()
         repository = WebhookEndpointRepository.from_session(session)
+        secret = generate_webhook_secret()
         return await repository.update(
             endpoint,
             update_dict={
-                "secret": generate_webhook_secret(),
+                "secret": secret,
+                "secret_encrypted": await WebhookEndpoint.encrypt_secret(
+                    endpoint.id, secret
+                ),
                 "secret_generated_at": utc_now(),
             },
         )

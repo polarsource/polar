@@ -102,7 +102,7 @@ class WebhookEndpoint(ExternalIDMixin, RecordModel):
     url: Mapped[str] = mapped_column(String, nullable=False)
     name: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
     format: Mapped[WebhookFormat] = mapped_column(String, nullable=False)
-    secret: Mapped[str] = mapped_column(String, nullable=True)
+    secret: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
     secret_encrypted: Mapped[EncryptedString | None] = mapped_column(
         EncryptedStringType(WEBHOOK_ENDPOINT_SECRET_CONTEXT), nullable=True
     )
@@ -129,3 +129,15 @@ class WebhookEndpoint(ExternalIDMixin, RecordModel):
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", lazy="raise")
+
+    @classmethod
+    async def encrypt_secret(cls, id: UUID, secret: str) -> EncryptedString:
+        return await EncryptedString.encrypt(
+            secret, context={**WEBHOOK_ENDPOINT_SECRET_CONTEXT, "id": str(id)}
+        )
+
+    async def get_secret(self) -> str:
+        if self.secret_encrypted is None:
+            assert self.secret is not None
+            return self.secret
+        return await self.secret_encrypted.decrypt(id=str(self.id))

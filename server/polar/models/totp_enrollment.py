@@ -15,7 +15,7 @@ class TOTPEnrollment(RecordModel):
     __tablename__ = "totp_enrollments"
 
     enabled: Mapped[bool] = mapped_column(nullable=False)
-    secret: Mapped[str] = mapped_column(CHAR(32), nullable=True)
+    secret: Mapped[str | None] = mapped_column(CHAR(32), nullable=True, default=None)
     secret_encrypted: Mapped[EncryptedString | None] = mapped_column(
         EncryptedStringType(TOTP_ENROLLMENT_SECRET_CONTEXT), nullable=True
     )
@@ -28,11 +28,23 @@ class TOTPEnrollment(RecordModel):
         Uuid, ForeignKey("users.id", ondelete="cascade"), nullable=False, unique=True
     )
 
-    def to_dataclass(self) -> TOTPEnrollmentDataclass:
+    @classmethod
+    async def encrypt_secret(cls, id: UUID, secret: str) -> EncryptedString:
+        return await EncryptedString.encrypt(
+            secret, context={**TOTP_ENROLLMENT_SECRET_CONTEXT, "id": str(id)}
+        )
+
+    async def get_secret(self) -> str:
+        if self.secret_encrypted is None:
+            assert self.secret is not None
+            return self.secret
+        return await self.secret_encrypted.decrypt(id=str(self.id))
+
+    async def to_dataclass(self) -> TOTPEnrollmentDataclass:
         return TOTPEnrollmentDataclass(
             id=self.id,
             enabled=self.enabled,
-            secret=self.secret,
+            secret=await self.get_secret(),
             algorithm=self.algorithm,
             code_length=self.code_length,
             time_step=self.time_step,

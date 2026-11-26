@@ -53,6 +53,7 @@ from polar.models import (
     SubscriptionUpdate,
     TrialRedemption,
 )
+from polar.models.customer import CustomerOAuthPlatform
 from polar.models.discount import DiscountFixed, DiscountPercentage, DiscountType
 from polar.models.member import MemberRole
 from polar.organization.repository import OrganizationRepository
@@ -77,6 +78,20 @@ def typer_async(f):  # type: ignore
         return asyncio.run(f(*args, **kwargs))
 
     return wrapper
+
+
+async def copy_oauth_accounts(source: Member, target: Member) -> None:
+    """Tokens are encrypted for their owner, so each account is decrypted and
+    encrypted again for the target. The target keeps its own accounts."""
+    for account_key in source.oauth_accounts:
+        if account_key in target.oauth_accounts:
+            continue
+        oauth_platform, account_id = CustomerOAuthPlatform.parse_account_key(
+            account_key
+        )
+        oauth_account = await source.get_oauth_account(account_id, oauth_platform)
+        assert oauth_account is not None
+        await target.set_oauth_account(oauth_account, oauth_platform)
 
 
 class ProductTransferError(Exception):
@@ -878,10 +893,7 @@ class ProductTransferService:
                             )
                         if matched_member.external_id is None:
                             matched_member.external_id = member.external_id
-                        matched_member._oauth_accounts = {
-                            **member.oauth_accounts,
-                            **matched_member.oauth_accounts,
-                        }
+                        await copy_oauth_accounts(member, matched_member)
                         member_map[member.id] = matched_member
                         self.transfer_stats["members_reused"] += 1
                         continue
@@ -900,9 +912,10 @@ class ProductTransferService:
                     name=member.name,
                     external_id=member.external_id,
                     role=member.role,
-                    _oauth_accounts=member.oauth_accounts.copy(),
+                    _oauth_accounts={},
                     deleted_at=member.deleted_at,
                 )
+                await copy_oauth_accounts(member, new_member)
                 session.add(new_member)
                 member_map[member.id] = new_member
                 if new_member.deleted_at is None:

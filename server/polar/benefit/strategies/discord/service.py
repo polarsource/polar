@@ -274,7 +274,7 @@ class BenefitDiscordService(
         oauth_account = None
         is_member_account = False
         if member is not None:
-            oauth_account = member.get_oauth_account(
+            oauth_account = await member.get_oauth_account(
                 account_id, CustomerOAuthPlatform.discord
             )
             if oauth_account is not None:
@@ -282,7 +282,7 @@ class BenefitDiscordService(
 
         # Fall back to customer OAuth account
         if oauth_account is None:
-            oauth_account = customer.get_oauth_account(
+            oauth_account = await customer.get_oauth_account(
                 account_id, CustomerOAuthPlatform.discord
             )
 
@@ -327,11 +327,15 @@ class BenefitDiscordService(
             oauth_account.refresh_token = refreshed_token_data["refresh_token"]
 
             if is_member_account and member is not None:
-                member.set_oauth_account(oauth_account, CustomerOAuthPlatform.discord)
+                await member.set_oauth_account(
+                    oauth_account, CustomerOAuthPlatform.discord
+                )
                 member_repository = MemberRepository.from_session(self.session)
                 await member_repository.update(member)
             else:
-                customer.set_oauth_account(oauth_account, CustomerOAuthPlatform.discord)
+                await customer.set_oauth_account(
+                    oauth_account, CustomerOAuthPlatform.discord
+                )
                 customer_repository = CustomerRepository.from_session(self.session)
                 await customer_repository.update(customer)
 

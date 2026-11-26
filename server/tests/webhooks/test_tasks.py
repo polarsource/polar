@@ -7,6 +7,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.config import settings
+from polar.kit.encryption import EncryptedString
 from polar.kit.versioning import api_version_context
 from polar.models import (
     Organization,
@@ -21,8 +22,10 @@ from polar.subscription.schemas import Subscription as SubscriptionSchema
 from polar.version import CURRENT_API_VERSION
 from polar.webhook.service import webhook as webhook_service
 from polar.webhook.tasks import (
+    _signing_secrets,
     _webhook_event_failed_debounce_key,
     _webhook_event_send,
+    get_cached_signing_secret,
 )
 from tests.fixtures.database import SaveFixture
 
@@ -403,3 +406,56 @@ class TestWebhookEventFailedDebounceKey:
 
     def test_no_key_without_endpoint(self) -> None:
         assert _webhook_event_failed_debounce_key(uuid.uuid4()) is None
+
+
+async def _build_endpoint(secret: str) -> WebhookEndpoint:
+    id = WebhookEndpoint.generate_id()
+    return WebhookEndpoint(
+        id=id, secret_encrypted=await WebhookEndpoint.encrypt_secret(id, secret)
+    )
+
+
+@pytest.mark.anyio
+class TestGetCachedSigningSecret:
+    @pytest.fixture(autouse=True)
+    def clear_cache(self) -> None:
+        _signing_secrets.clear()
+
+    async def test_decrypts_once_per_ciphertext(self, mocker: MockerFixture) -> None:
+        decrypt = mocker.spy(EncryptedString, "decrypt")
+        endpoint = await _build_endpoint("whsec_one")
+
+        assert await get_cached_signing_secret(endpoint) == "whsec_one"
+        assert await get_cached_signing_secret(endpoint) == "whsec_one"
+
+        assert decrypt.call_count == 1
+
+    async def test_new_ciphertext_after_reset(self, mocker: MockerFixture) -> None:
+        decrypt = mocker.spy(EncryptedString, "decrypt")
+        endpoint = await _build_endpoint("whsec_old")
+        assert await get_cached_signing_secret(endpoint) == "whsec_old"
+
+        endpoint.secret_encrypted = await WebhookEndpoint.encrypt_secret(
+            endpoint.id, "whsec_new"
+        )
+
+        assert await get_cached_signing_secret(endpoint) == "whsec_new"
+        assert decrypt.call_count == 2
+
+    async def test_evicts_least_recently_used(self, mocker: MockerFixture) -> None:
+        mocker.patch("polar.webhook.tasks._SIGNING_SECRETS_MAX_SIZE", 2)
+        decrypt = mocker.spy(EncryptedString, "decrypt")
+        first = await _build_endpoint("whsec_first")
+        second = await _build_endpoint("whsec_second")
+        third = await _build_endpoint("whsec_third")
+
+        await get_cached_signing_secret(first)
+        await get_cached_signing_secret(second)
+        await get_cached_signing_secret(first)
+        await get_cached_signing_secret(third)
+        assert decrypt.call_count == 3
+
+        await get_cached_signing_secret(first)
+        assert decrypt.call_count == 3
+        await get_cached_signing_secret(second)
+        assert decrypt.call_count == 4

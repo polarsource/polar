@@ -278,11 +278,11 @@ async def callback(
 
     # Store OAuth account on member or customer
     if member is not None:
-        member.set_oauth_account(oauth_account, platform)
+        await member.set_oauth_account(oauth_account, platform)
         member_repository = MemberRepository.from_session(session)
         await member_repository.update(member)
     else:
-        customer.set_oauth_account(oauth_account, platform)
+        await customer.set_oauth_account(oauth_account, platform)
         await customer_repository.update(customer)
 
     platform_benefit_type = {

@@ -81,9 +81,15 @@ class OrganizationSSOConnectionService:
         if not await organization_domain_service.has_verified(session, organization):
             raise SSORequiresVerifiedDomain()
         repository = OrganizationSSOConnectionRepository.from_session(session)
+        id = OrganizationSSOConnection.generate_id()
+        configuration = create.configuration.model_dump()
         connection = OrganizationSSOConnection(
-            organization=organization,
             **create.model_dump(),
+            id=id,
+            organization=organization,
+            client_secret_encrypted=await OrganizationSSOConnection.encrypt_client_secret(
+                id, configuration.get("client_secret")
+            ),
         )
         return await repository.create(connection, flush=True)
 
@@ -106,7 +112,13 @@ class OrganizationSSOConnectionService:
         update_dict = update.model_dump(exclude_unset=True, exclude={"configuration"})
 
         if update.configuration is not MISSING:
-            update_dict["configuration"] = update.configuration.model_dump()
+            configuration = update.configuration.model_dump()
+            update_dict["configuration"] = configuration
+            update_dict[
+                "client_secret_encrypted"
+            ] = await OrganizationSSOConnection.encrypt_client_secret(
+                connection.id, configuration.get("client_secret")
+            )
 
         return await repository.update(connection, update_dict=update_dict)
 

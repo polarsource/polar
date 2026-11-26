@@ -1777,7 +1777,7 @@ class TestApply:
         assert endpoint.format == WebhookFormat.raw
         assert endpoint.events == ["order.created", "order.paid"]
         assert endpoint.api_version == V2026_04
-        assert endpoint.secret.startswith("whsec_")
+        assert (await endpoint.get_secret()).startswith("whsec_")
         assert [change.action for change in plan.changes] == [ConfigAction.unchanged]
         assert [change.action for change in reapplied.changes] == [
             ConfigAction.unchanged

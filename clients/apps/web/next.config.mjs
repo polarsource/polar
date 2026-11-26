@@ -208,7 +208,7 @@ const nextConfig = {
       {
         source: '/legal/acceptable-use-policy',
         destination: 'https://polar.sh/docs/acceptable-use',
-        permanent: false,
+        permanent: true,
       },
       {
         source: '/llms.txt',

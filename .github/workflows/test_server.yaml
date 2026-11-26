@@ -400,6 +400,8 @@ jobs:
           --health-interval 1s
           --health-timeout 2s
           --health-retries 60
+          --tmpfs /var/lib/clickhouse:rw,size=2g
+          --tmpfs /redis-data:rw,size=512m
 
     steps:
       - name: Harden the runner (Audit all outbound calls)

@@ -2178,6 +2178,80 @@ class TestGetCustomerMeterUnits:
 
         assert [consumed_units for consumed_units, _ in units] == [9, None, 0]
 
+    async def test_mixed_identities_resets_and_credits(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        meter = await rollup_tokens(
+            save_fixture, session, redis, organization, SUM_TOKENS
+        )
+        await reducer_service.rollup(
+            session,
+            redis,
+            organization.id,
+            [
+                build_event(
+                    organization,
+                    timestamp=BUCKET_START - 2 * REDUCER_BUCKET_SIZE,
+                    customer_id=customer.id,
+                    external_customer_id=None,
+                    metadata={"tokens": 5},
+                )
+            ],
+        )
+        external_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="external@example.com",
+            external_id="external",
+        )
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=external_customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_reset,
+            timestamp=BUCKET_START - REDUCER_BUCKET_SIZE,
+            metadata={"meter_id": str(meter.id)},
+        )
+        credit_meter = await create_meter(
+            save_fixture, id=uuid.uuid4(), organization=organization
+        )
+        credit = await create_reducer(
+            save_fixture,
+            organization=organization,
+            meters=[credit_meter],
+            kind=ReducerKind.credit,
+        )
+        await save_fixture(
+            ReducerBucket(
+                organization=organization,
+                reducer=credit,
+                customer_id=customer.id,
+                bucket_start=BUCKET_START,
+                bucket_end=NEXT_BUCKET_START,
+                count=1,
+                sum=Decimal(10),
+            )
+        )
+
+        units = await reducer_service.get_customer_meter_units(
+            session,
+            redis,
+            [
+                (external_customer, meter.id),
+                (customer, meter.id),
+                (customer, credit_meter.id),
+                (external_customer, credit_meter.id),
+            ],
+        )
+
+        assert units == [(7, None), (5, None), (None, 10), (None, 0)]
+
     @pytest.mark.parametrize(
         ("since", "expected"),
         [

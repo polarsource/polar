@@ -5,16 +5,18 @@ from typing import Any
 from uuid import UUID
 
 from sqlalchemy import (
+    ARRAY,
+    CTE,
     BigInteger,
     ColumnElement,
     ColumnExpressionArgument,
     Numeric,
     Row,
-    ScalarSelect,
     Select,
     String,
     Uuid,
     and_,
+    bindparam,
     cast,
     column,
     false,
@@ -426,96 +428,146 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         and max of every generation starting from it: one row per identity of the
         customer's usage buckets before `usage_closed_before`, and one of its credit
         buckets."""
+        customer_meter = (
+            func.unnest(
+                bindparam(
+                    "organization_ids",
+                    [customer.organization_id for customer, _ in customer_meters],
+                    type_=ARRAY(Uuid),
+                ),
+                bindparam(
+                    "customer_ids",
+                    [customer.id for customer, _ in customer_meters],
+                    type_=ARRAY(Uuid),
+                ),
+                bindparam(
+                    "external_customer_ids",
+                    [customer.external_id for customer, _ in customer_meters],
+                    type_=ARRAY(String),
+                ),
+                bindparam(
+                    "meter_ids",
+                    [meter_id for _, meter_id in customer_meters],
+                    type_=ARRAY(Uuid),
+                ),
+            )
+            .table_valued(
+                column("organization_id", Uuid),
+                column("customer_id", Uuid),
+                column("external_customer_id", String),
+                column("meter_id", Uuid),
+                with_ordinality="ordinality",
+            )
+            .render_derived("customer_meter")
+        )
+        targets = (
+            select(
+                (customer_meter.c.ordinality - 1).label("index"),
+                customer_meter.c.customer_id,
+                customer_meter.c.external_customer_id,
+                EventRepository.from_session(self.session)
+                .get_latest_meter_reset_timestamp_statement(
+                    customer_meter.c.organization_id,
+                    customer_meter.c.customer_id,
+                    customer_meter.c.meter_id,
+                )
+                .label("since"),
+                Reducer.id.label("reducer_id"),
+                Reducer.organization_id.label("reducer_organization_id"),
+                Reducer.kind,
+                Reducer.aggregation,
+            )
+            .select_from(customer_meter)
+            .join(MeterReducer, MeterReducer.meter_id == customer_meter.c.meter_id)
+            .join(Reducer, Reducer.id == MeterReducer.reducer_id)
+            .cte("targets")
+        )
+        # One statement per kind and identity shape: Postgres won't serve an OR of
+        # identities from the identity index here.
+        statement = union_all(
+            *(
+                self._get_meter_reducer_totals_statement(
+                    targets,
+                    ReducerKind.usage,
+                    by_customer_id,
+                    by_external_id,
+                    ReducerBucket.bucket_start < usage_closed_before,
+                )
+                for by_customer_id, by_external_id in (
+                    (True, False),
+                    (False, True),
+                    (True, True),
+                )
+            ),
+            self._get_meter_reducer_totals_statement(
+                targets, ReducerKind.credit, True, False
+            ),
+        )
         rows: list[list[tuple[Any, ...]]] = [[] for _ in customer_meters]
-        reducer_by_meter: dict[UUID, dict[ReducerKind, Reducer]] = {}
-        for meter_id, reducer in await self.session.execute(
-            select(MeterReducer.meter_id, Reducer)
-            .join(MeterReducer, MeterReducer.reducer_id == Reducer.id)
-            .where(
-                MeterReducer.meter_id.in_({meter_id for _, meter_id in customer_meters})
-            )
-        ):
-            reducer_by_meter.setdefault(meter_id, {})[reducer.kind] = reducer
-
-        event_repository = EventRepository.from_session(self.session)
-        statements: list[Select[*tuple[Any, ...]]] = []
-        for index, (customer, meter_id) in enumerate(customer_meters):
-            reducer_by_kind = reducer_by_meter.get(meter_id, {})
-            usage_reducer = reducer_by_kind.get(ReducerKind.usage)
-            credit_reducer = reducer_by_kind.get(ReducerKind.credit)
-            if usage_reducer is None and credit_reducer is None:
-                continue
-            reset = (
-                event_repository.get_meter_resets_statement(customer, meter_id)
-                .with_only_columns(func.max(Event.timestamp).label("since"))
-                .cte(f"reset_{index}")
-            )
-            # A scalar subquery runs once before the scans, so its value can bound
-            # the bucket index scan; a join on the CTE can't.
-            since = select(reset.c.since).scalar_subquery()
-            if usage_reducer is not None:
-                statements.extend(
-                    self._get_meter_reducer_totals_statement(
-                        index,
-                        usage_reducer,
-                        since,
-                        (customer_id, external_customer_id),
-                        ReducerBucket.bucket_start < usage_closed_before,
-                    )
-                    for customer_id, external_customer_id in get_customer_identities(
-                        customer
-                    )
-                )
-            if credit_reducer is not None:
-                statements.append(
-                    self._get_meter_reducer_totals_statement(
-                        index, credit_reducer, since, (customer.id, None)
-                    )
-                )
-        if statements:
-            for index, *row in await self.session.execute(union_all(*statements)):
-                rows[index].append(tuple(row))
+        for index, *row in await self.session.execute(statement):
+            rows[index].append(tuple(row))
         return rows
 
     def _get_meter_reducer_totals_statement(
         self,
-        index: int,
-        reducer: Reducer,
-        since: ScalarSelect[datetime | None],
-        identity: tuple[UUID | None, str | None],
+        targets: CTE,
+        kind: ReducerKind,
+        by_customer_id: bool,
+        by_external_id: bool,
         *clauses: ColumnElement[bool],
     ) -> Select[*tuple[Any, ...]]:
-        # One statement per kind and identity: Postgres won't serve an OR of
-        # identities from the identity index here.
-        customer_id, external_customer_id = identity
+        # Lateral, the target's values bound the bucket index scan, `since` included.
+        totals = (
+            select(
+                func.coalesce(
+                    func.bool_or(ReducerBucket.bucket_start == targets.c.since), False
+                ).label("split_at_reset"),
+                func.coalesce(func.sum(ReducerBucket.count), 0).label("count"),
+                func.coalesce(func.sum(ReducerBucket.sum), 0).label("sum"),
+                func.min(ReducerBucket.min).label("min"),
+                func.max(ReducerBucket.max).label("max"),
+            )
+            .where(
+                ReducerBucket.organization_id == targets.c.reducer_organization_id,
+                ReducerBucket.reducer_id == targets.c.reducer_id,
+                ReducerBucket.bucket_start
+                >= func.coalesce(
+                    targets.c.since, literal_column("'-infinity'::timestamptz")
+                ),
+                ReducerBucket.customer_id == targets.c.customer_id
+                if by_customer_id
+                else ReducerBucket.customer_id.is_(None),
+                ReducerBucket.external_customer_id == targets.c.external_customer_id
+                if by_external_id
+                else ReducerBucket.external_customer_id.is_(None),
+                *clauses,
+            )
+            .lateral()
+        )
         return (
             select(
-                literal(index),
-                Reducer.id,
-                Reducer.kind,
-                Reducer.aggregation,
-                since,
-                literal(customer_id, Uuid),
-                literal(external_customer_id, String),
-                func.coalesce(func.bool_or(ReducerBucket.bucket_start == since), False),
-                func.coalesce(func.sum(ReducerBucket.count), 0),
-                func.coalesce(func.sum(ReducerBucket.sum), 0),
-                func.min(ReducerBucket.min),
-                func.max(ReducerBucket.max),
+                targets.c.index,
+                targets.c.reducer_id,
+                targets.c.kind,
+                targets.c.aggregation,
+                targets.c.since,
+                targets.c.customer_id if by_customer_id else null().cast(Uuid),
+                targets.c.external_customer_id
+                if by_external_id
+                else null().cast(String),
+                totals.c.split_at_reset,
+                totals.c.count,
+                totals.c.sum,
+                totals.c.min,
+                totals.c.max,
             )
-            .outerjoin(
-                ReducerBucket,
-                and_(
-                    ReducerBucket.organization_id == reducer.organization_id,
-                    ReducerBucket.reducer_id == reducer.id,
-                    ReducerBucket.bucket_start
-                    >= func.coalesce(since, literal_column("'-infinity'::timestamptz")),
-                    _is_customer(ReducerBucket, customer_id, external_customer_id),
-                    *clauses,
-                ),
+            .select_from(targets.join(totals, true()))
+            .where(
+                targets.c.kind == kind,
+                targets.c.external_customer_id.is_not(None)
+                if by_external_id
+                else true(),
             )
-            .where(Reducer.id == reducer.id)
-            .group_by(Reducer.id)
         )
 
     async def get_last_synced_ends(

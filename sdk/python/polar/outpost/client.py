@@ -20,7 +20,7 @@ from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.trace import Span, StatusCode
 from opentelemetry.util.types import AttributeValue
-from redis.asyncio import Redis
+from redis.asyncio import BlockingConnectionPool, Redis
 from redis.asyncio.retry import Retry
 from redis.backoff import EqualJitterBackoff, NoBackoff
 from redis.commands.core import AsyncScript
@@ -265,14 +265,23 @@ def _is_transient_error(error: BaseException) -> bool:
     )
 
 
+# Connections one instance opens to Redis. Past them, a command waits for a free one, up to
+# TIMEOUT: a cold start runs more commands at once than the merchant's Redis should hold
+# connections.
+REDIS_CONNECTIONS = 32
+
+
 @contextlib.asynccontextmanager
 async def connect_redis(url: str) -> collections.abc.AsyncGenerator[Redis, None]:
-    async with Redis.from_url(
+    pool = BlockingConnectionPool.from_url(
         url,
+        max_connections=REDIS_CONNECTIONS,
+        timeout=TIMEOUT,
         retry=Retry(NoBackoff(), 0),
         socket_timeout=TIMEOUT,
         socket_connect_timeout=TIMEOUT,
-    ) as redis:
+    )
+    async with Redis.from_pool(pool) as redis:
         # A connection the server closes at once, as under a burst of new ones, is tried
         # again until the timeout.
         deadline = anyio.current_time() + TIMEOUT

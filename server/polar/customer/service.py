@@ -1,6 +1,7 @@
 import uuid
 from collections.abc import Sequence
 from datetime import datetime, timedelta
+from decimal import Decimal
 from typing import Any
 
 import structlog
@@ -1002,13 +1003,13 @@ class CustomerService:
         # 👋 Whenever you change the state schema,
         # please also update the cache key with a version number.
         cache_key = f"polar:customer_state:v8:{customer.id}"
-        reducer_metering = customer.organization.is_reducer_billing_enabled
 
-        # A cached state would freeze the live meter units.
-        if cache and not reducer_metering:
+        if cache:
             raw_state = await redis.get(cache_key)
             if raw_state is not None:
-                return _CustomerStateAdapter.validate_json(raw_state)
+                state = _CustomerStateAdapter.validate_json(raw_state)
+                await self._apply_reducer_units(session, redis, customer, state)
+                return state
 
         subscription_repository = SubscriptionRepository.from_session(session)
         customer.active_subscriptions = (
@@ -1023,25 +1024,48 @@ class CustomerService:
         )
 
         customer_meter_repository = CustomerMeterRepository.from_session(session)
-        active_meters = await customer_meter_repository.get_all_by_customer(
+        customer.active_meters = await customer_meter_repository.get_all_by_customer(
             customer.id, options=(joinedload(CustomerMeter.customer),)
         )
-        if reducer_metering:
-            await customer_meter_service.apply_reducer_units(
-                session, redis, active_meters
-            )
-        customer.active_meters = active_meters
 
         state = _CustomerStateAdapter.validate_python(customer, from_attributes=True)
 
-        if not reducer_metering:
-            await redis.set(
-                cache_key,
-                state.model_dump_json(),
-                ex=int(timedelta(hours=1).total_seconds()),
-            )
+        # Cached with the stored units: live reducer units are applied on every read.
+        await redis.set(
+            cache_key,
+            state.model_dump_json(),
+            ex=int(timedelta(hours=1).total_seconds()),
+        )
+        await self._apply_reducer_units(session, redis, customer, state)
 
         return state
+
+    async def _apply_reducer_units(
+        self,
+        session: AsyncReadSession,
+        redis: Redis,
+        customer: Customer,
+        state: CustomerState,
+    ) -> None:
+        if not customer.organization.is_reducer_billing_enabled:
+            return
+        if not state.active_meters:
+            return
+        units = await customer_meter_service.get_reducer_units(
+            session,
+            redis,
+            [(customer, meter.meter_id) for meter in state.active_meters],
+        )
+        if units is None:
+            return
+        for meter, (consumed, credited) in zip(state.active_meters, units, strict=True):
+            consumed_units = (
+                Decimal(str(meter.consumed_units)) if consumed is None else consumed
+            )
+            credited_units = meter.credited_units if credited is None else int(credited)
+            meter.consumed_units = float(consumed_units)
+            meter.credited_units = credited_units
+            meter.balance = float(credited_units - consumed_units)
 
     async def state_changed(
         self, session: AsyncSession, redis: Redis, customer: Customer

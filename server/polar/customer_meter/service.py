@@ -154,22 +154,15 @@ class CustomerMeterService:
         ]
         if not live_customer_meters:
             return
-        try:
-            units = await reducer_service.get_customer_meter_units(
-                session,
-                redis,
-                [
-                    (customer_meter.customer, customer_meter.meter_id)
-                    for customer_meter in live_customer_meters
-                ],
-            )
-        except RedisError:
-            logfire.warn(
-                "Could not read customer meter units from the reducer",
-                customer_meter_ids=[
-                    str(customer_meter.id) for customer_meter in live_customer_meters
-                ],
-            )
+        units = await self.get_reducer_units(
+            session,
+            redis,
+            [
+                (customer_meter.customer, customer_meter.meter_id)
+                for customer_meter in live_customer_meters
+            ],
+        )
+        if units is None:
             return
         for customer_meter, (consumed_units, credited_units) in zip(
             live_customer_meters, units, strict=True
@@ -184,6 +177,28 @@ class CustomerMeterService:
             set_committed_value(customer_meter, "consumed_units", consumed_units)
             set_committed_value(customer_meter, "credited_units", credited)
             set_committed_value(customer_meter, "balance", credited - consumed_units)
+
+    async def get_reducer_units(
+        self,
+        session: AsyncReadSession,
+        redis: Redis,
+        customer_meters: Sequence[tuple[Customer, uuid.UUID]],
+    ) -> Sequence[tuple[Decimal | None, Decimal | None]] | None:
+        """Each customer and meter's consumed and credited units read live from the
+        reducer, or `None` if Redis can't be read."""
+        try:
+            return await reducer_service.get_customer_meter_units(
+                session, redis, customer_meters
+            )
+        except RedisError:
+            logfire.warn(
+                "Could not read customer meter units from the reducer",
+                customer_meters=[
+                    f"{customer.id}:{meter_id}"
+                    for customer, meter_id in customer_meters
+                ],
+            )
+            return None
 
     async def update_customer(
         self, session: AsyncSession, redis: Redis, customer: Customer

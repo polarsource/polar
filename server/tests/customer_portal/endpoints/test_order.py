@@ -11,13 +11,14 @@ from polar.integrations.stripe.service import StripeService
 from polar.kit.address import Address
 from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
-from polar.models import Customer, Organization, Product
+from polar.models import Customer, Organization, Product, Subscription
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderStatus
 from polar.models.payment import PaymentStatus
+from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.version import V2027_01
-from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT
+from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT, MEMBER_AUTH_SUBJECT
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_benefit,
@@ -34,6 +35,117 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
     mocker.patch("polar.order.service.stripe_service", new=mock)
     return mock
+
+
+@pytest.mark.anyio
+@pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+@pytest.mark.api_version(V2027_01)
+class TestCreateOrder:
+    async def test_creates_draft_for_ended_trial(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        product.is_tax_applicable = False
+        customer.billing_name = "Customer billing name"
+        customer.billing_address = Address.model_validate({"country": "FR"})
+        await save_fixture(product)
+        await save_fixture(customer)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.trial_ended,
+        )
+        payload = {"subscription_id": str(subscription.id)}
+
+        response = await client.post("/v1/customer-portal/orders/", json=payload)
+
+        assert response.status_code == 201, response.text
+        draft = response.json()
+        assert draft["status"] == OrderStatus.draft
+        assert draft["subscription"]["id"] == str(subscription.id)
+        assert draft["invoice_number"] is None
+        assert draft["applied_balance_amount"] == 0
+        assert draft["due_amount"] == subscription.amount
+        assert draft["billing_name"] == customer.billing_name
+        assert draft["billing_address"]["country"] == "FR"
+        assert sum(item["amount"] for item in draft["items"]) == subscription.amount
+        stored_subscription = await session.get(Subscription, subscription.id)
+        assert stored_subscription is not None
+        assert stored_subscription.status == SubscriptionStatus.trial_ended
+        stripe_service_mock.create_payment_intent.assert_not_awaited()
+
+        response = await client.post("/v1/customer-portal/orders/", json=payload)
+        assert response.status_code == 422, response.text
+        error = response.json()["detail"][0]
+        assert error["loc"] == ["body", "subscription_id"]
+        assert error["msg"] == "A draft order already exists for this subscription."
+
+    async def test_rejects_subscription_whose_trial_has_not_ended(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+        )
+
+        response = await client.post(
+            "/v1/customer-portal/orders/",
+            json={"subscription_id": str(subscription.id)},
+        )
+
+        assert response.status_code == 422, response.text
+        error = response.json()["detail"][0]
+        assert error["loc"] == ["body", "subscription_id"]
+        assert (
+            error["msg"]
+            == "This subscription's trial has not ended without converting."
+        )
+
+    async def test_hides_other_customers_subscription(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer_second: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer_second,
+            status=SubscriptionStatus.trial_ended,
+        )
+
+        response = await client.post(
+            "/v1/customer-portal/orders/",
+            json={"subscription_id": str(subscription.id)},
+        )
+
+        assert response.status_code == 422, response.text
+        error = response.json()["detail"][0]
+        assert error["loc"] == ["body", "subscription_id"]
+        assert error["msg"] == "Subscription not found."
+
+    @pytest.mark.auth(MEMBER_AUTH_SUBJECT)
+    async def test_non_billing_member_cannot_create_order(
+        self, client: AsyncClient
+    ) -> None:
+        response = await client.post(
+            "/v1/customer-portal/orders/", json={"subscription_id": str(uuid.uuid4())}
+        )
+
+        assert response.status_code == 403, response.text
 
 
 @pytest.mark.anyio

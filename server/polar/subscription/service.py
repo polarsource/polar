@@ -100,6 +100,7 @@ from polar.models import (
     PaymentMethod,
     Product,
     ProductBenefit,
+    ProductPrice,
     Subscription,
     SubscriptionMeter,
     SubscriptionProductPrice,
@@ -1583,7 +1584,11 @@ class SubscriptionService:
             subscription.discount = None
 
     async def _create_cycle_billing_entries(
-        self, session: AsyncSession, subscription: Subscription
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        order: Order | None = None,
     ) -> None:
         event = await event_service.create_event(
             session,
@@ -1601,33 +1606,59 @@ class SubscriptionService:
                 ),
             ),
         )
-        # Add a billing entry for a new period
         billing_entry_repository = BillingEntryRepository.from_session(session)
-        for subscription_product_price in subscription.subscription_product_prices:
-            product_price = subscription_product_price.product_price
-            if is_static_price(product_price):
-                discount_amount = 0
-                if subscription.discount:
-                    discount_amount = subscription.discount.get_discount_amount(
-                        subscription_product_price.amount, subscription.currency
-                    )
-
-                await billing_entry_repository.create(
-                    BillingEntry(
-                        start_timestamp=subscription.current_period_start,
-                        end_timestamp=subscription.current_period_end,
-                        type=BillingEntryType.cycle,
-                        direction=BillingEntryDirection.debit,
-                        amount=subscription_product_price.amount,
-                        currency=subscription.currency,
-                        customer=subscription.customer,
-                        product_price=product_price,
-                        discount=subscription.discount,
-                        discount_amount=discount_amount,
-                        subscription=subscription,
-                        event=event,
-                    ),
+        prices: list[tuple[ProductPrice, int, OrderItem | None]]
+        if order is None:
+            prices = [
+                (price.product_price, price.amount, None)
+                for price in subscription.subscription_product_prices
+                if is_static_price(price.product_price)
+            ]
+            discount = subscription.discount
+            discounts = [
+                discount.get_discount_amount(amount, subscription.currency)
+                if discount
+                else 0
+                for _, amount, _ in prices
+            ]
+        else:
+            prices = [
+                (item.product_price, item.amount, item)
+                for item in order.items
+                if item.product_price is not None
+            ]
+            discount = order.discount
+            discounts = (
+                discount.allocate_discount_amounts(
+                    [amount for _, amount, _ in prices], order.currency
                 )
+                if discount
+                else [0] * len(prices)
+            )
+
+        for (product_price, amount, order_item), discount_amount in zip(
+            prices, discounts, strict=True
+        ):
+            if order_item is not None:
+                order_item.start_timestamp = subscription.current_period_start
+                order_item.end_timestamp = subscription.current_period_end
+            await billing_entry_repository.create(
+                BillingEntry(
+                    start_timestamp=subscription.current_period_start,
+                    end_timestamp=subscription.current_period_end,
+                    type=BillingEntryType.cycle,
+                    direction=BillingEntryDirection.debit,
+                    amount=amount,
+                    currency=subscription.currency,
+                    customer=subscription.customer,
+                    product_price=product_price,
+                    discount=discount,
+                    discount_amount=discount_amount,
+                    subscription=subscription,
+                    event=event,
+                    order_item=order_item,
+                )
+            )
 
     async def reset_meters(
         self,
@@ -3237,37 +3268,49 @@ class SubscriptionService:
         session: AsyncSession,
         ctx: SubscriptionUpdateContext,
         subscription: Subscription,
+        *,
+        order: Order | None = None,
     ) -> Subscription:
-        """Start a paid period for a trial_ended subscription and charge it now.
-
-        The charge runs synchronously: if it fails, PaymentFailed propagates and
-        the caller's transaction rolls back, leaving the subscription trial_ended.
-        """
+        """Start the first paid period, reusing the settled order when supplied."""
         if subscription.status != SubscriptionStatus.trial_ended:
             raise NotTrialEndedSubscription(subscription)
 
-        if not subscription.organization.can_renew_subscriptions:
-            raise PaymentNotReady("Organization is not ready to renew subscriptions")
+        if order is None:
+            if not subscription.organization.can_renew_subscriptions:
+                raise PaymentNotReady(
+                    "Organization is not ready to renew subscriptions"
+                )
 
-        if not self._has_payment_method(
-            subscription
-        ) or not self._has_complete_billing_address(subscription):
-            raise MissingBillingDetails(subscription)
+            if not self._has_payment_method(
+                subscription
+            ) or not self._has_complete_billing_address(subscription):
+                raise MissingBillingDetails(subscription)
 
         now = utc_now()
+        if order is not None:
+            if subscription.discount_id != order.discount_id:
+                subscription.discount = order.discount
+                subscription.discount_applied_at = (
+                    now if order.discount is not None else None
+                )
+            subscription.update_net_amount_from(order)
+
         subscription.status = SubscriptionStatus.active
         subscription.ends_at = None
-        subscription = await self._start_fresh_period(session, ctx, subscription, now)
+        subscription = await self._start_fresh_period(
+            session, ctx, subscription, now, order=order
+        )
         await billing_interval_service.record_subscription(
             session, subscription, effective_at=now
         )
 
-        await self._create_subscription_update_order(
-            session,
-            subscription,
-            OrderBillingReasonInternal.subscription_cycle_after_trial,
-            cutoff=now,
-        )
+        if order is None:
+            await self._create_subscription_update_order(
+                session,
+                subscription,
+                OrderBillingReasonInternal.subscription_cycle_after_trial,
+                cutoff=now,
+            )
 
         log.info("subscription.trial_ended.reactivated", id=subscription.id)
         return subscription
@@ -3278,6 +3321,8 @@ class SubscriptionService:
         ctx: SubscriptionUpdateContext,
         subscription: Subscription,
         now: datetime,
+        *,
+        order: Order | None = None,
     ) -> Subscription:
         subscription.current_period_start = now
         subscription.anchor_day = now.day
@@ -3297,7 +3342,7 @@ class SubscriptionService:
 
         await self.reset_meters(session, subscription, reset_at=now)
         await self.enqueue_benefits_grants(session, subscription)
-        await self._create_cycle_billing_entries(session, subscription)
+        await self._create_cycle_billing_entries(session, subscription, order=order)
 
         repository = SubscriptionRepository.from_session(session)
         return await repository.update(subscription)

@@ -1,15 +1,20 @@
 'use client'
 
-import { EntityLink } from '@/components/Shared/EntityLink'
+import { EntityLink, type EntityIcon } from '@/components/Shared/EntityLink'
 import { type EntityMenuAction } from '@/components/Shared/EntityLinkMenu'
 import { useFilterMenuItem } from '@/components/Shared/useFilterMenuItem'
 import { schemas } from '@polar-sh/client'
+import { Layer, Layers2 } from '@polar-sh/orbit/icons'
 import { ProductPreview } from './ProductPreview'
 
 interface LinkedProduct {
   id: string
   name: string
+  recurring_interval: string | null
 }
+
+export const getProductIcon = (product: LinkedProduct): EntityIcon =>
+  product.recurring_interval ? Layers2 : Layer
 
 export const getProductHref = (
   organization: schemas['Organization'],
@@ -61,6 +66,7 @@ export const ProductEntityLink = ({
 }) => (
   <EntityLink
     kind="product"
+    icon={getProductIcon(product)}
     minimal={minimal}
     muted={muted}
     href={getProductHref(organization, product)}

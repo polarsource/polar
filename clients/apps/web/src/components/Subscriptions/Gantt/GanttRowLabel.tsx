@@ -4,6 +4,7 @@ import {
 } from '@/components/Customer/CustomerEntityLink'
 import {
   getProductHref,
+  getProductIcon,
   useProductMenuItems,
 } from '@/components/Products/ProductEntityLink'
 import { CombinedEntityLink } from '@/components/Shared/EntityLink'
@@ -55,6 +56,7 @@ export const GanttRowLabel = ({
             },
             {
               kind: 'product',
+              icon: getProductIcon(product),
               href: getProductHref(organization, product),
               name: product.name,
               menuItems: productMenuItems,

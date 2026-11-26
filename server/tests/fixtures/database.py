@@ -32,14 +32,14 @@ def _ensure_database_initialized(worker_id: str) -> None:
     global _initialized_worker_id
     if _initialized_worker_id == worker_id:
         return
-    sync_database_url = get_database_url(worker_id, "psycopg")
+    sync_database_url = _build_database_url(worker_id, "psycopg")
     if database_exists(sync_database_url):
         drop_database(sync_database_url)
     if TEMPLATE_DATABASE:
         clone_template_database(sync_database_url)
     else:
         create_database(sync_database_url)
-        apply_migrations(get_database_url(worker_id))
+        apply_migrations(_build_database_url(worker_id))
     _initialized_worker_id = worker_id
 
 
@@ -48,7 +48,7 @@ def _get_or_create_engine(worker_id: str) -> AsyncEngine:
     if _active_engine is None:
         _ensure_database_initialized(worker_id)
         _active_engine = create_async_engine(
-            dsn=get_database_url(worker_id),
+            dsn=_build_database_url(worker_id),
             application_name=f"test_{worker_id}",
             pool_size=settings.DATABASE_POOL_SIZE,
             pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
@@ -65,7 +65,7 @@ async def get_lazy_test_session() -> AsyncIterator[AsyncSession]:
     if engine is None:
         _ensure_database_initialized(_worker_id)
         engine = create_async_engine(
-            dsn=get_database_url(_worker_id),
+            dsn=_build_database_url(_worker_id),
             application_name=f"test_{_worker_id}",
             pool_size=1,
             pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
@@ -84,7 +84,7 @@ async def get_lazy_test_session() -> AsyncIterator[AsyncSession]:
             await engine.dispose()
 
 
-def get_database_url(worker_id: str, driver: str = "asyncpg") -> str:
+def _build_database_url(worker_id: str, driver: str = "asyncpg") -> str:
     return str(
         Url.build(
             scheme=f"postgresql+{driver}",
@@ -95,6 +95,12 @@ def get_database_url(worker_id: str, driver: str = "asyncpg") -> str:
             path=f"{settings.POSTGRES_DATABASE}_{worker_id}",
         )
     )
+
+
+def get_database_url(worker_id: str, driver: str = "asyncpg") -> str:
+    if worker_id == _worker_id:
+        _ensure_database_initialized(worker_id)
+    return _build_database_url(worker_id, driver)
 
 
 TEMPLATE_DATABASE = os.environ.get("POLAR_TEST_DATABASE_TEMPLATE")
@@ -148,7 +154,7 @@ def track_worker_id(worker_id: str) -> Iterator[None]:
     yield
     if _initialized_worker_id is not None:
         if not SKIP_DB_DROP:
-            sync_database_url = get_database_url(_initialized_worker_id, "psycopg")
+            sync_database_url = _build_database_url(_initialized_worker_id, "psycopg")
             if database_exists(sync_database_url):
                 drop_database(sync_database_url)
         _initialized_worker_id = None

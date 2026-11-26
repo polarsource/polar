@@ -128,7 +128,7 @@ Use `<Tabs>` in the order **Dashboard, CLI, Prompt**, matching "a click, command
 ````mdx
 <Tabs>
   <Tab title="Dashboard">
-    - Open **Products**
+    - Open **Catalog**
     - Click **New Product**
     - Add a monthly price of $20
   </Tab>
@@ -148,7 +148,7 @@ Use `<Tabs>` in the order **Dashboard, CLI, Prompt**, matching "a click, command
 </Tabs>
 ````
 
-- **Dashboard:** a short list with one action per line ("Open **Products**", "Click **New
+- **Dashboard:** a short list with one action per line ("Open **Catalog**", "Click **New
   Product**"), not a single sentence. Bold the UI labels.
 - **CLI:** find the command in `docs/integrate/cli/reference/{resource}.mdx` and copy its exact
   flags. Link the reference page. Mention `polar webhook listen` wherever webhooks are tested

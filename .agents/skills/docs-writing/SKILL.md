@@ -179,8 +179,7 @@ the API, SDK or dashboard only:
   (dashboard only).
 
 CLI only: `polar webhook listen|trigger`, `polar auth token`, `polar agent setup`. MCP only (API
-`2027-01`): `benefit_grants_create|update|revoke`, `customer_meters_reverse_credit`,
-`webhooks_get_external_webhook_endpoint`.
+`2027-01`): `benefit_grants_create|update|revoke`, `customer_meters_reverse_credit`.
 
 ### API versions and gated features
 

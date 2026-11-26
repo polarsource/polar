@@ -325,25 +325,138 @@ describe('polar config draft', () => {
     expect(output).toContain('Acme (sandbox) is up to date, nothing to change')
   })
 
-  test('applies when the draft holds a change the file no longer has', async () => {
-    const reverted: AppliedEntry = {
-      section: 'meters',
-      id: 'tool-calls',
-      action: 'updated',
-      diff: [{ field: 'name', before: 'Calls', after: 'Tool calls' }],
-    }
-    const { output, failed, applied } = await run(
+  const reverted: AppliedEntry = {
+    section: 'meters',
+    id: 'tool-calls',
+    action: 'updated',
+    diff: [{ field: 'name', before: 'Calls', after: 'Tool calls' }],
+  }
+  const drafted = {
+    catalog: { id: 'cat-draft', name: null },
+    plan: { entries: [reverted], issues: [] },
+  }
+
+  test('stops when the draft holds a change the file does not have', async () => {
+    const { output, failed, applied, exit } = await run(
       { entries: [kept], issues: [] },
       { status: 'applied', entries: [kept] },
       ['--confirm'],
       {},
+      drafted,
+    )
+    expect(failed).toBe(true)
+    expect(applied).toBe(0)
+    expect(output).toContain('Conflict with the draft on Polar')
+    expect(output).toContain(
+      "The draft on Polar has changes your local polar.json doesn't have:",
+    )
+    expect(output).toMatch(
+      /│ {2}~ tool-calls *│\n *│ {6}name {2}"Tool calls" → "Calls" *│/,
+    )
+    expect(output).toContain(
+      'Run polar config reset to replace polar.json with the draft.',
+    )
+    expect(output).toContain(
+      'Run polar config draft --force to replace the draft with polar.json.',
+    )
+    expect(message(exit)).toBe(
+      'The draft of Acme (sandbox) has changes that are not in polar.json',
+    )
+  })
+
+  test('stops for a drafted change even when the file has changes of its own', async () => {
+    const own: AppliedEntry = {
+      section: 'products',
+      id: 'pro',
+      action: 'updated',
+      diff: [{ field: 'name', before: 'Pro', after: 'Pro plan' }],
+    }
+    const { failed, applied, output } = await run(
+      { entries: [own, kept], issues: [] },
+      { status: 'applied', entries: [own, kept] },
+      ['--confirm'],
+      {},
       {
         catalog: { id: 'cat-draft', name: null },
-        plan: { entries: [reverted], issues: [] },
+        plan: { entries: [own, reverted], issues: [] },
       },
+    )
+    expect(failed).toBe(true)
+    expect(applied).toBe(0)
+    expect(output).toMatch(
+      /│ {2}~ tool-calls *│\n *│ {6}name {2}"Tool calls" → "Calls" *│/,
+    )
+    expect(output).not.toContain('products pro')
+  })
+
+  test('does not save when the file cannot be compared with the draft', async () => {
+    const own: AppliedEntry = {
+      section: 'products',
+      id: 'pro',
+      action: 'updated',
+      diff: [{ field: 'name', before: 'Pro', after: 'Pro plan' }],
+    }
+    const { failed, applied, output } = await run(
+      { entries: [own, kept], issues: [] },
+      { status: 'applied', entries: [own, kept] },
+      ['--confirm'],
+      {},
+      {
+        catalog: { id: 'cat-draft', name: null },
+        plan: {
+          entries: [],
+          issues: [
+            {
+              severity: 'error',
+              code: 'meter_locked',
+              path: 'meters.0.filter',
+              message: 'Locked',
+              location,
+            },
+          ],
+        },
+      },
+    )
+    expect(failed).toBe(true)
+    expect(applied).toBe(0)
+    expect(output).toContain('Error:')
+  })
+
+  test('reports the conflict in --json output', async () => {
+    const { output, failed, applied } = await run(
+      { entries: [kept], issues: [] },
+      { status: 'applied', entries: [kept] },
+      ['--confirm', '--json'],
+      {},
+      drafted,
+    )
+    expect(failed).toBe(true)
+    expect(applied).toBe(0)
+    expect(JSON.parse(output)).toEqual({
+      file: 'polar.json',
+      status: 'conflict',
+      conflicts: [
+        {
+          section: 'meters',
+          id: 'tool-calls',
+          action: 'updated',
+          diff: [{ field: 'name', before: 'Tool calls', after: 'Calls' }],
+        },
+      ],
+    })
+  })
+
+  test('discards the drafted change with --force', async () => {
+    const { output, failed, applied } = await run(
+      { entries: [kept], issues: [] },
+      { status: 'applied', entries: [kept] },
+      ['--confirm', '--force'],
+      {},
+      drafted,
     )
     expect(failed).toBe(false)
     expect(applied).toBe(1)
+    expect(output).toContain('Discarding from the draft')
     expect(output).toContain('~ tool-calls')
     expect(output).toContain('"Calls" → "Tool calls"')
     expect(output).toContain(

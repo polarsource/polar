@@ -201,7 +201,7 @@ describe('polar config validate', () => {
     )
   })
 
-  test('asks to discard a draft with changes the file no longer has', async () => {
+  test('asks to reset or force when the draft has changes the file does not', async () => {
     const { output } = await run(
       {
         entries: [{ ...entries[0]!, action: 'unchanged' as const }],
@@ -212,8 +212,13 @@ describe('polar config validate', () => {
       { entries, issues: [] },
     )
     expect(output).not.toContain('up to date')
+    expect(output).toContain('Conflict with the draft on Polar')
+    expect(output).toContain(
+      "The draft on Polar has changes your local polar.json doesn't have:",
+    )
+    expect(output).toMatch(/│ {2}meters *│\n *│ {2}- tool-calls *│/)
     expect(output.replace(/ *│\n *│ +/g, ' ')).toContain(
-      "The draft has changes polar.json doesn't. Run polar config draft to discard them.",
+      'Run polar config reset to replace polar.json with the draft. Run polar config draft --force to replace the draft with polar.json.',
     )
   })
 
@@ -242,6 +247,7 @@ describe('polar config validate', () => {
             diff: [{ field: 'name', before: null, after: 'v1' }],
           },
         ],
+        conflicts: [],
       },
     })
   })
@@ -263,7 +269,11 @@ describe('polar config validate', () => {
     expect(human.output.replace(/ *│\n *│ +/g, ' ')).toContain(
       "There's an unpublished draft. Run polar config draft, then polar config publish.",
     )
-    expect(JSON.parse(json.output).draft).toEqual({ ...draft, drift: null })
+    expect(JSON.parse(json.output).draft).toEqual({
+      ...draft,
+      drift: null,
+      conflicts: [],
+    })
   })
 
   test('leaves the catalogs out when they cannot be read', async () => {

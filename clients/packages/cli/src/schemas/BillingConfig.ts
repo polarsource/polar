@@ -181,6 +181,10 @@ export const ApplyResult = Schema.Union([
     status: Schema.Literal('rejected'),
     issues: Schema.Array(ConfigIssue),
   }),
+  Schema.Struct({
+    status: Schema.Literal('conflict'),
+    conflicts: Schema.Array(AppliedEntry),
+  }),
 ])
 export type ApplyResult = typeof ApplyResult.Type
 
@@ -188,6 +192,7 @@ export type ApplyResult = typeof ApplyResult.Type
 export const PlanDraft = Schema.Struct({
   ...Catalog.fields,
   drift: Schema.NullOr(Schema.Array(AppliedEntry)),
+  conflicts: Schema.Array(AppliedEntry),
 })
 export type PlanDraft = typeof PlanDraft.Type
 

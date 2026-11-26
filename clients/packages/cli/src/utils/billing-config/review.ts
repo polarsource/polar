@@ -7,6 +7,10 @@ import type {
   PlanDraft,
   PlanResult,
 } from '@/schemas/BillingConfig'
+import {
+  conflictActions,
+  conflictWarning,
+} from '@/utils/billing-config/conflicts'
 import { record } from '@/utils/billing-config/describe'
 import { planTally } from '@/utils/billing-config/entries'
 import { formatProblems, plural } from '@/utils/billing-config/problems'
@@ -50,14 +54,11 @@ const draftFact = (
 ) => {
   const changes = draftedChanges(entries).length > 0
   if (draft.drift === null) return "There's an unpublished draft."
-  if (draft.drift.length === 0) {
-    return changes
-      ? 'These changes are saved in a draft.'
-      : `The draft matches ${file}.`
-  }
+  if (draft.drift.length > 0)
+    return 'The draft is missing some of these changes.'
   return changes
-    ? 'The draft is missing some of these changes.'
-    : `The draft has changes ${file} doesn't.`
+    ? 'These changes are saved in a draft.'
+    : `The draft matches ${file}.`
 }
 
 export const draftNote = (
@@ -66,21 +67,14 @@ export const draftNote = (
   entries: ReadonlyArray<AppliedEntry>,
 ) => [draftFact(file, draft, entries)]
 
-// `polar config draft` discards a draft that differs from a file matching the live catalog
-export const discardsDraft = (
-  draft: PlanDraft,
-  entries: ReadonlyArray<AppliedEntry>,
-) =>
-  draft.drift !== null &&
-  draft.drift.length > 0 &&
-  draftedChanges(entries).length === 0
-
 const draftAction = (
+  file: string,
   draft: PlanDraft,
   entries: ReadonlyArray<AppliedEntry>,
 ) => {
   const save = ui.command('polar config draft')
   const publish = ui.command('polar config publish')
+  if (draft.conflicts.length > 0) return conflictActions(file)
   if (draft.drift?.length === 0) {
     return [
       `Run ${publish} to make ${draftedChanges(entries).length > 0 ? 'them' : 'it'} live.`,
@@ -89,20 +83,21 @@ const draftAction = (
   if (draftedChanges(entries).length > 0) {
     return [`Run ${save}, then ${publish}.`]
   }
-  if (discardsDraft(draft, entries)) {
-    return [`Run ${save} to discard them.`]
-  }
   return []
 }
+
+const indented = (lines: ReadonlyArray<string>) =>
+  lines.map((line) => `${ui.INDENT}${line}`).join('\n')
 
 export const draftNext = (
   file: string,
   draft: PlanDraft,
   entries: ReadonlyArray<AppliedEntry>,
 ) =>
-  [...draftNote(file, draft, entries), ...draftAction(draft, entries)]
-    .map((line) => `${ui.INDENT}${line}`)
-    .join('\n')
+  indented([
+    ...(draft.conflicts.length > 0 ? [] : draftNote(file, draft, entries)),
+    ...draftAction(file, draft, entries),
+  ])
 
 export const unchanged = (entries: ReadonlyArray<AppliedEntry>) =>
   entries.every((entry) => entry.action === 'unchanged')
@@ -142,11 +137,17 @@ const ENVIRONMENT_COLORS: Record<PolarEnvironment, (text: string) => string> = {
   local: ui.dim,
 }
 
-export const section = (title: string, text: string) => [
-  ui.blank,
-  ui.heading(title),
-  ui.box(text),
-]
+export const section = (
+  title: string,
+  text: string,
+  tint?: (text: string) => string,
+) => [ui.blank, ui.heading(tint ? tint(title) : title), ui.box(text, tint)]
+
+export const conflictSection = (
+  config: LoadedConfig,
+  conflicts: ReadonlyArray<AppliedEntry>,
+  title = 'Conflict with the draft on Polar',
+) => section(title, conflictWarning(config, conflicts), ui.yellow)
 
 export const sections = (config: LoadedConfig, result: PlanResult) => [
   ...(result.entries.length > 0
@@ -180,5 +181,8 @@ export const overview = (
   )
 
 export const next = (text: string) => section('Next', text)
+
+export const conflictNext = (file: string) =>
+  next(indented(conflictActions(file)))
 
 export const nextOpen = () => [ui.blank, ui.heading('Next'), ui.boxTop()]

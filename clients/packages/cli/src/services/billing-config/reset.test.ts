@@ -1,12 +1,22 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  realpath,
+  rm,
+  symlink,
+  writeFile,
+} from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { BunServices } from '@effect/platform-bun'
 import { Effect, FileSystem, Layer } from 'effect'
 import type { ActiveOrganization } from '@/schemas/Auth'
 import { BillingConfigError } from '@/schemas/BillingConfig'
 import { Auth } from '@/services/auth'
+import { loader } from '@/services/billing-config/load'
 import { type ResetPending, reset } from '@/services/billing-config/reset'
 import { authenticatedClient } from '@/services/client'
 import { fakeHttp } from '@/utils/test-utils/http'
@@ -29,6 +39,7 @@ const meter = (name: string) => ({
   name,
   filter: { conjunction: 'and', clauses: [] },
   aggregation: { func: 'count' },
+  unit: 'scalar',
 })
 
 const exported = (name: string) =>
@@ -81,9 +92,28 @@ const run = (
     ),
   )
 
-const read = () => readFile(join(directory, 'polar.config.json'), 'utf8')
-const write = (content: string) =>
-  writeFile(join(directory, 'polar.config.json'), content)
+const read = (name = 'polar.config.json') =>
+  readFile(join(directory, name), 'utf8')
+const write = (content: string, name = 'polar.config.json') =>
+  writeFile(join(directory, name), content)
+
+const load = (name: string) =>
+  Effect.runPromise(
+    Effect.gen(function* () {
+      return yield* loader(yield* FileSystem.FileSystem)(name)
+    }).pipe(Effect.provide(BunServices.layer)),
+  )
+
+const installConfigPackage = async () => {
+  const manifest = createRequire(import.meta.url).resolve(
+    '@polar-sh/config/package.json',
+  )
+  await mkdir(join(directory, 'node_modules', '@polar-sh'), { recursive: true })
+  await symlink(
+    dirname(manifest),
+    join(directory, 'node_modules', '@polar-sh', 'config'),
+  )
+}
 
 describe('reset', () => {
   test('rewrites the file from the draft when there is one', async () => {
@@ -149,6 +179,61 @@ describe('reset', () => {
       ),
     ).rejects.toThrow('Reset cancelled')
     expect(await read()).toBe('{ "meters": [] }\n')
+  })
+
+  test('rewrites a TypeScript config as TypeScript that loads back as the draft', async () => {
+    await installConfigPackage()
+    await write(
+      [
+        '// Our pricing',
+        "const name = 'Calls'",
+        'export default { meters: [{ external_id: "calls", name }] }',
+      ].join('\n'),
+      'polar.config.ts',
+    )
+    const api = fakeHttp({
+      [catalogsUrl]: () => catalogs('draft', 'live'),
+      [draftUrl]: () => exported('Drafted calls'),
+    })
+
+    const result = await run(api, () => Effect.void)
+
+    expect(result).toEqual({
+      file: 'polar.config.ts',
+      source: 'draft',
+      status: 'reset',
+    })
+    const source = await read('polar.config.ts')
+    expect(source).toContain("import { defineConfig } from '@polar-sh/config'")
+    expect(source).not.toContain('// Our pricing')
+    expect((await load('polar.config.ts')).input).toMatchObject({
+      meters: [{ external_id: 'calls', name: 'Drafted calls' }],
+    })
+  })
+
+  test('does not ask or write when a TypeScript config already matches', async () => {
+    await write('export default {}', 'polar.config.ts')
+    const api = fakeHttp({
+      [catalogsUrl]: () => catalogs('draft', 'live'),
+      [draftUrl]: () => exported('Drafted calls'),
+    })
+    await run(api, () => Effect.void)
+    const approve = vi.fn(() => Effect.void)
+
+    const result = await run(api, approve)
+
+    expect(result.status).toBe('unchanged')
+    expect(approve).not.toHaveBeenCalled()
+  })
+
+  test('refuses a file type it cannot write', async () => {
+    await write('export default {}', 'polar.config.mjs')
+    const api = fakeHttp({})
+
+    await expect(
+      run(api, () => Effect.void, 'polar.config.mjs'),
+    ).rejects.toThrow('polar.config.mjs is not a file reset can write')
+    expect(api.requests).toEqual([])
   })
 
   test('fails when there is no config file to reset', async () => {

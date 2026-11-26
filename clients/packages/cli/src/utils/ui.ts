@@ -117,21 +117,28 @@ const wrap = (line: string, width: number) => {
   return rows
 }
 
-export const boxTop = () => `${INDENT}${pc.dim(`╭${'─'.repeat(boxInner())}╮`)}`
+type Tint = (text: string) => string
 
-export const boxBottom = () =>
-  `${INDENT}${pc.dim(`╰${'─'.repeat(boxInner())}╯`)}`
+export const boxTop = (border: Tint = pc.dim) =>
+  `${INDENT}${border(`╭${'─'.repeat(boxInner())}╮`)}`
 
-export const boxRows = (line: string) => {
+export const boxBottom = (border: Tint = pc.dim) =>
+  `${INDENT}${border(`╰${'─'.repeat(boxInner())}╯`)}`
+
+export const boxRows = (line: string, border: Tint = pc.dim) => {
   const inner = boxInner()
   return wrap(line, inner).map(
     (row) =>
-      `${INDENT}${pc.dim('│')}${row}${' '.repeat(Math.max(inner - Bun.stringWidth(row), 0))}${pc.dim('│')}`,
+      `${INDENT}${border('│')}${row}${' '.repeat(Math.max(inner - Bun.stringWidth(row), 0))}${border('│')}`,
   )
 }
 
-export const box = (text: string) =>
-  [boxTop(), ...text.split('\n').flatMap(boxRows), boxBottom()].join('\n')
+export const box = (text: string, border: Tint = pc.dim) =>
+  [
+    boxTop(border),
+    ...text.split('\n').flatMap((line) => boxRows(line, border)),
+    boxBottom(border),
+  ].join('\n')
 
 export const truncate = (text: string, width: number) => {
   if (width <= 0) return ''

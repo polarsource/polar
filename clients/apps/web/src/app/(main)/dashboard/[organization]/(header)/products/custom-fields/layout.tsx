@@ -12,7 +12,7 @@ export default async function Layout({
   return (
     <OrganizationPermissionGuard
       organizationSlug={organization}
-      permission="custom_fields:read"
+      permission="custom_fields:manage"
       standalone
     >
       {children}

@@ -151,7 +151,7 @@ export default function Onboarding() {
                   <Touchable
                     onPress={() =>
                       Linking.openURL(
-                        'https://polar.sh/legal/acceptable-use-policy',
+                        'https://polar.sh/docs/acceptable-use',
                       )
                     }
                   >

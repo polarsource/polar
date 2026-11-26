@@ -367,7 +367,7 @@ class OrganizationDetailView:
                     ):
                         text("Internal Note")
                     with tag.div(
-                        classes="text-sm whitespace-pre-wrap text-base-content/90 leading-relaxed"
+                        classes="text-sm whitespace-pre-wrap wrap-anywhere text-base-content/90 leading-relaxed"
                     ):
                         text(self.org.internal_notes)
                     with tag.div(classes="mt-3 pt-3 border-t border-base-300"):

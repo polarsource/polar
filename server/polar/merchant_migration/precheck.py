@@ -30,7 +30,7 @@ from polar.kit.currency import (
 )
 from polar.models import Organization
 from polar.models.organization import OrganizationStatus
-from polar.product.schemas import PRODUCT_NAME_MIN_LENGTH
+from polar.product.schemas import PRODUCT_NAME_MAX_LENGTH, PRODUCT_NAME_MIN_LENGTH
 
 from .canonical import (
     CanonicalAccount,
@@ -505,6 +505,18 @@ class PrecheckEngine:
                 source_id=product.source_id,
             )
             dropped = True
+        if not dropped and len(product.name.strip()) > PRODUCT_NAME_MAX_LENGTH:
+            yield PrecheckIssue(
+                level=PrecheckIssueLevel.warning,
+                code="product_name_too_long",
+                message=(
+                    f"Product '{product.name}' has a name longer than "
+                    f"{PRODUCT_NAME_MAX_LENGTH} characters. It imports with the "
+                    f"first {PRODUCT_NAME_MAX_LENGTH} characters; you can rename "
+                    "it in Polar afterwards."
+                ),
+                source_id=product.source_id,
+            )
         for price in product.prices:
             yield from self._check_price(product, price)
         # Only worth reporting on a product that would otherwise import.

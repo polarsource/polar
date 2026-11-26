@@ -15,6 +15,7 @@ from polar.enums import TaxBehavior
 from polar.kit.address import Address
 from polar.kit.currency import PresentmentCurrency
 from polar.models.merchant_migration_record import MerchantMigrationRecordType
+from polar.product.schemas import PRODUCT_NAME_MAX_LENGTH
 from polar.tax.tax_id import TaxID, TaxIDFormat
 
 
@@ -559,6 +560,11 @@ def discount_started_at_for(
     if subscription.discount_source_ids[:1] == [source_id]:
         return subscription.discount_started_at
     return None
+
+
+def polar_product_name(name: str) -> str:
+    """Polar caps product names at 64 characters; longer source names are cut."""
+    return name.strip()[:PRODUCT_NAME_MAX_LENGTH].rstrip()
 
 
 def polar_discount_code(raw: str | None) -> str | None:

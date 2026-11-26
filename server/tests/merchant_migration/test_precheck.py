@@ -280,6 +280,12 @@ class TestPrecheckEngine:
         report = await run([build_product(name="AB")])
         assert "product_name_too_short" in codes(report, PrecheckIssueLevel.warning)
 
+    async def test_long_product_name_warns_but_imports(self) -> None:
+        product = build_product(name="A" * 87)
+        report = await run([product])
+        assert "product_name_too_long" in codes(report, PrecheckIssueLevel.warning)
+        assert plan_product_imports([product], "usd")[product.source_id].skip is None
+
     async def test_short_name_does_not_double_report_with_one_time(self) -> None:
         # A one-time product is already dropped for a more fundamental reason;
         # the name check must not add a redundant warning.

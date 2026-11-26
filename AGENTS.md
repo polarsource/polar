@@ -209,7 +209,8 @@ directory. Invoke as `/name` in Cursor and Claude Code, or `$name` in Codex.
   new system, or adds a third-party tool that can see Polar data. Start from the
   [design document template](https://linear.app/polarsh/document/design-document-template-02c5d83b61b2).
 - **API guidelines**: [REST API Guidelines](https://linear.app/polarsh/document/rest-api-guidelines-65841b9f4bcc)
-- **User/developer docs**: `docs/` (Mintlify) — `cd docs && pnpm dev` to serve locally.
+- **User/developer docs**: `docs/` (Mintlify) — `cd docs && pnpm dev` to serve locally. Read the
+  `docs-writing` skill before writing or editing a page.
 
 Mintlify API reference is generated from committed `docs/openapi/{version}.openapi.json`. After
 changing public endpoints or webhooks, from `sdk/generator/`:

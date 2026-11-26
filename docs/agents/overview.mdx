@@ -1,0 +1,67 @@
+---
+title: "Build with agents"
+sidebarTitle: "Overview"
+description: "Choose between the Polar plugin, MCP server, CLI, skills and llms.txt to let a coding agent build and run your Polar integration."
+---
+
+Polar is built so a coding agent can do what you'd do in the dashboard: create products, look up customers, test webhooks and write the integration code. There are five ways to give your agent access. Most setups use the first one.
+
+| Tool | What it gives the agent | Use it when |
+| --- | --- | --- |
+| [Plugin and skills](/agents/skills-and-plugins) | The MCP servers plus instructions for setup, integration, testing and migration | You use Claude Code, Codex, ChatGPT, Cursor, Gemini CLI or Antigravity |
+| [MCP server](/integrate/mcp) | Read and change data in your organization, search the docs | Any MCP client, or you only want data access |
+| [Polar CLI](/integrate/cli/introduction) | Terminal commands for every resource, local webhooks, access tokens | The agent runs shell commands, or you script Polar |
+| [Agent signup](/agents/signup) | An organization the agent creates on its own and hands to you | You don't have a Polar account yet |
+| [`llms.txt`](https://polar.sh/docs/llms.txt) | An index of these docs, and every page as Markdown | The agent only needs to read the docs |
+
+## Set it up in one command
+
+Install the CLI, then let it set up the agents it finds:
+
+```bash Terminal
+curl -fsSL https://polar.sh/install.sh | bash
+polar agent setup
+```
+
+`polar agent setup` detects Claude Code, Codex and Cursor. Claude Code and Codex get the Polar plugin. Cursor gets both MCP servers and the skills. See [Skills and plugins](/agents/skills-and-plugins) for what each agent gets and how to install the plugin in other agents.
+
+## Sandbox first
+
+Let your agent work in the [sandbox](/integrate/sandbox) until the integration works. Nothing there moves real money, and its data is separate from production.
+
+- **MCP:** connect `polar-sandbox` (`https://mcp.polar.sh/mcp/polar-sandbox`) next to `polar`, and say "in my Polar sandbox" in your prompts.
+- **CLI:** sign in with `polar auth login --sandbox`. Commands act on the active organization's environment.
+- **API:** use `https://sandbox-api.polar.sh` and a sandbox access token.
+
+When you're ready, follow [Go live](/quickstart/go-live).
+
+<Visibility for="agents">
+  Work in the sandbox until the user says otherwise. Never put an organization access token in client-side code or commit it. Use the app's user ID as `external_id` on customers. Verify webhook signatures. Before calling an MCP operation, check /agents/mcp-operations; before a CLI command, check /integrate/cli/reference.
+</Visibility>
+
+## What agents can't do
+
+Some actions have no CLI command and no MCP operation. Your agent writes code against the API or SDK for these, or asks you to use the dashboard:
+
+- Creating Checkout Sessions and customer sessions (Customer Portal links). The agent can create Checkout Links.
+- Ingesting events. The agent can create meters and read their quantities.
+- Creating subscriptions and orders.
+- Changing organization settings.
+- Uploading files, and validating or activating license keys.
+- Disputes, payouts, payout accounts, members and identity verification.
+
+The [MCP operations](/agents/mcp-operations) page lists every operation that is available.
+
+## Two API versions
+
+The SDK and cURL examples in these docs use API version `2026-10`. The MCP server calls `2027-01`, so a few operations, like manual benefit grants, exist only there. CLI commands use `2026-10` and mark the few `2027-01` commands as preview.
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [MCP server](/integrate/mcp) | Connect a client, headless tokens, read-only mode |
+| [Skills and plugins](/agents/skills-and-plugins) | What the plugin contains and how to install it |
+| [Agent signup](/agents/signup) | How an agent signs up and hands the organization to you |
+| [Resource commands](/integrate/cli/resources) | Manage resources from the CLI |
+| [Quickstart](/quickstart/overview) | The integration your agent builds, step by step |

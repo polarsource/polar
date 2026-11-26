@@ -1,87 +1,145 @@
 ---
-title: "OAuth 2.0 Connect"
+title: "Connect users with OAuth 2.0"
 sidebarTitle: "Connect users"
+description: "Run the OAuth 2.0 authorization code flow against Polar: redirect users to consent, exchange the code for tokens, refresh them and call the API on the user's behalf."
 ---
+
+Connecting a user takes three requests: send them to Polar to approve access, exchange the code Polar returns for tokens, and call the API with the access token. You need an [OAuth 2.0 client](/integrate/oauth2/setup) first.
+
+The examples use the sandbox. In production, use `https://polar.sh` for the authorization URL and `https://api.polar.sh` for the API.
 
 ## Authorize
 
-To start the authorization flow you need to redirect the user to the authorization URL. It looks like this:
+Redirect the user to the authorization URL:
 
-```
-https://polar.sh/oauth2/authorize?
+```text
+https://sandbox.polar.sh/oauth2/authorize?
   response_type=code
   &client_id=CLIENT_ID
   &redirect_uri=https%3A%2F%2Fexample.com%2Fcallback
   &scope=openid%20email
 ```
 
-The parameters are the one described in the [OpenID Connect specification](https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest). The most important ones are:
+The parameters follow the [OpenID Connect specification](https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest). The main ones:
 
 <ParamField path="response_type=code" type="string" required>
-  Indicates that you want to use the authorization code flow. Most common and
-  the only one supported by Polar.
+  The authorization code flow, the only flow Polar supports.
 </ParamField>
 
 <ParamField path="client_id" type="string" required>
-  The Client ID you got when creating the OAuth 2.0 client.
+  The Client ID of your OAuth 2.0 client.
 </ParamField>
 
 <ParamField path="redirect_uri" type="string" required>
-  The URL where the user will be redirected after granting access to their data.
-  Make sure you declared it when creating the OAuth2 client.
+  Where Polar sends the user after they approve access. It must be one of the client's **Redirect URIs**.
 </ParamField>
 
 <ParamField path="scope" type="string" required>
-  A space-separated list of scopes you want to ask for. Make sure they are part
-  of the scopes you declared when creating the OAuth2 client.
+  Space-separated scopes to request. Each must be one of the client's **Scopes**.
 </ParamField>
 
-If you redirect the user to this URL, they'll see a page asking them to grant access to their data, corresponding to the scopes you asked for.
+<ParamField path="sub_type=organization" type="string">
+  Optional. Makes the user pick exactly one organization on the consent screen, so the token is limited to it.
+</ParamField>
 
-<img src="/assets/integrate/oauth2/connect.png" />
+The user sees a consent screen listing the scopes you asked for. When they approve, Polar redirects them to your `redirect_uri` with a one-time `code` in the query string.
 
-Polar issues **user-scoped** access tokens, tied to the user granting access. On the consent screen, the user can optionally **limit the token to specific organizations**: by default it can access all of their organizations (including ones they join later), but if they select specific ones, it's restricted to those. Access always intersects with the user's current membership, so it adjusts automatically if they leave an organization. You can check which organizations a token is limited to by [introspecting it](/api-reference/current/oauth2/introspect-token) — the response includes an `organizations` array (an empty array means all of them).
+Polar issues **user-scoped** access tokens, tied to the user who approved access. On the consent screen, the user can limit the token to specific organizations. By default it can access all of their organizations, including ones they join later. Access always follows the user's current membership: if they leave an organization, the token loses access to it. To see which organizations a token is limited to, [introspect it](/api-reference/current/oauth2/introspect-token). The `organizations` array in the response is empty when the token isn't limited.
 
-If the user grants access, they'll be redirected to your `redirect_uri` with a `code` parameter in the query string. This code is a one-time code that you can exchange for an access token.
+## Exchange the code for tokens
 
-#### Exchange code token
+Send the code to the token endpoint, authenticated with your Client ID and Client Secret:
 
-Once you have the authorization code, you can exchange it for an access token. To do so, you'll need to make a `POST` request to the token endpoint. This call needs to be authenticated with the Client ID and Client Secret you got when creating the OAuth2 client.
-
-Here is an example with cURL:
-
-```bash Terminal
-curl -X POST https://api.polar.sh/v1/oauth2/token \
-  -H 'Content-Type: application/x-www-form-urlencoded' \
-  -d 'grant_type=authorization_code&code=AUTHORIZATION_CODE&client_id=CLIENT_ID&client_secret=CLIENT_SECRET&redirect_uri=https://example.com/callback'
+```bash cURL
+curl -X POST https://sandbox-api.polar.sh/v1/oauth2/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d grant_type=authorization_code \
+  -d code=AUTHORIZATION_CODE \
+  -d client_id=CLIENT_ID \
+  -d client_secret=CLIENT_SECRET \
+  -d redirect_uri=https://example.com/callback
 ```
 
-You should get the following response:
+The response:
 
 ```json
 {
   "token_type": "Bearer",
-  "access_token": "polar_at_XXX",
+  "access_token": "polar_at_u_XXX",
   "expires_in": 864000,
-  "refresh_token": "polar_rt_XXX",
+  "refresh_token": "polar_rt_u_XXX",
   "scope": "openid email",
   "id_token": "ID_TOKEN"
 }
 ```
 
-The `access_token` will allow you to make authenticated API requests on behalf of the user. The `refresh_token` is a long-lived token that you can use to get new access tokens when the current one expires. The `id_token` is a signed JWT token containing information about the user, as per the [OpenID Connect specification](https://openid.net/specs/openid-connect-core-1_0.html#IDToken).
+- `access_token` authenticates API requests on behalf of the user, until `expires_in` seconds have passed.
+- `refresh_token` gets a new access token when the current one expires.
+- `id_token` is a signed JWT with the user's identity, as defined by [OpenID Connect](https://openid.net/specs/openid-connect-core-1_0.html#IDToken).
 
-#### Public Clients
+The token endpoint is a standard OAuth 2.0 endpoint and doesn't need a `Polar-Version` header. See [Request Token](/api-reference/current/oauth2/request-token).
 
-Public clients are clients where the Client Secret can't be kept safe, as it would be accessible by the final user. This is the case for SPA, mobile applications, or any client running on the user's device.
+### Refresh the access token
 
-In this case, **and only if the client is configured as a Public Client**, the request to the token endpoint won't require the `client_secret` parameter. However, the [PKCE](https://oauth.net/2/pkce/) method will be required to maximize security.
-
-### Make authenticated requests
-
-Once you have an access token, either from a Personal Access Token or from the OpenID Connect flow, you can make authenticated requests to the API. Here is a simple example with cURL:
-
-```bash Terminal
-curl -X GET https://api.polar.sh/v1/oauth2/userinfo \
-  -H 'Authorization: Bearer polar_at_XXX'
+```bash cURL
+curl -X POST https://sandbox-api.polar.sh/v1/oauth2/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d grant_type=refresh_token \
+  -d refresh_token=polar_rt_u_XXX \
+  -d client_id=CLIENT_ID \
+  -d client_secret=CLIENT_SECRET
 ```
+
+Each refresh returns a new refresh token as well. Store it and use it next time.
+
+### Public clients
+
+A **public client** can't keep a secret, because its code runs on the user's device: single-page apps, mobile and desktop apps. If, and only if, the client's **Client Type** is **Public Client**, the token endpoint doesn't need `client_secret`. Instead, the flow must use [PKCE](https://oauth.net/2/pkce/): send a `code_challenge` when you authorize, and the matching `code_verifier` when you exchange the code.
+
+## Make authenticated requests
+
+Send the access token as a bearer token, like any other Polar token:
+
+<CodeGroup>
+```typescript TypeScript
+import { createPolar } from "@polar-sh/sdk/2026-10";
+
+const polar = createPolar({
+  accessToken: userAccessToken,
+  environment: "sandbox",
+});
+
+const organizations = await polar.organizations.list();
+```
+
+```python Python
+from polar.v2026_10 import Polar
+
+polar = Polar(user_access_token, environment="sandbox")
+
+organizations = polar.organizations.list()
+```
+
+```bash cURL
+curl https://sandbox-api.polar.sh/v1/organizations/ \
+  -H "Authorization: Bearer polar_at_u_XXX" \
+  -H "Polar-Version: 2026-10"
+```
+</CodeGroup>
+
+The token can only do what its scopes allow, in the organizations it can access. When it can access several organizations, pass `organization_id` on requests that create resources.
+
+To disconnect a user, [revoke the token](/api-reference/current/oauth2/revoke-token).
+
+<Visibility for="agents">
+  Never ship a Client Secret in browser or mobile code: use a Public Client with PKCE there. Store refresh tokens server-side and replace them after every refresh. Use the sandbox (`sandbox.polar.sh`, `sandbox-api.polar.sh`) until the user says otherwise.
+</Visibility>
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Create a client](/integrate/oauth2/setup) | Register your app and get its credentials |
+| [Get User Info](/api-reference/current/oauth2/get-user-info) | Read the connected user's identity |
+| [Introspect Token](/api-reference/current/oauth2/introspect-token) | Check a token's scopes and organizations |
+| [Authentication](/integrate/authentication) | All the ways to authenticate with the Polar API |

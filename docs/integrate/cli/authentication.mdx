@@ -1,7 +1,7 @@
 ---
 title: "Authentication"
 sidebarTitle: "Authentication"
-description: "Sign in to Polar from the CLI and choose the organization you work on"
+description: "Sign in to Polar from the CLI, choose the organization you work on, create access tokens for your app and authenticate in CI."
 ---
 
 The CLI signs in through your browser with OAuth. Sessions are stored in your
@@ -67,12 +67,36 @@ Lists every organization you can access, grouped by environment, with the
 active one marked.
 
 To use a different organization for a single command without changing the
-active one, pass its ID with `--org`. Every command that acts on an
+active one, pass its ID or slug with `--org`. Every command that acts on an
 organization accepts it:
 
 ```bash Terminal
 polar webhook listen http://localhost:3000/webhooks --org <organization-id>
 ```
+
+## Create an access token for your app
+
+Your application needs an [organization access token](/integrate/oat) to call the API.
+`polar auth token` creates one for the active organization and prints it:
+
+```bash Terminal
+echo "POLAR_ACCESS_TOKEN=$(polar auth token)" >> .env.local
+```
+
+The CLI opens the dashboard on a token page for the active organization, named after the
+current directory. Choose the scopes and expiration, click **Create and send to CLI**, and
+the token arrives in your terminal. Preselect scopes with `--scope`, repeated:
+
+```bash Terminal
+polar auth token --scope products:read --scope checkouts:write | gh secret set POLAR_ACCESS_TOKEN
+```
+
+The token belongs to the active organization's environment. A sandbox token only works
+against `https://sandbox-api.polar.sh`.
+
+Tokens created this way show up with the rest in **Settings → Access Tokens** in the
+dashboard, where you can also create or revoke them. See
+[Organization access tokens](/integrate/oat).
 
 ## Signing out
 
@@ -100,8 +124,8 @@ polar webhook listen http://localhost:3000/webhooks
 ```
 
 `POLAR_ENVIRONMENT` selects the environment the token belongs to and defaults
-to `production`. When a token can access several organizations, pass
-`--org <organization-id>` to the command.
+to `production`. An organization access token belongs to one organization, so
+commands use that organization.
 
 <Note>
   While `POLAR_ACCESS_TOKEN` is set, saved sessions are ignored and `polar auth

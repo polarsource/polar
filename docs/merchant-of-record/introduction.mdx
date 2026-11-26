@@ -1,117 +1,88 @@
 ---
 title: "Merchant of Record"
 sidebarTitle: "Merchant of Record (MoR)"
-description: "An open source and transparent Merchant of Record"
+description: "What a Merchant of Record is, how Polar handles sales tax and VAT, and the trade-offs vs. a payment provider like Stripe."
 ---
 
-### What is a Merchant of Record?
+A **Merchant of Record (MoR)** is the business that legally sells your product to your customers. As your MoR, Polar resells your software, so it's Polar's job, not yours, to collect sales tax and VAT and pay it to tax authorities around the world.
 
-We take on the liability of international sales taxes globally for you.
-So you can focus on growing your business vs. accounting bills. Leave billing
-infrastructure and international sales tax headaches to us.
+You keep the relationship with your customers. Polar handles the liability.
 
-### Payment Service Providers vs. Merchants of Record
+## Payment providers vs. Merchants of Record
 
-**Payment Service Providers (PSPs)**
+A **payment service provider (PSP)**, like Stripe, moves money between your customers and you. You're the seller, so every obligation that comes with a sale is yours.
 
-Stripe and other Payment Service Providers (PSPs) offer an accessible and convenient abstraction to faciliate transactions on top of underlying credit card networks & banks.
+A **Merchant of Record** sits one layer above. Polar is built on Stripe, and adds products, subscriptions, benefits and customer management on top, while taking on the seller's obligations.
 
-- ✅ Powerful, flexibile & low-level APIs to facilitate transactions
-- ✅ Can be used to power all business- and pricing models under the sun.
-- ❌ You are responsible for all liabilities associated with transactions, e.g international taxes
-- ❌ Low-level APIs require more development even for common use cases
+| | Payment provider (e.g. Stripe) | Merchant of Record (Polar) |
+| --- | --- | --- |
+| **Who is the seller** | You | Polar |
+| **Sales tax and VAT** | You register, collect, file and pay | Polar does it |
+| **APIs** | Low-level and flexible | Built for billing, with less to integrate |
+| **Fees** | Lower | Higher, covering tax and compliance |
+| **Pricing models** | Anything you can build | Polar's [pricing models](/concepts/products#price-types) |
 
-**Merchants of Record (MoRs)**
+### Which should you choose?
 
-Merchants of Record offer yet another layer of convenient abstraction to facilitate digital orders on top of the underlying PSPs and transactions. E.g Polar is built on Stripe (+ more PSPs in the future).
+**Choose a payment provider if** you've already integrated one, want full control over low-level APIs, want the lowest fees, and are prepared to handle international taxes yourself.
 
-- ✅ Higher-level Dashboard, APIs & SDKs to better facilitate digital products, services & orders beyond the underlying transactions
-- ✅ The platform (Polar) handles international taxes by being a reseller of your digital goods & services. Of course, without being in the way of your relationship with your customers.
-- ❌ Less flexibility & control in terms of advanced business- and pricing models.
-- ❌ Higher fees per payment
+**Choose Polar if** you want billing, checkout, [benefits](/concepts/benefits) and customer management ready to use, and want someone else to handle international taxes.
 
-**What should you choose?**
+Both are good choices. Ship with whatever gets you there.
 
-**Ship with what you feel comfortable with vs. others tell you to**
+## How sales tax works
 
-Just like in programming, abstractions are super helpful to ship faster with fewer low-level concerns, but in exchange for reduced flexibility and higher costs. So what's the right level of abstraction for you? As always, it depends (tm).
+Most countries and many US states tax digital goods and services: VAT, GST, US sales tax and more. That applies whether or not the seller lives there.
 
-**Go with Stripe (PSP) if...**
+Take a $10/month subscription sold to Sweden, where VAT is 25%:
 
-- You've already integrated it? Just ship already - we salute builders however they ship
-- You're comfortable with the Stripe API and prefer absolute control with low-level APIs.
-- You're looking for the lowest fees possible.
-- You're fine with handling international taxes yourself (you absolutely can).
+- A Swedish **consumer** pays $12.50/month. $2.50 goes to the Swedish tax authority.
+- A Swedish **business** with a VAT number pays $10/month, and accounts for the VAT itself (reverse charge).
 
-**Go with Polar (MoR) if...**
+The seller is responsible for two things:
 
-- You want product-, customer-, order- and subscription management via an intuitive and easy dashboard
-- You want to offer file downloads, license keys, Discord- and/or private GitHub repository invites with ease - with more built-in automations to come.
-- You prefer a more high-level API optimized for making monetization easier. We're only getting started here and have some big things coming
-- You want us to handle international taxes for you
+1. **Collecting.** Charging the right tax for each customer's location and business status. Polar uses Stripe Tax for this.
+2. **Remitting.** Registering with each tax authority, then filing and paying on time. Stripe Tax doesn't do this, so with a payment provider it's up to you.
 
-### Polar MoR
+Every jurisdiction sets its own rules. The UK and EU require foreign sellers to register before their first sale, while Texas only requires it above $500,000 in sales. Rates and rules on what's taxable vary too. Complying everywhere from day one is hard and expensive, even for large companies.
 
-**We take on the liability of international sales taxes globally for you. So you can focus on building your passion. Leaving billing infrastructure and sales tax headaches to us.**
+### Trade-offs
 
-So how does Polar offer a Merchant of Record (MoR) service and handle international sale taxes? All other Merchants of Record simply state they handle it internationally - don't worry about it. We do too.
+With Polar as your MoR:
 
-But we believe in transparency and don't want to scare customers into thinking it's impossible to manage it themselves. So below we'll share how exactly we go about doing this.
+- Polar is liable for registering, collecting, filing and paying sales tax worldwide.
+- You can sell to EU businesses with reverse-charge VAT without registering for VAT yourself.
+- Polar's total sales volume counts toward each country's threshold, not yours. Some customers pay tax that they wouldn't if you sold directly while under a threshold.
+- You can't deduct the VAT you pay on purchases against these sales, since you aren't the seller.
 
-#### International Sales Taxes
+<Warning>
+  Polar handles sales tax, such as VAT, GST and US sales tax. You're still responsible for income tax on your earnings in your own country.
+</Warning>
 
-Most countries, states and jurisdictions globally impose sales taxes on digital goods and services (VAT, GST, US Sales Tax etc). Regardless of whether the merchant (seller) is a resident there or not - they're doing business there.
+## Polar's coverage
 
-For example, a \$10/month subscription should cost \$12.5/month for a Swedish (25% VAT) consumer, but \$10/month for a Swedish business with VAT registration (reverse charge).
+Polar is registered in jurisdictions around the world and works with global accounting firms. They monitor sales volumes, register in new markets as thresholds are reached, and file and pay on an ongoing basis. You don't need to track where you owe tax, or when.
 
-Merchants are responsible for 1) capturing & 2) remitting sales taxes to the local tax authorities. What does that mean in our example?
+**Finance → Taxes** in your dashboard shows the tax Polar remitted for you, per jurisdiction. See [Taxes](/features/finance/taxes).
 
-1. **Capturing**. Charging the Swedish consumer \$12.5/month and saving \$2.5/month for the Swedish tax authorities. Stripe Tax is an excellent service to automate this and the one Polar uses today.
-2. **Remitting**. Filing & paying the captured sales taxes with the tax authorities on time. Stripe Tax does not do this, i.e the merchant is liable to register, file and pay taxes to local tax authorities.
+Selling enough that handling tax yourself is worth the cost? [Contact support](/support) and Polar can introduce you to the accounting firms it works with.
 
-Many jurisdictions, however, don't require this until you reach a certain threshold in terms of sales volume. But others require registration even before the first sale - or after a very low threshold. In addition to having different rates and rules on which goods are taxable and whether they're deductable or not for business customers.
-
-For example, United Kingdom and EU countries require upfront registration for international companies, but Texas (United States) does not until you've sold for more than $500,000 🇺🇸🦅
-
-In short: It's complex and hard. Even large and well-known businesses don't do it perfectly. Arguably, it's almost impossible and at least highly impracticle and expensive to comply perfectly upfront. Many companies even delay compliance as a calculated risk, i.e focus on validating & growing their business with the risk of paying back taxes + penalities later.
-
-**PSP (Stripe)**
-
-- ✅ Your volume alone is what counts towards international thresholds vs. the MoR platform, i.e customers might not need to pay sales taxes with you, but would via a MoR.
-- ✅ You can deduct inbound VAT against purchases your business does with VAT
-- ❌ You're liable for capturing & remitting international sales taxes
-- ❌ Stripe Tax is great to monitor & automate capturing, but registration and remittance is up to you.
-
-**MoR (Polar)**
-
-- ✅ We are liable for all of the above as your reseller, i.e we have to worry about it vs. you.
-- ✅ Offer EU VAT for B2B sales (expected and desired within EU for businesses) without having to register, capture and remit it yourself.
-- ❌ Sales taxes would be added for more customers vs. with you selling directly
-- ❌ You cannot leverage inbound VAT towards VAT expense deductions yourself
-
-Merchants of Record (MoR) handles sales taxes, e.g US Sales Tax, EU VAT,
-Canadian GST etc. **However, you're always responsible for your own
-income/revenue tax** in your country of residency.
-
-#### Polar Coverage
-
-**We support global payments and take on the liability for international sales taxes on your behalf.**
-
-Polar is registered in jurisdictions around the world and works with global accounting firms to monitor sales volumes, register in new markets as thresholds are reached, and handle filings and remittance on an ongoing basis. You don't need to track where you owe taxes, or when — that's our job.
-
-**Want to do this yourself?**
-
-Selling a lot and want to handle this yourself, i.e worth the ongoing costs? Feel free to reach out and we'd be happy to introduce you to our contacts at the accounting firms we use.
-
-We consider MoR a key value-add to Polar, but not the sole reason for Polar to exist. Our ambition is to be the easiest way to monetize for developers. However, we're never going to be the right solution for all use cases. But we'll always salute and help anyone who ships software - regardless of billing platform.
-
-## Frequently Asked Questions
+## FAQ
 
 <AccordionGroup>
   <Accordion title="Why doesn't my accounting software recognize Polar's EU OSS VAT number (EU372061545)?">
-    OSS VAT numbers use the `EU` prefix instead of country-specific prefixes (like `IE` for
-    Ireland). Some accounting software predates the OSS program or lacks support for this format.
-    You can manually enter the number if your software allows overriding validation, or contact your
-    software vendor to request OSS number support.
+    OSS VAT numbers use the `EU` prefix instead of a country prefix (like `IE` for Ireland). Some
+    accounting software predates the OSS program or doesn't support this format. Enter the number
+    manually if your software lets you override validation, or ask your software vendor to add OSS
+    support.
   </Accordion>
 </AccordionGroup>
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Money flow](/concepts/money-flow) | How a payment becomes a payout |
+| [Fees](/merchant-of-record/fees) | Plans, transaction fees and additional fees |
+| [Supported countries](/merchant-of-record/supported-countries) | Where you can sell and get paid |
+| [Account reviews](/merchant-of-record/account-reviews) | What Polar checks before you go live |

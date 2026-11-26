@@ -1,17 +1,241 @@
 ---
-title: "Strategy Introduction"
-description: "Ingestion strategies for Metering"
+title: "Ingestion strategies"
+description: "Send usage events automatically from TypeScript with @polar-sh/ingestion: S3 uploads, streams, elapsed time and OpenTelemetry traces."
 ---
 
-Polar offers an ingestion framework to work with Polar's event ingestion API.
+An **ingestion strategy** wraps a client you already use, like an S3 client or a stream, and sends a usage event each time it does metered work. You don't write `events.ingest` calls yourself. Strategies come from the `@polar-sh/ingestion` package, for TypeScript only.
 
-Want to report events regarding Large Language Model usage, S3 file uploads or something else? Our Ingestion strategies are customized to make it as seamless as possible to fire ingestion events for complex needs.
+| Strategy | Wraps | Sends |
+| --- | --- | --- |
+| [S3](#s3) | An AWS SDK v3 `S3Client` | Bytes uploaded |
+| [Stream](#stream) | A Node.js stream | Bytes read |
+| [Delta time](#delta-time) | A clock function | Elapsed time |
+| [LLM](/features/usage-based-billing/ingestion-strategies/llm-strategy) | An AI SDK model | Input, output and total tokens |
 
-- [LLM Strategy](/features/usage-based-billing/ingestion-strategies/llm-strategy)
-- [S3 Strategy](/features/usage-based-billing/ingestion-strategies/s3-strategy)
-- [Stream Strategy](/features/usage-based-billing/ingestion-strategies/stream-strategy)
-- [Delta Time Strategy](/features/usage-based-billing/ingestion-strategies/delta-time-strategy)
+For Python, or for events no strategy covers, send events with the SDK. See [Send events](/features/usage-based-billing/event-ingestion).
 
-### Help us improve
+## Install
 
-We're always looking for ways to improve our ingestion strategies. Feel free to contribute — [Polar Ingestion SDK](https://github.com/polarsource/polar/tree/main/clients/packages/ingestion).
+```bash
+pnpm add @polar-sh/ingestion @polar-sh/sdk
+```
+
+The package requires Node.js 24 or later.
+
+## Set up a strategy
+
+Every strategy follows the same pattern:
+
+1. `Ingestion(...)` connects to Polar.
+2. `.strategy(...)` picks what to measure.
+3. `.ingest("event_name")` names the events it sends.
+4. `.client({ externalCustomerId: "user_123" })` returns the wrapped client for one customer. Use it like the original.
+
+Pass `customerId` instead of `externalCustomerId` to identify the customer by Polar's ID.
+
+Connect with an access token:
+
+```typescript
+import { Ingestion } from "@polar-sh/ingestion";
+
+const ingestion = Ingestion({
+  accessToken: process.env.POLAR_ACCESS_TOKEN,
+  server: "sandbox",
+});
+```
+
+`accessToken` defaults to the `POLAR_ACCESS_TOKEN` environment variable. Each event is sent in its own request to the [Ingest Events API](/api-reference/current/events/ingest-events).
+
+**One trade-off:** a strategy never throws when sending fails. It logs the error with `console.error` and your request carries on. Your user isn't blocked by a Polar outage, but a failed event is lost.
+
+To attach what each event cost you, add `.cost()`. It receives the strategy's context and returns an amount in cents:
+
+```typescript
+const s3Ingestion = Ingestion({ accessToken: process.env.POLAR_ACCESS_TOKEN, server: "sandbox" })
+  .strategy(new S3Strategy(s3Client))
+  .cost((ctx) => ({ amount: ctx.bytes * 0.000002, currency: "usd" }))
+  .ingest("s3_upload");
+```
+
+See [Cost insights](/features/cost-insights/introduction#cost-events) for how costs are reported.
+
+## S3
+
+Wrap an `S3Client` to send the bytes of every upload.
+
+```bash
+pnpm add @aws-sdk/client-s3
+```
+
+```typescript
+import { Ingestion } from "@polar-sh/ingestion";
+import { S3Strategy } from "@polar-sh/ingestion/strategies/S3";
+import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+
+const s3Client = new S3Client({ region: process.env.AWS_REGION });
+
+const s3Ingestion = Ingestion({ accessToken: process.env.POLAR_ACCESS_TOKEN, server: "sandbox" })
+  .strategy(new S3Strategy(s3Client))
+  .ingest("s3_upload");
+
+export async function uploadReport(userId: string, body: string) {
+  const s3 = s3Ingestion.client({ externalCustomerId: userId });
+
+  await s3.send(
+    new PutObjectCommand({
+      Bucket: process.env.AWS_BUCKET_NAME,
+      Key: `reports/${userId}.json`,
+      Body: body,
+      ContentType: "application/json",
+    }),
+  );
+}
+```
+
+Each request with a body sends one event. Requests with a `Content-Length` of zero, like reads, send nothing. The wrapped client is a copy, so the original `s3Client` stays untracked.
+
+```json Event
+{
+  "name": "s3_upload",
+  "external_customer_id": "user_123",
+  "metadata": {
+    "bytes": 2048,
+    "bucket": "my-bucket",
+    "key": "reports/user_123.json",
+    "contentType": "application/json",
+    "strategy": "S3"
+  }
+}
+```
+
+`bucket`, `key` and `contentType` are included when the command sets them.
+
+**Meter:** filter `name` equals `s3_upload`, **Sum** over `bytes`. To display prices per gigabyte, use a **Custom** unit labeled `GB`. See [Meters](/features/usage-based-billing/meters#unit).
+
+## Stream
+
+Wrap a Node.js stream to send the bytes that pass through it. The event is sent when the stream ends.
+
+```typescript
+import { createReadStream } from "node:fs";
+import { Ingestion } from "@polar-sh/ingestion";
+import { StreamStrategy } from "@polar-sh/ingestion/strategies/Stream";
+
+export function streamFile(userId: string, path: string) {
+  const stream = Ingestion({ accessToken: process.env.POLAR_ACCESS_TOKEN, server: "sandbox" })
+    .strategy(new StreamStrategy(createReadStream(path)))
+    .ingest("file_streamed")
+    .client({ externalCustomerId: userId });
+
+  return stream;
+}
+```
+
+Create one strategy per stream. A stream can only be read once, so it's tracked for the first customer you pass to `.client()`.
+
+```json Event
+{
+  "name": "file_streamed",
+  "external_customer_id": "user_123",
+  "metadata": {
+    "bytes": 1048576,
+    "strategy": "Stream"
+  }
+}
+```
+
+**Meter:** filter `name` equals `file_streamed`, **Sum** over `bytes`.
+
+## Delta time
+
+Measure how long something takes. You provide the clock, so you choose the unit.
+
+```typescript
+import { Ingestion } from "@polar-sh/ingestion";
+import { DeltaTimeStrategy } from "@polar-sh/ingestion/strategies/DeltaTime";
+
+const timer = Ingestion({ accessToken: process.env.POLAR_ACCESS_TOKEN, server: "sandbox" })
+  .strategy(new DeltaTimeStrategy(() => performance.now()))
+  .ingest("execution_time");
+
+export async function runJob(userId: string, job: () => Promise<void>) {
+  const start = timer.client({ externalCustomerId: userId });
+  const stop = start();
+
+  await job();
+
+  return stop();
+}
+```
+
+`start()` reads the clock. `stop()` reads it again, sends the difference as `deltaTime` and returns it. With `performance.now()` or `Date.now()`, `deltaTime` is in milliseconds.
+
+```json Event
+{
+  "name": "execution_time",
+  "external_customer_id": "user_123",
+  "metadata": {
+    "deltaTime": 1250.4,
+    "strategy": "DeltaTime"
+  }
+}
+```
+
+**Meter:** filter `name` equals `execution_time`, **Sum** over `deltaTime`.
+
+## OpenTelemetry
+
+If you already trace your application with OpenTelemetry, `PolarTraceExporter` turns spans into events. Add a `customerId` or `externalCustomerId` attribute to the spans you want to send. Spans without one are skipped.
+
+```bash
+pnpm add @opentelemetry/api @opentelemetry/sdk-trace-base @opentelemetry/sdk-trace-node
+```
+
+```typescript
+import { PolarTraceExporter } from "@polar-sh/ingestion/opentelemetry";
+import { trace } from "@opentelemetry/api";
+import { BatchSpanProcessor } from "@opentelemetry/sdk-trace-base";
+import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
+
+const provider = new NodeTracerProvider({
+  spanProcessors: [
+    new BatchSpanProcessor(
+      new PolarTraceExporter({ accessToken: process.env.POLAR_ACCESS_TOKEN, server: "sandbox" }),
+    ),
+  ],
+});
+provider.register();
+
+const tracer = trace.getTracer("my-app");
+
+await tracer.startActiveSpan("agent_run", async (span) => {
+  span.setAttribute("externalCustomerId", "user_123");
+  span.setAttribute("steps", 4);
+  // ...
+  span.end();
+});
+```
+
+Each span becomes one event:
+
+- `name` is the span name.
+- `metadata` holds the span's string, number and boolean attributes.
+- `external_id` is the span ID, and `parent_id` is the parent span's ID.
+
+Parent and child spans become parent and child events, which group a request's costs into a [trace](/features/cost-insights/introduction#traces).
+
+<Warning>
+  Set the customer attribute on the root span too. A child span's event points at its parent with `parent_id`. If the parent span is skipped, Polar never receives the parent, and the child event stays unresolved and isn't processed further.
+</Warning>
+
+Attribute names with dots, like `gen_ai.usage.input_tokens`, are stored as they are. Meter paths read dots as nesting, so set plain attribute names for anything you want to meter on.
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Track LLM tokens](/features/usage-based-billing/ingestion-strategies/llm-strategy) | The LLM strategy for AI SDK models, and Python |
+| [Send events](/features/usage-based-billing/event-ingestion) | Send events with the SDK, batching and field limits |
+| [Meters](/features/usage-based-billing/meters) | Filter and aggregate the events a strategy sends |
+| [Cost insights](/features/cost-insights/introduction) | Track what each event costs you |
+| [`@polar-sh/ingestion` source](https://github.com/polarsource/polar/tree/main/clients/packages/ingestion) | Package source and README |

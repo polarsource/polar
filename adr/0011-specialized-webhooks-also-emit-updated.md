@@ -16,7 +16,7 @@ Outgoing Polar webhooks come in two shapes: a catch-all `*.updated` (`subscripti
 it as “anything changed on this resource.” A specialized event without the catch-all leaves
 those subscribers with no signal.
 
-The public [webhook events docs](https://docs.polar.sh/integrate/webhooks/events) already describe
+The public [webhook events docs](https://polar.sh/docs/integrate/webhooks/events) already describe
 `subscription.updated` as a catch-all for the specialized subscription events. That contract was
 implicit in code (`_after_subscription_updated` always fires `subscription.updated` first) and
 easy to drop when adding a new specialized type.
@@ -59,7 +59,7 @@ scope until they get one.
 
 ## References
 
-- [Webhook events](https://docs.polar.sh/integrate/webhooks/events) — `subscription.updated` as
+- [Webhook events](https://polar.sh/docs/integrate/webhooks/events) — `subscription.updated` as
   catch-all; cancellation, renewal, and pause sequences always list `subscription.updated`
   alongside the specialized event.
 - `server/polar/subscription/service.py` — `_after_subscription_updated` fires

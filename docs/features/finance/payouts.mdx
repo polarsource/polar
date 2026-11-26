@@ -1,140 +1,174 @@
 ---
-title: "Payouts"
-sidebarTitle: "Withdraw"
-description: "Withdraw money from your Polar account"
+title: "Balance and payouts"
+sidebarTitle: "Payouts"
+description: "Read your balance and its fees, withdraw it to your payout account, and download payout invoices and CSVs."
 ---
 
-You can issue a withdrawal — also called a payout — once your balance meets the minimum threshold for your account currency. Polar transfers the balance, minus Stripe payout fees (see below), to your Stripe account, and Stripe issues the payout from there.
+Your **balance** is what you've earned through Polar after tax and fees. A **payout** moves that balance to your [payout account](/features/finance/accounts), a Stripe Connect Express account linked to your bank. For how a payment turns into a payout, see [Money flow](/concepts/money-flow).
 
-## Payout Delay
+<Note>Dashboard only. Balance, transactions and payouts aren't available from the CLI or MCP server.</Note>
 
-Transactions are subject to a **7-day settlement delay** from the date they occur before the corresponding funds become available for payout. This delay applies by default to organizations created on or after May 12, 2026. Organizations created before this date continue to receive instant payouts.
+## Your balance
 
-We may also extend this delay or hold specific transactions when it makes sense — most commonly to align your settlement window with your refund policy, and occasionally for risk or compliance reasons.
+**Finance → Payouts** shows your **Available Balance**, the amount you can withdraw now. **Finance → Income** lists every transaction that makes up your balance, with its **Gross**, **Fees**, **Tax** and **Net** amounts.
 
-## Minimum Payout Thresholds
+Each payment adds to your balance after:
 
-The minimum balance required to issue a payout varies based on the payout currency. Certain currencies have a higher limit due to Stripe requirements, and these limits can change.
+1. **Sales tax** collected for remittance: VAT, GST, US sales tax and others. Polar pays it to the tax authorities. See [Taxes](/features/finance/taxes).
+2. **Polar's fees**, which depend on your plan. Fees are calculated on the total the customer paid, tax included. See [Fees](/merchant-of-record/fees).
 
+Balances are kept in USD. Payments in other currencies are converted at the exchange rate when the transaction happens.
 
-| Currency | Minimum Balance (USD) |
-|----------|----------------------|
-| USD      | $10.00              |
-| EUR      | $13.00              |
-| GBP      | $15.00              |
-| CHF      | $15.00              |
-| AOA      | $30.00              |
-| ALL      | $40.00              |
-| AMD      | $40.00              |
-| AZN      | $40.00              |
-| BAM      | $40.00              |
-| BOB      | $40.00              |
-| BTN      | $40.00              |
-| CLP      | $40.00              |
-| GHS      | $40.00              |
-| GMD      | $40.00              |
-| GYD      | $40.00              |
-| KHR      | $40.00              |
-| KRW      | $40.00              |
-| LAK      | $40.00              |
-| MDL      | $40.00              |
-| MGA      | $40.00              |
-| MKD      | $40.00              |
-| MNT      | $40.00              |
-| MYR      | $40.00              |
-| MZN      | $40.00              |
-| NAD      | $40.00              |
-| PYG      | $40.00              |
-| RSD      | $40.00              |
-| THB      | $40.00              |
-| TWD      | $40.00              |
-| UZS      | $40.00              |
-| COP      | $50.00              |
-| Other currencies | $10.00 (default) |
+### Fee lines
 
-A handful of countries also enforce a higher minimum:
+The **Fees** column breaks each fee out by type:
 
-| Country | Minimum Balance (USD) |
-|---------|----------------------|
-| Bahamas      | $30.00 |
-| El Salvador  | $30.00 |
-| Panama       | $50.00 |
+| Fee | When it applies |
+| --- | --- |
+| **Payment Fee** | Every payment, at your plan's rate |
+| **International Payment Fee** | Cards issued outside the US |
+| **Subscription Fee** | Subscription payments, on the Early Member rate only |
+| **Dispute Fee** | Each dispute, whatever the outcome |
+| **Payout Fee** | Each payout |
+| **Cross-border Transfer Payout Fee** | Payouts that need a cross-border transfer, depending on your payout account's country |
+| **Active Payout Account Fee** | A payout when you've had no other payout in the previous 30 days |
+| **Fee Credit** | Fee credits applied to your fees |
 
-## Stripe Payout Fees
+If your account holds fee credits, **Finance → Payouts** shows them under **Fee Credits**. Fees are deducted from your credits first.
 
-Each payout to your Stripe account carries a fee:
+To download your transactions as a CSV, see [Export income](/features/finance/taxes#export-income).
 
-1. $2 per month in which you have at least one active payout
-2. 0.25% + $0.25 per payout
-3. Cross-border fees (currency conversion): 0.25% within the EU, up to 1% elsewhere
+### Settlement delay
 
-## Manual Withdrawal
+New transactions are held for **7 days** before they count toward your available balance. This applies by default to organizations created on or after May 12, 2026. Organizations created before that date get their funds without the delay.
 
-Because of those fixed per-payout costs, withdrawals are initiated manually rather than on an automatic schedule. This way you decide when to incur the fees and can batch earnings into fewer, larger payouts instead of paying overhead on every transaction.
+The amount still settling shows as **Pending** under your available balance, with the date of the next release. Polar can extend the delay or hold specific transactions, most often to match your refund policy, and sometimes for risk or compliance reasons.
 
-## Reverse invoices
+## Withdraw your balance
 
-Polar invoices your customers directly as the Merchant of Record. For your own accounting, you'll need to invoice Polar in return for each payout. You can generate a **reverse invoice** — detailing the sales we made on your behalf, minus our fees — from the **Payouts** page under **Finance** in your dashboard. Click the ellipsis next to a payout and select **Download invoice**.
+Payouts are manual. Each one carries fixed fees, so you decide when to withdraw and can batch earnings into fewer, larger payouts.
 
-A modal will open, allowing you to:
+Before you can withdraw:
 
-- Set your billing name and address.
-- Add information shown below your billing address — a good place for your VAT number or any other details your local tax rules require on an invoice.
-- Add notes shown at the bottom of the invoice.
-- Customize the invoice number. By default, we generate one like `POLAR-0001`, but you can change it to your own format and sequence.
+- You're an **Admin** or the **Owner** of the organization. See [Team management](/features/team-management#permissions).
+- Your [payout account](/features/finance/accounts) is connected and ready.
+- Your support email is verified. See the [review checklist](/merchant-of-record/review-checklist#add-a-support-email).
+- Your available balance is at or above the [minimum for your currency](#minimum-payout-amounts).
+- You haven't requested another payout in the last 24 hours.
+
+To withdraw:
+
+1. Open **Finance → Payouts**.
+2. Click **Withdraw**.
+3. Check the **Gross Amount**, **Fees Amount** and **Net Amount**.
+4. Click **Confirm**.
+
+Polar sends the transfer to your payout account right away. Stripe then pays it out to your bank, which typically takes 4 to 7 business days.
+
+If the modal says **Withdrawals are currently unavailable**, your organization isn't approved for payouts. See [Account reviews](/merchant-of-record/account-reviews#organization-statuses).
+
+### Minimum payout amounts
+
+The minimum balance depends on your payout currency. Some currencies have a higher minimum because of Stripe's requirements, and these limits can change.
+
+| Currency | Minimum balance (USD) |
+| --- | --- |
+| USD | $10 |
+| EUR | $13 |
+| GBP, CHF | $15 |
+| AOA | $30 |
+| ALL, AMD, AZN, BAM, BOB, BTN, CLP, GHS, GMD, GYD, KHR, KRW, LAK, MDL, MGA, MKD, MNT, MYR, MZN, NAD, PYG, RSD, THB, TWD, UZS | $40 |
+| COP | $50 |
+| Other currencies | $10 |
+
+A few countries have a higher minimum:
+
+| Country | Minimum balance (USD) |
+| --- | --- |
+| Bahamas | $30 |
+| El Salvador | $30 |
+| Panama | $50 |
+
+For payout accounts in Icelandic króna (ISK), Hungarian forint (HUF), New Taiwan dollar (TWD) or Ugandan shilling (UGX), Stripe pays out whole currency units only. Any fraction stays in your balance and goes out with your next payout.
+
+### Payout fees
+
+Stripe charges these fees on each payout. Polar passes them on without a markup:
+
+- **Payout fee:** 0.25% + $0.25 per payout.
+- **Cross-border transfer fee:** between 0% and 1.25% of the payout, depending on your payout account's country. For example, 0.25% for euro countries and the UK.
+- **Active payout account fee:** $2, charged on a payout when you haven't had another payout in the previous 30 days.
+
+The withdraw modal shows the exact fees before you confirm.
+
+If you leave a balance unwithdrawn for several months, Polar may trigger a payout on your behalf.
+
+## Payout statuses
+
+| Status | Meaning |
+| --- | --- |
+| **Pending** | Requested. The transfer to your payout account is being processed. |
+| **Held for review** | Requested while your organization is under review. Paid out automatically once the review is approved. |
+| **In Transit** | On its way from Stripe to your bank. |
+| **Succeeded** | Paid out to your bank. |
+| **Failed** | Stripe couldn't complete the payout. |
+| **Canceled** | Canceled before the transfer. The amount and its fees return to your available balance. |
+
+A held payout is canceled if the review ends with your organization denied, blocked or offboarded. It's also canceled if you switch to a different payout account while it's held.
+
+## Payout documents
+
+Each payout row on **Finance → Payouts** has a menu with:
+
+- **Download CSV:** the transactions included in that payout.
+- **Generate invoice** or **Download invoice:** a reverse invoice, for succeeded payouts.
+
+### Reverse invoices
+
+Polar invoices your customers directly as the [Merchant of Record](/merchant-of-record/introduction). For your own accounting, you invoice Polar for each payout. A **reverse invoice** lists the sales Polar made on your behalf, minus its fees.
+
+When you generate one, you can set:
+
+- **Billing name** and **Billing address**.
+- **Additional billing information**, shown below your address. Use it for your VAT number or other details your local rules require.
+- **Notes**, shown at the bottom of the invoice.
+- **Invoice number**. The default looks like `POLAR-0001`. You can change it to your own format and sequence.
 
 <Warning>
-  Once the reverse invoice is generated, it cannot be changed. Make sure to
-  double-check the information before generating it.
+  A reverse invoice can't be changed once it's generated. Check the details before you confirm.
 </Warning>
 
-### Sample Reverse Invoice
+See a [sample reverse invoice (PDF)](https://polar-public-assets.s3.us-east-2.amazonaws.com/sample-reverse-invoice.pdf).
 
-<iframe
-  src="https://polar-public-assets.s3.us-east-2.amazonaws.com/sample-reverse-invoice.pdf"
-  width="100%"
-  height="600px"
-></iframe>
+## Tax forms
 
-## Tax Forms
+### 1099-K (US)
 
-### 1099-K Form (US)
+Polar issues Form 1099-K through Stripe each year to eligible merchants in the US. Platforms like Polar issue a 1099-K rather than a 1099-NEC or 1099-MISC because they process card payments between buyers and sellers who aren't their contractors. Stripe explains the requirements in its [1099-K guide](https://support.stripe.com/questions/intro-to-1099-k-tax-forms-for-platforms-and-marketplaces).
 
-Polar will issue 1099-K forms via Stripe to eligible users in the US on an annual basis.
-
-For a given tax year, 1099-K forms are required for users who cross a certain gross volume in USD and a certain number of transactions via Polar.
-
-**Why not a 1099-NEC or 1099-MISC?**
-
-TurboTax has [this great article](https://blog.turbotax.intuit.com/self-employed/1099-misc-or-1099-k-whats-the-difference-29903/) on the difference between 1099-K, 1099-NEC & 1099-MISC.
-
-<Tip>
-If you're self-employed and accept credit, debit, or prepaid cards, you may receive Form 1099-K for transactions processed by a third party. This includes creators, influencers, rideshare drivers, or side-giggers. If you're an online seller selling on platforms like Ebay, AirBnB, Etsy, and VRBO, you may also receive Form 1099-K.
-</Tip>
-
-Stripe further clarifies 1099-K requirements for Payment Settlement Entities (PSE) in [this article](https://support.stripe.com/questions/intro-to-1099-k-tax-forms-for-platforms-and-marketplaces).
-
-Effectively, `1099-K` is required for platforms/marketplaces which:
-
-1. Handle payment between someone providing goods/services to purchasers
-2. Such payments are made with credit, debit, or prepaid cards
-3. Receiver is not a contractor/freelancer to the platform/marketplace
-
-Polar meets all of these criteria and therefore issues 1099-K forms to eligible developers on the platform vs. other forms.
-
-## Frequently Asked Questions
+## FAQ
 
 <AccordionGroup>
-  <Accordion title="How long do payouts take?">
-    Payouts typically take 4-7 business days.
+  <Accordion title="When does a payout reach my bank?">
+    Polar starts the transfer to your payout account as soon as you confirm. Stripe then pays it out to your bank, typically within 4 to 7 business days.
   </Accordion>
-  <Accordion title="When are payouts processed after I request them?">
-    Payouts are processed in batches 24 hours after initiation.
+  <Accordion title="How often can I withdraw?">
+    Once every 24 hours. If you've recently requested a payout, the withdraw modal shows when you can request the next one.
   </Accordion>
   <Accordion title="Can I use my personal bank account to receive payouts?">
-    For individual accounts, yes. For business accounts, you will need a business bank account.
+    For individual accounts, yes. For business accounts, you need a business bank account.
   </Accordion>
-  <Accordion title="Why does my payout say 'Held for review'?">
-    You can request a payout at any time. [Account Reviews](/merchant-of-record/account-reviews) are a normal part of how we operate, so if your account happens to be under review when you request one, the payout shows as "Held for review" until you are reviewed, then is paid out automatically.
+  <Accordion title="Why does my payout say Held for review?">
+    You can request a payout at any time. If your organization is under [review](/merchant-of-record/account-reviews) when you do, the payout is held until the review is approved, then paid out automatically.
   </Accordion>
 </AccordionGroup>
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Money flow](/concepts/money-flow) | How a payment becomes your balance and payout |
+| [Payout accounts](/features/finance/accounts) | Connect and manage the Stripe account you're paid out to |
+| [Taxes](/features/finance/taxes) | Tax Polar remitted for you, and the income export |
+| [Fees](/merchant-of-record/fees) | Plans, transaction fees and additional fees |
+| [Supported countries](/merchant-of-record/supported-countries) | Where Polar can pay you out |

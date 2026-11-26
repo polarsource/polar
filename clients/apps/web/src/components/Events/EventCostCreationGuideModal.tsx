@@ -46,7 +46,7 @@ const result = await polar.events.ingest({
         </Well>
         <div className="flex flex-row items-center gap-x-4">
           <a
-            href="https://docs.polar.sh/features/cost-insights/cost-events"
+            href="https://polar.sh/docs/features/cost-insights/introduction#cost-events"
             target="_blank"
             rel="noopener noreferrer"
             className="flex flex-row items-center"

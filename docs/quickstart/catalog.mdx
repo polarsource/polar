@@ -1,0 +1,222 @@
+---
+title: "Set up your catalog"
+description: "Create a plan with a base fee, metered usage and included credits."
+---
+
+<Info>
+  **Why now?** With usage flowing, you can price against real numbers. A product holds both what customers pay (prices) and what they get (benefits). See [Products & prices](/concepts/products).
+</Info>
+
+In this step you'll create a **Pro** plan: $20 a month, including 100,000 tokens, with usage beyond that billed per token.
+
+The examples use the sandbox client from the [quickstart overview](/quickstart/overview#prerequisites), on API version `2026-10`.
+
+## Create the credits benefit
+
+A [Meter Credits benefit](/features/usage-based-billing/credits) adds units to a customer's meter balance at the start of every billing cycle. Usage draws the balance down before anything is billed.
+
+<Tabs>
+  <Tab title="Dashboard">
+    - Open **Products → Benefits**
+    - Click **Create Benefit**
+    - Set the type to **Meter Credits**
+    - Enter the **Description** "100,000 AI tokens per month"
+    - Pick the **AI tokens** meter and set **Number of credited units** to 100,000
+    - Leave **Rollover unused credits** unchecked
+    - Click **Create**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    export BENEFIT_ID=$(polar benefits create --type meter_credit \
+      --description "100,000 AI tokens per month" \
+      --properties '{"meter_id": "'"$METER_ID"'", "units": 100000, "rollover": false}' | jq -r .id)
+    ```
+
+    See [`polar benefits`](/integrate/cli/reference/benefits).
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    In my Polar sandbox, create a Meter Credits benefit that grants 100,000 units of the AI tokens meter per month, without rollover.
+    ```
+
+    Uses the `benefits_create` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+From your code:
+
+<CodeGroup>
+```typescript TypeScript
+const credits = await polar.benefits.create({
+  type: "meter_credit",
+  description: "100,000 AI tokens per month",
+  properties: {
+    meter_id: meter.id,
+    units: 100_000,
+    rollover: false,
+  },
+});
+```
+
+```python Python
+credits = polar.benefits.create(
+    type="meter_credit",
+    description="100,000 AI tokens per month",
+    properties={
+        "meter_id": meter.id,
+        "units": 100_000,
+        "rollover": False,
+    },
+)
+```
+
+```bash cURL
+export BENEFIT_ID=$(curl -s -X POST https://sandbox-api.polar.sh/v1/benefits/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "meter_credit",
+    "description": "100,000 AI tokens per month",
+    "properties": {
+      "meter_id": "'"$METER_ID"'",
+      "units": 100000,
+      "rollover": false
+    }
+  }' | jq -r .id)
+```
+</CodeGroup>
+
+## Create the product
+
+Create a monthly product with two prices: a fixed base fee and a metered price on the **AI tokens** meter, then attach the credits benefit.
+
+<Tabs>
+  <Tab title="Dashboard">
+    - Open **Products**
+    - Click **New Product**
+    - Set **Name** to "Pro"
+    - Under **Pricing**, choose **Recurring subscription** and set **Every** 1 month
+    - Pick **Fixed price** and enter $20
+    - Click **Add metered price**, select the **AI tokens** meter and set **Amount per unit** to $0.00002
+    - Under **Automated Benefits**, select the credits benefit
+    - Click **Create Product**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    export PRODUCT_ID=$(polar products create --name "Pro" --recurring-interval month \
+      --prices '[
+        { "amount_type": "fixed", "price_amount": 2000 },
+        { "amount_type": "metered_unit", "meter_id": "'"$METER_ID"'", "unit_amount": "0.002" }
+      ]' | jq -r .id)
+
+    polar products update_benefits $PRODUCT_ID --data '{ "benefits": ["'"$BENEFIT_ID"'"] }'
+    ```
+
+    See [`polar products`](/integrate/cli/reference/products).
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    In my Polar sandbox, create a monthly product called Pro for $20, with a metered price of $0.00002 per unit on the AI tokens meter, and attach the 100,000 AI tokens credits benefit.
+    ```
+
+    Uses the `products_create` and `products_update_benefits` operations of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+From your code. Amounts are in cents:
+
+<CodeGroup>
+```typescript TypeScript
+const product = await polar.products.create({
+  name: "Pro",
+  recurring_interval: "month",
+  prices: [
+    { amount_type: "fixed", price_amount: 2000 },
+    { amount_type: "metered_unit", meter_id: meter.id, unit_amount: "0.002" },
+  ],
+});
+
+await polar.products.updateBenefits(product.id, {
+  benefits: [credits.id],
+});
+```
+
+```python Python
+product = polar.products.create(
+    name="Pro",
+    recurring_interval="month",
+    prices=[
+        {"amount_type": "fixed", "price_amount": 2000},
+        {"amount_type": "metered_unit", "meter_id": meter.id, "unit_amount": "0.002"},
+    ],
+)
+
+polar.products.update_benefits(product.id, benefits=[credits.id])
+```
+
+```bash cURL
+export PRODUCT_ID=$(curl -s -X POST https://sandbox-api.polar.sh/v1/products/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Pro",
+    "recurring_interval": "month",
+    "prices": [
+      { "amount_type": "fixed", "price_amount": 2000 },
+      { "amount_type": "metered_unit", "meter_id": "'"$METER_ID"'", "unit_amount": "0.002" }
+    ]
+  }' | jq -r .id)
+
+curl -X POST "https://sandbox-api.polar.sh/v1/products/$PRODUCT_ID/benefits" \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{ "benefits": ["'"$BENEFIT_ID"'"] }'
+```
+</CodeGroup>
+
+Customers now pay $20 a month. The first 100,000 tokens each month are covered by credits, and every token after that costs $0.00002.
+
+<Tip>
+  To protect customers from surprise bills, set a `cap_amount` on the metered price. To never bill for usage at all, leave out the metered price and sell credits only. See [Usage-based pricing](/features/usage-based-billing/billing).
+</Tip>
+
+## Verify it works
+
+**Pro** has a $20 monthly price, a metered price on **AI tokens**, and the credits benefit.
+
+<Tabs>
+  <Tab title="Dashboard">
+    - Open **Products**
+    - Select **Pro**
+    - Check the prices and the benefit under **Automated Benefits**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar products get $PRODUCT_ID
+    ```
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Show the Pro product in my Polar sandbox with its prices and benefits.
+    ```
+
+    Uses the `products_get` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Products](/features/products) | Billing cycles, currencies, trials and archiving |
+| [Usage-based pricing](/features/usage-based-billing/billing) | Unit, volume and graduated rates, caps and meter cycles |
+| [Credits](/features/usage-based-billing/credits) | Credits-only spending and manual grants |
+| [Benefits](/concepts/benefits) | License keys, feature flags, file downloads and more |
+
+<Card title="Next: Integrate checkout & customers" icon="arrow-right" href="/quickstart/checkout" horizontal>
+  Link customers to your users and let them buy Pro.
+</Card>

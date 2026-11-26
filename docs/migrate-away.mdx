@@ -1,7 +1,7 @@
 ---
-title: "Migrate Away from Polar"
-sidebarTitle: "Migrate Away"
-description: "Move your customers and saved payment methods to another payment provider whenever you choose."
+title: "Migrate away from Polar"
+sidebarTitle: "Migrate away"
+description: "Plan a move off Polar: what transfers to your next provider, the offboarding period and payout hold, and how to avoid double billing."
 ---
 
 You own your business, and that includes the freedom to leave. If you decide Polar isn't the right fit, we'll help you move your customers and their saved payment methods to another payment provider so your subscribers experience as little disruption as possible.
@@ -9,7 +9,7 @@ You own your business, and that includes the freedom to leave. If you decide Pol
 Because Polar is a [Merchant of Record](/merchant-of-record/introduction), your customers' payment methods are securely vaulted with our payment processor (Stripe). Moving them to your own account is a coordinated, support-assisted process rather than a one-click export, so we can do it securely and in line with card network rules.
 
 <Note>
-**This process is handled by our team**
+**Handled by Polar's support team**
 
 Migrations are not self-serve today. To get started, email [support@polar.sh](mailto:support@polar.sh) with the account you want to migrate to, and we'll guide you through every step.
 </Note>
@@ -46,15 +46,14 @@ Customers whose payment method can't be moved need to add a new one on your new 
 When you start a migration, we set your Polar organization to an **offboarding** state. While offboarding:
 
 - Your existing subscriptions keep renewing until you cancel them, so customers are never cut off mid-transition.
-- New checkouts are disabled, since you're moving your business elsewhere.
-- **Payouts are paused for 120 days.**
+- **Payouts are paused for at least 120 days.**
 
 <Warning>
 **Why payouts are held for 120 days**
 
 We hold your remaining balance for 120 days to cover any refunds and chargebacks that may still come in on payments processed while you were on Polar. Disputes can be filed weeks or months after a purchase, and as Merchant of Record we're liable for them. Holding the balance protects both you and us from a negative balance after you've already withdrawn.
 
-After 120 days, your remaining balance is released and you can withdraw it.
+The 120 days count from your last paid order on Polar or the start of offboarding, whichever is later. After that, your organization moves to **offboarded**, and your remaining balance is released for you to withdraw.
 </Warning>
 
 ## How the migration works
@@ -84,11 +83,11 @@ To keep billing seamless, recreate each active subscription on your new provider
 <Warning>
 **Cancel your Polar subscriptions once you've migrated them**
 
-Once a subscription is live on your new provider, cancel the matching Polar subscription so Polar stops generating renewals for it. If you leave both subscriptions active, your customer may be charged twice for the same billing period.
+Once a subscription is live on your new provider, cancel the matching Polar subscription so Polar stops generating renewals for it. Open it in **Sales → Subscriptions**, or use the API or CLI. See [Manage subscriptions](/features/subscriptions/manage). If you leave both subscriptions active, your customer may be charged twice for the same billing period.
 
 Your existing subscriptions will continue to renew on Polar until you cancel them. We recommend migrating customers to your new provider and canceling the corresponding Polar subscriptions as soon as possible.
 
-The 120-day holding period begins after your final transaction on Polar. Leaving subscriptions active will continue generating transactions and delay the release of your remaining balance.
+The 120-day holding period runs from your last paid order on Polar. Leaving subscriptions active will continue generating transactions and delay the release of your remaining balance.
 </Warning>
 
 ## Withdrawing your remaining balance
@@ -123,3 +122,11 @@ After the 120-day holding period ends, your remaining balance is released and yo
     Email [support@polar.sh](mailto:support@polar.sh) with your destination account and we'll take it from there.
   </Accordion>
 </AccordionGroup>
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Account reviews](/merchant-of-record/account-reviews#organization-statuses) | What the `offboarding` and `offboarded` statuses allow |
+| [Balance and payouts](/features/finance/payouts) | Withdraw your balance and minimum payout amounts |
+| [Manage subscriptions](/features/subscriptions/manage) | Cancel subscriptions on Polar |

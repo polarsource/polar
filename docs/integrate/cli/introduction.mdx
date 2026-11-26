@@ -1,16 +1,21 @@
 ---
 title: "Polar CLI"
 sidebarTitle: "Introduction"
-description: "Forward webhooks to your machine, trigger sample events and manage your Polar sessions from the terminal"
+description: "Install the Polar CLI to manage 22 API resources from your terminal, test webhooks locally, create access tokens and set up coding agents."
 ---
 
-The Polar CLI brings your Polar organization to your terminal. Use it to receive
-webhooks on your local machine while you build, send realistic sample events to
-your handler, and switch between your sandbox and production organizations.
+The Polar CLI brings your Polar organization to your terminal. It does three jobs:
 
-<CardGroup cols={3}>
+- **Manage resources.** Commands for 22 API resources, from products and customers to meters and webhook endpoints. See [Resource commands](/integrate/cli/resources).
+- **Test webhooks.** Forward your organization's webhooks to your local server and trigger sample events. See [Webhooks](/integrate/cli/webhooks).
+- **Set up agents.** `polar agent setup` installs the Polar plugin, MCP servers and skills for Claude Code, Codex and Cursor. See [Skills and plugins](/agents/skills-and-plugins).
+
+<CardGroup cols={2}>
   <Card title="Authentication" icon="key" href="/integrate/cli/authentication">
-    Sign in to sandbox and production, and choose the organization you work on.
+    Sign in to sandbox and production, choose the organization and create access tokens.
+  </Card>
+  <Card title="Resource commands" icon="cube" href="/integrate/cli/resources">
+    Naming, JSON input, field selection and confirmation prompts.
   </Card>
   <Card title="Webhooks" icon="webhook" href="/integrate/cli/webhooks">
     Receive real webhooks locally and trigger sample events on demand.
@@ -22,27 +27,49 @@ your handler, and switch between your sandbox and production organizations.
 
 ## Installation
 
-The CLI ships as a single binary for macOS (Apple Silicon and Intel), Linux
-(x64) and Windows through WSL.
+The CLI ships as a single binary for macOS (Apple Silicon and Intel), Linux (x64 and arm64) and Windows (x64).
 
-```bash Terminal
-curl -fsSL https://polar.sh/install.sh | bash
-```
+<Tabs>
+  <Tab title="macOS and Linux">
+    ```bash Terminal
+    curl -fsSL https://polar.sh/install.sh | bash
+    ```
 
-Or with your package manager, on any platform. pnpm and bun block install
-scripts by default, and the flags below allow the one that unpacks the binary:
+    The script installs `polar` to `/usr/local/bin` and asks for `sudo` if that directory isn't writable.
+  </Tab>
+  <Tab title="Windows">
+    In PowerShell:
 
-```bash Terminal
-npm install -g @polar-sh/cli
-pnpm add -g --allow-build=@polar-sh/cli @polar-sh/cli
-bun install -g --trust @polar-sh/cli
-```
+    ```powershell PowerShell
+    irm https://polar.sh/install.ps1 | iex
+    ```
+
+    The script installs `polar.exe` to `%USERPROFILE%\.polar\bin` and adds it to your user `PATH`. Restart other open terminals to pick it up.
+  </Tab>
+  <Tab title="Package managers">
+    On any platform. pnpm and bun block install scripts by default, and the flags below allow the one that unpacks the binary:
+
+    ```bash Terminal
+    npm install -g @polar-sh/cli
+    pnpm add -g --allow-build=@polar-sh/cli @polar-sh/cli
+    bun install -g --trust @polar-sh/cli
+    ```
+  </Tab>
+</Tabs>
 
 Check that it works:
 
 ```bash Terminal
 polar --version
 ```
+
+Then sign in to the sandbox:
+
+```bash Terminal
+polar auth login --sandbox
+```
+
+Run `polar` with no arguments to see the version, the environments you're signed in to and the active organization.
 
 ## Updating
 
@@ -52,6 +79,8 @@ available. Install it with:
 ```bash Terminal
 polar update
 ```
+
+`polar update` detects how the CLI was installed. Override it with `--method` (`binary`, `npm`, `pnpm`, `bun`, `yarn` or `vp`).
 
 ## Shell completions
 
@@ -79,4 +108,13 @@ To opt out, set either variable in your environment:
 export POLAR_CLI_TELEMETRY_OPTOUT=1
 ```
 
-The standard `DO_NOT_TRACK=1` is honoured as well.
+The standard `DO_NOT_TRACK=1` is honored as well.
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Authentication](/integrate/cli/authentication) | Sessions, organizations, `polar auth token` and CI |
+| [Resource commands](/integrate/cli/resources) | How resource commands take input and print output |
+| [Webhooks](/integrate/cli/webhooks) | `polar webhook listen` and `polar webhook trigger` |
+| [Build with agents](/agents/overview) | The CLI next to the MCP server and plugin |

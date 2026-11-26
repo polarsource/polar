@@ -1,189 +1,282 @@
 ---
 title: "Meters"
-description: "Creating and managing meters"
+description: "Create a meter that filters and aggregates events into usage, and look up its filter operators, aggregation functions, units and edit rules."
 ---
 
-import Meters from "/snippets/usage/meters.mdx";
+A **meter** turns events into a usage number per customer. Its **filter** selects events, and its **aggregation** adds them up: count them, or sum, average, or take the minimum or maximum of a property. A meter works on its own as a usage report. Metered prices and credits attach to a meter when you want to charge for that usage. See [Usage](/concepts/usage) for the full picture.
 
-<Meters />
+The examples on this page use the sandbox and API version `2026-10`.
 
-## Creating a Meter
+## Create a meter
 
-To create a meter, [open the Meters page](https://polar.sh/to/dashboard/products/meters) and click the "Create Meter" button.
+This meter sums `total_tokens` across `ai_usage` events, the events sent in [Send events](/features/usage-based-billing/event-ingestion).
 
-<img
-  className="block dark:hidden"
-  src="/assets/features/usage/create-meter.light.png"
-/>
-<img
-  className="hidden dark:block"
-  src="/assets/features/usage/create-meter.dark.png"
-/>
+<Tabs>
+  <Tab title="Dashboard">
+    - Open **Products → Meters**
+    - Click **Create Meter**
+    - Set **Name** to "AI tokens"
+    - Under **Filters**, add a condition: **Name** equals `ai_usage`
+    - Set **Aggregation** to **Sum** over the property `total_tokens`
+    - Set **Unit** to **Token**
+    - Click **Create Meter**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar meters create --name "AI tokens" --unit token \
+      --filter '{"conjunction":"and","clauses":[{"property":"name","operator":"eq","value":"ai_usage"}]}' \
+      --aggregation '{"func":"sum","property":"total_tokens"}'
+    ```
+
+    See the [`meters` reference](/integrate/cli/reference/meters).
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Create a meter called "AI tokens" in my Polar sandbox organization that sums total_tokens across ai_usage events, with the token unit.
+    ```
+
+    Uses the `meters_create` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+From your code:
+
+<CodeGroup>
+```typescript TypeScript
+const meter = await polar.meters.create({
+  name: "AI tokens",
+  unit: "token",
+  filter: {
+    conjunction: "and",
+    clauses: [{ property: "name", operator: "eq", value: "ai_usage" }],
+  },
+  aggregation: { func: "sum", property: "total_tokens" },
+});
+```
+
+```python Python
+meter = polar.meters.create(
+    name="AI tokens",
+    unit="token",
+    filter={
+        "conjunction": "and",
+        "clauses": [{"property": "name", "operator": "eq", "value": "ai_usage"}],
+    },
+    aggregation={"func": "sum", "property": "total_tokens"},
+)
+```
+
+```bash cURL
+export METER_ID=$(curl -s -X POST https://sandbox-api.polar.sh/v1/meters/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "AI tokens",
+    "unit": "token",
+    "filter": {
+      "conjunction": "and",
+      "clauses": [{ "property": "name", "operator": "eq", "value": "ai_usage" }]
+    },
+    "aggregation": { "func": "sum", "property": "total_tokens" }
+  }' | jq -r .id)
+```
+</CodeGroup>
+
+The name needs at least 3 characters. It's shown to customers on invoices and in the Customer Portal.
+
+A new meter counts events you've already sent, so you can add a meter later without changing your code.
 
 ## Filters
 
-A filter is a set of clauses that are combined using conjunctions. They're used to filter events that you've ingested into Polar.
+A filter is a `conjunction` (`and` or `or`) and a list of `clauses`. Each clause compares one property of the event with a value. A clause can itself be a filter, so you can nest groups. In the dashboard, the top level holds condition groups: **Add condition group** adds one and **Add condition** adds a clause to it.
 
-<img
-  className="block dark:hidden"
-  src="/assets/features/usage/filter.light.png"
-/>
-<img
-  className="hidden dark:block"
-  src="/assets/features/usage/filter.dark.png"
-/>
+```json
+{
+  "conjunction": "or",
+  "clauses": [
+    { "property": "name", "operator": "eq", "value": "ai_usage" },
+    {
+      "conjunction": "and",
+      "clauses": [
+        { "property": "name", "operator": "eq", "value": "agent_run" },
+        { "property": "model", "operator": "like", "value": "gpt" }
+      ]
+    }
+  ]
+}
+```
 
-### Clauses
+### Properties
 
-A clause is a condition that an event must meet to be included in the meter.
+| Property | Matches |
+| --- | --- |
+| `name` | The event name |
+| `source` | `user` for your events, `system` for events Polar writes |
+| `timestamp` | The event time, compared as a Unix timestamp in seconds |
+| Any other key | The metadata key with that name. `model` reads `metadata.model`. |
 
-#### Property
+Use dot notation to reach into `_llm` and `_cost`, for example `_llm.total_tokens` or `_cost.amount`. A path has at most 5 levels and 255 characters. A leading `metadata.` is optional.
 
-Properties are the properties of the event that you want to filter on.
+### Operators
 
-If you want to match on a metadata field, you can use the metadata key directly. No need to include a `metadata.` prefix.
+| Dashboard | API | Works on |
+| --- | --- | --- |
+| equals | `eq` | Strings, numbers, booleans |
+| does not equal | `ne` | Strings, numbers, booleans |
+| is greater than | `gt` | Numbers, strings |
+| is greater than or equal to | `gte` | Numbers, strings |
+| is less than | `lt` | Numbers, strings |
+| is less than or equal to | `lte` | Numbers, strings |
+| contains | `like` | Strings |
+| does not contain | `not_like` | Strings |
 
-#### Operator
-
-Operators are the operators that you want to use to filter the events.
-
-- **Equals**
-- **Not equals**
-- **Greater Than**
-- **Greater Than or Equals**
-- **Less Than**
-- **Less Than or Equals**
-- **Contains**
-- **Does Not Contain**
-
-#### Value
-
-Values are automatically parsed in the filter builder. They're parsed in the following order:
-
-1. Number — Tries to parse the value as number
-2. Boolean — Checks if value is "true" or "false"
-3. String — Treats value as string as fallback
-
-### Conjunctions
-
-A conjunction is a logical operator that combines two or more clauses.
-
-- **and** — All clauses must be true for the event to be included.
-- **or** — At least one clause must be true for the event to be included.
+A value is a string (up to 1,000 characters), an integer or a boolean. Types must match: the string `"77"` doesn't equal the number `77`. The dashboard reads what you type as a number first, then as `true` or `false`, and otherwise as a string.
 
 ## Aggregation
 
-The aggregation is the function that is used to aggregate the events that match the filter.
-
-For example, if you want to count the number of events that match the filter, you can use the **Count** aggregation. If you want to sum the value of a metadata field, you can use the **Sum** aggregation.
-
-- **Count** — Counts the number of events that match the filter.
-- **Sum** — Sums the value of a property.
-- **Average** — Computes the average value of a property.
-- **Minimum** — Computes the minimum value of a property.
-- **Maximum** — Computes the maximum value of a property.
-- **Unique** (deprecated) — Counts the number of unique values of a property.
+| Function | API | Result |
+| --- | --- | --- |
+| **Count** | `count` | The number of matching events. Takes no property. |
+| **Sum** | `sum` | The sum of a property |
+| **Average** | `avg` | The average of a property |
+| **Minimum** | `min` | The smallest value of a property |
+| **Maximum** | `max` | The largest value of a property |
+| **Unique** | `unique` | The number of distinct values of a property. Deprecated. |
 
 <Note>
-  The **Unique** aggregation is deprecated and disabled for new accounts.
+  **Unique** is deprecated, and some organizations can't create it. Use one of the other functions for new meters.
 </Note>
+
+Like filters, the aggregation property is a metadata key or a dot path such as `_llm.total_tokens`.
 
 <AccordionGroup>
   <Accordion title="Example">
 
-Consider the following events:
+Four events:
 
 ```json
 [
-  {
-    "name": "ai_usage",
-    "external_customer_id": "cus_123",
-    "metadata": {
-      "total_tokens": 10
-    }
-  },
-  {
-    "name": "ai_usage",
-    "external_customer_id": "cus_123",
-    "metadata": {
-      "total_tokens": 20
-    }
-  },
-  {
-    "name": "ai_usage",
-    "external_customer_id": "cus_123",
-    "metadata": {
-      "total_tokens": 30
-    }
-  },
-  {
-    "name": "ai_usage",
-    "external_customer_id": "cus_123",
-    "metadata": {
-      "total_tokens": 30
-    }
-  }
+  { "name": "ai_usage", "external_customer_id": "user_123", "metadata": { "total_tokens": 10 } },
+  { "name": "ai_usage", "external_customer_id": "user_123", "metadata": { "total_tokens": 20 } },
+  { "name": "ai_usage", "external_customer_id": "user_123", "metadata": { "total_tokens": 30 } },
+  { "name": "ai_usage", "external_customer_id": "user_123", "metadata": { "total_tokens": 30 } }
 ]
 ```
 
-Here is the result of each aggregation function, over the `total_tokens` metadata property:
+Each function over `total_tokens`:
 
-- **Count**: 4 units
-- **Sum**: 90 units
-- **Average**: 22.5 units
-- **Minimum**: 10 units
-- **Maximum**: 30 units
-- **Unique**: 3 units
+- **Count**: 4
+- **Sum**: 90
+- **Average**: 22.5
+- **Minimum**: 10
+- **Maximum**: 30
+- **Unique**: 3
 
 </Accordion>
 </AccordionGroup>
 
-If you want to use a metadata property in the aggregation, you can use the metadata property directly. No need to include a `metadata.` prefix.
-
 ## Unit
 
-The unit controls how prices for this meter are **formatted and displayed** to customers — on invoices, in the customer portal, and in your checkout. It does not affect billing calculation; it is purely presentational.
+The unit controls how prices on this meter are **displayed** to customers: on invoices, in the Customer Portal and at checkout. It doesn't change how usage is counted or billed.
 
-| Unit | Display format | Best for |
-| -------- | -------------------------- | ----------------------------------------- |
-| Scalar | $0.05 / unit | Generic counts (API calls, events, seats) |
-| Token | $20.00 / 1M tokens | LLM token consumption |
-| Custom | Configurable (see below) | Any unit not covered above |
+| Unit | API | Display | Use for |
+| --- | --- | --- | --- |
+| **Scalar** | `scalar` | $0.05 / unit | Generic counts: API calls, requests, events. The default. |
+| **Token** | `token` | $20.00 / 1M tokens | LLM tokens |
+| **Custom** | `custom` | Your own label | Anything else |
 
-### Custom unit
+With **Custom**, two more fields appear:
 
-Select **Custom** to define your own display format. Two additional fields appear:
+- **Unit label** (`custom_label`): the name shown after the price, up to 32 characters. `gigabyte` shows as `$0.023 / gigabyte`. Required.
+- **Unit Multiplier** (`custom_multiplier`): shows the price per that many units. `1000` shows the price per 1,000 units. Defaults to 1.
 
-- **Unit label** — The singular name shown after the price, e.g. `gigabyte` displays as `$0.023 / gigabyte`.
-- **Unit multiplier** — Scales the displayed price so you can show a more readable denomination. For example, a multiplier of `1000` shows the price per 1 000 units rather than per single unit.
+The multiplier only changes the display. The price you set is still per single unit.
 
-<Tip>
-  The unit multiplier only affects how the price is shown. The raw `unit_amount`
-  you set is still the price per single event unit — the multiplier scales the
-  display amount for readability.
-</Tip>
+## Read usage
 
-## Example
+The meter's page in **Products → Meters** has three tabs:
 
-The following Meter Filter & Aggregation will match events that have the name `openai-usage` and sum units over metadata property `completionTokens`.
+- **Overview**: a usage chart and the **Current Month**, **Previous Month** and **All Time** totals.
+- **Events**: the events the meter matched.
+- **Customers**: usage per customer.
 
-<img
-  className="block dark:hidden"
-  src="/assets/features/usage/meter.light.png"
-/>
-<img
-  className="hidden dark:block"
-  src="/assets/features/usage/meter.dark.png"
-/>
+To read usage over a time range from your code, call the quantities endpoint. Pass `external_customer_id` or `customer_id` to scope it to one customer:
 
-<Tip>
-  You can **Preview** the events matched by the meter while creating it.
-</Tip>
+<CodeGroup>
+```typescript TypeScript
+const quantities = await polar.meters.quantities(meter.id, {
+  start_timestamp: "2026-11-01T00:00:00Z",
+  end_timestamp: "2026-12-01T00:00:00Z",
+  interval: "day",
+  external_customer_id: "user_123",
+});
+```
 
-## Good to know
+```python Python
+quantities = polar.meters.quantities(
+    meter.id,
+    start_timestamp="2026-11-01T00:00:00Z",
+    end_timestamp="2026-12-01T00:00:00Z",
+    interval="day",
+    external_customer_id="user_123",
+)
+```
 
-A few things to keep in mind when creating and managing meters:
+```bash cURL
+curl -G "https://sandbox-api.polar.sh/v1/meters/$METER_ID/quantities" \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  --data-urlencode "start_timestamp=2026-11-01T00:00:00Z" \
+  --data-urlencode "end_timestamp=2026-12-01T00:00:00Z" \
+  --data-urlencode "interval=day" \
+  --data-urlencode "external_customer_id=user_123"
+```
+</CodeGroup>
 
-### Updating a Meter
+```bash
+polar meters quantities $METER_ID --external-customer-id user_123 \
+  --start-timestamp 2026-11-01T00:00:00Z --end-timestamp 2026-12-01T00:00:00Z --interval day
+```
 
-You may update a meter's filters or aggregation function as long as the meter doesn't have any processed events or does not have any customer purchase associated with it.
+For a customer's current balance against their credits, read the [customer state](/integrate/customer-state) or `polar customer_meters list --external-customer-id user_123`.
+
+## Edit a meter
+
+Open the meter and click **Edit Meter**, or call `polar meters update <id>`. You can always change the name and unit.
+
+**The filter and aggregation lock** once the meter has billed events. Changing them then would change usage customers were already charged for. The API rejects the change with "This field can't be updated because the meter is already aggregating events." Create a new meter instead.
+
+## Archive a meter
+
+Archive a meter you no longer use with **Archive Meter** on its page, or `polar meters update <id> --is-archived`. Polar blocks archiving while the meter is still used by:
+
+- A metered price on an active product.
+- An active subscription that bills it.
+- A **Meter Credits** benefit.
+
+Archived meters stop counting toward billing. **Unarchive Meter** restores it.
+
+## From the CLI or your agent
+
+| Task | CLI | MCP operation |
+| --- | --- | --- |
+| Create a meter | `polar meters create` | `meters_create` |
+| List or get meters | `polar meters list`, `polar meters get <id>` | `meters_list`, `meters_get` |
+| Read usage over time | `polar meters quantities <id>` | `meters_quantities` |
+| Rename, edit or archive | `polar meters update <id>` | `meters_update` |
+| Read customer balances | `polar customer_meters list` | `customer_meters_list` |
+
+<Visibility for="agents">
+  Create meters in the sandbox until the user says otherwise. Over HTTP this is `POST /v1/meters/` with `name`, `filter` and `aggregation`. Filter operators are `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `like`, `not_like`. Aggregation functions are `count`, `sum`, `avg`, `min`, `max`; don't use the deprecated `unique`. Don't try to change `filter` or `aggregation` on a meter that has billed events; create a new meter.
+</Visibility>
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Usage](/concepts/usage) | How events, meters, metered prices and credits fit together |
+| [Send events](/features/usage-based-billing/event-ingestion) | The events meters aggregate |
+| [Usage-based pricing](/features/usage-based-billing/billing) | Charge for a meter's usage |
+| [Credits](/features/usage-based-billing/credits) | Prepay usage on a meter |
+| [Create Meter API](/api-reference/current/meters/create-meter) | API reference |

@@ -515,7 +515,7 @@ The customer state object contains:
 
 Thus, with that single object, you have all the required information to check if you should provision access to your service or not.
 
-[You can learn more about the Polar Customer State in the Polar Docs](https://docs.polar.sh/integrate/customer-state).
+[You can learn more about the Polar Customer State in the Polar Docs](https://polar.sh/docs/integrate/customer-state).
 
 ### Benefits, Orders & Subscriptions
 
@@ -618,7 +618,7 @@ const auth = betterAuth({
 
 Polar's Usage Based Billing builds entirely on event ingestion. Ingest events from your application, create Meters to represent that usage, and add metered prices to Products to charge for it.
 
-[Learn more about Usage Based Billing in the Polar Docs.](https://docs.polar.sh/features/usage-based-billing/introduction)
+[Learn more about Usage Based Billing in the Polar Docs.](https://polar.sh/docs/concepts/usage)
 
 ```typescript
 const { data: ingested } = await authClient.usage.ingest({

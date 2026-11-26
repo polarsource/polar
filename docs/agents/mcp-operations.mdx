@@ -1,0 +1,263 @@
+---
+title: "MCP operations"
+description: "Look up the name of a Polar MCP operation, the API request behind it, and whether it needs API version 2027-01."
+---
+
+The [Polar MCP server](/integrate/mcp) can call 108 Polar API operations. Your agent finds them with the `search` tool and calls them with `execute`. With `?codemode=false` on the server URL, each operation is its own tool instead.
+
+Operations are named `{resource}_{action}`, like `customers_get_state_external`. The [Polar CLI](/integrate/cli/resources) uses the same names: `customers_get_state_external` is `polar customers get_state_external`, and `customers_members_list` is `polar customers members list`.
+
+<Note>
+  The MCP server calls the Polar API with `Polar-Version: 2027-01`, the [next API version](/api-reference/next/introduction). Request and response bodies follow the 2027-01 schema, which can differ from the 2026-10 examples elsewhere in these docs. Operations marked † exist only in 2027-01.
+</Note>
+
+In [read-only mode](/integrate/mcp#read-only-mode) (`?readonly=true`), only `GET` operations work.
+
+<Visibility for="agents">
+  Use these names in `execute` code and when you tell the user which operation a prompt uses. Don't invent operations that aren't listed here. For anything below under "Not available", use the API or SDK, or point the user to the dashboard.
+</Visibility>
+
+## Not available from the MCP server
+
+These have no MCP operation. Use the API, an SDK or the dashboard:
+
+- Creating or updating Checkout Sessions, and creating customer sessions (Customer Portal links).
+- Ingesting or listing events.
+- Creating subscriptions. Creating, finalizing or exporting orders.
+- Creating or updating organizations, including every setting.
+- Uploading files. Validating, activating or deactivating license keys.
+- Disputes.
+- Creating or revoking organization access tokens.
+- Balance, payouts, payout accounts, transactions, taxes, organization members, SSO and domains (dashboard only).
+
+## Organizations
+
+| Operation | Request | Description |
+| --- | --- | --- |
+| `organizations_list` | `GET /v1/organizations/` | List organizations. |
+| `organizations_get` | `GET /v1/organizations/{id}` | Get an organization by ID. |
+
+## Products
+
+| Operation | Request | Description |
+| --- | --- | --- |
+| `products_list` | `GET /v1/products/` | List products. |
+| `products_create` | `POST /v1/products/` | Create a product. |
+| `products_get` | `GET /v1/products/{id}` | Get a product by ID. |
+| `products_update` | `PATCH /v1/products/{id}` | Update a product. |
+| `products_delete` | `DELETE /v1/products/{id}` | Delete a product that has no orders, subscriptions, trials or discounts. Archive it otherwise. |
+| `products_update_benefits` | `POST /v1/products/{id}/benefits` | Update benefits granted by a product. |
+
+## Benefits
+
+| Operation | Request | Description |
+| --- | --- | --- |
+| `benefits_list` | `GET /v1/benefits/` | List benefits. |
+| `benefits_create` | `POST /v1/benefits/` | Create a benefit, for example license keys, file downloads or Discord access. |
+| `benefits_get` | `GET /v1/benefits/{id}` | Get a benefit by ID. |
+| `benefits_update` | `PATCH /v1/benefits/{id}` | Update a benefit. |
+| `benefits_delete` | `DELETE /v1/benefits/{id}` | Delete a benefit and revoke every grant of it. |
+| `benefits_files` | `GET /v1/benefits/{id}/files` | List the downloadable files for a benefit with their download statistics. |
+| `benefits_grants` | `GET /v1/benefits/{id}/grants` | List the grants of one benefit, for example to check whether a customer has it. |
+
+## Benefit grants
+
+| Operation | Request | Description |
+| --- | --- | --- |
+| `benefit_grants_list` | `GET /v1/benefit-grants/` | List benefit grants across all benefits. |
+| `benefit_grants_create` † | `POST /v1/benefit-grants/` | Manually grant a benefit to a customer or one of their members. No CLI command. |
+| `benefit_grants_update` † | `PATCH /v1/benefit-grants/{id}` | Undo a manual revocation of a benefit grant. No CLI command. |
+| `benefit_grants_revoke` † | `DELETE /v1/benefit-grants/{id}` | Manually revoke a benefit grant, including one from a purchase. No CLI command. |
+
+## Discounts
+
+| Operation | Request | Description |
+| --- | --- | --- |
+| `discounts_list` | `GET /v1/discounts/` | List discounts. |
+| `discounts_create` | `POST /v1/discounts/` | Create a discount. |
+| `discounts_get` | `GET /v1/discounts/{id}` | Get a discount by ID. |
+| `discounts_update` | `PATCH /v1/discounts/{id}` | Update a discount. |
+| `discounts_delete` | `DELETE /v1/discounts/{id}` | Delete a discount. |
+
+## Checkout Links
+
+| Operation | Request | Description |
+| --- | --- | --- |
+| `checkout_links_list` | `GET /v1/checkout-links/` | List checkout links. |
+| `checkout_links_create` | `POST /v1/checkout-links/` | Create a checkout link. |
+| `checkout_links_get` | `GET /v1/checkout-links/{id}` | Get a checkout link by ID. |
+| `checkout_links_update` | `PATCH /v1/checkout-links/{id}` | Update a checkout link. |
+| `checkout_links_delete` | `DELETE /v1/checkout-links/{id}` | Delete a checkout link. |
+
+## Checkout Sessions
+
+| Operation | Request | Description |
+| --- | --- | --- |
+| `checkouts_list` | `GET /v1/checkouts/` | List checkout sessions. |
+| `checkouts_get` | `GET /v1/checkouts/{id}` | Get a checkout session by ID. |
+
+## Custom fields
+
+| Operation | Request | Description |
+| --- | --- | --- |
+| `custom_fields_list` | `GET /v1/custom-fields/` | List custom fields. |
+| `custom_fields_create` | `POST /v1/custom-fields/` | Create a custom field. |
+| `custom_fields_get` | `GET /v1/custom-fields/{id}` | Get a custom field by ID. |
+| `custom_fields_update` | `PATCH /v1/custom-fields/{id}` | Update a custom field. |
+| `custom_fields_delete` | `DELETE /v1/custom-fields/{id}` | Delete a custom field. |
+
+## Customers
+
+| Operation | Request | Description |
+| --- | --- | --- |
+| `customers_list` | `GET /v1/customers/` | List customers. |
+| `customers_create` | `POST /v1/customers/` | Create a customer. Set `external_id` to the customer's ID in your system to look it up by that ID. |
+| `customers_get` | `GET /v1/customers/{id}` | Get a customer by ID. |
+| `customers_update` | `PATCH /v1/customers/{id}` | Update a customer. |
+| `customers_delete` | `DELETE /v1/customers/{id}` | Delete a customer. Cancels their subscriptions, revokes their benefits and clears `external_id`. |
+| `customers_get_external` | `GET /v1/customers/external/{external_id}` | Get a customer by external ID. |
+| `customers_update_external` | `PATCH /v1/customers/external/{external_id}` | Update a customer by external ID. |
+| `customers_delete_external` | `DELETE /v1/customers/external/{external_id}` | Delete a customer by external ID. Cancels their subscriptions and revokes their benefits. |
+| `customers_get_state` | `GET /v1/customers/{id}/state` | Get a customer's state: active subscriptions, granted benefits and meter balances. |
+| `customers_get_state_external` | `GET /v1/customers/external/{external_id}/state` | Get a customer's state by external ID. |
+| `customers_list_payment_methods` | `GET /v1/customers/{id}/payment-methods` | Get saved payment methods of a customer. |
+| `customers_list_payment_methods_external` | `GET /v1/customers/external/{external_id}/payment-methods` | Get saved payment methods of a customer by external ID. |
+
+## Customer members
+
+| Operation | Request | Description |
+| --- | --- | --- |
+| `customers_members_list` | `GET /v1/customers/{id}/members` | List the members of a customer. |
+| `customers_members_create` | `POST /v1/customers/{id}/members` | Add a member to a team customer. |
+| `customers_members_list_external` | `GET /v1/customers/external/{external_id}/members` | List the members of a customer identified by its external ID. |
+| `customers_members_create_external` | `POST /v1/customers/external/{external_id}/members` | Add a member to a team customer, by the customer's external ID. |
+| `customers_members_get` | `GET /v1/customers/{id}/members/{member_id}` | Get a member of a customer by its ID. |
+| `customers_members_update` | `PATCH /v1/customers/{id}/members/{member_id}` | Update a member of a customer. Only name, email and role can be updated. |
+| `customers_members_delete` | `DELETE /v1/customers/{id}/members/{member_id}` | Delete a member of a customer. |
+| `customers_members_get_external` | `GET /v1/customers/external/{external_id}/members/{member_external_id}` | Get a member by external ID for a customer identified by its external ID. |
+| `customers_members_update_external` | `PATCH /v1/customers/external/{external_id}/members/{member_external_id}` | Update a member by external ID for a customer identified by its external ID. |
+| `customers_members_delete_external` | `DELETE /v1/customers/external/{external_id}/members/{member_external_id}` | Delete a member by external ID for a customer identified by its external ID. |
+
+## Customer seats
+
+| Operation | Request | Description |
+| --- | --- | --- |
+| `customer_seats_list_seats` | `GET /v1/customer-seats` | List seats for a subscription or order. |
+| `customer_seats_assign_seat` | `POST /v1/customer-seats` | Assign a seat for a subscription or order. |
+| `customer_seats_revoke_seat` | `DELETE /v1/customer-seats/{seat_id}` | Revoke a customer seat. |
+| `customer_seats_resend_invitation` | `POST /v1/customer-seats/{seat_id}/resend` | Resend an invitation for a pending customer seat. |
+
+## Subscriptions
+
+| Operation | Request | Description |
+| --- | --- | --- |
+| `subscriptions_list` | `GET /v1/subscriptions/` | List subscriptions. |
+| `subscriptions_get` | `GET /v1/subscriptions/{id}` | Get a subscription by ID. |
+| `subscriptions_update` | `PATCH /v1/subscriptions/{id}` | Update a subscription. |
+| `subscriptions_revoke` | `DELETE /v1/subscriptions/{id}` | Revoke a subscription: cancel it immediately. |
+
+## Orders
+
+| Operation | Request | Description |
+| --- | --- | --- |
+| `orders_list` | `GET /v1/orders/` | List orders. |
+| `orders_get` | `GET /v1/orders/{id}` | Get an order by ID. |
+| `orders_update` | `PATCH /v1/orders/{id}` | Update an order. |
+| `orders_invoice` | `GET /v1/orders/{id}/invoice` | Get an order's invoice data. |
+| `orders_generate_invoice` | `POST /v1/orders/{id}/invoice` | Trigger generation of an order's invoice. |
+| `orders_receipt` | `GET /v1/orders/{id}/receipt` | Get a presigned URL to download an order's receipt PDF. |
+
+## Refunds
+
+| Operation | Request | Description |
+| --- | --- | --- |
+| `refunds_list` | `GET /v1/refunds/` | List refunds. |
+| `refunds_create` | `POST /v1/refunds/` | Create a refund. |
+
+## Payments
+
+| Operation | Request | Description |
+| --- | --- | --- |
+| `payments_list` | `GET /v1/payments/` | List payments. |
+| `payments_get` | `GET /v1/payments/{id}` | Get a payment by ID. |
+
+## Events
+
+| Operation | Request | Description |
+| --- | --- | --- |
+| `events_list_names` | `GET /v1/events/names` | List event names. |
+| `events_get` | `GET /v1/events/{id}` | Get an event by ID. |
+
+## Event types
+
+| Operation | Request | Description |
+| --- | --- | --- |
+| `event_types_list` | `GET /v1/event-types/` | List event types with aggregated statistics. |
+| `event_types_update` | `PATCH /v1/event-types/{id}` | Update an event type's label. |
+
+## Meters
+
+| Operation | Request | Description |
+| --- | --- | --- |
+| `meters_list` | `GET /v1/meters/` | List meters. |
+| `meters_create` | `POST /v1/meters/` | Create a meter. |
+| `meters_get` | `GET /v1/meters/{id}` | Get a meter by ID. |
+| `meters_get_external` † | `GET /v1/meters/external/{external_id}` | Get a meter by external ID. |
+| `meters_update` | `PATCH /v1/meters/{id}` | Update a meter. |
+| `meters_quantities` | `GET /v1/meters/{id}/quantities` | Get quantities of a meter over a time period. |
+
+## Customer meters
+
+| Operation | Request | Description |
+| --- | --- | --- |
+| `customer_meters_list` | `GET /v1/customer-meters/` | List customer meters. |
+| `customer_meters_get` | `GET /v1/customer-meters/{id}` | Get a customer meter by ID. |
+| `customer_meters_credits` † | `POST /v1/customer-meters/credits` | Manually grant credits on a customer meter. |
+| `customer_meters_reverse_credit` † | `POST /v1/customer-meters/credits/{id}/reverse` | Reverse a manual credit, removing the units the customer has yet to use. No CLI command. |
+
+## License keys
+
+| Operation | Request | Description |
+| --- | --- | --- |
+| `license_keys_list` | `GET /v1/license-keys/` | List license keys. |
+| `license_keys_get` | `GET /v1/license-keys/{id}` | Get a license key. |
+| `license_keys_update` | `PATCH /v1/license-keys/{id}` | Update a license key. |
+| `license_keys_rotate` | `POST /v1/license-keys/{id}/rotate` | Rotate a license key. The old key string stops validating immediately. |
+| `license_keys_get_activation` | `GET /v1/license-keys/{id}/activations/{activation_id}` | Get a license key activation. |
+
+## Files
+
+| Operation | Request | Description |
+| --- | --- | --- |
+| `files_list` | `GET /v1/files/` | List files. |
+| `files_delete` | `DELETE /v1/files/{id}` | Delete a file. |
+
+## Metrics
+
+| Operation | Request | Description |
+| --- | --- | --- |
+| `metrics_get` | `GET /v1/metrics/` | Get metrics about your orders and subscriptions. Amounts are in cents. |
+| `metrics_limits` | `GET /v1/metrics/limits` | Get the interval limits for the metrics endpoint. |
+
+## Webhook endpoints
+
+| Operation | Request | Description |
+| --- | --- | --- |
+| `webhooks_list_webhook_endpoints` | `GET /v1/webhooks/endpoints` | List webhook endpoints. |
+| `webhooks_create_webhook_endpoint` | `POST /v1/webhooks/endpoints` | Create a webhook endpoint. |
+| `webhooks_get_webhook_endpoint` | `GET /v1/webhooks/endpoints/{id}` | Get a webhook endpoint by ID. |
+| `webhooks_get_external_webhook_endpoint` † | `GET /v1/webhooks/endpoints/external/{external_id}` | Get a webhook endpoint by external ID. No CLI command. |
+| `webhooks_update_webhook_endpoint` | `PATCH /v1/webhooks/endpoints/{id}` | Update a webhook endpoint. |
+| `webhooks_delete_webhook_endpoint` | `DELETE /v1/webhooks/endpoints/{id}` | Delete a webhook endpoint. |
+| `webhooks_reset_webhook_endpoint_secret` | `PATCH /v1/webhooks/endpoints/{id}/secret` | Regenerate a webhook endpoint secret. |
+| `webhooks_list_webhook_deliveries` | `GET /v1/webhooks/deliveries` | List webhook deliveries: every attempt to deliver an event to an endpoint. |
+| `webhooks_redeliver_webhook_event` | `POST /v1/webhooks/events/{id}/redeliver` | Schedule the re-delivery of a webhook event. |
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [MCP server](/integrate/mcp) | Connect your agent, read-only mode and telemetry |
+| [Resource commands](/integrate/cli/resources) | The same operations from the Polar CLI |
+| [Build with agents](/agents/overview) | When to use the plugin, MCP server, CLI or skills |
+| [API reference (2027-01)](/api-reference/next/introduction) | Request and response schemas for every operation |

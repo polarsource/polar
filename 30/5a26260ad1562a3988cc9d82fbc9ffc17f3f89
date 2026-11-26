@@ -1,0 +1,61 @@
+sdk/generator/typescript/template/src/outpost/client.test.ts
+  s_868513325afaca::t_332b4a8a58484b 1319,1322-1323
+  s_868513325afaca::t_fed2b71a82bb9e 1310-1318,1320-1321,1324-1327
+sdk/generator/python/template/tests/outpost/test_client.py
+  s_868513325afaca::t_332b4a8a58484b 2161,2164-2166,2192
+  s_868513325afaca::t_5e7b24bae5e83f 2140-2160,2162-2163,2167-2191,2193-2200,3036
+sdk/generator/python/template/polar/outpost/client.py
+  s_868513325afaca::t_fef6707aa16059 282,286,292-293,597,611,618,628,1184,1193-1194,1625
+sdk/generator/python/template/polar/outpost/state.py
+  s_868513325afaca::t_04b11d26cb602c 5,59-60
+sdk/generator/python/template/tests/benchmarks/test_scripts.py
+  s_868513325afaca::t_5ab84d0fbbdcb6 59,97,109
+sdk/generator/redis/outpost/apply_snapshot.lua
+  s_868513325afaca::t_02e9dc0065fc1d 47-49
+sdk/generator/redis/outpost/confirm.lua
+  s_868513325afaca::t_8407c48e27acfc 1-2,4,9,12-15,18-28,30,37,50-51,88-128,133-134,138-139
+sdk/generator/redis/outpost/read_states.lua
+  s_868513325afaca::t_b926fc997de839 34-35
+sdk/generator/redis/outpost/write_bucket.lua
+  s_868513325afaca::t_b844670b20b501 6-8,16,18,22-23
+sdk/generator/typescript/template/src/outpost/client.ts
+  s_868513325afaca::t_059315049b8c4d 160,178,181,185,187,404,526,967,977-978,1319
+sdk/generator/typescript/template/src/outpost/scripts.bench.ts
+  s_868513325afaca::t_87087e99a4ecfe 32,74,87
+sdk/generator/typescript/template/src/outpost/state.ts
+  s_868513325afaca::t_8d0817fc6107af 10-11,48
+sdk/python/polar/outpost/client.py
+  s_868513325afaca::t_44b0a9f0683c77 267-268,334-336,344,346,350-351,381-382,384,389,392-395,398-408,410,417,430-431,468-508,513-514,518-519,572-574,646,650,656-657,961,975,982,992,1554,1563-1566,2016
+sdk/python/polar/outpost/state.py
+  s_868513325afaca::t_c2ccff8312e050 5,59-62
+sdk/python/tests/benchmarks/test_scripts.py
+  s_868513325afaca::t_a749899aba1fdc 59,97,109
+sdk/python/tests/outpost/test_client.py
+  s_868513325afaca::t_4caa4aca9ed634 2165-2225,3059-3063
+sdk/typescript/src/outpost/client.test.ts
+  s_868513325afaca::t_7fdba9d1558343 1343-1369
+sdk/typescript/src/outpost/client.ts
+  s_868513325afaca::t_729a22c538df48 169,187,190,194,196,409,529,979,989-990,1340
+sdk/typescript/src/outpost/scripts.bench.ts
+  s_868513325afaca::t_dd252839a32108 32,74,87
+sdk/typescript/src/outpost/scripts.ts
+  s_868513325afaca::t_ce75433d3e8c13 35-36,96-98,106,108,112-113,211-213,242-243,245,250,253-256,259-269,271,278,291-292,329-369,374-375,379-380
+sdk/typescript/src/outpost/state.ts
+  s_868513325afaca::t_2e903ecdd5c500 1,47-48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "305a26260ad1562a3988cc9d82fbc9ffc17f3f89",
+  "prompts": {},
+  "sessions": {
+    "s_868513325afaca": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a2138b-136c-7cf0-b8fd-2500c8a89c9c",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

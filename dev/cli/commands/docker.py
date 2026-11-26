@@ -27,6 +27,7 @@ from shared import (
     ROOT_DIR,
     SECRETS_FILE,
     SERVER_DIR,
+    CommandGroup,
     console,
     is_docker_running,
     read_secrets,
@@ -638,7 +639,7 @@ def _print_access_info(ctx: typer.Context, instance: int) -> None:
 
 
 def register(app: typer.Typer, prompt_setup: callable) -> None:
-    docker_app = typer.Typer(help="Isolated Docker development environment")
+    docker_app = typer.Typer(cls=CommandGroup, help="Isolated Docker development environment")
     app.add_typer(docker_app, name="docker")
 
     @docker_app.callback()
@@ -978,7 +979,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
             ),
         ] = False,
         force: Annotated[
-            bool, typer.Option("--force", help="Skip confirmation")
+            bool, typer.Option("--force", "-f", help="Skip confirmation")
         ] = False,
     ) -> None:
         """Remove this instance's app stack and its postgres/redis/S3 data.
@@ -1257,7 +1258,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
     @docker_app.command("prune")
     def docker_prune(
         force: Annotated[
-            bool, typer.Option("--force", help="Skip confirmation")
+            bool, typer.Option("--force", "-f", help="Skip confirmation")
         ] = False,
     ) -> None:
         """Drop registry entries whose path no longer exists, plus all their data.

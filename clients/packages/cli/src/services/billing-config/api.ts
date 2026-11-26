@@ -69,7 +69,6 @@ export const SECTIONS = {
   custom_field: 'custom_fields',
   benefit: 'benefits',
   product: 'products',
-  webhook: 'webhooks',
 } as const satisfies Record<typeof ConfigResource.Type, string>
 
 // The server reports settings changes by dotted path, like `payments.currency`
@@ -251,7 +250,7 @@ export const withDefaultCurrency = (
     )
   })
 
-// Settings, custom fields, benefits, products and webhooks sections need their own scope on top of the meters one
+// Settings, custom fields, benefits and products sections need their own scope on top of the meters one
 export const requiredScopes = (
   config: LoadedConfig,
   access: 'read' | 'write',
@@ -260,14 +259,7 @@ export const requiredScopes = (
     typeof config.input === 'object' && config.input !== null
       ? config.input
       : {}
-  return [
-    'meters',
-    'custom_fields',
-    'benefits',
-    'products',
-    'settings',
-    'webhooks',
-  ]
+  return ['meters', 'custom_fields', 'benefits', 'products', 'settings']
     .filter((section) => section === 'meters' || section in input)
     .map(
       (section) =>

@@ -11,18 +11,16 @@ import {
   productSentence,
   shownDiff,
   usedMeters,
-  webhookSentence,
 } from '@/utils/billing-config/sentences'
 import * as ui from '@/utils/ui'
 
-type Section = 'meters' | 'custom_fields' | 'benefits' | 'products' | 'webhooks'
+type Section = 'meters' | 'custom_fields' | 'benefits' | 'products'
 
 const SECTIONS: ReadonlyArray<Section> = [
   'meters',
   'custom_fields',
   'benefits',
   'products',
-  'webhooks',
 ]
 
 type Sentence = ReadonlyArray<string>
@@ -35,7 +33,6 @@ const SENTENCES: Record<Section, (input: unknown) => Sentence | undefined> = {
   custom_fields: customFieldSentence,
   benefits: benefitSentence,
   products: productSentence,
-  webhooks: webhookSentence,
 }
 
 const COVERED: Record<Section, ReadonlySet<string>> = {
@@ -53,7 +50,6 @@ const COVERED: Record<Section, ReadonlySet<string>> = {
     'benefits',
     'custom_fields',
   ]),
-  webhooks: new Set(['url', 'format', 'events', 'api_version']),
 }
 
 const TOP = ui.INDENT
@@ -238,7 +234,6 @@ export const formatTree = (
     custom_fields: documents(input, 'custom_fields'),
     benefits: documents(input, 'benefits'),
     products: documents(input, 'products'),
-    webhooks: documents(input, 'webhooks'),
   }
 
   const updatedBenefits = updatedIds(entries, 'benefits')

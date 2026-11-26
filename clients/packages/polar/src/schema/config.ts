@@ -32,7 +32,6 @@ import { fixed, free, metered, seats, TaxBehavior, tier, units } from './price'
 import { product, ProductConfig, productPrices } from './product'
 import type { ProductDefinition, ProductHelpers } from './product'
 import { visibilityKey } from './visibility'
-import type { WebhookEntries } from './webhook'
 
 export const SettingsConfig = Schema.Struct({
   payments: Schema.optionalKey(
@@ -328,7 +327,6 @@ type ConnectedConfig<
   Meters extends MeterEntries,
   Benefits extends BenefitEntries,
   Events extends EventDefinitions | undefined,
-  Webhooks extends WebhookEntries,
 > = {
   readonly meters: Readonly<Record<MeterKey<Meters>, MeterConfig>>
   readonly benefits: {
@@ -336,7 +334,6 @@ type ConnectedConfig<
       EntryAt<Benefits, Key>
     >
   }
-  readonly webhooks: Webhooks
 } & (Events extends EventDefinitions
   ? { readonly events: Extract<Events, EventSchemas> }
   : unknown)
@@ -345,15 +342,9 @@ export interface Config<
   Meters extends MeterEntries = MeterEntries,
   Benefits extends BenefitEntries = BenefitEntries,
   Events extends EventDefinitions | undefined = undefined,
-  Webhooks extends WebhookEntries = Record<never, never>,
 > {
   readonly toJSON: () => PolarConfig
-  readonly [runtimeConfig]: () => ConnectedConfig<
-    Meters,
-    Benefits,
-    Events,
-    Webhooks
-  >
+  readonly [runtimeConfig]: () => ConnectedConfig<Meters, Benefits, Events>
 }
 
 const byExternalId = <Resource extends { readonly external_id: string }>(
@@ -634,12 +625,7 @@ export const defineConfig = <
     }),
   })
 
-  type Connected = ConnectedConfig<
-    Meters,
-    Benefits,
-    Events,
-    Record<never, never>
-  >
+  type Connected = ConnectedConfig<Meters, Benefits, Events>
   return {
     toJSON: () => structuredClone(config),
     [runtimeConfig]: () =>
@@ -647,7 +633,6 @@ export const defineConfig = <
         ...(events !== undefined && { events }),
         meters: byExternalId('meter', config.meters),
         benefits: byExternalId('benefit', config.benefits ?? []),
-        webhooks: {},
       }) as Connected,
   }
 }

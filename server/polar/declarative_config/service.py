@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field, create_model
 from sqlalchemy.exc import IntegrityError
 from typing_extensions import TypeForm
 
-from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.auth.models import AuthSubject, is_organization
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
     assert_organization_permission,
@@ -44,8 +44,6 @@ from polar.product.repository import ProductRepository
 from polar.product.service import product as product_service
 from polar.redis import Redis
 from polar.subscription.repository import SubscriptionRepository
-from polar.webhook.repository import WebhookEndpointRepository
-from polar.webhook.schemas import WebhookEndpointCreate, WebhookEndpointUpdate
 from polar.webhook.service import webhook as webhook_service
 
 from . import (
@@ -94,14 +92,12 @@ from .validation import (
     ProductChange,
     ResourceChange,
     SettingsChange,
-    WebhookChange,
     is_expressible_product,
 )
 
 _METER_EXTERNAL_ID_INDEX = "ix_meters_organization_id_external_id"
 _BENEFIT_EXTERNAL_ID_INDEX = "ix_benefits_organization_id_external_id"
 _PRODUCT_EXTERNAL_ID_INDEX = "ix_products_organization_id_external_id"
-_WEBHOOK_EXTERNAL_ID_INDEX = "ix_webhook_endpoints_organization_id_external_id"
 _CUSTOM_FIELD_SLUG_INDEX = "custom_fields_slug_organization_id_active_key"
 
 
@@ -129,23 +125,6 @@ def _assert_section_scopes(
         (section for section in SECTION_SCOPES if section in config.model_fields_set),
         write=write,
     )
-
-
-# Webhook endpoints are managed with `organization_manage`, which product
-# permissions don't imply.
-async def _assert_webhooks_permission(
-    session: AsyncReadSession,
-    auth_subject: AuthSubject[User | Organization | Agent],
-    config: Config,
-    organization: Organization,
-) -> None:
-    if "webhooks" in config.model_fields_set:
-        await assert_organization_permission(
-            session,
-            auth_subject,
-            organization.id,
-            OrganizationPermission.organization_manage,
-        )
 
 
 async def _assert_custom_fields_permission(
@@ -218,15 +197,6 @@ class ConfigProductConflict(PolarError):
     def __init__(self) -> None:
         super().__init__(
             "A product in this config was created by a concurrent request. Retry.", 409
-        )
-
-
-class ConfigWebhookConflict(PolarError):
-    def __init__(self) -> None:
-        super().__init__(
-            "A webhook endpoint in this config was created by a concurrent request. "
-            "Retry.",
-            409,
         )
 
 
@@ -423,7 +393,6 @@ class DeclarativeConfigService:
                 organization.id,
                 OrganizationPermission.organization_manage,
             )
-        await _assert_webhooks_permission(session, auth_subject, config, organization)
         await _assert_custom_fields_permission(
             session,
             auth_subject,
@@ -502,9 +471,6 @@ class DeclarativeConfigService:
         )
         settings_result = await self._apply_settings(
             session, organization, changes.settings, draft=not publish
-        )
-        webhook_results = await self._apply_webhooks(
-            session, auth_subject, organization, changes.webhooks
         )
         meter_results, meter_ids, new_meters = await self._apply_meters(
             session,
@@ -613,7 +579,6 @@ class DeclarativeConfigService:
             )
         return ConfigApplyResult(
             changes=[
-                *webhook_results,
                 *meter_results,
                 *custom_field_results,
                 *benefit_results,
@@ -635,7 +600,6 @@ class DeclarativeConfigService:
         organization = await self._get_organization(
             session, auth_subject, config, OrganizationPermission.products_read
         )
-        await _assert_webhooks_permission(session, auth_subject, config, organization)
         await _assert_custom_fields_permission(
             session,
             auth_subject,
@@ -723,7 +687,6 @@ class DeclarativeConfigService:
             )
         return ConfigPlan(
             changes=[
-                *self._plan_changes(ConfigResource.webhook, changes.webhooks),
                 *self._plan_changes(ConfigResource.meter, changes.meters),
                 *self._plan_changes(ConfigResource.custom_field, changes.custom_fields),
                 *self._plan_changes(ConfigResource.benefit, changes.benefits),
@@ -914,61 +877,6 @@ class DeclarativeConfigService:
         if require_enabled and not organization.is_config_as_code_enabled:
             raise ConfigAsCodeNotEnabled()
         return organization
-
-    async def _apply_webhooks(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization | Agent],
-        organization: Organization,
-        changes: Sequence[WebhookChange],
-    ) -> list[ConfigResult]:
-        if not changes:
-            return []
-        # `_assert_section_scopes` rejects a webhooks section from an agent.
-        assert is_user(auth_subject) or is_organization(auth_subject)
-        repository = WebhookEndpointRepository.from_session(session)
-        results: list[ConfigResult] = []
-        for change in changes:
-            config = change.config
-            endpoint = change.existing
-            if endpoint is None:
-                try:
-                    async with session.begin_nested():
-                        endpoint = await webhook_service.create_endpoint(
-                            session,
-                            auth_subject,
-                            WebhookEndpointCreate(
-                                url=config.url,
-                                format=config.format,
-                                events=config.events,
-                                api_version=config.api_version,
-                                organization_id=None
-                                if is_organization(auth_subject)
-                                else organization.id,
-                            ),
-                        )
-                        await repository.update(
-                            endpoint, update_dict={"external_id": config.external_id}
-                        )
-                except IntegrityError as e:
-                    if _constraint_name(e) != _WEBHOOK_EXTERNAL_ID_INDEX:
-                        raise
-                    raise ConfigWebhookConflict() from e
-            elif change.update_dict:
-                await webhook_service.update_endpoint(
-                    session,
-                    auth_subject,
-                    endpoint=endpoint,
-                    update_schema=WebhookEndpointUpdate(**change.update_dict),
-                )
-            results.append(
-                ConfigResult(
-                    resource=ConfigResource.webhook,
-                    external_id=config.external_id,
-                    action=change.action,
-                )
-            )
-        return results
 
     async def _apply_settings(
         self,

@@ -1,4 +1,5 @@
 import { listBenefitGrants as listBenefitGrantsCustomerPortal } from '@polar-sh/sdk/2026-10/services/customer_portal/benefit_grants'
+import { listCustomerMeters as listCustomerMetersCustomerPortal } from '@polar-sh/sdk/2026-10/services/customer_portal/customer_meters'
 import { listSubscriptions as listSubscriptionsCustomerPortal } from '@polar-sh/sdk/2026-10/services/customer_portal/subscriptions'
 import { getStateExternalCustomers } from '@polar-sh/sdk/2026-10/services/customers'
 import { listOrders as listOrdersCustomerPortal } from '@polar-sh/sdk/2026-10/services/customer_portal/orders'
@@ -422,6 +423,69 @@ export const portal =
 
             throw new APIError('INTERNAL_SERVER_ERROR', {
               message: 'Orders list failed',
+            })
+          }
+        },
+      ),
+      meters: createAuthEndpoint(
+        '/customer/meters/list',
+        {
+          method: 'GET',
+          use: [sessionMiddleware],
+          query: z
+            .object({
+              organizationId: z.string().min(1).optional(),
+              page: z.coerce.number().optional(),
+              limit: z.coerce.number().optional(),
+            })
+            .optional(),
+        },
+        async (ctx) => {
+          if (!ctx.context.session.user.id) {
+            throw new APIError('BAD_REQUEST', {
+              message: 'User not found',
+            })
+          }
+
+          const principal = ctx.query?.organizationId
+            ? await resolveBillingPrincipal({
+                context: ctx.context,
+                session: ctx.context.session,
+                organizationId: ctx.query.organizationId,
+                organizationEnabled:
+                  rootOptions?.experimental_organizationSync?.enabled,
+                authorization: 'member',
+              })
+            : undefined
+
+          try {
+            const customerSession = await createCustomerSessions(polar)({
+              external_customer_id:
+                principal?.externalCustomerId ?? ctx.context.session.user.id,
+              ...(principal?.kind === 'team'
+                ? { external_member_id: principal.externalMemberId }
+                : {}),
+            })
+
+            const customerMeters: models.ListResourceCustomerCustomerMeter =
+              await listCustomerMetersCustomerPortal(polar)(
+                {
+                  page: ctx.query?.page,
+                  limit: ctx.query?.limit,
+                },
+                { accessToken: customerSession.token },
+              )
+
+            return ctx.json(customerMeters)
+          } catch (e: unknown) {
+            if (e instanceof Error) {
+              ctx.context.logger.error(
+                `Polar meters list failed. Error: ${e.message}`,
+              )
+            }
+
+            throw new APIError('INTERNAL_SERVER_ERROR', {
+              message: 'Meters list failed',
             })
           }
         },

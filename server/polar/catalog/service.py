@@ -602,30 +602,18 @@ class CatalogService:
         """Set these settings, by `Organization` attribute name, on the
         organization."""
         update_dict: dict[str, Any] = {}
-        subscription_update: dict[str, Any] = {}
-        portal_update: dict[str, dict[str, Any]] = {}
+        subscription: dict[str, Any] = dict(organization.subscription_settings)
+        portal: dict[str, Any] = dict(organization.customer_portal_settings)
         for name, value in settings.items():
             if name in SUBSCRIPTION_SETTINGS:
-                subscription_update[name] = value
+                subscription[name] = value
+                update_dict["subscription_settings"] = subscription
             elif name in PORTAL_SETTINGS:
                 group, key = PORTAL_SETTINGS[name]
-                portal_update.setdefault(group, {})[key] = value
+                portal[group] = {**portal.get(group, {}), key: value}
+                update_dict["customer_portal_settings"] = portal
             else:
                 update_dict[name] = value
-        if subscription_update:
-            update_dict["subscription_settings"] = {
-                **organization.subscription_settings,
-                **subscription_update,
-            }
-        if portal_update:
-            stored: dict[str, Any] = dict(organization.customer_portal_settings)
-            update_dict["customer_portal_settings"] = {
-                **stored,
-                **{
-                    group: {**stored.get(group, {}), **values}
-                    for group, values in portal_update.items()
-                },
-            }
         await OrganizationRepository.from_session(session).update(
             organization, update_dict=update_dict
         )

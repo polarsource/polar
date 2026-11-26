@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, Self
 
 from annotated_types import Ge, MaxLen, MinLen
 from pydantic import (
@@ -37,6 +37,7 @@ from polar.enums import PaymentProcessor, TaxBehavior
 from polar.kit.address import Address, AddressInput
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.email import EmailStrDNS
+from polar.kit.external_id import ExternalID
 from polar.kit.http import SuccessUrl
 from polar.kit.locale import Locale
 from polar.kit.metadata import (
@@ -495,6 +496,18 @@ class CheckoutUpdate(
 ):
     """Update an existing checkout session using an access token."""
 
+    external_product_id: Annotated[
+        Omissible[ExternalID],
+        Version(starting_from=V2027_01),
+        Field(
+            description=(
+                "ID in your system of the product to checkout. "
+                "Must be present in the checkout's product list. "
+                "Can't be combined with `product_id`."
+            ),
+            examples=["ext_1337"],
+        ),
+    ] = MISSING
     currency: Omissible[CheckoutCurrency] = MISSING
     discount_id: Omissible[UUID4 | None] = Field(
         default=MISSING, description="ID of the discount to apply to the checkout."
@@ -515,6 +528,12 @@ class CheckoutUpdate(
     success_url: Omissible[SuccessURL] = MISSING
     return_url: Omissible[ReturnURL] = MISSING
     embed_origin: Omissible[EmbedOrigin] = MISSING
+
+    @model_validator(mode="after")
+    def _validate_product_reference(self) -> Self:
+        if self.product_id is not MISSING and self.external_product_id is not MISSING:
+            raise ValueError("product_id and external_product_id can't be set together")
+        return self
 
 
 class CheckoutUpdatePublic(CheckoutUpdateBase):

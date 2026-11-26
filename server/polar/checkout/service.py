@@ -2442,8 +2442,18 @@ class CheckoutService:
             else MISSING
         )
 
+        updated_external_product_id = (
+            checkout_update.external_product_id
+            if isinstance(checkout_update, CheckoutUpdate)
+            else MISSING
+        )
+        updates_product = (
+            checkout_update.product_id is not MISSING
+            or updated_external_product_id is not MISSING
+        )
+
         # Currency is updated, but not the product, make sure the product supports it
-        if updated_currency is not MISSING and checkout_update.product_id is MISSING:
+        if updated_currency is not MISSING and not updates_product:
             assert checkout.product is not None
             checkout.currency = updated_currency
             try:
@@ -2465,22 +2475,35 @@ class CheckoutService:
                 checkout, checkout_update, currency_prices
             )
         # Product is updated
-        elif checkout_update.product_id is not MISSING:
+        elif updates_product:
             product_repository = ProductRepository.from_session(session)
-            product = await product_repository.get_by_id_and_checkout(
-                checkout_update.product_id,
-                checkout.id,
-                options=product_repository.get_eager_options(),
-            )
+            product_loc: str
+            product_input: uuid.UUID | str
+            if updated_external_product_id is not MISSING:
+                product_loc = "external_product_id"
+                product_input = updated_external_product_id
+                product = await product_repository.get_by_external_id_and_checkout(
+                    updated_external_product_id,
+                    checkout.id,
+                    options=product_repository.get_eager_options(),
+                )
+            else:
+                assert checkout_update.product_id is not MISSING
+                product_loc, product_input = "product_id", checkout_update.product_id
+                product = await product_repository.get_by_id_and_checkout(
+                    checkout_update.product_id,
+                    checkout.id,
+                    options=product_repository.get_eager_options(),
+                )
 
             if product is None:
                 raise PolarRequestValidationError(
                     [
                         {
                             "type": "value_error",
-                            "loc": ("body", "product_id"),
+                            "loc": ("body", product_loc),
                             "msg": "Product is not available in this checkout.",
-                            "input": checkout_update.product_id,
+                            "input": product_input,
                         }
                     ]
                 )
@@ -2490,9 +2513,9 @@ class CheckoutService:
                     [
                         {
                             "type": "value_error",
-                            "loc": ("body", "product_id"),
+                            "loc": ("body", product_loc),
                             "msg": "Product is archived.",
-                            "input": checkout_update.product_id,
+                            "input": product_input,
                         }
                     ]
                 )

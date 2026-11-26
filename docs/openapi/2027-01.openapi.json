@@ -7585,11 +7585,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.checkouts.update(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.checkouts.update(\n    '00000000-0000-4000-8000-000000000000',\n    external_product_id='ext_1337',\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.checkouts.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {},\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.checkouts.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"external_product_id\": \"ext_1337\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -44047,6 +44047,15 @@
             "maxProperties": 50,
             "title": "Metadata",
             "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
+          },
+          "external_product_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "External Product Id",
+            "description": "ID in your system of the product to checkout. Must be present in the checkout's product list. Can't be combined with `product_id`.",
+            "examples": [
+              "ext_1337"
+            ]
           },
           "currency": {
             "$ref": "#/components/schemas/PresentmentCurrency",

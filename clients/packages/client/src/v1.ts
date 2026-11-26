@@ -17050,6 +17050,12 @@ export interface components {
       metadata?: {
         [key: string]: string | number | boolean
       }
+      /**
+       * External Product Id
+       * @description ID in your system of the product to checkout. Must be present in the checkout's product list. Can't be combined with `product_id`.
+       * @example ext_1337
+       */
+      external_product_id?: string
       currency?: components['schemas']['PresentmentCurrency']
       /**
        * Discount Id

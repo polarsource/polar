@@ -15,6 +15,7 @@ import {
   ShoppingBagOutlined,
   ShoppingCart,
   SpaceDashboardOutlined,
+  TextCursorInput,
   TrendingUpFilled as TrendingUp,
   TuneOutlined,
 } from '@polar-sh/orbit/icons'
@@ -209,6 +210,11 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
         title: 'Meters',
         link: `/dashboard/${org?.slug}/products/meters`,
         icon: <DonutLargeOutlined fontSize="inherit" />,
+      },
+      {
+        title: 'Custom Fields',
+        link: `/dashboard/${org?.slug}/products/custom-fields`,
+        icon: <TextCursorInput size="1em" />,
       },
     ],
   },

@@ -24,6 +24,7 @@ export const ALLOWED_DASHBOARD_PATHS = [
   'products',
   'products/benefits',
   'products/checkout-links',
+  'products/custom-fields',
   'products/discounts',
   'products/meters',
   'products/meters/create',
@@ -34,7 +35,6 @@ export const ALLOWED_DASHBOARD_PATHS = [
   'settings',
   'settings/billing',
   'settings/billing/change-plan',
-  'settings/custom-fields',
   'settings/members',
   'settings/webhooks',
 ] as const

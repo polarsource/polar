@@ -1,12 +1,12 @@
 ---
 title: "Single Sign-On"
 sidebarTitle: "SSO"
-description: "Let your team sign in to Polar through your own identity provider, and become members automatically."
+description: "Set up an OpenID Connect provider so your team signs in to Polar with company credentials and joins your organization automatically."
 ---
 
 <Note>
   Single Sign-On is included in the **Scale** plan. Upgrade from [**Settings →
-  Billing**](https://polar.sh/to/dashboard/settings/billing) — SSO becomes available as soon as the
+  Billing**](https://polar.sh/to/dashboard/settings/billing). SSO becomes available as soon as the
   subscription is active.
 </Note>
 
@@ -14,7 +14,7 @@ Single Sign-On connects your organization to your own identity provider. Your te
 
 Polar supports any provider that implements OpenID Connect, including Google Workspace, Okta, Microsoft Entra ID, and Keycloak.
 
-SSO lives under [**Settings → SSO**](https://polar.sh/to/dashboard/settings/sso) in your dashboard.
+SSO lives under [**Settings → Single Sign-On**](https://polar.sh/to/dashboard/settings/sso) in your dashboard. It's dashboard only: SSO connections and enforcement aren't available from the CLI or MCP server.
 
 ## Company-managed accounts
 
@@ -26,7 +26,7 @@ Use a separate account with a personal email address for work that should remain
 
 ## How people become members
 
-Anyone who signs in through your connection becomes a member of your organization. You don't invite them first — authenticating against your identity provider is what grants membership.
+Anyone who signs in through your connection becomes a member of your organization. You don't invite them first: authenticating against your identity provider is what grants membership.
 
 New members join with the **Member** role. To grant more access, [change their role](/features/team-management#changing-a-members-role) after their first sign-in.
 
@@ -40,20 +40,20 @@ Polar only accepts an identity whose email address your provider marks as verifi
 
 ## Setting up a connection
 
-You can only add a connection once you've verified a domain you own, so start there.
+You can only add a connection once you've verified a domain you own, so start there. See [Domains](/features/domains).
 
 <Steps>
   <Step title="Verify your email domain">
     Go to [**Settings → Domains**](https://polar.sh/to/dashboard/settings/domains), enter the domain of your team's email addresses, and click **Add**. Add the TXT record shown to your DNS, then click **Verify**.
   </Step>
   <Step title="Add the connection in Polar">
-    Go to [**Settings → SSO**](https://polar.sh/to/dashboard/settings/sso) and click **Add connection**. Pick **Google Workspace** or **Custom OIDC provider**.
+    Go to [**Settings → Single Sign-On**](https://polar.sh/to/dashboard/settings/sso) and click **Add connection**. Pick **Google Workspace** or **Custom OIDC provider**.
   </Step>
   <Step title="Register the callback URL">
     Copy the **Callback URL** shown at the top of the form and register it as a redirect URI in your identity provider.
   </Step>
   <Step title="Fill in the provider details">
-    Enter the **Issuer URL** and **Client ID** from your provider. You can paste the discovery URL into the issuer field — Polar strips the `/.well-known/openid-configuration` suffix.
+    Enter the **Issuer URL** and **Client ID** from your provider. You can paste the discovery URL into the issuer field. Polar strips the `/.well-known/openid-configuration` suffix.
 
     For **Client secret** authentication, paste the secret. For **Private key JWT**, copy the **JWKS URL** into your provider so it can fetch Polar's public keys.
   </Step>
@@ -72,7 +72,7 @@ Polar sets `response_type`, `client_id`, `redirect_uri`, `scope`, `state`, `nonc
 
 ## Enforcing SSO
 
-By default, members can sign in either through SSO or through the standard methods — email code, Google, GitHub, or Apple. Enforcing SSO removes the alternatives: members reach your organization only through your identity provider.
+By default, members can sign in either through SSO or through the standard methods: email code, Google, GitHub or Apple. Enforcing SSO removes the alternatives: members reach your organization only through your identity provider.
 
 To enforce it, you need an enabled connection and a verified domain, and you must already be signed in through this organization's SSO. That proves the connection works before it becomes the only way in.
 
@@ -82,7 +82,7 @@ Once SSO is enforced, anyone who signs in with an email address on your verified
 Enforcing SSO disconnects every member and every authorized third-party app. They must sign in again through your identity provider.
 </Warning>
 
-Enforcement makes your identity provider the only door. Anyone who can't authenticate there loses access, including members you invited by email — they keep their membership, but they can't reach the organization until you add them to your provider.
+Enforcement makes your identity provider the only door. Anyone who can't authenticate there loses access, including members you invited by email. They keep their membership, but they can't reach the organization until you add them to your provider.
 
 You can stop enforcing at any time from the same screen.
 
@@ -111,6 +111,14 @@ Enforcement applies to dashboard sessions. Personal access tokens and organizati
     Revoke their access to the Polar application in your identity provider. Removing them in Polar alone doesn't stop them from rejoining on their next sign-in.
   </Accordion>
   <Accordion title="What happens if I leave the Scale plan?">
-    SSO turns off, and enforcement is lifted with it, so your members sign in with the standard methods again. Your connections are kept — upgrading to Scale again restores them as they were. Everyone who joined through SSO stays a member.
+    SSO turns off, and enforcement is lifted with it, so your members sign in with the standard methods again. Your connections are kept, and upgrading to Scale again restores them as they were. Everyone who joined through SSO stays a member.
   </Accordion>
 </AccordionGroup>
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Domains](/features/domains) | Verify the email domain SSO needs |
+| [Team management](/features/team-management) | Roles and what each one can do |
+| [Fees](/merchant-of-record/fees) | Plans, including Scale |

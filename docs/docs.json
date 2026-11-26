@@ -41,27 +41,60 @@
         "icon": "compass",
         "groups": [
           {
-            "group": "Get Started",
+            "group": "Get started",
             "pages": [
               "introduction",
-              "merchant-of-record/introduction",
-              "merchant-of-record/fees",
               {
-                "group": "Migrating to Polar",
-                "pages": ["migrate", "migrate-lemon-squeezy"]
+                "group": "Quickstart",
+                "pages": [
+                  "quickstart/overview",
+                  "quickstart/track-usage",
+                  "quickstart/catalog",
+                  "quickstart/checkout",
+                  "quickstart/webhooks",
+                  "quickstart/go-live"
+                ]
+              },
+              {
+                "group": "Core concepts",
+                "pages": [
+                  "concepts/overview",
+                  "concepts/usage",
+                  "concepts/benefits",
+                  "concepts/products",
+                  "concepts/customers",
+                  "concepts/checkout",
+                  "concepts/orders-and-subscriptions",
+                  "concepts/money-flow",
+                  "merchant-of-record/introduction"
+                ]
+              },
+              "integrate/sandbox",
+              {
+                "group": "Migrate",
+                "pages": [
+                  "migrate",
+                  "migrate-lemon-squeezy",
+                  "migrate-away"
+                ]
               }
             ]
           },
           {
-            "group": "Agent Toolkit",
+            "group": "Agents & CLI",
             "pages": [
+              "agents/overview",
               "integrate/mcp",
+              "agents/mcp-operations",
+              "agents/skills-and-plugins",
+              "agents/signup",
               {
                 "group": "CLI",
                 "pages": [
                   "integrate/cli/introduction",
                   "integrate/cli/authentication",
                   "integrate/cli/webhooks",
+                  "integrate/cli/resources",
                   "integrate/cli/reference",
                   {
                     "group": "CLI commands",
@@ -104,8 +137,81 @@
             ]
           },
           {
-            "group": "Customers & Usage",
+            "group": "Usage",
             "pages": [
+              "features/usage-based-billing/event-ingestion",
+              "features/usage-based-billing/meters",
+              "features/usage-based-billing/credits",
+              "features/cost-insights/introduction",
+              {
+                "group": "Ingestion strategies",
+                "pages": [
+                  "features/usage-based-billing/ingestion-strategies/ingestion-strategy",
+                  "features/usage-based-billing/ingestion-strategies/llm-strategy"
+                ]
+              }
+            ]
+          },
+          {
+            "group": "Catalog",
+            "pages": [
+              "features/products",
+              {
+                "group": "Pricing models",
+                "pages": [
+                  "features/pricing-models",
+                  "features/fixed-pricing",
+                  "features/seat-based-pricing",
+                  "features/unit-based-pricing",
+                  "features/usage-based-billing/billing"
+                ]
+              },
+              "features/tax-inclusive-pricing",
+              {
+                "group": "Benefits",
+                "pages": [
+                  "features/benefits/introduction",
+                  "features/usage-based-billing/credits",
+                  "features/benefits/feature-flags",
+                  "features/benefits/slack-shared-channel",
+                  "features/benefits/custom",
+                  {
+                    "group": "License Keys",
+                    "pages": [
+                      "features/benefits/license-keys",
+                      "features/benefits/validate-license-keys"
+                    ]
+                  },
+                  "features/benefits/file-downloads",
+                  "features/benefits/github-access",
+                  "features/benefits/discord-access"
+                ]
+              },
+              "features/discounts"
+            ]
+          },
+          {
+            "group": "Checkout & customers",
+            "pages": [
+              {
+                "group": "Checkout",
+                "pages": [
+                  "features/checkout/session",
+                  "features/checkout/links",
+                  "features/custom-fields",
+                  "features/checkout/payment-methods",
+                  "features/checkout/localization",
+                  "features/checkout/agents"
+                ]
+              },
+              {
+                "group": "Embedded UI",
+                "pages": [
+                  "features/checkout/embed",
+                  "features/checkout/embed-payment-method",
+                  "features/checkout/embed-hosts"
+                ]
+              },
               {
                 "group": "Customers",
                 "pages": [
@@ -114,44 +220,12 @@
                 ]
               },
               {
-                "group": "Events & Meters",
+                "group": "Customer Portal",
                 "pages": [
-                  "features/usage-based-billing/introduction",
-                  "features/usage-based-billing/event-ingestion",
-                  "features/usage-based-billing/meters",
-                  {
-                    "group": "Ingestion Strategies",
-                    "pages": [
-                      "features/usage-based-billing/ingestion-strategies/ingestion-strategy",
-                      "features/usage-based-billing/ingestion-strategies/llm-strategy",
-                      "features/usage-based-billing/ingestion-strategies/s3-strategy",
-                      "features/usage-based-billing/ingestion-strategies/stream-strategy",
-                      "features/usage-based-billing/ingestion-strategies/delta-time-strategy"
-                    ]
-                  }
-                ]
-              },
-              {
-                "group": "Entitlements",
-                "pages": [
-                  "features/benefits/introduction",
-                  "features/benefits/credits",
-                  "features/benefits/custom",
-                  "features/benefits/discord-access",
-                  "features/benefits/feature-flags",
-                  "features/benefits/file-downloads",
-                  "features/benefits/github-access",
-                  "features/benefits/license-keys",
-                  "features/benefits/slack-shared-channel"
-                ]
-              },
-              {
-                "group": "Customer Cost Insights",
-                "tag": "Beta",
-                "pages": [
-                  "features/cost-insights/introduction",
-                  "features/cost-insights/cost-events",
-                  "features/cost-insights/cost-traces"
+                  "features/customer-portal/introduction",
+                  "features/customer-portal/navigate-customers",
+                  "features/customer-portal/settings",
+                  "features/customer-portal/custom-portal"
                 ]
               }
             ]
@@ -159,19 +233,8 @@
           {
             "group": "Billing",
             "pages": [
-              "features/products",
-              {
-                "group": "Pricing Models",
-                "pages": [
-                  "features/unit-based-pricing",
-                  "features/seat-based-pricing",
-                  "features/usage-based-billing/billing",
-                  "features/usage-based-billing/credits",
-                  "features/tax-inclusive-pricing"
-                ]
-              },
-              "features/discounts",
               "features/orders",
+              "features/off-session-charges",
               {
                 "group": "Subscriptions",
                 "pages": [
@@ -182,74 +245,51 @@
                   "features/subscriptions/failed-payments"
                 ]
               },
-              {
-                "group": "Checkout",
-                "pages": [
-                  "features/checkout/links",
-                  "features/checkout/session",
-                  "features/checkout/payment-methods",
-                  "features/checkout/localization",
-                  "features/custom-fields",
-                  {
-                    "group": "Embedded UI",
-                    "pages": [
-                      "features/checkout/embed",
-                      "features/checkout/embed-payment-method"
-                    ]
-                  }
-                ]
-              },
-              {
-                "group": "Customer Portal",
-                "pages": [
-                  "features/customer-portal/introduction",
-                  "features/customer-portal/navigate-customers",
-                  "features/customer-portal/settings"
-                ]
-              },
               "features/refunds",
-              "features/analytics"
+              "features/disputes"
             ]
           },
           {
-            "group": "Finance & Payouts",
+            "group": "Analytics",
             "pages": [
-              "features/finance/balance",
-              "features/finance/payouts",
-              "features/finance/accounts"
+              "features/analytics",
+              "features/customer-analytics"
             ]
           },
           {
-            "group": "Account",
+            "group": "Finance",
+            "pages": [
+              "features/finance/payouts",
+              "features/finance/accounts",
+              "features/finance/taxes",
+              "merchant-of-record/fees"
+            ]
+          },
+          {
+            "group": "Organization",
             "pages": [
               "features/team-management",
               "features/sso",
-              {
-                "group": "Integrations",
-                "pages": [
-                  "features/integrations/affonso",
-                  "features/integrations/fernand",
-                  "features/integrations/framer",
-                  "features/integrations/paritydeals",
-                  "features/integrations/raycast",
-                  "features/integrations/zapier"
-                ]
-              }
+              "features/domains",
+              "features/notifications",
+              "features/settings",
+              "features/integrations"
             ]
           },
           {
-            "group": "Compliance & Security",
+            "group": "Compliance & support",
             "pages": [
               "merchant-of-record/supported-countries",
               {
-                "group": "Account Reviews",
+                "group": "Account reviews",
                 "pages": [
                   "merchant-of-record/account-reviews",
                   "merchant-of-record/review-checklist"
                 ]
               },
               "merchant-of-record/acceptable-use/introduction",
-              "security"
+              "security",
+              "support"
             ]
           }
         ]
@@ -272,7 +312,7 @@
                   "api-reference/2026-04/introduction",
                   "integrate/authentication",
                   "integrate/oat",
-                  "integrate/sandbox",
+                  "integrate/external-ids",
                   "api-reference/2026-04/versioning"
                 ]
               },
@@ -406,7 +446,10 @@
                   },
                   {
                     "group": "Refunds",
-                    "pages": ["POST /v1/refunds/", "GET /v1/refunds/"]
+                    "pages": [
+                      "POST /v1/refunds/",
+                      "GET /v1/refunds/"
+                    ]
                   },
                   {
                     "group": "Products",
@@ -421,7 +464,11 @@
                   },
                   {
                     "group": "Events",
-                    "pages": ["POST /v1/events/ingest", "GET /v1/events/{id}", "GET /v1/events/"]
+                    "pages": [
+                      "POST /v1/events/ingest",
+                      "GET /v1/events/{id}",
+                      "GET /v1/events/"
+                    ]
                   },
                   {
                     "group": "Meters",
@@ -440,6 +487,7 @@
                       "GET /v1/benefits/{id}",
                       "GET /v1/benefits/",
                       "GET /v1/benefits/{id}/grants",
+                      "GET /v1/benefits/{id}/files",
                       "PATCH /v1/benefits/{id}",
                       "DELETE /v1/benefits/{id}",
                       "GET /v1/benefit-grants/"
@@ -447,7 +495,10 @@
                   },
                   {
                     "group": "Customer Meters",
-                    "pages": ["GET /v1/customer-meters/{id}", "GET /v1/customer-meters/"]
+                    "pages": [
+                      "GET /v1/customer-meters/{id}",
+                      "GET /v1/customer-meters/"
+                    ]
                   },
                   {
                     "group": "License Keys",
@@ -509,7 +560,10 @@
                   },
                   {
                     "group": "Metrics",
-                    "pages": ["GET /v1/metrics/", "GET /v1/metrics/limits"]
+                    "pages": [
+                      "GET /v1/metrics/",
+                      "GET /v1/metrics/limits"
+                    ]
                   }
                 ]
               },
@@ -578,7 +632,9 @@
                   },
                   {
                     "group": "File Downloads",
-                    "pages": ["GET /v1/customer-portal/downloadables/"]
+                    "pages": [
+                      "GET /v1/customer-portal/downloadables/"
+                    ]
                   },
                   {
                     "group": "Seats",
@@ -674,7 +730,10 @@
                           },
                           {
                             "group": "Refunds",
-                            "pages": ["webhook refund.created", "webhook refund.updated"]
+                            "pages": [
+                              "webhook refund.created",
+                              "webhook refund.updated"
+                            ]
                           },
                           {
                             "group": "Benefit Grants",
@@ -692,11 +751,17 @@
                         "pages": [
                           {
                             "group": "Benefits",
-                            "pages": ["webhook benefit.created", "webhook benefit.updated"]
+                            "pages": [
+                              "webhook benefit.created",
+                              "webhook benefit.updated"
+                            ]
                           },
                           {
                             "group": "Products",
-                            "pages": ["webhook product.created", "webhook product.updated"]
+                            "pages": [
+                              "webhook product.created",
+                              "webhook product.updated"
+                            ]
                           },
                           {
                             "group": "Discounts",
@@ -708,7 +773,9 @@
                           },
                           {
                             "group": "Organization",
-                            "pages": ["webhook organization.updated"]
+                            "pages": [
+                              "webhook organization.updated"
+                            ]
                           }
                         ]
                       }
@@ -735,20 +802,15 @@
                   "integrate/oauth2/introduction",
                   "integrate/oauth2/setup",
                   "integrate/oauth2/connect",
-                  {
-                    "group": "API Endpoints",
-                    "pages": [
-                      "GET /v1/oauth2/authorize",
-                      "POST /v1/oauth2/token",
-                      "POST /v1/oauth2/introspect",
-                      "POST /v1/oauth2/revoke",
-                      "GET /v1/oauth2/userinfo",
-                      "POST /v1/oauth2/register",
-                      "GET /v1/oauth2/register/{client_id}",
-                      "PUT /v1/oauth2/register/{client_id}",
-                      "DELETE /v1/oauth2/register/{client_id}"
-                    ]
-                  }
+                  "GET /v1/oauth2/authorize",
+                  "POST /v1/oauth2/token",
+                  "POST /v1/oauth2/introspect",
+                  "POST /v1/oauth2/revoke",
+                  "GET /v1/oauth2/userinfo",
+                  "POST /v1/oauth2/register",
+                  "GET /v1/oauth2/register/{client_id}",
+                  "PUT /v1/oauth2/register/{client_id}",
+                  "DELETE /v1/oauth2/register/{client_id}"
                 ]
               }
             ]
@@ -768,7 +830,7 @@
                   "api-reference/2026-10/introduction",
                   "integrate/authentication",
                   "integrate/oat",
-                  "integrate/sandbox",
+                  "integrate/external-ids",
                   "api-reference/2026-10/versioning"
                 ]
               },
@@ -902,7 +964,10 @@
                   },
                   {
                     "group": "Refunds",
-                    "pages": ["POST /v1/refunds/", "GET /v1/refunds/"]
+                    "pages": [
+                      "POST /v1/refunds/",
+                      "GET /v1/refunds/"
+                    ]
                   },
                   {
                     "group": "Products",
@@ -917,7 +982,11 @@
                   },
                   {
                     "group": "Events",
-                    "pages": ["POST /v1/events/ingest", "GET /v1/events/{id}", "GET /v1/events/"]
+                    "pages": [
+                      "POST /v1/events/ingest",
+                      "GET /v1/events/{id}",
+                      "GET /v1/events/"
+                    ]
                   },
                   {
                     "group": "Meters",
@@ -936,6 +1005,7 @@
                       "GET /v1/benefits/{id}",
                       "GET /v1/benefits/",
                       "GET /v1/benefits/{id}/grants",
+                      "GET /v1/benefits/{id}/files",
                       "PATCH /v1/benefits/{id}",
                       "DELETE /v1/benefits/{id}",
                       "GET /v1/benefit-grants/"
@@ -943,7 +1013,10 @@
                   },
                   {
                     "group": "Customer Meters",
-                    "pages": ["GET /v1/customer-meters/{id}", "GET /v1/customer-meters/"]
+                    "pages": [
+                      "GET /v1/customer-meters/{id}",
+                      "GET /v1/customer-meters/"
+                    ]
                   },
                   {
                     "group": "License Keys",
@@ -1005,7 +1078,10 @@
                   },
                   {
                     "group": "Metrics",
-                    "pages": ["GET /v1/metrics/", "GET /v1/metrics/limits"]
+                    "pages": [
+                      "GET /v1/metrics/",
+                      "GET /v1/metrics/limits"
+                    ]
                   }
                 ]
               },
@@ -1074,7 +1150,9 @@
                   },
                   {
                     "group": "File Downloads",
-                    "pages": ["GET /v1/customer-portal/downloadables/"]
+                    "pages": [
+                      "GET /v1/customer-portal/downloadables/"
+                    ]
                   },
                   {
                     "group": "Seats",
@@ -1170,7 +1248,10 @@
                           },
                           {
                             "group": "Refunds",
-                            "pages": ["webhook refund.created", "webhook refund.updated"]
+                            "pages": [
+                              "webhook refund.created",
+                              "webhook refund.updated"
+                            ]
                           },
                           {
                             "group": "Benefit Grants",
@@ -1188,11 +1269,17 @@
                         "pages": [
                           {
                             "group": "Benefits",
-                            "pages": ["webhook benefit.created", "webhook benefit.updated"]
+                            "pages": [
+                              "webhook benefit.created",
+                              "webhook benefit.updated"
+                            ]
                           },
                           {
                             "group": "Products",
-                            "pages": ["webhook product.created", "webhook product.updated"]
+                            "pages": [
+                              "webhook product.created",
+                              "webhook product.updated"
+                            ]
                           },
                           {
                             "group": "Discounts",
@@ -1204,7 +1291,9 @@
                           },
                           {
                             "group": "Organization",
-                            "pages": ["webhook organization.updated"]
+                            "pages": [
+                              "webhook organization.updated"
+                            ]
                           }
                         ]
                       }
@@ -1231,20 +1320,15 @@
                   "integrate/oauth2/introduction",
                   "integrate/oauth2/setup",
                   "integrate/oauth2/connect",
-                  {
-                    "group": "API Endpoints",
-                    "pages": [
-                      "GET /v1/oauth2/authorize",
-                      "POST /v1/oauth2/token",
-                      "POST /v1/oauth2/introspect",
-                      "POST /v1/oauth2/revoke",
-                      "GET /v1/oauth2/userinfo",
-                      "POST /v1/oauth2/register",
-                      "GET /v1/oauth2/register/{client_id}",
-                      "PUT /v1/oauth2/register/{client_id}",
-                      "DELETE /v1/oauth2/register/{client_id}"
-                    ]
-                  }
+                  "GET /v1/oauth2/authorize",
+                  "POST /v1/oauth2/token",
+                  "POST /v1/oauth2/introspect",
+                  "POST /v1/oauth2/revoke",
+                  "GET /v1/oauth2/userinfo",
+                  "POST /v1/oauth2/register",
+                  "GET /v1/oauth2/register/{client_id}",
+                  "PUT /v1/oauth2/register/{client_id}",
+                  "DELETE /v1/oauth2/register/{client_id}"
                 ]
               }
             ]
@@ -1263,7 +1347,7 @@
                   "api-reference/2027-01/introduction",
                   "integrate/authentication",
                   "integrate/oat",
-                  "integrate/sandbox",
+                  "integrate/external-ids",
                   "api-reference/2027-01/versioning"
                 ]
               },
@@ -1397,7 +1481,10 @@
                   },
                   {
                     "group": "Refunds",
-                    "pages": ["POST /v1/refunds/", "GET /v1/refunds/"]
+                    "pages": [
+                      "POST /v1/refunds/",
+                      "GET /v1/refunds/"
+                    ]
                   },
                   {
                     "group": "Products",
@@ -1412,7 +1499,11 @@
                   },
                   {
                     "group": "Events",
-                    "pages": ["POST /v1/events/ingest", "GET /v1/events/{id}", "GET /v1/events/"]
+                    "pages": [
+                      "POST /v1/events/ingest",
+                      "GET /v1/events/{id}",
+                      "GET /v1/events/"
+                    ]
                   },
                   {
                     "group": "Meters",
@@ -1432,6 +1523,7 @@
                       "GET /v1/benefits/{id}",
                       "GET /v1/benefits/",
                       "GET /v1/benefits/{id}/grants",
+                      "GET /v1/benefits/{id}/files",
                       "POST /v1/benefit-grants/",
                       "PATCH /v1/benefit-grants/{id}",
                       "DELETE /v1/benefit-grants/{id}",
@@ -1509,7 +1601,10 @@
                   },
                   {
                     "group": "Metrics",
-                    "pages": ["GET /v1/metrics/", "GET /v1/metrics/limits"]
+                    "pages": [
+                      "GET /v1/metrics/",
+                      "GET /v1/metrics/limits"
+                    ]
                   }
                 ]
               },
@@ -1578,7 +1673,9 @@
                   },
                   {
                     "group": "File Downloads",
-                    "pages": ["GET /v1/customer-portal/downloadables/"]
+                    "pages": [
+                      "GET /v1/customer-portal/downloadables/"
+                    ]
                   },
                   {
                     "group": "Seats",
@@ -1674,7 +1771,10 @@
                           },
                           {
                             "group": "Refunds",
-                            "pages": ["webhook refund.created", "webhook refund.updated"]
+                            "pages": [
+                              "webhook refund.created",
+                              "webhook refund.updated"
+                            ]
                           },
                           {
                             "group": "Benefit Grants",
@@ -1692,11 +1792,17 @@
                         "pages": [
                           {
                             "group": "Benefits",
-                            "pages": ["webhook benefit.created", "webhook benefit.updated"]
+                            "pages": [
+                              "webhook benefit.created",
+                              "webhook benefit.updated"
+                            ]
                           },
                           {
                             "group": "Products",
-                            "pages": ["webhook product.created", "webhook product.updated"]
+                            "pages": [
+                              "webhook product.created",
+                              "webhook product.updated"
+                            ]
                           },
                           {
                             "group": "Discounts",
@@ -1708,7 +1814,9 @@
                           },
                           {
                             "group": "Organization",
-                            "pages": ["webhook organization.updated"]
+                            "pages": [
+                              "webhook organization.updated"
+                            ]
                           }
                         ]
                       }
@@ -1736,20 +1844,15 @@
                   "integrate/oauth2/introduction",
                   "integrate/oauth2/setup",
                   "integrate/oauth2/connect",
-                  {
-                    "group": "API Endpoints",
-                    "pages": [
-                      "GET /v1/oauth2/authorize",
-                      "POST /v1/oauth2/token",
-                      "POST /v1/oauth2/introspect",
-                      "POST /v1/oauth2/revoke",
-                      "GET /v1/oauth2/userinfo",
-                      "POST /v1/oauth2/register",
-                      "GET /v1/oauth2/register/{client_id}",
-                      "PUT /v1/oauth2/register/{client_id}",
-                      "DELETE /v1/oauth2/register/{client_id}"
-                    ]
-                  }
+                  "GET /v1/oauth2/authorize",
+                  "POST /v1/oauth2/token",
+                  "POST /v1/oauth2/introspect",
+                  "POST /v1/oauth2/revoke",
+                  "GET /v1/oauth2/userinfo",
+                  "POST /v1/oauth2/register",
+                  "GET /v1/oauth2/register/{client_id}",
+                  "PUT /v1/oauth2/register/{client_id}",
+                  "DELETE /v1/oauth2/register/{client_id}"
                 ]
               }
             ]
@@ -1759,7 +1862,10 @@
       {
         "tab": "Changelog",
         "icon": "signal-stream",
-        "pages": ["changelog/recent", "changelog/api"]
+        "pages": [
+          "changelog/recent",
+          "changelog/api"
+        ]
       }
     ]
   },
@@ -2673,7 +2779,7 @@
     },
     {
       "source": "/documentation/tools/polar-init",
-      "destination": "/introduction#quickstart-from-cli"
+      "destination": "/introduction#integrate-usage-based-credits-in-5-minutes"
     },
     {
       "source": "/documentation/basics/getting-started",
@@ -2729,7 +2835,7 @@
     },
     {
       "source": "/documentation/tools/checkout-link",
-      "destination": "/features/checkout/links#checkout-links-cli"
+      "destination": "/features/checkout/links#from-the-cli-or-your-agent"
     },
     {
       "source": "/documentation/features/checkouts/checkout-embed",
@@ -2817,7 +2923,7 @@
     },
     {
       "source": "/documentation/features/finance/balance",
-      "destination": "/features/finance/balance"
+      "destination": "/features/finance/payouts"
     },
     {
       "source": "/documentation/features/finance/payouts",
@@ -2825,23 +2931,23 @@
     },
     {
       "source": "/documentation/integrations/polar-for-raycast",
-      "destination": "/features/integrations/raycast"
+      "destination": "/features/integrations"
     },
     {
       "source": "/documentation/integrations/polar-for-framer",
-      "destination": "/features/integrations/framer"
+      "destination": "/features/integrations"
     },
     {
       "source": "/documentation/integrations/polar-for-zapier",
-      "destination": "/features/integrations/zapier"
+      "destination": "/features/integrations"
     },
     {
       "source": "/documentation/features/products/purchasing-power-parity",
-      "destination": "/features/integrations/paritydeals"
+      "destination": "https://www.evendeals.com/integrations/polar"
     },
     {
       "source": "/documentation/integration-guides/webhooks",
-      "destination": "/integrate/webhooks/intro"
+      "destination": "/integrate/webhooks/endpoints"
     },
     {
       "source": "/documentation/features/sandbox",
@@ -2945,11 +3051,11 @@
     },
     {
       "source": "/finance/balance",
-      "destination": "/features/finance/balance"
+      "destination": "/features/finance/payouts"
     },
     {
       "source": "/docs/finance/balance",
-      "destination": "/features/finance/balance"
+      "destination": "/features/finance/payouts"
     },
     {
       "source": "/merchant-of-record/tax",
@@ -2993,11 +3099,11 @@
     },
     {
       "source": "/onboarding",
-      "destination": "/introduction#quickstart"
+      "destination": "/quickstart/overview"
     },
     {
       "source": "/docs/onboarding",
-      "destination": "/introduction#quickstart"
+      "destination": "/quickstart/overview"
     },
     {
       "source": "/benefits",
@@ -3398,6 +3504,74 @@
     {
       "source": "/integrate/webhooks/locally",
       "destination": "/integrate/cli/webhooks"
+    },
+    {
+      "source": "/features/usage-based-billing/introduction",
+      "destination": "/concepts/usage"
+    },
+    {
+      "source": "/features/benefits/credits",
+      "destination": "/features/usage-based-billing/credits"
+    },
+    {
+      "source": "/features/usage-based-billing/ingestion-strategies",
+      "destination": "/features/usage-based-billing/ingestion-strategies/ingestion-strategy"
+    },
+    {
+      "source": "/features/usage-based-billing/ingestion-strategies/s3-strategy",
+      "destination": "/features/usage-based-billing/ingestion-strategies/ingestion-strategy#s3"
+    },
+    {
+      "source": "/features/usage-based-billing/ingestion-strategies/stream-strategy",
+      "destination": "/features/usage-based-billing/ingestion-strategies/ingestion-strategy#stream"
+    },
+    {
+      "source": "/features/usage-based-billing/ingestion-strategies/delta-time-strategy",
+      "destination": "/features/usage-based-billing/ingestion-strategies/ingestion-strategy#delta-time"
+    },
+    {
+      "source": "/features/cost-insights/cost-events",
+      "destination": "/features/cost-insights/introduction#cost-events"
+    },
+    {
+      "source": "/features/cost-insights/cost-traces",
+      "destination": "/features/cost-insights/introduction#traces"
+    },
+    {
+      "source": "/guides/seat-based-pricing",
+      "destination": "/features/seat-based-pricing"
+    },
+    {
+      "source": "/features/finance/balance",
+      "destination": "/features/finance/payouts"
+    },
+    {
+      "source": "/features/integrations/affonso",
+      "destination": "/features/integrations"
+    },
+    {
+      "source": "/features/integrations/fernand",
+      "destination": "/features/integrations"
+    },
+    {
+      "source": "/features/integrations/framer",
+      "destination": "/features/integrations"
+    },
+    {
+      "source": "/features/integrations/raycast",
+      "destination": "/features/integrations"
+    },
+    {
+      "source": "/features/integrations/zapier",
+      "destination": "/features/integrations"
+    },
+    {
+      "source": "/features/integrations/paritydeals",
+      "destination": "https://www.evendeals.com/integrations/polar"
+    },
+    {
+      "source": "/api-reference",
+      "destination": "/api-reference/2026-10/introduction"
     }
   ]
 }

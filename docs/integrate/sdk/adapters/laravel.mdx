@@ -1,9 +1,9 @@
 ---
 title: "Laravel"
-description: "Payments and Checkouts made dead simple with Laravel"
+description: "Use the community-maintained laravel-polar package: a Billable trait for checkouts, subscriptions, orders and the Customer Portal, plus webhook events."
 ---
 
-Seamlessly integrate Polar.sh subscriptions and payments into your Laravel application. This package provides an elegant way to handle subscriptions, manage recurring payments, and interact with Polar's API. With built-in support for webhooks, subscription management, and a fluent API, you can focus on building your application while we handle the complexities of subscription billing.
+`danestves/laravel-polar` adds Polar checkouts, subscriptions and webhooks to a Laravel app. A `Billable` trait gives your models methods for checkout, plan changes and the Customer Portal, and the package stores subscriptions and orders in your database from webhooks.
 
 <Note>
 This provider is not maintained or officially supported by Polar. Use at your own discretion. If you have questions about the provider, please contact the project maintainer.
@@ -117,9 +117,9 @@ return [
 
 ## Usage
 
-### Access Token
+### Access token
 
-Configure your access token. Create a new token in the Polar Dashboard > Settings > Access Tokens and paste it in the `.env` file.
+Create an [organization access token](/integrate/oat) in **Settings → Access Tokens**, or run `polar auth token`, and add it to `.env`:
 
 - https://sandbox.polar.sh/dashboard/ORG_SLUG/settings/access-tokens (Sandbox)
 - https://polar.sh/dashboard/ORG_SLUG/settings/access-tokens (Production)
@@ -128,9 +128,9 @@ Configure your access token. Create a new token in the Polar Dashboard > Setting
 POLAR_ACCESS_TOKEN="<your_access_token>"
 ```
 
-### Webhook Secret
+### Webhook secret
 
-Configure your webhook secret. Create a new webhook in the Polar Dashboard > Settings > Webhooks.
+[Create a webhook endpoint](/integrate/webhooks/endpoints) in **Settings → Webhooks** and copy its secret.
 
 - https://sandbox.polar.sh/dashboard/ORG_SLUG/settings/webhooks (Sandbox)
 - https://polar.sh/dashboard/ORG_SLUG/settings/webhooks (Production)
@@ -139,6 +139,7 @@ Configure the webhook for the following events that this package supports:
 
 - `order.created`
 - `order.updated`
+- `order.refunded`
 - `subscription.created`
 - `subscription.updated`
 - `subscription.active`
@@ -152,11 +153,9 @@ Configure the webhook for the following events that this package supports:
 POLAR_WEBHOOK_SECRET="<your_webhook_secret>"
 ```
 
-### Billable Trait
+### Billable trait
 
-Let’s make sure everything’s ready for your customers to checkout smoothly. 🛒
-
-First, we’ll need to set up a model to handle billing—don’t worry, it’s super simple! In most cases, this will be your app’s User model. Just add the Billable trait to your model like this (you’ll import it from the package first, of course):
+Add the `Billable` trait to the model that pays, usually `User`:
 
 ```php
 use Danestves\LaravelPolar\Billable;
@@ -169,9 +168,9 @@ class User extends Authenticatable
 
 Now the user model will have access to the methods provided by the package. You can make any model billable by adding the trait to it, not just the User model.
 
-### Polar Script
+### Polar script
 
-Polar includes a JavaScript script that you can use to initialize the [Polar Embedded Checkout](https://polar.sh/docs/features/checkout/embed). If you going to use this functionality, you can use the `@polarEmbedScript` directive to include the script in your views inside the `<head>` tag.
+To use the [embedded checkout](/features/checkout/embed), include Polar's script with the `@polarEmbedScript` directive inside the `<head>` tag of your views.
 
 ```blade
 <head>
@@ -185,7 +184,7 @@ Polar includes a JavaScript script that you can use to initialize the [Polar Emb
 
 This package includes a webhook handler that will handle the webhooks from Polar.
 
-#### Webhooks & CSRF Protection
+#### Webhooks and CSRF protection
 
 Incoming webhooks should not be affected by [CSRF protection](https://laravel.com/docs/csrf). To prevent this, add your webhook path to the except list of your `App\Http\Middleware\VerifyCsrfToken` middleware:
 
@@ -215,7 +214,7 @@ This package includes a list of commands that you can use to retrieve informatio
 
 ### Checkouts
 
-#### Single Payments
+#### Single payments
 
 To create a checkout to show only a single payment, pass a single items to the array of products when creating the checkout.
 
@@ -239,10 +238,11 @@ Route::get('/subscribe', function (Request $request) {
 
 This could be useful if you want to offer monthly, yearly, and lifetime plans for example.
 
-> [!NOTE]
-> If you are requesting the checkout a lot of times we recommend you to cache the URL returned by the `checkout` method.
+<Tip>
+  If you request the same checkout often, cache the URL the `checkout` method returns.
+</Tip>
 
-#### Custom Price
+#### Custom price
 
 You can override the price of a product using the `charge` method.
 
@@ -254,9 +254,9 @@ Route::get('/subscribe', function (Request $request) {
 });
 ```
 
-#### Embedded Checkout
+#### Embedded checkout
 
-Instead of redirecting the user you can create the checkout link, pass it to the page and use our blade component:
+Instead of redirecting the user, create the checkout link, pass it to the page and use the package's Blade component:
 
 ```php
 use Illuminate\Http\Request;
@@ -268,7 +268,7 @@ Route::get('/billing', function (Request $request) {
 });
 ```
 
-Now we can use the button like this:
+Then use the button:
 
 ```blade
 <x-polar-button :checkout="$checkout" />
@@ -282,7 +282,7 @@ The component accepts the normal props that a link element accepts. You can chan
 
 It defaults to light theme, so you only need to pass the prop if you want to change it.
 
-### Prefill Customer Information
+### Prefill customer information
 
 You can override the user data using the following methods in your models provided by the `Billable` trait.
 
@@ -291,7 +291,7 @@ public function polarName(): ?string; // default: $model->name
 public function polarEmail(): ?string; // default: $model->email
 ```
 
-### Redirects After Purchase
+### Redirects after purchase
 
 You can redirect the user to a custom page after the purchase using the `withSuccessUrl` method:
 
@@ -325,7 +325,7 @@ $request->user()->checkout('variant-id')
 
 These will then be available in the relevant webhooks for you.
 
-#### Reserved Keywords
+#### Reserved keywords
 
 When working with custom data, this library has a few reserved terms.
 
@@ -339,7 +339,7 @@ Using any of these will result in an exception being thrown.
 
 #### Customer Portal
 
-Customers can update their personal information (e.g., name, email address) by accessing their [self-service customer portal](https://polar.sh/docs/features/customer-portal). To redirect customers to this portal, call the `redirectToCustomerPortal()` method on your billable model (e.g., the User model).
+Customers can update their personal information, such as name and email address, in the [Customer Portal](/features/customer-portal/introduction). To redirect customers to this portal, call the `redirectToCustomerPortal()` method on your billable model (e.g., the User model).
 
 ```php
 use Illuminate\Http\Request;
@@ -357,7 +357,7 @@ $url = $user->customerPortalUrl();
 
 ### Orders
 
-#### Retrieving Orders
+#### Retrieving orders
 
 You can retrieve orders by using the `orders` relationship on the billable model:
 
@@ -432,9 +432,9 @@ if ($user->hasPurchasedPrice('price_id_123')) {
 
 ### Subscriptions
 
-#### Creating Subscriptions
+#### Creating subscriptions
 
-Starting a subscription is simple. For this, we require our product's variant id. Copy the product id and start a new subscription checkout using your billable model:
+To start a subscription, pass the product ID to a new subscription checkout on your billable model:
 
 ```php
 use Illuminate\Http\Request;
@@ -450,7 +450,7 @@ When a customer completes their checkout, the incoming `SubscriptionCreated` eve
 $subscription = $user->subscription();
 ```
 
-#### Checking Subscription Status
+#### Checking subscription status
 
 Once a consumer has subscribed to your services, you can use a variety of methods to check on the status of their subscription. The most basic example is to check if a customer has a valid subscription.
 
@@ -506,7 +506,7 @@ if ($user->subscribedToPrice('price_id_123', 'swimming')) {
 }
 ```
 
-#### Cancelled Status
+#### Cancelled status
 
 To see if a user has cancelled their subscription, you can use the cancelled method:
 
@@ -524,7 +524,7 @@ if ($user->subscription()->onGracePeriod()) {
 }
 ```
 
-#### Past Due Status
+#### Past due status
 
 If a recurring payment fails, the subscription will become past due. This indicates that the subscription is still valid, but your customer's payments will be retried automatically over a 21-day period.
 
@@ -534,7 +534,7 @@ if ($user->subscription()->pastDue()) {
 }
 ```
 
-#### Subscription Scopes
+#### Subscription scopes
 
 There are several subscription scopes available for querying subscriptions in specific states:
 
@@ -558,7 +558,7 @@ Subscription::query()->unpaid();
 Subscription::query()->cancelled();
 ```
 
-#### Changing Plans
+#### Changing plans
 
 When a consumer is on a monthly plan, they may desire to upgrade to a better plan, alter their payments to an annual plan, or drop to a lower-cost plan. In these cases, you can allow them to swap plans by giving a different product id to the `swap` method:
 
@@ -578,7 +578,7 @@ $user = User::find(1);
 $user->subscription()->swapAndInvoice('product_id_123');
 ```
 
-#### Multiple Subscriptions
+#### Multiple subscriptions
 
 In certain situations, you may wish to allow your consumer to subscribe to numerous subscription kinds. For example, a gym may provide a swimming and weight lifting subscription. You can let your customers subscribe to one or both.
 
@@ -605,7 +605,7 @@ $user->subscription('gym')->swap('product_id_123');
 $user->subscription('swimming')->cancel();
 ```
 
-#### Cancelling Subscriptions
+#### Cancelling subscriptions
 
 To cancel a subscription, call the `cancel` method.
 
@@ -623,7 +623,7 @@ if ($user->subscription()->onGracePeriod()) {
 }
 ```
 
-Polar does not offer immediate cancellation. To resume a subscription while it is still in its grace period, use the resume method.
+The package's `cancel` method always cancels at the end of the period. To resume a subscription while it's still in its grace period, use the `resume` method.
 
 ```php
 $user->subscription()->resume();
@@ -631,11 +631,11 @@ $user->subscription()->resume();
 
 When a cancelled subscription approaches the end of its grace period, it becomes expired and cannot be resumed.
 
-### Handling Webhooks
+### Handling webhooks
 
-Polar can send webhooks to your app, allowing you to react. By default, this package handles the majority of the work for you. If you have properly configured webhooks, it will listen for incoming events and update your database accordingly. We recommend activating all event kinds so you may easily upgrade in the future.
+Polar can send webhooks to your app, allowing you to react. The package handles most of the work: once the webhook endpoint is configured, it listens for incoming events and updates your database. Subscribe the endpoint to all the events listed above.
 
-#### Webhook Events
+#### Webhook events
 
 - `Danestves\LaravelPolar\Events\BenefitGrantCreated`
 - `Danestves\LaravelPolar\Events\BenefitGrantUpdated`
@@ -673,7 +673,7 @@ class PolarEventListener
 }
 ```
 
-The [Polar documentation](https://polar.sh/docs/integrate/webhooks/events) includes an example payload.
+[Webhook events](/integrate/webhooks/events) links the payload of every event.
 
 Laravel v11 and up will automatically discover the listener. If you're using Laravel v10 or lower, you should configure it in your app's `EventServiceProvider`:
 

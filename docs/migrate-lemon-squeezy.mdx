@@ -106,9 +106,9 @@ If your app limits devices, see [Devices and activations](#devices-and-activatio
 
 <AccordionGroup>
   <Accordion title="Devices and activations">
-    Activated devices stay activated. Polar keeps each Lemon Squeezy activation under the same ID, so the `instance_id` your app saved works as the `activation_id` in Polar's [validate](/features/benefits/license-keys#validate-license-keys) and [deactivate](/features/benefits/license-keys) endpoints. Devices count toward the key's activation limit, as they did on Lemon Squeezy.
+    Activated devices stay activated. Polar keeps each Lemon Squeezy activation under the same ID, so the `instance_id` your app saved works as the `activation_id` in Polar's [validate](/features/benefits/validate-license-keys#validate-a-key) and [deactivate](/features/benefits/validate-license-keys#deactivate-a-device) endpoints. Devices count toward the key's activation limit, as they did on Lemon Squeezy.
 
-    - **Devices activated on Lemon Squeezy after the key moved** aren't on Polar. [Activate them on Polar](/features/benefits/license-keys#activate-license-keys-optional) once. The same goes for the rare activation whose ID isn't a standard UUID.
+    - **Devices activated on Lemon Squeezy after the key moved** aren't on Polar. [Activate them on Polar](/features/benefits/validate-license-keys#activate-a-device) once. The same goes for the rare activation whose ID isn't a standard UUID.
     - **Keys with unlimited activations** have no device limit on Polar. Their existing devices keep working, but Polar doesn't activate new ones: validate these keys without a device ID.
     - **A key moves** when you set up benefits for past buyers, and when the subscription switches for subscribers.
   </Accordion>
@@ -126,7 +126,7 @@ If your app limits devices, see [Devices and activations](#devices-and-activatio
   </Accordion>
 
   <Accordion title="Supported countries">
-    You can sign up as an individual or as a registered company. Check the list of [supported countries](/merchant-of-record/supported-countries) to see whether we can pay out to your country and what you need to set up a payout account.
+    You can sign up as an individual or as a registered company. Check the list of [supported countries](/merchant-of-record/supported-countries) to see whether Polar pays out to your country and what you need to set up a payout account.
   </Accordion>
 
   <Accordion title="Fees">
@@ -178,7 +178,7 @@ Design a progressive migration in which:
 Before recommending an endpoint, SDK method, webhook, or field:
 
 1. Read https://polar.sh/docs/migrate-lemon-squeezy.
-2. Read https://polar.sh/docs/features/benefits/license-keys.
+2. Read https://polar.sh/docs/features/benefits/validate-license-keys.
 3. For JavaScript or TypeScript, read:
    https://raw.githubusercontent.com/polarsource/agent-toolkit/main/skills/polar-integration/SKILL.md
    For other languages, use the current language SDK and OpenAPI docs.

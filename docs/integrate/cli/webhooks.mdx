@@ -1,7 +1,7 @@
 ---
 title: "Webhooks on your machine"
 sidebarTitle: "Webhooks"
-description: "Receive real webhook events locally and trigger sample events on demand"
+description: "Forward your organization's webhooks to a local server with polar webhook listen, and send sample events with polar webhook trigger."
 ---
 
 Polar delivers webhooks to public URLs, which your local server does not have.
@@ -27,6 +27,9 @@ whenever you need one, without waiting for a real checkout or subscription.
     polar webhook listen http://localhost:3000/api/webhooks
     ```
 
+    A port alone works too: `polar webhook listen 3000` forwards to
+    `http://localhost:3000`, and `polar webhook listen 3000/api/webhooks` to that route.
+
     ```text
       ● Connected  Acme
       Forwarding   http://localhost:3000/api/webhooks
@@ -42,6 +45,12 @@ whenever you need one, without waiting for a real checkout or subscription.
 
     ```bash .env
     POLAR_WEBHOOK_SECRET=6t3c8ce2247c493a3ade20uea4484d64
+    ```
+
+    To write it without starting a session, print the secret and exit:
+
+    ```bash Terminal
+    echo "POLAR_WEBHOOK_SECRET=$(polar webhook listen --print-secret)" >> .env
     ```
   </Step>
 </Steps>
@@ -59,7 +68,9 @@ if it drops. Press `Ctrl+C` to stop.
 
 ## Trigger sample events
 
-With `polar webhook listen` running in one terminal, send a sample event from another:
+`polar webhook trigger` delivers through your `listen` session, so start
+`polar webhook listen` in one terminal first. Without an active session, the
+trigger fails. Then send a sample event from another terminal:
 
 ```bash Terminal
 polar webhook trigger order.created
@@ -101,9 +112,10 @@ Print the payload instead of delivering it:
 polar webhook trigger checkout.created --dry-run
 ```
 
-## Next steps
+## Learn more
 
-- [Webhook events](/integrate/webhooks/events) documents every event and its
-  payload.
-- [Delivery](/integrate/webhooks/delivery) explains signatures, retries and
-  timeouts for production endpoints.
+| Resource | Description |
+| --- | --- |
+| [Webhook events](/integrate/webhooks/events) | Every event and its payload |
+| [Delivery](/integrate/webhooks/delivery) | Signatures, retries and timeouts for production endpoints |
+| [Webhook endpoints](/integrate/webhooks/endpoints) | Add a public endpoint before you go live |

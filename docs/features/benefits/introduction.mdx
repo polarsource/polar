@@ -1,40 +1,249 @@
 ---
-title: "Entitlements (Benefits)"
-sidebarTitle: "Introduction"
+title: "Manage benefits"
+sidebarTitle: "Manage benefits"
+description: "Create benefits, attach them to products, control their visibility, grant or revoke them manually, and react to grant webhooks."
 ---
 
-Polar offers built-in benefit (entitlements) automation for common upsells within the developer &
-designer ecosystem with more to come.
+A **benefit** is what a customer receives from you: credits on a meter, a feature flag, a shared Slack channel, a license key. You create a benefit once and attach it to any number of products. Polar grants it on purchase and revokes it when access ends. You can also [grant a benefit to a customer directly](#grant-or-revoke-a-benefit-manually), without a purchase. See [Benefits](/concepts/benefits) for grants and their lifecycle.
 
-- [**Credits**](/features/benefits/credits). A simple benefit that allows you to credit a customer's Usage Meter balance.
-- [**License Keys**](/features/benefits/license-keys). Software license keys that you can customize the branding of.
-- [**Feature Flags**](/features/benefits/feature-flags). Simple, API-driven feature access flags with optional metadata.
-- [**File Downloads**](/features/benefits/file-downloads). Downloadable files of any kind up to 10GB each.
-- [**GitHub Repository Access**](/features/benefits/github-access). Automatically invite subscribers to private GitHub repo(s).
-- [**Discord Invite**](/features/benefits/discord-access). Automate invitations and granting of roles to subscribers and customers.
-- [**Shared Slack Channel**](/features/benefits/slack-shared-channel). Give customers a shared Slack channel via Slack Connect.
+This page covers the tasks every benefit type shares. Code examples use API version `2026-10`.
 
-## Product & Subscription Benefits
+## Benefit types
 
-Product and subscription benefits are standalone resources in Polar - connected to one or many products or subscription tiers.
+| Type | API `type` | What the customer gets |
+| --- | --- | --- |
+| [Meter Credits](/features/usage-based-billing/credits) | `meter_credit` | Units credited to a meter balance |
+| [Feature Flag](/features/benefits/feature-flags) | `feature_flag` | A flag, with metadata, that your application checks |
+| [Shared Slack Channel](/features/benefits/slack-shared-channel) | `slack_shared_channel` | A Slack Connect channel with your team |
+| [Custom](/features/benefits/custom) | `custom` | A private note, for anything else you deliver |
+| [License Keys](/features/benefits/license-keys) | `license_keys` | A unique key, with optional expiry, activations and usage limit |
+| [File Downloads](/features/benefits/file-downloads) | `downloadables` | Files to download |
+| [GitHub Repository Access](/features/benefits/github-access) | `github_repository` | An invitation to a private repository |
+| [Discord Invite](/features/benefits/discord-access) | `discord` | An invitation to a Discord server, with a role |
 
-This approach is a bit different from other platforms, but offers many advantages:
+## Create a benefit
 
-- Easy to enable the same benefit across multiple products & subscriptions
-- You can change a benefit in one place vs. many
-- No duplicate data or work (error prone)
-- More intuitive UI for you and your customers
+Every benefit has a `type`, a `description` of 3 to 42 characters, and `properties` that depend on the type. The description is what customers see on the product, at checkout and in the [Customer Portal](/features/customer-portal/introduction).
 
-**How customers get access to benefits:**
+<Tabs>
+  <Tab title="Dashboard">
+    - Open **Products** → **Benefits**
+    - Click **Create Benefit**
+    - Pick a **Type** and fill in the **Description**
+    - Fill in the type's options and click **Create**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar benefits create --data '{
+      "type": "feature_flag",
+      "description": "Beta access",
+      "properties": {}
+    }'
+    ```
 
-- ✅ Active subscribers of tiers with the benefit enabled
-- ✅ Customers who bought a product with the benefit (lifetime access)
-- ❌ Subscribers with an expired subscription (cancelled)
-- ❌ Users who are not customers
+    See [`polar benefits`](/integrate/cli/reference/benefits).
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Create a Feature Flag benefit called "Beta access" in my Polar sandbox organization.
+    ```
 
-## Creating & Managing Benefits
+    Uses the `benefits_create` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
 
-You can manage benefits in two ways:
+<CodeGroup>
+```typescript TypeScript
+const benefit = await polar.benefits.create({
+  type: "feature_flag",
+  description: "Beta access",
+  properties: {},
+  metadata: { tier: "pro" },
+});
+```
 
-1. Directly within a product create/edit form
-2. Or via `Benefits` in your dashboard
+```python Python
+benefit = polar.benefits.create(
+    type="feature_flag",
+    description="Beta access",
+    properties={},
+    metadata={"tier": "pro"},
+)
+```
+
+```bash cURL
+export BENEFIT_ID=$(curl -s -X POST https://sandbox-api.polar.sh/v1/benefits/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "feature_flag",
+    "description": "Beta access",
+    "properties": {},
+    "metadata": { "tier": "pro" }
+  }' | jq -r .id)
+```
+</CodeGroup>
+
+Each type page lists its `properties`. Discord, GitHub and Slack benefits need a connection made in the dashboard first.
+
+## Attach a benefit to a product
+
+A product grants every benefit attached to it. Setting a product's benefits replaces the whole list, so send every benefit the product should keep.
+
+<Tabs>
+  <Tab title="Dashboard">
+    - Open **Products** and select the product
+    - Under **Automated Benefits**, select the benefit
+    - Save the product
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar products update_benefits <product_id> --data '{ "benefits": ["<benefit_id>"] }'
+    ```
+
+    See [`polar products`](/integrate/cli/reference/products).
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Attach the "Beta access" benefit to my Pro product in my Polar sandbox organization.
+    ```
+
+    Uses the `products_update_benefits` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+<CodeGroup>
+```typescript TypeScript
+await polar.products.updateBenefits(product.id, {
+  benefits: [benefit.id],
+});
+```
+
+```python Python
+polar.products.update_benefits(product.id, benefits=[benefit.id])
+```
+
+```bash cURL
+curl -X POST https://sandbox-api.polar.sh/v1/products/$PRODUCT_ID/benefits \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{ "benefits": ["'"$BENEFIT_ID"'"] }'
+```
+</CodeGroup>
+
+Existing customers of the product get the new benefit too. Removing a benefit from a product revokes it from the product's customers.
+
+## Visibility
+
+`visibility` decides whether customers see a benefit after purchase: in order confirmations, emails, the Customer Portal and the product's public benefit list.
+
+| Dashboard | API value | Effect |
+| --- | --- | --- |
+| **Visible** | `public` | Shown to customers |
+| **Hidden** | `private` | Granted, but never shown to customers |
+
+Hidden benefits still appear in the customer's `granted_benefits` in the [customer state](/integrate/customer-state), so your application can read them.
+
+You can only change visibility on **Custom**, **License Keys**, **Meter Credits** and **Feature Flag** benefits. Feature flags default to hidden, the others to visible. Discord, GitHub, file download and Slack benefits are always visible, because the customer has to act in the portal to receive them.
+
+## Metadata
+
+`metadata` is a key-value object on the benefit. It's returned as `benefit_metadata` on each entry of the customer state's `granted_benefits`, so your application can read configuration such as a plan tier or a limit without hardcoding benefit IDs. Feature flags rely on it. See [Feature flags](/features/benefits/feature-flags).
+
+## Update or delete a benefit
+
+Updating a benefit's properties updates existing grants: changing a Discord role, for example, moves every customer to the new role.
+
+Deleting a benefit revokes it from every customer who holds it. Detach it from products instead if existing customers should keep it.
+
+<Warning>
+  Deleting a benefit can't be undone, and customers lose access right away.
+</Warning>
+
+In the dashboard:
+
+- Open **Products → Benefits** and select the benefit
+- Click **Edit Benefit** to change it
+- Open the **…** menu and click **Delete Benefit** to delete it
+
+The benefit's page also lists its **Benefit Grants**: who holds it and each grant's status.
+
+| Task | CLI | MCP operation |
+| --- | --- | --- |
+| Update a benefit | `polar benefits update <id>` | `benefits_update` |
+| Delete a benefit | `polar benefits delete <id>` | `benefits_delete` |
+| List who holds a benefit | `polar benefits grants <id>` | `benefits_grants` |
+| List grants across benefits | `polar benefit_grants list` | `benefit_grants_list` |
+
+## Grant or revoke a benefit manually
+
+<Note>Available from API version 2027-01.</Note>
+
+Benefits aren't tied to orders. You can grant a benefit to any customer without a purchase: to unlock a feature for a trial, compensate a customer, or deliver a deal agreed outside checkout. A manual grant lasts until you revoke it. You can also revoke any grant, including one from a purchase, and undo a manual revocation. Meter Credits benefits can't be granted this way. Credit the meter directly instead, see [Credits](/features/usage-based-billing/credits).
+
+<Tabs>
+  <Tab title="Dashboard">
+    To grant a benefit:
+
+    - Open **Customers** and select the customer
+    - Under **Benefit Grants**, click **Grant benefit**
+    - Search for and select the benefit
+    - For a team customer, select the **Member** who gets it
+    - Click **Grant benefit**
+
+    To revoke a grant, click **Revoke** on its row and confirm. To undo a manual revocation, click **Unrevoke**. Both buttons appear under **Benefit Grants** on the customer's page and on the benefit's page in **Products → Benefits**.
+  </Tab>
+  <Tab title="CLI">
+    The CLI can't grant or revoke benefits yet. Use it to find a customer's grants:
+
+    ```bash
+    polar benefit_grants list --external-customer-id user_123
+    ```
+
+    See [`polar benefit_grants`](/integrate/cli/reference/benefit_grants).
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Grant the "Beta access" benefit to the customer with external ID user_123 in my Polar sandbox organization.
+    ```
+
+    Uses the `benefit_grants_create` operation of the [Polar MCP server](/integrate/mcp). Ask your agent to revoke a grant or undo a revocation the same way. It uses `benefit_grants_revoke` and `benefit_grants_update`.
+  </Tab>
+</Tabs>
+
+Through the API, use [`POST /v1/benefit-grants/`](/api-reference/next/benefit-grants/create-benefit-grant) to grant, [`DELETE /v1/benefit-grants/{id}`](/api-reference/next/benefit-grants/revoke-benefit-grant) to revoke and [`PATCH /v1/benefit-grants/{id}`](/api-reference/next/benefit-grants/update-benefit-grant) to undo a revocation.
+
+Granting and revoking are asynchronous. The returned grant may not be granted yet. A manually revoked grant stays revoked through renewals until you undo the revocation.
+
+## Grant errors
+
+When Polar can't deliver a benefit, for example because the GitHub App lost access to the repository, the grant's `error` field holds the reason. Find failed grants under **Benefit Grants** on the benefit's page in **Products → Benefits**, or list them with `polar benefits grants <id>`.
+
+## Webhooks
+
+| Event | When |
+| --- | --- |
+| `benefit.created` | A benefit was created |
+| `benefit.updated` | A benefit was updated |
+| `benefit_grant.created` | A customer was granted a benefit |
+| `benefit_grant.updated` | A grant changed, for example a license key was updated |
+| `benefit_grant.cycled` | A subscription renewed and the grant was renewed with it |
+| `benefit_grant.revoked` | A grant was revoked |
+
+Each grant change also fires `customer.state_changed`, which is usually all you need. See [Webhook events](/integrate/webhooks/events).
+
+<Visibility for="agents">
+  Read access from the customer state (`GET /v1/customers/external/{external_id}/state`, `granted_benefits[].benefit_id` and `benefit_metadata`), not by listing grants. `visibility` takes `public` or `private`. Only `custom`, `license_keys`, `meter_credit` and `feature_flag` accept a value other than `public`; other types return a validation error. `POST /v1/products/{id}/benefits` replaces the full list. `DELETE /v1/benefits/{id}` revokes every grant. Manual grants (`benefit-grants` create, update, revoke) require API version `2027-01`.
+</Visibility>
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Benefits](/concepts/benefits) | Grants, revocation and how benefits relate to orders and subscriptions |
+| [Customer state](/integrate/customer-state) | Read a customer's granted benefits in one call |
+| [Create Benefit API](/api-reference/current/benefits/create-benefit) | Request and response schema for every benefit type |
+| [Update Product Benefits API](/api-reference/current/products/update-product-benefits) | Attach benefits to a product |
+| [`polar benefits`](/integrate/cli/reference/benefits) | CLI reference |

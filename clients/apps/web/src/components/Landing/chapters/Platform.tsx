@@ -25,7 +25,7 @@ const PILLARS: Pillar[] = [
     desc: 'Every token, agent run and GPU second streams into live meters, priced and ready to bill the moment it happens.',
     image: '/assets/landing/company/Polar_Flow_01_No_Logo.jpg',
     focus: 'center',
-    docs: '/docs/features/usage-based-billing/introduction',
+    docs: '/docs/concepts/usage',
     vignette: <MeterVignette />,
   },
   {

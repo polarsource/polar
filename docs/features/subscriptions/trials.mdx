@@ -1,110 +1,183 @@
 ---
 title: "Trials"
-description: "Offer free trials on your subscriptions"
+sidebarTitle: "Trials"
+description: "Offer free trials on subscription products, with or without a card up front. Covers where trials are set, what happens when they end, reminders and trial abuse prevention."
 ---
 
-Trials are a great way to let potential customers experience your product before committing to a subscription. With Polar, you can easily set up free trials for your subscription products.
+A **trial** is a free period at the start of a subscription. The customer gets the product's benefits right away and is charged when the trial ends. The subscription is **Trialing** (`trialing`) until then. To see every trial, filter **Sales → Subscriptions** by the **Trialing** status.
 
-## Setting up a trial
+The code examples use the sandbox client from the [quickstart overview](/quickstart/overview#prerequisites), on API version `2026-10`.
 
-You can set up a trial period through the following means:
+## Where a trial comes from
 
-- When creating or editing a [product](/features/products).
-- When creating or editing a [checkout link](/features/checkout/links).
-- When creating a Checkout Session through the [API](/api-reference/current/checkouts/create-checkout-session).
+A trial has a length: a count and an interval of `day`, `week`, `month` or `year` (`trial_interval_count` and `trial_interval` in the API). You can set it in three places:
 
-If you set a trial period on the Checkout Link or Checkout Session, it will **override the trial period set on the product**.
+| Source | Set with |
+| --- | --- |
+| [Product](/features/products) | Dashboard, CLI, agent or API |
+| [Checkout Link](/features/checkout/links) | Dashboard, CLI, agent or API |
+| [Checkout Session](/features/checkout/session) | API |
 
-The trial period consists of two parameters:
+A trial on a Checkout Link or Checkout Session **overrides the product's trial**. Set `allow_trial: false` on a Checkout Session to sell without a trial even when the product has one.
 
-- **A unit**: day, week, month, or year.
-- **A duration**: a number representing how many units the trial will last.
+### Add a trial to a product
 
-<img
-  className="block dark:hidden"
-  src="/assets/features/trials/setup.light.png"
-/>
-<img
-  className="hidden dark:block"
-  src="/assets/features/trials/setup.dark.png"
-/>
+<Tabs>
+  <Tab title="Dashboard">
+    - Open **Products → Catalogue** and edit a recurring product
+    - Under **Free Trial Configuration**, click **Configure Trial**
+    - Set **Trial duration**: a number and an interval
+    - Leave **Require credit card up front** on, or turn it off for a card-less trial
+    - Save the product
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar products update $PRODUCT_ID --trial-interval day --trial-interval-count 14
+    ```
 
-## Starting a trial
+    The same flags work on `polar products create` and `polar checkout_links create|update`.
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Add a 14-day free trial to the Pro product in my Polar sandbox organization.
+    ```
 
-When a customer checks out a subscription product with a trial period, they will not be charged immediately. Instead, they will have access to the product for the duration of the trial period.
+    Uses the `products_update` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
 
-We'll still collect their payment information at checkout, but they won't be charged until the trial period ends. This means that if they decide to cancel before the trial ends, they won't be charged at all.
+<CodeGroup>
+```typescript TypeScript
+await polar.products.update(productId, {
+  trial_interval: "day",
+  trial_interval_count: 14,
+});
+```
 
-Once the trial period ends, the customer will be automatically charged for the subscription, and their billing cycle will begin.
+```python Python
+polar.products.update(product_id, trial_interval="day", trial_interval_count=14)
+```
 
-<img
-  className="block dark:hidden"
-  src="/assets/features/trials/checkout.light.png"
-/>
-<img
-  className="hidden dark:block"
-  src="/assets/features/trials/checkout.dark.png"
-/>
+```bash cURL
+curl -X PATCH https://sandbox-api.polar.sh/v1/products/$PRODUCT_ID \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{ "trial_interval": "day", "trial_interval_count": 14 }'
+```
+</CodeGroup>
 
-## Adding, extending or canceling a trial
+Set both fields to `null` to remove the trial.
 
-For existing trialing subscriptions, you can extend or cancel a customer's trial period through the dashboard, from the subscription details page. Click on **Update Subscription**, then click on the **Trial** tab.
+### Set or skip a trial on a Checkout Session
 
-To extend a trial, set a new trial end date in the future.
+<CodeGroup>
+```typescript TypeScript
+const checkout = await polar.checkouts.create({
+  products: [productId],
+  external_customer_id: "user_123",
+  trial_interval: "week",
+  trial_interval_count: 1,
+});
+```
 
-To cancel a trial, click on the **End trial** button. Polar will charge the customer immediately and change the subscription to **active** if payment succeeds.
+```python Python
+checkout = polar.checkouts.create(
+    products=[product_id],
+    external_customer_id="user_123",
+    trial_interval="week",
+    trial_interval_count=1,
+)
+```
 
-<img
-  className="block dark:hidden"
-  src="/assets/features/trials/update.light.png"
-/>
-<img
-  className="hidden dark:block"
-  src="/assets/features/trials/update.dark.png"
-/>
+```bash cURL
+curl -X POST https://sandbox-api.polar.sh/v1/checkouts/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "products": ["'"$PRODUCT_ID"'"],
+    "external_customer_id": "user_123",
+    "trial_interval": "week",
+    "trial_interval_count": 1
+  }'
+```
+</CodeGroup>
 
-## Trial conversion reminders
+Pass `allow_trial: false` instead to charge the customer today.
 
-Before a trial ends, Polar emails the customer to remind them that they're about to be charged. This keeps conversions transparent and avoids surprise charges that often end in chargebacks.
+<Note>API only. Checkout Sessions can't be created from the CLI or MCP server.</Note>
 
-When the reminder goes out depends on the length of the trial:
+## Card up front or card-less
 
-- **Trials of 3 days or more** — reminder sent **3 days before** the trial ends.
-- **Trials between 1 and 3 days** — reminder sent **1 day before** the trial ends.
-- **Trials shorter than 1 day** — no reminder is sent (there isn't enough runway).
+By default, checkout collects a payment method for a trial without charging it. When the trial ends, Polar charges that payment method, the subscription becomes `active` and the customer gets the **Trial converted** email. If the charge fails, the usual [payment retries](/features/subscriptions/failed-payments) apply.
 
-Reminders are skipped for fully free subscriptions and for trialing subscriptions already scheduled to cancel at period end.
+A **card-less trial** skips the payment form at checkout. Turn off **Require credit card up front** on the product or Checkout Link.
 
-You can turn trial conversion reminders off under [**Settings → Customer Notifications**](https://polar.sh/to/dashboard/settings/customer-notifications) if you prefer to handle that communication yourself.
+<Note>
+  Available from API version 2027-01 as `trial_payment_setup_required: false` on products and Checkout Links. See [Update Product](/api-reference/next/products/update-product). In the dashboard, use the **Require credit card up front** switch.
+</Note>
 
-## Preventing trial abuse
+When a card-less trial ends without a payment method or a complete billing address:
 
-To protect your business from customers repeatedly signing up for trials, you can enable the **Prevent trial abuse** feature from your organization's subscription settings.
+1. The subscription moves to **Trial ended** (`trial_ended`) and the customer loses access to its benefits.
+2. The customer can add their billing details in the [Customer Portal](/features/customer-portal/introduction). Polar charges them right away and the subscription becomes `active` with a new billing period.
+3. If they don't, Polar revokes the subscription **14 days after the trial ended**. Usage recorded during the trial isn't billed.
 
-### How it works
+Before the trial ends, the reminder email asks a customer without billing details to add them instead of announcing a charge. See [Reminders](#reminders).
 
-When this feature is enabled, Polar tracks trial redemptions using:
+A `trial_ended` subscription can't change plan, seats or units. Free products never move to `trial_ended`, since nothing is charged after the trial.
 
-- **Email addresses**: We automatically detect and normalize email aliases (e.g., `user+alias@example.com` is treated as `user@example.com`) to prevent abuse through simple email variations.
-- **Payment method fingerprints**: We track the unique fingerprint of payment methods (credit cards) used during checkout to identify returning customers even if they use a different email address.
-- **Customer IDs**: A redemption stays linked to the customer record when the customer changes their email address.
+## Extend or end a trial
 
-A customer who has already redeemed a trial for any of your products can't start another trial if any of these signals match.
+Set a new `trial_end` date to extend a trial, or `"now"` to end it and charge the first cycle right away. In the dashboard, open the subscription, click **Update Subscription** and use the **Trial** tab. It's only shown while the subscription is **Trialing**.
 
-### Enabling the feature
+See [Extend or end a trial](/features/subscriptions/manage#extend-or-end-a-trial) for the CLI, prompt and API examples, including adding a trial to an `active` subscription.
 
-1. Open your organization's [**Settings**](https://polar.sh/to/dashboard/settings) page
-2. Navigate to the **Subscription** section
-3. Toggle on **Prevent trial abuse**
+## Reminders
 
-Once enabled, the feature will apply to all future trial checkout attempts across all your products.
+Polar emails the customer before a trial ends, so the first charge isn't a surprise:
 
-### Customer experience
+| Trial length | Reminder sent |
+| --- | --- |
+| 3 days or more | 3 days before the trial ends |
+| 1 to 3 days | 1 day before the trial ends |
+| Under 1 day | No reminder |
 
-When a customer who has already used a trial attempts to check out again:
+Fully free subscriptions and trials set to cancel at period end don't get a reminder. On a card-less trial without billing details, the same email asks the customer to add them.
 
-1. They will see an error message: "You have already used a trial for this product. Trials can only be used once per customer."
-2. The checkout will automatically refresh without the trial period
-3. The customer can still complete their purchase and subscribe at the regular price
+Turn reminders off under **Settings → Customer Notifications → Trials → Trial conversion reminder**. The **Trial converted** email, sent when the first charge succeeds, is in the same group.
 
-This approach ensures a smooth experience while protecting your business from trial abuse.
+## Prevent trial abuse
+
+Turn on **Settings → Subscriptions → Prevent trial abuse** to give each customer one trial across all your products. The API field is `subscription_settings.prevent_trial_abuse` on the organization.
+
+Polar matches earlier trials on any of:
+
+- **Email address**, normalized so aliases match: `jane+trial@example.com` counts as `jane@example.com`.
+- **Payment method fingerprint**, so the same card is recognized under a different email.
+- **Customer ID**, so a trial stays linked when the customer changes their email.
+
+When a returning customer checks out, they see **No free trial for this purchase** and the checkout continues without the trial. They can still subscribe at the regular price.
+
+Polar records every trial whether or not the setting is on, so trials started before you turn it on count too.
+
+## From the CLI or your agent
+
+| Task | CLI | MCP operation |
+| --- | --- | --- |
+| Add a trial to a product | `polar products update <id> --trial-interval day --trial-interval-count 14` | `products_update` |
+| Add a trial to a Checkout Link | `polar checkout_links update <id> --trial-interval week --trial-interval-count 1` | `checkout_links_update` |
+| List trialing subscriptions | `polar subscriptions list --status trialing` | `subscriptions_list` |
+| Extend a trial | `polar subscriptions update <id> --trial-end 2026-12-15T00:00:00Z` | `subscriptions_update` |
+| End a trial now | `polar subscriptions update <id> --trial-end now` | `subscriptions_update` |
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Orders & subscriptions](/concepts/orders-and-subscriptions) | Subscription statuses, including `trialing` and `trial_ended` |
+| [Managing subscriptions](/features/subscriptions/manage) | Extend, end or add a trial |
+| [Checkout Sessions](/features/checkout/session) | Trial overrides and `allow_trial` |
+| [Subscriptions overview](/features/subscriptions/introduction) | Customer notification emails |
+| [Update Product](/api-reference/current/products/update-product) | API reference |

@@ -20,7 +20,7 @@ const CHECKOUT_FILES = [
   'src/utils/checkout.ts',
 ]
 
-const SERVER_TESTS = ['src/proxy.test.ts']
+const SERVER_TESTS = ['src/proxy.test.ts', 'src/utils/user.test.ts']
 
 const env = {
   NEXT_PUBLIC_API_URL: 'http://api.polar.test',

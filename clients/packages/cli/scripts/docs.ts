@@ -272,7 +272,9 @@ const commandPage = (command: CommandTree) =>
       frontmatter({
         title: own!.join(' '),
         sidebarTitle: command.name,
-        ...(doc.description ? { description: doc.description } : {}),
+        description:
+          doc.description ||
+          `Arguments and flags for every ${own!.join(' ')} command`,
       }),
       GENERATED,
       ...sections,

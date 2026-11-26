@@ -1,10 +1,18 @@
 ---
-title: "Webhook Events"
-sidebarTitle: "Overview"
-description: "Our webhook events and in which context they are useful"
+title: "Webhook events"
+sidebarTitle: "Events"
+description: "Every webhook event Polar sends, what triggers it, and the order events arrive in when subscriptions are canceled, renewed, paused or migrated."
 ---
 
-## Billing Events
+Polar sends one webhook event per change in your organization. Each payload has a `type`, such as `order.paid`, a `timestamp` and the changed object in `data`, shaped by the endpoint's [API version](/integrate/webhooks/endpoints#api-version). Select a card for the full payload schema.
+
+**Not sure which to pick?** For granting and revoking access, `customer.state_changed` alone is usually enough: it carries the customer's active subscriptions, granted benefits and meter balances. See [Customer state](/integrate/customer-state). For fulfilling one-time purchases, use `order.paid`.
+
+<Visibility for="agents">
+  Prefer `customer.state_changed` for access control and `order.paid` for fulfillment. `subscription.canceled` doesn't end access: the customer keeps it until `subscription.revoked`. Don't rely on delivery order across events; read `status` and timestamps from the payload.
+</Visibility>
+
+## Billing events
 
 ### Checkout
 
@@ -14,14 +22,18 @@ description: "Our webhook events and in which context they are useful"
     icon="link"
     href="/api-reference/current/checkout_created"
     horizontal
-  ></Card>
+  >
+    Sent when a Checkout Session is created.
+  </Card>
 
   <Card
     title="checkout.updated"
     icon="link"
     href="/api-reference/current/checkout_updated"
     horizontal
-  ></Card>
+  >
+    Sent when a Checkout Session changes, including when its `status` becomes `succeeded`.
+  </Card>
 
   <Card
     title="checkout.expired"
@@ -29,7 +41,7 @@ description: "Our webhook events and in which context they are useful"
     href="/api-reference/current/checkout_expired"
     horizontal
   >
-    Fired when a checkout link has expired without being completed.
+    Sent when a Checkout Session expires without being completed.
   </Card>
 </Columns>
 
@@ -42,7 +54,7 @@ description: "Our webhook events and in which context they are useful"
     href="/api-reference/current/customer_created"
     horizontal
   >
-    Fired when a new customer has been created.
+    Sent when a customer is created.
   </Card>
 
   <Card
@@ -51,7 +63,7 @@ description: "Our webhook events and in which context they are useful"
     href="/api-reference/current/customer_updated"
     horizontal
   >
-    Fired when a customer has been updated.
+    Sent when a customer is updated.
   </Card>
 
   <Card
@@ -60,7 +72,7 @@ description: "Our webhook events and in which context they are useful"
     href="/api-reference/current/customer_deleted"
     horizontal
   >
-    Fired when a customer has been deleted.
+    Sent when a customer is deleted.
   </Card>
 
   <Card
@@ -69,14 +81,13 @@ description: "Our webhook events and in which context they are useful"
     href="/api-reference/current/customer_state_changed"
     horizontal
   >
-    Fired when a customer's state has changed. Includes active subscriptions and
-    granted benefits.
+    Sent when a customer's state changes. Includes active subscriptions, granted benefits and active meters.
   </Card>
 </Columns>
 
 ### Subscriptions
 
-In order to properly implement logic for handling subscriptions, you should look into the following events.
+To track a subscription's full lifecycle, listen to these events. The sequences below show how they combine.
 
 <Columns cols={2}>
   <Card
@@ -85,7 +96,7 @@ In order to properly implement logic for handling subscriptions, you should look
     href="/api-reference/current/subscription_created"
     horizontal
   >
-    Fired when a new subscription has been created.
+    Sent when a subscription is created. Its `status` might not be `active` yet while the first payment is processed.
   </Card>
 
   <Card
@@ -93,14 +104,18 @@ In order to properly implement logic for handling subscriptions, you should look
     icon="link"
     href="/api-reference/current/subscription_active"
     horizontal
-  ></Card>
+  >
+    Sent when a subscription becomes active, for a new paid subscription or after a payment is recovered.
+  </Card>
 
   <Card
     title="subscription.uncanceled"
     icon="link"
     href="/api-reference/current/subscription_uncanceled"
     horizontal
-  ></Card>
+  >
+    Sent when a customer undoes a cancellation scheduled for the end of the period.
+  </Card>
 
   <Card
     title="subscription.cycled"
@@ -108,7 +123,7 @@ In order to properly implement logic for handling subscriptions, you should look
     href="/api-reference/current/subscription_cycled"
     horizontal
   >
-    Fired when a subscription enters a new billing period, before the renewal order exists and whether or not the payment succeeds.
+    Sent when a subscription enters a new billing period, before the renewal order exists and whether or not the payment succeeds.
   </Card>
 
   <Card
@@ -116,7 +131,9 @@ In order to properly implement logic for handling subscriptions, you should look
     icon="link"
     href="/api-reference/current/subscription_canceled"
     horizontal
-  ></Card>
+  >
+    Sent when a subscription is canceled. The customer might keep access until the end of the current period.
+  </Card>
 
   <Card
     title="subscription.past_due"
@@ -124,7 +141,7 @@ In order to properly implement logic for handling subscriptions, you should look
     href="/api-reference/current/subscription_past_due"
     horizontal
   >
-    Fired when a subscription payment has failed. The customer can recover by updating their payment method.
+    Sent when a subscription payment fails. The customer can recover by updating their payment method.
   </Card>
 
   <Card
@@ -133,24 +150,7 @@ In order to properly implement logic for handling subscriptions, you should look
     href="/api-reference/current/subscription_updated"
     horizontal
   >
-    Use this event if you want to handle cancellations, un-cancellations, etc. The
-    updated event is a catch-all event for `subscription.active`,
-    `subscription.canceled`, `subscription.uncanceled`, `subscription.cycled`,
-    `subscription.past_due`, `subscription.revoked`, `subscription.paused`,
-    `subscription.resumed` and `subscription.migrated`.
-  </Card>
-
-  <Card
-    title="order.created"
-    icon="link"
-    href="/api-reference/current/order_created"
-    horizontal
-  >
-    Carries a `billing_reason` field, which can be `purchase`,
-    `subscription_create`, `subscription_cycle`, `subscription_update` and
-    `subscription_meter_cycle`. To act
-    on a renewal, listen to `subscription.cycled` instead: it fires whether or not
-    the renewal payment succeeds.
+    A catch-all, sent along with `subscription.active`, `subscription.canceled`, `subscription.uncanceled`, `subscription.cycled`, `subscription.past_due`, `subscription.revoked`, `subscription.paused`, `subscription.resumed` and `subscription.migrated`. Use it to handle every change in one place.
   </Card>
 
   <Card
@@ -158,7 +158,9 @@ In order to properly implement logic for handling subscriptions, you should look
     icon="link"
     href="/api-reference/current/subscription_revoked"
     horizontal
-  ></Card>
+  >
+    Sent when a subscription ends and the customer loses access: at the end of a canceled period, on immediate revocation, or when payment retries are exhausted.
+  </Card>
 
   <Card
     title="subscription.paused"
@@ -166,7 +168,7 @@ In order to properly implement logic for handling subscriptions, you should look
     href="/api-reference/current/subscription_paused"
     horizontal
   >
-    Fired when a scheduled pause takes effect at the end of the period. Billing stops and benefits are revoked until the subscription resumes.
+    Sent when a scheduled pause takes effect at the end of the period. Billing stops and benefits are revoked until the subscription resumes.
   </Card>
 
   <Card
@@ -175,7 +177,7 @@ In order to properly implement logic for handling subscriptions, you should look
     href="/api-reference/current/subscription_resumed"
     horizontal
   >
-    Fired when a paused subscription resumes. A new billing period starts and the customer is charged immediately.
+    Sent when a paused subscription resumes. A new billing period starts and the customer is charged immediately.
   </Card>
 
   <Card
@@ -184,47 +186,47 @@ In order to properly implement logic for handling subscriptions, you should look
     href="/api-reference/current/subscription_migrated"
     horizontal
   >
-    Fired when Polar takes over billing of a subscription migrated from another provider. Includes `provider` and `provider_subscription_id` so you can correlate the two. Does not send `subscription.created` or `subscription.active`.
+    Sent when Polar takes over billing of a subscription migrated from another provider. Includes `provider` and `provider_subscription_id`. Doesn't send `subscription.created` or `subscription.active`.
   </Card>
 </Columns>
 
-#### Cancellation Sequences
+#### Cancellation sequences
 
 When a subscription is canceled, the events triggered depend on whether the cancellation is immediate or scheduled for the end of the billing period.
 
-**End-of-Period Cancellation (default)**
+**End-of-period cancellation (default)**
 
-When a subscription is **canceled** (by customer action from the portal or by the merchant from the dashboard/API), the following events are sent immediately:
+When a subscription is **canceled** (by customer action from the portal or by you from the dashboard or API), the following events are sent immediately:
 
 1. `subscription.updated`
 2. `subscription.canceled`
 
-Both events contain the same subscription data. The subscription will still have `active` status, but the `cancel_at_period_end` flag will be set to `true`.
+Both events contain the same subscription data. The subscription is still `active`, with `cancel_at_period_end` set to `true`.
 
-When the end of the current billing period arrives, the subscription is definitively revoked: billing cycles stop and benefits are revoked. The following events are then sent:
+At the end of the billing period, the subscription is revoked: billing stops and benefits are revoked. These events follow:
 
 3. `subscription.updated`
 4. `subscription.revoked`
 
-Both events contain the same subscription data. The subscription will have the `canceled` status.
+Both events contain the same subscription data. The subscription is now `canceled`.
 
-**Immediate Revocation**
+**Immediate revocation**
 
-When a merchant cancels a subscription with **immediate revocation**, those events are sent at once:
+When you cancel a subscription with **immediate revocation**, these events are sent at once:
 
 1. `subscription.updated`
 2. `subscription.canceled`
 3. `subscription.revoked`
 
-All three events contain the same subscription data. The subscription will have the `canceled` status immediately.
+All three events contain the same subscription data. The subscription is `canceled` immediately.
 
-#### Renewal Sequences
+#### Renewal sequences
 
-When a subscription is renewed for a new cycle, the webhook events are triggered in a specific sequence to help you track the renewal process and handle billing logic appropriately.
+When a subscription renews, events arrive in two steps: the new period starts, then the payment is processed.
 
-**Initial Renewal Events**
+**Initial renewal events**
 
-When a subscription reaches its renewal date, the following events are sent immediately (if enabled on the webhook):
+When a subscription reaches its renewal date, these events are sent immediately, if the endpoint subscribes to them:
 
 1. `subscription.cycled`
 2. `subscription.updated`
@@ -232,24 +234,24 @@ When a subscription reaches its renewal date, the following events are sent imme
 
 `subscription.cycled` fires only on a new billing period, so you can act on a renewal without inspecting `billing_reason` on the order. It also fires when a trial converts to a paid subscription, since that starts a period too: read `status` to tell the two apart.
 
-The subscription data will reflect the new billing period through the `current_period_start` and `current_period_end` properties, showing the updated cycle dates.
+The subscription shows the new period in `current_period_start` and `current_period_end`.
 
-The order data represents the new invoice for the upcoming cycle, with a total representing what the customer will pay for this new period. If usage-based billing is involved, their consumption for the past period will be included in the total. The status of this order is `pending` at this stage.
+The order is the invoice for the new period. With usage-based billing, its total includes usage from the past period. Its status is `pending` at this stage.
 
-**Payment Processing Events**
+**Payment processing events**
 
-Shortly after the initial renewal events, the platform will trigger a payment for the new order. Once the payment is successfully processed, the following events are sent:
+Shortly after, Polar charges the customer for the new order. Once the payment is successfully processed, the following events are sent:
 
 4. `order.updated`
 5. `order.paid`
 
-Both events will contain the same order data, with the order status changed to `paid`.
+Both events contain the same order, now with status `paid`.
 
-#### Pause Sequences
+#### Pause sequences
 
 Pausing is scheduled for the end of the current billing period, much like an end-of-period cancellation.
 
-When a subscription is **paused** (by customer action from the portal or by the merchant from the dashboard/API), only one event is sent immediately, because the subscription stays `active` until the period ends:
+When a subscription is **paused** (by customer action from the portal or by you from the dashboard or API), only one event is sent immediately, because the subscription stays `active` until the period ends:
 
 1. `subscription.updated`
 
@@ -272,7 +274,7 @@ When a paused subscription resumes, either immediately when you resume it or aut
 
 The subscription data reflects the new period through `current_period_start` and `current_period_end`, and the order represents the immediate charge for the new cycle.
 
-#### Migration Sequences
+#### Migration sequences
 
 When Polar takes over billing of a subscription imported from another provider, these events are sent at cutover:
 
@@ -284,7 +286,7 @@ When Polar takes over billing of a subscription imported from another provider, 
 
 Polar enqueues `subscription.updated` before `subscription.migrated`, but delivery order isn't guaranteed.
 
-`subscription.migrated` carries `provider` and `provider_subscription_id` so you can match the Polar subscription to the source. Polar does not send `subscription.created`, `subscription.active`, or `subscription.resumed` for this path. A subscription already set to cancel at the end of its period arrives with `cancel_at_period_end` set, and gets `subscription.canceled` and `subscription.revoked` when that period ends.
+`subscription.migrated` carries `provider` and `provider_subscription_id` so you can match the Polar subscription to the source. Polar doesn't send `subscription.created`, `subscription.active`, or `subscription.resumed` for this path. A subscription already set to cancel at the end of its period arrives with `cancel_at_period_end` set, and gets `subscription.canceled` and `subscription.revoked` when that period ends.
 
 ### Orders
 
@@ -294,26 +296,39 @@ Polar enqueues `subscription.updated` before `subscription.migrated`, but delive
     icon="link"
     href="/api-reference/current/order_created"
     horizontal
-  ></Card>
+  >
+    Sent when an order is created, for a purchase, a new subscription, a renewal or an upgrade with an immediate proration invoice. `billing_reason` is `purchase`, `subscription_create`, `subscription_cycle`, `subscription_update` or `subscription_meter_cycle`. The order might still be `pending`.
+  </Card>
+
   <Card
     title="order.paid"
     icon="link"
     href="/api-reference/current/order_paid"
     horizontal
-  ></Card>
+  >
+    Sent when an order is paid. Use it to fulfill purchases.
+  </Card>
+
   <Card
     title="order.updated"
     icon="link"
     href="/api-reference/current/order_updated"
     horizontal
-  ></Card>
+  >
+    Sent when an order changes, for example from `pending` to `paid`, or when it's refunded.
+  </Card>
+
   <Card
     title="order.refunded"
     icon="link"
     href="/api-reference/current/order_refunded"
     horizontal
-  ></Card>
+  >
+    Sent when an order is fully or partially refunded.
+  </Card>
 </Columns>
+
+To act on a renewal, listen to `subscription.cycled` rather than `order.created`: it fires whether or not the renewal payment succeeds.
 
 ### Refunds
 
@@ -323,16 +338,21 @@ Polar enqueues `subscription.updated` before `subscription.migrated`, but delive
     icon="link"
     href="/api-reference/current/refund_created"
     horizontal
-  ></Card>
+  >
+    Sent when a refund is created, whatever its status.
+  </Card>
+
   <Card
     title="refund.updated"
     icon="link"
     href="/api-reference/current/refund_updated"
     horizontal
-  ></Card>
+  >
+    Sent when a refund is updated.
+  </Card>
 </Columns>
 
-### Benefit Grants
+### Benefit grants
 
 <Columns cols={2}>
   <Card
@@ -340,22 +360,80 @@ Polar enqueues `subscription.updated` before `subscription.migrated`, but delive
     icon="link"
     href="/api-reference/current/benefit_grant_created"
     horizontal
-  ></Card>
+  >
+    Sent when a customer is granted a benefit.
+  </Card>
+
+  <Card
+    title="benefit_grant.cycled"
+    icon="link"
+    href="/api-reference/current/benefit_grant_cycled"
+    horizontal
+  >
+    Sent when a grant renews because its subscription started a new period.
+  </Card>
+
   <Card
     title="benefit_grant.updated"
     icon="link"
     href="/api-reference/current/benefit_grant_updated"
     horizontal
-  ></Card>
+  >
+    Sent when a grant is updated.
+  </Card>
+
   <Card
     title="benefit_grant.revoked"
     icon="link"
     href="/api-reference/current/benefit_grant_revoked"
     horizontal
-  ></Card>
+  >
+    Sent when a grant is revoked.
+  </Card>
 </Columns>
 
-## Organization Events
+### Seats
+
+For [seat-based pricing](/features/seat-based-pricing).
+
+<Columns cols={2}>
+  <Card
+    title="customer_seat.assigned"
+    icon="link"
+    href="/api-reference/current/customer_seat_assigned"
+    horizontal
+  >
+    Sent when you assign a seat. The customer gets an email invitation to claim it.
+  </Card>
+
+  <Card
+    title="customer_seat.claimed"
+    icon="link"
+    href="/api-reference/current/customer_seat_claimed"
+    horizontal
+  >
+    Sent when a customer accepts the invitation and claims the seat.
+  </Card>
+
+  <Card
+    title="customer_seat.revoked"
+    icon="link"
+    href="/api-reference/current/customer_seat_revoked"
+    horizontal
+  >
+    Sent when a seat is revoked, by you or automatically when the subscription is canceled.
+  </Card>
+</Columns>
+
+### Members
+
+Members are the individuals within a team customer. These events have no dedicated reference page yet. Their payload is the `Member` object.
+
+- `member.created`: a member is added to a customer, through the API or as the owner of a new customer.
+- `member.updated`: a member's details change, such as their name or role.
+- `member.deleted`: a member is removed from a customer. Their active seats are revoked.
+
+## Organization events
 
 ### Benefits
 
@@ -365,13 +443,18 @@ Polar enqueues `subscription.updated` before `subscription.migrated`, but delive
     icon="link"
     href="/api-reference/current/benefit_created"
     horizontal
-  ></Card>
+  >
+    Sent when a benefit is created.
+  </Card>
+
   <Card
     title="benefit.updated"
     icon="link"
     href="/api-reference/current/benefit_updated"
     horizontal
-  ></Card>
+  >
+    Sent when a benefit is updated.
+  </Card>
 </Columns>
 
 ### Products
@@ -382,13 +465,18 @@ Polar enqueues `subscription.updated` before `subscription.migrated`, but delive
     icon="link"
     href="/api-reference/current/product_created"
     horizontal
-  ></Card>
+  >
+    Sent when a product is created.
+  </Card>
+
   <Card
     title="product.updated"
     icon="link"
     href="/api-reference/current/product_updated"
     horizontal
-  ></Card>
+  >
+    Sent when a product is updated.
+  </Card>
 </Columns>
 
 ### Discounts
@@ -399,21 +487,27 @@ Polar enqueues `subscription.updated` before `subscription.migrated`, but delive
     icon="link"
     href="/api-reference/current/discount_created"
     horizontal
-  ></Card>
+  >
+    Sent when a discount is created.
+  </Card>
 
   <Card
     title="discount.updated"
     icon="link"
     href="/api-reference/current/discount_updated"
     horizontal
-  ></Card>
+  >
+    Sent when a discount is updated.
+  </Card>
 
   <Card
     title="discount.deleted"
     icon="link"
     href="/api-reference/current/discount_deleted"
     horizontal
-  ></Card>
+  >
+    Sent when a discount is deleted.
+  </Card>
 </Columns>
 
 ### Organization
@@ -424,5 +518,16 @@ Polar enqueues `subscription.updated` before `subscription.migrated`, but delive
     icon="link"
     href="/api-reference/current/organization_updated"
     horizontal
-  ></Card>
+  >
+    Sent when your organization's details or settings change.
+  </Card>
 </Columns>
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Set up an endpoint](/integrate/webhooks/endpoints) | Choose which events an endpoint receives |
+| [Handle deliveries](/integrate/webhooks/delivery) | Verify signatures, retries and redelivery |
+| [Customer state](/integrate/customer-state) | Grant access from `customer.state_changed` |
+| [Orders and subscriptions](/concepts/orders-and-subscriptions) | Statuses and lifecycle behind these events |

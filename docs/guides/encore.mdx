@@ -1,55 +1,43 @@
 ---
 title: "Integrate Polar with Encore"
 sidebarTitle: "Encore"
-description: "In this guide, we'll show you how to integrate Polar with Encore."
+description: "Follow a step-by-step Encore.ts integration: Polar secrets, an API client, a checkout endpoint and a verified webhook handler, tested locally."
 ---
 
 [Encore](https://encore.dev) is an open source backend framework for TypeScript with built-in infrastructure automation and observability. When you define services, databases, and APIs in code, Encore automatically provisions and manages the underlying infrastructure, both locally and in the cloud.
 
-Because Encore defines infrastructure in code and provides built-in distributed tracing, AI coding assistants can both build and debug your backend end-to-end, including your Polar integration. They can read the code to understand the full system, then inspect traces to diagnose exactly what happened when a checkout completes or a webhook arrives.
+Because Encore defines infrastructure in code and traces every request, a coding agent can read your Polar integration and inspect the trace of a checkout or webhook to debug it.
 
-Consider following this guide while using the Polar Sandbox Environment. This will allow you to test your integration without affecting your production data.
+This guide adds a checkout endpoint and a webhook handler to an Encore app, using the [TypeScript SDK](/integrate/sdk/typescript) and API version `2026-10`. Build against the [sandbox](/integrate/sandbox) first. Nothing there moves real money.
 
 ## Examples
 
 - [With Encore](https://github.com/polarsource/examples/tree/main/with-encore)
 
-## Install the Polar JavaScript SDK
-
-To get started, install the Polar JavaScript SDK and the webhook verification library:
+## Install the SDK
 
 ```bash Terminal
-npm install @polar-sh/sdk standardwebhooks
+npm install @polar-sh/sdk
 ```
 
-## Setting up Secrets
+## Set the secrets
 
-Encore has built-in secrets management that works consistently across local development and cloud environments.
+Encore manages secrets the same way locally and in the cloud.
 
-### Polar Access Token and Mode
+### Access token and environment
 
-To authenticate with Polar, you need to create an access token and specify if it's production or sandbox mode. You can create an [organization access token from your organization settings](/integrate/oat).
-
-Add it to Encore using the secrets manager:
+Create an [organization access token](/integrate/oat) in your sandbox organization's **Settings → Access Tokens**, or run `polar auth token`. Add it to Encore, along with `POLAR_MODE` set to `sandbox`:
 
 ```bash Terminal
 encore secret set --type local POLAR_ACCESS_TOKEN
 encore secret set --type local POLAR_MODE
 ```
 
-### Polar Webhook Secret
+You'll add `POLAR_WEBHOOK_SECRET` in [Receive webhooks](#receive-webhooks). When you deploy to Encore Cloud, set production secrets in its dashboard or your CI pipeline.
 
-You'll need a webhook secret to verify incoming webhook events. We'll set this up in the webhook section below.
+## Create an API client
 
-```bash Terminal
-encore secret set --type local POLAR_WEBHOOK_SECRET
-```
-
-When deploying to Encore Cloud, you'll set production secrets through the dashboard or CI/CD pipeline.
-
-## Configuring a Polar API Client
-
-To interact with the Polar API, create a client with `createPolar` using Encore's secret management.
+Create the client with `createPolar`, reading the token and environment from Encore's secrets:
 
 ```tsx title="payments/polar.ts"
 import { createPolar } from "@polar-sh/sdk/2026-10";
@@ -64,11 +52,11 @@ export const polar = createPolar({
 });
 ```
 
-Remember to set `POLAR_MODE` as `production` when you're ready to switch to the production environment.
+Set `POLAR_MODE` to `production`, with a production token, when you go live.
 
-## Generating Polar Checkout Sessions
+## Add a checkout endpoint
 
-Create a checkout endpoint that creates a Polar checkout session and redirects the user.
+This endpoint creates a Checkout Session and redirects the customer to it:
 
 ```tsx title="payments/payments.ts"
 import { api, APIError } from "encore.dev/api";
@@ -103,118 +91,89 @@ export const checkout = api.raw(
 );
 ```
 
-You can now create a checkout session by visiting `/checkout?product=YOUR_PRODUCT_ID`.
+Visit `/checkout?product=<product_id>` to start a checkout. To link the customer to your user, also pass `external_customer_id` to `checkouts.create`.
 
-## Handling Polar Webhooks
+## Receive webhooks
 
-Polar can send you events about various things happening in your organization. This is useful for keeping your database in sync with Polar checkouts, orders, subscriptions, etc.
+Webhooks keep your app in sync with checkouts, orders and subscriptions.
 
-Configuring a webhook is simple. Head over to [**Settings → Webhooks**](https://polar.sh/to/dashboard/settings/webhooks) and click on the "Add Endpoint" button to create a new webhook.
+### Forward webhooks locally
 
-### Tunneling webhook events to your local development environment
-
-Encore runs your app locally with full infrastructure support. To receive webhooks during local development, you can use the [Polar CLI](/integrate/cli/webhooks) to tunnel webhook events to your local environment.
+The [Polar CLI](/integrate/cli/webhooks) forwards your sandbox organization's webhooks to your Encore app:
 
 ```bash Terminal
+polar auth login --sandbox
 polar webhook listen http://localhost:4000/webhooks/polar
 ```
 
-Make sure to copy the webhook secret and set it using:
+Set the secret it prints as `POLAR_WEBHOOK_SECRET`:
 
 ```bash Terminal
 encore secret set --type local POLAR_WEBHOOK_SECRET
 ```
 
-### Add Webhook Endpoint
+When you deploy, [create a webhook endpoint](/integrate/webhooks/endpoints) in **Settings → Webhooks** for `https://<your-domain>/webhooks/polar` and set that endpoint's secret in Encore Cloud.
 
-1. Point the Webhook to `your-app.com/webhooks/polar`. This must be an absolute URL which Polar can reach. If you use the Polar CLI tunnel, it will handle this for you.
-2. Select which events you want to be notified about. You can read more about the available events in the [Events section](/api-reference#webhooks).
-3. Generate a secret key to sign the requests. This will allow you to verify that the requests are truly coming from Polar.
-4. Add the secret key to Encore:
+### Add the webhook handler
 
-```bash Terminal
-encore secret set --type local POLAR_WEBHOOK_SECRET
-```
+Use `api.raw()` so the handler gets the raw request body, which signature verification needs. `webhooks.validateEvent` verifies the signature and returns a typed event:
 
-### Setting up the Webhook handler
-
-Encore webhook handlers use `api.raw()` to access the raw request body, which is required for signature verification.
-
-```tsx title="payments/payments.ts"
+```tsx title="payments/webhooks.ts"
 import { api } from "encore.dev/api";
 import { secret } from "encore.dev/config";
-import { Webhook } from "standardwebhooks";
+import { webhooks } from "@polar-sh/sdk/2026-10";
 
 const POLAR_WEBHOOK_SECRET = secret("POLAR_WEBHOOK_SECRET");
 
-export const webhooks = api.raw(
+export const polarWebhooks = api.raw(
   { expose: true, path: "/webhooks/polar", method: "POST" },
   async (req, resp) => {
-    // Read the raw request body
     const chunks: Buffer[] = [];
     for await (const chunk of req) {
       chunks.push(chunk);
     }
     const body = Buffer.concat(chunks).toString("utf-8");
 
-    // Convert headers for standardwebhooks
     const headers: Record<string, string> = {};
     for (const [key, value] of Object.entries(req.headers)) {
-      headers[key] = Array.isArray(value) ? value[0] : (value || "");
+      headers[key] = Array.isArray(value) ? value[0] : (value ?? "");
     }
 
-    // Verify the webhook signature. Try Standard Webhooks first (secret as-is),
-    // then Polar's legacy HMAC (UTF-8 bytes of the full secret, including `whsec_`).
-    const secret = POLAR_WEBHOOK_SECRET().trim();
-    let payload: any;
+    let event: webhooks.WebhookPayload;
     try {
-      payload = new Webhook(secret).verify(body, headers);
-    } catch {
-      try {
-        const legacySecret = Buffer.from(secret, "utf-8").toString("base64");
-        payload = new Webhook(legacySecret).verify(body, headers);
-      } catch (error: any) {
-        console.error("[Polar] Invalid webhook signature:", error?.message);
+      event = await webhooks.validateEvent(body, headers, POLAR_WEBHOOK_SECRET());
+    } catch (error) {
+      if (error instanceof webhooks.PolarWebhookVerificationError) {
         resp.writeHead(403);
-        resp.end(JSON.stringify({ error: "Invalid signature" }));
+        resp.end();
         return;
       }
+      if (error instanceof webhooks.PolarWebhookUnknownTypeError) {
+        resp.writeHead(202);
+        resp.end();
+        return;
+      }
+      throw error;
     }
 
-    // Handle the payload
-    switch (payload.type) {
-      case "order.created":
-        console.log("[Polar] Order created:", payload.data.id);
-        break;
-      case "subscription.active":
-        console.log("[Polar] Subscription active:", payload.data.id);
-        break;
-      case "subscription.canceled":
-        console.log("[Polar] Subscription canceled:", payload.data.id);
+    switch (event.type) {
+      case "order.paid":
+        console.log("[Polar] Order paid:", event.data.id);
         break;
       case "customer.state_changed":
-        console.log("[Polar] Customer state changed:", payload.data.id);
+        console.log("[Polar] Customer state changed:", event.data.id);
         break;
-      default:
-        console.log("[Polar] Unhandled event:", payload.type);
     }
 
-    resp.writeHead(200);
-    resp.end(JSON.stringify({ received: true }));
+    resp.writeHead(202);
+    resp.end();
   }
 );
 ```
 
-<Warning>
-  Polar webhook signatures use two key derivations depending on when the secret
-  was generated. Polar SDKs (version 1.0.0-alpha.19 and later) try both. If you
-  verify with `standardwebhooks` directly: secrets created **on or after 8
-  September 2026, 00:00 UTC** can be passed to `new Webhook()` as-is (`whsec_…`).
-  Older Polar secrets need the **entire** secret UTF-8 string base64-encoded
-  first.
-</Warning>
+See [Handle deliveries](/integrate/webhooks/delivery) for retries and timeouts, and [Webhook events](/integrate/webhooks/events) for every event type.
 
-## Local Development
+## Run it locally
 
 Start your Encore app:
 
@@ -222,26 +181,23 @@ Start your Encore app:
 encore run
 ```
 
-Encore provides a local development dashboard at `localhost:9400` where you can:
+Encore's local development dashboard at `localhost:9400` lets you:
 
-- View distributed traces for all requests, including checkout redirects and webhook deliveries
+- View traces for every request, including checkout redirects and webhook deliveries
 - Inspect API calls between services
 - Query local databases
-- View logs and errors in real-time
+- View logs and errors as they happen
 
-This makes debugging payment flows straightforward since you can trace exactly what happens when a checkout completes or a webhook arrives.
+## Deploy to production
 
-## Deploying to Production
-
-When you're ready to go live, deploy to Encore Cloud or your own cloud account:
+Deploy to Encore Cloud or your own cloud account:
 
 ```bash Terminal
 git push encore
 ```
 
-Encore automatically provisions all the infrastructure your app needs. Remember to:
+Encore provisions the infrastructure your app needs. Then:
 
-1. Set production secrets in the Encore Cloud dashboard
-2. Set the `POLAR_MODE` secret to `"production"`
-3. Update your webhook URL in Polar to point to your production domain
-4. Update `success_url` to your production URL
+1. Set production secrets in the Encore Cloud dashboard, with `POLAR_MODE` set to `production`
+2. Create a webhook endpoint in your production organization for your production domain
+3. Update `success_url` to your production URL

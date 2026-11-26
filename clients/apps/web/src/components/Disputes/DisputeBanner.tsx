@@ -11,7 +11,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 
 const DISPUTE_DOCS_URL =
-  'https://polar.sh/docs/merchant-of-record/fees#dispute/chargeback-fees'
+  'https://polar.sh/docs/merchant-of-record/fees#dispute-fees'
 
 export const DisputeBanner = ({
   dispute,

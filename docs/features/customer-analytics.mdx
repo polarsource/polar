@@ -1,0 +1,86 @@
+---
+title: "Customer analytics"
+description: "Find your top customers by revenue, subscriptions at risk of churning, and the customers who drive your costs, in the dashboard's Customers section."
+---
+
+The **Customers** section of the dashboard answers three questions: who pays you the most, who's about to leave, and who costs you the most. It has four tabs: **Overview**, **Top Customers**, **At Risk** and **Cost Drivers**.
+
+<Note>
+  Dashboard only. The views on this page aren't available from the API, CLI or MCP server. See [From the CLI or your agent](#from-the-cli-or-your-agent) for the closest equivalents.
+</Note>
+
+Overview, Top Customers and Cost Drivers have a range selector: **All Time**, **12m**, **3m**, **30d** (the default) or **Today**. Click any row to open that customer.
+
+For a single customer's details, such as their subscriptions, orders, usage and events, see [Customer management](/features/customer-management).
+
+## Overview
+
+- A growth chart with two views: **New** (New Customers per period) and **Total** (Total Customers over time).
+- The top five of each list below: **Top Customers** by net revenue, **At Risk** (past due and canceling), and **Cost Drivers** from cost events.
+
+## Top Customers
+
+Customers ranked by **net revenue** from paid orders in the selected range, up to 50.
+
+| Column | Description |
+| --- | --- |
+| **Customer** | Name and email |
+| **Orders** | Paid orders in the range |
+| **Net Revenue** | What you kept, in USD |
+
+Net revenue subtracts refunds, so a partially refunded order counts only for what's left. Orders in other currencies are converted to USD at the exchange rate of their payment.
+
+## At Risk
+
+Subscriptions that may stop paying soon. There's no range: the list shows their current state.
+
+| Column | Description |
+| --- | --- |
+| **Customer** | Name and email |
+| **Product** | The subscribed product |
+| **Amount** | The subscription's recurring amount |
+| **Status** | **Past due**, or **Cancels** with the date it ends |
+
+Two kinds of subscriptions are listed:
+
+- **Past due** first, largest amount first. A renewal payment failed and Polar is retrying it. See [Failed payments](/features/subscriptions/failed-payments).
+- **Canceling** next, soonest first. Active or trialing subscriptions set to cancel at the end of the current period. You can still win these back before they end.
+
+## Cost Drivers
+
+Customers ranked by the costs you've recorded for them in the selected range. Costs come from `_cost` metadata on the events you send. If you don't send costs, this tab is empty. See [Cost insights](/features/cost-insights/introduction#cost-events).
+
+| Column | Description |
+| --- | --- |
+| **Customer** | Name and email, or the external ID |
+| **Events** | Their events in the range |
+| **Share of Costs** | Their part of your total costs |
+| **Cost** | Their total cost |
+
+Cost Drivers needs the `analytics:read` permission. Members without it don't see the tab or the Overview list.
+
+For costs over time, margins and breakdowns by event type or model, use **Analytics → Costs**. See [Cost insights](/features/cost-insights/introduction#where-costs-show-up).
+
+## From the CLI or your agent
+
+These don't reproduce the dashboard views, but return the same underlying data. The `costs` and `gross_margin` metrics are **Costs** and **Gross Margin** under **Analytics → Metrics**.
+
+| Question | CLI | MCP operation |
+| --- | --- | --- |
+| Which subscriptions are past due? | `polar subscriptions list --status past_due --sorting -amount` | `subscriptions_list` |
+| Which subscriptions are canceling? | `polar subscriptions list --cancel-at-period-end --sorting current_period_end` | `subscriptions_list` |
+| What does one customer cost me? | `polar metrics get --start-date 2026-11-01 --end-date 2026-11-30 --interval month --customer-id <id> --metrics costs --metrics gross_margin` | `metrics_get` |
+
+```text Prompt
+List the past due and canceling subscriptions in my Polar sandbox organization, largest first.
+```
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Customers](/concepts/customers) | What a customer is in Polar |
+| [Customer management](/features/customer-management) | View and edit one customer |
+| [Metrics](/features/analytics) | Revenue, subscription and customer metrics |
+| [Cost insights](/features/cost-insights/introduction) | Record costs and read margins |
+| [Failed payments](/features/subscriptions/failed-payments) | How past due subscriptions are retried |

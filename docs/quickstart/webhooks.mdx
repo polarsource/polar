@@ -1,0 +1,184 @@
+---
+title: "Sync customer state"
+description: "Listen to webhooks and read the customer state to grant access in your application."
+---
+
+<Info>
+  **Why this matters:** Subscriptions renew, payments fail, customers upgrade and credits run out, often while the customer isn't in your app. One webhook and one object tell you everything that changed. See [Customer state](/integrate/customer-state).
+</Info>
+
+In this step you'll listen for state changes, then gate your AI feature on the customer's subscription and credit balance.
+
+The examples use the sandbox client from the [quickstart overview](/quickstart/overview#prerequisites), on API version `2026-10`.
+
+## Forward webhooks to your machine
+
+Use the [Polar CLI](/integrate/cli/webhooks) to receive your sandbox organization's webhooks on your local server:
+
+```bash Terminal
+curl -fsSL https://polar.sh/install.sh | bash
+polar auth login --sandbox
+polar webhook listen http://localhost:3000/api/webhooks
+```
+
+The CLI prints a webhook secret. Put it in your environment as `POLAR_WEBHOOK_SECRET`.
+
+## Handle `customer.state_changed`
+
+Polar sends `customer.state_changed` whenever a customer's subscriptions, benefits or details change. The payload is the full customer state, so you don't need to fetch anything else.
+
+<CodeGroup>
+```typescript TypeScript
+import { webhooks } from "@polar-sh/sdk/2026-10";
+
+export async function POST(request: Request) {
+  let event;
+  try {
+    event = await webhooks.validateEvent(
+      await request.text(),
+      {
+        "webhook-id": request.headers.get("webhook-id") ?? "",
+        "webhook-timestamp": request.headers.get("webhook-timestamp") ?? "",
+        "webhook-signature": request.headers.get("webhook-signature") ?? "",
+      },
+      process.env.POLAR_WEBHOOK_SECRET!,
+    );
+  } catch (error) {
+    if (error instanceof webhooks.PolarWebhookVerificationError) {
+      return new Response(null, { status: 403 });
+    }
+    if (error instanceof webhooks.PolarWebhookUnknownTypeError) {
+      return new Response(null, { status: 202 });
+    }
+    throw error;
+  }
+
+  if (event.type === "customer.state_changed") {
+    const state = event.data;
+    await saveAccess(state.external_id, {
+      hasPro: state.active_subscriptions.length > 0,
+    });
+  }
+
+  return new Response(null, { status: 202 });
+}
+```
+
+```python Python
+import os
+
+from flask import Flask, request
+from polar.v2026_10.webhooks import (
+    PolarWebhookUnknownTypeError,
+    PolarWebhookVerificationError,
+    validate_event,
+)
+
+app = Flask(__name__)
+
+
+@app.post("/api/webhooks")
+def webhook():
+    try:
+        event = validate_event(
+            request.get_data(),
+            dict(request.headers),
+            os.environ["POLAR_WEBHOOK_SECRET"],
+        )
+    except PolarWebhookVerificationError:
+        return "", 403
+    except PolarWebhookUnknownTypeError:
+        return "", 202
+
+    if event.type == "customer.state_changed":
+        state = event.data
+        save_access(state.external_id, has_pro=len(state.active_subscriptions) > 0)
+
+    return "", 202
+```
+</CodeGroup>
+
+`validateEvent` (`validate_event` in Python) throws if the signature is invalid, and the handler answers `403`. Event types your SDK version doesn't know yet get a `202`, so Polar doesn't retry them. Without an SDK, verify the signature with a [Standard Webhooks library](/integrate/webhooks/delivery#custom-validation). See [Webhook delivery](/integrate/webhooks/delivery) for error handling and retries. If you use Next.js, Nuxt or Better Auth, an [adapter](/integrate/sdk/adapters/introduction) gives you this handler in a few lines.
+
+## Guard usage with the customer state
+
+Before running an expensive action, read the customer state by your user ID and check the `balance` of the **AI tokens** meter in `active_meters`:
+
+<CodeGroup>
+```typescript TypeScript
+const state = await polar.customers.getStateExternal("user_123");
+
+const tokens = state.active_meters.find((m) => m.meter_id === meter.id);
+if (!tokens || tokens.balance <= 0) {
+  // Upsell, or block the request if you don't bill overage
+}
+```
+
+```python Python
+state = polar.customers.get_state_external("user_123")
+
+tokens = next((m for m in state.active_meters if m.meter_id == meter.id), None)
+if tokens is None or tokens.balance <= 0:
+    # Upsell, or block the request if you don't bill overage
+    ...
+```
+
+```bash cURL
+curl https://sandbox-api.polar.sh/v1/customers/external/user_123/state \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10"
+```
+</CodeGroup>
+
+Polar never blocks events, so a guardrail like this lives in your application. Then [send the usage event](/quickstart/track-usage) for the action, and the loop is complete.
+
+## Verify it works
+
+With `polar webhook listen` running, cancel Jane's subscription immediately. From the CLI or API, its ID is in `active_subscriptions` of her customer state. The CLI logs a `customer.state_changed` delivery, and your handler records that Jane no longer has Pro.
+
+<Tabs>
+  <Tab title="Dashboard">
+    - Open **Sales → Subscriptions**
+    - Open Jane's **Pro** subscription
+    - In the actions menu, click **Cancel Subscription**
+    - Set **Cancellation Date** to **Immediately**
+    - Click **Cancel Subscription**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar subscriptions revoke <subscription_id>
+    ```
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Revoke user_123's Pro subscription in my Polar sandbox.
+    ```
+
+    Uses the `subscriptions_revoke` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+Canceling immediately (a revoke in the API) ends the subscription now. A subscription canceled at **End of current period** stays active until then, so access correctly continues.
+
+<Visibility for="agents">
+  In the handler, return `403` when signature verification fails (`PolarWebhookVerificationError`) and `202` for event types the SDK doesn't know (`PolarWebhookUnknownTypeError`), so Polar doesn't retry them.
+</Visibility>
+
+## You're done
+
+You've built the full loop: usage flows into a meter, a plan bills and credits that usage, customers buy through checkout, and your application stays in sync.
+
+<CardGroup cols={2}>
+  <Card title="Next: Go live" icon="rocket" href="/quickstart/go-live">
+    Set up production, add a webhook endpoint and pass the account review.
+  </Card>
+  <Card title="Customer portal" icon="user" href="/features/customer-portal/introduction">
+    Let customers change plans, update payment methods and download invoices.
+  </Card>
+  <Card title="Webhook events" icon="webhook" href="/integrate/webhooks/events">
+    Every event Polar sends, and when.
+  </Card>
+  <Card title="How Polar works" icon="book-open" href="/concepts/overview">
+    The concepts behind everything you just built.
+  </Card>
+</CardGroup>

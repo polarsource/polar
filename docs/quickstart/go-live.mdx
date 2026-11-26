@@ -1,0 +1,166 @@
+---
+title: "Go live"
+description: "Move a working sandbox integration to production: create the production organization, catalog, access token and webhook endpoint, then pass the account review."
+---
+
+<Info>
+  **Why now?** Production is a separate environment with its own organization, data and tokens. Nothing you built in the [sandbox](/integrate/sandbox) carries over, and you can't take payments until your account passes the [account review](/merchant-of-record/account-reviews).
+</Info>
+
+In this step you'll set up the production organization and switch your application to it.
+
+## Create the production organization
+
+Sign up at [polar.sh/start](https://polar.sh/start) and create an organization. Your sandbox account and organization don't exist in production.
+
+<Visibility for="agents">
+  Don't switch anything to production until the user confirms the sandbox integration works and asks to go live. Production calls move real money.
+</Visibility>
+
+## Recreate your catalog
+
+Products, meters, benefits, discounts and Checkout Links from the sandbox don't copy over. Recreate them in the production organization the way you created them in [step 2](/quickstart/catalog). Their IDs change, so update every ID your application stores, such as product and meter IDs.
+
+<Tabs>
+  <Tab title="Dashboard">
+    - Switch to the production organization
+    - Recreate meters under **Products → Meters** and benefits under **Products → Benefits**
+    - Recreate products under **Products**, then Checkout Links and discounts under **Products → Checkout Links** and **Products → Discounts**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar auth login --production
+    polar auth org
+    polar products create --name "Pro" --recurring-interval month \
+      --prices '[{ "amount_type": "fixed", "price_amount": 2000 }]'
+    ```
+
+    Repeat the commands from your sandbox setup. Resource commands act on the active organization's environment.
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Recreate the products and meters from my Polar sandbox organization in my live Polar organization.
+    ```
+
+    Uses the `products_list`, `meters_list`, `products_create` and `meters_create` operations on both the `polar-sandbox` and `polar` [MCP servers](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+## Create a production access token
+
+Sandbox tokens don't work in production. Create a new [access token](/integrate/oat) in the production organization and store it in your production secrets, not in code.
+
+<Tabs>
+  <Tab title="Dashboard">
+    - Open **Settings → Access Tokens**
+    - Click **Create token**
+    - Enter a **Name**, choose an **Expiration** and select the **Scopes** your app uses
+    - Copy the token
+  </Tab>
+  <Tab title="CLI">
+    With the production organization active:
+
+    ```bash
+    polar auth token | gh secret set POLAR_ACCESS_TOKEN
+    ```
+  </Tab>
+</Tabs>
+
+<Note>Not available from the MCP server.</Note>
+
+## Point your client at production
+
+Drop `environment: "sandbox"`, or set it to `"production"`, and use `https://api.polar.sh`:
+
+<CodeGroup>
+```typescript TypeScript
+import { createPolar } from "@polar-sh/sdk/2026-10";
+
+export const polar = createPolar({
+  accessToken: process.env.POLAR_ACCESS_TOKEN!,
+  environment: "production",
+});
+```
+
+```python Python
+import os
+
+from polar.v2026_10 import Polar
+
+polar = Polar(
+    os.environ["POLAR_ACCESS_TOKEN"],
+    environment="production",
+)
+```
+
+```bash cURL
+curl https://api.polar.sh/v1/products/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10"
+```
+</CodeGroup>
+
+Keep the sandbox for development. An environment variable that selects `sandbox` or `production` per deployment works well.
+
+## Add a webhook endpoint
+
+`polar webhook listen` only forwards to your machine. In production, Polar delivers webhooks to a public URL. Add an endpoint for your handler, subscribe it to the events you handle, such as `customer.state_changed`, and set its secret as `POLAR_WEBHOOK_SECRET` in production.
+
+<Tabs>
+  <Tab title="Dashboard">
+    - Open **Settings → Webhooks**
+    - Click **Add Endpoint**
+    - Enter the **URL**, such as `https://example.com/api/webhooks`
+    - Set **Format** to **Raw** and **API Version** to `2026-10`
+    - Select `customer.state_changed` and any other events you handle
+    - Click **Create**
+    - Open the endpoint and click **Copy Secret**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar webhooks create_webhook_endpoint --url https://example.com/api/webhooks \
+      --format raw --api-version 2026-10 --events customer.state_changed --fields id,secret
+    ```
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Create a webhook endpoint for https://example.com/api/webhooks in my live Polar organization that sends customer.state_changed.
+    ```
+
+    Uses the `webhooks_create_webhook_endpoint` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+See [Webhook endpoints](/integrate/webhooks/endpoints) for the options and [Delivery](/integrate/webhooks/delivery) for retries.
+
+## Submit your account for review
+
+Your organization can't accept payments until it passes the account review. Open **Finance → Account** in the production dashboard and complete the checklist:
+
+- At least one product that isn't archived
+- A checkout setup: a Checkout Link that delivers something, or an access token (a webhook endpoint is recommended)
+- Identity verification of the organization owner
+- A payout account
+- A product description, a public website and a verified support email
+
+Then click **Submit for review**. See the [review checklist](/merchant-of-record/review-checklist) for each item and common fixes, and [Account reviews](/merchant-of-record/account-reviews) for what happens next.
+
+<Note>Dashboard only. The account review isn't available from the API, CLI or MCP server.</Note>
+
+## Verify it works
+
+- **Finance → Account** shows your account as submitted or approved.
+- After approval, a real purchase through your production checkout creates an order under **Sales → Orders**, and your handler receives `customer.state_changed` from the production endpoint. Refund the purchase from the order if it was a test.
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Review checklist](/merchant-of-record/review-checklist) | Every item you need before you submit |
+| [Account reviews](/merchant-of-record/account-reviews) | How Polar reviews accounts, now and later |
+| [Payout accounts](/features/finance/accounts) | Connect the account Polar pays you into |
+| [Webhook endpoints](/integrate/webhooks/endpoints) | Production webhooks, formats and secrets |
+
+<Card title="Next: Customer Portal" icon="arrow-right" href="/features/customer-portal/introduction" horizontal>
+  Let customers change plans, update payment methods and download invoices.
+</Card>

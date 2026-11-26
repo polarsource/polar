@@ -1,216 +1,143 @@
 ---
-title: "Automate Customer License Key Management"
-sidebarTitle: "License Keys"
-description: "Sell license key access to your service, software or APIs with ease"
+title: "License Keys benefit"
+sidebarTitle: "Overview"
+description: "Issue license keys on purchase: set a prefix, expiry, activation and usage limits, and manage, disable or rotate keys."
 ---
 
-<img src="/assets/features/benefits/license-keys/hero.jpeg" />
+A **License Keys benefit** issues a unique license key to each customer who buys the product. Your software validates the key against Polar's API, so you don't host a license server. Polar also handles expiry, device activations, usage quotas and revocation when a subscription ends.
 
-You can easily sell software license keys with Polar without having to deal with sales tax or hosting an API to validate them in real-time. License keys with Polar come with a lot of powerful features built-in.
+To check keys from your application, see [Integrate License Keys](/features/benefits/validate-license-keys).
 
-* Brandable prefixes, e.g `POLAR_*****`
-* Expiration after `N` days, months or years for one-time purchases
-* Automatic revocation when a subscription ends
-* Limited number of user activations, e.g devices
-* Custom validation conditions
-* Usage quotas per license key
+## What the customer gets
 
-Create License Key Benefit
----------------------------------
+A key such as `ACME-1C285B2D-6CE6-4BC7-B8BE-ADB6A7E304DA`, shown in the [Customer Portal](/features/customer-portal/introduction). Each customer gets their own key per benefit.
 
-1. Go to [`Benefits`](https://polar.sh/to/dashboard/products/benefits)
-2. Click `+ New Benefit` to create a new benefit
-3. Choose `License Keys` as the `Type`
+## Create it
 
-### Custom Branding
+<Tabs>
+  <Tab title="Dashboard">
+    - Open **Products** → **Benefits**
+    - Click **Create Benefit**
+    - Choose **License Keys** as the **Type**
+    - Set the **Description** and an optional **Key prefix**
+    - Turn on **Expires**, **Limit Activations** or **Limit Usage** if you need them
+    - Click **Create**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar benefits create --data '{
+      "type": "license_keys",
+      "description": "Desktop app license",
+      "properties": {
+        "prefix": "ACME",
+        "activations": { "limit": 3, "enable_customer_admin": true }
+      }
+    }'
+    ```
 
-Make your license keys standout with brandable prefixes, e.g `MYAPP_<AUTO_GENERATED_UUID4>`
+    See [`polar benefits`](/integrate/cli/reference/benefits).
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Create a License Keys benefit called "Desktop app license" with the prefix ACME and up to 3 activations that customers can manage themselves, in my Polar sandbox organization.
+    ```
+
+    Uses the `benefits_create` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+Then attach it to a product. See [Manage benefits](/features/benefits/introduction#attach-a-benefit-to-a-product).
+
+## Options
+
+| Dashboard | API property | Default |
+| --- | --- | --- |
+| **Key prefix** | `properties.prefix` | None |
+| **Expires**, after N days, months or years | `properties.expires.ttl` (> 0) and `properties.expires.timeframe` (`day`, `month`, `year`) | No expiry |
+| **Limit Activations** | `properties.activations.limit` (> 0) | No activations |
+| **Enable user to deactivate instances via Polar** | `properties.activations.enable_customer_admin` | Off |
+| **Limit Usage** | `properties.limit_usage` (> 0) | Unlimited |
+| **Visibility** | `visibility` | **Visible** (`public`) |
+
+Changes to these options apply to keys already issued, not just new ones.
 
 ### Expiration
 
-How long a license key stays valid depends on how the customer got it:
+How long a key stays valid depends on how the customer got it:
 
-* **One-time purchases:** if you enable expiration on the benefit, the key expires `N` days, months or years after the purchase.
-* **Subscriptions:** the expiration setting is ignored. Keys granted through a subscription have no `expires_at`, stay valid for as long as the subscription is active, and are revoked when it ends.
+- **One-time purchases:** with **Expires** on, the key expires `ttl` days, months or years after the purchase.
+- **Subscriptions:** the expiration setting is ignored. Keys granted through a subscription have no `expires_at`, stay valid while the subscription is active, and are revoked when it ends.
 
-This means the same benefit can produce keys with an expiry date (one-time products) and keys without one (subscription products).
+So the same benefit can produce keys with an expiry date (one-time products) and keys without one (subscription products).
 
 <Note>
   For subscription products, check the key's `status` when validating rather than `expires_at`. A revoked key fails validation.
 </Note>
 
 <Warning>
-  Polar manages `expires_at`. Whenever the benefit or the customer's grant is updated, Polar re-applies the benefit's expiration to the key, or removes it for subscription keys. A manual change to `expires_at` through the API will be overwritten.
+  Polar manages `expires_at`. Whenever the benefit or the customer's grant is updated, Polar re-applies the benefit's expiration to the key, or removes it for subscription keys. A manual change to `expires_at` through the API is overwritten.
 </Warning>
 
-### Activation Limits
+### Activations
 
-You can require license keys to be activated before future validation. A great feature in case you want to limit license key usage to a certain number of devices, IPs or other conditions.
+With **Limit Activations**, your application must activate a key on each device or instance before validating it there. Polar refuses activations beyond the limit. Each activation has a `label` and can store `conditions` (for example a major version or machine ID) that later validations must match.
 
-**Enable user to deactivate instances via Polar.** Instead of building your own custom admin for customers to manage their activation instances - leave it to Polar instead.
+With **Enable user to deactivate instances via Polar**, customers can remove activations from the Customer Portal, for example when they replace a laptop. Otherwise, your application deactivates them through the API.
 
-### Usage Limit
+### Usage limit
 
-Offering OpenAI tokens or anything else with a variable usage cost? You can set a custom usage quota per license key and increment usage upon validation.
+**Limit Usage** gives each key a quota. Your application consumes it by passing `increment_usage` when validating. Validation fails once the request would exceed the remaining quota. Use it for credits, API calls or generations tied to a key.
 
-Customer Experience
---------------------------
+## Key statuses
 
-Once customers buy your product or subscribes to your tier, they will automatically receive a unique license key. It's easily accessible to them under their purchases page.
+| Dashboard | API `status` | Meaning | Validates |
+| --- | --- | --- | --- |
+| **Granted** | `granted` | Active | Yes, unless expired |
+| **Disabled** | `disabled` | Turned off by you. Set it back to **Granted** to re-enable | No |
+| **Revoked** | `revoked` | The benefit was revoked, for example when a subscription ended | No |
 
-Customers can:
+## Manage keys
 
-* View & copy their license key
-* See expiration date (if applicable)
-* See usage left (if applicable)
-* Deactivate activations (if enabled)
-* Rotate their license key if it is exposed or compromised
+In the dashboard, open the benefit under **Products** → **Benefits** and use the **License Keys** tab. Select a key to see its usage, validations and activations, change its status, or rotate it.
 
-### Rotate License Keys
+| Task | CLI | MCP operation |
+| --- | --- | --- |
+| List keys, filtered by benefit or status | `polar license_keys list --benefit-id <id>` | `license_keys_list` |
+| Get a key and its activations | `polar license_keys get <id>` | `license_keys_get` |
+| Disable a key, or change its usage or limits | `polar license_keys update <id> --status disabled` | `license_keys_update` |
+| Rotate a key | `polar license_keys rotate <id>` | `license_keys_rotate` |
+| Get an activation | `polar license_keys get_activation <id> <activation_id>` | `license_keys_get_activation` |
 
-If a key is exposed or compromised, merchants can rotate it from the benefit license keys page in the dashboard, or via `POST /v1/license-keys/{id}/rotate`. Customers can rotate their own key from the customer portal, or via `POST /v1/customer-portal/license-keys/{id}/rotate`. Only keys in `granted` or `disabled` status can be rotated; rotating a revoked key returns a `400` error.
+See [`polar license_keys`](/integrate/cli/reference/license_keys). Changes to a key fire the `benefit_grant.updated` webhook.
 
-Rotation generates a new key string on the same license key record. The previous key stops validating immediately. Status, usage, limits, expiry, and activations are preserved. After rotating, copy the new key from the customer portal or share it from the dashboard.
+### Rotate a key
 
-Integrate API
---------------------
+If a key is exposed, rotate it. Rotation generates a new key string on the same license key record. The old string stops validating immediately. Status, usage, limits, expiry and activations are kept.
 
-It's super easy and straightforward to integrate Polar license keys into your application, library or API.
+You can rotate from the dashboard, the CLI, or [`POST /v1/license-keys/{id}/rotate`](/api-reference/current/license_keys/rotate-license-key). Customers can rotate their own key from the Customer Portal. Only `granted` and `disabled` keys can be rotated. Rotating a revoked key returns a `400` error.
 
-### Activate License Keys (Optional)
+## Customer experience
 
-In case you've setup license keys to have a maximum amount of activation instances, e.g user devices. You'll then need to create an activation instance prior to validating license keys / activation.
+After paying, the customer finds the key in the Customer Portal. They can:
 
-**No activation limit?** You can skip this step.
+- View and copy the key
+- See its expiry date and remaining usage, when set
+- Deactivate activations, when you allow it
+- Rotate the key if it's exposed
 
-```bash Terminal
-curl -X POST https://api.polar.sh/v1/customer-portal/license-keys/activate
--H "Content-Type: application/json"
--d '{
-  "key": "1C285B2D-6CE6-4BC7-B8BE-ADB6A7E304DA",
-  "organization_id": "fda84e25-7b55-4d67-916d-60ead04ff61f",
-  "label": "hello",
-  "conditions": { "major_version": 1 },
-  "meta": { "ip": "84.19.145.194" }
-}'
-```
+## Revocation
 
-<ParamField path="key" type="string" required>
-  Replace with the users license key (from input in your app).
-</ParamField>
+When the benefit is revoked, for example when a subscription ends, the key's status becomes `revoked` and it stops validating. The customer no longer sees it in the portal.
 
-<ParamField path="organization_id" type="string" required>
-  Replace with your organization ID here found in your settings.
-</ParamField>
+## Visibility
 
-<ParamField path="label" type="string" required>
-  Set a label to associate with this specific activation.
-</ParamField>
+Configurable, visible by default. A hidden License Keys benefit still issues a key, but the customer never sees it. Hide it only if you deliver the key some other way.
 
-<ParamField path="conditions" type="object">
-  JSON object with custom conditions to validate against in the future, e.g IP, mac address, major version etc.
-</ParamField>
+## Learn more
 
-<ParamField path="meta" type="object">
-  JSON object with metadata to store for the users activation.
-</ParamField>
-
-#### **Response (200 OK)**
-
-```json
-{
-  "id": "b6724bc8-7ad9-4ca0-b143-7c896fcbb6fe",
-  "license_key_id": "508176f7-065a-4b5d-b524-4e9c8a11ed63",
-  "label": "hello",
-  "meta": {
-    "ip": "84.19.145.194"
-  },
-  "created_at": "2024-09-02T13:48:13.251621Z",
-  "modified_at": null,
-  "license_key": {
-    "id": "508176f7-065a-4b5d-b524-4e9c8a11ed63",
-    "organization_id": "fda84e25-7b55-4d67-916d-60ead04ff61f",
-    "user_id": "d910050c-be66-4ca0-b4cc-34fde514f227",
-    "benefit_id": "32a8eda4-56cf-4a94-8228-792d324a519e",
-    "key": "1C285B2D-6CE6-4BC7-B8BE-ADB6A7E304DA",
-    "display_key": "****-E304DA",
-    "status": "granted",
-    "limit_activations": 3,
-    "usage": 0,
-    "limit_usage": 100,
-    "validations": 0,
-    "last_validated_at": null,
-    "expires_at": "2026-08-30T08:40:34.769148Z"
-  }
-}
-```
-### Validate License Keys
-
-For each session of your premium app, library or API, we recommend you validate the users license key via the
-[`/v1/customer-portal/license-keys/validate`](/api-reference/current/customer_portal/validate-license-key) endpoint.
-
-```bash Terminal
-curl -X POST https://api.polar.sh/v1/customer-portal/license-keys/validate
--H "Content-Type: application/json"
--d '{
-  "key": "1C285B2D-6CE6-4BC7-B8BE-ADB6A7E304DA",
-  "organization_id": "fda84e25-7b55-4d67-916d-60ead04ff61f",
-  "activation_id": "b6724bc8-7ad9-4ca0-b143-7c896fcbb6fe",
-  "conditions": { "major_version": 1 },
-  "increment_usage": 15
-}'
-```
-
-<ParamField path="key" type="string" required>
-  Replace with the users license key (from input in your app).
-</ParamField>
-
-<ParamField path="organization_id" type="string" required>
-  Replace with your organization ID here found in your settings.
-</ParamField>
-
-<ParamField path="activation_id" type="string">
-  The activation ID to validate - required in case activations limit is enabled and used (above).
-</ParamField>
-
-<ParamField path="conditions" type="object">
-  In case of activation instances. Same exact JSON object as upon registration of the activation.
-</ParamField>
-
-<ParamField path="increment_usage" type="integer">
-  In case you want to increment usage upon validation.
-</ParamField>
-
-#### **Response (200 OK)**
-
-```json
-{
-  "id": "508176f7-065a-4b5d-b524-4e9c8a11ed63",
-  "organization_id": "fda84e25-7b55-4d67-916d-60ead04ff61f",
-  "user_id": "d910050c-be66-4ca0-b4cc-34fde514f227",
-  "benefit_id": "32a8eda4-56cf-4a94-8228-792d324a519e",
-  "key": "1C285B2D-6CE6-4BC7-B8BE-ADB6A7E304DA",
-  "display_key": "****-E304DA",
-  "status": "granted",
-  "limit_activations": 3,
-  "usage": 15,
-  "limit_usage": 100,
-  "validations": 5,
-  "last_validated_at": "2024-09-02T13:57:00.977363Z",
-  "expires_at": "2026-08-30T08:40:34.769148Z",
-  "activation": {
-    "id": "b6724bc8-7ad9-4ca0-b143-7c896fcbb6fe",
-    "license_key_id": "508176f7-065a-4b5d-b524-4e9c8a11ed63",
-    "label": "hello",
-    "meta": {
-      "ip": "84.19.145.194"
-    },
-    "created_at": "2024-09-02T13:48:13.251621Z",
-    "modified_at": null
-  }
-}
-```
-
-Validate `benefit_id` in case of multiple license keys
-
-We require `organization_id` to be provided to avoid cases of Polar license keys being used across Polar organizations erroneously. Otherwise, a valid license key for one organization could be used on another.However, you are required to validate and scope license keys more narrowly within your organization if necessary. Offering more than one type of license key? Be sure to validate their unique benefit\_id in the responses.
+| Resource | Description |
+| --- | --- |
+| [Integrate License Keys](/features/benefits/validate-license-keys) | Activate, validate and deactivate keys from your application |
+| [Manage benefits](/features/benefits/introduction) | Attach, update, delete and grant benefits |
+| [License Keys API](/api-reference/current/license_keys/list-license-keys) | List, update and rotate keys |
+| [`polar license_keys`](/integrate/cli/reference/license_keys) | CLI reference |

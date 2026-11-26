@@ -17,7 +17,7 @@ import { Children, type ReactNode } from 'react'
 const DUNNING_TOTAL_RETRY_DAYS = 21
 
 const FAILED_PAYMENTS_DOCS_URL =
-  'https://docs.polar.sh/features/subscriptions/failed-payments'
+  'https://polar.sh/docs/features/subscriptions/failed-payments'
 
 const BannerFrame = ({
   heading,

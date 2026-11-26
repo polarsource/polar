@@ -1,4 +1,4 @@
-import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
+import { getAuthenticatedUser } from '@/utils/user'
 import * as Sentry from '@sentry/nextjs'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
 
   let trustedOrganizationId: string | undefined
   if (parsed.data.organizationId) {
-    const userOrganizations = await getUserOrganizations()
+    const userOrganizations = user.organizations ?? []
     if (
       userOrganizations.some((org) => org.id === parsed.data.organizationId)
     ) {

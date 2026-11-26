@@ -3,19 +3,12 @@ import { NextRequest } from 'next/server'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { config, proxy } from './proxy'
 
-vi.mock('./utils/client', () => ({
-  createServerSideAPI: vi.fn(),
-}))
-
 const nextConfig = {}
 
 const getForwardedRequestHeader = (
   response: Response,
   header: string,
 ): string | null => response.headers.get(`x-middleware-request-${header}`)
-
-const getForwardedRequestHeaderNames = (response: Response): string[] =>
-  response.headers.get('x-middleware-override-headers')?.split(',') ?? []
 
 describe('proxy matcher configuration', () => {
   it('should run for dashboard routes', () => {
@@ -200,16 +193,6 @@ describe('proxy matcher configuration', () => {
 })
 
 describe('middleware function', () => {
-  let createServerSideAPI: ReturnType<typeof vi.fn>
-
-  beforeEach(async () => {
-    const clientModule = await import('./utils/client')
-    createServerSideAPI = clientModule.createServerSideAPI as ReturnType<
-      typeof vi.fn
-    >
-    vi.clearAllMocks()
-  })
-
   it('should redirect unauthenticated users from protected routes', async () => {
     const request = new NextRequest('https://example.com/dashboard')
 
@@ -220,30 +203,30 @@ describe('middleware function', () => {
     expect(response.headers.get('location')).toContain('return_to=%2Fdashboard')
   })
 
-  it('should allow authenticated users to access protected routes', async () => {
-    const mockUser = { id: '123', email: 'test@example.com' }
-    const spoofedUser = { id: 'spoofed', email: 'attacker@example.com' }
-    createServerSideAPI.mockResolvedValue({
-      GET: vi.fn().mockResolvedValue({
-        data: mockUser,
-        response: { ok: true, status: 200, headers: new Headers() },
-      }),
-    })
-
-    const request = new NextRequest('https://example.com/dashboard', {
-      headers: {
-        'x-polar-user': Buffer.from(JSON.stringify(spoofedUser)).toString(
-          'base64',
-        ),
-      },
-    })
-    request.cookies.set('polar_session', 'valid-session-token')
+  it('should let requests with a session cookie through to protected routes', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+    const request = new NextRequest('https://example.com/dashboard')
+    request.cookies.set('polar_session', 'session-token')
 
     const response = await proxy(request)
 
     expect(response.status).toBe(200)
-    expect(getForwardedRequestHeader(response, 'x-polar-user')).toBe(
-      Buffer.from(JSON.stringify(mockUser)).toString('base64'),
+    expect(response.headers.get('location')).toBeNull()
+    expect(fetchSpy).not.toHaveBeenCalled()
+    fetchSpy.mockRestore()
+  })
+
+  it('forwards the requested path so a layout can send the user back after login', async () => {
+    const request = new NextRequest(
+      'https://example.com/dashboard/acme?tab=orders',
+      { headers: { 'x-polar-request-path': '/spoofed' } },
+    )
+    request.cookies.set('polar_session', 'session-token')
+
+    const response = await proxy(request)
+
+    expect(getForwardedRequestHeader(response, 'x-polar-request-path')).toBe(
+      '/dashboard/acme?tab=orders',
     )
   })
 
@@ -253,29 +236,6 @@ describe('middleware function', () => {
     const response = await proxy(request)
 
     expect(response.status).toBe(200)
-    expect(getForwardedRequestHeader(response, 'x-polar-user')).toBeNull()
-    expect(getForwardedRequestHeaderNames(response)).not.toContain(
-      'x-polar-user',
-    )
-  })
-
-  it('should strip spoofed user headers from forwarded routes', async () => {
-    const request = new NextRequest('https://example.com/docs/overview', {
-      headers: {
-        'x-polar-user': Buffer.from(
-          JSON.stringify({ id: 'spoofed', email: 'attacker@example.com' }),
-        ).toString('base64'),
-      },
-    })
-
-    const response = await proxy(request)
-
-    expect(response.status).toBe(200)
-    expect(getForwardedRequestHeader(response, 'x-polar-user')).toBeNull()
-    expect(getForwardedRequestHeaderNames(response)).not.toContain(
-      'x-polar-user',
-    )
-    expect(createServerSideAPI).not.toHaveBeenCalled()
   })
 
   it('should redirect to login with query params preserved', async () => {
@@ -289,68 +249,6 @@ describe('middleware function', () => {
     const location = response.headers.get('location')
     expect(location).toContain('/auth')
     expect(location).toContain('return_to=%2Fdashboard%3Ffoo%3Dbar%26baz%3Dqux')
-  })
-
-  it('should throw error on unexpected API response status', async () => {
-    const consoleErrorSpy = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {})
-
-    createServerSideAPI.mockResolvedValue({
-      GET: vi.fn().mockResolvedValue({
-        data: undefined,
-        response: { ok: false, status: 500, headers: new Headers() },
-      }),
-    })
-
-    const request = new NextRequest('https://example.com/dashboard')
-    request.cookies.set('polar_session', 'valid-session-token')
-
-    await expect(proxy(request)).rejects.toThrow(
-      'Unexpected response status while fetching authenticated user',
-    )
-    consoleErrorSpy.mockRestore()
-  })
-
-  it('should handle 401 responses gracefully', async () => {
-    createServerSideAPI.mockResolvedValue({
-      GET: vi.fn().mockResolvedValue({
-        data: undefined,
-        response: { ok: false, status: 401, headers: new Headers() },
-      }),
-    })
-
-    const request = new NextRequest('https://example.com/dashboard')
-    request.cookies.set('polar_session', 'invalid-session-token')
-
-    const response = await proxy(request)
-
-    expect(response.status).toBe(307)
-    expect(response.headers.get('location')).toContain('/auth')
-  })
-
-  it('should handle 429 rate-limit responses gracefully', async () => {
-    const consoleErrorSpy = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {})
-
-    createServerSideAPI.mockResolvedValue({
-      GET: vi.fn().mockResolvedValue({
-        data: undefined,
-        response: { ok: false, status: 429, headers: new Headers() },
-      }),
-    })
-
-    const request = new NextRequest('https://example.com/dashboard')
-    request.cookies.set('polar_session', 'rate-limited-session-token')
-
-    // Must not throw: a 429 should be treated as "couldn't determine the user"
-    // and proceed as anonymous (protected route -> redirect to login).
-    const response = await proxy(request)
-
-    expect(response.status).toBe(307)
-    expect(response.headers.get('location')).toContain('/auth')
-    consoleErrorSpy.mockRestore()
   })
 
   it('lets unauthenticated agent claims through so the page can offer sign-in', async () => {

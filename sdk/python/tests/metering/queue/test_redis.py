@@ -8,7 +8,7 @@ import pytest
 from fakeredis import FakeAsyncRedis, FakeServer
 
 from polar.metering import _ingest_events
-from polar.metering.errors import DropReason, MeteringTimeoutError
+from polar.metering.errors import DropReason
 from polar.metering.events import EventInput
 from polar.metering.queue import EventQueue
 from polar.metering.queue.redis import RedisEventQueue
@@ -60,8 +60,8 @@ async def test_redis_queue_retries_with_the_same_event_and_reports_acceptance(
         first_ack = AsyncMock()
         async with queue.open(ingest=send, on_ack=first_ack, on_rejected=on_rejected):
             await queue.enqueue({"name": "call", "external_customer_id": "alice"})
-            with pytest.raises(MeteringTimeoutError):
-                await queue.flush(timeout=0.1)
+            # Redis keeps what a drain fails to deliver: the next flush takes it.
+            await queue.flush(timeout=0.1)
             assert len(attempts) == 1
             assert not accepted
             assert not rejected

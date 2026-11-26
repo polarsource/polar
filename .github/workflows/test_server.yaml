@@ -425,6 +425,20 @@ jobs:
         if: steps.merge-check.outputs.should_run != 'false' && matrix.shard == 'tinybird'
         run: touch /tmp/email-renderer
 
+      - name: 🐦 Install Tinybird CLI
+        if: steps.merge-check.outputs.should_run != 'false' && matrix.shard == 'tinybird'
+        run: |
+          rm -f "$RUNNER_TEMP/tb-cli.done" "$RUNNER_TEMP/tb-cli.error"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          nohup bash -c '
+            set -euo pipefail
+            if curl -fsSL https://tinybird.co/install.sh | bash; then
+              touch "$RUNNER_TEMP/tb-cli.done"
+            else
+              echo "Tinybird CLI install failed" > "$RUNNER_TEMP/tb-cli.error"
+            fi
+          ' </dev/null > "$RUNNER_TEMP/tb-cli.log" 2>&1 &
+
       - name: 📬 Restore emails renderer
         id: emails
         if: steps.merge-check.outputs.should_run != 'false' && matrix.shard != 'tinybird'
@@ -495,14 +509,12 @@ jobs:
         if: steps.merge-check.outputs.should_run != 'false'
         working-directory: ./server
         run: |
-          uv sync --dev --frozen --compile-bytecode
-          uv run python -m compileall -j 0 -q polar tests
-
-      - name: 🐦 Install Tinybird CLI
-        if: steps.merge-check.outputs.should_run != 'false' && matrix.shard == 'tinybird'
-        run: |
-          curl -sSL https://tinybird.co/install.sh | bash
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          if [ "${{ matrix.shard }}" = "tinybird" ]; then
+            uv sync --dev --frozen
+          else
+            uv sync --dev --frozen --compile-bytecode
+            uv run python -m compileall -j 0 -q polar tests
+          fi
 
       - name: 🐦 Prepare Tinybird workspace
         if: steps.merge-check.outputs.should_run != 'false' && matrix.shard == 'tinybird'
@@ -510,7 +522,31 @@ jobs:
         run: |
           token_file="$RUNNER_TEMP/tinybird-token"
           rm -f "$token_file" "$token_file.error"
-          nohup uv run python -m scripts.tinybird_test_workspace --token-file "$token_file" > "$RUNNER_TEMP/tinybird-prepare.log" 2>&1 &
+          nohup bash -c '
+            set -euo pipefail
+            for _ in $(seq 1 300); do
+              if [ -f "$RUNNER_TEMP/tb-cli.done" ]; then
+                break
+              fi
+              if [ -f "$RUNNER_TEMP/tb-cli.error" ]; then
+                cat "$RUNNER_TEMP/tb-cli.log"
+                cp "$RUNNER_TEMP/tb-cli.error" "$RUNNER_TEMP/tinybird-token.error"
+                exit 1
+              fi
+              sleep 0.1
+            done
+            if [ ! -f "$RUNNER_TEMP/tb-cli.done" ]; then
+              echo "Timed out waiting for Tinybird CLI install" > "$RUNNER_TEMP/tinybird-token.error"
+              exit 1
+            fi
+            export PATH="$HOME/.local/bin:$PATH"
+            exec uv run python -m scripts.tinybird_test_workspace --token-file "$RUNNER_TEMP/tinybird-token"
+          ' </dev/null > "$RUNNER_TEMP/tinybird-prepare.log" 2>&1 &
+
+      - name: 🔧 Compile Python bytecode (Tinybird)
+        if: steps.merge-check.outputs.should_run != 'false' && matrix.shard == 'tinybird'
+        working-directory: ./server
+        run: uv run python -m compileall -j 0 -q polar tests
 
       - name: ⚗️ Restore migrated Postgres schema
         id: schema-cache
@@ -561,8 +597,40 @@ jobs:
         if: steps.merge-check.outputs.should_run != 'false' && matrix.shard != 'tinybird'
         working-directory: ./server
         run: |
-          uv run python -m scripts.pytest_shards --shards 4 --shard ${{ matrix.shard }} > "$RUNNER_TEMP/test-files"
-          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "not tinybird and not benchmark" -n 8 --dist=loadgroup -p no:sugar -p no:cov -p no:codspeed -p no:locust --durations=20 --store-durations --clean-durations
+          pids=()
+          for i in $(seq 0 7); do
+            sub_shard=$(( ${{ matrix.shard }} + i * 4 ))
+            files_out=$(uv run python -m scripts.pytest_shards --shards 32 --shard "$sub_shard")
+            mapfile -t files <<< "$files_out"
+            split_args=(-p no:split)
+            if [ "${{ github.event_name }}" = "push" ]; then
+              split_args=(--store-durations --clean-durations --durations-path "$RUNNER_TEMP/dur-$i.json")
+            fi
+            POLAR_TEST_WORKER_ID="gw$i" uv run pytest -p no:xdist "${split_args[@]}" -m "not tinybird and not benchmark" -p no:sugar -p no:cov -p no:codspeed -p no:locust --durations=10 "${files[@]}" > "$RUNNER_TEMP/gw$i.log" 2>&1 &
+            pids+=($!)
+          done
+          failed=0
+          passed=0
+          for i in "${!pids[@]}"; do
+            rc=0
+            wait "${pids[$i]}" || rc=$?
+            summary=$(grep -E '^=.*=$' "$RUNNER_TEMP/gw$i.log" | tail -n 1 || true)
+            echo "[gw$i] rc=$rc — $summary"
+            if [ "$rc" -eq 0 ]; then
+              passed=$((passed + 1))
+            elif [ "$rc" -ne 5 ]; then
+              failed=1
+              cat "$RUNNER_TEMP/gw$i.log"
+            fi
+          done
+          if [ "$failed" -ne 0 ] || [ "$passed" -eq 0 ]; then
+            exit 1
+          fi
+          if [ "${{ github.event_name }}" = "push" ]; then
+            shopt -s nullglob
+            dur_files=("$RUNNER_TEMP"/dur-*.json)
+            uv run python -m scripts.merge_test_durations --expected-shards "${#dur_files[@]}" --output .test_durations "${dur_files[@]}"
+          fi
 
       - name: 🐦 Run Tinybird tests (pytest)
         if: steps.merge-check.outputs.should_run != 'false' && matrix.shard == 'tinybird'
@@ -570,8 +638,30 @@ jobs:
         env:
           POLAR_TEST_TINYBIRD_TOKEN_FILE: ${{ runner.temp }}/tinybird-token
         run: |
-          uv run python -m scripts.pytest_shards --tinybird > "$RUNNER_TEMP/test-files"
-          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "tinybird and not benchmark" -n 6 --dist=loadgroup -p no:sugar -p no:cov -p no:codspeed -p no:locust -p no:split --durations=20
+          files_out=$(uv run python -m scripts.pytest_shards --tinybird)
+          mapfile -t tb_files <<< "$files_out"
+          pids=()
+          for i in "${!tb_files[@]}"; do
+            POLAR_TEST_WORKER_ID="gw$i" uv run pytest -p no:xdist -p no:split -m "tinybird and not benchmark" -p no:sugar -p no:cov -p no:codspeed -p no:locust --durations=10 "${tb_files[$i]}" > "$RUNNER_TEMP/gw$i.log" 2>&1 &
+            pids+=($!)
+          done
+          failed=0
+          passed=0
+          for i in "${!pids[@]}"; do
+            rc=0
+            wait "${pids[$i]}" || rc=$?
+            summary=$(grep -E '^=.*=$' "$RUNNER_TEMP/gw$i.log" | tail -n 1 || true)
+            echo "[gw$i] (${tb_files[$i]}) rc=$rc — $summary"
+            if [ "$rc" -eq 0 ]; then
+              passed=$((passed + 1))
+            elif [ "$rc" -ne 5 ]; then
+              failed=1
+              cat "$RUNNER_TEMP/gw$i.log"
+            fi
+          done
+          if [ "$failed" -ne 0 ] || [ "$passed" -eq 0 ]; then
+            exit 1
+          fi
 
       - name: 📊 Upload shard test durations
         if: steps.merge-check.outputs.should_run != 'false' && github.event_name == 'push' && matrix.shard != 'tinybird'

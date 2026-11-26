@@ -133,6 +133,14 @@ def clone_template_database(sync_database_url: str) -> None:
     raise RuntimeError(f"Template database {TEMPLATE_DATABASE} never became free")
 
 
+@pytest.fixture(scope="session")
+def worker_id(request: pytest.FixtureRequest) -> str:
+    workerinput = getattr(request.config, "workerinput", None)
+    if workerinput is not None:
+        return str(workerinput["workerid"])
+    return os.environ.get("POLAR_TEST_WORKER_ID", "master")
+
+
 @pytest.fixture(scope="session", autouse=True)
 def track_worker_id(worker_id: str) -> Iterator[None]:
     global _worker_id, _initialized_worker_id, _active_engine

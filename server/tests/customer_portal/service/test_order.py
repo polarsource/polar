@@ -12,10 +12,7 @@ from polar.customer_portal.schemas.order import (
     CustomerOrderPayPaymentMethod,
     CustomerOrderPayWithoutCredentials,
 )
-from polar.customer_portal.service.order import (
-    CustomerOrderSortProperty,
-    OrderNotEligibleForRetry,
-)
+from polar.customer_portal.service.order import CustomerOrderSortProperty
 from polar.customer_portal.service.order import customer_order as customer_order_service
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarRequestValidationError
@@ -28,7 +25,7 @@ from polar.models import Customer, DiscountRedemption, Order, Organization, Prod
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderStatus
 from polar.models.subscription import SubscriptionStatus
-from polar.order.service import PaymentError
+from polar.order.service import OrderNotEligibleForRetry, PaymentError
 from polar.order.service import order as order_service
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture

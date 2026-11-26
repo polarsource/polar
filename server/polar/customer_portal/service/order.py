@@ -22,7 +22,13 @@ from polar.models.order import OrderStatus
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.order.repository import OrderRepository
-from polar.order.service import InvoiceDoesNotExist, PaymentError, ReceiptNotAllocated
+from polar.order.service import (
+    InvoiceDoesNotExist,
+    NotExistingPaymentMethod,
+    OrderNotEligibleForRetry,
+    PaymentError,
+    ReceiptNotAllocated,
+)
 from polar.order.service import order as order_service
 from polar.receipt.service import receipt as receipt_service
 from polar.subscription.repository import SubscriptionRepository
@@ -41,30 +47,9 @@ from ..schemas.order import (
 )
 
 
-class CustomerOrderError(PolarError): ...
-
-
-class OrderNotEligibleForRetry(CustomerOrderError):
-    def __init__(self, order: Order) -> None:
-        self.order = order
-        message = "Order is not eligible for payment retry."
-        super().__init__(message, 422)
-
-
-class PaymentAlreadyInProgress(CustomerOrderError):
-    def __init__(self, order: Order) -> None:
-        self.order = order
-        message = "Payment for order is already in progress."
-        super().__init__(message, 409)
-
-
-class ManualRetryLimitExceeded(CustomerOrderError):
-    def __init__(self, order: Order) -> None:
-        self.order = order
-        message = (
-            "Maximum number of payment retry attempts has been reached for this order."
-        )
-        super().__init__(message, 429)
+class PaymentRetryValidationError(PolarError):
+    def __init__(self) -> None:
+        super().__init__("Payment method does not belong to customer", 422)
 
 
 class CustomerOrderSortProperty(StrEnum):
@@ -282,6 +267,18 @@ class CustomerOrderService:
                     )
                 ]
             ) from e
+        except NotExistingPaymentMethod as e:
+            order.status = original_status
+            raise PolarRequestValidationError(
+                [
+                    ValidationError(
+                        type="value_error",
+                        loc=("body", "payment_method_id"),
+                        msg=e.message,
+                        input=e.payment_method_id,
+                    )
+                ]
+            ) from e
         except PaymentError, PolarRequestValidationError:
             order.status = original_status
             raise
@@ -328,6 +325,9 @@ class CustomerOrderService:
         payment_processor: PaymentProcessor,
         payment_method_id: uuid.UUID | None = None,
     ) -> CustomerOrderPaymentConfirmation:
+        if order.subscription is None:
+            raise OrderNotEligibleForRetry(order, status_code=422)
+
         try:
             if confirmation_token_id is not None:
                 order = await order_service.handle_on_session_payment(
@@ -340,6 +340,10 @@ class CustomerOrderService:
                 order = await order_service.handle_on_session_payment(
                     session, order, payment_method_id=payment_method_id
                 )
+        except OrderNotEligibleForRetry as e:
+            raise OrderNotEligibleForRetry(e.order, status_code=422) from e
+        except NotExistingPaymentMethod as e:
+            raise PaymentRetryValidationError() from e
         except PaymentError as e:
             return CustomerOrderPaymentConfirmation(
                 status="failed", error=e.error or "Payment failed. Please try again."

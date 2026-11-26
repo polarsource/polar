@@ -256,11 +256,12 @@ interface ToolbarFilterMenuProps {
   filters: Filter[]
   // Offered at the foot of the menu while there is something to reset.
   onReset?: () => void
-  // The toolbar button, a plus that follows the filter chips, or an arrow
-  // inside a line of text. The plus sits at the left of the toolbar, so its
-  // menu and options open to the right. The arrow can be anywhere, so its
-  // options open towards the middle of the window.
-  variant?: 'toolbar' | 'add' | 'inline'
+  // The toolbar button, or an arrow inside a line of text. The toolbar button
+  // sits at the left of the toolbar, after the filter chips, so its menu and
+  // options open to the right. Once a filter is applied it is a plus, sized to
+  // stand beside the chips. The arrow can be anywhere, so its options open
+  // towards the middle of the window.
+  variant?: 'toolbar' | 'inline'
   // Things to do, listed above the properties.
   actions?: ToolbarAction[]
 }
@@ -274,14 +275,14 @@ export const ToolbarFilterMenu = ({
 }: ToolbarFilterMenuProps) => {
   const [open, setOpen] = useState(false)
   const [activeKey, setActiveKey] = useState<string | null>(null)
-  const isAdd = variant === 'add'
   const isInline = variant === 'inline'
   const triggerRef = useRef<HTMLButtonElement>(null)
   const [isInLeftHalf, setIsInLeftHalf] = useState(false)
-  const opensRight = isAdd || (isInline && isInLeftHalf)
   const hasApplied = filters.some(
     (filter) => isFilterActive(filter) && !isFilterDefaulted(filter),
   )
+  const opensRight = !isInline || isInLeftHalf
+  const isAdd = !isInline && hasApplied
   // Leaving a property clears what was typed into its search.
   const activate = (key: string | null) => {
     if (key === activeKey) return
@@ -374,15 +375,9 @@ export const ToolbarFilterMenu = ({
             variant="ghost"
             className={twMerge(
               isAdd ? ADD_TRIGGER_CLASS : 'h-7 w-7 [&_svg]:size-4!',
-              (open || (hasApplied && !isAdd)) && TRIGGER_ON_CLASS,
+              open && TRIGGER_ON_CLASS,
             )}
-            aria-label={
-              isAdd
-                ? 'Add filter'
-                : hasApplied
-                  ? 'Filters, some applied'
-                  : 'Filters'
-            }
+            aria-label={isAdd ? 'Add filter' : 'Filters'}
             title={isAdd ? 'Add filter' : 'Filters'}
           >
             {isAdd ? <Plus /> : <FilterListOutlined fontSize="inherit" />}
@@ -390,7 +385,7 @@ export const ToolbarFilterMenu = ({
         )}
       </PopoverTrigger>
       <PopoverContent
-        align={isAdd || isInline ? 'start' : 'end'}
+        align="start"
         sideOffset={8}
         className={twMerge(PANEL_CLASS, 'w-60 overflow-visible p-0')}
       >

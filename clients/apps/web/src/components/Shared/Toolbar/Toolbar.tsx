@@ -9,7 +9,7 @@ import { ToolbarFilterMenu } from './ToolbarFilterMenu'
 interface ToolbarProps {
   title: string
   // Everything set from the filter menu. Each one away from its default also
-  // shows as a chip beside the title.
+  // shows as a chip beside the title, ahead of the menu.
   filters: Filter[]
   // Offered while there is something to reset.
   onReset?: () => void
@@ -42,22 +42,15 @@ export const Toolbar = ({
       <Text as="h1" variant="body" wrap="nowrap">
         {title}
       </Text>
-      <ToolbarFilterChips
-        filters={filters}
-        trailing={
-          <ToolbarFilterMenu
-            filters={filters}
-            onReset={onReset}
-            variant="add"
-          />
-        }
-      />
+      {filters.length > 0 && (
+        <ToolbarFilterChips
+          filters={filters}
+          trailing={<ToolbarFilterMenu filters={filters} onReset={onReset} />}
+        />
+      )}
     </Box>
     <Box alignItems="center" gap="s" flexShrink={0} minHeight={32}>
       {children}
-      {filters.length > 0 && (
-        <ToolbarFilterMenu filters={filters} onReset={onReset} />
-      )}
       <ToolbarActionsMenu groups={actions} />
     </Box>
   </Box>

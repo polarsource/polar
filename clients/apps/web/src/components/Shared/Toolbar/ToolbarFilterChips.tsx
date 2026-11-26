@@ -48,7 +48,7 @@ export const ToolbarFilterChips = ({
   const applied = filters.filter(
     (filter) => isFilterActive(filter) && !isFilterDefaulted(filter),
   )
-  if (applied.length === 0) return null
+  if (applied.length === 0) return trailing
 
   return (
     <Box alignItems="center" gap="s" minWidth={0}>

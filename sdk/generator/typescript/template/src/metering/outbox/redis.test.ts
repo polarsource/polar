@@ -4,6 +4,7 @@ import { expect, it, vi } from "vitest";
 import { ClientBase } from "../../base";
 import { startRedisServer } from "../../outpost/testing";
 import type { EventInput } from "../event";
+import type { Outbox } from "./index";
 import { RedisOutbox } from "./redis";
 
 it("keeps an entry until its rejection hook succeeds", async () => {
@@ -26,7 +27,10 @@ it("keeps an entry until its rejection hook succeeds", async () => {
     expect(await redis.xlen(stream)).toBe(1);
     if (attempts.length === 1) throw new Error("Reducer unavailable");
   });
-  const outbox = new RedisOutbox(server.socket, { client, stream, onAck, onRejected });
+  const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  const outbox: Outbox = new RedisOutbox(server.socket, { client, stream });
+  outbox.onAck = onAck;
+  outbox.onRejected = onRejected;
   try {
     await outbox.start();
     await outbox.enqueue({ name: "call", external_customer_id: "alice" });
@@ -39,7 +43,9 @@ it("keeps an entry until its rejection hook succeeds", async () => {
     expect(onRejected).toHaveBeenCalledWith([attempts[0]], "permanent_error");
     expect(onAck).not.toHaveBeenCalled();
     expect(await redis.xlen(stream)).toBe(0);
+    expect(warn).toHaveBeenCalledWith("Redis outbox drain failed", expect.any(Error));
   } finally {
+    warn.mockRestore();
     await outbox.close();
     redis.disconnect();
     await server.stop();

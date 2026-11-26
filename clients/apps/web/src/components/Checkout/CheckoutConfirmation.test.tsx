@@ -78,4 +78,15 @@ describe('CheckoutConfirmation', () => {
       ).not.toBeInTheDocument(),
     )
   })
+
+  it('refreshes the page once the customer session has expired', async () => {
+    const { router } = renderConfirmation({
+      checkout: {
+        product: { ...createCheckout().product, benefits: [customBenefit] },
+      },
+      customerSessionExpired: true,
+    })
+
+    await waitFor(() => expect(router.refresh).toHaveBeenCalledTimes(1))
+  })
 })

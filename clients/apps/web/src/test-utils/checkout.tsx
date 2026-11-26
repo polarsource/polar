@@ -152,6 +152,7 @@ export interface ServeCheckoutOptions {
   discounts?: Record<string, CheckoutDiscount>
   fulfillment?: StreamEvent[]
   benefitGrants?: schemas['CustomerBenefitGrant'][]
+  customerSessionExpired?: boolean
 }
 
 const validationError = (field: string, message: string) =>
@@ -207,6 +208,7 @@ export const serveCheckout = (
     discounts = {},
     fulfillment = FULFILLED,
     benefitGrants = [],
+    customerSessionExpired = false,
   }: ServeCheckoutOptions = {},
 ): CheckoutApi => {
   let current = initial
@@ -302,6 +304,12 @@ export const serveCheckout = (
       `${API_URL}/v1/customer-portal/benefit-grants/`,
       async ({ request }) => {
         await record(request)
+        if (customerSessionExpired) {
+          return HttpResponse.json(
+            { error: 'invalid_token', error_description: 'Token expired' },
+            { status: 401 },
+          )
+        }
         return HttpResponse.json({
           items: grants,
           pagination: { total_count: grants.length, max_page: 1 },
@@ -498,6 +506,7 @@ export const renderConfirmation = ({
   discounts,
   fulfillment,
   benefitGrants,
+  customerSessionExpired,
   ...providerOptions
 }: RenderConfirmationOptions = {}): CheckoutRenderResult => {
   const checkout = createWebCheckout({ status: 'succeeded', ...overrides })
@@ -506,6 +515,7 @@ export const renderConfirmation = ({
     discounts,
     fulfillment,
     benefitGrants,
+    customerSessionExpired,
   })
 
   const result = renderWithProviders(

@@ -13,7 +13,6 @@ SECTION_SCOPES = {
     "custom_fields": (Scope.custom_fields_read, Scope.custom_fields_write),
     "benefits": (Scope.benefits_read, Scope.benefits_write),
     "products": (Scope.products_read, Scope.products_write),
-    "webhooks": (Scope.webhooks_read, Scope.webhooks_write),
 }
 
 _ConfigRead = Authenticator(

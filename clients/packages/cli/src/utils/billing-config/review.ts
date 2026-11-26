@@ -40,24 +40,8 @@ export const fixErrors = (issues: ReadonlyArray<ConfigIssue>) =>
 
 export const runDraft = `${ui.INDENT}Run ${ui.command('polar config draft')} to save it to the draft.`
 
-// `polar config draft` saves these sections to the draft, and makes webhook changes right away
-const DRAFTED = new Set([
-  'products',
-  'benefits',
-  'meters',
-  'custom_fields',
-  'settings',
-])
-
 export const draftedChanges = (entries: ReadonlyArray<AppliedEntry>) =>
-  entries.filter(
-    (entry) => DRAFTED.has(entry.section) && entry.action !== 'unchanged',
-  )
-
-const immediateChanges = (entries: ReadonlyArray<AppliedEntry>) =>
-  entries.filter(
-    (entry) => !DRAFTED.has(entry.section) && entry.action !== 'unchanged',
-  )
+  entries.filter((entry) => entry.action !== 'unchanged')
 
 const draftFact = (
   file: string,
@@ -80,12 +64,7 @@ export const draftNote = (
   file: string,
   draft: PlanDraft,
   entries: ReadonlyArray<AppliedEntry>,
-) => [
-  draftFact(file, draft, entries),
-  ...(immediateChanges(entries).length > 0
-    ? [`Webhook changes take effect on ${ui.command('polar config draft')}.`]
-    : []),
-]
+) => [draftFact(file, draft, entries)]
 
 // `polar config draft` discards a draft that differs from a file matching the live catalog
 export const discardsDraft = (
@@ -102,19 +81,18 @@ const draftAction = (
 ) => {
   const save = ui.command('polar config draft')
   const publish = ui.command('polar config publish')
-  const webhooks = immediateChanges(entries).length > 0
-  if (draft.drift?.length === 0 && !webhooks) {
+  if (draft.drift?.length === 0) {
     return [
       `Run ${publish} to make ${draftedChanges(entries).length > 0 ? 'them' : 'it'} live.`,
     ]
   }
-  if (draft.drift?.length === 0 || draftedChanges(entries).length > 0) {
+  if (draftedChanges(entries).length > 0) {
     return [`Run ${save}, then ${publish}.`]
   }
   if (discardsDraft(draft, entries)) {
     return [`Run ${save} to discard them.`]
   }
-  return webhooks ? [`Run ${save}.`] : []
+  return []
 }
 
 export const draftNext = (
@@ -137,7 +115,6 @@ export const NOUNS = [
   ['custom_fields', 'custom field'],
   ['benefits', 'benefit'],
   ['products', 'product'],
-  ['webhooks', 'webhook'],
 ] as const
 
 export const counts = (input: unknown) => {

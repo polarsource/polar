@@ -67,17 +67,10 @@ from polar.product.schemas import (
     UnitLabel,
 )
 from polar.product.tiers import TiersInput, TierType
-from polar.webhook.schemas import (
-    AvailableAPIVersion,
-    CreatableEndpointFormat,
-    EndpointEvents,
-    EndpointURL,
-)
 
 MAXIMUM_METERS = 100
 MAXIMUM_BENEFITS = 100
 MAXIMUM_PRODUCTS = 100
-MAXIMUM_WEBHOOK_ENDPOINTS = 25
 MAXIMUM_CUSTOM_FIELDS = 100
 
 
@@ -432,21 +425,6 @@ class ConfigProduct(
             )
 
 
-class ConfigWebhookEndpoint(Schema):
-    model_config = ConfigDict(extra="forbid")
-
-    external_id: ExternalID = Field(
-        ...,
-        description="Your identifier for the webhook endpoint, used to match it.",
-    )
-    url: EndpointURL
-    format: CreatableEndpointFormat
-    events: EndpointEvents = Field(min_length=1)
-    api_version: AvailableAPIVersion = Field(
-        description="The API version that'll be used in event payloads."
-    )
-
-
 class ConfigCustomFieldBase(MetadataInputMixin, Schema):
     model_config = ConfigDict(extra="forbid")
 
@@ -648,7 +626,6 @@ class ConfigResource(StrEnum):
     meter = "meter"
     benefit = "benefit"
     product = "product"
-    webhook = "webhook"
 
 
 class ConfigResult(Schema):

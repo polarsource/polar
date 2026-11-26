@@ -4328,28 +4328,6 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/v1/webhooks/endpoints/external/{external_id}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get Webhook Endpoint by External ID
-     * @description Get a webhook endpoint by external ID.
-     *
-     *     **Scopes**: `webhooks:read` `webhooks:write`
-     */
-    get: operations['webhooks:get_external_webhook_endpoint']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/v1/webhooks/endpoints/{id}': {
     parameters: {
       query?: never
@@ -6796,7 +6774,7 @@ export interface paths {
      *
      *     Requires the read or write scope of every exported section.
      *
-     *     **Scopes**: `benefits:read` `benefits:write` `custom_fields:read` `custom_fields:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
+     *     **Scopes**: `benefits:read` `benefits:write` `custom_fields:read` `custom_fields:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write`
      */
     get: operations['config:export']
     put?: never
@@ -6899,7 +6877,7 @@ export interface paths {
      *
      *     Each section requires the write scope for its resource.
      *
-     *     **Scopes**: `benefits:write` `custom_fields:write` `meters:write` `organizations:write` `products:write` `webhooks:write`
+     *     **Scopes**: `benefits:write` `custom_fields:write` `meters:write` `organizations:write` `products:write`
      */
     post: operations['config:draft']
     delete?: never
@@ -6931,7 +6909,7 @@ export interface paths {
      *
      *     Each section requires the read or write scope for its resource.
      *
-     *     **Scopes**: `benefits:read` `benefits:write` `custom_fields:read` `custom_fields:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
+     *     **Scopes**: `benefits:read` `benefits:write` `custom_fields:read` `custom_fields:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write`
      */
     post: operations['config:validate']
     delete?: never
@@ -6958,7 +6936,7 @@ export interface paths {
      *
      *     Each section requires the read or write scope for its resource.
      *
-     *     **Scopes**: `benefits:read` `benefits:write` `custom_fields:read` `custom_fields:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
+     *     **Scopes**: `benefits:read` `benefits:write` `custom_fields:read` `custom_fields:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write`
      */
     post: operations['config:prune']
     delete?: never
@@ -9168,17 +9146,6 @@ export interface components {
        * @constant
        */
       error: 'AmbiguousExternalMeterID'
-      /** Detail */
-      detail: string
-    }
-    /** AmbiguousExternalWebhookEndpointID */
-    AmbiguousExternalWebhookEndpointID: {
-      /**
-       * Error
-       * @example AmbiguousExternalWebhookEndpointID
-       * @constant
-       */
-      error: 'AmbiguousExternalWebhookEndpointID'
       /** Detail */
       detail: string
     }
@@ -18596,7 +18563,7 @@ export interface components {
      * ConfigResource
      * @enum {string}
      */
-    ConfigResource: 'custom_field' | 'meter' | 'benefit' | 'product' | 'webhook'
+    ConfigResource: 'custom_field' | 'meter' | 'benefit' | 'product'
     /** ConfigResult */
     ConfigResult: {
       /** @description The type of resource. */
@@ -59853,55 +59820,6 @@ export interface operations {
       }
     }
   }
-  'webhooks:get_external_webhook_endpoint': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        external_id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['WebhookEndpoint']
-        }
-      }
-      /** @description Webhook endpoint not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
-        }
-      }
-      /** @description The external ID matches webhook endpoints in several accessible organizations. */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['AmbiguousExternalWebhookEndpointID']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
   'webhooks:get_webhook_endpoint': {
     parameters: {
       query?: never
@@ -75411,7 +75329,7 @@ export const configRemovalReasonValues: ReadonlyArray<
 > = ['missing', 'deprecated']
 export const configResourceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigResource']
-> = ['custom_field', 'meter', 'benefit', 'product', 'webhook']
+> = ['custom_field', 'meter', 'benefit', 'product']
 export const configSkippedReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigSkippedReason']
 > = ['missing_external_id', 'archived', 'invalid', 'over_limit']

@@ -57,7 +57,6 @@ export const ConfigResource = Schema.Literals([
   'custom_field',
   'benefit',
   'product',
-  'webhook',
 ])
 
 export const EntryResult = Schema.Struct({

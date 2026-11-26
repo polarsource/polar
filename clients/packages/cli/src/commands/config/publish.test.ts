@@ -141,12 +141,10 @@ describe('polar config publish', () => {
         action: 'updated',
         diff: [{ field: 'currency', before: 'usd', after: 'eur' }],
       },
-      { section: 'webhooks', id: 'orders', action: 'updated', diff: [] },
     ])
     expect(output).toContain('polar.json has 1 change not in the draft')
     expect(output).toContain('Not in the draft polar.json')
     expect(output).toMatch(/currency/)
-    expect(output).not.toContain('orders')
   })
 
   test('warns in the confirmation when the draft is missing changes', async () => {

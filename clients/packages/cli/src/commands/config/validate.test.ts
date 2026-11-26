@@ -189,33 +189,6 @@ describe('polar config validate', () => {
     expect(output).toContain('Catalog       no live catalog → v1 (draft)')
   })
 
-  test('asks to save webhook changes before publishing a draft that has the rest', async () => {
-    const webhook = {
-      section: 'webhooks',
-      id: 'orders',
-      action: 'updated' as const,
-      diff: [],
-    }
-    const { output, failed, planned } = await run(
-      {
-        entries: [...entries, webhook],
-        catalog: { before: null, name: 'v1' },
-        issues: [],
-      },
-      [],
-      { live: null, draft },
-      {
-        entries: [{ ...entries[0]!, action: 'unchanged' as const }, webhook],
-        issues: [],
-      },
-    )
-    expect(failed).toBe(false)
-    expect(planned).toEqual([undefined, 'cat-draft'])
-    expect(output).toMatch(
-      /Next\n {2}╭─+╮\n *│ {2}These changes are saved in a draft\. *│\n *│ {2}Webhook changes take effect on polar config draft\. *│\n *│ {2}Run polar config draft, then polar config publish\. *│\n {2}╰─+╯\n$/,
-    )
-  })
-
   test('asks to save again when the draft is missing changes', async () => {
     const { output } = await run(
       { entries, issues: [] },

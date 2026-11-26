@@ -22,7 +22,6 @@ import {
   unchanged,
 } from '@/utils/billing-config/review'
 import { shownDiff, usedMeters } from '@/utils/billing-config/sentences'
-import { documents } from '@/utils/billing-config/tree'
 
 const HEADINGS: Record<string, string> = {
   settings: 'Settings',
@@ -69,7 +68,6 @@ const ids = (input: unknown): string[] =>
 
 const entryLines = (
   entry: AppliedEntry,
-  document: unknown,
   updated: { benefits: ReadonlySet<string>; meters: ReadonlySet<string> },
 ) => {
   const { section, id, action, diff } = entry
@@ -88,7 +86,7 @@ const entryLines = (
     shownDiff(
       section,
       sameIds ? diff.filter(({ field }) => field !== 'benefits') : diff,
-      document,
+      undefined,
     ),
     section,
   )
@@ -196,7 +194,6 @@ export const planMarkdown = (
             ...result.entries.map(({ section }) => section),
           ]),
         ].flatMap((section) => {
-          const webhooks = documents(config.input, 'webhooks')
           const changed = result.entries.filter(
             (entry) =>
               entry.section === section && entry.action !== 'unchanged',
@@ -209,7 +206,7 @@ export const planMarkdown = (
                   plain(
                     changed
                       .flatMap((entry) =>
-                        entryLines(entry, webhooks.get(name(entry.id)), {
+                        entryLines(entry, {
                           benefits: updatedIds(result.entries, 'benefits'),
                           meters: updatedIds(result.entries, 'meters'),
                         }),

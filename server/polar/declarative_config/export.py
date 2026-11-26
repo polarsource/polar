@@ -56,8 +56,6 @@ from .schemas import (
 )
 from .validation import benefit_properties, is_expressible_product, price_config
 
-# Webhook endpoints stay out: they need a permission and scope that
-# unclaimed agents don't have. Apply leaves unlisted endpoints untouched.
 EXPORTED_SECTIONS = ("settings", "meters", "benefits", "products")
 
 _config_benefit = TypeAdapter[ConfigBenefit](ConfigBenefit)

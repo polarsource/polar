@@ -3,7 +3,7 @@ title: "MCP operations"
 description: "Look up the name of a Polar MCP operation, the API request behind it, and whether it needs API version 2027-01."
 ---
 
-The [Polar MCP server](/integrate/mcp) can call 108 Polar API operations. Your agent finds them with the `search` tool and calls them with `execute`. With `?codemode=false` on the server URL, each operation is its own tool instead.
+The [Polar MCP server](/integrate/mcp) can call 107 Polar API operations. Your agent finds them with the `search` tool and calls them with `execute`. With `?codemode=false` on the server URL, each operation is its own tool instead.
 
 Operations are named `{resource}_{action}`, like `customers_get_state_external`. The [Polar CLI](/integrate/cli/resources) uses the same names: `customers_get_state_external` is `polar customers get_state_external`, and `customers_members_list` is `polar customers members list`.
 
@@ -246,7 +246,6 @@ These have no MCP operation. Use the API, an SDK or the dashboard:
 | `webhooks_list_webhook_endpoints` | `GET /v1/webhooks/endpoints` | List webhook endpoints. |
 | `webhooks_create_webhook_endpoint` | `POST /v1/webhooks/endpoints` | Create a webhook endpoint. |
 | `webhooks_get_webhook_endpoint` | `GET /v1/webhooks/endpoints/{id}` | Get a webhook endpoint by ID. |
-| `webhooks_get_external_webhook_endpoint` † | `GET /v1/webhooks/endpoints/external/{external_id}` | Get a webhook endpoint by external ID. No CLI command. |
 | `webhooks_update_webhook_endpoint` | `PATCH /v1/webhooks/endpoints/{id}` | Update a webhook endpoint. |
 | `webhooks_delete_webhook_endpoint` | `DELETE /v1/webhooks/endpoints/{id}` | Delete a webhook endpoint. |
 | `webhooks_reset_webhook_endpoint_secret` | `PATCH /v1/webhooks/endpoints/{id}/secret` | Regenerate a webhook endpoint secret. |

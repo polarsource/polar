@@ -28,12 +28,10 @@ interface Row {
   readonly renamed: boolean
 }
 
-const label = (entry: Record<string, unknown>) =>
-  typeof entry['name'] === 'string'
-    ? entry['name']
-    : typeof entry['description'] === 'string'
-      ? entry['description']
-      : ''
+const label = (entry: Record<string, unknown>) => {
+  if (typeof entry['name'] === 'string') return entry['name']
+  return typeof entry['description'] === 'string' ? entry['description'] : ''
+}
 
 const existing = (catalog: ConfigExport, section: string): Row[] => {
   const entries = catalog.config[section]
@@ -83,9 +81,10 @@ const rowLine = (row: Row, width: number) => {
   const id = ui.pad(ui.truncate(ui.printable(row.external_id), width), width)
   const marker = row.added ? ui.green('+') : ' '
   const name = ui.dim(row.added ? row.name : ui.printable(row.name))
-  return row.renamed
-    ? `${ui.INDENT}${marker} ${ui.yellow(id)}  ${name} ${ui.yellow('duplicate name, suffix added')}`
-    : `${ui.INDENT}${marker} ${row.added ? id : ui.dim(id)}  ${name}`
+  if (row.renamed) {
+    return `${ui.INDENT}${marker} ${ui.yellow(id)}  ${name} ${ui.yellow('duplicate name, suffix added')}`
+  }
+  return `${ui.INDENT}${marker} ${row.added ? id : ui.dim(id)}  ${name}`
 }
 
 const notInConfig = (catalog: ConfigExport) => {

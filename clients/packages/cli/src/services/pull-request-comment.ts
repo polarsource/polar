@@ -25,18 +25,17 @@ const gitHubActions = (env: Env) => {
   const repository = env['GITHUB_REPOSITORY']
   const server = env['GITHUB_SERVER_URL']
   const runId = env['GITHUB_RUN_ID']
-  return number && repository
-    ? {
-        repository,
-        number,
-        commit: undefined,
-        event: env['GITHUB_EVENT_PATH'],
-        run:
-          server && runId
-            ? `${server}/${repository}/actions/runs/${runId}`
-            : undefined,
-      }
-    : undefined
+  if (!number || !repository) return undefined
+  return {
+    repository,
+    number,
+    commit: undefined,
+    event: env['GITHUB_EVENT_PATH'],
+    run:
+      server && runId
+        ? `${server}/${repository}/actions/runs/${runId}`
+        : undefined,
+  }
 }
 
 const buildkite = (env: Env) => {

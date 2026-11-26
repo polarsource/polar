@@ -67,23 +67,23 @@ const render = (
   organization: ActiveOrganization,
   result: ApplyResult,
   revertedDraft: boolean,
-) =>
-  result.status !== 'applied'
-    ? [ui.blank]
-    : [
-        ...(unchanged(result.entries) ? [ui.blank] : []),
-        revertedDraft
-          ? ui.success(
-              `Changes that are no longer in ${config.file} were removed from the draft of ${target(organization)}`,
-            )
-          : applied(config, organization, result.entries),
-        ...(result.draft
-          ? next(
-              `${ui.INDENT}Products, benefits, meters and settings are saved to the draft catalog.\n${ui.INDENT}Run ${ui.command('polar config publish')} to make it live.`,
-            )
-          : []),
-        ui.blank,
-      ]
+) => {
+  if (result.status !== 'applied') return [ui.blank]
+  return [
+    ...(unchanged(result.entries) ? [ui.blank] : []),
+    revertedDraft
+      ? ui.success(
+          `Changes that are no longer in ${config.file} were removed from the draft of ${target(organization)}`,
+        )
+      : applied(config, organization, result.entries),
+    ...(result.draft
+      ? next(
+          `${ui.INDENT}Products, benefits, meters and settings are saved to the draft catalog.\n${ui.INDENT}Run ${ui.command('polar config publish')} to make it live.`,
+        )
+      : []),
+    ui.blank,
+  ]
+}
 
 const approve = (
   config: LoadedConfig,
@@ -317,14 +317,19 @@ export const draft = Command.make('draft', {
     render: ({ config, organization, result, revertedDraft }) =>
       render(config, organization, result, revertedDraft),
     json: ({ config, result }) => ({ file: config.file, ...result }),
-    failed: ({ config, organization, result }) =>
-      result.status === 'rejected'
-        ? new BillingConfigError({ message: `${config.file} was not saved` })
-        : result.status === 'conflict'
-          ? new BillingConfigError({
-              message: `The draft of ${target(organization)} has changes that are not in ${config.file}`,
-              hint: 'Run polar config reset to replace the file with the draft, or polar config draft --force to replace the draft with the file.',
-            })
-          : undefined,
+    failed: ({ config, organization, result }) => {
+      if (result.status === 'rejected') {
+        return new BillingConfigError({
+          message: `${config.file} was not saved`,
+        })
+      }
+      if (result.status === 'conflict') {
+        return new BillingConfigError({
+          message: `The draft of ${target(organization)} has changes that are not in ${config.file}`,
+          hint: 'Run polar config reset to replace the file with the draft, or polar config draft --force to replace the draft with the file.',
+        })
+      }
+      return undefined
+    },
   }),
 )

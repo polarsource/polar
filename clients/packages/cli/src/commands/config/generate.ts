@@ -133,15 +133,17 @@ export const generate = Command.make('generate', {
         } satisfies GenerateOutput
       }),
     render,
-    failed: (result) =>
-      result.status === 'outdated' || result.status === 'missing'
-        ? new BillingConfigError({
-            message:
-              result.status === 'missing'
-                ? `${result.file} has not been generated`
-                : `${result.file} is out of date`,
-            hint: `Run ${result.command} and commit the result.`,
-          })
-        : undefined,
+    failed: (result) => {
+      if (result.status !== 'outdated' && result.status !== 'missing') {
+        return undefined
+      }
+      return new BillingConfigError({
+        message:
+          result.status === 'missing'
+            ? `${result.file} has not been generated`
+            : `${result.file} is out of date`,
+        hint: `Run ${result.command} and commit the result.`,
+      })
+    },
   }),
 )

@@ -70,15 +70,14 @@ export const fakeAuth = (
   }
   const auth = Auth.of({
     override: Effect.sync(() => state.credential.source === 'override'),
-    environments: Effect.suspend(() =>
-      state.failure
-        ? Effect.fail(state.failure)
-        : Effect.succeed(
-            state.credential.source === 'override'
-              ? [state.environment]
-              : [...state.sessions],
-          ),
-    ),
+    environments: Effect.suspend(() => {
+      if (state.failure) return Effect.fail(state.failure)
+      return Effect.succeed(
+        state.credential.source === 'override'
+          ? [state.environment]
+          : [...state.sessions],
+      )
+    }),
     resolve: (environment, rejected) =>
       Effect.suspend(() => {
         state.resolutions.push({ environment, rejected })
@@ -144,16 +143,15 @@ export const fakeOrganizations = (
             : item.id === state.selected?.id &&
               item.environment === state.selected.environment,
         )
-        return found
-          ? Effect.succeed(found)
-          : Effect.fail(
-              new AuthError({
-                message:
-                  id && environment
-                    ? `No organization ${id} in ${environment}.`
-                    : 'No active organization.',
-              }),
-            )
+        if (found) return Effect.succeed(found)
+        return Effect.fail(
+          new AuthError({
+            message:
+              id && environment
+                ? `No organization ${id} in ${environment}.`
+                : 'No active organization.',
+          }),
+        )
       }),
   })
   return { organizations, state }

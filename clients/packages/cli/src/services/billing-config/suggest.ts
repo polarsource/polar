@@ -35,12 +35,12 @@ export const withSuggestions = (
     const events = issues.some(({ code }) => code === 'unknown_event')
       ? yield* eventNames(clients, organization)
       : []
-    const candidates = (issue: ConfigIssue) =>
-      issue.code === 'unknown_event'
-        ? events
-        : issue.code === 'unknown_reference'
-          ? externalIds(config.input, referencedResource(issue.message))
-          : []
+    const candidates = (issue: ConfigIssue) => {
+      if (issue.code === 'unknown_event') return events
+      return issue.code === 'unknown_reference'
+        ? externalIds(config.input, referencedResource(issue.message))
+        : []
+    }
     return issues.map((issue) => {
       const wanted = textOf(issue.got)
       const suggestion =

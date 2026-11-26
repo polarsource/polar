@@ -132,6 +132,11 @@ const edit = (
     })
   })
 
+const suffixWarning = (flagged: number) =>
+  ui.warning(
+    `${plural(flagged, 'suggestion')} ${flagged === 1 ? 'has' : 'have'} a numbered suffix because of a duplicate name. Double-check ${flagged === 1 ? 'it' : 'them'} before continuing.`,
+  )
+
 type Review = 'accept' | 'edit' | 'cancel'
 
 const REVIEW_LABELS: Record<Review, string> = {
@@ -157,13 +162,7 @@ const review = (
       ui.step(
         'Config matches meters, benefits and products by external ID. Use the suggestions, or edit them in a table.',
       ),
-      ...(flagged > 0
-        ? [
-            ui.warning(
-              `${plural(flagged, 'suggestion')} ${flagged === 1 ? 'has' : 'have'} a numbered suffix because of a duplicate name. Double-check ${flagged === 1 ? 'it' : 'them'} before continuing.`,
-            ),
-          ]
-        : []),
+      ...(flagged > 0 ? [suffixWarning(flagged)] : []),
       ui.blank,
     ])
     let chosen = proposed

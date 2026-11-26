@@ -46,12 +46,12 @@ const ADVERBS: Record<string, string> = {
   year: 'yearly',
 }
 
-const cadence = (interval: string | null, count: number | null) =>
-  interval === null
-    ? 'one-time'
-    : count === null || count === 1
-      ? (ADVERBS[interval] ?? `every ${interval}`)
-      : `every ${count} ${interval}s`
+const cadence = (interval: string | null, count: number | null) => {
+  if (interval === null) return 'one-time'
+  return count === null || count === 1
+    ? (ADVERBS[interval] ?? `every ${interval}`)
+    : `every ${count} ${interval}s`
+}
 
 const isKeyed = (resource: string): resource is KeyedResource =>
   resource in SECTIONS

@@ -197,12 +197,11 @@ const run = async (
   }
 }
 
-const message = (exit: Exit.Exit<unknown, unknown>) =>
-  Exit.isFailure(exit)
-    ? Cause.squash(exit.cause) instanceof BillingConfigError
-      ? (Cause.squash(exit.cause) as BillingConfigError).message
-      : String(Cause.squash(exit.cause))
-    : undefined
+const message = (exit: Exit.Exit<unknown, unknown>) => {
+  if (!Exit.isFailure(exit)) return undefined
+  const error = Cause.squash(exit.cause)
+  return error instanceof BillingConfigError ? error.message : String(error)
+}
 
 describe('polar config draft', () => {
   test('applies with --confirm and reports what was applied', async () => {

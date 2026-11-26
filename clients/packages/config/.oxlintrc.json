@@ -7,7 +7,6 @@
   "rules": {
     "import/no-cycle": "error",
     "oxc/no-barrel-file": ["error", { "threshold": 0 }],
-    "polar-config/no-terminal-output": "error",
     "polar-config/schema-is-pure": "error",
     "polar-config/test-colocation": "error"
   }

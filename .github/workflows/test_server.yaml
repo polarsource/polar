@@ -597,7 +597,7 @@ jobs:
         working-directory: ./server
         run: |
           uv run python -m scripts.pytest_shards --shards 4 --shard ${{ matrix.shard }} > "$RUNNER_TEMP/test-files"
-          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "not tinybird and not benchmark" -n 8 --dist=loadgroup -p no:sugar --no-cov --durations=0 --store-durations --clean-durations
+          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "not tinybird and not benchmark" -n 8 --dist=loadgroup -p no:sugar -p no:cov -p no:codspeed -p no:locust --durations=0 --store-durations --clean-durations
 
       - name: 🐦 Run Tinybird tests (pytest)
         if: matrix.shard == 'tinybird'
@@ -606,7 +606,7 @@ jobs:
           POLAR_TEST_TINYBIRD_TOKEN_FILE: ${{ runner.temp }}/tinybird-token
         run: |
           uv run python -m scripts.pytest_shards --tinybird > "$RUNNER_TEMP/test-files"
-          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "tinybird and not benchmark" -n 4 --dist=loadgroup -p no:sugar --no-cov --durations=0
+          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "tinybird and not benchmark" -n 4 --dist=loadgroup -p no:sugar -p no:cov -p no:codspeed -p no:locust -p no:split --durations=0
 
       - name: 📊 Upload shard test durations
         if: github.event_name == 'push' && matrix.shard != 'tinybird'

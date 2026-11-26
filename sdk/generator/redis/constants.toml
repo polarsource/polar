@@ -6,24 +6,24 @@ timeout = 5000
 reconnect_delay = 100
 max_reconnect_delay = 2000
 
-# Outbox delivery
+# EventQueue delivery
 # Events per ingest request a flusher sends Polar.
-outbox_batch = 1000
-# Flushers that drain the outbox at once, across instances: one per batch waiting.
+queue_batch = 1000
+# Flushers that drain the queue at once, across instances: one per batch waiting.
 # Backoff controls when the fleet retries if Polar cannot keep up.
-outbox_flushers = 32
+queue_flushers = 32
 # How long a batch sits unacknowledged before another flusher can claim it.
-outbox_claim_idle = 60000
+queue_claim_idle = 60000
 # How long a flusher holds its slot. Each batch it delivers extends it.
-outbox_flusher_lock_ttl = 30000
+queue_flusher_lock_ttl = 30000
 # How long a drain a flush or close waits on keeps its slot while the fleet writes.
-outbox_flush_tenure = 5000
+queue_flush_tenure = 5000
 # How often a long-running instance drains the stream.
-outbox_drain_interval = 1000
+queue_drain_interval = 1000
 # How long the fleet waits to retry after Polar fails to take a batch. The delay doubles
 # after each failure up to the maximum, unless Polar specifies a wait.
-outbox_retry_delay = 1000
-outbox_max_retry_delay = 60000
+queue_retry_delay = 1000
+queue_max_retry_delay = 60000
 
 # Outpost storage and reads
 # A new key layout starts cold from Polar's snapshot.

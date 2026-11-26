@@ -10,7 +10,7 @@ import {
   type RequestOptions,
 } from "../../base";
 import { MeteringDeliveryError } from "../errors";
-import { MemoryOutbox } from "./memory";
+import { MemoryEventQueue } from "./memory";
 
 const events: EventInput[] = Array.from({ length: 5 }, (_, i) => ({
   name: `usage-${i}`,
@@ -24,7 +24,7 @@ afterEach(() => {
 
 it("flushes empty and bounded batches, then accepts more events", async () => {
   const ingest = vi.fn().mockResolvedValue(undefined);
-  const strategy = new MemoryOutbox(
+  const strategy = new MemoryEventQueue(
     { events: { ingest } },
     { batchSize: 2, batchIntervalMs: 60_000 },
   );
@@ -55,7 +55,10 @@ it("flushes empty and bounded batches, then accepts more events", async () => {
 it("starts the batch interval with the first event without resetting it", async () => {
   vi.useFakeTimers();
   const ingest = vi.fn().mockResolvedValue(undefined);
-  const strategy = await new MemoryOutbox({ events: { ingest } }, { batchIntervalMs: 100 }).start();
+  const strategy = await new MemoryEventQueue(
+    { events: { ingest } },
+    { batchIntervalMs: 100 },
+  ).start();
   try {
     expect(vi.getTimerCount()).toBe(0);
     await vi.advanceTimersByTimeAsync(50);
@@ -82,7 +85,7 @@ it("keeps the newest flush boundary while a batch is in flight", async () => {
         finishDelivery = resolve;
       }),
   );
-  const strategy = await new MemoryOutbox({ events: { ingest } }, { batchSize: 1 }).start();
+  const strategy = await new MemoryEventQueue({ events: { ingest } }, { batchSize: 1 }).start();
   try {
     try {
       await strategy.enqueue(events[0]);
@@ -124,7 +127,7 @@ it.each([
           deliveries.push(resolve);
         }),
     );
-    const strategy = await new MemoryOutbox(
+    const strategy = await new MemoryEventQueue(
       { events: { ingest } },
       { batchSize, batchIntervalMs: 60_000 },
     ).start();
@@ -173,7 +176,7 @@ it.each(["shutdown timeout", "worker error"])(
       });
     });
     const onRejected = vi.fn();
-    const strategy = await new MemoryOutbox(
+    const strategy = await new MemoryEventQueue(
       { events: { ingest } },
       { batchIntervalMs: 60_000 },
     ).start({ onRejected });
@@ -214,7 +217,7 @@ it.each(["shutdown timeout", "worker error"])(
 it.each([0, 1, 5])("drains %i events in bounded batches on close", async (count) => {
   const ingest = vi.fn().mockResolvedValue(undefined);
   {
-    const strategy = await new MemoryOutbox(
+    const strategy = await new MemoryEventQueue(
       { events: { ingest } },
       { batchSize: 2, batchIntervalMs: 60_000 },
     ).start();
@@ -236,7 +239,7 @@ it.each([
   "automatically sends with batch size $batchSize and interval $batchIntervalMs",
   async (options) => {
     const ingest = vi.fn().mockResolvedValue(undefined);
-    const strategy = await new MemoryOutbox({ events: { ingest } }, options).start();
+    const strategy = await new MemoryEventQueue({ events: { ingest } }, options).start();
     try {
       await strategy.enqueue(events[0]);
       await vi.waitFor(() => expect(ingest).toHaveBeenCalledOnce());
@@ -253,7 +256,7 @@ it("honors Retry-After and preserves the batch through retries", async () => {
     .fn()
     .mockRejectedValueOnce(new PolarRateLimitError(429, 0.001))
     .mockResolvedValue(undefined);
-  const strategy = await new MemoryOutbox({ events: { ingest } }).start({ onRejected });
+  const strategy = await new MemoryEventQueue({ events: { ingest } }).start({ onRejected });
   try {
     await strategy.enqueue(events[0]);
     await strategy.flush();
@@ -272,7 +275,7 @@ it("waits at least a second on Retry-After without spending attempts", async () 
     calls.push(performance.now());
     if (calls.length === 1) throw new PolarRateLimitError(429, 0);
   });
-  const strategy = await new MemoryOutbox({ events: { ingest } }, { maxAttempts: 1 }).start({
+  const strategy = await new MemoryEventQueue({ events: { ingest } }, { maxAttempts: 1 }).start({
     onRejected,
   });
   try {
@@ -290,7 +293,7 @@ it("drops the batch when Retry-After exceeds the wait budget", async () => {
   vi.spyOn(console, "warn").mockImplementation(() => {});
   const onRejected = vi.fn();
   const ingest = vi.fn().mockRejectedValue(new PolarRateLimitError(429, 301));
-  const strategy = await new MemoryOutbox({ events: { ingest } }).start({ onRejected });
+  const strategy = await new MemoryEventQueue({ events: { ingest } }).start({ onRejected });
   try {
     await strategy.enqueue(events[0]);
     await expect(strategy.flush()).rejects.toBeInstanceOf(MeteringDeliveryError);
@@ -317,7 +320,7 @@ it.each([
         finishDrop = resolve;
       }),
   );
-  const strategy = await new MemoryOutbox({ events: { ingest } }, { maxAttempts: 1 }).start({
+  const strategy = await new MemoryEventQueue({ events: { ingest } }, { maxAttempts: 1 }).start({
     onRejected,
   });
   try {
@@ -363,7 +366,7 @@ it.each([false, true])(
         });
       },
     );
-    const strategy = await new MemoryOutbox(
+    const strategy = await new MemoryEventQueue(
       { events: { ingest } },
       {
         batchSize: 1,
@@ -384,7 +387,7 @@ it("cancels a retry wait at the shutdown deadline", async () => {
   vi.spyOn(console, "warn").mockImplementation(() => {});
   const ingest = vi.fn().mockRejectedValue(new PolarNetworkError("offline"));
   const onRejected = vi.fn();
-  const strategy = await new MemoryOutbox({ events: { ingest } }).start({ onRejected });
+  const strategy = await new MemoryEventQueue({ events: { ingest } }).start({ onRejected });
   try {
     await strategy.enqueue(events[0]);
     await expect(strategy.close({ timeoutMs: 10 })).rejects.toBeInstanceOf(MeteringDeliveryError);
@@ -404,22 +407,22 @@ it.each([false, true])("keeps delivering after a hook fails (rejected: %s)", asy
   const onRejected = vi.fn().mockRejectedValueOnce(hookError);
   if (rejected) ingest.mockRejectedValueOnce(error);
   else onAck.mockRejectedValueOnce(hookError);
-  const outbox = await new MemoryOutbox({ events: { ingest } }).start({ onAck, onRejected });
+  const queue = await new MemoryEventQueue({ events: { ingest } }).start({ onAck, onRejected });
   try {
-    await outbox.enqueue(events[0]);
+    await queue.enqueue(events[0]);
     if (rejected) {
-      await expect(outbox.flush()).rejects.toMatchObject({ cause: error });
+      await expect(queue.flush()).rejects.toMatchObject({ cause: error });
       expect(onRejected).toHaveBeenCalledExactlyOnceWith(events.slice(0, 1), "permanent_error");
     } else {
-      await outbox.flush();
+      await queue.flush();
       expect(onRejected).not.toHaveBeenCalled();
     }
-    await outbox.enqueue(events[1]);
-    await outbox.flush();
+    await queue.enqueue(events[1]);
+    await queue.flush();
     expect(ingest).toHaveBeenCalledTimes(2);
-    expect(warn).toHaveBeenCalledWith("Memory outbox delivery hook failed", "Error");
+    expect(warn).toHaveBeenCalledWith("Memory queue delivery hook failed", "Error");
   } finally {
-    await outbox.close();
+    await queue.close();
   }
 });
 
@@ -428,7 +431,7 @@ it("reports background drops to the newest overlapping flush, then recovers", as
   const cause = new PolarClientError(422, "invalid");
   const ingest = vi.fn().mockRejectedValueOnce(cause).mockResolvedValue(undefined);
   const onRejected = vi.fn();
-  const strategy = await new MemoryOutbox({ events: { ingest } }, { batchSize: 1 }).start({
+  const strategy = await new MemoryEventQueue({ events: { ingest } }, { batchSize: 1 }).start({
     onRejected,
   });
   try {
@@ -462,7 +465,7 @@ it("does not include later failed events in an earlier flush boundary", async ()
     .fn()
     .mockImplementationOnce(() => gate)
     .mockRejectedValue(new PolarClientError(422, "invalid"));
-  const strategy = await new MemoryOutbox({ events: { ingest } }, { batchSize: 1 }).start();
+  const strategy = await new MemoryEventQueue({ events: { ingest } }, { batchSize: 1 }).start();
   try {
     await strategy.enqueue(events[0]);
     const first = strategy.flush();
@@ -488,7 +491,7 @@ it("releases an older flush when a newer one starts, and reports both boundaries
     await gate;
     throw cause;
   });
-  const strategy = await new MemoryOutbox({ events: { ingest } }, { batchSize: 1 }).start();
+  const strategy = await new MemoryEventQueue({ events: { ingest } }, { batchSize: 1 }).start();
   try {
     await strategy.enqueue(events[0]);
     const older = strategy.flush().then(() => "released");
@@ -510,7 +513,7 @@ it("a newer flush with a shorter timeout does not release an older one", async (
   const gate = new Promise<void>((resolve) => {
     release = resolve;
   });
-  const strategy = await new MemoryOutbox(
+  const strategy = await new MemoryEventQueue(
     { events: { ingest: () => gate } },
     { batchSize: 1 },
   ).start();
@@ -541,7 +544,7 @@ it("a flush timeout does not cancel delivery or acknowledge unseen drops", async
     await gate;
     throw cause;
   });
-  const strategy = await new MemoryOutbox({ events: { ingest } }, { batchSize: 1 }).start();
+  const strategy = await new MemoryEventQueue({ events: { ingest } }, { batchSize: 1 }).start();
   try {
     await strategy.enqueue(events[0]);
     const timedOut = strategy.flush({ timeoutMs: 10 }).catch((error) => error);
@@ -567,7 +570,7 @@ it("an abandoned flush leaves its eventual failure observable", async () => {
   });
   const onRejected = vi.fn();
   const cause = new PolarClientError(422, "invalid");
-  const strategy = await new MemoryOutbox(
+  const strategy = await new MemoryEventQueue(
     {
       events: {
         ingest: async () => {
@@ -595,20 +598,20 @@ it("reports a worker error without calling onRejected", async () => {
   vi.spyOn(console, "warn").mockImplementation(() => {});
   const cause = new TypeError("broken transport");
   const onRejected = vi.fn();
-  const outbox = await new MemoryOutbox(
+  const queue = await new MemoryEventQueue(
     {
       events: { ingest: vi.fn().mockRejectedValue(cause) },
     },
     { batchSize: 1 },
   ).start({ onRejected });
   try {
-    await outbox.enqueue(events[0]);
-    await expect(outbox.flush()).rejects.toMatchObject({
+    await queue.enqueue(events[0]);
+    await expect(queue.flush()).rejects.toMatchObject({
       events: [events[0]],
       failures: [{ reason: "worker_error", cause }],
     });
     expect(onRejected).not.toHaveBeenCalled();
   } finally {
-    await outbox.close().catch(() => {});
+    await queue.close().catch(() => {});
   }
 });

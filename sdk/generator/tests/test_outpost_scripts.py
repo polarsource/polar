@@ -14,7 +14,7 @@ def test_loads_redis_scripts_by_group() -> None:
         group: set(scripts) for group, scripts in emitter.load_redis_scripts().items()
     } == {
         "common": {"backoff", "extend_lock", "release_lock"},
-        "outbox": {"acknowledge", "outbox_backlog"},
+        "queue": {"acknowledge", "queue_backlog"},
         "outpost": {
             "apply_snapshot",
             "commit_pull",
@@ -45,7 +45,7 @@ def test_every_sdk_references_every_redis_constant() -> None:
             "redis_constants",
             (
                 "src/redis.ts",
-                "src/metering/outbox/redis.ts",
+                "src/metering/queue/redis.ts",
                 "src/outpost/client.ts",
                 "src/outpost/reducer.ts",
             ),
@@ -57,7 +57,7 @@ def test_every_sdk_references_every_redis_constant() -> None:
                 "polar/_redis.py",
                 "polar/outpost/client.py",
                 "polar/outpost/reducer.py",
-                "polar/metering/outbox/redis.py",
+                "polar/metering/queue/redis.py",
             ),
         ),
     )

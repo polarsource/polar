@@ -2,7 +2,7 @@ import { afterAll, beforeAll, bench } from "vitest";
 
 import type { EventInput } from "./event";
 
-import { MemoryOutbox } from "./outbox/memory";
+import { MemoryEventQueue } from "./queue/memory";
 
 // A fixed count: a flush that waits on Polar takes tens of milliseconds, one that does not takes
 // microseconds, and a timed run of the fast one would queue more events than the worker delivers.
@@ -10,11 +10,11 @@ const OPTIONS = { iterations: 100, warmupIterations: 10, time: 0, warmupTime: 0 
 const POLAR_LATENCY_MS = 20;
 const EVENT: EventInput = { name: "tick", external_customer_id: "alice" };
 
-let strategy: MemoryOutbox;
+let strategy: MemoryEventQueue;
 let next: Promise<void> | undefined;
 
 beforeAll(async () => {
-  strategy = await new MemoryOutbox({
+  strategy = await new MemoryEventQueue({
     events: {
       ingest: () => new Promise((resolve) => setTimeout(resolve, POLAR_LATENCY_MS)),
     },

@@ -8,8 +8,8 @@ from fakeredis import FakeAsyncRedis, FakeServer
 
 from polar.metering.errors import DropReason, MeteringTimeoutError
 from polar.metering.events import EventInput
-from polar.metering.outbox import Outbox
-from polar.metering.outbox.redis import RedisOutbox
+from polar.metering.queue import EventQueue
+from polar.metering.queue.redis import RedisEventQueue
 
 
 @pytest.fixture
@@ -21,12 +21,12 @@ def server(monkeypatch: pytest.MonkeyPatch) -> FakeServer:
         async with FakeAsyncRedis(server=server) as redis:
             yield redis
 
-    monkeypatch.setattr("polar.metering.outbox.redis.connect_redis", connect)
+    monkeypatch.setattr("polar.metering.queue.redis.connect_redis", connect)
     return server
 
 
 @pytest.mark.anyio
-async def test_redis_outbox_retries_with_the_same_event_and_reports_acceptance(
+async def test_redis_queue_retries_with_the_same_event_and_reports_acceptance(
     server: FakeServer,
 ) -> None:
     attempts: list[EventInput] = []
@@ -50,24 +50,24 @@ async def test_redis_outbox_retries_with_the_same_event_and_reports_acceptance(
             base_url="https://polar.test", transport=httpx2.MockTransport(ingest)
         ) as client,
     ):
-        outbox: Outbox = RedisOutbox(
+        queue: EventQueue = RedisEventQueue(
             "redis://localhost",
-            stream="test:outbox",
+            stream="test:queue",
             client=client,
         )
         first_ack = AsyncMock()
-        async with outbox.open(on_ack=first_ack, on_rejected=on_rejected):
-            await outbox.enqueue({"name": "call", "external_customer_id": "alice"})
+        async with queue.open(on_ack=first_ack, on_rejected=on_rejected):
+            await queue.enqueue({"name": "call", "external_customer_id": "alice"})
             with pytest.raises(MeteringTimeoutError):
-                await outbox.flush(timeout=0.1)
+                await queue.flush(timeout=0.1)
             assert len(attempts) == 1
             assert not accepted
             assert not rejected
-            assert await redis.xlen("test:outbox") == 1
+            assert await redis.xlen("test:queue") == 1
 
-        await redis.hset("test:outbox:backoff", "retry_at", 0)
-        async with outbox.open(on_ack=on_ack, on_rejected=on_rejected):
-            await outbox.flush()
+        await redis.hset("test:queue:backoff", "retry_at", 0)
+        async with queue.open(on_ack=on_ack, on_rejected=on_rejected):
+            await queue.flush()
 
         assert len(attempts) == 2
         first_ack.assert_not_awaited()
@@ -76,11 +76,11 @@ async def test_redis_outbox_retries_with_the_same_event_and_reports_acceptance(
         assert attempts[0]["timestamp"]
         assert accepted == [attempts[0]]
         assert not rejected
-        assert await redis.xlen("test:outbox") == 0
+        assert await redis.xlen("test:queue") == 0
 
 
 @pytest.mark.anyio
-async def test_redis_outbox_reports_a_rejection_before_retiring_the_entry(
+async def test_redis_queue_reports_a_rejection_before_retiring_the_entry(
     server: FakeServer,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
@@ -101,16 +101,18 @@ async def test_redis_outbox_reports_a_rejection_before_retiring_the_entry(
     ):
 
         async def on_rejected(events: list[EventInput], reason: DropReason) -> None:
-            assert await redis.xlen("test:outbox") == 1
+            assert await redis.xlen("test:queue") == 1
             rejected.append((events, reason))
             if len(rejected) == 1:
                 raise RuntimeError("Reducer unavailable")
 
-        async with RedisOutbox('redis://localhost', stream='test:outbox', client=client).open(on_rejected=on_rejected) as outbox:
-            await outbox.enqueue(event)
-            await outbox.flush()
+        async with RedisEventQueue(
+            "redis://localhost", stream="test:queue", client=client
+        ).open(on_rejected=on_rejected) as queue:
+            await queue.enqueue(event)
+            await queue.flush()
 
         assert rejected == [([event], "permanent_error")] * 2
-        assert await redis.xlen("test:outbox") == 0
-        assert "Redis outbox drain failed" in caplog.messages
+        assert await redis.xlen("test:queue") == 0
+        assert "Redis queue drain failed" in caplog.messages
         assert "Reducer unavailable" in caplog.text

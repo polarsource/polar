@@ -3,7 +3,7 @@ import { createRequire } from "node:module";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import type { EventInput } from "./event";
-import type { OutboxHooks } from "./outbox/index";
+import type { EventQueueHooks } from "./queue/index";
 
 import { createPolar } from "../2026-10/client";
 import { ClientBase } from "../base";
@@ -25,7 +25,7 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-it("creates a memory outbox using the configured HTTP client", async () => {
+it("creates a memory queue using the configured HTTP client", async () => {
   const fetch = vi
     .spyOn(globalThis, "fetch")
     .mockResolvedValue(new Response('{"inserted":1,"duplicates":0}'));
@@ -62,13 +62,13 @@ it("enqueues before reducing and shares delivery hooks with Outpost", async () =
   const ack = vi.spyOn(outpost, "onAck").mockResolvedValue(undefined);
   const reject = vi.spyOn(outpost, "onRejected").mockResolvedValue(undefined);
   const transport = {
-    start: vi.fn<(hooks?: OutboxHooks) => Promise<void>>().mockResolvedValue(undefined),
+    start: vi.fn<(hooks?: EventQueueHooks) => Promise<void>>().mockResolvedValue(undefined),
     enqueue: vi.fn<(event: EventInput) => Promise<void>>().mockResolvedValue(undefined),
     close: vi.fn().mockResolvedValue(undefined),
     flush: vi.fn().mockResolvedValue(undefined),
   };
   const polar = createPolar({ accessToken: "token" });
-  const metering = polar.metering({ outbox: transport, outpost: () => outpost });
+  const metering = polar.metering({ queue: transport, outpost: () => outpost });
   try {
     const unavailable = new Error("private event details");
     transport.enqueue.mockRejectedValueOnce(unavailable);
@@ -130,9 +130,9 @@ it.each([
   { external_member_id: "member" },
   { customer_id: "customer", external_member_id: "member" },
   { external_customer_id: "customer", member_id: "member" },
-])("rejects an invalid actor before starting the outbox: %j", async (input) => {
-  const outbox = { start: vi.fn(), enqueue: vi.fn(), close: vi.fn(), flush: vi.fn() };
-  const metering = new Metering(client, outbox);
+])("rejects an invalid actor before starting the queue: %j", async (input) => {
+  const queue = { start: vi.fn(), enqueue: vi.fn(), close: vi.fn(), flush: vi.fn() };
+  const metering = new Metering(client, queue);
   try {
     await expect(metering.actor(input as unknown as ActorInput)).rejects.toBeInstanceOf(
       InvalidActorError,
@@ -140,7 +140,7 @@ it.each([
     await expect(metering.track({ name: "usage", ...input } as EventInput)).rejects.toBeInstanceOf(
       InvalidActorError,
     );
-    expect(outbox.start).not.toHaveBeenCalled();
+    expect(queue.start).not.toHaveBeenCalled();
   } finally {
     await metering.close();
   }
@@ -160,10 +160,10 @@ it("ships metering for both ESM and CommonJS", async () => {
   const esm = await import("../../dist/metering/index.mjs");
   const cjs = createRequire(import.meta.url)("../../dist/metering/index.cjs");
   expect(esm.Metering).toBeTypeOf("function");
-  expect(cjs.MemoryOutbox).toBeTypeOf("function");
+  expect(cjs.MemoryEventQueue).toBeTypeOf("function");
 });
 
-it("uses the memory outbox without loading optional Outpost dependencies", () => {
+it("uses the memory queue without loading optional Outpost dependencies", () => {
   const child = spawnSync(
     process.execPath,
     [
@@ -246,11 +246,11 @@ it("startup that outlives a close deadline cleans up when it eventually complete
 it.each([-1, NaN, Infinity, 2_147_483_648])(
   "rejects invalid delivery deadlines before startup: %s",
   async (timeoutMs) => {
-    const outbox = { start: vi.fn(), enqueue: vi.fn(), close: vi.fn(), flush: vi.fn() };
-    const metering = new Metering(client, outbox);
+    const queue = { start: vi.fn(), enqueue: vi.fn(), close: vi.fn(), flush: vi.fn() };
+    const metering = new Metering(client, queue);
     await expect(metering.flush({ timeoutMs })).rejects.toBeInstanceOf(RangeError);
     await expect(metering.close({ timeoutMs })).rejects.toBeInstanceOf(RangeError);
-    expect(outbox.start).not.toHaveBeenCalled();
+    expect(queue.start).not.toHaveBeenCalled();
     await metering.close();
   },
 );

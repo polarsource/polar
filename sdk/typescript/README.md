@@ -194,7 +194,7 @@ from Polar: the API may have accepted it before the connection failed.
 Delivery failures reject with `MeteringDeliveryError` from `@polar-sh/sdk/metering`. Its `events`
 and `failures` describe unconfirmed events, reasons, and original causes. Lifecycle timeouts
 reject with `MeteringTimeoutError`; a flush waiting on pending events can instead report a
-`MeteringDeliveryError` with reason `flush_timeout`. Unexpected worker errors also reject. The memory outbox logs delivery hook failures and continues delivering events.
+`MeteringDeliveryError` with reason `flush_timeout`. Unexpected worker errors also reject. The memory queue logs delivery hook failures and continues delivering events.
 
 The buffer retries network and server errors with exponential backoff and jitter. Rate limits
 honor `Retry-After`, up to five minutes per batch; caller deadlines can expire sooner. Other
@@ -227,28 +227,28 @@ const metering = polar.metering({ outpost: outpost() });
 ```
 
 `outpost()` uses `REDIS_URL` by default. Pass a URL explicitly with
-`outpost({ redisUrl: "redis://localhost:6379" })`. The outbox queues events for Polar and
+`outpost({ redisUrl: "redis://localhost:6379" })`. The queue queues events for Polar and
 Outpost applies them locally. If Outpost cannot answer a meter read, metering reads the value
 from the Polar API. `snapshotTimeout` sets how long Outpost waits for an initial snapshot.
 
-### Choose an outbox
+### Choose a queue
 
-`polar.metering()` creates a `MemoryOutbox` by default. Pass `outbox` to configure it or
-supply another implementation of the `Outbox` interface from `@polar-sh/sdk/metering`.
+`polar.metering()` creates a `MemoryEventQueue` by default. Pass `queue` to configure it or
+supply another implementation of the `EventQueue` interface from `@polar-sh/sdk/metering`.
 
 ```typescript
-import { MemoryOutbox } from "@polar-sh/sdk/metering";
+import { MemoryEventQueue } from "@polar-sh/sdk/metering";
 
 const metering = polar.metering({
-    outbox: new MemoryOutbox(polar, { batchSize: 50 }),
+    queue: new MemoryEventQueue(polar, { batchSize: 50 }),
 });
 ```
 
-`RedisOutbox` from `@polar-sh/sdk/metering/outbox/redis` uses a Redis stream for persistent
-delivery. Either outbox can be used with Outpost. A custom outbox receives `onAck` and
+`RedisEventQueue` from `@polar-sh/sdk/metering/queue/redis` uses a Redis stream for persistent
+delivery. Either queue can be used with Outpost. A custom queue receives `onAck` and
 `onRejected` in `start()` and calls them for events Polar accepts or permanently rejects.
 
-#### MemoryOutbox options
+#### MemoryEventQueue options
 
 | Option            | Default | Meaning                                                |
 | ----------------- | ------- | ------------------------------------------------------ |

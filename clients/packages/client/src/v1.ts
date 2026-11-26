@@ -27453,8 +27453,20 @@ export interface components {
       activation_id?: string | null
       /** Benefit Id */
       benefit_id?: string | null
+      /**
+       * External Benefit Id
+       * @description The ID in your system of the benefit the license key must belong to. Matches every version of the benefit. Can't be combined with `benefit_id`.
+       * @example ext_1337
+       */
+      external_benefit_id?: string | null
       /** Customer Id */
       customer_id?: string | null
+      /**
+       * External Customer Id
+       * @description The ID in your system of the customer the license key must belong to. Can't be combined with `customer_id`.
+       * @example usr_1337
+       */
+      external_customer_id?: string | null
       /** Increment Usage */
       increment_usage?: number | null
       /**

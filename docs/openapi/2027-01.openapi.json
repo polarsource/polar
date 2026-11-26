@@ -3472,11 +3472,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.license_keys.validate(\n    key='string',\n    organization_id='00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_portal.license_keys.validate(\n    key='string',\n    organization_id='00000000-0000-4000-8000-000000000000',\n    external_benefit_id='ext_1337',\n    external_customer_id='usr_1337',\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.licenseKeys.validate(\n  {\n    \"key\": \"string\",\n    \"organization_id\": \"00000000-0000-4000-8000-000000000000\"\n  },\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerPortal.licenseKeys.validate(\n  {\n    \"key\": \"string\",\n    \"organization_id\": \"00000000-0000-4000-8000-000000000000\",\n    \"external_benefit_id\": \"ext_1337\",\n    \"external_customer_id\": \"usr_1337\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -10705,11 +10705,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.license_keys.validate(\n    key='string',\n    organization_id='00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.license_keys.validate(\n    key='string',\n    organization_id='00000000-0000-4000-8000-000000000000',\n    external_benefit_id='ext_1337',\n    external_customer_id='usr_1337',\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.licenseKeys.validate(\n  {\n    \"key\": \"string\",\n    \"organization_id\": \"00000000-0000-4000-8000-000000000000\"\n  },\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.licenseKeys.validate(\n  {\n    \"key\": \"string\",\n    \"organization_id\": \"00000000-0000-4000-8000-000000000000\",\n    \"external_benefit_id\": \"ext_1337\",\n    \"external_customer_id\": \"usr_1337\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -61283,6 +61283,22 @@
             ],
             "title": "Benefit Id"
           },
+          "external_benefit_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Benefit Id",
+            "description": "The ID in your system of the benefit the license key must belong to. Matches every version of the benefit. Can't be combined with `benefit_id`.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "customer_id": {
             "anyOf": [
               {
@@ -61294,6 +61310,22 @@
               }
             ],
             "title": "Customer Id"
+          },
+          "external_customer_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Customer Id",
+            "description": "The ID in your system of the customer the license key must belong to. Can't be combined with `customer_id`.",
+            "examples": [
+              "usr_1337"
+            ]
           },
           "increment_usage": {
             "anyOf": [

@@ -355,6 +355,20 @@ class LicenseKeyService:
             )
             raise ResourceNotFound("License key does not match given user.")
 
+        if (
+            validate.external_benefit_id is not None
+            and validate.external_benefit_id != license_key.benefit.external_id
+        ):
+            bound_logger.info("license_key.validate.invalid_benefit")
+            raise ResourceNotFound("License key does not match given benefit.")
+
+        if (
+            validate.external_customer_id is not None
+            and validate.external_customer_id != license_key.customer.external_id
+        ):
+            bound_logger.warning("license_key.validate.invalid_owner")
+            raise ResourceNotFound("License key does not match given user.")
+
         if validate.increment_usage and license_key.limit_usage:
             remaining = license_key.limit_usage - license_key.usage
             if validate.increment_usage > remaining:

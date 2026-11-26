@@ -8,6 +8,7 @@ from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
 from sqlalchemy import select
 
+from polar.config import settings
 from polar.customer_portal.endpoints.oauth_accounts import OAUTH_CLIENTS
 from polar.kit import jwt
 from polar.kit.utils import utc_now
@@ -125,10 +126,12 @@ class TestAuthorize:
         assert "member_id" in decoded
 
 
-async def _encode_state(customer_id: str, member_id: str | None = None) -> str:
+async def _encode_state(
+    customer_id: str, member_id: str | None = None, *, return_to: str = "/"
+) -> str:
     payload: dict[str, str] = {
         "platform": CustomerOAuthPlatform.discord.value,
-        "return_to": "/",
+        "return_to": return_to,
         "customer_id": customer_id,
     }
     if member_id is not None:
@@ -142,6 +145,62 @@ class TestCallback:
     customer's OAuth callback URL and obtained a session from the state JWT
     alone, before the provider's code exchange had been attempted.
     """
+
+    @pytest.mark.parametrize(
+        ("return_to", "expected_path", "as_member"),
+        [
+            ("/", "{portal}", False),
+            ("/checkout/example/confirmation", "{portal}", False),
+            ("/another-org/portal", "{portal}", True),
+            ("{portal}/%2e%2e", "{portal}", True),
+            ("{portal}/overview", "{portal}/overview", True),
+        ],
+    )
+    async def test_session_redirect_stays_in_customer_portal(
+        self,
+        client: AsyncClient,
+        member: Member,
+        organization: Organization,
+        mocker: MockerFixture,
+        return_to: str,
+        expected_path: str,
+        as_member: bool,
+    ) -> None:
+        portal_path = f"/{organization.slug}/portal"
+        state = await _encode_state(
+            str(member.customer_id),
+            member_id=str(member.id) if as_member else None,
+            return_to=return_to.format(portal=portal_path),
+        )
+        oauth_client = OAUTH_CLIENTS[CustomerOAuthPlatform.discord]
+        mocker.patch.object(
+            oauth_client,
+            "get_access_token",
+            return_value={
+                "access_token": "access-token",
+                "expires_at": 0,
+                "refresh_token": "refresh-token",
+            },
+        )
+        mocker.patch.object(
+            oauth_client, "get_profile", return_value={"id": "123", "username": "user"}
+        )
+
+        response = await client.get(
+            "/v1/customer-portal/oauth-accounts/callback",
+            params={"state": state, "code": "some-code"},
+            follow_redirects=False,
+        )
+
+        assert response.status_code == 307
+        location = urlparse(response.headers["location"])
+        assert location._replace(query="").geturl() == settings.generate_frontend_url(
+            expected_path.format(portal=portal_path)
+        )
+        token_parameter = (
+            "member_session_token" if as_member else "customer_session_token"
+        )
+        assert parse_qs(location.query)[token_parameter][0]
 
     async def test_anonymous_without_code_does_not_create_customer_session(
         self,

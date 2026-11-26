@@ -1,5 +1,7 @@
+import re
 import uuid
 from typing import Any
+from urllib.parse import urlsplit
 
 import httpx
 import logfire
@@ -9,8 +11,9 @@ from fastapi.responses import RedirectResponse
 from httpx_oauth.clients.github import GitHubOAuth2
 from httpx_oauth.exceptions import GetProfileError
 from httpx_oauth.oauth2 import BaseOAuth2, GetAccessTokenError
+from sqlalchemy.orm import joinedload
 
-from polar.auth.models import Customer, Member, is_anonymous, is_customer, is_member
+from polar.auth.models import is_anonymous, is_customer, is_member
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.strategies.base.service import BenefitActionRequiredError
 from polar.config import settings
@@ -22,6 +25,7 @@ from polar.kit import jwt
 from polar.kit.http import ReturnTo, add_query_parameters, get_safe_return_url
 from polar.member.repository import MemberRepository
 from polar.member_session.service import member_session as member_session_service
+from polar.models import Customer, Member
 from polar.models.benefit import BenefitType
 from polar.models.customer import CustomerOAuthAccount, CustomerOAuthPlatform
 from polar.openapi import APITag
@@ -134,7 +138,10 @@ async def callback(
 
     if member_id_str:
         member_repository = MemberRepository.from_session(session)
-        member = await member_repository.get_by_id(uuid.UUID(member_id_str))
+        member = await member_repository.get_by_id(
+            uuid.UUID(member_id_str),
+            options=(joinedload(Member.customer).joinedload(Customer.organization),),
+        )
 
     if is_member(auth_subject):
         member = auth_subject.subject
@@ -143,7 +150,9 @@ async def callback(
         customer = auth_subject.subject
     elif is_anonymous(auth_subject):
         # Trust the customer ID in the state for anonymous users
-        customer = await customer_repository.get_by_id(customer_id)
+        customer = await customer_repository.get_by_id(
+            customer_id, options=(joinedload(Customer.organization),)
+        )
 
     if customer is None:
         raise NotPermitted("Invalid customer")
@@ -223,6 +232,20 @@ async def callback(
 
     # Create a session only after the OAuth provider has confirmed the code.
     if is_anonymous(auth_subject):
+        session_customer = member.customer if member is not None else customer
+        portal_path = f"/{session_customer.organization.slug}/portal"
+        portal_url = settings.generate_frontend_url(portal_path)
+        portal = urlsplit(portal_url)
+        destination = urlsplit(redirect_url)
+        same_origin = (destination.scheme, destination.netloc) == (
+            portal.scheme,
+            portal.netloc,
+        )
+        if not same_origin or not re.fullmatch(
+            rf"{re.escape(portal.path)}(?:/[a-zA-Z0-9_-]+)*/?", destination.path
+        ):
+            redirect_url = portal_url
+
         if member is not None:
             token, _ = await member_session_service.create_member_session(
                 session, member

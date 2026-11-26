@@ -175,7 +175,11 @@ export class RedisEventQueue implements EventQueue {
       redis.defineCommand("queueAcknowledge", { numberOfKeys: 2, lua: ACKNOWLEDGE_SCRIPT });
       await this.createQueueGroup();
       this.session = options;
-      this.timer = setInterval(() => void this.drain().catch(() => {}), DRAIN_INTERVAL);
+      // A long-running instance delivers what it queued without a flush; one with nothing to
+      // deliver leaves the stream to the flusher in flight.
+      this.timer = setInterval(() => {
+        if (this.undrained) void this.drain().catch(() => {});
+      }, DRAIN_INTERVAL);
       return this;
     } catch (error) {
       this.redis = undefined;

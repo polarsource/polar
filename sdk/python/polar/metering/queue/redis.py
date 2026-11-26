@@ -276,9 +276,12 @@ class RedisEventQueue:
         self._drain_until = min(self._drain_until, anyio.current_time() + FLUSH_TENURE)
 
     async def _drain_on_time(self) -> None:
+        """A long-running instance delivers what it queued without a flush; one with
+        nothing to deliver leaves the stream to the flusher in flight."""
         while True:
             await anyio.sleep(DRAIN_INTERVAL)
-            await self._drain()
+            if self._undrained:
+                await self._drain()
 
     async def _drain_queue(self) -> None:
         """One flusher per QUEUE_BATCH events waiting, up to FLUSHERS across the fleet.

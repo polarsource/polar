@@ -1102,19 +1102,19 @@ class CheckoutService:
         await self._after_checkout_updated(session, checkout)
         return checkout
 
-    async def check_confirm_rate_limit(
-        self, redis: Redis, checkout: Checkout, checkout_confirm: CheckoutConfirm
-    ) -> None:
-        email = checkout_confirm.customer_email or checkout.customer_email
-        if email is None:
+    async def check_confirm_rate_limit(self, redis: Redis, checkout: Checkout) -> None:
+        if checkout.customer_email is None:
             return
-        retry_after = await get_checkout_confirm_email_retry_after(redis, email)
+        retry_after = await get_checkout_confirm_email_retry_after(
+            redis, checkout.customer_email
+        )
         if retry_after:
             raise CheckoutConfirmRateLimited(retry_after)
 
     async def confirm(
         self,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[User | Anonymous],
         checkout: Checkout,
         checkout_confirm: CheckoutConfirm,
@@ -1128,7 +1128,7 @@ class CheckoutService:
                 ) as discount_redemption:
                     discount_redemption.checkout = checkout
                     return await self._confirm_inner(
-                        session, auth_subject, checkout, checkout_confirm
+                        session, redis, auth_subject, checkout, checkout_confirm
                     )
             except DiscountNotRedeemableError as e:
                 raise PolarRequestValidationError(
@@ -1143,12 +1143,13 @@ class CheckoutService:
                 ) from e
 
         return await self._confirm_inner(
-            session, auth_subject, checkout, checkout_confirm
+            session, redis, auth_subject, checkout, checkout_confirm
         )
 
     async def _confirm_inner(
         self,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[User | Anonymous],
         checkout: Checkout,
         checkout_confirm: CheckoutConfirm,
@@ -1285,6 +1286,9 @@ class CheckoutService:
             and isinstance(checkout_confirm, CheckoutConfirmSharedPaymentToken)
         ):
             self._validate_shared_payment_token(checkout)
+
+        if checkout.is_payment_form_required:
+            await self.check_confirm_rate_limit(redis, checkout)
 
         if checkout.payment_processor == PaymentProcessor.stripe:
             async with self._create_or_update_customer(

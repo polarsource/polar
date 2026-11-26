@@ -380,10 +380,8 @@ async def client_confirm(
     checkout = await checkout_service.get_by_client_secret(
         session, client_secret, for_update=True
     )
-    await checkout_service.check_confirm_rate_limit(redis, checkout, checkout_confirm)
-
     return await checkout_service.confirm(
-        session, auth_subject, checkout, checkout_confirm
+        session, redis, auth_subject, checkout, checkout_confirm
     )
 
 
@@ -418,10 +416,8 @@ async def client_confirm_v2027_01(
     checkout = await checkout_service.get_by_client_secret(
         session, client_secret, for_update=True
     )
-    await checkout_service.check_confirm_rate_limit(redis, checkout, checkout_confirm)
-
     return await checkout_service.confirm(
-        session, auth_subject, checkout, checkout_confirm
+        session, redis, auth_subject, checkout, checkout_confirm
     )
 
 

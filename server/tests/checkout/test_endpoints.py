@@ -1407,7 +1407,9 @@ class TestClientConfirm:
         response = await client.post(
             f"{api_prefix}/client/{checkout_open.client_secret}/confirm",
             json={
+                "customer_name": "Customer Name",
                 "customer_email": "customer@example.com",
+                "customer_billing_address": {"country": "FR"},
                 "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
             },
         )

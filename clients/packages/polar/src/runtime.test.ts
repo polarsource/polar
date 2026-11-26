@@ -3,7 +3,15 @@ import { afterEach, expect, expectTypeOf, test, vi } from 'vitest'
 import { z } from 'zod'
 import { EventValidationError } from './client/actor'
 import { RuntimeSDK } from './runtime'
-import { and, defineConfig, eq, gte } from '@polar-sh/config'
+import {
+  and,
+  defineConfig,
+  eq,
+  gte,
+  type CostMetadata,
+  type EventHelpers,
+  type LLMMetadata,
+} from '@polar-sh/config'
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -91,20 +99,27 @@ test('connected configs validate and ingest typed events and track the meters th
     throw new Error(`Unexpected request ${url}`)
   })
   const config = defineConfig({
-    events: {
-      tool_call: z.object({
-        tool: z.enum(['search', 'fetch']),
-        durationMs: z.int(),
-        region: z.string().default('eu'),
-      }),
-      'llm.completion': z.object({ model: z.string(), inputTokens: z.int() }),
-    },
+    events: ({ event }) => ({
+      tool_call: event(
+        z.object({
+          tool: z.enum(['search', 'fetch']),
+          durationMs: z.int(),
+          region: z.string().default('eu'),
+        }),
+      ),
+      'llm.completion': event(z.object({ feature: z.string() }))
+        .withTokens()
+        .withCosts(),
+    }),
     meters: ({ meter, events }) => ({
       searches: meter()
         .on(events.tool_call)
         .where(eq(events.tool_call.tool, 'search'))
         .count(),
-      completions: meter().on(events['llm.completion']).count(),
+      completions: meter()
+        .on(events['llm.completion'])
+        .where(eq(events['llm.completion']._llm.vendor, 'anthropic'))
+        .sum('_llm.total_tokens'),
     }),
   })
   const customer = RuntimeSDK(config, {
@@ -127,12 +142,48 @@ test('connected configs validate and ingest typed events and track the meters th
   await customer.track('tool_call', { tool: 'search', durationMs: 5 })
   expect(await pristine()).toEqual({ searches: false, completions: true })
 
-  await customer.track('llm.completion', { model: 'claude', inputTokens: 10 })
+  const usage = {
+    vendor: 'anthropic',
+    model: 'claude',
+    input_tokens: 10,
+    output_tokens: 5,
+    total_tokens: 15,
+  }
+  const cost = { amount: 0.5, currency: 'usd' } as const
+  expectTypeOf(customer.track<'llm.completion'>)
+    .parameter(1)
+    .toEqualTypeOf<{
+      feature: string
+      readonly _llm: LLMMetadata
+      readonly _cost: CostMetadata
+    }>()
+
+  await customer.track('llm.completion', {
+    feature: 'chat',
+    _llm: { ...usage, vendor: 'openai' },
+    _cost: cost,
+  })
+  expect(await pristine()).toEqual({ searches: false, completions: true })
+
+  await customer.track('llm.completion', {
+    feature: 'chat',
+    _llm: usage,
+    _cost: cost,
+  })
   expect(await pristine()).toEqual({ searches: false, completions: false })
 
   await expect(
-    customer.track('llm.completion', { model: 'claude', inputTokens: 1.5 }),
+    customer.track('llm.completion', {
+      feature: 'chat',
+      _llm: { ...usage, total_tokens: 1.5 },
+      _cost: cost,
+    }),
   ).rejects.toBeInstanceOf(EventValidationError)
+  const typeOnly = () => {
+    // @ts-expect-error usage is required
+    void customer.track('llm.completion', { feature: 'chat', _cost: cost })
+  }
+  expectTypeOf(typeOnly).toBeFunction()
 
   expect(ingested).toMatchObject([
     {
@@ -144,7 +195,14 @@ test('connected configs validate and ingest typed events and track the meters th
       name: 'tool_call',
       metadata: { tool: 'search', durationMs: 5, region: 'eu' },
     },
-    { name: 'llm.completion', metadata: { model: 'claude', inputTokens: 10 } },
+    {
+      name: 'llm.completion',
+      metadata: { feature: 'chat', _llm: { vendor: 'openai' }, _cost: cost },
+    },
+    {
+      name: 'llm.completion',
+      metadata: { feature: 'chat', _llm: usage, _cost: cost },
+    },
   ])
 })
 
@@ -207,20 +265,26 @@ test('access types granted metadata from the benefit declared in the config', as
     .toEqualTypeOf<{ granted: true; metadata: { readonly limit: number } }>()
 })
 
-const events = {
-  tool_call: z.object({
-    tool: z.enum(['search', 'fetch']),
-    durationMs: z.int(),
-  }),
-  'llm.completion': Schema.toStandardSchemaV1(
-    Schema.Struct({ model: Schema.String, inputTokens: Schema.Int }),
+const events = ({ event }: EventHelpers) => ({
+  tool_call: event(
+    z.object({
+      tool: z.enum(['search', 'fetch']),
+      durationMs: z.int(),
+    }),
   ),
-  'llm.embedding': z.object({
-    model: z.string(),
-    inputTokens: z.int(),
-    dimensions: z.int(),
-  }),
-}
+  'llm.completion': event(
+    Schema.toStandardSchemaV1(
+      Schema.Struct({ model: Schema.String, inputTokens: Schema.Int }),
+    ),
+  ),
+  'llm.embedding': event(
+    z.object({
+      model: z.string(),
+      inputTokens: z.int(),
+      dimensions: z.int(),
+    }),
+  ),
+})
 
 test('RuntimeSDK rejects duplicate IDs without changing JSON serialization', () => {
   const config = defineConfig({

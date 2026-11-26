@@ -17,27 +17,31 @@ import { Schema } from 'effect'
 import { z } from 'zod'
 
 export const requestCountConfig = defineConfig({
-  events: {
-    'api.request': z.object({
-      statusCode: z.int(),
-      durationMs: z.int(),
-      accountId: z.string(),
-    }),
-  },
+  events: ({ event }) => ({
+    'api.request': event(
+      z.object({
+        statusCode: z.int(),
+        durationMs: z.int(),
+        accountId: z.string(),
+      }),
+    ),
+  }),
   meters: ({ meter, events }) => ({
     requests: meter().on(events['api.request']).count(),
   }),
 })
 
 export const completionTokensConfig = defineConfig({
-  events: {
-    'llm.completions': z.object({
-      status: z.enum(['ok', 'error']),
-      model: z.enum(['claude', 'gpt']),
-      region: z.enum(['eu', 'us']),
-      inputTokens: z.int(),
-    }),
-  },
+  events: ({ event }) => ({
+    'llm.completions': event(
+      z.object({
+        status: z.enum(['ok', 'error']),
+        region: z.enum(['eu', 'us']),
+      }),
+    )
+      .withTokens()
+      .withCosts(),
+  }),
   meters: ({ meter, events }) => ({
     completionTokens: meter('Completion Tokens')
       .on(events['llm.completions'])
@@ -46,26 +50,31 @@ export const completionTokensConfig = defineConfig({
           eq(events['llm.completions'].status, 'ok'),
           or(
             and(
-              eq(events['llm.completions'].model, 'claude'),
+              eq(events['llm.completions']._llm.model, 'claude'),
               eq(events['llm.completions'].region, 'eu'),
             ),
-            eq(events['llm.completions'].model, 'gpt'),
+            eq(events['llm.completions']._llm.model, 'gpt'),
           ),
         ),
       )
       .unit('token')
-      .sum('inputTokens'),
+      .sum('_llm.input_tokens'),
+    completionCost: meter('Completion cost')
+      .on(events['llm.completions'])
+      .sum('_cost.amount'),
   }),
 })
 
 export const apiMetricsConfig = defineConfig({
-  events: {
-    'api.request': z.object({
-      statusCode: z.int(),
-      durationMs: z.int(),
-      accountId: z.string(),
-    }),
-  },
+  events: ({ event }) => ({
+    'api.request': event(
+      z.object({
+        statusCode: z.int(),
+        durationMs: z.int(),
+        accountId: z.string(),
+      }),
+    ),
+  }),
   meters: ({ meter, events }) => {
     const successful = and(
       gte(events['api.request'].statusCode, 200),
@@ -97,19 +106,23 @@ export const apiMetricsConfig = defineConfig({
 })
 
 export const llmUsageConfig = defineConfig({
-  events: {
-    'llm.completion': z.object({
-      model: z.string(),
-      inputTokens: z.int(),
-      outputTokens: z.int(),
-      streamed: z.boolean(),
-    }),
-    'llm.embedding': z.object({
-      model: z.string(),
-      inputTokens: z.int(),
-    }),
-    'webhook.delivered': z.object({}),
-  },
+  events: ({ event }) => ({
+    'llm.completion': event(
+      z.object({
+        model: z.string(),
+        inputTokens: z.int(),
+        outputTokens: z.int(),
+        streamed: z.boolean(),
+      }),
+    ),
+    'llm.embedding': event(
+      z.object({
+        model: z.string(),
+        inputTokens: z.int(),
+      }),
+    ),
+    'webhook.delivered': event(z.object({})),
+  }),
   meters: ({ meter, events }) => ({
     inputTokens: meter('Input Tokens')
       .on(events['llm.completion'], events['llm.embedding'])
@@ -130,17 +143,19 @@ export const llmUsageConfig = defineConfig({
 })
 
 export const storageConfig = defineConfig({
-  events: {
-    'storage.upload': Schema.toStandardSchemaV1(
-      Schema.Struct({
-        bucket: Schema.String,
-        bytes: Schema.Int,
-        contentType: Schema.Literals(['image', 'video', 'document']),
-        public: Schema.Boolean,
-        region: Schema.optional(Schema.String),
-      }),
+  events: ({ event }) => ({
+    'storage.upload': event(
+      Schema.toStandardSchemaV1(
+        Schema.Struct({
+          bucket: Schema.String,
+          bytes: Schema.Int,
+          contentType: Schema.Literals(['image', 'video', 'document']),
+          public: Schema.Boolean,
+          region: Schema.optional(Schema.String),
+        }),
+      ),
     ),
-  },
+  }),
   meters: ({ meter, events }) => ({
     uploadedBytes: meter('Uploaded Bytes')
       .on(events['storage.upload'])
@@ -163,14 +178,16 @@ export const storageConfig = defineConfig({
 })
 
 export const checkoutConfig = defineConfig({
-  events: {
-    'checkout.completed': z.object({
-      plan: z.enum(['starter', 'pro', 'enterprise']),
-      seats: z.int(),
-      annual: z.boolean(),
-      coupon: z.string().optional(),
-    }),
-  },
+  events: ({ event }) => ({
+    'checkout.completed': event(
+      z.object({
+        plan: z.enum(['starter', 'pro', 'enterprise']),
+        seats: z.int(),
+        annual: z.boolean(),
+        coupon: z.string().optional(),
+      }),
+    ),
+  }),
   meters: ({ meter, events }) => {
     const checkout = events['checkout.completed']
     const plan = checkout.plan

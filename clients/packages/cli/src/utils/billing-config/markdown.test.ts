@@ -119,7 +119,10 @@ describe('planMarkdown', () => {
         config,
         acme,
         { entries, issues: [] },
-        { live: null, draft: { id: 'cat-draft', name: 'v1', drift: [] } },
+        {
+          live: null,
+          draft: { id: 'cat-draft', name: 'v1', drift: [], conflicts: [] },
+        },
       ),
     ).toContain(
       [
@@ -131,7 +134,7 @@ describe('planMarkdown', () => {
     )
   })
 
-  test('warns that saving discards a draft the file no longer matches', () => {
+  test('warns that the draft has changes the config does not', () => {
     expect(
       planMarkdown(
         config,
@@ -139,17 +142,50 @@ describe('planMarkdown', () => {
         { entries: [entries[1]!], issues: [] },
         {
           live: { id: 'cat-live', name: 'v3' },
-          draft: { id: 'cat-draft', name: null, drift: [entries[0]!] },
+          draft: {
+            id: 'cat-draft',
+            name: null,
+            drift: [entries[0]!],
+            conflicts: [
+              {
+                section: entries[0]!.section,
+                id: entries[0]!.id,
+                action: 'updated',
+                diff: [],
+              },
+            ],
+          },
         },
       ),
     ).toContain(
       [
         '> [!WARNING]',
-        '> Saving this config to the draft discards the unpublished draft of **Acme\\_Inc** in sandbox.',
-        '>',
-        "> The draft has changes polar.json doesn't.",
+        "> The unpublished draft of **Acme\\_Inc** in sandbox has changes this config doesn't. `polar config draft` stops until they are in the file or discarded with `--force`.",
         '',
       ].join('\n'),
+    )
+  })
+
+  test('warns about a draft conflict when the config has changes of its own', () => {
+    expect(
+      planMarkdown(
+        config,
+        acme,
+        { entries, issues: [] },
+        {
+          live: { id: 'cat-live', name: 'v3' },
+          draft: {
+            id: 'cat-draft',
+            name: null,
+            drift: [],
+            conflicts: [
+              { section: 'benefits', id: 'spare', action: 'updated', diff: [] },
+            ],
+          },
+        },
+      ),
+    ).toContain(
+      "> [!WARNING]\n> The unpublished draft of **Acme\\_Inc** in sandbox has changes this config doesn't.",
     )
   })
 

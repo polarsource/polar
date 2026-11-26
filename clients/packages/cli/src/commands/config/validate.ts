@@ -7,6 +7,7 @@ import {
   type Catalog,
   type LoadedConfig,
   type PlanCatalogs,
+  type PlanDraft,
   type PlanResult,
   PlanOutput,
 } from '@/schemas/BillingConfig'
@@ -14,6 +15,10 @@ import { BillingConfig } from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
 import { commentOnPullRequest } from '@/services/pull-request-comment'
 import { record } from '@/utils/billing-config/describe'
+import {
+  catalogNameConflict,
+  draftConflicts,
+} from '@/utils/billing-config/conflicts'
 import { planMarkdown } from '@/utils/billing-config/markdown'
 import {
   draftedChanges,
@@ -24,6 +29,7 @@ import {
   next,
   overview,
   runDraft,
+  conflictSection,
   sections,
   target,
   unchanged,
@@ -53,6 +59,34 @@ const renamed = (
       ]
     : []
 
+type DraftComparison = Pick<PlanDraft, 'drift' | 'conflicts'>
+
+const UNCOMPARED: DraftComparison = { drift: null, conflicts: [] }
+
+const compareWithDraft = (
+  config: LoadedConfig,
+  organization: ActiveOrganization,
+  result: PlanResult,
+  draft: Catalog,
+) =>
+  Effect.gen(function* () {
+    if (errors(result.issues) > 0) return UNCOMPARED
+    const plan = yield* (yield* BillingConfig).plan(config, organization, {
+      catalogId: draft.id,
+    })
+    if (errors(plan.issues) > 0) return UNCOMPARED
+    return {
+      drift: [
+        ...draftedChanges(plan.entries),
+        ...renamed(config, result, draft),
+      ],
+      conflicts: [
+        ...draftConflicts(result.entries, plan.entries),
+        ...catalogNameConflict(result.catalog, draft),
+      ],
+    } satisfies DraftComparison
+  }).pipe(Effect.orElseSucceed(() => UNCOMPARED))
+
 // Plan compares with the live catalog: an unpublished draft is compared separately
 const readCatalogs = (
   config: LoadedConfig,
@@ -60,27 +94,35 @@ const readCatalogs = (
   result: PlanResult,
 ) =>
   Effect.gen(function* () {
-    const billing = yield* BillingConfig
-    const { live, draft } = yield* billing.catalogs(organization)
+    const { live, draft } = yield* (yield* BillingConfig).catalogs(organization)
     if (draft === null) return { live, draft: null } satisfies PlanCatalogs
-    const drift =
-      errors(result.issues) > 0
-        ? null
-        : yield* billing
-            .plan(config, organization, { catalogId: draft.id })
-            .pipe(
-              Effect.map((plan) =>
-                errors(plan.issues) > 0
-                  ? null
-                  : [
-                      ...draftedChanges(plan.entries),
-                      ...renamed(config, result, draft),
-                    ],
-              ),
-              Effect.orElseSucceed(() => null),
-            )
-    return { live, draft: { ...draft, drift } } satisfies PlanCatalogs
+    const compared = yield* compareWithDraft(
+      config,
+      organization,
+      result,
+      draft,
+    )
+    return { live, draft: { ...draft, ...compared } } satisfies PlanCatalogs
   }).pipe(Effect.option, Effect.map(Option.getOrUndefined))
+
+const nextStep = (
+  config: LoadedConfig,
+  organization: ActiveOrganization,
+  result: PlanResult,
+  catalogs: PlanCatalogs | undefined,
+) => {
+  if (errors(result.issues) > 0) return next(fixErrors(result.issues))
+  if (catalogs?.draft) {
+    return next(draftNext(config.file, catalogs.draft, result.entries))
+  }
+  if (unchanged(result.entries)) {
+    return [
+      ui.blank,
+      ui.success(`${target(organization)} is up to date, nothing to change`),
+    ]
+  }
+  return next(runDraft)
+}
 
 const render = (
   config: LoadedConfig,
@@ -90,18 +132,10 @@ const render = (
 ) => [
   ...sections(config, result),
   ...overview(config, organization, result),
-  ...(errors(result.issues) > 0
-    ? next(fixErrors(result.issues))
-    : catalogs?.draft
-      ? next(draftNext(config.file, catalogs.draft, result.entries))
-      : unchanged(result.entries)
-        ? [
-            ui.blank,
-            ui.success(
-              `${target(organization)} is up to date, nothing to change`,
-            ),
-          ]
-        : next(runDraft)),
+  ...(catalogs?.draft && catalogs.draft.conflicts.length > 0
+    ? conflictSection(config, catalogs.draft.conflicts)
+    : []),
+  ...nextStep(config, organization, result, catalogs),
   ui.blank,
 ]
 

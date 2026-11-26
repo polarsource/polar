@@ -16,7 +16,6 @@ import {
 import { formatProblems } from '@/utils/billing-config/problems'
 import {
   catalogChange,
-  discardsDraft,
   draftNote,
   errors,
   unchanged,
@@ -132,6 +131,9 @@ const pendingDraft = (
     ? `\n>\n> ${escape(plain(draftNote(config.file, catalogs.draft, entries).join(' ')))}`
     : ''
 
+const conflicted = (catalogs: PlanCatalogs | undefined) =>
+  (catalogs?.draft?.conflicts.length ?? 0) > 0
+
 const callout = (
   config: LoadedConfig,
   organization: ActiveOrganization,
@@ -142,8 +144,8 @@ const callout = (
   if (errors(result.issues) > 0) {
     return `> [!CAUTION]\n> \`${config.file}\` can't be saved to the draft of ${where}. Fix the errors below first.`
   }
-  if (unchanged(result.entries)) {
-    return `> [!WARNING]\n> Saving this config to the draft discards the unpublished draft of ${where}.${pendingDraft(config, result, catalogs)}`
+  if (conflicted(catalogs)) {
+    return `> [!WARNING]\n> The unpublished draft of ${where} has changes this config doesn't. \`polar config draft\` stops until they are in the file or discarded with \`--force\`.`
   }
   return `> [!NOTE]\n> Publishing the config in this pull request changes billing for ${where}. Review every change below before it's published.${pendingDraft(config, result, catalogs)}`
 }
@@ -182,7 +184,7 @@ export const planMarkdown = (
 ) =>
   unchanged(result.entries) &&
   errors(result.issues) === 0 &&
-  !(catalogs?.draft && discardsDraft(catalogs.draft, result.entries))
+  !conflicted(catalogs)
     ? undefined
     : [
         '## Polar billing config changed',

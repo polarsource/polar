@@ -1,0 +1,19 @@
+server/tests/declarative_config/test_concurrency.py
+  s_9efec70753fa3f::t_5a44c2866a6d71 82-84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e5b5a35fa2a06050b9a8f12a0e8741bb6430ba77",
+  "prompts": {},
+  "sessions": {
+    "s_9efec70753fa3f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05f1061b-aed5-46ca-b11d-39ac6aeab69d",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

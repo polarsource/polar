@@ -42,6 +42,7 @@ from polar.models.product import ProductBillingType
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.database import (
+    SKIP_DB_DROP,
     TEMPLATE_DATABASE,
     clone_template_database,
     get_database_url,
@@ -1621,7 +1622,8 @@ async def tinybird_metrics_database_url(worker_id: str) -> AsyncIterator[str]:
         yield async_database_url
     finally:
         await engine.dispose()
-        drop_database(sync_database_url)
+        if not SKIP_DB_DROP:
+            drop_database(sync_database_url)
 
 
 @pytest.fixture(scope="module")

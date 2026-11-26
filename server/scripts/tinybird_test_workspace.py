@@ -27,14 +27,15 @@ def get_tokens(host: str | None = None) -> dict[str, str] | None:
 
 def request(method: str, url: str, **kwargs: Any) -> httpx2.Response:
     """Tinybird answers /tokens before its API is up, so retry past gateway errors."""
-    for _ in range(60):
+    deadline = time.monotonic() + 60
+    while time.monotonic() < deadline:
         try:
             response = httpx2.request(method, url, **kwargs)
         except httpx2.RequestError:
-            time.sleep(1)
+            time.sleep(0.25)
             continue
         if response.status_code >= 500:
-            time.sleep(1)
+            time.sleep(0.25)
             continue
         response.raise_for_status()
         return response
@@ -108,7 +109,8 @@ def deploy_schema(host: str, workspace_token: str) -> None:
 
 
 def wait_for_ingestion(host: str, workspace_token: str) -> None:
-    for _ in range(30):
+    deadline = time.monotonic() + 15
+    while time.monotonic() < deadline:
         try:
             r = httpx2.post(
                 f"{host}/v0/events",
@@ -124,7 +126,7 @@ def wait_for_ingestion(host: str, workspace_token: str) -> None:
                 return
         except httpx2.RequestError:
             pass
-        time.sleep(0.5)
+        time.sleep(0.2)
 
 
 def delete_workspace(host: str, workspace_id: str, user_token: str) -> None:

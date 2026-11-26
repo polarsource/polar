@@ -228,4 +228,20 @@ describe('agent setup', () => {
     expect(cli.terminal()).toContain('What should be set up for Polar?')
     expect(cli.installed).toEqual(['codex'])
   })
+
+  test('preselects outdated skills so a re-run updates them', async () => {
+    const cli = run(
+      [],
+      {
+        statuses: [client('claude-code', { installed: true })],
+        skills: { project: 'outdated', global: 'current' },
+      },
+      { interactive: true, input: [keys.enter] },
+    )
+    await cli.promise
+
+    expect(cli.terminal()).toContain('☒ Polar skills (project)')
+    expect(cli.terminal()).toContain('☐ Polar skills (global)')
+    expect(cli.installed).toEqual(['skills:project'])
+  })
 })

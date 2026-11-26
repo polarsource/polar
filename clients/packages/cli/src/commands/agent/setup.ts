@@ -7,6 +7,7 @@ import {
   type ClientStatus,
   type SetupStep,
   type SkillScope,
+  type SkillsStatus,
   clients,
   skillScopes,
 } from '@/schemas/AgentSetup'
@@ -56,9 +57,17 @@ interface Selection {
 const isClient = (agent: string): agent is Client =>
   clients.some((client) => client === agent)
 
+const skillsDescription = (scope: SkillScope, outdated: boolean) => {
+  const directory = `${scope === 'global' ? '~/' : ''}.agents/skills`
+  return outdated
+    ? `Out of date, updates ${directory}`
+    : `For other agents, in ${directory}`
+}
+
 const pick = (
   detected: ReadonlyArray<ClientStatus>,
   scope: SkillScope | undefined,
+  skills: ReadonlyArray<SkillsStatus>,
 ) =>
   Prompt.run(
     Prompt.MultiSelect<Client | SkillScope>({
@@ -70,16 +79,22 @@ const pick = (
           description: describeClient(status),
           selected: !status.installed && status.problem === undefined,
         })),
-        ...skillScopes.map((value) => ({
-          title: skillsName(value),
-          value,
-          description: `For other agents, in ${value === 'global' ? '~/' : ''}.agents/skills`,
-          selected:
-            scope === value ||
-            (scope === undefined &&
-              value === 'project' &&
-              detected.length === 0),
-        })),
+        ...skillScopes.map((value) => {
+          const outdated = skills.some(
+            (status) => status.scope === value && status.state === 'outdated',
+          )
+          return {
+            title: skillsName(value),
+            value,
+            description: skillsDescription(value, outdated),
+            selected:
+              scope === value ||
+              outdated ||
+              (scope === undefined &&
+                value === 'project' &&
+                detected.length === 0),
+          }
+        }),
       ],
     }),
   ).pipe(
@@ -130,8 +145,13 @@ const select = (
         hint: 'Pass --confirm to set up every detected agent, or --client to pick one.',
       })
     }
+    const skills = yield* withProgress((progress) =>
+      progress
+        .start('Checking the Polar skills')
+        .pipe(Effect.andThen(installedSkills)),
+    )
     yield* note(ui.blank)
-    return yield* pick(detected, scope)
+    return yield* pick(detected, scope, skills)
   })
 
 const step = (

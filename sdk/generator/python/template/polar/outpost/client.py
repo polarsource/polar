@@ -279,16 +279,18 @@ def _throttled(
 
 def _confirm_arguments(
     prefix: str,
-    hot_only: bool,
+    mode: str,
     groups: collections.abc.Mapping[tuple[str, int], list[str]],
 ) -> tuple[list[str], list[str | int]]:
     keys: list[str] = []
-    args: list[str | int] = ["1" if hot_only else ""]
+    args: list[str | int] = [mode]
     for (identity, bucket_start), ids in groups.items():
         keys += [
             f"{prefix}:state:{identity}",
             f"{prefix}:pending:{identity}:{bucket_start}",
         ]
+        if mode == "reject":
+            keys.append(f"{prefix}:rejected:{identity}:{bucket_start}")
         args += [bucket_start, len(ids), *ids]
     return keys, args
 
@@ -594,6 +596,7 @@ class Outpost:
                 arguments: list[str | int | float] = [
                     f"{self._prefix}:state:{identity}",
                     f"{self._prefix}:pending:{identity}:{bucket_start}",
+                    f"{self._prefix}:rejected:{identity}:{bucket_start}",
                     self._outbox_key,
                     f"{self._outbox_key}:flusher:0",
                     bucket_start,
@@ -607,14 +610,14 @@ class Outpost:
             if len(writes) == 1:
                 try:
                     results = [
-                        await self._redis.evalsha(WRITE_BUCKET_SHA, 4, *writes[0])
+                        await self._redis.evalsha(WRITE_BUCKET_SHA, 5, *writes[0])
                     ]
                 except NoScriptError as error:
                     results = [error]
             else:
                 async with self._redis.pipeline(transaction=False) as pipeline:
                     for arguments in writes:
-                        pipeline.evalsha(WRITE_BUCKET_SHA, 4, *arguments)
+                        pipeline.evalsha(WRITE_BUCKET_SHA, 5, *arguments)
                     results = await pipeline.execute(raise_on_error=False)
             first_error: Exception | None = None
             for index, (arguments, result) in enumerate(
@@ -624,7 +627,7 @@ class Outpost:
                 if isinstance(result, NoScriptError):
                     try:
                         result = results[index] = await self._redis.eval(
-                            WRITE_BUCKET_SCRIPT, 4, *arguments
+                            WRITE_BUCKET_SCRIPT, 5, *arguments
                         )
                     except RedisError as error:
                         result = error
@@ -1186,7 +1189,7 @@ class Outpost:
     async def _on_ack(self, events: list[EventInput]) -> None:
         assert self._confirm_script is not None
         if groups := self._settlements(events):
-            await self._confirm_script(*_confirm_arguments(self._prefix, True, groups))
+            await self._confirm_script(*_confirm_arguments(self._prefix, "ack", groups))
         if self._on_delivered is not None:
             try:
                 await self._on_delivered(events)
@@ -1195,8 +1198,8 @@ class Outpost:
 
     async def _on_rejected(self, events: list[EventInput], reason: DropReason) -> None:
         assert self._confirm_script is not None
-        if groups := self._settlements(events):
-            await self._confirm_script(*_confirm_arguments(self._prefix, False, groups))
+        if reason == "permanent_error" and (groups := self._settlements(events)):
+            await self._confirm_script(*_confirm_arguments(self._prefix, "reject", groups))
         if self._on_dropped is not None:
             try:
                 await self._on_dropped(events, reason)
@@ -1627,7 +1630,7 @@ class Outpost:
                     pipeline.hgetall(key)
                     keys, args = _confirm_arguments(
                         self._prefix,
-                        False,
+                        "",
                         {
                             (identity, bucket_start): ids
                             for bucket_start, ids in confirmed.items()

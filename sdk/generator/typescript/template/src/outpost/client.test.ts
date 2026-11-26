@@ -1307,6 +1307,24 @@ it("settles a hot bucket's events on Polar's receipt", async () => {
   expect((await outpost.meter(meter))?.consumed_units).toBe(20);
 });
 
+it.each([false, true])("rejection wins over local reduction (before apply: %s)", async (early) => {
+  const outpost = await warm();
+  const accepted = usage("accepted", 3);
+  const pending = usage("pending", 5);
+  const refused = usage("refused", 8);
+  await outpost.track(accepted);
+  await outpost["onAck"]([accepted]);
+  await outpost.track(pending);
+  if (early) await outpost["onRejected"]([refused], "permanent_error");
+  await outpost.track(refused);
+  await outpost["onRejected"]([refused], "permanent_error");
+  await outpost["onRejected"]([refused], "permanent_error");
+  await outpost.track(refused);
+  expect(await redis.hexists(`outpost:v1:org-1:rejected:external:alice:tokens:${bucket}`, "refused")).toBe(1);
+  expect((await outpost.meter(meter))?.consumed_units).toBe(8);
+  expect(await redis.hmget(key, `bucket:${bucket}:count`, `bucket:${bucket}:min`, `bucket:${bucket}:max`)).toEqual(["2", "3", "5"]);
+});
+
 it("keeps a cold bucket's events pending on Polar's receipt until a snapshot counts them", async () => {
   const outpost = await warm();
   const events = [usage("event-0", 10), usage("event-1", 10)];

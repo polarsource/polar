@@ -2099,7 +2099,7 @@ class TestCustomerStateReducerUnits:
         assert [meter.consumed_units for meter in state.active_meters] == [3]
         assert [meter.balance for meter in state.active_meters] == [-3]
         assert [meter.consumed_units for meter in cached_state.active_meters] == [3]
-        raw_state = await redis.get(f"polar:customer_state:v10:{customer.id}")
+        raw_state = await redis.get(f"polar:customer_state:v9:{customer.id}")
         assert raw_state is not None
         assert b'"consumed_units":0.0' in raw_state
 
@@ -2135,7 +2135,7 @@ class TestCustomerStateReducerUnits:
         state = await customer_service.get_state(session, redis, customer)
 
         assert [meter.consumed_units for meter in state.active_meters] == [0]
-        assert await redis.get(f"polar:customer_state:v10:{customer.id}") is not None
+        assert await redis.get(f"polar:customer_state:v9:{customer.id}") is not None
 
     async def test_skips_a_state_cached_before_reducer_billing(
         self,

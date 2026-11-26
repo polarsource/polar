@@ -166,6 +166,7 @@ interface OutpostPipeline extends ChainableCommander {
   outpostWriteBucket(
     key: string,
     pendingKey: string,
+    rejectedKey: string,
     outboxKey: string,
     flusherKey: string,
     ...args: (string | number)[]
@@ -183,15 +184,16 @@ interface Settlement {
 // The arguments of one CONFIRM call settling every group, with its number of keys first.
 const confirmArguments = (
   prefix: string,
-  hotOnly: boolean,
+  mode: "" | "ack" | "reject",
   settlements: Settlement[],
 ): [number, ...(string | number)[]] => [
-  settlements.length * 2,
+  settlements.length * (mode === "reject" ? 3 : 2),
   ...settlements.flatMap(({ identity, bucketStart }) => [
     `${prefix}:state:${identity}`,
     `${prefix}:pending:${identity}:${bucketStart}`,
+    ...(mode === "reject" ? [`${prefix}:rejected:${identity}:${bucketStart}`] : []),
   ]),
-  hotOnly ? "1" : "",
+  mode,
   ...settlements.flatMap(({ bucketStart, ids }) => [bucketStart, ids.length, ...ids]),
 ];
 
@@ -404,7 +406,7 @@ export class Outpost {
         lua: PUSH_TELEMETRY_SCRIPT,
       });
       this.redis.defineCommand("outpostWriteBucket", {
-        numberOfKeys: 4,
+        numberOfKeys: 5,
         lua: WRITE_BUCKET_SCRIPT,
       });
       this.redis.defineCommand("outpostConfirm", { lua: CONFIRM_SCRIPT });
@@ -524,6 +526,7 @@ export class Outpost {
         pipeline.outpostWriteBucket(
           `${this.prefix}:state:${identity}`,
           `${this.prefix}:pending:${identity}:${bucketStart}`,
+          `${this.prefix}:rejected:${identity}:${bucketStart}`,
           this.outboxKey,
           `${this.outboxKey}:flusher:0`,
           bucketStart,
@@ -973,7 +976,7 @@ export class Outpost {
   private async onAck(events: EventInput[]): Promise<void> {
     const groups = this.settlements(events);
     if (groups.length)
-      await this.requireRedis().outpostConfirm(...confirmArguments(this.prefix, true, groups));
+      await this.requireRedis().outpostConfirm(...confirmArguments(this.prefix, "ack", groups));
     try {
       await this.options.onDelivered?.(events);
     } catch (error) {
@@ -983,8 +986,8 @@ export class Outpost {
 
   private async onRejected(events: EventInput[], reason: DropReason): Promise<void> {
     const groups = this.settlements(events);
-    if (groups.length)
-      await this.requireRedis().outpostConfirm(...confirmArguments(this.prefix, false, groups));
+    if (reason === "permanent_error" && groups.length)
+      await this.requireRedis().outpostConfirm(...confirmArguments(this.prefix, "reject", groups));
     try {
       await this.options.onDropped?.(events, reason);
     } catch (error) {
@@ -1334,7 +1337,7 @@ export class Outpost {
           transaction.outpostConfirm(
             ...confirmArguments(
               this.prefix,
-              false,
+              "",
               confirmed.map(([bucketStart, ids]) => ({ identity, bucketStart, ids })),
             ),
           );

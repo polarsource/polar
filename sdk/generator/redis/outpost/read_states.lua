@@ -31,6 +31,8 @@ for i = 1, #ARGV do
                 start = tonumber(start)
                 if kind == 'bucket' then
                     keep = cold_until == nil or start >= cold_until
+                elseif kind == 'invalid' then
+                    keep = cold_until == nil or start >= cold_until
                 elseif kind == 'pending' then
                     keep = cold_until ~= nil and start < cold_until
                 end

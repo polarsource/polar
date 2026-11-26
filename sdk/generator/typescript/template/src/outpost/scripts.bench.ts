@@ -29,6 +29,7 @@ const queuedEvent = JSON.stringify({
 const writeArgs = (identity: string, bucketStart: number, queued = true) => [
   stateKey(identity),
   `outpost:v1:pending:${identity}:${bucketStart}`,
+  `outpost:v1:rejected:${identity}:${bucketStart}`,
   "outpost:v1:outbox",
   "outpost:v1:outbox:flusher:0",
   bucketStart,
@@ -70,7 +71,7 @@ describe("WRITE_BUCKET", () => {
       async () => {
         await redis.evalsha(
           writeBucketSha,
-          4,
+          5,
           ...writeArgs(identityOf(buckets), newestBucketStart),
         );
       },
@@ -83,7 +84,7 @@ describe("WRITE_BUCKET", () => {
       const pipeline = redis.pipeline();
       for (const [index, reducer] of REDUCERS.entries()) {
         const identity = `external:alice:${reducer}`;
-        pipeline.evalsha(writeBucketSha, 4, ...writeArgs(identity, COLD_UNTIL, index === 0));
+        pipeline.evalsha(writeBucketSha, 5, ...writeArgs(identity, COLD_UNTIL, index === 0));
       }
       const results = await pipeline.exec();
       for (const [error] of results ?? []) if (error) throw error;

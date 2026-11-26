@@ -3,6 +3,9 @@ local pending = 'pending:' .. ARGV[1] .. ':'
 -- ARGV[2] is the event's value, or nothing when it only counts.
 local value = ARGV[2] ~= '' and tonumber(ARGV[2]) or nil
 assert(ARGV[2] == '' or (value and value == value and math.abs(value) ~= math.huge), 'Invalid value')
+if redis.call('HEXISTS', KEYS[3], ARGV[3]) == 1 then
+    return 0
+end
 local total = tonumber(redis.call('HGET', KEYS[1], bucket .. 'sum') or '0') + (value or 0)
 assert(total == total and math.abs(total) ~= math.huge, 'Aggregation values must be finite')
 -- One event pending, under its external_id, ARGV[3]. An external_id Polar has not confirmed yet:
@@ -10,14 +13,14 @@ assert(total == total and math.abs(total) ~= math.huge, 'Aggregation values must
 if redis.call('HSETNX', KEYS[2], ARGV[3], ARGV[2]) == 0 then
     return 0
 end
--- The write that first sees an event queues it for Polar, as Polar ingests it: KEYS[3] is the
+-- The write that first sees an event queues it for Polar, as Polar ingests it: KEYS[4] is the
 -- stream, ARGV[4] the event, or nothing for the other reducers the event matches. A flusher
--- holding the first slot, KEYS[4], reads the stream again once it lets go: it delivers the event.
+-- holding the first slot, KEYS[5], reads the stream again once it lets go: it delivers the event.
 -- Otherwise the write returns 2, and the instance drains the stream on its next flush.
 local written = 1
 if ARGV[4] ~= '' then
-    redis.call('XADD', KEYS[3], '*', 'event', ARGV[4])
-    if redis.call('EXISTS', KEYS[4]) == 0 then
+    redis.call('XADD', KEYS[4], '*', 'event', ARGV[4])
+    if redis.call('EXISTS', KEYS[5]) == 0 then
         written = 2
     end
 end

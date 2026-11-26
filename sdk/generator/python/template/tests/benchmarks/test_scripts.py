@@ -56,6 +56,7 @@ def write_args(
     return [
         state_key(identity),
         pending_key,
+        f"outpost:v1:rejected:{identity}:{bucket_start}",
         "outpost:v1:outbox",
         "outpost:v1:outbox:flusher:0",
         bucket_start,
@@ -93,7 +94,7 @@ def test_write_bucket_one_event(
     identity = identity_of(buckets)
 
     def write() -> None:
-        redis.evalsha(sha, 4, *write_args(identity, newest_bucket_start))
+        redis.evalsha(sha, 5, *write_args(identity, newest_bucket_start))
 
     benchmark(write)
 
@@ -105,7 +106,7 @@ def test_write_bucket_three_reducers(benchmark: BenchmarkFixture, redis: Redis) 
         pipeline = redis.pipeline(transaction=False)
         for index, reducer in enumerate(REDUCERS):
             identity = f"external:alice:{reducer}"
-            pipeline.evalsha(sha, 4, *write_args(identity, COLD_UNTIL, index == 0))
+            pipeline.evalsha(sha, 5, *write_args(identity, COLD_UNTIL, index == 0))
         pipeline.execute()
 
     benchmark(write)

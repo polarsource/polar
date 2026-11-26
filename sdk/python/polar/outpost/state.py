@@ -2,6 +2,7 @@ import collections.abc
 import dataclasses
 import math
 
+from polar.outpost.errors import NotReadyError
 from polar.outpost.reducer import BucketStatistics, Reducer
 
 
@@ -55,6 +56,10 @@ def decode_state(values: collections.abc.Sequence[str | bytes]) -> ReducerState:
                     confirmed_after_resets = int(value)
                 continue
             kind, _, timestamp = group.partition(":")
+            if kind == "invalid":
+                raise NotReadyError(
+                    "Outpost cannot read an unconfirmed bucket extremum"
+                )
             if kind == "bucket" or kind == "pending":
                 bucket = BucketStatistics()
                 (buckets if kind == "bucket" else pending)[int(timestamp)] = bucket

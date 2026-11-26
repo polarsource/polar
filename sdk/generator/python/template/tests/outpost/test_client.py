@@ -2709,6 +2709,24 @@ async def test_sends_only_full_batches_while_another_flusher_delivers(
 
 
 @pytest.mark.anyio
+async def test_returns_from_a_flush_once_its_drain_ends_while_another_flusher_still_delivers(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    ingest: dict[str, typing.Any],
+) -> None:
+    url, redis = redis_connection
+    async with RedisEventQueue(url, stream=QUEUE).open(ingest=functools.partial(_ingest_events, polar_client)) as outpost:
+        await outpost.enqueue(_usage("event-0", 10))
+        # Another flusher holds a batch in flight.
+        await redis.xreadgroup("polar", "other", {QUEUE: ">"})
+        await outpost.enqueue(_usage("event-1", 10))
+        # A serverless instance flushes after each response: it must not wait on the
+        # fleet's stream.
+        await outpost.flush(timeout=0.5)
+        assert _delivered(ingest) == []
+
+
+@pytest.mark.anyio
 async def test_delivers_what_another_instance_queued_while_it_flushed(
     redis_connection: tuple[str, Redis],
     polar_client: httpx2.AsyncClient,

@@ -1,0 +1,19 @@
+server/tests/customer_portal/endpoints/test_order.py
+  s_5b4119735a452f::t_ecc13ffe5dc692 232,239-241,246-274
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1354be0b889602e413fe03a66127a2f75a1a1240",
+  "prompts": {},
+  "sessions": {
+    "s_5b4119735a452f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a21792-4591-7d00-9bd9-d07b0b98987d",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

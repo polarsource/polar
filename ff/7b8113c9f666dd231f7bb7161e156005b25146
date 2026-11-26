@@ -1,0 +1,19 @@
+.agents/skills/triage-advisories/SKILL.md
+  s_9d4fcc69d80fc5::t_facc509f8af493 1-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ff7b8113c9f666dd231f7bb7161e156005b25146",
+  "prompts": {},
+  "sessions": {
+    "s_9d4fcc69d80fc5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20ccd-705d-7a61-9a99-612697cae1a1",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

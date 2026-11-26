@@ -1,0 +1,31 @@
+docs/openapi/2027-01.openapi.json
+  s_5b4119735a452f::t_aeb44d86c120eb 4491-4492,4499,4511-4538,62372-62393,67346-67367,71666-71687
+sdk/python/polar/v2027_01/errors.py
+  s_5b4119735a452f::t_efe9d2c62019da 61-63,85-87,97-99,533-554
+sdk/python/polar/v2027_01/outputs.py
+  s_5b4119735a452f::t_652175faa59157 7563-7569,8489-8495,9192-9198
+sdk/python/polar/v2027_01/services/customer_portal/orders.py
+  s_5b4119735a452f::t_d173f4840357e8 13,15,324,326,328,346,348,350,762,764,766,784,786,788
+sdk/typescript/src/2027-01/errors.ts
+  s_5b4119735a452f::t_e02fbe77236a72 21,29,33,538,542,549-574
+sdk/typescript/src/2027-01/models.ts
+  s_5b4119735a452f::t_9ecf17a26c0304 16721-16734,18591-18604,19944-19957
+sdk/typescript/src/2027-01/services/customer_portal/orders.ts
+  s_5b4119735a452f::t_007a125a04a9a5 15,17,223,225,227,247,249,251
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e0b877a4597b2e78293ddb9ae394842ac513681b",
+  "prompts": {},
+  "sessions": {
+    "s_5b4119735a452f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a21792-4591-7d00-9bd9-d07b0b98987d",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

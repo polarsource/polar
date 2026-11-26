@@ -37,21 +37,28 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
   const managedAsCode =
     organization.feature_settings?.config_as_code_enabled ?? false
   const externalId = managedAsCode ? product.external_id : null
-  const { data: versions, isPlaceholderData: versionsArePlaceholder } =
-    useSelectedProducts(
-      {
-        organization_id: organization.id,
-        external_id: externalId ? [externalId] : [],
-      },
-      { includeArchived: true, includeAllVersions: true },
-    )
-  const firstCreatedAt = [product, ...(versions ?? [])]
+  const {
+    data: versions,
+    isPlaceholderData: versionsArePlaceholder,
+    isError: versionsFailed,
+  } = useSelectedProducts(
+    {
+      organization_id: organization.id,
+      external_id: externalId ? [externalId] : [],
+    },
+    { includeArchived: true, includeAllVersions: true },
+  )
+  const firstCreatedAt = [
+    product,
+    ...(versionsArePlaceholder ? [] : (versions ?? [])),
+  ]
     .map(({ created_at }) => created_at)
     .reduce((a, b) => (a < b ? a : b))
   const productFilter = externalId
     ? { external_product_id: [externalId] }
     : { product_id: [product.id] }
-  const versionsReady = !externalId || (!!versions && !versionsArePlaceholder)
+  const versionsReady =
+    !externalId || versionsFailed || (!!versions && !versionsArePlaceholder)
 
   const [allTimeStart, allTimeEnd, allTimeInterval] = getChartRangeParams(
     'all_time',

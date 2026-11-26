@@ -710,31 +710,6 @@ jobs:
         working-directory: ./server
         run: uv run alembic check
 
-  test-status:
-    name: "Server: Tests 🐍"
-    needs: [changes, test, alembic-check]
-    if: always()
-    runs-on: blacksmith-4vcpu-ubuntu-2404
-    steps:
-      - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
-        with:
-          egress-policy: audit
-
-      - name: Check shard results
-        env:
-          RESULT: ${{ needs.test.result }}
-          ALEMBIC_RESULT: ${{ needs.alembic-check.result }}
-          CHANGES_RESULT: ${{ needs.changes.result }}
-        run: |
-          if [ "$RESULT" = "success" ] && [ "$ALEMBIC_RESULT" = "success" ]; then
-            exit 0
-          fi
-          if [ "$RESULT" = "skipped" ] && [ "$ALEMBIC_RESULT" = "skipped" ] && [ "$CHANGES_RESULT" = "success" ]; then
-            exit 0
-          fi
-          exit 1
-
   merge-durations:
     name: "Server: Save Test Durations 📊"
     needs: [test]

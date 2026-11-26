@@ -38,6 +38,7 @@ locals {
       POLAR_TAX_PROCESSORS                       = var.backend_config.tax_processors
       POLAR_TAX_RECORD_PROCESSOR                 = var.backend_config.tax_record_processor
       POLAR_CUSTOMER_PORTAL_URL_OVERRIDES        = var.backend_config.customer_portal_url_overrides
+      POLAR_PROTECTED_OAUTH2_CLIENT_IDS          = jsonencode(var.backend_config.protected_oauth2_client_ids)
     },
     { for name, value in {
       POLAR_DATABASE_STATEMENT_CACHE_SIZE               = var.backend_config.database_statement_cache_size
@@ -66,7 +67,6 @@ locals {
 
   backend_secrets = merge(
     {
-      POLAR_MCP_OAUTH2_CLIENT_ID               = var.backend_secrets.mcp_oauth2_client_id
       POLAR_DISCORD_BOT_TOKEN                  = var.backend_secrets.discord_bot_token
       POLAR_DISCORD_CLIENT_ID                  = var.backend_secrets.discord_client_id
       POLAR_DISCORD_CLIENT_SECRET              = var.backend_secrets.discord_client_secret

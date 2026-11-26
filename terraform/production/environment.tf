@@ -62,12 +62,12 @@ locals {
     tax_processors                                   = "[\"numeral\",\"stripe\"]"
     tax_record_processor                             = "numeral"
     customer_portal_url_overrides                    = var.customer_portal_url_overrides
+    protected_oauth2_client_ids                      = var.protected_oauth2_client_ids
     plain_default_tier_external_id                   = var.plain_default_tier_external_id
     merchant_migration_destination_stripe_account_id = var.merchant_migration_destination_stripe_account_id
   }
 
   backend_secrets = {
-    mcp_oauth2_client_id               = var.mcp_oauth2_client_id
     linear_api_key                     = var.linear_api_key
     stripe_publishable_key             = var.stripe_publishable_key_production
     discord_bot_token                  = var.backend_discord_bot_token_production

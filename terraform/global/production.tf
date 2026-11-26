@@ -704,11 +704,11 @@ resource "tfe_variable" "vercel_attio_design_partner_list_id_production" {
   }
 }
 
-resource "tfe_variable" "vercel_mcp_oauth2_client_id_production" {
-  key             = "mcp_oauth2_client_id"
+resource "tfe_variable" "protected_oauth2_client_ids_production" {
+  key             = "protected_oauth2_client_ids"
   category        = "terraform"
-  description     = "MCP OAuth2 client ID for the Vercel production frontend"
-  sensitive       = true
+  description     = "OAuth2 client IDs excluded from stale cleanup in production"
+  hcl             = true
   variable_set_id = tfe_variable_set.production.id
 
   lifecycle {

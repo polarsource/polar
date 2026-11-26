@@ -390,10 +390,10 @@ variable "mintlify_assistant_api_key" {
   sensitive   = true
 }
 
-variable "mcp_oauth2_client_id" {
-  description = "MCP OAuth2 client ID for the Vercel frontend"
-  type        = string
-  sensitive   = true
+variable "protected_oauth2_client_ids" {
+  description = "OAuth2 client IDs excluded from stale cleanup"
+  type        = list(string)
+  nullable    = false
 }
 
 variable "mcp_oauth2_client_secret" {

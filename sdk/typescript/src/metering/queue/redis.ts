@@ -4,22 +4,15 @@ import { randomUUID } from "node:crypto";
 import { setTimeout as sleep } from "node:timers/promises";
 
 import type { EventInput } from "../event";
-import type { EventQueue, EventQueueHooks } from "./index";
+import type { EventQueue, EventQueueStartOptions } from "./index";
 
-import { type ClientBase, PolarClientError, PolarError } from "../../base";
-import {
-  DEFAULT_TIMEOUT,
-  backOff,
-  connectRedis,
-  createRedis,
-  releaseLock,
-  takeLock,
-} from "../../redis";
+import { backOff, connectRedis, createRedis, releaseLock, takeLock } from "../../redis";
 import {
   type DeliveryOptions,
   MeteringTimeoutError,
   deliveryTimeout,
-  retryAfterMs,
+  IngestRejectedError,
+  IngestRetryableError,
   waitForDelivery,
 } from "../errors";
 
@@ -85,32 +78,6 @@ interface Delivery {
 // How many times a batch goes again without the events Polar named, before it is dropped whole.
 const REFUSED_RESENDS = 3;
 
-// The indexes of the events Polar's validation refuses, when each of its errors names one.
-const refusedIndexes = (error: unknown): Set<number> | undefined => {
-  if (!(error instanceof PolarClientError) || error.statusCode !== 422) return undefined;
-  let detail: unknown;
-  try {
-    // The client keeps the body of an error it has no class for as text.
-    detail = (JSON.parse(String(error.error)) as { detail?: unknown } | null)?.detail;
-  } catch {
-    return undefined;
-  }
-  if (!Array.isArray(detail)) return undefined;
-  const indexes = new Set<number>();
-  for (const error of detail as ({ loc?: unknown } | null)[]) {
-    const loc = error?.loc;
-    if (
-      !Array.isArray(loc) ||
-      loc[0] !== "body" ||
-      loc[1] !== "events" ||
-      !Number.isInteger(loc[2])
-    )
-      return undefined;
-    indexes.add(loc[2] as number);
-  }
-  return indexes;
-};
-
 // A number too large to read, such as 1e999, parses to an infinity no request could carry.
 const holdsNoInfinity = (value: unknown): boolean => {
   if (typeof value === "number") return Number.isFinite(value);
@@ -119,13 +86,13 @@ const holdsNoInfinity = (value: unknown): boolean => {
 };
 
 export interface RedisEventQueueOptions {
-  client: Pick<ClientBase, "sendRequest" | "buildRequest" | "parseResponse">;
   /** Use a distinct stream per Polar environment and organization. */
   stream: string;
 }
 
 export class RedisEventQueue implements EventQueue {
-  private hooks?: EventQueueHooks;
+  private session?: EventQueueStartOptions;
+  private ownsRedis = false;
 
   private redis?: QueueRedis;
   private timer?: ReturnType<typeof setInterval>;
@@ -135,27 +102,21 @@ export class RedisEventQueue implements EventQueue {
   private undrained = false;
 
   constructor(
-    private readonly redisUrl: string,
+    private readonly redisSource: string | Redis,
     private readonly options: RedisEventQueueOptions,
   ) {}
 
-  async start(hooks: EventQueueHooks = {}): Promise<this> {
-    if (this.redis) throw new PolarError("Redis queue is already connected");
-    const redis = createRedis(this.redisUrl);
-    this.redis = redis as QueueRedis;
-    try {
-      await connectRedis(redis);
-      redis.defineCommand("queueBacklog", { numberOfKeys: 2, lua: QUEUE_BACKLOG_SCRIPT });
-      redis.defineCommand("queueAcknowledge", { numberOfKeys: 2, lua: ACKNOWLEDGE_SCRIPT });
-      await this.createQueueGroup();
-      this.hooks = hooks;
-      this.timer = setInterval(() => void this.drain().catch(() => {}), DRAIN_INTERVAL);
-      return this;
-    } catch (error) {
-      this.redis = undefined;
-      redis.disconnect();
-      throw error;
-    }
+  get redisUrl(): string | undefined {
+    return typeof this.redisSource === "string" ? this.redisSource : undefined;
+  }
+
+  start(options: EventQueueStartOptions): Promise<this> {
+    return this.open(this.redisSource, options);
+  }
+
+  /** @internal */
+  startWithRedis(options: EventQueueStartOptions, redis: Redis): Promise<this> {
+    return this.open(redis, options);
   }
 
   async close(options?: DeliveryOptions): Promise<void> {
@@ -170,8 +131,8 @@ export class RedisEventQueue implements EventQueue {
           timeout,
         );
     } finally {
-      this.hooks = undefined;
-      this.redis?.disconnect();
+      this.session = undefined;
+      if (this.ownsRedis) this.redis?.disconnect();
       this.redis = undefined;
     }
   }
@@ -212,9 +173,28 @@ export class RedisEventQueue implements EventQueue {
     }
   }
 
+  private async open(source: string | Redis, options: EventQueueStartOptions): Promise<this> {
+    if (this.redis) throw new Error("Redis queue is already connected");
+    const redis = typeof source === "string" ? createRedis(source) : source;
+    this.ownsRedis = typeof source === "string";
+    this.redis = redis as QueueRedis;
+    try {
+      if (this.ownsRedis) await connectRedis(redis);
+      redis.defineCommand("queueBacklog", { numberOfKeys: 2, lua: QUEUE_BACKLOG_SCRIPT });
+      redis.defineCommand("queueAcknowledge", { numberOfKeys: 2, lua: ACKNOWLEDGE_SCRIPT });
+      await this.createQueueGroup();
+      this.session = options;
+      this.timer = setInterval(() => void this.drain().catch(() => {}), DRAIN_INTERVAL);
+      return this;
+    } catch (error) {
+      this.redis = undefined;
+      if (this.ownsRedis) redis.disconnect();
+      throw error;
+    }
+  }
+
   private requireRedis(): QueueRedis {
-    if (!this.redis)
-      throw new PolarError("Call RedisEventQueue.start() before using RedisEventQueue");
+    if (!this.redis) throw new Error("Call RedisEventQueue.start() before using RedisEventQueue");
     return this.redis;
   }
 
@@ -381,6 +361,8 @@ export class RedisEventQueue implements EventQueue {
     entries: [string, string[] | null][],
     delivery: Delivery,
   ): Promise<boolean> {
+    const session = this.session;
+    if (!session) return false;
     // An entry that is not JSON can never be sent: it leaves the queue with the batch.
     let events = entries.flatMap(([, fields]) => {
       if (!fields) return [];
@@ -394,43 +376,32 @@ export class RedisEventQueue implements EventQueue {
       }
     });
     const refused: EventInput[] = [];
-    for (let resent = 0; events.length; resent += 1)
+    for (let resent = 0; events.length; resent += 1) {
       try {
-        const { client } = this.options;
-        const response = await client.sendRequest(
-          client.buildRequest("POST", "/v1/events/ingest", undefined, undefined, { events }),
-          { timeout: DEFAULT_TIMEOUT / 1000 },
-        );
-        if (!response.ok) {
-          if (response.status < 400) throw new PolarError(`Polar answered ${response.status}`);
-          await client.parseResponse(response, "none");
-        }
-        await response.body?.cancel().catch(() => {});
+        await session.ingest(events);
         break;
       } catch (error) {
-        // Polar refuses a whole request for the events it names: the others go again without
-        // them, a few times at most.
-        const named = refusedIndexes(error);
+        if (error instanceof IngestRetryableError) {
+          const wait = error.retryAfterMs;
+          await backOff(this.redis, this.backoffKey, {
+            first: wait ?? QUEUE_RETRY_DELAY,
+            max: wait ?? MAX_QUEUE_RETRY_DELAY,
+          });
+          return false;
+        }
+        if (!(error instanceof IngestRejectedError)) throw error;
+        const named = error.rejectedIndexes;
         if (named?.size && named.size < events.length && resent < REFUSED_RESENDS) {
           refused.push(...events.filter((_, index) => named.has(index)));
           events = events.filter((_, index) => !named.has(index));
           continue;
         }
-        if (error instanceof PolarClientError && ![401, 403, 408, 429].includes(error.statusCode)) {
-          refused.push(...events);
-          events = [];
-          break;
-        }
-        // As long as Polar asks, or longer after each failure in a row.
-        const wait = retryAfterMs(error);
-        await backOff(this.redis, this.backoffKey, {
-          first: wait ?? QUEUE_RETRY_DELAY,
-          max: wait ?? MAX_QUEUE_RETRY_DELAY,
-        });
-        return false;
+        refused.push(...events);
+        events = [];
       }
-    if (refused.length) await this.hooks?.onRejected?.(refused, "permanent_error");
-    if (events.length) await this.hooks?.onAck?.(events);
+    }
+    if (refused.length) await this.session?.onRejected?.(refused, "permanent_error");
+    if (events.length) await this.session?.onAck?.(events);
     await this.requireRedis().queueAcknowledge(
       this.options.stream,
       delivery.lockKey,

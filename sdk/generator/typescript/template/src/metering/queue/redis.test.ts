@@ -3,6 +3,7 @@ import { expect, it, vi } from "vitest";
 
 import { ClientBase } from "../../base";
 import { startRedisServer } from "../../outpost/testing";
+import { createIngest } from "../client";
 import type { EventInput } from "../event";
 import type { EventQueue } from "./index";
 import { RedisEventQueue } from "./redis";
@@ -28,9 +29,9 @@ it("keeps an entry until its rejection hook succeeds", async () => {
     if (attempts.length === 1) throw new Error("Reducer unavailable");
   });
   const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-  const queue: EventQueue = new RedisEventQueue(server.socket, { client, stream });
+  const queue: EventQueue = new RedisEventQueue(server.socket, { stream });
   try {
-    await queue.start({ onAck, onRejected });
+    await queue.start({ ingest: createIngest(client), onAck, onRejected });
     await queue.enqueue({ name: "call", external_customer_id: "alice" });
     await queue.flush();
     expect(attempts).toHaveLength(2);

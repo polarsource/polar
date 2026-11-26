@@ -1,4 +1,5 @@
 import contextlib
+import functools
 import json
 from unittest.mock import AsyncMock
 
@@ -6,6 +7,7 @@ import httpx2
 import pytest
 from fakeredis import FakeAsyncRedis, FakeServer
 
+from polar.metering import _ingest_events
 from polar.metering.errors import DropReason, MeteringTimeoutError
 from polar.metering.events import EventInput
 from polar.metering.queue import EventQueue
@@ -51,12 +53,12 @@ async def test_redis_queue_retries_with_the_same_event_and_reports_acceptance(
         ) as client,
     ):
         queue: EventQueue = RedisEventQueue(
-            "redis://localhost",
+            redis="redis://localhost",
             stream="test:queue",
-            client=client,
         )
+        send = functools.partial(_ingest_events, client)
         first_ack = AsyncMock()
-        async with queue.open(on_ack=first_ack, on_rejected=on_rejected):
+        async with queue.open(ingest=send, on_ack=first_ack, on_rejected=on_rejected):
             await queue.enqueue({"name": "call", "external_customer_id": "alice"})
             with pytest.raises(MeteringTimeoutError):
                 await queue.flush(timeout=0.1)
@@ -66,7 +68,7 @@ async def test_redis_queue_retries_with_the_same_event_and_reports_acceptance(
             assert await redis.xlen("test:queue") == 1
 
         await redis.hset("test:queue:backoff", "retry_at", 0)
-        async with queue.open(on_ack=on_ack, on_rejected=on_rejected):
+        async with queue.open(ingest=send, on_ack=on_ack, on_rejected=on_rejected):
             await queue.flush()
 
         assert len(attempts) == 2
@@ -106,9 +108,9 @@ async def test_redis_queue_reports_a_rejection_before_retiring_the_entry(
             if len(rejected) == 1:
                 raise RuntimeError("Reducer unavailable")
 
-        async with RedisEventQueue(
-            "redis://localhost", stream="test:queue", client=client
-        ).open(on_rejected=on_rejected) as queue:
+        async with RedisEventQueue("redis://localhost", stream="test:queue").open(
+            ingest=functools.partial(_ingest_events, client), on_rejected=on_rejected
+        ) as queue:
             await queue.enqueue(event)
             await queue.flush()
 

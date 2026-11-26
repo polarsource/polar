@@ -8,11 +8,6 @@ export class UnavailableRedisError extends PolarOutpostError {
     super("Redis is unavailable", options);
   }
 }
-export class MissingExternalIdError extends PolarOutpostError {
-  constructor() {
-    super("Outpost needs an external_id on every event");
-  }
-}
 export const redisUnavailable = (error: unknown): UnavailableRedisError =>
   new UnavailableRedisError({ cause: error });
 export const isRedisConnectionError = (error: unknown): boolean => {

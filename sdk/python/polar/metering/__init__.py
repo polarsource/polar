@@ -6,18 +6,20 @@ import typing
 import uuid
 
 import anyio
+import httpx2
 
 from polar.base import AsyncClientBase, parse_response_json
 from polar.logging import get_logger
-from polar.metering.client import PolarClient
 from polar.metering.errors import (
     DeliveryFailure,
     DropReason,
-    InvalidActorError,
+    IngestRejectedError,
+    IngestRetryableError,
     MeteringDeliveryError,
     MeteringError,
     MeteringTimeoutError,
     UnknownMeterError,
+    retry_after_response,
     validate_timeout,
 )
 from polar.metering.events import (
@@ -27,27 +29,34 @@ from polar.metering.events import (
     EventInput,
 )
 from polar.metering.meter import CustomerMeter, CustomerMeterList
-from polar.metering.queue import EventQueue
+from polar.metering.queue import EventQueue, Ingest, OnAck, OnRejected
 from polar.metering.queue.memory import MemoryEventQueue
 
 if typing.TYPE_CHECKING:
+    from redis.asyncio import Redis
+
     from polar.outpost.client import Outpost
 
 log = get_logger(__name__)
+
+
+class PolarClient(typing.Protocol):
+    @property
+    def _client(self) -> AsyncClientBase: ...
 
 
 class MeteringOutpostOptions(typing.TypedDict, total=False):
     """Configure optional local reduction.
 
     Attributes:
-        redis_url: Redis connection URL. Defaults to the REDIS_URL environment variable.
+        redis: Redis URL or caller-owned asynchronous Redis client. Defaults to REDIS_URL.
         telemetry: Send Outpost metrics and traces to Polar. Defaults to True;
             POLAR_OUTPOST_TELEMETRY=0 disables it regardless of this option.
         snapshot_timeout: Seconds a read of a cold customer waits for its first
             snapshot. Defaults to 5.
     """
 
-    redis_url: str
+    redis: "str | Redis"
     telemetry: bool
     snapshot_timeout: float
 
@@ -129,22 +138,55 @@ class Metering:
         *,
         client: AsyncClientBase,
         outpost: "Outpost | None" = None,
+        on_ack: OnAck | None = None,
+        on_rejected: OnRejected | None = None,
     ) -> None:
         self.queue = queue
         self._active_queue = queue
         self.outpost = outpost
         self._client = client
+        self._caller_on_ack = on_ack
+        self._caller_on_rejected = on_rejected
         self._stack = contextlib.AsyncExitStack()
 
     async def __aenter__(self) -> typing.Self:
+        on_ack = (
+            self._on_ack
+            if self._caller_on_ack is not None or self.outpost is not None
+            else None
+        )
+        on_rejected = (
+            self._on_rejected
+            if self._caller_on_rejected is not None or self.outpost is not None
+            else None
+        )
         try:
             if self.outpost is None:
-                session = self.queue.open()
+                session = self.queue.open(
+                    ingest=self._ingest, on_ack=on_ack, on_rejected=on_rejected
+                )
             else:
                 outpost = await self._stack.enter_async_context(self.outpost)
-                session = self.queue.open(
-                    on_ack=outpost.on_ack, on_rejected=outpost.on_rejected
-                )
+                from polar.metering.queue.redis import RedisEventQueue
+
+                queue = self.queue
+                if (
+                    type(queue) is RedisEventQueue
+                    and queue.redis_url is not None
+                    and queue.redis_url == outpost.redis_url
+                ):
+                    session = queue._open(
+                        outpost._require_redis(),
+                        ingest=self._ingest,
+                        on_ack=on_ack,
+                        on_rejected=on_rejected,
+                    )
+                else:
+                    session = queue.open(
+                        ingest=self._ingest,
+                        on_ack=on_ack,
+                        on_rejected=on_rejected,
+                    )
             self._active_queue = await self._stack.enter_async_context(session)
         except BaseException:
             await self._stack.aclose()
@@ -196,7 +238,7 @@ class Metering:
                 queue sees it.
 
         Raises:
-            InvalidActorError: Customer or member identifiers are inconsistent.
+            ValueError: Customer or member identifiers are inconsistent.
         """
         _validate_actor(
             event.get("customer_id"),
@@ -250,7 +292,7 @@ class Metering:
             A helper that attaches this identity to events and reads customer meters.
 
         Raises:
-            InvalidActorError: Customer or member identifiers are inconsistent.
+            ValueError: Customer or member identifiers are inconsistent.
         """
         _validate_actor(
             customer_id, member_id, external_customer_id, external_member_id
@@ -303,7 +345,7 @@ class Metering:
             Consumption, credits, and balance, or None if no meter is found.
 
         Raises:
-            InvalidActorError: Exactly one customer identifier was not provided.
+            ValueError: Exactly one customer identifier was not provided.
         """
         _validate_actor(customer_id, None, external_customer_id, None)
         if self.outpost is not None:
@@ -338,28 +380,103 @@ class Metering:
         *,
         queue: EventQueue | None = None,
         outpost: MeteringOutpostOptions | bool | None = None,
+        on_ack: OnAck | None = None,
+        on_rejected: OnRejected | None = None,
     ) -> typing.Self:
         if queue is None:
-            queue = MemoryEventQueue(polar)
+            queue = MemoryEventQueue()
         if outpost is None or outpost is False:
-            return cls(queue, client=polar._client)
+            return cls(
+                queue, client=polar._client, on_ack=on_ack, on_rejected=on_rejected
+            )
 
         options = MeteringOutpostOptions() if outpost is True else outpost
-        redis_url = options.get("redis_url", os.environ.get("REDIS_URL"))
-        if not redis_url:
-            raise MeteringError("Outpost requires redis_url or REDIS_URL")
+        redis_source = options.get("redis", os.environ.get("REDIS_URL"))
+        if redis_source is None or redis_source == "":
+            raise MeteringError("Outpost requires redis or REDIS_URL")
         from polar.outpost.client import SNAPSHOT_TIMEOUT, Outpost
 
         return cls(
             queue,
             client=polar._client,
+            on_ack=on_ack,
+            on_rejected=on_rejected,
             outpost=Outpost.create(
                 polar,
-                redis_url,
+                redis=redis_source,
                 telemetry=options.get("telemetry", True),
                 snapshot_timeout=options.get("snapshot_timeout", SNAPSHOT_TIMEOUT),
             ),
         )
+
+    async def _ingest(self, events: list[EventInput]) -> None:
+        await _ingest_events(self._client._client, events)
+
+    async def _on_ack(self, events: list[EventInput]) -> None:
+        if self.outpost is not None:
+            await self.outpost.on_ack(events)
+        if self._caller_on_ack is not None:
+            try:
+                await self._caller_on_ack(events)
+            except Exception as error:  # noqa: BLE001
+                log.warning(
+                    "Metering acknowledgement hook failed (%s)", type(error).__name__
+                )
+
+    async def _on_rejected(self, events: list[EventInput], reason: DropReason) -> None:
+        if self.outpost is not None:
+            await self.outpost.on_rejected(events, reason)
+        if self._caller_on_rejected is not None:
+            try:
+                await self._caller_on_rejected(events, reason)
+            except Exception as error:  # noqa: BLE001
+                log.warning("Metering rejection hook failed (%s)", type(error).__name__)
+
+
+async def _ingest_events(client: httpx2.AsyncClient, events: list[EventInput]) -> None:
+    try:
+        response = await client.post("/v1/events/ingest", json={"events": events})
+    except httpx2.RequestError as error:
+        raise IngestRetryableError() from error
+
+    try:
+        response.raise_for_status()
+    except httpx2.HTTPStatusError as error:
+        if response.is_client_error and response.status_code not in (
+            401,
+            403,
+            408,
+            429,
+        ):
+            raise IngestRejectedError(
+                rejected_indexes=_refused_indexes(response, len(events))
+            ) from error
+        raise IngestRetryableError(
+            retry_after=retry_after_response(response)
+        ) from error
+
+
+def _refused_indexes(response: httpx2.Response, batch_size: int) -> set[int] | None:
+    """The indexes of the events Polar's validation refuses, when each of its errors
+    names one."""
+    if response.status_code != 422:
+        return None
+    try:
+        locations = [error["loc"] for error in response.json()["detail"]]
+    except (ValueError, KeyError, TypeError):
+        return None
+    indexes: set[int] = set()
+    for location in locations:
+        if (
+            not isinstance(location, list)
+            or len(location) < 3
+            or location[:2] != ["body", "events"]
+            or type(location[2]) is not int
+            or not 0 <= location[2] < batch_size
+        ):
+            return None
+        indexes.add(location[2])
+    return indexes or None
 
 
 def _validate_actor(
@@ -369,13 +486,11 @@ def _validate_actor(
     external_member_id: str | None,
 ) -> None:
     if (customer_id is None) == (external_customer_id is None):
-        raise InvalidActorError(
-            "Provide exactly one customer_id or external_customer_id"
-        )
+        raise ValueError("Provide exactly one customer_id or external_customer_id")
     if member_id is not None and customer_id is None:
-        raise InvalidActorError("member_id requires customer_id")
+        raise ValueError("member_id requires customer_id")
     if external_member_id is not None and external_customer_id is None:
-        raise InvalidActorError("external_member_id requires external_customer_id")
+        raise ValueError("external_member_id requires external_customer_id")
 
 
 __all__ = [
@@ -386,7 +501,9 @@ __all__ = [
     "DropReason",
     "EventInput",
     "EventQueue",
-    "InvalidActorError",
+    "Ingest",
+    "IngestRejectedError",
+    "IngestRetryableError",
     "Metering",
     "MeteringDeliveryError",
     "MeteringError",

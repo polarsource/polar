@@ -9,7 +9,6 @@ import typing
 import uuid
 
 import anyio
-import httpx2
 from redis.asyncio import Redis
 from redis.commands.core import AsyncScript
 from redis.exceptions import RedisError
@@ -17,21 +16,20 @@ from redis.exceptions import ResponseError as RedisResponseError
 from redis.typing import StreamIdT
 
 from polar._redis import (
-    DEFAULT_TIMEOUT,
     back_off,
     connect_redis,
     release_lock,
     take_lock,
 )
 from polar.logging import get_logger
-from polar.metering.client import PolarClient
 from polar.metering.errors import (
+    IngestRejectedError,
+    IngestRetryableError,
     MeteringTimeoutError,
-    retry_after_response,
     validate_timeout,
 )
 from polar.metering.events import EventInput
-from polar.metering.queue import OnAck, OnRejected
+from polar.metering.queue import Ingest, OnAck, OnRejected
 
 log = get_logger(__name__)
 
@@ -87,33 +85,11 @@ def _finite(number: str) -> float:
 REFUSED_RESENDS = 3
 
 
-def _refused_indexes(response: httpx2.Response) -> set[int] | None:
-    """The indexes of the events Polar's validation refuses, when each of its errors
-    names one."""
-    if response.status_code != 422:
-        return None
-    try:
-        locations = [error["loc"] for error in response.json()["detail"]]
-    except (ValueError, KeyError, TypeError):
-        return None
-    indexes: set[int] = set()
-    for location in locations:
-        if (
-            not isinstance(location, list)
-            or len(location) < 3
-            or location[:2] != ["body", "events"]
-            or not isinstance(location[2], int)
-        ):
-            return None
-        indexes.add(location[2])
-    return indexes
-
-
 @dataclasses.dataclass
 class _Delivery:
     """The queue entries a flusher delivered, and the slot it holds."""
 
-    entries: list[str]
+    entries: list[str | bytes]
     lock_key: str
     token: str
 
@@ -121,21 +97,21 @@ class _Delivery:
 class RedisEventQueue:
     """Deliver events from a Redis stream shared by workers using the same Polar account.
 
-    Use a distinct stream per Polar environment and organization. Delivery hooks can be
+    A supplied Redis client remains caller-owned. Use a distinct stream per Polar
+    environment and organization. Delivery hooks can be
     called again if a worker fails before acknowledging the stream entries.
     """
 
     def __init__(
         self,
-        redis_url: str,
+        redis: str | Redis,
         *,
         stream: str,
-        client: httpx2.AsyncClient,
     ) -> None:
-        self._redis_url = redis_url
+        self._redis_source = redis
         self._stream = stream
         self._backoff_key = f"{stream}:backoff"
-        self._client = client
+        self._ingest: Ingest | None = None
         self._opening = False
         self._on_ack: OnAck | None = None
         self._on_rejected: OnRejected | None = None
@@ -148,55 +124,20 @@ class RedisEventQueue:
         self._drain_again = False
         self._undrained = False
 
-    @classmethod
-    def create(
-        cls,
-        polar: PolarClient,
-        redis_url: str,
-        *,
-        stream: str,
-    ) -> typing.Self:
-        return cls(
-            redis_url,
-            stream=stream,
-            client=polar._client._client,
-        )
+    @property
+    def redis_url(self) -> str | None:
+        return self._redis_source if isinstance(self._redis_source, str) else None
 
-    @contextlib.asynccontextmanager
-    async def open(
+    def open(
         self,
         *,
+        ingest: Ingest,
         on_ack: OnAck | None = None,
         on_rejected: OnRejected | None = None,
-    ) -> collections.abc.AsyncGenerator[typing.Self, None]:
-        if self._opening:
-            raise RuntimeError("Redis queue is already running")
-        self._opening = True
-        try:
-            async with connect_redis(self._redis_url) as redis:
-                await self._create_queue_group(redis)
-                self._queue_backlog = redis.register_script(QUEUE_BACKLOG_SCRIPT)
-                self._acknowledge = redis.register_script(ACKNOWLEDGE_SCRIPT)
-                async with anyio.create_task_group() as tasks:
-                    self._redis = redis
-                    self._tasks = tasks
-                    self._on_ack = on_ack
-                    self._on_rejected = on_rejected
-                    tasks.start_soon(self._drain_on_time)
-                    try:
-                        yield self
-                    finally:
-                        try:
-                            with anyio.move_on_after(30):
-                                await self._drain_queue_quietly(limited=True)
-                        finally:
-                            tasks.cancel_scope.cancel()
-        finally:
-            self._redis = None
-            self._tasks = None
-            self._on_ack = None
-            self._on_rejected = None
-            self._opening = False
+    ) -> contextlib.AbstractAsyncContextManager[typing.Self]:
+        return self._open(
+            self._redis_source, ingest=ingest, on_ack=on_ack, on_rejected=on_rejected
+        )
 
     async def enqueue(self, event: EventInput) -> None:
         """Persist an event with a stable ID and timestamp for delivery retries."""
@@ -229,6 +170,51 @@ class RedisEventQueue:
                 await anyio.sleep(DRAIN_INTERVAL)
         if scope.cancelled_caught:
             raise MeteringTimeoutError(timeout)
+
+    @contextlib.asynccontextmanager
+    async def _open(
+        self,
+        redis_source: str | Redis,
+        *,
+        ingest: Ingest,
+        on_ack: OnAck | None = None,
+        on_rejected: OnRejected | None = None,
+    ) -> collections.abc.AsyncGenerator[typing.Self, None]:
+        if self._opening:
+            raise RuntimeError("Redis queue is already running")
+        self._opening = True
+        try:
+            connection = (
+                connect_redis(redis_source)
+                if isinstance(redis_source, str)
+                else contextlib.nullcontext(redis_source)
+            )
+            async with connection as redis:
+                await self._create_queue_group(redis)
+                self._queue_backlog = redis.register_script(QUEUE_BACKLOG_SCRIPT)
+                self._acknowledge = redis.register_script(ACKNOWLEDGE_SCRIPT)
+                async with anyio.create_task_group() as tasks:
+                    self._redis = redis
+                    self._tasks = tasks
+                    self._ingest = ingest
+                    self._on_ack = on_ack
+                    self._on_rejected = on_rejected
+                    tasks.start_soon(self._drain_on_time)
+                    try:
+                        yield self
+                    finally:
+                        try:
+                            with anyio.move_on_after(30):
+                                await self._drain_queue_quietly(limited=True)
+                        finally:
+                            tasks.cancel_scope.cancel()
+        finally:
+            self._redis = None
+            self._tasks = None
+            self._ingest = None
+            self._on_ack = None
+            self._on_rejected = None
+            self._opening = False
 
     def _require_redis(self) -> Redis:
         if self._redis is None:
@@ -403,7 +389,7 @@ class RedisEventQueue:
                 entries = read[0][1] if read else []
                 if entries:
                     delivery = _Delivery(
-                        [entry.decode() for entry, _ in entries], lock_key, token
+                        [entry for entry, _ in entries], lock_key, token
                     )
                     if not await self._deliver(entries, delivery):
                         # Slot 0 starts every drain and sends what it holds first: the
@@ -443,7 +429,7 @@ class RedisEventQueue:
             try:
                 events.append(
                     json.loads(
-                        fields.get(b"event", b""),
+                        fields.get("event") or fields.get(b"event", b""),
                         parse_constant=_not_json,
                         parse_float=_finite,
                     )
@@ -453,39 +439,30 @@ class RedisEventQueue:
                 log.warning("Redis queue dropped an unreadable entry")
         refused: list[EventInput] = []
         resent = 0
+        ingest = self._ingest
+        assert ingest is not None
         while events:
             try:
-                response = await self._client.post(
-                    "/v1/events/ingest",
-                    json={"events": events},
-                    timeout=DEFAULT_TIMEOUT,
-                )
-            except httpx2.TransportError:
-                await self._back_off_queue(None)
+                await ingest(events)
+            except IngestRetryableError as error:
+                await self._back_off_queue(error.retry_after)
                 return False
-            # Only a 2xx means Polar has the batch.
-            if response.is_success:
-                break
-            # Polar refuses a whole request for the events it names: the others go
-            # again without them, a few times at most.
-            named = _refused_indexes(response)
-            if named and len(named) < len(events) and resent < REFUSED_RESENDS:
-                resent += 1
-                refused += [e for index, e in enumerate(events) if index in named]
-                events = [e for index, e in enumerate(events) if index not in named]
-                continue
-            # Authentication failures, timeouts, and rate limits leave entries queued.
-            if response.is_client_error and response.status_code not in (
-                401,
-                403,
-                408,
-                429,
-            ):
+            except IngestRejectedError as error:
+                named = error.rejected_indexes
+                if named and len(named) < len(events) and resent < REFUSED_RESENDS:
+                    resent += 1
+                    refused += [
+                        event for index, event in enumerate(events) if index in named
+                    ]
+                    events = [
+                        event
+                        for index, event in enumerate(events)
+                        if index not in named
+                    ]
+                    continue
                 refused += events
                 events = []
-                break
-            await self._back_off_queue(retry_after_response(response))
-            return False
+            break
         if refused and self._on_rejected is not None:
             await self._on_rejected(refused, "permanent_error")
         if events and self._on_ack is not None:

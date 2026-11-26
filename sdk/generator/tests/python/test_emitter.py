@@ -57,7 +57,7 @@ def test_emit_input_model_with_fields_and_additional_properties(
 
     PythonEmitter(APIIR(versions=[api]), "2026-10").emit(tmp_path)
 
-    for module in ("events", "client", "meter", "errors"):
+    for module in ("__init__", "events", "meter", "errors"):
         assert (tmp_path / "polar" / "metering" / f"{module}.py").is_file()
     assert (tmp_path / "polar" / "metering" / "queue" / "memory.py").is_file()
     assert not (tmp_path / "polar" / "metering" / "alias.py").exists()

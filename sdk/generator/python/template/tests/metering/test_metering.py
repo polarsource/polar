@@ -8,12 +8,12 @@ import anyio
 import httpx2
 import pytest
 
-from polar import PolarClientError, PolarError
+from polar import PolarClientError
 from polar.base import AsyncClientBase
 from polar.metering import (
     CustomerMeter,
     EventInput,
-    InvalidActorError,
+    IngestRejectedError,
     Metering,
     MeteringDeliveryError,
     MeteringError,
@@ -44,12 +44,10 @@ async def test_invalid_actor(identity: dict[str, typing.Any]) -> None:
     async with Metering(
         queue=queue, client=AsyncMock(spec=AsyncClientBase)
     ) as metering:
-        with pytest.raises(InvalidActorError) as exc_info:
+        with pytest.raises(ValueError):
             await metering.actor(**identity)
-        assert isinstance(exc_info.value, MeteringError)
-        assert isinstance(exc_info.value, PolarError)
 
-        with pytest.raises(InvalidActorError):
+        with pytest.raises(ValueError):
             await metering.track(name="usage", **identity)
         queue.enqueue.assert_not_awaited()
 
@@ -62,7 +60,7 @@ def test_actor_without_outpost_dependencies() -> None:
             """
 import asyncio
 import sys
-from unittest.mock import AsyncMock
+import httpx2
 
 sys.modules["polar.outpost"] = None
 sys.modules["redis"] = None
@@ -73,12 +71,15 @@ from polar.metering import Metering
 from polar.metering.queue.memory import MemoryEventQueue
 
 async def main():
-    async with Metering(
-        queue=MemoryEventQueue(AsyncMock()),
-        client=AsyncMock(spec=AsyncClientBase),
-    ) as metering:
-        actor = await metering.actor(external_customer_id="customer")
-        await actor.track(name="usage")
+    client = AsyncClientBase("https://polar.test", "2026-04", "token")
+    async with httpx2.AsyncClient(
+        base_url="https://polar.test",
+        transport=httpx2.MockTransport(lambda request: httpx2.Response(202)),
+    ) as transport:
+        client._client = transport
+        async with Metering(queue=MemoryEventQueue(), client=client) as metering:
+            actor = await metering.actor(external_customer_id="customer")
+            await actor.track(name="usage")
 
 asyncio.run(main())
 """,
@@ -114,7 +115,7 @@ async def test_meter_api_fallback(
     )
     async with PolarAsync("token", organization_id="org") as polar:
         monkeypatch.setattr(polar._client, "send_request", send)
-        async with polar.metering(queue=MemoryEventQueue(polar)) as metering:
+        async with polar.metering(queue=MemoryEventQueue()) as metering:
             if external:
                 actor = await metering.actor(external_customer_id="external")
                 result = await actor.meter("meter")
@@ -147,7 +148,7 @@ async def test_meter_api_error_propagates(monkeypatch: pytest.MonkeyPatch) -> No
             "send_request",
             AsyncMock(return_value=httpx2.Response(403, text="Forbidden")),
         )
-        async with polar.metering(queue=MemoryEventQueue(polar)) as metering:
+        async with polar.metering(queue=MemoryEventQueue()) as metering:
             with pytest.raises(PolarClientError):
                 await metering.meter(meter_id="meter", external_customer_id="customer")
 
@@ -191,10 +192,14 @@ async def test_context_preserves_body_and_delivery_errors(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     body_error = ValueError("body failed")
-    delivery_error = PolarClientError(422, "rejected")
+    response = httpx2.Response(
+        422,
+        text="rejected",
+        request=httpx2.Request("POST", "https://polar.test/v1/events/ingest"),
+    )
     async with PolarAsync("token") as polar:
         monkeypatch.setattr(
-            polar.events, "ingest", AsyncMock(side_effect=delivery_error)
+            polar._client._client, "post", AsyncMock(return_value=response)
         )
         with pytest.raises(ExceptionGroup) as failure:
             async with polar.metering() as metering:
@@ -205,12 +210,44 @@ async def test_context_preserves_body_and_delivery_errors(
     assert failure.value.exceptions[0] is body_error
     delivery = failure.value.exceptions[1]
     assert isinstance(delivery, MeteringDeliveryError)
-    assert delivery.failures[0].cause is delivery_error
+    cause = delivery.failures[0].cause
+    assert isinstance(cause, IngestRejectedError)
+    assert isinstance(cause.__cause__, httpx2.HTTPStatusError)
+    assert cause.__cause__.response is response
 
 
 @pytest.mark.anyio
+@pytest.mark.parametrize("status", [202, 422])
+async def test_metering_reports_delivery_outcomes_without_outpost(
+    status: int, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    response = httpx2.Response(
+        status, request=httpx2.Request("POST", "https://polar.test/v1/events/ingest")
+    )
+    on_ack, on_rejected = AsyncMock(), AsyncMock()
+    async with PolarAsync("token") as polar:
+        post = AsyncMock(return_value=response)
+        monkeypatch.setattr(polar._client._client, "post", post)
+        async with polar.metering(on_ack=on_ack, on_rejected=on_rejected) as metering:
+            await metering.track(name="usage", external_customer_id="alice")
+            if status == 202:
+                await metering.flush()
+                assert post.await_args is not None
+                on_ack.assert_awaited_once_with(post.await_args.kwargs["json"]["events"])
+                on_rejected.assert_not_awaited()
+            else:
+                with pytest.raises(MeteringDeliveryError) as failure:
+                    await metering.flush()
+                on_rejected.assert_awaited_once_with(failure.value.events, "permanent_error")
+                on_ack.assert_not_awaited()
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("hook_fails", [False, True])
 async def test_metering_wires_hooks_and_reduces_the_enqueued_event(
     monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    hook_fails: bool,
 ) -> None:
     queue = AsyncMock(spec=EventQueue)
     queue.open.return_value.__aenter__.return_value = queue
@@ -224,8 +261,22 @@ async def test_metering_wires_hooks_and_reduces_the_enqueued_event(
     monkeypatch.setattr(Outpost, "on_rejected", rejected)
     monkeypatch.setattr(Outpost, "meter", AsyncMock(return_value=consumed))
 
+    caller_error = RuntimeError("private event data") if hook_fails else None
+    caller_ack = AsyncMock(side_effect=caller_error)
+    caller_rejected = AsyncMock(side_effect=caller_error)
+    hooks_order = MagicMock()
+    hooks_order.attach_mock(caller_ack, "caller_ack")
+    hooks_order.attach_mock(ack, "outpost_ack")
+    hooks_order.attach_mock(caller_rejected, "caller_rejected")
+    hooks_order.attach_mock(rejected, "outpost_rejected")
+
     polar = PolarAsync("token")
-    metering = polar.metering(queue=queue, outpost={"redis_url": "redis://localhost"})
+    metering = polar.metering(
+        queue=queue,
+        outpost={"redis": "redis://localhost"},
+        on_ack=caller_ack,
+        on_rejected=caller_rejected,
+    )
     async with metering:
         assert metering.outpost is not None
         actor = await metering.actor(external_customer_id="alice")
@@ -234,13 +285,24 @@ async def test_metering_wires_hooks_and_reduces_the_enqueued_event(
         assert event["external_id"]
         assert datetime.datetime.fromisoformat(event["timestamp"]).tzinfo is not None
         track.assert_awaited_once_with(event)
-        queue.open.assert_called_once_with(on_ack=ack, on_rejected=rejected)
+        queue.open.assert_called_once_with(
+            ingest=metering._ingest, on_ack=metering._on_ack, on_rejected=metering._on_rejected
+        )
         hooks = queue.open.call_args.kwargs
         await hooks["on_ack"]([event])
         await hooks["on_rejected"]([event], "permanent_error")
         ack.assert_awaited_once_with([event])
         rejected.assert_awaited_once_with([event], "permanent_error")
+        assert [entry[0] for entry in hooks_order.mock_calls] == [
+            "outpost_ack", "caller_ack", "outpost_rejected", "caller_rejected"
+        ]
+        caller_ack.assert_awaited_once_with([event])
+        caller_rejected.assert_awaited_once_with([event], "permanent_error")
         assert await actor.meter("meter") == consumed
+    if hook_fails:
+        assert "Metering acknowledgement hook failed (RuntimeError)" in caplog.messages
+        assert "Metering rejection hook failed (RuntimeError)" in caplog.messages
+        assert "private event data" not in caplog.text
 
 
 @pytest.mark.anyio
@@ -285,5 +347,5 @@ async def test_meter_uses_api_when_outpost_cannot_answer(
 
 def test_factory_requires_outpost_url() -> None:
     polar = PolarAsync("token")
-    with pytest.raises(MeteringError, match="Outpost requires redis_url or REDIS_URL"):
-        polar.metering(queue=MemoryEventQueue(polar), outpost=True)
+    with pytest.raises(MeteringError, match="Outpost requires redis or REDIS_URL"):
+        polar.metering(queue=MemoryEventQueue(), outpost=True)

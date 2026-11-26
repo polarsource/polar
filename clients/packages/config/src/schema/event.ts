@@ -17,9 +17,24 @@ export const LLMMetadata = Schema.Struct({
 
 export type LLMMetadata = typeof LLMMetadata.Type
 
+// The API stores costs as decimals with 5 whole digits and 12 decimal places.
+const decimalPlaces = (amount: number) => {
+  const [, fraction = '', exponent = '0'] =
+    /^-?\d+(?:\.(\d+))?(?:e([+-]\d+))?$/.exec(String(amount)) ?? []
+  return Math.max(0, fraction.length - Number(exponent))
+}
+
 export const CostMetadata = Schema.Struct({
-  /** The amount in cents. */
-  amount: Schema.Finite,
+  /** The amount in cents, below 100,000 and with at most 12 decimal places. */
+  amount: Schema.Finite.check(
+    Schema.isGreaterThan(-100_000),
+    Schema.isLessThan(100_000),
+    Schema.makeFilter((amount) =>
+      decimalPlaces(amount) <= 12
+        ? undefined
+        : `The cost amount ${amount} has more than 12 decimal places. Round it first.`,
+    ),
+  ),
   currency: Schema.Literal('usd'),
 })
 

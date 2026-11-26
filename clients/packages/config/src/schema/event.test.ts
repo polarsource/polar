@@ -59,6 +59,21 @@ test('declared usage is required and validated', async () => {
   expect(cost.issues?.[0]?.path).toEqual(['_cost', 'currency'])
 })
 
+test('cost amounts fit the API decimal limits', async () => {
+  const amount = async (value: number) =>
+    (
+      await validate(event().withCosts(), {
+        _cost: { amount: value, currency: 'usd' },
+      })
+    ).issues?.[0]?.path
+  for (const valid of [0.1, 99_999.123456789, 1e-12, -5, 0]) {
+    expect(await amount(valid)).toBeUndefined()
+  }
+  for (const invalid of [0.1 + 0.2, 1e-13, 100_000, 1e20, -100_000]) {
+    expect(await amount(invalid)).toEqual(['_cost', 'amount'])
+  }
+})
+
 test('reports issues from the event schema and usage together', async () => {
   const result = await validate(
     event(z.object({ feature: z.string() })).withTokens(),

@@ -4,6 +4,7 @@ import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import { toast } from '@/components/Toast/use-toast'
 import { useSafeCopy } from '@/hooks/clipboard'
 import { useDeleteProduct, useMetrics, useUpdateProduct } from '@/hooks/queries'
+import { useSelectedProducts } from '@/hooks/queries/products'
 import { apiErrorToast, extractApiErrorMessage } from '@/utils/api/errors'
 import { getChartRangeParams } from '@/utils/metrics'
 import { MoreVert } from '@polar-sh/orbit/icons'
@@ -33,47 +34,69 @@ export interface ProductPageProps {
 }
 
 export const ProductPage = ({ organization, product }: ProductPageProps) => {
+  const managedAsCode =
+    organization.feature_settings?.config_as_code_enabled ?? false
+  const externalId = managedAsCode ? product.external_id : null
+  const { data: versions, isPlaceholderData: versionsArePlaceholder } =
+    useSelectedProducts(
+      {
+        organization_id: organization.id,
+        external_id: externalId ? [externalId] : [],
+      },
+      { includeArchived: true, includeAllVersions: true },
+    )
+  const firstCreatedAt = [product, ...(versions ?? [])]
+    .map(({ created_at }) => created_at)
+    .reduce((a, b) => (a < b ? a : b))
+  const productFilter = externalId
+    ? { external_product_id: [externalId] }
+    : { product_id: [product.id] }
+  const versionsReady = !externalId || (!!versions && !versionsArePlaceholder)
+
   const [allTimeStart, allTimeEnd, allTimeInterval] = getChartRangeParams(
     'all_time',
-    product.created_at,
+    firstCreatedAt,
   )
-  const { data: metrics, isLoading: metricsLoading } = useMetrics({
-    organization_id: organization.id,
-    product_id: [product.id],
-    startDate: allTimeStart,
-    endDate: allTimeEnd,
-    interval: allTimeInterval,
-    metrics: product.is_recurring
-      ? [
-          // Subscription metrics
-          'monthly_recurring_revenue',
-          'committed_monthly_recurring_revenue',
-          'active_subscriptions',
-          'new_subscriptions',
-          'renewed_subscriptions',
-          'new_subscriptions_revenue',
-          'renewed_subscriptions_revenue',
-          // Order metrics
-          'revenue',
-          'orders',
-          'average_order_value',
-          'cumulative_revenue',
-        ]
-      : [
-          // One-time metrics
-          'one_time_products',
-          'one_time_products_revenue',
-          // Order metrics (excluding revenue and orders for one-time)
-          'average_order_value',
-          'cumulative_revenue',
-        ],
-  })
+  const { data: metrics, isLoading: metricsLoading } = useMetrics(
+    {
+      organization_id: organization.id,
+      ...productFilter,
+      startDate: allTimeStart,
+      endDate: allTimeEnd,
+      interval: allTimeInterval,
+      metrics: product.is_recurring
+        ? [
+            // Subscription metrics
+            'monthly_recurring_revenue',
+            'committed_monthly_recurring_revenue',
+            'active_subscriptions',
+            'new_subscriptions',
+            'renewed_subscriptions',
+            'new_subscriptions_revenue',
+            'renewed_subscriptions_revenue',
+            // Order metrics
+            'revenue',
+            'orders',
+            'average_order_value',
+            'cumulative_revenue',
+          ]
+        : [
+            // One-time metrics
+            'one_time_products',
+            'one_time_products_revenue',
+            // Order metrics (excluding revenue and orders for one-time)
+            'average_order_value',
+            'cumulative_revenue',
+          ],
+    },
+    versionsReady,
+  )
   const { data: todayMetrics } = useMetrics({
     organization_id: organization.id,
     startDate: new Date(),
     endDate: new Date(),
     interval: 'day',
-    product_id: [product.id],
+    ...productFilter,
     metrics: ['revenue'],
   })
 
@@ -81,8 +104,6 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
 
   const updateProduct = useUpdateProduct(organization)
   const deleteProduct = useDeleteProduct(organization)
-  const managedAsCode =
-    organization.feature_settings?.config_as_code_enabled ?? false
   const router = useRouter()
   const safeCopy = useSafeCopy(toast)
 
@@ -297,7 +318,7 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
           <ProductMetricsView
             data={metrics}
             interval={allTimeInterval}
-            loading={metricsLoading}
+            loading={!versionsReady || metricsLoading}
             product={product}
           />
         )}

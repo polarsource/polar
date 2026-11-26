@@ -1,4 +1,5 @@
 import { SubscriptionStatus as SubscriptionStatusComponent } from '@/components/Subscriptions/SubscriptionStatus'
+import { useCatalogVersionLabels } from '@/hooks/queries/catalogs'
 import { useSubscriptions } from '@/hooks/queries/subscriptions'
 import { schemas } from '@polar-sh/client'
 import { Avatar } from '@polar-sh/orbit'
@@ -16,6 +17,11 @@ export const ProductSubscriptions = ({
   organization,
   product,
 }: ProductSubscriptionsProps) => {
+  const { data: versionLabels } = useCatalogVersionLabels(organization)
+  const versionName =
+    organization.feature_settings?.config_as_code_enabled && product.catalog_id
+      ? versionLabels?.get(product.catalog_id)?.name
+      : null
   const { data: subscriptions, isLoading: subscriptionsIsLoading } =
     useSubscriptions(organization.id, {
       product_id: product.id,
@@ -32,6 +38,17 @@ export const ProductSubscriptions = ({
           </Text>
           <p className="dark:text-polar-500 text-sm text-gray-500">
             Showing 10 most recent subscriptions for {product.name}
+            {versionName && (
+              <>
+                {' on version '}
+                <Link
+                  href={`/dashboard/${organization.slug}/products/versions/${product.catalog_id}`}
+                  className="font-medium text-gray-900 hover:underline hover:decoration-current/30 hover:underline-offset-4 dark:text-white"
+                >
+                  {versionName}
+                </Link>
+              </>
+            )}
           </p>
         </div>
         <Link

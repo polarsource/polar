@@ -537,7 +537,8 @@ jobs:
       - name: 🔧 uv install
         working-directory: ./server
         run: |
-          uv sync --dev --frozen
+          uv sync --dev --frozen --compile-bytecode
+          uv run python -m compileall -j 0 -q polar tests
 
       - name: 🐦 Install Tinybird CLI
         if: matrix.shard == 'tinybird'

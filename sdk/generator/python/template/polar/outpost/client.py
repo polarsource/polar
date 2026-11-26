@@ -515,6 +515,8 @@ class Outpost:
         self._requesting: dict[str, anyio.Event] = {}
         self._telemetry_buffer = TelemetryBuffer()
         self._queued: list[str] = []
+        self._fetched_poll: anyio.Event | None = None
+        self._fetched_count: bytes | str | None = None
         self._configured = anyio.Event()
         self._apply_snapshot: AsyncScript | None = None
         self._confirm_script: AsyncScript | None = None
@@ -1055,43 +1057,46 @@ class Outpost:
         self, customer: str, reducers: list[Reducer], statistics: list[str]
     ) -> list[ReducerState | None]:
         """Reads the customer's states from Redis. One Polar has no snapshot of yet is
-        asked for once, then read again once the fleet's fetch of it ends."""
+        asked for once, then read again each time the fleet ends a fetch."""
         deadline = anyio.current_time() + self._snapshot_timeout
-        states = await self._load(customer, reducers, statistics)
+        states, fetched = await self._load(customer, reducers, statistics)
         # Polar sends no snapshot without a connection.
         if not self.connected:
             return states
         # A state confirmed before the last reset serves the read while Polar confirms
         # it again.
-        fetches = [
-            self._fetch(customer, reducer)
-            for reducer, state in zip(reducers, states, strict=True)
-            if not _is_ready(state) or self._is_stale(state)
-        ]
-        if all(map(_is_ready, states)):
-            return states
-        with anyio.move_on_after(deadline - anyio.current_time()):
-            for fetched in fetches:
-                await fetched.wait()
-        markers = [
-            self._fetch_key(f"{customer}:{reducer['id']}")
-            for reducer, state in zip(reducers, states, strict=True)
-            if not _is_ready(state)
-        ]
-        redis = self._require_redis()
-        while True:
-            fetching = await redis.exists(*markers)
-            if not fetching or anyio.current_time() >= deadline:
-                states = await self._load(customer, reducers, statistics)
-                if all(map(_is_ready, states)) or anyio.current_time() >= deadline:
-                    return states
-            await anyio.sleep(min(POLL_INTERVAL, deadline - anyio.current_time()))
+        for reducer, state in zip(reducers, states, strict=True):
+            if not _is_ready(state) or self._is_stale(state):
+                self._fetch(customer, reducer)
+        while not all(map(_is_ready, states)) and anyio.current_time() < deadline:
+            count = fetched
+            while count == fetched and anyio.current_time() < deadline:
+                count = await self._next_fetched_count()
+            states, fetched = await self._load(customer, reducers, statistics)
+        return states
+
+    async def _next_fetched_count(self) -> bytes | str | None:
+        """The fleet counts the batches of cold customers it fetched. One look every
+        POLL_INTERVAL, whatever the number of reads waiting on this instance."""
+        if self._fetched_poll is not None:
+            await self._fetched_poll.wait()
+            return self._fetched_count
+        self._fetched_poll = polled = anyio.Event()
+        try:
+            await anyio.sleep(POLL_INTERVAL)
+            self._fetched_count = await self._require_running().hget(
+                self._pull_key, "fetched"
+            )
+        finally:
+            self._fetched_poll = None
+            polled.set()
+        return self._fetched_count
 
     async def _load(
         self, customer: str, reducers: list[Reducer], statistics: list[str]
-    ) -> list[ReducerState | None]:
+    ) -> tuple[list[ReducerState | None], bytes | str | None]:
         """One command: each reducer's state, with only the statistics the read adds
-        up, unless Polar does not know the customer."""
+        up, unless Polar does not know the customer, and the fleet's fetch count."""
         redis = self._require_running()
         keys = [self._pull_key]
         for reducer in reducers:
@@ -1105,13 +1110,15 @@ class Outpost:
             results = await redis.evalsha(READ_STATES_SHA, len(keys), *keys, *statistics)
         except NoScriptError:
             results = await redis.eval(READ_STATES_SCRIPT, len(keys), *keys, *statistics)
+        fetched = results.pop()
         resets = results.pop()
         self._resets = None if resets is None else int(resets)
         now = time.time() * 1000
-        return [
+        states = [
             None if retry_at and float(retry_at) > now else decode_state(state)
             for retry_at, state in results
         ]
+        return states, fetched
 
     def _is_stale(self, state: ReducerState | None) -> bool:
         return state is not None and state.confirmed_after_resets != self._resets
@@ -1286,9 +1293,10 @@ class Outpost:
                     group.start_soon(apply, snapshot)
         finally:
             with contextlib.suppress(RedisError):
-                await redis.delete(
-                    *(self._fetch_key(identity) for identity in identities)
-                )
+                async with redis.pipeline(transaction=False) as pipeline:
+                    pipeline.delete(*(self._fetch_key(identity) for identity in identities))
+                    pipeline.hincrby(self._pull_key, "fetched", 1)
+                    await pipeline.execute()
 
     async def _in_flight(self, timeout: float = 30.0) -> None:
         with anyio.fail_after(timeout):

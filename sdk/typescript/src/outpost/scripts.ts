@@ -1,6 +1,6 @@
 export const READ_STATES_SCRIPT = `
 -- A customer's read in one command: for each reducer, KEYS holds its state and its missing marker,
--- and the last key is the pull. ARGV names, per reducer, the statistics the reader adds up,
+-- and the last key is the pull, whose reset and fetch count go back after the reads. ARGV names, per reducer, the statistics the reader adds up,
 -- comma-separated, or none for its readiness alone. A state keeps cold_until, reset and those
 -- statistics of the groups the read counts: the cold totals, the pending part of cold buckets,
 -- the hot buckets. Values go back as stored; the reader adds them up.
@@ -45,6 +45,7 @@ for i = 1, #ARGV do
     reads[i] = {redis.call('HGET', KEYS[2 * i], 'retry_at'), kept}
 end
 reads[#ARGV + 1] = redis.call('HGET', KEYS[#KEYS], 'reset')
+reads[#ARGV + 2] = redis.call('HGET', KEYS[#KEYS], 'fetched')
 return reads
 `;
 

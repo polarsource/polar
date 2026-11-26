@@ -513,7 +513,7 @@ jobs:
             uv sync --dev --frozen
           else
             uv sync --dev --frozen --compile-bytecode
-            uv run python -m compileall -j 0 -q polar tests
+            .venv/bin/python -m compileall -j 0 -q polar tests
           fi
 
       - name: 🐦 Prepare Tinybird workspace
@@ -540,13 +540,13 @@ jobs:
               exit 1
             fi
             export PATH="$HOME/.local/bin:$PATH"
-            exec uv run python -m scripts.tinybird_test_workspace --token-file "$RUNNER_TEMP/tinybird-token"
+            exec .venv/bin/python -m scripts.tinybird_test_workspace --token-file "$RUNNER_TEMP/tinybird-token"
           ' </dev/null > "$RUNNER_TEMP/tinybird-prepare.log" 2>&1 &
 
       - name: 🔧 Compile Python bytecode (Tinybird)
         if: steps.merge-check.outputs.should_run != 'false' && matrix.shard == 'tinybird'
         working-directory: ./server
-        run: uv run python -m compileall -j 0 -q polar tests
+        run: .venv/bin/python -m compileall -j 0 -q polar tests
 
       - name: ⚗️ Restore migrated Postgres schema
         id: schema-cache
@@ -576,6 +576,16 @@ jobs:
               docker exec "$PG_CONTAINER" pg_dump -U polar -d polar_test --no-owner --no-privileges > "$RUNNER_TEMP/pg-schema/schema.sql"
             fi
           fi
+          if [ -n "$PG_CONTAINER" ]; then
+            psql_args=(
+              -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'polar_test' AND pid <> pg_backend_pid()"
+            )
+            for i in $(seq 0 7); do
+              psql_args+=(-c "CREATE DATABASE polar_test_gw$i TEMPLATE polar_test STRATEGY = FILE_COPY")
+            done
+            docker exec "$PG_CONTAINER" psql -U polar -d postgres -v ON_ERROR_STOP=1 -q "${psql_args[@]}"
+            echo "POLAR_TEST_PRECREATED_WORKERS=gw0,gw1,gw2,gw3,gw4,gw5,gw6,gw7" >> "$GITHUB_ENV"
+          fi
 
       - name: ⚗️ Save migrated Postgres schema cache
         if: steps.merge-check.outputs.should_run != 'false' && matrix.shard == '1' && steps.schema-cache.outputs.cache-hit != 'true'
@@ -597,16 +607,20 @@ jobs:
         if: steps.merge-check.outputs.should_run != 'false' && matrix.shard != 'tinybird'
         working-directory: ./server
         run: |
+          export VIRTUAL_ENV="$PWD/.venv"
+          export PATH="$PWD/.venv/bin:$PATH"
           pids=()
           for i in $(seq 0 7); do
             sub_shard=$(( ${{ matrix.shard }} + i * 4 ))
-            files_out=$(uv run python -m scripts.pytest_shards --shards 32 --shard "$sub_shard")
-            mapfile -t files <<< "$files_out"
-            split_args=(-p no:split)
-            if [ "${{ github.event_name }}" = "push" ]; then
-              split_args=(--store-durations --clean-durations --durations-path "$RUNNER_TEMP/dur-$i.json")
-            fi
-            POLAR_TEST_WORKER_ID="gw$i" uv run pytest -p no:xdist "${split_args[@]}" -m "not tinybird and not benchmark" -p no:sugar -p no:cov -p no:codspeed -p no:locust --durations=10 "${files[@]}" > "$RUNNER_TEMP/gw$i.log" 2>&1 &
+            (
+              set -euo pipefail
+              mapfile -t files < <(python -m scripts.pytest_shards --shards 32 --shard "$sub_shard")
+              split_args=(-p no:split)
+              if [ "${{ github.event_name }}" = "push" ]; then
+                split_args=(--store-durations --clean-durations --durations-path "$RUNNER_TEMP/dur-$i.json")
+              fi
+              exec env POLAR_TEST_WORKER_ID="gw$i" pytest -p no:xdist "${split_args[@]}" -m "not tinybird and not benchmark" -p no:sugar -p no:cov -p no:codspeed -p no:locust --durations=10 "${files[@]}"
+            ) > "$RUNNER_TEMP/gw$i.log" 2>&1 &
             pids+=($!)
           done
           failed=0
@@ -629,7 +643,7 @@ jobs:
           if [ "${{ github.event_name }}" = "push" ]; then
             shopt -s nullglob
             dur_files=("$RUNNER_TEMP"/dur-*.json)
-            uv run python -m scripts.merge_test_durations --expected-shards "${#dur_files[@]}" --output .test_durations "${dur_files[@]}"
+            python -m scripts.merge_test_durations --expected-shards "${#dur_files[@]}" --output .test_durations "${dur_files[@]}"
           fi
 
       - name: 🐦 Run Tinybird tests (pytest)
@@ -638,11 +652,13 @@ jobs:
         env:
           POLAR_TEST_TINYBIRD_TOKEN_FILE: ${{ runner.temp }}/tinybird-token
         run: |
-          files_out=$(uv run python -m scripts.pytest_shards --tinybird)
+          export VIRTUAL_ENV="$PWD/.venv"
+          export PATH="$PWD/.venv/bin:$PATH"
+          files_out=$(python -m scripts.pytest_shards --tinybird)
           mapfile -t tb_files <<< "$files_out"
           pids=()
           for i in "${!tb_files[@]}"; do
-            POLAR_TEST_WORKER_ID="gw$i" uv run pytest -p no:xdist -p no:split -m "tinybird and not benchmark" -p no:sugar -p no:cov -p no:codspeed -p no:locust --durations=10 "${tb_files[$i]}" > "$RUNNER_TEMP/gw$i.log" 2>&1 &
+            POLAR_TEST_WORKER_ID="gw$i" pytest -p no:xdist -p no:split -m "tinybird and not benchmark" -p no:sugar -p no:cov -p no:codspeed -p no:locust --durations=10 "${tb_files[$i]}" > "$RUNNER_TEMP/gw$i.log" 2>&1 &
             pids+=($!)
           done
           failed=0

@@ -4,15 +4,9 @@ import pathlib
 import time
 from collections.abc import AsyncIterator, Callable, Coroutine, Iterator
 
-import psycopg
 import pytest
-from alembic import command
-from alembic.config import Config
-from psycopg import sql as psycopg_sql
 from pydantic_core import Url
-from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
-from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from polar.config import settings
 from polar.kit.db.postgres import create_async_engine
@@ -32,6 +26,11 @@ def _ensure_database_initialized(worker_id: str) -> None:
     global _initialized_worker_id
     if _initialized_worker_id == worker_id:
         return
+    if worker_id in PRECREATED_WORKERS:
+        _initialized_worker_id = worker_id
+        return
+    from sqlalchemy_utils import create_database, database_exists, drop_database
+
     sync_database_url = _build_database_url(worker_id, "psycopg")
     if database_exists(sync_database_url):
         drop_database(sync_database_url)
@@ -105,17 +104,27 @@ def get_database_url(worker_id: str, driver: str = "asyncpg") -> str:
 
 TEMPLATE_DATABASE = os.environ.get("POLAR_TEST_DATABASE_TEMPLATE")
 SKIP_DB_DROP = os.environ.get("POLAR_TEST_SKIP_DB_DROP") == "true"
+PRECREATED_WORKERS = frozenset(
+    filter(None, os.environ.get("POLAR_TEST_PRECREATED_WORKERS", "").split(","))
+)
 
 ALEMBIC_CONFIG_FILE = pathlib.Path(__file__).parent.parent.parent / "alembic.ini"
 
 
 def apply_migrations(asyncpg_database_url: str) -> None:
+    from alembic import command
+    from alembic.config import Config
+
     alembic_cfg = Config(ALEMBIC_CONFIG_FILE)
     alembic_cfg.attributes["sqlalchemy.url"] = asyncpg_database_url
     command.upgrade(alembic_cfg, "head")
 
 
 def clone_template_database(sync_database_url: str) -> None:
+    import psycopg
+    from psycopg import sql as psycopg_sql
+    from sqlalchemy.engine import make_url
+
     assert TEMPLATE_DATABASE is not None
     parsed = make_url(sync_database_url)
     target_db = parsed.database
@@ -154,6 +163,8 @@ def track_worker_id(worker_id: str) -> Iterator[None]:
     yield
     if _initialized_worker_id is not None:
         if not SKIP_DB_DROP:
+            from sqlalchemy_utils import database_exists, drop_database
+
             sync_database_url = _build_database_url(_initialized_worker_id, "psycopg")
             if database_exists(sync_database_url):
                 drop_database(sync_database_url)

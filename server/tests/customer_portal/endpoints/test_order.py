@@ -155,6 +155,108 @@ class TestCreateOrder:
 @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
 @pytest.mark.api_version(V2027_01)
 class TestPayOrder:
+    async def test_decline_returns_payment_required(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        customer.stripe_customer_id = "cus_test"
+        await save_fixture(customer)
+        subscription = await create_subscription(
+            save_fixture, customer=customer, product=product
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            billing_address=Address.model_validate({"country": "FR"}),
+        )
+        stripe_service_mock.create_payment_intent.side_effect = stripe_lib.CardError(
+            "Card declined.", param=None, code="card_declined"
+        )
+
+        response = await client.patch(
+            f"/v1/customer-portal/orders/{order.id}/pay",
+            json={
+                "payment_processor": "stripe",
+                "confirmation_token_id": "ctoken_test",
+            },
+        )
+
+        assert response.status_code == 402, response.text
+        assert response.json()["error"] == "PaymentError"
+
+    async def test_rejects_nonexistent_payment_method(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture, customer=customer, product=product
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            billing_address=Address.model_validate({"country": "FR"}),
+        )
+        payment_method_id = str(uuid.uuid4())
+
+        response = await client.patch(
+            f"/v1/customer-portal/orders/{order.id}/pay",
+            json={"payment_method_id": payment_method_id},
+        )
+
+        assert response.status_code == 422, response.text
+        assert response.json() == {
+            "error": "PolarRequestValidationError",
+            "detail": [
+                {
+                    "type": "value_error",
+                    "loc": ["body", "payment_method_id"],
+                    "msg": "Payment method not found.",
+                    "input": payment_method_id,
+                }
+            ],
+        }
+
+    @pytest.mark.parametrize("status", [OrderStatus.paid, OrderStatus.pending])
+    async def test_rejects_orders_ineligible_for_retry(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        status: OrderStatus,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=status,
+            billing_address=Address.model_validate({"country": "FR"}),
+        )
+
+        response = await client.patch(
+            f"/v1/customer-portal/orders/{order.id}/pay",
+            json={
+                "payment_processor": "stripe",
+                "confirmation_token_id": "ctoken_test",
+            },
+        )
+
+        assert response.status_code == 409, response.text
+        assert response.json()["error"] == "OrderNotEligibleForRetry"
+
     async def test_returns_pending_order_after_stripe_accepts_payment(
         self,
         client: AsyncClient,

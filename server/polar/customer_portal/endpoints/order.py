@@ -12,8 +12,10 @@ from polar.models import Order
 from polar.openapi import APITag, destructive
 from polar.order.schemas import OrderID
 from polar.order.service import (
+    ManualRetryLimitExceeded,
     MissingInvoiceBillingDetails,
     OrderNotEligibleForInvoice,
+    OrderNotEligibleForRetry,
     PaymentAlreadyInProgress,
     PaymentError,
 )
@@ -35,11 +37,7 @@ from ..schemas.order import (
     CustomerOrderUpdate,
     CustomerPortalOrderListParams,
 )
-from ..service.order import (
-    CustomerOrderSortProperty,
-    ManualRetryLimitExceeded,
-    OrderNotEligibleForRetry,
-)
+from ..service.order import CustomerOrderSortProperty
 from ..service.order import customer_order as customer_order_service
 
 router = APIRouter(prefix="/orders", tags=["orders", APITag.public])
@@ -169,7 +167,19 @@ async def update(
     status_code=202,
     summary="Pay Order",
     response_model=CustomerOrder,
-    responses={400: {"model": PaymentError.schema()}, 404: OrderNotFound},
+    responses={
+        402: {"description": "Payment failed.", "model": PaymentError.schema()},
+        404: OrderNotFound,
+        409: {
+            "description": "Order is not eligible for retry or payment is already in progress.",
+            "model": OrderNotEligibleForRetry.schema()
+            | PaymentAlreadyInProgress.schema(),
+        },
+        429: {
+            "description": "Manual retry limit exceeded.",
+            "model": ManualRetryLimitExceeded.schema(),
+        },
+    },
     openapi_extra=destructive(),
 )
 @version(starting_from=V2027_01)

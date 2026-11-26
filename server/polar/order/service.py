@@ -234,10 +234,10 @@ class ReceiptNotAllocated(OrderError):
 
 
 class OrderNotEligibleForRetry(OrderError):
-    def __init__(self, order: Order) -> None:
+    def __init__(self, order: Order, *, status_code: int = 409) -> None:
         self.order = order
         message = f"Order {order.id} is not eligible for payment retry."
-        super().__init__(message, 422)
+        super().__init__(message, status_code)
 
 
 class NoPendingBillingEntries(OrderError):
@@ -293,7 +293,7 @@ class PaymentError(OrderError):
             f"The payment failed{f': {error}' if error else '.'} "
             "Please try again with a different payment method."
         )
-        super().__init__(message, 400)
+        super().__init__(message, 402)
 
 
 class PaymentActionRequired(OrderError):
@@ -350,9 +350,10 @@ class OrderNotDraft(OrderError):
         )
 
 
-class PaymentRetryValidationError(OrderError):
-    def __init__(self, message: str) -> None:
-        super().__init__(message, 422)
+class NotExistingPaymentMethod(OrderError):
+    def __init__(self, payment_method_id: uuid.UUID) -> None:
+        self.payment_method_id = payment_method_id
+        super().__init__("Payment method does not belong to customer", 422)
 
 
 class ManualRetryLimitExceeded(OrderError):
@@ -2379,9 +2380,7 @@ class OrderService:
                 )
             )
             if saved_payment_method is None:
-                raise PaymentRetryValidationError(
-                    "Payment method does not belong to customer"
-                )
+                raise NotExistingPaymentMethod(payment_method_id)
 
         metadata: dict[str, Any] = {
             "organization_id": str(order.organization_id),

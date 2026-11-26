@@ -49997,8 +49997,8 @@ export interface operations {
           'application/json': components['schemas']['CustomerOrder']
         }
       }
-      /** @description Bad Request */
-      400: {
+      /** @description Payment failed. */
+      402: {
         headers: {
           [name: string]: unknown
         }
@@ -50015,6 +50015,17 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
+      /** @description Order is not eligible for retry or payment is already in progress. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['OrderNotEligibleForRetry']
+            | components['schemas']['PaymentAlreadyInProgress']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -50022,6 +50033,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+      /** @description Manual retry limit exceeded. */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ManualRetryLimitExceeded']
         }
       }
     }

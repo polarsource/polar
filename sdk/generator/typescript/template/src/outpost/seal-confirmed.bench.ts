@@ -12,8 +12,7 @@ import {
   pendingIds,
 } from "./benchmark";
 import { BUCKET_SIZE } from "./reducer";
-import { CONFIRM_SCRIPT } from "../redis";
-import { APPLY_SNAPSHOT_SCRIPT } from "./scripts";
+import { APPLY_SNAPSHOT_SCRIPT, CONFIRM_SCRIPT } from "./scripts";
 import { startRedisServer, type RedisServer } from "./testing";
 
 const OPTIONS = { warmupTime: 500, time: 2_000 };
@@ -64,15 +63,10 @@ describe("CONFIRM then APPLY_SNAPSHOT", () => {
             .hset(pendingKey, ...entries)
             .evalsha(
               confirmSha,
-              4,
-              "outpost:v1:outbox",
-              "outpost:v1:outbox",
+              2,
               stateKey,
               pendingKey,
               "",
-              "",
-              0,
-              0,
               newestBucketStart,
               ids.length,
               ...ids,

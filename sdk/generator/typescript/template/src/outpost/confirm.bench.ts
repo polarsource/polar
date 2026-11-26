@@ -10,7 +10,7 @@ import {
   pendingEntries,
   pendingIds,
 } from "./benchmark";
-import { CONFIRM_SCRIPT } from "../redis";
+import { CONFIRM_SCRIPT } from "./scripts";
 import { startRedisServer, type RedisServer } from "./testing";
 
 const OPTIONS = { warmupTime: 500, time: 2_000 };
@@ -53,15 +53,10 @@ describe("CONFIRM", () => {
           .hset(pendingKey, ...entries)
           .evalsha(
             confirmSha,
-            4,
-            "outpost:v1:outbox",
-            "outpost:v1:outbox",
+            2,
             stateKey,
             pendingKey,
             "",
-            "",
-            0,
-            0,
             COLD_UNTIL,
             ids.length,
             ...ids,

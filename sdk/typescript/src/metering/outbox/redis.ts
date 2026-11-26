@@ -8,7 +8,6 @@ import type { Outbox } from "./index";
 
 import { type ClientBase, PolarClientError, PolarError } from "../../base";
 import {
-  CONFIRM_SCRIPT,
   DEFAULT_TIMEOUT,
   backOff,
   connectRedis,
@@ -27,7 +26,7 @@ import {
 const OUTBOX_BATCH = 1000;
 const FLUSHERS = 32;
 const OUTBOX_CLAIM_IDLE = 60000;
-export const FLUSHER_LOCK_TTL = 30000;
+const FLUSHER_LOCK_TTL = 30000;
 const FLUSH_TENURE = 5000;
 export const DRAIN_INTERVAL = 1000;
 const OUTBOX_RETRY_DELAY = 1000;
@@ -51,8 +50,23 @@ end
 return {length, redis.call('XPENDING', KEYS[1], ARGV[1])[1], retry_at}
 `;
 
+const ACKNOWLEDGE_SCRIPT = `
+redis.call('XACK', KEYS[1], ARGV[1], unpack(ARGV, 4))
+redis.call('XDEL', KEYS[1], unpack(ARGV, 4))
+if redis.call('GET', KEYS[2]) == ARGV[2] then
+    redis.call('PEXPIRE', KEYS[2], ARGV[3])
+end
+`;
+
 interface OutboxRedis extends Redis {
-  outpostConfirm(numberOfKeys: number, ...args: (string | number)[]): Promise<number>;
+  outboxAcknowledge(
+    stream: string,
+    lockKey: string,
+    group: string,
+    token: string,
+    ttl: number,
+    ...ids: string[]
+  ): Promise<void>;
   outboxBacklog(
     key: string,
     backoffKey: string,
@@ -62,7 +76,7 @@ interface OutboxRedis extends Redis {
 }
 
 // The outbox entries a flusher delivered, and the slot it holds.
-export interface Delivery {
+interface Delivery {
   entries: string[];
   lockKey: string;
   token: string;
@@ -104,8 +118,6 @@ const holdsNoInfinity = (value: unknown): boolean => {
   return Object.values(value).every(holdsNoInfinity);
 };
 
-type Settle = (events: EventInput[], refused: EventInput[], delivery: Delivery) => Promise<void>;
-
 export interface RedisOutboxOptions extends Partial<Pick<Outbox, "onAck" | "onRejected">> {
   client: Pick<ClientBase, "sendRequest" | "buildRequest" | "parseResponse">;
   /** Use a distinct stream per Polar environment and organization. */
@@ -117,7 +129,6 @@ export class RedisOutbox implements Outbox {
   onRejected: Outbox["onRejected"];
 
   private redis?: OutboxRedis;
-  private settle?: Settle;
   private timer?: ReturnType<typeof setInterval>;
   private draining?: Promise<void>;
   private drainUntil = Infinity;
@@ -195,11 +206,10 @@ export class RedisOutbox implements Outbox {
   }
 
   /** @internal Attach to the Redis connection owned by Outpost. */
-  async attach(redis: Redis, settle?: Settle): Promise<void> {
+  async attach(redis: Redis): Promise<void> {
     this.redis = redis as OutboxRedis;
-    this.settle = settle;
     redis.defineCommand("outboxBacklog", { numberOfKeys: 2, lua: OUTBOX_BACKLOG_SCRIPT });
-    if (!settle) redis.defineCommand("outpostConfirm", { lua: CONFIRM_SCRIPT });
+    redis.defineCommand("outboxAcknowledge", { numberOfKeys: 2, lua: ACKNOWLEDGE_SCRIPT });
     await this.createOutboxGroup();
   }
 
@@ -379,8 +389,6 @@ export class RedisOutbox implements Outbox {
     }
   }
 
-  // Sends a batch to Polar, then acknowledges it and settles its events in one script. Polar
-  // refusing the batch drops it; failing to take it leaves it for the next flush.
   private async deliver(
     entries: [string, string[] | null][],
     delivery: Delivery,
@@ -433,22 +441,16 @@ export class RedisOutbox implements Outbox {
         });
         return false;
       }
-    if (this.settle) {
-      await this.settle(events, refused, delivery);
-    } else {
-      if (refused.length) await this.onRejected?.(refused, "permanent_error");
-      if (events.length) await this.onAck?.(events);
-      await this.requireRedis().outpostConfirm(
-        2,
-        this.options.stream,
-        delivery.lockKey,
-        "",
-        delivery.token,
-        FLUSHER_LOCK_TTL,
-        delivery.entries.length,
-        ...delivery.entries,
-      );
-    }
+    if (refused.length) await this.onRejected?.(refused, "permanent_error");
+    if (events.length) await this.onAck?.(events);
+    await this.requireRedis().outboxAcknowledge(
+      this.options.stream,
+      delivery.lockKey,
+      OUTBOX_GROUP,
+      delivery.token,
+      FLUSHER_LOCK_TTL,
+      ...delivery.entries,
+    );
     return true;
   }
 }

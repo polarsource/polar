@@ -2,7 +2,6 @@ import { Redis } from "ioredis";
 import { once } from "node:events";
 import { afterAll, beforeAll, bench, describe } from "vitest";
 
-import { CONFIRM_SCRIPT } from "../redis";
 import {
   COLD_UNTIL,
   PENDING_COUNTS,
@@ -11,6 +10,7 @@ import {
   pendingEntries,
   pendingIds,
 } from "./benchmark";
+import { CONFIRM_SCRIPT } from "./scripts";
 import { startRedisServer, type RedisServer } from "./testing";
 
 const OPTIONS = { warmupTime: 500, time: 2_000 };
@@ -51,21 +51,7 @@ describe("CONFIRM", () => {
           .multi()
           .hset(stateKey, ...fields)
           .hset(pendingKey, ...entries)
-          .evalsha(
-            confirmSha,
-            4,
-            "outpost:v1:outbox",
-            "outpost:v1:outbox",
-            stateKey,
-            pendingKey,
-            "",
-            "",
-            0,
-            0,
-            COLD_UNTIL,
-            ids.length,
-            ...ids,
-          )
+          .evalsha(confirmSha, 2, stateKey, pendingKey, "", COLD_UNTIL, ids.length, ...ids)
           .exec();
         for (const [error] of results ?? []) if (error) throw error;
       },

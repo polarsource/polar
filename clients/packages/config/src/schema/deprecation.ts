@@ -1,7 +1,7 @@
 import type { Builder, Mixin } from './builder'
 
 export const deprecatedKey: unique symbol = Symbol.for(
-  '~@polar-sh/polar/Deprecated',
+  '~@polar-sh/config/Deprecated',
 )
 
 export type HasDeprecation = {

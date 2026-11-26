@@ -3,7 +3,7 @@ import {
   runtimeConfig,
   type DefinedConfig,
   type RuntimeSDKConfig,
-} from './schema/runtime'
+} from '@polar-sh/config/runtime'
 import { createPolar, type Polar, type PolarOptions } from './sdk'
 
 export type RuntimeConnection<Config extends RuntimeSDKConfig> = {

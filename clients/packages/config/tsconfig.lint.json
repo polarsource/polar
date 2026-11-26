@@ -1,0 +1,14 @@
+{
+  "extends": "@polar-sh/typescript-config/bundled.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true,
+    "exactOptionalPropertyTypes": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "verbatimModuleSyntax": true,
+    "types": ["node"]
+  },
+  "include": ["lint"]
+}

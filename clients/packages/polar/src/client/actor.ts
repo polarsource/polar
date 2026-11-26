@@ -12,9 +12,14 @@ import type {
   CustomerIdentifier,
   MemberIdentifier,
 } from '../internal/api/utils'
-import type { EventInput, EventMetadata, EventSchema } from '../schema/event'
-import type { Metadata } from '../schema/metadata'
-import type { EventConfig, RuntimeSDKConfig } from '../schema/runtime'
+import type {
+  EventConfig,
+  EventInput,
+  EventMetadata,
+  EventSchema,
+  Metadata,
+  RuntimeSDKConfig,
+} from '@polar-sh/config/runtime'
 import type { models, Polar } from '../sdk'
 
 export type MeterBalance = {

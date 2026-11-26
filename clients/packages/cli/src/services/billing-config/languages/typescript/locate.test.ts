@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest'
 import { locateInScript } from '@/services/billing-config/languages/typescript/locate'
 
 const builder = [
-  "import { defineConfig, eq } from '@polar-sh/polar'",
+  "import { defineConfig, eq } from '@polar-sh/config'",
   '',
   'export default defineConfig({',
   '  meters: ({ meter }) => ({',
@@ -158,7 +158,7 @@ describe('locateInScript', () => {
 
 describe('locateInScript with an events section', () => {
   const config = [
-    "import { defineConfig } from '@polar-sh/polar'",
+    "import { defineConfig } from '@polar-sh/config'",
     '',
     'export default defineConfig({',
     '  events: {',
@@ -207,7 +207,7 @@ describe('locateInScript with an events section', () => {
 
 describe('locateInScript with destructured helpers', () => {
   const config = [
-    "import { defineConfig, usd } from '@polar-sh/polar'",
+    "import { defineConfig, usd } from '@polar-sh/config'",
     '',
     'export default defineConfig({',
     '  products: ({ product, free, fixed }) => ({',
@@ -230,7 +230,7 @@ describe('locateInScript with destructured helpers', () => {
 
 describe('locateInScript with a settings section', () => {
   const config = [
-    "import { defineConfig } from '@polar-sh/polar'",
+    "import { defineConfig } from '@polar-sh/config'",
     '',
     'export default defineConfig({',
     "  settings: { payments: { tax: 'exclusive', currency: 'eur' } },",
@@ -277,7 +277,7 @@ describe('locateInScript with a settings section', () => {
 
   test('finds custom fields under customFields, by slug', () => {
     const source = [
-      "import { defineConfig } from '@polar-sh/polar'",
+      "import { defineConfig } from '@polar-sh/config'",
       '',
       'export default defineConfig({',
       '  meters: () => ({}),',

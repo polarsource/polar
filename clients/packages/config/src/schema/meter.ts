@@ -92,7 +92,7 @@ export type MeterConfig = typeof MeterConfig.Type
 
 type ScalarValue = MeterFilterClause['value']
 
-const scopeKey: unique symbol = Symbol.for('~@polar-sh/polar/ConditionScope')
+const scopeKey: unique symbol = Symbol.for('~@polar-sh/config/ConditionScope')
 
 type Scoped<Names extends string> = { readonly [scopeKey]?: Names }
 

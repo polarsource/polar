@@ -13,7 +13,7 @@ export const Metadata = Schema.Record(
 export type Metadata = typeof Metadata.Type
 
 export const metadataKey: unique symbol = Symbol.for(
-  '~@polar-sh/polar/Metadata',
+  '~@polar-sh/config/Metadata',
 )
 
 type Widen<Value> = Value extends string

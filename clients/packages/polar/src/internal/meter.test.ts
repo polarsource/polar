@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import { matchesMeter } from './meter'
-import type { MeterAggregation, MeterFilter } from '../schema/meter'
+import type { MeterAggregation, MeterFilter } from '@polar-sh/config/runtime'
 
 const event = {
   name: 'llm.completion',

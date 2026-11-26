@@ -1,6 +1,6 @@
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { generateConfig } from '@polar-sh/polar'
+import { generateConfig } from '@polar-sh/config'
 import { Effect, type FileSystem } from 'effect'
 import { BillingConfigError, CONFIG_FILES } from '@/schemas/BillingConfig'
 import {
@@ -15,7 +15,7 @@ import {
 import { locateInScript } from '@/services/billing-config/languages/typescript/locate'
 import { removeFromScript } from '@/services/billing-config/languages/typescript/remove'
 
-const PACKAGE = '@polar-sh/polar'
+const PACKAGE = '@polar-sh/config'
 const MANIFEST = 'package.json'
 
 const MANAGERS = ['pnpm', 'yarn', 'bun', 'npm'] as const

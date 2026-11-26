@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 import { z } from 'zod'
-import type { RuntimeSDKConfig } from '../schema/runtime'
+import type { RuntimeSDKConfig } from '@polar-sh/config/runtime'
 import { errors, type Polar } from '../sdk'
 import { createActor, EventValidationError } from './actor'
 

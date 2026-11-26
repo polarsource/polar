@@ -1,4 +1,4 @@
-import { ExternalId } from '@polar-sh/polar'
+import { ExternalId } from '@polar-sh/config'
 import { Schema } from 'effect'
 import { printable } from '@/utils/ui'
 import type {

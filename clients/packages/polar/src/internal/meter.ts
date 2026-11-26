@@ -1,6 +1,9 @@
 import { Predicate } from 'effect'
-import type { RuntimeFilter, RuntimeMeterConfig } from '../schema/runtime'
-import type { MeterFilterClause } from '../schema/meter'
+import type {
+  MeterFilterClause,
+  RuntimeFilter,
+  RuntimeMeterConfig,
+} from '@polar-sh/config/runtime'
 import type { models } from '../sdk'
 
 type IngestedEvent = {

@@ -229,20 +229,49 @@ class TestPayOrder:
             ],
         }
 
-    @pytest.mark.parametrize("status", [OrderStatus.paid, OrderStatus.pending])
-    async def test_rejects_orders_ineligible_for_retry(
+    async def test_rejects_paid_subscription_order(
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
-        status: OrderStatus,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture, customer=customer, product=product
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.paid,
+            billing_address=Address.model_validate({"country": "FR"}),
+        )
+
+        response = await client.patch(
+            f"/v1/customer-portal/orders/{order.id}/pay",
+            json={
+                "payment_processor": "stripe",
+                "confirmation_token_id": "ctoken_test",
+            },
+        )
+
+        assert response.status_code == 409, response.text
+        assert response.json()["error"] == "OrderNotEligibleForRetry"
+
+    async def test_rejects_pending_order_without_subscription(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
     ) -> None:
         order = await create_order(
             save_fixture,
             product=product,
             customer=customer,
-            status=status,
+            subscription=None,
+            status=OrderStatus.pending,
             billing_address=Address.model_validate({"country": "FR"}),
         )
 

@@ -130,17 +130,14 @@ const OlderVersionBanner = ({
     limit: 1,
   })
   const current = currentProducts?.items[0]
-  const { data: removedItems } = useRemovedCatalogItems(
-    organization.id,
-    currentProducts !== undefined && !current,
-  )
 
   if (!current) {
-    const removed = removedItems?.find(
-      (item) => item.resource === 'product' && item.external_id === externalId,
-    )
-    return removed ? (
-      <RemovedProductBanner organization={organization} item={removed} />
+    return currentProducts ? (
+      <RemovedItemBanner
+        organization={organization}
+        resource="product"
+        externalId={externalId}
+      />
     ) : null
   }
 
@@ -183,19 +180,35 @@ const OlderVersionBanner = ({
   )
 }
 
-const RemovedProductBanner = ({
+const removedCopy = {
+  product: "New customers can't buy it.",
+  benefit: "New customers don't get it.",
+  meter: "New subscriptions don't bill it.",
+} as const
+
+export const RemovedItemBanner = ({
   organization,
-  item,
+  resource,
+  externalId,
 }: {
   organization: schemas['Organization']
-  item: schemas['RemovedCatalogItem']
+  resource: schemas['RemovedCatalogItemResource']
+  externalId: string
 }) => {
   const router = useRouter()
+  const { data: removedItems } = useRemovedCatalogItems(organization.id)
+  const item = removedItems?.find(
+    (removed) =>
+      removed.resource === resource && removed.external_id === externalId,
+  )
+  if (!item) {
+    return null
+  }
   const removedIn = item.removed_in_catalog
   return (
     <BannerFrame>
       <Box flexDirection="column" rowGap="xs" minWidth={0}>
-        <Text variant="title">This product has been removed</Text>
+        <Text variant="title">This {resource} has been removed</Text>
         <Text color="muted">
           Removed in{' '}
           <Text as="span" color="default">
@@ -206,7 +219,7 @@ const RemovedProductBanner = ({
               {removedIn.name ?? 'Untitled'}
             </Link>
           </Text>
-          . New customers can&apos;t buy it.
+          . {removedCopy[resource]}
         </Text>
       </Box>
       <Box
@@ -229,7 +242,7 @@ const RemovedProductBanner = ({
             )
           }
         >
-          View removed products
+          View removed {resource}s
         </Button>
       </Box>
     </BannerFrame>

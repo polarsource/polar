@@ -29,10 +29,8 @@ it("keeps an entry until its rejection hook succeeds", async () => {
   });
   const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
   const outbox: Outbox = new RedisOutbox(server.socket, { client, stream });
-  outbox.onAck = onAck;
-  outbox.onRejected = onRejected;
   try {
-    await outbox.start();
+    await outbox.start({ onAck, onRejected });
     await outbox.enqueue({ name: "call", external_customer_id: "alice" });
     await outbox.flush();
     expect(attempts).toHaveLength(2);

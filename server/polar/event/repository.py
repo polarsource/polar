@@ -12,6 +12,7 @@ from sqlalchemy import (
     ColumnElement,
     ColumnExpressionArgument,
     NotNullable,
+    ScalarSelect,
     Select,
     String,
     and_,
@@ -105,6 +106,20 @@ _DELETE_STAGED_EVENTS_ALREADY_IN_EVENTS = text(
     RETURNING staged_events.id
     """
 )
+
+
+def _is_meter_reset(
+    organization_id: UUID | ColumnElement[UUID],
+    customer_id: UUID | ColumnElement[UUID],
+    meter_id: str | ColumnElement[str],
+) -> ColumnElement[bool]:
+    return and_(
+        Event.organization_id == organization_id,
+        Event.customer_id == customer_id,
+        Event.source == EventSource.system,
+        Event.name == SystemEvent.meter_reset,
+        Event.user_metadata["meter_id"].as_string() == meter_id,
+    )
 
 
 class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
@@ -510,11 +525,21 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         self, customer: Customer, meter_id: UUID
     ) -> Select[Event]:
         return self.get_base_statement().where(
-            Event.organization_id == customer.organization_id,
-            Event.customer_id == customer.id,
-            Event.source == EventSource.system,
-            Event.name == SystemEvent.meter_reset,
-            Event.user_metadata["meter_id"].as_string() == str(meter_id),
+            _is_meter_reset(customer.organization_id, customer.id, str(meter_id))
+        )
+
+    def get_latest_meter_reset_timestamp_statement(
+        self,
+        organization_id: ColumnElement[UUID],
+        customer_id: ColumnElement[UUID],
+        meter_id: ColumnElement[UUID],
+    ) -> ScalarSelect[datetime]:
+        return (
+            select(func.max(Event.timestamp))
+            .where(
+                _is_meter_reset(organization_id, customer_id, cast(meter_id, String))
+            )
+            .scalar_subquery()
         )
 
     async def get_latest_meter_reset_timestamps(

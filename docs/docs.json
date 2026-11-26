@@ -1830,7 +1830,6 @@
                       "GET /v1/webhooks/endpoints",
                       "PATCH /v1/webhooks/endpoints/{id}",
                       "DELETE /v1/webhooks/endpoints/{id}",
-                      "GET /v1/webhooks/endpoints/external/{external_id}",
                       "PATCH /v1/webhooks/endpoints/{id}/secret",
                       "GET /v1/webhooks/deliveries",
                       "POST /v1/webhooks/events/{id}/redeliver"

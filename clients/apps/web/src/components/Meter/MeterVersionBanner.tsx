@@ -1,5 +1,8 @@
 import { DraftVersionBanner } from '@/components/Products/DraftVersionBanner'
-import { formatPublishedAt } from '@/components/Products/ProductPage/ProductVersionBanner'
+import {
+  formatPublishedAt,
+  RemovedItemBanner,
+} from '@/components/Products/ProductPage/ProductVersionBanner'
 import { useCatalog, useLiveCatalog } from '@/hooks/queries/catalogs'
 import { useMeters } from '@/hooks/queries/meters'
 import { schemas } from '@polar-sh/client'
@@ -70,7 +73,13 @@ const NonCurrentMeterBanner = ({
   }
 
   if (!currentHref) {
-    return null
+    return currentMeters ? (
+      <RemovedItemBanner
+        organization={organization}
+        resource="meter"
+        externalId={externalId}
+      />
+    ) : null
   }
 
   return (

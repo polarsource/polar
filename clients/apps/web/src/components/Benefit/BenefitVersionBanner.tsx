@@ -1,6 +1,7 @@
 import { useGrantsForBenefit } from '@/hooks/queries/benefits'
 import { useCatalog, useLiveCatalog } from '@/hooks/queries/catalogs'
 import { DraftVersionBanner } from '@/components/Products/DraftVersionBanner'
+import { RemovedItemBanner } from '@/components/Products/ProductPage/ProductVersionBanner'
 import { schemas } from '@polar-sh/client'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -58,6 +59,16 @@ export const BenefitVersionBanner = ({
             ? `/dashboard/${organization.slug}/products/benefits/${current.benefit_id}`
             : null
         }
+      />
+    )
+  }
+
+  if (managedAsCode && liveVersion && !current && benefit.external_id) {
+    return (
+      <RemovedItemBanner
+        organization={organization}
+        resource="benefit"
+        externalId={benefit.external_id}
       />
     )
   }

@@ -86,7 +86,7 @@ export function createPolar(options: PolarOptions) {
     /**
      * Create a helper for event delivery and customer meter reads.
      *
-     * @param options.outbox Outbox used to deliver events. Defaults to MemoryOutbox.
+     * @param options.queue EventQueue used to deliver events. Defaults to MemoryEventQueue.
      * @param options.outpost Outpost from `outpost()` in `@polar-sh/sdk/outpost`. Disabled by default.
      * @returns A metering helper that starts on its first operation.
      */

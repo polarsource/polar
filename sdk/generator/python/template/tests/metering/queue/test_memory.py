@@ -6,10 +6,10 @@ import anyio.lowlevel
 import pytest
 
 from polar import PolarClientError, PolarError, PolarNetworkError, PolarRateLimitError
-from polar.metering import MeteringDeliveryError, MeteringTimeoutError, Outbox
+from polar.metering import MeteringDeliveryError, MeteringTimeoutError, EventQueue
+from polar.metering.queue.memory import MemoryEventQueue, DropReason, _FlushRequest
 from polar.metering.client import MeteringClient
 from polar.metering.events import EventInput
-from polar.metering.outbox.memory import DropReason, MemoryOutbox, _FlushRequest
 
 
 @pytest.fixture
@@ -28,7 +28,7 @@ def events() -> list[EventInput]:
 async def test_flush_drains_batches_and_keeps_accepting_events(
     client: AsyncMock, events: list[EventInput]
 ) -> None:
-    strategy: Outbox = MemoryOutbox(client, batch_size=2, batch_interval=60)
+    strategy: EventQueue = MemoryEventQueue(client, batch_size=2, batch_interval=60)
     with pytest.raises(PolarError, match="has not started"):
         await strategy.flush()
     with anyio.fail_after(1):
@@ -58,9 +58,7 @@ async def test_batching_without_explicit_flush(
     sent = anyio.Event()
     client.events.ingest.side_effect = lambda **kwargs: sent.set()
     with anyio.fail_after(1):
-        async with MemoryOutbox(
-            client, batch_size=batch_size, batch_interval=batch_interval
-        ).open() as strategy:
+        async with MemoryEventQueue(client, batch_size=batch_size, batch_interval=batch_interval).open() as strategy:
             await strategy.enqueue(events[0])
             await sent.wait()
             client.events.ingest.assert_awaited_once_with(events=events[:1])
@@ -83,7 +81,7 @@ async def test_the_newest_flush_keeps_its_boundary(
     client.events.ingest.side_effect = send
     with anyio.fail_after(1):
         async with (
-            MemoryOutbox(client, batch_size=1).open() as strategy,
+            MemoryEventQueue(client, batch_size=1).open() as strategy,
             anyio.create_task_group() as callers,
         ):
             for index in range(2):
@@ -128,9 +126,7 @@ async def test_released_flushes_batch_queued_events(
     client.events.ingest.side_effect = send
     with anyio.fail_after(1):
         async with (
-            MemoryOutbox(
-                client, batch_size=batch_size, batch_interval=60
-            ).open() as strategy,
+            MemoryEventQueue(client, batch_size=batch_size, batch_interval=60).open() as strategy,
             anyio.create_task_group() as callers,
         ):
             for index in range(4):
@@ -158,7 +154,7 @@ async def test_flush_waits_for_retries(
 ) -> None:
     client.events.ingest.side_effect = [PolarRateLimitError(429, 0), None]
     with anyio.fail_after(3):
-        async with MemoryOutbox(client, batch_interval=60).open() as strategy:
+        async with MemoryEventQueue(client, batch_interval=60).open() as strategy:
             await strategy.enqueue(events[0])
             await strategy.flush()
             first, second = client.events.ingest.await_args_list
@@ -180,9 +176,7 @@ async def test_retry_after_waits_a_second_without_spending_attempts(
 
     client.events.ingest.side_effect = send
     with anyio.fail_after(3):
-        async with MemoryOutbox(client, batch_interval=60, max_attempts=1).open(
-            on_rejected=on_rejected
-        ) as strategy:
+        async with MemoryEventQueue(client, batch_interval=60, max_attempts=1).open(on_rejected=on_rejected) as strategy:
             await strategy.enqueue(events[0])
             await strategy.flush()
             assert len(calls) == 2
@@ -197,9 +191,7 @@ async def test_retry_after_beyond_budget_drops_the_batch(
     on_rejected = AsyncMock()
     client.events.ingest.side_effect = PolarRateLimitError(429, 301)
     with anyio.fail_after(0.5):
-        async with MemoryOutbox(client, batch_interval=60, shutdown_timeout=0.02).open(
-            on_rejected=on_rejected
-        ) as strategy:
+        async with MemoryEventQueue(client, batch_interval=60, shutdown_timeout=0.02).open(on_rejected=on_rejected) as strategy:
             await strategy.enqueue(events[0])
             with pytest.raises(MeteringDeliveryError) as failure:
                 await strategy.flush()
@@ -234,9 +226,7 @@ async def test_flush_waits_for_rejection_hook(
     client.events.ingest.side_effect = error
     with anyio.fail_after(1):
         async with (
-            MemoryOutbox(client, batch_interval=60, max_attempts=1).open(
-                on_rejected=on_rejected
-            ) as strategy,
+            MemoryEventQueue(client, batch_interval=60, max_attempts=1).open(on_rejected=on_rejected) as strategy,
             anyio.create_task_group() as callers,
         ):
             await strategy.enqueue(events[0])
@@ -270,7 +260,7 @@ async def test_worker_exit_releases_the_waiting_flush(
 
     client.events.ingest.side_effect = send
     on_rejected = AsyncMock()
-    strategy = MemoryOutbox(client, batch_interval=60, shutdown_timeout=0.02)
+    strategy = MemoryEventQueue(client, batch_interval=60, shutdown_timeout=0.02)
     with anyio.fail_after(1):
         async with anyio.create_task_group() as callers:
             with pytest.raises(MeteringDeliveryError):
@@ -301,9 +291,7 @@ async def test_exit_drains_batches(
     client: AsyncMock, events: list[EventInput], event_count: int
 ) -> None:
     with anyio.fail_after(1):
-        async with MemoryOutbox(
-            client, batch_size=2, batch_interval=60
-        ).open() as strategy:
+        async with MemoryEventQueue(client, batch_size=2, batch_interval=60).open() as strategy:
             for event in events[:event_count]:
                 await strategy.enqueue(event)
     batches = [call.kwargs["events"] for call in client.events.ingest.await_args_list]
@@ -326,7 +314,7 @@ async def test_exit_shields_in_flight_batch_from_cancellation(
     client.events.ingest.side_effect = send
     with anyio.fail_after(1):
         with anyio.CancelScope() as scope:
-            async with MemoryOutbox(client, batch_size=1).open() as strategy:
+            async with MemoryEventQueue(client, batch_size=1).open() as strategy:
                 await strategy.enqueue(events[0])
                 await started.wait()
                 scope.cancel()
@@ -341,9 +329,7 @@ async def test_exit_bounds_retry_wait(
 ) -> None:
     client.events.ingest.side_effect = PolarNetworkError("unavailable")
     with anyio.fail_after(1), pytest.raises(MeteringDeliveryError):
-        async with MemoryOutbox(
-            client, batch_size=1, shutdown_timeout=0.02
-        ).open() as strategy:
+        async with MemoryEventQueue(client, batch_size=1, shutdown_timeout=0.02).open() as strategy:
             await strategy.enqueue(events[0])
     client.events.ingest.assert_awaited_once()
 
@@ -354,7 +340,7 @@ async def test_exit_flushes_before_propagating_body_error(
 ) -> None:
     with anyio.fail_after(1):
         with pytest.raises(ValueError, match="body failed"):
-            async with MemoryOutbox(client, batch_interval=60).open() as strategy:
+            async with MemoryEventQueue(client, batch_interval=60).open() as strategy:
                 await strategy.enqueue(events[0])
                 raise ValueError("body failed")
     client.events.ingest.assert_awaited_once_with(events=events[:1])
@@ -374,17 +360,13 @@ async def test_shutdown_reports_only_unfinished_events(
 
     client.events.ingest.side_effect = send
     with anyio.fail_after(1), pytest.raises(MeteringDeliveryError) as failure:
-        async with MemoryOutbox(
-            client, batch_size=1, shutdown_timeout=0.02, max_attempts=1
-        ).open() as strategy:
+        async with MemoryEventQueue(client, batch_size=1, shutdown_timeout=0.02, max_attempts=1).open() as strategy:
             for event in events[:3]:
                 await strategy.enqueue(event)
     expected = [(event, "shutdown_timeout") for event in events[1:3]]
     if drop_first:
         expected.insert(0, (events[0], "retry_exhausted"))
-    assert [
-        (item.events[0], item.reason) for item in failure.value.failures
-    ] == expected
+    assert [(item.events[0], item.reason) for item in failure.value.failures] == expected
 
 
 @pytest.mark.anyio
@@ -399,7 +381,7 @@ async def test_structural_metering_client(events: list[EventInput]) -> None:
         events = Events()
 
     client: MeteringClient = Client()
-    async with MemoryOutbox(client, batch_interval=60).open() as strategy:
+    async with MemoryEventQueue(client, batch_interval=60).open() as strategy:
         await strategy.enqueue(events[0])
     assert received == events[:1]
 
@@ -407,16 +389,13 @@ async def test_structural_metering_client(events: list[EventInput]) -> None:
 @pytest.mark.parametrize("batch_size", [0, -1])
 def test_rejects_non_positive_batch_size(client: AsyncMock, batch_size: int) -> None:
     with pytest.raises(ValueError, match="batch_size must be greater than zero"):
-        MemoryOutbox(client, batch_size=batch_size)
+        MemoryEventQueue(client, batch_size=batch_size)
 
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("rejected", [False, True])
-async def test_failing_delivery_hook_does_not_stop_the_outbox(
-    client: AsyncMock,
-    events: list[EventInput],
-    rejected: bool,
-    caplog: pytest.LogCaptureFixture,
+async def test_failing_delivery_hook_does_not_stop_the_queue(
+    client: AsyncMock, events: list[EventInput], rejected: bool, caplog: pytest.LogCaptureFixture
 ) -> None:
     hook_error = RuntimeError("private event details")
     rejection = PolarClientError(422, "invalid")
@@ -424,22 +403,20 @@ async def test_failing_delivery_hook_does_not_stop_the_outbox(
         client.events.ingest.side_effect = [rejection, None]
     on_ack = AsyncMock(side_effect=None if rejected else [hook_error, None])
     on_rejected = AsyncMock(side_effect=hook_error)
-    async with MemoryOutbox(client).open(
-        on_ack=on_ack, on_rejected=on_rejected
-    ) as outbox:
-        await outbox.enqueue(events[0])
+    async with MemoryEventQueue(client).open(on_ack=on_ack, on_rejected=on_rejected) as queue:
+        await queue.enqueue(events[0])
         if rejected:
             with pytest.raises(MeteringDeliveryError) as exc_info:
-                await outbox.flush()
+                await queue.flush()
             assert exc_info.value.failures[0].cause is rejection
             on_rejected.assert_awaited_once_with(events[:1], "permanent_error")
         else:
-            await outbox.flush()
+            await queue.flush()
             on_rejected.assert_not_awaited()
-        await outbox.enqueue(events[1])
-        await outbox.flush()
+        await queue.enqueue(events[1])
+        await queue.flush()
     assert client.events.ingest.await_count == 2
-    assert "Memory outbox delivery hook failed (RuntimeError)" in caplog.messages
+    assert "Memory queue delivery hook failed (RuntimeError)" in caplog.messages
     assert "private event details" not in caplog.text
 
 
@@ -464,9 +441,7 @@ async def test_background_failures_go_to_the_newest_overlapping_flush(
 
     client.events.ingest.side_effect = cause
     with anyio.fail_after(1):
-        async with MemoryOutbox(client, batch_size=1).open(
-            on_rejected=on_rejected
-        ) as strategy:
+        async with MemoryEventQueue(client, batch_size=1).open(on_rejected=on_rejected) as strategy:
             await strategy.enqueue(events[0])
             await reporting.wait()
             async with anyio.create_task_group() as callers:
@@ -507,7 +482,7 @@ async def test_a_newer_flush_releases_older_ones_and_reports_their_failures(
 
     client.events.ingest.side_effect = send
     with anyio.fail_after(1):
-        async with MemoryOutbox(client, batch_size=1).open() as strategy:
+        async with MemoryEventQueue(client, batch_size=1).open() as strategy:
             async with anyio.create_task_group() as callers:
                 await strategy.enqueue(events[0])
                 callers.start_soon(older)
@@ -537,7 +512,7 @@ async def test_a_newer_flush_with_a_shorter_timeout_does_not_release_older_ones(
 
     client.events.ingest.side_effect = send
     with anyio.fail_after(1):
-        async with MemoryOutbox(client, batch_size=1).open() as strategy:
+        async with MemoryEventQueue(client, batch_size=1).open() as strategy:
             async with anyio.create_task_group() as callers:
                 await strategy.enqueue(events[0])
                 callers.start_soon(older)
@@ -572,7 +547,7 @@ async def test_abandoned_flush_preserves_failures_and_other_waiters(
 
     client.events.ingest.side_effect = send
     with anyio.fail_after(1):
-        async with MemoryOutbox(client, batch_size=1).open() as strategy:
+        async with MemoryEventQueue(client, batch_size=1).open() as strategy:
             await strategy.enqueue(events[0])
             await sending.wait()
             if cancel:
@@ -603,9 +578,7 @@ async def test_shutdown_timeout_does_not_invoke_rejection_hook(
     client.events.ingest.side_effect = send
 
     with anyio.fail_after(1), pytest.raises(MeteringDeliveryError) as failure:
-        async with MemoryOutbox(client, shutdown_timeout=0.01).open(
-            on_rejected=on_rejected
-        ) as strategy:
+        async with MemoryEventQueue(client, shutdown_timeout=0.01).open(on_rejected=on_rejected) as strategy:
             await strategy.enqueue(events[0])
     assert failure.value.events == events[:1]
     assert failure.value.failures[0].reason == "shutdown_timeout"
@@ -616,8 +589,8 @@ async def test_shutdown_timeout_does_not_invoke_rejection_hook(
 @pytest.mark.anyio
 async def test_invalid_delivery_timeouts(client: AsyncMock, timeout: float) -> None:
     with pytest.raises(ValueError):
-        MemoryOutbox(client, shutdown_timeout=timeout)
-    async with MemoryOutbox(client).open() as strategy:
+        MemoryEventQueue(client, shutdown_timeout=timeout)
+    async with MemoryEventQueue(client).open() as strategy:
         with pytest.raises(ValueError):
             await strategy.flush(timeout=timeout)
 
@@ -635,9 +608,7 @@ async def test_timed_out_drop_reporting_remains_observable(
 
     client.events.ingest.side_effect = PolarClientError(422, "invalid")
     with anyio.fail_after(1):
-        async with MemoryOutbox(client, batch_size=1).open(
-            on_rejected=on_rejected
-        ) as strategy:
+        async with MemoryEventQueue(client, batch_size=1).open(on_rejected=on_rejected) as strategy:
             await strategy.enqueue(events[0])
             await reporting.wait()
             with pytest.raises(MeteringTimeoutError):
@@ -670,7 +641,7 @@ async def test_flush_excludes_later_delivery_failures(
 
     client.events.ingest.side_effect = send
     with anyio.fail_after(1):
-        async with MemoryOutbox(client, batch_size=1).open() as strategy:
+        async with MemoryEventQueue(client, batch_size=1).open() as strategy:
             await strategy.enqueue(events[0])
             await sending.wait()
             async with anyio.create_task_group() as callers:
@@ -706,7 +677,7 @@ async def test_cancellation_at_completion_does_not_acknowledge_failure(
 
     client.events.ingest.side_effect = send
     with anyio.fail_after(1):
-        async with MemoryOutbox(client, batch_size=1).open() as strategy:
+        async with MemoryEventQueue(client, batch_size=1).open() as strategy:
             await strategy.enqueue(events[0])
             await sending.wait()
             async with anyio.create_task_group() as callers:
@@ -730,11 +701,11 @@ async def test_ambiguous_timeout_does_not_invoke_rejection_hook(
     client: AsyncMock, events: list[EventInput]
 ) -> None:
     client.events.ingest.side_effect = PolarClientError(408, "timed out")
-    outbox = MemoryOutbox(client, max_attempts=1)
+    queue = MemoryEventQueue(client, max_attempts=1)
     on_rejected = AsyncMock()
-    async with outbox.open(on_rejected=on_rejected):
-        await outbox.enqueue(events[0])
+    async with queue.open(on_rejected=on_rejected):
+        await queue.enqueue(events[0])
         with pytest.raises(MeteringDeliveryError) as failure:
-            await outbox.flush()
+            await queue.flush()
         assert failure.value.failures[0].reason == "retry_exhausted"
         on_rejected.assert_not_awaited()

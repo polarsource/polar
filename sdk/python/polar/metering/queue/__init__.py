@@ -11,13 +11,13 @@ OnRejected = collections.abc.Callable[
 ]
 
 
-class Outbox(typing.Protocol):
+class EventQueue(typing.Protocol):
     def open(
         self,
         *,
         on_ack: OnAck | None = None,
         on_rejected: OnRejected | None = None,
-    ) -> contextlib.AbstractAsyncContextManager["Outbox"]: ...
+    ) -> contextlib.AbstractAsyncContextManager["EventQueue"]: ...
 
     async def enqueue(self, event: EventInput) -> None: ...
 

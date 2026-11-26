@@ -41,5 +41,5 @@ def test_emits_metering_and_outpost_submodules(
     ):
         assert (tmp_path / "src" / "metering" / f"{module}.ts").is_file()
     for module in ("memory", "memory.test"):
-        assert (tmp_path / "src" / "metering" / "outbox" / f"{module}.ts").is_file()
+        assert (tmp_path / "src" / "metering" / "queue" / f"{module}.ts").is_file()
     assert '"src/metering/index.ts"' in (tmp_path / "tsdown.config.ts").read_text()

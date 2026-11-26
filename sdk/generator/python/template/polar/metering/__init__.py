@@ -27,8 +27,8 @@ from polar.metering.events import (
     EventInput,
 )
 from polar.metering.meter import CustomerMeter, CustomerMeterList
-from polar.metering.outbox import Outbox
-from polar.metering.outbox.memory import MemoryOutbox
+from polar.metering.queue import EventQueue
+from polar.metering.queue.memory import MemoryEventQueue
 
 if typing.TYPE_CHECKING:
     from polar.outpost.client import Outpost
@@ -121,17 +121,17 @@ class ActorMetering:
 
 
 class Metering:
-    """Deliver events through an outbox and optionally reduce them locally."""
+    """Deliver events through a queue and optionally reduce them locally."""
 
     def __init__(
         self,
-        outbox: Outbox,
+        queue: EventQueue,
         *,
         client: AsyncClientBase,
         outpost: "Outpost | None" = None,
     ) -> None:
-        self.outbox = outbox
-        self._active_outbox = outbox
+        self.queue = queue
+        self._active_queue = queue
         self.outpost = outpost
         self._client = client
         self._stack = contextlib.AsyncExitStack()
@@ -139,13 +139,13 @@ class Metering:
     async def __aenter__(self) -> typing.Self:
         try:
             if self.outpost is None:
-                session = self.outbox.open()
+                session = self.queue.open()
             else:
                 outpost = await self._stack.enter_async_context(self.outpost)
-                session = self.outbox.open(
+                session = self.queue.open(
                     on_ack=outpost.on_ack, on_rejected=outpost.on_rejected
                 )
-            self._active_outbox = await self._stack.enter_async_context(session)
+            self._active_queue = await self._stack.enter_async_context(session)
         except BaseException:
             await self._stack.aclose()
             raise
@@ -160,7 +160,7 @@ class Metering:
         try:
             return await self._stack.__aexit__(exc_type, exc_value, traceback)
         finally:
-            self._active_outbox = self.outbox
+            self._active_queue = self.queue
 
     async def flush(self, *, timeout: float = 30.0) -> None:
         """Wait for earlier events to be delivered."""
@@ -168,7 +168,7 @@ class Metering:
         deadline = anyio.current_time() + timeout
         try:
             with anyio.fail_after(timeout):
-                await self._active_outbox.flush(timeout=timeout)
+                await self._active_queue.flush(timeout=timeout)
                 if self.outpost is not None:
                     await self.outpost.flush(timeout=max(0.0, deadline - anyio.current_time()))
         except MeteringTimeoutError:
@@ -191,7 +191,7 @@ class Metering:
             **event: Event fields with exactly one customer_id or
                 external_customer_id. Member IDs must match the identifier kind.
                 An event without a timestamp is dated now, once, before any
-                outbox sees it.
+                queue sees it.
 
         Raises:
             InvalidActorError: Customer or member identifiers are inconsistent.
@@ -206,7 +206,7 @@ class Metering:
         if not event.get("external_id"):
             event["external_id"] = str(uuid.uuid4())
         actor_event = typing.cast(EventInput, event)
-        await self._active_outbox.enqueue(actor_event)
+        await self._active_queue.enqueue(actor_event)
         if self.outpost is not None:
             try:
                 await self.outpost.track(actor_event)
@@ -331,13 +331,13 @@ class Metering:
         cls,
         polar: PolarClient,
         *,
-        outbox: Outbox | None = None,
+        queue: EventQueue | None = None,
         outpost: MeteringOutpostOptions | bool | None = None,
     ) -> typing.Self:
-        if outbox is None:
-            outbox = MemoryOutbox(polar)
+        if queue is None:
+            queue = MemoryEventQueue(polar)
         if outpost is None or outpost is False:
-            return cls(outbox, client=polar._client)
+            return cls(queue, client=polar._client)
 
         options = MeteringOutpostOptions() if outpost is True else outpost
         redis_url = options.get("redis_url", os.environ.get("REDIS_URL"))
@@ -346,7 +346,7 @@ class Metering:
         from polar.outpost.client import SNAPSHOT_TIMEOUT, Outpost
 
         return cls(
-            outbox,
+            queue,
             client=polar._client,
             outpost=Outpost.create(
                 polar,
@@ -385,7 +385,7 @@ __all__ = [
     "MeteringDeliveryError",
     "MeteringError",
     "MeteringOutpostOptions",
-    "Outbox",
+    "EventQueue",
     "MeteringTimeoutError",
     "UnknownMeterError",
 ]

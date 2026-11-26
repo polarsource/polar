@@ -42,7 +42,7 @@ from polar._redis import RedisReconnectBackoff
 from polar.base import AsyncClientBase
 from polar.metering import EventInput, Metering
 from polar.metering.errors import UnknownMeterError
-from polar.metering.outbox.redis import RedisOutbox
+from polar.metering.queue.redis import RedisEventQueue
 from polar.outpost import NotReadyError
 from polar.outpost.client import (
     APPLY_SNAPSHOT_SCRIPT,
@@ -227,7 +227,7 @@ def clock(monkeypatch: pytest.MonkeyPatch) -> types.SimpleNamespace:
         time=lambda: time.time() + clock.elapsed,
     )
     monkeypatch.setattr("polar.outpost.client.time", patched_time)
-    monkeypatch.setattr("polar.metering.outbox.redis.time", patched_time)
+    monkeypatch.setattr("polar.metering.queue.redis.time", patched_time)
     monkeypatch.setattr("polar._redis.time", patched_time)
     return clock
 
@@ -2277,11 +2277,11 @@ async def test_keeps_a_cold_buckets_events_pending_on_polars_receipt(
 
 
 async def _queued(redis: Redis) -> list[typing.Any]:
-    entries = await redis.xrange("outpost:v1:org-1:outbox") or []
+    entries = await redis.xrange("outpost:v1:org-1:queue") or []
     return [json.loads(fields[b"event"]) for _, fields in entries if fields]
 
 
-OUTBOX = "outpost:v1:org-1:outbox"
+QUEUE = "outpost:v1:org-1:queue"
 
 
 @pytest.mark.anyio
@@ -2293,18 +2293,18 @@ async def test_keeps_stream_entry_when_outpost_cannot_settle_delivery(
     url, redis = redis_connection
     await _seal(redis, BUCKET)
     outpost = Outpost(url, client=polar_client)
-    outbox = RedisOutbox(url, stream=OUTBOX, client=polar_client)
-    async with Metering(outbox, client=AsyncMock(spec=AsyncClientBase), outpost=outpost) as metering:
+    queue = RedisEventQueue(url, stream=QUEUE, client=polar_client)
+    async with Metering(queue, client=AsyncMock(spec=AsyncClientBase), outpost=outpost) as metering:
         event = _usage("event-0", 10)
         await metering.track(**event)
         with monkeypatch.context() as patch:
             patch.setattr(
                 outpost, "_confirm_script", AsyncMock(side_effect=ResponseError("unavailable"))
             )
-            await outbox._drain()
+            await queue._drain()
             assert await _queued(redis) == [event]
         await metering.flush()
-        assert await redis.xlen(OUTBOX) == 0
+        assert await redis.xlen(QUEUE) == 0
 
 
 def _delivered(ingest: dict[str, typing.Any]) -> list[list[str]]:
@@ -2319,7 +2319,7 @@ async def test_delivers_what_it_queued_on_its_own_without_a_flush(
     ingest: dict[str, typing.Any],
 ) -> None:
     url, _ = redis_connection
-    async with RedisOutbox(url, stream=OUTBOX, client=polar_client).open() as outpost:
+    async with RedisEventQueue(url, stream=QUEUE, client=polar_client).open() as outpost:
         await outpost.enqueue(_usage("event-0", 10))
         with anyio.fail_after(3):
             while not ingest["requests"]:
@@ -2335,8 +2335,8 @@ async def test_delivers_the_stream_in_batches_of_a_thousand_whichever_instance_f
 ) -> None:
     url, redis = redis_connection
     async with (
-        RedisOutbox(url, stream=OUTBOX, client=polar_client).open() as first,
-        RedisOutbox(url, stream=OUTBOX, client=polar_client).open() as second,
+        RedisEventQueue(url, stream=QUEUE, client=polar_client).open() as first,
+        RedisEventQueue(url, stream=QUEUE, client=polar_client).open() as second,
     ):
         outposts = (first, second)
         for index in range(2500):
@@ -2349,7 +2349,7 @@ async def test_delivers_the_stream_in_batches_of_a_thousand_whichever_instance_f
     assert (
         len({external_id for ids in _delivered(ingest) for external_id in ids}) == 2500
     )
-    assert await redis.xlen(OUTBOX) == 0
+    assert await redis.xlen(QUEUE) == 0
 
 
 @pytest.mark.anyio
@@ -2361,8 +2361,8 @@ async def test_metering_settles_the_events_polar_received(
     url, redis = redis_connection
     await _seal(redis, BUCKET)
     outpost = Outpost(url, client=polar_client)
-    outbox = RedisOutbox(url, stream=OUTBOX, client=polar_client)
-    async with Metering(outbox, client=AsyncMock(spec=AsyncClientBase), outpost=outpost) as metering:
+    queue = RedisEventQueue(url, stream=QUEUE, client=polar_client)
+    async with Metering(queue, client=AsyncMock(spec=AsyncClientBase), outpost=outpost) as metering:
         await outpost.actor(external_customer_id="alice")
         events = [_usage("event-0", 10), _usage("event-1", 10)]
         for event in events:
@@ -2374,7 +2374,7 @@ async def test_metering_settles_the_events_polar_received(
         assert await _consumed(outpost) == 20
 
 
-BACKOFF = "outpost:v1:org-1:outbox:backoff"
+BACKOFF = "outpost:v1:org-1:queue:backoff"
 
 
 @pytest.mark.anyio
@@ -2385,8 +2385,8 @@ async def test_keeps_a_batch_polar_fails_to_take_and_the_fleet_waits_to_send_it_
 ) -> None:
     url, redis = redis_connection
     async with (
-        RedisOutbox(url, stream=OUTBOX, client=polar_client).open() as outpost,
-        RedisOutbox(url, stream=OUTBOX, client=polar_client).open() as other,
+        RedisEventQueue(url, stream=QUEUE, client=polar_client).open() as outpost,
+        RedisEventQueue(url, stream=QUEUE, client=polar_client).open() as other,
     ):
         await outpost.enqueue(_usage("event-0", 10))
         ingest["statuses"] = [503]
@@ -2401,7 +2401,7 @@ async def test_keeps_a_batch_polar_fails_to_take_and_the_fleet_waits_to_send_it_
         await redis.hset(BACKOFF, "retry_at", 0)
         await outpost._drain()
         assert _delivered(ingest) == [["event-0"], ["event-0"], ["event-1"]]
-        assert await redis.xlen(OUTBOX) == 0
+        assert await redis.xlen(QUEUE) == 0
         assert not await redis.exists(BACKOFF)
 
 
@@ -2413,8 +2413,8 @@ async def test_sends_a_batch_that_failed_on_another_slot_again_once_the_backoff_
     ingest: dict[str, typing.Any],
 ) -> None:
     url, redis = redis_connection
-    monkeypatch.setattr("polar.metering.outbox.redis.DRAIN_INTERVAL", 60)
-    async with RedisOutbox(url, stream=OUTBOX, client=polar_client).open() as outpost:
+    monkeypatch.setattr("polar.metering.queue.redis.DRAIN_INTERVAL", 60)
+    async with RedisEventQueue(url, stream=QUEUE, client=polar_client).open() as outpost:
         # Two full batches: two flushers, and Polar fails both.
         for index in range(2000):
             await outpost.enqueue(_usage(f"event-{index}", 1))
@@ -2426,7 +2426,7 @@ async def test_sends_a_batch_that_failed_on_another_slot_again_once_the_backoff_
         # batches.
         await outpost._drain()
         assert len({id for batch in _delivered(ingest) for id in batch}) == 2000
-        assert await redis.xlen(OUTBOX) == 0
+        assert await redis.xlen(QUEUE) == 0
 
 
 @pytest.mark.anyio
@@ -2436,7 +2436,7 @@ async def test_waits_as_long_as_a_polar_that_rate_limits_it_asks(
     ingest: dict[str, typing.Any],
 ) -> None:
     url, redis = redis_connection
-    async with RedisOutbox(url, stream=OUTBOX, client=polar_client).open() as outpost:
+    async with RedisEventQueue(url, stream=QUEUE, client=polar_client).open() as outpost:
         await outpost.enqueue(_usage("event-0", 10))
         ingest["statuses"] = [429]
         # Redis stores whole milliseconds.
@@ -2474,7 +2474,7 @@ async def test_keeps_a_backoff_another_flusher_set_while_this_one_delivered(
         await redis.hset(BACKOFF, "retry_at", later)
 
     await redis.hset(BACKOFF, mapping={"failures": 1, "retry_at": 1})
-    async with RedisOutbox(url, stream=OUTBOX, client=polar_client).open(on_ack=on_delivered) as outpost:
+    async with RedisEventQueue(url, stream=QUEUE, client=polar_client).open(on_ack=on_delivered) as outpost:
         await outpost.enqueue(_usage("event-0", 10))
         await outpost.flush()
         assert await redis.hget(BACKOFF, "retry_at") == str(later).encode()
@@ -2489,7 +2489,7 @@ async def test_keeps_a_backoff_another_flusher_set_while_this_one_delivered(
         ("other", "unreadable"),
     ],
 )
-async def test_skips_an_outbox_entry_it_cannot_read_and_delivers_the_rest(
+async def test_skips_an_queue_entry_it_cannot_read_and_delivers_the_rest(
     redis_connection: tuple[str, Redis],
     polar_client: httpx2.AsyncClient,
     ingest: dict[str, typing.Any],
@@ -2497,12 +2497,12 @@ async def test_skips_an_outbox_entry_it_cannot_read_and_delivers_the_rest(
     value: str,
 ) -> None:
     url, redis = redis_connection
-    async with RedisOutbox(url, stream=OUTBOX, client=polar_client).open() as outpost:
-        await redis.xadd(OUTBOX, {field: value})
+    async with RedisEventQueue(url, stream=QUEUE, client=polar_client).open() as outpost:
+        await redis.xadd(QUEUE, {field: value})
         await outpost.enqueue(_usage("event-0", 10))
         await outpost.flush()
         assert _delivered(ingest) == [["event-0"]]
-        assert await redis.xlen(OUTBOX) == 0
+        assert await redis.xlen(QUEUE) == 0
 
 
 @pytest.mark.anyio
@@ -2512,14 +2512,14 @@ async def test_delivers_an_event_another_sdk_queued_in_a_form_it_cannot_parse(
     ingest: dict[str, typing.Any],
 ) -> None:
     url, redis = redis_connection
-    async with RedisOutbox(url, stream=OUTBOX, client=polar_client).open() as outpost:
+    async with RedisEventQueue(url, stream=QUEUE, client=polar_client).open() as outpost:
         # Another SDK takes a timestamp this one refuses.
         foreign = _usage("foreign", 10, timestamp="2026-10-12t12:00:00z")
-        await redis.xadd(OUTBOX, {"event": json.dumps(foreign)})
+        await redis.xadd(QUEUE, {"event": json.dumps(foreign)})
         await outpost.enqueue(_usage("event-0", 10))
         await outpost.flush()
         assert _delivered(ingest) == [["foreign", "event-0"]]
-        assert await redis.xlen(OUTBOX) == 0
+        assert await redis.xlen(QUEUE) == 0
 
 
 @pytest.mark.anyio
@@ -2527,12 +2527,12 @@ async def test_refuses_to_track_a_number_json_cannot_carry(
     redis_connection: tuple[str, Redis], polar_client: httpx2.AsyncClient
 ) -> None:
     url, redis = redis_connection
-    async with RedisOutbox(url, stream=OUTBOX, client=polar_client).open() as outpost:
+    async with RedisEventQueue(url, stream=QUEUE, client=polar_client).open() as outpost:
         event = _usage("event-0", 10)
         event["metadata"] = {"tokens": 10, "ratio": float("nan")}
         with pytest.raises(ValueError, match="JSON"):
             await outpost.enqueue(event)
-        assert await redis.xlen(OUTBOX) == 0
+        assert await redis.xlen(QUEUE) == 0
         assert await _pending_count(redis) is None
 
 
@@ -2545,8 +2545,8 @@ async def test_drops_only_the_events_polar_names_and_delivers_the_rest(
     url, redis = redis_connection
     await _seal(redis, BUCKET)
     outpost = Outpost(url, client=polar_client)
-    outbox = RedisOutbox(url, stream=OUTBOX, client=polar_client)
-    async with Metering(outbox, client=AsyncMock(spec=AsyncClientBase), outpost=outpost) as metering:
+    queue = RedisEventQueue(url, stream=QUEUE, client=polar_client)
+    async with Metering(queue, client=AsyncMock(spec=AsyncClientBase), outpost=outpost) as metering:
         events = [_usage("event-0", 10), _usage("refused", 10), _usage("event-1", 10)]
         for event in events:
             await metering.track(**event)
@@ -2556,7 +2556,7 @@ async def test_drops_only_the_events_polar_names_and_delivers_the_rest(
             ["event-0", "refused", "event-1"],
             ["event-0", "event-1"],
         ]
-        assert await redis.xlen(OUTBOX) == 0
+        assert await redis.xlen(QUEUE) == 0
         assert await _pending_count(redis) is None
 
 
@@ -2569,14 +2569,14 @@ async def test_metering_settles_a_batch_polar_refuses(
     url, redis = redis_connection
     await _seal(redis, BUCKET)
     outpost = Outpost(url, client=polar_client)
-    outbox = RedisOutbox(url, stream=OUTBOX, client=polar_client)
-    async with Metering(outbox, client=AsyncMock(spec=AsyncClientBase), outpost=outpost) as metering:
+    queue = RedisEventQueue(url, stream=QUEUE, client=polar_client)
+    async with Metering(queue, client=AsyncMock(spec=AsyncClientBase), outpost=outpost) as metering:
         events = [_usage("event-0", 10), _usage("event-1", 10)]
         for event in events:
             await metering.track(**event)
         ingest["statuses"] = [422]
         await metering.flush()
-        assert await redis.xlen(OUTBOX) == 0
+        assert await redis.xlen(QUEUE) == 0
         key = "outpost:v1:org-1:state:external:alice:tokens"
         assert await redis.hget(key, f"pending:{BUCKET}:count") is None
         await metering.flush()
@@ -2590,24 +2590,24 @@ async def test_takes_back_the_batch_of_a_flusher_that_died_on_the_next_drain(
     ingest: dict[str, typing.Any],
 ) -> None:
     url, redis = redis_connection
-    async with RedisOutbox(url, stream=OUTBOX, client=polar_client).open() as outpost:
+    async with RedisEventQueue(url, stream=QUEUE, client=polar_client).open() as outpost:
         await outpost.enqueue(_usage("event-0", 10))
         # A flusher read the batch and froze before Polar answered.
         [[_, entries]] = typing.cast(
             list[typing.Any],
-            await redis.xreadgroup("polar", "frozen", {OUTBOX: ">"}, count=1000),
+            await redis.xreadgroup("polar", "frozen", {QUEUE: ">"}, count=1000),
         )
         await outpost._drain()
         assert ingest["requests"] == []
         await redis.xclaim(
-            OUTBOX, "polar", "frozen", 0, [entry for entry, _ in entries], idle=60_000
+            QUEUE, "polar", "frozen", 0, [entry for entry, _ in entries], idle=60_000
         )
         await outpost.enqueue(_usage("event-1", 10))
         await outpost._drain()
         assert sorted(
             external_id for ids in _delivered(ingest) for external_id in ids
         ) == ["event-0", "event-1"]
-        assert await redis.xlen(OUTBOX) == 0
+        assert await redis.xlen(QUEUE) == 0
 
 
 @pytest.mark.anyio
@@ -2617,20 +2617,20 @@ async def test_sends_only_full_batches_while_another_flusher_delivers(
     ingest: dict[str, typing.Any],
 ) -> None:
     url, redis = redis_connection
-    async with RedisOutbox(url, stream=OUTBOX, client=polar_client).open() as outpost:
+    async with RedisEventQueue(url, stream=QUEUE, client=polar_client).open() as outpost:
         await outpost.enqueue(_usage("event-0", 10))
         # Another flusher holds a batch in flight.
-        await redis.xreadgroup("polar", "other", {OUTBOX: ">"})
+        await redis.xreadgroup("polar", "other", {QUEUE: ">"})
         for index in range(1, 1002):
             await outpost.enqueue(_usage(f"event-{index}", 1))
         await outpost._drain()
         assert [len(ids) for ids in _delivered(ingest)] == [1000]
         # The other flusher delivered its batch, and the rest goes.
         [[entry, _]] = typing.cast(
-            list[typing.Any], await redis.xrange(OUTBOX, count=1)
+            list[typing.Any], await redis.xrange(QUEUE, count=1)
         )
-        await redis.xack(OUTBOX, "polar", entry)
-        await redis.xdel(OUTBOX, entry)
+        await redis.xack(QUEUE, "polar", entry)
+        await redis.xdel(QUEUE, entry)
         await outpost._drain()
         assert [len(ids) for ids in _delivered(ingest)] == [1000, 1]
         assert _delivered(ingest)[1] == ["event-1001"]
@@ -2644,8 +2644,8 @@ async def test_delivers_what_another_instance_queued_while_it_flushed(
 ) -> None:
     url, redis = redis_connection
     async with (
-        RedisOutbox(url, stream=OUTBOX, client=polar_client).open() as first,
-        RedisOutbox(url, stream=OUTBOX, client=polar_client).open() as second,
+        RedisEventQueue(url, stream=QUEUE, client=polar_client).open() as first,
+        RedisEventQueue(url, stream=QUEUE, client=polar_client).open() as second,
     ):
         await first.enqueue(_usage("event-0", 10))
         ingest["delay"] = 0.1
@@ -2660,7 +2660,7 @@ async def test_delivers_what_another_instance_queued_while_it_flushed(
         "event-0",
         "event-1",
     ]
-    assert await redis.xlen(OUTBOX) == 0
+    assert await redis.xlen(QUEUE) == 0
 
 
 @pytest.mark.anyio
@@ -2671,8 +2671,8 @@ async def test_drains_after_an_empty_flush(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     url, _ = redis_connection
-    monkeypatch.setattr("polar.metering.outbox.redis.FLUSH_TENURE", 0.1)
-    async with RedisOutbox(url, client=polar_client, stream=OUTBOX).open() as outbox:
+    monkeypatch.setattr("polar.metering.queue.redis.FLUSH_TENURE", 0.1)
+    async with RedisEventQueue(url, client=polar_client, stream=QUEUE).open() as outbox:
         await outbox.flush()
         await anyio.sleep(0.2)
         await outbox.enqueue(_usage("event-0", 10))
@@ -2688,10 +2688,10 @@ async def test_hands_its_slot_over_a_few_seconds_into_a_drain_a_flush_waits_on(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     url, _ = redis_connection
-    monkeypatch.setattr("polar.metering.outbox.redis.FLUSH_TENURE", 0.3)
+    monkeypatch.setattr("polar.metering.queue.redis.FLUSH_TENURE", 0.3)
     async with (
-        RedisOutbox(url, client=polar_client, stream=OUTBOX).open() as first,
-        RedisOutbox(url, client=polar_client, stream=OUTBOX).open() as second,
+        RedisEventQueue(url, client=polar_client, stream=QUEUE).open() as first,
+        RedisEventQueue(url, client=polar_client, stream=QUEUE).open() as second,
     ):
         await first.enqueue(_usage("event-0", 10))
         ingest["delay"] = 0.04
@@ -4271,13 +4271,13 @@ async def test_flushes_a_thousand_events_in_as_many_commands_as_one(
     redis_commands: collections.Counter[str],
 ) -> None:
     url, redis = redis_connection
-    async with RedisOutbox(url, stream=OUTBOX, client=polar_client).open() as outpost:
+    async with RedisEventQueue(url, stream=QUEUE, client=polar_client).open() as outpost:
 
         async def flush_cost(events: int) -> dict[str, int]:
             for _ in range(events):
                 await outpost.enqueue(_event())
             cost = await _cost(redis_commands, outpost.flush)
-            assert await redis.xlen("outpost:v1:org-1:outbox") == 0
+            assert await redis.xlen("outpost:v1:org-1:queue") == 0
             return cost
 
         await flush_cost(1)

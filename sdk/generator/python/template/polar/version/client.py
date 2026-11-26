@@ -2,7 +2,7 @@ import types
 import typing
 
 from polar.base import AsyncClientBase, RequestTimeout, SyncClientBase, resolve_base_url
-from polar.metering import Metering, MeteringOutpostOptions, Outbox
+from polar.metering import Metering, MeteringOutpostOptions, EventQueue
 
 {% for service in api.services %}
 from polar.{{ version }}.services.{{ service.name | service_name }} import {{ service.name }}Async
@@ -85,20 +85,20 @@ class PolarAsync:
     def metering(
         self,
         *,
-        outbox: Outbox | None = None,
+        queue: EventQueue | None = None,
         outpost: MeteringOutpostOptions | bool | None = None,
     ) -> Metering:
         """Create a metering helper for event delivery and customer meter reads.
 
         Args:
-            outbox: Outbox used to queue and deliver events to Polar.
-                Defaults to an in-memory MemoryOutbox.
+            queue: EventQueue used to queue and deliver events to Polar.
+                Defaults to an in-memory MemoryEventQueue.
             outpost: Set to True to enable local reduction using REDIS_URL, or
                 pass options to configure Outpost. Disabled by default.
 
         Returns:
             A Metering instance to use as an async context manager.
         """
-        return Metering.create(self, outbox=outbox, outpost=outpost)
+        return Metering.create(self, queue=queue, outpost=outpost)
 
 __all__ = ["Environment", "Polar", "PolarAsync"]

@@ -19,9 +19,9 @@
       "import": { "types": "./dist/metering/index.d.mts", "default": "./dist/metering/index.mjs" },
       "require": { "types": "./dist/metering/index.d.cts", "default": "./dist/metering/index.cjs" }
     },
-    "./metering/outbox/redis": {
-      "import": { "types": "./dist/metering/outbox/redis.d.mts", "default": "./dist/metering/outbox/redis.mjs" },
-      "require": { "types": "./dist/metering/outbox/redis.d.cts", "default": "./dist/metering/outbox/redis.cjs" }
+    "./metering/queue/redis": {
+      "import": { "types": "./dist/metering/queue/redis.d.mts", "default": "./dist/metering/queue/redis.mjs" },
+      "require": { "types": "./dist/metering/queue/redis.d.cts", "default": "./dist/metering/queue/redis.cjs" }
     },
     "./outpost": {
       "import": { "types": "./dist/outpost/index.d.mts", "default": "./dist/outpost/index.mjs" },

@@ -32,7 +32,7 @@ def load_redis_scripts() -> dict[str, dict[str, str]]:
     return {
         "common": _load_redis_scripts(REDIS_DIRECTORY),
         "outpost": _load_redis_scripts(REDIS_DIRECTORY / "outpost"),
-        "outbox": _load_redis_scripts(REDIS_DIRECTORY / "outbox"),
+        "queue": _load_redis_scripts(REDIS_DIRECTORY / "queue"),
     }
 
 

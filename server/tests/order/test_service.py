@@ -120,8 +120,8 @@ from polar.tax.calculation import (
     TaxCalculationService,
     get_tax_behavior_from_option,
 )
-from polar.tax.calculation.base import UnsupportedCountryError
-from polar.tax.tax_id import TaxID
+from polar.tax.calculation.base import InvalidTaxIDError, UnsupportedCountryError
+from polar.tax.tax_id import TaxID, TaxIDFormat
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
 from polar.transaction.service.payment import (
     payment_transaction as payment_transaction_service,
@@ -8277,6 +8277,34 @@ class TestCreateDraftOrder:
             await order_service.create_draft_order(
                 session, off_session_organization, payload
             )
+
+    async def test_invalid_tax_id_rejected(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        product_one_time: Product,
+        tax_service_mock: MagicMock,
+    ) -> None:
+        tax_service_mock.calculate.side_effect = InvalidTaxIDError()
+        customer = await create_customer(
+            save_fixture,
+            organization=off_session_organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+            tax_id=("FR61954506077", TaxIDFormat.eu_vat),
+        )
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product_one_time.id,
+        )
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
+        (error,) = exc_info.value.errors()
+        assert error["loc"] == ("body", "customer_id")
+        assert "tax ID" in error["msg"]
+        assert "billing address" not in error["msg"]
 
     async def test_unit_based_product_requires_units(
         self,

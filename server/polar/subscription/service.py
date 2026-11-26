@@ -3288,12 +3288,7 @@ class SubscriptionService:
 
         now = utc_now()
         if order is not None:
-            if subscription.discount_id != order.discount_id or (
-                order.discount is not None
-                and order.discount.is_repetition_expired(
-                    subscription.discount_applied_at or now, now
-                )
-            ):
+            if subscription.discount_id != order.discount_id:
                 subscription.discount = order.discount
                 subscription.discount_applied_at = (
                     now if order.discount is not None else None

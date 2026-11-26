@@ -4776,7 +4776,7 @@ class TestReactivateEndedTrial:
         events = await get_all_by_name(session, SystemEvent.subscription_reactivated)
         assert len(events) == 1
 
-    @pytest.mark.parametrize("keep_discount", [True, False], ids=["renew", "remove"])
+    @pytest.mark.parametrize("keep_discount", [True, False], ids=["keep", "remove"])
     async def test_reuses_paid_order(
         self,
         frozen_time: datetime,
@@ -4799,12 +4799,14 @@ class TestReactivateEndedTrial:
             else DiscountDuration.forever,
             basis_points=2500,
         )
+        trial_start = frozen_time - timedelta(days=40)
         subscription = await create_subscription(
             save_fixture,
             product=product,
             customer=customer,
             status=SubscriptionStatus.trial_ended,
-            current_period_start=frozen_time - timedelta(days=40),
+            current_period_start=trial_start,
+            trial_start=trial_start,
             discount=discount,
         )
         paid_order = await create_order(

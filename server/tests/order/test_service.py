@@ -4498,6 +4498,55 @@ class TestHandlePayment:
             assert item.start_timestamp == subscription.current_period_start
             assert item.end_timestamp == subscription.current_period_end
 
+    async def test_reactivation_does_not_renew_expired_discount(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            organization=product.organization,
+            type=DiscountType.percentage,
+            duration=DiscountDuration.repeating,
+            duration_in_months=3,
+            basis_points=2500,
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.trial_ended,
+            discount=discount,
+        )
+        subscription.discount_applied_at = datetime(2026, 11, 1, tzinfo=UTC)
+        await session.flush()
+
+        with freeze_time("2026-12-29"):
+            order = await order_service.create_subscription_reactivation_order(
+                session, subscription
+            )
+        assert order.discount_id == discount.id
+        discount_amount = order.discount_amount
+        assert discount_amount > 0
+
+        order.status = OrderStatus.pending
+        await session.flush()
+        payment = await create_payment(
+            save_fixture, product.organization, order=order, amount=order.due_amount
+        )
+        with freeze_time("2027-01-02"):
+            result = await order_service.handle_payment(session, order, payment)
+        await session.flush()
+
+        assert result.status == OrderStatus.paid
+        assert result.discount_id == discount.id
+        assert result.discount_amount == discount_amount
+        assert subscription.status == SubscriptionStatus.active
+        assert subscription.discount_id is None
+        assert subscription.discount_applied_at is None
+
     async def test_past_due_subscription_other_dunning(
         self,
         save_fixture: SaveFixture,

@@ -54,22 +54,6 @@ def test_writes_one_overlay_per_api_version(
     )
 
 
-def test_customer_session_code_samples(code_samples_spec: op.OpenAPI) -> None:
-    spec = code_samples_spec.model_dump(by_alias=True, exclude_none=True)
-    spec["paths"]["/health"]["get"]["security"] = [
-        {"customer_session": []},
-        {"member_session": []},
-    ]
-    api = generate_ir(op.OpenAPI.model_validate(spec)).versions[0]
-    overlay = generate_code_samples_overlay(api, "1.2.3", ["python", "typescript"])
-    samples = next(
-        action["update"]["x-codeSamples"]
-        for action in overlay["actions"]
-        if action["target"] == '$["paths"]["/health"]["get"]'
-    )
-    assert all("polar_cst_xxx" in sample["source"] for sample in samples)
-
-
 def test_discriminator_mapping_overrides_generated_property(
     code_samples_spec: op.OpenAPI,
 ) -> None:

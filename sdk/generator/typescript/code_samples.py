@@ -48,7 +48,6 @@ def render_code_sample(sample: OperationSample) -> str:
     return (
         TEMPLATE.render(
             version=sample.api.version,
-            access_token=sample.access_token,
             call_path=f"polar.{client_path}.{method_name}",
             arguments=arguments,
             pagination=sample.method.pagination is not None,

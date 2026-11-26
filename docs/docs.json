@@ -3027,7 +3027,7 @@
     },
     {
       "source": "/merchant-of-record/acceptable-use",
-      "destination": "https://polar.sh/legal/acceptable-use-policy"
+      "destination": "/merchant-of-record/acceptable-use/introduction"
     },
     {
       "source": "/documentation/polar-as-merchant-of-record/account-reviews",

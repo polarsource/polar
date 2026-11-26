@@ -709,6 +709,25 @@ test('renders settings as an object literal', async () => {
   )
 })
 
+test('renders the subscription settings an organization exports', async () => {
+  const source = await Effect.runPromise(
+    generateConfig({
+      settings: {
+        payments: { currency: 'usd', tax: 'location' },
+        subscriptions: {
+          allow_multiple_subscriptions: false,
+          proration_behavior: 'prorate',
+          benefit_revocation_grace_period: 0,
+          prevent_trial_abuse: false,
+        },
+      },
+      meters: [],
+    }),
+  )
+  expect(source).toContain("proration_behavior: 'prorate'")
+  expect(source).toContain('benefit_revocation_grace_period: 0')
+})
+
 test('renders date bounds as the UTC day they fall on', async () => {
   const source = await Effect.runPromise(
     generateConfig({

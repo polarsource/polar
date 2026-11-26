@@ -34,11 +34,29 @@ import { product, ProductConfig, productPrices } from './product'
 import type { ProductDefinition, ProductHelpers } from './product'
 import { visibilityKey } from './visibility'
 
+const ProrationBehavior = Schema.Literals([
+  'invoice',
+  'prorate',
+  'next_period',
+  'reset',
+  'auto',
+])
+
+const Days = Schema.Int.check(Schema.isGreaterThanOrEqualTo(0))
+
 export const SettingsConfig = Schema.Struct({
   payments: Schema.optionalKey(
     Schema.Struct({
       currency: Schema.optionalKey(Currency),
       tax: Schema.optionalKey(TaxBehavior),
+    }),
+  ),
+  subscriptions: Schema.optionalKey(
+    Schema.Struct({
+      allow_multiple_subscriptions: Schema.optionalKey(Schema.Boolean),
+      proration_behavior: Schema.optionalKey(ProrationBehavior),
+      benefit_revocation_grace_period: Schema.optionalKey(Days),
+      prevent_trial_abuse: Schema.optionalKey(Schema.Boolean),
     }),
   ),
 })

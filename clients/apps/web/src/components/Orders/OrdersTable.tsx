@@ -57,7 +57,11 @@ const ProductCell = ({
 }) => (
   <>
     {order.product ? (
-      <ProductEntityLink organization={organization} product={order.product} />
+      <ProductEntityLink
+        organization={organization}
+        product={order.product}
+        filterable
+      />
     ) : (
       <Text color="muted" truncate>
         {getProductLabel(order)}

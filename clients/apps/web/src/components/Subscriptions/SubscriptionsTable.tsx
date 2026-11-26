@@ -1,11 +1,10 @@
 'use client'
 
+import { DiscountEntityLink } from '@/components/Discounts/DiscountEntityLink'
 import { EventTimestamp } from '@/components/Events/EventTimestamp'
 import { CatalogVersionLabel } from '@/components/Products/CatalogVersionLabel'
 import { CustomerEntityLink } from '@/components/Customer/CustomerEntityLink'
 import { ProductEntityLink } from '@/components/Products/ProductEntityLink'
-import { useFilterMenuItem } from '@/components/Shared/useFilterMenuItem'
-import { EntityLink } from '@/components/Shared/EntityLink'
 import {
   CondensedTable,
   CondensedTableHeader,
@@ -80,6 +79,7 @@ const ProductCell = ({
     <ProductEntityLink
       organization={organization}
       product={subscription.product}
+      filterable
     />
     <CatalogVersionLabel
       organization={organization}
@@ -87,33 +87,6 @@ const ProductCell = ({
     />
   </>
 )
-
-const DiscountLink = ({
-  discount,
-  organization,
-}: {
-  discount: NonNullable<Subscription['discount']>
-  organization: schemas['Organization']
-}) => {
-  const filter = useFilterMenuItem(
-    'discount_id',
-    discount.id,
-    'Filter by this discount',
-  )
-  return (
-    <EntityLink
-      kind="discount"
-      href={`/dashboard/${organization.slug}/products/discounts${discount.code ? `?query=${encodeURIComponent(discount.code)}` : ''}`}
-      menuItems={[
-        ...filter,
-        { label: 'Copy discount ID', copy: discount.id },
-        ...(discount.code ? [{ label: 'Copy code', copy: discount.code }] : []),
-      ]}
-    >
-      {discount.name}
-    </EntityLink>
-  )
-}
 
 const EMPTY: Subscription[] = []
 
@@ -175,8 +148,9 @@ const getColumns = (
     header: 'Discount',
     cell: ({ row: { original: subscription } }) =>
       subscription.discount && (
-        <DiscountLink
+        <DiscountEntityLink
           discount={subscription.discount}
+          filterable
           organization={organization}
         />
       ),

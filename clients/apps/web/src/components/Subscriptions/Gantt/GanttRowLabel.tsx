@@ -28,7 +28,7 @@ export const GanttRowLabel = ({
   const organization = useDashboardOrganization()
   const { customer, product } = subscription
   const customerMenuItems = useCustomerMenuItems(organization, customer, true)
-  const productMenuItems = useProductMenuItems(product)
+  const productMenuItems = useProductMenuItems(organization, product, true)
   return (
     // Not a button, so the customer and product can be links of their own.
     <div

@@ -1,7 +1,6 @@
 import { EventTimestamp } from '@/components/Events/EventTimestamp'
-import { getProductHref } from '@/components/Products/ProductEntityLink'
+import { ProductEntityLink } from '@/components/Products/ProductEntityLink'
 import { type CondensedTableColumn } from '@/components/Shared/CondensedTable'
-import { EntityLink } from '@/components/Shared/EntityLink'
 import { ISODuration } from '@/utils/duration'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -40,20 +39,17 @@ const DescriptionCell = ({
         <Text>{getIncomeLabel(transaction)}</Text>
       </Box>
       {transaction.order && product && (
-        <EntityLink
-          kind="product"
-          href={getProductHref(organization, product)}
+        <ProductEntityLink
+          organization={organization}
+          product={product}
           menuItems={[
             {
               label: 'View order',
               href: `/dashboard/${organization.slug}/sales/${transaction.order.id}`,
             },
-            { label: 'Copy product ID', copy: product.id },
           ]}
           muted
-        >
-          {product.name}
-        </EntityLink>
+        />
       )}
     </>
   )

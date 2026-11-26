@@ -3,7 +3,7 @@
 import { Field } from '@/components/Events/EventDetailField'
 import { EventTimestamp } from '@/components/Events/EventTimestamp'
 import { CustomerEntityLink } from '@/components/Customer/CustomerEntityLink'
-import { useMetrics } from '@/hooks/queries/metrics'
+import { useCustomerTotals } from '@/components/Customer/useCustomerTotals'
 import { formatCountry } from '@/utils/formatters'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -19,18 +19,7 @@ export const SubscriptionSidePanelCustomer = ({
   customer: schemas['Subscription']['customer']
   today: Date
 }) => {
-  const { data: metrics } = useMetrics({
-    startDate: new Date(customer.created_at),
-    endDate: today,
-    organization_id: organization.id,
-    interval: 'month',
-    customer_id: [customer.id],
-  })
-  const revenue = metrics?.periods.at(-1)?.cumulative_revenue
-  const orders = metrics?.periods.reduce(
-    (total, period) => total + (period.orders ?? 0),
-    0,
-  )
+  const { revenue, orders } = useCustomerTotals(organization, customer, today)
   const country = customer.billing_address?.country
   const billingName =
     customer.billing_name && customer.billing_name !== customer.name

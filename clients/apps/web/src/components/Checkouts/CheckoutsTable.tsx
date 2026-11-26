@@ -89,7 +89,11 @@ const ProductCell = ({
   return (
     <>
       {checkout.products.length === 1 ? (
-        <ProductEntityLink organization={organization} product={product} />
+        <ProductEntityLink
+          organization={organization}
+          product={product}
+          filterable
+        />
       ) : (
         <Text color="muted" truncate>
           {getProductLabel(checkout)}

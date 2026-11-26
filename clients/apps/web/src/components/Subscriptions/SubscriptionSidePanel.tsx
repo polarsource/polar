@@ -1,5 +1,7 @@
 'use client'
 
+import { DiscountEntityLink } from '@/components/Discounts/DiscountEntityLink'
+import { ProductEntityLink } from '@/components/Products/ProductEntityLink'
 import { Field } from '@/components/Events/EventDetailField'
 import { IconButton, Section } from '@/components/Events/EventDetailPanel'
 import { EventTimestamp } from '@/components/Events/EventTimestamp'
@@ -63,7 +65,6 @@ export const SubscriptionSidePanel = ({
 }: SubscriptionSidePanelProps) => {
   const { customer, discount } = subscription
   const cancellationReason = getCancellationReason(subscription)
-  const subscriptionsPath = `/dashboard/${organization.slug}/sales/subscriptions?view=table`
   const [today] = useState(() => new Date())
   const dunning = useSubscriptionDunning(organization.id, subscription.id)
   // The same requests the subscription page's billing history makes.
@@ -129,19 +130,10 @@ export const SubscriptionSidePanel = ({
           </Text>
         </Field>
         <Field label="Product">
-          <EntityLink
-            kind="product"
-            href={`/dashboard/${organization.slug}/products/${subscription.product.id}`}
-            menuItems={[
-              { label: 'Copy product ID', copy: subscription.product.id },
-              {
-                label: 'View subscriptions',
-                href: `${subscriptionsPath}&product_id=${subscription.product.id}`,
-              },
-            ]}
-          >
-            {subscription.product.name}
-          </EntityLink>
+          <ProductEntityLink
+            organization={organization}
+            product={subscription.product}
+          />
           <CatalogVersionLabel
             organization={organization}
             version={subscription.product}
@@ -166,22 +158,10 @@ export const SubscriptionSidePanel = ({
         ))}
         {discount && (
           <Field label="Discount">
-            <EntityLink
-              kind="discount"
-              href={`/dashboard/${organization.slug}/products/discounts${discount.code ? `?query=${encodeURIComponent(discount.code)}` : ''}`}
-              menuItems={[
-                { label: 'Copy discount ID', copy: discount.id },
-                ...(discount.code
-                  ? [{ label: 'Copy code', copy: discount.code }]
-                  : []),
-                {
-                  label: 'View subscriptions',
-                  href: `${subscriptionsPath}&discount_id=${discount.id}`,
-                },
-              ]}
-            >
-              {discount.name}
-            </EntityLink>
+            <DiscountEntityLink
+              organization={organization}
+              discount={discount}
+            />
           </Field>
         )}
         {cancellationReason && (

@@ -679,9 +679,10 @@ class LemonSqueezyAdapter:
                 ),
             )
             benefit.product_source_ids.append(variant_id)
-            if self._prices_by_variant.get(
-                variant_id
-            ) and not self._is_subscription_variant(variant_id):
+            if any(
+                not _renews(price)
+                for price in self._prices_by_variant.get(variant_id, [])
+            ):
                 benefit.for_one_time = True
 
         for variant, product_name in variants:

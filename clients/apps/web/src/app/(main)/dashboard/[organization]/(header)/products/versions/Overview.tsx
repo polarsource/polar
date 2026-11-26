@@ -1,7 +1,8 @@
 'use client'
 
+import { DraftGlyph } from '@/components/Layout/Dashboard/CatalogHoverCard'
 import { schemas } from '@polar-sh/client'
-import { Button, Pill, Text } from '@polar-sh/orbit'
+import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useRouter } from 'next/navigation'
 import { kinds } from './VersionsTab'
@@ -32,13 +33,20 @@ export const Overview = ({
       borderColor="border-primary"
     >
       <Box flexDirection="column" rowGap="xs" minWidth={0}>
-        <Box alignItems="center" columnGap="s" minWidth={0}>
-          <span className="truncate text-base">
-            {draft.name ?? 'Unpublished changes'}
-          </span>
-          {draft.name ? <Pill color="gray">Draft</Pill> : null}
-        </Box>
-        <Box columnGap="m">
+        <span className="truncate text-base">{draft.name ?? 'Untitled'}</span>
+        <Box alignItems="center" columnGap="m">
+          <Box
+            as="span"
+            display="flex"
+            alignItems="center"
+            columnGap="xs"
+            color="text-secondary"
+          >
+            <DraftGlyph size={14} />
+            <Text as="span" color="inherit">
+              Draft
+            </Text>
+          </Box>
           {kinds
             .filter(({ change }) => draft.changes?.[`${change}_count`])
             .map(({ change, glyph, color }) => (

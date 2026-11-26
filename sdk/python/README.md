@@ -201,7 +201,7 @@ if meter is not None:
 
 ### Local reduction with Outpost
 
-Pass `outpost=True` to enable local reduction using `REDIS_URL`, or pass Outpost options with an explicit `redis_url`. The queue handles delivery. Outpost applies events locally after enqueue succeeds. If Outpost cannot answer a read, metering queries the Polar API.
+Pass `outpost=True` to enable local reduction using `REDIS_URL`, or pass a Redis URL or client in the `redis` option. The queue handles delivery. Outpost applies events locally after enqueue succeeds. If Outpost cannot answer a read, metering queries the Polar API.
 
 `track()` assigns a timestamp and external ID when omitted, so the queue and Outpost use the same event.
 
@@ -211,9 +211,22 @@ For durable delivery, install the `outpost` extra with `uv add "polar-sdk[outpos
 from polar.metering.queue.redis import RedisEventQueue
 
 redis_url = "redis://localhost:6379"
-queue = RedisEventQueue.create(polar, redis_url, stream="my-app:production:org:events")
-async with polar.metering(queue=queue, outpost={"redis_url": redis_url}) as metering:
+queue = RedisEventQueue(redis_url, stream="my-app:production:org:events")
+async with polar.metering(queue=queue, outpost={"redis": redis_url}) as metering:
     await metering.track(name="api_request", external_customer_id="customer_123")
+```
+
+If the queue and Outpost use the same URL, they share one Redis client for the metering
+session. You can also pass an existing `redis.asyncio.Redis` client. Your application owns
+that client and closes it after metering shuts down.
+
+```python
+from redis.asyncio import Redis
+
+async with Redis.from_url(redis_url) as redis:
+    queue = RedisEventQueue(redis, stream="my-app:production:org:events")
+    async with polar.metering(queue=queue, outpost={"redis": redis}) as metering:
+        await metering.track(name="api_request", external_customer_id="customer_123")
 ```
 
 ### Delivery
@@ -247,7 +260,7 @@ from polar.metering.queue.memory import MemoryEventQueue
 
 
 async def handle_request() -> dict[str, bool]:
-    queue = MemoryEventQueue(polar, shutdown_timeout=30)
+    queue = MemoryEventQueue(shutdown_timeout=30)
     async with polar.metering(queue=queue) as metering:
         await metering.track(name="api_request", external_customer_id="customer_123")
     return {"ok": True}
@@ -276,6 +289,13 @@ The buffer is in memory: forced process termination can still lose events. Choos
 that fit within the function's execution limit; use durable storage when delivery must survive
 termination. A timeout means delivery is unconfirmed, so blindly retrying may duplicate events.
 
+### Delivery callbacks
+
+Pass async `on_ack(events)` and `on_rejected(events, reason)` callbacks to `polar.metering()`
+to observe delivery. When Outpost is enabled, its corresponding hook runs first. Metering
+logs caller callback failures. A Redis queue may notify callbacks again if a worker fails
+before acknowledging the stream entries.
+
 ### Options
 
 #### Memory
@@ -289,13 +309,11 @@ The in-memory queue sends events in batches to Polar. It retries network errors,
 | `shutdown_timeout` | `30.0`   | Seconds allowed to drain on context exit.                  |
 | `max_attempts`     | `3`     | Total attempts per batch, including the first.             |
 
-Metering opens the queue and supplies Outpost's delivery hooks when enabled. When using a queue directly, open it with `async with queue.open()`. Pass `on_ack` or `on_rejected` to `open()` to handle delivery outcomes for that session.
-
 #### Outpost
 
 | Option         | Default                          | Meaning                                                  |
 | -------------- | -------------------------------- | -------------------------------------------------------- |
-| `redis_url`    | `REDIS_URL` environment variable | Redis instance used by Outpost.                          |
+| `redis`        | `REDIS_URL` environment variable | Redis URL or caller-owned asynchronous Redis client.    |
 | `telemetry`    | `True`                           | Send Outpost metrics and traces to Polar.                |
 | `snapshot_timeout` | `5`                          | Seconds a cold read waits for its initial snapshot.      |
 

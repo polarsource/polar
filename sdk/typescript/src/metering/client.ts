@@ -1,4 +1,5 @@
-import type { Outpost } from "../outpost/client";
+import type { Redis } from "ioredis";
+
 import type {
   ContextualEventInput,
   EventCustomerInput,
@@ -6,23 +7,27 @@ import type {
   EventInput,
 } from "./event";
 import type { CustomerMeter, MeterInput } from "./meter";
-import type { EventQueue } from "./queue/index";
+import type { EventQueue, EventQueueHooks, EventQueueStartOptions, Ingest } from "./queue/index";
+import type { RedisEventQueue } from "./queue/redis";
 
-import { type ClientBase } from "../base";
+import { PolarClientError, PolarNetworkError, PolarServerError, type ClientBase } from "../base";
 import { PolarOutpostError } from "../outpost/errors";
 import {
-  MeteringError,
-  InvalidActorError,
+  IngestRejectedError,
+  IngestRetryableError,
   MeteringTimeoutError,
   UnknownMeterError,
   deliveryTimeout,
   waitForDelivery,
   type DeliveryOptions,
+  type DropReason,
+  retryAfterMs,
 } from "./errors";
-import { MemoryEventQueue, type MeteringClient } from "./queue/memory";
+import { MemoryEventQueue } from "./queue/memory";
 export {
   MeteringError,
-  InvalidActorError,
+  IngestRejectedError,
+  IngestRetryableError,
   MeteringDeliveryError,
   MeteringTimeoutError,
   UnknownMeterError,
@@ -61,9 +66,21 @@ export interface ActorMetering {
   meter(meterId: string): Promise<CustomerMeter | null>;
 }
 
-export type MeteringOutpost = (client: ClientBase) => Outpost;
+interface MeteringReducer {
+  start(): Promise<unknown>;
+  close(): Promise<void>;
+  track(event: EventInput): Promise<void>;
+  actor(input: ActorInput): Promise<void>;
+  meter(input: MeterInput & { meter_id: string }): Promise<CustomerMeter | null>;
+  flush(): Promise<void>;
+  onAck(events: EventInput[]): Promise<void>;
+  onRejected(events: EventInput[], reason: DropReason): Promise<void>;
+  redisForUrl?(url: string | undefined): object | undefined;
+}
 
-export interface MeteringOptions {
+export type MeteringOutpost = (client: ClientBase) => MeteringReducer;
+
+export interface MeteringOptions extends EventQueueHooks {
   queue?: EventQueue;
   outpost?: MeteringOutpost;
 }
@@ -79,7 +96,8 @@ export class Metering {
   constructor(
     private readonly client: ClientBase,
     readonly queue: EventQueue,
-    readonly outpost?: Outpost,
+    readonly outpost?: MeteringReducer,
+    private readonly hooks: EventQueueHooks = {},
   ) {}
 
   /**
@@ -88,7 +106,7 @@ export class Metering {
    * @param event Event fields with exactly one customer_id or external_customer_id.
    * Member IDs must match the identifier kind. An event without a timestamp is dated now,
    * once, before the queue sees it. A missing external ID is also assigned here.
-   * @throws InvalidActorError if customer or member identifiers are inconsistent.
+   * @throws TypeError if customer or member identifiers are inconsistent.
    */
   async track(event: EventInput): Promise<void> {
     validateActor(event);
@@ -121,7 +139,7 @@ export class Metering {
    *
    * @param input Customer identity and optional matching member identity.
    * @returns A helper that attaches this identity to events and reads customer meters.
-   * @throws InvalidActorError if customer or member identifiers are inconsistent.
+   * @throws TypeError if customer or member identifiers are inconsistent.
    */
   async actor(input: ActorInput): Promise<ActorMetering> {
     validateActor(input);
@@ -158,7 +176,7 @@ export class Metering {
    * @param meterId Polar meter ID.
    * @param input Exactly one customer identifier.
    * @returns Consumption, credits, and balance, or null if no meter is found.
-   * @throws InvalidActorError if exactly one customer identifier was not provided.
+   * @throws TypeError if exactly one customer identifier was not provided.
    */
   async meter(meterId: string, input: MeterInput): Promise<CustomerMeter | null> {
     validateActor(input);
@@ -219,7 +237,7 @@ export class Metering {
   }
 
   private begin(): Promise<void> {
-    if (this.closing) throw new MeteringError("Metering is closed");
+    if (this.closing) throw new Error("Metering is closed");
     this.activeOperations++;
     this.starting ??= this.startResources();
     return this.starting;
@@ -239,12 +257,16 @@ export class Metering {
         this.running.push(this.outpost);
         checkDeadline();
       }
-      await this.queue.start(
-        this.outpost && {
-          onAck: this.outpost.onAck.bind(this.outpost),
-          onRejected: this.outpost.onRejected.bind(this.outpost),
-        },
-      );
+      const options: EventQueueStartOptions = {
+        ingest: createIngest(this.client),
+        onAck: this.outpost || this.hooks.onAck ? this.onAck.bind(this) : undefined,
+        onRejected: this.outpost || this.hooks.onRejected ? this.onRejected.bind(this) : undefined,
+      };
+      const queue = this.queue as EventQueue & Partial<RedisEventQueue>;
+      const redis = this.outpost?.redisForUrl?.(queue.redisUrl) as Redis | undefined;
+      if (redis && typeof queue.startWithRedis === "function")
+        await queue.startWithRedis(options, redis);
+      else await queue.start(options);
       this.running.push(this.queue);
       checkDeadline();
     } catch (error) {
@@ -254,6 +276,30 @@ export class Metering {
         throw new AggregateError([error, cleanupError], "Metering startup and cleanup failed");
       }
       throw error;
+    }
+  }
+
+  private async onAck(events: EventInput[]): Promise<void> {
+    await this.outpost?.onAck(events);
+    try {
+      await this.hooks.onAck?.(events);
+    } catch (error) {
+      console.warn(
+        "Metering acknowledgement hook failed",
+        error instanceof Error ? error.constructor.name : typeof error,
+      );
+    }
+  }
+
+  private async onRejected(events: EventInput[], reason: DropReason): Promise<void> {
+    await this.outpost?.onRejected(events, reason);
+    try {
+      await this.hooks.onRejected?.(events, reason);
+    } catch (error) {
+      console.warn(
+        "Metering rejection hook failed",
+        error instanceof Error ? error.constructor.name : typeof error,
+      );
     }
   }
 
@@ -308,19 +354,83 @@ const validateActor = (input: {
   external_member_id?: string | null;
 }): void => {
   if ((input.customer_id == null) === (input.external_customer_id == null)) {
-    throw new InvalidActorError("Provide exactly one customer_id or external_customer_id");
+    throw new TypeError("Provide exactly one customer_id or external_customer_id");
   }
   if (input.member_id != null && input.customer_id == null) {
-    throw new InvalidActorError("member_id requires customer_id");
+    throw new TypeError("member_id requires customer_id");
   }
   if (input.external_member_id != null && input.external_customer_id == null) {
-    throw new InvalidActorError("external_member_id requires external_customer_id");
+    throw new TypeError("external_member_id requires external_customer_id");
   }
 };
 
-export const createMetering = (
-  polar: MeteringClient,
-  client: ClientBase,
-  options: MeteringOptions = {},
-): Metering =>
-  new Metering(client, options.queue ?? new MemoryEventQueue(polar), options.outpost?.(client));
+export const createMetering = (client: ClientBase, options: MeteringOptions = {}): Metering =>
+  new Metering(client, options.queue ?? new MemoryEventQueue(), options.outpost?.(client), options);
+
+// The indexes of the events Polar's validation refuses, when each of its errors names one.
+const refusedIndexes = (error: PolarClientError, batchSize: number): Set<number> | undefined => {
+  if (error.statusCode !== 422) return undefined;
+  let detail: unknown;
+  try {
+    // The client keeps the body of an error it has no class for as text.
+    detail = (JSON.parse(String(error.error)) as { detail?: unknown } | null)?.detail;
+  } catch {
+    return undefined;
+  }
+  if (!Array.isArray(detail)) return undefined;
+  const indexes = new Set<number>();
+  for (const error of detail as ({ loc?: unknown } | null)[]) {
+    const loc = error?.loc;
+    if (
+      !Array.isArray(loc) ||
+      loc[0] !== "body" ||
+      loc[1] !== "events" ||
+      !Number.isInteger(loc[2])
+    )
+      return undefined;
+    const index = loc[2] as number;
+    if (index < 0 || index >= batchSize) return undefined;
+    indexes.add(index);
+  }
+  return indexes.size ? indexes : undefined;
+};
+
+export const createIngest =
+  (client: ClientBase): Ingest =>
+  async (events, options) => {
+    try {
+      const response = await client.sendRequest(
+        client.buildRequest("POST", "/v1/events/ingest", undefined, undefined, { events }),
+        options,
+      );
+      try {
+        if (!response.ok) {
+          if (response.status < 400)
+            throw new IngestRetryableError({
+              cause: new Error(`Polar answered ${response.status}`),
+            });
+          await client.parseResponse(response, "none");
+        }
+      } finally {
+        if (!response.bodyUsed) await response.body?.cancel().catch(() => {});
+      }
+    } catch (error) {
+      if (error instanceof PolarClientError && ![401, 403, 408, 429].includes(error.statusCode)) {
+        throw new IngestRejectedError({
+          rejectedIndexes: refusedIndexes(error, events.length),
+          cause: error,
+        });
+      }
+      if (
+        error instanceof PolarClientError ||
+        error instanceof PolarNetworkError ||
+        error instanceof PolarServerError
+      ) {
+        throw new IngestRetryableError({
+          retryAfterMs: retryAfterMs(error) ?? undefined,
+          cause: error,
+        });
+      }
+      throw error;
+    }
+  };

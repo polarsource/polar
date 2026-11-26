@@ -8,25 +8,18 @@ import typing
 import anyio
 import anyio.lowlevel
 
-from polar import (
-    PolarClientError,
-    PolarError,
-    PolarNetworkError,
-    PolarRateLimitError,
-    PolarServerError,
-)
 from polar.logging import get_logger
-from polar.metering.client import MeteringClient
 from polar.metering.errors import (
     DeliveryFailure,
     DropReason,
     MeteringDeliveryError,
     MeteringTimeoutError,
-    retry_after_seconds,
+    IngestRejectedError,
+    IngestRetryableError,
     validate_timeout,
 )
 from polar.metering.events import EventInput
-from polar.metering.queue import OnAck, OnRejected
+from polar.metering.queue import Ingest, OnAck, OnRejected
 
 log = get_logger(__name__)
 
@@ -66,7 +59,6 @@ class MemoryEventQueue:
 
     def __init__(
         self,
-        polar: MeteringClient,
         batch_size: int = 100,
         batch_interval: float = 1.0,
         shutdown_timeout: float = 30.0,
@@ -75,7 +67,6 @@ class MemoryEventQueue:
         """Configure event delivery and retries.
 
         Args:
-            polar: Client exposing the events.ingest API.
             batch_size: Maximum events per request. Defaults to 100.
             batch_interval: Batch collection interval in seconds. Defaults to 1.
             shutdown_timeout: Drain deadline in seconds. Defaults to 30.
@@ -87,7 +78,6 @@ class MemoryEventQueue:
         if batch_size <= 0:
             raise ValueError("batch_size must be greater than zero")
         validate_timeout(shutdown_timeout)
-        self.polar = polar
         self.batch_size = batch_size
         self.batch_interval = batch_interval
         self.shutdown_timeout = shutdown_timeout
@@ -111,18 +101,19 @@ class MemoryEventQueue:
     async def open(
         self,
         *,
+        ingest: Ingest,
         on_ack: OnAck | None = None,
         on_rejected: OnRejected | None = None,
     ) -> collections.abc.AsyncGenerator[typing.Self, None]:
         if self._started:
-            raise PolarError("Memory queue has already started")
+            raise RuntimeError("Memory queue has already started")
         self._started = True
         try:
             self._worker_task_group = await self._stack.enter_async_context(
                 anyio.create_task_group()
             )
             self._flush_cancel_scope = await self._worker_task_group.start(
-                self._flush_task, on_ack, on_rejected
+                self._flush_task, ingest, on_ack, on_rejected
             )
         except BaseException:
             await self._stack.aclose()
@@ -146,10 +137,9 @@ class MemoryEventQueue:
             event: Event including its customer identity.
         """
         await anyio.lowlevel.checkpoint()
+        self._require_open()
         if self._failure is not None:
             raise self._failure
-        if self._flush_cancel_scope is None:
-            raise PolarError("Memory queue has not started")
         self._sequence += 1
         self._send_queue.send_nowait(_QueuedEvent(self._sequence, event))
         self._pending[self._sequence] = event
@@ -171,10 +161,7 @@ class MemoryEventQueue:
             MeteringTimeoutError: The caller's wait expired.
         """
         validate_timeout(timeout)
-        if self._flush_cancel_scope is None:
-            raise PolarError("Memory queue has not started")
-        if self._closed:
-            raise anyio.ClosedResourceError
+        self._require_open()
         request = self._barrier()
         request.deadline = anyio.current_time() + timeout
         try:
@@ -200,6 +187,10 @@ class MemoryEventQueue:
                 raise request.error
         finally:
             self._release(request)
+
+    def _require_open(self) -> None:
+        if self._flush_cancel_scope is None or self._closed:
+            raise RuntimeError("Use MemoryEventQueue inside an open() context")
 
     async def _close(self, body_error: BaseException | None) -> None:
         assert self._flush_cancel_scope is not None
@@ -247,6 +238,7 @@ class MemoryEventQueue:
 
     async def _flush_task(
         self,
+        ingest: Ingest,
         on_ack: OnAck | None,
         on_rejected: OnRejected | None,
         *,
@@ -287,29 +279,32 @@ class MemoryEventQueue:
                         except anyio.EndOfStream:
                             stream_closed = True
 
-                        events = [item.event for item in batch]
-                        outcome = await self._process_batch(events)
+                        failures = await self._process_batch(ingest, batch)
+                        accepted = None
+                        if on_ack is not None:
+                            failed_sequences = {item.sequence for item in failures}
+                            accepted = [
+                                item.event for item in batch if item.sequence not in failed_sequences
+                            ]
+                        rejected = [
+                            item.failure.events[0]
+                            for item in failures
+                            if item.failure.reason == "permanent_error"
+                        ] if on_rejected is not None else None
                         for item in batch:
                             self._pending.pop(item.sequence)
-                            if outcome is not None:
-                                self._failures.append(
-                                    _FailedEvent(
-                                        item.sequence,
-                                        DeliveryFailure(
-                                            [item.event], outcome.reason, outcome.cause
-                                        ),
-                                    )
-                                )
+                        self._failures.extend(failures)
                         batch = []
-                        if outcome is not None:
-                            log.warning("Dropping %s events: %s", len(events), outcome.reason)
                         try:
-                            if outcome is None and on_ack is not None:
-                                await on_ack(events)
-                            elif outcome is not None and outcome.reason == "permanent_error" and on_rejected is not None:
-                                await on_rejected(events, outcome.reason)
+                            if rejected and on_rejected is not None:
+                                await on_rejected(rejected, "permanent_error")
                         except Exception as error:  # noqa: BLE001
-                            log.warning("Memory queue delivery hook failed (%s)", type(error).__name__)
+                            log.warning("Memory queue rejection hook failed (%s)", type(error).__name__)
+                        try:
+                            if accepted and on_ack is not None:
+                                await on_ack(accepted)
+                        except Exception as error:  # noqa: BLE001
+                            log.warning("Memory queue acknowledgement hook failed (%s)", type(error).__name__)
                         for request in requests:
                             self._finish(request)
                         requests = []
@@ -349,33 +344,50 @@ class MemoryEventQueue:
                 for request in requests:
                     self._finish(request)
 
-    async def _process_batch(self, batch: list[EventInput]) -> DeliveryFailure | None:
+    async def _process_batch(
+        self, ingest: Ingest, batch: list[_QueuedEvent]
+    ) -> list[_FailedEvent]:
+        failures: list[_FailedEvent] = []
+        remaining = batch
         attempt = 1
         waited = 0.0
-        while True:
+        while remaining:
             try:
-                await self.polar.events.ingest(events=batch)
-                break
-            except PolarError as error:
-                if not (
-                    isinstance(error, (PolarNetworkError, PolarRateLimitError, PolarServerError))
-                    or isinstance(error, PolarClientError) and error.status_code == 408
-                ):
-                    return DeliveryFailure(batch, "permanent_error", error)
-                retry_after = (
-                    retry_after_seconds(error.retry_after)
-                    if isinstance(error, PolarRateLimitError)
-                    else None
-                )
-                if retry_after is not None:
-                    delay = retry_after
-                    waited += delay
-                    if waited > RETRY_AFTER_BUDGET:
-                        return DeliveryFailure(batch, "retry_exhausted", error)
+                await ingest([item.event for item in remaining])
+            except IngestRejectedError as error:
+                indexes = error.rejected_indexes
+                rejected = [
+                    item for index, item in enumerate(remaining) if indexes and index in indexes
+                ]
+                if rejected:
+                    remaining = [
+                        item for index, item in enumerate(remaining) if indexes is not None and index not in indexes
+                    ]
                 else:
-                    if attempt >= self.max_attempts:
-                        return DeliveryFailure(batch, "retry_exhausted", error)
+                    rejected, remaining = remaining, []
+                log.warning("Dropping %s events: permanent_error", len(rejected))
+                failures.extend(
+                    _FailedEvent(item.sequence, DeliveryFailure([item.event], "permanent_error", error))
+                    for item in rejected
+                )
+            except IngestRetryableError as error:
+                if error.retry_after is not None:
+                    delay = error.retry_after
+                    waited += delay
+                    retry = waited <= RETRY_AFTER_BUDGET
+                else:
                     delay = _jittered_delay(2**attempt)
+                    retry = attempt < self.max_attempts
                     attempt += 1
-                await anyio.sleep(delay)
-        return None
+                if retry:
+                    await anyio.sleep(delay)
+                    continue
+                log.warning("Dropping %s events: retry_exhausted", len(remaining))
+                failures.extend(
+                    _FailedEvent(item.sequence, DeliveryFailure([item.event], "retry_exhausted", error))
+                    for item in remaining
+                )
+                break
+            else:
+                break
+        return failures

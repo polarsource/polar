@@ -17,7 +17,6 @@ import { createHash, randomUUID } from "node:crypto";
 import { once } from "node:events";
 import { setTimeout as sleep } from "node:timers/promises";
 
-import type { MeteringOutpost } from "../metering/client";
 import type { EventInput } from "../metering/event";
 import type { CustomerMeter } from "../metering/meter";
 
@@ -38,7 +37,6 @@ import {
   takeLock,
 } from "../redis";
 import {
-  MissingExternalIdError,
   NotReadyError,
   PolarOutpostError,
   RefusedError,
@@ -320,6 +318,9 @@ export interface OutpostOptions {
 }
 export class Outpost {
   private redis?: OutpostRedis;
+  private readonly onRedisClose = () => {
+    this.event("outpost.redis.disconnect", new Error("Redis connection closed"));
+  };
   private _connectionId?: string;
   private tracerProvider?: TracerProvider;
   private tracer?: Tracer;
@@ -355,9 +356,19 @@ export class Outpost {
   private applying: Promise<unknown> = Promise.resolve();
 
   constructor(
-    readonly redisUrl: string,
+    private readonly redisSource: string | Redis,
     private readonly options: OutpostOptions,
   ) {}
+
+  get redisUrl(): string | undefined {
+    return typeof this.redisSource === "string" ? this.redisSource : undefined;
+  }
+
+  /** @internal */
+  redisForUrl(url: string | undefined): Redis | undefined {
+    if (url !== undefined && url === this.redisUrl) return this.redis;
+    return undefined;
+  }
 
   get connectionId(): string | undefined {
     return this._connectionId;
@@ -368,7 +379,7 @@ export class Outpost {
   }
 
   async start(): Promise<this> {
-    if (this.redis) throw new PolarError("Outpost is already connected");
+    if (this.redis) throw new Error("Outpost is already connected");
     this.failure = undefined;
     this.pullRetryAt = 0;
     this.configurationRevision = null;
@@ -387,7 +398,8 @@ export class Outpost {
       this.redisKeys = meter.createGauge("outpost.redis.keys");
     }
     try {
-      this.redis = createRedis(this.redisUrl) as OutpostRedis;
+      const source = this.redisSource;
+      this.redis = (typeof source === "string" ? createRedis(source) : source) as OutpostRedis;
       this.redis.defineCommand("outpostReadStates", { lua: READ_STATES_SCRIPT });
       this.redis.defineCommand("outpostPrepareSnapshot", {
         numberOfKeys: 2,
@@ -408,15 +420,14 @@ export class Outpost {
       });
       this.redis.defineCommand("outpostCommitPull", { numberOfKeys: 2, lua: COMMIT_PULL_SCRIPT });
       const redis = this.redis;
-      this.redis.on("close", () => {
-        if (this.redis !== redis) return;
-        this.event("outpost.redis.disconnect", new PolarError("Redis connection closed"));
-      });
-      await this.trace("outpost.redis.connect", () => connectRedis(redis), {
-        "outpost.redis.connection": "primary",
-      }).catch((error: unknown) => {
-        throw redisUnavailable(error);
-      });
+      redis.on("close", this.onRedisClose);
+      if (typeof source === "string") {
+        await this.trace("outpost.redis.connect", () => connectRedis(redis), {
+          "outpost.redis.connection": "primary",
+        }).catch((error: unknown) => {
+          throw redisUnavailable(error);
+        });
+      }
       // Keys carry the organization: organizations can share a Redis.
       await this.configure();
       this._connectionId = randomUUID();
@@ -439,7 +450,8 @@ export class Outpost {
     clearInterval(this.pullTimer);
     await this.inFlight();
     const redis = this.redis;
-    if (redis) this.event("outpost.redis.disconnect");
+    const owned = typeof this.redisSource === "string" ? redis : undefined;
+    if (owned) this.event("outpost.redis.disconnect");
     const tracerProvider = this.tracerProvider;
     const meterProvider = this.meterProvider;
     this.tracerProvider = undefined;
@@ -455,12 +467,13 @@ export class Outpost {
     await this.pushTelemetry();
     this._connectionId = undefined;
     this.redis = undefined;
+    redis?.off("close", this.onRedisClose);
     // disconnect() stops a connection that is not up without ever emitting "end".
     const closed =
-      !redis || ["end", "reconnecting", "wait"].includes(redis.status)
+      !owned || ["end", "reconnecting", "wait"].includes(owned.status)
         ? Promise.resolve()
-        : once(redis, "end");
-    redis?.disconnect();
+        : once(owned, "end");
+    owned?.disconnect();
     await Promise.allSettled([closed, this.applying, ...this.requesting.values()]);
     this.requesting.clear();
     this.reducers = [];
@@ -474,10 +487,10 @@ export class Outpost {
   /**
    * Reject an event Outpost cannot reconcile with Polar.
    *
-   * @throws MissingExternalIdError when the event has no external_id.
+   * @throws TypeError when the event has no external_id.
    */
   validate(event: EventInput): void {
-    if (!event.external_id) throw new MissingExternalIdError();
+    if (!event.external_id) throw new TypeError("Outpost needs an external_id on every event");
   }
 
   async track(event: EventInput): Promise<void> {
@@ -597,7 +610,7 @@ export class Outpost {
   }
 
   private requireRedis(): OutpostRedis {
-    if (!this.redis) throw new PolarError("Call Outpost.start() before using Outpost");
+    if (!this.redis) throw new Error("Call Outpost.start() before using Outpost");
     return this.redis;
   }
 
@@ -1424,19 +1437,19 @@ export class Outpost {
 }
 
 export type OutpostFactoryOptions = Omit<OutpostOptions, "client" | "confirmTimeout"> & {
-  /** Redis connection URL. Defaults to the REDIS_URL environment variable. */
-  redisUrl?: string;
+  /** Redis URL or a caller-owned Redis client. Defaults to REDIS_URL. */
+  redis?: string | Redis;
 };
 
 /**
- * Configure Outpost for polar.metering({ outpost: outpost({ redisUrl }) }).
+ * Configure Outpost for polar.metering({ outpost: outpost({ redis }) }).
  *
- * @throws MeteringError if neither redisUrl nor REDIS_URL is set.
+ * @throws MeteringError if neither redis nor REDIS_URL is set.
  */
 export const outpost = ({
-  redisUrl = process.env.REDIS_URL,
+  redis = process.env.REDIS_URL,
   ...options
-}: OutpostFactoryOptions = {}): MeteringOutpost => {
-  if (!redisUrl) throw new MeteringError("Outpost requires redisUrl or REDIS_URL");
-  return (client) => new Outpost(redisUrl, { ...options, client });
+}: OutpostFactoryOptions = {}) => {
+  if (!redis) throw new MeteringError("Outpost requires redis or REDIS_URL");
+  return (client: ClientBase) => new Outpost(redis, { ...options, client });
 };

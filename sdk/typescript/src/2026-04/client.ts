@@ -88,9 +88,11 @@ export function createPolar(options: PolarOptions) {
      *
      * @param options.queue EventQueue used to deliver events. Defaults to MemoryEventQueue.
      * @param options.outpost Outpost from `outpost()` in `@polar-sh/sdk/outpost`. Disabled by default.
+     * @param options.onAck Callback for batches Polar accepts.
+     * @param options.onRejected Callback for permanently rejected events and their reason.
      * @returns A metering helper that starts on its first operation.
      */
-    metering: (options?: MeteringOptions) => createMetering(services, client, options),
+    metering: (options?: MeteringOptions) => createMetering(client, options),
   };
 }
 

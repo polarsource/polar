@@ -218,7 +218,7 @@ if (meter !== null) console.log(meter.consumed_units, meter.credited_units, mete
 
 Pass `outpost()` from `@polar-sh/sdk/outpost` to `polar.metering()` to enable Redis-backed
 local reduction. This provides low-latency meter reads across clients. Outpost requires the
-optional `ioredis` and `@opentelemetry/*` peer dependencies; the rest of the SDK does not.
+optional `ioredis` and `@opentelemetry/*` peer dependencies.
 
 ```typescript
 import { outpost } from "@polar-sh/sdk/outpost";
@@ -227,7 +227,7 @@ const metering = polar.metering({ outpost: outpost() });
 ```
 
 `outpost()` uses `REDIS_URL` by default. Pass a URL explicitly with
-`outpost({ redisUrl: "redis://localhost:6379" })`. The queue queues events for Polar and
+`outpost({ redis: "redis://localhost:6379" })`. The queue queues events for Polar and
 Outpost applies them locally. If Outpost cannot answer a meter read, metering reads the value
 from the Polar API. `snapshotTimeout` sets how long Outpost waits for an initial snapshot.
 
@@ -240,13 +240,26 @@ supply another implementation of the `EventQueue` interface from `@polar-sh/sdk/
 import { MemoryEventQueue } from "@polar-sh/sdk/metering";
 
 const metering = polar.metering({
-  queue: new MemoryEventQueue(polar, { batchSize: 50 }),
+  queue: new MemoryEventQueue({ batchSize: 50 }),
 });
 ```
 
 `RedisEventQueue` from `@polar-sh/sdk/metering/queue/redis` uses a Redis stream for persistent
-delivery. Either queue can be used with Outpost. A custom queue receives `onAck` and
-`onRejected` in `start()` and calls them for events Polar accepts or permanently rejects.
+delivery. Either queue can be used with Outpost.
+
+```typescript
+import { RedisEventQueue } from "@polar-sh/sdk/metering/queue/redis";
+import { outpost } from "@polar-sh/sdk/outpost";
+
+const redis = "redis://localhost:6379";
+const metering = polar.metering({
+  queue: new RedisEventQueue(redis, { stream: "my-app:metering" }),
+  outpost: outpost({ redis }),
+});
+```
+
+Metering opens a single Redis client when the queue and Outpost use the same URL. Both also
+accept an existing `ioredis` client, which your application manages and closes.
 
 #### MemoryEventQueue options
 
@@ -260,11 +273,17 @@ delivery. Either queue can be used with Outpost. A custom queue receives `onAck`
 
 | Option | Default | Meaning |
 | --- | --- | --- |
-| `redisUrl` | `REDIS_URL` environment variable | Redis instance used by Outpost. |
+| `redis` | `REDIS_URL` environment variable | Redis instance used by Outpost. |
 | `telemetry` | `true` | Send Outpost metrics and traces to Polar. |
 | `snapshotTimeout` | `5000` | Milliseconds a cold read waits for its initial snapshot. |
 
 Telemetry can also be disabled with `POLAR_OUTPOST_TELEMETRY=0`.
+
+### Delivery callbacks
+
+Pass `onAck(events)` and `onRejected(events, reason)` to `polar.metering()` to observe delivery.
+Metering runs the corresponding Outpost hook first when Outpost is enabled. If your callback
+throws, Metering logs the error type and continues settling the events.
 
 ## Webhooks
 

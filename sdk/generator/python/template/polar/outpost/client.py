@@ -22,6 +22,7 @@ from opentelemetry.trace import Span, StatusCode
 from opentelemetry.util.types import AttributeValue
 from redis.asyncio import Redis
 from redis.asyncio.retry import Retry
+from redis.client import NEVER_DECODE
 from redis.commands.core import AsyncScript
 from redis.exceptions import (
     AuthenticationError,
@@ -44,7 +45,7 @@ from polar._redis import (
 )
 from polar.base import PolarError
 from polar.logging import get_logger
-from polar.metering.client import PolarClient
+from polar.metering import PolarClient
 from polar.metering.errors import (
     DropReason,
     UnknownMeterError,
@@ -54,7 +55,6 @@ from polar.metering.errors import (
 from polar.metering.events import EventInput
 from polar.metering.meter import CustomerMeter
 from polar.outpost.errors import (
-    MissingExternalIdError,
     NotReadyError,
     PolarOutpostError,
     UnavailableRedisError,
@@ -343,16 +343,18 @@ def is_sampled(trace_id: int) -> bool:
 
 
 class Outpost:
+    """Reduce events locally using a Redis URL or a caller-owned Redis client."""
+
     def __init__(
         self,
-        redis_url: str,
+        redis: str | Redis,
         *,
         client: httpx2.AsyncClient,
         telemetry: bool = True,
         snapshot_timeout: float = SNAPSHOT_TIMEOUT,
         confirm_timeout: float = CONFIRM_TIMEOUT,
     ) -> None:
-        self.redis_url = redis_url
+        self._redis_source = redis
         self._client = client
         self._telemetry = is_telemetry_enabled(telemetry)
         self._tracer_provider: TracerProvider | None = None
@@ -401,17 +403,21 @@ class Outpost:
         # of the pull hash.
         self._resets: int | None = None
 
+    @property
+    def redis_url(self) -> str | None:
+        return self._redis_source if isinstance(self._redis_source, str) else None
+
     @classmethod
     def create(
         cls,
         polar: PolarClient,
-        redis_url: str,
+        redis: str | Redis,
         *,
         telemetry: bool = True,
         snapshot_timeout: float = SNAPSHOT_TIMEOUT,
     ) -> typing.Self:
         return cls(
-            redis_url=redis_url,
+            redis=redis,
             client=polar._client._client,
             telemetry=telemetry,
             snapshot_timeout=snapshot_timeout,
@@ -441,10 +447,13 @@ class Outpost:
             self._redis_memory = meter.create_gauge("outpost.redis.memory", unit="By")
             self._redis_keys = meter.create_gauge("outpost.redis.keys")
         try:
-            with self._span("outpost.redis.connect"):
-                self._redis = await self._stack.enter_async_context(
-                    connect_redis(self.redis_url, timeout=TIMEOUT)
-                )
+            if isinstance(self._redis_source, str):
+                with self._span("outpost.redis.connect"):
+                    self._redis = await self._stack.enter_async_context(
+                        connect_redis(self._redis_source, timeout=TIMEOUT)
+                    )
+            else:
+                self._redis = self._redis_source
             self._redis_available = True
             # Keys carry the organization: organizations can share a Redis.
             await self._configure()
@@ -526,10 +535,10 @@ class Outpost:
         """Reject an event Outpost cannot reconcile with Polar.
 
         Raises:
-            MissingExternalIdError: The event has no external_id.
+            ValueError: The event has no external_id.
         """
         if not event.get("external_id"):
-            raise MissingExternalIdError()
+            raise ValueError("Outpost needs an external_id on every event")
 
     @_raise_redis_unavailable
     async def track(self, event: EventInput) -> None:
@@ -1627,7 +1636,10 @@ class Outpost:
                 if not await redis.exists(batch):
                     with contextlib.suppress(RedisResponseError):
                         await redis.rename(key, batch)
-                exports = typing.cast(list[bytes], await redis.lrange(batch, 0, -1))
+                exports = typing.cast(
+                    list[bytes],
+                    await redis.execute_command("LRANGE", batch, 0, -1, **{NEVER_DECODE: True}),
+                )
                 if not exports:
                     continue
                 response = await self._client.post(

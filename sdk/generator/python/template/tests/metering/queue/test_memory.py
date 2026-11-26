@@ -5,16 +5,15 @@ import anyio
 import anyio.lowlevel
 import pytest
 
-from polar import PolarClientError, PolarError, PolarNetworkError, PolarRateLimitError
+from polar.metering.errors import IngestRejectedError, IngestRetryableError
 from polar.metering import MeteringDeliveryError, MeteringTimeoutError, EventQueue
 from polar.metering.queue.memory import MemoryEventQueue, DropReason, _FlushRequest
-from polar.metering.client import MeteringClient
 from polar.metering.events import EventInput
 
 
 @pytest.fixture
-def client() -> AsyncMock:
-    return AsyncMock()
+def ingest() -> AsyncMock:
+    return AsyncMock(return_value=None)
 
 
 @pytest.fixture
@@ -26,62 +25,69 @@ def events() -> list[EventInput]:
 
 @pytest.mark.anyio
 async def test_flush_drains_batches_and_keeps_accepting_events(
-    client: AsyncMock, events: list[EventInput]
+    ingest: AsyncMock, events: list[EventInput]
 ) -> None:
-    strategy: EventQueue = MemoryEventQueue(client, batch_size=2, batch_interval=60)
-    with pytest.raises(PolarError, match="has not started"):
+    strategy: EventQueue = MemoryEventQueue(batch_size=2, batch_interval=60)
+    with pytest.raises(RuntimeError, match="inside an open"):
         await strategy.flush()
+    with pytest.raises(RuntimeError, match="inside an open"):
+        await strategy.enqueue(events[0])
     with anyio.fail_after(1):
-        async with strategy.open():
+        async with strategy.open(ingest=ingest):
+            with pytest.raises(RuntimeError, match="already started"):
+                async with strategy.open(ingest=ingest):
+                    pass
             await strategy.flush()
-            client.events.ingest.assert_not_awaited()
+            ingest.assert_not_awaited()
             for event in events:
                 await strategy.enqueue(event)
             await strategy.flush()
             batches = [
-                call.kwargs["events"] for call in client.events.ingest.await_args_list
+                call.args[0] for call in ingest.await_args_list
             ]
             assert batches == [events[:2], events[2:4], events[4:]]
-            client.events.ingest.reset_mock()
+            ingest.reset_mock()
             await strategy.enqueue(events[0])
             await strategy.flush()
-            client.events.ingest.assert_awaited_once_with(events=events[:1])
-    with pytest.raises(anyio.ClosedResourceError):
+            ingest.assert_awaited_once_with(events[:1])
+    with pytest.raises(RuntimeError, match="inside an open"):
         await strategy.flush()
+    with pytest.raises(RuntimeError, match="inside an open"):
+        await strategy.enqueue(events[0])
 
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("batch_size, batch_interval", [(1, 60), (100, 0.01), (100, 0)])
 async def test_batching_without_explicit_flush(
-    client: AsyncMock, events: list[EventInput], batch_size: int, batch_interval: float
+    ingest: AsyncMock, events: list[EventInput], batch_size: int, batch_interval: float
 ) -> None:
     sent = anyio.Event()
-    client.events.ingest.side_effect = lambda **kwargs: sent.set()
+    ingest.side_effect = lambda events: sent.set()
     with anyio.fail_after(1):
-        async with MemoryEventQueue(client, batch_size=batch_size, batch_interval=batch_interval).open() as strategy:
+        async with MemoryEventQueue(batch_size=batch_size, batch_interval=batch_interval).open(ingest=ingest) as strategy:
             await strategy.enqueue(events[0])
             await sent.wait()
-            client.events.ingest.assert_awaited_once_with(events=events[:1])
+            ingest.assert_awaited_once_with(events[:1])
 
 
 @pytest.mark.anyio
 async def test_the_newest_flush_keeps_its_boundary(
-    client: AsyncMock, events: list[EventInput]
+    ingest: AsyncMock, events: list[EventInput]
 ) -> None:
     release = [anyio.Event() for _ in range(3)]
     completed = [anyio.Event(), anyio.Event()]
 
-    async def send(*, events: list[EventInput]) -> None:
+    async def send(events: list[EventInput]) -> None:
         await release[int(events[0]["name"])].wait()
 
     async def flush(index: int) -> None:
         await strategy.flush()
         completed[index].set()
 
-    client.events.ingest.side_effect = send
+    ingest.side_effect = send
     with anyio.fail_after(1):
         async with (
-            MemoryEventQueue(client, batch_size=1).open() as strategy,
+            MemoryEventQueue(batch_size=1).open(ingest=ingest) as strategy,
             anyio.create_task_group() as callers,
         ):
             for index in range(2):
@@ -97,7 +103,7 @@ async def test_the_newest_flush_keeps_its_boundary(
             release[1].set()
             await completed[1].wait()
             await anyio.wait_all_tasks_blocked()
-            assert client.events.ingest.await_count == 3
+            assert ingest.await_count == 3
             release[2].set()
 
 
@@ -106,7 +112,7 @@ async def test_the_newest_flush_keeps_its_boundary(
     "batch_size, batches", [(100, [[1, 2, 3]]), (2, [[1, 2], [3]])]
 )
 async def test_released_flushes_batch_queued_events(
-    client: AsyncMock,
+    ingest: AsyncMock,
     events: list[EventInput],
     batch_size: int,
     batches: list[list[int]],
@@ -114,7 +120,7 @@ async def test_released_flushes_batch_queued_events(
     release: list[anyio.Event] = []
     completed = [anyio.Event() for _ in range(4)]
 
-    async def send(*, events: list[EventInput]) -> None:
+    async def send(events: list[EventInput]) -> None:
         gate = anyio.Event()
         release.append(gate)
         await gate.wait()
@@ -123,60 +129,60 @@ async def test_released_flushes_batch_queued_events(
         await strategy.flush()
         completed[index].set()
 
-    client.events.ingest.side_effect = send
+    ingest.side_effect = send
     with anyio.fail_after(1):
         async with (
-            MemoryEventQueue(client, batch_size=batch_size, batch_interval=60).open() as strategy,
+            MemoryEventQueue(batch_size=batch_size, batch_interval=60).open(ingest=ingest) as strategy,
             anyio.create_task_group() as callers,
         ):
             for index in range(4):
                 await strategy.enqueue(events[index])
                 callers.start_soon(flush, index)
                 await anyio.wait_all_tasks_blocked()
-            assert client.events.ingest.await_count == 1
+            assert ingest.await_count == 1
             assert [done.is_set() for done in completed] == [True, True, True, False]
             release[0].set()
             for index, batch in enumerate(batches):
                 await anyio.wait_all_tasks_blocked()
-                assert client.events.ingest.await_count == index + 2
-                call = client.events.ingest.await_args_list[index + 1]
-                assert call.kwargs["events"] == [events[i] for i in batch]
+                assert ingest.await_count == index + 2
+                call = ingest.await_args_list[index + 1]
+                assert call.args[0] == [events[i] for i in batch]
                 assert not completed[3].is_set()
                 release[index + 1].set()
             await completed[3].wait()
             await anyio.wait_all_tasks_blocked()
-            assert client.events.ingest.await_count == len(batches) + 1
+            assert ingest.await_count == len(batches) + 1
 
 
 @pytest.mark.anyio
 async def test_flush_waits_for_retries(
-    client: AsyncMock, events: list[EventInput]
+    ingest: AsyncMock, events: list[EventInput]
 ) -> None:
-    client.events.ingest.side_effect = [PolarRateLimitError(429, 0), None]
+    ingest.side_effect = [IngestRetryableError(retry_after=1), None]
     with anyio.fail_after(3):
-        async with MemoryEventQueue(client, batch_interval=60).open() as strategy:
+        async with MemoryEventQueue(batch_interval=60).open(ingest=ingest) as strategy:
             await strategy.enqueue(events[0])
             await strategy.flush()
-            first, second = client.events.ingest.await_args_list
-            assert first.kwargs["events"] == events[:1]
+            first, second = ingest.await_args_list
+            assert first.args[0] == events[:1]
             assert first == second
 
 
 @pytest.mark.anyio
 async def test_retry_after_waits_a_second_without_spending_attempts(
-    client: AsyncMock, events: list[EventInput]
+    ingest: AsyncMock, events: list[EventInput]
 ) -> None:
     on_rejected = AsyncMock()
     calls: list[float] = []
 
-    async def send(*, events: list[EventInput]) -> None:
+    async def send(events: list[EventInput]) -> None:
         calls.append(time.monotonic())
         if len(calls) == 1:
-            raise PolarRateLimitError(429, 0)
+            raise IngestRetryableError(retry_after=1)
 
-    client.events.ingest.side_effect = send
+    ingest.side_effect = send
     with anyio.fail_after(3):
-        async with MemoryEventQueue(client, batch_interval=60, max_attempts=1).open(on_rejected=on_rejected) as strategy:
+        async with MemoryEventQueue(batch_interval=60, max_attempts=1).open(ingest=ingest, on_rejected=on_rejected) as strategy:
             await strategy.enqueue(events[0])
             await strategy.flush()
             assert len(calls) == 2
@@ -186,26 +192,26 @@ async def test_retry_after_waits_a_second_without_spending_attempts(
 
 @pytest.mark.anyio
 async def test_retry_after_beyond_budget_drops_the_batch(
-    client: AsyncMock, events: list[EventInput]
+    ingest: AsyncMock, events: list[EventInput]
 ) -> None:
     on_rejected = AsyncMock()
-    client.events.ingest.side_effect = PolarRateLimitError(429, 301)
+    ingest.side_effect = IngestRetryableError(retry_after=301)
     with anyio.fail_after(0.5):
-        async with MemoryEventQueue(client, batch_interval=60, shutdown_timeout=0.02).open(on_rejected=on_rejected) as strategy:
+        async with MemoryEventQueue(batch_interval=60, shutdown_timeout=0.02).open(ingest=ingest, on_rejected=on_rejected) as strategy:
             await strategy.enqueue(events[0])
             with pytest.raises(MeteringDeliveryError) as failure:
                 await strategy.flush()
-            assert failure.value.failures[0].cause is client.events.ingest.side_effect
-            client.events.ingest.assert_awaited_once()
+            assert failure.value.failures[0].cause is ingest.side_effect
+            ingest.assert_awaited_once()
             assert failure.value.failures[0].reason == "retry_exhausted"
             on_rejected.assert_not_awaited()
 
 
 @pytest.mark.anyio
 async def test_flush_waits_for_rejection_hook(
-    client: AsyncMock, events: list[EventInput]
+    ingest: AsyncMock, events: list[EventInput]
 ) -> None:
-    error = PolarClientError(422, "invalid")
+    error = IngestRejectedError("invalid")
     reporting = anyio.Event()
     release = anyio.Event()
     completed = anyio.Event()
@@ -223,10 +229,10 @@ async def test_flush_waits_for_rejection_hook(
         assert failure.value.failures[0].cause is error
         completed.set()
 
-    client.events.ingest.side_effect = error
+    ingest.side_effect = error
     with anyio.fail_after(1):
         async with (
-            MemoryEventQueue(client, batch_interval=60, max_attempts=1).open(on_rejected=on_rejected) as strategy,
+            MemoryEventQueue(batch_interval=60, max_attempts=1).open(ingest=ingest, on_rejected=on_rejected) as strategy,
             anyio.create_task_group() as callers,
         ):
             await strategy.enqueue(events[0])
@@ -235,19 +241,19 @@ async def test_flush_waits_for_rejection_hook(
             assert not completed.is_set()
             release.set()
             await completed.wait()
-    client.events.ingest.assert_awaited_once()
+    ingest.assert_awaited_once()
 
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("fail_worker", [False, True])
 async def test_worker_exit_releases_the_waiting_flush(
-    client: AsyncMock, events: list[EventInput], fail_worker: bool
+    ingest: AsyncMock, events: list[EventInput], fail_worker: bool
 ) -> None:
     release = anyio.Event()
     failure = TypeError("broken transport")
     flush_errors: list[MeteringDeliveryError] = []
 
-    async def send(*, events: list[EventInput]) -> None:
+    async def send(events: list[EventInput]) -> None:
         await release.wait()
         raise failure
 
@@ -258,13 +264,13 @@ async def test_worker_exit_releases_the_waiting_flush(
             except MeteringDeliveryError as error:
                 flush_errors.append(error)
 
-    client.events.ingest.side_effect = send
+    ingest.side_effect = send
     on_rejected = AsyncMock()
-    strategy = MemoryEventQueue(client, batch_interval=60, shutdown_timeout=0.02)
+    strategy = MemoryEventQueue(batch_interval=60, shutdown_timeout=0.02)
     with anyio.fail_after(1):
         async with anyio.create_task_group() as callers:
             with pytest.raises(MeteringDeliveryError):
-                async with strategy.open(on_rejected=on_rejected):
+                async with strategy.open(ingest=ingest, on_rejected=on_rejected):
                     await strategy.enqueue(events[0])
                     for _ in range(2):
                         callers.start_soon(flush)
@@ -288,33 +294,33 @@ async def test_worker_exit_releases_the_waiting_flush(
 @pytest.mark.anyio
 @pytest.mark.parametrize("event_count", [0, 1, 5])
 async def test_exit_drains_batches(
-    client: AsyncMock, events: list[EventInput], event_count: int
+    ingest: AsyncMock, events: list[EventInput], event_count: int
 ) -> None:
     with anyio.fail_after(1):
-        async with MemoryEventQueue(client, batch_size=2, batch_interval=60).open() as strategy:
+        async with MemoryEventQueue(batch_size=2, batch_interval=60).open(ingest=ingest) as strategy:
             for event in events[:event_count]:
                 await strategy.enqueue(event)
-    batches = [call.kwargs["events"] for call in client.events.ingest.await_args_list]
+    batches = [call.args[0] for call in ingest.await_args_list]
     assert [event for batch in batches for event in batch] == events[:event_count]
     assert all(0 < len(batch) <= 2 for batch in batches)
 
 
 @pytest.mark.anyio
 async def test_exit_shields_in_flight_batch_from_cancellation(
-    client: AsyncMock, events: list[EventInput]
+    ingest: AsyncMock, events: list[EventInput]
 ) -> None:
     started = anyio.Event()
     sent: list[EventInput] = []
 
-    async def send(*, events: list[EventInput]) -> None:
+    async def send(events: list[EventInput]) -> None:
         started.set()
         await anyio.sleep(0.01)
         sent.extend(events)
 
-    client.events.ingest.side_effect = send
+    ingest.side_effect = send
     with anyio.fail_after(1):
         with anyio.CancelScope() as scope:
-            async with MemoryEventQueue(client, batch_size=1).open() as strategy:
+            async with MemoryEventQueue(batch_size=1).open(ingest=ingest) as strategy:
                 await strategy.enqueue(events[0])
                 await started.wait()
                 scope.cancel()
@@ -325,42 +331,42 @@ async def test_exit_shields_in_flight_batch_from_cancellation(
 
 @pytest.mark.anyio
 async def test_exit_bounds_retry_wait(
-    client: AsyncMock, events: list[EventInput]
+    ingest: AsyncMock, events: list[EventInput]
 ) -> None:
-    client.events.ingest.side_effect = PolarNetworkError("unavailable")
+    ingest.side_effect = IngestRetryableError("unavailable")
     with anyio.fail_after(1), pytest.raises(MeteringDeliveryError):
-        async with MemoryEventQueue(client, batch_size=1, shutdown_timeout=0.02).open() as strategy:
+        async with MemoryEventQueue(batch_size=1, shutdown_timeout=0.02).open(ingest=ingest) as strategy:
             await strategy.enqueue(events[0])
-    client.events.ingest.assert_awaited_once()
+    ingest.assert_awaited_once()
 
 
 @pytest.mark.anyio
 async def test_exit_flushes_before_propagating_body_error(
-    client: AsyncMock, events: list[EventInput]
+    ingest: AsyncMock, events: list[EventInput]
 ) -> None:
     with anyio.fail_after(1):
         with pytest.raises(ValueError, match="body failed"):
-            async with MemoryEventQueue(client, batch_interval=60).open() as strategy:
+            async with MemoryEventQueue(batch_interval=60).open(ingest=ingest) as strategy:
                 await strategy.enqueue(events[0])
                 raise ValueError("body failed")
-    client.events.ingest.assert_awaited_once_with(events=events[:1])
+    ingest.assert_awaited_once_with(events[:1])
 
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("drop_first", [False, True])
 async def test_shutdown_reports_only_unfinished_events(
-    client: AsyncMock, events: list[EventInput], drop_first: bool
+    ingest: AsyncMock, events: list[EventInput], drop_first: bool
 ) -> None:
-    async def send(*, events: list[EventInput]) -> None:
+    async def send(events: list[EventInput]) -> None:
         if events[0]["name"] == "0":
             if drop_first:
-                raise PolarNetworkError("unavailable")
+                raise IngestRetryableError("unavailable")
             return
         await anyio.sleep_forever()
 
-    client.events.ingest.side_effect = send
+    ingest.side_effect = send
     with anyio.fail_after(1), pytest.raises(MeteringDeliveryError) as failure:
-        async with MemoryEventQueue(client, batch_size=1, shutdown_timeout=0.02, max_attempts=1).open() as strategy:
+        async with MemoryEventQueue(batch_size=1, shutdown_timeout=0.02, max_attempts=1).open(ingest=ingest) as strategy:
             for event in events[:3]:
                 await strategy.enqueue(event)
     expected = [(event, "shutdown_timeout") for event in events[1:3]]
@@ -370,40 +376,40 @@ async def test_shutdown_reports_only_unfinished_events(
 
 
 @pytest.mark.anyio
-async def test_structural_metering_client(events: list[EventInput]) -> None:
-    received: list[EventInput] = []
-
-    class Events:
-        async def ingest(self, *, events: list[EventInput]) -> None:
-            received.extend(events)
-
-    class Client:
-        events = Events()
-
-    client: MeteringClient = Client()
-    async with MemoryEventQueue(client, batch_interval=60).open() as strategy:
-        await strategy.enqueue(events[0])
-    assert received == events[:1]
+async def test_only_notifies_rejection_for_named_events(events: list[EventInput]) -> None:
+    refusal = IngestRejectedError(rejected_indexes={1})
+    ingest = AsyncMock(side_effect=[refusal, None])
+    on_ack, on_rejected = AsyncMock(), AsyncMock()
+    async with MemoryEventQueue().open(ingest=ingest, on_ack=on_ack, on_rejected=on_rejected) as queue:
+        for event in events[:3]:
+            await queue.enqueue(event)
+        with pytest.raises(MeteringDeliveryError) as failure:
+            await queue.flush()
+        assert failure.value.events == [events[1]]
+    accepted = [events[0], events[2]]
+    assert [call.args[0] for call in ingest.await_args_list] == [events[:3], accepted]
+    on_rejected.assert_awaited_once_with([events[1]], "permanent_error")
+    on_ack.assert_awaited_once_with(accepted)
 
 
 @pytest.mark.parametrize("batch_size", [0, -1])
-def test_rejects_non_positive_batch_size(client: AsyncMock, batch_size: int) -> None:
+def test_rejects_non_positive_batch_size(batch_size: int) -> None:
     with pytest.raises(ValueError, match="batch_size must be greater than zero"):
-        MemoryEventQueue(client, batch_size=batch_size)
+        MemoryEventQueue(batch_size=batch_size)
 
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("rejected", [False, True])
 async def test_failing_delivery_hook_does_not_stop_the_queue(
-    client: AsyncMock, events: list[EventInput], rejected: bool, caplog: pytest.LogCaptureFixture
+    ingest: AsyncMock, events: list[EventInput], rejected: bool, caplog: pytest.LogCaptureFixture
 ) -> None:
     hook_error = RuntimeError("private event details")
-    rejection = PolarClientError(422, "invalid")
+    rejection = IngestRejectedError("invalid")
     if rejected:
-        client.events.ingest.side_effect = [rejection, None]
+        ingest.side_effect = [rejection, None]
     on_ack = AsyncMock(side_effect=None if rejected else [hook_error, None])
     on_rejected = AsyncMock(side_effect=hook_error)
-    async with MemoryEventQueue(client).open(on_ack=on_ack, on_rejected=on_rejected) as queue:
+    async with MemoryEventQueue().open(ingest=ingest, on_ack=on_ack, on_rejected=on_rejected) as queue:
         await queue.enqueue(events[0])
         if rejected:
             with pytest.raises(MeteringDeliveryError) as exc_info:
@@ -415,19 +421,20 @@ async def test_failing_delivery_hook_does_not_stop_the_queue(
             on_rejected.assert_not_awaited()
         await queue.enqueue(events[1])
         await queue.flush()
-    assert client.events.ingest.await_count == 2
-    assert "Memory queue delivery hook failed (RuntimeError)" in caplog.messages
+    assert ingest.await_count == 2
+    hook = "rejection" if rejected else "acknowledgement"
+    assert f"Memory queue {hook} hook failed (RuntimeError)" in caplog.messages
     assert "private event details" not in caplog.text
 
 
 @pytest.mark.anyio
 async def test_background_failures_go_to_the_newest_overlapping_flush(
-    client: AsyncMock, events: list[EventInput]
+    ingest: AsyncMock, events: list[EventInput]
 ) -> None:
     reporting = anyio.Event()
     release = anyio.Event()
     observed: list[MeteringDeliveryError] = []
-    cause = PolarClientError(422, "invalid")
+    cause = IngestRejectedError("invalid")
 
     async def on_rejected(batch: list[EventInput], reason: DropReason) -> None:
         reporting.set()
@@ -439,9 +446,9 @@ async def test_background_failures_go_to_the_newest_overlapping_flush(
         except MeteringDeliveryError as error:
             observed.append(error)
 
-    client.events.ingest.side_effect = cause
+    ingest.side_effect = cause
     with anyio.fail_after(1):
-        async with MemoryEventQueue(client, batch_size=1).open(on_rejected=on_rejected) as strategy:
+        async with MemoryEventQueue(batch_size=1).open(ingest=ingest, on_rejected=on_rejected) as strategy:
             await strategy.enqueue(events[0])
             await reporting.wait()
             async with anyio.create_task_group() as callers:
@@ -453,21 +460,21 @@ async def test_background_failures_go_to_the_newest_overlapping_flush(
             assert observed[0].events == events[:1]
             assert observed[0].failures[0].reason == "permanent_error"
             assert observed[0].failures[0].cause is cause
-            client.events.ingest.side_effect = None
+            ingest.side_effect = None
             await strategy.enqueue(events[1])
             await strategy.flush()
 
 
 @pytest.mark.anyio
 async def test_a_newer_flush_releases_older_ones_and_reports_their_failures(
-    client: AsyncMock, events: list[EventInput]
+    ingest: AsyncMock, events: list[EventInput]
 ) -> None:
     release = anyio.Event()
     released = anyio.Event()
     observed: list[MeteringDeliveryError] = []
-    cause = PolarClientError(422, "invalid")
+    cause = IngestRejectedError("invalid")
 
-    async def send(*, events: list[EventInput]) -> None:
+    async def send(events: list[EventInput]) -> None:
         await release.wait()
         raise cause
 
@@ -480,9 +487,9 @@ async def test_a_newer_flush_releases_older_ones_and_reports_their_failures(
             await strategy.flush()
         observed.append(failure.value)
 
-    client.events.ingest.side_effect = send
+    ingest.side_effect = send
     with anyio.fail_after(1):
-        async with MemoryEventQueue(client, batch_size=1).open() as strategy:
+        async with MemoryEventQueue(batch_size=1).open(ingest=ingest) as strategy:
             async with anyio.create_task_group() as callers:
                 await strategy.enqueue(events[0])
                 callers.start_soon(older)
@@ -490,7 +497,7 @@ async def test_a_newer_flush_releases_older_ones_and_reports_their_failures(
                 await strategy.enqueue(events[1])
                 callers.start_soon(newer)
                 await released.wait()
-                assert client.events.ingest.await_count == 1
+                assert ingest.await_count == 1
                 release.set()
             assert observed[0].events == events[:2]
             assert observed[0].failures[0].cause is cause
@@ -498,21 +505,21 @@ async def test_a_newer_flush_releases_older_ones_and_reports_their_failures(
 
 @pytest.mark.anyio
 async def test_a_newer_flush_with_a_shorter_timeout_does_not_release_older_ones(
-    client: AsyncMock, events: list[EventInput]
+    ingest: AsyncMock, events: list[EventInput]
 ) -> None:
     release = anyio.Event()
     released = anyio.Event()
 
-    async def send(*, events: list[EventInput]) -> None:
+    async def send(events: list[EventInput]) -> None:
         await release.wait()
 
     async def older() -> None:
         await strategy.flush()
         released.set()
 
-    client.events.ingest.side_effect = send
+    ingest.side_effect = send
     with anyio.fail_after(1):
-        async with MemoryEventQueue(client, batch_size=1).open() as strategy:
+        async with MemoryEventQueue(batch_size=1).open(ingest=ingest) as strategy:
             async with anyio.create_task_group() as callers:
                 await strategy.enqueue(events[0])
                 callers.start_soon(older)
@@ -527,14 +534,14 @@ async def test_a_newer_flush_with_a_shorter_timeout_does_not_release_older_ones(
 @pytest.mark.anyio
 @pytest.mark.parametrize("cancel", [False, True])
 async def test_abandoned_flush_preserves_failures_and_other_waiters(
-    client: AsyncMock, events: list[EventInput], cancel: bool
+    ingest: AsyncMock, events: list[EventInput], cancel: bool
 ) -> None:
     sending = anyio.Event()
     release = anyio.Event()
     completed = anyio.Event()
-    cause = PolarClientError(422, "invalid")
+    cause = IngestRejectedError("invalid")
 
-    async def send(*, events: list[EventInput]) -> None:
+    async def send(events: list[EventInput]) -> None:
         sending.set()
         await release.wait()
         raise cause
@@ -545,9 +552,9 @@ async def test_abandoned_flush_preserves_failures_and_other_waiters(
         assert failure.value.failures[0].cause is cause
         completed.set()
 
-    client.events.ingest.side_effect = send
+    ingest.side_effect = send
     with anyio.fail_after(1):
-        async with MemoryEventQueue(client, batch_size=1).open() as strategy:
+        async with MemoryEventQueue(batch_size=1).open(ingest=ingest) as strategy:
             await strategy.enqueue(events[0])
             await sending.wait()
             if cancel:
@@ -568,17 +575,17 @@ async def test_abandoned_flush_preserves_failures_and_other_waiters(
 
 @pytest.mark.anyio
 async def test_shutdown_timeout_does_not_invoke_rejection_hook(
-    client: AsyncMock, events: list[EventInput]
+    ingest: AsyncMock, events: list[EventInput]
 ) -> None:
     on_rejected = AsyncMock()
 
-    async def send(**kwargs: object) -> None:
+    async def send(events: list[EventInput]) -> None:
         await anyio.sleep_forever()
 
-    client.events.ingest.side_effect = send
+    ingest.side_effect = send
 
     with anyio.fail_after(1), pytest.raises(MeteringDeliveryError) as failure:
-        async with MemoryEventQueue(client, shutdown_timeout=0.01).open(on_rejected=on_rejected) as strategy:
+        async with MemoryEventQueue(shutdown_timeout=0.01).open(ingest=ingest, on_rejected=on_rejected) as strategy:
             await strategy.enqueue(events[0])
     assert failure.value.events == events[:1]
     assert failure.value.failures[0].reason == "shutdown_timeout"
@@ -587,17 +594,17 @@ async def test_shutdown_timeout_does_not_invoke_rejection_hook(
 
 @pytest.mark.parametrize("timeout", [-1.0, float("nan"), float("inf")])
 @pytest.mark.anyio
-async def test_invalid_delivery_timeouts(client: AsyncMock, timeout: float) -> None:
+async def test_invalid_delivery_timeouts(ingest: AsyncMock, timeout: float) -> None:
     with pytest.raises(ValueError):
-        MemoryEventQueue(client, shutdown_timeout=timeout)
-    async with MemoryEventQueue(client).open() as strategy:
+        MemoryEventQueue(shutdown_timeout=timeout)
+    async with MemoryEventQueue().open(ingest=ingest) as strategy:
         with pytest.raises(ValueError):
             await strategy.flush(timeout=timeout)
 
 
 @pytest.mark.anyio
 async def test_timed_out_drop_reporting_remains_observable(
-    client: AsyncMock, events: list[EventInput]
+    ingest: AsyncMock, events: list[EventInput]
 ) -> None:
     reporting = anyio.Event()
     release = anyio.Event()
@@ -606,9 +613,9 @@ async def test_timed_out_drop_reporting_remains_observable(
         reporting.set()
         await release.wait()
 
-    client.events.ingest.side_effect = PolarClientError(422, "invalid")
+    ingest.side_effect = IngestRejectedError("invalid")
     with anyio.fail_after(1):
-        async with MemoryEventQueue(client, batch_size=1).open(on_rejected=on_rejected) as strategy:
+        async with MemoryEventQueue(batch_size=1).open(ingest=ingest, on_rejected=on_rejected) as strategy:
             await strategy.enqueue(events[0])
             await reporting.wait()
             with pytest.raises(MeteringTimeoutError):
@@ -622,26 +629,26 @@ async def test_timed_out_drop_reporting_remains_observable(
 
 @pytest.mark.anyio
 async def test_flush_excludes_later_delivery_failures(
-    client: AsyncMock, events: list[EventInput]
+    ingest: AsyncMock, events: list[EventInput]
 ) -> None:
     sending = anyio.Event()
     release = anyio.Event()
     completed = anyio.Event()
 
-    async def send(*, events: list[EventInput]) -> None:
+    async def send(events: list[EventInput]) -> None:
         if events[0]["name"] == "0":
             sending.set()
             await release.wait()
         else:
-            raise PolarClientError(422, "invalid")
+            raise IngestRejectedError("invalid")
 
     async def first_flush() -> None:
         await strategy.flush()
         completed.set()
 
-    client.events.ingest.side_effect = send
+    ingest.side_effect = send
     with anyio.fail_after(1):
-        async with MemoryEventQueue(client, batch_size=1).open() as strategy:
+        async with MemoryEventQueue(batch_size=1).open(ingest=ingest) as strategy:
             await strategy.enqueue(events[0])
             await sending.wait()
             async with anyio.create_task_group() as callers:
@@ -657,16 +664,16 @@ async def test_flush_excludes_later_delivery_failures(
 
 @pytest.mark.anyio
 async def test_cancellation_at_completion_does_not_acknowledge_failure(
-    client: AsyncMock, events: list[EventInput], monkeypatch: pytest.MonkeyPatch
+    ingest: AsyncMock, events: list[EventInput], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     sending = anyio.Event()
     release = anyio.Event()
     abandoned = anyio.Event()
 
-    async def send(*, events: list[EventInput]) -> None:
+    async def send(events: list[EventInput]) -> None:
         sending.set()
         await release.wait()
-        raise PolarClientError(422, "invalid")
+        raise IngestRejectedError("invalid")
 
     async def flush(*, task_status: anyio.abc.TaskStatus[anyio.CancelScope]) -> None:
         with anyio.CancelScope() as scope:
@@ -675,9 +682,9 @@ async def test_cancellation_at_completion_does_not_acknowledge_failure(
         assert scope.cancelled_caught
         abandoned.set()
 
-    client.events.ingest.side_effect = send
+    ingest.side_effect = send
     with anyio.fail_after(1):
-        async with MemoryEventQueue(client, batch_size=1).open() as strategy:
+        async with MemoryEventQueue(batch_size=1).open(ingest=ingest) as strategy:
             await strategy.enqueue(events[0])
             await sending.wait()
             async with anyio.create_task_group() as callers:
@@ -698,12 +705,12 @@ async def test_cancellation_at_completion_does_not_acknowledge_failure(
 
 @pytest.mark.anyio
 async def test_ambiguous_timeout_does_not_invoke_rejection_hook(
-    client: AsyncMock, events: list[EventInput]
+    ingest: AsyncMock, events: list[EventInput]
 ) -> None:
-    client.events.ingest.side_effect = PolarClientError(408, "timed out")
-    queue = MemoryEventQueue(client, max_attempts=1)
+    ingest.side_effect = IngestRetryableError("timed out")
+    queue = MemoryEventQueue(max_attempts=1)
     on_rejected = AsyncMock()
-    async with queue.open(on_rejected=on_rejected):
+    async with queue.open(ingest=ingest, on_rejected=on_rejected):
         await queue.enqueue(events[0])
         with pytest.raises(MeteringDeliveryError) as failure:
             await queue.flush()

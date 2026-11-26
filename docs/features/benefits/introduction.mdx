@@ -27,7 +27,7 @@ Every benefit has a `type`, a `description` of 3 to 42 characters, and `properti
 
 <Tabs>
   <Tab title="Dashboard">
-    - Open **Products** → **Benefits**
+    - Open **Catalog** → **Benefits**
     - Click **Create Benefit**
     - Pick a **Type** and fill in the **Description**
     - Fill in the type's options and click **Create**
@@ -93,7 +93,7 @@ A product grants every benefit attached to it. Setting a product's benefits repl
 
 <Tabs>
   <Tab title="Dashboard">
-    - Open **Products** and select the product
+    - Open **Catalog** and select the product
     - Under **Automated Benefits**, select the benefit
     - Save the product
   </Tab>
@@ -164,7 +164,7 @@ Deleting a benefit revokes it from every customer who holds it. Detach it from p
 
 In the dashboard:
 
-- Open **Products → Benefits** and select the benefit
+- Open **Catalog → Benefits** and select the benefit
 - Click **Edit Benefit** to change it
 - Open the **…** menu and click **Delete Benefit** to delete it
 
@@ -193,7 +193,7 @@ Benefits aren't tied to orders. You can grant a benefit to any customer without 
     - For a team customer, select the **Member** who gets it
     - Click **Grant benefit**
 
-    To revoke a grant, click **Revoke** on its row and confirm. To undo a manual revocation, click **Unrevoke**. Both buttons appear under **Benefit Grants** on the customer's page and on the benefit's page in **Products → Benefits**.
+    To revoke a grant, click **Revoke** on its row and confirm. To undo a manual revocation, click **Unrevoke**. Both buttons appear under **Benefit Grants** on the customer's page and on the benefit's page in **Catalog → Benefits**.
   </Tab>
   <Tab title="CLI">
     The CLI can't grant or revoke benefits yet. Use it to find a customer's grants:
@@ -219,7 +219,7 @@ Granting and revoking are asynchronous. The returned grant may not be granted ye
 
 ## Grant errors
 
-When Polar can't deliver a benefit, for example because the GitHub App lost access to the repository, the grant's `error` field holds the reason. Find failed grants under **Benefit Grants** on the benefit's page in **Products → Benefits**, or list them with `polar benefits grants <id>`.
+When Polar can't deliver a benefit, for example because the GitHub App lost access to the repository, the grant's `error` field holds the reason. Find failed grants under **Benefit Grants** on the benefit's page in **Catalog → Benefits**, or list them with `polar benefits grants <id>`.
 
 ## Webhooks
 

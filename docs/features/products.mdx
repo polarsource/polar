@@ -14,7 +14,7 @@ A product needs a name, at least one price, and a billing cycle if it's recurrin
 
 <Tabs>
   <Tab title="Dashboard">
-    - Open **Products**
+    - Open **Catalog**
     - Click **New Product**
     - Enter a **Name**
     - Under **Pricing**, choose **Recurring subscription** and set **Every** 1 month
@@ -159,7 +159,7 @@ Attach key-value `metadata` to a product to store your own IDs or categories. Cu
 
 Everything except the billing cycle can change after creation, including the price types.
 
-In the dashboard, open **Products**, select the product, click **Edit Product**, make your changes and click **Update Product**. From the CLI, run `polar products update <product_id>`. With your agent, ask for the change; it uses the `products_update` operation.
+In the dashboard, open **Catalog**, select the product, click **Edit Product**, make your changes and click **Update Product**. From the CLI, run `polar products update <product_id>`. With your agent, ask for the change; it uses the `products_update` operation.
 
 - **Prices.** Send a new `prices` list to replace them. To keep an existing price, include it as `{ "id": "<price_id>" }`. Replaced prices are archived. Existing subscribers stay on the price they signed up at, so a change only affects new purchases. To move a subscriber, [update their subscription](/features/subscriptions/manage).
 - **Meter cycle.** A `meter_interval` can't be changed once set. See [Meter cycle](/features/usage-based-billing/billing#meter-cycle).

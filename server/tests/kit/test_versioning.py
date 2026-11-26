@@ -404,6 +404,41 @@ def test_versioned_routes() -> None:
         assert operation["x-speakeasy-name-override"] == "get_items"
 
 
+def test_deprecation_headers() -> None:
+    deprecated_version = APIVersion(2026, 4)
+    current_version = APIVersion(2026, 10)
+    next_version = APIVersion(2027, 1)
+    router = APIRouter()
+
+    @router.get("/items")
+    async def get_items() -> str:
+        return "items"
+
+    app = FastAPI(openapi_url=None)
+    add_versioned_routers(
+        app,
+        router,
+        [],
+        [deprecated_version, current_version, next_version],
+        current_version,
+        next_version,
+    )
+    client = TestClient(app)
+
+    response = client.get("/items", headers={"Polar-Version": str(deprecated_version)})
+    assert response.headers["Deprecation"] == "@1790812800"
+    assert response.headers["Sunset"] == "Fri, 01 Jan 2027 00:00:00 GMT"
+    assert response.headers["Link"] == (
+        '<https://polar.sh/docs/api-reference/versioning>; rel="deprecation"; '
+        'type="text/html"'
+    )
+
+    response = client.get("/items")
+    assert "Deprecation" not in response.headers
+    assert "Sunset" not in response.headers
+    assert "Link" not in response.headers
+
+
 def test_rejects_overlapping_versioned_routes() -> None:
     next_version = APIVersion(2026, 10)
     router = APIRouter()

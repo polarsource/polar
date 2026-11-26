@@ -605,11 +605,6 @@ jobs:
           path: ${{ runner.temp }}/pg-schema
           key: pg-schema-v1-pg18-${{ hashFiles('server/migrations/**/*.py') }}
 
-      - name: ⚗️ alembic check
-        if: matrix.shard == '1'
-        working-directory: ./server
-        run: uv run alembic check
-
       - name: 📊 Restore test durations
         if: matrix.shard != 'tinybird'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -645,9 +640,79 @@ jobs:
           overwrite: true
           retention-days: 1
 
+  alembic-check:
+    name: "Server: Alembic Check ⚗️"
+    needs: changes
+    if: needs.changes.outputs.server == 'true'
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 10
+    env:
+      POLAR_ENV: testing
+      POLAR_EMAIL_RENDERER_BINARY_PATH: /tmp/email-renderer
+    services:
+      postgres:
+        image: postgres:18.6-bookworm
+        env:
+          POSTGRES_USER: polar
+          POSTGRES_PASSWORD: polar
+          POSTGRES_DB: polar_test
+          POSTGRES_PORT: 5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 1s
+          --health-timeout 2s
+          --health-retries 30
+          --tmpfs /var/lib/postgresql/18/docker:rw,size=1g
+        ports:
+          - 5432:5432
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Create mock email renderer binary
+        run: touch /tmp/email-renderer
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version-file: "server/pyproject.toml"
+
+      - name: 🔧 uv install
+        working-directory: ./server
+        run: uv sync --frozen --no-dev
+
+      - name: ⚗️ Restore migrated Postgres schema
+        id: schema-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/pg-schema
+          key: pg-schema-v1-pg18-${{ hashFiles('server/migrations/**/*.py') }}
+
+      - name: ⚗️ Prepare Postgres database
+        run: |
+          PG_CONTAINER=$(docker ps -q --filter ancestor=postgres:18.6-bookworm | head -n 1)
+          if [ "${{ steps.schema-cache.outputs.cache-hit }}" = "true" ] && [ -n "$PG_CONTAINER" ] && [ -f "$RUNNER_TEMP/pg-schema/schema.sql" ]; then
+            docker exec -i "$PG_CONTAINER" psql -U polar -d polar_test -v ON_ERROR_STOP=1 -q < "$RUNNER_TEMP/pg-schema/schema.sql"
+          else
+            (cd server && uv run task db_migrate)
+          fi
+
+      - name: ⚗️ alembic check
+        working-directory: ./server
+        run: uv run alembic check
+
   test-status:
     name: "Server: Tests 🐍"
-    needs: [changes, test]
+    needs: [changes, test, alembic-check]
     if: always()
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
@@ -659,12 +724,13 @@ jobs:
       - name: Check shard results
         env:
           RESULT: ${{ needs.test.result }}
+          ALEMBIC_RESULT: ${{ needs.alembic-check.result }}
           CHANGES_RESULT: ${{ needs.changes.result }}
         run: |
-          if [ "$RESULT" = "success" ]; then
+          if [ "$RESULT" = "success" ] && [ "$ALEMBIC_RESULT" = "success" ]; then
             exit 0
           fi
-          if [ "$RESULT" = "skipped" ] && [ "$CHANGES_RESULT" = "success" ]; then
+          if [ "$RESULT" = "skipped" ] && [ "$ALEMBIC_RESULT" = "skipped" ] && [ "$CHANGES_RESULT" = "success" ]; then
             exit 0
           fi
           exit 1

@@ -1,6 +1,4 @@
-import { schemas } from '@polar-sh/client'
 import { nanoid } from 'nanoid'
-import { RequestCookiesAdapter } from 'next/dist/server/web/spec-extension/adapters/request-cookies'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import {
@@ -10,14 +8,10 @@ import {
 } from './experiments/constants'
 import { frameAncestorsCSP } from './csp.mjs'
 import { getServerURL } from './utils/api'
-import { createServerSideAPI } from './utils/client'
 import { CONFIG } from './utils/config'
 import { POLAR_ENV_COOKIE } from './utils/cookies'
 import { POLAR_EMBED_ORIGIN_HEADER } from './utils/embed'
-
-const POLAR_AUTH_COOKIE_KEY =
-  process.env.POLAR_AUTH_COOKIE_KEY || 'polar_session'
-const POLAR_USER_HEADER = 'x-polar-user'
+import { getLoginPath, POLAR_REQUEST_PATH_HEADER } from './utils/login'
 
 const IS_SANDBOX =
   (process.env.NEXT_PUBLIC_ENVIRONMENT ||
@@ -214,19 +208,19 @@ const getEmbedPolicy = async (
   return undefined
 }
 
+const getRequestPath = (request: NextRequest): string =>
+  `${request.nextUrl.pathname}${request.nextUrl.search}`
+
 const getLoginResponse = (request: NextRequest): NextResponse => {
-  const redirectURL = request.nextUrl.clone()
-  redirectURL.pathname = '/auth'
-  redirectURL.search = ''
-  const returnTo = `${request.nextUrl.pathname}${request.nextUrl.search}`
-  redirectURL.searchParams.set('return_to', returnTo)
-  return NextResponse.redirect(redirectURL)
+  return NextResponse.redirect(
+    new URL(getLoginPath(getRequestPath(request)), request.nextUrl),
+  )
 }
 
 export async function proxy(request: NextRequest) {
   const requestHeaders = new Headers(request.headers)
-  requestHeaders.delete(POLAR_USER_HEADER)
   requestHeaders.delete(POLAR_EMBED_ORIGIN_HEADER)
+  requestHeaders.delete(POLAR_REQUEST_PATH_HEADER)
 
   // Do not run middleware for forwarded routes
   // @pieterbeulque added this because the `config.matcher` behavior below
@@ -374,39 +368,10 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(redirectURL, { status: 308 })
   }
 
-  let user: schemas['UserRead'] | undefined = undefined
-
-  if (request.cookies.has(POLAR_AUTH_COOKIE_KEY)) {
-    const api = await createServerSideAPI(
-      request.headers,
-      RequestCookiesAdapter.seal(request.cookies),
-    )
-    const { data, response } = await api.GET('/v1/users/me', {
-      cache: 'no-cache',
-    })
-
-    // A 429 means resolving the session was rate-limited upstream (the session
-    // cookie is being counted in the API's `pending_auth` bucket). We can't
-    // determine the user, so we proceed as anonymous rather than turning a
-    // transient rate-limit into a hard 500 for the user. It's still logged so
-    // we keep visibility on how often this happens.
-    if (response.status === 429) {
-      console.error(
-        `Rate limited while fetching authenticated user: status=429, headers=${JSON.stringify(Object.fromEntries(response.headers.entries()))}`,
-      )
-    } else if (!response.ok && response.status !== 401) {
-      console.error(
-        `Error response: status=${response.status}, headers=${JSON.stringify(Object.fromEntries(response.headers.entries()))}`,
-      )
-      throw new Error(
-        'Unexpected response status while fetching authenticated user',
-      )
-    }
-
-    user = data
-  }
-
-  if (requiresAuthentication(request) && !user) {
+  if (
+    requiresAuthentication(request) &&
+    !request.cookies.has(CONFIG.AUTH_COOKIE_KEY)
+  ) {
     return getLoginResponse(request)
   }
 
@@ -414,12 +379,7 @@ export async function proxy(request: NextRequest) {
     getOrCreateDistinctId(request)
 
   requestHeaders.set(DISTINCT_ID_HEADER, distinctId)
-  if (user) {
-    requestHeaders.set(
-      POLAR_USER_HEADER,
-      Buffer.from(JSON.stringify(user)).toString('base64'),
-    )
-  }
+  requestHeaders.set(POLAR_REQUEST_PATH_HEADER, getRequestPath(request))
 
   const embedPolicy = await getEmbedPolicy(request)
   if (embedPolicy?.embed_origin) {

@@ -3,7 +3,7 @@ from datetime import timedelta
 from unittest.mock import ANY
 
 import pytest
-from freezegun.api import freeze_time
+import time_machine
 from pytest_mock import MockerFixture
 
 from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
@@ -313,7 +313,7 @@ class TestSubscriptionCycle:
         await save_fixture(subscription)
         session.expunge_all()
 
-        with freeze_time(previous_period_end):
+        with time_machine.travel(previous_period_end, tick=False):
             await subscription_cycle(subscription.id)
 
         updated_subscription = await session.get(Subscription, subscription.id)
@@ -379,7 +379,7 @@ class TestSubscriptionCycle:
         previous_period_end = subscription.current_period_end
         session.expunge_all()
 
-        with freeze_time(previous_period_end):
+        with time_machine.travel(previous_period_end, tick=False):
             await subscription_cycle(subscription.id)
 
         updated_subscription = await session.get(Subscription, subscription.id)
@@ -419,7 +419,7 @@ class TestSubscriptionCycle:
         previous_period_end = subscription.current_period_end
         session.expunge_all()
 
-        with freeze_time(previous_period_end):
+        with time_machine.travel(previous_period_end, tick=False):
             await subscription_cycle(subscription.id)
 
         updated_subscription = await session.get(Subscription, subscription.id)
@@ -474,7 +474,7 @@ class TestSubscriptionCycle:
         await save_fixture(subscription_update)
         session.expunge_all()
 
-        with freeze_time(previous_period_end):
+        with time_machine.travel(previous_period_end, tick=False):
             await subscription_cycle(subscription.id)
 
         updated_subscription = await session.get(Subscription, subscription.id)
@@ -520,7 +520,7 @@ class TestSubscriptionCycle:
         previous_period_end = subscription.current_period_end
         session.expunge_all()
 
-        with freeze_time(previous_period_end):
+        with time_machine.travel(previous_period_end, tick=False):
             await subscription_cycle(subscription.id)
 
         updated_subscription = await session.get(Subscription, subscription.id)
@@ -560,7 +560,7 @@ class TestSubscriptionCycle:
         previous_period_end = subscription.current_period_end
         session.expunge_all()
 
-        with freeze_time(previous_period_end):
+        with time_machine.travel(previous_period_end, tick=False):
             await subscription_cycle(subscription.id)
 
         updated_subscription = await session.get(Subscription, subscription.id)
@@ -592,7 +592,7 @@ class TestSubscriptionCycle:
         previous_period_end = subscription.current_period_end
         session.expunge_all()
 
-        with freeze_time(previous_period_end):
+        with time_machine.travel(previous_period_end, tick=False):
             await subscription_cycle(subscription.id)
 
         updated_subscription = await session.get(Subscription, subscription.id)
@@ -651,7 +651,7 @@ class TestSubscriptionCycle:
         assert previous_period_end is not None
         session.expunge_all()
 
-        with freeze_time(previous_period_end):
+        with time_machine.travel(previous_period_end, tick=False):
             await subscription_cycle(subscription.id)
 
         updated_subscription = await session.get(Subscription, subscription.id)
@@ -724,7 +724,7 @@ class TestSubscriptionCycle:
         with pytest.raises(SubscriptionMeterCycleLag):
             await subscription_cycle(subscription.id)
 
-    @freeze_time("2026-01-01 12:00:00")
+    @time_machine.travel("2026-01-01T12:00:00Z", tick=False)
     async def test_billing_due_without_meter_lag_cycles(
         self,
         save_fixture: SaveFixture,

@@ -1,0 +1,104 @@
+name: Env Var Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, edited]
+    paths:
+      - "terraform/**"
+      - "server/**"
+      - "clients/**"
+      - ".github/workflows/env_vars_check.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  env-vars-check:
+    name: "Server: Env Var Check 🔑"
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # The check ignores variables added to terraform/ in the last 7 days
+
+      - name: Find POLAR_* variables nothing reads
+        id: check
+        run: |
+          STATUS=0
+          OUTPUT=$(python3 server/scripts/check_env_vars.py) || STATUS=$?
+
+          if [ "$STATUS" -gt 1 ]; then
+            echo "check_env_vars exited $STATUS" >&2
+            exit "$STATUS"
+          fi
+
+          if [ "$STATUS" -eq 0 ]; then
+            echo "has_orphans=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_orphans=true" >> $GITHUB_OUTPUT
+            echo "orphans<<EOF" >> $GITHUB_OUTPUT
+            echo "$OUTPUT" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+
+            NAMES=$(echo "$OUTPUT" | grep -oE 'POLAR_[A-Z0-9_]+' | paste -sd' ' -)
+            echo "::warning title=Provisioned but never read::$NAMES"
+            {
+              echo "## 🔑 Env Var Check"
+              echo
+              echo '```'
+              echo "$OUTPUT"
+              echo '```'
+            } >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Find existing comment
+        uses: peter-evans/find-comment@b30e6a3c0ed37e7c023ccd3f1db5c6c0b0c23aad # v4.0.0
+        id: fc
+        with:
+          issue-number: ${{ github.event.number }}
+          body-includes: "<!-- __ENV_VAR_CHECK -->"
+
+      - name: Create or update comment
+        if: github.event.pull_request.head.repo.full_name == github.repository && steps.check.outputs.has_orphans == 'true'
+        uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9 # v5.0.0
+        with:
+          issue-number: ${{ github.event.number }}
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          edit-mode: replace
+          body: |
+            <!-- __ENV_VAR_CHECK -->
+            ## 🔑 Env Var Check
+
+            Terraform provisions these into the app environment, and nothing reads them:
+
+            ```
+            ${{ steps.check.outputs.orphans }}
+            ```
+
+            A credential nobody reads is a credential nobody watches. Remove them from
+            `terraform/`, or add them to `ALLOWED` in `server/scripts/check_env_vars.py`
+            with a reason. Variables added to `terraform/` in the last 7 days are not
+            reported.
+
+            This check does not block the merge.
+
+      - name: Delete resolved comment
+        if: github.event.pull_request.head.repo.full_name == github.repository && steps.check.outputs.has_orphans == 'false' && steps.fc.outputs.comment-id != ''
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            github.rest.issues.deleteComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: ${{ steps.fc.outputs.comment-id }}
+            })

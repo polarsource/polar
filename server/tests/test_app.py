@@ -1,5 +1,5 @@
 import pytest
-from fastapi import FastAPI, Response
+from fastapi import APIRouter, FastAPI, Response
 from fastapi.testclient import TestClient
 from httpx2 import ASGITransport, AsyncClient
 
@@ -41,7 +41,7 @@ def test_external_cors_allows_and_exposes_version_header() -> None:
 
 @pytest.mark.anyio
 async def test_unsupported_polar_version_includes_cors_headers() -> None:
-    app = create_app()
+    app = create_app(api_router=APIRouter())
     origin = "https://external.example.com"
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
@@ -82,7 +82,9 @@ def test_backoffice_enabled(
 ) -> None:
     monkeypatch.setattr(settings, "BACKOFFICE_ENABLED", backoffice_enabled)
     monkeypatch.setattr(settings, "BACKOFFICE_HOST", backoffice_host)
-    client = TestClient(create_app(), base_url="https://backoffice.example.com")
+    client = TestClient(
+        create_app(api_router=APIRouter()), base_url="https://backoffice.example.com"
+    )
     prefix = "/backoffice" if backoffice_host is None else ""
 
     response = client.get(f"{prefix}/static/logo.light.svg")
@@ -96,7 +98,9 @@ def test_disabled_backoffice_routes(
 ) -> None:
     monkeypatch.setattr(settings, "BACKOFFICE_ENABLED", False)
     monkeypatch.setattr(settings, "BACKOFFICE_HOST", backoffice_host)
-    client = TestClient(create_app(), base_url="https://api.example.com")
+    client = TestClient(
+        create_app(api_router=APIRouter()), base_url="https://api.example.com"
+    )
 
     for host in ["api.example.com", "backoffice.example.com"]:
         for path in [

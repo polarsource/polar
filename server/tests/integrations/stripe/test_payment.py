@@ -3,7 +3,7 @@ from datetime import timedelta
 
 import pytest
 import stripe as stripe_lib
-from freezegun import freeze_time
+import time_machine
 from pytest_mock import MockerFixture
 from sqlalchemy import delete, select
 
@@ -274,7 +274,7 @@ class TestHandleFailure:
             is not None
         )
 
-    @freeze_time("2024-01-01 12:00:00")
+    @time_machine.travel("2024-01-01T12:00:00Z", tick=False)
     async def test_full_dunning_flow_with_repositories(
         self,
         session: AsyncSession,

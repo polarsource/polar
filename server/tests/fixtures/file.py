@@ -19,7 +19,6 @@ from polar.file.schemas import (
     FileUpload,
     ProductMediaFileCreate,
 )
-from polar.file.service import file as file_service
 from polar.integrations.aws.s3.client import client as s3_client
 from polar.integrations.aws.s3.schemas import (
     S3FileCreateMultipart,
@@ -93,6 +92,8 @@ class TestFile:
         s3_stub: Stubber,
         parts: int = 1,
     ) -> FileUpload:
+        from polar.file.service import file as file_service
+
         self.stub_create(s3_stub, FileServiceTypes.downloadable)
         return await file_service.generate_presigned_upload(
             session,
@@ -246,11 +247,19 @@ class TestFile:
         return head
 
 
-@pytest.fixture(autouse=True)
-def s3_stub() -> Iterator[Stubber]:
+@pytest.fixture(scope="session", autouse=True)
+def session_s3_stub() -> Iterator[Stubber]:
     with Stubber(s3_client) as stub:
         yield stub
-        stub.assert_no_pending_responses()
+
+
+@pytest.fixture
+def s3_stub(session_s3_stub: Stubber) -> Iterator[Stubber]:
+    try:
+        yield session_s3_stub
+        session_s3_stub.assert_no_pending_responses()
+    finally:
+        getattr(session_s3_stub, "_queue").clear()
 
 
 async def uploaded_fixture(

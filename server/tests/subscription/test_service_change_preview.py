@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 
-import freezegun
 import pytest
+import time_machine
 from pytest_mock import MockerFixture
 from sqlalchemy import func, select
 
@@ -133,7 +133,7 @@ class TestCalculateChangePreview:
         product: Product,
         customer: Customer,
     ) -> None:
-        with freezegun.freeze_time(datetime(2025, 1, 16, 12, tzinfo=UTC)):
+        with time_machine.travel(datetime(2025, 1, 16, 12, tzinfo=UTC), tick=False):
             subscription = await create_active_subscription(
                 save_fixture,
                 product=product,
@@ -169,7 +169,7 @@ class TestCalculateChangePreview:
         product: Product,
         customer: Customer,
     ) -> None:
-        with freezegun.freeze_time(datetime(2025, 1, 16, 12, tzinfo=UTC)):
+        with time_machine.travel(datetime(2025, 1, 16, 12, tzinfo=UTC), tick=False):
             subscription = await create_active_subscription(
                 save_fixture,
                 product=product,
@@ -316,7 +316,7 @@ class TestCalculateChangePreview:
             tiers=[{"min_seats": 3, "max_seats": None, "price_per_seat": 1000}],
         )
 
-        with freezegun.freeze_time(datetime(2025, 1, 16, 12, tzinfo=UTC)):
+        with time_machine.travel(datetime(2025, 1, 16, 12, tzinfo=UTC), tick=False):
             subscription = await create_active_subscription(
                 save_fixture,
                 product=product,
@@ -376,7 +376,7 @@ class TestCalculateChangePreview:
             price_per_seat=1000,
         )
 
-        with freezegun.freeze_time(datetime(2025, 1, 16, 12, tzinfo=UTC)):
+        with time_machine.travel(datetime(2025, 1, 16, 12, tzinfo=UTC), tick=False):
             subscription = await create_subscription_with_seats(
                 save_fixture,
                 product=seat_product,
@@ -408,7 +408,7 @@ class TestCalculateChangePreview:
             save_fixture, organization=organization, price_per_unit=1000
         )
 
-        with freezegun.freeze_time(datetime(2025, 1, 16, 12, tzinfo=UTC)):
+        with time_machine.travel(datetime(2025, 1, 16, 12, tzinfo=UTC), tick=False):
             subscription = await create_subscription_with_units(
                 save_fixture,
                 product=unit_product,
@@ -475,7 +475,7 @@ class TestCalculateChangePreview:
             minimum_units=3,
         )
 
-        with freezegun.freeze_time(datetime(2025, 1, 16, 12, tzinfo=UTC)):
+        with time_machine.travel(datetime(2025, 1, 16, 12, tzinfo=UTC), tick=False):
             subscription = await create_active_subscription(
                 save_fixture,
                 product=product,

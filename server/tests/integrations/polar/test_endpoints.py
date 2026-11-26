@@ -12,6 +12,8 @@ from standardwebhooks.webhooks import Webhook as StandardWebhook
 
 from polar.version import CURRENT_API_VERSION
 
+pytestmark = pytest.mark.xdist_group(name="polar_webhooks")
+
 WEBHOOK_SECRET = "test_polar_webhook_secret"
 WEBHOOK_URL = "/v1/integrations/polar/webhook"
 

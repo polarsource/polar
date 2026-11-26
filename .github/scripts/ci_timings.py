@@ -18,7 +18,15 @@ WORKFLOWS = (
     "openapi-generate-check.yml",
 )
 SLOT_HOURS = 6
-REAL_WORK_SECONDS = 60
+MIN_RUN_SECONDS = 20
+NON_WORK_JOBS = frozenset(
+    {
+        "Detect changes",
+        "Server: Tests 🐍",
+        "Client: Tests 🎨",
+        "Server: No migrations",
+    }
+)
 BATCH_SIZE = 500
 SHARD_NAME = re.compile(r"(?P<job>.+) \((?P<shard>\d+/\d+)\)")
 
@@ -67,10 +75,7 @@ def started_jobs(run: dict) -> list[dict]:
 
 
 def did_real_work(jobs: list[dict]) -> bool:
-    return any(
-        seconds_between(job["started_at"], job["completed_at"]) >= REAL_WORK_SECONDS
-        for job in jobs
-    )
+    return any(job["name"] not in NON_WORK_JOBS for job in jobs)
 
 
 def posthog_event(name: str, key: str, timestamp: str, properties: dict) -> dict:
@@ -138,7 +143,7 @@ def job_event(run: dict, job: dict) -> dict:
 
 
 def events_for_run(run: dict) -> list[dict]:
-    if seconds_between(run["run_started_at"], run["updated_at"]) < REAL_WORK_SECONDS:
+    if seconds_between(run["run_started_at"], run["updated_at"]) < MIN_RUN_SECONDS:
         return [run_event(run, did_work=False)]
     jobs = started_jobs(run)
     if not did_real_work(jobs):

@@ -7,8 +7,8 @@ and then the final cycle completes the cancellation and revokes benefits.
 
 from datetime import UTC, datetime
 
-import freezegun
 import pytest
+import time_machine
 from httpx2 import AsyncClient
 
 from polar.kit.db.postgres import AsyncSession
@@ -48,7 +48,7 @@ class TestSubscriptionFullLifecycle:
         apr1 = datetime(2025, 4, 1, 12, 0, 0, tzinfo=UTC)
 
         # ── January 1st: Purchase ────────────────────────────────
-        with freezegun.freeze_time(jan1):
+        with time_machine.travel(jan1, tick=False):
             purchase = await complete_purchase(
                 client, session, stripe_sim, drain, organization, product, amount=1500
             )
@@ -71,7 +71,7 @@ class TestSubscriptionFullLifecycle:
             assert grants[0].is_granted is True
 
         # ── February 1st: First renewal ──────────────────────────
-        with freezegun.freeze_time(feb1):
+        with time_machine.travel(feb1, tick=False):
             assert await scheduler_sim.get_due_count() == 1
             await scheduler_sim.trigger_due_cycles(drain)
 
@@ -88,7 +88,7 @@ class TestSubscriptionFullLifecycle:
             assert entries[0].end_timestamp == mar1
 
         # ── March 1st: Second renewal ────────────────────────────
-        with freezegun.freeze_time(mar1):
+        with time_machine.travel(mar1, tick=False):
             assert await scheduler_sim.get_due_count() == 1
             await scheduler_sim.trigger_due_cycles(drain)
 
@@ -104,7 +104,9 @@ class TestSubscriptionFullLifecycle:
             assert entries[1].end_timestamp == apr1
 
         # ── March 15th: Cancel ───────────────────────────────────
-        with freezegun.freeze_time(datetime(2025, 3, 15, 12, 0, 0, tzinfo=UTC)):
+        with time_machine.travel(
+            datetime(2025, 3, 15, 12, 0, 0, tzinfo=UTC), tick=False
+        ):
             response = await client.patch(
                 f"/v1/subscriptions/{subscription_id}",
                 json={"cancel_at_period_end": True},
@@ -119,7 +121,7 @@ class TestSubscriptionFullLifecycle:
             assert grants[0].is_granted is True
 
         # ── April 1st: Final cycle — cancellation completes ──────
-        with freezegun.freeze_time(apr1):
+        with time_machine.travel(apr1, tick=False):
             assert await scheduler_sim.get_due_count() == 1
             await scheduler_sim.trigger_due_cycles(drain)
 

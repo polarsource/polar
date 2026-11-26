@@ -2,7 +2,7 @@ from datetime import timedelta
 from urllib.parse import parse_qs, unquote, urlparse
 
 import pytest
-from freezegun import freeze_time
+import time_machine
 from httpx2 import AsyncClient
 
 from polar.benefit.strategies.downloadables.schemas import (
@@ -114,7 +114,7 @@ class TestDownloadablesEndpoints:
         assert s3_download_url
 
         expires_at = downloadable.file.download.expires_at
-        with freeze_time(expires_at + timedelta(seconds=1)):
+        with time_machine.travel(expires_at + timedelta(seconds=1), tick=False):
             response = await client.get(polar_download_url, follow_redirects=False)
             assert response.status_code == 410
 

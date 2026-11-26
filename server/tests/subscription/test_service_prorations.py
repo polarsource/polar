@@ -6,8 +6,8 @@ from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock
 from uuid import UUID
 
-import freezegun
 import pytest
+import time_machine
 from dateutil.relativedelta import relativedelta
 from pytest_mock import MockerFixture
 
@@ -345,7 +345,7 @@ class TestUpdateProductProrations:
             prices=[(new_product_param[1], "usd")],
         )
 
-        with freezegun.freeze_time(cycle_start) as frozen_time:
+        with time_machine.travel(cycle_start, tick=False) as frozen_time:
             # Assert default setting: "Invoice later"
             assert (
                 organization.subscription_settings["proration_behavior"]
@@ -492,7 +492,7 @@ class TestUpdateProductProrations:
         previous_period_end = subscription.current_period_end
 
         update_time = datetime(2025, 6, 16, tzinfo=UTC)
-        with freezegun.freeze_time(update_time):
+        with time_machine.travel(update_time, tick=False):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -554,7 +554,7 @@ class TestUpdateProductProrations:
         previous_period_end = subscription.current_period_end
 
         update_time = datetime(2025, 6, 16, tzinfo=UTC)
-        with freezegun.freeze_time(update_time):
+        with time_machine.travel(update_time, tick=False):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -618,7 +618,7 @@ class TestUpdateProductProrations:
         previous_period_end = subscription.current_period_end
 
         update_time = datetime(2025, 6, 16, tzinfo=UTC)
-        with freezegun.freeze_time(update_time):
+        with time_machine.travel(update_time, tick=False):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -697,7 +697,7 @@ class TestUpdateProductProrations:
         )
 
         update_time = datetime(2025, 6, 16, tzinfo=UTC)
-        with freezegun.freeze_time(update_time):
+        with time_machine.travel(update_time, tick=False):
             new_anchor_day = update_time.day
             new_period_end = subscription.recurring_interval.get_next_period(
                 update_time, new_anchor_day, subscription.recurring_interval_count
@@ -801,7 +801,7 @@ class TestUpdateProductProrations:
         session.add(organization)
         await session.flush()
 
-        with freezegun.freeze_time(cycle_start) as frozen_time:
+        with time_machine.travel(cycle_start, tick=False) as frozen_time:
             subscription = await create_active_subscription(
                 save_fixture,
                 product=old_product,
@@ -855,7 +855,9 @@ class TestUpdateProductProrations:
             for i in range(4)
         ]
 
-        with freezegun.freeze_time(datetime(2025, 6, 1, tzinfo=UTC)) as frozen_time:
+        with time_machine.travel(
+            datetime(2025, 6, 1, tzinfo=UTC), tick=False
+        ) as frozen_time:
             # Create 3 subscriptions starting June 1st, June 2nd, June 3rd respectively
             subscriptions = []
             for i in range(3):
@@ -985,7 +987,7 @@ class TestUpdateProductProrations:
             for i in range(4)
         ]
 
-        with freezegun.freeze_time(cycle_start) as frozen_time:
+        with time_machine.travel(cycle_start, tick=False) as frozen_time:
             subscription = await create_active_subscription(
                 save_fixture,
                 product=products[0],
@@ -1131,7 +1133,7 @@ class TestUpdateProductProrations:
             prices=[(meter, Decimal(50), None, "usd"), (30000, "usd")],
         )
 
-        with freezegun.freeze_time(cycle_start) as frozen_time:
+        with time_machine.travel(cycle_start, tick=False) as frozen_time:
             subscription = await create_active_subscription(
                 save_fixture,
                 product=old_product,
@@ -1308,7 +1310,7 @@ class TestUpdateProductProrations:
         else:
             new_discount_arg = "unset"
 
-        with freezegun.freeze_time(cycle_start) as frozen_time:
+        with time_machine.travel(cycle_start, tick=False) as frozen_time:
             subscription = await create_active_subscription(
                 save_fixture,
                 product=old_product,
@@ -1488,7 +1490,7 @@ class TestImmediateSeatChangeWithPendingProductChange:
             new=AsyncMock(),
         )
 
-        with freezegun.freeze_time(cycle_start) as frozen_time:
+        with time_machine.travel(cycle_start, tick=False) as frozen_time:
             product_a = await create_product(
                 save_fixture,
                 organization=organization,
@@ -1718,7 +1720,7 @@ class TestComposedStaticPriceDiscountAllocation:
             prices=[(300_00, "usd"), ("seat", 200_00, "usd")],
         )
 
-        with freezegun.freeze_time(UPDATE_TIME):
+        with time_machine.travel(UPDATE_TIME, tick=False):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -1788,7 +1790,7 @@ class TestComposedStaticPriceDiscountAllocation:
             prices=[(200_00, "usd"), ("seat", 120_00, "usd")],
         )
 
-        with freezegun.freeze_time(UPDATE_TIME):
+        with time_machine.travel(UPDATE_TIME, tick=False):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -1858,7 +1860,7 @@ class TestComposedStaticPriceDiscountAllocation:
             discount=discount,
         )
 
-        with freezegun.freeze_time(UPDATE_TIME):
+        with time_machine.travel(UPDATE_TIME, tick=False):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -1923,7 +1925,7 @@ class TestComposedStaticPriceDiscountAllocation:
             discount=discount,
         )
 
-        with freezegun.freeze_time(UPDATE_TIME):
+        with time_machine.travel(UPDATE_TIME, tick=False):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -1985,7 +1987,9 @@ class TestFixedSeatProrations:
         fixed_price = next(p for p in product.prices if is_fixed_price(p))
         seat_price = next(p for p in product.prices if is_seat_price(p))
 
-        with freezegun.freeze_time(datetime(2024, 1, 1, tzinfo=UTC)) as frozen_time:
+        with time_machine.travel(
+            datetime(2024, 1, 1, tzinfo=UTC), tick=False
+        ) as frozen_time:
             subscription = await create_subscription_with_seats(
                 save_fixture,
                 product=product,
@@ -2131,7 +2135,7 @@ class TestProrationDiscountProductApplicability:
             current_period_end=CYCLE_END,
         )
 
-        with freezegun.freeze_time(UPDATE_TIME):
+        with time_machine.travel(UPDATE_TIME, tick=False):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -2185,7 +2189,7 @@ class TestProrationDiscountProductApplicability:
             current_period_end=CYCLE_END,
         )
 
-        with freezegun.freeze_time(UPDATE_TIME):
+        with time_machine.travel(UPDATE_TIME, tick=False):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -2237,7 +2241,7 @@ class TestProrationDiscountProductApplicability:
             current_period_end=CYCLE_END,
         )
 
-        with freezegun.freeze_time(UPDATE_TIME):
+        with time_machine.travel(UPDATE_TIME, tick=False):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -2351,7 +2355,9 @@ class TestAutoProrationBehavior:
             prices=[(new_amount, "usd")],
         )
 
-        with freezegun.freeze_time(datetime(2025, 6, 1, tzinfo=UTC)) as frozen_time:
+        with time_machine.travel(
+            datetime(2025, 6, 1, tzinfo=UTC), tick=False
+        ) as frozen_time:
             subscription = await create_active_subscription(
                 save_fixture, product=old_product, customer=customer
             )
@@ -2461,7 +2467,9 @@ class TestAutoProrationBehavior:
             seat_tier_type=SeatTierType.graduated,
         )
 
-        with freezegun.freeze_time(datetime(2024, 1, 1, tzinfo=UTC)) as frozen_time:
+        with time_machine.travel(
+            datetime(2024, 1, 1, tzinfo=UTC), tick=False
+        ) as frozen_time:
             subscription = await create_subscription_with_seats(
                 save_fixture,
                 product=product,

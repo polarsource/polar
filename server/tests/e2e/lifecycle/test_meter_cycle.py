@@ -10,8 +10,8 @@ order, computing the overage from real ingested usage events.
 
 from decimal import Decimal
 
-import freezegun
 import pytest
+import time_machine
 from httpx2 import AsyncClient
 
 from polar.auth.scope import Scope
@@ -29,8 +29,8 @@ from tests.fixtures.random_objects import (
     create_product,
 )
 
-PURCHASE_DATE = "2024-01-15 12:00:00"
-METER_BOUNDARY = "2024-02-15 12:00:01"  # one month later — meter clock, not billing
+PURCHASE_DATE = "2024-01-15T12:00:00Z"
+METER_BOUNDARY = "2024-02-15T12:00:01Z"  # one month later — meter clock, not billing
 
 BASE_AMOUNT = 1500  # $15 / year base price
 UNIT_AMOUNT_CENTS = 100  # $1 per metered unit
@@ -79,7 +79,7 @@ class TestUsageCycle:
 
         # Purchase: charges the yearly base, creates a subscription with a monthly
         # meter clock.
-        with freezegun.freeze_time(PURCHASE_DATE):
+        with time_machine.travel(PURCHASE_DATE, tick=False):
             purchase = await complete_purchase(
                 client,
                 session,
@@ -115,7 +115,7 @@ class TestUsageCycle:
             await drain(ignored_actors={"email.send"})
 
         # One month later the meter clock fires (the yearly billing clock is in 2025).
-        with freezegun.freeze_time(METER_BOUNDARY):
+        with time_machine.travel(METER_BOUNDARY, tick=False):
             assert await scheduler_sim.get_due_count() == 1, (
                 "Expected the subscription to be due at the monthly meter cycle boundary"
             )

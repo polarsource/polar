@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 
 import pytest
 import stripe as stripe_lib
-from freezegun import freeze_time
+import time_machine
 from pytest_mock import MockerFixture
 from sqlalchemy.exc import OperationalError
 
@@ -706,7 +706,7 @@ class TestRun:
 
     # Freeze a 30-day month. The default period is 30 days, so a 31-day month
     # puts its start and end on different days and one fewer renewal is discounted.
-    @freeze_time("2026-06-15")
+    @time_machine.travel("2026-06-15T00:00:00Z", tick=False)
     async def test_applies_kept_coupon_start_not_the_first_coupon(
         self,
         mocker: MockerFixture,
@@ -782,7 +782,7 @@ class TestRun:
     )
     # Freeze a 30-day month. The default period is 30 days, so a 31-day month
     # puts its start and end on different days and one fewer renewal is discounted.
-    @freeze_time("2026-06-15")
+    @time_machine.travel("2026-06-15T00:00:00Z", tick=False)
     async def test_discounts_the_renewals_the_source_still_would(
         self,
         mocker: MockerFixture,
@@ -851,7 +851,7 @@ class TestRun:
         }
         await _discounted_pending(save_fixture, pending_record, **fields)
 
-        with freeze_time("2026-02-20"):
+        with time_machine.travel("2026-02-20T00:00:00Z", tick=False):
             outcome = await cutover(_source(has_discount=True, **fields))
 
         assert outcome.status == MerchantMigrationCutoverStatus.moved
@@ -893,7 +893,7 @@ class TestRun:
         await _discounted_pending(save_fixture, pending_record, **fields)
         adapter = _source(has_discount=True, **fields)
 
-        with freeze_time("2026-04-27T06:00:00Z", tick=True):
+        with time_machine.travel("2026-04-27T06:00:00Z", tick=True):
             outcome = await cutover(adapter)
 
         assert outcome.status == MerchantMigrationCutoverStatus.skipped

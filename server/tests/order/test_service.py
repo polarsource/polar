@@ -6,7 +6,7 @@ from unittest.mock import ANY, AsyncMock, MagicMock, call
 
 import pytest
 import stripe as stripe_lib
-from freezegun import freeze_time
+import time_machine
 from pydantic import BaseModel
 from pytest_mock import MockerFixture
 from sqlalchemy.orm import joinedload
@@ -4426,7 +4426,7 @@ class TestHandlePayment:
         assert result.status == OrderStatus.paid
         assert subscription.status == SubscriptionStatus.active
 
-    @freeze_time("2026-11-24 12:00:00")
+    @time_machine.travel("2026-11-24T12:00:00Z", tick=False)
     async def test_reactivates_ended_trial_using_settled_order(
         self,
         save_fixture: SaveFixture,
@@ -4525,7 +4525,7 @@ class TestHandlePayment:
         subscription.discount_applied_at = datetime(2026, 11, 1, tzinfo=UTC)
         await session.flush()
 
-        with freeze_time("2026-12-29"):
+        with time_machine.travel("2026-12-29T00:00:00Z", tick=False):
             order = await order_service.create_subscription_reactivation_order(
                 session, subscription
             )
@@ -4538,7 +4538,7 @@ class TestHandlePayment:
         payment = await create_payment(
             save_fixture, product.organization, order=order, amount=order.due_amount
         )
-        with freeze_time("2027-01-02"):
+        with time_machine.travel("2027-01-02T00:00:00Z", tick=False):
             result = await order_service.handle_payment(session, order, payment)
         await session.flush()
 
@@ -4635,7 +4635,7 @@ class TestHandlePaymentFailure:
         assert discount.redemptions_count == 1
         assert await session.get(DiscountRedemption, existing_redemption.id) is not None
 
-    @freeze_time("2024-01-01 12:00:00")
+    @time_machine.travel("2024-01-01T12:00:00Z", tick=False)
     async def test_subscription_order(
         self,
         session: AsyncSession,
@@ -4678,8 +4678,7 @@ class TestHandlePaymentFailure:
 
         mock_mark_past_due.assert_called_once_with(session, subscription)
 
-    @freeze_time("2024-01-01 12:00:00")
-    @freeze_time("2024-01-01 12:00:00")
+    @time_machine.travel("2024-01-01T12:00:00Z", tick=False)
     async def test_meter_cycle_order_retries_without_escalating_subscription(
         self,
         session: AsyncSession,
@@ -4778,7 +4777,7 @@ class TestHandlePaymentFailure:
         assert len(events) == 1
         assert events[0].user_metadata["order_id"] == str(order.id)
 
-    @freeze_time("2024-01-01 12:00:00")
+    @time_machine.travel("2024-01-01T12:00:00Z", tick=False)
     async def test_meter_cycle_non_recoverable_decline_skips_retries(
         self,
         session: AsyncSession,
@@ -4849,7 +4848,7 @@ class TestHandlePaymentFailure:
             + sum(settings.DUNNING_RETRY_INTERVALS, timedelta())
             + timedelta(minutes=1)
         )
-        with freeze_time(created_at):
+        with time_machine.travel(created_at, tick=False):
             order = await create_order(
                 save_fixture,
                 product=product,
@@ -4868,7 +4867,7 @@ class TestHandlePaymentFailure:
                 trigger=PaymentTrigger.purchase,
                 order=order,
             )
-        with freeze_time(dunning_deadline + timedelta(minutes=1)):
+        with time_machine.travel(dunning_deadline + timedelta(minutes=1), tick=False):
             await create_payment(
                 save_fixture,
                 order.organization,
@@ -4903,7 +4902,7 @@ class TestHandlePaymentFailure:
             customer=customer,
         )
         created_at = datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
-        with freeze_time(created_at):
+        with time_machine.travel(created_at, tick=False):
             order = await create_order(
                 save_fixture,
                 product=product,
@@ -4921,7 +4920,7 @@ class TestHandlePaymentFailure:
         )
 
         retry_at = created_at + settings.DUNNING_RETRY_INTERVALS[0]
-        with freeze_time(retry_at):
+        with time_machine.travel(retry_at, tick=False):
             result_order = await order_service.handle_payment_failure(session, order)
 
         assert result_order.status == OrderStatus.pending
@@ -4930,17 +4929,18 @@ class TestHandlePaymentFailure:
             == retry_at + settings.DUNNING_RETRY_INTERVALS[1]
         )
 
-        with freeze_time(
+        with time_machine.travel(
             created_at
             + sum(settings.DUNNING_RETRY_INTERVALS, timedelta())
-            + timedelta(minutes=2)
+            + timedelta(minutes=2),
+            tick=False,
         ):
             result_order = await order_service.handle_payment_failure(session, order)
 
         assert result_order.status == OrderStatus.void
         assert result_order.next_payment_attempt_at is None
 
-    @freeze_time("2024-01-01 12:00:00")
+    @time_machine.travel("2024-01-01T12:00:00Z", tick=False)
     async def test_first_dunning_enqueues_benefit_revocation(
         self,
         session: AsyncSession,
@@ -4981,7 +4981,7 @@ class TestHandlePaymentFailure:
         mock_mark_past_due.assert_called_once_with(session, subscription)
         mock_enqueue_benefits_grants.assert_called_once_with(session, subscription)
 
-    @freeze_time("2024-01-01 12:00:00")
+    @time_machine.travel("2024-01-01T12:00:00Z", tick=False)
     async def test_first_dunning_attempt_skips_ended_subscription(
         self,
         session: AsyncSession,
@@ -5020,7 +5020,7 @@ class TestHandlePaymentFailure:
         assert result_order.next_payment_attempt_at is None
         mock_mark_past_due.assert_not_called()
 
-    @freeze_time("2024-01-01 12:00:00")
+    @time_machine.travel("2024-01-01T12:00:00Z", tick=False)
     async def test_ignores_payment_failure_for_already_paid_order(
         self,
         session: AsyncSession,
@@ -5090,7 +5090,7 @@ class TestHandlePaymentFailure:
 
         mock_mark_past_due.assert_not_called()
 
-    @freeze_time("2024-01-01 12:00:00")
+    @time_machine.travel("2024-01-01T12:00:00Z", tick=False)
     async def test_consecutive_first_retry(
         self,
         session: AsyncSession,
@@ -5145,7 +5145,7 @@ class TestHandlePaymentFailure:
 
         mock_mark_past_due.assert_not_called()
 
-    @freeze_time("2024-01-01 12:00:00")
+    @time_machine.travel("2024-01-01T12:00:00Z", tick=False)
     async def test_consecutive_second_retry(
         self,
         session: AsyncSession,
@@ -5200,7 +5200,7 @@ class TestHandlePaymentFailure:
 
         mock_mark_past_due.assert_not_called()
 
-    @freeze_time("2024-01-01 12:00:00")
+    @time_machine.travel("2024-01-01T12:00:00Z", tick=False)
     @pytest.mark.parametrize(
         ("past_due_days_ago", "failed_payments", "next_retry_in_days"),
         [(2, 0, 5), (7, 0, 7), (14, 0, 7), (21, 0, None), (7, 1, 7)],
@@ -5253,7 +5253,7 @@ class TestHandlePaymentFailure:
             )
             assert subscription.status == SubscriptionStatus.past_due
 
-    @freeze_time("2024-01-01 12:00:00")
+    @time_machine.travel("2024-01-01T12:00:00Z", tick=False)
     async def test_final_attempt_cancels_subscription(
         self,
         session: AsyncSession,
@@ -5306,7 +5306,7 @@ class TestHandlePaymentFailure:
         mock_revoke.assert_called_once_with(session, ANY, subscription)
         mock_mark_past_due.assert_not_called()
 
-    @freeze_time("2024-01-01 12:00:00")
+    @time_machine.travel("2024-01-01T12:00:00Z", tick=False)
     async def test_final_attempt_canceled_subscription(
         self,
         session: AsyncSession,
@@ -5356,7 +5356,7 @@ class TestHandlePaymentFailure:
         mock_revoke.assert_not_called()
         mock_mark_past_due.assert_not_called()
 
-    @freeze_time("2024-01-01 12:00:00")
+    @time_machine.travel("2024-01-01T12:00:00Z", tick=False)
     async def test_only_failed_payments_counted(
         self,
         session: AsyncSession,
@@ -5413,7 +5413,7 @@ class TestHandlePaymentFailure:
 
         mock_mark_past_due.assert_not_called()
 
-    @freeze_time("2025-01-22 01:00:00")
+    @time_machine.travel("2025-01-22T01:00:00Z", tick=False)
     async def test_past_due_deadline_reached(
         self,
         session: AsyncSession,
@@ -5490,7 +5490,7 @@ class TestHandlePaymentFailure:
         assert result_order.next_payment_attempt_at is None
         mock_revoke.assert_called_once()
 
-    @freeze_time("2024-01-01 12:00:00")
+    @time_machine.travel("2024-01-01T12:00:00Z", tick=False)
     async def test_void_order_with_null_next_payment_attempt(
         self,
         session: AsyncSession,
@@ -5528,7 +5528,7 @@ class TestHandlePaymentFailure:
         assert result_order.next_payment_attempt_at is None
         assert result_order.status == OrderStatus.void
 
-    @freeze_time("2024-01-01 12:00:00")
+    @time_machine.travel("2024-01-01T12:00:00Z", tick=False)
     async def test_non_recoverable_decline_code_skips_dunning(
         self,
         session: AsyncSession,
@@ -5592,7 +5592,7 @@ class TestHandlePaymentFailure:
         mock_mark_past_due.assert_called_once_with(session, subscription)
         mock_enqueue_benefits_grants.assert_called_once_with(session, subscription)
 
-    @freeze_time("2024-01-01 12:00:00")
+    @time_machine.travel("2024-01-01T12:00:00Z", tick=False)
     async def test_recoverable_decline_enters_dunning(
         self,
         session: AsyncSession,
@@ -5642,7 +5642,7 @@ class TestHandlePaymentFailure:
         assert result_order.next_payment_attempt_at == expected_retry_date
         mock_mark_past_due.assert_called_once_with(session, subscription)
 
-    @freeze_time("2024-02-01 12:00:00")
+    @time_machine.travel("2024-02-01T12:00:00Z", tick=False)
     async def test_non_recoverable_revokes_at_past_due_deadline(
         self,
         session: AsyncSession,
@@ -5896,7 +5896,7 @@ class TestProcessDunningOrder:
 class TestScheduleRetryForPastDueOrders:
     """Test scheduling dunning retries when a customer saves a new payment method."""
 
-    @freeze_time("2024-01-15 12:00:00")
+    @time_machine.travel("2024-01-15T12:00:00Z", tick=False)
     async def test_schedules_retry_for_past_due_no_next_attempt(
         self,
         enqueue_job_mock: MagicMock,
@@ -5945,7 +5945,7 @@ class TestScheduleRetryForPastDueOrders:
         await session.refresh(subscription)
         assert subscription.payment_method_id == new_payment_method.id
 
-    @freeze_time("2024-01-15 12:00:00")
+    @time_machine.travel("2024-01-15T12:00:00Z", tick=False)
     async def test_skips_canceled_subscription(
         self,
         enqueue_job_mock: MagicMock,
@@ -5987,7 +5987,7 @@ class TestScheduleRetryForPastDueOrders:
         # Then — no retry scheduled
         enqueue_job_mock.assert_not_called()
 
-    @freeze_time("2024-02-01 12:00:00")
+    @time_machine.travel("2024-02-01T12:00:00Z", tick=False)
     async def test_skips_past_deadline(
         self,
         enqueue_job_mock: MagicMock,
@@ -6029,7 +6029,7 @@ class TestScheduleRetryForPastDueOrders:
         # Then — no retry scheduled (deadline expired)
         enqueue_job_mock.assert_not_called()
 
-    @freeze_time("2024-01-15 12:00:00")
+    @time_machine.travel("2024-01-15T12:00:00Z", tick=False)
     async def test_enqueues_payment_if_next_attempt_already_set(
         self,
         enqueue_job_mock: MagicMock,
@@ -6079,7 +6079,7 @@ class TestScheduleRetryForPastDueOrders:
         await session.refresh(subscription)
         assert subscription.payment_method_id == new_payment_method.id
 
-    @freeze_time("2024-01-15 12:00:00")
+    @time_machine.travel("2024-01-15T12:00:00Z", tick=False)
     async def test_skips_active_subscription(
         self,
         enqueue_job_mock: MagicMock,

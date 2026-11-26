@@ -5,10 +5,10 @@ from unittest.mock import Mock
 from uuid import UUID
 
 import dramatiq
-import freezegun
 import httpx2
 import pytest
 import stripe as stripe_lib
+import time_machine
 from pytest_mock import MockerFixture
 from sqlalchemy import select, update
 from sqlalchemy.orm import selectinload
@@ -3254,13 +3254,13 @@ class TestImportCatalog:
         enqueue.reset_mock()
         import_next_batch = CatalogImporter.import_next_batch
 
-        with freezegun.freeze_time(utc_now()) as frozen_time:
+        with time_machine.travel(utc_now(), tick=False) as frozen_time:
 
             async def slow_batch(
                 importer: CatalogImporter,
             ) -> MerchantMigrationImportReport | None:
                 report = await import_next_batch(importer)
-                frozen_time.tick(timedelta(minutes=9))
+                frozen_time.shift(timedelta(minutes=9))
                 return report
 
             slow = mocker.patch.object(

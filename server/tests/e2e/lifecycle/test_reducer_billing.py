@@ -9,8 +9,8 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from decimal import Decimal
 
-import freezegun
 import pytest
+import time_machine
 from httpx2 import AsyncClient
 
 from polar.auth.scope import Scope
@@ -124,7 +124,7 @@ class Scenario:
     async def when_the_customer_subscribes(
         self, plan: Product, *, at: datetime
     ) -> None:
-        with freezegun.freeze_time(at):
+        with time_machine.travel(at, tick=False):
             purchase = await complete_purchase(
                 self.client,
                 self.session,
@@ -138,7 +138,7 @@ class Scenario:
         self.subscription_id = purchase.order["subscription_id"]
 
     async def when_units_are_included(self, units: int, *, at: datetime) -> None:
-        with freezegun.freeze_time(at):
+        with time_machine.travel(at, tick=False):
             response = await self.client.post(
                 "/v1/customer-meters/credits",
                 json={
@@ -154,7 +154,7 @@ class Scenario:
     async def when_usage_is_reported(
         self, *values: int, at: datetime, arriving: datetime | None = None
     ) -> None:
-        with freezegun.freeze_time(arriving or at + timedelta(minutes=10)):
+        with time_machine.travel(arriving or at + timedelta(minutes=10), tick=False):
             response = await self.client.post(
                 "/v1/events/ingest",
                 json={
@@ -176,7 +176,7 @@ class Scenario:
     async def when_the_customer_switches_to(
         self, plan: Product, *, at: datetime
     ) -> None:
-        with freezegun.freeze_time(at):
+        with time_machine.travel(at, tick=False):
             response = await self.client.patch(
                 f"/v1/subscriptions/{self.subscription_id}",
                 json={"product_id": str(plan.id), "proration_behavior": "prorate"},
@@ -188,7 +188,7 @@ class Scenario:
         async def drain(**_kwargs: object) -> object:
             return await self.drain(ignored_actors={"email.send"})
 
-        with freezegun.freeze_time(at + timedelta(seconds=1)):
+        with time_machine.travel(at + timedelta(seconds=1), tick=False):
             assert await self.scheduler_sim.get_due_count() == 1
             await self.scheduler_sim.trigger_due_cycles(drain)  # type: ignore[arg-type]
 

@@ -3,7 +3,7 @@ from decimal import Decimal
 from uuid import UUID
 
 import pytest
-from freezegun import freeze_time
+import time_machine
 from pytest_mock import MockerFixture
 
 from polar.billing_interval.repository import BillingIntervalRepository
@@ -93,7 +93,7 @@ async def cycle(session: AsyncSession, subscription: Subscription) -> None:
 
 @pytest.mark.anyio
 class TestCreateOrUpdateFromCheckout:
-    @freeze_time(START)
+    @time_machine.travel(START, tick=False)
     async def test_opens_charge_interval(
         self,
         session: AsyncSession,
@@ -117,7 +117,7 @@ class TestCreateOrUpdateFromCheckout:
             (product_recurring_metered.prices[0].id, UsagePolicy.charge, START, None)
         ]
 
-    @freeze_time(START)
+    @time_machine.travel(START, tick=False)
     async def test_trial_opens_trial_interval(
         self,
         session: AsyncSession,
@@ -146,7 +146,7 @@ class TestCreateOrUpdateFromCheckout:
 
 @pytest.mark.anyio
 class TestCycle:
-    @freeze_time(START)
+    @time_machine.travel(START, tick=False)
     async def test_renewal_keeps_interval_open(
         self,
         session: AsyncSession,
@@ -163,7 +163,7 @@ class TestCycle:
 
         assert await get_history(session, subscription) == history
 
-    @freeze_time(START)
+    @time_machine.travel(START, tick=False)
     async def test_pause_replaces_interval_at_period_end(
         self,
         session: AsyncSession,
@@ -185,7 +185,7 @@ class TestCycle:
             (price_id, UsagePolicy.paused, cycle_at, None),
         ]
 
-    @freeze_time(START)
+    @time_machine.travel(START, tick=False)
     async def test_trial_conversion_replaces_interval_at_period_end(
         self,
         session: AsyncSession,
@@ -210,7 +210,7 @@ class TestCycle:
             (price_id, UsagePolicy.charge, cycle_at, None),
         ]
 
-    @freeze_time(START)
+    @time_machine.travel(START, tick=False)
     async def test_cancellation_closes_interval_at_period_end(
         self,
         session: AsyncSession,
@@ -260,12 +260,12 @@ class TestUpdateProduct:
         new_product: Product,
         customer: Customer,
     ) -> None:
-        with freeze_time(START):
+        with time_machine.travel(START, tick=False):
             subscription = await create_recorded_subscription(
                 session, save_fixture, product_recurring_metered, customer
             )
 
-        with freeze_time(LATER):
+        with time_machine.travel(LATER, tick=False):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -282,7 +282,7 @@ class TestUpdateProduct:
             (new_product.prices[0].id, UsagePolicy.charge, LATER, None),
         ]
 
-    @freeze_time(START)
+    @time_machine.travel(START, tick=False)
     async def test_scheduled_change_replaces_interval_at_period_end(
         self,
         session: AsyncSession,
@@ -374,13 +374,13 @@ class TestUpdateTrial:
         product_recurring_metered: Product,
         customer: Customer,
     ) -> None:
-        with freeze_time(START):
+        with time_machine.travel(START, tick=False):
             subscription = await create_recorded_subscription(
                 session, save_fixture, product_recurring_metered, customer
             )
         price_id = product_recurring_metered.prices[0].id
 
-        with freeze_time(LATER):
+        with time_machine.travel(LATER, tick=False):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -406,7 +406,7 @@ class TestResume:
         product_recurring_metered: Product,
         customer: Customer,
     ) -> None:
-        with freeze_time(START):
+        with time_machine.travel(START, tick=False):
             subscription = await create_recorded_subscription(
                 session,
                 save_fixture,
@@ -416,7 +416,7 @@ class TestResume:
             )
         price_id = product_recurring_metered.prices[0].id
 
-        with freeze_time(LATER):
+        with time_machine.travel(LATER, tick=False):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -438,18 +438,18 @@ class TestReinstate:
         customer: Customer,
     ) -> None:
         revoked_at = START + timedelta(days=1)
-        with freeze_time(START):
+        with time_machine.travel(START, tick=False):
             subscription = await create_recorded_subscription(
                 session, save_fixture, product_recurring_metered, customer
             )
-        with freeze_time(revoked_at):
+        with time_machine.travel(revoked_at, tick=False):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
                 await subscription_service.revoke(session, ctx, subscription)
         price_id = product_recurring_metered.prices[0].id
 
-        with freeze_time(LATER):
+        with time_machine.travel(LATER, tick=False):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -472,7 +472,7 @@ class TestActivateImported:
         customer: Customer,
     ) -> None:
         mocker.patch.object(subscription_service, "_on_subscription_migrated")
-        with freeze_time(START):
+        with time_machine.travel(START, tick=False):
             subscription = await create_recorded_subscription(
                 session,
                 save_fixture,
@@ -482,7 +482,7 @@ class TestActivateImported:
             )
         price_id = product_recurring_metered.prices[0].id
 
-        with freeze_time(LATER):
+        with time_machine.travel(LATER, tick=False):
             await subscription_service.activate_imported(
                 session,
                 subscription,

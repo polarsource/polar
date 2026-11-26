@@ -6,12 +6,8 @@ import { getExperimentNames } from '@/experiments'
 import { getDistinctId } from '@/experiments/distinct-id'
 import { ExperimentProvider } from '@/experiments/ExperimentProvider'
 import { getExperiments } from '@/experiments/server'
-import { AuthContext } from '@/providers/auth'
 import { CONFIG } from '@/utils/config'
 import { GOOGLE_ANALYTICS_CONSENT_DEFAULT_SCRIPT } from '@/utils/googleAnalyticsConsent'
-import { getAuthenticatedUser } from '@/utils/user'
-import { schemas } from '@polar-sh/client'
-import { PHASE_PRODUCTION_BUILD } from 'next/constants'
 import { Viewport } from 'next/types'
 import {
   PolarMotionProvider,
@@ -30,16 +26,6 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  let authenticatedUser: schemas['UserRead'] | undefined = undefined
-
-  try {
-    authenticatedUser = await getAuthenticatedUser()
-  } catch (e) {
-    if (process.env.NEXT_PHASE !== PHASE_PRODUCTION_BUILD) {
-      throw e
-    }
-  }
-
   const distinctId = await getDistinctId()
   const experimentVariants = await getExperiments(getExperimentNames(), {
     distinctId,
@@ -69,19 +55,17 @@ export default async function RootLayout({
       </head>
       <body style={{ textRendering: 'optimizeLegibility' }}>
         <ExperimentProvider experiments={experimentVariants}>
-          <AuthContext value={authenticatedUser}>
-            <PolarPostHogProvider>
-              <PolarQueryClientProvider>
-                <PolarNuqsProvider>
-                  <PolarMotionProvider>
-                    {CONFIG.IS_SANDBOX && <SandboxBanner />}
-                    <SessionRefreshModal />
-                    {children}
-                  </PolarMotionProvider>
-                </PolarNuqsProvider>
-              </PolarQueryClientProvider>
-            </PolarPostHogProvider>
-          </AuthContext>
+          <PolarPostHogProvider>
+            <PolarQueryClientProvider>
+              <PolarNuqsProvider>
+                <PolarMotionProvider>
+                  {CONFIG.IS_SANDBOX && <SandboxBanner />}
+                  <SessionRefreshModal />
+                  {children}
+                </PolarMotionProvider>
+              </PolarNuqsProvider>
+            </PolarQueryClientProvider>
+          </PolarPostHogProvider>
         </ExperimentProvider>
       </body>
     </html>

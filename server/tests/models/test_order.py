@@ -13,6 +13,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_discount,
     create_order,
+    create_product_price_seat_unit,
     create_subscription,
 )
 
@@ -127,6 +128,32 @@ class TestIsPaymentSetupRequired:
         )
 
         assert not order.is_payment_setup_required
+
+    async def test_subscription_with_free_first_seat(
+        self, save_fixture: SaveFixture, customer: Customer, product: Product
+    ) -> None:
+        price = await create_product_price_seat_unit(
+            save_fixture,
+            product=product,
+            tiers=[
+                {"min_seats": 1, "max_seats": 1, "price_per_seat": 0},
+                {"min_seats": 2, "max_seats": None, "price_per_seat": 1000},
+            ],
+        )
+        subscription = await create_subscription(
+            save_fixture, customer=customer, product=product, prices=[price], seats=1
+        )
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            product=product,
+            subscription=subscription,
+            status=OrderStatus.draft,
+            subtotal_amount=0,
+        )
+
+        assert not order.is_payment_required
+        assert order.is_payment_setup_required
 
     async def test_metered_subscription(
         self,

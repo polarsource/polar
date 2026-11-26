@@ -32,10 +32,9 @@ from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.metadata import MetadataMixin
 from polar.kit.utils import utc_now
 from polar.models.order_item import OrderItem
+from polar.product.guard import has_future_charges
 from polar.tax.calculation import TaxBreakdownItem
 from polar.tax.tax_id import TaxID, TaxIDType
-
-from .discount import DiscountDuration, DiscountPercentage
 
 if TYPE_CHECKING:
     from polar.models import (
@@ -362,20 +361,14 @@ class Order(
 
     @property
     def is_payment_setup_required(self) -> bool:
-        if self.subscription is None:
+        subscription = self.subscription
+        if subscription is None:
             return False
 
-        discount = self.discount
-        if (
-            isinstance(discount, DiscountPercentage)
-            and discount.duration == DiscountDuration.forever
-            and discount.basis_points == 10_000
-        ):
-            return False
-
-        return any(
-            price.amount > 0 or price.product_price.is_metered
-            for price in self.subscription.subscription_product_prices
+        return has_future_charges(
+            subscription.prices,
+            sum(price.amount for price in subscription.subscription_product_prices),
+            self.discount,
         )
 
     @property

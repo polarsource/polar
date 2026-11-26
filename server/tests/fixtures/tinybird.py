@@ -2,7 +2,7 @@ import json
 import os
 import time
 import uuid
-from collections.abc import Generator
+from collections.abc import AsyncIterator, Generator
 from pathlib import Path
 from unittest.mock import patch
 
@@ -104,11 +104,11 @@ def tinybird_clickhouse_token(tinybird_workspace: str) -> str:
     return response.json()["token"]
 
 
-@pytest.fixture
-def tinybird_client(
+@pytest.fixture(scope="session")
+async def session_tinybird_client(
     tinybird_workspace: str,
     tinybird_clickhouse_token: str,
-) -> Generator[TinybirdClient]:
+) -> AsyncIterator[TinybirdClient]:
     client = SynchronousIngestTinybirdClient(
         api_url=settings.TINYBIRD_API_URL,
         clickhouse_url=settings.TINYBIRD_CLICKHOUSE_URL,
@@ -117,14 +117,28 @@ def tinybird_client(
         clickhouse_username=settings.TINYBIRD_CLICKHOUSE_USERNAME,
         clickhouse_token=tinybird_clickhouse_token,
     )
-    with (
-        patch.object(tinybird_service, "client", client),
-        patch.object(queries_tinybird, "tinybird_client", client),
-    ):
+    try:
         yield client
+    finally:
+        await client._write_client.aclose()
+        await client._read_client.aclose()
+        if client._clickhouse_client is not None:
+            await client._clickhouse_client.close()
+
+
+@pytest.fixture
+def tinybird_client(
+    session_tinybird_client: TinybirdClient,
+) -> Generator[TinybirdClient]:
+    with (
+        patch.object(tinybird_service, "client", session_tinybird_client),
+        patch.object(queries_tinybird, "tinybird_client", session_tinybird_client),
+    ):
+        yield session_tinybird_client
 
 
 __all__ = [
+    "session_tinybird_client",
     "tinybird_available",
     "tinybird_clickhouse_token",
     "tinybird_client",

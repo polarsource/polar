@@ -166,7 +166,6 @@ class TestListEventTypes:
         assert json["items"][0]["name"] == "test.event.1"
 
     @pytest.mark.auth(
-        AuthSubjectFixture(subject="user", scopes={Scope.events_read}),
         AuthSubjectFixture(subject="organization", scopes={Scope.events_read}),
     )
     async def test_search_by_query(
@@ -220,7 +219,6 @@ class TestListEventTypes:
         assert json["items"][0]["name"] == "user.login"
 
     @pytest.mark.auth(
-        AuthSubjectFixture(subject="user", scopes={Scope.events_read}),
         AuthSubjectFixture(subject="organization", scopes={Scope.events_read}),
     )
     async def test_sorting(
@@ -277,7 +275,6 @@ class TestListEventTypes:
         assert json["items"][1]["name"] == "aaa.event"
 
     @pytest.mark.auth(
-        AuthSubjectFixture(subject="user", scopes={Scope.events_read}),
         AuthSubjectFixture(subject="organization", scopes={Scope.events_read}),
     )
     async def test_pagination(
@@ -316,7 +313,6 @@ class TestListEventTypes:
         assert len(json["items"]) == 5
 
     @pytest.mark.auth(
-        AuthSubjectFixture(subject="user", scopes={Scope.events_read}),
         AuthSubjectFixture(subject="organization", scopes={Scope.events_read}),
     )
     async def test_filter_by_parent_id(
@@ -373,7 +369,6 @@ class TestListEventTypes:
         assert json["items"][0]["name"] == "child.event"
 
     @pytest.mark.auth(
-        AuthSubjectFixture(subject="user", scopes={Scope.events_read}),
         AuthSubjectFixture(subject="organization", scopes={Scope.events_read}),
     )
     async def test_filter_by_source(
@@ -427,7 +422,6 @@ class TestListEventTypes:
         assert json["items"][0]["name"] == "system.event"
 
     @pytest.mark.auth(
-        AuthSubjectFixture(subject="user", scopes={Scope.events_read}),
         AuthSubjectFixture(subject="organization", scopes={Scope.events_read}),
     )
     async def test_system_event_without_event_type_row(

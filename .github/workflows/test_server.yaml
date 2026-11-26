@@ -562,7 +562,7 @@ jobs:
         working-directory: ./server
         run: |
           uv run python -m scripts.pytest_shards --shards 4 --shard ${{ matrix.shard }} > "$RUNNER_TEMP/test-files"
-          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "not tinybird and not benchmark" -n 8 --dist=loadgroup -p no:sugar -p no:cov -p no:codspeed -p no:locust --durations=0 --store-durations --clean-durations
+          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "not tinybird and not benchmark" -n 8 --dist=loadgroup -p no:sugar -p no:cov -p no:codspeed -p no:locust --durations=20 --store-durations --clean-durations
 
       - name: 🐦 Run Tinybird tests (pytest)
         if: steps.merge-check.outputs.should_run != 'false' && matrix.shard == 'tinybird'
@@ -571,7 +571,7 @@ jobs:
           POLAR_TEST_TINYBIRD_TOKEN_FILE: ${{ runner.temp }}/tinybird-token
         run: |
           uv run python -m scripts.pytest_shards --tinybird > "$RUNNER_TEMP/test-files"
-          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "tinybird and not benchmark" -n 6 --dist=loadgroup -p no:sugar -p no:cov -p no:codspeed -p no:locust -p no:split --durations=0
+          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "tinybird and not benchmark" -n 6 --dist=loadgroup -p no:sugar -p no:cov -p no:codspeed -p no:locust -p no:split --durations=20
 
       - name: 📊 Upload shard test durations
         if: steps.merge-check.outputs.should_run != 'false' && github.event_name == 'push' && matrix.shard != 'tinybird'

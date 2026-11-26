@@ -8,6 +8,34 @@ import type { EventInput } from "../event";
 import type { EventQueue } from "./index";
 import { RedisEventQueue } from "./redis";
 
+it("skips periodic drains until the queue has work", async () => {
+  const server = await startRedisServer();
+  const ingest = vi.fn().mockResolvedValue(undefined);
+  const onAck = vi.fn();
+  const queue = new RedisEventQueue(server.socket, { stream: "test:queue" });
+  vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+  try {
+    await queue.start({ ingest, onAck });
+    const backlog = vi.spyOn(queue["redis"]!, "queueBacklog");
+    await vi.advanceTimersByTimeAsync({{ redis_constants.queue_drain_interval }});
+    expect(backlog).not.toHaveBeenCalled();
+    const event = {
+      name: "call",
+      external_customer_id: "alice",
+      external_id: "event-0",
+      timestamp: "2026-11-26T12:00:00Z",
+    };
+    await queue.enqueue(event);
+    await vi.advanceTimersByTimeAsync({{ redis_constants.queue_drain_interval }});
+    await vi.waitFor(() => expect(onAck).toHaveBeenCalledWith([event]));
+    expect(ingest).toHaveBeenCalledExactlyOnceWith([event]);
+  } finally {
+    await queue.close();
+    vi.useRealTimers();
+    await server.stop();
+  }
+});
+
 it("keeps an entry until its rejection hook succeeds", async () => {
   const server = await startRedisServer();
   const redis = new Redis(server.socket);

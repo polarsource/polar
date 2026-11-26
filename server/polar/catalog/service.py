@@ -148,7 +148,14 @@ def hash_entries(parent_hash: str | None, entries: CatalogEntries) -> str:
     )
 
 
-CATALOG_SETTINGS = ("default_presentment_currency", "default_tax_behavior")
+PAYMENT_SETTINGS = ("default_presentment_currency", "default_tax_behavior")
+SUBSCRIPTION_SETTINGS = (
+    "allow_multiple_subscriptions",
+    "proration_behavior",
+    "benefit_revocation_grace_period",
+    "prevent_trial_abuse",
+)
+CATALOG_SETTINGS = (*PAYMENT_SETTINGS, *SUBSCRIPTION_SETTINGS)
 
 
 def _settings(organization: Organization) -> dict[str, Any]:
@@ -578,6 +585,32 @@ class CatalogService:
             settings.update(catalog.settings)
         return settings
 
+    async def update_settings(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        settings: Mapping[str, Any],
+    ) -> None:
+        """Set these settings, by `Organization` attribute name, on the
+        organization."""
+        update_dict = {
+            name: value
+            for name, value in settings.items()
+            if name not in SUBSCRIPTION_SETTINGS
+        }
+        if len(update_dict) < len(settings):
+            update_dict["subscription_settings"] = {
+                **organization.subscription_settings,
+                **{
+                    name: value
+                    for name, value in settings.items()
+                    if name in SUBSCRIPTION_SETTINGS
+                },
+            }
+        await OrganizationRepository.from_session(session).update(
+            organization, update_dict=update_dict
+        )
+
     async def get_catalog_meters(
         self,
         session: AsyncReadSession,
@@ -1002,9 +1035,7 @@ class CatalogService:
                     custom_field, update_dict={"is_current": True}, flush=True
                 )
         if settings:
-            await OrganizationRepository.from_session(session).update(
-                organization, update_dict=settings
-            )
+            await self.update_settings(session, organization, settings)
             await webhook_service.send(
                 session,
                 organization,

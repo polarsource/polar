@@ -981,8 +981,8 @@ class DeclarativeConfigService:
         if change is None:
             return None
         if change.update_dict and not draft:
-            await OrganizationRepository.from_session(session).update(
-                organization, update_dict=change.organization_update_dict
+            await catalog_service.update_settings(
+                session, organization, change.organization_update_dict
             )
         return ConfigSettingsResult(action=change.action)
 

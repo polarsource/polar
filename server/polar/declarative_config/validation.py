@@ -21,6 +21,7 @@ from polar.catalog.repository import (
 from polar.catalog.service import CatalogMembers
 from polar.catalog.service import catalog as catalog_service
 from polar.custom_field.repository import CustomFieldRepository
+from polar.enums import SubscriptionProrationBehavior
 from polar.event.system import SystemEvent
 from polar.event_type.repository import EventTypeRepository
 from polar.kit.currency import PresentmentCurrency
@@ -119,6 +120,10 @@ class ResourceChange[ConfigT, ModelT]:
 SETTINGS_FIELDS = {
     "payments.currency": "default_presentment_currency",
     "payments.tax": "default_tax_behavior",
+    "subscriptions.allow_multiple_subscriptions": "allow_multiple_subscriptions",
+    "subscriptions.proration_behavior": "proration_behavior",
+    "subscriptions.benefit_revocation_grace_period": "benefit_revocation_grace_period",
+    "subscriptions.prevent_trial_abuse": "prevent_trial_abuse",
 }
 
 
@@ -469,6 +474,27 @@ def changed_currency(currency: PresentmentCurrency) -> ConfigIssue:
         ),
         input=currency,
     )
+
+
+def reset_proration_not_enabled(
+    organization: Organization, settings: SettingsChange | None
+) -> list[ConfigIssue]:
+    field = "subscriptions.proration_behavior"
+    if (
+        settings is None
+        or settings.update_dict.get(field) != SubscriptionProrationBehavior.reset
+        or organization.feature_settings.get("reset_proration_behavior_enabled")
+    ):
+        return []
+    return [
+        ConfigIssue(
+            severity=ConfigIssueSeverity.error,
+            type=ConfigIssueType.not_supported,
+            loc=_settings_loc(field),
+            msg="The reset proration behavior isn't enabled for this organization.",
+            input=SubscriptionProrationBehavior.reset,
+        )
+    ]
 
 
 def _changed_interval(
@@ -1405,6 +1431,7 @@ async def check(
         organization, None if archived else catalog
     )
     settings = diff_settings(current_settings, config.settings)
+    issues.extend(reset_proration_not_enabled(organization, settings))
     new_currency = (
         None if settings is None else settings.update_dict.get("payments.currency")
     )

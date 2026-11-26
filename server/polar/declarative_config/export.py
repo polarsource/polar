@@ -16,6 +16,7 @@ from polar.catalog.repository import (
     CatalogMeterRepository,
     CatalogProductRepository,
 )
+from polar.catalog.service import SUBSCRIPTION_SETTINGS
 from polar.catalog.service import catalog as catalog_service
 from polar.custom_field.repository import CustomFieldRepository
 from polar.meter.repository import MeterRepository
@@ -247,7 +248,8 @@ def _settings(
             "payments": {
                 "currency": current["default_presentment_currency"],
                 "tax": current["default_tax_behavior"],
-            }
+            },
+            "subscriptions": {name: current[name] for name in SUBSCRIPTION_SETTINGS},
         }
     )
     return ConfigSettingsRead.model_validate(_dump(settings))

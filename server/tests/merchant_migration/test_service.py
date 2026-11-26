@@ -135,6 +135,7 @@ from polar.models.product_price import ProductPriceFixed
 from polar.models.subscription import SubscriptionStatus
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.postgres import AsyncSession
+from polar.product.schemas import PRODUCT_NAME_MAX_LENGTH
 from polar.product.service import product as product_service
 from polar.redis import Redis
 from polar.subscription.repository import SubscriptionRepository
@@ -2352,7 +2353,7 @@ class TestImportCatalog:
         assert results[PrecheckEntity.products].imported == 1
         products = await _products(session, organization)
         assert [p.name for p in products] == [
-            ("Live Workshop Ticket " * 5)[:64].rstrip()
+            ("Live Workshop Ticket " * 5)[:PRODUCT_NAME_MAX_LENGTH].rstrip()
         ]
 
     @pytest.mark.auth

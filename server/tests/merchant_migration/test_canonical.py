@@ -445,10 +445,10 @@ class TestPolarProductName:
         assert polar_product_name("  Pro  ") == "Pro"
 
     def test_cuts_a_long_name_to_the_limit(self) -> None:
-        name = polar_product_name("Workshop ticket " * 10)
-
-        assert len(name) <= 64
-        assert name == ("Workshop ticket " * 4).rstrip()
+        assert (
+            polar_product_name("Workshop ticket " * 10)
+            == ("Workshop ticket " * 4).rstrip()
+        )
 
 
 class TestPolarDiscountHelpers:

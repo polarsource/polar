@@ -563,7 +563,6 @@ def discount_started_at_for(
 
 
 def polar_product_name(name: str) -> str:
-    """Polar caps product names at 64 characters; longer source names are cut."""
     return name.strip()[:PRODUCT_NAME_MAX_LENGTH].rstrip()
 
 

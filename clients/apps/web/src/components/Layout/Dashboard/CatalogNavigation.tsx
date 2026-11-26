@@ -54,7 +54,7 @@ const CatalogVersionChip = ({
         >
           {!live && draft ? <DraftGlyph size={10} /> : null}
           <Text as="span" variant="caption" color="inherit" truncate>
-            {live ? (live.name ?? 'Untitled') : 'Draft'}
+            {(live ?? draft)?.name ?? 'Untitled'}
           </Text>
           {live && draft ? <DraftGlyph size={10} /> : null}
         </Box>

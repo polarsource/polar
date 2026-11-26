@@ -137,7 +137,7 @@ export const CatalogHoverCard = ({
             <DraftGlyph size={14} />
           </span>
           <span className="max-w-1/2 shrink-0 truncate">
-            {draft.name ?? 'Draft'}
+            {draft.name ?? 'Untitled'}
           </span>
           <DraftChanges organization={organization} draft={draft} />
           <TimeAgo date={draft.modified_at ?? draft.created_at} />

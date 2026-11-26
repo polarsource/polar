@@ -1,13 +1,13 @@
 'use client'
 
 import { schemas } from '@polar-sh/client'
-import { Grid, List, ListItem, Pill, Text } from '@polar-sh/orbit'
+import { Grid, List, ListItem, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ChevronRight } from '@polar-sh/orbit/icons'
+import { ChevronRight, CircleCheck } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { PublishedAt } from './PublishedAt'
 
-const columns = 'minmax(0, 1fr) 128px repeat(3, 32px) 16px'
+const columns = 'minmax(0, 1fr) 96px 128px repeat(3, 32px) 16px'
 
 export const kinds = [
   { change: 'added', glyph: '+', color: 'text-success' },
@@ -64,12 +64,17 @@ export const VersionsTab = ({
               alignItems="center"
               width="100%"
             >
-              <Box alignItems="center" columnGap="s" minWidth={0}>
-                <span className="truncate text-base">
-                  {catalog.name ?? 'Untitled'}
-                </span>
+              <span className="truncate text-base">
+                {catalog.name ?? 'Untitled'}
+              </span>
+              <Box alignItems="center" columnGap="xs" color="text-secondary">
                 {catalog.status === 'live' ? (
-                  <Pill color="gray">Current</Pill>
+                  <>
+                    <CircleCheck size={14} aria-hidden />
+                    <Text as="span" color="inherit">
+                      Current
+                    </Text>
+                  </>
                 ) : null}
               </Box>
               <Text color="muted" tabularNums>

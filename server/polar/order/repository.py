@@ -464,6 +464,11 @@ class OrderRepository(
         result = cast(CursorResult[Order], await self.session.execute(statement))
         return result.rowcount > 0
 
+    async def refresh_for_payment_update(self, order: Order) -> None:
+        await self.session.refresh(
+            order, with_for_update={"of": Order, "key_share": True}
+        )
+
     async def release_payment_lock(self, order: Order) -> Order:
         """Release a payment lock for an order."""
         statement = (

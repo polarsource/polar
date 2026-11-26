@@ -22,8 +22,10 @@ sdk/generator/typescript/template/src/portability.test.ts
   s_868513325afaca::t_fff9438b9b803a 6
 sdk/generator/redis/constants.toml
   s_868513325afaca::t_fff9438b9b803a 9,11-12,14,16,18,22,25-26
+  s_868513325afaca::t_498e0dde7f7cf3 20
 sdk/generator/typescript/template/src/metering/queue/redis.ts
   s_868513325afaca::t_fff9438b9b803a 1-28,30-108,110-140,142-170,172-222,227-229,234-239,244-289,294-385
+  s_868513325afaca::t_498e0dde7f7cf3 29
 sdk/generator/python/emitter.py
   s_868513325afaca::t_fff9438b9b803a 143-145,158-160
 sdk/generator/typescript/template/README.md
@@ -32,14 +34,17 @@ sdk/generator/python/template/tests/metering/queue/test_memory.py
   s_868513325afaca::t_fff9438b9b803a 1-711
 sdk/generator/python/template/polar/metering/queue/redis.py
   s_868513325afaca::t_fff9438b9b803a 1-41,43-128,130-172,174-206,208-234,236-239,242-272,274-275,279-294,298-362,366-482
+  s_868513325afaca::t_498e0dde7f7cf3 42,173,235
 sdk/generator/python/template/README.md
   s_868513325afaca::t_fff9438b9b803a 172,208,210,212,215,218-219,225,250,254-255,263,287,296
 sdk/generator/typescript/template/src/outpost/client.test.ts
   s_868513325afaca::t_fff9438b9b803a 12-13,135,381,1337,1377,1379,1383-1386,1393,1399,1406,1412,1426,1429,1442,1447,1460,1464,1487,1502-1504,1508,1512,1515,1519,1525,1536,1546,1553,1563,1566,1579-1580,1597,1606,2438
+  s_868513325afaca::t_498e0dde7f7cf3 1611,1626,1637,1649,1655
 sdk/generator/tests/typescript/test_emitter.py
   s_868513325afaca::t_fff9438b9b803a 44
 sdk/generator/python/template/tests/metering/queue/test_redis.py
   s_868513325afaca::t_fff9438b9b803a 2-14,28-29,31,32-83,85-86,87-116
+  s_868513325afaca::t_498e0dde7f7cf3 24
 sdk/generator/generator/emitter.py
   s_868513325afaca::t_fff9438b9b803a 35
 sdk/generator/tests/test_outpost_scripts.py
@@ -48,6 +53,7 @@ sdk/generator/typescript/template/src/metering/queue/memory.test.ts
   s_868513325afaca::t_fff9438b9b803a 1-634
 sdk/generator/python/template/tests/outpost/test_client.py
   s_868513325afaca::t_fff9438b9b803a 45,230,2280,2284,2296-2297,2304,2307,2322,2338-2339,2352,2364-2365,2377,2388-2389,2404,2416-2417,2429,2439,2477,2492,2500-2501,2505,2515,2518,2522,2530,2535,2548-2549,2559,2572-2573,2579,2593,2598,2603,2610,2620,2623,2630,2632-2633,2647-2648,2663,4274,4280
+  s_868513325afaca::t_498e0dde7f7cf3 2674-2675,2691,2693-2694
 sdk/generator/python/template/tests/metering/test_metering.py
   s_868513325afaca::t_fff9438b9b803a 21,23,42-43,45,54,73,77,117,150,156-159,161,167-168,172-175,180,183,201-202,215-216,228,233,237-238,250-251,254-255,260,273-274,281,289
 sdk/generator/typescript/template/src/metering/index.ts

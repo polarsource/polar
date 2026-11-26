@@ -1,7 +1,8 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationOrNotFound } from '@/utils/customerPortal'
+import { unwrap } from '@polar-sh/client'
 import type { Metadata } from 'next'
-import { redirect } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { CustomerPortalPage } from '../../CustomerPortalPage'
 import OrdersPage from './OrdersPage'
 
@@ -66,38 +67,32 @@ export default async function Page(props: {
     searchParams,
   )
 
-  const {
-    data: order,
-    error,
-    response,
-  } = await api.GET('/v1/customer-portal/orders/{id}', {
-    params: {
-      path: {
-        id: params.id,
+  const order = await unwrap(
+    api.GET('/v1/customer-portal/orders/{id}', {
+      params: {
+        path: {
+          id: params.id,
+        },
       },
+      cache: 'no-cache',
+      next: {
+        tags: [`customer_portal`],
+      },
+    }),
+    {
+      404: notFound,
+      422: notFound,
+      401: () =>
+        redirect(
+          `/${organization.slug}/portal/request?${new URLSearchParams(searchParams)}`,
+        ),
+      // Member doesn't have billing permissions - redirect to overview
+      403: () =>
+        redirect(
+          `/${organization.slug}/portal?${new URLSearchParams(resolvedSearchParams)}`,
+        ),
     },
-    cache: 'no-cache',
-    next: {
-      tags: [`customer_portal`],
-    },
-  })
-
-  if (response.status === 401) {
-    redirect(
-      `/${organization.slug}/portal/request?${new URLSearchParams(searchParams)}`,
-    )
-  }
-
-  if (response.status === 403) {
-    // Member doesn't have billing permissions - redirect to overview
-    redirect(
-      `/${organization.slug}/portal?${new URLSearchParams(resolvedSearchParams)}`,
-    )
-  }
-
-  if (error) {
-    throw error
-  }
+  )
 
   return (
     <CustomerPortalPage

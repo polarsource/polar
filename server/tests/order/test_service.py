@@ -6970,34 +6970,6 @@ class TestHandleOnSessionPayment:
                 payment_processor=PaymentProcessor.stripe,
             )
 
-    async def test_handle_on_session_payment_no_subscription(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        """Test retry payment with no subscription."""
-        order = await create_order(
-            save_fixture,
-            product=product,
-            customer=customer,
-            status=OrderStatus.pending,
-            next_payment_attempt_at=utc_now(),
-            subscription=None,  # No subscription
-        )
-        await save_fixture(order)
-
-        from polar.order.service import OrderNotEligibleForRetry
-
-        with pytest.raises(OrderNotEligibleForRetry):
-            await order_service.handle_on_session_payment(
-                session,
-                order,
-                confirmation_token_id="ctoken_test",
-                payment_processor=PaymentProcessor.stripe,
-            )
-
     async def test_handle_on_session_payment_already_in_progress(
         self,
         session: AsyncSession,

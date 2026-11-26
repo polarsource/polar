@@ -2344,10 +2344,6 @@ class OrderService:
             log.warning("Order is not pending", order_id=order.id, status=order.status)
             raise OrderNotEligibleForRetry(order)
 
-        if order.subscription is None:
-            log.warning("Order is not a subscription", order_id=order.id)
-            raise OrderNotEligibleForRetry(order)
-
         if order.payment_lock_acquired_at is not None:
             log.warning(
                 "Payment already in progress",

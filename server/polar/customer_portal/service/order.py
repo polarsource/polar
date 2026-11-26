@@ -325,6 +325,9 @@ class CustomerOrderService:
         payment_processor: PaymentProcessor,
         payment_method_id: uuid.UUID | None = None,
     ) -> CustomerOrderPaymentConfirmation:
+        if order.subscription is None:
+            raise OrderNotEligibleForRetry(order, status_code=422)
+
         try:
             if confirmation_token_id is not None:
                 order = await order_service.handle_on_session_payment(

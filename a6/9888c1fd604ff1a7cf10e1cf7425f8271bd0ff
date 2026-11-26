@@ -12,6 +12,7 @@ sdk/generator/typescript/emitter.py
   s_868513325afaca::t_6f1022dac15525 99
 sdk/generator/redis/constants.toml
   s_868513325afaca::t_b1e1b45da908fd 1-18,21-74
+  s_868513325afaca::t_05e616c5b511e3 19-20
 sdk/generator/python/template/polar/outpost/client.py
   s_868513325afaca::t_7de287a62b5d43 55-59,61-63,407,485-491,493,514,551,596-597,643-644,1185,1193-1195
   s_868513325afaca::t_0ce95c1d219955 60
@@ -21,6 +22,7 @@ sdk/generator/python/template/polar/outpost/client.py
   s_868513325afaca::t_b1e1b45da908fd 214,216-234
   s_868513325afaca::t_0e871ac8f56816 212,237,242,247,252,257,260
   s_868513325afaca::t_d00b28361e7e31 41,1083,1366
+  s_868513325afaca::t_05e616c5b511e3 23,1186
 sdk/generator/typescript/template/src/outpost/scripts.ts
   s_868513325afaca::t_defdd67106f769 2,5,8,11,14,17
 sdk/generator/python/template/polar/_redis.py
@@ -29,6 +31,7 @@ sdk/generator/python/template/polar/_redis.py
   s_868513325afaca::t_06806736431a0e 28
   s_868513325afaca::t_ac5844495f249e 1-6,8-13,18,22,24-25,27,29-43,48-58,60,63-65,68-106
   s_868513325afaca::t_d00b28361e7e31 19-21,44-47
+  s_868513325afaca::t_05e616c5b511e3 7,14,59,61-62,66-67
 sdk/generator/typescript/template/src/metering/outbox/redis.test.ts
   s_868513325afaca::t_965aff317b7fba 1-47
 sdk/generator/typescript/template/tsdown.config.ts
@@ -38,6 +41,7 @@ sdk/generator/python/template/polar/outpost/reducer.py
 sdk/generator/python/template/tests/outpost/test_client.py
   s_868513325afaca::t_35848e78816857 41,229
   s_868513325afaca::t_0ce95c1d219955 222-225,227-228
+  s_868513325afaca::t_05e616c5b511e3 40,99,2664,2684
 sdk/generator/tests/python/test_emitter.py
   s_868513325afaca::t_69ca9cb3c8818e 5,71-77
   s_868513325afaca::t_c1fafefde1a1f9 65
@@ -56,6 +60,8 @@ sdk/generator/typescript/template/src/metering/outbox/redis.ts
   s_868513325afaca::t_9bc3ca90de2273 143,147-149
   s_868513325afaca::t_134cbab0d4f3b8 14
   s_868513325afaca::t_3ee9aa2cfbdd58 1-13,15-30,32-92,94-106,108-134,136-142,144-146,150-161,163-189,191,193-233,238-240,245-250,255-300,305-357,363-404
+  s_868513325afaca::t_05e616c5b511e3 31,107,135,162,190,192,234-237,241-242,251-254,301-304
+  s_868513325afaca::t_c6dd62a07e9493 243-244
 sdk/generator/typescript/template/src/metering/index.ts
   s_868513325afaca::t_5a32a475061725 21
 sdk/generator/tests/test_outpost_scripts.py
@@ -76,12 +82,14 @@ sdk/generator/python/template/polar/metering/outbox/redis.py
   s_868513325afaca::t_07d5457b6abf31 28,157-174,181-182,323,325-326
   s_868513325afaca::t_ac5844495f249e 146,246,391,455,459
   s_868513325afaca::t_ce53f7637dd746 197,251,254-255,489
+  s_868513325afaca::t_05e616c5b511e3 43,153,198,232,280,285-286,317,320-322,339-341,407-409
 sdk/generator/python/template/polar/metering/outbox/__init__.py
   s_868513325afaca::t_7de287a62b5d43 1-19
 sdk/generator/typescript/template/src/outpost/client.ts
   s_868513325afaca::t_134cbab0d4f3b8 20
   s_868513325afaca::t_defdd67106f769 15,21,75-96,351,398,425,432-435,447,480,891,973,1083,1105
   s_868513325afaca::t_9bc3ca90de2273 542
+  s_868513325afaca::t_05e616c5b511e3 462,612
 sdk/generator/typescript/template/src/outpost/seal-confirmed.bench.ts
   s_868513325afaca::t_134cbab0d4f3b8 15
   s_868513325afaca::t_defdd67106f769 16
@@ -93,8 +101,10 @@ sdk/generator/typescript/template/src/outpost/client.test.ts
   s_868513325afaca::t_823317a33c5d3d 1398,1401
   s_868513325afaca::t_134cbab0d4f3b8 18
   s_868513325afaca::t_defdd67106f769 19
+  s_868513325afaca::t_05e616c5b511e3 1587,1614
 sdk/generator/python/template/tests/metering/outbox/test_redis.py
   s_868513325afaca::t_86531c6c3ea393 2-13,27-28,30,31-82,84,85-117
+  s_868513325afaca::t_f1c19f39b8f420 1,14-26,29,83
 sdk/generator/typescript/template/src/redis.ts
   s_868513325afaca::t_38f6e2921884a7 1-88
 sdk/python/polar/_redis.py

@@ -1,3 +1,4 @@
+import * as Option from 'effect/Option'
 import * as Schema from 'effect/Schema'
 import type { Ingest, Usage } from './usage'
 
@@ -41,12 +42,14 @@ const OpenAIPayload = Schema.Struct({
   ]),
 })
 
-const isOpenAIPayload = Schema.is(OpenAIPayload)
+const decodePayload = Schema.decodeUnknownOption(
+  Schema.fromJsonString(
+    Schema.Union([OpenAIPayload, Schema.Struct({ response: OpenAIPayload })]),
+  ),
+)
 
-const hasModel = Schema.is(Schema.Struct({ model: Schema.String }))
-
-const isOpenAIResponseEvent = Schema.is(
-  Schema.Struct({ response: OpenAIPayload }),
+const decodeModel = Schema.decodeUnknownOption(
+  Schema.fromJsonString(Schema.Struct({ model: Schema.String })),
 )
 
 const openAIUsage = ({ usage }: typeof OpenAIPayload.Type): Usage =>
@@ -76,27 +79,27 @@ const generation = (input: string | URL | Request, init?: RequestInit) => {
     : undefined
 }
 
-const parse = (text: string): unknown => {
-  try {
-    return JSON.parse(text)
-  } catch {
-    return undefined
-  }
-}
-
-const isChatStream = Schema.is(
-  Schema.Struct({
-    stream: Schema.Literal(true),
-    stream_options: Schema.optional(
-      Schema.NullOr(Schema.Record(Schema.String, Schema.Unknown)),
+const decodeChatStream = Schema.decodeUnknownOption(
+  Schema.fromJsonString(
+    Schema.StructWithRest(
+      Schema.Struct({
+        stream: Schema.Literal(true),
+        stream_options: Schema.optional(
+          Schema.NullOr(Schema.Record(Schema.String, Schema.Unknown)),
+        ),
+      }),
+      [Schema.Record(Schema.String, Schema.Unknown)],
     ),
-  }),
+  ),
 )
 
 const withUsage = (input: string | URL | Request, init?: RequestInit) => {
-  const body = typeof init?.body === 'string' ? parse(init.body) : undefined
+  const body =
+    generation(input, init) === 'chat/completions'
+      ? Option.getOrUndefined(decodeChatStream(init?.body))
+      : undefined
 
-  return generation(input, init) === 'chat/completions' && isChatStream(body)
+  return body
     ? {
         ...init,
         body: JSON.stringify({
@@ -109,15 +112,16 @@ const withUsage = (input: string | URL | Request, init?: RequestInit) => {
 
 // The SDK's helpers (parse, stream, runTools) bypass a wrapped create(), so meter at fetch
 export const openAIClient = (client: LLMStrategyOpenAI, ingest: Ingest) => {
-  const meter = async (payload: unknown, request?: RequestInit) => {
-    const body = isOpenAIResponseEvent(payload) ? payload.response : payload
+  const meter = async (text: string, request?: RequestInit) => {
+    const payload = Option.getOrUndefined(decodePayload(text))
 
-    if (!isOpenAIPayload(body)) {
+    if (!payload) {
       return
     }
 
-    const sent = typeof request?.body === 'string' && parse(request.body)
-    const model = body.model ?? (hasModel(sent) ? sent.model : undefined)
+    const body = 'response' in payload ? payload.response : payload
+    const model =
+      body.model ?? Option.getOrUndefined(decodeModel(request?.body))?.model
 
     if (model) {
       await ingest({ vendor: 'openai', model }, openAIUsage(body))
@@ -128,23 +132,20 @@ export const openAIClient = (client: LLMStrategyOpenAI, ingest: Ingest) => {
     const decoder = new TextDecoder()
     let buffer = ''
 
-    const read = async (text: string) => {
-      const lines = (buffer + text).split('\n')
-      buffer = lines.pop() ?? ''
-
-      for (const line of lines) {
-        if (line.startsWith('data:')) {
-          await meter(parse(line.slice(5)))
-        }
-      }
-    }
-
     return new TransformStream<Uint8Array, Uint8Array>({
       transform: async (chunk, controller) => {
-        await read(decoder.decode(chunk, { stream: true }))
+        const text = buffer + decoder.decode(chunk, { stream: true })
+        const lines = text.split('\n')
+        buffer = lines.pop() ?? ''
+
+        for (const line of lines) {
+          if (line.startsWith('data:')) {
+            await meter(line.slice(5))
+          }
+        }
+
         controller.enqueue(chunk)
       },
-      flush: () => read(`${decoder.decode()}\n`),
     })
   }
 
@@ -172,8 +173,8 @@ export const openAIClient = (client: LLMStrategyOpenAI, ingest: Ingest) => {
         await meter(
           await response
             .clone()
-            .json()
-            .catch(() => undefined),
+            .text()
+            .catch(() => ''),
           init,
         )
       }

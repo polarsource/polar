@@ -17224,7 +17224,7 @@ export interface components {
     }
     /** Config */
     Config: {
-      /** @description Organization settings to update. */
+      /** @description Organization settings. Settings left out are set to their default. Leave out `settings` to keep the current ones. */
       settings?: components['schemas']['ConfigSettings'] | null
       /**
        * Catalog Name
@@ -17912,6 +17912,8 @@ export interface components {
       enabled: boolean
       /** @description The current config, in the shape plan and apply accept, without `organization_id`. */
       config: components['schemas']['ConfigExportDocument']
+      /** @description Every setting at its default. Settings left out of a config are set to these, so a written config can leave them out. */
+      default_settings: components['schemas']['ConfigSettingsRead']
       /**
        * Skipped
        * @description Resources left out of the exported config. At most the section's config limit is listed.
@@ -18622,19 +18624,13 @@ export interface components {
     /** ConfigSettings */
     ConfigSettings: {
       /** @description Payment settings. */
-      payments?: components['schemas']['ConfigSettingsPayments'] | null
+      payments?: components['schemas']['ConfigSettingsPayments']
       /** @description Subscription settings. */
-      subscriptions?:
-        | components['schemas']['ConfigSettingsSubscriptions']
-        | null
+      subscriptions?: components['schemas']['ConfigSettingsSubscriptions']
       /** @description Customer portal settings. */
-      customer_portal?:
-        | components['schemas']['ConfigSettingsCustomerPortal']
-        | null
+      customer_portal?: components['schemas']['ConfigSettingsCustomerPortal']
       /** @description Which emails Polar sends customers. */
-      customer_notifications?:
-        | components['schemas']['ConfigSettingsCustomerNotifications']
-        | null
+      customer_notifications?: components['schemas']['ConfigSettingsCustomerNotifications']
     }
     /** ConfigSettingsChange */
     ConfigSettingsChange: {
@@ -18650,74 +18646,88 @@ export interface components {
     ConfigSettingsCustomerNotifications: {
       /**
        * Send Order Confirmation
-       * @description Whether to email customers when they complete a one-time purchase.
+       * @description Whether to email customers when they complete a one-time purchase. Defaults to `true`.
+       * @default true
        */
-      send_order_confirmation?: boolean | null
+      send_order_confirmation: boolean
       /**
        * Send Subscription Confirmation
-       * @description Whether to email customers when they start a new subscription.
+       * @description Whether to email customers when they start a new subscription. Defaults to `true`.
+       * @default true
        */
-      send_subscription_confirmation?: boolean | null
+      send_subscription_confirmation: boolean
       /**
        * Send Trial Conversion Reminder
-       * @description Whether to email customers when a trial is about to end and convert to a paid subscription.
+       * @description Whether to email customers when a trial is about to end and convert to a paid subscription. Defaults to `true`.
+       * @default true
        */
-      send_trial_conversion_reminder?: boolean | null
+      send_trial_conversion_reminder: boolean
       /**
        * Send Trial Converted
-       * @description Whether to email customers when a trial ends and the subscription becomes paid.
+       * @description Whether to email customers when a trial ends and the subscription becomes paid. Defaults to `true`.
+       * @default true
        */
-      send_trial_converted?: boolean | null
+      send_trial_converted: boolean
       /**
        * Send Renewal Reminder
-       * @description Whether to email customers when a subscription with a long billing cycle renews within 30 days.
+       * @description Whether to email customers when a subscription with a long billing cycle renews within 30 days. Defaults to `true`.
+       * @default true
        */
-      send_renewal_reminder?: boolean | null
+      send_renewal_reminder: boolean
       /**
        * Send Subscription Cycled
-       * @description Whether to email customers when a subscription renews or is invoiced for usage.
+       * @description Whether to email customers when a subscription renews or is invoiced for usage. Defaults to `true`.
+       * @default true
        */
-      send_subscription_cycled?: boolean | null
+      send_subscription_cycled: boolean
       /**
        * Send Card Expiring
-       * @description Whether to email customers when a card backing an active subscription is about to expire.
+       * @description Whether to email customers when a card backing an active subscription is about to expire. Defaults to `true`.
+       * @default true
        */
-      send_card_expiring?: boolean | null
+      send_card_expiring: boolean
       /**
        * Send Subscription Past Due
-       * @description Whether to email customers when a subscription payment fails and becomes overdue.
+       * @description Whether to email customers when a subscription payment fails and becomes overdue. Defaults to `true`.
+       * @default true
        */
-      send_subscription_past_due?: boolean | null
+      send_subscription_past_due: boolean
       /**
        * Send Subscription Updated
-       * @description Whether to email customers when they change their subscription to another product.
+       * @description Whether to email customers when they change their subscription to another product. Defaults to `true`.
+       * @default true
        */
-      send_subscription_updated?: boolean | null
+      send_subscription_updated: boolean
       /**
        * Send Subscription Paused
-       * @description Whether to email customers when they pause their subscription.
+       * @description Whether to email customers when they pause their subscription. Defaults to `true`.
+       * @default true
        */
-      send_subscription_paused?: boolean | null
+      send_subscription_paused: boolean
       /**
        * Send Subscription Resumed
-       * @description Whether to email customers when a paused subscription resumes and billing restarts.
+       * @description Whether to email customers when a paused subscription resumes and billing restarts. Defaults to `true`.
+       * @default true
        */
-      send_subscription_resumed?: boolean | null
+      send_subscription_resumed: boolean
       /**
        * Send Subscription Canceled
-       * @description Whether to email customers when they cancel their subscription.
+       * @description Whether to email customers when they cancel their subscription. Defaults to `true`.
+       * @default true
        */
-      send_subscription_canceled?: boolean | null
+      send_subscription_canceled: boolean
       /**
        * Send Subscription Uncanceled
-       * @description Whether to email customers when they reactivate a canceled subscription.
+       * @description Whether to email customers when they reactivate a canceled subscription. Defaults to `true`.
+       * @default true
        */
-      send_subscription_uncanceled?: boolean | null
+      send_subscription_uncanceled: boolean
       /**
        * Send Subscription Revoked
-       * @description Whether to email customers when a canceled subscription ends at the end of its billing cycle.
+       * @description Whether to email customers when a canceled subscription ends at the end of its billing cycle. Defaults to `true`.
+       * @default true
        */
-      send_subscription_revoked?: boolean | null
+      send_subscription_revoked: boolean
     }
     /** ConfigSettingsCustomerNotificationsRead */
     ConfigSettingsCustomerNotificationsRead: {
@@ -18754,34 +18764,40 @@ export interface components {
     ConfigSettingsCustomerPortal: {
       /**
        * Allow Plan Changes
-       * @description Whether customers can switch their subscription to another product.
+       * @description Whether customers can switch their subscription to another product. Defaults to `true`.
+       * @default true
        */
-      allow_plan_changes?: boolean | null
+      allow_plan_changes: boolean
       /**
        * Allow Unit Changes
-       * @description Whether customers can change the number of units on their subscriptions.
+       * @description Whether customers can change the number of units on their subscriptions. Defaults to `false`.
+       * @default false
        */
-      allow_unit_changes?: boolean | null
+      allow_unit_changes: boolean
       /**
        * Allow Seat Management
-       * @description Whether customers can assign and manage seats on their subscriptions.
+       * @description Whether customers can assign and manage seats on their subscriptions. Defaults to `true`.
+       * @default true
        */
-      allow_seat_management?: boolean | null
+      allow_seat_management: boolean
       /**
        * Allow Pausing
-       * @description Whether customers can pause and resume their subscriptions.
+       * @description Whether customers can pause and resume their subscriptions. Defaults to `false`.
+       * @default false
        */
-      allow_pausing?: boolean | null
+      allow_pausing: boolean
       /**
        * Allow Email Changes
-       * @description Whether customers can change their email address.
+       * @description Whether customers can change their email address. Defaults to `false`.
+       * @default false
        */
-      allow_email_changes?: boolean | null
+      allow_email_changes: boolean
       /**
        * Show Metered Usage
-       * @description Whether customers see their metered usage in the customer portal.
+       * @description Whether customers see their metered usage in the customer portal. Defaults to `true`.
+       * @default true
        */
-      show_metered_usage?: boolean | null
+      show_metered_usage: boolean
     }
     /** ConfigSettingsCustomerPortalRead */
     ConfigSettingsCustomerPortalRead: {
@@ -18800,10 +18816,16 @@ export interface components {
     }
     /** ConfigSettingsPayments */
     ConfigSettingsPayments: {
-      /** @description The organization's default presentment currency. Every active product must have a price in it. */
-      currency?: components['schemas']['PresentmentCurrency'] | null
-      /** @description The organization's default tax behavior, used by prices without their own. */
-      tax?: components['schemas']['TaxBehaviorOption'] | null
+      /**
+       * @description The organization's default presentment currency. Every active product must have a price in it. Defaults to `usd`.
+       * @default usd
+       */
+      currency: components['schemas']['PresentmentCurrency']
+      /**
+       * @description The organization's default tax behavior, used by prices without their own. Defaults to `location`.
+       * @default location
+       */
+      tax: components['schemas']['TaxBehaviorOption']
     }
     /** ConfigSettingsPaymentsRead */
     ConfigSettingsPaymentsRead: {
@@ -18826,27 +18848,30 @@ export interface components {
     ConfigSettingsSubscriptions: {
       /**
        * Allow Multiple Subscriptions
-       * @description Whether a customer can have several active subscriptions at once.
+       * @description Whether a customer can have several active subscriptions at once. Defaults to `false`.
+       * @default false
        */
-      allow_multiple_subscriptions?: boolean | null
+      allow_multiple_subscriptions: boolean
       /**
        * Proration Behavior
-       * @description How customers are billed when their subscription changes.
+       * @description How customers are billed when their subscription changes. Defaults to `prorate`.
+       * @default prorate
        */
-      proration_behavior?:
+      proration_behavior:
         | components['schemas']['SubscriptionProrationBehavior']
         | 'auto'
-        | null
       /**
        * Benefit Revocation Grace Period
-       * @description Days to wait before revoking benefits while a failed payment is retried.
+       * @description Days to wait before revoking benefits while a failed payment is retried. Defaults to `0`.
+       * @default 0
        */
-      benefit_revocation_grace_period?: number | null
+      benefit_revocation_grace_period: number
       /**
        * Prevent Trial Abuse
-       * @description Whether a customer who already had a trial is refused another one.
+       * @description Whether a customer who already had a trial is refused another one. Defaults to `false`.
+       * @default false
        */
-      prevent_trial_abuse?: boolean | null
+      prevent_trial_abuse: boolean
     }
     /** ConfigSettingsSubscriptionsRead */
     ConfigSettingsSubscriptionsRead: {

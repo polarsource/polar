@@ -149,12 +149,8 @@ SETTINGS_FIELDS = {
 
 
 def _setting(settings: ConfigSettings, field: str) -> Any:
-    value: Any = settings
-    for part in field.split("."):
-        value = getattr(value, part)
-        if value is None:
-            return None
-    return value
+    group, key = field.split(".")
+    return getattr(getattr(settings, group), key)
 
 
 @dataclass
@@ -195,7 +191,7 @@ def diff_settings(
     update_dict = {
         field: value
         for field in SETTINGS_FIELDS
-        if (value := _setting(settings, field)) is not None and before[field] != value
+        if before[field] != (value := _setting(settings, field))
     }
     return SettingsChange(update_dict, before)
 

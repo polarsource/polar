@@ -2301,6 +2301,29 @@ class TestApply:
         }
 
     @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_settings_left_out_reset_to_default(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        organization.default_tax_behavior = TaxBehaviorOption.inclusive
+        organization.subscription_settings = {
+            **organization.subscription_settings,
+            "allow_multiple_subscriptions": True,
+        }
+        await save_fixture(organization)
+
+        await declarative_config_service.apply(
+            session, redis, auth_subject, Config.model_validate({"settings": {}})
+        )
+
+        assert organization.default_tax_behavior == TaxBehaviorOption.location
+        assert organization.allow_multiple_subscriptions is False
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_settings_currency_switch(
         self,
         save_fixture: SaveFixture,
@@ -2623,6 +2646,37 @@ class TestPlan:
         assert issue.severity == ConfigIssueSeverity.error
         assert issue.type == ConfigIssueType.not_supported
         assert issue.loc == ["body", "settings", "subscriptions", "proration_behavior"]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_settings_left_out_reset_to_default(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        organization.default_tax_behavior = TaxBehaviorOption.inclusive
+        organization.subscription_settings = {
+            **organization.subscription_settings,
+            "allow_multiple_subscriptions": True,
+        }
+        await save_fixture(organization)
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate({"settings": {"payments": {"currency": "usd"}}}),
+        )
+
+        assert plan.settings is not None
+        assert [change.model_dump() for change in plan.settings.diff] == [
+            {"field": "payments.tax", "before": "inclusive", "after": "location"},
+            {
+                "field": "subscriptions.allow_multiple_subscriptions",
+                "before": True,
+                "after": False,
+            },
+        ]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_settings_omitted(
@@ -5714,6 +5768,14 @@ class TestExport:
         [exported_product] = document["products"]
         assert exported_product["external_id"] == "pack"
         assert "custom_fields" not in exported_product
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_default_settings_are_a_new_organizations(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        exported = await declarative_config_service.export(session, auth_subject, None)
+
+        assert exported.default_settings == exported.config.settings
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_round_trips_custom_fields(

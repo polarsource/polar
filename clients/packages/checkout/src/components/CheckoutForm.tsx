@@ -936,7 +936,9 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
   useEffect(() => {
     if (!checkout.is_payment_form_required) return
     stripePromise.then((stripe) => {
-      if (!stripe) onPaymentElementLoadError()
+      if (!stripe) {
+        onPaymentElementLoadError()
+      }
     }, onPaymentElementLoadError)
   }, [
     stripePromise,

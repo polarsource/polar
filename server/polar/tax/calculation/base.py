@@ -79,16 +79,21 @@ class TaxCode(StrEnum):
     general_electronically_supplied_services = (
         "general_electronically_supplied_services"
     )
+    live_online_seminar = "live_online_seminar"
 
     def to_stripe(self) -> str:
         match self:
             case TaxCode.general_electronically_supplied_services:
                 return "txcd_10000000"
+            case TaxCode.live_online_seminar:
+                return "txcd_20060045"
 
     def to_numeral(self) -> str:
         match self:
             case TaxCode.general_electronically_supplied_services:
                 return "SAAS_GENERAL"
+            case TaxCode.live_online_seminar:
+                return "WEB_BASED_SEMINAR"
 
 
 class TaxabilityReason(StrEnum):

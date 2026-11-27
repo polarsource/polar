@@ -3,7 +3,9 @@ import {
   formatProperty,
   OPERATOR_DISPLAY_NAMES,
 } from '@/components/Meter/MeterFilterReadOnlyConfiguration'
+import { BENEFIT_REVOCATION_GRACE_PERIOD_LABELS } from '@/components/Settings/BenefitRevocationGracePeriod'
 import { taxBehaviorOptionDisplayNames } from '@/components/Settings/OrganizationPaymentSettings'
+import { PRORATION_BEHAVIOR_LABELS } from '@/components/Settings/ProrationBehavior'
 import { getUnitLabels } from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -21,6 +23,9 @@ type SelectOption = schemas['CustomFieldSelectOption']
 type Bounds = { ge?: number; le?: number }
 type Settings = {
   payments: { currency: string; tax: schemas['TaxBehaviorOption'] }
+  subscriptions: schemas['ConfigSettingsSubscriptionsRead']
+  customer_portal: schemas['ConfigSettingsCustomerPortalRead']
+  customer_notifications: schemas['ConfigSettingsCustomerNotificationsRead']
 }
 
 export const plural = (count: number, noun: string) =>
@@ -120,9 +125,70 @@ export const customFieldFields = ({
   }
 }
 
-export const settingsFields = ({ payments }: Settings) => ({
+const yesNo = (value: boolean) => (value ? 'Yes' : 'No')
+
+export const customerPortalSettings = ({
+  usage,
+  subscription,
+  customer,
+}: schemas['OrganizationCustomerPortalSettings']): Settings['customer_portal'] => ({
+  allow_plan_changes: subscription.update_plan,
+  allow_unit_changes: subscription.update_units ?? false,
+  allow_seat_management: subscription.update_seats,
+  allow_pausing: subscription.pause ?? false,
+  allow_email_changes: customer?.allow_email_change ?? false,
+  show_metered_usage: usage.show,
+})
+
+export const customerEmailSettings = (
+  emails: schemas['OrganizationCustomerEmailSettings'],
+): Settings['customer_notifications'] => ({
+  send_order_confirmation: emails.order_confirmation,
+  send_subscription_confirmation: emails.subscription_confirmation,
+  send_trial_conversion_reminder: emails.subscription_trial_conversion_reminder,
+  send_trial_converted: emails.subscription_cycled_after_trial,
+  send_renewal_reminder: emails.subscription_renewal_reminder,
+  send_subscription_cycled: emails.subscription_cycled,
+  send_card_expiring: emails.payment_method_expiration_reminder,
+  send_subscription_past_due: emails.subscription_past_due,
+  send_subscription_updated: emails.subscription_updated,
+  send_subscription_paused: emails.subscription_paused,
+  send_subscription_resumed: emails.subscription_resumed,
+  send_subscription_canceled: emails.subscription_cancellation,
+  send_subscription_uncanceled: emails.subscription_uncanceled,
+  send_subscription_revoked: emails.subscription_revoked,
+})
+
+export const settingsFields = ({
+  payments,
+  subscriptions,
+  customer_portal,
+  customer_notifications,
+}: Settings) => ({
   default_payment_currency: payments.currency.toUpperCase(),
   default_tax_behavior: taxBehaviorOptionDisplayNames[payments.tax],
+  allow_multiple_subscriptions: yesNo(
+    subscriptions.allow_multiple_subscriptions,
+  ),
+  prevent_trial_abuse: yesNo(subscriptions.prevent_trial_abuse),
+  proration_behavior:
+    PRORATION_BEHAVIOR_LABELS[subscriptions.proration_behavior],
+  benefit_revocation_grace_period:
+    BENEFIT_REVOCATION_GRACE_PERIOD_LABELS[
+      subscriptions.benefit_revocation_grace_period
+    ] ?? `After ${subscriptions.benefit_revocation_grace_period} Days`,
+  allow_plan_changes: yesNo(customer_portal.allow_plan_changes),
+  allow_unit_changes: yesNo(customer_portal.allow_unit_changes),
+  allow_seat_management: yesNo(customer_portal.allow_seat_management),
+  allow_pausing: yesNo(customer_portal.allow_pausing),
+  allow_email_changes: yesNo(customer_portal.allow_email_changes),
+  show_metered_usage: yesNo(customer_portal.show_metered_usage),
+  ...Object.fromEntries(
+    Object.entries(customer_notifications).map(([field, send]) => [
+      field,
+      yesNo(send),
+    ]),
+  ),
 })
 
 const listFieldLabels: Record<string, string> = {

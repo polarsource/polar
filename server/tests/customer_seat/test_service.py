@@ -18,6 +18,7 @@ from polar.customer_seat.service import (
     seat_service,
 )
 from polar.enums import SubscriptionRecurringInterval
+from polar.kit.crypto import get_token_hash
 from polar.kit.db.postgres import (
     AsyncSessionMaker,
     create_async_engine,
@@ -56,6 +57,7 @@ from tests.fixtures.random_objects import (
     create_refund,
     create_subscription_with_seats,
     create_user,
+    get_seat_invitation_token,
 )
 
 
@@ -271,7 +273,7 @@ class TestAssignSeat:
         assert new_seat.id == original_seat_id
         assert new_seat.status == SeatStatus.pending
         assert new_seat.customer_id == customer.id
-        assert new_seat.invitation_token is not None
+        assert new_seat.invitation_token_hash is not None
         assert new_seat.invitation_token_expires_at is not None
         assert new_seat.revoked_at is None
         assert new_seat.claimed_at is None
@@ -323,7 +325,7 @@ class TestAssignSeat:
 
         assert seat.subscription_id == subscription_with_seats.id
         assert seat.status == SeatStatus.claimed
-        assert seat.invitation_token is None
+        assert seat.invitation_token_hash is None
         assert seat.invitation_token_expires_at is None
         assert seat.customer_id == subscription_with_seats.customer_id
         assert seat.claimed_at is not None
@@ -424,14 +426,19 @@ class TestAssignSeat:
             organization=subscription_with_seats.product.organization,
             email="original@example.com",
         )
-        original_seat = await seat_service.assign_seat(
-            session, subscription_with_seats, email="original@example.com"
-        )
+        with patch(
+            "polar.customer_seat.service.send_seat_invitation_email"
+        ) as mock_send_email:
+            original_seat = await seat_service.assign_seat(
+                session, subscription_with_seats, email="original@example.com"
+            )
         original_seat_id = original_seat.id
         await session.flush()
 
         # Claim it first
-        await seat_service.claim_seat(session, original_seat.invitation_token or "")
+        await seat_service.claim_seat(
+            session, mock_send_email.call_args.kwargs["invitation_token"]
+        )
         await session.flush()
 
         # Revoke the seat
@@ -455,7 +462,7 @@ class TestAssignSeat:
         assert new_seat.id == original_seat_id
         assert new_seat.status == SeatStatus.claimed
         assert new_seat.customer_id == subscription_with_seats.customer_id
-        assert new_seat.invitation_token is None
+        assert new_seat.invitation_token_hash is None
         assert new_seat.invitation_token_expires_at is None
         assert new_seat.revoked_at is None
         assert new_seat.claimed_at is not None
@@ -1367,7 +1374,7 @@ class TestAssignSeat:
         assert seat.member_id == member.id
         assert seat.email == "member@example.com"
         assert seat.claimed_at is not None
-        assert seat.invitation_token is None
+        assert seat.invitation_token_hash is None
 
 
 class TestGetSeatByToken:
@@ -1375,9 +1382,9 @@ class TestGetSeatByToken:
     async def test_get_seat_by_token_success(
         self, session: AsyncSession, customer_seat_pending: CustomerSeat
     ) -> None:
-        assert customer_seat_pending.invitation_token is not None
+        assert customer_seat_pending.invitation_token_hash is not None
         seat = await seat_service.get_seat_by_token(
-            session, customer_seat_pending.invitation_token
+            session, get_seat_invitation_token(customer_seat_pending.id)
         )
 
         assert seat is not None
@@ -1400,7 +1407,7 @@ class TestGetSeatByToken:
         save_fixture: SaveFixture,
         customer_seat_pending: CustomerSeat,
     ) -> None:
-        old_token = customer_seat_pending.invitation_token
+        old_token = get_seat_invitation_token(customer_seat_pending.id)
         customer_seat_pending.status = SeatStatus.revoked
         await save_fixture(customer_seat_pending)
 
@@ -1415,7 +1422,7 @@ class TestGetSeatByToken:
         save_fixture: SaveFixture,
         customer_seat_pending: CustomerSeat,
     ) -> None:
-        old_token = customer_seat_pending.invitation_token
+        old_token = get_seat_invitation_token(customer_seat_pending.id)
         customer_seat_pending.status = SeatStatus.claimed
         await save_fixture(customer_seat_pending)
 
@@ -1430,7 +1437,7 @@ class TestGetSeatByToken:
         save_fixture: SaveFixture,
         customer_seat_pending: CustomerSeat,
     ) -> None:
-        old_token = customer_seat_pending.invitation_token
+        old_token = get_seat_invitation_token(customer_seat_pending.id)
         customer_seat_pending.invitation_token_expires_at = datetime.now(
             UTC
         ) - timedelta(hours=1)
@@ -1453,7 +1460,7 @@ class TestClaimSeat:
         subscription_with_seats.status = SubscriptionStatus.paused
         await save_fixture(subscription_with_seats)
 
-        token = customer_seat_pending.invitation_token
+        token = get_seat_invitation_token(customer_seat_pending.id)
         assert token is not None
         with pytest.raises(InvalidInvitationToken):
             await seat_service.claim_seat(session, token)
@@ -1478,10 +1485,10 @@ class TestClaimSeat:
         assert seat_pending.subscription is not None
         await session.refresh(seat_pending.subscription.product, ["organization"])
 
-        assert seat_pending.invitation_token is not None
+        assert seat_pending.invitation_token_hash is not None
 
         seat, session_token = await seat_service.claim_seat(
-            session, seat_pending.invitation_token
+            session, get_seat_invitation_token(seat_pending.id)
         )
 
         assert seat.customer_id == customer.id
@@ -1506,11 +1513,11 @@ class TestClaimSeat:
         customer_seat_pending.status = SeatStatus.revoked
         await save_fixture(customer_seat_pending)
 
-        assert customer_seat_pending.invitation_token is not None
+        assert customer_seat_pending.invitation_token_hash is not None
         with pytest.raises(InvalidInvitationToken):
             await seat_service.claim_seat(
                 session,
-                customer_seat_pending.invitation_token,
+                get_seat_invitation_token(customer_seat_pending.id),
             )
 
     @pytest.mark.anyio
@@ -1520,7 +1527,7 @@ class TestClaimSeat:
         save_fixture: SaveFixture,
         customer_seat_pending: CustomerSeat,
     ) -> None:
-        old_token = customer_seat_pending.invitation_token
+        old_token = get_seat_invitation_token(customer_seat_pending.id)
         customer_seat_pending.invitation_token_expires_at = datetime.now(
             UTC
         ) - timedelta(hours=1)
@@ -1551,12 +1558,12 @@ class TestClaimSeat:
         assert seat.subscription is not None
         await session.refresh(seat.subscription.product, ["organization"])
 
-        assert seat.invitation_token is not None
-        old_token = seat.invitation_token
+        assert seat.invitation_token_hash is not None
+        old_token = get_seat_invitation_token(seat.id)
 
         claimed_seat, _ = await seat_service.claim_seat(session, old_token)
 
-        assert claimed_seat.invitation_token is None
+        assert claimed_seat.invitation_token_hash is None
 
     @pytest.mark.anyio
     async def test_claim_seat_sends_webhook(
@@ -1577,12 +1584,12 @@ class TestClaimSeat:
         await session.refresh(seat_pending.subscription, ["product"])
         await session.refresh(seat_pending.subscription.product, ["organization"])
 
-        assert seat_pending.invitation_token is not None
+        assert seat_pending.invitation_token_hash is not None
 
         with patch("polar.webhook.service.webhook.send") as mock_send:
             mock_send.return_value = []
             seat, _ = await seat_service.claim_seat(
-                session, seat_pending.invitation_token
+                session, get_seat_invitation_token(seat_pending.id)
             )
 
             mock_send.assert_called_once()
@@ -1618,25 +1625,28 @@ class TestClaimSeat:
             save_fixture, product=product, customer=billing_customer, seats=5
         )
 
-        seat = await seat_service.assign_seat(
-            session,
-            subscription,
-            email="seat@example.com",
-            external_member_id="ext-member-claim",
-        )
+        with patch(
+            "polar.customer_seat.service.send_seat_invitation_email"
+        ) as mock_send_email:
+            seat = await seat_service.assign_seat(
+                session,
+                subscription,
+                email="seat@example.com",
+                external_member_id="ext-member-claim",
+            )
 
-        assert seat.invitation_token is not None
+        assert seat.invitation_token_hash is not None
         assert seat.customer_id == billing_customer.id
         assert seat.member_id is not None
         assert seat.email == "seat@example.com"
 
         claimed_seat, session_token = await seat_service.claim_seat(
-            session, seat.invitation_token
+            session, mock_send_email.call_args.kwargs["invitation_token"]
         )
 
         assert claimed_seat.status == SeatStatus.claimed
         assert claimed_seat.claimed_at is not None
-        assert claimed_seat.invitation_token is None
+        assert claimed_seat.invitation_token_hash is None
         assert session_token is not None
         assert len(session_token) > 0
         assert session_token.startswith("polar_mst_")
@@ -1682,16 +1692,18 @@ class TestClaimSeat:
             save_fixture, product=product, customer=billing_customer, seats=5
         )
 
-        seat = await seat_service.assign_seat(
-            session,
-            subscription,
-            email="seat@example.com",
-            external_member_id="ext-member-claim",
-        )
+        with patch(
+            "polar.customer_seat.service.send_seat_invitation_email"
+        ) as mock_send_email:
+            seat = await seat_service.assign_seat(
+                session,
+                subscription,
+                email="seat@example.com",
+                external_member_id="ext-member-claim",
+            )
         await session.flush()
         assert seat.member_id is not None
-        invitation_token = seat.invitation_token
-        assert invitation_token is not None
+        invitation_token = mock_send_email.call_args.kwargs["invitation_token"]
 
         # Simulate the post-delete, pre-revoke-job DB state: the member is
         # soft-deleted but the seat's invitation token is still valid.
@@ -1719,7 +1731,7 @@ class TestClaimSeat:
         assert seat.status == SeatStatus.revoked
         assert seat.revoked_at is not None
         assert seat.customer_id is None
-        assert seat.invitation_token is None
+        assert seat.invitation_token_hash is None
         assert isinstance(seat.revoked_at, datetime)
 
     @pytest.mark.anyio
@@ -1939,7 +1951,7 @@ class TestResendInvitation:
         assert seat.subscription is not None
         await session.refresh(seat.subscription.product, ["organization"])
 
-        original_token = seat.invitation_token
+        original_token = get_seat_invitation_token(seat.id)
 
         with patch(
             "polar.customer_seat.service.send_seat_invitation_email"
@@ -1992,7 +2004,7 @@ class TestResendInvitation:
         seat = CustomerSeat(
             subscription=subscription_with_seats,
             status=SeatStatus.pending,
-            invitation_token="test-token",
+            invitation_token_hash=get_token_hash("test-token"),
         )
         await save_fixture(seat)
         await session.refresh(seat, ["subscription", "customer"])
@@ -2018,7 +2030,7 @@ class TestResendInvitation:
             subscription=subscription_with_seats,
             customer=customer,
             status=SeatStatus.pending,
-            invitation_token=None,
+            invitation_token_hash=None,
         )
         await save_fixture(seat)
         await session.refresh(seat, ["subscription", "customer"])
@@ -2090,7 +2102,7 @@ class TestResendInvitation:
 
         assert seat.status == SeatStatus.pending
         assert seat.email == "seat@example.com"
-        assert seat.invitation_token is not None
+        assert seat.invitation_token_hash is not None
 
         # Reload seat with relationships
         await session.refresh(seat, ["subscription"])
@@ -2134,11 +2146,11 @@ class TestBenefitGranting:
         assert seat.subscription is not None
         await session.refresh(seat.subscription.product, ["organization"])
 
-        assert seat.invitation_token is not None
+        assert seat.invitation_token_hash is not None
 
         with patch("polar.customer_seat.service.enqueue_job") as mock_enqueue_job:
             claimed_seat, _ = await seat_service.claim_seat(
-                session, seat.invitation_token
+                session, get_seat_invitation_token(seat.id)
             )
             assert claimed_seat.subscription is not None
 
@@ -2214,11 +2226,11 @@ class TestBenefitGranting:
         assert seat.subscription is not None
         await session.refresh(seat.subscription.product, ["organization"])
 
-        assert seat.invitation_token is not None
+        assert seat.invitation_token_hash is not None
 
         with patch("polar.customer_seat.service.eventstream_publish") as mock_publish:
             claimed_seat, _ = await seat_service.claim_seat(
-                session, seat.invitation_token
+                session, get_seat_invitation_token(seat.id)
             )
 
             mock_publish.assert_called_once()
@@ -3026,7 +3038,7 @@ class TestRevokeAllSeatsForOrder:
             assert refreshed is not None
             assert refreshed.status == SeatStatus.revoked
             assert refreshed.customer_id is None
-            assert refreshed.invitation_token is None
+            assert refreshed.invitation_token_hash is None
 
         refreshed_revoked = await session.get(CustomerSeat, already_revoked_seat.id)
         assert refreshed_revoked is not None

@@ -238,6 +238,9 @@ sign-in (`dev otp <email>` when several are waiting). It issues a new code, so t
 API log (`LOGIN CODE: …`) stops working. `admin@polar.sh` is the conventional test account.
 The `local-login` skill has the full steps.
 
+**Errors.** When something fails against the local API or worker, run `dev logs --errors --since 10m`
+before asking anyone to paste a traceback. The `local-logs` skill has the details.
+
 **Onboarding gotcha.** The org-creation wizard's "Launch Dashboard" button only submits once the
 Product step's required fields are filled (description ≥30 chars, ≥1 selling category, ≥1 pricing
 model). The AUP AI check auto-APPROVEs when `PYDANTIC_AI_GATEWAY_API_KEY` is unset.

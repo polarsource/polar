@@ -22,11 +22,25 @@ test('config serializes to JSON without exposing mutable internal data', () => {
 
 test('defineConfig passes settings through', () => {
   const config = defineConfig({
-    settings: { payments: { currency: 'eur', tax: 'inclusive' } },
+    settings: {
+      payments: { currency: 'eur', tax: 'inclusive' },
+      subscriptions: {
+        allowMultipleSubscriptions: false,
+        prorationBehavior: 'prorate',
+        benefitRevocationGracePeriod: '7 days',
+        preventTrialAbuse: true,
+      },
+    },
     meters: ({ meter }) => ({ tokens: meter().count() }),
   })
   expect(config.toJSON().settings).toEqual({
     payments: { currency: 'eur', tax: 'inclusive' },
+    subscriptions: {
+      allow_multiple_subscriptions: false,
+      proration_behavior: 'prorate',
+      benefit_revocation_grace_period: 7,
+      prevent_trial_abuse: true,
+    },
   })
   expect(
     'settings' in

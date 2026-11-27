@@ -471,12 +471,34 @@ class ProductRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def get_by_external_id_and_checkout(
+        self,
+        external_id: str,
+        checkout_id: UUID,
+        *,
+        options: Options = (),
+    ) -> Product | None:
+        statement = (
+            self.get_base_statement()
+            .join(CheckoutProduct, onclause=Product.id == CheckoutProduct.product_id)
+            .where(
+                Product.external_id == external_id,
+                CheckoutProduct.checkout_id == checkout_id,
+            )
+            .options(*options)
+        )
+        return await self.get_one_or_none(statement)
+
     def get_eager_options(self) -> Options:
         return (
             joinedload(Product.organization),
             selectinload(Product.product_medias),
             selectinload(Product.attached_custom_fields),
-            selectinload(Product.all_prices),
+            selectinload(
+                Product.all_prices.and_(
+                    ProductPrice.source == ProductPriceSource.catalog
+                )
+            ),
         )
 
     def apply_catalog_filter(

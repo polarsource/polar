@@ -12,8 +12,28 @@ export const retryAfterMs = (error: unknown): number | null =>
   error.retryAfter >= 0
     ? Math.max(error.retryAfter, 1) * 1000
     : null;
-export class InvalidActorError extends MeteringError {}
 export class UnknownMeterError extends MeteringError {}
+
+export class IngestRetryableError extends MeteringError {
+  readonly retryAfterMs?: number;
+
+  constructor({ retryAfterMs, cause }: { retryAfterMs?: number; cause?: unknown } = {}) {
+    super("Event delivery can be retried", { cause });
+    this.retryAfterMs = retryAfterMs;
+  }
+}
+
+export class IngestRejectedError extends MeteringError {
+  readonly rejectedIndexes?: ReadonlySet<number>;
+
+  constructor({
+    rejectedIndexes,
+    cause,
+  }: { rejectedIndexes?: ReadonlySet<number>; cause?: unknown } = {}) {
+    super("Event delivery was rejected", { cause });
+    this.rejectedIndexes = rejectedIndexes;
+  }
+}
 
 export type DropReason =
   | "retry_exhausted"

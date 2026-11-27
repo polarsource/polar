@@ -3,21 +3,13 @@ import { createRequire } from "node:module";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import type { EventInput } from "./event";
-import type { CustomerMeter } from "./meter";
 
-import { ClientBase, PolarError, PolarNetworkError } from "../base";
+import { ClientBase } from "../base";
 import { createPolar } from "../{{ (ir.versions[-2] | default(ir.versions[0])).version }}/client";
-import { outpost, type OutpostFactoryOptions } from "../outpost/client";
-import { BufferedMeteringStrategy } from "./buffered";
-import { UnknownMeterError } from "./errors";
-import {
-  Metering,
-  MeteringError,
-  MeteringDeliveryError,
-  InvalidActorError,
-  type ActorInput,
-  type MeteringStrategy,
-} from "./client";
+import { Outpost } from "../outpost/client";
+import { NotReadyError } from "../outpost/errors";
+import type { EventQueueStartOptions } from "./queue/index";
+import { Metering, UnknownMeterError, type ActorInput } from "./client";
 
 const client = new ClientBase({
   accessToken: "token",
@@ -33,334 +25,7 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-it.each([false, true])("flushes supporting strategies and collects failures: %s", async (fail) => {
-  const ordinary = {
-    start: vi.fn().mockResolvedValue(undefined),
-    track: vi.fn().mockResolvedValue(undefined),
-    close: vi.fn().mockResolvedValue(undefined),
-  };
-  const error = new Error("flush failed");
-  const first = {
-    ...ordinary,
-    flush: vi.fn(async () => {
-      if (fail) throw error;
-    }),
-  };
-  const second = { ...ordinary, flush: vi.fn().mockResolvedValue(undefined) };
-  const metering = new Metering({
-    client,
-    strategies: [first, ordinary, second],
-  });
-  try {
-    if (fail) {
-      await expect(metering.flush()).rejects.toBe(error);
-    } else {
-      await metering.flush();
-    }
-    expect(first.flush).toHaveBeenCalledOnce();
-    expect(second.flush).toHaveBeenCalledOnce();
-    expect(ordinary.close).not.toHaveBeenCalled();
-    await metering.track(event);
-    expect(ordinary.track).toHaveBeenCalledTimes(3);
-  } finally {
-    await metering.close();
-  }
-});
-
-it("dates an event that carries no timestamp, once for every strategy", async () => {
-  const seen: EventInput[] = [];
-  const recording = (): MeteringStrategy => ({
-    start: async () => {},
-    track: async (tracked) => {
-      seen.push(tracked);
-    },
-    close: async () => {},
-  });
-  const metering = new Metering({
-    client,
-    strategies: [recording(), recording()],
-  });
-  try {
-    const before = Date.now();
-    await metering.track(event);
-    await metering.track({ ...event, timestamp: "2026-10-22T08:00:00Z" });
-    const [first, second, explicit] = seen;
-    expect(Date.parse(first.timestamp!)).toBeGreaterThanOrEqual(before);
-    expect(first.timestamp).toMatch(/Z$/);
-    expect(second.timestamp).toBe(first.timestamp);
-    expect(explicit.timestamp).toBe("2026-10-22T08:00:00Z");
-    expect(event).not.toHaveProperty("timestamp");
-  } finally {
-    await metering.close();
-  }
-});
-
-it("waits for an active flush before closing", async () => {
-  let finishFlush!: () => void;
-  const strategy = {
-    start: vi.fn().mockResolvedValue(undefined),
-    track: vi.fn(),
-    flush: vi.fn(
-      () =>
-        new Promise<void>((resolve) => {
-          finishFlush = resolve;
-        }),
-    ),
-    close: vi.fn().mockResolvedValue(undefined),
-  };
-  const metering = new Metering({ client, strategies: [strategy] });
-  try {
-    await metering.track(event);
-    const flushing = metering.flush();
-    await vi.waitFor(() => expect(strategy.flush).toHaveBeenCalledOnce());
-    const closing = metering.close();
-    expect(strategy.close).not.toHaveBeenCalled();
-    finishFlush();
-    await flushing;
-    await closing;
-    expect(strategy.close).toHaveBeenCalledOnce();
-    await expect(metering.flush()).rejects.toThrow("closed");
-  } finally {
-    await metering.close();
-  }
-});
-
-it("starts, ingests and closes in order", async () => {
-  const calls: string[] = [];
-  const strategies: MeteringStrategy[] = ["buffered", "local"].map((name) => ({
-    async start() {
-      calls.push(`start:${name}`);
-    },
-    async track(value) {
-      expect(value).toEqual({ ...event, timestamp: expect.any(String) });
-      calls.push(`track:${name}`);
-    },
-    async close() {
-      calls.push(`close:${name}`);
-    },
-  }));
-  {
-    const metering = new Metering({ client, strategies });
-    try {
-      await metering.track(event);
-    } finally {
-      await metering.close();
-    }
-  }
-  expect(calls).toEqual([
-    "start:buffered",
-    "start:local",
-    "track:buffered",
-    "track:local",
-    "close:buffered",
-    "close:local",
-  ]);
-});
-
-it.each([false, true])(
-  "preserves the startup failure when cleanup fails: %s",
-  async (failCleanup) => {
-    const startupError = new Error("start failed");
-    const cleanupError = new Error("close failed");
-    const first = {
-      start: vi.fn().mockResolvedValue(undefined),
-      track: vi.fn(),
-      close: vi.fn().mockResolvedValue(undefined),
-    };
-    const second = {
-      ...first,
-      close: vi.fn(async () => {
-        if (failCleanup) throw cleanupError;
-      }),
-    };
-    const third = { ...second, start: vi.fn().mockRejectedValue(startupError) };
-    const metering = new Metering({ client, strategies: [first, second, third] });
-    try {
-      const started = metering.track(event);
-      if (failCleanup) {
-        await expect(started).rejects.toBeInstanceOf(AggregateError);
-        await expect(started).rejects.toMatchObject({ errors: [startupError, cleanupError] });
-      } else {
-        await expect(started).rejects.toBe(startupError);
-      }
-      expect(second.close).toHaveBeenCalledOnce();
-      expect(first.close).toHaveBeenCalledOnce();
-    } finally {
-      await metering.close();
-    }
-  },
-);
-
-it("stops at the failing strategy and rejects metering outside its lifecycle", async () => {
-  const first = {
-    start: vi.fn().mockResolvedValue(undefined),
-    track: vi.fn().mockRejectedValue(new Error("track failed")),
-    close: vi.fn().mockResolvedValue(undefined),
-  };
-  const second = { ...first, track: vi.fn() };
-  const metering = new Metering({ client, strategies: [first, second] });
-  try {
-    await expect(metering.track(event)).rejects.toThrow("track failed");
-    expect(second.track).not.toHaveBeenCalled();
-    await metering.close();
-    await expect(metering.track(event)).rejects.toThrow("closed");
-    await expect(metering.actor({ external_customer_id: "alice" })).rejects.toThrow("closed");
-  } finally {
-    await metering.close();
-  }
-});
-
-it("rejects an event a strategy refuses before any strategy tracks it", async () => {
-  const accepting = {
-    start: vi.fn().mockResolvedValue(undefined),
-    track: vi.fn().mockResolvedValue(undefined),
-    close: vi.fn().mockResolvedValue(undefined),
-  };
-  const refusing = {
-    ...accepting,
-    validate: vi.fn(() => {
-      throw new Error("refused");
-    }),
-    track: vi.fn().mockResolvedValue(undefined),
-  };
-  const metering = new Metering({ client, strategies: [accepting, refusing] });
-  try {
-    await expect(metering.track(event)).rejects.toThrow("refused");
-    expect(accepting.track).not.toHaveBeenCalled();
-    expect(refusing.track).not.toHaveBeenCalled();
-  } finally {
-    await metering.close();
-  }
-});
-
-it.each<ActorInput>([
-  { customer_id: "customer" },
-  { customer_id: "customer", member_id: "member" },
-  { external_customer_id: "customer" },
-  { external_customer_id: "customer", external_member_id: "member" },
-])("warms and binds an actor: %j", async (input) => {
-  const ordinary = {
-    start: vi.fn().mockResolvedValue(undefined),
-    track: vi.fn().mockResolvedValue(undefined),
-    close: vi.fn().mockResolvedValue(undefined),
-  };
-  const warmup = {
-    ...ordinary,
-    actor: vi.fn().mockResolvedValue(undefined),
-    track: vi.fn().mockResolvedValue(undefined),
-  };
-  const metering = new Metering({ client, strategies: [ordinary, warmup] });
-  try {
-    const actor = await metering.actor(input);
-    expect(warmup.actor).toHaveBeenCalledExactlyOnceWith(input);
-    const payload = { name: "usage", metadata: { tokens: 3 } };
-    await actor.track(payload);
-    expect(ordinary.track).toHaveBeenNthCalledWith(
-      1,
-      expect.objectContaining({ ...payload, ...input }),
-    );
-    expect(ordinary.track).toHaveBeenCalledOnce();
-    expect(warmup.track).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ ...payload, ...input }),
-    );
-    expect(payload).toEqual({ name: "usage", metadata: { tokens: 3 } });
-  } finally {
-    await metering.close();
-  }
-});
-
-it.each([
-  {},
-  { customer_id: "customer", external_customer_id: "customer" },
-  { member_id: "member" },
-  { external_member_id: "member" },
-  { customer_id: "customer", external_member_id: "member" },
-  { external_customer_id: "customer", member_id: "member" },
-])("rejects an invalid actor before warmup or metering: %j", async (input) => {
-  const strategy = {
-    start: vi.fn().mockResolvedValue(undefined),
-    actor: vi.fn().mockResolvedValue(undefined),
-    track: vi.fn().mockResolvedValue(undefined),
-    close: vi.fn().mockResolvedValue(undefined),
-  };
-  const metering = new Metering({ client, strategies: [strategy] });
-  try {
-    const result = metering.actor(input as unknown as ActorInput);
-    await expect(result).rejects.toBeInstanceOf(InvalidActorError);
-    await expect(result).rejects.toBeInstanceOf(MeteringError);
-    await expect(result).rejects.toBeInstanceOf(PolarError);
-    await expect(metering.track({ name: "usage", ...input } as EventInput)).rejects.toBeInstanceOf(
-      InvalidActorError,
-    );
-    expect(strategy.actor).not.toHaveBeenCalled();
-    expect(strategy.track).not.toHaveBeenCalled();
-  } finally {
-    await metering.close();
-  }
-});
-
-it("captures the actor identity before awaiting warmup", async () => {
-  const input = { external_customer_id: "alice" };
-  const strategy = {
-    start: vi.fn().mockResolvedValue(undefined),
-    actor: vi.fn(async () => {
-      input.external_customer_id = "bob";
-    }),
-    track: vi.fn().mockResolvedValue(undefined),
-    close: vi.fn().mockResolvedValue(undefined),
-  };
-  const metering = new Metering({ client, strategies: [strategy] });
-  try {
-    const actor = await metering.actor(input);
-    await actor.track({ name: "usage", external_customer_id: "carol" } as EventInput);
-    expect(strategy.track).toHaveBeenCalledExactlyOnceWith({
-      name: "usage",
-      external_customer_id: "alice",
-      external_member_id: undefined,
-      timestamp: expect.any(String),
-    });
-  } finally {
-    await metering.close();
-  }
-});
-
-it.each([false, true])(
-  "waits for actor warmup before closing, including failures: %s",
-  async (failWarmup) => {
-    let release!: () => void;
-    const gate = new Promise<void>((resolve) => {
-      release = resolve;
-    });
-    const error = new Error("warmup failed");
-    const strategy = {
-      start: vi.fn().mockResolvedValue(undefined),
-      actor: vi.fn(async () => {
-        await gate;
-        if (failWarmup) throw error;
-      }),
-      track: vi.fn().mockResolvedValue(undefined),
-      close: vi.fn().mockResolvedValue(undefined),
-    };
-    const metering = new Metering({ client, strategies: [strategy] });
-    try {
-      const actor = metering.actor({ external_customer_id: "alice" });
-      const result = Promise.allSettled([actor]);
-      const closing = metering.close();
-      expect(strategy.close).not.toHaveBeenCalled();
-      release();
-      const [settled] = await result;
-      expect(settled.status).toBe(failWarmup ? "rejected" : "fulfilled");
-      if (settled.status === "rejected") expect(settled.reason).toBe(error);
-      else await expect(settled.value.track({ name: "usage" })).rejects.toThrow("closed");
-      await closing;
-      expect(strategy.close).toHaveBeenCalledOnce();
-    } finally {
-      await metering.close();
-    }
-  },
-);
-
-it("creates buffered metering using the configured HTTP client", async () => {
+it("creates a memory queue using the configured HTTP client", async () => {
   const fetch = vi
     .spyOn(globalThis, "fetch")
     .mockResolvedValue(new Response('{"inserted":1,"duplicates":0}'));
@@ -387,296 +52,101 @@ it("creates buffered metering using the configured HTTP client", async () => {
     "{{ (ir.versions[-2] | default(ir.versions[0])).version }}",
   );
   expect(JSON.parse(request!.body as string)).toEqual({
-    events: [{ ...event, timestamp: expect.any(String) }],
+    events: [{ ...event, timestamp: expect.any(String), external_id: expect.any(String) }],
   });
 });
 
-it.each<[string | undefined, OutpostFactoryOptions | undefined, string | undefined]>([
-  [undefined, undefined, undefined],
-  ["redis://environment:6379", undefined, undefined],
-  ["redis://environment:6379", {}, "redis://environment:6379"],
-  [undefined, { redisUrl: "redis://explicit:6379" }, "redis://explicit:6379"],
-  ["redis://environment:6379", { redisUrl: "redis://explicit:6379" }, "redis://explicit:6379"],
-])("resolves Outpost configuration: %s, %j", async (environment, options, expectedUrl) => {
-  vi.stubEnv("REDIS_URL", environment);
-  const { Outpost } = await import("../outpost/client");
-  const start = vi
-    .spyOn(Outpost.prototype, "start")
-    .mockImplementation(async function (this: InstanceType<typeof Outpost>) {
-      return this;
-    });
-  const close = vi.spyOn(Outpost.prototype, "close").mockResolvedValue(undefined);
-  const metering = createPolar({ accessToken: "token" }).metering({
-    outpost: options && outpost(options),
-  });
+it("enqueues before reducing and shares delivery hooks with Outpost", async () => {
+  const outpost = new Outpost("redis://localhost", { client });
+  vi.spyOn(outpost, "start").mockResolvedValue(outpost);
+  const closeOutpost = vi.spyOn(outpost, "close").mockResolvedValue(undefined);
+  const reduce = vi.spyOn(outpost, "track").mockResolvedValue(undefined);
+  const ack = vi.spyOn(outpost, "onAck").mockResolvedValue(undefined);
+  const reject = vi.spyOn(outpost, "onRejected").mockResolvedValue(undefined);
+  const transport = {
+    start: vi.fn<(options: EventQueueStartOptions) => Promise<void>>().mockResolvedValue(undefined),
+    enqueue: vi.fn<(event: EventInput) => Promise<void>>().mockResolvedValue(undefined),
+    close: vi.fn().mockResolvedValue(undefined),
+    flush: vi.fn().mockResolvedValue(undefined),
+  };
+  const polar = createPolar({ accessToken: "token" });
+  const onAck = vi.fn().mockRejectedValue(new Error("private event details"));
+  const onRejected = vi.fn();
+  const metering = polar.metering({ queue: transport, outpost: () => outpost, onAck, onRejected });
   try {
-    vi.stubEnv("REDIS_URL", "redis://changed:6379");
-    await metering.flush();
-    await metering.close();
-    // Outpost delivers its events itself: the buffer would send each one twice.
-    expect(metering.strategies).toHaveLength(1);
-    expect(metering.strategies[0] instanceof BufferedMeteringStrategy).toBe(!expectedUrl);
-    if (expectedUrl) {
-      expect(start.mock.instances[0]).toMatchObject({ redisUrl: expectedUrl });
-      expect(close).toHaveBeenCalledOnce();
-    } else {
-      expect(start).not.toHaveBeenCalled();
-    }
+    const unavailable = new Error("private event details");
+    transport.enqueue.mockRejectedValueOnce(unavailable);
+    await expect(metering.track(event)).rejects.toBe(unavailable);
+    expect(reduce).not.toHaveBeenCalled();
+
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    reduce.mockRejectedValueOnce(unavailable);
+    await metering.track(event);
+    expect(warn).toHaveBeenCalledExactlyOnceWith("Outpost failed to reduce an enqueued event", "Error");
+    const queued = transport.enqueue.mock.calls[1][0];
+    expect(reduce).toHaveBeenCalledWith(queued);
+    expect(transport.enqueue.mock.invocationCallOrder[1]).toBeLessThan(
+      reduce.mock.invocationCallOrder[0],
+    );
+    const [hooks] = transport.start.mock.calls[0];
+    await hooks?.onAck?.([queued]);
+    await hooks?.onRejected?.([queued], "permanent_error");
+    expect(ack).toHaveBeenCalledWith([queued]);
+    expect(reject).toHaveBeenCalledWith([queued], "permanent_error");
+    expect(onAck).toHaveBeenCalledWith([queued]);
+    expect(onRejected).toHaveBeenCalledWith([queued], "permanent_error");
+    expect(ack.mock.invocationCallOrder[0]).toBeLessThan(onAck.mock.invocationCallOrder[0]);
+    expect(reject.mock.invocationCallOrder[0]).toBeLessThan(onRejected.mock.invocationCallOrder[0]);
+    expect(warn).toHaveBeenLastCalledWith("Metering acknowledgement hook failed", "Error");
   } finally {
     await metering.close();
   }
-});
-
-it.each<OutpostFactoryOptions>([{}, { redisUrl: "" }])(
-  "rejects Outpost without a Redis URL: %j",
-  (options) => {
-    vi.stubEnv("REDIS_URL", undefined);
-    expect(() => outpost(options)).toThrow("Outpost requires redisUrl or REDIS_URL");
-  },
-);
-
-it.each([{ buffered: {} }, { outpost: outpost({ redisUrl: "redis://localhost:6379" }) }])(
-  "rejects combining strategies with built-in options: %j",
-  (options) => {
-    expect(() =>
-      // @ts-expect-error Explicit strategies exclude built-in configuration.
-      createPolar({ accessToken: "token" }).metering({ strategies: [], ...options }),
-    ).toThrow("Cannot combine strategies");
-  },
-);
-
-it.each([false, true])(
-  "uses only explicit strategies, including an empty list: %s",
-  async (empty) => {
-    vi.stubEnv("REDIS_URL", "redis://environment:6379");
-    const strategy = {
-      start: vi.fn().mockResolvedValue(undefined),
-      track: vi.fn().mockResolvedValue(undefined),
-      close: vi.fn().mockResolvedValue(undefined),
-    };
-    const strategies = empty ? [] : [strategy];
-    {
-      const metering = createPolar({ accessToken: "token" }).metering({ strategies });
-      try {
-        expect(metering.strategies).toEqual(strategies);
-        await metering.track(event);
-      } finally {
-        await metering.close();
-      }
-    }
-    expect(strategy.start).toHaveBeenCalledTimes(empty ? 0 : 1);
-    expect(strategy.track).toHaveBeenCalledTimes(empty ? 0 : 1);
-    expect(strategy.close).toHaveBeenCalledTimes(empty ? 0 : 1);
-  },
-);
-
-it("forwards buffer options and reports failed delivery", async () => {
-  vi.spyOn(console, "warn").mockImplementation(() => {});
-  const polar = createPolar({ accessToken: "token" });
-  const send = vi.spyOn(polar.events, "ingest").mockRejectedValue(new PolarNetworkError("offline"));
-  const onDropped = vi.fn();
-  {
-    const metering = polar.metering({
-      buffered: { batchSize: 1, batchIntervalMs: 60_000, maxAttempts: 1, onDropped },
-    });
-    try {
-      await metering.track(event);
-      await vi.waitFor(() =>
-        expect(onDropped).toHaveBeenCalledExactlyOnceWith(
-          [{ ...event, timestamp: expect.any(String) }],
-          "retry_exhausted",
-        ),
-      );
-      await expect(metering.flush()).rejects.toBeInstanceOf(MeteringDeliveryError);
-    } finally {
-      await metering.close();
-    }
-  }
-  expect(send).toHaveBeenCalledOnce();
-});
-
-it("runs Outpost alone, on its own batches, and refuses buffer options beside it", async () => {
-  const { Outpost } = await import("../outpost/client");
-  const polar = createPolar({ accessToken: "token" });
-  const onDelivered = vi.fn();
-  const create = outpost({ redisUrl: "redis://localhost:6379", telemetry: false, onDelivered });
-  expect(() => polar.metering({ buffered: {}, outpost: create })).toThrow(MeteringError);
-  const start = vi.spyOn(Outpost.prototype, "start").mockImplementation(async function (this: InstanceType<typeof Outpost>) {
-    return this;
-  });
-  vi.spyOn(Outpost.prototype, "close").mockResolvedValue(undefined);
-  const metering = polar.metering({ outpost: create });
-  try {
-    await metering.flush();
-    expect(metering.strategies).toHaveLength(1);
-    expect(metering.strategies[0]).not.toBeInstanceOf(BufferedMeteringStrategy);
-    expect(start.mock.instances[0]).toMatchObject({ options: { onDelivered } });
-  } finally {
-    await metering.close();
-  }
-});
-
-it("refuses the buffer beside Outpost as explicit strategies", async () => {
-  const { Outpost } = await import("../outpost/client");
-  const polar = createPolar({ accessToken: "token" });
-  const strategies = [new BufferedMeteringStrategy(polar), new Outpost("redis://localhost:6379", { client })];
-  expect(() => polar.metering({ strategies })).toThrow(MeteringError);
-});
-
-it("propagates Outpost startup failures", async () => {
-  vi.stubEnv("REDIS_URL", "redis://environment:6379");
-  const { Outpost } = await import("../outpost/client");
-  vi.spyOn(Outpost.prototype, "start").mockRejectedValue(new Error("Redis unavailable"));
-  await expect(
-    createPolar({ accessToken: "token" }).metering({ outpost: outpost() }).flush(),
-  ).rejects.toThrow("Redis unavailable");
-});
-
-it("forwards Outpost options and actor warmup", async () => {
-  const { Outpost } = await import("../outpost/client");
-  vi.spyOn(Outpost.prototype, "start").mockImplementation(
-    async function (this: InstanceType<typeof Outpost>) {
-      return this;
-    },
+  expect(transport.close.mock.invocationCallOrder[0]).toBeLessThan(
+    closeOutpost.mock.invocationCallOrder[0],
   );
-  vi.spyOn(Outpost.prototype, "close").mockResolvedValue(undefined);
-  const warmup = vi.spyOn(Outpost.prototype, "actor").mockResolvedValue(undefined);
-  const meter = vi.spyOn(Outpost.prototype, "meter").mockResolvedValue(null);
+});
+
+it.each([
+  new NotReadyError("pending snapshot"),
+  new UnknownMeterError("unknown meter"),
+])("reads from Outpost and falls back to the API on %s", async (error) => {
   const polar = createPolar({ accessToken: "token" });
-  const metering = polar.metering({
-    outpost: outpost({
-      redisUrl: "redis://localhost:6379",
-      telemetry: false,
-      snapshotTimeout: 250,
-    }),
-  });
+  const outpost = new Outpost("redis://localhost", { client });
+  vi.spyOn(outpost, "start").mockResolvedValue(outpost);
+  vi.spyOn(outpost, "close").mockResolvedValue(undefined);
+  const local = { meter_id: "meter", consumed_units: 2, credited_units: 3, balance: 1 };
+  vi.spyOn(outpost, "meter")
+    .mockResolvedValueOnce(local)
+    .mockRejectedValueOnce(error);
+  const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+    new Response(JSON.stringify({ items: [{ ...local, balance: 0 }] })),
+  );
+  const metering = polar.metering({ outpost: () => outpost });
   try {
-    await metering.flush();
-    expect(vi.mocked(Outpost.prototype.start).mock.instances[0]).toMatchObject({
-      options: { telemetry: false, snapshotTimeout: 250 },
-    });
-    const actor = await metering.actor({ external_customer_id: "alice" });
-    expect(await actor.meter("meter")).toBeNull();
-    expect(meter).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ external_customer_id: "alice", meter_id: "meter" }),
-    );
-    expect(warmup).toHaveBeenCalledExactlyOnceWith({
-      external_customer_id: "alice",
-      external_member_id: undefined,
-    });
+    await expect(metering.meter("meter", event)).resolves.toEqual(local);
+    expect(fetch).not.toHaveBeenCalled();
+    await expect(metering.meter("meter", event)).resolves.toEqual({ ...local, balance: 0 });
   } finally {
     await metering.close();
   }
 });
 
-it.each([false, true])(
-  "reads meters through the API when no strategy provides reads: %s",
-  async (missing) => {
-    const value = {
-      meter_id: "meter",
-      customer_id: "customer",
-      consumed_units: 3,
-      credited_units: 10,
-      balance: 7,
-    };
-    const fetch = vi
-      .spyOn(globalThis, "fetch")
-      .mockImplementation(
-        async () => new Response(JSON.stringify({ items: missing ? [] : [value] })),
-      );
-    const polar = createPolar({
-      accessToken: "token",
-      organizationId: "org",
-      baseUrl: "https://custom.test",
-    });
-    const metering = polar.metering();
-    try {
-      const actor = await metering.actor({
-        external_customer_id: "external",
-        external_member_id: "member",
-      });
-      expect(await actor.meter("meter")).toEqual(missing ? null : value);
-      expect(await metering.meter("meter", { customer_id: "customer" })).toEqual(
-        missing ? null : value,
-      );
-      expect(await metering.meter("meter", { external_customer_id: "external" })).toEqual(
-        missing ? null : value,
-      );
-      const [rawUrl, request] = fetch.mock.calls[0];
-      const url = new URL(String(rawUrl));
-      expect(url.origin).toBe("https://custom.test");
-      expect(url.pathname).toBe("/v1/customer-meters/");
-      expect(url.searchParams.get("external_customer_id")).toBe("external");
-      expect(url.searchParams.get("meter_id")).toBe("meter");
-      expect(url.searchParams.has("external_member_id")).toBe(false);
-      for (const [index, key, identity] of [
-        [1, "customer_id", "customer"],
-        [2, "external_customer_id", "external"],
-      ] as const) {
-        const directUrl = new URL(String(fetch.mock.calls[index]![0]));
-        expect(directUrl.searchParams.get("meter_id")).toBe("meter");
-        expect(directUrl.searchParams.get(key)).toBe(identity);
-      }
-      const headers = new Headers(request!.headers);
-      expect(headers.get("Authorization")).toBe("Bearer token");
-      expect(headers.get("Polar-Organization")).toBe("org");
-    } finally {
-      await metering.close();
-    }
-  },
-);
-
-it.each<CustomerMeter | null | Error>([
-  { meter_id: "meter", consumed_units: 3, credited_units: 10, balance: 7 },
-  null,
-  new Error("read failed"),
-])("uses the first meter strategy without API fallback: %j", async (result) => {
-  const strategy = {
-    start: vi.fn().mockResolvedValue(undefined),
-    track: vi.fn().mockResolvedValue(undefined),
-    close: vi.fn().mockResolvedValue(undefined),
-    meter: vi.fn(async () => {
-      if (result instanceof Error) throw result;
-      return result;
-    }),
-  };
-  const second = { ...strategy, meter: vi.fn().mockResolvedValue(null) };
-  const metering = new Metering({ client, strategies: [strategy, second] });
+it.each([
+  {},
+  { customer_id: "customer", external_customer_id: "customer" },
+  { member_id: "member" },
+  { external_member_id: "member" },
+  { customer_id: "customer", external_member_id: "member" },
+  { external_customer_id: "customer", member_id: "member" },
+])("rejects an invalid actor before starting the queue: %j", async (input) => {
+  const queue = { start: vi.fn(), enqueue: vi.fn(), close: vi.fn(), flush: vi.fn() };
+  const metering = new Metering(client, queue);
   try {
-    const actor = await metering.actor({ customer_id: "customer" });
-    const read = actor.meter("meter");
-    if (result instanceof Error) await expect(read).rejects.toBe(result);
-    else expect(await read).toBe(result);
-    expect(strategy.meter).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ customer_id: "customer", meter_id: "meter" }),
+    await expect(metering.actor(input as unknown as ActorInput)).rejects.toBeInstanceOf(TypeError);
+    await expect(metering.track({ name: "usage", ...input } as EventInput)).rejects.toBeInstanceOf(
+      TypeError,
     );
-    expect(second.meter).not.toHaveBeenCalled();
-  } finally {
-    await metering.close();
-  }
-});
-
-it("reads a meter its strategy does not know through the API", async () => {
-  const value = {
-    meter_id: "meter",
-    customer_id: "customer",
-    consumed_units: 3,
-    credited_units: 10,
-    balance: 7,
-  };
-  const fetch = vi
-    .spyOn(globalThis, "fetch")
-    .mockImplementation(async () => new Response(JSON.stringify({ items: [value] })));
-  const strategy = {
-    start: vi.fn().mockResolvedValue(undefined),
-    track: vi.fn().mockResolvedValue(undefined),
-    close: vi.fn().mockResolvedValue(undefined),
-    meter: vi.fn().mockRejectedValue(new UnknownMeterError("Outpost reduces no meter")),
-  };
-  const metering = new Metering({ client, strategies: [strategy] });
-  try {
-    expect(await metering.meter("meter", { customer_id: "customer" })).toEqual(value);
-    expect(new URL(String(fetch.mock.calls[0]![0])).pathname).toBe("/v1/customer-meters/");
+    expect(queue.start).not.toHaveBeenCalled();
   } finally {
     await metering.close();
   }
@@ -692,64 +162,14 @@ it("propagates meter API errors", async () => {
   }
 });
 
-it("waits for active meter reads before closing", async () => {
-  let release!: () => void;
-  const gate = new Promise<void>((resolve) => {
-    release = resolve;
-  });
-  const strategy = {
-    start: vi.fn().mockResolvedValue(undefined),
-    track: vi.fn().mockResolvedValue(undefined),
-    close: vi.fn().mockResolvedValue(undefined),
-    meter: vi.fn(async () => {
-      await gate;
-      return null;
-    }),
-  };
-  const metering = new Metering({ client, strategies: [strategy] });
-  try {
-    const read = metering.meter("meter", { customer_id: "customer" });
-    const closing = metering.close();
-    expect(strategy.close).not.toHaveBeenCalled();
-    await expect(metering.meter("meter", { customer_id: "customer" })).rejects.toThrow("closed");
-    release();
-    await read;
-    await closing;
-    expect(strategy.close).toHaveBeenCalledOnce();
-  } finally {
-    await metering.close();
-  }
-});
-
-it("aborts an in-flight HTTP delivery on shutdown", async () => {
-  vi.spyOn(console, "warn").mockImplementation(() => {});
-  let signal: AbortSignal | null | undefined;
-  vi.spyOn(globalThis, "fetch").mockImplementation(async (_, options) => {
-    signal = options?.signal;
-    return new Promise((_, reject) =>
-      signal!.addEventListener("abort", () => reject(signal!.reason), { once: true }),
-    );
-  });
-  const polar = createPolar({ accessToken: "token" });
-  const { BufferedMeteringStrategy } = await import("./buffered");
-  const onDropped = vi.fn();
-  const strategy = await new BufferedMeteringStrategy(polar, {
-    onDropped,
-  }).start();
-  await strategy.track(event);
-  await expect(strategy.close({ timeoutMs: 10 })).rejects.toBeInstanceOf(MeteringDeliveryError);
-  expect(signal?.aborted).toBe(true);
-  expect(onDropped).toHaveBeenCalledExactlyOnceWith([event], "shutdown_timeout");
-});
-
 it("ships metering for both ESM and CommonJS", async () => {
   const esm = await import("../../dist/metering/index.mjs");
   const cjs = createRequire(import.meta.url)("../../dist/metering/index.cjs");
   expect(esm.Metering).toBeTypeOf("function");
-  expect(cjs.BufferedMeteringStrategy).toBeTypeOf("function");
+  expect(cjs.MemoryEventQueue).toBeTypeOf("function");
 });
 
-it("uses buffered metering without loading optional Outpost dependencies", () => {
+it("uses the memory queue without loading optional Outpost dependencies", () => {
   const child = spawnSync(
     process.execPath,
     [
@@ -773,134 +193,13 @@ it("uses buffered metering without loading optional Outpost dependencies", () =>
   expect(child.status).toBe(0);
 });
 
-it.each([false, true])(
-  "waits for every active track call before closing, including failed calls: %s",
-  async (failTrack) => {
-    let releaseFirst!: () => void;
-    let releaseSecond!: () => void;
-    const firstGate = new Promise<void>((resolve) => {
-      releaseFirst = resolve;
-    });
-    const secondGate = new Promise<void>((resolve) => {
-      releaseSecond = resolve;
-    });
-    const error = new Error("track failed");
-    const first = {
-      start: vi.fn().mockResolvedValue(undefined),
-      track: vi
-        .fn()
-        .mockImplementationOnce(async () => {
-          await firstGate;
-          if (failTrack) throw error;
-        })
-        .mockImplementationOnce(() => secondGate),
-      close: vi.fn().mockResolvedValue(undefined),
-    };
-    const second = {
-      ...first,
-      track: vi.fn().mockResolvedValue(undefined),
-      close: vi.fn().mockResolvedValue(undefined),
-    };
-    const metering = new Metering({ client, strategies: [first, second] });
-    try {
-      const firstTrack = metering.track(event);
-      const secondTrack = metering.track(event);
-      const results = Promise.allSettled([firstTrack, secondTrack]);
-      const closing = metering.close();
-      const closingAgain = metering.close();
-
-      await expect(metering.track(event)).rejects.toThrow("closed");
-      expect(second.close).not.toHaveBeenCalled();
-      expect(first.close).not.toHaveBeenCalled();
-
-      releaseFirst();
-      await Promise.allSettled([firstTrack]);
-      expect(second.close).not.toHaveBeenCalled();
-      expect(first.close).not.toHaveBeenCalled();
-
-      releaseSecond();
-      const settled = await results;
-      await Promise.all([closing, closingAgain]);
-      expect(settled[0]).toEqual(
-        failTrack
-          ? { status: "rejected", reason: error }
-          : { status: "fulfilled", value: undefined },
-      );
-      expect(settled[1].status).toBe("fulfilled");
-      expect(second.track).toHaveBeenCalledTimes(failTrack ? 1 : 2);
-      expect(second.close).toHaveBeenCalledOnce();
-      expect(first.close).toHaveBeenCalledOnce();
-    } finally {
-      await metering.close();
-    }
-  },
-);
-
-it("starts once for concurrent operations and closes without explicit startup", async () => {
-  let release!: () => void;
-  const gate = new Promise<void>((resolve) => {
-    release = resolve;
-  });
-  const strategy = {
-    start: vi.fn(() => gate),
-    track: vi.fn().mockResolvedValue(undefined),
-    actor: vi.fn().mockResolvedValue(undefined),
-    meter: vi.fn().mockResolvedValue(null),
-    flush: vi.fn().mockResolvedValue(undefined),
-    close: vi.fn().mockResolvedValue(undefined),
-  };
-  const metering = new Metering({ client, strategies: [strategy] });
-  expect(strategy.start).not.toHaveBeenCalled();
-  const calls = [
-    metering.track(event),
-    metering.actor({ external_customer_id: "alice" }),
-    metering.meter("meter", { external_customer_id: "alice" }),
-    metering.flush(),
-  ];
-  const closing = metering.close();
-  await expect(metering.track(event)).rejects.toThrow("closed");
-  expect(strategy.start).toHaveBeenCalledOnce();
-  expect(strategy.close).not.toHaveBeenCalled();
-  release();
-  await Promise.all([...calls, closing]);
-  expect(strategy.track).toHaveBeenCalledOnce();
-  expect(strategy.actor).toHaveBeenCalledOnce();
-  expect(strategy.meter).toHaveBeenCalledOnce();
-  expect(strategy.flush).toHaveBeenCalledOnce();
-  expect(strategy.close).toHaveBeenCalledOnce();
-  expect(metering).not.toHaveProperty("start");
-  expect(Symbol.asyncDispose in metering).toBe(false);
-});
-
 it("closing an unused helper does not start resources", async () => {
-  const strategy = { start: vi.fn(), track: vi.fn(), close: vi.fn() };
-  const metering = new Metering({ client, strategies: [strategy] });
+  const strategy = { start: vi.fn(), enqueue: vi.fn(), close: vi.fn() };
+  const metering = new Metering(client, { ...strategy, flush: vi.fn() });
   await metering.close();
   await expect(metering.flush()).rejects.toThrow("closed");
   expect(strategy.start).not.toHaveBeenCalled();
   expect(strategy.close).not.toHaveBeenCalled();
-});
-
-it("overlapping public flushes report a previous background drop to the newest", async () => {
-  vi.spyOn(console, "warn").mockImplementation(() => {});
-  const polar = createPolar({ accessToken: "token" });
-  const cause = new PolarNetworkError("offline");
-  vi.spyOn(polar.events, "ingest").mockRejectedValue(cause);
-  const onDropped = vi.fn();
-  const metering = polar.metering({ buffered: { batchSize: 1, maxAttempts: 1, onDropped } });
-  try {
-    await metering.track(event);
-    await vi.waitFor(() => expect(onDropped).toHaveBeenCalledOnce());
-    const [older, newer] = await Promise.allSettled([metering.flush(), metering.flush()]);
-    expect(older.status).toBe("fulfilled");
-    expect(newer).toMatchObject({
-      status: "rejected",
-      reason: { cause, events: [expect.objectContaining(event)] },
-    });
-    await metering.flush();
-  } finally {
-    await metering.close();
-  }
 });
 
 it("close bounds its wait for an active custom flush and still closes resources", async () => {
@@ -910,11 +209,11 @@ it("close bounds its wait for an active custom flush and still closes resources"
   });
   const strategy = {
     start: vi.fn().mockResolvedValue(undefined),
-    track: vi.fn().mockResolvedValue(undefined),
+    enqueue: vi.fn().mockResolvedValue(undefined),
     flush: vi.fn(() => gate),
     close: vi.fn().mockResolvedValue(undefined),
   };
-  const metering = new Metering({ client, strategies: [strategy] });
+  const metering = new Metering(client, strategy);
   const flushing = metering.flush();
   try {
     await vi.waitFor(() => expect(strategy.flush).toHaveBeenCalledOnce());
@@ -935,10 +234,10 @@ it("startup that outlives a close deadline cleans up when it eventually complete
   });
   const strategy = {
     start: vi.fn(() => gate),
-    track: vi.fn().mockResolvedValue(undefined),
+    enqueue: vi.fn().mockResolvedValue(undefined),
     close: vi.fn().mockResolvedValue(undefined),
   };
-  const metering = new Metering({ client, strategies: [strategy] });
+  const metering = new Metering(client, { ...strategy, flush: vi.fn() });
   const tracking = metering.track(event).catch((error) => error);
   try {
     await expect(metering.close({ timeoutMs: 10 })).rejects.toThrow("timed out");
@@ -947,37 +246,17 @@ it("startup that outlives a close deadline cleans up when it eventually complete
     expect(await tracking).toMatchObject({ message: expect.stringContaining("timed out") });
   }
   expect(strategy.close).toHaveBeenCalledOnce();
-  expect(strategy.track).not.toHaveBeenCalled();
+  expect(strategy.enqueue).not.toHaveBeenCalled();
 });
 
 it.each([-1, NaN, Infinity, 2_147_483_648])(
   "rejects invalid delivery deadlines before startup: %s",
   async (timeoutMs) => {
-    const strategy = { start: vi.fn(), track: vi.fn(), close: vi.fn() };
-    const metering = new Metering({ client, strategies: [strategy] });
+    const queue = { start: vi.fn(), enqueue: vi.fn(), close: vi.fn(), flush: vi.fn() };
+    const metering = new Metering(client, queue);
     await expect(metering.flush({ timeoutMs })).rejects.toBeInstanceOf(RangeError);
     await expect(metering.close({ timeoutMs })).rejects.toBeInstanceOf(RangeError);
-    expect(strategy.start).not.toHaveBeenCalled();
+    expect(queue.start).not.toHaveBeenCalled();
     await metering.close();
   },
 );
-
-it("flushes every strategy even when one throws synchronously", async () => {
-  const error = new Error("flush failed");
-  const first = {
-    start: vi.fn().mockResolvedValue(undefined),
-    track: vi.fn().mockResolvedValue(undefined),
-    close: vi.fn().mockResolvedValue(undefined),
-    flush: vi.fn(() => {
-      throw error;
-    }),
-  };
-  const second = { ...first, flush: vi.fn().mockResolvedValue(undefined) };
-  const metering = new Metering({ client, strategies: [first, second] });
-  try {
-    await expect(metering.flush()).rejects.toBe(error);
-    expect(second.flush).toHaveBeenCalledOnce();
-  } finally {
-    await metering.close();
-  }
-});

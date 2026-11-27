@@ -214,6 +214,47 @@ describe('init', () => {
     })
   })
 
+  test('leaves settings at their default out of the config', async () => {
+    const settings = (tax: string, pausing: boolean) => ({
+      payments: { currency: 'usd', tax },
+      customer_portal: { allow_pausing: pausing },
+    })
+    api.routes[`GET ${exportUrl}`] = () =>
+      Response.json({
+        enabled: false,
+        config: { settings: settings('inclusive', false), ...EMPTY },
+        default_settings: settings('location', false),
+        skipped: [],
+        catalog: null,
+      })
+
+    await run()
+
+    expect(JSON.parse(await read('polar.config.json'))).toEqual({
+      settings: { payments: { tax: 'inclusive' } },
+      ...EMPTY,
+    })
+  })
+
+  test('writes empty settings when all are at their default', async () => {
+    const settings = { payments: { currency: 'usd', tax: 'location' } }
+    api.routes[`GET ${exportUrl}`] = () =>
+      Response.json({
+        enabled: false,
+        config: { settings, ...EMPTY },
+        default_settings: settings,
+        skipped: [],
+        catalog: null,
+      })
+
+    await run()
+
+    expect(JSON.parse(await read('polar.config.json'))).toEqual({
+      settings: {},
+      ...EMPTY,
+    })
+  })
+
   test('picks the package manager from the lockfile, then from package.json', async () => {
     await project('{"packageManager":"yarn@4.0.0"}')
     expect((await run({ file: 'a.ts' })).install).toEqual([
@@ -301,6 +342,21 @@ describe('init', () => {
     expect(error.message).toBe('polar.config.ts already exists')
     expect(await read('polar.config.ts')).toBe('keep')
     expect(api.requests).toHaveLength(0)
+  })
+
+  test('suggests updating or JSON when the catalog cannot be written as TypeScript', async () => {
+    await project()
+    api.routes[`GET ${exportUrl}`] = () =>
+      exported({ ...EMPTY, settings: { unknown: {} } })
+
+    const error = await failure(run())
+
+    expect(error.message).toBe(
+      "This version of the CLI can't write your catalog as TypeScript",
+    )
+    expect(error.hint).toBe(
+      'Run polar update and try again, or pass --format json to create a JSON config instead. Not supported yet: settings.unknown',
+    )
   })
 
   test('refuses file types it cannot write and a mismatched --format', async () => {

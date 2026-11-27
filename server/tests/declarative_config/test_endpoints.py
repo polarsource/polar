@@ -9,6 +9,7 @@ from polar.auth.scope import Scope
 from polar.kit.utils import utc_now
 from polar.meter.unit import MeterUnit
 from polar.models import Organization, UserOrganization
+from polar.models.user_organization import OrganizationRole
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
@@ -112,6 +113,27 @@ class TestDraft:
         assert json["catalog"]["before"] is None
         # A draft is named when published.
         assert json["catalog"]["after"]["name"] is None
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_member_role(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        mocker.patch("polar.meter.service.enqueue_job")
+        user_organization.role = OrganizationRole.member
+        await save_fixture(user_organization)
+
+        response = await client.post(
+            "/v1/config/draft",
+            json={"meters": [METER], "organization_id": str(organization.id)},
+        )
+
+        assert response.status_code == 200
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization"),

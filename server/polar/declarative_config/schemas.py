@@ -33,6 +33,7 @@ from polar.custom_field.schemas import (
 from polar.enums import (
     MeterInterval,
     ProrationBehaviorSetting,
+    SubscriptionProrationBehavior,
     SubscriptionRecurringInterval,
     TaxBehaviorOption,
 )
@@ -481,19 +482,18 @@ ConfigCustomField = Annotated[
 class ConfigSettingsPayments(Schema):
     model_config = ConfigDict(extra="forbid")
 
-    currency: PresentmentCurrency | None = Field(
-        default=None,
+    currency: PresentmentCurrency = Field(
+        default=PresentmentCurrency.usd,
         description=(
             "The organization's default presentment currency. "
-            "Every active product must have a price in it. "
-            "Left untouched when omitted."
+            "Every active product must have a price in it. Defaults to `usd`."
         ),
     )
-    tax: TaxBehaviorOption | None = Field(
-        default=None,
+    tax: TaxBehaviorOption = Field(
+        default=TaxBehaviorOption.location,
         description=(
-            "The organization's default tax behavior, used by prices "
-            "without their own. Left untouched when omitted."
+            "The organization's default tax behavior, used by prices without "
+            "their own. Defaults to `location`."
         ),
     )
 
@@ -501,33 +501,182 @@ class ConfigSettingsPayments(Schema):
 class ConfigSettingsSubscriptions(Schema):
     model_config = ConfigDict(extra="forbid")
 
-    allow_multiple_subscriptions: bool | None = Field(
-        default=None,
+    allow_multiple_subscriptions: bool = Field(
+        default=False,
         description=(
-            "Whether a customer can have several active subscriptions at "
-            "once. Left untouched when omitted."
+            "Whether a customer can have several active subscriptions at once. "
+            "Defaults to `false`."
         ),
     )
-    proration_behavior: ProrationBehaviorSetting | None = Field(
-        default=None,
+    proration_behavior: ProrationBehaviorSetting = Field(
+        default=SubscriptionProrationBehavior.prorate,
         description=(
             "How customers are billed when their subscription changes. "
-            "Left untouched when omitted."
+            "Defaults to `prorate`."
         ),
     )
-    benefit_revocation_grace_period: int | None = Field(
-        default=None,
+    benefit_revocation_grace_period: int = Field(
+        default=0,
         ge=0,
         description=(
-            "Days to wait before revoking benefits while a failed payment "
-            "is retried. Left untouched when omitted."
+            "Days to wait before revoking benefits while a failed payment is "
+            "retried. Defaults to `0`."
         ),
     )
-    prevent_trial_abuse: bool | None = Field(
-        default=None,
+    prevent_trial_abuse: bool = Field(
+        default=False,
         description=(
-            "Whether a customer who already had a trial is refused another "
-            "one. Left untouched when omitted."
+            "Whether a customer who already had a trial is refused another one. "
+            "Defaults to `false`."
+        ),
+    )
+
+
+class ConfigSettingsCustomerPortal(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    allow_plan_changes: bool = Field(
+        default=True,
+        description=(
+            "Whether customers can switch their subscription to another product. "
+            "Defaults to `true`."
+        ),
+    )
+    allow_unit_changes: bool = Field(
+        default=False,
+        description=(
+            "Whether customers can change the number of units on their "
+            "subscriptions. Defaults to `false`."
+        ),
+    )
+    allow_seat_management: bool = Field(
+        default=True,
+        description=(
+            "Whether customers can assign and manage seats on their subscriptions. "
+            "Defaults to `true`."
+        ),
+    )
+    allow_pausing: bool = Field(
+        default=False,
+        description=(
+            "Whether customers can pause and resume their subscriptions. "
+            "Defaults to `false`."
+        ),
+    )
+    allow_email_changes: bool = Field(
+        default=False,
+        description=(
+            "Whether customers can change their email address. Defaults to `false`."
+        ),
+    )
+    show_metered_usage: bool = Field(
+        default=True,
+        description=(
+            "Whether customers see their metered usage in the customer portal. "
+            "Defaults to `true`."
+        ),
+    )
+
+
+class ConfigSettingsCustomerNotifications(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    send_order_confirmation: bool = Field(
+        default=True,
+        description=(
+            "Whether to email customers when they complete a one-time purchase. "
+            "Defaults to `true`."
+        ),
+    )
+    send_subscription_confirmation: bool = Field(
+        default=True,
+        description=(
+            "Whether to email customers when they start a new subscription. "
+            "Defaults to `true`."
+        ),
+    )
+    send_trial_conversion_reminder: bool = Field(
+        default=True,
+        description=(
+            "Whether to email customers when a trial is about to end and convert "
+            "to a paid subscription. Defaults to `true`."
+        ),
+    )
+    send_trial_converted: bool = Field(
+        default=True,
+        description=(
+            "Whether to email customers when a trial ends and the subscription "
+            "becomes paid. Defaults to `true`."
+        ),
+    )
+    send_renewal_reminder: bool = Field(
+        default=True,
+        description=(
+            "Whether to email customers when a subscription with a long billing "
+            "cycle renews within 30 days. Defaults to `true`."
+        ),
+    )
+    send_subscription_cycled: bool = Field(
+        default=True,
+        description=(
+            "Whether to email customers when a subscription renews or is invoiced "
+            "for usage. Defaults to `true`."
+        ),
+    )
+    send_card_expiring: bool = Field(
+        default=True,
+        description=(
+            "Whether to email customers when a card backing an active subscription "
+            "is about to expire. Defaults to `true`."
+        ),
+    )
+    send_subscription_past_due: bool = Field(
+        default=True,
+        description=(
+            "Whether to email customers when a subscription payment fails and "
+            "becomes overdue. Defaults to `true`."
+        ),
+    )
+    send_subscription_updated: bool = Field(
+        default=True,
+        description=(
+            "Whether to email customers when they change their subscription to "
+            "another product. Defaults to `true`."
+        ),
+    )
+    send_subscription_paused: bool = Field(
+        default=True,
+        description=(
+            "Whether to email customers when they pause their subscription. "
+            "Defaults to `true`."
+        ),
+    )
+    send_subscription_resumed: bool = Field(
+        default=True,
+        description=(
+            "Whether to email customers when a paused subscription resumes and "
+            "billing restarts. Defaults to `true`."
+        ),
+    )
+    send_subscription_canceled: bool = Field(
+        default=True,
+        description=(
+            "Whether to email customers when they cancel their subscription. "
+            "Defaults to `true`."
+        ),
+    )
+    send_subscription_uncanceled: bool = Field(
+        default=True,
+        description=(
+            "Whether to email customers when they reactivate a canceled "
+            "subscription. Defaults to `true`."
+        ),
+    )
+    send_subscription_revoked: bool = Field(
+        default=True,
+        description=(
+            "Whether to email customers when a canceled subscription ends at the "
+            "end of its billing cycle. Defaults to `true`."
         ),
     )
 
@@ -535,13 +684,21 @@ class ConfigSettingsSubscriptions(Schema):
 class ConfigSettings(Schema):
     model_config = ConfigDict(extra="forbid")
 
-    payments: ConfigSettingsPayments | None = Field(
-        default=None,
-        description="Payment settings. Left untouched when omitted.",
+    payments: ConfigSettingsPayments = Field(
+        default_factory=ConfigSettingsPayments,
+        description="Payment settings.",
     )
-    subscriptions: ConfigSettingsSubscriptions | None = Field(
-        default=None,
-        description="Subscription settings. Left untouched when omitted.",
+    subscriptions: ConfigSettingsSubscriptions = Field(
+        default_factory=ConfigSettingsSubscriptions,
+        description="Subscription settings.",
+    )
+    customer_portal: ConfigSettingsCustomerPortal = Field(
+        default_factory=ConfigSettingsCustomerPortal,
+        description="Customer portal settings.",
+    )
+    customer_notifications: ConfigSettingsCustomerNotifications = Field(
+        default_factory=ConfigSettingsCustomerNotifications,
+        description="Which emails Polar sends customers.",
     )
 
 
@@ -550,7 +707,10 @@ class Config(Schema):
 
     settings: ConfigSettings | None = Field(
         default=None,
-        description="Organization settings to update. Left untouched when omitted.",
+        description=(
+            "Organization settings. Settings left out are set to their default. "
+            "Leave out `settings` to keep the current ones."
+        ),
     )
     catalog_name: str | None = Field(
         default=None,
@@ -1031,9 +1191,37 @@ class ConfigSettingsSubscriptionsRead(_ConfigRead):
     prevent_trial_abuse: bool
 
 
+class ConfigSettingsCustomerPortalRead(_ConfigRead):
+    allow_plan_changes: bool
+    allow_unit_changes: bool
+    allow_seat_management: bool
+    allow_pausing: bool
+    allow_email_changes: bool
+    show_metered_usage: bool
+
+
+class ConfigSettingsCustomerNotificationsRead(_ConfigRead):
+    send_order_confirmation: bool
+    send_subscription_confirmation: bool
+    send_trial_conversion_reminder: bool
+    send_trial_converted: bool
+    send_renewal_reminder: bool
+    send_subscription_cycled: bool
+    send_card_expiring: bool
+    send_subscription_past_due: bool
+    send_subscription_updated: bool
+    send_subscription_paused: bool
+    send_subscription_resumed: bool
+    send_subscription_canceled: bool
+    send_subscription_uncanceled: bool
+    send_subscription_revoked: bool
+
+
 class ConfigSettingsRead(_ConfigRead):
     payments: ConfigSettingsPaymentsRead
     subscriptions: ConfigSettingsSubscriptionsRead
+    customer_portal: ConfigSettingsCustomerPortalRead
+    customer_notifications: ConfigSettingsCustomerNotificationsRead
 
 
 class ConfigExportDocument(_ConfigRead):
@@ -1090,6 +1278,12 @@ class ConfigExport(Schema):
         description=(
             "The current config, in the shape plan and apply accept, "
             "without `organization_id`."
+        )
+    )
+    default_settings: ConfigSettingsRead = Field(
+        description=(
+            "Every setting at its default. Settings left out of a config are "
+            "set to these, so a written config can leave them out."
         )
     )
     skipped: list[ConfigSkippedResource] = Field(

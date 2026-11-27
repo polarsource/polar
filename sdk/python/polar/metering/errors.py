@@ -2,6 +2,8 @@ import dataclasses
 import math
 import typing
 
+import httpx2
+
 from polar import PolarError
 from polar.metering.events import EventInput
 
@@ -10,13 +12,44 @@ class MeteringError(PolarError):
     """Base error for metering configuration and operations."""
 
 
+class IngestRetryableError(MeteringError):
+    """Delivery failed or its outcome is uncertain."""
+
+    def __init__(
+        self,
+        message: str = "Event delivery can be retried",
+        *,
+        retry_after: float | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.retry_after = retry_after
+
+
+class IngestRejectedError(MeteringError):
+    """Polar permanently refused the batch or the supplied zero-based event indexes."""
+
+    def __init__(
+        self,
+        message: str = "Event delivery was rejected",
+        *,
+        rejected_indexes: set[int] | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.rejected_indexes = rejected_indexes
+
+
 def retry_after_seconds(retry_after: int | None) -> float | None:
     """How long Polar asked to wait before the next delivery: a second at least."""
     return None if retry_after is None else max(float(retry_after), 1.0)
 
 
-class InvalidActorError(MeteringError):
-    """Raised when customer or member identifiers are inconsistent."""
+def retry_after_response(response: httpx2.Response | None) -> float | None:
+    if response is None or response.status_code != 429:
+        return None
+    retry_after = response.headers.get("Retry-After")
+    if not retry_after or not retry_after.isdecimal():
+        return None
+    return retry_after_seconds(int(retry_after))
 
 
 class UnknownMeterError(MeteringError):

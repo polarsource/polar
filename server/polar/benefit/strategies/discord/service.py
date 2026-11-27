@@ -84,6 +84,7 @@ class BenefitDiscordService(
         oauth_account = await self._get_oauth_account(
             customer, account_id, member=member
         )
+        assert oauth_account.access_token is not None
 
         try:
             await discord_bot_service.add_member(

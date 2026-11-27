@@ -20,9 +20,9 @@ from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.trace import Span, StatusCode
 from opentelemetry.util.types import AttributeValue
-from redis.asyncio import BlockingConnectionPool, Redis
+from redis.asyncio import Redis
 from redis.asyncio.retry import Retry
-from redis.backoff import EqualJitterBackoff, NoBackoff
+from redis.client import NEVER_DECODE
 from redis.commands.core import AsyncScript
 from redis.exceptions import (
     AuthenticationError,
@@ -33,21 +33,28 @@ from redis.exceptions import (
 from redis.exceptions import ConnectionError as RedisConnectionError
 from redis.exceptions import ResponseError as RedisResponseError
 from redis.exceptions import TimeoutError as RedisTimeoutError
-from redis.typing import StreamIdT
 
+from polar._redis import (
+    DEFAULT_TIMEOUT,
+    RedisReconnectBackoff,
+    back_off,
+    connect_redis,
+    extend_lock,
+    release_lock,
+    take_lock,
+)
 from polar.base import PolarError
 from polar.logging import get_logger
-from polar.metering.client import PolarClient
+from polar.metering import PolarClient
 from polar.metering.errors import (
     DropReason,
     UnknownMeterError,
-    retry_after_seconds,
+    retry_after_response,
     validate_timeout,
 )
 from polar.metering.events import EventInput
 from polar.metering.meter import CustomerMeter
 from polar.outpost.errors import (
-    MissingExternalIdError,
     NotReadyError,
     PolarOutpostError,
     UnavailableRedisError,
@@ -79,48 +86,8 @@ from polar.outpost.telemetry import (
     is_telemetry_enabled,
 )
 
-
 # The reset count of a state whose snapshot Polar did not confirm.
 UNCONFIRMED = -1
-
-# NaN and the infinities are not JSON: no flusher could send an event that holds one.
-_encode_event = json.JSONEncoder(allow_nan=False).encode
-
-
-def _not_json(constant: str) -> typing.NoReturn:
-    raise ValueError(f"{constant} is not JSON")
-
-
-def _finite(number: str) -> float:
-    value = float(number)
-    return value if math.isfinite(value) else _not_json(number)
-
-
-# How many times a batch goes again without the events Polar named, before it is dropped
-# whole.
-REFUSED_RESENDS = 3
-
-
-def _refused_indexes(response: httpx2.Response) -> set[int] | None:
-    """The indexes of the events Polar's validation refuses, when each of its errors
-    names one."""
-    if response.status_code != 422:
-        return None
-    try:
-        locations = [error["loc"] for error in response.json()["detail"]]
-    except (ValueError, KeyError, TypeError):
-        return None
-    indexes: set[int] = set()
-    for location in locations:
-        if (
-            not isinstance(location, list)
-            or len(location) < 3
-            or location[:2] != ["body", "events"]
-            or not isinstance(location[2], int)
-        ):
-            return None
-        indexes.add(location[2])
-    return indexes
 
 
 def _report_local_value(
@@ -180,38 +147,6 @@ def _report_local_value(
             span.set_attribute(f"outpost.snapshot.{statistic}", value)
 
 
-class RedisReconnectBackoff(EqualJitterBackoff):
-    def __init__(self) -> None:
-        super().__init__(cap=MAX_REDIS_RECONNECT_DELAY, base=REDIS_RECONNECT_DELAY)
-
-    def compute(self, failures: int) -> float:
-        # Bounded exponent: a long outage would overflow the float otherwise.
-        return super().compute(min(failures, 16))
-
-
-def _retry_after(response: httpx2.Response | None) -> float | None:
-    """How long Polar asks to wait, which only a rate limit says."""
-    if response is None or response.status_code != 429:
-        return None
-    retry_after = response.headers.get("Retry-After")
-    if not retry_after or not retry_after.isdecimal():
-        return None
-    return retry_after_seconds(int(retry_after))
-
-
-async def _take_lock(redis: Redis, key: str, ttl: float) -> str | None:
-    """A lock holds its owner's token: only the owner extends or releases it. Past its
-    TTL, it may be another instance's."""
-    token = uuid.uuid4().hex
-    taken = await redis.set(key, token, px=int(ttl * 1000), nx=True)
-    return token if taken else None
-
-
-async def _release_lock(redis: Redis, key: str, token: str) -> None:
-    with contextlib.suppress(RedisError):
-        await redis.eval(RELEASE_LOCK_SCRIPT, 1, key, token)
-
-
 async def _call_script(
     redis: Redis, sha: str, script: str, keys: int, *arguments: typing.Any
 ) -> typing.Any:
@@ -266,115 +201,58 @@ def _is_transient_error(error: BaseException) -> bool:
     )
 
 
-# Connections one instance opens to Redis. Past them, a command waits for a free one, up to
-# TIMEOUT: a cold start runs more commands at once than the merchant's Redis should hold
-# connections.
-REDIS_CONNECTIONS = 32
-
-
-@contextlib.asynccontextmanager
-async def connect_redis(url: str) -> collections.abc.AsyncGenerator[Redis, None]:
-    pool = BlockingConnectionPool.from_url(
-        url,
-        max_connections=REDIS_CONNECTIONS,
-        timeout=TIMEOUT,
-        retry=Retry(NoBackoff(), 0),
-        socket_timeout=TIMEOUT,
-        socket_connect_timeout=TIMEOUT,
-    )
-    async with Redis.from_pool(pool) as redis:
-        # A connection the server closes at once, as under a burst of new ones, is tried
-        # again until the timeout.
-        deadline = anyio.current_time() + TIMEOUT
-        backoff = RedisReconnectBackoff()
-        failures = 0
-        while True:
-            try:
-                await redis.ping()
-                break
-            except (RedisConnectionError, RedisTimeoutError):
-                failures += 1
-                if anyio.current_time() >= deadline:
-                    raise
-                await anyio.sleep(backoff.compute(failures))
-        yield redis
-
-
-# Shared by every Outpost SDK: sdk/generator/outpost/constants.toml says what each one
+# Shared by every Outpost SDK: sdk/generator/redis/constants.toml says what each one
 # means. Durations are in seconds here.
-KEY_VERSION = "{{ outpost_constants.key_version }}"
-TIMEOUT = {{ outpost_constants.timeout / 1000 }}
-SNAPSHOT_TIMEOUT = {{ outpost_constants.snapshot_timeout / 1000 }}
-CONFIRM_TIMEOUT = {{ outpost_constants.confirm_timeout / 1000 }}
-CONFIRM_BATCH = {{ outpost_constants.confirm_batch }}
-OUTBOX_BATCH = {{ outpost_constants.outbox_batch }}
-FLUSHERS = {{ outpost_constants.flushers }}
-OUTBOX_CLAIM_IDLE = {{ outpost_constants.outbox_claim_idle / 1000 }}
-FLUSHER_LOCK_TTL = {{ outpost_constants.flusher_lock_ttl / 1000 }}
-FLUSH_TENURE = {{ outpost_constants.flush_tenure / 1000 }}
-DRAIN_INTERVAL = {{ outpost_constants.drain_interval / 1000 }}
-OUTBOX_RETRY_DELAY = {{ outpost_constants.outbox_retry_delay / 1000 }}
-MAX_OUTBOX_RETRY_DELAY = {{ outpost_constants.max_outbox_retry_delay / 1000 }}
-# The consumer group the flushers read the outbox through.
-OUTBOX_GROUP = "polar"
-REPORT_INTERVAL = {{ outpost_constants.report_interval / 1000 }}
-SPAN_SAMPLE_RATE = {{ outpost_constants.span_sample_rate }}
-TELEMETRY_CAP = {{ outpost_constants.telemetry_cap }}
-RELAY_LOCK_TTL = {{ outpost_constants.relay_lock_ttl / 1000 }}
-POLL_INTERVAL = {{ outpost_constants.poll_interval / 1000 }}
-REDIS_RECONNECT_DELAY = {{ outpost_constants.redis_reconnect_delay / 1000 }}
-MAX_REDIS_RECONNECT_DELAY = {{ outpost_constants.max_redis_reconnect_delay / 1000 }}
-PULL_INTERVAL = {{ outpost_constants.pull_interval / 1000 }}
-PULL_LOCK_TTL = {{ outpost_constants.pull_lock_ttl / 1000 }}
-PULL_RETRY_DELAY = {{ outpost_constants.pull_retry_delay / 1000 }}
-MAX_PULL_RETRY_DELAY = {{ outpost_constants.max_pull_retry_delay / 1000 }}
-PULL_LIMIT = {{ outpost_constants.pull_limit }}
-PULL_CONCURRENCY = {{ outpost_constants.pull_concurrency }}
-SNAPSHOT_BATCH = {{ outpost_constants.snapshot_batch }}
-FETCH_BATCH_WINDOW = {{ outpost_constants.fetch_batch_window / 1000 }}
-FETCH_CONCURRENCY = {{ outpost_constants.fetch_concurrency }}
-FETCH_RETRY_DELAY = {{ outpost_constants.fetch_retry_delay / 1000 }}
-PULL_CHECK_INTERVAL = {{ outpost_constants.pull_check_interval / 1000 }}
-RELEASE_LOCK_SCRIPT = """
-{{ outpost_scripts.release_lock }}"""
-
-EXTEND_LOCK_SCRIPT = """
-{{ outpost_scripts.extend_lock }}"""
-
-OUTBOX_BACKLOG_SCRIPT = """
-{{ outpost_scripts.outbox_backlog }}"""
+KEY_VERSION = "{{ redis_constants.outpost_key_version }}"
+TIMEOUT = DEFAULT_TIMEOUT
+SNAPSHOT_TIMEOUT = {{ redis_constants.outpost_snapshot_timeout / 1000 }}
+CONFIRM_TIMEOUT = {{ redis_constants.outpost_confirm_timeout / 1000 }}
+CONFIRM_BATCH = {{ redis_constants.outpost_confirm_batch }}
+REPORT_INTERVAL = {{ redis_constants.outpost_report_interval / 1000 }}
+SPAN_SAMPLE_RATE = {{ redis_constants.outpost_span_sample_rate }}
+TELEMETRY_CAP = {{ redis_constants.outpost_telemetry_cap }}
+RELAY_LOCK_TTL = {{ redis_constants.outpost_relay_lock_ttl / 1000 }}
+POLL_INTERVAL = {{ redis_constants.outpost_poll_interval / 1000 }}
+PULL_INTERVAL = {{ redis_constants.outpost_pull_interval / 1000 }}
+PULL_LOCK_TTL = {{ redis_constants.outpost_pull_lock_ttl / 1000 }}
+PULL_RETRY_DELAY = {{ redis_constants.outpost_pull_retry_delay / 1000 }}
+MAX_PULL_RETRY_DELAY = {{ redis_constants.outpost_max_pull_retry_delay / 1000 }}
+PULL_LIMIT = {{ redis_constants.outpost_pull_limit }}
+PULL_CONCURRENCY = {{ redis_constants.outpost_pull_concurrency }}
+SNAPSHOT_BATCH = {{ redis_constants.outpost_snapshot_batch }}
+FETCH_BATCH_WINDOW = {{ redis_constants.outpost_fetch_batch_window / 1000 }}
+FETCH_CONCURRENCY = {{ redis_constants.outpost_fetch_concurrency }}
+FETCH_RETRY_DELAY = {{ redis_constants.outpost_fetch_retry_delay / 1000 }}
+PULL_CHECK_INTERVAL = {{ redis_constants.outpost_pull_check_interval / 1000 }}
 
 READ_STATES_SCRIPT = """
-{{ outpost_scripts.read_states }}"""
+{{ redis_scripts.outpost.read_states }}"""
 
 READ_STATES_SHA = hashlib.sha1(READ_STATES_SCRIPT.encode()).hexdigest()
 
 PREPARE_SNAPSHOT_SCRIPT = """
-{{ outpost_scripts.prepare_snapshot }}"""
+{{ redis_scripts.outpost.prepare_snapshot }}"""
 
 PREPARE_SNAPSHOT_SHA = hashlib.sha1(PREPARE_SNAPSHOT_SCRIPT.encode()).hexdigest()
 
 PUSH_TELEMETRY_SCRIPT = """
-{{ outpost_scripts.push_telemetry }}"""
+{{ redis_scripts.outpost.push_telemetry }}"""
 
 PUSH_TELEMETRY_SHA = hashlib.sha1(PUSH_TELEMETRY_SCRIPT.encode()).hexdigest()
 
 WRITE_BUCKET_SCRIPT = """
-{{ outpost_scripts.write_bucket }}"""
+{{ redis_scripts.outpost.write_bucket }}"""
 
 WRITE_BUCKET_SHA = hashlib.sha1(WRITE_BUCKET_SCRIPT.encode()).hexdigest()
 
 CONFIRM_SCRIPT = """
-{{ outpost_scripts.confirm }}"""
+{{ redis_scripts.outpost.confirm }}"""
 
 APPLY_SNAPSHOT_SCRIPT = """
-{{ outpost_scripts.apply_snapshot }}"""
+{{ redis_scripts.outpost.apply_snapshot }}"""
 
 COMMIT_PULL_SCRIPT = """
-{{ outpost_scripts.commit_pull }}"""
-
-BACKOFF_SCRIPT = """
-{{ outpost_scripts.backoff }}"""
+{{ redis_scripts.outpost.commit_pull }}"""
 
 
 def _throttled(
@@ -394,48 +272,25 @@ def _throttled(
     return renew
 
 
-@dataclasses.dataclass
-class _Delivery:
-    """The outbox entries a flusher delivered, and the slot it holds."""
-
-    entries: list[str]
-    lock_key: str
-    token: str
-
-
 def _confirm_arguments(
     prefix: str,
-    hot_only: bool,
+    mode: str,
     groups: collections.abc.Mapping[tuple[str, int], list[str]],
-    delivery: _Delivery | None = None,
 ) -> tuple[list[str], list[str | int]]:
-    """The keys and arguments of one CONFIRM call settling every (identity, bucket)."""
-    outbox = f"{prefix}:outbox"
-    keys: list[str] = [outbox, delivery.lock_key if delivery else outbox]
-    entries = delivery.entries if delivery else []
-    args: list[str | int] = [
-        "1" if hot_only else "",
-        delivery.token if delivery else "",
-        int(FLUSHER_LOCK_TTL * 1000),
-        len(entries),
-        *entries,
-    ]
+    keys: list[str] = []
+    args: list[str | int] = [mode]
     for (identity, bucket_start), ids in groups.items():
         keys += [
             f"{prefix}:state:{identity}",
             f"{prefix}:pending:{identity}:{bucket_start}",
         ]
+        if mode == "reject":
+            keys.append(f"{prefix}:rejected:{identity}:{bucket_start}")
         args += [bucket_start, len(ids), *ids]
     return keys, args
 
 
 log = get_logger(__name__)
-
-# Called with each batch of events Polar accepted from the outbox.
-OnDelivered = typing.Callable[[list[EventInput]], typing.Awaitable[None]]
-# Called with each batch of events Polar refused, which leave the outbox.
-OnDropped = typing.Callable[[list[EventInput], DropReason], typing.Awaitable[None]]
-
 
 class Configuration(typing.TypedDict):
     organization_id: str
@@ -488,21 +343,19 @@ def is_sampled(trace_id: int) -> bool:
 
 
 class Outpost:
+    """Reduce events locally using a Redis URL or a caller-owned Redis client."""
+
     def __init__(
         self,
-        redis_url: str,
+        redis: str | Redis,
         *,
         client: httpx2.AsyncClient,
         telemetry: bool = True,
         snapshot_timeout: float = SNAPSHOT_TIMEOUT,
         confirm_timeout: float = CONFIRM_TIMEOUT,
-        on_delivered: OnDelivered | None = None,
-        on_dropped: OnDropped | None = None,
     ) -> None:
-        self.redis_url = redis_url
+        self._redis_source = redis
         self._client = client
-        self._on_delivered = on_delivered
-        self._on_dropped = on_dropped
         self._telemetry = is_telemetry_enabled(telemetry)
         self._tracer_provider: TracerProvider | None = None
         self._tracer: trace.Tracer = trace.NoOpTracer()
@@ -530,16 +383,6 @@ class Outpost:
         self._apply_snapshot: AsyncScript | None = None
         self._confirm_script: AsyncScript | None = None
         self._commit_pull: AsyncScript | None = None
-        self._outbox_backlog: AsyncScript | None = None
-        # One drain at a time per instance; a flush during one asks for one more round.
-        self._draining: anyio.Event | None = None
-        # When the drain in flight hands its slots over: never, unless a flush or a close
-        # waits on it.
-        self._drain_until = math.inf
-        self._drain_again = False
-        # This instance queued an event that no flusher was there to deliver: its next
-        # flush drains.
-        self._undrained = False
         validate_timeout(snapshot_timeout)
         self._snapshot_timeout = snapshot_timeout
         self._confirm_timeout = confirm_timeout
@@ -560,24 +403,24 @@ class Outpost:
         # of the pull hash.
         self._resets: int | None = None
 
+    @property
+    def redis_url(self) -> str | None:
+        return self._redis_source if isinstance(self._redis_source, str) else None
+
     @classmethod
     def create(
         cls,
         polar: PolarClient,
-        redis_url: str,
+        redis: str | Redis,
         *,
         telemetry: bool = True,
         snapshot_timeout: float = SNAPSHOT_TIMEOUT,
-        on_delivered: OnDelivered | None = None,
-        on_dropped: OnDropped | None = None,
     ) -> typing.Self:
         return cls(
-            redis_url=redis_url,
+            redis=redis,
             client=polar._client._client,
             telemetry=telemetry,
             snapshot_timeout=snapshot_timeout,
-            on_delivered=on_delivered,
-            on_dropped=on_dropped,
         )
 
     @_raise_redis_unavailable
@@ -604,18 +447,19 @@ class Outpost:
             self._redis_memory = meter.create_gauge("outpost.redis.memory", unit="By")
             self._redis_keys = meter.create_gauge("outpost.redis.keys")
         try:
-            with self._span("outpost.redis.connect"):
-                self._redis = await self._stack.enter_async_context(
-                    connect_redis(self.redis_url)
-                )
+            if isinstance(self._redis_source, str):
+                with self._span("outpost.redis.connect"):
+                    self._redis = await self._stack.enter_async_context(
+                        connect_redis(self._redis_source, timeout=TIMEOUT)
+                    )
+            else:
+                self._redis = self._redis_source
             self._redis_available = True
             # Keys carry the organization: organizations can share a Redis.
             await self._configure()
-            await self._create_outbox_group()
             self._apply_snapshot = self._redis.register_script(APPLY_SNAPSHOT_SCRIPT)
             self._confirm_script = self._redis.register_script(CONFIRM_SCRIPT)
             self._commit_pull = self._redis.register_script(COMMIT_PULL_SCRIPT)
-            self._outbox_backlog = self._redis.register_script(OUTBOX_BACKLOG_SCRIPT)
             self._tasks = await self._stack.enter_async_context(
                 anyio.create_task_group()
             )
@@ -623,7 +467,6 @@ class Outpost:
             await self._load_pull()
             self._tasks.start_soon(self._pull_on_time)
             self._tasks.start_soon(self._report_on_time)
-            self._tasks.start_soon(self._drain_on_time)
         except BaseException:
             try:
                 if self._tasks is not None:
@@ -639,7 +482,6 @@ class Outpost:
                 self._apply_snapshot = None
                 self._confirm_script = None
                 self._commit_pull = None
-                self._outbox_backlog = None
                 await self._shutdown_telemetry()
             raise
         return self
@@ -655,7 +497,6 @@ class Outpost:
         try:
             try:
                 await self._in_flight()
-                await self._drain_outbox_quietly(limited=True)
                 # Their last exports land in the buffer, which the shared Redis takes
                 # before it closes.
                 await self._shutdown_telemetry()
@@ -676,7 +517,6 @@ class Outpost:
             self._apply_snapshot = None
             self._confirm_script = None
             self._commit_pull = None
-            self._outbox_backlog = None
             await self._shutdown_telemetry()
 
     @property
@@ -695,10 +535,10 @@ class Outpost:
         """Reject an event Outpost cannot reconcile with Polar.
 
         Raises:
-            MissingExternalIdError: The event has no external_id.
+            ValueError: The event has no external_id.
         """
         if not event.get("external_id"):
-            raise MissingExternalIdError()
+            raise ValueError("Outpost needs an external_id on every event")
 
     @_raise_redis_unavailable
     async def track(self, event: EventInput) -> None:
@@ -713,28 +553,18 @@ class Outpost:
             if self._ingest_buckets is not None:
                 self._ingest_buckets.add(len(matches))
             assert self._redis is not None
-            # Polar dates the event as Outpost bucketed it.
-            queued = _encode_event(
-                {
-                    **event,
-                    "timestamp": event.get("timestamp") or parsed.timestamp.isoformat(),
-                }
-            )
             if not matches:
-                await self._redis.xadd(self._outbox_key, {"event": queued})
-                self._undrained = True
+                return
             writes: list[list[str | int | float]] = []
-            for index, (reducer_id, value) in enumerate(matches):
+            for reducer_id, value in matches:
                 identity = f"{parsed.external_customer_id}:{reducer_id}"
                 arguments: list[str | int | float] = [
                     f"{self._prefix}:state:{identity}",
                     f"{self._prefix}:pending:{identity}:{bucket_start}",
-                    self._outbox_key,
-                    f"{self._outbox_key}:flusher:0",
+                    f"{self._prefix}:rejected:{identity}:{bucket_start}",
                     bucket_start,
                     value if value is not None else "",
                     typing.cast(str, event["external_id"]),
-                    queued if index == 0 else "",
                 ]
                 writes.append(arguments)
             # Most events match one reducer: one EVALSHA writes its bucket. A pipeline only
@@ -742,14 +572,14 @@ class Outpost:
             if len(writes) == 1:
                 try:
                     results = [
-                        await self._redis.evalsha(WRITE_BUCKET_SHA, 4, *writes[0])
+                        await self._redis.evalsha(WRITE_BUCKET_SHA, 3, *writes[0])
                     ]
                 except NoScriptError as error:
                     results = [error]
             else:
                 async with self._redis.pipeline(transaction=False) as pipeline:
                     for arguments in writes:
-                        pipeline.evalsha(WRITE_BUCKET_SHA, 4, *arguments)
+                        pipeline.evalsha(WRITE_BUCKET_SHA, 3, *arguments)
                     results = await pipeline.execute(raise_on_error=False)
             first_error: Exception | None = None
             for index, (arguments, result) in enumerate(
@@ -759,7 +589,7 @@ class Outpost:
                 if isinstance(result, NoScriptError):
                     try:
                         result = results[index] = await self._redis.eval(
-                            WRITE_BUCKET_SCRIPT, 4, *arguments
+                            WRITE_BUCKET_SCRIPT, 3, *arguments
                         )
                     except RedisError as error:
                         result = error
@@ -767,8 +597,6 @@ class Outpost:
                     first_error = result
             if first_error is not None:
                 raise first_error
-            if writes and results[0] == 2:
-                self._undrained = True
         except BaseException:
             outcome = "error"
             raise
@@ -845,9 +673,7 @@ class Outpost:
                 read.outcome = "ready"
 
     async def flush(self, *, timeout: float = 30.0) -> None:
-        """Deliver the events this instance queued, and wait for the pull and the fetches
-        in flight: a serverless function must not freeze in the middle of them. A newer
-        flush that outlasts this one releases it, since it waits for the same work."""
+        """Wait for in-flight snapshot and customer fetch work."""
         deadline = anyio.current_time() + timeout
         for older, until in self._flushing.items():
             if until <= deadline:
@@ -855,11 +681,21 @@ class Outpost:
         with anyio.CancelScope() as scope:
             self._flushing[scope] = deadline
             try:
-                with anyio.fail_after(timeout):
-                    await self._drain_outbox_quietly(limited=True)
                 await self._in_flight(max(0.0, deadline - anyio.current_time()))
             finally:
                 del self._flushing[scope]
+
+    async def on_ack(self, events: list[EventInput]) -> None:
+        assert self._confirm_script is not None
+        if groups := self._settlements(events):
+            await self._confirm_script(*_confirm_arguments(self._prefix, "ack", groups))
+
+    async def on_rejected(self, events: list[EventInput], reason: DropReason) -> None:
+        if reason != "permanent_error":
+            return
+        assert self._confirm_script is not None
+        if groups := self._settlements(events):
+            await self._confirm_script(*_confirm_arguments(self._prefix, "reject", groups))
 
     async def flush_telemetry(self) -> bool:
         """Hands this instance's telemetry to the shared Redis, where the next pull
@@ -944,15 +780,6 @@ class Outpost:
     @property
     def _cold_lock_key(self) -> str:
         return f"{self._prefix}:cold:lock"
-
-    # The events Polar has yet to receive, in the order Outpost tracked them.
-    @property
-    def _outbox_key(self) -> str:
-        return f"{self._prefix}:outbox"
-
-    @property
-    def _outbox_backoff_key(self) -> str:
-        return f"{self._outbox_key}:backoff"
 
     @property
     def _configuration_key(self) -> str:
@@ -1204,20 +1031,14 @@ class Outpost:
         it held the lock is not left behind."""
         redis = self._require_redis()
         while True:
-            token = await _take_lock(redis, self._cold_lock_key, TIMEOUT)
+            token = await take_lock(redis, self._cold_lock_key, TIMEOUT)
             if token is None:
                 return
             try:
                 await anyio.sleep(FETCH_BATCH_WINDOW)
 
                 async def renew(token: str = token) -> None:
-                    await redis.eval(
-                        EXTEND_LOCK_SCRIPT,
-                        1,
-                        self._cold_lock_key,
-                        token,
-                        int(TIMEOUT * 1000),
-                    )
+                    await extend_lock(redis, self._cold_lock_key, token, TIMEOUT)
 
                 while True:
                     batches: list[list[str]] = []
@@ -1239,7 +1060,7 @@ class Outpost:
                         for identities in batches:
                             group.start_soon(self._fetch_batch, identities, renew)
             finally:
-                await _release_lock(redis, self._cold_lock_key, token)
+                await release_lock(redis, self._cold_lock_key, token)
             if not await redis.scard(self._cold_key):
                 return
 
@@ -1278,7 +1099,7 @@ class Outpost:
                             response.is_client_error and response.status_code != 429
                         ):
                             raise
-                        wait = _retry_after(response) or delay
+                        wait = retry_after_response(response) or delay
                         if anyio.current_time() + wait >= deadline:
                             raise
                         await anyio.sleep(wait)
@@ -1317,288 +1138,6 @@ class Outpost:
                 await fetching.wait()
             async with self._applying:
                 pass
-
-    async def _create_outbox_group(self) -> None:
-        """A flusher reads the outbox through the group, which tracks each batch until
-        Polar has it."""
-        try:
-            await self._require_redis().xgroup_create(
-                self._outbox_key, OUTBOX_GROUP, id="0", mkstream=True
-            )
-        except RedisResponseError as error:
-            if "BUSYGROUP" not in str(error):
-                raise
-
-    async def _drain_outbox_quietly(self, *, limited: bool = False) -> None:
-        """Redis keeps what a drain fails to deliver: the next flush takes it. Without an
-        event of its own to deliver, a flush waits for the drain in flight, if any."""
-        if self._redis is None or self._failure is not None:
-            return
-        if limited:
-            self._limit_drain()
-        if self._undrained:
-            await self._drain()
-        elif self._draining is not None:
-            await self._draining.wait()
-
-    async def _drain(self) -> None:
-        """One drain at a time per instance: a flush during one waits for it, and asks
-        for one more round so that its own events do not stay queued. The drain runs in
-        the instance's task group: a newer flush that releases an older one does not cut
-        it short in the middle of a batch."""
-        self._drain_again = True
-        draining = self._draining
-        if draining is None:
-            assert self._tasks is not None
-            draining = self._draining = anyio.Event()
-            self._tasks.start_soon(self._run_drains, draining)
-        await draining.wait()
-
-    async def _run_drains(self, done: anyio.Event) -> None:
-        try:
-            while self._drain_again:
-                self._drain_again = False
-                self._undrained = False
-                await self._drain_outbox()
-        # Whatever a drain raises, it must not end the task group, and with it the
-        # task that started Outpost.
-        except* Exception:  # noqa: BLE001
-            self._undrained = True
-        finally:
-            self._draining = None
-            self._drain_until = math.inf
-            done.set()
-
-    def _limit_drain(self) -> None:
-        """The fleet's other instances keep writing: a drain a flush or a close waits on
-        would never end."""
-        if self._undrained or self._draining is not None:
-            self._drain_until = min(
-                self._drain_until, anyio.current_time() + FLUSH_TENURE
-            )
-
-    async def _drain_on_time(self) -> None:
-        """A long-running process delivers what it queued without a flush."""
-        while True:
-            await anyio.sleep(DRAIN_INTERVAL)
-            if self._undrained:
-                await self._drain_outbox_quietly()
-
-    async def _drain_outbox(self) -> None:
-        """One flusher per OUTBOX_BATCH events waiting, up to FLUSHERS across the fleet.
-        Once its flushers let go of their slots, the instance looks again: an event
-        queued while they held them is not left behind."""
-        self._require_redis()
-        assert self._outbox_backlog is not None
-        first = True
-        # The backoff a round delivered past: the next round's read ends it.
-        ended: list[bytes] = []
-        try:
-            while True:
-                if anyio.current_time() >= self._drain_until:
-                    self._undrained = True
-                    return
-                length, delivering, retry_at = await self._outbox_backlog(
-                    keys=[self._outbox_key, self._outbox_backoff_key],
-                    args=[OUTBOX_GROUP, *ended],
-                )
-                # The first round also takes back the batches that wait on a failed or
-                # frozen flusher.
-                if not length or (not first and length == delivering):
-                    return
-                # Polar failed to take a batch: the fleet waits before sending the
-                # outbox again.
-                if retry_at and float(retry_at) > time.time() * 1000:
-                    self._undrained = True
-                    return
-                # A partial batch goes only when no flusher delivers: the last one in
-                # flight takes it.
-                full = (length - delivering) // OUTBOX_BATCH
-                slots = min(FLUSHERS, full or (0 if delivering and not first else 1))
-                if not slots:
-                    return
-                first = False
-                outcomes: list[str] = []
-
-                async def flush_slot(slot: int, outcomes: list[str] = outcomes) -> None:
-                    outcomes.append(await self._flush_slot(slot))
-
-                async with anyio.create_task_group() as group:
-                    for slot in range(slots):
-                        group.start_soon(flush_slot, slot)
-                if "failed" in outcomes:
-                    self._undrained = True
-                    return
-                if "drained" not in outcomes:
-                    return
-                # Polar takes batches again: the next failure waits the first delay.
-                ended = [retry_at] if retry_at else []
-        except Exception as error:
-            # Redis lost the group, with the rest of its keys: the next flush reads a new
-            # one.
-            errors = error.exceptions if isinstance(error, ExceptionGroup) else (error,)
-            if any("NOGROUP" in str(each) for each in errors):
-                await self._create_outbox_group()
-            raise
-
-    async def _flush_slot(self, slot: int) -> str:
-        """A batch whose flusher froze is taken back once idle long enough; one this slot
-        left behind, as Polar failed, goes before the new events."""
-        redis = self._require_redis()
-        lock_key = f"{self._outbox_key}:flusher:{slot}"
-        consumer = f"flusher-{slot}"
-        token = await _take_lock(redis, lock_key, FLUSHER_LOCK_TTL)
-        if token is None:
-            return "busy"
-        try:
-            if slot == 0:
-                await redis.xautoclaim(
-                    self._outbox_key,
-                    OUTBOX_GROUP,
-                    consumer,
-                    int(OUTBOX_CLAIM_IDLE * 1000),
-                    count=OUTBOX_BATCH,
-                    justid=True,
-                )
-            start = "0"
-            while True:
-                if start == ">":
-                    # Between two batches, the slot goes to the next instance that
-                    # writes.
-                    if anyio.current_time() >= self._drain_until:
-                        self._undrained = True
-                        return "drained"
-                    assert self._outbox_backlog is not None
-                    length, delivering, _ = await self._outbox_backlog(
-                        keys=[self._outbox_key, self._outbox_backoff_key],
-                        args=[OUTBOX_GROUP],
-                    )
-                    if length == delivering:
-                        return "drained"
-                    # The flusher still in flight takes a partial batch; if it let go
-                    # meanwhile, the next drain does.
-                    if delivering and length - delivering < OUTBOX_BATCH:
-                        self._undrained = True
-                        return "drained"
-                read = typing.cast(
-                    list[typing.Any],
-                    await redis.xreadgroup(
-                        OUTBOX_GROUP,
-                        consumer,
-                        {self._outbox_key: start},
-                        count=OUTBOX_BATCH,
-                    ),
-                )
-                entries = read[0][1] if read else []
-                if entries:
-                    delivery = _Delivery(
-                        [_decode(entry) for entry, _ in entries], lock_key, token
-                    )
-                    if not await self._deliver(entries, delivery):
-                        # Slot 0 starts every drain and sends what it holds first: the
-                        # batch goes to it, and does not wait for a drain large enough
-                        # to start this slot again.
-                        if slot:
-                            ids: list[StreamIdT] = [*delivery.entries]
-                            with contextlib.suppress(RedisError):
-                                await redis.xclaim(
-                                    self._outbox_key,
-                                    OUTBOX_GROUP,
-                                    "flusher-0",
-                                    0,
-                                    ids,
-                                    justid=True,
-                                )
-                        return "failed"
-                elif start == "0":
-                    start = ">"
-        finally:
-            await _release_lock(redis, lock_key, token)
-
-    async def _back_off_outbox(self, wait: float | None) -> None:
-        """As long as Polar asks, or longer after each failure in a row."""
-        await self._back_off(
-            self._outbox_backoff_key,
-            first=wait if wait is not None else OUTBOX_RETRY_DELAY,
-            maximum=wait if wait is not None else MAX_OUTBOX_RETRY_DELAY,
-        )
-
-    async def _deliver(
-        self, entries: list[typing.Any], delivery: _Delivery
-    ) -> bool:
-        """Sends a batch to Polar, then acknowledges it and settles its events in one
-        script. Polar refusing the batch drops it; failing to take it leaves it for the
-        next flush."""
-        events: list[EventInput] = []
-        for _, fields in entries:
-            if not fields:
-                continue
-            try:
-                events.append(
-                    json.loads(
-                        fields.get(b"event", b""),
-                        parse_constant=_not_json,
-                        parse_float=_finite,
-                    )
-                )
-            except ValueError:
-                # It can never be sent: it leaves the outbox with the batch.
-                log.warning("Outpost dropped an outbox entry it cannot read")
-        refused: list[EventInput] = []
-        resent = 0
-        while events:
-            try:
-                response = await self._client.post(
-                    "/v1/events/ingest", json={"events": events}, timeout=TIMEOUT
-                )
-            except httpx2.TransportError:
-                await self._back_off_outbox(None)
-                return False
-            # Only a 2xx means Polar has the batch.
-            if response.is_success:
-                break
-            # Polar refuses a whole request for the events it names: the others go
-            # again without them, a few times at most.
-            named = _refused_indexes(response)
-            if named and len(named) < len(events) and resent < REFUSED_RESENDS:
-                resent += 1
-                refused += [e for index, e in enumerate(events) if index in named]
-                events = [e for index, e in enumerate(events) if index not in named]
-                continue
-            # A 4xx other than a refusal or a rate limit drops the batch; anything else
-            # leaves it for the next flush.
-            if response.is_client_error and response.status_code not in (401, 403, 429):
-                refused += events
-                events = []
-                break
-            await self._back_off_outbox(_retry_after(response))
-            return False
-        assert self._confirm_script is not None
-        # Polar will never count a refused event: it settles everywhere, hot bucket or
-        # cold.
-        if refused and events:
-            await self._confirm_script(
-                *_confirm_arguments(self._prefix, False, self._settlements(refused))
-            )
-        await self._confirm_script(
-            *_confirm_arguments(
-                self._prefix,
-                bool(events),
-                self._settlements(events or refused),
-                delivery,
-            )
-        )
-        if refused and self._on_dropped is not None:
-            try:
-                await self._on_dropped(refused, "permanent_error")
-            except Exception as error:  # noqa: BLE001
-                log.warning("Outpost on_dropped failed: %s", error)
-        if events and self._on_delivered is not None:
-            try:
-                await self._on_delivered(events)
-            except Exception as error:  # noqa: BLE001
-                log.warning("Outpost on_delivered failed: %s", error)
-        return True
 
     def _settlements(
         self, events: collections.abc.Sequence[EventInput]
@@ -1720,21 +1259,7 @@ class Outpost:
         first: float = PULL_RETRY_DELAY,
         maximum: float = MAX_PULL_RETRY_DELAY,
     ) -> float:
-        """One more failure on the key, for the whole fleet: when to try again."""
-        now = int(time.time() * 1000)
-        retry_at = now + int(first * 1000)
-        if self._redis is not None:
-            with contextlib.suppress(RedisError):
-                retry_at = await self._redis.eval(
-                    BACKOFF_SCRIPT,
-                    1,
-                    key,
-                    now,
-                    int(first * 1000),
-                    int(maximum * 1000),
-                    *forget,
-                )
-        return retry_at / 1000
+        return await back_off(self._redis, key, *forget, first=first, maximum=maximum)
 
     async def _pull_changes(self, span: Span, wait: bool) -> None:
         """One instance of the fleet pulls at a time: the others learn the result through
@@ -1746,7 +1271,7 @@ class Outpost:
         if retry_at and float(retry_at) > time.time() * 1000:
             self._pull_retry_at = float(retry_at) / 1000
             return
-        lock = await _take_lock(redis, self._pull_lock_key, PULL_LOCK_TTL)
+        lock = await take_lock(redis, self._pull_lock_key, PULL_LOCK_TTL)
         if lock is None:
             span.set_attribute("outpost.pull.locked", True)
             # Unless a read needs it, this instance does not wait for the other one's pull:
@@ -1758,15 +1283,7 @@ class Outpost:
             return
 
         async def extend() -> bool:
-            return bool(
-                await redis.eval(
-                    EXTEND_LOCK_SCRIPT,
-                    1,
-                    self._pull_lock_key,
-                    lock,
-                    int(PULL_LOCK_TTL * 1000),
-                )
-            )
+            return await extend_lock(redis, self._pull_lock_key, lock, PULL_LOCK_TTL)
 
         async def renew() -> None:
             # The page's snapshots and their confirms would outlast the lock otherwise.
@@ -1862,7 +1379,7 @@ class Outpost:
                 {"outpost.pull.pages": pages, "outpost.pull.applied": applied}
             )
             if not released:
-                await _release_lock(redis, self._pull_lock_key, lock)
+                await release_lock(redis, self._pull_lock_key, lock)
         # In the background: a read that waits for the pull does not wait for telemetry.
         if self._relaying is None and self._tasks is not None:
             self._relaying = anyio.Event()
@@ -2046,7 +1563,7 @@ class Outpost:
                     pipeline.hgetall(key)
                     keys, args = _confirm_arguments(
                         self._prefix,
-                        False,
+                        "",
                         {
                             (identity, bucket_start): ids
                             for bucket_start, ids in confirmed.items()
@@ -2104,7 +1621,7 @@ class Outpost:
             return
         redis = self._require_redis()
         lock = f"{self._prefix}:telemetry:lock"
-        token = await _take_lock(redis, lock, RELAY_LOCK_TTL)
+        token = await take_lock(redis, lock, RELAY_LOCK_TTL)
         if token is None:
             return
         try:
@@ -2119,7 +1636,10 @@ class Outpost:
                 if not await redis.exists(batch):
                     with contextlib.suppress(RedisResponseError):
                         await redis.rename(key, batch)
-                exports = typing.cast(list[bytes], await redis.lrange(batch, 0, -1))
+                exports = typing.cast(
+                    list[bytes],
+                    await redis.execute_command("LRANGE", batch, 0, -1, **{NEVER_DECODE: True}),
+                )
                 if not exports:
                     continue
                 response = await self._client.post(
@@ -2131,7 +1651,7 @@ class Outpost:
                 if response.status_code < 500 and response.status_code != 429:
                     await redis.delete(batch)
         finally:
-            await _release_lock(redis, lock, token)
+            await release_lock(redis, lock, token)
 
     async def _relay_in_background(self, done: anyio.Event) -> None:
         try:

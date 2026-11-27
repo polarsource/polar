@@ -94,6 +94,7 @@ from polar.models.benefit import BenefitType
 from polar.models.catalog import CatalogStatus
 from polar.models.custom_field import CustomFieldText, CustomFieldType
 from polar.models.discount import DiscountDuration, DiscountType
+from polar.models.organization import OrganizationCustomerEmailSettings
 from polar.models.product_price import ProductPriceAmountType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.user_organization import OrganizationRole
@@ -2303,7 +2304,50 @@ class TestApply:
             "proration_behavior": SubscriptionProrationBehavior.prorate,
             "benefit_revocation_grace_period": 0,
             "prevent_trial_abuse": False,
+            "customer_portal_usage_show": True,
+            "customer_portal_subscription_update_plan": True,
+            "customer_portal_subscription_update_seats": True,
+            "customer_portal_subscription_update_units": False,
+            "customer_portal_subscription_pause": False,
+            "customer_portal_customer_allow_email_change": False,
+            "customer_email_order_confirmation": True,
+            "customer_email_payment_method_expiration_reminder": True,
+            "customer_email_subscription_cancellation": True,
+            "customer_email_subscription_confirmation": True,
+            "customer_email_subscription_cycled": True,
+            "customer_email_subscription_cycled_after_trial": True,
+            "customer_email_subscription_past_due": True,
+            "customer_email_subscription_paused": True,
+            "customer_email_subscription_resumed": True,
+            "customer_email_subscription_renewal_reminder": True,
+            "customer_email_subscription_revoked": True,
+            "customer_email_subscription_trial_conversion_reminder": True,
+            "customer_email_subscription_uncanceled": True,
+            "customer_email_subscription_updated": True,
         }
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_settings_left_out_reset_to_default(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        organization.default_tax_behavior = TaxBehaviorOption.inclusive
+        organization.subscription_settings = {
+            **organization.subscription_settings,
+            "allow_multiple_subscriptions": True,
+        }
+        await save_fixture(organization)
+
+        await declarative_config_service.apply(
+            session, redis, auth_subject, Config.model_validate({"settings": {}})
+        )
+
+        assert organization.default_tax_behavior == TaxBehaviorOption.location
+        assert organization.allow_multiple_subscriptions is False
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_settings_currency_switch(
@@ -2408,7 +2452,52 @@ class TestApply:
                         "settings": {"payments": {"currency": "usd"}},
                     }
                 ),
+                publish=False,
             )
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    @pytest.mark.parametrize(
+        ("role", "allowed"),
+        [
+            (OrganizationRole.owner, True),
+            (OrganizationRole.admin, True),
+            (OrganizationRole.member, False),
+        ],
+    )
+    async def test_publish_requires_catalog_publish(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        organization: Organization,
+        role: OrganizationRole,
+        allowed: bool,
+    ) -> None:
+        mocker.patch("polar.meter.service.enqueue_job")
+        user_organization.role = role
+        await save_fixture(user_organization)
+        config = Config.model_validate(
+            {"organization_id": str(organization.id), "meters": [TOOL_CALLS_METER]}
+        )
+
+        if allowed:
+            result = await declarative_config_service.apply(
+                session, redis, auth_subject, config
+            )
+            assert result.catalog is not None
+        else:
+            with pytest.raises(NotPermitted):
+                await declarative_config_service.apply(
+                    session, redis, auth_subject, config
+                )
+            result = await declarative_config_service.apply(
+                session, redis, auth_subject, config, publish=False
+            )
+            assert result.catalog is not None
 
 
 @pytest.mark.anyio
@@ -2628,6 +2717,37 @@ class TestPlan:
         assert issue.severity == ConfigIssueSeverity.error
         assert issue.type == ConfigIssueType.not_supported
         assert issue.loc == ["body", "settings", "subscriptions", "proration_behavior"]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_settings_left_out_reset_to_default(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        organization.default_tax_behavior = TaxBehaviorOption.inclusive
+        organization.subscription_settings = {
+            **organization.subscription_settings,
+            "allow_multiple_subscriptions": True,
+        }
+        await save_fixture(organization)
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate({"settings": {"payments": {"currency": "usd"}}}),
+        )
+
+        assert plan.settings is not None
+        assert [change.model_dump() for change in plan.settings.diff] == [
+            {"field": "payments.tax", "before": "inclusive", "after": "location"},
+            {
+                "field": "subscriptions.allow_multiple_subscriptions",
+                "before": True,
+                "after": False,
+            },
+        ]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_settings_omitted(
@@ -5537,6 +5657,30 @@ ROUND_TRIP_CONFIG: dict[str, Any] = {
             "benefit_revocation_grace_period": 2,
             "prevent_trial_abuse": True,
         },
+        "customer_portal": {
+            "allow_plan_changes": False,
+            "allow_unit_changes": True,
+            "allow_seat_management": False,
+            "allow_pausing": True,
+            "allow_email_changes": True,
+            "show_metered_usage": False,
+        },
+        "customer_notifications": {
+            "send_order_confirmation": False,
+            "send_subscription_confirmation": True,
+            "send_trial_conversion_reminder": False,
+            "send_trial_converted": True,
+            "send_renewal_reminder": False,
+            "send_subscription_cycled": True,
+            "send_card_expiring": False,
+            "send_subscription_past_due": True,
+            "send_subscription_updated": False,
+            "send_subscription_paused": True,
+            "send_subscription_resumed": False,
+            "send_subscription_canceled": True,
+            "send_subscription_uncanceled": False,
+            "send_subscription_revoked": True,
+        },
     },
     "meters": [{**TOOL_CALLS_METER, "metadata": {"team": "billing"}}],
     "custom_fields": [
@@ -5695,6 +5839,30 @@ class TestExport:
         [exported_product] = document["products"]
         assert exported_product["external_id"] == "pack"
         assert "custom_fields" not in exported_product
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_default_settings_are_a_new_organizations(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        exported = await declarative_config_service.export(session, auth_subject, None)
+
+        assert exported.default_settings == exported.config.settings
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_default_settings_ignore_the_organizations_settings(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        organization.default_tax_behavior = TaxBehaviorOption.inclusive
+        await save_fixture(organization)
+
+        exported = await declarative_config_service.export(session, auth_subject, None)
+
+        assert exported.config.settings.payments.tax == TaxBehaviorOption.inclusive
+        assert exported.default_settings.payments.tax == TaxBehaviorOption.location
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_round_trips_custom_fields(
@@ -6688,6 +6856,130 @@ class TestCatalogDrafts:
             "trial_ended_reactivation_period": 14,
             "prevent_trial_abuse": False,
         }
+
+    async def test_portal_settings_go_live_on_publish(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "settings": {
+                        "customer_portal": {
+                            "show_metered_usage": False,
+                            "allow_pausing": True,
+                        }
+                    }
+                }
+            ),
+            publish=False,
+        )
+
+        draft = await CatalogRepository.from_session(session).get_draft(organization.id)
+        assert draft is not None
+        assert draft.settings == {
+            "customer_portal_usage_show": False,
+            "customer_portal_subscription_pause": True,
+        }
+        assert organization.customer_portal_subscription_pause is False
+
+        await catalog_service.publish_draft(session, auth_subject, organization, draft)
+
+        assert organization.customer_portal_settings == {
+            "usage": {"show": False},
+            "subscription": {
+                "update_seats": True,
+                "update_plan": True,
+                "pause": True,
+            },
+            "customer": {"allow_email_change": False},
+        }
+
+    async def test_email_settings_go_live_on_publish(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "settings": {
+                        "customer_notifications": {
+                            "send_order_confirmation": False,
+                            "send_card_expiring": False,
+                        }
+                    }
+                }
+            ),
+            publish=False,
+        )
+
+        draft = await CatalogRepository.from_session(session).get_draft(organization.id)
+        assert draft is not None
+        assert draft.settings == {
+            "customer_email_order_confirmation": False,
+            "customer_email_payment_method_expiration_reminder": False,
+        }
+        assert organization.customer_email_settings["order_confirmation"] is True
+
+        await catalog_service.publish_draft(session, auth_subject, organization, draft)
+
+        assert organization.customer_email_settings["order_confirmation"] is False
+        assert (
+            organization.customer_email_settings["payment_method_expiration_reminder"]
+            is False
+        )
+        assert organization.customer_email_settings["subscription_cycled"] is True
+
+    async def test_publish_stores_the_inherited_card_expiring_setting(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        stored = dict(organization.customer_email_settings)
+        del stored["payment_method_expiration_reminder"]
+        organization.customer_email_settings = cast(
+            OrganizationCustomerEmailSettings, stored
+        )
+        await save_fixture(organization)
+
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "settings": {
+                        "customer_notifications": {"send_subscription_cycled": False}
+                    }
+                }
+            ),
+            publish=False,
+        )
+        draft = await CatalogRepository.from_session(session).get_draft(organization.id)
+        assert draft is not None
+
+        await catalog_service.publish_draft(session, auth_subject, organization, draft)
+
+        assert organization.customer_email_settings["subscription_cycled"] is False
+        assert (
+            organization.customer_email_settings["payment_method_expiration_reminder"]
+            is True
+        )
 
     async def test_reverting_settings_drops_the_draft(
         self,

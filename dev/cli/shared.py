@@ -7,17 +7,24 @@ import re
 import shutil
 import socket
 import subprocess
+import sys
 import tempfile
 import threading
 import time
+from contextlib import contextmanager
 from dataclasses import dataclass, field
+from difflib import get_close_matches
 from pathlib import Path
 
-from rich.console import Console
+from rich.console import Console, Group
 from rich.live import Live
+from rich.markup import escape
 from rich.padding import Padding
+from rich.panel import Panel
 from rich.spinner import Spinner
+from rich.table import Table
 from rich.text import Text
+from typer.core import TyperGroup
 
 from secrets_io import SECRETS_FILE, read_secrets, update_secrets
 
@@ -70,6 +77,158 @@ class Context:
 
 
 last_command_interrupted = False
+
+
+COMMAND_SYNONYMS = {
+    "migrate": "db migrate",
+    "doctor": "status",
+    "db downgrade": "db rollback",
+    "pu": "up",
+    "server": "api",
+}
+
+
+def _command_paths(group, prefix: str = ""):
+    for name, command in group.commands.items():
+        if command.hidden:
+            continue
+        path = f"{prefix} {name}".strip()
+        yield path, command
+        if hasattr(command, "commands"):
+            yield from _command_paths(command, path)
+
+
+def _command_names(ctx) -> list[str]:
+    names = []
+    while ctx.parent is not None:
+        names.insert(0, ctx.info_name)
+        ctx = ctx.parent
+    return names
+
+
+def _suggestion_table(rows: list[tuple[str, str]]) -> Table:
+    table = Table(show_header=False, box=None, padding=(0, 3), pad_edge=False)
+    table.add_column(style="bold cyan", no_wrap=True)
+    table.add_column(style="dim")
+    for name, description in rows:
+        table.add_row(escape(name), escape(description))
+    return table
+
+
+def _print_mistake(title: str, body, hint: str | None) -> None:
+    Console(stderr=True, highlight=False).print(
+        "",
+        Panel(
+            Padding(body, (1, 2)),
+            title=title,
+            title_align="left",
+            subtitle=hint,
+            subtitle_align="right",
+            border_style="red",
+            expand=False,
+        ),
+        "",
+        sep="\n",
+    )
+
+
+def _options(ctx) -> dict[str, str]:
+    options = {}
+    for param in ctx.command.get_params(ctx):
+        if getattr(param, "param_type_name", None) != "option":
+            continue
+        for name in [*param.opts, *param.secondary_opts]:
+            options[name] = (param.help or "").strip().splitlines()[0] if param.help else ""
+    return options
+
+
+def _report_unknown_option(ctx, option: str) -> None:
+    tried = next(
+        (arg for arg in sys.argv[1:] if arg.startswith(option) and not arg.startswith("--") and arg != option),
+        option,
+    ).split("=", 1)[0]
+    command = " ".join(["dev", *_command_names(ctx)])
+    hint = f"[dim]{escape(command)} --help shows all options[/dim]"
+    title = f"[red]✗ No such option[/red] [bold yellow]{escape(tried)}[/bold yellow] [red]for[/red] [bold]{escape(command)}[/bold]"
+
+    owner = ctx.parent
+    while owner is not None and owner.parent is not None:
+        if option in _options(owner):
+            group = " ".join(["dev", *_command_names(owner)])
+            subcommand = ctx.info_name
+            body = (
+                f"[bold cyan]{escape(option)}[/bold cyan] belongs to [bold]{escape(group)}[/bold], "
+                f"so it goes before [bold]{escape(subcommand)}[/bold]:\n\n"
+                f"  [bold cyan]{escape(group)} {escape(option)} … {escape(subcommand)}[/bold cyan]"
+            )
+            _print_mistake(title, body, hint)
+            ctx.exit(2)
+        owner = owner.parent
+
+    options = _options(ctx)
+    by_name: dict[str, list[str]] = {}
+    for name in options:
+        by_name.setdefault(name.lstrip("-"), []).append(name)
+    matches = [name for match in get_close_matches(tried.lstrip("-"), by_name) for name in by_name[match]]
+    matches = sorted(matches, key=lambda name: not name.startswith("--"))[:3]
+    if matches:
+        body = Group("Did you mean", "", _suggestion_table([(name, options[name]) for name in matches]))
+    else:
+        body = f"Run [bold cyan]{escape(command)} --help[/bold cyan] to see its options."
+        hint = None
+    _print_mistake(title, body, hint)
+    ctx.exit(2)
+
+
+@contextmanager
+def _unknown_options_reported():
+    try:
+        yield
+    except Exception as error:
+        if type(error).__name__ != "NoSuchOption" or getattr(error, "ctx", None) is None:
+            raise
+        _report_unknown_option(error.ctx, error.option_name)
+
+
+class CommandGroup(TyperGroup):
+    """Suggests commands from every group, including ones whose names don't look like what people try."""
+
+    def resolve_command(self, ctx, args: list[str]):
+        name = args[0] if args else ""
+        if name and not name.startswith("-") and self.get_command(ctx, name) is None:
+            parents = _command_names(ctx)
+            commands = dict(_command_paths(ctx.find_root().command))
+
+            by_name: dict[str, list[str]] = {}
+            for path in commands:
+                by_name.setdefault(path.split()[-1], []).append(path)
+            matches = [path for match in get_close_matches(name, by_name) for path in by_name[match]]
+            matches = sorted(matches, key=lambda path: path.split()[:-1] != parents)[:3]
+            synonym = COMMAND_SYNONYMS.get(" ".join([*parents, name]))
+            if synonym:
+                matches = [synonym]
+
+            tried = escape(" ".join(["dev", *parents, name]))
+            group_help = escape(" ".join(["dev", *parents, "--help"]))
+            scope = f"the {escape(' '.join(parents))} commands" if parents else "all commands"
+            if matches:
+                rows = [(f"dev {path}", commands[path].get_short_help_str(60)) for path in matches]
+                body = Group("Did you mean", "", _suggestion_table(rows))
+                hint = f"[dim]{group_help} shows {scope}[/dim]"
+            else:
+                body = f"Run [bold cyan]{group_help}[/bold cyan] to see {scope}."
+                hint = None
+            _print_mistake(f"[red]✗ No such command[/red] [bold yellow]{tried}[/bold yellow]", body, hint)
+            ctx.exit(2)
+        return super().resolve_command(ctx, args)
+
+    def parse_args(self, ctx, args: list[str]):
+        with _unknown_options_reported():
+            return super().parse_args(ctx, args)
+
+    def invoke(self, ctx):
+        with _unknown_options_reported():
+            return super().invoke(ctx)
 
 
 def run_command(

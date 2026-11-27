@@ -12,8 +12,3 @@ class NotReadyError(PolarOutpostError):
 class UnavailableRedisError(PolarOutpostError):
     def __init__(self) -> None:
         super().__init__("Redis is unavailable")
-
-
-class MissingExternalIdError(PolarOutpostError):
-    def __init__(self) -> None:
-        super().__init__("Outpost needs an external_id on every event")

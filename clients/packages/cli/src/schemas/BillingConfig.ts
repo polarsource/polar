@@ -252,6 +252,9 @@ export type SkippedResource = typeof SkippedResource.Type
 export const ConfigExport = Schema.Struct({
   enabled: Schema.Boolean,
   config: ConfigDocument,
+  default_settings: Schema.optionalKey(
+    Schema.Record(Schema.String, Schema.Record(Schema.String, Schema.Unknown)),
+  ),
   skipped: Schema.Array(SkippedResource),
 })
 export type ConfigExport = typeof ConfigExport.Type

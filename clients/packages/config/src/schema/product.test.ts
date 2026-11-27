@@ -3,6 +3,7 @@ import { expect, test } from 'vitest'
 import { eur, perThousand, usd } from './money'
 import { fixed, free, metered, seats, tier, units } from './price'
 import { product, ProductConfig, productPrices } from './product'
+import type { PriceDefinition } from './price'
 import type { ProductDefinition } from './product'
 
 test('a product needs prices and a billing cycle', () => {
@@ -150,7 +151,8 @@ test('one-time products cannot have metered prices', () => {
 })
 
 const decodeProduct = (
-  ...prices: Parameters<ReturnType<typeof product>['prices']>
+  price: PriceDefinition,
+  ...rest: ReadonlyArray<PriceDefinition>
 ) =>
   Schema.decodeUnknownSync(ProductConfig)({
     external_id: 'pro',
@@ -160,7 +162,7 @@ const decodeProduct = (
     prices: productPrices(
       'pro',
       product()
-        .prices(...prices)
+        .prices(price, ...rest)
         .recurring('monthly'),
     ),
     benefits: [],
@@ -178,6 +180,30 @@ test('products allow one fixed price with seats or units plus a price per meter'
   expect(() =>
     decodeProduct(free(), units().flat().amount(usd(1))),
   ).not.toThrow()
+})
+
+test('price combinations the API does not support fail to type-check', () => {
+  product().prices(
+    // @ts-expect-error a second seat-based price
+    seats().flat().amount(usd(20)),
+    seats().flat().amount(usd(15)),
+  )
+  // @ts-expect-error a seat-based price with a unit-based one
+  product().prices(seats().flat().amount(usd(1)), units().flat().amount(usd(2)))
+  // @ts-expect-error a free price with a fixed one
+  product().prices(free(), fixed().amount(usd(10)))
+  product().prices(
+    // @ts-expect-error a meter charged twice
+    metered('calls').flat().amount(usd(0.01)),
+    metered('calls').flat().amount(usd(0.02)),
+  )
+  const valid = product().prices(
+    fixed().amount(usd(10)),
+    seats().flat().amount(usd(1)),
+    metered('calls').flat().amount(usd(0.01)),
+    metered('tokens').flat().amount(usd(0.01)),
+  )
+  expect(valid.priceList).toHaveLength(4)
 })
 
 test('products reject price combinations the API does not support', () => {

@@ -20,6 +20,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.catalog import CatalogStatus
+from polar.models.user_organization import OrganizationRole
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -486,6 +487,34 @@ class TestPublish:
 
         assert response.status_code == 200
         assert response.json()["status"] == CatalogStatus.live
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize(
+        ("role", "status_code"),
+        [
+            (OrganizationRole.owner, 200),
+            (OrganizationRole.admin, 200),
+            (OrganizationRole.member, 403),
+            (OrganizationRole.finance, 404),
+        ],
+    )
+    async def test_role(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        products_only_draft: Catalog,
+        role: OrganizationRole,
+        status_code: int,
+    ) -> None:
+        user_organization.role = role
+        await save_fixture(user_organization)
+
+        response = await client.post(f"/v1/catalogs/{products_only_draft.id}/publish")
+
+        assert response.status_code == status_code
+        if role == OrganizationRole.member:
+            assert response.json()["error"] == "NotPermitted"
 
     @pytest.mark.auth
     async def test_not_draft(

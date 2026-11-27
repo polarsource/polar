@@ -627,6 +627,28 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/customer-portal/customer-session/logout': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Log Out of Customer Portal
+     * @description Expire the current customer portal session.
+     *
+     *     **Scopes**: `customer_portal:read` `customer_portal:write`
+     */
+    post: operations['customer_portal:customer-session:logout']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/customer-portal/customer-session/start': {
     parameters: {
       query?: never
@@ -1771,6 +1793,9 @@ export interface paths {
      *     upfront payment setup. Paid subscriptions start with the product's configured
      *     trial period. For other paid products, use the checkout flow.
      *
+     *     Reference the customer by Polar ID or external ID. Reference the product by
+     *     Polar ID, or by external ID together with an external customer ID.
+     *
      *     No initial order will be created and no confirmation email will be sent.
      *
      *     **Scopes**: `subscriptions:write`
@@ -1889,6 +1914,28 @@ export interface paths {
      *     **Scopes**: `subscriptions:read` `subscriptions:write`
      */
     get: operations['subscriptions:get_meter_charge_preview']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/subscriptions/{id}/billing-intervals': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Subscription Billing Intervals
+     * @description List the subscription's billing intervals with their usage, newest first.
+     *
+     *     **Scopes**: `subscriptions:read` `subscriptions:write`
+     */
+    get: operations['subscriptions:list_billing_intervals']
     put?: never
     post?: never
     delete?: never
@@ -2427,7 +2474,8 @@ export interface paths {
      *     method. The order is created with `status=draft` and no invoice number;
      *     call `POST /v1/orders/{id}/finalize` to attempt the charge.
      *
-     *     Reference the customer and the product both by Polar ID or both by external ID.
+     *     Reference the customer by `customer_id` or `external_customer_id`, and the
+     *     product by `product_id` or `external_product_id`.
      *
      *     The organization must have the `off_session_charges_enabled` feature flag.
      *
@@ -6742,7 +6790,8 @@ export interface paths {
      *     Requires `catalog:publish` and `products:write`, `benefits:write` when the
      *     draft changes benefits, `meters:write` when it changes meters,
      *     `custom_fields:write` when it changes custom fields, and
-     *     `organizations:write` when it changes settings.
+     *     `organizations:write` when it changes settings. Users need the owner or
+     *     admin role.
      *
      *     **Scopes**: `products:write`
      */
@@ -14329,6 +14378,15 @@ export interface components {
      */
     BillingAddressFieldMode: 'required' | 'optional' | 'disabled'
     /**
+     * BillingIntervalGenerationStatus
+     * @enum {string}
+     */
+    BillingIntervalGenerationStatus:
+      | 'open'
+      | 'unbilled'
+      | 'billed'
+      | 'not_charged'
+    /**
      * BlockingOrganization
      * @description Organization that is blocking user deletion.
      */
@@ -17054,6 +17112,12 @@ export interface components {
       metadata?: {
         [key: string]: string | number | boolean
       }
+      /**
+       * External Product Id
+       * @description ID in your system of the product to checkout. Must be present in the checkout's product list. Can't be combined with `product_id`.
+       * @example ext_1337
+       */
+      external_product_id?: string
       currency?: components['schemas']['PresentmentCurrency']
       /**
        * Discount Id
@@ -17187,7 +17251,7 @@ export interface components {
     }
     /** Config */
     Config: {
-      /** @description Organization settings to update. Left untouched when omitted. */
+      /** @description Organization settings. Settings left out are set to their default. Leave out `settings` to keep the current ones. */
       settings?: components['schemas']['ConfigSettings'] | null
       /**
        * Catalog Name
@@ -17875,6 +17939,8 @@ export interface components {
       enabled: boolean
       /** @description The current config, in the shape plan and apply accept, without `organization_id`. */
       config: components['schemas']['ConfigExportDocument']
+      /** @description Every setting at its default. Settings left out of a config are set to these, so a written config can leave them out. */
+      default_settings: components['schemas']['ConfigSettingsRead']
       /**
        * Skipped
        * @description Resources left out of the exported config. At most the section's config limit is listed.
@@ -18584,12 +18650,14 @@ export interface components {
     }
     /** ConfigSettings */
     ConfigSettings: {
-      /** @description Payment settings. Left untouched when omitted. */
-      payments?: components['schemas']['ConfigSettingsPayments'] | null
-      /** @description Subscription settings. Left untouched when omitted. */
-      subscriptions?:
-        | components['schemas']['ConfigSettingsSubscriptions']
-        | null
+      /** @description Payment settings. */
+      payments?: components['schemas']['ConfigSettingsPayments']
+      /** @description Subscription settings. */
+      subscriptions?: components['schemas']['ConfigSettingsSubscriptions']
+      /** @description Customer portal settings. */
+      customer_portal?: components['schemas']['ConfigSettingsCustomerPortal']
+      /** @description Which emails Polar sends customers. */
+      customer_notifications?: components['schemas']['ConfigSettingsCustomerNotifications']
     }
     /** ConfigSettingsChange */
     ConfigSettingsChange: {
@@ -18601,12 +18669,190 @@ export interface components {
        */
       diff: components['schemas']['ConfigFieldChange'][]
     }
+    /** ConfigSettingsCustomerNotifications */
+    ConfigSettingsCustomerNotifications: {
+      /**
+       * Send Order Confirmation
+       * @description Whether to email customers when they complete a one-time purchase. Defaults to `true`.
+       * @default true
+       */
+      send_order_confirmation: boolean
+      /**
+       * Send Subscription Confirmation
+       * @description Whether to email customers when they start a new subscription. Defaults to `true`.
+       * @default true
+       */
+      send_subscription_confirmation: boolean
+      /**
+       * Send Trial Conversion Reminder
+       * @description Whether to email customers when a trial is about to end and convert to a paid subscription. Defaults to `true`.
+       * @default true
+       */
+      send_trial_conversion_reminder: boolean
+      /**
+       * Send Trial Converted
+       * @description Whether to email customers when a trial ends and the subscription becomes paid. Defaults to `true`.
+       * @default true
+       */
+      send_trial_converted: boolean
+      /**
+       * Send Renewal Reminder
+       * @description Whether to email customers when a subscription with a long billing cycle renews within 30 days. Defaults to `true`.
+       * @default true
+       */
+      send_renewal_reminder: boolean
+      /**
+       * Send Subscription Cycled
+       * @description Whether to email customers when a subscription renews or is invoiced for usage. Defaults to `true`.
+       * @default true
+       */
+      send_subscription_cycled: boolean
+      /**
+       * Send Card Expiring
+       * @description Whether to email customers when a card backing an active subscription is about to expire. Defaults to `true`.
+       * @default true
+       */
+      send_card_expiring: boolean
+      /**
+       * Send Subscription Past Due
+       * @description Whether to email customers when a subscription payment fails and becomes overdue. Defaults to `true`.
+       * @default true
+       */
+      send_subscription_past_due: boolean
+      /**
+       * Send Subscription Updated
+       * @description Whether to email customers when they change their subscription to another product. Defaults to `true`.
+       * @default true
+       */
+      send_subscription_updated: boolean
+      /**
+       * Send Subscription Paused
+       * @description Whether to email customers when they pause their subscription. Defaults to `true`.
+       * @default true
+       */
+      send_subscription_paused: boolean
+      /**
+       * Send Subscription Resumed
+       * @description Whether to email customers when a paused subscription resumes and billing restarts. Defaults to `true`.
+       * @default true
+       */
+      send_subscription_resumed: boolean
+      /**
+       * Send Subscription Canceled
+       * @description Whether to email customers when they cancel their subscription. Defaults to `true`.
+       * @default true
+       */
+      send_subscription_canceled: boolean
+      /**
+       * Send Subscription Uncanceled
+       * @description Whether to email customers when they reactivate a canceled subscription. Defaults to `true`.
+       * @default true
+       */
+      send_subscription_uncanceled: boolean
+      /**
+       * Send Subscription Revoked
+       * @description Whether to email customers when a canceled subscription ends at the end of its billing cycle. Defaults to `true`.
+       * @default true
+       */
+      send_subscription_revoked: boolean
+    }
+    /** ConfigSettingsCustomerNotificationsRead */
+    ConfigSettingsCustomerNotificationsRead: {
+      /** Send Order Confirmation */
+      send_order_confirmation: boolean
+      /** Send Subscription Confirmation */
+      send_subscription_confirmation: boolean
+      /** Send Trial Conversion Reminder */
+      send_trial_conversion_reminder: boolean
+      /** Send Trial Converted */
+      send_trial_converted: boolean
+      /** Send Renewal Reminder */
+      send_renewal_reminder: boolean
+      /** Send Subscription Cycled */
+      send_subscription_cycled: boolean
+      /** Send Card Expiring */
+      send_card_expiring: boolean
+      /** Send Subscription Past Due */
+      send_subscription_past_due: boolean
+      /** Send Subscription Updated */
+      send_subscription_updated: boolean
+      /** Send Subscription Paused */
+      send_subscription_paused: boolean
+      /** Send Subscription Resumed */
+      send_subscription_resumed: boolean
+      /** Send Subscription Canceled */
+      send_subscription_canceled: boolean
+      /** Send Subscription Uncanceled */
+      send_subscription_uncanceled: boolean
+      /** Send Subscription Revoked */
+      send_subscription_revoked: boolean
+    }
+    /** ConfigSettingsCustomerPortal */
+    ConfigSettingsCustomerPortal: {
+      /**
+       * Allow Plan Changes
+       * @description Whether customers can switch their subscription to another product. Defaults to `true`.
+       * @default true
+       */
+      allow_plan_changes: boolean
+      /**
+       * Allow Unit Changes
+       * @description Whether customers can change the number of units on their subscriptions. Defaults to `false`.
+       * @default false
+       */
+      allow_unit_changes: boolean
+      /**
+       * Allow Seat Management
+       * @description Whether customers can assign and manage seats on their subscriptions. Defaults to `true`.
+       * @default true
+       */
+      allow_seat_management: boolean
+      /**
+       * Allow Pausing
+       * @description Whether customers can pause and resume their subscriptions. Defaults to `false`.
+       * @default false
+       */
+      allow_pausing: boolean
+      /**
+       * Allow Email Changes
+       * @description Whether customers can change their email address. Defaults to `false`.
+       * @default false
+       */
+      allow_email_changes: boolean
+      /**
+       * Show Metered Usage
+       * @description Whether customers see their metered usage in the customer portal. Defaults to `true`.
+       * @default true
+       */
+      show_metered_usage: boolean
+    }
+    /** ConfigSettingsCustomerPortalRead */
+    ConfigSettingsCustomerPortalRead: {
+      /** Allow Plan Changes */
+      allow_plan_changes: boolean
+      /** Allow Unit Changes */
+      allow_unit_changes: boolean
+      /** Allow Seat Management */
+      allow_seat_management: boolean
+      /** Allow Pausing */
+      allow_pausing: boolean
+      /** Allow Email Changes */
+      allow_email_changes: boolean
+      /** Show Metered Usage */
+      show_metered_usage: boolean
+    }
     /** ConfigSettingsPayments */
     ConfigSettingsPayments: {
-      /** @description The organization's default presentment currency. Every active product must have a price in it. Left untouched when omitted. */
-      currency?: components['schemas']['PresentmentCurrency'] | null
-      /** @description The organization's default tax behavior, used by prices without their own. Left untouched when omitted. */
-      tax?: components['schemas']['TaxBehaviorOption'] | null
+      /**
+       * @description The organization's default presentment currency. Every active product must have a price in it. Defaults to `usd`.
+       * @default usd
+       */
+      currency: components['schemas']['PresentmentCurrency']
+      /**
+       * @description The organization's default tax behavior, used by prices without their own. Defaults to `location`.
+       * @default location
+       */
+      tax: components['schemas']['TaxBehaviorOption']
     }
     /** ConfigSettingsPaymentsRead */
     ConfigSettingsPaymentsRead: {
@@ -18617,6 +18863,8 @@ export interface components {
     ConfigSettingsRead: {
       payments: components['schemas']['ConfigSettingsPaymentsRead']
       subscriptions: components['schemas']['ConfigSettingsSubscriptionsRead']
+      customer_portal: components['schemas']['ConfigSettingsCustomerPortalRead']
+      customer_notifications: components['schemas']['ConfigSettingsCustomerNotificationsRead']
     }
     /** ConfigSettingsResult */
     ConfigSettingsResult: {
@@ -18627,27 +18875,30 @@ export interface components {
     ConfigSettingsSubscriptions: {
       /**
        * Allow Multiple Subscriptions
-       * @description Whether a customer can have several active subscriptions at once. Left untouched when omitted.
+       * @description Whether a customer can have several active subscriptions at once. Defaults to `false`.
+       * @default false
        */
-      allow_multiple_subscriptions?: boolean | null
+      allow_multiple_subscriptions: boolean
       /**
        * Proration Behavior
-       * @description How customers are billed when their subscription changes. Left untouched when omitted.
+       * @description How customers are billed when their subscription changes. Defaults to `prorate`.
+       * @default prorate
        */
-      proration_behavior?:
+      proration_behavior:
         | components['schemas']['SubscriptionProrationBehavior']
         | 'auto'
-        | null
       /**
        * Benefit Revocation Grace Period
-       * @description Days to wait before revoking benefits while a failed payment is retried. Left untouched when omitted.
+       * @description Days to wait before revoking benefits while a failed payment is retried. Defaults to `0`.
+       * @default 0
        */
-      benefit_revocation_grace_period?: number | null
+      benefit_revocation_grace_period: number
       /**
        * Prevent Trial Abuse
-       * @description Whether a customer who already had a trial is refused another one. Left untouched when omitted.
+       * @description Whether a customer who already had a trial is refused another one. Defaults to `false`.
+       * @default false
        */
-      prevent_trial_abuse?: boolean | null
+      prevent_trial_abuse: boolean
     }
     /** ConfigSettingsSubscriptionsRead */
     ConfigSettingsSubscriptionsRead: {
@@ -22956,6 +23207,12 @@ export interface components {
        */
       benefit_id: string
       /**
+       * External Benefit Id
+       * @description The external ID of the benefit concerned by this grant, if any. It stays the same across benefit versions.
+       * @example premium_support
+       */
+      external_benefit_id: string | null
+      /**
        * @description The type of the benefit concerned by this grant.
        * @example custom
        */
@@ -23120,6 +23377,12 @@ export interface components {
        */
       meter_id: string
       /**
+       * External Meter Id
+       * @description The external ID of the meter, if any. It stays the same across meter versions.
+       * @example tool_call
+       */
+      external_meter_id: string | null
+      /**
        * Consumed Units
        * @description The number of consumed units.
        * @example 25
@@ -23249,6 +23512,12 @@ export interface components {
        * @example d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23
        */
       product_id: string
+      /**
+       * External Product Id
+       * @description The external ID of the subscribed product, if any. It stays the same across product versions.
+       * @example pro_monthly
+       */
+      external_product_id: string | null
       /**
        * Discount Id
        * @description The ID of the applied discount, if any.
@@ -30897,6 +31166,142 @@ export interface components {
        */
       external_product_id: string
     }
+    /**
+     * OrderCreateExternalCustomer
+     * @description Schema to create a draft order for an off-session charge,
+     *     referencing the customer by its external ID.
+     */
+    OrderCreateExternalCustomer: {
+      /**
+       * Custom Field Data
+       * @description Key-value object storing custom field values.
+       */
+      custom_field_data?: {
+        [key: string]: string | number | boolean | null
+      }
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Organization Id
+       * @description The ID of the organization the order belongs to. **Required unless you use an organization token.** The customer and product must belong to this organization.
+       */
+      organization_id?: string | null
+      /**
+       * Currency
+       * @description The currency to charge in (ISO 4217, lowercase, e.g. `usd`). Defaults to the organization's default currency; specify it to force a different one, or when the product isn't priced in the organization's default currency.
+       */
+      currency?: string | null
+      /**
+       * Amount
+       * @description A custom amount to charge, in the smallest currency unit. Overrides the product's price; defaults to the product's configured price (0 for free products). A positive amount must be at least the currency's minimum. Can't be combined with `units`.
+       */
+      amount?: number | null
+      /**
+       * Units
+       * @description The number of units to charge for. Required when the product has unit-based pricing, and rejected otherwise. The amount comes from the price's tiers. Can't be combined with `amount`.
+       */
+      units?: number | null
+      /**
+       * Description
+       * @description A custom description for the order's line item, shown on the invoice and receipt (e.g. `5,000 tokens`). Defaults to the product name.
+       */
+      description?: string | null
+      /**
+       * External Customer Id
+       * @description The ID of the customer in your system the order is for. Must belong to the order's organization.
+       * @example usr_1337
+       */
+      external_customer_id: string
+      /**
+       * Product Id
+       * Format: uuid4
+       * @description The ID of the one-time product to charge for. Must belong to the order's organization. Only fixed-price, free and unit-based products are supported.
+       */
+      product_id: string
+    }
+    /**
+     * OrderCreateExternalProduct
+     * @description Schema to create a draft order for an off-session charge,
+     *     referencing the product by its external ID.
+     */
+    OrderCreateExternalProduct: {
+      /**
+       * Custom Field Data
+       * @description Key-value object storing custom field values.
+       */
+      custom_field_data?: {
+        [key: string]: string | number | boolean | null
+      }
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Organization Id
+       * @description The ID of the organization the order belongs to. **Required unless you use an organization token.** The customer and product must belong to this organization.
+       */
+      organization_id?: string | null
+      /**
+       * Currency
+       * @description The currency to charge in (ISO 4217, lowercase, e.g. `usd`). Defaults to the organization's default currency; specify it to force a different one, or when the product isn't priced in the organization's default currency.
+       */
+      currency?: string | null
+      /**
+       * Amount
+       * @description A custom amount to charge, in the smallest currency unit. Overrides the product's price; defaults to the product's configured price (0 for free products). A positive amount must be at least the currency's minimum. Can't be combined with `units`.
+       */
+      amount?: number | null
+      /**
+       * Units
+       * @description The number of units to charge for. Required when the product has unit-based pricing, and rejected otherwise. The amount comes from the price's tiers. Can't be combined with `amount`.
+       */
+      units?: number | null
+      /**
+       * Description
+       * @description A custom description for the order's line item, shown on the invoice and receipt (e.g. `5,000 tokens`). Defaults to the product name.
+       */
+      description?: string | null
+      /**
+       * Customer Id
+       * Format: uuid4
+       * @description The ID of the customer the order is for. Must belong to the order's organization.
+       */
+      customer_id: string
+      /**
+       * External Product Id
+       * @description The ID of the one-time product in your system to charge for. Resolves to the current version of the product. Must belong to the order's organization. Only fixed-price, free and unit-based products are supported.
+       * @example ext_1337
+       */
+      external_product_id: string
+    }
     /** OrderCustomer */
     OrderCustomer: {
       /**
@@ -33767,6 +34172,7 @@ export interface components {
       | 'members:manage'
       | 'products:read'
       | 'products:manage'
+      | 'catalog:publish'
       | 'custom_fields:read'
       | 'custom_fields:manage'
       | 'customers:read'
@@ -39387,6 +39793,124 @@ export interface components {
       /** @description Pending subscription update that will be applied at the beginning of the next period. If `null`, there is no pending update. */
       pending_update: components['schemas']['PendingSubscriptionUpdate'] | null
     }
+    /** SubscriptionBillingInterval */
+    SubscriptionBillingInterval: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /** @description The meter of the interval. */
+      meter: components['schemas']['Meter']
+      /**
+       * Period Start
+       * Format: date-time
+       * @description The start of the interval.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      period_start: string
+      /**
+       * Period End
+       * @description The end of the interval, or `None` if it's ongoing.
+       */
+      period_end: string | null
+      /** @description How the usage is charged. */
+      usage_policy: components['schemas']['UsagePolicy']
+      /** @description The product of the interval's price. */
+      product: components['schemas']['SubscriptionBillingIntervalProduct']
+      /**
+       * Product Price
+       * @description The price of the interval.
+       */
+      product_price: components['schemas']['ProductPrice']
+    }
+    /** SubscriptionBillingIntervalGeneration */
+    SubscriptionBillingIntervalGeneration: {
+      /**
+       * Generation
+       * @description The generation number.
+       */
+      generation: number
+      /**
+       * Order Id
+       * @description The order that billed the usage, or `None` if it's not billed.
+       */
+      order_id: string | null
+      /**
+       * Units
+       * @description The usage.
+       */
+      units: number
+      /**
+       * Amount
+       * @description The usage at the interval's price before credits, in cents.
+       */
+      amount: number
+      /** @description The billing status. */
+      status: components['schemas']['BillingIntervalGenerationStatus']
+    }
+    /** SubscriptionBillingIntervalProduct */
+    SubscriptionBillingIntervalProduct: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Name
+       * @description The name of the product.
+       */
+      name: string
+    }
+    /** SubscriptionBillingIntervalUsage */
+    SubscriptionBillingIntervalUsage: {
+      /** @description The billing interval. */
+      interval: components['schemas']['SubscriptionBillingInterval']
+      /**
+       * Groups
+       * @description The usage in the interval, grouped by the first generation it belongs to.
+       */
+      groups: components['schemas']['SubscriptionBillingIntervalUsageGroup'][]
+    }
+    /** SubscriptionBillingIntervalUsageGroup */
+    SubscriptionBillingIntervalUsageGroup: {
+      /**
+       * Period Start
+       * Format: date-time
+       * @description The start of the usage.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      period_start: string
+      /**
+       * Period End
+       * Format: date-time
+       * @description The end of the usage.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      period_end: string
+      /**
+       * Units
+       * @description The usage across the generations.
+       */
+      units: number
+      /**
+       * Credited Units
+       * @description The credits the group's order applied, or the credits pending for the next order on the latest unbilled group.
+       */
+      credited_units: number
+      /**
+       * Amount
+       * @description The group's usage at the interval's price before credits, in cents.
+       */
+      amount: number
+      /**
+       * Generations
+       * @description The usage by generation and order.
+       */
+      generations: components['schemas']['SubscriptionBillingIntervalGeneration'][]
+    }
     /**
      * SubscriptionBillingPeriodUpdatedEvent
      * @description An event created by Polar when a subscription billing period is updated.
@@ -39940,7 +40464,7 @@ export interface components {
        */
       product_id: string
       /** @description The currency of the subscription. The product must have a free price in this currency or have a trial with no upfront payment setup required. If not set, the organization's default currency is used. */
-      currency?: components['schemas']['PresentmentCurrency'] | null
+      currency?: components['schemas']['PresentmentCurrency']
       /**
        * Customer Id
        * Format: uuid4
@@ -39948,6 +40472,48 @@ export interface components {
        * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
        */
       customer_id: string
+    }
+    /**
+     * SubscriptionCreateExternal
+     * @description Create a subscription using external IDs for the customer and the product.
+     */
+    SubscriptionCreateExternal: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * External Customer Id
+       * @description The ID of the customer in your system to create the subscription for. It must already exist in Polar.
+       * @example usr_1337
+       */
+      external_customer_id: string
+      /**
+       * External Product Id
+       * @description The ID of the recurring product in your system to subscribe to. Resolves to the current version of the product. Must be a free product or have a trial with no upfront payment setup required. Otherwise, the customer should go through a checkout flow.
+       * @example ext_1337
+       */
+      external_product_id: string
+      /**
+       * Organization Id
+       * @description The ID of the organization owning the customer and product. **Required unless your credential identifies one organization.** Omit this field when using an organization token.
+       */
+      organization_id?: string | null
+      /** @description The currency of the subscription. The product must have a free price in this currency or have a trial with no upfront payment setup required. If not set, the organization's default currency is used. */
+      currency?: components['schemas']['PresentmentCurrency']
     }
     /**
      * SubscriptionCreateExternalCustomer
@@ -39979,7 +40545,7 @@ export interface components {
        */
       product_id: string
       /** @description The currency of the subscription. The product must have a free price in this currency or have a trial with no upfront payment setup required. If not set, the organization's default currency is used. */
-      currency?: components['schemas']['PresentmentCurrency'] | null
+      currency?: components['schemas']['PresentmentCurrency']
       /**
        * External Customer Id
        * @description The ID of the customer in your system to create the subscription for. It must already exist in Polar.
@@ -41540,6 +42106,12 @@ export interface components {
        */
       product_id?: string
       /**
+       * External Product Id
+       * @description Update subscription to another product, referenced by its ID in your system. Resolves to the current version of the product. Can't be combined with `product_id`.
+       * @example ext_1337
+       */
+      external_product_id?: string
+      /**
        * Proration Behavior
        * @description Determine how to handle the proration billing. If not provided, will use the default organization setting.
        */
@@ -42817,6 +43389,11 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /**
+     * UsagePolicy
+     * @enum {string}
+     */
+    UsagePolicy: 'charge' | 'trial' | 'paused'
     /** UserCannotAuthenticate */
     UserCannotAuthenticate: {
       /**
@@ -49024,6 +49601,24 @@ export interface operations {
       }
     }
   }
+  'customer_portal:customer-session:logout': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+    }
+  }
   'customer_portal:customer-session:customer_portal.customer_session.start': {
     parameters: {
       query?: never
@@ -52063,6 +52658,7 @@ export interface operations {
         'application/json':
           | components['schemas']['SubscriptionCreateCustomer']
           | components['schemas']['SubscriptionCreateExternalCustomer']
+          | components['schemas']['SubscriptionCreateExternal']
       }
     }
     responses: {
@@ -52390,6 +52986,47 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['SubscriptionMeterChargePreview']
+        }
+      }
+      /** @description Subscription not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'subscriptions:list_billing_intervals': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The subscription ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SubscriptionBillingIntervalUsage'][]
         }
       }
       /** @description Subscription not found. */
@@ -53731,6 +54368,8 @@ export interface operations {
       content: {
         'application/json':
           | components['schemas']['OrderCreate']
+          | components['schemas']['OrderCreateExternalCustomer']
+          | components['schemas']['OrderCreateExternalProduct']
           | components['schemas']['OrderCreateExternal']
       }
     }
@@ -66985,6 +67624,15 @@ export interface operations {
           'application/json': components['schemas']['Catalog']
         }
       }
+      /** @description Not allowed to publish this organization's catalog. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
       /** @description No catalog with this ID. */
       404: {
         headers: {
@@ -75255,6 +75903,9 @@ export const benefitVisibilityValues: ReadonlyArray<
 export const billingAddressFieldModeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BillingAddressFieldMode']
 > = ['required', 'optional', 'disabled']
+export const billingIntervalGenerationStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BillingIntervalGenerationStatus']
+> = ['open', 'unbilled', 'billed', 'not_charged']
 export const body_oauth2_consentActionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['Body_oauth2_consent']['action']
 > = ['allow', 'deny']
@@ -77275,6 +77926,7 @@ export const organizationPermissionValues: ReadonlyArray<
   'members:manage',
   'products:read',
   'products:manage',
+  'catalog:publish',
   'custom_fields:read',
   'custom_fields:manage',
   'customers:read',
@@ -78739,6 +79391,9 @@ export const trialIntervalValues: ReadonlyArray<
 export const uniqueAggregationFuncValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['UniqueAggregation']['func']
 > = ['unique']
+export const usagePolicyValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['UsagePolicy']
+> = ['charge', 'trial', 'paused']
 export const userDeletionBlockedReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['UserDeletionBlockedReason']
 > = ['has_active_organizations']

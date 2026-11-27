@@ -11,7 +11,7 @@ import {
 import { typescript } from '@/services/billing-config/languages/typescript'
 
 export type { Language } from '@/services/billing-config/languages/language'
-export { exists } from '@/services/billing-config/languages/language'
+export { advised, exists } from '@/services/billing-config/languages/language'
 
 export const LANGUAGES: ReadonlyArray<Language> = [typescript, json]
 

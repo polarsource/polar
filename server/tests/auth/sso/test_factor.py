@@ -95,9 +95,13 @@ class TestBuildSSOFactor:
                 "issuer": "https://idp.example.com/",
                 "client_id": "client-id",
                 "auth_method": OIDCAuthMethod.client_secret,
-                "client_secret": "secret",
                 "authorization_parameters": {},
             }
+        )
+        connection.client_secret_encrypted = (
+            await OrganizationSSOConnection.encrypt_client_secret(
+                connection.id, "secret"
+            )
         )
 
         factor = await build_sso_factor(

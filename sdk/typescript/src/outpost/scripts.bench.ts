@@ -18,23 +18,13 @@ const keyOf = (buckets: number) => stateKey(identityOf(buckets));
 // An event of 7 units in the given bucket: what WRITE_BUCKET takes after the key count. Each
 // call brings a new external_id, as events do; the same one would be a duplicate and write nothing.
 let sequence = 0;
-// What track queues for Polar with an event's first write.
-const queuedEvent = JSON.stringify({
-  name: "api_call",
-  external_customer_id: "alice",
-  external_id: "event",
-  timestamp: "2026-10-12T12:00:00.000Z",
-  metadata: { tokens: 7 },
-});
-const writeArgs = (identity: string, bucketStart: number, queued = true) => [
+const writeArgs = (identity: string, bucketStart: number) => [
   stateKey(identity),
   `outpost:v1:pending:${identity}:${bucketStart}`,
-  "outpost:v1:outbox",
-  "outpost:v1:outbox:flusher:0",
+  `outpost:v1:rejected:${identity}:${bucketStart}`,
   bucketStart,
   7,
   `event-${++sequence}`,
-  queued ? queuedEvent : "",
 ];
 
 let redisServer: RedisServer;
@@ -70,7 +60,7 @@ describe("WRITE_BUCKET", () => {
       async () => {
         await redis.evalsha(
           writeBucketSha,
-          4,
+          3,
           ...writeArgs(identityOf(buckets), newestBucketStart),
         );
       },
@@ -81,9 +71,9 @@ describe("WRITE_BUCKET", () => {
     "write one event to three reducers",
     async () => {
       const pipeline = redis.pipeline();
-      for (const [index, reducer] of REDUCERS.entries()) {
+      for (const reducer of REDUCERS) {
         const identity = `external:alice:${reducer}`;
-        pipeline.evalsha(writeBucketSha, 4, ...writeArgs(identity, COLD_UNTIL, index === 0));
+        pipeline.evalsha(writeBucketSha, 3, ...writeArgs(identity, COLD_UNTIL));
       }
       const results = await pipeline.exec();
       for (const [error] of results ?? []) if (error) throw error;

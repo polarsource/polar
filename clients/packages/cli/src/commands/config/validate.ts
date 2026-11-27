@@ -38,6 +38,7 @@ import { output } from '@/utils/command'
 import { configFile as file, org } from '@/utils/flags'
 import { withProgress } from '@/utils/progress'
 import { commented, prComment } from '@/utils/pull-request-comment'
+import { validateUsage } from '@/utils/billing-config/usage'
 import * as ui from '@/utils/ui'
 
 // A plan against the draft never reports the catalog, so a name the file sets is compared here
@@ -229,5 +230,6 @@ export const validate = Command.make('validate', { file, org, prComment }).pipe(
             message: `${config.file} has errors`,
           })
         : undefined,
+    telemetry: validateUsage,
   }),
 )

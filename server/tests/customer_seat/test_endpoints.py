@@ -22,6 +22,7 @@ from tests.fixtures.random_objects import (
     create_customer_seat,
     create_member,
     create_subscription_with_seats,
+    get_seat_invitation_token,
 )
 
 # Auth fixture with the required scopes for seat endpoints
@@ -388,10 +389,10 @@ class TestGetClaimInfo:
         client: AsyncClient,
         customer_seat_pending: CustomerSeat,
     ) -> None:
-        assert customer_seat_pending.invitation_token is not None
+        assert customer_seat_pending.invitation_token_hash is not None
 
         response = await client.get(
-            f"/v1/customer-seats/claim/{customer_seat_pending.invitation_token}"
+            f"/v1/customer-seats/claim/{get_seat_invitation_token(customer_seat_pending.id)}"
         )
 
         assert response.status_code == 200
@@ -428,9 +429,11 @@ class TestGetClaimInfo:
         assert seat.subscription is not None
         await session.refresh(seat.subscription.product, ["organization"])
 
-        assert seat.invitation_token is not None
+        assert seat.invitation_token_hash is not None
 
-        response = await client.get(f"/v1/customer-seats/claim/{seat.invitation_token}")
+        response = await client.get(
+            f"/v1/customer-seats/claim/{get_seat_invitation_token(seat.id)}"
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -447,9 +450,9 @@ class TestGetClaimInfo:
         save_fixture: SaveFixture,
         customer_seat_pending: CustomerSeat,
     ) -> None:
-        old_token = customer_seat_pending.invitation_token
+        old_token = get_seat_invitation_token(customer_seat_pending.id)
         customer_seat_pending.status = SeatStatus.revoked
-        customer_seat_pending.invitation_token = None
+        customer_seat_pending.invitation_token_hash = None
         await save_fixture(customer_seat_pending)
 
         assert old_token is not None
@@ -473,7 +476,7 @@ class TestGetClaimInfo:
         save_fixture: SaveFixture,
         customer_seat_pending: CustomerSeat,
     ) -> None:
-        old_token = customer_seat_pending.invitation_token
+        old_token = get_seat_invitation_token(customer_seat_pending.id)
         customer_seat_pending.invitation_token_expires_at = datetime.now(
             UTC
         ) - timedelta(hours=1)
@@ -506,10 +509,10 @@ class TestClaimSeat:
         await session.refresh(seat.subscription, ["product"])
         await session.refresh(seat.subscription.product, ["organization"])
 
-        assert seat.invitation_token is not None
+        assert seat.invitation_token_hash is not None
         response = await client.post(
             "/v1/customer-seats/claim",
-            json={"invitation_token": seat.invitation_token},
+            json={"invitation_token": get_seat_invitation_token(seat.id)},
         )
 
         assert response.status_code == 200
@@ -534,9 +537,9 @@ class TestClaimSeat:
         save_fixture: SaveFixture,
         customer_seat_pending: CustomerSeat,
     ) -> None:
-        old_token = customer_seat_pending.invitation_token
+        old_token = get_seat_invitation_token(customer_seat_pending.id)
         customer_seat_pending.status = SeatStatus.revoked
-        customer_seat_pending.invitation_token = None
+        customer_seat_pending.invitation_token_hash = None
         await save_fixture(customer_seat_pending)
 
         assert old_token is not None
@@ -553,7 +556,7 @@ class TestClaimSeat:
         save_fixture: SaveFixture,
         customer_seat_pending: CustomerSeat,
     ) -> None:
-        old_token = customer_seat_pending.invitation_token
+        old_token = get_seat_invitation_token(customer_seat_pending.id)
         customer_seat_pending.invitation_token_expires_at = datetime.now(
             UTC
         ) - timedelta(hours=1)
@@ -778,10 +781,10 @@ class TestOrderBasedSeats:
         await session.refresh(seat.order, ["product"])
         await session.refresh(seat.order.product, ["organization"])
 
-        assert seat.invitation_token is not None
+        assert seat.invitation_token_hash is not None
         response = await client.post(
             "/v1/customer-seats/claim",
-            json={"invitation_token": seat.invitation_token},
+            json={"invitation_token": get_seat_invitation_token(seat.id)},
         )
 
         assert response.status_code == 200
@@ -811,8 +814,10 @@ class TestOrderBasedSeats:
         await session.refresh(seat.order, ["product"])
         await session.refresh(seat.order.product, ["organization"])
 
-        assert seat.invitation_token is not None
-        response = await client.get(f"/v1/customer-seats/claim/{seat.invitation_token}")
+        assert seat.invitation_token_hash is not None
+        response = await client.get(
+            f"/v1/customer-seats/claim/{get_seat_invitation_token(seat.id)}"
+        )
 
         assert response.status_code == 200
         data = response.json()

@@ -27,6 +27,7 @@ from polar.models.order import OrderStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.order.service import OrderNotEligibleForRetry, PaymentError
 from polar.order.service import order as order_service
+from polar.tax.calculation import InvalidTaxIDError
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -415,6 +416,27 @@ class TestPay:
             )
 
         submit.assert_not_awaited()
+
+    async def test_invalid_tax_id_reported_on_tax_id(
+        self, session: AsyncSession, draft_order: Order, mocker: MockerFixture
+    ) -> None:
+        mocker.patch(
+            "polar.order.service.OrderService.update",
+            side_effect=InvalidTaxIDError(),
+        )
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await customer_order_service.pay(
+                session,
+                draft_order,
+                CustomerOrderPayConfirmationToken(
+                    billing_address=AddressInput.model_validate({"country": "FR"}),
+                    payment_processor=PaymentProcessor.stripe,
+                    confirmation_token_id="ctoken_test",
+                ),
+            )
+
+        assert [error["loc"] for error in e.value.errors()] == [("body", "tax_id")]
 
     async def test_payment_required_without_credentials(
         self, session: AsyncSession, draft_order: Order, mocker: MockerFixture

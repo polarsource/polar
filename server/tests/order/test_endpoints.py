@@ -1026,6 +1026,79 @@ class TestCreateOrder:
             },
         )
 
+        assert response.status_code == 201
+        body = response.json()
+        assert body["customer_id"] == str(customer_external_id.id)
+        assert body["product_id"] == str(product_one_time.id)
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_write}))
+    async def test_customer_id_with_external_product_id(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+        off_session_organization: Organization,
+        product_one_time: Product,
+        customer: Customer,
+    ) -> None:
+        product_one_time.external_id = "topup"
+        await save_fixture(product_one_time)
+
+        response = await client.post(
+            "/v1/orders/",
+            json={
+                "organization_id": str(off_session_organization.id),
+                "customer_id": str(customer.id),
+                "external_product_id": "topup",
+            },
+        )
+
+        assert response.status_code == 201
+        body = response.json()
+        assert body["customer_id"] == str(customer.id)
+        assert body["product_id"] == str(product_one_time.id)
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_write}))
+    @pytest.mark.parametrize(
+        "references",
+        [
+            pytest.param({"product_id": True}, id="no customer"),
+            pytest.param({"customer_id": True}, id="no product"),
+            pytest.param(
+                {"customer_id": True, "external_customer_id": True, "product_id": True},
+                id="both customer references",
+            ),
+            pytest.param(
+                {"customer_id": True, "product_id": True, "external_product_id": True},
+                id="both product references",
+            ),
+        ],
+    )
+    async def test_invalid_references(
+        self,
+        references: dict[str, bool],
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        off_session_organization: Organization,
+        product_one_time: Product,
+        customer_external_id: Customer,
+    ) -> None:
+        values = {
+            "customer_id": str(customer_external_id.id),
+            "external_customer_id": customer_external_id.external_id,
+            "product_id": str(product_one_time.id),
+            "external_product_id": "topup",
+        }
+        response = await client.post(
+            "/v1/orders/",
+            json={
+                "organization_id": str(off_session_organization.id),
+                **{key: values[key] for key in references},
+            },
+        )
+
         assert response.status_code == 422
 
     @pytest.mark.api_version(V2026_10)

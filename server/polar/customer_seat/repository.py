@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, func, or_, select, update
+from sqlalchemy import Select, func, select, update
 from sqlalchemy.orm import joinedload
 
 from polar.authz.types import AccessibleOrganizationID
@@ -154,12 +154,7 @@ class CustomerSeatRepository(
             return None
         statement = (
             select(CustomerSeat)
-            .where(
-                or_(
-                    self.token_hash_clause(get_token_hash_candidates(token)),
-                    CustomerSeat.invitation_token == token,
-                )
-            )
+            .where(self.token_hash_clause(get_token_hash_candidates(token)))
             .options(*options)
         )
         return await self.get_one_or_none(statement)

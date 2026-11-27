@@ -27,7 +27,7 @@ from polar.kit.versioning import Version, VersionedJsonSchema
 from polar.models.benefit import BenefitType
 from polar.models.subscription import SubscriptionStatus
 from polar.subscription.schemas import SubscriptionMeterBase
-from polar.version import V2026_10
+from polar.version import V2026_10, V2027_01
 
 from .customer import (
     CustomerIndividual,
@@ -105,6 +105,19 @@ class CustomerStateSubscription(
     product_id: UUID4 = Field(
         description="The ID of the subscribed product.", examples=[PRODUCT_ID_EXAMPLE]
     )
+    external_product_id: Annotated[str | None, Version(starting_from=V2027_01)] = Field(
+        description=(
+            "The external ID of the subscribed product, if any. "
+            "It stays the same across product versions."
+        ),
+        examples=["pro_monthly"],
+        validation_alias=AliasChoices(
+            # Validate from stored webhook payload
+            "external_product_id",
+            # Validate from ORM model
+            AliasPath("product", "external_id"),
+        ),
+    )
     discount_id: UUID4 | None = Field(
         description="The ID of the applied discount, if any.", examples=[None]
     )
@@ -152,6 +165,19 @@ class CustomerStateBenefitGrant(TimestampedSchema, IDSchema):
         description="The ID of the benefit concerned by this grant.",
         examples=[BENEFIT_ID_EXAMPLE],
     )
+    external_benefit_id: Annotated[str | None, Version(starting_from=V2027_01)] = Field(
+        description=(
+            "The external ID of the benefit concerned by this grant, if any. "
+            "It stays the same across benefit versions."
+        ),
+        examples=["premium_support"],
+        validation_alias=AliasChoices(
+            # Validate from stored webhook payload
+            "external_benefit_id",
+            # Validate from ORM model
+            AliasPath("benefit", "external_id"),
+        ),
+    )
     benefit_type: BenefitType = Field(
         description="The type of the benefit concerned by this grant.",
         validation_alias=AliasChoices(
@@ -180,6 +206,19 @@ class CustomerStateMeter(TimestampedSchema, IDSchema):
 
     meter_id: UUID4 = Field(
         description="The ID of the meter.", examples=[METER_ID_EXAMPLE]
+    )
+    external_meter_id: Annotated[str | None, Version(starting_from=V2027_01)] = Field(
+        description=(
+            "The external ID of the meter, if any. "
+            "It stays the same across meter versions."
+        ),
+        examples=["tool_call"],
+        validation_alias=AliasChoices(
+            # Validate from stored webhook payload
+            "external_meter_id",
+            # Validate from ORM model
+            AliasPath("meter", "external_id"),
+        ),
     )
     consumed_units: float = Field(
         description="The number of consumed units.", examples=[25.0]

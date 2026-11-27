@@ -196,7 +196,6 @@ class TOTPFactor(TOTPFactorBase):
         totp_orm = TOTPEnrollment(
             id=id,
             enabled=totp.enabled,
-            secret=totp.secret,
             secret_encrypted=await TOTPEnrollment.encrypt_secret(id, totp.secret),
             algorithm=totp.algorithm,
             code_length=totp.code_length,

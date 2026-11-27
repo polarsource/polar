@@ -697,16 +697,61 @@ test('leaves empty metadata out of the generated code', async () => {
   expect(source).not.toContain('.metadata(')
 })
 
-test('renders settings as an object literal', async () => {
+test('renders settings as an object literal, a group per line', async () => {
   const source = await Effect.runPromise(
     generateConfig({
-      settings: { payments: { currency: 'eur', tax: 'location' } },
+      settings: {
+        payments: { currency: 'eur', tax: 'location' },
+        subscriptions: {
+          proration_behavior: 'invoice',
+          prevent_trial_abuse: true,
+          benefit_revocation_grace_period: 0,
+        },
+        customer_portal: { allow_pausing: true },
+        customer_notifications: {
+          send_order_confirmation: false,
+          send_card_expiring: false,
+        },
+      },
       meters: [],
     }),
   )
   expect(source).toContain(
-    "  settings: { payments: { currency: 'eur', tax: 'location' } },",
+    [
+      '  settings: {',
+      "    payments: { currency: 'eur', tax: 'location' },",
+      "    subscriptions: { prorationBehavior: 'invoice', benefitRevocationGracePeriod: 'immediately', preventTrialAbuse: true },",
+      '    customerPortal: { allowPausing: true },',
+      '    customerNotifications: { sendOrderConfirmation: false, sendCardExpiring: false },',
+      '  },',
+    ].join('\n'),
   )
+})
+
+test('renders settings without any setting as an empty object', async () => {
+  const source = await Effect.runPromise(
+    generateConfig({ settings: {}, meters: [] }),
+  )
+  expect(source).toContain('  settings: {},\n')
+})
+
+test('renders the subscription settings an organization exports', async () => {
+  const source = await Effect.runPromise(
+    generateConfig({
+      settings: {
+        payments: { currency: 'usd', tax: 'location' },
+        subscriptions: {
+          allow_multiple_subscriptions: false,
+          proration_behavior: 'prorate',
+          benefit_revocation_grace_period: 7,
+          prevent_trial_abuse: false,
+        },
+      },
+      meters: [],
+    }),
+  )
+  expect(source).toContain("prorationBehavior: 'prorate'")
+  expect(source).toContain("benefitRevocationGracePeriod: '7 days'")
 })
 
 test('renders date bounds as the UTC day they fall on', async () => {

@@ -119,7 +119,7 @@ async function recordUsage() {
 ```
 
 `track()` resolves when the event is queued, not when Polar accepts it. Events without a
-`timestamp` are dated when you call `track()`.
+`timestamp` or `external_id` receive one when you call `track()`.
 
 ### Actor context
 
@@ -194,8 +194,7 @@ from Polar: the API may have accepted it before the connection failed.
 Delivery failures reject with `MeteringDeliveryError` from `@polar-sh/sdk/metering`. Its `events`
 and `failures` describe unconfirmed events, reasons, and original causes. Lifecycle timeouts
 reject with `MeteringTimeoutError`; a flush waiting on pending events can instead report a
-`MeteringDeliveryError` with reason `flush_timeout`. Unexpected worker or callback errors also
-reject; callbacks are still called and never turn a drop into a successful flush.
+`MeteringDeliveryError` with reason `flush_timeout`. Unexpected worker errors also reject. The memory queue logs delivery hook failures and continues delivering events.
 
 The buffer retries network and server errors with exponential backoff and jitter. Rate limits
 honor `Retry-After`, up to five minutes per batch; caller deadlines can expire sooner. Other
@@ -219,7 +218,7 @@ if (meter !== null) console.log(meter.consumed_units, meter.credited_units, mete
 
 Pass `outpost()` from `@polar-sh/sdk/outpost` to `polar.metering()` to enable Redis-backed
 local reduction. This provides low-latency meter reads across clients. Outpost requires the
-optional `ioredis` and `@opentelemetry/*` peer dependencies; the rest of the SDK does not.
+optional `ioredis` and `@opentelemetry/*` peer dependencies.
 
 ```typescript
 import { outpost } from "@polar-sh/sdk/outpost";
@@ -227,40 +226,64 @@ import { outpost } from "@polar-sh/sdk/outpost";
 const metering = polar.metering({ outpost: outpost() });
 ```
 
-`outpost()` uses `REDIS_URL` and throws if it is unset. Pass options to configure it, such as
-`outpost({ redisUrl: "redis://localhost:6379" })`. Every Outpost event requires an
-`external_id`; `track()` rejects events without one. An event counts locally until Polar confirms
-storage or refuses it. A first read of a customer waits up to `snapshotTimeout` for Polar's
-snapshot. If it does not arrive in time, the read throws `NotReadyError` from
-`@polar-sh/sdk/outpost`; the next read asks again.
+`outpost()` uses `REDIS_URL` by default. Pass a URL explicitly with
+`outpost({ redis: "redis://localhost:6379" })`. The queue queues events for Polar and
+Outpost applies them locally. If Outpost cannot answer a meter read, metering reads the value
+from the Polar API. `snapshotTimeout` sets how long Outpost waits for an initial snapshot.
 
-Outpost delivers the events itself, instead of the buffer: it queues them in Redis and sends them
-to Polar in batches of up to 1,000 events, shared by every client, on `flush()` and every second on a
-long-running server. Pass `buffered` or `outpost`, not both.
+### Choose a queue
 
-### Options
+`polar.metering()` creates a `MemoryEventQueue` by default. Pass `queue` to configure it or
+supply another implementation of the `EventQueue` interface from `@polar-sh/sdk/metering`.
 
-#### Buffered
+```typescript
+import { MemoryEventQueue } from "@polar-sh/sdk/metering";
 
-| Option            | Default     | Meaning                                                     |
-| ----------------- | ----------- | ----------------------------------------------------------- |
-| `batchSize`       | `100`       | Maximum events per HTTP request.                            |
-| `batchIntervalMs` | `1000`      | Milliseconds to collect a batch after its first event.      |
-| `maxAttempts`     | `3`         | Total attempts per batch, including the first.              |
-| `onDelivered`     | `undefined` | Callback for events Polar accepted; may be async.           |
-| `onDropped`       | `undefined` | Callback for dropped events and their reason; may be async. |
+const metering = polar.metering({
+    queue: new MemoryEventQueue({ batchSize: 50 }),
+});
+```
 
-#### Outpost
+`RedisEventQueue` from `@polar-sh/sdk/metering/queue/redis` uses a Redis stream for persistent
+delivery. Either queue can be used with Outpost.
 
-| Option            | Default                          | Meaning                                                           |
-| ----------------- | -------------------------------- | ----------------------------------------------------------------- |
-| `redisUrl`        | `REDIS_URL` environment variable | Redis instance used by Outpost.                                   |
-| `telemetry`       | `true`                           | Send Outpost metrics and traces to Polar.                         |
-| `snapshotTimeout` | `5000`                           | Milliseconds a cold read waits for its initial snapshot.          |
-| `onDelivered`     | `undefined`                      | Callback for events Polar accepted; may be async.                 |
-| `onDropped`       | `undefined`                      | Callback for events Polar refused and their reason; may be async. |
+```typescript
+import { RedisEventQueue } from "@polar-sh/sdk/metering/queue/redis";
+import { outpost } from "@polar-sh/sdk/outpost";
+
+const redis = "redis://localhost:6379";
+const metering = polar.metering({
+    queue: new RedisEventQueue(redis, { stream: "my-app:metering" }),
+    outpost: outpost({ redis }),
+});
+```
+
+Metering opens a single Redis client when the queue and Outpost use the same URL. Both also
+accept an existing `ioredis` client, which your application manages and closes.
+
+#### MemoryEventQueue options
+
+| Option            | Default | Meaning                                                |
+| ----------------- | ------- | ------------------------------------------------------ |
+| `batchSize`       | `100`   | Maximum events per HTTP request.                       |
+| `batchIntervalMs` | `1000`  | Milliseconds to collect a batch after its first event. |
+| `maxAttempts`     | `3`     | Total attempts per batch, including the first.         |
+
+#### Outpost options
+
+| Option            | Default                          | Meaning                                                  |
+| ----------------- | -------------------------------- | -------------------------------------------------------- |
+| `redis`           | `REDIS_URL` environment variable | Redis instance used by Outpost.                          |
+| `telemetry`       | `true`                           | Send Outpost metrics and traces to Polar.                |
+| `snapshotTimeout` | `5000`                           | Milliseconds a cold read waits for its initial snapshot. |
 
 Telemetry can also be disabled with `POLAR_OUTPOST_TELEMETRY=0`.
+
+### Delivery callbacks
+
+Pass `onAck(events)` and `onRejected(events, reason)` to `polar.metering()` to observe delivery.
+Metering runs the corresponding Outpost hook first when Outpost is enabled. If your callback
+throws, Metering logs the error type and continues settling the events.
 
 ## Webhooks
 

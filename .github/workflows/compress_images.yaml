@@ -30,5 +30,6 @@ jobs:
         uses: calibreapp/image-actions@9d037c06280028c110ff61c433ad4dc7d33c3c43 # 1.5.0
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          jpegQuality: "60"
-          ignorePaths: "node_modules/**,server/tests/fixtures/**"
+          jpegQuality: "85"
+          minPctChange: "20"
+          ignorePaths: "node_modules/**,server/tests/fixtures/**,clients/apps/web/public/assets/landing/hero/**"

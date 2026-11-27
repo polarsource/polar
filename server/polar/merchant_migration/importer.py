@@ -65,6 +65,7 @@ from .canonical import (
     customer_country_fallbacks,
     deserialize,
     polar_discount_amounts,
+    polar_product_name,
     subscription_price_key,
 )
 from .precheck import (
@@ -901,7 +902,7 @@ class CatalogImporter:
         polar_product = await product_service.create(
             self.session,
             ProductCreateRecurring(
-                name=product.name,
+                name=polar_product_name(product.name),
                 organization_id=None,
                 recurring_interval=SubscriptionRecurringInterval(
                     product.recurring_interval

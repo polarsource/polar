@@ -33,13 +33,13 @@ def test_emits_metering_and_outpost_submodules(
     )
     for module in (
         "client",
-        "buffered",
         "errors",
         "event",
         "meter",
         "index",
         "client.test",
-        "buffered.test",
     ):
         assert (tmp_path / "src" / "metering" / f"{module}.ts").is_file()
+    for module in ("memory", "memory.test"):
+        assert (tmp_path / "src" / "metering" / "queue" / f"{module}.ts").is_file()
     assert '"src/metering/index.ts"' in (tmp_path / "tsdown.config.ts").read_text()

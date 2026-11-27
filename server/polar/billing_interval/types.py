@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
+from enum import StrEnum
 from uuid import UUID
 
+from polar.models import BillingInterval
 from polar.models.billing_interval import UsagePolicy
 
 
@@ -25,6 +27,38 @@ class MeterCharge:
     units_by_price: dict[UUID, Decimal]
     period_shares: dict[UUID, Decimal]
     credited_units: Decimal
+
+
+class BillingIntervalGenerationStatus(StrEnum):
+    open = "open"
+    unbilled = "unbilled"
+    billed = "billed"
+    not_charged = "not_charged"
+
+
+@dataclass(frozen=True)
+class IntervalGeneration:
+    generation: int
+    order_id: UUID | None
+    units: Decimal
+    amount: int
+    status: BillingIntervalGenerationStatus
+
+
+@dataclass(frozen=True)
+class IntervalUsageGroup:
+    period_start: datetime
+    period_end: datetime
+    units: Decimal
+    credited_units: Decimal
+    amount: int
+    generations: tuple[IntervalGeneration, ...]
+
+
+@dataclass(frozen=True)
+class IntervalUsage:
+    interval: BillingInterval
+    groups: tuple[IntervalUsageGroup, ...]
 
 
 @dataclass(frozen=True)

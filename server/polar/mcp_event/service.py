@@ -70,7 +70,6 @@ class MCPEventService:
             await _verify_callback(url, subscribe.secret, endpoint_id, now)
 
         update_dict = {
-            "secret": subscribe.secret,
             "secret_encrypted": await WebhookEndpoint.encrypt_secret(
                 endpoint_id, subscribe.secret
             ),

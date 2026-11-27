@@ -1,5 +1,6 @@
 import type { MeterProvider } from "@opentelemetry/sdk-metrics";
 import type { TracerProvider } from "@opentelemetry/sdk-trace";
+import type { Redis, ChainableCommander } from "ioredis";
 
 import {
   INVALID_SPAN_CONTEXT,
@@ -12,7 +13,6 @@ import {
   type Span,
   type Tracer,
 } from "@opentelemetry/api";
-import { Redis, type ChainableCommander } from "ioredis";
 import { createHash, randomUUID } from "node:crypto";
 import { once } from "node:events";
 import { setTimeout as sleep } from "node:timers/promises";
@@ -21,7 +21,6 @@ import type { EventInput } from "../metering/event";
 import type { CustomerMeter } from "../metering/meter";
 
 import { ClientBase, PolarClientError, PolarError, PolarRateLimitError } from "../base";
-import { type MeteringOutpost, OUTPOST } from "../metering/client";
 import {
   type DropReason,
   MeteringError,
@@ -29,7 +28,15 @@ import {
   retryAfterMs,
 } from "../metering/errors";
 import {
-  MissingExternalIdError,
+  DEFAULT_TIMEOUT,
+  backOff,
+  connectRedis,
+  createRedis,
+  extendLock,
+  releaseLock,
+  takeLock,
+} from "../redis";
+import {
   NotReadyError,
   PolarOutpostError,
   RefusedError,
@@ -54,13 +61,9 @@ import {
   PREPARE_SNAPSHOT_SCRIPT,
   PUSH_TELEMETRY_SCRIPT,
   WRITE_BUCKET_SCRIPT,
-  CONFIRM_SCRIPT,
   APPLY_SNAPSHOT_SCRIPT,
   COMMIT_PULL_SCRIPT,
-  BACKOFF_SCRIPT,
-  RELEASE_LOCK_SCRIPT,
-  EXTEND_LOCK_SCRIPT,
-  OUTBOX_BACKLOG_SCRIPT,
+  CONFIRM_SCRIPT,
 } from "./scripts";
 import {
   COLD_PREFIX,
@@ -80,29 +83,17 @@ import {
   SAMPLE_RATE_ATTRIBUTE,
 } from "./telemetry";
 
-// Shared by every Outpost SDK: sdk/generator/outpost/constants.toml says what each one means.
+// Shared by every Outpost SDK: sdk/generator/redis/constants.toml says what each one means.
 const KEY_VERSION = "outpost:v1";
-const TIMEOUT = 5000;
+const TIMEOUT = DEFAULT_TIMEOUT;
 const SNAPSHOT_TIMEOUT = 5000;
 const CONFIRM_TIMEOUT = 2000;
 const CONFIRM_BATCH = 1000;
-const OUTBOX_BATCH = 1000;
-const FLUSHERS = 32;
-const OUTBOX_CLAIM_IDLE = 60000;
-const FLUSHER_LOCK_TTL = 30000;
-const FLUSH_TENURE = 5000;
-const DRAIN_INTERVAL = 1000;
-const OUTBOX_RETRY_DELAY = 1000;
-const MAX_OUTBOX_RETRY_DELAY = 60000;
-// The consumer group the flushers read the outbox through.
-const OUTBOX_GROUP = "polar";
 const REPORT_INTERVAL = 30000;
 const SPAN_SAMPLE_RATE = 10;
 const TELEMETRY_CAP = 1000;
 const RELAY_LOCK_TTL = 30000;
 const POLL_INTERVAL = 25;
-const REDIS_RECONNECT_DELAY = 100;
-const MAX_REDIS_RECONNECT_DELAY = 2000;
 const PULL_INTERVAL = 30000;
 const PULL_LOCK_TTL = 10000;
 const PULL_RETRY_DELAY = 1000;
@@ -166,20 +157,13 @@ interface OutpostRedis extends Redis {
   ): Promise<number>;
   outpostConfirm(numberOfKeys: number, ...args: (string | number)[]): Promise<number>;
   outpostApplySnapshot(key: string, ...args: (string | number)[]): Promise<string[]>;
-  outpostOutboxBacklog(
-    key: string,
-    backoffKey: string,
-    group: string,
-    ...ended: string[]
-  ): Promise<[number, number, string]>;
   outpostCommitPull(key: string, lockKey: string, ...args: (string | number)[]): Promise<number>;
 }
 interface OutpostPipeline extends ChainableCommander {
   outpostWriteBucket(
     key: string,
     pendingKey: string,
-    outboxKey: string,
-    flusherKey: string,
+    rejectedKey: string,
     ...args: (string | number)[]
   ): this;
   outpostConfirm(numberOfKeys: number, ...args: (string | number)[]): this;
@@ -192,48 +176,22 @@ interface Settlement {
   ids: string[];
 }
 
-// The outbox entries a flusher delivered, and the slot it holds.
-interface Delivery {
-  entries: string[];
-  lockKey: string;
-  token: string;
-}
-
 // The arguments of one CONFIRM call settling every group, with its number of keys first.
 const confirmArguments = (
   prefix: string,
-  hotOnly: boolean,
+  mode: "" | "ack" | "reject",
   settlements: Settlement[],
-  delivery?: Delivery,
 ): [number, ...(string | number)[]] => [
-  2 + settlements.length * 2,
-  `${prefix}:outbox`,
-  delivery?.lockKey ?? `${prefix}:outbox`,
+  settlements.length * (mode === "reject" ? 3 : 2),
   ...settlements.flatMap(({ identity, bucketStart }) => [
     `${prefix}:state:${identity}`,
     `${prefix}:pending:${identity}:${bucketStart}`,
+    ...(mode === "reject" ? [`${prefix}:rejected:${identity}:${bucketStart}`] : []),
   ]),
-  hotOnly ? "1" : "",
-  delivery?.token ?? "",
-  FLUSHER_LOCK_TTL,
-  delivery?.entries.length ?? 0,
-  ...(delivery?.entries ?? []),
+  mode,
   ...settlements.flatMap(({ bucketStart, ids }) => [bucketStart, ids.length, ...ids]),
 ];
 
-const withTimeout = async <T>(promise: Promise<T>): Promise<T> => {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  try {
-    return await Promise.race([
-      promise,
-      new Promise<never>((_, reject) => {
-        timer = setTimeout(() => reject(new NotReadyError("Outpost operation timed out")), TIMEOUT);
-      }),
-    ]);
-  } finally {
-    clearTimeout(timer);
-  }
-};
 const eachAtMost = async <T>(
   items: T[],
   limit: number,
@@ -249,9 +207,6 @@ const eachAtMost = async <T>(
   const failed = workers.find((worker) => worker.status === "rejected");
   if (failed) throw failed.reason;
 };
-const reconnectDelay = (attempt: number): number =>
-  Math.min(MAX_REDIS_RECONNECT_DELAY, REDIS_RECONNECT_DELAY * 2 ** (attempt - 1)) *
-  (0.5 + Math.random() / 2);
 const waitAtMost = async (promise: Promise<unknown>, milliseconds: number): Promise<void> => {
   let timer: ReturnType<typeof setTimeout> | undefined;
   await Promise.race([
@@ -332,53 +287,6 @@ const reportLocalValue = (
 // The reset count of a state whose snapshot Polar did not confirm.
 const UNCONFIRMED = -1;
 
-// How many times a batch goes again without the events Polar named, before it is dropped whole.
-const REFUSED_RESENDS = 3;
-
-// The indexes of the events Polar's validation refuses, when each of its errors names one.
-const refusedIndexes = (error: unknown): Set<number> | undefined => {
-  if (!(error instanceof PolarClientError) || error.statusCode !== 422) return undefined;
-  let detail: unknown;
-  try {
-    // The client keeps the body of an error it has no class for as text.
-    detail = (JSON.parse(String(error.error)) as { detail?: unknown } | null)?.detail;
-  } catch {
-    return undefined;
-  }
-  if (!Array.isArray(detail)) return undefined;
-  const indexes = new Set<number>();
-  for (const error of detail as ({ loc?: unknown } | null)[]) {
-    const loc = error?.loc;
-    if (
-      !Array.isArray(loc) ||
-      loc[0] !== "body" ||
-      loc[1] !== "events" ||
-      !Number.isInteger(loc[2])
-    )
-      return undefined;
-    indexes.add(loc[2] as number);
-  }
-  return indexes;
-};
-
-// A number too large to read, such as 1e999, parses to an infinity no request could carry.
-const holdsNoInfinity = (value: unknown): boolean => {
-  if (typeof value === "number") return Number.isFinite(value);
-  if (typeof value !== "object" || value === null) return true;
-  return Object.values(value).every(holdsNoInfinity);
-};
-
-// A lock holds its owner's token: only the owner extends or releases it. Past its TTL, it may be
-// another instance's.
-const takeLock = async (redis: Redis, key: string, ttl: number): Promise<string | null> => {
-  const token = randomUUID();
-  return (await redis.set(key, token, "PX", ttl, "NX")) ? token : null;
-};
-
-const releaseLock = async (redis: Redis, key: string, token: string): Promise<void> => {
-  await redis.eval(RELEASE_LOCK_SCRIPT, 1, key, token).catch(() => {});
-};
-
 const recordError = (span: Span, error: unknown): void => {
   span.recordException(error instanceof Error ? error : String(error));
   span.setStatus({ code: SpanStatusCode.ERROR });
@@ -407,13 +315,12 @@ export interface OutpostOptions {
    * then applies with the events still pending.
    */
   confirmTimeout?: number;
-  /** Called with each batch of events Polar accepted from the outbox; may be async. */
-  onDelivered?: (events: EventInput[]) => void | Promise<void>;
-  /** Called with each batch of events Polar refused, which leave the outbox; may be async. */
-  onDropped?: (events: EventInput[], reason: DropReason) => void | Promise<void>;
 }
 export class Outpost {
   private redis?: OutpostRedis;
+  private readonly onRedisClose = () => {
+    this.event("outpost.redis.disconnect", new Error("Redis connection closed"));
+  };
   private _connectionId?: string;
   private tracerProvider?: TracerProvider;
   private tracer?: Tracer;
@@ -434,18 +341,11 @@ export class Outpost {
   private prefix = KEY_VERSION;
   private telemetryTimer?: ReturnType<typeof setInterval>;
   private pullTimer?: ReturnType<typeof setInterval>;
-  private drainTimer?: ReturnType<typeof setInterval>;
   private pulledAt = 0;
   private pullInterval = PULL_INTERVAL;
   private pulling?: Promise<void>;
   private relaying?: Promise<void>;
   private releaseFlush?: () => void;
-  private draining?: Promise<void>;
-  // When the drain in flight hands its slots over: never, unless a flush or a close waits on it.
-  private drainUntil = Infinity;
-  private drainAgain = false;
-  // This instance queued an event that no flusher was there to deliver: its next flush drains.
-  private undrained = false;
   private pullRetryAt = 0;
   // The configuration's revision in the pull hash, as of the configuration this instance runs.
   private configurationRevision: number | null = null;
@@ -456,9 +356,19 @@ export class Outpost {
   private applying: Promise<unknown> = Promise.resolve();
 
   constructor(
-    readonly redisUrl: string,
+    private readonly redisSource: string | Redis,
     private readonly options: OutpostOptions,
   ) {}
+
+  get redisUrl(): string | undefined {
+    return typeof this.redisSource === "string" ? this.redisSource : undefined;
+  }
+
+  /** @internal */
+  redisForUrl(url: string | undefined): Redis | undefined {
+    if (url !== undefined && url === this.redisUrl) return this.redis;
+    return undefined;
+  }
 
   get connectionId(): string | undefined {
     return this._connectionId;
@@ -469,7 +379,7 @@ export class Outpost {
   }
 
   async start(): Promise<this> {
-    if (this.redis) throw new PolarError("Outpost is already connected");
+    if (this.redis) throw new Error("Outpost is already connected");
     this.failure = undefined;
     this.pullRetryAt = 0;
     this.configurationRevision = null;
@@ -488,15 +398,8 @@ export class Outpost {
       this.redisKeys = meter.createGauge("outpost.redis.keys");
     }
     try {
-      this.redis = new Redis(this.redisUrl, {
-        lazyConnect: true,
-        enableOfflineQueue: false,
-        autoResendUnfulfilledCommands: false,
-        maxRetriesPerRequest: 0,
-        connectTimeout: TIMEOUT,
-        commandTimeout: TIMEOUT,
-        retryStrategy: reconnectDelay,
-      }) as OutpostRedis;
+      const source = this.redisSource;
+      this.redis = (typeof source === "string" ? createRedis(source) : source) as OutpostRedis;
       this.redis.defineCommand("outpostReadStates", { lua: READ_STATES_SCRIPT });
       this.redis.defineCommand("outpostPrepareSnapshot", {
         numberOfKeys: 2,
@@ -507,7 +410,7 @@ export class Outpost {
         lua: PUSH_TELEMETRY_SCRIPT,
       });
       this.redis.defineCommand("outpostWriteBucket", {
-        numberOfKeys: 4,
+        numberOfKeys: 3,
         lua: WRITE_BUCKET_SCRIPT,
       });
       this.redis.defineCommand("outpostConfirm", { lua: CONFIRM_SCRIPT });
@@ -515,44 +418,18 @@ export class Outpost {
         numberOfKeys: 1,
         lua: APPLY_SNAPSHOT_SCRIPT,
       });
-      this.redis.defineCommand("outpostOutboxBacklog", {
-        numberOfKeys: 2,
-        lua: OUTBOX_BACKLOG_SCRIPT,
-      });
       this.redis.defineCommand("outpostCommitPull", { numberOfKeys: 2, lua: COMMIT_PULL_SCRIPT });
       const redis = this.redis;
-      this.redis.on("error", () => {});
-      this.redis.on("close", () => {
-        if (this.redis !== redis) return;
-        this.event("outpost.redis.disconnect", new PolarError("Redis connection closed"));
-      });
-      // A connection the server closes at once, as under a burst of new ones, is tried again
-      // until the timeout.
-      await this.trace(
-        "outpost.redis.connect",
-        async () => {
-          const deadline = Date.now() + TIMEOUT;
-          for (let attempt = 1; ; attempt++) {
-            try {
-              await withTimeout(redis.connect());
-              await redis.ping();
-              return;
-            } catch (error) {
-              if (Date.now() >= deadline) throw error;
-              redis.disconnect();
-              await sleep(reconnectDelay(attempt));
-            }
-          }
-        },
-        { "outpost.redis.connection": "primary" },
-      ).catch((error: unknown) => {
-        throw redisUnavailable(error);
-      });
+      redis.on("close", this.onRedisClose);
+      if (typeof source === "string") {
+        await this.trace("outpost.redis.connect", () => connectRedis(redis), {
+          "outpost.redis.connection": "primary",
+        }).catch((error: unknown) => {
+          throw redisUnavailable(error);
+        });
+      }
       // Keys carry the organization: organizations can share a Redis.
       await this.configure();
-      await this.createOutboxGroup().catch((error: unknown) => {
-        throw redisUnavailable(error);
-      });
       this._connectionId = randomUUID();
       await this.loadPull().catch((error: unknown) => {
         throw redisUnavailable(error);
@@ -560,10 +437,6 @@ export class Outpost {
       // A long-running process pulls on time, reads or not.
       this.pullTimer = setInterval(() => void this.refresh().catch(() => {}), PULL_CHECK_INTERVAL);
       this.telemetryTimer = setInterval(() => void this.flushTelemetry(), REPORT_INTERVAL);
-      // A long-running process delivers what it queued without a flush.
-      this.drainTimer = setInterval(() => {
-        if (this.undrained && this.delivers) void this.drain().catch(() => {});
-      }, DRAIN_INTERVAL);
       this.requireRunning();
       return this;
     } catch (error) {
@@ -575,14 +448,10 @@ export class Outpost {
   async close(): Promise<void> {
     clearInterval(this.telemetryTimer);
     clearInterval(this.pullTimer);
-    clearInterval(this.drainTimer);
     await this.inFlight();
-    if (this.delivers) {
-      this.limitDrain();
-      await this.drain().catch(() => {});
-    }
     const redis = this.redis;
-    if (redis) this.event("outpost.redis.disconnect");
+    const owned = typeof this.redisSource === "string" ? redis : undefined;
+    if (owned) this.event("outpost.redis.disconnect");
     const tracerProvider = this.tracerProvider;
     const meterProvider = this.meterProvider;
     this.tracerProvider = undefined;
@@ -598,12 +467,13 @@ export class Outpost {
     await this.pushTelemetry();
     this._connectionId = undefined;
     this.redis = undefined;
+    redis?.off("close", this.onRedisClose);
     // disconnect() stops a connection that is not up without ever emitting "end".
     const closed =
-      !redis || ["end", "reconnecting", "wait"].includes(redis.status)
+      !owned || ["end", "reconnecting", "wait"].includes(owned.status)
         ? Promise.resolve()
-        : once(redis, "end");
-    redis?.disconnect();
+        : once(owned, "end");
+    owned?.disconnect();
     await Promise.allSettled([closed, this.applying, ...this.requesting.values()]);
     this.requesting.clear();
     this.reducers = [];
@@ -617,10 +487,10 @@ export class Outpost {
   /**
    * Reject an event Outpost cannot reconcile with Polar.
    *
-   * @throws MissingExternalIdError when the event has no external_id.
+   * @throws TypeError when the event has no external_id.
    */
   validate(event: EventInput): void {
-    if (!event.external_id) throw new MissingExternalIdError();
+    if (!event.external_id) throw new TypeError("Outpost needs an external_id on every event");
   }
 
   async track(event: EventInput): Promise<void> {
@@ -633,24 +503,17 @@ export class Outpost {
       const bucketStart = getBucketStart(parsed.timestamp);
       const matches = matchEvent(this.matchers, parsed);
       this.ingestBuckets?.add(matches.length);
-      // Polar dates the event as Outpost bucketed it.
-      const queued = JSON.stringify({
-        ...event,
-        timestamp: event.timestamp ?? new Date(Math.floor(parsed.timestamp / 1000)).toISOString(),
-      });
+      if (!matches.length) return;
       const pipeline = redis.pipeline() as OutpostPipeline;
-      if (!matches.length) pipeline.xadd(this.outboxKey, "*", "event", queued);
-      for (const [index, match] of matches.entries()) {
+      for (const match of matches) {
         const identity = `${parsed.customer}:${match.reducer}`;
         pipeline.outpostWriteBucket(
           `${this.prefix}:state:${identity}`,
           `${this.prefix}:pending:${identity}:${bucketStart}`,
-          this.outboxKey,
-          `${this.outboxKey}:flusher:0`,
+          `${this.prefix}:rejected:${identity}:${bucketStart}`,
           bucketStart,
           match.value ?? "",
           event.external_id!,
-          index === 0 ? queued : "",
         );
       }
       const results = await pipeline.exec().catch((error: unknown) => {
@@ -659,7 +522,6 @@ export class Outpost {
       if (results === null) throw new UnavailableRedisError();
       const failed = results.find(([error]) => error)?.[0];
       if (failed) throw redisUnavailable(failed);
-      if (!matches.length || results[0][1] === 2) this.undrained = true;
     } catch (error) {
       outcome = "error";
       throw error;
@@ -721,24 +583,25 @@ export class Outpost {
     });
   }
 
-  /**
-   * Deliver the events this instance queued, and wait for the pull in flight: a serverless function
-   * must not freeze in the middle of either. A newer flush releases this one, since it waits for the
-   * same work.
-   */
+  /** Wait for in-flight snapshot and customer fetch work. */
   async flush(): Promise<void> {
     this.releaseFlush?.();
     const released = new Promise<void>((resolve) => (this.releaseFlush = resolve));
-    // Redis keeps what a drain fails to deliver: the next flush takes it. Without an event of its
-    // own to deliver, a flush waits for the drain in flight, if any.
-    if (this.delivers && (this.undrained || this.draining)) this.limitDrain();
-    const draining = !this.delivers
-      ? undefined
-      : (this.undrained ? this.drain() : this.draining)?.catch(() => {});
-    await Promise.race([Promise.all([this.inFlight(), draining]), released]);
+    await Promise.race([this.inFlight(), released]);
   }
 
-  readonly [OUTPOST] = true;
+  async onAck(events: EventInput[]): Promise<void> {
+    const groups = this.settlements(events);
+    if (groups.length)
+      await this.requireRedis().outpostConfirm(...confirmArguments(this.prefix, "ack", groups));
+  }
+
+  async onRejected(events: EventInput[], reason: DropReason): Promise<void> {
+    if (reason !== "permanent_error") return;
+    const groups = this.settlements(events);
+    if (groups.length)
+      await this.requireRedis().outpostConfirm(...confirmArguments(this.prefix, "reject", groups));
+  }
 
   // Hands this instance's telemetry to the shared Redis, where the next pull sends it to Polar.
   async flushTelemetry(): Promise<void> {
@@ -747,7 +610,7 @@ export class Outpost {
   }
 
   private requireRedis(): OutpostRedis {
-    if (!this.redis) throw new PolarError("Call Outpost.start() before using Outpost");
+    if (!this.redis) throw new Error("Call Outpost.start() before using Outpost");
     return this.redis;
   }
 
@@ -797,15 +660,6 @@ export class Outpost {
 
   private get coldLockKey(): string {
     return `${this.prefix}:cold:lock`;
-  }
-
-  // The events Polar has yet to receive, in the order Outpost tracked them.
-  private get outboxKey(): string {
-    return `${this.prefix}:outbox`;
-  }
-
-  private get outboxBackoffKey(): string {
-    return `${this.outboxKey}:backoff`;
   }
 
   // The instances of a token share its configuration in Redis, where a new instance reads it
@@ -1024,7 +878,7 @@ export class Outpost {
       if (!token) return;
       try {
         await sleep(FETCH_BATCH_WINDOW);
-        const renew = () => redis.eval(EXTEND_LOCK_SCRIPT, 1, this.coldLockKey, token, TIMEOUT);
+        const renew = () => extendLock(redis, this.coldLockKey, token, TIMEOUT);
         for (;;) {
           const batches: string[][] = [];
           while (batches.length < FETCH_CONCURRENCY) {
@@ -1096,242 +950,10 @@ export class Outpost {
     }
   }
 
-  private get delivers(): boolean {
-    return Boolean(this.redis && !this.failure);
-  }
-
   private async inFlight(): Promise<void> {
     await Promise.allSettled([this.pulling, this.applying, ...this.requesting.values()]);
     // The pull that just ended may have started one.
     await this.relaying;
-  }
-
-  // A flusher reads the outbox through the group, which tracks each batch until Polar has it.
-  private async createOutboxGroup(): Promise<void> {
-    await this.requireRedis()
-      .xgroup("CREATE", this.outboxKey, OUTBOX_GROUP, "0", "MKSTREAM")
-      .catch((error: unknown) => {
-        if (!String(error).includes("BUSYGROUP")) throw error;
-      });
-  }
-
-  // One flusher per OUTBOX_BATCH events waiting, up to FLUSHERS across the fleet. Once its
-  // flushers let go of their slots, the instance looks again: an event queued while they held
-  // them is not left behind.
-  // One drain at a time per instance: a flush during one waits for it, and asks for one more round
-  // so that its own events do not stay queued.
-  private drain(): Promise<void> {
-    if (this.draining) {
-      this.drainAgain = true;
-      return this.draining;
-    }
-    const drain = async () => {
-      do {
-        this.drainAgain = false;
-        this.undrained = false;
-        await this.drainOutbox().catch((error: unknown) => {
-          this.undrained = true;
-          throw error;
-        });
-      } while (this.drainAgain);
-    };
-    this.draining = drain().finally(() => {
-      this.draining = undefined;
-      this.drainUntil = Infinity;
-    });
-    return this.draining;
-  }
-
-  // The fleet's other instances keep writing: a drain a flush or a close waits on would never end.
-  private limitDrain(): void {
-    this.drainUntil = Math.min(this.drainUntil, Date.now() + FLUSH_TENURE);
-  }
-
-  private async drainOutbox(): Promise<void> {
-    const redis = this.requireRedis();
-    try {
-      // The backoff a round delivered past: the next round's read ends it.
-      let ended: string[] = [];
-      for (let round = 0; ; round += 1) {
-        if (Date.now() >= this.drainUntil) {
-          this.undrained = true;
-          return;
-        }
-        const [length, delivering, retryAt] = await redis.outpostOutboxBacklog(
-          this.outboxKey,
-          this.outboxBackoffKey,
-          OUTBOX_GROUP,
-          ...ended,
-        );
-        // The first round also takes back the batches that wait on a failed or frozen flusher.
-        if (!length || (round && length === delivering)) return;
-        // Polar failed to take a batch: the fleet waits before sending the outbox again.
-        if (Number(retryAt) > Date.now()) {
-          this.undrained = true;
-          return;
-        }
-        // A partial batch goes only when no flusher delivers: the last one in flight takes it.
-        const full = Math.floor((length - delivering) / OUTBOX_BATCH);
-        const slots = Math.min(FLUSHERS, full || (round && delivering ? 0 : 1));
-        if (!slots) return;
-        const outcomes = await Promise.all(
-          Array.from({ length: slots }, (_, slot) => this.flushSlot(slot)),
-        );
-        if (outcomes.includes("failed")) {
-          this.undrained = true;
-          return;
-        }
-        if (!outcomes.includes("drained")) return;
-        // Polar takes batches again: the next failure waits the first delay.
-        ended = retryAt ? [retryAt] : [];
-      }
-    } catch (error) {
-      // Redis lost the group, with the rest of its keys: the next flush reads a new one.
-      if (String(error).includes("NOGROUP")) await this.createOutboxGroup();
-      throw error;
-    }
-  }
-
-  // A batch whose flusher froze is taken back once idle long enough; one this slot left behind,
-  // as Polar failed, goes before the new events.
-  private async flushSlot(slot: number): Promise<"busy" | "failed" | "drained"> {
-    const redis = this.requireRedis();
-    const lockKey = `${this.outboxKey}:flusher:${slot}`;
-    const consumer = `flusher-${slot}`;
-    const token = await takeLock(redis, lockKey, FLUSHER_LOCK_TTL);
-    if (!token) return "busy";
-    try {
-      if (slot === 0)
-        await redis.xautoclaim(
-          this.outboxKey,
-          OUTBOX_GROUP,
-          consumer,
-          OUTBOX_CLAIM_IDLE,
-          "0-0",
-          "COUNT",
-          OUTBOX_BATCH,
-          "JUSTID",
-        );
-      for (let from = "0"; ; ) {
-        if (from === ">") {
-          // Between two batches, the slot goes to the next instance that writes.
-          if (Date.now() >= this.drainUntil) {
-            this.undrained = true;
-            return "drained";
-          }
-          const [length, delivering] = await redis.outpostOutboxBacklog(
-            this.outboxKey,
-            this.outboxBackoffKey,
-            OUTBOX_GROUP,
-          );
-          if (length === delivering) return "drained";
-          // The flusher still in flight takes a partial batch; if it let go meanwhile, the next
-          // drain does.
-          if (delivering && length - delivering < OUTBOX_BATCH) {
-            this.undrained = true;
-            return "drained";
-          }
-        }
-        const read = (await redis.xreadgroup(
-          "GROUP",
-          OUTBOX_GROUP,
-          consumer,
-          "COUNT",
-          OUTBOX_BATCH,
-          "STREAMS",
-          this.outboxKey,
-          from,
-        )) as [string, [string, string[] | null][]][] | null;
-        const entries = read?.[0]?.[1] ?? [];
-        if (entries.length) {
-          const ids = entries.map(([id]) => id);
-          if (!(await this.deliver(entries, { entries: ids, lockKey, token }))) {
-            // Slot 0 starts every drain and sends what it holds first: the batch goes to it, and
-            // does not wait for a drain large enough to start this slot again.
-            if (slot)
-              await redis
-                .xclaim(this.outboxKey, OUTBOX_GROUP, "flusher-0", 0, ...ids, "JUSTID")
-                .catch(() => {});
-            return "failed";
-          }
-        } else if (from === "0") from = ">";
-      }
-    } finally {
-      // Past its TTL, the slot may be another flusher's.
-      await releaseLock(redis, lockKey, token);
-    }
-  }
-
-  // Sends a batch to Polar, then acknowledges it and settles its events in one script. Polar
-  // refusing the batch drops it; failing to take it leaves it for the next flush.
-  private async deliver(
-    entries: [string, string[] | null][],
-    delivery: Delivery,
-  ): Promise<boolean> {
-    // An entry that is not JSON can never be sent: it leaves the outbox with the batch.
-    let events = entries.flatMap(([, fields]) => {
-      if (!fields) return [];
-      try {
-        const event: EventInput = JSON.parse(fields[1]);
-        if (!holdsNoInfinity(event)) throw new TypeError("An infinity is not JSON");
-        return [event];
-      } catch {
-        console.warn("Outpost dropped an outbox entry it cannot read");
-        return [];
-      }
-    });
-    const refused: EventInput[] = [];
-    for (let resent = 0; events.length; resent += 1)
-      try {
-        await this.request("POST", "/v1/events/ingest", { body: { events }, timeout: TIMEOUT });
-        break;
-      } catch (error) {
-        // Polar refuses a whole request for the events it names: the others go again without
-        // them, a few times at most.
-        const named = refusedIndexes(error);
-        if (named?.size && named.size < events.length && resent < REFUSED_RESENDS) {
-          refused.push(...events.filter((_, index) => named.has(index)));
-          events = events.filter((_, index) => !named.has(index));
-          continue;
-        }
-        if (error instanceof PolarClientError && !(error instanceof PolarRateLimitError)) {
-          refused.push(...events);
-          events = [];
-          break;
-        }
-        // As long as Polar asks, or longer after each failure in a row.
-        const wait = retryAfterMs(error);
-        await this.backOff(this.outboxBackoffKey, {
-          first: wait ?? OUTBOX_RETRY_DELAY,
-          max: wait ?? MAX_OUTBOX_RETRY_DELAY,
-        });
-        return false;
-      }
-    const redis = this.requireRedis();
-    // Polar will never count a refused event: it settles everywhere, hot bucket or cold.
-    if (refused.length && events.length)
-      await redis.outpostConfirm(
-        ...confirmArguments(this.prefix, false, this.settlements(refused)),
-      );
-    await redis.outpostConfirm(
-      ...confirmArguments(
-        this.prefix,
-        events.length > 0,
-        this.settlements(events.length ? events : refused),
-        delivery,
-      ),
-    );
-    const report = async (name: string, callback: () => unknown): Promise<void> => {
-      try {
-        await callback();
-      } catch (error) {
-        console.warn(`Outpost ${name} failed: ${String(error)}`);
-      }
-    };
-    if (refused.length)
-      await report("onDropped", () => this.options.onDropped?.(refused, "permanent_error"));
-    if (events.length) await report("onDelivered", () => this.options.onDelivered?.(events));
-    return true;
   }
 
   // The events' ids, by the (customer, reducer, bucket) whose pending usage they settle. An event
@@ -1423,11 +1045,7 @@ export class Outpost {
       forget,
     }: { first?: number; max?: number; forget?: number } = {},
   ): Promise<number> {
-    const now = Date.now();
-    const retryAt = await this.redis
-      ?.eval(BACKOFF_SCRIPT, 1, key, now, first, max, ...(forget === undefined ? [] : [forget]))
-      .catch(() => undefined);
-    return Number(retryAt ?? now + first);
+    return backOff(this.redis, key, { first, max, forget });
   }
 
   // One instance of the fleet pulls at a time: the others learn the result through Redis.
@@ -1449,7 +1067,7 @@ export class Outpost {
       return;
     }
     // The page's snapshots and their confirms would outlast the lock otherwise.
-    const extend = () => redis.eval(EXTEND_LOCK_SCRIPT, 1, this.pullLockKey, lock, PULL_LOCK_TTL);
+    const extend = () => extendLock(redis, this.pullLockKey, lock, PULL_LOCK_TTL);
     const renew = throttled(extend, PULL_LOCK_TTL);
     let pages = 0;
     let applied = 0;
@@ -1680,7 +1298,7 @@ export class Outpost {
           transaction.outpostConfirm(
             ...confirmArguments(
               this.prefix,
-              false,
+              "",
               confirmed.map(([bucketStart, ids]) => ({ identity, bucketStart, ids })),
             ),
           );
@@ -1819,19 +1437,19 @@ export class Outpost {
 }
 
 export type OutpostFactoryOptions = Omit<OutpostOptions, "client" | "confirmTimeout"> & {
-  /** Redis connection URL. Defaults to the REDIS_URL environment variable. */
-  redisUrl?: string;
+  /** Redis URL or a caller-owned Redis client. Defaults to REDIS_URL. */
+  redis?: string | Redis;
 };
 
 /**
- * Configure Outpost for polar.metering({ outpost: outpost({ redisUrl }) }).
+ * Configure Outpost for polar.metering({ outpost: outpost({ redis }) }).
  *
- * @throws MeteringError if neither redisUrl nor REDIS_URL is set.
+ * @throws MeteringError if neither redis nor REDIS_URL is set.
  */
 export const outpost = ({
-  redisUrl = process.env.REDIS_URL,
+  redis = process.env.REDIS_URL,
   ...options
-}: OutpostFactoryOptions = {}): MeteringOutpost => {
-  if (!redisUrl) throw new MeteringError("Outpost requires redisUrl or REDIS_URL");
-  return (client) => new Outpost(redisUrl, { ...options, client });
+}: OutpostFactoryOptions = {}) => {
+  if (!redis) throw new MeteringError("Outpost requires redis or REDIS_URL");
+  return (client: ClientBase) => new Outpost(redis, { ...options, client });
 };

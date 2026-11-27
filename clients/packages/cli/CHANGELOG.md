@@ -1,5 +1,30 @@
 # @polar-sh/cli
 
+## 3.4.2
+
+### Patch Changes
+
+- 66d44c7: Internal cleanup of how commands are registered.
+- 6c3731c: Some commands now add a short summary of the run to the anonymous usage event, such as how it ended and the codes of any issues found. Organization names are no longer included in reported error messages.
+- ff42747: Fix a misleading hint shown when a config file can't be written.
+- 86532ac: A setting left out of `settings` is now set to its default, the value a new organization gets, instead of keeping its current value. `polar config init` and `polar config reset` only write settings that differ from their default, and write an empty `settings` when none do, so apply still resets every setting to its default.
+- cd680ef: Add `settings.subscriptions` to the config: `allowMultipleSubscriptions`, `prorationBehavior`, `benefitRevocationGracePeriod` and `preventTrialAbuse`. `benefitRevocationGracePeriod` takes the dashboard's options, like `'immediately'` or `'7 days'`. `polar config init` and `polar config reset` could not write a TypeScript config for an organization that has these settings.
+- Updated dependencies [86532ac]
+- Updated dependencies [c295c57]
+- Updated dependencies [cd680ef]
+  - @polar-sh/config@0.0.2
+
+## 3.4.1
+
+### Patch Changes
+
+- 6e47c4a: `polar agent setup` now checks the Polar skills in `.agents/skills` and `~/.agents/skills` before asking what to set up, and preselects any that are out of date, so running it again updates them.
+- 7a074d2: `polar config` no longer handles a `webhooks` section, and no longer asks for the `webhooks` scopes when a config declares one. Webhook endpoints are managed from the dashboard or the API.
+- 24419ff: `polar config init` installs `@polar-sh/config` instead of `@polar-sh/polar`, and generated TypeScript configs import `defineConfig` and its helpers from `@polar-sh/config`.
+- 384dfae: The install script now installs `polar` to `~/.polar/bin`. If `polar update` asks you to, run the install script again to move to the new location.
+- Updated dependencies [24419ff]
+  - @polar-sh/config@0.0.1
+
 ## 3.4.0
 
 ### Minor Changes

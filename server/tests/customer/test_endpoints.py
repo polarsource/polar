@@ -1,16 +1,21 @@
 import uuid
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 
 import pytest
 from httpx2 import AsyncClient
 
+from polar.enums import SubscriptionRecurringInterval
 from polar.kit.utils import utc_now
+from polar.kit.versioning import VERSION_HEADER, APIVersion
 from polar.member.repository import MemberRepository
 from polar.models import (
     Benefit,
     Customer,
+    CustomerMeter,
     Member,
     MemberRole,
+    Meter,
     Organization,
     Product,
     User,
@@ -21,15 +26,19 @@ from polar.models.subscription import SubscriptionStatus
 from polar.models.user_organization import OrganizationRole
 from polar.postgres import AsyncSession
 from polar.tax.tax_id import TaxIDFormat
+from polar.version import V2026_10, V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
+    create_benefit,
     create_benefit_grant,
     create_customer,
+    create_meter,
     create_order,
     create_payment_method,
     create_payment_transaction,
+    create_product,
     create_subscription,
 )
 
@@ -1033,6 +1042,151 @@ class TestGetState:
             json["granted_benefits"][0]["benefit_metadata"]
             == benefit_organization.user_metadata
         )
+
+    @pytest.mark.api_version(V2026_10, V2027_01)
+    @pytest.mark.auth
+    async def test_external_ids(
+        self,
+        api_version: APIVersion,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro_monthly",
+        )
+        benefit = await create_benefit(
+            save_fixture, organization=organization, external_id="premium_support"
+        )
+        meter = await create_meter(
+            save_fixture, organization=organization, external_id="tool_call"
+        )
+        await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        await create_benefit_grant(save_fixture, customer, benefit, granted=True)
+        await save_fixture(
+            CustomerMeter(
+                customer=customer,
+                meter=meter,
+                consumed_units=Decimal(0),
+                credited_units=0,
+                balance=Decimal(0),
+            )
+        )
+        session.expunge_all()
+
+        response = await client.get(f"/v1/customers/{customer.id}/state")
+
+        assert response.status_code == 200
+        json = response.json()
+        [subscription] = json["active_subscriptions"]
+        [grant] = json["granted_benefits"]
+        [customer_meter] = json["active_meters"]
+        if api_version == V2027_01:
+            assert subscription["external_product_id"] == "pro_monthly"
+            assert grant["external_benefit_id"] == "premium_support"
+            assert customer_meter["external_meter_id"] == "tool_call"
+        else:
+            assert "external_product_id" not in subscription
+            assert "external_benefit_id" not in grant
+            assert "external_meter_id" not in customer_meter
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_external_ids_not_set(
+        self,
+        api_version: APIVersion,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        customer: Customer,
+        product: Product,
+        benefit_organization: Benefit,
+        meter: Meter,
+    ) -> None:
+        await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        await create_benefit_grant(
+            save_fixture, customer, benefit_organization, granted=True
+        )
+        await save_fixture(
+            CustomerMeter(
+                customer=customer,
+                meter=meter,
+                consumed_units=Decimal(0),
+                credited_units=0,
+                balance=Decimal(0),
+            )
+        )
+        session.expunge_all()
+
+        response = await client.get(f"/v1/customers/{customer.id}/state")
+
+        assert response.status_code == 200
+        json = response.json()
+        [subscription] = json["active_subscriptions"]
+        [grant] = json["granted_benefits"]
+        [customer_meter] = json["active_meters"]
+        assert subscription["external_product_id"] is None
+        assert grant["external_benefit_id"] is None
+        assert customer_meter["external_meter_id"] is None
+
+    @pytest.mark.parametrize(
+        ("cached_version", "read_version"),
+        [(V2026_10, V2027_01), (V2027_01, V2026_10)],
+        ids=["2026-10 then 2027-01", "2027-01 then 2026-10"],
+    )
+    @pytest.mark.auth
+    async def test_cache_shared_across_versions(
+        self,
+        cached_version: APIVersion,
+        read_version: APIVersion,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro_monthly",
+        )
+        await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        session.expunge_all()
+
+        response = await client.get(
+            f"/v1/customers/{customer.id}/state",
+            headers={VERSION_HEADER: str(cached_version)},
+        )
+        assert response.status_code == 200
+
+        response = await client.get(
+            f"/v1/customers/{customer.id}/state",
+            headers={VERSION_HEADER: str(read_version)},
+        )
+
+        assert response.status_code == 200
+        [subscription] = response.json()["active_subscriptions"]
+        if read_version == V2027_01:
+            assert subscription["external_product_id"] == "pro_monthly"
+            assert "price_id" not in subscription
+        else:
+            assert "external_product_id" not in subscription
+            assert "price_id" in subscription
 
 
 @pytest.mark.anyio

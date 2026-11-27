@@ -24,6 +24,7 @@ import {
   type Language,
   languageFor,
   LANGUAGES,
+  advised,
   projectRootFor,
   projectsAt,
   writableLanguageOf,
@@ -73,6 +74,24 @@ const unsupportedResources = (
     Effect.option,
   )
 
+const withoutDefaultSettings = (exported: ConfigExport): ConfigExport => {
+  const { settings, ...rest } = exported.config
+  const defaults = exported.default_settings
+  if (settings === undefined || defaults === undefined) return exported
+
+  const changed: Record<string, Record<string, unknown>> = {}
+  for (const [group, fields] of Object.entries(settings)) {
+    const fieldsChanged = Object.entries(
+      fields as Record<string, unknown>,
+    ).filter(([name, value]) => value !== defaults[group]?.[name])
+    if (fieldsChanged.length > 0) {
+      changed[group] = Object.fromEntries(fieldsChanged)
+    }
+  }
+
+  return { ...exported, config: { settings: changed, ...rest } }
+}
+
 export const exportConfig = (
   clients: Clients,
   organization: ActiveOrganization,
@@ -96,7 +115,9 @@ export const exportConfig = (
     if (response.status !== 200) {
       return yield* unexpected(response, organization, EXPORT_SCOPES)
     }
-    return yield* HttpClientResponse.schemaBodyJson(ConfigExport)(response)
+    return withoutDefaultSettings(
+      yield* HttpClientResponse.schemaBodyJson(ConfigExport)(response),
+    )
   }).pipe(
     Effect.scoped,
     Effect.catchTags({
@@ -294,7 +315,16 @@ export const init =
       if (keyed.length > 0) {
         exported = yield* exportConfig(clients, organization)
       }
-      yield* writeConfig(fs, path, yield* language.render(exported.config))
+      const content = yield* language
+        .render(exported.config)
+        .pipe(
+          Effect.mapError(
+            advised(
+              'Run polar update and try again, or pass --format json to create a JSON config instead.',
+            ),
+          ),
+        )
+      yield* writeConfig(fs, path, content)
       return {
         file: display(path),
         format: language.format,

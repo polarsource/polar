@@ -1201,6 +1201,84 @@ class TestUpdateCheckout:
 
         assert response.status_code == 200
 
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
+    async def test_external_product_id(
+        self,
+        api_prefix: str,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        basic = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="basic",
+        )
+        pro = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+        )
+        checkout = await create_checkout(
+            save_fixture, products=[basic, pro], product=basic
+        )
+
+        response = await client.patch(
+            f"{api_prefix}/{checkout.id}", json={"external_product_id": "pro"}
+        )
+
+        assert response.status_code == 200
+        assert response.json()["product_id"] == str(pro.id)
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
+    async def test_external_product_id_not_in_checkout(
+        self,
+        api_prefix: str,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        checkout_open: Checkout,
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+        )
+
+        response = await client.patch(
+            f"{api_prefix}/{checkout_open.id}", json={"external_product_id": "pro"}
+        )
+
+        assert response.status_code == 422
+        assert response.json()["detail"][0]["loc"] == ["body", "external_product_id"]
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
+    async def test_product_id_and_external_product_id(
+        self,
+        api_prefix: str,
+        client: AsyncClient,
+        checkout_open: Checkout,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.patch(
+            f"{api_prefix}/{checkout_open.id}",
+            json={
+                "product_id": str(checkout_open.product_id),
+                "external_product_id": "pro",
+            },
+        )
+
+        assert response.status_code == 422
+        assert "can't be set together" in response.json()["detail"][0]["msg"]
+
 
 @pytest.mark.anyio
 class TestClientGet:

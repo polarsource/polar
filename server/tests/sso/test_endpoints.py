@@ -38,9 +38,12 @@ async def create_sso_connection(
         "auth_method": auth_method,
         "authorization_parameters": {},
     }
-    if client_secret is not None:
-        configuration["client_secret"] = client_secret
+    id = OrganizationSSOConnection.generate_id()
     connection = OrganizationSSOConnection(
+        id=id,
+        client_secret_encrypted=await OrganizationSSOConnection.encrypt_client_secret(
+            id, client_secret
+        ),
         organization=organization,
         name=name,
         type=OrganizationSSOConnectionType.oidc,

@@ -285,6 +285,43 @@ class TestList:
 
         assert events[0].id == event1.id
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_metadata_filter_empty_value(
+        self,
+        buffered_save_fixture: SaveFixture,
+        flush_tinybird_events: Callable[[], Awaitable[None]],
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await create_event(
+            buffered_save_fixture, organization=organization, metadata={"foo": "bar"}
+        )
+        await create_event(
+            buffered_save_fixture, organization=organization, metadata={"plan": "free"}
+        )
+        await create_event(
+            buffered_save_fixture, organization=organization, metadata={"plan": 1}
+        )
+        empty_plan_event = await create_event(
+            buffered_save_fixture, organization=organization, metadata={"plan": ""}
+        )
+        await flush_tinybird_events()
+
+        events, count = await event_service.list(
+            session,
+            auth_subject,
+            metadata={"plan": [""]},
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert count == 1
+        assert [event.id for event in events] == [empty_plan_event.id]
+
 
 @pytest.mark.anyio
 class TestGet:

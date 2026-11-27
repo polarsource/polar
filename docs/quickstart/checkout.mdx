@@ -86,7 +86,7 @@ curl -X POST https://sandbox-api.polar.sh/v1/checkouts/ \
 Passing `external_customer_id` ties the purchase to your user and locks the email field to theirs. After paying, the customer returns to your `success_url`, with `{CHECKOUT_ID}` replaced by the session ID.
 
 <Tip>
-  Don't need per-user sessions? Create a [Checkout Link](/features/checkout/links) under **Products → Checkout Links**, or with `polar checkout_links create`, and link to it from your pricing page. To keep customers on your site, use [embedded checkout](/features/checkout/embed).
+  Don't need per-user sessions? Create a [Checkout Link](/features/checkout/links) under **Catalog → Checkout Links**, or with `polar checkout_links create`, and link to it from your pricing page. To keep customers on your site, use [embedded checkout](/features/checkout/embed).
 </Tip>
 
 ## Verify it works

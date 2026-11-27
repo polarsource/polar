@@ -236,6 +236,32 @@ describe('reset', () => {
     expect(api.requests).toEqual([])
   })
 
+  test('suggests updating when the catalog cannot be written as TypeScript', async () => {
+    await write('export default {}', 'polar.config.ts')
+    const api = fakeHttp({
+      [catalogsUrl]: () => catalogs('draft', 'live'),
+      [draftUrl]: () =>
+        Response.json({
+          enabled: true,
+          config: { meters: [], settings: { unknown: {} } },
+          skipped: [],
+        }),
+    })
+
+    const error = await run(api, () => Effect.void).then(
+      () => undefined,
+      (failure: { message: string; hint?: string }) => failure,
+    )
+
+    expect(error?.message).toBe(
+      "This version of the CLI can't write your catalog as TypeScript",
+    )
+    expect(error?.hint).toBe(
+      'Run polar update and try again. Not supported yet: settings.unknown',
+    )
+    expect(await read('polar.config.ts')).toBe('export default {}')
+  })
+
   test('fails when there is no config file to reset', async () => {
     const api = fakeHttp({})
 

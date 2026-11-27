@@ -13,6 +13,7 @@ from polar.enums import TokenType
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.kit.crypto import generate_token_hash_pair
 from polar.kit.services import ResourceServiceReader
+from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
@@ -239,6 +240,12 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
     async def delete_expired(self, session: AsyncSession) -> None:
         repository = CustomerSessionRepository.from_session(session)
         await repository.delete_expired()
+
+    async def expire(
+        self, session: AsyncSession, portal_session: CustomerSession | MemberSession
+    ) -> None:
+        portal_session.expires_at = utc_now()
+        session.add(portal_session)
 
     async def revoke_leaked(
         self,

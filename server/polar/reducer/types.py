@@ -24,6 +24,15 @@ class UsageSummary:
 
 
 @dataclass(frozen=True)
+class BucketTotals:
+    summary: UsageSummary
+    start: datetime
+    end: datetime
+    has_open: bool
+    has_unbilled: bool
+
+
+@dataclass(frozen=True)
 class WindowUsage:
     window: UsageWindow
     summary: UsageSummary

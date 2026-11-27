@@ -38,6 +38,7 @@ from polar.models import (
     ProductMedia,
 )
 from polar.models.catalog import CatalogStatus
+from polar.models.organization import resolve_default_customer_email_settings
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.oauth2.exceptions import InsufficientScopeError
 from polar.organization.repository import OrganizationRepository
@@ -155,11 +156,48 @@ SUBSCRIPTION_SETTINGS = (
     "benefit_revocation_grace_period",
     "prevent_trial_abuse",
 )
-CATALOG_SETTINGS = (*PAYMENT_SETTINGS, *SUBSCRIPTION_SETTINGS)
+PORTAL_SETTINGS = {
+    "customer_portal_usage_show": ("usage", "show"),
+    "customer_portal_subscription_update_plan": ("subscription", "update_plan"),
+    "customer_portal_subscription_update_seats": ("subscription", "update_seats"),
+    "customer_portal_subscription_update_units": ("subscription", "update_units"),
+    "customer_portal_subscription_pause": ("subscription", "pause"),
+    "customer_portal_customer_allow_email_change": ("customer", "allow_email_change"),
+}
+EMAIL_SETTINGS = {
+    "customer_email_order_confirmation": "order_confirmation",
+    "customer_email_subscription_confirmation": "subscription_confirmation",
+    "customer_email_subscription_trial_conversion_reminder": "subscription_trial_conversion_reminder",
+    "customer_email_subscription_cycled_after_trial": "subscription_cycled_after_trial",
+    "customer_email_subscription_renewal_reminder": "subscription_renewal_reminder",
+    "customer_email_subscription_cycled": "subscription_cycled",
+    "customer_email_payment_method_expiration_reminder": "payment_method_expiration_reminder",
+    "customer_email_subscription_past_due": "subscription_past_due",
+    "customer_email_subscription_updated": "subscription_updated",
+    "customer_email_subscription_paused": "subscription_paused",
+    "customer_email_subscription_resumed": "subscription_resumed",
+    "customer_email_subscription_cancellation": "subscription_cancellation",
+    "customer_email_subscription_uncanceled": "subscription_uncanceled",
+    "customer_email_subscription_revoked": "subscription_revoked",
+}
+CATALOG_SETTINGS = (
+    *PAYMENT_SETTINGS,
+    *SUBSCRIPTION_SETTINGS,
+    *PORTAL_SETTINGS,
+    *EMAIL_SETTINGS,
+)
 
 
 def _settings(organization: Organization) -> dict[str, Any]:
-    return {name: getattr(organization, name) for name in CATALOG_SETTINGS}
+    emails: Mapping[str, Any] = resolve_default_customer_email_settings(
+        organization.customer_email_settings
+    )
+    return {
+        name: emails[EMAIL_SETTINGS[name]]
+        if name in EMAIL_SETTINGS
+        else getattr(organization, name)
+        for name in CATALOG_SETTINGS
+    }
 
 
 def _ids(rows: Mapping[str, Benefit | Meter | CustomField]) -> dict[str, uuid.UUID]:
@@ -593,20 +631,27 @@ class CatalogService:
     ) -> None:
         """Set these settings, by `Organization` attribute name, on the
         organization."""
-        update_dict = {
-            name: value
-            for name, value in settings.items()
-            if name not in SUBSCRIPTION_SETTINGS
-        }
-        if len(update_dict) < len(settings):
-            update_dict["subscription_settings"] = {
-                **organization.subscription_settings,
-                **{
-                    name: value
-                    for name, value in settings.items()
-                    if name in SUBSCRIPTION_SETTINGS
-                },
-            }
+        update_dict: dict[str, Any] = {}
+        subscription: dict[str, Any] = dict(organization.subscription_settings)
+        portal: dict[str, Any] = dict(organization.customer_portal_settings)
+        emails: dict[str, Any] = dict(
+            resolve_default_customer_email_settings(
+                organization.customer_email_settings
+            )
+        )
+        for name, value in settings.items():
+            if name in SUBSCRIPTION_SETTINGS:
+                subscription[name] = value
+                update_dict["subscription_settings"] = subscription
+            elif name in PORTAL_SETTINGS:
+                group, key = PORTAL_SETTINGS[name]
+                portal[group] = {**portal.get(group, {}), key: value}
+                update_dict["customer_portal_settings"] = portal
+            elif name in EMAIL_SETTINGS:
+                emails[EMAIL_SETTINGS[name]] = value
+                update_dict["customer_email_settings"] = emails
+            else:
+                update_dict[name] = value
         await OrganizationRepository.from_session(session).update(
             organization, update_dict=update_dict
         )
@@ -970,15 +1015,21 @@ class CatalogService:
         the new product rows. Its new meters start matching events, and the
         organization takes the settings it changes.
 
+        Publishing needs the `catalog:publish` scope, so a token that can edit
+        products can't change live pricing unless it was granted that too, and
+        the `catalog:publish` permission (owners and admins).
         A draft that changes benefits, meters or custom fields also needs
         `benefits:write`, `meters:write` or `custom_fields:write`, and one that
         changes settings needs `organizations:write` and permission to manage
-        the organization, as applying them does.
-
-        Publishing always needs `catalog:publish`, so a token that can edit
-        products can't change live pricing unless it was granted that too."""
+        the organization, as applying them does."""
         if Scope.catalog_publish not in auth_subject.scopes:
             raise InsufficientScopeError({str(Scope.catalog_publish)})
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            organization.id,
+            OrganizationPermission.catalog_publish,
+        )
         repository = CatalogRepository.from_session(session)
         await repository.lock(organization.id)
         await self._assert_still_draft(session, draft)
@@ -999,10 +1050,11 @@ class CatalogService:
         ):
             if _ids(rows) != _ids(live_rows) and scope not in auth_subject.scopes:
                 raise InsufficientScopeError({str(scope)})
+        current = _settings(organization)
         settings = {
             name: value
             for name, value in (draft.settings or {}).items()
-            if getattr(organization, name) != value
+            if current[name] != value
         }
         if settings:
             if Scope.organizations_write not in auth_subject.scopes:

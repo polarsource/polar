@@ -34,6 +34,16 @@ import { product, ProductConfig, productPrices } from './product'
 import type { ProductDefinition, ProductHelpers } from './product'
 import { visibilityKey } from './visibility'
 
+const ProrationBehavior = Schema.Literals([
+  'invoice',
+  'prorate',
+  'next_period',
+  'reset',
+  'auto',
+])
+
+const Days = Schema.Int.check(Schema.isGreaterThanOrEqualTo(0))
+
 export const SettingsConfig = Schema.Struct({
   payments: Schema.optionalKey(
     Schema.Struct({
@@ -41,9 +51,102 @@ export const SettingsConfig = Schema.Struct({
       tax: Schema.optionalKey(TaxBehavior),
     }),
   ),
+  subscriptions: Schema.optionalKey(
+    Schema.Struct({
+      allow_multiple_subscriptions: Schema.optionalKey(Schema.Boolean),
+      proration_behavior: Schema.optionalKey(ProrationBehavior),
+      benefit_revocation_grace_period: Schema.optionalKey(Days),
+      prevent_trial_abuse: Schema.optionalKey(Schema.Boolean),
+    }),
+  ),
+  customer_portal: Schema.optionalKey(
+    Schema.Struct({
+      allow_plan_changes: Schema.optionalKey(Schema.Boolean),
+      allow_unit_changes: Schema.optionalKey(Schema.Boolean),
+      allow_seat_management: Schema.optionalKey(Schema.Boolean),
+      allow_pausing: Schema.optionalKey(Schema.Boolean),
+      allow_email_changes: Schema.optionalKey(Schema.Boolean),
+      show_metered_usage: Schema.optionalKey(Schema.Boolean),
+    }),
+  ),
+  customer_notifications: Schema.optionalKey(
+    Schema.Struct({
+      send_order_confirmation: Schema.optionalKey(Schema.Boolean),
+      send_subscription_confirmation: Schema.optionalKey(Schema.Boolean),
+      send_trial_conversion_reminder: Schema.optionalKey(Schema.Boolean),
+      send_trial_converted: Schema.optionalKey(Schema.Boolean),
+      send_renewal_reminder: Schema.optionalKey(Schema.Boolean),
+      send_subscription_cycled: Schema.optionalKey(Schema.Boolean),
+      send_card_expiring: Schema.optionalKey(Schema.Boolean),
+      send_subscription_past_due: Schema.optionalKey(Schema.Boolean),
+      send_subscription_updated: Schema.optionalKey(Schema.Boolean),
+      send_subscription_paused: Schema.optionalKey(Schema.Boolean),
+      send_subscription_resumed: Schema.optionalKey(Schema.Boolean),
+      send_subscription_canceled: Schema.optionalKey(Schema.Boolean),
+      send_subscription_uncanceled: Schema.optionalKey(Schema.Boolean),
+      send_subscription_revoked: Schema.optionalKey(Schema.Boolean),
+    }),
+  ),
 })
 
 export type SettingsConfig = typeof SettingsConfig.Type
+
+type CamelCase<S extends string> = S extends `${infer Head}_${infer Tail}`
+  ? `${Head}${Capitalize<CamelCase<Tail>>}`
+  : S
+
+type CamelKeys<T> = {
+  readonly [K in keyof T as CamelCase<K & string>]: NonNullable<
+    T[K]
+  > extends object
+    ? CamelKeys<NonNullable<T[K]>>
+    : T[K]
+}
+
+export type GracePeriod =
+  | 'immediately'
+  | '2 days'
+  | '7 days'
+  | '14 days'
+  | '21 days'
+
+type SubscriptionsInput = Omit<
+  NonNullable<CamelKeys<SettingsConfig>['subscriptions']>,
+  'benefitRevocationGracePeriod'
+> & {
+  /** How long to wait before revoking benefits during payment retries, like `'7 days'` or `'immediately'`. */
+  readonly benefitRevocationGracePeriod?: GracePeriod
+}
+
+export type SettingsInput = Omit<CamelKeys<SettingsConfig>, 'subscriptions'> & {
+  readonly subscriptions?: SubscriptionsInput
+}
+
+const snakeKeys = (value: object): object =>
+  Object.fromEntries(
+    Object.entries(value).map(([name, item]) => [
+      name.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`),
+      typeof item === 'object' && item !== null ? snakeKeys(item) : item,
+    ]),
+  )
+
+const days = (period: GracePeriod): number =>
+  period === 'immediately' ? 0 : Number(period.split(' ')[0])
+
+const settingsJSON = (settings: SettingsInput): object => {
+  const period = settings.subscriptions?.benefitRevocationGracePeriod
+  return snakeKeys(
+    period === undefined
+      ? settings
+      : {
+          ...settings,
+          subscriptions: {
+            ...settings.subscriptions,
+            benefitRevocationGracePeriod: days(period),
+          },
+        },
+  )
+}
 
 export const PolarConfig = Schema.Struct({
   settings: Schema.optionalKey(SettingsConfig),
@@ -409,8 +512,8 @@ export const defineConfig = <
   Events extends EventDefinitions | undefined = undefined,
 >(
   input: {
-    /** Organization defaults, like the payment currency and tax behavior. */
-    readonly settings?: SettingsConfig
+    /** Organization settings: payment defaults, how subscriptions behave, what customers can do in the customer portal and which emails Polar sends them. A setting you leave out is set to its default, the value a new organization gets. Leave out `settings` to keep the current ones. */
+    readonly settings?: SettingsInput
     /** The events your app sends, keyed by name. Meters count them. */
     readonly events?: (helpers: EventHelpers) => Events
     /** What usage to measure, keyed by ID. */
@@ -495,7 +598,9 @@ export const defineConfig = <
     errors: 'all',
     onExcessProperty: 'error',
   })({
-    ...(input.settings !== undefined && { settings: input.settings }),
+    ...(input.settings !== undefined && {
+      settings: settingsJSON(input.settings),
+    }),
     meters: entries.map(
       ([
         external_id,

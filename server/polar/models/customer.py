@@ -94,8 +94,8 @@ class CustomerOAuthPlatform(StrEnum):
 
 @dataclasses.dataclass
 class CustomerOAuthAccount:
-    access_token: str
     account_id: str
+    access_token: str | None = None
     account_username: str | None = None
     expires_at: int | None = None
     refresh_token: str | None = None
@@ -123,11 +123,11 @@ async def encrypt_oauth_account(
     platform: CustomerOAuthPlatform,
 ) -> dict[str, Any]:
     data = dataclasses.asdict(oauth_account)
+    tokens = {field: data.pop(field) for field in OAUTH_ACCOUNT_TOKEN_FIELDS}
     if not platform.keeps_tokens:
         return data
     account_key = platform.get_account_key(oauth_account.account_id)
-    for field in OAUTH_ACCOUNT_TOKEN_FIELDS:
-        token = data[field]
+    for field, token in tokens.items():
         if token is None:
             continue
         encrypted = await EncryptedString.encrypt(
@@ -146,6 +146,7 @@ async def decrypt_oauth_account(
 ) -> CustomerOAuthAccount:
     data = dict(data)
     for field in OAUTH_ACCOUNT_TOKEN_FIELDS:
+        data.pop(field, None)
         encrypted = data.pop(f"{field}_encrypted", None)
         if encrypted is None:
             continue

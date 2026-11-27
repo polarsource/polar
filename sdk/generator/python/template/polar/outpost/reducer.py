@@ -88,7 +88,7 @@ class BucketStatistics:
                 raise ValueError(f"Unsupported aggregation: {func}")
 
 
-BUCKET_SIZE = {{ outpost_constants.bucket_size }}
+BUCKET_SIZE = {{ redis_constants.outpost_bucket_size }}
 EPOCH = datetime.datetime(1970, 1, 1, tzinfo=datetime.UTC)
 FILTER_OPERATORS = {
     "eq": operator.eq,

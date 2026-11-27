@@ -21,6 +21,7 @@ from polar.enums import (
     TaxProcessor,
 )
 from polar.kit.address import Address
+from polar.kit.crypto import get_token_hash
 from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
@@ -2596,6 +2597,10 @@ async def create_billing_entry(
     return billing_entry
 
 
+def get_seat_invitation_token(seat_id: uuid.UUID) -> str:
+    return f"seat_invitation_{seat_id}"
+
+
 async def create_customer_seat(
     save_fixture: SaveFixture,
     *,
@@ -2615,13 +2620,17 @@ async def create_customer_seat(
     if subscription is not None and order is not None:
         raise ValueError("Only one of subscription or order can be provided")
 
+    id = CustomerSeat.generate_id()
     if invitation_token is None and status == SeatStatus.pending:
-        invitation_token = secrets.token_urlsafe(32)
+        invitation_token = get_seat_invitation_token(id)
 
     seat = CustomerSeat(
+        id=id,
         status=status,
         customer_id=customer.id if customer else None,
-        invitation_token=invitation_token,
+        invitation_token_hash=(
+            get_token_hash(invitation_token) if invitation_token is not None else None
+        ),
         claimed_at=claimed_at,
         revoked_at=revoked_at,
         seat_metadata=metadata or {},
@@ -2784,6 +2793,14 @@ async def event_type(
     return await create_event_type(save_fixture, organization=organization)
 
 
+async def webhook_endpoint_secret(secret: str) -> dict[str, Any]:
+    id = WebhookEndpoint.generate_id()
+    return {
+        "id": id,
+        "secret_encrypted": await WebhookEndpoint.encrypt_secret(id, secret),
+    }
+
+
 async def create_webhook_endpoint(
     save_fixture: SaveFixture,
     *,
@@ -2793,7 +2810,7 @@ async def create_webhook_endpoint(
     webhook_endpoint = WebhookEndpoint(
         url="https://example.com/webhook",
         format=WebhookFormat.raw,
-        secret="SECRET",
+        **await webhook_endpoint_secret("SECRET"),
         events=events or list(WebhookEventType),
         organization=organization,
     )

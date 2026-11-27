@@ -1,6 +1,6 @@
 import inspect
 from datetime import datetime
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal, Self
 
 from fastapi import Path
 from pydantic import (
@@ -9,11 +9,15 @@ from pydantic import (
     AliasChoices,
     AliasPath,
     ConfigDict,
+    Discriminator,
     Field,
     FutureDatetime,
+    Tag,
+    model_validator,
 )
 from pydantic.json_schema import SkipJsonSchema
 
+from polar.billing_interval.types import BillingIntervalGenerationStatus
 from polar.custom_field.data import CustomFieldDataOutputMixin
 from polar.customer.schemas.customer import CustomerBase, CustomerID, ExternalCustomerID
 from polar.discount.schemas import DiscountID, DiscountMinimal
@@ -23,6 +27,7 @@ from polar.enums import (
     SubscriptionRecurringInterval,
 )
 from polar.kit.currency import PresentmentCurrency, format_currency
+from polar.kit.external_id import ExternalID
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import (
     CUSTOMER_ID_EXAMPLE,
@@ -36,8 +41,14 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
-from polar.kit.versioning import Omissible, QuerySchema, Version, VersionedJsonSchema
+from polar.kit.versioning import (
+    Omissible,
+    QuerySchema,
+    Version,
+    VersionedJsonSchema,
+)
 from polar.meter.schemas import Meter
+from polar.models.billing_interval import UsagePolicy
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.openapi import destructive_when_equals
 from polar.organization.schemas import OrganizationID
@@ -308,6 +319,20 @@ class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, Subscription
     )
 
 
+SubscriptionCreateCurrency = Annotated[
+    Omissible[PresentmentCurrency],
+    Version(starting_from=V2027_01),
+    Field(
+        description=(
+            "The currency of the subscription. "
+            "The product must have a free price in this currency or have a trial "
+            "with no upfront payment setup required. "
+            "If not set, the organization's default currency is used."
+        ),
+    ),
+]
+
+
 class SubscriptionCreateBase(MetadataInputMixin, Schema):
     product_id: Annotated[
         UUID4,
@@ -334,18 +359,7 @@ class SubscriptionCreateBase(MetadataInputMixin, Schema):
             up_to=V2026_10,
         ),
     ]
-    currency: Annotated[
-        PresentmentCurrency | None,
-        Version(starting_from=V2027_01),
-        Field(
-            description=(
-                "The currency of the subscription. "
-                "The product must have a free price in this currency or have a trial "
-                "with no upfront payment setup required. "
-                "If not set, the organization's default currency is used."
-            ),
-        ),
-    ] = None
+    currency: SubscriptionCreateCurrency = MISSING
 
 
 class SubscriptionCreateCustomer(SubscriptionCreateBase):
@@ -372,7 +386,62 @@ class SubscriptionCreateExternalCustomer(SubscriptionCreateBase):
     )
 
 
+class SubscriptionCreateExternal(MetadataInputMixin, Schema):
+    """
+    Create a subscription using external IDs for the customer and the product.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    external_customer_id: str = Field(
+        min_length=1,
+        description=(
+            "The ID of the customer in your system to create the subscription for. "
+            "It must already exist in Polar."
+        ),
+        examples=["usr_1337"],
+    )
+    external_product_id: ExternalID = Field(
+        description=(
+            "The ID of the recurring product in your system to subscribe to. "
+            "Resolves to the current version of the product. "
+            "Must be a free product or have a trial with no upfront payment setup required. "
+            "Otherwise, the customer should go through a checkout flow."
+        ),
+        examples=["ext_1337"],
+    )
+    organization_id: OrganizationID | None = Field(
+        default=None,
+        description=(
+            "The ID of the organization owning the customer and product. "
+            "**Required unless your credential identifies one organization.** "
+            "Omit this field when using an organization token."
+        ),
+    )
+    currency: SubscriptionCreateCurrency = MISSING
+
+
 SubscriptionCreate = SubscriptionCreateCustomer | SubscriptionCreateExternalCustomer
+
+
+def _subscription_create_discriminator(v: Any) -> str:
+    if isinstance(v, dict):
+        if "external_product_id" in v:
+            return "external"
+        return "customer" if "customer_id" in v else "external_customer"
+    if isinstance(v, SubscriptionCreateExternal):
+        return "external"
+    if isinstance(v, SubscriptionCreateCustomer):
+        return "customer"
+    return "external_customer"
+
+
+SubscriptionCreateV2027_01 = Annotated[
+    Annotated[SubscriptionCreateCustomer, Tag("customer")]
+    | Annotated[SubscriptionCreateExternalCustomer, Tag("external_customer")]
+    | Annotated[SubscriptionCreateExternal, Tag("external")],
+    Discriminator(_subscription_create_discriminator),
+]
 
 
 def _discount_input(
@@ -393,6 +462,18 @@ class SubscriptionUpdateBase(MetadataInputMixin, Schema):
         description="Update subscription to another product.",
         examples=[PRODUCT_ID_EXAMPLE],
     )
+    external_product_id: Annotated[
+        Omissible[ExternalID],
+        Version(starting_from=V2027_01),
+        Field(
+            description=(
+                "Update subscription to another product, referenced by its ID "
+                "in your system. Resolves to the current version of the product. "
+                "Can't be combined with `product_id`."
+            ),
+            examples=["ext_1337"],
+        ),
+    ] = MISSING
     proration_behavior: Omissible[ProrationBehaviorSetting] = Field(
         default=MISSING,
         description=(
@@ -418,9 +499,19 @@ class SubscriptionUpdateBase(MetadataInputMixin, Schema):
         ),
     )
 
+    @model_validator(mode="after")
+    def _validate_product_reference(self) -> Self:
+        if self.product_id is not MISSING and self.external_product_id is not MISSING:
+            raise ValueError("product_id and external_product_id can't be set together")
+        return self
+
     @property
     def has_metadata(self) -> bool:
         return "metadata" in self.model_fields_set
+
+    @property
+    def changes_product(self) -> bool:
+        return self.product_id is not MISSING or self.external_product_id is not MISSING
 
     @property
     def discount(self) -> UUID4 | Literal["unset"] | None:
@@ -664,6 +755,63 @@ class SubscriptionChangePreview(SubscriptionChargePreview):
         description=(
             "How the change would be billed, resolved from the requested "
             "or organization setting."
+        )
+    )
+
+
+class SubscriptionBillingIntervalProduct(IDSchema):
+    name: str = Field(description="The name of the product.")
+
+
+class SubscriptionBillingIntervalGeneration(Schema):
+    generation: int = Field(description="The generation number.")
+    order_id: UUID4 | None = Field(
+        description="The order that billed the usage, or `None` if it's not billed."
+    )
+    units: float = Field(description="The usage.")
+    amount: int = Field(
+        description="The usage at the interval's price before credits, in cents."
+    )
+    status: BillingIntervalGenerationStatus = Field(description="The billing status.")
+
+
+class SubscriptionBillingIntervalUsageGroup(Schema):
+    period_start: datetime = Field(description="The start of the usage.")
+    period_end: datetime = Field(description="The end of the usage.")
+    units: float = Field(description="The usage across the generations.")
+    credited_units: float = Field(
+        description=(
+            "The credits the group's order applied, or the credits pending for "
+            "the next order on the latest unbilled group."
+        )
+    )
+    amount: int = Field(
+        description="The group's usage at the interval's price before credits, in cents."
+    )
+    generations: list[SubscriptionBillingIntervalGeneration] = Field(
+        description="The usage by generation and order."
+    )
+
+
+class SubscriptionBillingInterval(IDSchema):
+    meter: Meter = Field(description="The meter of the interval.")
+    period_start: datetime = Field(description="The start of the interval.")
+    period_end: datetime | None = Field(
+        description="The end of the interval, or `None` if it's ongoing."
+    )
+    usage_policy: UsagePolicy = Field(description="How the usage is charged.")
+    product: SubscriptionBillingIntervalProduct = Field(
+        validation_alias=AliasPath("product_price", "product"),
+        description="The product of the interval's price.",
+    )
+    product_price: ProductPrice = Field(description="The price of the interval.")
+
+
+class SubscriptionBillingIntervalUsage(Schema):
+    interval: SubscriptionBillingInterval = Field(description="The billing interval.")
+    groups: list[SubscriptionBillingIntervalUsageGroup] = Field(
+        description=(
+            "The usage in the interval, grouped by the first generation it belongs to."
         )
     )
 

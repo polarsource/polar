@@ -1,20 +1,17 @@
 export { Metering } from "./client";
 export {
   MeteringError,
-  InvalidActorError,
+  IngestRejectedError,
+  IngestRetryableError,
   MeteringDeliveryError,
   MeteringTimeoutError,
   UnknownMeterError,
 } from "./errors";
 export type { DeliveryOptions, DeliveryFailure } from "./errors";
-export type {
-  ActorInput,
-  ActorMetering,
-  MeteringOptions,
-  MeteringOutpost,
-  MeteringStrategy,
-} from "./client";
-export { BufferedMeteringStrategy } from "./buffered";
-export type { BufferedMeteringOptions, DropReason } from "./buffered";
+export type { ActorInput, ActorMetering, MeteringOptions, MeteringOutpost } from "./client";
+export { MemoryEventQueue } from "./queue/memory";
+export type { MemoryEventQueueOptions } from "./queue/memory";
+export type { DropReason } from "./errors";
 export type { ContextualEventInput, EventInput } from "./event";
 export type { CustomerMeter, MeterInput } from "./meter";
+export type { EventQueue, EventQueueHooks, EventQueueStartOptions, Ingest } from "./queue/index";

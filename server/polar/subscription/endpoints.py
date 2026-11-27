@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import Annotated
 from zoneinfo import ZoneInfo
 
@@ -6,6 +7,8 @@ from fastapi import Depends, Query
 
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_resource_permission
+from polar.billing_interval.service import billing_interval as billing_interval_service
+from polar.billing_interval.types import IntervalUsage
 from polar.exceptions import NotPermitted, PaymentNotReady, ResourceNotFound
 from polar.kit.csv import CSVStreamingResponse
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
@@ -32,8 +35,8 @@ from .export import (
     get_filename,
 )
 from .schemas import Subscription as SubscriptionSchema
-from .schemas import SubscriptionBulkUpdate as SubscriptionBulkUpdateSchema
 from .schemas import (
+    SubscriptionBillingIntervalUsage,
     SubscriptionBulkUpdateCreate,
     SubscriptionBulkUpdateID,
     SubscriptionCancelPreview,
@@ -43,10 +46,12 @@ from .schemas import (
     SubscriptionChangeUnits,
     SubscriptionChargePreview,
     SubscriptionCreate,
+    SubscriptionCreateV2027_01,
     SubscriptionID,
     SubscriptionMeterChargePreview,
     SubscriptionUpdate,
 )
+from .schemas import SubscriptionBulkUpdate as SubscriptionBulkUpdateSchema
 from .service import (
     AlreadyActiveSubscription,
     AlreadyCanceledSubscription,
@@ -256,6 +261,27 @@ async def get_meter_charge_preview(
 
 
 @router.get(
+    "/{id}/billing-intervals",
+    summary="List Subscription Billing Intervals",
+    response_model=Sequence[SubscriptionBillingIntervalUsage],
+    responses={404: SubscriptionNotFound},
+    tags=[APITag.private],
+)
+async def list_billing_intervals(
+    id: SubscriptionID,
+    auth_subject: auth.SubscriptionsRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> Sequence[IntervalUsage]:
+    """List the subscription's billing intervals with their usage, newest first."""
+    subscription = await subscription_service.get(session, auth_subject, id)
+
+    if subscription is None or not subscription.organization.is_reducer_billing_enabled:
+        raise ResourceNotFound()
+
+    return await billing_interval_service.list_usage(session, subscription)
+
+
+@router.get(
     "/{id}/cancel-preview",
     summary="Preview Subscription Cancellation",
     response_model=SubscriptionCancelPreview,
@@ -378,7 +404,7 @@ async def create(
 )
 @version(starting_from=V2027_01)
 async def create_v2027_01(
-    subscription_create: SubscriptionCreate,
+    subscription_create: SubscriptionCreateV2027_01,
     auth_subject: auth.SubscriptionsWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> Subscription:
@@ -388,6 +414,9 @@ async def create_v2027_01(
     Supports free products and paid products with a trial that does not require
     upfront payment setup. Paid subscriptions start with the product's configured
     trial period. For other paid products, use the checkout flow.
+
+    Reference the customer by Polar ID or external ID. Reference the product by
+    Polar ID, or by external ID together with an external customer ID.
 
     No initial order will be created and no confirmation email will be sent.
     """

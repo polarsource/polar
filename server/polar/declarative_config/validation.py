@@ -121,16 +121,36 @@ SETTINGS_FIELDS = {
     "subscriptions.proration_behavior": "proration_behavior",
     "subscriptions.benefit_revocation_grace_period": "benefit_revocation_grace_period",
     "subscriptions.prevent_trial_abuse": "prevent_trial_abuse",
+    "customer_portal.allow_plan_changes": "customer_portal_subscription_update_plan",
+    "customer_portal.allow_unit_changes": "customer_portal_subscription_update_units",
+    "customer_portal.allow_seat_management": (
+        "customer_portal_subscription_update_seats"
+    ),
+    "customer_portal.allow_pausing": "customer_portal_subscription_pause",
+    "customer_portal.allow_email_changes": (
+        "customer_portal_customer_allow_email_change"
+    ),
+    "customer_portal.show_metered_usage": "customer_portal_usage_show",
+    "customer_notifications.send_order_confirmation": "customer_email_order_confirmation",
+    "customer_notifications.send_subscription_confirmation": "customer_email_subscription_confirmation",
+    "customer_notifications.send_trial_conversion_reminder": "customer_email_subscription_trial_conversion_reminder",
+    "customer_notifications.send_trial_converted": "customer_email_subscription_cycled_after_trial",
+    "customer_notifications.send_renewal_reminder": "customer_email_subscription_renewal_reminder",
+    "customer_notifications.send_subscription_cycled": "customer_email_subscription_cycled",
+    "customer_notifications.send_card_expiring": "customer_email_payment_method_expiration_reminder",
+    "customer_notifications.send_subscription_past_due": "customer_email_subscription_past_due",
+    "customer_notifications.send_subscription_updated": "customer_email_subscription_updated",
+    "customer_notifications.send_subscription_paused": "customer_email_subscription_paused",
+    "customer_notifications.send_subscription_resumed": "customer_email_subscription_resumed",
+    "customer_notifications.send_subscription_canceled": "customer_email_subscription_cancellation",
+    "customer_notifications.send_subscription_uncanceled": "customer_email_subscription_uncanceled",
+    "customer_notifications.send_subscription_revoked": "customer_email_subscription_revoked",
 }
 
 
 def _setting(settings: ConfigSettings, field: str) -> Any:
-    value: Any = settings
-    for part in field.split("."):
-        value = getattr(value, part)
-        if value is None:
-            return None
-    return value
+    group, key = field.split(".")
+    return getattr(getattr(settings, group), key)
 
 
 @dataclass
@@ -171,7 +191,7 @@ def diff_settings(
     update_dict = {
         field: value
         for field in SETTINGS_FIELDS
-        if (value := _setting(settings, field)) is not None and before[field] != value
+        if before[field] != (value := _setting(settings, field))
     }
     return SettingsChange(update_dict, before)
 

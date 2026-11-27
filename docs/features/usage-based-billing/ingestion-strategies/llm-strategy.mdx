@@ -146,7 +146,7 @@ Sum `_llm.total_tokens` across `ai_usage` events. The same meter works for event
 
 <Tabs>
   <Tab title="Dashboard">
-    - Open **Products → Meters**
+    - Open **Catalog → Meters**
     - Click **Create Meter**
     - Set **Name** to "AI tokens"
     - Under **Filters**, add a condition: **Name** equals `ai_usage`
@@ -174,7 +174,7 @@ To bill input and output tokens at different prices, create two meters, one summ
 
 ## Verify it works
 
-Make one call as `user_123`, then open **Products → Meters → AI tokens**. The call's tokens show on the **Overview** tab, and the event on the **Events** tab. Or run:
+Make one call as `user_123`, then open **Catalog → Meters → AI tokens**. The call's tokens show on the **Overview** tab, and the event on the **Events** tab. Or run:
 
 ```bash
 polar meters quantities <meter-id> --external-customer-id user_123 \

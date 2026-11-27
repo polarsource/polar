@@ -17,6 +17,7 @@ from shared import (
     CLIENTS_DIR,
     ROOT_DIR,
     SERVER_DIR,
+    CommandGroup,
     console,
     gradient,
     gradient_title,
@@ -83,7 +84,7 @@ def _stripe_listener_running() -> bool:
 
 
 def register(app: typer.Typer, prompt_setup: callable) -> None:
-    e2e_app = typer.Typer(help="End-to-end test helpers")
+    e2e_app = typer.Typer(cls=CommandGroup, help="End-to-end test helpers")
     app.add_typer(e2e_app, name="e2e")
 
     @e2e_app.command("setup")

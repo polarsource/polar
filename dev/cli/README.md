@@ -69,6 +69,8 @@ dev db reset --force    # Reset without confirmation
 
 ```bash
 dev status              # Show environment status
+dev logs --errors       # Latest API and worker errors, with tracebacks
+dev logs api            # Recent API log records (also: worker, --since 10m, --request <id>)
 dev doctor              # Check prerequisites and configuration
 dev seed                # Load sample data
 dev seed --reset        # Recreate database and load fresh seed data

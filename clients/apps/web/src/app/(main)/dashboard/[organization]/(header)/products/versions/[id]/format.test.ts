@@ -1,8 +1,10 @@
 import { schemas } from '@polar-sh/client'
 import { expect, it } from 'vitest'
 import {
+  customerEmailSettings,
   customFieldFields,
   meterFields,
+  customerPortalSettings,
   settingsFields,
   valueFormatter,
 } from './format'
@@ -76,12 +78,84 @@ it('reads a meter filter and aggregation as one line each', () => {
   })
 })
 
-it('names settings like the payment settings page', () => {
+it('names settings like their config keys', () => {
   expect(
-    settingsFields({ payments: { currency: 'eur', tax: 'location' } }),
+    settingsFields({
+      payments: { currency: 'eur', tax: 'location' },
+      subscriptions: {
+        allow_multiple_subscriptions: true,
+        prevent_trial_abuse: false,
+        proration_behavior: 'next_period',
+        benefit_revocation_grace_period: 7,
+      },
+      customer_portal: {
+        allow_plan_changes: true,
+        allow_unit_changes: false,
+        allow_seat_management: false,
+        allow_pausing: true,
+        allow_email_changes: false,
+        show_metered_usage: true,
+      },
+      customer_notifications: customerEmailSettings({
+        order_confirmation: false,
+        payment_method_expiration_reminder: false,
+        subscription_cancellation: true,
+        subscription_confirmation: true,
+        subscription_cycled: true,
+        subscription_cycled_after_trial: false,
+        subscription_past_due: true,
+        subscription_paused: true,
+        subscription_resumed: true,
+        subscription_renewal_reminder: true,
+        subscription_revoked: true,
+        subscription_trial_conversion_reminder: true,
+        subscription_uncanceled: true,
+        subscription_updated: true,
+      }),
+    }),
   ).toEqual({
     default_payment_currency: 'EUR',
     default_tax_behavior: 'Location based',
+    allow_multiple_subscriptions: 'Yes',
+    prevent_trial_abuse: 'No',
+    proration_behavior: 'Schedule for next cycle',
+    benefit_revocation_grace_period: 'After 7 Days',
+    allow_plan_changes: 'Yes',
+    allow_unit_changes: 'No',
+    allow_seat_management: 'No',
+    allow_pausing: 'Yes',
+    allow_email_changes: 'No',
+    show_metered_usage: 'Yes',
+    send_order_confirmation: 'No',
+    send_subscription_confirmation: 'Yes',
+    send_trial_conversion_reminder: 'Yes',
+    send_trial_converted: 'No',
+    send_renewal_reminder: 'Yes',
+    send_subscription_cycled: 'Yes',
+    send_card_expiring: 'No',
+    send_subscription_past_due: 'Yes',
+    send_subscription_updated: 'Yes',
+    send_subscription_paused: 'Yes',
+    send_subscription_resumed: 'Yes',
+    send_subscription_canceled: 'Yes',
+    send_subscription_uncanceled: 'Yes',
+    send_subscription_revoked: 'Yes',
+  })
+})
+
+it('reads the organization customer portal settings with their defaults', () => {
+  expect(
+    customerPortalSettings({
+      usage: { show: false },
+      subscription: { update_plan: true, update_seats: true },
+    }),
+  ).toEqual({
+    allow_plan_changes: true,
+    allow_unit_changes: false,
+    allow_seat_management: true,
+    allow_pausing: false,
+    allow_email_changes: false,
+    show_metered_usage: false,
   })
 })
 

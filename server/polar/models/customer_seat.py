@@ -110,10 +110,6 @@ class CustomerSeat(RecordModel):
 
     email: Mapped[str | None] = mapped_column(String(320), nullable=True, default=None)
 
-    invitation_token: Mapped[str | None] = mapped_column(
-        String, nullable=True, default=None, index=True
-    )
-
     invitation_token_hash: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None, index=True, unique=True
     )

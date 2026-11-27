@@ -2,12 +2,8 @@ import types
 import typing
 
 from polar.base import AsyncClientBase, RequestTimeout, SyncClientBase, resolve_base_url
-from polar.metering import (
-    BufferedMeteringOptions,
-    Metering,
-    MeteringOutpostOptions,
-    MeteringStrategyProtocol,
-)
+from polar.metering import Metering, MeteringOutpostOptions, EventQueue
+from polar.metering.queue import OnAck, OnRejected
 
 {% for service in api.services %}
 from polar.{{ version }}.services.{{ service.name | service_name }} import {{ service.name }}Async
@@ -87,41 +83,29 @@ class PolarAsync:
     ) -> None:
         await self._client.__aexit__(exc_type, exc_val, exc_tb)
 
-    @typing.overload
     def metering(
         self,
         *,
-        buffered: BufferedMeteringOptions | None = None,
+        queue: EventQueue | None = None,
         outpost: MeteringOutpostOptions | bool | None = None,
-    ) -> Metering: ...
-
-    @typing.overload
-    def metering(
-        self, *, strategies: list[MeteringStrategyProtocol]
-    ) -> Metering: ...
-
-    def metering(
-        self,
-        *,
-        buffered: BufferedMeteringOptions | None = None,
-        outpost: MeteringOutpostOptions | bool | None = None,
-        strategies: list[MeteringStrategyProtocol] | None = None,
+        on_ack: OnAck | None = None,
+        on_rejected: OnRejected | None = None,
     ) -> Metering:
-        """Create a helper for buffered event delivery and customer meter reads.
+        """Create a metering helper for event delivery and customer meter reads.
 
         Args:
-            buffered: Batch and retry options; defaults to 100 events, a 1-second
-                collection interval, a 5-second shutdown timeout, and 3 attempts.
-            outpost: True or Outpost options to enable Outpost. Disabled by default.
-                Pass False to disable; explicit options require a Redis URL.
-            strategies: Replace all defaults with custom strategies. Cannot be
-                combined with buffered or outpost.
+            queue: EventQueue used to queue and deliver events to Polar.
+                Defaults to an in-memory MemoryEventQueue.
+            outpost: Set to True to enable local reduction using REDIS_URL, or
+                pass options to configure Outpost. Disabled by default.
+            on_ack: Async callback for batches Polar accepts.
+            on_rejected: Async callback for permanently rejected events and their reason.
 
         Returns:
-            An metering helper.
+            A Metering instance to use as an async context manager.
         """
         return Metering.create(
-            self, buffered=buffered, outpost=outpost, strategies=strategies
+            self, queue=queue, outpost=outpost, on_ack=on_ack, on_rejected=on_rejected
         )
 
 __all__ = ["Environment", "Polar", "PolarAsync"]

@@ -62,7 +62,6 @@ jobs:
       - name: 📋 Plan
         working-directory: ./clients/apps/demo-app
         env:
-          POLAR_PREVIEW: "1"
           POLAR_ENVIRONMENT: sandbox
           POLAR_ACCESS_TOKEN: ${{ secrets.DEMO_POLAR_ACCESS_TOKEN }}
           GITHUB_TOKEN: ${{ github.token }}

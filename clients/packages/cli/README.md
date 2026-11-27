@@ -92,13 +92,17 @@ used (never their values), whether it succeeded, failed or was interrupted, the
 error type and status code, the name of the flag, argument or subcommand behind
 a usage mistake, the environment (sandbox or production), the duration, the CLI version,
 OS, architecture, Bun version, whether it ran in CI, and which AI coding agent
-(if any) invoked it. Events are keyed by a random install id stored in
-`~/.polar/telemetry.json`. Access tokens, organization IDs, URLs and payloads
-are never sent. The PostHog project key is a public write-only token, the same
+(if any) invoked it. A command can add a short summary of its run: `polar config`
+commands report the file format, the codes of the issues found, how many
+entries conflict with the draft, and how the run ended (for example saved,
+conflict or rejected). Events are keyed by a random install id stored in
+`~/.polar/telemetry.json`. Access tokens, organization names and IDs, URLs,
+payloads and the contents of a config are never sent. The PostHog project key is a public write-only token, the same
 one the website uses.
 
 Telemetry is wired around the root command in `src/cli.ts`, so new commands are
-covered automatically. Only the compiled release binary sends events, which the
+covered automatically. A command adds its own properties with the `telemetry`
+option of `output()`; keep them to counts, codes and statuses. Only the compiled release binary sends events, which the
 release workflow marks with `--define POLAR_CLI_BUILD='"release"'`; running
 from source or from `bin/cli.js` sends nothing. Opt out with
 `POLAR_CLI_TELEMETRY_OPTOUT=1` (`DO_NOT_TRACK=1` is honoured too).

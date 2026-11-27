@@ -1,0 +1,421 @@
+import type { Redis } from "ioredis";
+
+import { randomUUID } from "node:crypto";
+
+import type { EventInput } from "../event";
+import type { EventQueue, EventQueueStartOptions } from "./index";
+
+import { backOff, connectRedis, createRedis, releaseLock, takeLock } from "../../redis";
+import {
+  type DeliveryOptions,
+  deliveryTimeout,
+  IngestRejectedError,
+  IngestRetryableError,
+  waitForDelivery,
+} from "../errors";
+
+const QUEUE_BATCH = 1000;
+const FLUSHERS = 32;
+const QUEUE_CLAIM_IDLE = 60000;
+const FLUSHER_LOCK_TTL = 30000;
+const FLUSH_TENURE = 5000;
+const DRAIN_INTERVAL = 1000;
+const QUEUE_RETRY_DELAY = 1000;
+const MAX_QUEUE_RETRY_DELAY = 60000;
+// The consumer group the flushers read the queue through.
+const QUEUE_GROUP = "polar";
+
+const QUEUE_BACKLOG_SCRIPT = `
+-- The queue's length, how many of its entries flushers hold, and when the fleet may send it
+-- again after Polar failed: KEYS[1] is the queue, KEYS[2] its backoff, ARGV[1] the consumer group.
+-- ARGV[2], optional, is the retry the caller read before it delivered: Polar takes batches
+-- again, so that backoff ends, unless a flusher failed since and set a later one.
+if ARGV[2] and redis.call('HGET', KEYS[2], 'retry_at') == ARGV[2] then
+    redis.call('DEL', KEYS[2])
+end
+local retry_at = redis.call('HGET', KEYS[2], 'retry_at') or ''
+local length = redis.call('XLEN', KEYS[1])
+if length == 0 then
+    return {0, 0, retry_at}
+end
+return {length, redis.call('XPENDING', KEYS[1], ARGV[1])[1], retry_at}
+`;
+
+const ACKNOWLEDGE_SCRIPT = `
+redis.call('XACK', KEYS[1], ARGV[1], unpack(ARGV, 4))
+redis.call('XDEL', KEYS[1], unpack(ARGV, 4))
+if redis.call('GET', KEYS[2]) == ARGV[2] then
+    redis.call('PEXPIRE', KEYS[2], ARGV[3])
+end
+`;
+
+interface QueueRedis extends Redis {
+  queueAcknowledge(
+    stream: string,
+    lockKey: string,
+    group: string,
+    token: string,
+    ttl: number,
+    ...ids: string[]
+  ): Promise<void>;
+  queueBacklog(
+    key: string,
+    backoffKey: string,
+    group: string,
+    ...ended: string[]
+  ): Promise<[number, number, string]>;
+}
+
+// The queue entries a flusher delivered, and the slot it holds.
+interface Delivery {
+  entries: string[];
+  lockKey: string;
+  token: string;
+}
+
+// How many times a batch goes again without the events Polar named, before it is dropped whole.
+const REFUSED_RESENDS = 3;
+
+// A number too large to read, such as 1e999, parses to an infinity no request could carry.
+const holdsNoInfinity = (value: unknown): boolean => {
+  if (typeof value === "number") return Number.isFinite(value);
+  if (typeof value !== "object" || value === null) return true;
+  return Object.values(value).every(holdsNoInfinity);
+};
+
+export interface RedisEventQueueOptions {
+  /** Use a distinct stream per Polar environment and organization. */
+  stream: string;
+}
+
+export class RedisEventQueue implements EventQueue {
+  private session?: EventQueueStartOptions;
+  private ownsRedis = false;
+
+  private redis?: QueueRedis;
+  private timer?: ReturnType<typeof setInterval>;
+  private draining?: Promise<void>;
+  private drainUntil = Infinity;
+  private drainAgain = false;
+  private undrained = false;
+  private readonly flushes = new Map<() => void, number>();
+
+  constructor(
+    private readonly redisSource: string | Redis,
+    private readonly options: RedisEventQueueOptions,
+  ) {}
+
+  get redisUrl(): string | undefined {
+    return typeof this.redisSource === "string" ? this.redisSource : undefined;
+  }
+
+  start(options: EventQueueStartOptions): Promise<this> {
+    return this.open(this.redisSource, options);
+  }
+
+  /** @internal */
+  startWithRedis(options: EventQueueStartOptions, redis: Redis): Promise<this> {
+    return this.open(redis, options);
+  }
+
+  async close(options?: DeliveryOptions): Promise<void> {
+    const timeout = deliveryTimeout(options);
+    clearInterval(this.timer);
+    try {
+      if (this.redis) await this.drainOwn(timeout);
+    } finally {
+      this.session = undefined;
+      if (this.ownsRedis) this.redis?.disconnect();
+      this.redis = undefined;
+    }
+  }
+
+  async enqueue(event: EventInput): Promise<void> {
+    const queued = JSON.stringify({
+      ...event,
+      external_id: event.external_id || randomUUID(),
+      timestamp: event.timestamp ?? new Date().toISOString(),
+    });
+    // A flusher holding the first slot reads the stream again once it lets go: it delivers the
+    // event. Otherwise the instance drains the stream on its next flush.
+    const results = await this.requireRedis()
+      .pipeline()
+      .xadd(this.options.stream, "*", "event", queued)
+      .exists(`${this.options.stream}:flusher:0`)
+      .exec();
+    const failed = results?.find(([error]) => error)?.[0];
+    if (failed) throw failed;
+    if (!results?.[1]?.[1]) this.undrained = true;
+  }
+
+  // A newer flush releases the ones still waiting that it outlasts: one waiter keeps a serverless
+  // function alive until the drain ends, the others answer.
+  async flush(options?: DeliveryOptions): Promise<void> {
+    this.requireRedis();
+    const timeout = deliveryTimeout(options);
+    const deadline = Date.now() + timeout;
+    for (const [release, until] of this.flushes) if (until <= deadline) release();
+    let release!: () => void;
+    const released = new Promise<void>((resolve) => (release = resolve));
+    this.flushes.set(release, deadline);
+    try {
+      await Promise.race([this.drainOwn(timeout), released]);
+    } finally {
+      this.flushes.delete(release);
+    }
+  }
+
+  // Redis keeps what a drain fails to deliver: the next flush takes it. Without an event of its
+  // own to deliver, a flush waits for the drain in flight, if any, never for the fleet's stream.
+  private async drainOwn(timeout: number): Promise<void> {
+    if (this.undrained || this.draining) this.limitDrain();
+    const draining = this.undrained ? this.drain() : this.draining;
+    if (draining)
+      await waitForDelivery(
+        draining.catch(() => {}),
+        timeout,
+      );
+  }
+
+  private async open(source: string | Redis, options: EventQueueStartOptions): Promise<this> {
+    if (this.redis) throw new Error("Redis queue is already connected");
+    const redis = typeof source === "string" ? createRedis(source) : source;
+    this.ownsRedis = typeof source === "string";
+    this.redis = redis as QueueRedis;
+    try {
+      if (this.ownsRedis) await connectRedis(redis);
+      redis.defineCommand("queueBacklog", { numberOfKeys: 2, lua: QUEUE_BACKLOG_SCRIPT });
+      redis.defineCommand("queueAcknowledge", { numberOfKeys: 2, lua: ACKNOWLEDGE_SCRIPT });
+      await this.createQueueGroup();
+      this.session = options;
+      this.timer = setInterval(() => {
+        if (this.undrained) void this.drain().catch(() => {});
+      }, DRAIN_INTERVAL);
+      return this;
+    } catch (error) {
+      this.redis = undefined;
+      if (this.ownsRedis) redis.disconnect();
+      throw error;
+    }
+  }
+
+  private requireRedis(): QueueRedis {
+    if (!this.redis) throw new Error("Call RedisEventQueue.start() before using RedisEventQueue");
+    return this.redis;
+  }
+
+  private get backoffKey(): string {
+    return `${this.options.stream}:backoff`;
+  }
+
+  // A flusher reads the queue through the group, which tracks each batch until Polar has it.
+  private async createQueueGroup(): Promise<void> {
+    await this.requireRedis()
+      .xgroup("CREATE", this.options.stream, QUEUE_GROUP, "0", "MKSTREAM")
+      .catch((error: unknown) => {
+        if (!String(error).includes("BUSYGROUP")) throw error;
+      });
+  }
+
+  // One flusher per QUEUE_BATCH events waiting, up to FLUSHERS across the fleet. Once its
+  // flushers let go of their slots, the instance looks again: an event queued while they held
+  // them is not left behind.
+  // One drain at a time per instance: a flush during one waits for it, and asks for one more round
+  // so that its own events do not stay queued.
+  private drain(): Promise<void> {
+    if (this.draining) {
+      this.drainAgain = true;
+      return this.draining;
+    }
+    const drain = async () => {
+      do {
+        this.drainAgain = false;
+        this.undrained = false;
+        await this.drainEventQueue().catch((error: unknown) => {
+          this.undrained = true;
+          console.warn("Redis queue drain failed", error);
+          throw error;
+        });
+      } while (this.drainAgain);
+    };
+    this.draining = drain().finally(() => {
+      this.draining = undefined;
+      this.drainUntil = Infinity;
+    });
+    return this.draining;
+  }
+
+  private limitDrain(): void {
+    this.drainUntil = Math.min(this.drainUntil, Date.now() + FLUSH_TENURE);
+  }
+
+  private async drainEventQueue(): Promise<void> {
+    const redis = this.requireRedis();
+    try {
+      // The backoff a round delivered past: the next round's read ends it.
+      let ended: string[] = [];
+      for (let round = 0; ; round += 1) {
+        if (Date.now() >= this.drainUntil) {
+          this.undrained = true;
+          return;
+        }
+        const [length, delivering, retryAt] = await redis.queueBacklog(
+          this.options.stream,
+          this.backoffKey,
+          QUEUE_GROUP,
+          ...ended,
+        );
+        // The first round also takes back the batches that wait on a failed or frozen flusher.
+        if (!length || (round && length === delivering)) return;
+        // Polar failed to take a batch: the fleet waits before sending the queue again.
+        if (Number(retryAt) > Date.now()) {
+          this.undrained = true;
+          return;
+        }
+        // A partial batch goes only when no flusher delivers: the last one in flight takes it.
+        const full = Math.floor((length - delivering) / QUEUE_BATCH);
+        const slots = Math.min(FLUSHERS, full || (round && delivering ? 0 : 1));
+        if (!slots) return;
+        const outcomes = await Promise.all(
+          Array.from({ length: slots }, (_, slot) => this.flushSlot(slot)),
+        );
+        if (outcomes.includes("failed")) {
+          this.undrained = true;
+          return;
+        }
+        if (!outcomes.includes("drained")) return;
+        // Polar takes batches again: the next failure waits the first delay.
+        ended = retryAt ? [retryAt] : [];
+      }
+    } catch (error) {
+      // Redis lost the group, with the rest of its keys: the next flush reads a new one.
+      if (String(error).includes("NOGROUP")) await this.createQueueGroup();
+      throw error;
+    }
+  }
+
+  // A batch whose flusher froze is taken back once idle long enough; one this slot left behind,
+  // as Polar failed, goes before the new events.
+  private async flushSlot(slot: number): Promise<"busy" | "failed" | "drained"> {
+    const redis = this.requireRedis();
+    const lockKey = `${this.options.stream}:flusher:${slot}`;
+    const consumer = `flusher-${slot}`;
+    const token = await takeLock(redis, lockKey, FLUSHER_LOCK_TTL);
+    if (!token) return "busy";
+    try {
+      if (slot === 0)
+        await redis.xautoclaim(
+          this.options.stream,
+          QUEUE_GROUP,
+          consumer,
+          QUEUE_CLAIM_IDLE,
+          "0-0",
+          "COUNT",
+          QUEUE_BATCH,
+          "JUSTID",
+        );
+      for (let from = "0"; ; ) {
+        if (from === ">") {
+          if (Date.now() >= this.drainUntil) {
+            this.undrained = true;
+            return "drained";
+          }
+          const [length, delivering] = await redis.queueBacklog(
+            this.options.stream,
+            this.backoffKey,
+            QUEUE_GROUP,
+          );
+          if (length === delivering) return "drained";
+          // The flusher still in flight takes a partial batch; if it let go meanwhile, the next
+          // drain does.
+          if (delivering && length - delivering < QUEUE_BATCH) {
+            this.undrained = true;
+            return "drained";
+          }
+        }
+        const read = (await redis.xreadgroup(
+          "GROUP",
+          QUEUE_GROUP,
+          consumer,
+          "COUNT",
+          QUEUE_BATCH,
+          "STREAMS",
+          this.options.stream,
+          from,
+        )) as [string, [string, string[] | null][]][] | null;
+        const entries = read?.[0]?.[1] ?? [];
+        if (entries.length) {
+          const ids = entries.map(([id]) => id);
+          if (!(await this.deliver(entries, { entries: ids, lockKey, token }))) {
+            // Slot 0 starts every drain and sends what it holds first: the batch goes to it, and
+            // does not wait for a drain large enough to start this slot again.
+            if (slot)
+              await redis
+                .xclaim(this.options.stream, QUEUE_GROUP, "flusher-0", 0, ...ids, "JUSTID")
+                .catch(() => {});
+            return "failed";
+          }
+        } else if (from === "0") from = ">";
+      }
+    } finally {
+      // Past its TTL, the slot may be another flusher's.
+      await releaseLock(redis, lockKey, token);
+    }
+  }
+
+  private async deliver(
+    entries: [string, string[] | null][],
+    delivery: Delivery,
+  ): Promise<boolean> {
+    const session = this.session;
+    if (!session) return false;
+    // An entry that is not JSON can never be sent: it leaves the queue with the batch.
+    let events = entries.flatMap(([, fields]) => {
+      if (!fields) return [];
+      try {
+        const event: EventInput = JSON.parse(fields[1]);
+        if (!holdsNoInfinity(event)) throw new TypeError("An infinity is not JSON");
+        return [event];
+      } catch {
+        console.warn("Redis queue dropped an unreadable entry");
+        return [];
+      }
+    });
+    const refused: EventInput[] = [];
+    for (let resent = 0; events.length; resent += 1) {
+      try {
+        await session.ingest(events);
+        break;
+      } catch (error) {
+        if (error instanceof IngestRetryableError) {
+          const wait = error.retryAfterMs;
+          await backOff(this.redis, this.backoffKey, {
+            first: wait ?? QUEUE_RETRY_DELAY,
+            max: wait ?? MAX_QUEUE_RETRY_DELAY,
+          });
+          return false;
+        }
+        if (!(error instanceof IngestRejectedError)) throw error;
+        const named = error.rejectedIndexes;
+        if (named?.size && named.size < events.length && resent < REFUSED_RESENDS) {
+          refused.push(...events.filter((_, index) => named.has(index)));
+          events = events.filter((_, index) => !named.has(index));
+          continue;
+        }
+        refused.push(...events);
+        events = [];
+      }
+    }
+    if (refused.length) await this.session?.onRejected?.(refused, "permanent_error");
+    if (events.length) await this.session?.onAck?.(events);
+    await this.requireRedis().queueAcknowledge(
+      this.options.stream,
+      delivery.lockKey,
+      QUEUE_GROUP,
+      delivery.token,
+      FLUSHER_LOCK_TTL,
+      ...delivery.entries,
+    );
+    return true;
+  }
+}

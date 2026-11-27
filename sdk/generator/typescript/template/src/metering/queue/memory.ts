@@ -1,0 +1,425 @@
+import type { EventInput } from "../event";
+import type { EventQueue, EventQueueStartOptions, Ingest } from "./index";
+
+import {
+  MeteringDeliveryError,
+  MeteringTimeoutError,
+  deliveryTimeout,
+  IngestRejectedError,
+  IngestRetryableError,
+  waitForDelivery,
+  type DeliveryFailure,
+  type DeliveryOptions,
+  type DropReason,
+} from "../errors";
+
+export type { DropReason } from "../errors";
+
+const RETRY_AFTER_BUDGET_MS = 300_000;
+
+function sleep(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) return reject(signal.reason);
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(signal.reason);
+    };
+    const timer = setTimeout(() => {
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
+/**
+ * Configure in-memory batching and delivery to Polar.
+ */
+export interface MemoryEventQueueOptions {
+  /**
+   * Maximum events per HTTP request. Defaults to 100.
+   */
+  batchSize?: number;
+  /**
+   * Milliseconds to collect a batch after its first event. Defaults to 1000.
+   */
+  batchIntervalMs?: number;
+  /**
+   * Total delivery attempts per batch, including the first. Defaults to 3.
+   */
+  maxAttempts?: number;
+}
+
+interface QueuedEvent {
+  sequence: number;
+  event: EventInput;
+}
+
+interface FailedEvent extends QueuedEvent {
+  reason: DropReason;
+  cause: unknown;
+}
+
+class FlushRequest {
+  resolve!: () => void;
+  reject!: (error: unknown) => void;
+  active = true;
+  deadline = Infinity;
+  readonly completed = new Promise<void>((resolve, reject) => {
+    this.resolve = resolve;
+    this.reject = reject;
+  });
+
+  constructor(
+    readonly after: number,
+    readonly through: number,
+  ) {}
+}
+
+/**
+ * Batch events in memory and deliver them through Polar's HTTP API.
+ */
+export class MemoryEventQueue implements EventQueue {
+  private readonly options: Required<MemoryEventQueueOptions>;
+  private readonly queue: (QueuedEvent | FlushRequest)[] = [];
+  private readonly barriers = new Set<FlushRequest>();
+  private readonly abort = new AbortController();
+  private failures: FailedEvent[] = [];
+  private batch: QueuedEvent[] = [];
+  private sequence = 0;
+  private acknowledged = 0;
+  private worker?: Promise<void>;
+  private closing?: Promise<void>;
+  private wake?: () => void;
+  private failure?: unknown;
+  private finished = false;
+
+  /**
+   * Configure event delivery and retries.
+   *
+   * @param options Batch size, collection interval in milliseconds, and retries.
+   * @throws RangeError if the batch size, max attempts, or batch interval is invalid.
+   */
+  constructor(options: MemoryEventQueueOptions = {}) {
+    this.options = {
+      batchSize: options.batchSize ?? 100,
+      batchIntervalMs: options.batchIntervalMs ?? 1000,
+      maxAttempts: options.maxAttempts ?? 3,
+    };
+    for (const value of [this.options.batchSize, this.options.maxAttempts]) {
+      if (!Number.isSafeInteger(value) || value < 1)
+        throw new RangeError("Batch size and max attempts must be positive integers");
+    }
+    const interval = this.options.batchIntervalMs;
+    if (!Number.isFinite(interval) || interval < 0 || interval > 2_147_483_647)
+      throw new RangeError("Batch interval must be between 0 and 2147483647 milliseconds");
+  }
+
+  /**
+   * Start the background delivery worker.
+   *
+   * @returns This queue, ready to accept events.
+   * @throws Error if the worker has already started.
+   */
+  async start(options: EventQueueStartOptions): Promise<this> {
+    if (this.worker) throw new Error("Memory queue has already started");
+    this.worker = this.run(options);
+    return this;
+  }
+
+  /**
+   * Queue an event without waiting for HTTP delivery.
+   *
+   * @param event Event including its customer identity.
+   */
+  async enqueue(event: EventInput): Promise<void> {
+    this.assertRunning();
+    this.queue.push({ sequence: ++this.sequence, event });
+    this.wake?.();
+  }
+
+  /**
+   * Wait for events queued before this call and report unacknowledged delivery failures.
+   *
+   * A newer flush releases the ones still waiting that it outlasts, and reports their failures
+   * instead: one waiter keeps a serverless function alive, and the others return without
+   * waiting for Polar. A completed flush acknowledges those outcomes; a timeout leaves them observable
+   * by a later flush and does not cancel background delivery.
+   *
+   * @param options Maximum wait in milliseconds; defaults to 30000.
+   * @throws MeteringDeliveryError if earlier events were dropped or remain pending at the deadline.
+   * @throws MeteringTimeoutError if the wait expires without dropped or pending events to report.
+   */
+  async flush(options?: DeliveryOptions): Promise<void> {
+    const timeout = deliveryTimeout(options);
+    if (!this.worker || this.closing) throw new Error("Memory queue is not running");
+    const request = this.barrier();
+    request.deadline = Date.now() + timeout;
+    if (this.finished || this.failure) this.finish(request);
+    else {
+      this.queue.push(request);
+      this.wake?.();
+    }
+    for (const older of this.barriers) {
+      if (older === request || older.deadline > request.deadline) continue;
+      older.resolve();
+      this.release(older);
+    }
+    const timer = setTimeout(() => {
+      request.reject(this.timeoutError(request, timeout, "flush_timeout"));
+      this.release(request);
+    }, timeout);
+    try {
+      await request.completed;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  /**
+   * Stop accepting events and drain the queue, aborting unfinished delivery at the deadline.
+   *
+   * Repeated calls share the first call's deadline and result. Does nothing if not started.
+   * A callback still running at the deadline may continue after this wait rejects.
+   *
+   * @param options Maximum drain time in milliseconds; defaults to 30000.
+   * @throws MeteringDeliveryError if delivery failures remain unacknowledged or shutdown drops events.
+   * @throws MeteringTimeoutError if shutdown expires while waiting for delivery callbacks.
+   */
+  async close(options?: DeliveryOptions): Promise<void> {
+    const timeout = deliveryTimeout(options);
+    if (!this.worker) return;
+    this.closing ??= this.drain(timeout);
+    this.wake?.();
+    await this.closing;
+  }
+
+  private assertRunning(): void {
+    if (!this.worker || this.closing) throw new Error("Memory queue is not running");
+    if (this.failure) throw this.failure;
+  }
+
+  private barrier(): FlushRequest {
+    const request = new FlushRequest(this.acknowledged, this.sequence);
+    this.barriers.add(request);
+    return request;
+  }
+
+  private deliveryFailures(request: FlushRequest): DeliveryFailure[] {
+    return this.failures
+      .filter((item) => item.sequence > request.after && item.sequence <= request.through)
+      .map((item) => ({ events: [item.event], reason: item.reason, cause: item.cause }));
+  }
+
+  private finish(request: FlushRequest): void {
+    if (!request.active) return;
+    const failures = this.deliveryFailures(request);
+    this.acknowledged = Math.max(this.acknowledged, request.through);
+    if (failures.length) request.reject(new MeteringDeliveryError(failures));
+    else if (this.failure) request.reject(this.failure);
+    else request.resolve();
+    this.release(request);
+  }
+
+  private release(request: FlushRequest): void {
+    request.active = false;
+    this.barriers.delete(request);
+    let oldest = this.acknowledged;
+    for (const barrier of this.barriers) oldest = Math.min(oldest, barrier.after);
+    this.failures = this.failures.filter((item) => item.sequence > oldest);
+  }
+
+  private timeoutError(
+    request: FlushRequest,
+    timeout: number,
+    reason: "flush_timeout" | "shutdown_timeout",
+  ): MeteringDeliveryError | MeteringTimeoutError {
+    const pending = [
+      ...this.batch,
+      ...this.queue.filter((item): item is QueuedEvent => !(item instanceof FlushRequest)),
+    ].filter((item) => item.sequence > request.after && item.sequence <= request.through);
+    const failures = this.deliveryFailures(request);
+    if (pending.length)
+      failures.push({
+        events: pending.map((item) => item.event),
+        reason,
+        cause: new MeteringTimeoutError(timeout),
+      });
+    return failures.length
+      ? new MeteringDeliveryError(failures)
+      : new MeteringTimeoutError(timeout);
+  }
+
+  private async drain(timeout: number): Promise<void> {
+    const request = this.barrier();
+    const timer = setTimeout(
+      () => this.abort.abort(new Error(`Metering shutdown timed out after ${timeout}ms`)),
+      timeout,
+    );
+    try {
+      try {
+        await waitForDelivery(this.worker!, timeout);
+      } catch (error) {
+        if (error instanceof MeteringTimeoutError)
+          throw this.timeoutError(request, timeout, "shutdown_timeout");
+        throw error;
+      }
+      this.finish(request);
+      await request.completed;
+    } finally {
+      clearTimeout(timer);
+      this.release(request);
+    }
+  }
+
+  private async waitForMessage(timeoutMs?: number): Promise<void> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await new Promise<void>((resolve) => {
+        this.wake = resolve;
+        if (timeoutMs !== undefined) timer = setTimeout(resolve, timeoutMs);
+      });
+    } finally {
+      clearTimeout(timer);
+      this.wake = undefined;
+    }
+  }
+
+  private async run({ ingest, onAck, onRejected }: EventQueueStartOptions): Promise<void> {
+    let requests: FlushRequest[] = [];
+    try {
+      while (!this.closing || this.queue.length) {
+        this.abort.signal.throwIfAborted();
+        const message = this.queue.shift();
+        if (message === undefined) {
+          await this.waitForMessage();
+          continue;
+        }
+        if (message instanceof FlushRequest) {
+          this.finish(message);
+          continue;
+        }
+        this.batch = [message];
+        const deadline = Date.now() + this.options.batchIntervalMs;
+        while (this.batch.length < this.options.batchSize) {
+          if (!this.queue.length) {
+            const remaining = deadline - Date.now();
+            if (this.closing || requests.length || remaining <= 0) break;
+            await this.waitForMessage(remaining);
+          }
+          const next = this.queue.shift();
+          if (next === undefined) break;
+          if (!(next instanceof FlushRequest)) this.batch.push(next);
+          else if (next.active) requests.push(next);
+        }
+        const failures = await this.processBatch(ingest, this.batch);
+        let accepted: EventInput[] | undefined;
+        if (onAck) {
+          const failedSequences = new Set(failures.map((item) => item.sequence));
+          accepted = this.batch
+            .filter((item) => !failedSequences.has(item.sequence))
+            .map((item) => item.event);
+        }
+        const rejected = onRejected
+          ? failures.filter((item) => item.reason === "permanent_error").map((item) => item.event)
+          : undefined;
+        this.failures.push(...failures);
+        this.batch = [];
+        try {
+          if (rejected?.length) await onRejected?.(rejected, "permanent_error");
+        } catch (error) {
+          console.warn(
+            "Memory queue rejection hook failed",
+            error instanceof Error ? error.constructor.name : typeof error,
+          );
+        }
+        try {
+          if (accepted?.length) await onAck?.(accepted);
+        } catch (error) {
+          console.warn(
+            "Memory queue acknowledgement hook failed",
+            error instanceof Error ? error.constructor.name : typeof error,
+          );
+        }
+        for (const request of requests) this.finish(request);
+        requests = [];
+      }
+    } catch (error) {
+      const reason: DropReason = this.abort.signal.aborted ? "shutdown_timeout" : "worker_error";
+      const pending = this.batch;
+      this.batch = [];
+      for (const message of this.queue.splice(0)) {
+        if (!(message instanceof FlushRequest)) pending.push(message);
+      }
+      for (const item of pending) this.failures.push({ ...item, reason, cause: error });
+      if (!this.abort.signal.aborted)
+        this.failure = error instanceof Error ? error : new Error(String(error));
+      if (pending.length) console.warn(`Dropping ${pending.length} events: ${reason}`);
+    } finally {
+      this.finished = true;
+      for (const request of this.barriers) this.finish(request);
+    }
+  }
+
+  private async processBatch(ingest: Ingest, batch: QueuedEvent[]): Promise<FailedEvent[]> {
+    const failures: FailedEvent[] = [];
+    let remaining = batch;
+    let attempt = 1;
+    let waited = 0;
+    while (remaining.length) {
+      try {
+        await ingest(
+          remaining.map((item) => item.event),
+          { signal: this.abort.signal },
+        );
+        break;
+      } catch (error) {
+        this.abort.signal.throwIfAborted();
+        if (error instanceof IngestRejectedError) {
+          const indexes = error.rejectedIndexes;
+          let rejected = remaining.filter((_, index) => indexes?.has(index));
+          if (rejected.length) remaining = remaining.filter((_, index) => !indexes?.has(index));
+          else {
+            rejected = remaining;
+            remaining = [];
+          }
+          console.warn(`Dropping ${rejected.length} events: permanent_error`);
+          failures.push(
+            ...rejected.map((item) => ({
+              ...item,
+              reason: "permanent_error" as const,
+              cause: error,
+            })),
+          );
+          continue;
+        }
+        if (!(error instanceof IngestRetryableError)) throw error;
+        let delay: number;
+        let retry: boolean;
+        if (error.retryAfterMs !== undefined) {
+          delay = error.retryAfterMs;
+          waited += delay;
+          retry = waited <= RETRY_AFTER_BUDGET_MS;
+        } else {
+          delay = 2 ** attempt * 1000 * (1 + (Math.random() * 2 - 1) * 0.1);
+          retry = attempt < this.options.maxAttempts;
+          attempt++;
+        }
+        if (retry) {
+          await sleep(Math.min(delay, 2_147_483_647), this.abort.signal);
+          continue;
+        }
+        console.warn(`Dropping ${remaining.length} events: retry_exhausted`);
+        failures.push(
+          ...remaining.map((item) => ({
+            ...item,
+            reason: "retry_exhausted" as const,
+            cause: error,
+          })),
+        );
+        break;
+      }
+    }
+    return failures;
+  }
+}

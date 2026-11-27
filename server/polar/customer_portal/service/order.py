@@ -32,7 +32,7 @@ from polar.order.service import (
 from polar.order.service import order as order_service
 from polar.receipt.service import receipt as receipt_service
 from polar.subscription.repository import SubscriptionRepository
-from polar.tax.calculation.base import TaxCalculationLogicalError
+from polar.tax.calculation.base import InvalidTaxIDError, TaxCalculationLogicalError
 from polar.worker import enqueue_job
 
 from ..repository.order import CustomerOrderRepository
@@ -193,6 +193,17 @@ class CustomerOrderService:
             order = await order_service.update(
                 session, order, order_pay, strict_tax=True
             )
+        except InvalidTaxIDError as e:
+            raise PolarRequestValidationError(
+                [
+                    ValidationError(
+                        type="value_error",
+                        loc=("body", "tax_id"),
+                        msg=e.message,
+                        input=None,
+                    )
+                ]
+            ) from e
         except TaxCalculationLogicalError as e:
             raise PolarRequestValidationError(
                 [

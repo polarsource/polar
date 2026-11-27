@@ -97,6 +97,11 @@ class TypeScriptEmitter(EmitterBase):
             self.get_context(),
         )
         self.render_file(
+            "src/redis.ts",
+            src_dir / "redis.ts",
+            self.get_context(),
+        )
+        self.render_file(
             "src/base.test.ts",
             src_dir / "base.test.ts",
             self.get_context(),
@@ -126,7 +131,7 @@ class TypeScriptEmitter(EmitterBase):
             src_dir / "portability.test.ts",
             self.get_context(),
         )
-        for module in ("metering", "outpost"):
+        for module in ("metering", "metering/queue", "outpost"):
             for source_file in (self.templates_dir / "src" / module).glob("*.ts"):
                 self.render_file(
                     f"src/{module}/{source_file.name}",

@@ -4,6 +4,7 @@ export default defineConfig({
   entry: [
     "src/index.ts",
     "src/metering/index.ts",
+    "src/metering/queue/redis.ts",
     "src/outpost/index.ts",
 {% for version in ir.versions %}
     "src/{{ version.version }}/index.ts",

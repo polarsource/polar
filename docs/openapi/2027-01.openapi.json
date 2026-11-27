@@ -7585,11 +7585,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.checkouts.update(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.checkouts.update(\n    '00000000-0000-4000-8000-000000000000',\n    external_product_id='ext_1337',\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.checkouts.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {},\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.checkouts.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"external_product_id\": \"ext_1337\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -8436,7 +8436,7 @@
           "public"
         ],
         "summary": "Create Subscription",
-        "description": "Create a subscription programmatically.\n\nSupports free products and paid products with a trial that does not require\nupfront payment setup. Paid subscriptions start with the product's configured\ntrial period. For other paid products, use the checkout flow.\n\nNo initial order will be created and no confirmation email will be sent.\n\n**Scopes**: `subscriptions:write`",
+        "description": "Create a subscription programmatically.\n\nSupports free products and paid products with a trial that does not require\nupfront payment setup. Paid subscriptions start with the product's configured\ntrial period. For other paid products, use the checkout flow.\n\nReference the customer by Polar ID or external ID. Reference the product by\nPolar ID, or by external ID together with an external customer ID.\n\nNo initial order will be created and no confirmation email will be sent.\n\n**Scopes**: `subscriptions:write`",
         "operationId": "subscriptions:create",
         "security": [
           {
@@ -8460,12 +8460,15 @@
           "content": {
             "application/json": {
               "schema": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "$ref": "#/components/schemas/SubscriptionCreateCustomer"
                   },
                   {
                     "$ref": "#/components/schemas/SubscriptionCreateExternalCustomer"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SubscriptionCreateExternal"
                   }
                 ],
                 "title": "Subscription Create"
@@ -8807,11 +8810,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.subscriptions.update(\n    '00000000-0000-4000-8000-000000000000',\n    product_id='d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23',\n)\nprint(response)\n"
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.subscriptions.update(\n    '00000000-0000-4000-8000-000000000000',\n    product_id='d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23',\n    external_product_id='ext_1337',\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.subscriptions.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"product_id\": \"d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23\"\n  },\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.subscriptions.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"product_id\": \"d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23\",\n    \"external_product_id\": \"ext_1337\"\n  },\n);\nconsole.log(response);\n"
           }
         ]
       },
@@ -11380,7 +11383,7 @@
           "public"
         ],
         "summary": "Create Order",
-        "description": "Create a draft order for an off-session charge against a saved payment\nmethod. The order is created with `status=draft` and no invoice number;\ncall `POST /v1/orders/{id}/finalize` to attempt the charge.\n\nReference the customer and the product both by Polar ID or both by external ID.\n\nThe organization must have the `off_session_charges_enabled` feature flag.\n\n**Scopes**: `orders:write`",
+        "description": "Create a draft order for an off-session charge against a saved payment\nmethod. The order is created with `status=draft` and no invoice number;\ncall `POST /v1/orders/{id}/finalize` to attempt the charge.\n\nReference the customer by `customer_id` or `external_customer_id`, and the\nproduct by `product_id` or `external_product_id`.\n\nThe organization must have the `off_session_charges_enabled` feature flag.\n\n**Scopes**: `orders:write`",
         "operationId": "orders:create",
         "security": [
           {
@@ -11407,6 +11410,12 @@
                 "oneOf": [
                   {
                     "$ref": "#/components/schemas/OrderCreate"
+                  },
+                  {
+                    "$ref": "#/components/schemas/OrderCreateExternalCustomer"
+                  },
+                  {
+                    "$ref": "#/components/schemas/OrderCreateExternalProduct"
                   },
                   {
                     "$ref": "#/components/schemas/OrderCreateExternal"
@@ -44050,6 +44059,15 @@
             "title": "Metadata",
             "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
           },
+          "external_product_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "External Product Id",
+            "description": "ID in your system of the product to checkout. Must be present in the checkout's product list. Can't be combined with `product_id`.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
           "currency": {
             "$ref": "#/components/schemas/PresentmentCurrency",
             "maxLength": 3,
@@ -52532,6 +52550,21 @@
               "397a17aa-15cf-4cb4-9333-18040203cf98"
             ]
           },
+          "external_benefit_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Benefit Id",
+            "description": "The external ID of the benefit concerned by this grant, if any. It stays the same across benefit versions.",
+            "examples": [
+              "premium_support"
+            ]
+          },
           "benefit_type": {
             "$ref": "#/components/schemas/BenefitType",
             "description": "The type of the benefit concerned by this grant.",
@@ -52582,6 +52615,7 @@
           "modified_at",
           "granted_at",
           "benefit_id",
+          "external_benefit_id",
           "benefit_type",
           "benefit_metadata",
           "properties"
@@ -52909,6 +52943,21 @@
               "d498a884-e2cd-4d3e-8002-f536468a8b22"
             ]
           },
+          "external_meter_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Meter Id",
+            "description": "The external ID of the meter, if any. It stays the same across meter versions.",
+            "examples": [
+              "tool_call"
+            ]
+          },
           "consumed_units": {
             "type": "number",
             "title": "Consumed Units",
@@ -52940,6 +52989,7 @@
           "created_at",
           "modified_at",
           "meter_id",
+          "external_meter_id",
           "consumed_units",
           "credited_units",
           "balance"
@@ -53166,6 +53216,21 @@
               "d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23"
             ]
           },
+          "external_product_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Product Id",
+            "description": "The external ID of the subscribed product, if any. It stays the same across product versions.",
+            "examples": [
+              "pro_monthly"
+            ]
+          },
           "discount_id": {
             "anyOf": [
               {
@@ -53240,6 +53305,7 @@
           "started_at",
           "ends_at",
           "product_id",
+          "external_product_id",
           "discount_id",
           "seats",
           "units",
@@ -66573,7 +66639,10 @@
                 },
                 {
                   "type": "string",
-                  "format": "date-time"
+                  "format": "date-time",
+                  "examples": [
+                    "2026-01-01T00:00:00.000000Z"
+                  ]
                 },
                 {
                   "type": "null"
@@ -66718,7 +66787,10 @@
                 },
                 {
                   "type": "string",
-                  "format": "date-time"
+                  "format": "date-time",
+                  "examples": [
+                    "2026-01-01T00:00:00.000000Z"
+                  ]
                 },
                 {
                   "type": "null"
@@ -66853,6 +66925,310 @@
         ],
         "title": "OrderCreateExternal",
         "description": "Schema to create a draft order for an off-session charge,\nreferencing the customer and product by their external IDs."
+      },
+      "OrderCreateExternalCustomer": {
+        "properties": {
+          "custom_field_data": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "format": "date-time",
+                  "examples": [
+                    "2026-01-01T00:00:00.000000Z"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Custom Field Data",
+            "description": "Key-value object storing custom field values."
+          },
+          "metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 1
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
+            },
+            "type": "object",
+            "maxProperties": 50,
+            "title": "Metadata",
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4",
+                "description": "The organization ID.",
+                "examples": [
+                  "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "The ID of the organization the order belongs to. **Required unless you use an organization token.** The customer and product must belong to this organization."
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency",
+            "description": "The currency to charge in (ISO 4217, lowercase, e.g. `usd`). Defaults to the organization's default currency; specify it to force a different one, or when the product isn't priced in the organization's default currency."
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount",
+            "description": "A custom amount to charge, in the smallest currency unit. Overrides the product's price; defaults to the product's configured price (0 for free products). A positive amount must be at least the currency's minimum. Can't be combined with `units`."
+          },
+          "units": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units",
+            "description": "The number of units to charge for. Required when the product has unit-based pricing, and rejected otherwise. The amount comes from the price's tiers. Can't be combined with `amount`."
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "A custom description for the order's line item, shown on the invoice and receipt (e.g. `5,000 tokens`). Defaults to the product name."
+          },
+          "external_customer_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "External Customer Id",
+            "description": "The ID of the customer in your system the order is for. Must belong to the order's organization.",
+            "examples": [
+              "usr_1337"
+            ]
+          },
+          "product_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Product Id",
+            "description": "The ID of the one-time product to charge for. Must belong to the order's organization. Only fixed-price, free and unit-based products are supported."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "external_customer_id",
+          "product_id"
+        ],
+        "title": "OrderCreateExternalCustomer",
+        "description": "Schema to create a draft order for an off-session charge,\nreferencing the customer by its external ID."
+      },
+      "OrderCreateExternalProduct": {
+        "properties": {
+          "custom_field_data": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "format": "date-time",
+                  "examples": [
+                    "2026-01-01T00:00:00.000000Z"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Custom Field Data",
+            "description": "Key-value object storing custom field values."
+          },
+          "metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 1
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
+            },
+            "type": "object",
+            "maxProperties": 50,
+            "title": "Metadata",
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4",
+                "description": "The organization ID.",
+                "examples": [
+                  "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "The ID of the organization the order belongs to. **Required unless you use an organization token.** The customer and product must belong to this organization."
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency",
+            "description": "The currency to charge in (ISO 4217, lowercase, e.g. `usd`). Defaults to the organization's default currency; specify it to force a different one, or when the product isn't priced in the organization's default currency."
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount",
+            "description": "A custom amount to charge, in the smallest currency unit. Overrides the product's price; defaults to the product's configured price (0 for free products). A positive amount must be at least the currency's minimum. Can't be combined with `units`."
+          },
+          "units": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units",
+            "description": "The number of units to charge for. Required when the product has unit-based pricing, and rejected otherwise. The amount comes from the price's tiers. Can't be combined with `amount`."
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "A custom description for the order's line item, shown on the invoice and receipt (e.g. `5,000 tokens`). Defaults to the product name."
+          },
+          "customer_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Customer Id",
+            "description": "The ID of the customer the order is for. Must belong to the order's organization."
+          },
+          "external_product_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "External Product Id",
+            "description": "The ID of the one-time product in your system to charge for. Resolves to the current version of the product. Must belong to the order's organization. Only fixed-price, free and unit-based products are supported.",
+            "examples": [
+              "ext_1337"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "customer_id",
+          "external_product_id"
+        ],
+        "title": "OrderCreateExternalProduct",
+        "description": "Schema to create a draft order for an off-session charge,\nreferencing the product by its external ID."
       },
       "OrderCustomer": {
         "properties": {
@@ -76929,14 +77305,7 @@
             ]
           },
           "currency": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/PresentmentCurrency"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "$ref": "#/components/schemas/PresentmentCurrency",
             "description": "The currency of the subscription. The product must have a free price in this currency or have a trial with no upfront payment setup required. If not set, the organization's default currency is used."
           },
           "customer_id": {
@@ -76956,6 +77325,85 @@
         ],
         "title": "SubscriptionCreateCustomer",
         "description": "Create a subscription for an existing customer."
+      },
+      "SubscriptionCreateExternal": {
+        "properties": {
+          "metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 1
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
+            },
+            "type": "object",
+            "maxProperties": 50,
+            "title": "Metadata",
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
+          },
+          "external_customer_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "External Customer Id",
+            "description": "The ID of the customer in your system to create the subscription for. It must already exist in Polar.",
+            "examples": [
+              "usr_1337"
+            ]
+          },
+          "external_product_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "External Product Id",
+            "description": "The ID of the recurring product in your system to subscribe to. Resolves to the current version of the product. Must be a free product or have a trial with no upfront payment setup required. Otherwise, the customer should go through a checkout flow.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4",
+                "description": "The organization ID.",
+                "examples": [
+                  "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the customer and product. **Required unless your credential identifies one organization.** Omit this field when using an organization token."
+          },
+          "currency": {
+            "$ref": "#/components/schemas/PresentmentCurrency",
+            "description": "The currency of the subscription. The product must have a free price in this currency or have a trial with no upfront payment setup required. If not set, the organization's default currency is used."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "external_customer_id",
+          "external_product_id"
+        ],
+        "title": "SubscriptionCreateExternal",
+        "description": "Create a subscription using external IDs for the customer and the product."
       },
       "SubscriptionCreateExternalCustomer": {
         "properties": {
@@ -76997,14 +77445,7 @@
             ]
           },
           "currency": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/PresentmentCurrency"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "$ref": "#/components/schemas/PresentmentCurrency",
             "description": "The currency of the subscription. The product must have a free price in this currency or have a trial with no upfront payment setup required. If not set, the organization's default currency is used."
           },
           "external_customer_id": {
@@ -79908,6 +80349,15 @@
             "description": "Update subscription to another product.",
             "examples": [
               "d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23"
+            ]
+          },
+          "external_product_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "External Product Id",
+            "description": "Update subscription to another product, referenced by its ID in your system. Resolves to the current version of the product. Can't be combined with `product_id`.",
+            "examples": [
+              "ext_1337"
             ]
           },
           "proration_behavior": {

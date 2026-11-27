@@ -7,7 +7,7 @@ from polar.worker import broker
 
 configure_sentry()
 configure_logfire("worker")
-configure_logging(logfire=True)
+configure_logging(logfire=True, process="worker")
 configure_posthog()
 
 __all__ = ["broker", "tasks"]

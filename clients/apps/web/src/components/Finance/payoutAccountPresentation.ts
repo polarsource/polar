@@ -29,9 +29,9 @@ const PRESENTATIONS: Record<
   not_connected: {
     tone: 'neutral',
     icon: BanknoteIcon,
-    title: 'Connect payout account',
+    title: 'Create payout account',
     description:
-      'Connect or create a Stripe account to receive payments from your customers.',
+      'Create a Stripe account to receive payments from your customers.',
   },
   managed_by_another_member: {
     tone: 'neutral',

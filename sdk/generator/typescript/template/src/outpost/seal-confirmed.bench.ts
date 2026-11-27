@@ -63,15 +63,10 @@ describe("CONFIRM then APPLY_SNAPSHOT", () => {
             .hset(pendingKey, ...entries)
             .evalsha(
               confirmSha,
-              4,
-              "outpost:v1:outbox",
-              "outpost:v1:outbox",
+              2,
               stateKey,
               pendingKey,
               "",
-              "",
-              0,
-              0,
               newestBucketStart,
               ids.length,
               ...ids,

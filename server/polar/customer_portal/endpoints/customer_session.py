@@ -1,7 +1,11 @@
+from fastapi import Depends
+
 from polar.auth.models import is_customer, is_member
+from polar.customer_session.service import customer_session as customer_session_service
 from polar.exceptions import PolarRequestValidationError
 from polar.models import CustomerSession, MemberSession
 from polar.openapi import APITag
+from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
 from .. import auth
@@ -69,3 +73,19 @@ async def get_authenticated_user(
             role=None,
         )
     raise ValueError("Invalid auth subject type")
+
+
+@router.post(
+    "/logout",
+    summary="Log Out of Customer Portal",
+    status_code=204,
+    tags=[APITag.private],
+)
+async def logout(
+    auth_subject: auth.CustomerPortalUnionRead,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    """Expire the current customer portal session."""
+    portal_session = auth_subject.session
+    assert isinstance(portal_session, (CustomerSession, MemberSession))
+    await customer_session_service.expire(session, portal_session)

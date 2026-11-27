@@ -35,6 +35,7 @@ from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.time_queries import TimeInterval, is_under_limits
 from polar.kit.utils import utc_now
+from polar.kit.versioning import all_api_versions
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
 from polar.member_session.service import member_session as member_session_service
@@ -1002,7 +1003,7 @@ class CustomerService:
     ) -> CustomerState:
         # 👋 Whenever you change the state schema,
         # please also update the cache key with a version number.
-        cache_key = f"polar:customer_state:v8:{customer.id}"
+        cache_key = f"polar:customer_state:v9:{customer.id}"
 
         if cache:
             raw_state = await redis.get(cache_key)
@@ -1013,7 +1014,9 @@ class CustomerService:
 
         subscription_repository = SubscriptionRepository.from_session(session)
         customer.active_subscriptions = (
-            await subscription_repository.list_active_by_customer(customer.id)
+            await subscription_repository.list_active_by_customer(
+                customer.id, options=(joinedload(Subscription.product),)
+            )
         )
 
         benefit_grant_repository = BenefitGrantRepository.from_session(session)
@@ -1025,15 +1028,22 @@ class CustomerService:
 
         customer_meter_repository = CustomerMeterRepository.from_session(session)
         customer.active_meters = await customer_meter_repository.get_all_by_customer(
-            customer.id, options=(joinedload(CustomerMeter.customer),)
+            customer.id,
+            options=(
+                joinedload(CustomerMeter.customer),
+                joinedload(CustomerMeter.meter),
+            ),
         )
 
         state = _CustomerStateAdapter.validate_python(customer, from_attributes=True)
 
         # Cached with the stored units: live reducer units are applied on every read.
+        # Every API version reads this cache, so it keeps the fields of all of them.
+        with all_api_versions():
+            cached_state = state.model_dump_json()
         await redis.set(
             cache_key,
-            state.model_dump_json(),
+            cached_state,
             ex=int(timedelta(hours=1).total_seconds()),
         )
         await self._apply_reducer_units(session, redis, customer, state)

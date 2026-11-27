@@ -305,9 +305,11 @@ class CustomerRepository(
             Customer.external_id.istartswith(query, autoescape=True),
         )
 
-    async def get_ids_by_email(self, email: str) -> Sequence[UUID]:
+    async def get_ids_by_email(
+        self, email: str, *, include_deleted: bool = False
+    ) -> Sequence[UUID]:
         statement = (
-            self.get_base_statement()
+            self.get_base_statement(include_deleted=include_deleted)
             .with_only_columns(Customer.id)
             .where(func.lower(Customer.email) == email.lower())
         )

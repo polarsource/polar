@@ -85,6 +85,7 @@ export class RedisEventQueue implements EventQueue {
   private drainUntil = Infinity;
   private drainAgain = false;
   private undrained = false;
+  private readonly flushes = new Map<() => void, number>();
 
   constructor(
     private readonly redisSource: string | Redis,
@@ -134,9 +135,21 @@ export class RedisEventQueue implements EventQueue {
     if (!results?.[1]?.[1]) this.undrained = true;
   }
 
+  // A newer flush releases the ones still waiting that it outlasts: one waiter keeps a serverless
+  // function alive until the drain ends, the others answer.
   async flush(options?: DeliveryOptions): Promise<void> {
     this.requireRedis();
-    await this.drainOwn(deliveryTimeout(options));
+    const timeout = deliveryTimeout(options);
+    const deadline = Date.now() + timeout;
+    for (const [release, until] of this.flushes) if (until <= deadline) release();
+    let release!: () => void;
+    const released = new Promise<void>((resolve) => (release = resolve));
+    this.flushes.set(release, deadline);
+    try {
+      await Promise.race([this.drainOwn(timeout), released]);
+    } finally {
+      this.flushes.delete(release);
+    }
   }
 
   // Redis keeps what a drain fails to deliver: the next flush takes it. Without an event of its

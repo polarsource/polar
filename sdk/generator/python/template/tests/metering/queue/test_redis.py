@@ -15,7 +15,7 @@ from fakeredis import FakeAsyncRedis, FakeServer
 from redis.asyncio import Redis
 
 from polar.metering import _ingest_events
-from polar.metering.errors import DropReason
+from polar.metering.errors import DropReason, MeteringTimeoutError
 from polar.metering.events import EventInput
 from polar.metering.queue import EventQueue
 from polar.metering.queue.redis import RedisEventQueue
@@ -452,6 +452,53 @@ async def test_returns_from_a_flush_once_its_drain_ends_while_another_flusher_st
         # fleet's stream.
         await queue.flush(timeout=0.5)
         assert _delivered(ingest) == []
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    ("newer_timeout", "returned"),
+    [
+        (30.0, ["older", "newer"]),
+        # A newer flush that gives up first does not release the one still waiting.
+        (0.2, ["newer timed out", "older"]),
+    ],
+)
+async def test_releases_an_older_flush_when_a_newer_one_outlasts_it(
+    redis_connection: tuple[str, Redis],
+    newer_timeout: float,
+    returned: list[str],
+) -> None:
+    url, _ = redis_connection
+    delivering = anyio.Event()
+    deliver = anyio.Event()
+
+    async def ingest(events: list[EventInput]) -> None:
+        delivering.set()
+        await deliver.wait()
+
+    done: list[str] = []
+
+    async def flush(name: str, timeout: float) -> None:
+        try:
+            await queue.flush(timeout=timeout)
+            done.append(name)
+        except MeteringTimeoutError:
+            done.append(f"{name} timed out")
+
+    async with RedisEventQueue(url, stream=QUEUE).open(ingest=ingest) as queue:
+        await queue.enqueue(_usage("event-0", 10))
+        async with anyio.create_task_group() as group:
+            group.start_soon(flush, "older", 30.0)
+            await delivering.wait()
+            # A serverless instance serves many ticks at once: one keeps it alive until
+            # the drain ends, the others answer.
+            group.start_soon(flush, "newer", newer_timeout)
+            with anyio.fail_after(1):
+                while not done:
+                    await anyio.sleep(0.01)
+            assert done == returned[:1]
+            deliver.set()
+        assert done == returned
 
 
 @pytest.mark.anyio

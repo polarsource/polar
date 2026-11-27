@@ -1,45 +1,56 @@
 ---
-title: "Team Management"
-sidebarTitle: "Team Management"
-description: "Invite teammates to your organization, manage their roles, and control what they can access in the Polar dashboard."
+title: "Team management"
+sidebarTitle: "Team management"
+description: "Invite teammates, set their roles and permissions, remove members and transfer ownership of your organization."
 ---
 
-Polar organizations support multiple users. You can invite teammates to collaborate on products, orders, customers, and other parts of your business — each with a role that determines what they're allowed to do.
+Polar organizations support multiple users. You can invite teammates to work on products, orders, customers and the rest of your business. Each member has a role that decides what they can do.
 
 Team management lives under [**Settings → Members**](https://polar.sh/to/dashboard/settings/members) in your dashboard.
 
 <Note>
+  Dashboard only. Members, roles and invitations aren't available from the CLI or MCP server.
+</Note>
+
+<Tip>
   On the Scale plan you can connect your own identity provider instead of inviting people one by
   one. See [Single Sign-On](/features/sso).
-</Note>
+</Tip>
 
 ## Roles
 
-Every member of an organization has one of three roles:
+Every member of an organization has one of four roles:
 
 | Role | Description |
 | --- | --- |
 | **Owner** | There is always exactly one owner per organization. Has the same permissions as an admin. |
-| **Admin** | Full access to the organization — including managing members, finances, and organization settings. |
+| **Admin** | Full access to the organization, including members, finances and organization settings. |
+| **Finance** | Read access to the business and its finances (balance, payouts), plus managing sales such as orders, subscriptions and refunds. Can see other members, but cannot edit products, customers or settings. |
 | **Member** | Operational access to day-to-day work (products, customers, orders, analytics) but cannot manage other members, finances, or organization settings. |
 
 ### Permissions
 
 The exact permissions granted by each role:
 
-| Permission | Member | Admin | Owner |
-| --- | :---: | :---: | :---: |
-| View & manage products | ✓ | ✓ | ✓ |
-| View & manage customers | ✓ | ✓ | ✓ |
-| View & manage custom fields | ✓ | ✓ | ✓ |
-| View & manage sales (orders, subscriptions, refunds) | ✓ | ✓ | ✓ |
-| View & manage analytics | ✓ | ✓ | ✓ |
-| View other members | ✓ | ✓ | ✓ |
-| Invite, remove & change member roles | | ✓ | ✓ |
-| View & manage finances (balance, payouts) | | ✓ | ✓ |
-| Manage organization settings (including webhooks & API keys) | | ✓ | ✓ |
+| Permission | Member | Finance | Admin | Owner |
+| --- | :---: | :---: | :---: | :---: |
+| View products | ✓ | ✓ | ✓ | ✓ |
+| Manage products | ✓ | | ✓ | ✓ |
+| View customers | ✓ | ✓ | ✓ | ✓ |
+| Manage customers | ✓ | | ✓ | ✓ |
+| View custom fields | ✓ | ✓ | ✓ | ✓ |
+| Manage custom fields | ✓ | | ✓ | ✓ |
+| View & manage sales (orders, subscriptions, refunds) | ✓ | ✓ | ✓ | ✓ |
+| View analytics | ✓ | ✓ | ✓ | ✓ |
+| Manage analytics | ✓ | | ✓ | ✓ |
+| Ingest events | ✓ | | ✓ | ✓ |
+| View other members | ✓ | ✓ | ✓ | ✓ |
+| Invite, remove & change member roles | | | ✓ | ✓ |
+| View finances (balance, transactions, payouts) | | ✓ | ✓ | ✓ |
+| Manage finances (payout account, payouts) | | | ✓ | ✓ |
+| Manage organization settings (including webhooks & API keys) | | | ✓ | ✓ |
 
-`owner` and `admin` carry the same permissions — the owner is distinguished by the fact that every organization always has exactly one, not by additional capabilities.
+`owner` and `admin` carry the same permissions. What sets the owner apart is that every organization has exactly one, not extra capabilities.
 
 ## Inviting a member
 
@@ -53,7 +64,7 @@ The invitee receives an email with a link to join your organization. If they don
 New members join with the **Member** role by default. To grant additional access, change their role after they've been added.
 
 <Note>
-**Already a member?** If you invite an email that's already part of your organization, no new invite is sent — the existing membership is shown instead.
+**Already a member?** If you invite an email that's already part of your organization, no new invite is sent. The existing membership is shown instead.
 </Note>
 
 <Warning>
@@ -67,12 +78,12 @@ Only **admins** and **owners** can change roles.
 1. Go to [**Settings → Members**](https://polar.sh/to/dashboard/settings/members).
 2. Click the **⋯** menu on the member's row.
 3. Choose **Change role**.
-4. Select **Admin** or **Member** and click **Save**.
+4. Select **Admin**, **Finance** or **Member** and click **Save**.
 
 The role picker shows a side-by-side permissions matrix so you can confirm what each role grants before saving.
 
 <Note>
-**The owner's role can't be changed from this menu.** Every organization has exactly one owner at all times. Ownership can only be transferred to another member of the organization who has completed identity verification — please [contact support](/support) to request an ownership transfer.
+**The owner's role can't be changed from this menu.** See [Transfer ownership](#transfer-ownership).
 </Note>
 
 ## Removing a member
@@ -87,7 +98,7 @@ Only **admins** and **owners** can remove other members.
 The removed member immediately loses access to the organization. They keep their Polar account and any other organizations they're a member of.
 
 <Warning>
-**You can't remove the owner.** Every organization always has exactly one owner — to remove the current owner, ownership must first be transferred to another member who has completed identity verification. Please [contact support](/support) to request an ownership transfer.
+**You can't remove the owner.** [Transfer ownership](#transfer-ownership) to another member first.
 </Warning>
 
 <Warning>
@@ -104,8 +115,23 @@ If you want to leave an organization yourself:
 
 You can't leave an organization if you are:
 
-- The **owner** — ownership must be transferred first.
+- The **owner**. [Transfer ownership](#transfer-ownership) first.
 - The **only remaining member** of the organization.
+
+## Transfer ownership
+
+Every organization has exactly one owner. Ownership moves through support:
+
+1. [Invite](#inviting-a-member) the new owner, if they aren't a member yet.
+2. Ask them to sign in and complete identity verification under **Finance → Account**.
+3. Make sure no payout is pending.
+4. From the current owner's email address, [contact support](/support) to confirm the transfer.
+
+Once the transfer completes, the previous owner becomes an admin.
+
+## Notifications
+
+Each member chooses which email notifications they receive for the organization, such as new orders and subscriptions. See [Notifications](/features/notifications).
 
 ## Frequently asked questions
 
@@ -114,13 +140,17 @@ You can't leave an organization if you are:
     No. If the invited email doesn't have a Polar account yet, one is created automatically. The user signs in to claim it when they accept the invitation.
   </Accordion>
   <Accordion title="Can people join without an invitation?">
-    Yes, if your organization uses [Single Sign-On](/features/sso). Anyone who authenticates through your identity provider becomes a member with the Member role — no invitation needed. Your identity provider controls who can do that.
+    Yes, if your organization uses [Single Sign-On](/features/sso). Anyone who authenticates through your identity provider becomes a member with the Member role, without an invitation. Your identity provider controls who can do that.
   </Accordion>
   <Accordion title="Can a user belong to more than one organization?">
     Yes. A user can be a member of any number of organizations and may have different roles in each one. You can switch between them from the organization picker in the dashboard.
   </Accordion>
-  <Accordion title="How do I transfer ownership of an organization?">
-    Ownership can only be transferred to another member of the organization who has completed identity verification. Every organization always has exactly one owner — the previous owner becomes an admin once the transfer completes.
-    Please [contact support](/support) to request an ownership transfer.
-  </Accordion>
 </AccordionGroup>
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Single Sign-On](/features/sso) | Let your team sign in through your identity provider |
+| [Notifications](/features/notifications) | Choose which emails each member gets |
+| [Settings](/features/settings) | Every organization setting in one place |

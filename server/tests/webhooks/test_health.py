@@ -52,6 +52,7 @@ class TestWebhooks:
                 WebhookDelivery(
                     webhook_event=event,
                     webhook_endpoint=webhook_endpoint_organization,
+                    organization_id=webhook_endpoint_organization.organization_id,
                     succeeded=succeeded,
                     deleted_at=deleted_at,
                 )

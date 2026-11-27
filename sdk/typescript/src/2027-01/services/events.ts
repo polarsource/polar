@@ -31,16 +31,16 @@ export const listEvents = (client: ClientBase) => {
    */
   return async (
     query?: {
+      organization_id?: string | string[] | null;
+      query?: string | null;
       filter?: string | null;
       start_timestamp?: string | null;
       end_timestamp?: string | null;
-      organization_id?: string | string[] | null;
       customer_id?: string | string[] | null;
       external_customer_id?: string | string[] | null;
       meter_id?: string | null;
       name?: string | string[] | null;
       source?: EventSource | EventSource[] | null;
-      query?: string | null;
       parent_id?: string | null;
       depth?: number | null;
       page?: number;
@@ -52,16 +52,16 @@ export const listEvents = (client: ClientBase) => {
   ): Promise<ListResourceEvent | ListResourceWithCursorPaginationEvent> => {
     const pathParams = {};
     const queryParams = {
+      organization_id: query?.organization_id,
+      query: query?.query,
       filter: query?.filter,
       start_timestamp: query?.start_timestamp,
       end_timestamp: query?.end_timestamp,
-      organization_id: query?.organization_id,
       customer_id: query?.customer_id,
       external_customer_id: query?.external_customer_id,
       meter_id: query?.meter_id,
       name: query?.name,
       source: query?.source,
-      query: query?.query,
       parent_id: query?.parent_id,
       depth: query?.depth,
       page: query?.page ?? 1,

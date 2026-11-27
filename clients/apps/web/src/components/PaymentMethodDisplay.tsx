@@ -43,6 +43,7 @@ interface PaymentMethodDisplayProps {
 
 const PAYMENT_METHOD_TYPE_LABELS: Record<string, string> = {
   link: 'Link',
+  paypal: 'PayPal',
   amazon_pay: 'Amazon Pay',
   kr_card: 'Korean card',
   kakao_pay: 'Kakao Pay',

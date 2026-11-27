@@ -1,5 +1,7 @@
 import * as ui from '@/utils/ui'
 
+export const isSet = (value: unknown) => value !== null && value !== undefined
+
 export const name = (input: unknown) =>
   ui.printable(String(input)).replace(/\s+/g, ' ').trim()
 
@@ -19,6 +21,12 @@ export const record = (input: unknown): Record<string, unknown> | undefined =>
     ? (input as Record<string, unknown>)
     : undefined
 
+// Custom fields are keyed by slug, everything else by external_id
+export const entryKey = (entry: unknown) => {
+  const key = record(entry)?.['external_id'] ?? record(entry)?.['slug']
+  return typeof key === 'string' ? key : undefined
+}
+
 const clause = (input: Record<string, unknown>) =>
   `${name(input['property'])} ${OPERATORS[String(input['operator'])] ?? name(input['operator'])} ${JSON.stringify(input['value'])}`
 
@@ -30,11 +38,8 @@ export const filter = (
 ): string => {
   const clauses = (input['clauses'] as unknown[]).map((item) => {
     const value = record(item)
-    return value && 'conjunction' in value
-      ? filter(value, true)
-      : value
-        ? clause(value)
-        : JSON.stringify(item)
+    if (!value) return JSON.stringify(item)
+    return 'conjunction' in value ? filter(value, true) : clause(value)
   })
   if (clauses.length === 0) return ALL_EVENTS
   if (clauses.length === 1) return clauses[0] ?? ''

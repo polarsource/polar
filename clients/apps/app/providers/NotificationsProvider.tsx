@@ -1,3 +1,4 @@
+import { capture } from '@/utils/posthog'
 import Constants from 'expo-constants'
 import * as Device from 'expo-device'
 import * as Linking from 'expo-linking'
@@ -95,6 +96,7 @@ export default function NotificationsProvider({
     responseListener.current =
       Notifications.addNotificationResponseReceivedListener((response) => {
         const data = response.notification.request.content.data
+        capture('app:notifications:push:open')
         if (data?.deepLink && typeof data.deepLink === 'string') {
           Linking.openURL(data.deepLink)
         }

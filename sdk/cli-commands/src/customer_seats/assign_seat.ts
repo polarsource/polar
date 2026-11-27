@@ -9,6 +9,7 @@ import {
   mergeInput,
   jsonFlag,
   nullableStringFlag,
+  org,
 } from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['customerSeats']['assignSeat']>[0]>
@@ -17,6 +18,7 @@ export const command = Command.make(
   'assign_seat',
   {
     fields,
+    org,
     data,
     input: {
       subscription_id: nullableStringFlag('subscription-id').pipe(
@@ -86,6 +88,7 @@ export const command = Command.make(
         method: 'POST',
         requiresConfirmation: false,
         confirm: false,
+        organizationId: config.org,
         fields: config.fields,
         invoke: (client) => client.customerSeats.assignSeat(body),
       })

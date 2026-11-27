@@ -10,19 +10,19 @@ const STEPS: GraphicCardProps[] = [
   {
     title: 'Measure the usage',
     desc: 'Every call, token and GPU second your users consume, recorded the moment it happens.',
-    href: '/features/event-ingestion',
+    href: '/features/usage-billing#events',
     Graphic: RadialSpinner,
   },
   {
     title: 'Aggregate into meters',
     desc: 'Raw events roll up into a live meter for every customer, updated in real time. No batch jobs, no lag.',
-    href: '/features/meters',
+    href: '/features/usage-billing#meters',
     Graphic: GaugeSweep,
   },
   {
     title: 'Bill it automatically',
     desc: 'Usage lands on the invoice and settles at the end of every cycle, without any manual reconciliation.',
-    href: '/features/usage-billing',
+    href: '/features/usage-billing#billing',
     Graphic: SteppedRadial,
   },
 ]
@@ -30,12 +30,13 @@ const STEPS: GraphicCardProps[] = [
 export const Meter = () => (
   <Chapter
     id="meter"
-    name="01 Meter anything"
+    rule={false}
+    name="01 Usage Billing"
     title="Every token becomes revenue"
     subtitle="the moment your model streams it"
     description="Tokens, agent runs and GPU seconds flow through live meters and land on the invoice, priced however you sell."
   >
-    <Box flexDirection="column" rowGap="4xl">
+    <Box flexDirection="column" rowGap="3xl">
       <MeterStream />
       <GraphicCardGrid cards={STEPS} />
     </Box>

@@ -1,28 +1,30 @@
 import contextlib
 import dataclasses
-import math
 import uuid
 from collections import defaultdict
 from collections.abc import AsyncGenerator, AsyncIterable, Sequence
 from datetime import datetime
 from decimal import Decimal
-from typing import cast
+from typing import Literal, cast
 
 import logfire
 import structlog
 from babel.dates import format_date
-from sqlalchemy.util.typing import Literal
+from babel.numbers import format_decimal
 
+from polar.billing_interval.service import billing_interval as billing_interval_service
+from polar.billing_interval.types import MeterCharge
 from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
-from polar.kit.math import non_negative_running_sum
+from polar.exceptions import PolarError
+from polar.kit.math import non_negative_running_sum, polar_round
 from polar.kit.utils import utc_now
 from polar.meter.aggregation import AggregationFunction
 from polar.meter.service import meter as meter_service
-from polar.models import BillingEntry, Event, OrderItem, Product, Subscription
+from polar.models import BillingEntry, Event, Meter, OrderItem, Product, Subscription
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.event import EventSource
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncReadSession, AsyncSession
 from polar.product.guard import (
     MeteredPrice,
     StaticPrice,
@@ -32,6 +34,7 @@ from polar.product.guard import (
 from polar.product.repository import ProductPriceRepository, ProductRepository
 from polar.reducer.service import reducer as reducer_service
 
+from .comparison import Comparison, Quantities, compare
 from .repository import BillingEntryRepository
 from .types import BillingEntrySelector, PendingByMeter, PendingByPrice
 
@@ -62,6 +65,23 @@ class MeteredLineItem:
     proration: Literal[False] = False
 
 
+class ReducerUsageAlreadyBilled(PolarError):
+    def __init__(self, subscription: Subscription) -> None:
+        self.subscription = subscription
+        super().__init__(
+            f"Reducer usage of subscription {subscription.id} was billed by "
+            "another order while its order was created.",
+            409,
+        )
+
+
+async def _no_line_items() -> AsyncGenerator[
+    tuple[StaticLineItem | MeteredLineItem, BillingEntrySelector]
+]:
+    return
+    yield
+
+
 class BillingEntryService:
     @contextlib.asynccontextmanager
     async def _create_order_items(
@@ -73,22 +93,33 @@ class BillingEntryService:
         ],
         *,
         cutoff: datetime,
+        reducer_cutoff: datetime,
     ) -> AsyncGenerator[Sequence[OrderItem]]:
         repository = BillingEntryRepository.from_session(session)
         await repository.lock_pending_by_subscription(subscription.id)
 
         item_entries_map: dict[OrderItem, BillingEntrySelector] = {}
         consumed_units: dict[uuid.UUID, Decimal] = defaultdict(Decimal)
+        credited_units: dict[uuid.UUID, Decimal] = defaultdict(Decimal)
+        net_units: dict[uuid.UUID, Decimal] = defaultdict(Decimal)
+        meters: dict[uuid.UUID, Meter] = {}
+        meter_order_item_ids: dict[uuid.UUID, list[uuid.UUID]] = defaultdict(list)
         async for line_item, selector in line_items:
+            order_item_id = uuid.uuid4()
             if (
                 isinstance(line_item, MeteredLineItem)
                 and line_item.price.meter.aggregation.func != AggregationFunction.unique
             ):
-                consumed_units[line_item.price.meter_id] += Decimal(
-                    str(line_item.consumed_units)
-                )
+                meter_id = line_item.price.meter_id
+                units = Decimal(str(line_item.consumed_units))
+                consumed_units[meter_id] += units
+                credited_units[meter_id] += line_item.credited_units
+                # Each line item bills its own net units.
+                net_units[meter_id] += max(Decimal(0), units - line_item.credited_units)
+                meters[meter_id] = line_item.price.meter
+                meter_order_item_ids[meter_id].append(order_item_id)
             order_item = OrderItem(
-                id=uuid.uuid4(),
+                id=order_item_id,
                 label=line_item.label,
                 amount=line_item.amount,
                 net_amount=line_item.amount,
@@ -120,42 +151,348 @@ class BillingEntryService:
             else:
                 await repository.update_order_item_id(selector, order_item.id)
 
-        billable_from = subscription.trial_end or subscription.started_at
-        if consumed_units and billable_from is not None:
+        if consumed_units:
             order_id = next(iter(item_entries_map)).order_id
             with logfire.span(
                 "Bill and compare reducer usage",
                 organization_id=str(subscription.customer.organization_id),
                 subscription_id=str(subscription.id),
                 order_id=str(order_id),
-                cutoff=cutoff,
+                cutoff=reducer_cutoff,
             ) as span:
-                quantities = await reducer_service.bill(
+                quantities = await billing_interval_service.bill_usage(
                     session,
-                    subscription.customer,
+                    subscription,
                     set(consumed_units),
                     order_id=order_id,
-                    billable_from=billable_from,
-                    cutoff=cutoff,
+                    cutoff=reducer_cutoff,
                 )
+                legacy = {
+                    meter_id: Quantities(
+                        usage=consumed_units[meter_id],
+                        credits=credited_units[meter_id],
+                        net=net,
+                    )
+                    for meter_id, net in net_units.items()
+                }
+                comparisons: dict[uuid.UUID, Comparison] = {}
+                for meter_id, (usage, credits) in quantities.items():
+                    comparisons[meter_id] = await compare(
+                        session,
+                        subscription,
+                        meters[meter_id],
+                        order_id,
+                        meter_order_item_ids[meter_id],
+                        legacy=legacy[meter_id],
+                        reducer=Quantities(
+                            usage=usage,
+                            credits=credits,
+                            net=max(Decimal(0), usage - credits),
+                        ),
+                        cutoff=reducer_cutoff,
+                    )
                 span.set_attribute(
                     "quantities",
                     {
-                        str(meter_id): {
-                            "legacy": str(units),
-                            "reducer": str(quantities.get(meter_id)),
-                        }
-                        for meter_id, units in consumed_units.items()
+                        str(meter_id): comparisons[meter_id].to_dict()
+                        if meter_id in comparisons
+                        else {"legacy": legacy[meter_id].to_dict(), "reducer": None}
+                        for meter_id in legacy
                     },
+                )
+                span.set_attribute(
+                    "raw_match",
+                    all(
+                        meter_id in comparisons and comparisons[meter_id].raw_match
+                        for meter_id in legacy
+                    ),
                 )
                 span.set_attribute(
                     "match",
                     all(
-                        meter_id in quantities
-                        and math.isclose(quantities[meter_id], units)
-                        for meter_id, units in consumed_units.items()
+                        meter_id in comparisons and comparisons[meter_id].match
+                        for meter_id in legacy
                     ),
                 )
+
+    @contextlib.asynccontextmanager
+    async def _create_order_items_from_reducers(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        static_line_items: AsyncIterable[
+            tuple[StaticLineItem | MeteredLineItem, BillingEntrySelector]
+        ],
+        *,
+        include_metered: bool = True,
+        period_start: datetime | None,
+        cutoff: datetime,
+        reducer_cutoff: datetime,
+        paid_on_creation: bool = False,
+    ) -> AsyncGenerator[Sequence[OrderItem]]:
+        """Like `_create_order_items`, with the metered usage read from the
+        reducers instead of the pending billing entries. The order bills the
+        period from `period_start` to `reducer_cutoff`.
+
+        The order bills exactly the buckets it read: usage arriving while it is
+        created is left to the next order. Buckets another order billed in the
+        meantime roll the order back to be retried, unless it is
+        `paid_on_creation`: it is charged before they are marked and the payment
+        can't be rolled back, so it is logged instead."""
+        meter_ids = (
+            await billing_interval_service.get_meter_ids(session, subscription)
+            if include_metered
+            else set()
+        )
+
+        async with self._create_order_items(
+            session,
+            subscription,
+            static_line_items,
+            cutoff=cutoff,
+            reducer_cutoff=reducer_cutoff,
+        ) as static_items:
+            usage, bucket_ids = (
+                await billing_interval_service.seal_usage(
+                    session,
+                    subscription,
+                    meter_ids,
+                    period_start=period_start,
+                    cutoff=reducer_cutoff,
+                )
+                if meter_ids
+                else ({}, [])
+            )
+            legacy_cutoff = utc_now()
+            legacy_usage = (
+                await self._get_legacy_usage(
+                    session,
+                    subscription,
+                    usage,
+                    before=period_start,
+                    cutoff=legacy_cutoff,
+                )
+                if period_start is not None
+                else {}
+            )
+            items_by_meter = {
+                meter_id: await self._get_reducer_order_items(session, charge)
+                for meter_id, charge in usage.items()
+            }
+            legacy_items_by_meter = {
+                meter_id: await self._get_legacy_order_items(
+                    session, usage[meter_id], legacy_units
+                )
+                for meter_id, legacy_units in legacy_usage.items()
+            }
+            metered_items = [
+                item
+                for meter_id, items in items_by_meter.items()
+                for item in (
+                    *items,
+                    *legacy_items_by_meter.get(meter_id, {}).values(),
+                )
+            ]
+
+            yield [*static_items, *metered_items]
+
+            if metered_items:
+                billed = await reducer_service.mark_as_billed(
+                    session, bucket_ids, order_id=metered_items[0].order_id
+                )
+                if billed != len(bucket_ids):
+                    if not paid_on_creation:
+                        raise ReducerUsageAlreadyBilled(subscription)
+                    log.error(
+                        "Reducer usage was billed by another order after the order "
+                        "was paid",
+                        subscription_id=subscription.id,
+                        order_id=metered_items[0].order_id,
+                    )
+
+            repository = BillingEntryRepository.from_session(session)
+            for legacy_items in legacy_items_by_meter.values():
+                for price_id, item in legacy_items.items():
+                    assert period_start is not None
+                    await repository.link_pending_by_subscription_and_price(
+                        subscription.id,
+                        price_id,
+                        item.id,
+                        before=period_start,
+                        cutoff=legacy_cutoff,
+                    )
+            for meter_id, items in items_by_meter.items():
+                if items:
+                    # The reducer bills all usage from here on: no legacy entry
+                    # read above stays pending to be carried over again.
+                    await repository.link_pending_by_subscription_and_meter(
+                        subscription.id, meter_id, items[0].id, cutoff=legacy_cutoff
+                    )
+
+    async def _get_legacy_usage(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        usage: dict[uuid.UUID, MeterCharge],
+        *,
+        before: datetime,
+        cutoff: datetime,
+    ) -> dict[uuid.UUID, dict[uuid.UUID, Decimal]]:
+        """The sums and counts legacy billing left pending before `before`, by
+        meter and by price, oldest price first: their billing entries were created
+        after the order that marked their buckets as billed. Only counts entries
+        created by `cutoff`."""
+        repository = BillingEntryRepository.from_session(session)
+        event_repository = EventRepository.from_session(session)
+        price_repository = ProductPriceRepository.from_session(session)
+        legacy_usage: dict[uuid.UUID, dict[uuid.UUID, Decimal]] = {}
+        for meter_id in usage:
+            legacy_units: dict[uuid.UUID, Decimal] = {}
+            for price_id in await repository.get_pending_metered_price_ids(
+                subscription.id, meter_id, before=before
+            ):
+                price = cast(
+                    MeteredPrice,
+                    await price_repository.get_by_id(price_id, include_deleted=True),
+                )
+                if not price.meter.aggregation.is_summable():
+                    break
+                units = Decimal(
+                    str(
+                        await meter_service.get_quantity(
+                            session,
+                            price.meter,
+                            event_repository.get_by_pending_meter_entries_statement(
+                                subscription.id, meter_id
+                            ).where(
+                                BillingEntry.product_price_id == price_id,
+                                BillingEntry.start_timestamp < before,
+                                BillingEntry.created_at <= cutoff,
+                            ),
+                        )
+                    )
+                )
+                if not units:
+                    continue
+                log.info(
+                    "Billing legacy usage with reducer usage",
+                    subscription_id=subscription.id,
+                    meter_id=meter_id,
+                    product_price_id=price_id,
+                    units=str(units),
+                )
+                legacy_units[price_id] = units
+            if legacy_units:
+                legacy_usage[meter_id] = legacy_units
+        return legacy_usage
+
+    async def _get_legacy_order_items(
+        self,
+        session: AsyncSession,
+        charge: MeterCharge,
+        legacy_units: dict[uuid.UUID, Decimal],
+    ) -> dict[uuid.UUID, OrderItem]:
+        """An item per price of `legacy_units`, for what its usage adds to the
+        meter's charge when billed with it, ahead of the charge's own prices."""
+        repository = ProductPriceRepository.from_session(session)
+        charge = dataclasses.replace(
+            charge,
+            units_by_price={
+                **{
+                    price_id: Decimal(0)
+                    for price_id in legacy_units
+                    if price_id not in charge.units_by_price
+                },
+                **charge.units_by_price,
+            },
+            period_shares={
+                **dict.fromkeys(legacy_units, Decimal(1)),
+                **charge.period_shares,
+            },
+        )
+        amount = await self.get_reducer_charge_amount(session, charge)
+        items: dict[uuid.UUID, OrderItem] = {}
+        for price_id, units in legacy_units.items():
+            charge = dataclasses.replace(
+                charge,
+                units=charge.units + units,
+                units_by_price={
+                    **charge.units_by_price,
+                    price_id: charge.units_by_price[price_id] + units,
+                },
+            )
+            amount_with_legacy = await self.get_reducer_charge_amount(session, charge)
+            price = cast(
+                MeteredPrice, await repository.get_by_id(price_id, include_deleted=True)
+            )
+            legacy_amount = amount_with_legacy - amount
+            items[price_id] = OrderItem(
+                label=(
+                    f"{price.meter.name} — "
+                    f"({format_decimal(units, locale='en_US')} consumed units "
+                    "from the previous period)"
+                ),
+                amount=legacy_amount,
+                net_amount=legacy_amount,
+                tax_amount=0,
+                proration=False,
+                product_price=price,
+            )
+            amount = amount_with_legacy
+        return items
+
+    async def _get_reducer_order_items(
+        self, session: AsyncSession, charge: MeterCharge
+    ) -> list[OrderItem]:
+        return [
+            OrderItem(
+                label=f"{price.meter.name} — {amount_label}",
+                amount=amount,
+                net_amount=amount,
+                tax_amount=0,
+                proration=False,
+                product_price=price,
+            )
+            for price, amount, amount_label in await self._price_reducer_charge(
+                session, charge
+            )
+        ]
+
+    async def get_reducer_charge_amount(
+        self, session: AsyncReadSession, charge: MeterCharge
+    ) -> int:
+        """The amount an order would charge for the meter's usage."""
+        return sum(
+            amount for _, amount, _ in await self._price_reducer_charge(session, charge)
+        )
+
+    async def _price_reducer_charge(
+        self, session: AsyncReadSession, charge: MeterCharge
+    ) -> list[tuple[MeteredPrice, int, str]]:
+        """The amount and label of each price the meter's usage is charged at.
+        Credits come off a sum or count at the oldest price first. A max, min or
+        average is charged above the credits at every price, for its share of the
+        period."""
+        repository = ProductPriceRepository.from_session(session)
+        priced: list[tuple[MeteredPrice, int, str]] = []
+        credited_units = charge.credited_units
+        for price_id, units in charge.units_by_price.items():
+            if units <= 0:
+                continue
+            price = cast(
+                MeteredPrice, await repository.get_by_id(price_id, include_deleted=True)
+            )
+            amount, amount_label = price.get_amount_and_label(
+                float(units), credited_units
+            )
+            period_share = charge.period_shares[price_id]
+            if period_share < 1:
+                amount = polar_round(amount * period_share)
+                amount_label += f" — {period_share:.0%} of the period"
+            priced.append((price, amount, amount_label))
+            if price.meter.aggregation.is_summable():
+                credited_units = max(Decimal(0), credited_units - units)
+        return priced
 
     def create_order_items_from_pending(
         self,
@@ -164,8 +501,24 @@ class BillingEntryService:
         *,
         include_metered: bool = True,
         cutoff: datetime | None = None,
+        reducer_cutoff: datetime | None = None,
+        period_start: datetime | None = None,
+        paid_on_creation: bool = False,
     ) -> contextlib.AbstractAsyncContextManager[Sequence[OrderItem]]:
         cutoff = cutoff or utc_now()
+        if subscription.organization.is_reducer_billing_enabled:
+            return self._create_order_items_from_reducers(
+                session,
+                subscription,
+                self.compute_pending_subscription_line_items(
+                    session, subscription, include_metered=False, cutoff=cutoff
+                ),
+                include_metered=include_metered,
+                period_start=period_start,
+                cutoff=cutoff,
+                reducer_cutoff=reducer_cutoff or cutoff,
+                paid_on_creation=paid_on_creation,
+            )
         return self._create_order_items(
             session,
             subscription,
@@ -173,6 +526,7 @@ class BillingEntryService:
                 session, subscription, include_metered=include_metered, cutoff=cutoff
             ),
             cutoff=cutoff,
+            reducer_cutoff=reducer_cutoff or cutoff,
         )
 
     def create_metered_order_items_from_pending(
@@ -182,6 +536,7 @@ class BillingEntryService:
         *,
         cutoff: datetime | None = None,
         price_ids: Sequence[uuid.UUID] | None = None,
+        period_start: datetime | None = None,
     ) -> contextlib.AbstractAsyncContextManager[Sequence[OrderItem]]:
         """
         Build order items from the subscription's pending *metered* billing entries
@@ -189,6 +544,15 @@ class BillingEntryService:
         which settles usage between billing renewals.
         """
         cutoff = cutoff or utc_now()
+        if subscription.organization.is_reducer_billing_enabled:
+            return self._create_order_items_from_reducers(
+                session,
+                subscription,
+                _no_line_items(),
+                period_start=period_start,
+                cutoff=cutoff,
+                reducer_cutoff=cutoff,
+            )
         return self._create_order_items(
             session,
             subscription,
@@ -196,6 +560,7 @@ class BillingEntryService:
                 session, subscription, cutoff=cutoff, price_ids=price_ids
             ),
             cutoff=cutoff,
+            reducer_cutoff=cutoff,
         )
 
     async def compute_pending_subscription_line_items(

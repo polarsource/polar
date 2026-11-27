@@ -1,26 +1,69 @@
 ---
 title: "Authentication"
 sidebarTitle: "Authentication"
+description: "Choose how to authenticate Polar API requests: an organization access token for your own integration, or OAuth 2.0 to act for other Polar users."
 ---
 
-<Info>
-    All bearer tokens should be kept private and never shared or exposed in client-side code.
-</Info>
+Every Polar API request carries a bearer token in the `Authorization` header. Which token you use depends on whose data you're acting on.
 
-To authenticate requests, Polar API has two mechanisms.
-1. [Organization Access Tokens (OAT)](/integrate/oat) - Recommended
-2. [OAuth 2.0 Provider](/integrate/oauth2/introduction) (Partner Integrations)
+| Token | Prefix | Use it when |
+| --- | --- | --- |
+| [Organization access token](/integrate/oat) (OAT) | `polar_oat_` | Your server, scripts or CI call the API for your own organization. Use this in almost every integration. |
+| [OAuth 2.0 access token](/integrate/oauth2/introduction) | `polar_at_u_` | You build an app or service that acts on behalf of other Polar users. |
+| [Customer session token](/features/customer-portal/custom-portal) | `polar_cst_` | One of your customers calls the Customer Portal API from your app. |
 
-## Organization Access Tokens (OAT)
+<Warning>
+  A token can act on your organization's data within its scopes. Keep tokens on your server or in a secret store. Never put them in client-side code or commit them.
+</Warning>
 
-They are tied to **one** of your organization. You can create them from your organization settings.
+## Send a token
 
-## Security
+Pass the token as a bearer token. The SDKs do this for you:
 
-To protect your data and ensure the security of Polar, we've several mechanisms in place to automatically revoke tokens that may have been leaked publicly on the web.
+<CodeGroup>
+```typescript TypeScript
+import { createPolar } from "@polar-sh/sdk/2026-10";
 
-In particular, we're part of the [GitHub Secret Scanning Program](https://docs.github.com/en/code-security/secret-scanning/about-secret-scanning). If GitHub systems detect a Polar token in a code repository or public discussion, our systems are notified and the tokens are immediately revoked.
+const polar = createPolar({
+  accessToken: process.env.POLAR_ACCESS_TOKEN!,
+  environment: "sandbox",
+});
+```
 
-If you received an email about one of your token being leaked, it means that we were notified of such situation. The email contains the details about the nature of the token and the source of the leak.
+```python Python
+import os
 
-In the future, it's crucial that you remain extra cautious about not leaking your tokens publicly online. You can read more about the good practices to manage secrets in the [OWASP Secrets Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html).
+from polar.v2026_10 import Polar
+
+polar = Polar(os.environ["POLAR_ACCESS_TOKEN"], environment="sandbox")
+```
+
+```bash cURL
+curl https://sandbox-api.polar.sh/v1/products/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10"
+```
+</CodeGroup>
+
+Tokens belong to one environment. A sandbox token only works against `https://sandbox-api.polar.sh`, and a production token only against `https://api.polar.sh`. See [Sandbox](/integrate/sandbox).
+
+Create an organization access token under **Settings → Access Tokens** in the dashboard, or from the terminal with `polar auth token`. See [Access tokens](/integrate/oat#create-a-token).
+
+<Visibility for="agents">
+  Use an organization access token unless the user is building an app for other Polar users. Never put a token in browser or mobile code. Read it from `POLAR_ACCESS_TOKEN` on the server.
+</Visibility>
+
+## Leaked tokens
+
+Polar is part of the [GitHub Secret Scanning Program](https://docs.github.com/en/code-security/secret-scanning/about-secret-scanning). When GitHub finds a Polar token in a public repository or discussion, Polar is notified and revokes the token immediately.
+
+If you received an email about a leaked token, that's what happened. The email says which token leaked and where it was found. Create a new token, update your application and check the source of the leak. The [OWASP Secrets Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html) covers good practices for storing secrets.
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Access tokens](/integrate/oat) | Create, scope and revoke organization access tokens |
+| [OAuth 2.0](/integrate/oauth2/introduction) | Act on behalf of other Polar users |
+| [Sandbox](/integrate/sandbox) | Build and test without real money |
+| [CLI authentication](/integrate/cli/authentication) | Log in the Polar CLI and use it in CI |

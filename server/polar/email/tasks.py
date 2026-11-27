@@ -1,4 +1,5 @@
 import json
+from datetime import timedelta
 from typing import Annotated, Any
 
 import structlog
@@ -27,6 +28,28 @@ def _build_tags(template: str | None, email_props: dict[str, Any]) -> dict[str, 
     return tags
 
 
+UNSUPPRESS_WINDOW = timedelta(days=30)
+UNSUPPRESS_MAX_BOUNCES = 1
+
+
+async def _remove_suppression_after_failure(to_email_addr: str) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = EmailLogRepository.from_session(session)
+        latest = await repository.get_latest_by_to_email_addr(to_email_addr)
+        if latest is None or latest.status != EmailLogStatus.failed:
+            return
+        # Bounced again after a previous unsuppression: it really doesn't work
+        bounces = await repository.count_bounces_since(
+            to_email_addr, utc_now() - UNSUPPRESS_WINDOW
+        )
+
+    if bounces > UNSUPPRESS_MAX_BOUNCES:
+        log.info("email.remove_suppression_skipped", bounces=bounces)
+        return
+
+    await email_sender.remove_suppression(to_email_addr)
+
+
 @actor(actor_name="email.send", priority=TaskPriority.HIGH)
 async def email_send(
     to_email_addr: str,
@@ -41,6 +64,7 @@ async def email_send(
     props_json: str | None = None,
     attachments: list[Attachment] | None = None,
     deduplication_key: str | None = None,
+    unsuppress: bool = False,
 ) -> None:
     if html_content is None:
         assert template is not None
@@ -49,6 +73,13 @@ async def email_send(
 
     email_props = json.loads(props_json) if props_json else {}
     tags = _build_tags(template, email_props)
+
+    # Removing a suppression needs a full-access Resend key, which only production has
+    if unsuppress and settings.is_production():
+        try:
+            await _remove_suppression_after_failure(to_email_addr)
+        except Exception:
+            log.warning("email.remove_suppression_failed", exc_info=True)
 
     processor_id: str | None = None
     status = EmailLogStatus.sent

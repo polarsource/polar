@@ -1,0 +1,351 @@
+---
+title: "Migrate from Lemon Squeezy"
+sidebarTitle: "Migrate from Lemon Squeezy"
+description: "Move your Lemon Squeezy subscriptions, customers, license keys and files to Polar before March 31, 2027."
+---
+
+Lemon Squeezy is [winding down payment processing on March 31, 2027](https://www.lemonsqueezy.com/blog/saying-goodbye-to-lemon-squeezy). Polar moves your subscriptions, customers, license keys and files, and most customers don't need to enter their card again (see [Payment methods that can't move](#payment-methods-that-cant-move)). If your app checks license keys, you need to ship one small update before you switch any subscription.
+
+## Migration steps
+
+Steps 4 and 5 happen in your app. The others happen in Polar under **Settings → Migrations**, where step 6 guides you through requesting the card copy in Lemon Squeezy.
+
+1. **Connect your Lemon Squeezy store** with an API key.
+2. **Assess and import your catalog.** Polar checks what can move, then imports your products, discounts and customers. Billing stays on Lemon Squeezy.
+3. **Set up benefits.** Polar brings over your license keys, files and links. See [Benefits and license keys](#benefits-and-license-keys).
+4. **Update your app.** If your app checks license keys, ship the update in [Update your app before you switch](#update-your-app-before-you-switch).
+5. **Move new sales to Polar.** Sell the imported products on Polar, so new customers get the same products and benefits as your existing subscribers. Existing subscriptions keep renewing on Lemon Squeezy until you switch them.
+6. **Move saved cards.** Request the copy in Lemon Squeezy, with Polar as the destination. Lemon Squeezy copies your customers and their saved cards to Polar, and usually starts within a week.
+7. **Switch billing to Polar.** For each subscription you select, Polar cancels it on Lemon Squeezy and bills the next renewal on Polar.
+
+<Warning>
+  Switching can't be undone. Before you switch any subscription:
+
+  - **Ship the app update.** Once a subscription switches, its license key is on Polar, and an app that only asks Lemon Squeezy can't rely on it.
+  - **Turn off Lemon Squeezy's cancellation emails.** Lemon Squeezy sees the switch as a cancellation. If your store emails customers when a subscription is cancelled, every customer you switch gets one. Turn that email off in your Lemon Squeezy store's email settings.
+  - **Check your Lemon Squeezy webhooks.** Lemon Squeezy sends `subscription_cancelled`, and later `subscription_expired`. Make sure your handlers don't remove access or start churn emails for subscriptions that switched.
+</Warning>
+
+When you switch, a subscription that renews within 24 hours stays on Lemon Squeezy, so it isn't charged twice. Polar marks it as skipped and doesn't retry it on its own: once that renewal has gone through, start the switch again for it. A subscription already cancelled on Lemon Squeezy still switches, and Polar ends it on the same date instead of renewing it.
+
+Polar doesn't send customers a separate email about the switch. The first renewal reminder and the first receipt from Polar include a short note that their billing moved to Polar.
+
+## Payment methods that can't move
+
+Some saved payment methods can't be carried over from Lemon Squeezy:
+
+- **PayPal**
+- **India-issued cards:** the card moves, but the approval India requires for recurring charges doesn't.
+- **Cash App Pay and Link**
+
+These subscriptions still switch. If Polar has another copied card for the customer, it uses that one. Otherwise their first renewal on Polar fails, and Polar asks the customer to enter their payment details again. Once they do, the subscription keeps renewing on Polar as usual. To avoid the failed payment, ask these customers to update their payment method in the customer portal after the switch.
+
+## Benefits and license keys
+
+Polar reads what each of your products gives buyers and sets it up as [benefits](/features/benefits/introduction) on the imported products. You pick which ones to bring over, and you can edit them later from **Benefits**.
+
+| On Lemon Squeezy | On Polar |
+| --- | --- |
+| License keys | [License key benefit](/features/benefits/license-keys), with the same activation limit. Customers keep their key, its expiry date and their activated devices. |
+| Files | [File downloads benefit](/features/benefits/file-downloads), with the files copied to Polar |
+| Links | [Custom benefit](/features/benefits/custom), with the links in its note |
+
+- **Subscribers** get the benefits when their subscription switches.
+- **Past one-time buyers** get them as soon as you set up benefits. This covers paid and partly refunded orders. Polar doesn't email them: they find everything in the customer portal.
+
+A few license keys don't move as they are:
+
+- **Past buyers whose key is disabled or expired** on Lemon Squeezy get no key on Polar, only your files and links.
+- **A customer who bought the same product more than once** keeps one key. Their other keys for that product stay on Lemon Squeezy only.
+- **Usage and validation counts** start at zero.
+
+## Update your app before you switch
+
+For a while, some keys are on Polar and others are still on Lemon Squeezy. Ship an update that checks the key with Polar first, and asks Lemon Squeezy only when Polar doesn't have the key yet:
+
+```ts
+// Polar knows these keys but no longer accepts them. Don't ask Lemon Squeezy.
+const REJECTED_ON_POLAR = [
+  "License key is no longer active.",
+  "License key has expired.",
+];
+
+async function isLicenseValid(key: string) {
+  const polar = await fetch(
+    "https://api.polar.sh/v1/customer-portal/license-keys/validate",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key, organization_id: POLAR_ORGANIZATION_ID }),
+    },
+  );
+  if (polar.status === 200) return true;
+  if (polar.status !== 404) {
+    throw new Error("Polar is unavailable"); // Handle it as you do today.
+  }
+  const { detail } = await polar.json();
+  if (REJECTED_ON_POLAR.includes(detail)) return false;
+
+  // Polar doesn't have this key yet: use your current Lemon Squeezy check.
+  return isLicenseValidOnLemonSqueezy(key); // Your existing function.
+}
+```
+
+| Polar answers | Your app |
+| --- | --- |
+| `200` | Valid. |
+| `404` with `License key is no longer active.` or `License key has expired.` | Invalid. Don't ask Lemon Squeezy: after a refund on Polar, the key often still works there. |
+| `404` with `Not found` | The key isn't on Polar yet, for example a subscriber who hasn't switched. Ask Lemon Squeezy. |
+| Anything else, or no answer | Polar is unavailable. Handle it as an outage, not as an invalid key. |
+
+Once a key is on Polar, only Polar's answer counts: changes to the key on Lemon Squeezy don't affect it. Remove the Lemon Squeezy check once every subscription has switched and Lemon Squeezy has stopped processing payments.
+
+If your app limits devices, see [Devices and activations](#devices-and-activations) below.
+
+## Migration details
+
+<AccordionGroup>
+  <Accordion title="Devices and activations">
+    Activated devices stay activated. Polar keeps each Lemon Squeezy activation under the same ID, so the `instance_id` your app saved works as the `activation_id` in Polar's [validate](/features/benefits/validate-license-keys#validate-a-key) and [deactivate](/features/benefits/validate-license-keys#deactivate-a-device) endpoints. Devices count toward the key's activation limit, as they did on Lemon Squeezy.
+
+    - **Devices activated on Lemon Squeezy after the key moved** aren't on Polar. [Activate them on Polar](/features/benefits/validate-license-keys#activate-a-device) once. The same goes for the rare activation whose ID isn't a standard UUID.
+    - **Keys with unlimited activations** have no device limit on Polar. Their existing devices keep working, but Polar doesn't activate new ones: validate these keys without a device ID.
+    - **A key moves** when you set up benefits for past buyers, and when the subscription switches for subscribers.
+  </Accordion>
+
+  <Accordion title="A license key that's already on Polar">
+    License keys are unique within a Polar organization. In the rare case that a Lemon Squeezy key has the same value as a key already in your Polar organization, that customer gets a new key instead. Their old key doesn't work on Polar, so they need the new one from the customer portal.
+  </Accordion>
+
+  <Accordion title="What you can sell">
+    Polar is built for software and digital products: SaaS, apps, plugins, templates, courses, premium content and similar. Some categories aren't supported, such as physical goods and human services, and others need a closer look before approval. Our [Acceptable Use Policy](/merchant-of-record/acceptable-use/introduction) explains what is and isn't allowed.
+  </Accordion>
+
+  <Accordion title="PayPal at checkout">
+    Lemon Squeezy offers PayPal at checkout, and Polar doesn't yet. It's on our radar, but we can't share a timeline. Polar supports cards, Apple Pay, Google Pay and a growing set of local payment methods. See [Payment Methods](/features/checkout/payment-methods).
+  </Accordion>
+
+  <Accordion title="Supported countries">
+    You can sign up as an individual or as a registered company. Check the list of [supported countries](/merchant-of-record/supported-countries) to see whether Polar pays out to your country and what you need to set up a payout account.
+  </Accordion>
+
+  <Accordion title="Fees">
+    The free Starter plan charges 5% + 50¢ per transaction. If you sell more, the Pro ($20/mo, 3.8% + 40¢), Growth ($100/mo, 3.6% + 35¢) and Scale ($400/mo, 3.4% + 30¢) plans lower your rate in exchange for a monthly fee. You can switch plans at any time. Cards issued outside the US add 1.5%.
+
+    Payouts go through Stripe with no markup from Polar: $2 per month with active payouts, 0.25% + $0.25 per payout, and between 0.25% and 1% for currency conversion depending on your country.
+
+    The [pricing page](https://polar.sh/resources/pricing) has the full breakdown. See [Fees](/merchant-of-record/fees) for refunds, disputes and payouts.
+  </Accordion>
+
+  <Accordion title="Trying Polar first">
+    Create an account in our [sandbox environment](/integrate/sandbox) to try Polar without moving real money. When you're ready, [sign up for Polar](https://polar.sh/signup) and go through onboarding. For anything the migration doesn't cover, connect your coding assistant to Polar with the [Polar CLI](/integrate/cli/introduction) or our [MCP server](/integrate/mcp).
+  </Accordion>
+</AccordionGroup>
+
+## Coding assistant prompt
+
+Optional. If you use a coding assistant that can inspect your repository, expand the prompt below. It asks for a migration plan before any code changes, including the license key update above. Review that plan before asking it to implement anything. Never paste Lemon Squeezy or Polar secrets into a conversation.
+
+```markdown title="Migration assistant prompt" icon="wand-magic-sparkles" expandable
+# Plan a safe Lemon Squeezy-to-Polar migration
+
+You are a senior payments integration engineer helping migrate this
+application from Lemon Squeezy to Polar. Work from the codebase in the current
+directory and current Polar documentation. Do not rely on memory for Polar or
+Lemon Squeezy API details.
+
+First produce a migration plan. Do not change code, create resources, cancel
+subscriptions, or ship anything until the user reviews and approves that plan.
+
+## Objective
+
+Design a progressive migration in which:
+
+1. New sales move to Polar once the catalog is imported, benefits are set up,
+   and the application checks license keys with Polar, so new customers buy
+   the same products as existing subscribers.
+2. Existing Lemon Squeezy subscriptions keep renewing on Lemon Squeezy until
+   they switch through Polar's migration flow (**Settings → Migrations**).
+3. Each subscription has exactly one system responsible for its next renewal.
+4. Customers keep their license key. The application checks keys with Polar
+   first and asks Lemon Squeezy only when Polar doesn't have the key yet.
+5. Access to license keys, files, and links continues across the switch.
+6. Everything is moved before Lemon Squeezy stops processing payments on
+   March 31, 2027.
+
+## Sources of truth
+
+Before recommending an endpoint, SDK method, webhook, or field:
+
+1. Read https://polar.sh/docs/migrate-lemon-squeezy.
+2. Read https://polar.sh/docs/features/benefits/validate-license-keys.
+3. For JavaScript or TypeScript, read:
+   https://raw.githubusercontent.com/polarsource/agent-toolkit/main/skills/polar-integration/SKILL.md
+   For other languages, use the current language SDK and OpenAPI docs.
+4. Use https://polar.sh/docs/llms.txt to find the current API reference page
+   for every Polar operation you recommend.
+5. Inspect installed Polar and Lemon Squeezy SDK types when available.
+
+Current documentation and generated SDK types override this prompt and your
+training data. If you cannot verify an API detail, label it as unverified and
+ask for the missing context. Never invent IDs, URLs, fields, event names, or
+capabilities.
+
+Merchant migration REST endpoints exist under `/v1/merchant-migrations`, but
+are excluded from Polar's public OpenAPI schema, SDKs, and API reference. They
+are dashboard-internal, not a merchant integration API. Use **Settings →
+Migrations** to import the catalog, set up benefits, move cards, and switch
+subscriptions.
+
+## Safety rules
+
+- Never expose, print, log, or commit Lemon Squeezy or Polar secrets.
+- Never ask the user to paste secrets into chat.
+- Never handle raw card data.
+- Never cancel or pause a Lemon Squeezy subscription, or create the matching
+  Polar subscription, outside Polar's switch. Refuse DIY switch scripts.
+- Never issue new license keys to existing customers, and never import keys or
+  activations yourself. Polar's migration keeps each customer's key, its
+  expiry and its activations, under the same IDs.
+- Never create Polar orders for Lemon Squeezy purchases. Historical orders stay
+  on Lemon Squeezy; Polar gives past one-time buyers their benefits through
+  its Benefits step.
+- Ask Lemon Squeezy only when Polar doesn't know the key. Polar answers 404
+  both for an unknown key and for a key it no longer accepts (its `detail`
+  says "License key is no longer active." or "License key has expired.").
+  Never fall back for a key Polar rejected: after a refund or revoke on Polar,
+  the key often still works on Lemon Squeezy.
+- Any validate answer other than 200 or 404 from Polar is an outage, not an
+  invalid key: handle it the way the application already handles a provider
+  outage.
+- Never remove the Lemon Squeezy fallback before every subscription has
+  switched and Lemon Squeezy has stopped processing payments.
+- Never treat webhooks as exactly-once delivery. Verify signatures, persist
+  the Standard Webhooks `webhook-id`, and make handlers idempotent.
+- Never use email as the durable cross-system identity.
+- Never overwrite a Polar Customer `external_id`. It is unique within an
+  organization and cannot be changed once set.
+- PayPal, Link and Cash App Pay can't be carried over, and India-issued cards
+  move without the mandate India requires for recurring charges. Those
+  subscriptions still switch. Polar uses another copied card for the customer
+  if there is one; otherwise their first renewal fails and Polar asks the
+  customer for new payment details. Never ask these customers to check out
+  again.
+- Switching can't be undone, and a subscription that renews within 24 hours
+  stays on Lemon Squeezy until its next switch.
+- Lemon Squeezy sees a switch as a cancellation and sends
+  `subscription_cancelled`, then `subscription_expired`. Make sure the
+  application's handlers don't remove access or start churn flows for
+  subscriptions that switched. Remind the user to turn off Lemon Squeezy's
+  cancellation email for customers before switching.
+
+## Phase 1: discover the current integration
+
+Inspect and report:
+
+- Framework, language, package manager, apps, and deployment boundaries,
+  including desktop apps, plugins, or CLIs that ship to customers
+- Authentication and the canonical user, account, or team ID
+- Lemon Squeezy checkout, customer portal, webhook, subscription, order, and
+  license key code
+- Every place that calls Lemon Squeezy's license API (`activate`, `validate`,
+  `deactivate`): where it runs, what it stores (key, `instance_id`), how it
+  caches results, and how it behaves offline or when the API is down
+- How the application delivers files and links to buyers
+- Database tables that store Lemon Squeezy IDs or billing state
+- How the application grants and revokes access
+- Which shipped app versions are still in use and how fast customers update
+
+Ask only what the repository cannot answer.
+
+## Phase 2: define the identity contract
+
+Use the application's immutable billable-customer ID as the Polar Customer
+`external_id`. For new checkouts, pass it as `external_customer_id`.
+
+Polar's catalog import creates or reuses a Polar Customer per Lemon Squeezy
+customer, matched by email. Polar cannot infer the application's own customer
+ID. If the application needs that mapping, match imported customers once using
+an exact, unique email, then set the application's canonical ID as the Polar
+Customer `external_id`. Require review for missing, duplicate, or changed
+emails.
+
+Map every Lemon Squeezy variant the application references to the imported
+Polar product. Verify the mapping by interval, currency, and amount. Never join
+catalogs by name alone.
+
+## Phase 3: update license key checks
+
+Design one function the whole application uses to check a key, following
+the "Update your app before you switch" section of the migration guide:
+
+1. Validate the key with Polar's customer portal endpoint
+   (`/v1/customer-portal/license-keys/validate`), sending the key and the
+   Polar organization ID.
+2. On a Polar 404, read `detail`. If Polar rejected the key (no longer
+   active, or expired), the key is invalid. Otherwise Polar doesn't have the
+   key yet: validate it with Lemon Squeezy as the application does today.
+3. If the application limits devices, also follow the guide's "Devices and
+   activations" section: the saved Lemon Squeezy `instance_id` works as
+   Polar's `activation_id`.
+4. Record which provider answered, so the team can see when Lemon Squeezy stops
+   being used.
+
+Plan to ship this before switching any subscriptions: a subscriber's key only
+reaches Polar at their switch, and Polar cancels the Lemon Squeezy subscription
+when it switches.
+
+## Phase 4: plan new sales and webhooks
+
+- Route new checkouts to Polar with `external_customer_id`.
+- Grant access from Polar webhooks and the Customer state API, with the
+  current event names from the docs.
+- Keep Lemon Squeezy webhooks working for subscriptions that haven't switched.
+- Treat Polar's `subscription.migrated` webhook (with `provider` set to
+  `lemon_squeezy`) as the signal that a subscription switched.
+- Setting up benefits sends `benefit_grant.created` for past one-time buyers.
+  Don't treat those as new sales.
+- Record exactly one billing system per subscription, and update it when a
+  subscription switches.
+
+## Phase 5: define cleanup gates
+
+Do not delete Lemon Squeezy code because the first batch switched. Require:
+
+- No new Lemon Squeezy checkouts
+- Every subscription switched, or moved to a new Polar checkout
+- License key checks answered by Polar for the shipped app versions that matter
+- Both providers' webhooks understood until the last switch
+- Support able to find transactions from either era
+- Lemon Squeezy history retained for accounting
+- Credentials revoked only after the final check
+
+## Required output
+
+Return:
+
+1. Current architecture with file paths
+2. Unknowns and blockers
+3. Identity and catalog maps
+4. License key check design, with every call site it replaces
+5. Endpoint plan with verified reference and purpose
+6. Webhook plan with idempotency and recovery
+7. Phased implementation, shipping order, and cleanup gates
+8. Schema changes, backfills, and rollback
+9. Testing: unit, sandbox, and the license key fallback in both directions
+10. Risks: double billing, lost access, keys that stop validating, stale app
+    versions, and premature cleanup
+
+Label every recommendation as:
+
+- **Observed** in this repository
+- **Documented** in current Polar docs or SDK types
+- **Proposed**
+
+End with the smallest safe implementation slice. Wait for approval before
+editing code or changing billing state.
+```
+
+## Questions
+
+If your question isn't answered here, [contact our support team](/support). Please include your current Lemon Squeezy setup (products, subscriptions and license keys) so we can help you faster.

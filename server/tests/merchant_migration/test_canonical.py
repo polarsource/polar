@@ -24,6 +24,7 @@ from polar.merchant_migration.canonical import (
     discount_started_at_for,
     polar_discount_amounts,
     polar_discount_code,
+    polar_product_name,
     serialize,
 )
 from polar.models.merchant_migration_record import MerchantMigrationRecordType
@@ -131,6 +132,7 @@ class TestSerialize:
             "tax_id": None,
             "tax_id_dropped": False,
             "tax_exempt": False,
+            "stripe_customer_id": None,
         }
 
 
@@ -436,6 +438,17 @@ class TestCustomerDiscount:
         assert result.discount_source_ids == ["coupon_sub"]
         assert result.discount_block is None
         assert result.customer_discount_source_id == "coupon_cust"
+
+
+class TestPolarProductName:
+    def test_keeps_a_name_within_the_limit(self) -> None:
+        assert polar_product_name("  Pro  ") == "Pro"
+
+    def test_cuts_a_long_name_to_the_limit(self) -> None:
+        assert (
+            polar_product_name("Workshop ticket " * 10)
+            == ("Workshop ticket " * 4).rstrip()
+        )
 
 
 class TestPolarDiscountHelpers:

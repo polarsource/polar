@@ -46,13 +46,7 @@ export default function Page() {
         />
         <NotificationRecipientsSettings />
       </Section>
-      <Section>
-        <SectionDescription
-          title="Danger Zone"
-          description="Irreversible actions for your account"
-        />
-        <UserDeleteSettings />
-      </Section>
+      <UserDeleteSettings />
     </>
   )
 }

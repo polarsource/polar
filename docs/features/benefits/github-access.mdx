@@ -1,79 +1,110 @@
 ---
-title: "Automate Private GitHub Repo(s) Access"
-sidebarTitle: "GitHub Access"
-description: "Sell premium GitHub repository access with ease"
+title: "GitHub Repository Access benefit"
+sidebarTitle: "GitHub Repository Access"
+description: "Invite customers to a private GitHub repository when they buy, and remove them as collaborators when access ends."
 ---
 
-<img src="/assets/features/benefits/github/hero.png" />
+A **GitHub Repository Access benefit** invites customers as collaborators on a private repository in your GitHub organization, and removes them when the benefit is revoked. Use it for sponsorware, private source code, starter kits, early access or self-hosted products.
 
-Sell GitHub Repository Access
-------------------------------------
+## What the customer gets
 
-With Polar you can seamlessly offer your customers and subscribers automated access to private GitHub repositories.
+A collaborator invitation to one repository, with the role you chose. One benefit covers one repository. For several repositories, create a benefit per repository and attach them all to the product.
 
-* Fully automated collaborator invites
-* Unlimited repositories (via multiple benefits) from your organization(s)
-* Users get access upon subscribing & removed on cancellation
-* Or get lifetime access upon paying a one-time price (product)
+## Create it
 
-### **Use cases**
+Connecting GitHub happens in the dashboard. Once it's connected, you can also create benefits from the CLI or your agent.
 
-* Sponsorware
-* Access to private GitHub discussions & issues for sponsors
-* Early access to new feature development before upstream push
-* Premium educational materials & code
-* Self-hosting products
-* Courses, starter kits, open core software & more...
+### Connect GitHub
 
-Create GitHub Repository Benefit
----------------------------------------
-
-1. Go to [`Benefits`](https://polar.sh/to/dashboard/products/benefits)
-2. Click `+ New Benefit` to create a new benefit
-3. Choose `GitHub Repository Access` as the `Type`
-
-You first need to `Connect your GitHub Account` and install a dedicated Polar App for this benefit across the repositories you want to use it with.
-
-* Click `Connect your GitHub Account`
+- Open **Catalog** → **Benefits**
+- Click **Create Benefit** and choose **GitHub Repository Access** as the **Type**
+- Click **Connect your GitHub Account** and authorize Polar's GitHub App
+- Install the app on the organization that owns the repository. If a repository is missing from the list, use the **Click here** link under it to install the app there.
 
 <Info>
-**Why do I need to connect GitHub again and install a separate app?**
-
-This feature requires permission to manage repository collaborators. GitHub Apps does not support progressive permission scope requests. So instead of requesting this sensitive permission from all users (unnecessarily) in our core GitHub Login this feature uses a standalone app instead.
+  **Why a separate GitHub App?** Managing collaborators needs a sensitive permission. GitHub Apps can't request permissions progressively, so Polar uses a dedicated app for this benefit instead of asking every user for it at login.
 </Info>
 
+### Create the benefit
 
+<Tabs>
+  <Tab title="Dashboard">
+    - Choose the **Repository**
+    - Choose the **Role**. **Read** is the safe choice.
+    - Click **Create**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar benefits create --data '{
+      "type": "github_repository",
+      "description": "Private repository access",
+      "properties": {
+        "repository_owner": "acme",
+        "repository_name": "starter-kit",
+        "permission": "pull"
+      }
+    }'
+    ```
 
-Once you've authorized our dedicated GitHub App for this feature you'll be redirected back to Polar and the benefit form - now connected and updated.
+    See [`polar benefits`](/integrate/cli/reference/benefits).
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Create a GitHub Repository Access benefit with read access to acme/starter-kit in my Polar sandbox organization.
+    ```
 
-### **Repository**
+    Uses the `benefits_create` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
 
-Select the desired repository you want to automate collaborator invites for.
+The API needs a user token whose user connected GitHub. An organization access token can't create this benefit. The CLI signs in as your user, so it works once you've connected GitHub in the dashboard. So does the MCP server, unless you connected it with an organization access token.
 
-<Info>
-**Why can I only connect organization repositories vs. personal ones?**
+## Options
 
-GitHub does not support granular permissions for collaborators on personal repositories - granting them all write permissions instead. Since collaborators would then be able to push changes, releases and more, we do not support personal repositories by default.Want this still? Reach out to us and we can enable it.
-</Info>
+| Dashboard | API property | Default |
+| --- | --- | --- |
+| **Repository** (owner) | `properties.repository_owner` | Required |
+| **Repository** (name) | `properties.repository_name` | Required |
+| **Role** | `properties.permission` | Required |
 
-### **Role**
+| **Role** | `permission` |
+| --- | --- |
+| Read | `pull` |
+| Triage | `triage` |
+| Write | `push` |
+| Maintain | `maintain` |
+| Admin | `admin` |
 
-Select the role you want to grant collaborators.
+Use **Read** unless you know you need more. Anyone with read access can still open pull requests. See GitHub's [repository roles](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role).
 
-* **Read (Default & Highly recommended)**
-* Triage
-* Write
-* Maintain
-* Admin
+Repositories owned by a personal account aren't supported. GitHub can't give collaborators read-only access there, so they'd be able to push.
 
-Read access (read-only) is what 99.9% of cases should use and the others are highly discouraged unless you have special use cases & absolutely know the impact of these permissions. Checkout the [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role) for reference.
+<Warning>
+  **Paid GitHub organizations bill per collaborator.** On a paid GitHub plan, each customer takes a seat in your organization and GitHub charges you for it. Price the product to cover that, or use an organization on GitHub's free plan.
+</Warning>
 
-<Info>
-Anyone with read access to a repository can create a pull request [(source)](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request).
-</Info>
+## Customer experience
 
-<Info>
-**Additional Costs for Paid GitHub Organizations**
+After paying, on the checkout confirmation page or in the [Customer Portal](/features/customer-portal/introduction), the customer:
 
-GitHub treats collaborators as a seat and they will incurr charges accordingly to your billing unless you're using a free GitHub organization plan. So make sure to confirm you're on a free plan OR charge sufficiently to offset the costs you'll need to pay to GitHub.
-</Info>
+1. Clicks **Connect GitHub account** and authorizes GitHub
+2. Clicks **Request my invite**
+3. Accepts the invitation from GitHub
+
+**Go to** opens the repository. **Request new invite** lets them switch to another GitHub account, or get a fresh invitation if the first one expired.
+
+## Revocation
+
+When the benefit is revoked, Polar removes the customer as a collaborator, or cancels the invitation if they never accepted it. Changing the benefit's repository or role moves every holder to the new one.
+
+## Visibility
+
+Always visible. The customer has to connect their GitHub account in the portal, so this benefit can't be hidden.
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Manage benefits](/features/benefits/introduction) | Attach, update, delete and grant benefits |
+| [Benefits](/concepts/benefits) | How grants and revocation work |
+| [Create Benefit API](/api-reference/current/benefits/create-benefit) | Request schema for `github_repository` |

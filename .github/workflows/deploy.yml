@@ -61,7 +61,12 @@ jobs:
       # job is skipped entirely when this is false.
       test-enabled: ${{ steps.test-enabled.outputs.enabled }}
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # fetch-depth: 0 already fetches all tags, so no separate
           # fetch-tags is needed here.
@@ -135,11 +140,11 @@ jobs:
           echo "test_enabled=${enabled:-false}"
 
       # Four paths-filter invocations: one per component per env. We can't
-      # combine them because dorny/paths-filter@v4.0.3 uses a single base for
+      # combine them because dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
       # all filters in one invocation, but our design requires the frontend
       # filter to diff against the frontend tag, not the backend tag.
       - name: Detect backend changes since last sandbox backend deploy
-        uses: dorny/paths-filter@v4.0.3
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter-backend-sandbox
         with:
           base: ${{ steps.bases.outputs.backend-sandbox }}
@@ -153,7 +158,7 @@ jobs:
               - 'server/migrations/**'
 
       - name: Detect frontend changes since last sandbox frontend deploy
-        uses: dorny/paths-filter@v4.0.3
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter-frontend-sandbox
         with:
           base: ${{ steps.bases.outputs.frontend-sandbox }}
@@ -164,7 +169,7 @@ jobs:
               - '.github/workflows/deploy-environment.yml'
 
       - name: Detect backend changes since last production backend deploy
-        uses: dorny/paths-filter@v4.0.3
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter-backend-production
         with:
           base: ${{ steps.bases.outputs.backend-production }}
@@ -178,7 +183,7 @@ jobs:
               - 'server/migrations/**'
 
       - name: Detect frontend changes since last production frontend deploy
-        uses: dorny/paths-filter@v4.0.3
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter-frontend-production
         with:
           base: ${{ steps.bases.outputs.frontend-production }}
@@ -191,7 +196,7 @@ jobs:
       # The MCP server's tools are generated from the committed OpenAPI spec,
       # so an API change that touches it redeploys the MCP server too.
       - name: Detect MCP changes since last MCP deploy
-        uses: dorny/paths-filter@v4.0.3
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter-mcp-production
         with:
           base: ${{ steps.bases.outputs.mcp-production }}
@@ -217,15 +222,20 @@ jobs:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Docker Buildx
-        uses: useblacksmith/setup-docker-builder@v2.2.0
+        uses: useblacksmith/setup-docker-builder@19215110ab936351210feebdfa5b440b4493e184 # v2.2.0
         with:
           cache-key: polar/server-production
 
       - name: Log in to the Container registry
-        uses: docker/login-action@v4.6.0
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -233,7 +243,7 @@ jobs:
 
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v6.2.0
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
           images: |
             ghcr.io/polarsource/polar
@@ -248,7 +258,7 @@ jobs:
       - name: Sync AUP to server
         run: cp "clients/apps/web/src/app/(main)/(website)/(landing)/(mdx)/legal/acceptable-use-policy/page.mdx" "server/polar/organization_review/acceptable-use-policy.mdx"
 
-      - uses: useblacksmith/build-push-action@v2
+      - uses: useblacksmith/build-push-action@9b0579bbec7a6cad2f171596c57e7ac1e7658850 # v2.3.0
         id: push
         with:
           push: true
@@ -259,6 +269,7 @@ jobs:
           platforms: linux/amd64
           build-args: |
             RELEASE_VERSION=${{ github.sha }}
+            TAILSCALE_VERSION=${{ vars.TAILSCALE_VERSION }}
           secrets: |
             IPINFO_ACCESS_TOKEN=${{ secrets.IPINFO_ACCESS_TOKEN }}
 
@@ -272,10 +283,15 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Docker Buildx
-        uses: useblacksmith/setup-docker-builder@v2.2.0
+        uses: useblacksmith/setup-docker-builder@19215110ab936351210feebdfa5b440b4493e184 # v2.2.0
         with:
           cache-key: polar/server-lambda
 
@@ -284,7 +300,7 @@ jobs:
 
       - name: Configure AWS credentials (test)
         if: needs.changes.outputs.test-enabled == 'true'
-        uses: aws-actions/configure-aws-credentials@v6.3.0
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           role-to-assume: ${{ secrets.TEST_AWS_ROLE_ARN }}
           aws-region: us-east-2
@@ -292,29 +308,33 @@ jobs:
       - name: Log in to Amazon ECR (test)
         if: needs.changes.outputs.test-enabled == 'true'
         id: login-ecr-test
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2.1.7
 
       - name: Configure AWS credentials (sandbox)
-        uses: aws-actions/configure-aws-credentials@v6.3.0
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           role-to-assume: ${{ secrets.SANDBOX_AWS_ROLE_ARN }}
           aws-region: us-east-2
 
       - name: Log in to Amazon ECR (sandbox)
         id: login-ecr-sandbox
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2.1.7
 
       - name: Configure AWS credentials (production)
-        uses: aws-actions/configure-aws-credentials@v6.3.0
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           role-to-assume: ${{ secrets.PRODUCTION_AWS_ROLE_ARN }}
           aws-region: us-east-2
 
       - name: Log in to Amazon ECR (production)
         id: login-ecr-production
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2.1.7
 
-      - uses: useblacksmith/build-push-action@v2
+      - name: Get today's date
+        id: date
+        run: echo "today=$(date -u +%F)" >> "$GITHUB_OUTPUT"
+
+      - uses: useblacksmith/build-push-action@9b0579bbec7a6cad2f171596c57e7ac1e7658850 # v2.3.0
         id: push-lambda-worker
         with:
           push: true
@@ -332,6 +352,8 @@ jobs:
           sbom: false
           build-args: |
             RELEASE_VERSION=${{ github.sha }}
+            TAILSCALE_VERSION=${{ vars.TAILSCALE_VERSION }}
+            DNF_REFRESH_DATE=${{ steps.date.outputs.today }}
           secrets: |
             IPINFO_ACCESS_TOKEN=${{ secrets.IPINFO_ACCESS_TOKEN }}
 
@@ -344,14 +366,19 @@ jobs:
       contents: read
       id-token: write
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v6.3.0
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           role-to-assume: ${{ secrets.TEST_AWS_ROLE_ARN }}
           aws-region: us-east-2
       - name: Log in to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2.1.7
       - name: Update test Lambda function code
         run: |
           for name in default high-priority medium-priority low-priority webhooks tinybird invoices-and-receipts; do
@@ -370,14 +397,19 @@ jobs:
       contents: read
       id-token: write
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v6.3.0
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           role-to-assume: ${{ secrets.SANDBOX_AWS_ROLE_ARN }}
           aws-region: us-east-2
       - name: Log in to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2.1.7
       - name: Update sandbox Lambda function code
         run: |
           for name in default high-priority medium-priority low-priority webhooks tinybird invoices-and-receipts; do
@@ -396,14 +428,19 @@ jobs:
       contents: read
       id-token: write
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v6.3.0
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           role-to-assume: ${{ secrets.PRODUCTION_AWS_ROLE_ARN }}
           aws-region: us-east-2
       - name: Log in to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2.1.7
       - name: Update production Lambda function code
         run: |
           for name in default high-priority medium-priority low-priority webhooks tinybird invoices-and-receipts; do
@@ -426,7 +463,12 @@ jobs:
     outputs:
       deployment-url: ${{ steps.deploy.outputs.deployment-url }}
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Deploy to Vercel (Staged Production)
         id: deploy
@@ -448,7 +490,7 @@ jobs:
     with:
       environment: sandbox
       render-api-service-id: "srv-crkocgbtq21c73ddsdbg"
-      render-worker-service-ids: "srv-d089jj7diees73934kgg,srv-dajtvp5g1s2s73c683og"
+      render-worker-service-ids: "srv-d089jj7diees73934kgg,srv-dajtvp5g1s2s73c683og,srv-dbc6vi4s728c73e7fo5g"
       has-migrations: ${{ needs.changes.outputs.migrations-sandbox == 'true' || github.event_name == 'workflow_dispatch' }}
       skip-backend: ${{ needs.changes.outputs.backend-sandbox != 'true' && github.event_name != 'workflow_dispatch' }}
       skip-frontend: ${{ needs.changes.outputs.frontend-sandbox != 'true' && github.event_name != 'workflow_dispatch' }}
@@ -472,7 +514,7 @@ jobs:
     with:
       environment: test
       render-api-service-id: "srv-d8ffbc42m8qs73e7lv30"
-      render-worker-service-ids: "srv-d8ffbbvavr4c73a79u00,srv-dai1d8hijrss7388u770"
+      render-worker-service-ids: "srv-d8ffbbvavr4c73a79u00,srv-dai1d8hijrss7388u770,srv-dbktog5bedkc73eht8i0"
       has-migrations: ${{ needs.changes.outputs.migrations-sandbox == 'true' || github.event_name == 'workflow_dispatch' }}
       skip-backend: ${{ needs.changes.outputs.backend-sandbox != 'true' && github.event_name != 'workflow_dispatch' }}
       skip-frontend: ${{ needs.changes.outputs.frontend-sandbox != 'true' && github.event_name != 'workflow_dispatch' }}
@@ -483,6 +525,42 @@ jobs:
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+
+  deploy-ecs-test:
+    name: "Deploy ECS Services to Test 🧰"
+    needs: [changes, build, deploy-test]
+    # Main only: `build` pushes :latest and the CI role trusts only main.
+    if: always() && !failure() && !cancelled() && github.ref == 'refs/heads/main' && needs.build.result == 'success' && needs.deploy-test.result == 'success' && (needs.changes.outputs.backend-sandbox == 'true' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      CLUSTER: polar-test
+      SERVICE: polar-test-api-events-test
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ secrets.TEST_AWS_ROLE_ARN }}
+          aws-region: us-east-2
+
+      # The task definition tracks :latest, which `build` just pushed.
+      # A circuit-breaker rollback drops our deployment, so it must end COMPLETED.
+      - name: Roll api-events-test onto the new image
+        run: |
+          deployment=$(aws ecs update-service --cluster "$CLUSTER" --service "$SERVICE" --force-new-deployment \
+            --query 'service.deployments[?status==`PRIMARY`].id' --output text)
+          aws ecs wait services-stable --cluster "$CLUSTER" --services "$SERVICE"
+          state=$(aws ecs describe-services --cluster "$CLUSTER" --services "$SERVICE" \
+            --query "services[0].deployments[?id=='$deployment'].rolloutState" --output text)
+          echo "$deployment: ${state:-rolled back}"
+          [ "$state" = COMPLETED ]
 
   deploy-production:
     name: "Deploy to Production 🚀"
@@ -520,13 +598,18 @@ jobs:
       run:
         working-directory: ./clients
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
 
-      - uses: pnpm/action-setup@v6.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           package_json_file: clients/package.json
 
-      - uses: actions/setup-node@v7.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -575,8 +658,13 @@ jobs:
     if: always() && (needs.build.result == 'failure' || needs.build-production-frontend.result == 'failure' || needs.deploy-sandbox.result == 'failure' || needs.deploy-production.result == 'failure' || needs.deploy-mcp.result == 'failure')
     runs-on: ubuntu-latest
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
       - name: Announce in Slack
-        uses: slackapi/slack-github-action@v4.0.0
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
         with:
           method: chat.postMessage
           token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}

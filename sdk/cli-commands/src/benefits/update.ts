@@ -11,6 +11,7 @@ import {
   missingFlags,
   jsonFlag,
   nullableStringFlag,
+  org,
 } from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['benefits']['update']>[1]>
@@ -20,6 +21,7 @@ export const command = Command.make(
   {
     confirm,
     fields,
+    org,
     path: {
       id: Argument.String('id'),
     },
@@ -87,6 +89,7 @@ export const command = Command.make(
         method: 'PATCH',
         requiresConfirmation: true,
         confirm: config.confirm,
+        organizationId: config.org,
         fields: config.fields,
         preview: {
           fields: [

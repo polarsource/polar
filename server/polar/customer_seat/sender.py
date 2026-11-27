@@ -12,6 +12,7 @@ log: Logger = structlog.get_logger()
 def send_seat_invitation_email(
     customer_email: str,
     seat: CustomerSeat,
+    invitation_token: str,
     organization: Organization,
     product_name: str,
     billing_manager_email: str,
@@ -19,19 +20,9 @@ def send_seat_invitation_email(
     """
     Send an invitation email to a customer who has been assigned a seat.
     """
-    if not seat.invitation_token:
-        log.warning(
-            "seat_invitation.no_token",
-            seat_id=seat.id,
-            customer_id=seat.customer_id,
-            member_id=seat.member_id,
-            organization_id=organization.id,
-        )
-        return
-
     claim_url = (
         f"{settings.FRONTEND_BASE_URL}/{organization.slug}/portal/claim"
-        f"?token={seat.invitation_token}"
+        f"?token={invitation_token}"
     )
 
     enqueue_email_template(

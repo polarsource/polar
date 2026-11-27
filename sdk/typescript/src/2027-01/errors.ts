@@ -1,9 +1,11 @@
 import type {
+  AlreadyActiveSubscription as AlreadyActiveSubscriptionModel,
   AlreadyCanceledSubscription as AlreadyCanceledSubscriptionModel,
   AmbiguousExternalCustomerID as AmbiguousExternalCustomerIDModel,
   AmbiguousExternalMeterID as AmbiguousExternalMeterIDModel,
   AmbiguousExternalWebhookEndpointID as AmbiguousExternalWebhookEndpointIDModel,
   BadRequest as BadRequestModel,
+  BenefitGrantAlreadyExists as BenefitGrantAlreadyExistsModel,
   CannotCreateOrganizationError as CannotCreateOrganizationErrorModel,
   CheckoutForbiddenError as CheckoutForbiddenErrorModel,
   CheckoutLocked as CheckoutLockedModel,
@@ -17,8 +19,10 @@ import type {
   HTTPValidationError as HTTPValidationErrorModel,
   InactiveSubscription as InactiveSubscriptionModel,
   ManualRetryLimitExceeded as ManualRetryLimitExceededModel,
+  MissingBillingDetails as MissingBillingDetailsModel,
   MissingInvoiceBillingDetails as MissingInvoiceBillingDetailsModel,
   NotPermitted as NotPermittedModel,
+  NotTrialEndedSubscription as NotTrialEndedSubscriptionModel,
   OffSessionChargesNotEnabled as OffSessionChargesNotEnabledModel,
   OrderNotDraft as OrderNotDraftModel,
   OrderNotEligibleForInvoice as OrderNotEligibleForInvoiceModel,
@@ -27,18 +31,22 @@ import type {
   PauseResumeNotAllowed as PauseResumeNotAllowedModel,
   PaymentActionRequired as PaymentActionRequiredModel,
   PaymentAlreadyInProgress as PaymentAlreadyInProgressModel,
+  PaymentError as PaymentErrorModel,
   PaymentFailed as PaymentFailedModel,
   PaymentMethodInUseByActiveSubscription as PaymentMethodInUseByActiveSubscriptionModel,
   PaymentMethodRequired as PaymentMethodRequiredModel,
   PaymentMethodSetupFailed as PaymentMethodSetupFailedModel,
   PaymentNotReady as PaymentNotReadyModel,
   ProductNotDeletable as ProductNotDeletableModel,
+  RefundPaymentAlreadyRefundedByStripe as RefundPaymentAlreadyRefundedByStripeModel,
   RefundedAlready as RefundedAlreadyModel,
   ResourceNotFound as ResourceNotFoundModel,
   RotateNotPermitted as RotateNotPermittedModel,
   SSOEnforcementRequiresConnection as SSOEnforcementRequiresConnectionModel,
+  SSORequiresVerifiedDomain as SSORequiresVerifiedDomainModel,
   SubscriptionLocked as SubscriptionLockedModel,
   SubscriptionNotScheduledToCancel as SubscriptionNotScheduledToCancelModel,
+  TrialAlreadyRedeemed as TrialAlreadyRedeemedModel,
   Unauthorized as UnauthorizedModel,
   UpdateSubscriptionPlanNotAllowed as UpdateSubscriptionPlanNotAllowedModel,
   UpdateSubscriptionSeatsNotAllowed as UpdateSubscriptionSeatsNotAllowedModel,
@@ -59,19 +67,7 @@ export class HTTPValidationError extends PolarClientError<HTTPValidationErrorMod
   }
 }
 /**
- * Forbidden
- */
-export class CannotCreateOrganizationError extends PolarClientError<CannotCreateOrganizationErrorModel> {
-  constructor(
-    public readonly statusCode: 403,
-    public readonly error: CannotCreateOrganizationErrorModel,
-  ) {
-    super(statusCode, error);
-    this.name = "CannotCreateOrganizationError";
-  }
-}
-/**
- * Organization not found.
+ * Event not found.
  */
 export class ResourceNotFound extends PolarClientError<ResourceNotFoundModel> {
   constructor(
@@ -83,102 +79,7 @@ export class ResourceNotFound extends PolarClientError<ResourceNotFoundModel> {
   }
 }
 /**
- * You don't have the permission to update this organization, or dispute auto-accept isn't enabled for it.
- */
-export class OrganizationsUpdate403Error extends PolarClientError<
-  NotPermittedModel | DisputeAutoAcceptNotEnabledModel
-> {
-  constructor(
-    public readonly statusCode: 403,
-    public readonly error: NotPermittedModel | DisputeAutoAcceptNotEnabledModel,
-  ) {
-    super(statusCode, error);
-    this.name = "OrganizationsUpdate403Error";
-  }
-}
-/**
- * Cannot enforce SSO without an enabled connection.
- */
-export class SSOEnforcementRequiresConnection extends PolarClientError<SSOEnforcementRequiresConnectionModel> {
-  constructor(
-    public readonly statusCode: 409,
-    public readonly error: SSOEnforcementRequiresConnectionModel,
-  ) {
-    super(statusCode, error);
-    this.name = "SSOEnforcementRequiresConnection";
-  }
-}
-/**
- * This subscription is already revoked.
- */
-export class AlreadyCanceledSubscription extends PolarClientError<AlreadyCanceledSubscriptionModel> {
-  constructor(
-    public readonly statusCode: 403,
-    public readonly error: AlreadyCanceledSubscriptionModel,
-  ) {
-    super(statusCode, error);
-    this.name = "AlreadyCanceledSubscription";
-  }
-}
-/**
- * Subscription is pending an update.
- */
-export class SubscriptionLocked extends PolarClientError<SubscriptionLockedModel> {
-  constructor(
-    public readonly statusCode: 409,
-    public readonly error: SubscriptionLockedModel,
-  ) {
-    super(statusCode, error);
-    this.name = "SubscriptionLocked";
-  }
-}
-/**
- * The charge failed, or requires customer authentication that can't be completed off-session.
- */
-export class SubscriptionsUpdate402Error extends PolarClientError<
-  PaymentFailedModel | PaymentActionRequiredModel
-> {
-  constructor(
-    public readonly statusCode: 402,
-    public readonly error: PaymentFailedModel | PaymentActionRequiredModel,
-  ) {
-    super(statusCode, error);
-    this.name = "SubscriptionsUpdate402Error";
-  }
-}
-/**
- * Subscription is already canceled or will be at the end of the period, is not active, or the organization is not ready to renew subscriptions.
- */
-export class SubscriptionsUpdate403Error extends PolarClientError<
-  AlreadyCanceledSubscriptionModel | InactiveSubscriptionModel | PaymentNotReadyModel
-> {
-  constructor(
-    public readonly statusCode: 403,
-    public readonly error:
-      | AlreadyCanceledSubscriptionModel
-      | InactiveSubscriptionModel
-      | PaymentNotReadyModel,
-  ) {
-    super(statusCode, error);
-    this.name = "SubscriptionsUpdate403Error";
-  }
-}
-/**
- * Subscription is pending an update, or is not scheduled to be canceled.
- */
-export class SubscriptionsUpdate409Error extends PolarClientError<
-  SubscriptionLockedModel | SubscriptionNotScheduledToCancelModel
-> {
-  constructor(
-    public readonly statusCode: 409,
-    public readonly error: SubscriptionLockedModel | SubscriptionNotScheduledToCancelModel,
-  ) {
-    super(statusCode, error);
-    this.name = "SubscriptionsUpdate409Error";
-  }
-}
-/**
- * This benefit is not deletable.
+ * Forbidden
  */
 export class NotPermitted extends PolarClientError<NotPermittedModel> {
   constructor(
@@ -187,238 +88,6 @@ export class NotPermitted extends PolarClientError<NotPermittedModel> {
   ) {
     super(statusCode, error);
     this.name = "NotPermitted";
-  }
-}
-/**
- * The external ID matches webhook endpoints in several accessible organizations.
- */
-export class AmbiguousExternalWebhookEndpointID extends PolarClientError<AmbiguousExternalWebhookEndpointIDModel> {
-  constructor(
-    public readonly statusCode: 409,
-    public readonly error: AmbiguousExternalWebhookEndpointIDModel,
-  ) {
-    super(statusCode, error);
-    this.name = "AmbiguousExternalWebhookEndpointID";
-  }
-}
-/**
- * Product is in use and cannot be deleted.
- */
-export class ProductNotDeletable extends PolarClientError<ProductNotDeletableModel> {
-  constructor(
-    public readonly statusCode: 409,
-    public readonly error: ProductNotDeletableModel,
-  ) {
-    super(statusCode, error);
-    this.name = "ProductNotDeletable";
-  }
-}
-/**
- * The charge failed, or requires customer authentication (e.g. a 3DS challenge) that can't be completed off-session.
- */
-export class OrdersFinalize402Error extends PolarClientError<
-  PaymentFailedModel | PaymentActionRequiredModel
-> {
-  constructor(
-    public readonly statusCode: 402,
-    public readonly error: PaymentFailedModel | PaymentActionRequiredModel,
-  ) {
-    super(statusCode, error);
-    this.name = "OrdersFinalize402Error";
-  }
-}
-/**
- * Off-session charges are not enabled for this organization, or its account can't currently accept payments.
- */
-export class OrdersFinalize403Error extends PolarClientError<
-  OffSessionChargesNotEnabledModel | OrganizationNotReadyForPaymentsModel
-> {
-  constructor(
-    public readonly statusCode: 403,
-    public readonly error: OffSessionChargesNotEnabledModel | OrganizationNotReadyForPaymentsModel,
-  ) {
-    super(statusCode, error);
-    this.name = "OrdersFinalize403Error";
-  }
-}
-/**
- * The order is not in `draft` status.
- */
-export class OrderNotDraft extends PolarClientError<OrderNotDraftModel> {
-  constructor(
-    public readonly statusCode: 412,
-    public readonly error: OrderNotDraftModel,
-  ) {
-    super(statusCode, error);
-    this.name = "OrderNotDraft";
-  }
-}
-/**
- * Order is not eligible for invoice generation (invalid status).
- */
-export class OrderNotEligibleForInvoice extends PolarClientError<OrderNotEligibleForInvoiceModel> {
-  constructor(
-    public readonly statusCode: 409,
-    public readonly error: OrderNotEligibleForInvoiceModel,
-  ) {
-    super(statusCode, error);
-    this.name = "OrderNotEligibleForInvoice";
-  }
-}
-/**
- * Order is missing billing name or address.
- */
-export class MissingInvoiceBillingDetails extends PolarClientError<MissingInvoiceBillingDetailsModel> {
-  constructor(
-    public readonly statusCode: 422,
-    public readonly error: MissingInvoiceBillingDetailsModel,
-  ) {
-    super(statusCode, error);
-    this.name = "MissingInvoiceBillingDetails";
-  }
-}
-/**
- * Order is already fully refunded.
- */
-export class RefundedAlready extends PolarClientError<RefundedAlreadyModel> {
-  constructor(
-    public readonly statusCode: 403,
-    public readonly error: RefundedAlreadyModel,
-  ) {
-    super(statusCode, error);
-    this.name = "RefundedAlready";
-  }
-}
-/**
- * Conflict
- */
-export class DisputeNotOpenError extends PolarClientError<DisputeNotOpenErrorModel> {
-  constructor(
-    public readonly statusCode: 409,
-    public readonly error: DisputeNotOpenErrorModel,
-  ) {
-    super(statusCode, error);
-    this.name = "DisputeNotOpenError";
-  }
-}
-/**
- * The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
- */
-export class CheckoutsUpdate403Error extends PolarClientError<CheckoutForbiddenErrorModel> {
-  constructor(
-    public readonly statusCode: 403,
-    public readonly error: CheckoutForbiddenErrorModel,
-  ) {
-    super(statusCode, error);
-    this.name = "CheckoutsUpdate403Error";
-  }
-}
-/**
- * The checkout session is expired.
- */
-export class ExpiredCheckoutError extends PolarClientError<ExpiredCheckoutErrorModel> {
-  constructor(
-    public readonly statusCode: 410,
-    public readonly error: ExpiredCheckoutErrorModel,
-  ) {
-    super(statusCode, error);
-    this.name = "ExpiredCheckoutError";
-  }
-}
-/**
- * The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
- */
-export class CheckoutsClientUpdate403Error extends PolarClientError<CheckoutForbiddenErrorModel> {
-  constructor(
-    public readonly statusCode: 403,
-    public readonly error: CheckoutForbiddenErrorModel,
-  ) {
-    super(statusCode, error);
-    this.name = "CheckoutsClientUpdate403Error";
-  }
-}
-/**
- * The checkout session is being processed.
- */
-export class CheckoutLocked extends PolarClientError<CheckoutLockedModel> {
-  constructor(
-    public readonly statusCode: 409,
-    public readonly error: CheckoutLockedModel,
-  ) {
-    super(statusCode, error);
-    this.name = "CheckoutLocked";
-  }
-}
-/**
- * The payment failed or the shared payment token was rejected.
- */
-export class CheckoutsClientConfirm400Error extends PolarClientError<CheckoutPaymentErrorModel> {
-  constructor(
-    public readonly statusCode: 400,
-    public readonly error: CheckoutPaymentErrorModel,
-  ) {
-    super(statusCode, error);
-    this.name = "CheckoutsClientConfirm400Error";
-  }
-}
-/**
- * The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
- */
-export class CheckoutsClientConfirm403Error extends PolarClientError<CheckoutForbiddenErrorModel> {
-  constructor(
-    public readonly statusCode: 403,
-    public readonly error: CheckoutForbiddenErrorModel,
-  ) {
-    super(statusCode, error);
-    this.name = "CheckoutsClientConfirm403Error";
-  }
-}
-/**
- * Not authorized to manage license key.
- */
-export class Unauthorized extends PolarClientError<UnauthorizedModel> {
-  constructor(
-    public readonly statusCode: 401,
-    public readonly error: UnauthorizedModel,
-  ) {
-    super(statusCode, error);
-    this.name = "Unauthorized";
-  }
-}
-/**
- * License key cannot be rotated in its current status. Allowed statuses: disabled, granted.
- */
-export class RotateNotPermitted extends PolarClientError<RotateNotPermittedModel> {
-  constructor(
-    public readonly statusCode: 400,
-    public readonly error: RotateNotPermittedModel,
-  ) {
-    super(statusCode, error);
-    this.name = "RotateNotPermitted";
-  }
-}
-/**
- * The requested usage increment exceeds the license key's remaining usage allowance.
- */
-export class BadRequest extends PolarClientError<BadRequestModel> {
-  constructor(
-    public readonly statusCode: 400,
-    public readonly error: BadRequestModel,
-  ) {
-    super(statusCode, error);
-    this.name = "BadRequest";
-  }
-}
-/**
- * The external customer ID matches customers in several accessible organizations.
- */
-export class AmbiguousExternalCustomerID extends PolarClientError<AmbiguousExternalCustomerIDModel> {
-  constructor(
-    public readonly statusCode: 409,
-    public readonly error: AmbiguousExternalCustomerIDModel,
-  ) {
-    super(statusCode, error);
-    this.name = "AmbiguousExternalCustomerID";
   }
 }
 /**
@@ -674,6 +343,42 @@ export class CustomerPortalSeatsListClaimedSubscriptions401Error extends PolarCl
   }
 }
 /**
+ * Not authorized to manage license key.
+ */
+export class Unauthorized extends PolarClientError<UnauthorizedModel> {
+  constructor(
+    public readonly statusCode: 401,
+    public readonly error: UnauthorizedModel,
+  ) {
+    super(statusCode, error);
+    this.name = "Unauthorized";
+  }
+}
+/**
+ * License key cannot be rotated in its current status. Allowed statuses: disabled, granted.
+ */
+export class RotateNotPermitted extends PolarClientError<RotateNotPermittedModel> {
+  constructor(
+    public readonly statusCode: 400,
+    public readonly error: RotateNotPermittedModel,
+  ) {
+    super(statusCode, error);
+    this.name = "RotateNotPermitted";
+  }
+}
+/**
+ * The requested usage increment exceeds the license key's remaining usage allowance.
+ */
+export class BadRequest extends PolarClientError<BadRequestModel> {
+  constructor(
+    public readonly statusCode: 400,
+    public readonly error: BadRequestModel,
+  ) {
+    super(statusCode, error);
+    this.name = "BadRequest";
+  }
+}
+/**
  * Authentication required
  */
 export class CustomerPortalMembersListMembers401Error extends PolarClientError<null> {
@@ -830,27 +535,29 @@ export class CustomerPortalMembersUpdateMember404Error extends PolarClientError<
   }
 }
 /**
- * Payment already in progress.
+ * Payment failed.
  */
-export class PaymentAlreadyInProgress extends PolarClientError<PaymentAlreadyInProgressModel> {
+export class PaymentError extends PolarClientError<PaymentErrorModel> {
   constructor(
-    public readonly statusCode: 409,
-    public readonly error: PaymentAlreadyInProgressModel,
+    public readonly statusCode: 402,
+    public readonly error: PaymentErrorModel,
   ) {
     super(statusCode, error);
-    this.name = "PaymentAlreadyInProgress";
+    this.name = "PaymentError";
   }
 }
 /**
- * Order not eligible for retry or payment confirmation failed.
+ * Order is not eligible for retry or payment is already in progress.
  */
-export class OrderNotEligibleForRetry extends PolarClientError<OrderNotEligibleForRetryModel> {
+export class CustomerPortalOrdersPay409Error extends PolarClientError<
+  OrderNotEligibleForRetryModel | PaymentAlreadyInProgressModel
+> {
   constructor(
-    public readonly statusCode: 422,
-    public readonly error: OrderNotEligibleForRetryModel,
+    public readonly statusCode: 409,
+    public readonly error: OrderNotEligibleForRetryModel | PaymentAlreadyInProgressModel,
   ) {
     super(statusCode, error);
-    this.name = "OrderNotEligibleForRetry";
+    this.name = "CustomerPortalOrdersPay409Error";
   }
 }
 /**
@@ -866,6 +573,42 @@ export class ManualRetryLimitExceeded extends PolarClientError<ManualRetryLimitE
   }
 }
 /**
+ * Order is not eligible for invoice generation (invalid status).
+ */
+export class OrderNotEligibleForInvoice extends PolarClientError<OrderNotEligibleForInvoiceModel> {
+  constructor(
+    public readonly statusCode: 409,
+    public readonly error: OrderNotEligibleForInvoiceModel,
+  ) {
+    super(statusCode, error);
+    this.name = "OrderNotEligibleForInvoice";
+  }
+}
+/**
+ * Order is missing billing name or address.
+ */
+export class MissingInvoiceBillingDetails extends PolarClientError<MissingInvoiceBillingDetailsModel> {
+  constructor(
+    public readonly statusCode: 422,
+    public readonly error: MissingInvoiceBillingDetailsModel,
+  ) {
+    super(statusCode, error);
+    this.name = "MissingInvoiceBillingDetails";
+  }
+}
+/**
+ * Customer subscription is already canceled or will be at the end of the period, or the user lacks billing permissions.
+ */
+export class AlreadyCanceledSubscription extends PolarClientError<AlreadyCanceledSubscriptionModel> {
+  constructor(
+    public readonly statusCode: 403,
+    public readonly error: AlreadyCanceledSubscriptionModel,
+  ) {
+    super(statusCode, error);
+    this.name = "AlreadyCanceledSubscription";
+  }
+}
+/**
  * Payment required to apply the subscription update.
  */
 export class PaymentFailed extends PolarClientError<PaymentFailedModel> {
@@ -878,7 +621,7 @@ export class PaymentFailed extends PolarClientError<PaymentFailedModel> {
   }
 }
 /**
- * Customer subscription is already canceled or will be at the end of the period, the user lacks billing permissions, or pausing/resuming is not enabled for the organization.
+ * Customer subscription is already canceled or will be at the end of the period, the user lacks billing permissions, pausing/resuming is not enabled for the organization, or the organization can't renew subscriptions.
  */
 export class CustomerPortalSubscriptionsUpdate403Error extends PolarClientError<
   | AlreadyCanceledSubscriptionModel
@@ -886,6 +629,7 @@ export class CustomerPortalSubscriptionsUpdate403Error extends PolarClientError<
   | UpdateSubscriptionPlanNotAllowedModel
   | UpdateSubscriptionSeatsNotAllowedModel
   | UpdateSubscriptionUnitsNotAllowedModel
+  | PaymentNotReadyModel
 > {
   constructor(
     public readonly statusCode: 403,
@@ -894,24 +638,379 @@ export class CustomerPortalSubscriptionsUpdate403Error extends PolarClientError<
       | PauseResumeNotAllowedModel
       | UpdateSubscriptionPlanNotAllowedModel
       | UpdateSubscriptionSeatsNotAllowedModel
-      | UpdateSubscriptionUnitsNotAllowedModel,
+      | UpdateSubscriptionUnitsNotAllowedModel
+      | PaymentNotReadyModel,
   ) {
     super(statusCode, error);
     this.name = "CustomerPortalSubscriptionsUpdate403Error";
   }
 }
 /**
- * The subscription has no payment method to charge, or is not scheduled to be canceled.
+ * The subscription has no payment method to charge, is not scheduled to be canceled, or can't be reactivated: its trial hasn't ended without converting, or the customer has no payment method or complete billing address.
  */
 export class CustomerPortalSubscriptionsUpdate409Error extends PolarClientError<
-  PaymentMethodRequiredModel | SubscriptionNotScheduledToCancelModel
+  | PaymentMethodRequiredModel
+  | SubscriptionNotScheduledToCancelModel
+  | NotTrialEndedSubscriptionModel
+  | MissingBillingDetailsModel
 > {
   constructor(
     public readonly statusCode: 409,
-    public readonly error: PaymentMethodRequiredModel | SubscriptionNotScheduledToCancelModel,
+    public readonly error:
+      | PaymentMethodRequiredModel
+      | SubscriptionNotScheduledToCancelModel
+      | NotTrialEndedSubscriptionModel
+      | MissingBillingDetailsModel,
   ) {
     super(statusCode, error);
     this.name = "CustomerPortalSubscriptionsUpdate409Error";
+  }
+}
+/**
+ * The external customer ID matches customers in several accessible organizations.
+ */
+export class AmbiguousExternalCustomerID extends PolarClientError<AmbiguousExternalCustomerIDModel> {
+  constructor(
+    public readonly statusCode: 409,
+    public readonly error: AmbiguousExternalCustomerIDModel,
+  ) {
+    super(statusCode, error);
+    this.name = "AmbiguousExternalCustomerID";
+  }
+}
+/**
+ * The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
+ */
+export class CheckoutsUpdate403Error extends PolarClientError<CheckoutForbiddenErrorModel> {
+  constructor(
+    public readonly statusCode: 403,
+    public readonly error: CheckoutForbiddenErrorModel,
+  ) {
+    super(statusCode, error);
+    this.name = "CheckoutsUpdate403Error";
+  }
+}
+/**
+ * The checkout session is expired.
+ */
+export class ExpiredCheckoutError extends PolarClientError<ExpiredCheckoutErrorModel> {
+  constructor(
+    public readonly statusCode: 410,
+    public readonly error: ExpiredCheckoutErrorModel,
+  ) {
+    super(statusCode, error);
+    this.name = "ExpiredCheckoutError";
+  }
+}
+/**
+ * The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
+ */
+export class CheckoutsClientUpdate403Error extends PolarClientError<CheckoutForbiddenErrorModel> {
+  constructor(
+    public readonly statusCode: 403,
+    public readonly error: CheckoutForbiddenErrorModel,
+  ) {
+    super(statusCode, error);
+    this.name = "CheckoutsClientUpdate403Error";
+  }
+}
+/**
+ * The checkout session is being processed.
+ */
+export class CheckoutLocked extends PolarClientError<CheckoutLockedModel> {
+  constructor(
+    public readonly statusCode: 409,
+    public readonly error: CheckoutLockedModel,
+  ) {
+    super(statusCode, error);
+    this.name = "CheckoutLocked";
+  }
+}
+/**
+ * The payment failed or the shared payment token was rejected.
+ */
+export class CheckoutsClientConfirm400Error extends PolarClientError<CheckoutPaymentErrorModel> {
+  constructor(
+    public readonly statusCode: 400,
+    public readonly error: CheckoutPaymentErrorModel,
+  ) {
+    super(statusCode, error);
+    this.name = "CheckoutsClientConfirm400Error";
+  }
+}
+/**
+ * The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
+ */
+export class CheckoutsClientConfirm403Error extends PolarClientError<CheckoutForbiddenErrorModel> {
+  constructor(
+    public readonly statusCode: 403,
+    public readonly error: CheckoutForbiddenErrorModel,
+  ) {
+    super(statusCode, error);
+    this.name = "CheckoutsClientConfirm403Error";
+  }
+}
+/**
+ * Conflict
+ */
+export class SubscriptionsCreate409Error extends PolarClientError<
+  AlreadyActiveSubscriptionModel | TrialAlreadyRedeemedModel
+> {
+  constructor(
+    public readonly statusCode: 409,
+    public readonly error: AlreadyActiveSubscriptionModel | TrialAlreadyRedeemedModel,
+  ) {
+    super(statusCode, error);
+    this.name = "SubscriptionsCreate409Error";
+  }
+}
+/**
+ * Subscription is pending an update.
+ */
+export class SubscriptionLocked extends PolarClientError<SubscriptionLockedModel> {
+  constructor(
+    public readonly statusCode: 409,
+    public readonly error: SubscriptionLockedModel,
+  ) {
+    super(statusCode, error);
+    this.name = "SubscriptionLocked";
+  }
+}
+/**
+ * The charge failed, or requires customer authentication that can't be completed off-session.
+ */
+export class SubscriptionsUpdate402Error extends PolarClientError<
+  PaymentFailedModel | PaymentActionRequiredModel
+> {
+  constructor(
+    public readonly statusCode: 402,
+    public readonly error: PaymentFailedModel | PaymentActionRequiredModel,
+  ) {
+    super(statusCode, error);
+    this.name = "SubscriptionsUpdate402Error";
+  }
+}
+/**
+ * Subscription is already canceled or will be at the end of the period, is not active, or the organization is not ready to renew subscriptions.
+ */
+export class SubscriptionsUpdate403Error extends PolarClientError<
+  AlreadyCanceledSubscriptionModel | InactiveSubscriptionModel | PaymentNotReadyModel
+> {
+  constructor(
+    public readonly statusCode: 403,
+    public readonly error:
+      | AlreadyCanceledSubscriptionModel
+      | InactiveSubscriptionModel
+      | PaymentNotReadyModel,
+  ) {
+    super(statusCode, error);
+    this.name = "SubscriptionsUpdate403Error";
+  }
+}
+/**
+ * Subscription is pending an update, or is not scheduled to be canceled.
+ */
+export class SubscriptionsUpdate409Error extends PolarClientError<
+  SubscriptionLockedModel | SubscriptionNotScheduledToCancelModel
+> {
+  constructor(
+    public readonly statusCode: 409,
+    public readonly error: SubscriptionLockedModel | SubscriptionNotScheduledToCancelModel,
+  ) {
+    super(statusCode, error);
+    this.name = "SubscriptionsUpdate409Error";
+  }
+}
+/**
+ * Product is in use and cannot be deleted.
+ */
+export class ProductNotDeletable extends PolarClientError<ProductNotDeletableModel> {
+  constructor(
+    public readonly statusCode: 409,
+    public readonly error: ProductNotDeletableModel,
+  ) {
+    super(statusCode, error);
+    this.name = "ProductNotDeletable";
+  }
+}
+/**
+ * The charge failed, or requires customer authentication (e.g. a 3DS challenge) that can't be completed off-session.
+ */
+export class OrdersFinalize402Error extends PolarClientError<
+  PaymentFailedModel | PaymentActionRequiredModel
+> {
+  constructor(
+    public readonly statusCode: 402,
+    public readonly error: PaymentFailedModel | PaymentActionRequiredModel,
+  ) {
+    super(statusCode, error);
+    this.name = "OrdersFinalize402Error";
+  }
+}
+/**
+ * Off-session charges are not enabled for this organization, or its account can't currently accept payments.
+ */
+export class OrdersFinalize403Error extends PolarClientError<
+  OffSessionChargesNotEnabledModel | OrganizationNotReadyForPaymentsModel
+> {
+  constructor(
+    public readonly statusCode: 403,
+    public readonly error: OffSessionChargesNotEnabledModel | OrganizationNotReadyForPaymentsModel,
+  ) {
+    super(statusCode, error);
+    this.name = "OrdersFinalize403Error";
+  }
+}
+/**
+ * The order is not in `draft` status.
+ */
+export class OrderNotDraft extends PolarClientError<OrderNotDraftModel> {
+  constructor(
+    public readonly statusCode: 412,
+    public readonly error: OrderNotDraftModel,
+  ) {
+    super(statusCode, error);
+    this.name = "OrderNotDraft";
+  }
+}
+/**
+ * Forbidden
+ */
+export class CannotCreateOrganizationError extends PolarClientError<CannotCreateOrganizationErrorModel> {
+  constructor(
+    public readonly statusCode: 403,
+    public readonly error: CannotCreateOrganizationErrorModel,
+  ) {
+    super(statusCode, error);
+    this.name = "CannotCreateOrganizationError";
+  }
+}
+/**
+ * You don't have the permission to update this organization, or dispute auto-accept isn't enabled for it.
+ */
+export class OrganizationsUpdate403Error extends PolarClientError<
+  NotPermittedModel | DisputeAutoAcceptNotEnabledModel
+> {
+  constructor(
+    public readonly statusCode: 403,
+    public readonly error: NotPermittedModel | DisputeAutoAcceptNotEnabledModel,
+  ) {
+    super(statusCode, error);
+    this.name = "OrganizationsUpdate403Error";
+  }
+}
+/**
+ * Cannot enforce SSO without an enabled connection and a verified domain.
+ */
+export class OrganizationsUpdate409Error extends PolarClientError<
+  SSOEnforcementRequiresConnectionModel | SSORequiresVerifiedDomainModel
+> {
+  constructor(
+    public readonly statusCode: 409,
+    public readonly error: SSOEnforcementRequiresConnectionModel | SSORequiresVerifiedDomainModel,
+  ) {
+    super(statusCode, error);
+    this.name = "OrganizationsUpdate409Error";
+  }
+}
+/**
+ * The external_id is already used by a different event, or the external customer ID matches customers in several accessible organizations.
+ */
+export class CustomerMetersCredits409Error extends PolarClientError<
+  CustomerMeterCreditExternalIDConflictModel | AmbiguousExternalCustomerIDModel
+> {
+  constructor(
+    public readonly statusCode: 409,
+    public readonly error:
+      | CustomerMeterCreditExternalIDConflictModel
+      | AmbiguousExternalCustomerIDModel,
+  ) {
+    super(statusCode, error);
+    this.name = "CustomerMetersCredits409Error";
+  }
+}
+/**
+ * The credit can't be reversed, or the customer meter is being updated: retry shortly.
+ */
+export class CustomerMeterCreditNotReversible extends PolarClientError<CustomerMeterCreditNotReversibleModel> {
+  constructor(
+    public readonly statusCode: 409,
+    public readonly error: CustomerMeterCreditNotReversibleModel,
+  ) {
+    super(statusCode, error);
+    this.name = "CustomerMeterCreditNotReversible";
+  }
+}
+/**
+ * The external ID matches meters in several accessible organizations.
+ */
+export class AmbiguousExternalMeterID extends PolarClientError<AmbiguousExternalMeterIDModel> {
+  constructor(
+    public readonly statusCode: 409,
+    public readonly error: AmbiguousExternalMeterIDModel,
+  ) {
+    super(statusCode, error);
+    this.name = "AmbiguousExternalMeterID";
+  }
+}
+/**
+ * Conflict
+ */
+export class DisputeNotOpenError extends PolarClientError<DisputeNotOpenErrorModel> {
+  constructor(
+    public readonly statusCode: 409,
+    public readonly error: DisputeNotOpenErrorModel,
+  ) {
+    super(statusCode, error);
+    this.name = "DisputeNotOpenError";
+  }
+}
+/**
+ * Order is already fully refunded.
+ */
+export class RefundedAlready extends PolarClientError<RefundedAlreadyModel> {
+  constructor(
+    public readonly statusCode: 403,
+    public readonly error: RefundedAlreadyModel,
+  ) {
+    super(statusCode, error);
+    this.name = "RefundedAlready";
+  }
+}
+/**
+ * Stripe already refunded the payment at its own expense.
+ */
+export class RefundPaymentAlreadyRefundedByStripe extends PolarClientError<RefundPaymentAlreadyRefundedByStripeModel> {
+  constructor(
+    public readonly statusCode: 409,
+    public readonly error: RefundPaymentAlreadyRefundedByStripeModel,
+  ) {
+    super(statusCode, error);
+    this.name = "RefundPaymentAlreadyRefundedByStripe";
+  }
+}
+/**
+ * The external ID matches webhook endpoints in several accessible organizations.
+ */
+export class AmbiguousExternalWebhookEndpointID extends PolarClientError<AmbiguousExternalWebhookEndpointIDModel> {
+  constructor(
+    public readonly statusCode: 409,
+    public readonly error: AmbiguousExternalWebhookEndpointIDModel,
+  ) {
+    super(statusCode, error);
+    this.name = "AmbiguousExternalWebhookEndpointID";
+  }
+}
+/**
+ * Conflict
+ */
+export class BenefitGrantAlreadyExists extends PolarClientError<BenefitGrantAlreadyExistsModel> {
+  constructor(
+    public readonly statusCode: 409,
+    public readonly error: BenefitGrantAlreadyExistsModel,
+  ) {
+    super(statusCode, error);
+    this.name = "BenefitGrantAlreadyExists";
   }
 }
 /**
@@ -1152,45 +1251,5 @@ export class EventTypesUpdate404Error extends PolarClientError<null> {
   ) {
     super(statusCode, error);
     this.name = "EventTypesUpdate404Error";
-  }
-}
-/**
- * The external ID matches meters in several accessible organizations.
- */
-export class AmbiguousExternalMeterID extends PolarClientError<AmbiguousExternalMeterIDModel> {
-  constructor(
-    public readonly statusCode: 409,
-    public readonly error: AmbiguousExternalMeterIDModel,
-  ) {
-    super(statusCode, error);
-    this.name = "AmbiguousExternalMeterID";
-  }
-}
-/**
- * The external_id is already used by a different event, or the external customer ID matches customers in several accessible organizations.
- */
-export class CustomerMetersCredits409Error extends PolarClientError<
-  CustomerMeterCreditExternalIDConflictModel | AmbiguousExternalCustomerIDModel
-> {
-  constructor(
-    public readonly statusCode: 409,
-    public readonly error:
-      | CustomerMeterCreditExternalIDConflictModel
-      | AmbiguousExternalCustomerIDModel,
-  ) {
-    super(statusCode, error);
-    this.name = "CustomerMetersCredits409Error";
-  }
-}
-/**
- * The credit can't be reversed, or the customer meter is being updated: retry shortly.
- */
-export class CustomerMeterCreditNotReversible extends PolarClientError<CustomerMeterCreditNotReversibleModel> {
-  constructor(
-    public readonly statusCode: 409,
-    public readonly error: CustomerMeterCreditNotReversibleModel,
-  ) {
-    super(statusCode, error);
-    this.name = "CustomerMeterCreditNotReversible";
   }
 }

@@ -3,6 +3,7 @@ import dataclasses
 import pathlib
 import re
 import subprocess
+import tomllib
 import typing
 from typing import Literal
 
@@ -11,7 +12,8 @@ from jinja2 import Environment, FileSystemLoader, Template
 from generator.ir import APIIR, APIVersion, LiteralType
 
 _LOOP_DIRECTORY_PATTERN = re.compile(r"^\[\[([\w\.]+)\]\]$")
-# The Outpost Lua scripts, which every SDK embeds in a string literal.
+# The Outpost Lua scripts, which every SDK embeds in a string literal, and the constants
+# every SDK shares.
 OUTPOST_SCRIPTS_DIRECTORY = pathlib.Path(__file__).parent.parent / "outpost"
 _LITERAL_BREAKERS = ("`", "${", '"""', "\\")
 
@@ -26,6 +28,10 @@ def load_outpost_scripts() -> dict[str, str]:
             )
         scripts[path.stem] = script
     return scripts
+
+
+def load_outpost_constants() -> dict[str, typing.Any]:
+    return tomllib.loads((OUTPOST_SCRIPTS_DIRECTORY / "constants.toml").read_text())
 
 
 PrereleaseLabel = Literal["alpha", "beta", "rc"]
@@ -103,6 +109,7 @@ class EmitterBase(abc.ABC):
             "ir": self.ir,
             "version": self.format_version(),
             "outpost_scripts": load_outpost_scripts(),
+            "outpost_constants": load_outpost_constants(),
         }
 
     def get_version_context(self, api: APIVersion) -> dict[str, typing.Any]:

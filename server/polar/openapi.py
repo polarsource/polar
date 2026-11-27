@@ -173,6 +173,9 @@ def add_destructive_tool_annotations(openapi_schema: dict[str, Any]) -> dict[str
     return openapi_schema
 
 
+VERSIONING_POLICY_URL = "https://polar.sh/docs/api-reference/versioning"
+
+
 def get_openapi(
     version: "APIVersion",
     route_contexts: Sequence[RouteContext],
@@ -183,7 +186,15 @@ def get_openapi(
             title="Polar API",
             version=str(version),
             summary="Polar HTTP and Webhooks API",
-            description="Read the docs at https://polar.sh/docs/api-reference",
+            description=(
+                "Read the docs at https://polar.sh/docs/api-reference. "
+                f"See {VERSIONING_POLICY_URL} for the API versioning "
+                "and deprecation policy."
+            ),
+            external_docs={
+                "description": "API versioning and deprecation policy",
+                "url": VERSIONING_POLICY_URL,
+            },
             routes=route_contexts,
             webhooks=webhooks,
             tags=APITag.metadata(),  # type: ignore

@@ -1,35 +1,40 @@
 'use client'
 
-import CheckoutStatus from '@/components/CheckoutStatus/CheckoutStatus'
-import CheckoutStatusSelect from '@/components/CheckoutStatusSelect/CheckoutStatusSelect'
+import { CheckoutsTable } from '@/components/Checkouts/CheckoutsTable'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import ProductSelect from '@/components/Products/ProductSelect'
-import { useCheckouts } from '@/hooks/queries/checkouts'
-import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
-import { useDebouncedCallback } from '@/hooks/utils'
-import { getAPIParams } from '@/utils/datatable'
-import { enums, schemas } from '@polar-sh/client'
+import { type ProductFilter } from '@/components/Products/ProductSelect'
+import { type ToolbarAction } from '@/components/Shared/Toolbar/ToolbarActionsMenu'
+import { toast } from '@/components/Toast/use-toast'
+import { useSafeCopy } from '@/hooks/clipboard'
 import {
-  DataTable,
-  DataTableColumnDef,
-  DataTableColumnHeader,
-} from '@polar-sh/orbit'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { Input, Text } from '@polar-sh/orbit'
+  uniqueCheckouts,
+  useInfiniteCheckouts,
+} from '@/hooks/queries/checkouts'
+import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
+import { sortingStateToQueryParam } from '@/utils/datatable'
+import useDebounce from '@/utils/useDebounce'
+import { enums, schemas } from '@polar-sh/client'
+import { Copy } from '@polar-sh/orbit/icons'
 import { useRouter } from 'next/navigation'
 import {
   parseAsArrayOf,
+  parseAsIsoDateTime,
   parseAsString,
   parseAsStringLiteral,
   useQueryStates,
 } from 'nuqs'
 import React from 'react'
+import { CheckoutsToolbar } from './CheckoutsToolbar'
 
+const PAGE_SIZE = 50
 const filterParsers = {
   product_id: parseAsArrayOf(parseAsString),
-  customer_id: parseAsString,
-  status: parseAsStringLiteral(enums.checkoutStatusValues),
+  external_product_id: parseAsArrayOf(parseAsString),
+  customer_id: parseAsArrayOf(parseAsString),
+  status: parseAsArrayOf(parseAsStringLiteral(enums.checkoutStatusValues)),
   query: parseAsString,
+  created_after: parseAsIsoDateTime,
+  created_before: parseAsIsoDateTime,
 }
 
 interface ClientPageProps {
@@ -39,162 +44,125 @@ interface ClientPageProps {
 const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const router = useRouter()
 
-  const { pagination, setPagination, sorting, setSorting, resetPage } =
-    useDataTableQueryState({
-      defaultSorting: [{ id: 'created_at', desc: true }],
-      defaultPageSize: 50,
-    })
-
-  const [
-    { product_id: productId, customer_id: customerId, status, query },
-    setFilters,
-  ] = useQueryStates(filterParsers)
-
-  const onProductSelect = (value: string[]) => {
-    setFilters({ product_id: value.length > 0 ? value : null })
-    resetPage()
-  }
-
-  const onStatusSelect = (value: schemas['CheckoutStatus'] | null) => {
-    setFilters({ status: value })
-    resetPage()
-  }
-
-  const onQueryChange = useDebouncedCallback((value: string) => {
-    setFilters({ query: value || null })
-    resetPage()
-  }, 500)
-
-  const checkoutsHook = useCheckouts(organization.id, {
-    ...getAPIParams(pagination, sorting),
-    product_id: productId ?? undefined,
-    customer_id: customerId ?? undefined,
-    status: status ?? undefined,
-    query: query ?? undefined,
+  const { sorting, setSorting } = useDataTableQueryState({
+    defaultSorting: [{ id: 'created_at', desc: true }],
+    defaultPageSize: PAGE_SIZE,
   })
 
-  const checkouts = checkoutsHook.data?.items || []
-  const rowCount = checkoutsHook.data?.pagination.total_count ?? 0
-  const pageCount = checkoutsHook.data?.pagination.max_page ?? 1
+  const [
+    {
+      product_id: productId,
+      external_product_id: externalProductId,
+      customer_id: customerId,
+      status,
+      query,
+      created_after: createdAfter,
+      created_before: createdBefore,
+    },
+    setFilters,
+  ] = useQueryStates(filterParsers)
+  const debouncedQuery = useDebounce(query, 300)
 
-  const columns: DataTableColumnDef<schemas['Checkout']>[] = [
-    {
-      accessorKey: 'created_at',
-      enableSorting: true,
-      size: 160,
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Date" />
-      ),
-      cell: (props) => (
-        <Text as="span" tabularNums>
-          <FormattedDateTime
-            datetime={props.getValue() as string}
-            resolution="time"
-          />
-        </Text>
-      ),
-    },
-    {
-      accessorKey: 'status',
-      enableSorting: true,
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Status" />
-      ),
-      cell: ({ row: { original: checkout } }) => {
-        return <CheckoutStatus checkout={checkout} />
+  const product: ProductFilter = {
+    product_id: productId,
+    external_product_id: externalProductId,
+  }
+  // Half a range filters nothing.
+  const created =
+    createdAfter && createdBefore
+      ? { from: createdAfter, to: createdBefore }
+      : null
+
+  const {
+    data,
+    hasNextPage,
+    isFetching,
+    isFetchingNextPage,
+    isFetchNextPageError,
+    fetchNextPage,
+  } = useInfiniteCheckouts(organization.id, {
+    limit: PAGE_SIZE,
+    sorting: sortingStateToQueryParam(sorting),
+    product_id: productId ?? undefined,
+    external_product_id: externalProductId ?? undefined,
+    customer_id: customerId ?? undefined,
+    status: status ?? undefined,
+    query: debouncedQuery?.trim() || undefined,
+    created_after: created?.from.toISOString(),
+    created_before: created?.to.toISOString(),
+  })
+
+  const checkouts = data && uniqueCheckouts(data.pages)
+  // Not while the first page for new filters is loading, and not again after a
+  // page failed, or the visible end of the list would retry it without pause.
+  const loadMore = () => {
+    if (hasNextPage && !isFetching && !isFetchNextPageError) {
+      fetchNextPage()
+    }
+  }
+
+  const totalCount = data?.pages[0]?.pagination.total_count
+  const countLabel =
+    totalCount === undefined
+      ? undefined
+      : `${totalCount.toLocaleString('en-US')} ${totalCount === 1 ? 'checkout' : 'checkouts'}`
+
+  const safeCopy = useSafeCopy(toast)
+  const copyLink = async () => {
+    await safeCopy(window.location.href)
+    toast({ title: 'Link copied' })
+  }
+  const actions: ToolbarAction[][] = [
+    [
+      {
+        key: 'copy-link',
+        label: 'Copy link to this view',
+        icon: <Copy />,
+        onSelect: copyLink,
       },
-    },
-    {
-      id: 'customer',
-      accessorKey: 'customer',
-      enableSorting: false,
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Customer" />
-      ),
-      cell: ({ row: { original: checkout } }) => {
-        const customerEmail = checkout.customer_email
-        const customerName = checkout.customer_name
-        const customerBillingName = checkout.customer_billing_name
-        const showBillingName =
-          !!customerName &&
-          !!customerBillingName &&
-          customerName.toLocaleLowerCase() !==
-            customerBillingName.toLocaleLowerCase()
-        return (
-          <div className="flex flex-row items-center gap-2 overflow-hidden">
-            {customerEmail ? (
-              <div className="overflow-hidden text-ellipsis">
-                {customerName || customerEmail}
-                {showBillingName && (
-                  <span className="dark:text-polar-500 ml-2 text-gray-500">
-                    {customerBillingName}
-                  </span>
-                )}
-              </div>
-            ) : (
-              <>—</>
-            )}
-          </div>
-        )
-      },
-    },
-    {
-      accessorKey: 'products',
-      id: 'products',
-      enableSorting: false,
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Product" />
-      ),
-      cell: ({
-        row: {
-          original: { products },
-        },
-      }) => {
-        return <>{products.map(({ name }) => name).join(', ')}</>
-      },
-    },
+    ],
   ]
 
   return (
-    <DashboardBody wide>
-      <div className="flex flex-col gap-8">
-        <div className="flex w-full flex-row items-center justify-between gap-2">
-          <div className="grid w-full grid-cols-2 gap-4 sm:w-auto sm:grid-cols-3">
-            <div className="col-span-2 sm:col-span-1">
-              <Input
-                type="text"
-                placeholder="Filter by email"
-                defaultValue={query ?? ''}
-                onChange={(e) => onQueryChange(e.target.value)}
-              />
-            </div>
-            <CheckoutStatusSelect value={status} onChange={onStatusSelect} />
-            <ProductSelect
-              organization={organization}
-              includeArchived
-              value={productId || []}
-              onChange={onProductSelect}
-            />
-          </div>
-        </div>
-        <DataTable
-          columns={columns}
-          data={checkouts}
-          rowCount={rowCount}
-          pageCount={pageCount}
-          pagination={pagination}
-          onPaginationChange={setPagination}
-          sorting={sorting}
-          onSortingChange={setSorting}
-          isLoading={checkoutsHook.isLoading}
-          onRowClick={(row) => {
-            const checkout = row.original
-            router.push(
-              `/dashboard/${organization.slug}/sales/checkouts/${checkout.id}`,
-            )
-          }}
-        />
-      </div>
+    <DashboardBody
+      title={null}
+      wrapperClassName="gap-0 pt-0"
+      className="min-h-0 flex-1 pb-0"
+      wide
+      flush
+    >
+      <CheckoutsToolbar
+        organization={organization}
+        product={product}
+        onProductSelect={setFilters}
+        status={status}
+        onStatusSelect={(value) => setFilters({ status: value })}
+        customerId={customerId}
+        onCustomerSelect={(value) => setFilters({ customer_id: value })}
+        query={query}
+        onQuerySelect={(value) => setFilters({ query: value })}
+        created={created}
+        onCreatedSelect={(range) =>
+          setFilters({
+            created_after: range?.from ?? null,
+            created_before: range?.to ?? null,
+          })
+        }
+        actions={actions}
+      />
+      <CheckoutsTable
+        organization={organization}
+        checkouts={checkouts}
+        sorting={sorting}
+        onSortingChange={setSorting}
+        onOpen={(id) =>
+          router.push(`/dashboard/${organization.slug}/sales/checkouts/${id}`)
+        }
+        footerLabel={countLabel}
+        isLoadingMore={isFetchingNextPage}
+        onRetry={isFetchNextPageError ? fetchNextPage : undefined}
+        onEndReached={loadMore}
+      />
     </DashboardBody>
   )
 }

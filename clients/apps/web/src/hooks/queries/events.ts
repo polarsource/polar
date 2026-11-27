@@ -1,6 +1,10 @@
 import { api } from '@/utils/client'
 import { operations, unwrap } from '@polar-sh/client'
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useQuery,
+} from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export const useInfiniteEvents = (
@@ -87,6 +91,50 @@ export const useEvent = (
   })
 }
 
+// The earliest event only moves on backfills, so cache it for an hour instead
+// of listing and counting the organization's events on every page mount.
+export const useEarliestEvent = (organizationId: string) =>
+  useQuery({
+    queryKey: ['events', organizationId, 'earliest'],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/events/', {
+          params: {
+            query: {
+              organization_id: organizationId,
+              sorting: ['timestamp'],
+              limit: 1,
+            },
+          },
+        }),
+      ).then((result) => result.items[0] ?? null),
+    staleTime: 60 * 60 * 1000,
+    retry: defaultRetry,
+  })
+
+export const useEventTypeStats = (
+  organizationId: string,
+  parameters: Omit<
+    NonNullable<
+      operations['events:get_statistics_by_type']['parameters']['query']
+    >,
+    'organization_id'
+  >,
+) =>
+  useQuery({
+    queryKey: ['events', organizationId, 'byType', parameters],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/events/statistics/by-type', {
+          params: {
+            query: { organization_id: organizationId, ...parameters },
+          },
+        }),
+      ).then((result) => result.items),
+    placeholderData: keepPreviousData,
+    retry: defaultRetry,
+  })
+
 export const useEventHierarchyStats = (
   organizationId: string,
   parameters: Omit<
@@ -121,6 +169,39 @@ export const useEventHierarchyStats = (
     enabled,
   })
 }
+
+type HistogramParameters = Omit<
+  NonNullable<operations['events:get_histogram']['parameters']['query']>,
+  'organization_id'
+>
+
+// Keeps the previous bars while only the filters change within the same
+// organization and range, so the chart doesn't empty out and replay its
+// entrance animation.
+export const useEventHistogram = (
+  organizationId: string,
+  parameters: HistogramParameters,
+) =>
+  useQuery({
+    queryKey: ['events', organizationId, 'histogram', parameters],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/events/statistics/histogram', {
+          params: { query: { organization_id: organizationId, ...parameters } },
+        }),
+      ),
+    placeholderData: (previous, previousQuery) => {
+      const previousParams = previousQuery?.queryKey[3] as
+        | HistogramParameters
+        | undefined
+      return previousQuery?.queryKey[1] === organizationId &&
+        previousParams?.start_timestamp === parameters.start_timestamp &&
+        previousParams?.end_timestamp === parameters.end_timestamp
+        ? previous
+        : undefined
+    },
+    retry: defaultRetry,
+  })
 
 export interface PropertyGroupStat {
   value: string

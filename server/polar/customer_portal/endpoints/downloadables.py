@@ -1,15 +1,18 @@
+from typing import Annotated
+
 from fastapi import Depends, Query
 from fastapi.responses import RedirectResponse
 
-from polar.benefit.schemas import BenefitID
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.schemas import MultipleQueryFilter
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
 from .. import auth
-from ..schemas.downloadables import DownloadableRead
+from ..schemas.downloadables import (
+    CustomerPortalDownloadablesListParams,
+    DownloadableRead,
+)
 from ..service.downloadables import downloadable as downloadable_service
 
 router = APIRouter(prefix="/downloadables", tags=["downloadables", APITag.public])
@@ -21,18 +24,16 @@ router = APIRouter(prefix="/downloadables", tags=["downloadables", APITag.public
     response_model=ListResource[DownloadableRead],
 )
 async def list(
+    filters: Annotated[CustomerPortalDownloadablesListParams, Query()],
     auth_subject: auth.CustomerPortalUnionRead,
     pagination: PaginationParamsQuery,
-    benefit_id: MultipleQueryFilter[BenefitID] | None = Query(
-        None, title="BenefitID Filter", description="Filter by benefit ID."
-    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[DownloadableRead]:
     results, count = await downloadable_service.get_list(
         session,
         auth_subject,
         pagination=pagination,
-        benefit_id=benefit_id,
+        benefit_id=filters.benefit_id,
     )
 
     return ListResource.from_paginated_results(

@@ -2,15 +2,19 @@
 
 import { MasterDetailLayoutContent } from '@/components/Layout/MasterDetailLayout'
 import { MeterPage } from '@/components/Meter/MeterPage'
+import { MeterVersionBanner } from '@/components/Meter/MeterVersionBanner'
+import { MeterVersionSelect } from '@/components/Meter/MeterVersionSelect'
 import { useModal } from '@/components/Modal/useModal'
+import { CatalogVersionLabel } from '@/components/Products/CatalogVersionLabel'
 import { useToast } from '@/components/Toast/use-toast'
-import { useHasPermission, useIsManagedAsCode } from '@/hooks/permissions'
+import { useHasPermission } from '@/hooks/permissions'
 import { useUpdateMeter } from '@/hooks/queries/meters'
 import { apiErrorToast } from '@/utils/api/errors'
 import { permissionDeniedMessage } from '@/utils/permissions'
 import { MoreVertOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { Status } from '@polar-sh/orbit'
 import {
   DropdownMenu,
@@ -41,7 +45,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, meter }) => {
   const { toast } = useToast()
   const updateMeter = useUpdateMeter(meter.id)
   const canManageProducts = useHasPermission(organization.id, 'products:manage')
-  const managedAsCode = useIsManagedAsCode(organization.id)
+  const managedAsCode =
+    organization.feature_settings?.config_as_code_enabled ?? false
 
   const handleArchiveMeter = useCallback(async () => {
     if (!canManageProducts) {
@@ -107,7 +112,13 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, meter }) => {
       header={
         <>
           <div className="flex flex-col gap-y-4">
-            <h2 className="text-2xl">{meter.name}</h2>
+            <div className="flex items-center gap-x-3">
+              <h2 className="text-2xl">{meter.name}</h2>
+              <CatalogVersionLabel
+                organization={organization}
+                version={meter}
+              />
+            </div>
             <div className="flex flex-row items-center gap-x-2">
               <Status
                 color="blue"
@@ -121,6 +132,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, meter }) => {
           </div>
 
           <div className="flex flex-row items-center gap-4">
+            <MeterVersionSelect organization={organization} meter={meter} />
             {!managedAsCode && (
               <Button onClick={showEditMeterModal}>Edit Meter</Button>
             )}
@@ -164,12 +176,15 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, meter }) => {
         </>
       }
     >
-      <MeterPage
-        meter={meter}
-        organization={organization}
-        isEditMeterModalShown={isEditMeterModalShown}
-        hideEditMeterModal={hideEditMeterModal}
-      />
+      <Box flexDirection="column" rowGap="xl">
+        <MeterVersionBanner organization={organization} meter={meter} />
+        <MeterPage
+          meter={meter}
+          organization={organization}
+          isEditMeterModalShown={isEditMeterModalShown}
+          hideEditMeterModal={hideEditMeterModal}
+        />
+      </Box>
     </MasterDetailLayoutContent>
   )
 }

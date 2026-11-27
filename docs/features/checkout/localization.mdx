@@ -1,71 +1,131 @@
 ---
-title: "Checkout Localization"
+title: "Localization"
 sidebarTitle: "Localization"
-description: "Serve checkout in your customer's preferred language"
+description: "Show checkout and the Customer Portal in your customer's language: enable localization, set a locale per session or link, and see the supported languages."
 ---
 
+**Localization** shows the checkout page and the [Customer Portal](/features/customer-portal/introduction) in the customer's language. It's off by default. Until you enable it, both are shown in English.
+
 <Note>
-  Checkout localization is currently in **beta**. To enable it, turn on the feature flag for your
-  organization.
+  Localization is in preview. You can turn it on yourself, no access request needed.
 </Note>
 
-## How it works
+## Enable localization
 
-When checkout localization is enabled for your organization, the checkout page automatically detects the customer's preferred language from their browser settings and displays the checkout in that language.
+- Open **Settings → Preview Features**
+- Turn on **Localized Checkout**
 
-This includes translated labels, placeholders, and descriptions for all standard checkout fields.
+From the API, set `feature_settings.checkout_localization_enabled` with [Update Organization](/api-reference/current/organizations/update-organization). The examples use the sandbox and API version `2026-10`:
 
-## Overriding the language via API
+<CodeGroup>
+```typescript TypeScript
+await polar.organizations.update(organizationId, {
+  feature_settings: { checkout_localization_enabled: true },
+});
+```
 
-You can explicitly set the checkout language by passing the `locale` parameter when creating a checkout session via the API:
+```python Python
+polar.organizations.update(
+    organization_id,
+    feature_settings={"checkout_localization_enabled": True},
+)
+```
 
-```bash
-curl -X POST https://api.polar.sh/v1/checkouts/ \
-  -H "Authorization: Bearer <token>" \
+```bash cURL
+curl -X PATCH https://sandbox-api.polar.sh/v1/organizations/$ORGANIZATION_ID \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{ "feature_settings": { "checkout_localization_enabled": true } }'
+```
+</CodeGroup>
+
+<Note>Dashboard and API only. Not available from the CLI or MCP server.</Note>
+
+The setting applies to checkout and the Customer Portal. The [Embedded Payment Method](/features/checkout/embed-payment-method#localization) takes its own `locale` option.
+
+## How the language is chosen
+
+On the checkout page, the first match wins:
+
+1. The `?locale=` query parameter on the checkout URL.
+2. The session's `locale`, set when you create it.
+3. The customer's browser language (`Accept-Language`).
+
+A customer's locale is saved on the customer after checkout and reused for their next checkout when no locale is set. You can also set it yourself with `locale` on the customer, for example `polar customers update_external user_123 --locale fr`.
+
+The Customer Portal uses `?locale=`, then the customer's saved locale, then the browser language.
+
+A region tag of a supported language, like `en-CA` or `fr-BE`, shows that language and formats dates and amounts for the region. Unsupported languages fall back to English. Invalid BCP 47 tags are rejected by the API.
+
+## Set the language for a session
+
+Pass `locale` when you create a [Checkout Session](/features/checkout/session):
+
+<CodeGroup>
+```typescript TypeScript
+const checkout = await polar.checkouts.create({
+  products: [product.id],
+  external_customer_id: "user_123",
+  locale: "fr",
+});
+```
+
+```python Python
+checkout = polar.checkouts.create(
+    products=[product.id],
+    external_customer_id="user_123",
+    locale="fr",
+)
+```
+
+```bash cURL
+curl -X POST https://sandbox-api.polar.sh/v1/checkouts/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
   -H "Content-Type: application/json" \
   -d '{
+    "products": ["'"$PRODUCT_ID"'"],
+    "external_customer_id": "user_123",
     "locale": "fr"
   }'
 ```
+</CodeGroup>
 
-When a `locale` is set explicitly, it takes precedence over the browser's language preference.
-
-## Overriding the language via querystring
-
-You can append `?locale=` to any checkout link and that will take precedence over the browser's language preference.
+For a [Checkout Link](/features/checkout/links#query-parameters), add `?locale=fr` to the link URL. With localization off, Polar creates sessions in English, whatever `locale` you pass.
 
 ## Supported languages
 
-- English (en) (default)
-- Dutch (nl)
-- Spanish (es)
-- French (fr)
-- Swedish (sv)
-- German (de)
-- Hungarian (hu)
-- Italian (it)
-- Portuguese (Brazil) (pt)
-- Portuguese (Portugal) (pt-PT)
-- Korean (ko)
-- Japanese (ja)
-- Turkish (tr)
-- Polish (pl)
-- Chinese (Traditional, Taiwan) (zh-TW)
-- Slovenian (sl)
+| Language | Tag |
+| --- | --- |
+| English (default) | `en` |
+| Chinese (Traditional, Taiwan) | `zh-TW` |
+| Dutch | `nl` |
+| French | `fr` |
+| German | `de` |
+| Hungarian | `hu` |
+| Italian | `it` |
+| Japanese | `ja` |
+| Korean (South Korea) | `ko` |
+| Polish | `pl` |
+| Portuguese (Brazilian) | `pt` |
+| Portuguese (Portugal) | `pt-PT` |
+| Slovenian | `sl` |
+| Spanish | `es` |
+| Swedish | `sv` |
+| Turkish | `tr` |
 
-Want to help us review translations for an upcoming language? Reach out at [translations@polar.sh](mailto:translations@polar.sh).
+Want to help review translations for an upcoming language? Email [translations@polar.sh](mailto:translations@polar.sh).
 
-## Known limitations
+## Limitations
 
-During the beta period, localization is scoped to the checkout page itself:
+There's no language picker on the page. The language comes from the URL, the session, the customer or the browser.
 
-- **Error messages** are displayed in English
-- **Transactional emails** (receipts, confirmations) are sent in English
-- There is **no language selector** on the checkout page — language is determined automatically from the browser, via the API `locale` parameter or via a querystring `?locale`.
+## Learn more
 
-## Feedback
-
-We'd love to hear your feedback on checkout localization:
-
-- Open an issue on [GitHub](https://github.com/polarsource/polar)
-- Email us at [translations@polar.sh](mailto:translations@polar.sh)
+| Resource | Description |
+| --- | --- |
+| [Checkout Sessions](/features/checkout/session) | Create sessions with a `locale` |
+| [Checkout Links](/features/checkout/links) | Query parameters for links |
+| [Customer Portal](/features/customer-portal/introduction) | The portal your customers sign in to |
+| [Settings](/features/settings) | Every organization setting |

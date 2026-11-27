@@ -98,9 +98,6 @@ locals {
     SENTRY_AUTH_TOKEN = {
       value = var.sentry_auth_token
     }
-    MCP_OAUTH2_CLIENT_ID = {
-      value = var.mcp_oauth2_client_id
-    }
     MCP_OAUTH2_CLIENT_SECRET = {
       value = var.mcp_oauth2_client_secret
     }
@@ -164,6 +161,10 @@ locals {
       value     = var.customer_portal_url_overrides
       sensitive = false
     }
+    POLAR_PROTECTED_OAUTH2_CLIENT_IDS = {
+      value     = jsonencode(var.protected_oauth2_client_ids)
+      sensitive = false
+    }
     POLAR_PLAIN_DEFAULT_TIER_EXTERNAL_ID = {
       value     = var.plain_default_tier_external_id
       sensitive = false
@@ -199,6 +200,12 @@ locals {
     } : null
     POLAR_RESEND_WEBHOOK_SECRET = {
       value = var.backend_resend_webhook_secret
+    }
+    POLAR_PAYMENT_RETRY_ALERT_API_KEY = {
+      value = var.payment_retry_alert_api_key
+    }
+    POLAR_PAYMENT_RETRY_ALERT_WEBHOOK_SECRET = {
+      value = var.payment_retry_alert_webhook_secret
     }
     POLAR_NUMERAL_API_KEY = {
       value = var.numeral_api_key

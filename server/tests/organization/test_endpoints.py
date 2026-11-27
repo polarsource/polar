@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.agent.repository import AgentRepository
@@ -11,10 +11,12 @@ from polar.auth.models import AuthSubject
 from polar.auth.service import auth as auth_service
 from polar.config import settings
 from polar.integrations.polar.service import PolarSelfService
+from polar.kit.utils import utc_now
 from polar.kit.versioning import APIVersion
 from polar.models import (
     Agent,
     OAuth2Token,
+    OrganizationDomain,
     OrganizationSSOConnection,
     Product,
     User,
@@ -51,6 +53,7 @@ from tests.fixtures.random_objects import (
     create_payout_account,
     create_subscription,
     create_user,
+    create_verified_organization_email,
 )
 
 # The organization fixture is created now, which is past the cutoff from
@@ -178,6 +181,27 @@ class TestGetOrganization:
 
         json = response.json()
         assert json["id"] == str(organization.id)
+
+    @pytest.mark.auth
+    async def test_auto_proration_behavior(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.subscription_settings = {
+            **organization.subscription_settings,
+            "proration_behavior": "auto",
+        }
+        await save_fixture(organization)
+
+        response = await client.get(f"/v1/organizations/{organization.id}")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["proration_behavior"] == "auto"
+        assert json["subscription_settings"]["proration_behavior"] == "auto"
 
 
 @pytest.mark.anyio
@@ -390,6 +414,115 @@ class TestUpdateOrganization:
         )
 
         assert response.status_code == 404
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_trial_ended_reactivation_period(
+        self,
+        api_version: APIVersion,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        subscription_settings = {
+            "allow_multiple_subscriptions": False,
+            "allow_customer_updates": True,
+            "proration_behavior": "prorate",
+            "benefit_revocation_grace_period": 0,
+            "prevent_trial_abuse": False,
+        }
+        response = await client.get(f"/v1/organizations/{organization.id}")
+        assert (
+            response.json()["subscription_settings"]["trial_ended_reactivation_period"]
+            == 14
+        )
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "subscription_settings": {
+                    **subscription_settings,
+                    "trial_ended_reactivation_period": 0,
+                }
+            },
+        )
+        assert response.status_code == 200
+        assert (
+            response.json()["subscription_settings"]["trial_ended_reactivation_period"]
+            == 0
+        )
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "subscription_settings": {
+                    **subscription_settings,
+                    "benefit_revocation_grace_period": 7,
+                }
+            },
+        )
+        assert response.status_code == 200
+        json = response.json()["subscription_settings"]
+        assert json["benefit_revocation_grace_period"] == 7
+        assert json["trial_ended_reactivation_period"] == 0
+
+    @pytest.mark.api_version(V2026_10)
+    @pytest.mark.auth
+    async def test_trial_ended_reactivation_period_hidden_before_2027_01(
+        self,
+        api_version: APIVersion,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.subscription_settings = {
+            **organization.subscription_settings,
+            "trial_ended_reactivation_period": 0,
+        }
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "subscription_settings": {
+                    "allow_multiple_subscriptions": False,
+                    "allow_customer_updates": True,
+                    "proration_behavior": "prorate",
+                    "benefit_revocation_grace_period": 7,
+                    "prevent_trial_abuse": False,
+                }
+            },
+        )
+
+        assert response.status_code == 200
+        json = response.json()["subscription_settings"]
+        assert json["benefit_revocation_grace_period"] == 7
+        assert "trial_ended_reactivation_period" not in json
+        assert organization.trial_ended_reactivation_period == 0
+
+    @pytest.mark.auth
+    async def test_negative_trial_ended_reactivation_period(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "subscription_settings": {
+                    "allow_multiple_subscriptions": False,
+                    "allow_customer_updates": True,
+                    "proration_behavior": "prorate",
+                    "benefit_revocation_grace_period": 0,
+                    "prevent_trial_abuse": False,
+                    "trial_ended_reactivation_period": -1,
+                }
+            },
+        )
+
+        assert response.status_code == 422
 
     @pytest.mark.auth
     async def test_negative_revenue_validation(
@@ -704,6 +837,9 @@ class TestUpdateOrganization:
 
         organization.status = OrganizationStatus.CREATED
         await save_fixture(organization)
+        await create_verified_organization_email(
+            save_fixture, organization, "support@example.com"
+        )
 
         update_response = await client.patch(
             f"/v1/organizations/{organization.id}",
@@ -1176,6 +1312,58 @@ class TestGetEmbedStatus:
         assert response.status_code == 200
         json = response.json()
         assert json["embed_hosts"] == ["example.com"]
+
+    @pytest.mark.auth
+    async def test_wallet_hosts(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.embed_hosts = [
+            "acme.com",
+            "shop.acme.com:8443",
+            "*.acme.com",
+            "other.com",
+        ]
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization, domain="acme.com", verified_at=utc_now()
+            )
+        )
+
+        response = await client.get(f"/v1/organizations/{organization.id}/embed-status")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["wallet_hosts"] == ["acme.com", "shop.acme.com:8443"]
+        assert json["pending_wallet_hosts"] == []
+
+    @pytest.mark.auth
+    async def test_pending_wallet_hosts(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.status = OrganizationStatus.REVIEW
+        organization.embed_hosts = ["shop.acme.com", "*.acme.com", "other.com"]
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization, domain="acme.com", verified_at=utc_now()
+            )
+        )
+
+        response = await client.get(f"/v1/organizations/{organization.id}/embed-status")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["wallet_hosts"] == []
+        assert json["pending_wallet_hosts"] == ["shop.acme.com"]
 
 
 @pytest.mark.anyio
@@ -1825,6 +2013,37 @@ class TestUpdateSSOEnforced:
         assert response.status_code == 409
 
     @pytest.mark.auth
+    async def test_enable_without_verified_domain_forbidden(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await self._create_connection(save_fixture, organization)
+        await save_fixture(
+            OrganizationDomain(organization=organization, domain="example.com")
+        )
+        auth_subject.organization_ids = frozenset({organization.id})
+        _, auth_subject.session = await auth_service._create_user_session(
+            session,
+            auth_subject.subject,
+            user_agent="test",
+            scopes=[],
+            organization_ids=frozenset({organization.id}),
+        )
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={"sso_enforced": True},
+        )
+
+        assert response.status_code == 409
+        assert response.json()["error"] == "SSORequiresVerifiedDomain"
+
+    @pytest.mark.auth
     async def test_enable_from_scoped_session(
         self,
         client: AsyncClient,
@@ -1835,6 +2054,11 @@ class TestUpdateSSOEnforced:
         user_organization: UserOrganization,
     ) -> None:
         await self._create_connection(save_fixture, organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization, domain="example.com", verified_at=utc_now()
+            )
+        )
         auth_subject.organization_ids = frozenset({organization.id})
         _, auth_subject.session = await auth_service._create_user_session(
             session,

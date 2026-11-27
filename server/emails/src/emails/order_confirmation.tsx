@@ -29,7 +29,7 @@ export function OrderConfirmation({
         <Text as="span" weight="medium">
           {order.description}
         </Text>
-        . Your invoice is attached.
+        .{order.is_invoice_generated && ' Your invoice is attached.'}
         {order.receipt_number && (
           <>
             {' '}

@@ -1,17 +1,18 @@
 from datetime import datetime
+from typing import Annotated
 
-from pydantic import UUID4, Field, computed_field, field_validator
+from pydantic import MISSING, UUID4, Field, computed_field, field_validator
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.kit.external_id import ExternalIDInputMixin, ExternalIDOutputMixin
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
-from polar.kit.versioning import Version
+from polar.kit.versioning import Omissible, Version
 from polar.kit.visibility import Visibility
 from polar.models.benefit import BenefitType, BenefitVisibility
 from polar.models.benefit_grant import BenefitGrantError
 from polar.organization.schemas import OrganizationID, OrganizationPublicBase
-from polar.version import V2026_10
+from polar.version import V2026_10, V2027_01
 
 BENEFIT_DESCRIPTION_MIN_LENGTH = 3
 BENEFIT_DESCRIPTION_MAX_LENGTH = 42
@@ -45,8 +46,8 @@ class BenefitCreateBase(MetadataInputMixin, ExternalIDInputMixin, Schema):
 
 
 class BenefitUpdateBase(MetadataInputMixin, ExternalIDInputMixin, Schema):
-    description: str | None = Field(
-        None,
+    description: Omissible[str] = Field(
+        MISSING,
         min_length=BENEFIT_DESCRIPTION_MIN_LENGTH,
         max_length=BENEFIT_DESCRIPTION_MAX_LENGTH,
         description=(
@@ -57,8 +58,8 @@ class BenefitUpdateBase(MetadataInputMixin, ExternalIDInputMixin, Schema):
 
 
 class BenefitUpdateVisibilityMixin(Schema):
-    visibility: BenefitVisibility | None = Field(
-        None,
+    visibility: Omissible[BenefitVisibility | None] = Field(
+        MISSING,
         description="The visibility of the benefit in the customer portal.",
     )
 
@@ -81,6 +82,21 @@ class BenefitBase(MetadataOutputMixin, ExternalIDOutputMixin, BenefitPublicBase)
     visibility: BenefitVisibility = Field(
         description="The visibility of the benefit in the customer portal."
     )
+    catalog_id: Annotated[
+        UUID4 | None,
+        Version(starting_from=V2027_01),
+        Field(
+            description=(
+                "ID of the catalog that introduced this version of the benefit. "
+                "None for benefits not managed by declarative config."
+            )
+        ),
+    ]
+    is_current: Annotated[
+        bool,
+        Version(starting_from=V2027_01),
+        Field(description="Whether this is the current version of the benefit."),
+    ]
 
     @field_validator("visibility", mode="before")
     @classmethod
@@ -95,7 +111,20 @@ class BenefitBase(MetadataOutputMixin, ExternalIDOutputMixin, BenefitPublicBase)
         return self.type.is_visibility_configurable()
 
 
-class BenefitGrantBase(IDSchema, TimestampedSchema):
+class BenefitGrantManualTimestamps(Schema):
+    manually_granted_at: Annotated[
+        datetime | None,
+        Version(starting_from=V2027_01),
+        Field(description="When the manual grant was requested, if applicable."),
+    ]
+    manually_revoked_at: Annotated[
+        datetime | None,
+        Version(starting_from=V2027_01),
+        Field(description="When this grant was manually revoked, if applicable."),
+    ]
+
+
+class BenefitGrantBase(IDSchema, TimestampedSchema, BenefitGrantManualTimestamps):
     """
     A grant of a benefit to a customer.
     """

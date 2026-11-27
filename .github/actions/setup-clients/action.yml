@@ -1,0 +1,27 @@
+name: "Setup clients"
+description: "Set up pnpm and Node.js, then install the clients workspace"
+
+runs:
+  using: "composite"
+  steps:
+    - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      with:
+        package_json_file: clients/package.json
+
+    - name: Setup Node.js environment
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version-file: .nvmrc
+        cache: "pnpm"
+        cache-dependency-path: "clients/pnpm-lock.yaml"
+
+    - name: Set up Turborepo Remote Cache
+      uses: vercel/setup-turborepo-remote-cache-action@49d7b1b46ba4c9251e1977986bfe18336feabc8f # v1.1.0
+      continue-on-error: true
+      with:
+        team: ${{ env.TURBO_TEAM }}
+
+    - name: 📦 Install dependencies
+      shell: bash
+      working-directory: ./clients
+      run: pnpm install

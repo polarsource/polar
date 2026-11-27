@@ -2,7 +2,12 @@ from collections.abc import AsyncIterator, Sequence
 from dataclasses import dataclass
 from typing import Any, Protocol
 
-from ..canonical import CanonicalAccount, CanonicalRecord, CanonicalSubscription
+from ..canonical import (
+    CanonicalAccount,
+    CanonicalLicenseKey,
+    CanonicalRecord,
+    CanonicalSubscription,
+)
 
 
 @dataclass(frozen=True)
@@ -32,6 +37,14 @@ class SourceAdapter(Protocol):
         Weeks can pass between the import and the cutover, so the cutover reads
         the source again rather than trusting the staged copy.
         """
+        ...
+
+    async def get_license_key(
+        self, subscription: CanonicalSubscription
+    ) -> CanonicalLicenseKey | None:
+        """The license key the customer has for this subscription on the
+        source, with its activations, kept on Polar so their apps keep working.
+        None when the source has none."""
         ...
 
     async def stop_source_subscription(

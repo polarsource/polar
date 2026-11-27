@@ -1,8 +1,7 @@
 import { useAccountCredits, useOrganizationAccount } from '@/hooks/queries'
-import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { useDashboardOrganization } from '@/hooks/dashboardOrganization'
 import { formatCurrency } from '@polar-sh/currency'
 import { List, ListItem } from '@polar-sh/orbit'
-import { useContext } from 'react'
 import { InlineModal, InlineModalHeader } from '@polar-sh/orbit'
 import { EmptyState } from '../Shared/EmptyState'
 import { TollOutlined } from '@polar-sh/orbit/icons'
@@ -13,7 +12,7 @@ export const FeeCreditGrantsModal = ({
   isShown: boolean
   hide: () => void
 }) => {
-  const { organization } = useContext(OrganizationContext)
+  const organization = useDashboardOrganization()
   const { data: account } = useOrganizationAccount(organization.id)
 
   const hasCredits = account?.credit_balance && account.credit_balance > 0

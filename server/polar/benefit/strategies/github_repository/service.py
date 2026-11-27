@@ -113,11 +113,11 @@ class BenefitGitHubRepositoryService(
             # Check member's OAuth accounts first, fall back to customer
             oauth_account = None
             if member is not None:
-                oauth_account = member.get_oauth_account(
+                oauth_account = await member.get_oauth_account(
                     account_id, CustomerOAuthPlatform.github
                 )
             if oauth_account is None:
-                oauth_account = customer.get_oauth_account(
+                oauth_account = await customer.get_oauth_account(
                     account_id, CustomerOAuthPlatform.github
                 )
 
@@ -205,11 +205,11 @@ class BenefitGitHubRepositoryService(
             # Check member's OAuth accounts first, fall back to customer
             oauth_account = None
             if member is not None:
-                oauth_account = member.get_oauth_account(
+                oauth_account = await member.get_oauth_account(
                     account_id, CustomerOAuthPlatform.github
                 )
             if oauth_account is None:
-                oauth_account = customer.get_oauth_account(
+                oauth_account = await customer.get_oauth_account(
                     account_id, CustomerOAuthPlatform.github
                 )
 

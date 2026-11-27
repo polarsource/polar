@@ -1,5 +1,5 @@
 from collections.abc import AsyncIterator
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from typing import Any, NotRequired, TypedDict
 from uuid import UUID
@@ -15,7 +15,6 @@ from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
 from polar.config import settings
 from polar.enums import SubscriptionRecurringInterval
-from polar.integrations.tinybird.client import TinybirdClient
 from polar.integrations.tinybird.service import DATASOURCE_EVENTS, _event_to_tinybird
 from polar.kit.db.postgres import create_async_engine, create_async_sessionmaker
 from polar.kit.time_queries import TimeInterval
@@ -41,7 +40,14 @@ from polar.models.order import OrderStatus
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
-from tests.fixtures.database import SaveFixture, get_database_url, save_fixture_factory
+from tests.fixtures.database import (
+    SKIP_DB_DROP,
+    TEMPLATE_DATABASE,
+    SaveFixture,
+    clone_template_database,
+    get_database_url,
+    save_fixture_factory,
+)
 from tests.fixtures.random_objects import (
     create_account,
     create_checkout,
@@ -56,10 +62,8 @@ from tests.fixtures.random_objects import (
     create_subscription,
     create_user,
 )
-from tests.fixtures.tinybird import tinybird_available
+from tests.fixtures.tinybird import SynchronousIngestTinybirdClient, tinybird_available
 from tests.metrics.conftest import create_events_for_fixtures
-
-pytestmark = pytest.mark.xdist_group(name="tinybird")
 
 
 class ProductFixture(TypedDict):
@@ -342,6 +346,7 @@ class MetricsHarness:
 class CheckoutMetricsContext:
     organization: Organization
     user: User
+    product_ids: dict[str, UUID] = field(default_factory=dict)
 
 
 @dataclass
@@ -359,6 +364,7 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         end_date=date(2024, 12, 31),
         interval=TimeInterval.year,
         auth_type="user",
+        metrics=("orders",),
     ),
     QueryCase(
         label="intervals_month",
@@ -367,6 +373,7 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         end_date=date(2024, 12, 31),
         interval=TimeInterval.month,
         auth_type="user",
+        metrics=("orders",),
     ),
     QueryCase(
         label="intervals_week",
@@ -375,6 +382,7 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         end_date=date(2024, 12, 31),
         interval=TimeInterval.week,
         auth_type="user",
+        metrics=("orders",),
     ),
     QueryCase(
         label="intervals_day",
@@ -383,6 +391,7 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         end_date=date(2024, 12, 31),
         interval=TimeInterval.day,
         auth_type="user",
+        metrics=("orders",),
     ),
     QueryCase(
         label="intervals_hour",
@@ -391,6 +400,7 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         end_date=date(2024, 12, 31),
         interval=TimeInterval.hour,
         auth_type="user",
+        metrics=("orders",),
     ),
     # --- shared org: timezones (user + org) ---
     QueryCase(
@@ -2301,6 +2311,37 @@ async def _seed_checkout_outside_range(
     )
 
 
+async def _seed_checkout_product_filters(
+    save_fixture: SaveFixture,
+    organization: Organization,
+) -> dict[str, UUID]:
+    one_time_product = await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=None,
+    )
+    recurring_product = await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.month,
+    )
+    opened_at = datetime(2026, 2, 15, 10, 0, tzinfo=UTC).isoformat()
+    await create_checkout(
+        save_fixture,
+        products=[one_time_product],
+        created_at=datetime(2026, 2, 15, 9, 30, tzinfo=UTC),
+        analytics_metadata={"opened_at": opened_at},
+    )
+    for _ in range(2):
+        await create_checkout(
+            save_fixture,
+            products=[recurring_product],
+            created_at=datetime(2026, 2, 15, 9, 30, tzinfo=UTC),
+            analytics_metadata={"opened_at": opened_at},
+        )
+    return {"one_time": one_time_product.id}
+
+
 def _checkout_auth_subject(
     context: CheckoutMetricsContext, auth: str
 ) -> AuthSubject[User | Organization]:
@@ -2327,12 +2368,15 @@ async def metrics_module_database_url(worker_id: str) -> AsyncIterator[str]:
     # The harness commits shared seed data once for speed, so it can't use the
     # worker database that regular tests rely on transaction rollbacks to isolate.
     database_id = f"{worker_id}_metrics_service"
-    sync_database_url = get_database_url(database_id, "psycopg2")
+    sync_database_url = get_database_url(database_id, "psycopg")
 
     if database_exists(sync_database_url):
         drop_database(sync_database_url)
 
-    create_database(sync_database_url)
+    if TEMPLATE_DATABASE:
+        clone_template_database(sync_database_url)
+    else:
+        create_database(sync_database_url)
 
     async_database_url = get_database_url(database_id)
     engine = create_async_engine(
@@ -2343,22 +2387,24 @@ async def metrics_module_database_url(worker_id: str) -> AsyncIterator[str]:
     )
 
     try:
-        async with engine.begin() as conn:
-            await conn.execute(CreateSequence(Customer.short_id_sequence))
-            for entity in entities_registry.entities():
-                if isinstance(entity, PGTrigger):
-                    continue
-                await conn.execute(entity.to_sql_statement_create())
-            await conn.run_sync(Model.metadata.create_all)
-            for entity in entities_registry.entities():
-                if not isinstance(entity, PGTrigger):
-                    continue
-                await conn.execute(entity.to_sql_statement_create())
+        if not TEMPLATE_DATABASE:
+            async with engine.begin() as conn:
+                await conn.execute(CreateSequence(Customer.short_id_sequence))
+                for entity in entities_registry.entities():
+                    if isinstance(entity, PGTrigger):
+                        continue
+                    await conn.execute(entity.to_sql_statement_create())
+                await conn.run_sync(Model.metadata.create_all)
+                for entity in entities_registry.entities():
+                    if not isinstance(entity, PGTrigger):
+                        continue
+                    await conn.execute(entity.to_sql_statement_create())
 
         yield async_database_url
     finally:
         await engine.dispose()
-        drop_database(sync_database_url)
+        if not SKIP_DB_DROP:
+            drop_database(sync_database_url)
 
 
 @pytest.fixture(scope="module")
@@ -2377,7 +2423,7 @@ async def metrics_harness(
     session = create_async_sessionmaker(engine)()
     save_fixture = save_fixture_factory(session)
 
-    tinybird_client = TinybirdClient(
+    tinybird_client = SynchronousIngestTinybirdClient(
         api_url=settings.TINYBIRD_API_URL,
         clickhouse_url=settings.TINYBIRD_CLICKHOUSE_URL,
         api_token=tinybird_workspace,
@@ -2711,6 +2757,11 @@ async def checkout_metrics_harness(
 
         outside_range = await make_context("outside_range")
         await _seed_checkout_outside_range(save_fixture, outside_range.organization)
+
+        product_filters = await make_context("product_filters")
+        product_filters.product_ids = await _seed_checkout_product_filters(
+            save_fixture, product_filters.organization
+        )
 
         await session.commit()
         harness = CheckoutMetricsHarness(
@@ -5635,3 +5686,45 @@ class TestCheckoutMetrics:
         # Only the checkout opened within range should be counted
         total_checkouts = sum(p.checkouts or 0 for p in metrics.periods)
         assert total_checkouts == 1
+
+    @pytest.mark.parametrize("auth", ["user", "org"])
+    @pytest.mark.parametrize(
+        ("filter_one_time_product", "billing_type", "expected_checkouts"),
+        [
+            pytest.param(False, None, 3, id="no_filter"),
+            pytest.param(True, None, 1, id="product"),
+            pytest.param(False, [ProductBillingType.recurring], 2, id="billing_type"),
+            pytest.param(
+                True, [ProductBillingType.recurring], 0, id="product_and_billing_type"
+            ),
+        ],
+    )
+    async def test_product_and_billing_type_filters(
+        self,
+        checkout_metrics_harness: CheckoutMetricsHarness,
+        checkout_metrics_session: AsyncSession,
+        auth: str,
+        filter_one_time_product: bool,
+        billing_type: list[ProductBillingType] | None,
+        expected_checkouts: int,
+    ) -> None:
+        context = checkout_metrics_harness.scenarios["product_filters"]
+        auth_subject = _checkout_auth_subject(context, auth)
+        product_id = (
+            [context.product_ids["one_time"]] if filter_one_time_product else None
+        )
+
+        metrics = await metrics_service.get_metrics(
+            checkout_metrics_session,
+            auth_subject,
+            start_date=date(2026, 2, 1),
+            end_date=date(2026, 2, 28),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.month,
+            product_id=product_id,
+            billing_type=billing_type,
+            metrics=["checkouts"],
+        )
+
+        total_checkouts = sum(p.checkouts or 0 for p in metrics.periods)
+        assert total_checkouts == expected_checkouts

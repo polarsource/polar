@@ -19,27 +19,6 @@ data "tfe_outputs" "production" {
   workspace    = "polar"
 }
 
-data "render_redis" "redis" {
-  id = data.tfe_outputs.production.values.redis_id
-}
-
-# =============================================================================
-# Sandbox Redis Instance
-# =============================================================================
-
-resource "render_redis" "redis_sandbox" {
-  environment_id    = data.tfe_outputs.production.values.sandbox_environment_id
-  name              = "redis-sandbox"
-  plan              = "standard"
-  region            = "ohio"
-  max_memory_policy = "noeviction"
-
-  # Empty IP allow list means only private network connections
-  ip_allow_list = []
-
-  depends_on = [render_registry_credential.ghcr]
-}
-
 # =============================================================================
 # Locals
 # =============================================================================
@@ -98,7 +77,7 @@ module "sandbox" {
     custom_domains         = [{ name = "sandbox-api.polar.sh" }]
     web_concurrency        = "2"
     forwarded_allow_ips    = local.forwarded_allow_ips
-    database_pool_size     = "10"
+    database_pool_size     = "20"
     postgres_database      = module.planetscale.database_name
     postgres_read_database = module.planetscale.database_name
     pre_deploy_command     = "env POLAR_POSTGRES_USER=${module.planetscale.app_role_username} POLAR_POSTGRES_PORT=5432 uv run task pre_deploy"
@@ -122,11 +101,7 @@ module "sandbox" {
   environment_groups = module.backend_environment.environment_groups
   email_from_domain  = local.backend_config.email_from_domain
 
-  memory_profile_config = {
-    s3_bucket_name = local.diagnostics_bucket_name
-  }
-
-  depends_on = [render_registry_credential.ghcr, data.render_redis.redis, render_redis.redis_sandbox]
+  depends_on = [render_registry_credential.ghcr]
 }
 
 # =============================================================================

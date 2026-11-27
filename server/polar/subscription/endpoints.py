@@ -1,41 +1,33 @@
-from datetime import datetime
 from typing import Annotated
 from zoneinfo import ZoneInfo
 
 import structlog
 from fastapi import Depends, Query
-from pydantic import AwareDatetime
 
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_resource_permission
-from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
-from polar.discount.schemas import DiscountID
 from polar.exceptions import NotPermitted, PaymentNotReady, ResourceNotFound
 from polar.kit.csv import CSVStreamingResponse
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.versioning import version
 from polar.models import Subscription, SubscriptionBulkUpdate
-from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.openapi import APITag, cli_preview
 from polar.order.service import PaymentActionRequired, PaymentFailed
-from polar.organization.schemas import OrganizationID
 from polar.postgres import (
     AsyncReadSession,
     AsyncSession,
     get_db_read_session,
     get_db_session,
 )
-from polar.product.schemas import ProductID
 from polar.routing import APIRouter
+from polar.subscription.schemas import SubscriptionListParams
 from polar.version import V2027_01
 
 from . import auth, sorting
 from .bulk_update import subscription_bulk_update as subscription_bulk_update_service
 from .export import (
-    SubscriptionExportColumn,
-    SubscriptionExportTimezone,
+    SubscriptionExportParams,
     generate_csv,
     get_filename,
 )
@@ -45,9 +37,10 @@ from .schemas import (
     SubscriptionBulkUpdateCreate,
     SubscriptionBulkUpdateID,
     SubscriptionCancelPreview,
+    SubscriptionChange,
     SubscriptionChangePreview,
-    SubscriptionChangePreviewSeats,
-    SubscriptionChangePreviewUnits,
+    SubscriptionChangeSeats,
+    SubscriptionChangeUnits,
     SubscriptionChargePreview,
     SubscriptionCreate,
     SubscriptionID,
@@ -55,11 +48,13 @@ from .schemas import (
     SubscriptionUpdate,
 )
 from .service import (
+    AlreadyActiveSubscription,
     AlreadyCanceledSubscription,
     InactiveSubscription,
     SubscriptionLocked,
     SubscriptionNotScheduledToCancel,
     SubscriptionUpdateContext,
+    TrialAlreadyRedeemed,
 )
 from .service import subscription as subscription_service
 
@@ -90,81 +85,32 @@ async def list(
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
     metadata: MetadataQuery,
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
-    product_id: MultipleQueryFilter[ProductID] | None = Query(
-        None, title="ProductID Filter", description="Filter by product ID."
-    ),
-    customer_id: MultipleQueryFilter[CustomerID] | None = Query(
-        None, title="CustomerID Filter", description="Filter by customer ID."
-    ),
-    external_customer_id: MultipleQueryFilter[ExternalCustomerID] | None = Query(
-        None,
-        title="ExternalCustomerID Filter",
-        description="Filter by customer external ID.",
-    ),
-    discount_id: MultipleQueryFilter[DiscountID] | None = Query(
-        None, title="DiscountID Filter", description="Filter by discount ID."
-    ),
-    active: bool | None = Query(
-        None,
-        description="Filter by active or inactive subscription.",
-        deprecated=True,
-    ),
-    status: MultipleQueryFilter[SubscriptionStatus] | None = Query(
-        None, title="Status Filter", description="Filter by subscription status."
-    ),
-    cancel_at_period_end: bool | None = Query(
-        None,
-        description="Filter by subscriptions that are set to cancel at period end.",
-    ),
-    customer_cancellation_reason: MultipleQueryFilter[CustomerCancellationReason]
-    | None = Query(
-        None,
-        title="CustomerCancellationReason Filter",
-        description="Filter by customer cancellation reason.",
-    ),
-    canceled_at_after: datetime | None = Query(
-        None,
-        description="Filter by cancellation date (after or equal to).",
-    ),
-    canceled_at_before: datetime | None = Query(
-        None,
-        description="Filter by cancellation date (before or equal to).",
-    ),
-    started_after: datetime | None = Query(
-        None,
-        description="Only include subscriptions started after this date.",
-    ),
-    started_before: datetime | None = Query(
-        None,
-        description="Only include subscriptions started before this date.",
-    ),
+    filters: Annotated[SubscriptionListParams, Query()],
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[SubscriptionSchema]:
     """List subscriptions."""
     results, count = await subscription_service.list(
         session,
         auth_subject,
-        organization_id=organization_id,
-        product_id=product_id,
-        customer_id=customer_id,
-        external_customer_id=external_customer_id,
-        discount_id=discount_id,
-        active=active,
-        status=status,
-        cancel_at_period_end=cancel_at_period_end,
-        customer_cancellation_reason=customer_cancellation_reason,
-        canceled_at_after=canceled_at_after,
-        canceled_at_before=canceled_at_before,
-        started_after=started_after,
-        started_before=started_before,
+        organization_id=filters.organization_id,
+        product_id=filters.product_id,
+        external_product_id=filters.external_product_id,
+        customer_id=filters.customer_id,
+        external_customer_id=filters.external_customer_id,
+        discount_id=filters.discount_id,
+        active=filters.active,
+        status=filters.status,
+        cancel_at_period_end=filters.cancel_at_period_end,
+        customer_cancellation_reason=filters.customer_cancellation_reason,
+        canceled_at_after=filters.canceled_at_after,
+        canceled_at_before=filters.canceled_at_before,
+        started_after=filters.started_after,
+        started_before=filters.started_before,
+        query=filters.query,
         metadata=metadata,
         pagination=pagination,
         sorting=sorting,
     )
-
     return ListResource.from_paginated_results(
         [SubscriptionSchema.model_validate(result) for result in results],
         count,
@@ -173,67 +119,33 @@ async def list(
 
 
 @router.get(
-    "/export", summary="Export Subscriptions", response_class=CSVStreamingResponse
+    "/export",
+    summary="Export Subscriptions",
+    response_class=CSVStreamingResponse,
+    tags=[APITag.private],
 )
 async def export(
     auth_subject: auth.SubscriptionsRead,
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
-    product_id: MultipleQueryFilter[ProductID] | None = Query(
-        None, title="ProductID Filter", description="Filter by product ID."
-    ),
-    status: MultipleQueryFilter[SubscriptionStatus] | None = Query(
-        None, title="Status Filter", description="Filter by subscription status."
-    ),
-    cancel_at_period_end: bool | None = Query(
-        None,
-        description="Filter by subscriptions that are set to cancel at period end.",
-    ),
-    started_after: AwareDatetime | None = Query(
-        None,
-        description=(
-            "Only include subscriptions started after this date. "
-            "Must include a UTC offset."
-        ),
-    ),
-    started_before: AwareDatetime | None = Query(
-        None,
-        description=(
-            "Only include subscriptions started before this date. "
-            "Must include a UTC offset."
-        ),
-    ),
-    timezone: Annotated[
-        SubscriptionExportTimezone,
-        Query(description="Time zone used to render dates in the CSV."),
-    ] = "UTC",
-    columns: MultipleQueryFilter[SubscriptionExportColumn] | None = Query(
-        None,
-        description=(
-            "Columns to include in the CSV, in order. "
-            "Defaults to email, started_at, product, amount, "
-            "currency, status and recurring_interval."
-        ),
-    ),
+    filters: Annotated[SubscriptionExportParams, Query()],
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> CSVStreamingResponse:
     """Export subscriptions as a CSV file."""
-    tzinfo = ZoneInfo(timezone)
+    tzinfo = ZoneInfo(filters.timezone)
     return CSVStreamingResponse(
         generate_csv(
             session,
             auth_subject,
-            organization_id=organization_id,
-            product_id=product_id,
-            status=status,
-            cancel_at_period_end=cancel_at_period_end,
-            started_after=started_after,
-            started_before=started_before,
+            organization_id=filters.organization_id,
+            product_id=filters.product_id,
+            external_product_id=filters.external_product_id,
+            status=filters.status,
+            cancel_at_period_end=filters.cancel_at_period_end,
+            started_after=filters.started_after,
+            started_before=filters.started_before,
             timezone=tzinfo,
-            columns=columns,
+            columns=filters.columns,
         ),
-        get_filename(started_after, started_before, tzinfo),
+        get_filename(filters.started_after, filters.started_before, tzinfo),
     )
 
 
@@ -371,7 +283,7 @@ async def get_cancel_preview(
 @router.post(
     "/{id}/change-preview",
     summary="Preview Subscription Change",
-    response_model=SubscriptionChargePreview,
+    response_model=SubscriptionChangePreview,
     responses={
         403: {"model": AlreadyCanceledSubscription.schema()},
         404: SubscriptionNotFound,
@@ -380,10 +292,10 @@ async def get_cancel_preview(
 )
 async def preview_change(
     id: SubscriptionID,
-    change: SubscriptionChangePreview,
+    change: SubscriptionChange,
     auth_subject: auth.SubscriptionsWrite,
     session: AsyncSession = Depends(get_db_session),
-) -> SubscriptionChargePreview:
+) -> SubscriptionChangePreview:
     """
     Preview what a subscription change would cost, without applying it.
 
@@ -401,7 +313,7 @@ async def preview_change(
         OrganizationPermission.sales_manage,
     )
 
-    if isinstance(change, SubscriptionChangePreviewSeats):
+    if isinstance(change, SubscriptionChangeSeats):
         return await subscription_service.calculate_change_preview(
             session,
             subscription,
@@ -409,7 +321,7 @@ async def preview_change(
             proration_behavior=change.proration_behavior,
         )
 
-    if isinstance(change, SubscriptionChangePreviewUnits):
+    if isinstance(change, SubscriptionChangeUnits):
         return await subscription_service.calculate_change_preview(
             session,
             subscription,
@@ -422,6 +334,7 @@ async def preview_change(
         subscription,
         product_id=change.product_id,
         proration_behavior=change.proration_behavior,
+        discount=change.discount,
     )
 
 
@@ -442,6 +355,39 @@ async def create(
 
     This endpoint only allows to create subscription on free products.
     For paid products, use the checkout flow.
+
+    No initial order will be created and no confirmation email will be sent.
+    """
+    return await subscription_service.create(
+        session, subscription_create, auth_subject, allow_trial=False
+    )
+
+
+@router.post(
+    "/",
+    name="create",
+    response_model=SubscriptionSchema,
+    status_code=201,
+    summary="Create Subscription",
+    responses={
+        201: {"description": "Subscription created."},
+        409: {
+            "model": AlreadyActiveSubscription.schema() | TrialAlreadyRedeemed.schema()
+        },
+    },
+)
+@version(starting_from=V2027_01)
+async def create_v2027_01(
+    subscription_create: SubscriptionCreate,
+    auth_subject: auth.SubscriptionsWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Subscription:
+    """
+    Create a subscription programmatically.
+
+    Supports free products and paid products with a trial that does not require
+    upfront payment setup. Paid subscriptions start with the product's configured
+    trial period. For other paid products, use the checkout flow.
 
     No initial order will be created and no confirmation email will be sent.
     """

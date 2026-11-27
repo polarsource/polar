@@ -27,6 +27,7 @@ from polar.v2027_01.inputs import (
     CustomFieldUpdateText,
 )
 from polar.v2027_01.literals import (
+    CatalogStatus,
     CustomFieldSortProperty,
     CustomFieldType,
 )
@@ -43,6 +44,8 @@ class CustomFieldsSync(SyncServiceBase):
         organization_id: str | builtins.list[str] | None = None,
         query: str | None = None,
         type: CustomFieldType | builtins.list[CustomFieldType] | None = None,
+        catalog_id: str | builtins.list[str] | None = None,
+        catalog_status: CatalogStatus | builtins.list[CatalogStatus] | None = None,
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CustomFieldSortProperty] | None = ["slug"],
@@ -58,10 +61,12 @@ class CustomFieldsSync(SyncServiceBase):
             organization_id: Filter by organization ID.
             query: Filter by custom field name or slug.
             type: Filter by custom field type.
+            catalog_id: Filter by catalog ID.
+            catalog_status: Filter by catalog status.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -79,6 +84,8 @@ class CustomFieldsSync(SyncServiceBase):
                 "organization_id": organization_id,
                 "query": query,
                 "type": type,
+                "catalog_id": catalog_id,
+                "catalog_status": catalog_status,
                 "page": page,
                 "limit": limit,
                 "sorting": sorting,
@@ -98,6 +105,8 @@ class CustomFieldsSync(SyncServiceBase):
         organization_id: str | builtins.list[str] | None = None,
         query: str | None = None,
         type: CustomFieldType | builtins.list[CustomFieldType] | None = None,
+        catalog_id: str | builtins.list[str] | None = None,
+        catalog_status: CatalogStatus | builtins.list[CatalogStatus] | None = None,
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CustomFieldSortProperty] | None = ["slug"],
@@ -113,10 +122,12 @@ class CustomFieldsSync(SyncServiceBase):
             organization_id: Filter by organization ID.
             query: Filter by custom field name or slug.
             type: Filter by custom field type.
+            catalog_id: Filter by catalog ID.
+            catalog_status: Filter by catalog status.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -134,6 +145,8 @@ class CustomFieldsSync(SyncServiceBase):
                 organization_id=organization_id,
                 query=query,
                 type=type,
+                catalog_id=catalog_id,
+                catalog_status=catalog_status,
                 page=page,
                 limit=limit,
                 sorting=sorting,
@@ -203,7 +216,7 @@ class CustomFieldsSync(SyncServiceBase):
         **Scopes**: `custom_fields:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -243,7 +256,7 @@ class CustomFieldsSync(SyncServiceBase):
 
         Args:
             id: The custom field ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -285,7 +298,7 @@ class CustomFieldsSync(SyncServiceBase):
 
         Args:
             id: The custom field ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -378,7 +391,7 @@ class CustomFieldsSync(SyncServiceBase):
 
         Args:
             id: The custom field ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -416,6 +429,8 @@ class CustomFieldsAsync(AsyncServiceBase):
         organization_id: str | builtins.list[str] | None = None,
         query: str | None = None,
         type: CustomFieldType | builtins.list[CustomFieldType] | None = None,
+        catalog_id: str | builtins.list[str] | None = None,
+        catalog_status: CatalogStatus | builtins.list[CatalogStatus] | None = None,
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CustomFieldSortProperty] | None = ["slug"],
@@ -431,10 +446,12 @@ class CustomFieldsAsync(AsyncServiceBase):
             organization_id: Filter by organization ID.
             query: Filter by custom field name or slug.
             type: Filter by custom field type.
+            catalog_id: Filter by catalog ID.
+            catalog_status: Filter by catalog status.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -452,6 +469,8 @@ class CustomFieldsAsync(AsyncServiceBase):
                 "organization_id": organization_id,
                 "query": query,
                 "type": type,
+                "catalog_id": catalog_id,
+                "catalog_status": catalog_status,
                 "page": page,
                 "limit": limit,
                 "sorting": sorting,
@@ -471,6 +490,8 @@ class CustomFieldsAsync(AsyncServiceBase):
         organization_id: str | builtins.list[str] | None = None,
         query: str | None = None,
         type: CustomFieldType | builtins.list[CustomFieldType] | None = None,
+        catalog_id: str | builtins.list[str] | None = None,
+        catalog_status: CatalogStatus | builtins.list[CatalogStatus] | None = None,
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CustomFieldSortProperty] | None = ["slug"],
@@ -486,10 +507,12 @@ class CustomFieldsAsync(AsyncServiceBase):
             organization_id: Filter by organization ID.
             query: Filter by custom field name or slug.
             type: Filter by custom field type.
+            catalog_id: Filter by catalog ID.
+            catalog_status: Filter by catalog status.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -507,6 +530,8 @@ class CustomFieldsAsync(AsyncServiceBase):
                 organization_id=organization_id,
                 query=query,
                 type=type,
+                catalog_id=catalog_id,
+                catalog_status=catalog_status,
                 page=page,
                 limit=limit,
                 sorting=sorting,
@@ -577,7 +602,7 @@ class CustomFieldsAsync(AsyncServiceBase):
         **Scopes**: `custom_fields:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -617,7 +642,7 @@ class CustomFieldsAsync(AsyncServiceBase):
 
         Args:
             id: The custom field ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -659,7 +684,7 @@ class CustomFieldsAsync(AsyncServiceBase):
 
         Args:
             id: The custom field ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -752,7 +777,7 @@ class CustomFieldsAsync(AsyncServiceBase):
 
         Args:
             id: The custom field ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters

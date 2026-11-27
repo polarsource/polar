@@ -1,11 +1,12 @@
+import json
+import typing
 import uuid
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
-import httpx
-import httpx_ws
+import httpx2
 import pytest
-from logfire.experimental.forwarding import ForwardExportRequestResponse
+from logfire._internal.forwarding import ForwardExportRequestResponse
 from opentelemetry.proto.collector.metrics.v1.metrics_service_pb2 import (
     ExportMetricsServiceRequest,
 )
@@ -14,197 +15,185 @@ from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import (
 )
 from opentelemetry.proto.common.v1.common_pb2 import AnyValue
 from pytest_mock import MockerFixture
+from sqlalchemy import event as sqlalchemy_event
 
+from polar.auth.scope import Scope
+from polar.event.system import SystemEvent
 from polar.kit.utils import utc_now
+from polar.meter.aggregation import UniqueAggregation
 from polar.models import (
     Customer,
-    CustomerMeter,
     Meter,
     Organization,
     ReducerBucket,
     StagedEvent,
 )
 from polar.models.event import EventSource
+from polar.models.reducer import ReducerKind
 from polar.outpost.schemas import to_epoch_microseconds
 from polar.outpost.service import SYNCED_LOOKBACK
-from polar.outpost.stream import publish
+from polar.outpost.service import outpost as outpost_service
+from polar.postgres import AsyncSession
 from polar.redis import Redis
+from polar.reducer.repository import ReducerRepository
 from polar.reducer.service import get_reducer_bucket_start
+from polar.reducer.service import reducer as reducer_service
 from tests.fixtures import AuthSubjectFixture, SaveFixture
 from tests.fixtures.random_objects import (
     METER_TEST_EVENT,
+    create_customer,
     create_event,
+    create_meter,
     create_reducer,
 )
 
 
-@pytest.fixture
-async def customer_meter(
-    save_fixture: SaveFixture, customer_external_id: Customer, meter: Meter
-) -> CustomerMeter:
-    customer_meter = CustomerMeter(
-        customer=customer_external_id,
-        meter=meter,
-        consumed_units=Decimal(90),
-        credited_units=100,
-        balance=Decimal(10),
-        last_balanced_event=None,
+async def _append_change(
+    redis: Redis, organization: Organization, event: dict[str, typing.Any]
+) -> None:
+    await redis.xadd(
+        f"outpost:changes:{organization.id}",
+        {"event": json.dumps(event, default=str)},
     )
-    await save_fixture(customer_meter)
-    return customer_meter
+
+
+async def _get_changes(
+    client: httpx2.AsyncClient, cursor: str | None = None, **params: typing.Any
+) -> dict[str, typing.Any]:
+    response = await client.get(
+        "/v1/outpost/changes",
+        params={**({"cursor": cursor} if cursor is not None else {}), **params},
+    )
+    assert response.status_code == 200
+    return response.json()
+
+
+async def _save_synced_bucket(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    reducer: typing.Any,
+    external_customer_id: str,
+    value: int,
+) -> datetime:
+    bucket_start = get_reducer_bucket_start(utc_now()) - timedelta(minutes=30)
+    bucket_end = bucket_start + timedelta(minutes=5)
+    await save_fixture(
+        ReducerBucket(
+            organization=organization,
+            reducer=reducer,
+            external_customer_id=external_customer_id,
+            bucket_start=bucket_start,
+            bucket_end=bucket_end,
+            count=1,
+            sum=Decimal(value),
+            min=Decimal(value),
+            max=Decimal(value),
+            synced_at=bucket_end,
+        )
+    )
+    return bucket_end
 
 
 @pytest.mark.anyio
-@pytest.mark.websocket
-class TestOutpost:
-    async def test_anonymous(self, client: httpx.AsyncClient, meter: Meter) -> None:
-        with pytest.raises(httpx_ws.WebSocketUpgradeError) as exc:
-            async with httpx_ws.aconnect_ws("/v1/outpost/", client=client):
-                pass
-        assert exc.value.response.status_code == 401
+class TestChanges:
+    async def test_anonymous(self, client: httpx2.AsyncClient) -> None:
+        response = await client.get("/v1/outpost/changes")
+
+        assert response.status_code == 401
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-    async def test_connection(self, client: httpx.AsyncClient) -> None:
-        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
-            message = await websocket.receive_json()
+    async def test_without_cursor(
+        self, client: httpx2.AsyncClient, redis: Redis, organization: Organization
+    ) -> None:
+        await _append_change(redis, organization, {"type": "configuration"})
 
-            assert message["type"] == "connection"
-            assert uuid.UUID(message["payload"]["id"])
+        changes = await _get_changes(client)
+
+        assert changes["changes"] == []
+        assert changes["has_more"] is False
+        # The changes before the first cursor are not served: the client starts over.
+        assert changes["reset"] is True
+        assert changes["configuration_changed"] is True
+        assert changes["next_poll_in"] == 30
+        assert (await _get_changes(client, changes["cursor"]))["changes"] == []
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-    async def test_request_configuration(
+    async def test_idle_poll_reads_no_reducer(
+        self, mocker: MockerFixture, client: httpx2.AsyncClient
+    ) -> None:
+        cursor = (await _get_changes(client))["cursor"]
+        get_reducers = mocker.spy(
+            ReducerRepository, "get_all_active_by_organization_and_kinds"
+        )
+
+        changes = await _get_changes(client, cursor)
+
+        assert changes["changes"] == []
+        get_reducers.assert_not_called()
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_changes_since_cursor(
         self,
         save_fixture: SaveFixture,
-        client: httpx.AsyncClient,
+        mocker: MockerFixture,
+        client: httpx2.AsyncClient,
+        redis: Redis,
         organization: Organization,
+        customer_external_id: Customer,
         meter: Meter,
     ) -> None:
+        external_id = customer_external_id.external_id
+        assert external_id is not None
         reducer = await create_reducer(
             save_fixture, organization=organization, meters=[meter]
         )
-
-        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
-            await websocket.receive_json()
-            await websocket.send_json({"type": "configuration"})
-            response = await websocket.receive_json()
-
-            assert response["type"] == "configuration"
-            [reducer_payload] = response["payload"]["reducers"]
-            assert reducer_payload["id"] == str(reducer.id)
-            assert reducer_payload["meter_ids"] == [str(meter.id)]
-            assert reducer_payload["filter"] == meter.filter.model_dump(mode="json")
-            assert reducer_payload["aggregation"] == meter.aggregation.model_dump(
-                mode="json"
-            )
-
-    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-    @pytest.mark.parametrize("customer_key", ["customer_id", "external_customer_id"])
-    async def test_request_meter_usage(
-        self,
-        save_fixture: SaveFixture,
-        client: httpx.AsyncClient,
-        organization: Organization,
-        customer_meter: CustomerMeter,
-        customer_key: str,
-    ) -> None:
-        customer = customer_meter.customer
-        reducer = await create_reducer(
-            save_fixture, organization=organization, meters=[customer_meter.meter]
+        bucket_end = await _save_synced_bucket(
+            save_fixture, organization, reducer, external_id, 4
         )
-        bucket_start = get_reducer_bucket_start(utc_now()) - timedelta(minutes=30)
-        bucket_end = bucket_start + timedelta(minutes=5)
-        await save_fixture(
-            ReducerBucket(
-                organization=organization,
-                reducer=reducer,
-                external_customer_id=customer.external_id,
-                bucket_start=bucket_start,
-                bucket_end=bucket_end,
-                count=1,
-                sum=Decimal(4),
-                min=Decimal(4),
-                max=Decimal(4),
-                synced_at=bucket_end,
-            )
-        )
-        customer_value = {
-            "customer_id": str(customer.id),
-            "external_customer_id": customer.external_id,
-        }[customer_key]
-
-        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
-            await websocket.receive_json()
-            await websocket.send_json(
-                {
-                    "type": "meter_usage",
-                    "payload": {
-                        customer_key: customer_value,
-                        "meter_id": str(customer_meter.meter_id),
-                    },
-                }
-            )
-            responses = [await websocket.receive_json() for _ in range(3)]
-
-        payloads = {
-            (payload["customer_id"], payload["external_customer_id"]): payload
-            for payload in (response["payload"] for response in responses)
+        cursor = (await _get_changes(client))["cursor"]
+        event = {
+            "type": "reducer_bucket",
+            "reducer_id": str(reducer.id),
+            "customer_id": None,
+            "external_customer_id": external_id,
         }
-        assert payloads.keys() == {
-            (str(customer.id), None),
-            (None, customer.external_id),
-            (str(customer.id), customer.external_id),
+        for _ in range(3):
+            await _append_change(redis, organization, event)
+        get_meter_usage = mocker.spy(outpost_service, "_get_meter_usage")
+
+        changes = await _get_changes(client, cursor)
+
+        get_meter_usage.assert_called_once()
+        [change] = changes["changes"]
+        assert isinstance(change.pop("version"), int)
+        assert change == {
+            "reducer_id": str(reducer.id),
+            "customer_id": None,
+            "external_customer_id": external_id,
+            "customer_exists": True,
+            "cold_until": to_epoch_microseconds(bucket_end),
+            "count": 1,
+            "sum": 4.0,
+            "min": 4.0,
+            "max": 4.0,
         }
-        assert all(p["credited_units"] == 100 for p in payloads.values())
-        assert all(p["customer_exists"] for p in payloads.values())
-        external = payloads[(None, customer.external_id)]
-        assert external["cold_until"] == to_epoch_microseconds(bucket_end)
-        assert (external["count"], external["sum"]) == (1, 4.0)
-        internal = payloads[(str(customer.id), None)]
-        version = datetime.fromtimestamp(internal["version"] / 1_000_000, UTC)
-        assert internal["cold_until"] == to_epoch_microseconds(
-            get_reducer_bucket_start(version - SYNCED_LOOKBACK)
-        )
-        assert (internal["count"], internal["sum"]) == (0, 0.0)
+        assert changes["has_more"] is False
+        assert (await _get_changes(client, changes["cursor"]))["changes"] == []
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-    async def test_request_meter_usage_unknown_customer(
+    async def test_change_cold_usage(
         self,
         save_fixture: SaveFixture,
-        client: httpx.AsyncClient,
-        organization: Organization,
-        meter: Meter,
-    ) -> None:
-        await create_reducer(save_fixture, organization=organization, meters=[meter])
-
-        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
-            await websocket.receive_json()
-            await websocket.send_json(
-                {
-                    "type": "meter_usage",
-                    "payload": {
-                        "external_customer_id": "unknown",
-                        "meter_id": str(meter.id),
-                    },
-                }
-            )
-            response = await websocket.receive_json()
-
-        assert response["payload"]["external_customer_id"] == "unknown"
-        assert response["payload"]["customer_exists"] is False
-
-    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-    async def test_event_reducer_bucket(
-        self,
-        save_fixture: SaveFixture,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         redis: Redis,
         organization: Organization,
-        customer_meter: CustomerMeter,
+        customer_external_id: Customer,
+        meter: Meter,
     ) -> None:
-        customer = customer_meter.customer
+        customer = customer_external_id
         external_id = customer.external_id
         reducer = await create_reducer(
-            save_fixture, organization=organization, meters=[customer_meter.meter]
+            save_fixture, organization=organization, meters=[meter]
         )
         start = get_reducer_bucket_start(utc_now()) - timedelta(minutes=30)
         cold_until = start + timedelta(minutes=10)
@@ -241,52 +230,46 @@ class TestOutpost:
                     sealed_at=bucket_end if sealed else None,
                 )
             )
-
-        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
-            await websocket.receive_json()
-            await publish(
-                redis,
-                organization.id,
-                {
-                    "type": "reducer_bucket",
-                    "reducer_id": reducer.id,
-                    "customer_id": None,
-                    "external_customer_id": external_id,
-                },
-            )
-
-            response = await websocket.receive_json()
-
-        payload = response["payload"]
-        assert isinstance(payload.pop("version"), int)
-        assert response == {
-            "type": "meter_usage",
-            "payload": {
-                "meter_id": str(customer_meter.meter_id),
+        cursor = (await _get_changes(client))["cursor"]
+        await _append_change(
+            redis,
+            organization,
+            {
+                "type": "reducer_bucket",
+                "reducer_id": reducer.id,
                 "customer_id": None,
                 "external_customer_id": external_id,
-                "customer_exists": True,
-                "credited_units": 100,
-                "cold_until": to_epoch_microseconds(cold_until),
-                "count": 2,
-                "sum": 7.0,
-                "min": 3.0,
-                "max": 4.0,
             },
+        )
+
+        [change] = (await _get_changes(client, cursor))["changes"]
+
+        assert isinstance(change.pop("version"), int)
+        assert change == {
+            "reducer_id": str(reducer.id),
+            "customer_id": None,
+            "external_customer_id": external_id,
+            "customer_exists": True,
+            "cold_until": to_epoch_microseconds(cold_until),
+            "count": 2,
+            "sum": 7.0,
+            "min": 3.0,
+            "max": 4.0,
         }
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-    async def test_event_reducer_bucket_split_half_synced(
+    async def test_change_split_half_synced(
         self,
         save_fixture: SaveFixture,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         redis: Redis,
         organization: Organization,
-        customer_meter: CustomerMeter,
+        customer_external_id: Customer,
+        meter: Meter,
     ) -> None:
-        external_id = customer_meter.customer.external_id
+        external_id = customer_external_id.external_id
         reducer = await create_reducer(
-            save_fixture, organization=organization, meters=[customer_meter.meter]
+            save_fixture, organization=organization, meters=[meter]
         )
         start = get_reducer_bucket_start(utc_now()) - timedelta(minutes=30)
         split_at = start + timedelta(minutes=7)
@@ -311,43 +294,45 @@ class TestOutpost:
                     synced_at=bucket_end if synced else None,
                 )
             )
+        cursor = (await _get_changes(client))["cursor"]
+        await _append_change(
+            redis,
+            organization,
+            {
+                "type": "reducer_bucket",
+                "reducer_id": reducer.id,
+                "customer_id": None,
+                "external_customer_id": external_id,
+            },
+        )
 
-        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
-            await websocket.receive_json()
-            await publish(
-                redis,
-                organization.id,
-                {
-                    "type": "reducer_bucket",
-                    "reducer_id": reducer.id,
-                    "customer_id": None,
-                    "external_customer_id": external_id,
-                },
-            )
-            response = await websocket.receive_json()
+        [change] = (await _get_changes(client, cursor))["changes"]
 
-        payload = response["payload"]
-        assert payload["cold_until"] == to_epoch_microseconds(
+        assert change["cold_until"] == to_epoch_microseconds(
             start + timedelta(minutes=5)
         )
-        assert payload["count"] == 1
-        assert payload["sum"] == 3.0
+        assert change["count"] == 1
+        assert change["sum"] == 3.0
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-    async def test_event_reducer_bucket_synced_across_lookback(
+    async def test_change_synced_across_lookback(
         self,
         save_fixture: SaveFixture,
-        client: httpx.AsyncClient,
+        session: AsyncSession,
+        client: httpx2.AsyncClient,
         redis: Redis,
         organization: Organization,
-        customer_meter: CustomerMeter,
+        customer_external_id: Customer,
+        meter: Meter,
     ) -> None:
-        external_id = customer_meter.customer.external_id
+        external_id = customer_external_id.external_id
         reducer = await create_reducer(
-            save_fixture, organization=organization, meters=[customer_meter.meter]
+            save_fixture, organization=organization, meters=[meter]
         )
-        # The bucket the lookback starts in.
-        bucket_start = get_reducer_bucket_start(utc_now() - SYNCED_LOOKBACK)
+        # The bucket the lookback starts in, on the clock the snapshot reads.
+        bucket_start = get_reducer_bucket_start(
+            await reducer_service.get_database_now(session) - SYNCED_LOOKBACK
+        )
         bucket_end = bucket_start + timedelta(minutes=5)
         await save_fixture(
             ReducerBucket(
@@ -363,31 +348,702 @@ class TestOutpost:
                 synced_at=bucket_end,
             )
         )
+        cursor = (await _get_changes(client))["cursor"]
+        await _append_change(
+            redis,
+            organization,
+            {
+                "type": "reducer_bucket",
+                "reducer_id": reducer.id,
+                "customer_id": None,
+                "external_customer_id": external_id,
+            },
+        )
 
-        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
-            await websocket.receive_json()
-            await publish(
+        [change] = (await _get_changes(client, cursor))["changes"]
+
+        assert change["cold_until"] == to_epoch_microseconds(bucket_end)
+        assert change["count"] == 1
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_queries_do_not_grow_with_the_changes(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        client: httpx2.AsyncClient,
+        redis: Redis,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        external_ids = ["alice", "bob", "carol"]
+        for value, external_id in enumerate(external_ids, start=1):
+            await create_customer(
+                save_fixture,
+                organization=organization,
+                external_id=external_id,
+                email=f"{external_id}@example.com",
+            )
+            await _save_synced_bucket(
+                save_fixture, organization, reducer, external_id, value
+            )
+        queries = 0
+
+        def count_query(*args: typing.Any) -> None:
+            nonlocal queries
+            queries += 1
+
+        bind = session.sync_session.bind
+        assert bind is not None
+        cursor = (await _get_changes(client))["cursor"]
+        pages = []
+        for page in (external_ids[:1], external_ids):
+            for external_id in page:
+                await _append_change(
+                    redis,
+                    organization,
+                    {
+                        "type": "reducer_bucket",
+                        "reducer_id": str(reducer.id),
+                        "customer_id": None,
+                        "external_customer_id": external_id,
+                    },
+                )
+            queries = 0
+            sqlalchemy_event.listen(bind, "before_cursor_execute", count_query)
+            try:
+                changes = await _get_changes(client, cursor)
+            finally:
+                sqlalchemy_event.remove(bind, "before_cursor_execute", count_query)
+            cursor = changes["cursor"]
+            pages.append((changes["changes"], queries))
+
+        [(_, one), (changes, three)] = pages
+        assert three == one
+        assert {
+            change["external_customer_id"]: change["sum"] for change in changes
+        } == {"alice": 1.0, "bob": 2.0, "carol": 3.0}
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_credit_change_for_each_identity(
+        self,
+        save_fixture: SaveFixture,
+        client: httpx2.AsyncClient,
+        redis: Redis,
+        organization: Organization,
+        customer_external_id: Customer,
+        meter: Meter,
+    ) -> None:
+        customer = customer_external_id
+        reducer = await create_reducer(
+            save_fixture,
+            organization=organization,
+            meters=[meter],
+            kind=ReducerKind.credit,
+        )
+        bucket_start = get_reducer_bucket_start(utc_now())
+        await save_fixture(
+            ReducerBucket(
+                organization=organization,
+                reducer=reducer,
+                customer=customer,
+                bucket_start=bucket_start,
+                bucket_end=bucket_start + timedelta(minutes=5),
+                count=1,
+                sum=Decimal(10),
+                min=Decimal(10),
+                max=Decimal(10),
+            )
+        )
+        cursor = (await _get_changes(client))["cursor"]
+        await _append_change(
+            redis,
+            organization,
+            {
+                "type": "reducer_bucket",
+                "reducer_id": str(reducer.id),
+                "customer_id": str(customer.id),
+                "external_customer_id": None,
+            },
+        )
+
+        changes = await _get_changes(client, cursor)
+
+        assert {
+            (change["customer_id"], change["external_customer_id"])
+            for change in changes["changes"]
+        } == {
+            (str(customer.id), None),
+            (None, customer.external_id),
+            (str(customer.id), customer.external_id),
+        }
+        assert all(
+            (change["count"], change["sum"]) == (1, 10.0)
+            for change in changes["changes"]
+        )
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_limit(
+        self,
+        save_fixture: SaveFixture,
+        client: httpx2.AsyncClient,
+        redis: Redis,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        cursor = (await _get_changes(client))["cursor"]
+        for external_id in ("alice", "bob"):
+            await _append_change(
                 redis,
-                organization.id,
+                organization,
                 {
                     "type": "reducer_bucket",
-                    "reducer_id": reducer.id,
+                    "reducer_id": str(reducer.id),
                     "customer_id": None,
                     "external_customer_id": external_id,
                 },
             )
 
-            response = await websocket.receive_json()
+        first = await _get_changes(client, cursor, limit=1)
+        second = await _get_changes(client, first["cursor"], limit=1)
 
-        payload = response["payload"]
-        assert payload["cold_until"] == to_epoch_microseconds(bucket_end)
-        assert payload["count"] == 1
+        assert first["has_more"] is True
+        assert [c["external_customer_id"] for c in first["changes"]] == ["alice"]
+        assert second["has_more"] is False
+        assert [c["external_customer_id"] for c in second["changes"]] == ["bob"]
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-    async def test_confirm_pending(
+    async def test_configuration_changed(
+        self, client: httpx2.AsyncClient, redis: Redis, organization: Organization
+    ) -> None:
+        cursor = (await _get_changes(client))["cursor"]
+        await _append_change(redis, organization, {"type": "configuration"})
+
+        changes = await _get_changes(client, cursor)
+
+        assert changes["configuration_changed"] is True
+        assert changes["changes"] == []
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_reset_when_the_cursor_is_too_old(
+        self, client: httpx2.AsyncClient, redis: Redis, organization: Organization
+    ) -> None:
+        await _append_change(redis, organization, {"type": "configuration"})
+
+        changes = await _get_changes(client, "1-0")
+
+        assert changes["reset"] is True
+        # The new cursor is past the configuration change: the reset reports it.
+        assert changes["configuration_changed"] is True
+        assert (await _get_changes(client, changes["cursor"]))["reset"] is False
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_reset_when_the_cursor_is_ahead_of_the_clock(
+        self, client: httpx2.AsyncClient, redis: Redis, organization: Organization
+    ) -> None:
+        seconds, _ = await redis.time()
+        await _append_change(redis, organization, {"type": "configuration"})
+
+        changes = await _get_changes(client, f"{(seconds + 60) * 1000}-0")
+
+        assert changes["reset"] is True
+        assert changes["configuration_changed"] is True
+        assert (await _get_changes(client, changes["cursor"]))["reset"] is False
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.parametrize(
+        "cursor",
+        ["not-a-cursor", f"{2**64}-0", f"0-{2**64}"],
+    )
+    async def test_invalid_cursor(
+        self, client: httpx2.AsyncClient, cursor: str
+    ) -> None:
+        response = await client.get("/v1/outpost/changes", params={"cursor": cursor})
+
+        assert response.status_code == 422
+
+
+@pytest.mark.anyio
+class TestRequests:
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="anonymous"),
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="customer"),
+        AuthSubjectFixture(subject="agent"),
+    )
+    async def test_unauthorized_subject(self, client: httpx2.AsyncClient) -> None:
+        response = await client.get("/v1/outpost/configuration")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_configuration(
         self,
         save_fixture: SaveFixture,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        visitors = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            name="Visitors",
+            aggregation=UniqueAggregation(property="visitor"),
+        )
+        await create_reducer(save_fixture, organization=organization, meters=[visitors])
+
+        response = await client.get("/v1/outpost/configuration")
+
+        assert response.status_code == 200
+        configuration = response.json()
+        assert configuration["organization_id"] == str(organization.id)
+        [payload] = configuration["reducers"]
+        assert payload["id"] == str(reducer.id)
+        assert payload["meter_ids"] == [str(meter.id)]
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_configuration_every_kind(
+        self,
+        save_fixture: SaveFixture,
+        client: httpx2.AsyncClient,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        reducers = {
+            kind: await create_reducer(
+                save_fixture, organization=organization, meters=[meter], kind=kind
+            )
+            for kind in ReducerKind
+        }
+
+        response = await client.get("/v1/outpost/configuration")
+
+        assert response.status_code == 200
+        payloads = response.json()["reducers"]
+        assert {payload["kind"]: payload["id"] for payload in payloads} == {
+            kind: str(reducer.id) for kind, reducer in reducers.items()
+        }
+        for payload in payloads:
+            assert payload["meter_ids"] == [str(meter.id)]
+            assert payload["filter"] == meter.filter.model_dump(mode="json")
+            assert payload["aggregation"] == meter.aggregation.model_dump(mode="json")
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.parametrize("customer_key", ["customer_id", "external_customer_id"])
+    async def test_meter_usage(
+        self,
+        save_fixture: SaveFixture,
+        client: httpx2.AsyncClient,
+        organization: Organization,
+        customer_external_id: Customer,
+        meter: Meter,
+        customer_key: str,
+    ) -> None:
+        customer = customer_external_id
+        assert customer.external_id is not None
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        bucket_end = await _save_synced_bucket(
+            save_fixture, organization, reducer, customer.external_id, 4
+        )
+
+        customer_value = {
+            "customer_id": str(customer.id),
+            "external_customer_id": customer.external_id,
+        }[customer_key]
+
+        response = await client.post(
+            "/v1/outpost/meter-usage",
+            json={
+                "identities": [
+                    {"reducer_id": str(reducer.id), customer_key: customer_value}
+                ]
+            },
+        )
+
+        assert response.status_code == 200
+        payloads = {
+            (payload["customer_id"], payload["external_customer_id"]): payload
+            for payload in response.json()
+        }
+        assert payloads.keys() == {
+            (str(customer.id), None),
+            (None, customer.external_id),
+            (str(customer.id), customer.external_id),
+        }
+        assert all(p["reducer_id"] == str(reducer.id) for p in payloads.values())
+        assert all(p["customer_exists"] for p in payloads.values())
+        external = payloads[(None, customer.external_id)]
+        assert external["cold_until"] == to_epoch_microseconds(bucket_end)
+        assert (external["count"], external["sum"]) == (1, 4.0)
+        internal = payloads[(str(customer.id), None)]
+        version = datetime.fromtimestamp(internal["version"] / 1_000_000, UTC)
+        assert internal["cold_until"] == to_epoch_microseconds(
+            get_reducer_bucket_start(version - SYNCED_LOOKBACK)
+        )
+        assert (internal["count"], internal["sum"]) == (0, 0.0)
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_meter_usage_since_the_latest_reset(
+        self,
+        save_fixture: SaveFixture,
+        client: httpx2.AsyncClient,
+        organization: Organization,
+        customer_external_id: Customer,
+        meter: Meter,
+    ) -> None:
+        customer = customer_external_id
+        assert customer.external_id is not None
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        # The seal of the usage before a reset runs minutes after it: until then its
+        # buckets are unsealed, and the snapshot leaves them out all the same.
+        current_start = get_reducer_bucket_start(utc_now())
+        reset_at = current_start - timedelta(minutes=20)
+        for bucket_start, count in (
+            (reset_at - timedelta(minutes=10), 7),
+            (reset_at + timedelta(minutes=5), 2),
+        ):
+            await save_fixture(
+                ReducerBucket(
+                    organization=organization,
+                    reducer=reducer,
+                    external_customer_id=customer.external_id,
+                    bucket_start=bucket_start,
+                    bucket_end=bucket_start + timedelta(minutes=5),
+                    count=count,
+                    sum=Decimal(0),
+                    synced_at=bucket_start + timedelta(minutes=5),
+                )
+            )
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_reset,
+            timestamp=reset_at,
+            metadata={"meter_id": str(meter.id)},
+        )
+
+        response = await client.post(
+            "/v1/outpost/meter-usage",
+            json={
+                "identities": [
+                    {
+                        "reducer_id": str(reducer.id),
+                        "external_customer_id": customer.external_id,
+                    }
+                ]
+            },
+        )
+
+        assert response.status_code == 200
+        counts = {
+            (payload["customer_id"], payload["external_customer_id"]): payload["count"]
+            for payload in response.json()
+        }
+        assert counts[(None, customer.external_id)] == 2
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.parametrize("customer_key", ["customer_id", "external_customer_id"])
+    async def test_meter_usage_credit(
+        self,
+        save_fixture: SaveFixture,
+        client: httpx2.AsyncClient,
+        organization: Organization,
+        customer_external_id: Customer,
+        meter: Meter,
+        customer_key: str,
+    ) -> None:
+        customer = customer_external_id
+        reducer = await create_reducer(
+            save_fixture,
+            organization=organization,
+            meters=[meter],
+            kind=ReducerKind.credit,
+        )
+        current = get_reducer_bucket_start(utc_now())
+        for bucket_start, units, sealed in (
+            # Before the latest reset.
+            (current - timedelta(hours=3), 100, True),
+            # Older than the synced lookback.
+            (current - SYNCED_LOOKBACK - timedelta(hours=1), 10, False),
+            (current, 5, False),
+        ):
+            bucket_end = bucket_start + timedelta(minutes=5)
+            await save_fixture(
+                ReducerBucket(
+                    organization=organization,
+                    reducer=reducer,
+                    customer=customer,
+                    bucket_start=bucket_start,
+                    bucket_end=bucket_end,
+                    count=1,
+                    sum=Decimal(units),
+                    min=Decimal(units),
+                    max=Decimal(units),
+                    sealed_at=bucket_end if sealed else None,
+                )
+            )
+        customer_value = {
+            "customer_id": str(customer.id),
+            "external_customer_id": customer.external_id,
+        }[customer_key]
+
+        response = await client.post(
+            "/v1/outpost/meter-usage",
+            json={
+                "identities": [
+                    {"reducer_id": str(reducer.id), customer_key: customer_value}
+                ]
+            },
+        )
+
+        assert response.status_code == 200
+        payloads = response.json()
+        assert {(p["customer_id"], p["external_customer_id"]) for p in payloads} == {
+            (str(customer.id), None),
+            (None, customer.external_id),
+            (str(customer.id), customer.external_id),
+        }
+        for payload in payloads:
+            assert payload["reducer_id"] == str(reducer.id)
+            assert payload["cold_until"] == payload["version"]
+            assert (payload["count"], payload["sum"]) == (2, 15.0)
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_meter_usage_unknown_customer(
+        self,
+        save_fixture: SaveFixture,
+        client: httpx2.AsyncClient,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+
+        response = await client.post(
+            "/v1/outpost/meter-usage",
+            json={
+                "identities": [
+                    {"reducer_id": str(reducer.id), "external_customer_id": "unknown"}
+                ]
+            },
+        )
+
+        assert response.status_code == 200
+        [payload] = response.json()
+        assert payload["external_customer_id"] == "unknown"
+        assert payload["customer_exists"] is False
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_meter_usage_queries_do_not_grow_with_the_customers(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        client: httpx2.AsyncClient,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        requests_meter = await create_meter(
+            save_fixture, organization=organization, id=uuid.uuid4(), name="Requests"
+        )
+        reducers = [
+            await create_reducer(save_fixture, organization=organization, meters=[m])
+            for m in (meter, requests_meter)
+        ]
+        external_ids = ["alice", "bob", "carol"]
+        for value, external_id in enumerate(external_ids, start=1):
+            await create_customer(
+                save_fixture,
+                organization=organization,
+                external_id=external_id,
+                email=f"{external_id}@example.com",
+            )
+            for reducer in reducers:
+                await _save_synced_bucket(
+                    save_fixture, organization, reducer, external_id, value
+                )
+        queries = 0
+
+        def count_query(*args: typing.Any) -> None:
+            nonlocal queries
+            queries += 1
+
+        bind = session.sync_session.bind
+        assert bind is not None
+        answers = []
+        for customers in (external_ids[:1], external_ids):
+            queries = 0
+            sqlalchemy_event.listen(bind, "before_cursor_execute", count_query)
+            try:
+                response = await client.post(
+                    "/v1/outpost/meter-usage",
+                    json={
+                        "identities": [
+                            {"reducer_id": str(reducer.id), "external_customer_id": id}
+                            for reducer in reducers
+                            for id in customers
+                        ]
+                    },
+                )
+            finally:
+                sqlalchemy_event.remove(bind, "before_cursor_execute", count_query)
+            assert response.status_code == 200
+            answers.append((response.json(), queries))
+
+        [(_, one), (snapshots, three)] = answers
+        assert three == one
+        assert {
+            (snapshot["reducer_id"], snapshot["external_customer_id"]): snapshot["sum"]
+            for snapshot in snapshots
+            if snapshot["customer_id"] is None
+        } == {
+            (str(reducer.id), external_id): float(value)
+            for reducer in reducers
+            for value, external_id in enumerate(external_ids, start=1)
+        }
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_meter_usage_queries_do_not_grow_with_the_reducers(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        client: httpx2.AsyncClient,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        meters = [meter] + [
+            await create_meter(
+                save_fixture, organization=organization, id=uuid.uuid4(), name=name
+            )
+            for name in ("Requests", "Images")
+        ]
+        usage_reducers = [
+            await create_reducer(save_fixture, organization=organization, meters=[m])
+            for m in meters
+        ]
+        credit_reducer = await create_reducer(
+            save_fixture,
+            organization=organization,
+            meters=[meter],
+            kind=ReducerKind.credit,
+        )
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            external_id="alice",
+            email="alice@example.com",
+        )
+        for value, reducer in enumerate(usage_reducers, start=1):
+            await _save_synced_bucket(
+                save_fixture, organization, reducer, "alice", value
+            )
+        queries = 0
+
+        def count_query(*args: typing.Any) -> None:
+            nonlocal queries
+            queries += 1
+
+        bind = session.sync_session.bind
+        assert bind is not None
+        answers = []
+        for reducers in (
+            usage_reducers[:1] + [credit_reducer],
+            usage_reducers + [credit_reducer],
+        ):
+            queries = 0
+            sqlalchemy_event.listen(bind, "before_cursor_execute", count_query)
+            try:
+                response = await client.post(
+                    "/v1/outpost/meter-usage",
+                    json={
+                        "identities": [
+                            {
+                                "reducer_id": str(reducer.id),
+                                "external_customer_id": "alice",
+                            }
+                            for reducer in reducers
+                        ]
+                    },
+                )
+            finally:
+                sqlalchemy_event.remove(bind, "before_cursor_execute", count_query)
+            assert response.status_code == 200
+            answers.append((response.json(), queries))
+
+        [(_, two), (snapshots, four)] = answers
+        assert four == two
+        assert {
+            snapshot["reducer_id"]: snapshot["sum"]
+            for snapshot in snapshots
+            if snapshot["customer_id"] is None
+        } == {
+            **{
+                str(reducer.id): float(value)
+                for value, reducer in enumerate(usage_reducers, start=1)
+            },
+            str(credit_reducer.id): 0.0,
+        }
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_meter_usage_unknown_reducer(
+        self,
+        save_fixture: SaveFixture,
+        client: httpx2.AsyncClient,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+
+        # A reducer Polar does not know does not cost the other identities of the
+        # request their snapshots.
+        response = await client.post(
+            "/v1/outpost/meter-usage",
+            json={
+                "identities": [
+                    {"reducer_id": str(uuid.uuid4()), "external_customer_id": "alice"},
+                    {"reducer_id": str(reducer.id), "external_customer_id": "alice"},
+                ]
+            },
+        )
+
+        assert response.status_code == 200
+        assert [snapshot["reducer_id"] for snapshot in response.json()] == [
+            str(reducer.id)
+        ]
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_meter_usage_too_many_identities(
+        self, client: httpx2.AsyncClient
+    ) -> None:
+        identity = {"reducer_id": str(uuid.uuid4()), "external_customer_id": "alice"}
+        response = await client.post(
+            "/v1/outpost/meter-usage", json={"identities": [identity] * 501}
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_confirm(
+        self,
+        save_fixture: SaveFixture,
+        client: httpx2.AsyncClient,
         organization: Organization,
         meter: Meter,
     ) -> None:
@@ -432,51 +1088,43 @@ class TestOutpost:
             )
         )
 
-        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
-            await websocket.receive_json()
-            await websocket.send_json(
-                {
-                    "type": "confirm",
-                    "payload": {
-                        "reducer_id": str(reducer.id),
-                        "external_customer_id": "alice",
-                        "bucket_start": to_epoch_microseconds(bucket_start),
-                        "meter_id": str(meter.id),
-                        "ids": ["counted", "unknown", "staged"],
-                    },
-                }
-            )
-            response = await websocket.receive_json(timeout=2)
+        response = await client.post(
+            "/v1/outpost/confirm",
+            json={
+                "reducer_id": str(reducer.id),
+                "external_customer_id": "alice",
+                "bucket_start": to_epoch_microseconds(bucket_start),
+                "ids": ["counted", "unknown", "staged"],
+            },
+        )
 
-        assert isinstance(response["payload"]["snapshot"].pop("version"), int)
-        assert response == {
-            "type": "confirmed",
-            "payload": {
+        assert response.status_code == 200
+        confirmation = response.json()
+        assert isinstance(confirmation["snapshot"].pop("version"), int)
+        assert confirmation == {
+            "reducer_id": str(reducer.id),
+            "customer_id": None,
+            "external_customer_id": "alice",
+            "bucket_start": to_epoch_microseconds(bucket_start),
+            "ids": ["counted", "staged"],
+            "snapshot": {
                 "reducer_id": str(reducer.id),
                 "customer_id": None,
                 "external_customer_id": "alice",
-                "bucket_start": to_epoch_microseconds(bucket_start),
-                "ids": ["counted", "staged"],
-                "snapshot": {
-                    "meter_id": str(meter.id),
-                    "customer_id": None,
-                    "external_customer_id": "alice",
-                    "customer_exists": False,
-                    "credited_units": 0,
-                    "cold_until": to_epoch_microseconds(synced_at),
-                    "count": 2,
-                    "sum": 2.0,
-                    "min": 1.0,
-                    "max": 1.0,
-                },
+                "customer_exists": False,
+                "cold_until": to_epoch_microseconds(synced_at),
+                "count": 2,
+                "sum": 2.0,
+                "min": 1.0,
+                "max": 1.0,
             },
         }
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-    async def test_confirm_pending_split_bucket(
+    async def test_confirm_split_bucket(
         self,
         save_fixture: SaveFixture,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         organization: Organization,
         meter: Meter,
     ) -> None:
@@ -513,36 +1161,33 @@ class TestOutpost:
                 save_fixture,
                 organization=organization,
                 timestamp=timestamp,
+                ingested_at=timestamp,
                 external_customer_id="alice",
                 external_id=external_id,
             )
 
-        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
-            await websocket.receive_json()
-            await websocket.send_json(
-                {
-                    "type": "confirm",
-                    "payload": {
-                        "reducer_id": str(reducer.id),
-                        "external_customer_id": "alice",
-                        "bucket_start": to_epoch_microseconds(bucket_start),
-                        "meter_id": str(meter.id),
-                        "ids": ["early", "late"],
-                    },
-                }
-            )
-            response = await websocket.receive_json(timeout=2)
+        response = await client.post(
+            "/v1/outpost/confirm",
+            json={
+                "reducer_id": str(reducer.id),
+                "external_customer_id": "alice",
+                "bucket_start": to_epoch_microseconds(bucket_start),
+                "ids": ["early", "late"],
+            },
+        )
 
-        assert response["payload"]["ids"] == ["early"]
-        assert response["payload"]["snapshot"]["cold_until"] == to_epoch_microseconds(
+        assert response.status_code == 200
+        confirmation = response.json()
+        assert confirmation["ids"] == ["early"]
+        assert confirmation["snapshot"]["cold_until"] == to_epoch_microseconds(
             bucket_start
         )
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-    async def test_confirm_pending_bucket_not_synced(
+    async def test_confirm_bucket_not_synced(
         self,
         save_fixture: SaveFixture,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         organization: Organization,
         meter: Meter,
     ) -> None:
@@ -554,98 +1199,114 @@ class TestOutpost:
             save_fixture,
             organization=organization,
             timestamp=bucket_start + timedelta(seconds=1),
+            ingested_at=bucket_start + timedelta(seconds=1),
             external_customer_id="alice",
             external_id="ingested",
         )
 
-        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
-            await websocket.receive_json()
-            await websocket.send_json(
-                {
-                    "type": "confirm",
-                    "payload": {
-                        "reducer_id": str(reducer.id),
-                        "external_customer_id": "alice",
-                        "bucket_start": to_epoch_microseconds(bucket_start),
-                        "meter_id": str(meter.id),
-                        "ids": ["ingested"],
-                    },
-                }
-            )
-            response = await websocket.receive_json(timeout=2)
+        response = await client.post(
+            "/v1/outpost/confirm",
+            json={
+                "reducer_id": str(reducer.id),
+                "external_customer_id": "alice",
+                "bucket_start": to_epoch_microseconds(bucket_start),
+                "ids": ["ingested"],
+            },
+        )
 
         # Nothing synced, so nothing confirmed: the snapshot leaves the bucket hot, where
         # the local copy counts the event, pending or not.
-        assert response["type"] == "confirmed"
-        assert response["payload"]["ids"] == []
-        assert response["payload"]["snapshot"]["cold_until"] <= to_epoch_microseconds(
+        assert response.status_code == 200
+        confirmation = response.json()
+        assert confirmation["ids"] == []
+        assert confirmation["snapshot"]["cold_until"] <= to_epoch_microseconds(
             bucket_start
         )
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-    async def test_confirm_pending_bucket_start_out_of_range(
+    async def test_confirm_event_ingested_after_its_bucket_closed(
         self,
         save_fixture: SaveFixture,
-        client: httpx.AsyncClient,
+        session: AsyncSession,
+        redis: Redis,
+        client: httpx2.AsyncClient,
         organization: Organization,
         meter: Meter,
     ) -> None:
         reducer = await create_reducer(
             save_fixture, organization=organization, meters=[meter]
         )
+        synced_end = await _save_synced_bucket(
+            save_fixture, organization, reducer, "alice", 1
+        )
+        # Ingest adds an event of a closed bucket to its row at once, and no sync
+        # visits that bucket again: the snapshot counts the event, so it is confirmed.
+        bucket_start = synced_end - timedelta(minutes=20)
+        event = await create_event(
+            save_fixture,
+            organization=organization,
+            timestamp=bucket_start + timedelta(seconds=1),
+            external_customer_id="alice",
+            external_id="late",
+        )
+        await reducer_service.rollup(session, redis, organization.id, [event])
+        await session.flush()
 
-        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
-            await websocket.receive_json()
-            await websocket.send_json(
-                {
-                    "type": "confirm",
-                    "payload": {
-                        "reducer_id": str(reducer.id),
-                        "external_customer_id": "alice",
-                        "bucket_start": 10**24,
-                        "meter_id": str(meter.id),
-                        "ids": ["event"],
-                    },
-                }
-            )
-            # The message is invalid and dropped: the next answer is to the next request.
-            await websocket.send_json({"type": "configuration"})
-            response = await websocket.receive_json(timeout=2)
+        response = await client.post(
+            "/v1/outpost/confirm",
+            json={
+                "reducer_id": str(reducer.id),
+                "external_customer_id": "alice",
+                "bucket_start": to_epoch_microseconds(bucket_start),
+                "ids": ["late"],
+            },
+        )
 
-        assert response["type"] == "configuration"
+        assert response.status_code == 200
+        confirmation = response.json()
+        assert confirmation["snapshot"]["cold_until"] == to_epoch_microseconds(
+            synced_end
+        )
+        assert confirmation["snapshot"]["count"] == 2
+        assert confirmation["ids"] == ["late"]
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-    async def test_confirm_pending_too_many_ids(
+    async def test_confirm_bucket_start_out_of_range(
         self,
         save_fixture: SaveFixture,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         organization: Organization,
         meter: Meter,
     ) -> None:
         reducer = await create_reducer(
             save_fixture, organization=organization, meters=[meter]
         )
-        bucket_start = get_reducer_bucket_start(utc_now()) - timedelta(minutes=30)
 
-        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
-            await websocket.receive_json()
-            await websocket.send_json(
-                {
-                    "type": "confirm",
-                    "payload": {
-                        "reducer_id": str(reducer.id),
-                        "external_customer_id": "alice",
-                        "bucket_start": to_epoch_microseconds(bucket_start),
-                        "meter_id": str(meter.id),
-                        "ids": [f"event-{index}" for index in range(1001)],
-                    },
-                }
-            )
-            # The message is invalid and dropped: the next answer is to the next request.
-            await websocket.send_json({"type": "configuration"})
-            response = await websocket.receive_json(timeout=2)
+        response = await client.post(
+            "/v1/outpost/confirm",
+            json={
+                "reducer_id": str(reducer.id),
+                "external_customer_id": "alice",
+                "bucket_start": 10**24,
+                "ids": ["event"],
+            },
+        )
 
-        assert response["type"] == "configuration"
+        assert response.status_code == 422
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_confirm_too_many_ids(self, client: httpx2.AsyncClient) -> None:
+        response = await client.post(
+            "/v1/outpost/confirm",
+            json={
+                "reducer_id": str(uuid.uuid4()),
+                "external_customer_id": "alice",
+                "bucket_start": 0,
+                "ids": [f"event-{index}" for index in range(1001)],
+            },
+        )
+
+        assert response.status_code == 422
 
 
 def _export_request(**attributes: str) -> ExportTraceServiceRequest:
@@ -660,7 +1321,7 @@ def _export_request(**attributes: str) -> ExportTraceServiceRequest:
 
 @pytest.mark.anyio
 class TestTelemetry:
-    async def test_anonymous(self, client: httpx.AsyncClient) -> None:
+    async def test_anonymous(self, client: httpx2.AsyncClient) -> None:
         response = await client.post(
             "/v1/outpost/telemetry",
             content=_export_request().SerializeToString(),
@@ -669,8 +1330,22 @@ class TestTelemetry:
 
         assert response.status_code == 401
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.events_read})
+    )
+    async def test_insufficient_scope(self, client: httpx2.AsyncClient) -> None:
+        response = await client.post(
+            "/v1/outpost/telemetry",
+            content=_export_request().SerializeToString(),
+            headers={"Content-Type": "application/x-protobuf"},
+        )
+
+        assert response.status_code == 403
+        assert response.json()["error"] == "insufficient_scope"
+        assert 'scope="events:write"' in response.headers["WWW-Authenticate"]
+
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-    async def test_invalid_body(self, client: httpx.AsyncClient) -> None:
+    async def test_invalid_body(self, client: httpx2.AsyncClient) -> None:
         response = await client.post(
             "/v1/outpost/telemetry",
             content=b"not protobuf",
@@ -683,7 +1358,7 @@ class TestTelemetry:
     async def test_forwards_with_organization(
         self,
         mocker: MockerFixture,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         organization: Organization,
     ) -> None:
         forward_mock = mocker.patch(
@@ -730,7 +1405,7 @@ def _metrics_request(**attributes: str) -> ExportMetricsServiceRequest:
 
 @pytest.mark.anyio
 class TestTelemetryMetrics:
-    async def test_anonymous(self, client: httpx.AsyncClient) -> None:
+    async def test_anonymous(self, client: httpx2.AsyncClient) -> None:
         response = await client.post(
             "/v1/outpost/telemetry/metrics",
             content=_metrics_request().SerializeToString(),
@@ -740,7 +1415,7 @@ class TestTelemetryMetrics:
         assert response.status_code == 401
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-    async def test_invalid_body(self, client: httpx.AsyncClient) -> None:
+    async def test_invalid_body(self, client: httpx2.AsyncClient) -> None:
         response = await client.post(
             "/v1/outpost/telemetry/metrics",
             content=b"not protobuf",
@@ -753,7 +1428,7 @@ class TestTelemetryMetrics:
     async def test_forwards_with_organization(
         self,
         mocker: MockerFixture,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         organization: Organization,
     ) -> None:
         forward_mock = mocker.patch(

@@ -15,12 +15,10 @@ export function MigrationSettingsPanel({
         ({ key, title, description, Component }) => (
           <Box key={key} as="section" flexDirection="column" rowGap="l">
             <Box flexDirection="column" rowGap="xs">
-              <Text variant="heading-xxs" as="h3">
+              <Text variant="title" as="h3">
                 {title}
               </Text>
-              <Text variant="caption" color="muted">
-                {description}
-              </Text>
+              <Text color="muted">{description}</Text>
             </Box>
             <Component migrationId={migrationId} />
           </Box>

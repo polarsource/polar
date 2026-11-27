@@ -27,6 +27,7 @@ from shared import (
     ROOT_DIR,
     SECRETS_FILE,
     SERVER_DIR,
+    CommandGroup,
     console,
     is_docker_running,
     read_secrets,
@@ -638,7 +639,7 @@ def _print_access_info(ctx: typer.Context, instance: int) -> None:
 
 
 def register(app: typer.Typer, prompt_setup: callable) -> None:
-    docker_app = typer.Typer(help="Isolated Docker development environment")
+    docker_app = typer.Typer(cls=CommandGroup, help="Isolated Docker development environment")
     app.add_typer(docker_app, name="docker")
 
     @docker_app.callback()
@@ -743,10 +744,15 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
             if not result or result.returncode != 0:
                 console.print("[red]Failed to start shared infra[/red]")
                 raise typer.Exit(1)
-        elif monitoring:
-            console.print(
-                "[yellow]Shared infra is already running; --monitoring only takes effect on first start. Run `dev docker down --all` first to apply.[/yellow]"
-            )
+        else:
+            result = run_command(_shared_compose_cmd() + ["up", "-d", "db"])
+            if not result or result.returncode != 0:
+                console.print("[red]Failed to update shared db[/red]")
+                raise typer.Exit(1)
+            if monitoring:
+                console.print(
+                    "[yellow]Shared infra is already running; --monitoring only takes effect on first start. Run `dev docker down --all` first to apply.[/yellow]"
+                )
 
         env = _build_compose_env(instance)
         cmd = _build_compose_cmd(instance)
@@ -973,7 +979,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
             ),
         ] = False,
         force: Annotated[
-            bool, typer.Option("--force", help="Skip confirmation")
+            bool, typer.Option("--force", "-f", help="Skip confirmation")
         ] = False,
     ) -> None:
         """Remove this instance's app stack and its postgres/redis/S3 data.
@@ -1252,7 +1258,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
     @docker_app.command("prune")
     def docker_prune(
         force: Annotated[
-            bool, typer.Option("--force", help="Skip confirmation")
+            bool, typer.Option("--force", "-f", help="Skip confirmation")
         ] = False,
     ) -> None:
         """Drop registry entries whose path no longer exists, plus all their data.

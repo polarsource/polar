@@ -17,3 +17,7 @@ def uses_standard_webhook_signature(secret_generated_at: datetime | None) -> boo
     if generated_at.tzinfo is None:
         generated_at = generated_at.replace(tzinfo=UTC)
     return generated_at >= WEBHOOK_STANDARD_SIGNATURE_CUTOFF
+
+
+# Keeps the backoff of MCP event deliveries within about 15 minutes.
+MCP_WEBHOOK_MAX_DELIVERIES = 8

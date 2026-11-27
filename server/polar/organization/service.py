@@ -11,7 +11,7 @@ from uuid import UUID
 import email_validator
 import stripe as stripe_lib
 import structlog
-from pydantic import BaseModel, Field, TypeAdapter
+from pydantic import MISSING, BaseModel, Field, TypeAdapter
 from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy.exc import IntegrityError
 
@@ -50,6 +50,7 @@ from polar.member.repository import MemberRepository
 from polar.member.service import member_service
 from polar.models import (
     Agent,
+    BackofficeUser,
     Customer,
     Organization,
     OrganizationRiskSignal,
@@ -60,6 +61,7 @@ from polar.models import (
 from polar.models.benefit import BenefitType
 from polar.models.member import MemberRole
 from polar.models.organization import (
+    DEFAULT_TRIAL_ENDED_REACTIVATION_PERIOD,
     FIRST_REVIEW_THRESHOLD_CENTS,
     STATUS_CAPABILITIES,
     CapabilityName,
@@ -80,6 +82,13 @@ from polar.oauth2.service.oauth2_token import (
 )
 from polar.organization_access_token.repository import (
     OrganizationAccessTokenRepository,
+)
+from polar.organization_domain.repository import OrganizationDomainRepository
+from polar.organization_domain.service import (
+    organization_domain as organization_domain_service,
+)
+from polar.organization_email.service import (
+    organization_email as organization_email_service,
 )
 from polar.organization_review.appeal_case import (
     appeal_case as appeal_case_service,
@@ -236,9 +245,9 @@ def _review_missing(review: OrganizationReview | None) -> str | None:
         return "No organization review has been submitted"
     if review.is_approved:
         return None
-    missing = f"Review verdict is {review.verdict.value}"
+    missing = f"Review verdict is {review.verdict}"
     if review.appeal_decision is not None:
-        missing += f" (appeal {review.appeal_decision.value})"
+        missing += f" (appeal {review.appeal_decision})"
     return missing
 
 
@@ -494,10 +503,15 @@ class OrganizationService:
             # Meter cycling is GA, but API versions up to 2026-10 still expose the
             # flag. Drop this once those versions no longer read it.
             "meter_cycling_enabled": True,
+            "reducer_billing_enabled": True,
         }
-        if is_agent(auth_subject):
-            create_data["feature_settings"]["config_as_code_enabled"] = True
-
+        if "subscription_settings" in create_data:
+            create_data["subscription_settings"] = {
+                "trial_ended_reactivation_period": (
+                    DEFAULT_TRIAL_ENDED_REACTIVATION_PERIOD
+                ),
+                **create_data["subscription_settings"],
+            }
         if settings.is_sandbox():
             create_data["status"] = OrganizationStatus.ACTIVE
             create_data["capabilities"] = {
@@ -536,6 +550,15 @@ class OrganizationService:
             )
             if agent is None:
                 raise CannotCreateOrganizationError(_AGENT_ONE_ORGANIZATION_MESSAGE)
+            posthog.agent_event(
+                agent,
+                "organization",
+                "create",
+                {
+                    "organization_id": str(organization.id),
+                    "organization_slug": organization.slug,
+                },
+            )
             return organization
 
         assert is_user(auth_subject)
@@ -614,15 +637,15 @@ class OrganizationService:
         if organization.onboarded_at is None:
             organization.onboarded_at = datetime.now(UTC)
 
-        if update_schema.feature_settings is not None:
+        if update_schema.feature_settings is not MISSING:
             organization.feature_settings = {
                 **organization.feature_settings,
                 **update_schema.feature_settings.model_dump(
-                    mode="json", exclude_unset=True, exclude_none=True
+                    mode="json", exclude_unset=True
                 ),
             }
 
-        if update_schema.subscription_settings is not None:
+        if update_schema.subscription_settings is not MISSING:
             if (
                 update_schema.subscription_settings.get("proration_behavior")
                 == SubscriptionProrationBehavior.reset
@@ -646,9 +669,14 @@ class OrganizationService:
                         }
                     ]
                 )
-            organization.subscription_settings = update_schema.subscription_settings
+            organization.subscription_settings = {
+                "trial_ended_reactivation_period": (
+                    organization.trial_ended_reactivation_period
+                ),
+                **update_schema.subscription_settings,
+            }
 
-        if update_schema.dispute_settings is not None:
+        if update_schema.dispute_settings is not MISSING:
             if (
                 update_schema.dispute_settings.auto_accept_below_amount is not None
                 and not organization.is_dispute_auto_accept_enabled
@@ -664,13 +692,13 @@ class OrganizationService:
                 },
             )
 
-        if update_schema.customer_portal_settings is not None:
+        if update_schema.customer_portal_settings is not MISSING:
             organization.customer_portal_settings = _merge_customer_portal_settings(
                 organization.customer_portal_settings,
                 update_schema.customer_portal_settings,
             )
 
-        if update_schema.default_presentment_currency is not None:
+        if update_schema.default_presentment_currency is not MISSING:
             await self._validate_currency_change(
                 session, organization, update_schema.default_presentment_currency
             )
@@ -692,14 +720,39 @@ class OrganizationService:
             },
         )
 
-        if update_schema.details:
+        if update_schema.details is not MISSING:
             organization.details = cast(
                 OrganizationDetails, update_schema.details.model_dump()
             )
 
         previous_website = organization.website
+        previous_email = organization.email
+        previous_embed_hosts = organization.embed_hosts
 
         organization = await repository.update(organization, update_dict=update_dict)
+
+        if organization.email != previous_email:
+            await organization_email_service.track_change(session, organization)
+
+        new_embed_hosts = [
+            host
+            for host in organization.embed_hosts
+            if host not in previous_embed_hosts
+        ]
+        if new_embed_hosts:
+            await organization_domain_service.register_payment_method_domains(
+                session, organization, new_embed_hosts
+            )
+
+        removed_embed_hosts = [
+            host
+            for host in previous_embed_hosts
+            if host not in organization.embed_hosts
+        ]
+        if removed_embed_hosts:
+            await organization_domain_service.unregister_payment_method_domains(
+                session, organization, removed_embed_hosts
+            )
 
         if organization.website != previous_website:
             enqueue_job(
@@ -725,6 +778,18 @@ class OrganizationService:
                 cast(Sequence[ValidationError], e.errors())
             ) from e
 
+        if not await organization_email_service.is_verified(session, organization):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "email"),
+                        "msg": "The support email must be verified.",
+                        "input": organization.email,
+                    }
+                ]
+            )
+
         if organization.details_submitted_at is None:
             organization.details_submitted_at = datetime.now(UTC)
             organization.onboarding_resubmission_requested_at = None
@@ -745,6 +810,9 @@ class OrganizationService:
         previous_status = organization.status
         organization.set_status(status)
         resend_service.on_organization_status_changed(
+            organization.id, previous_status, status
+        )
+        organization_domain_service.on_organization_status_changed(
             organization.id, previous_status, status
         )
 
@@ -961,8 +1029,14 @@ class OrganizationService:
         if organization.socials:
             update_dict["socials"] = []
 
+        await organization_domain_service.unregister_payment_method_domains(
+            session, organization
+        )
         organization = await repository.update(organization, update_dict=update_dict)
         await repository.soft_delete(organization)
+        await OrganizationDomainRepository.from_session(
+            session
+        ).soft_delete_by_organization(organization.id)
 
         # Close an open *appeal* support case — it's moot once the org is gone.
         # Only appeals: dispute and refund cases are deliberately left open, as
@@ -1313,6 +1387,11 @@ class OrganizationService:
                 "payout.release_held_payouts",
                 account_id=confirmed.account_id,
             )
+        if confirmed is not None:
+            enqueue_job(
+                "organization_domain.register_organization_payment_method_domains",
+                organization_id=confirmed.id,
+            )
 
         return confirmed
 
@@ -1476,7 +1555,7 @@ class OrganizationService:
         *,
         reason: str | None = None,
         internal_note: str | None = None,
-        staff_user: User,
+        staff_user: BackofficeUser,
     ) -> Organization:
         """Backoffice override to re-activate a DENIED or BLOCKED organization.
 
@@ -1583,6 +1662,7 @@ class OrganizationService:
         session.add(organization)
 
         self._enqueue_cancel_pending_payouts(organization)
+        polar_self_service.enqueue_revoke_subscription(organization_id=organization.id)
         if stripe_reject_reason is not None:
             self._enqueue_reject_stripe_account(organization, stripe_reject_reason)
 
@@ -1759,7 +1839,7 @@ class OrganizationService:
     ) -> Sequence[Organization]:
         """Enqueue a per-org cancellation job for each organization denied,
         blocked, or offboarded past the cancellation delay that still has
-        billable subscriptions. Returns the organizations enqueued.
+        billable or paused subscriptions. Returns the organizations enqueued.
         """
         repository = OrganizationRepository.from_session(session)
         cutoff = (
@@ -1815,7 +1895,7 @@ class OrganizationService:
         organization: Organization,
         *,
         actor_type: ActorType,
-        reviewer_id: uuid.UUID | None = None,
+        backoffice_reviewer: BackofficeUser | None = None,
         enqueue_review: bool = True,
     ) -> Organization:
         self.set_status(organization, OrganizationStatus.REVIEW)
@@ -1830,7 +1910,7 @@ class OrganizationService:
         await review_repository.save_review_decision(
             organization_id=organization.id,
             actor_type=actor_type,
-            reviewer_id=reviewer_id,
+            backoffice_reviewer=backoffice_reviewer,
             decision=DecisionType.ESCALATE,
             review_context=ReviewContext.MANUAL,
         )
@@ -1945,7 +2025,7 @@ class OrganizationService:
             organization,
             source=OrganizationRiskSignal.Source.STRIPE,
             type=OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE,
-            risk_level=OrganizationRiskSignal.UNKNOWN_RISK_LEVEL,
+            risk_level=OrganizationRiskSignal.RiskLevel.UNKNOWN,
             account_evaluation_id=evaluation_id,
         )
 
@@ -2146,7 +2226,7 @@ class OrganizationService:
             self._build_payout_account_check(payout_account),
             self._build_product_description_check(organization),
             await product_url_task,
-            self._build_email_check(organization),
+            await self._build_email_check(session, organization),
             self._build_socials_check(organization),
         ]
 
@@ -2201,38 +2281,43 @@ class OrganizationService:
             key=key, status=OrganizationReviewCheckStatus.PASSED
         )
 
-    def _build_email_check(self, organization: Organization) -> OrganizationReviewCheck:
+    async def _build_email_check(
+        self, session: AsyncReadSession, organization: Organization
+    ) -> OrganizationReviewCheck:
         key = OrganizationReviewCheckKey.IDENTITY_EMAIL
         if not organization.email:
             return self._not_started_check(key)
+
+        reasons: list[OrganizationReviewCheckReason] = []
+        if not await organization_email_service.is_verified(session, organization):
+            reasons.append(OrganizationReviewCheckReason.IDENTITY_EMAIL_UNVERIFIED)
 
         try:
             email_domain = email_validator.validate_email(
                 organization.email, check_deliverability=False
             ).domain
         except email_validator.EmailNotValidError:
+            email_domain = None
+
+        if email_domain:
+            website_domain = _website_domain(organization.website)
+            if email_domain in settings.PERSONAL_EMAIL_DOMAINS:
+                reasons.append(OrganizationReviewCheckReason.IDENTITY_PERSONAL_EMAIL)
+            if (
+                website_domain
+                and not _email_domain_matches_website(email_domain, website_domain)
+                and not _is_hosted_website_domain(website_domain)
+            ):
+                reasons.append(OrganizationReviewCheckReason.IDENTITY_DOMAIN_MISMATCH)
+
+        if not reasons:
             return self._passed_check(key)
-
-        website_domain = _website_domain(organization.website)
-        reasons: list[OrganizationReviewCheckReason] = []
-
-        if email_domain in settings.PERSONAL_EMAIL_DOMAINS:
-            reasons.append(OrganizationReviewCheckReason.IDENTITY_PERSONAL_EMAIL)
-
-        if (
-            website_domain
-            and not _email_domain_matches_website(email_domain, website_domain)
-            and not _is_hosted_website_domain(website_domain)
-        ):
-            reasons.append(OrganizationReviewCheckReason.IDENTITY_DOMAIN_MISMATCH)
-
-        if reasons:
-            return OrganizationReviewCheck(
-                key=key,
-                status=OrganizationReviewCheckStatus.WARNING,
-                reasons=reasons,
-            )
-        return self._passed_check(key)
+        status = (
+            OrganizationReviewCheckStatus.PENDING
+            if OrganizationReviewCheckReason.IDENTITY_EMAIL_UNVERIFIED in reasons
+            else OrganizationReviewCheckStatus.WARNING
+        )
+        return OrganizationReviewCheck(key=key, status=status, reasons=reasons)
 
     async def _build_product_url_check(
         self, organization: Organization
@@ -2601,7 +2686,7 @@ class OrganizationService:
         session: AsyncSession,
         organization: Organization,
         *,
-        staff_user: User | None = None,
+        staff_user: BackofficeUser | None = None,
         reason: str | None = None,
     ) -> OrganizationReview:
         """Deny an organization's appeal and keep payment access blocked.
@@ -2636,26 +2721,6 @@ class OrganizationService:
             )
 
         return review
-
-    async def mark_ai_onboarding_complete(
-        self, session: AsyncSession, organization: Organization
-    ) -> Organization:
-        """Mark the AI onboarding as completed for this organization.
-
-        Only sets the timestamp if it hasn't been set before, to capture the first completion.
-        """
-        if organization.ai_onboarding_completed_at is not None:
-            return organization
-
-        repository = OrganizationRepository.from_session(session)
-        organization = await repository.update(
-            organization,
-            update_dict={
-                "onboarded_at": datetime.now(UTC),
-                "ai_onboarding_completed_at": datetime.now(UTC),
-            },
-        )
-        return organization
 
     async def enable_preview_access(
         self, session: AsyncSession, organization: Organization
@@ -2714,6 +2779,10 @@ class OrganizationService:
             f"Capability '{capability}' {action}{by}",
             reason=reason,
         )
+        if capability == "checkout_payments":
+            organization_domain_service.on_organization_checkout_payments_changed(
+                organization.id, value
+            )
 
         session.add(organization)
         return organization

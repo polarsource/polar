@@ -1,0 +1,72 @@
+name: Server (Skip Non-Server PRs)
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited]
+    paths-ignore:
+      - "server/**"
+      - ".github/workflows/test_server.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+  checks: write
+
+jobs:
+  skip:
+    name: "Server: Skip Check"
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        with:
+          filters: |
+            server:
+              - 'server/**'
+              - '.github/workflows/test_server.yaml'
+
+      - name: Mark server checks as skipped
+        if: steps.filter.outputs.server != 'true'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          MIGRATIONS_LOCKED: ${{ vars.MIGRATIONS_LOCKED }}
+        with:
+          script: |
+            const checks = [
+              "Server: Linters 📝",
+              "Server: Alembic Check ⚗️",
+              "Server: Tests 🐍 (1/4)",
+              "Server: Tests 🐍 (2/4)",
+              "Server: Tests 🐍 (3/4)",
+              "Server: Tests 🐍 (4/4)",
+              "Server: Tests 🐍 (Tinybird)",
+            ];
+            if (process.env.MIGRATIONS_LOCKED === "true") {
+              checks.push("Server: No migrations");
+            }
+            const head_sha = context.payload.pull_request.head.sha;
+            await Promise.all(
+              checks.map((name) =>
+                github.rest.checks.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name,
+                  head_sha,
+                  status: "completed",
+                  conclusion: "skipped",
+                  output: {
+                    title: "Skipped (no server files changed)",
+                    summary: "No files under server/ changed in this pull request.",
+                  },
+                }),
+              ),
+            );

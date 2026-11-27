@@ -5,9 +5,11 @@ import {
   differenceInMonths,
   differenceInWeeks,
   differenceInYears,
+  isValid,
   parse,
 } from 'date-fns'
-import { formatPercentage, formatScalar } from './formatters'
+import { createParser } from 'nuqs/server'
+import { formatCostAmount, formatPercentage, formatScalar } from './formatters'
 
 /**
  * Converts a Date object to an ISO date string (YYYY-MM-DD) in local timezone.
@@ -27,6 +29,24 @@ export const toISODate = (date: Date) => {
 export const fromISODate = (date: string) =>
   parse(date, 'yyyy-MM-dd', new Date(1970, 0, 1, 0, 0, 0))
 
+export const TIME_INTERVALS = ['hour', 'day', 'week', 'month', 'year'] as const
+
+const parseStrictISODate = (value: string): Date | null => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null
+  const date = fromISODate(value)
+  return isValid(date) ? date : null
+}
+
+export const parseAsISODate = createParser({
+  parse: parseStrictISODate,
+  serialize: (date: Date) => toISODate(date),
+})
+
+export const parseAsISODateString = createParser({
+  parse: (value: string) => (parseStrictISODate(value) ? value : null),
+  serialize: (value: string) => value,
+})
+
 export const getFormattedMetricValue = (
   metric: schemas['Metric'],
   value: number,
@@ -39,7 +59,7 @@ export const getFormattedMetricValue = (
     case 'percentage':
       return formatPercentage(value)
     case 'currency_sub_cent':
-      return formatCurrency('subcent')(value, 'usd')
+      return formatCostAmount(value)
   }
 }
 
@@ -496,18 +516,3 @@ export const ALL_METRICS = METRIC_GROUPS.flatMap((g) => g.metrics)
 
 export const metricGroupSlug = (category: string): string =>
   category.toLowerCase().replace(/\s+/g, '-')
-
-const METRIC_SLUG_TO_GROUP_SLUG: Record<string, string> = Object.fromEntries(
-  METRIC_GROUPS.flatMap((g) =>
-    g.metrics.map((m) => [m.slug, metricGroupSlug(g.category)]),
-  ),
-)
-
-/**
- * Resolve a single metric slug (e.g. from a Compass insight) to the analytics
- * page that renders it — the metrics dashboard is grouped by category, so an
- * individual metric links to its group's page. Returns `undefined` for unknown
- * slugs so callers can fall back to the analytics index.
- */
-export const getMetricGroupSlug = (metricSlug: string): string | undefined =>
-  METRIC_SLUG_TO_GROUP_SLUG[metricSlug]

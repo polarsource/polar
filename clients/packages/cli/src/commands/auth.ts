@@ -1,5 +1,5 @@
-import { Effect, Schema, Stdio } from 'effect'
-import { Command, Flag, Prompt } from 'effect/cli'
+import { Effect, Option, Schema } from 'effect'
+import { Argument, Command, Flag, Prompt } from 'effect/cli'
 import {
   ActiveOrganization,
   AuthError,
@@ -14,7 +14,9 @@ import { Organizations } from '@/services/organizations'
 import { token } from '@/commands/token'
 import { output } from '@/utils/command'
 import { local, production, sandbox } from '@/utils/flags'
+import { type EnvironmentVariable, EnvironmentVariables } from '@/utils/help'
 import { note } from '@/utils/progress'
+import { interactive } from '@/utils/prompt'
 import * as ui from '@/utils/ui'
 
 const isSelected = (
@@ -36,10 +38,26 @@ const organizationRows = (
   ['ID', ui.dim(organization.id)],
 ]
 
+export const tokenVariables: ReadonlyArray<EnvironmentVariable> = [
+  {
+    name: 'POLAR_ACCESS_TOKEN',
+    description:
+      'Use this token instead of polar auth login: an organization access token, or an OAuth or agent access token',
+  },
+  {
+    name: 'POLAR_ENVIRONMENT',
+    description:
+      'Environment of POLAR_ACCESS_TOKEN: sandbox or production. Defaults to production',
+  },
+]
+
 const notLoggedIn = [
   ui.warning('Not logged in'),
   ui.step(
     `Run ${ui.command(loginCommand('sandbox'))} or ${ui.command(loginCommand('production'))}`,
+  ),
+  ui.step(
+    `Or set ${ui.command('POLAR_ACCESS_TOKEN')} to use an access token without logging in`,
   ),
   ui.blank,
 ]
@@ -54,7 +72,7 @@ const environmentTitles: Record<PolarEnvironment, string> = {
   local: 'Local',
 }
 
-const announceAuthorization =
+export const announceAuthorization =
   (environment: PolarEnvironment) => (authorization: URL) =>
     note(
       [
@@ -67,11 +85,6 @@ const announceAuthorization =
         ui.blank,
       ].join('\n'),
     )
-
-const interactive = Effect.gen(function* () {
-  const stdio = yield* Stdio.Stdio
-  return (yield* stdio.stdinIsTerminal) && (yield* stdio.stdoutIsTerminal)
-})
 
 const chooseEnvironment = (flags: EnvironmentFlags, action: string) =>
   Effect.gen(function* () {
@@ -187,7 +200,7 @@ const selectionLines = (selection: Selection) => {
       return [
         ui.warning('Organization selection requires an interactive terminal'),
         ui.step(
-          `Run ${ui.command(orgCommand)} interactively, or use POLAR_ACCESS_TOKEN with ${ui.command('--org <id>')} in CI`,
+          `Run ${ui.command('polar auth list')} to see them, then ${ui.command(`${orgCommand} <id>`)} or pass ${ui.command('--org <id>')} on a command`,
         ),
         ui.blank,
       ]
@@ -214,6 +227,11 @@ const login = Command.make('login', {
     {
       command: 'polar auth login --production --new-session',
       description: 'Sign in to production again, replacing the saved session',
+    },
+    {
+      command: 'export POLAR_ACCESS_TOKEN=<token> POLAR_ENVIRONMENT=sandbox',
+      description:
+        'Without a browser, e.g. in CI or as an agent, skip login and use an access token',
     },
   ]),
   output({
@@ -366,11 +384,28 @@ const list = Command.make('list', {}).pipe(
   }),
 )
 
-const org = Command.make('org', {}).pipe(
+const org = Command.make('org', {
+  organization: Argument.String('organization').pipe(
+    Argument.withDescription(
+      'Organization ID or slug. Omit to pick from a list',
+    ),
+    Argument.optional,
+  ),
+}).pipe(
   Command.withDescription('Choose the active organization'),
+  Command.withExamples([
+    {
+      command: 'polar auth org',
+      description: 'Pick the active organization from a list',
+    },
+    {
+      command: 'polar auth org acme',
+      description: 'Set it by slug or ID, for scripts and agents',
+    },
+  ]),
   output({
     result: Selection,
-    run: () =>
+    run: ({ organization }) =>
       Effect.gen(function* () {
         const auth = yield* Auth
         if (yield* auth.override) {
@@ -382,6 +417,12 @@ const org = Command.make('org', {}).pipe(
           return yield* new AuthError({
             message: `Not logged in. Run ${loginCommand('sandbox')} or ${loginCommand('production')}.`,
           })
+        }
+        if (Option.isSome(organization)) {
+          const organizations = yield* Organizations
+          return yield* activate(
+            yield* organizations.resolve(organization.value),
+          )
         }
         return yield* selectOrganization
       }),
@@ -467,5 +508,6 @@ const logout = Command.make('logout', {
 
 export const auth = Command.make('auth').pipe(
   Command.withDescription('Manage your Polar sessions and active organization'),
+  Command.annotate(EnvironmentVariables, tokenVariables),
   Command.withSubcommands([login, whoami, list, org, token, logout]),
 )

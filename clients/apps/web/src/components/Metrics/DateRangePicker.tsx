@@ -19,7 +19,7 @@ import {
 } from 'date-fns'
 import * as React from 'react'
 
-import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { useDashboardOrganization } from '@/hooks/dashboardOrganization'
 import { CalendarMonthOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import FormattedInterval from '@polar-sh/ui/components/atoms/FormattedInterval'
@@ -30,7 +30,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@polar-sh/ui/components/ui/popover'
-import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export const dateRangeIntervals = (
@@ -112,9 +111,10 @@ export type DateRange = {
 
 interface DateRangePickerProps extends React.HTMLAttributes<HTMLDivElement> {
   date: DateRange | undefined
-  onDateChange: (v: DateRange) => void
+  onDateChange: (v: DateRange, interval?: DateRangeInterval) => void
   minDate?: Date
   additionalIntervals?: DateRangeInterval[]
+  selectedInterval?: DateRangeIntervalSlug | null
 }
 
 const DateRangePicker: React.FC<DateRangePickerProps> = ({
@@ -123,11 +123,18 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
   onDateChange,
   minDate,
   additionalIntervals,
+  selectedInterval,
 }) => {
-  const { organization } = useContext(OrganizationContext)
-  const interval = date
-    ? dateRangeToMatchingInterval(date, organization)
-    : undefined
+  const organization = useDashboardOrganization()
+  const interval =
+    selectedInterval !== undefined
+      ? [
+          ...(additionalIntervals ?? []),
+          ...dateRangeIntervals(organization),
+        ].find((int) => int.slug === selectedInterval)
+      : date
+        ? dateRangeToMatchingInterval(date, organization)
+        : undefined
 
   return (
     <div
@@ -137,7 +144,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
       )}
     >
       <Popover>
-        <PopoverTrigger className="dark:hover:bg-polar-700 flex cursor-pointer items-center justify-center px-4 py-3 duration-150 hover:bg-gray-100">
+        <PopoverTrigger className="dark:hover:bg-polar-700 flex cursor-pointer items-center justify-center px-4 py-3 transition-colors duration-150 hover:bg-gray-100">
           <CalendarMonthOutlined fontSize="inherit" />
         </PopoverTrigger>
         <PopoverContent>
@@ -158,7 +165,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
       </Popover>
 
       <Popover>
-        <PopoverTrigger className="dark:hover:bg-polar-700 flex-1 cursor-pointer truncate px-4 text-sm duration-150 hover:bg-gray-100">
+        <PopoverTrigger className="dark:hover:bg-polar-700 flex-1 cursor-pointer truncate px-4 text-sm transition-colors duration-150 hover:bg-gray-100">
           {interval ? (
             interval.label
           ) : date?.from ? (
@@ -179,10 +186,13 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
             interval={interval}
             additionalIntervals={additionalIntervals}
             onIntervalChange={(int) => {
-              onDateChange({
-                from: int.value[0],
-                to: int.value[1],
-              })
+              onDateChange(
+                {
+                  from: int.value[0],
+                  to: int.value[1],
+                },
+                int,
+              )
             }}
           />
         </PopoverContent>
@@ -220,7 +230,7 @@ const DateRangeIntervals = ({
   onIntervalChange,
   additionalIntervals,
 }: DateRangeIntervalProps) => {
-  const { organization } = useContext(OrganizationContext)
+  const organization = useDashboardOrganization()
   const allIntervals = [
     ...(additionalIntervals ?? []),
     ...dateRangeIntervals(organization),

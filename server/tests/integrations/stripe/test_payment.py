@@ -3,20 +3,25 @@ from datetime import timedelta
 
 import pytest
 import stripe as stripe_lib
-from freezegun import freeze_time
-from sqlalchemy import delete
+import time_machine
+from pytest_mock import MockerFixture
+from sqlalchemy import delete, select
 
 from polar.checkout.repository import CheckoutRepository
+from polar.checkout.service import NotConfirmedCheckout
+from polar.checkout.tasks import checkout_success
 from polar.enums import PaymentProcessor
 from polar.integrations.stripe.payment import (
     _resolve_trigger,
     handle_failure,
+    handle_success,
 )
 from polar.kit.db.postgres import (
     AsyncSession,
     create_async_engine,
     create_async_sessionmaker,
 )
+from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
 from polar.models import (
     Account,
@@ -25,15 +30,20 @@ from polar.models import (
     Organization,
     Product,
     Subscription,
+    TrialRedemption,
     User,
 )
 from polar.models.checkout import CheckoutStatus
 from polar.models.order import OrderStatus
 from polar.models.payment import PaymentTrigger
 from polar.models.subscription import SubscriptionStatus
+from polar.models.wallet import WalletType
 from polar.order.repository import OrderRepository
+from polar.order.tasks import order_paid, wallet_order
 from polar.payment.repository import PaymentRepository
+from polar.payment_method.repository import PaymentMethodRepository
 from polar.subscription.repository import SubscriptionRepository
+from polar.wallet.repository import WalletTransactionRepository
 from tests.fixtures.database import SaveFixture, get_database_url, save_fixture_factory
 from tests.fixtures.random_objects import (
     create_account,
@@ -41,9 +51,16 @@ from tests.fixtures.random_objects import (
     create_order,
     create_organization,
     create_product,
+    create_subscription,
     create_user,
+    create_wallet,
+    create_wallet_transaction,
 )
-from tests.fixtures.stripe import build_stripe_charge, build_stripe_payment_intent
+from tests.fixtures.stripe import (
+    build_stripe_charge,
+    build_stripe_payment_intent,
+    build_stripe_payment_method,
+)
 
 
 @pytest.mark.anyio
@@ -181,7 +198,83 @@ class TestHandleFailure:
             assert checkout.status == CheckoutStatus.open
             assert "intent_status" not in checkout.payment_processor_metadata
 
-    @freeze_time("2024-01-01 12:00:00")
+    @pytest.mark.parametrize(
+        ("trigger", "current_intent_id", "failure_applied"),
+        [
+            (PaymentTrigger.retry_customer, "pi_current", False),
+            (PaymentTrigger.retry_customer, "pi_failed", True),
+            (PaymentTrigger.retry_customer, None, True),
+            (PaymentTrigger.retry_dunning, "pi_current", True),
+        ],
+    )
+    @pytest.mark.parametrize(
+        "failure",
+        [
+            build_stripe_charge(
+                status="failed",
+                payment_intent="pi_failed",
+                billing_details={"email": "test@example.com"},
+                payment_method_details={"type": "card", "card": {"last4": "4242"}},
+            ),
+            build_stripe_payment_intent(
+                id="pi_failed",
+                last_payment_error={
+                    "message": "Authentication failed",
+                    "payment_method": {"type": "card", "card": {"last4": "4242"}},
+                },
+            ),
+        ],
+        ids=["charge", "payment_intent"],
+    )
+    async def test_order_failure_matches_current_customer_retry_intent(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        product: Product,
+        failure: stripe_lib.Charge | stripe_lib.PaymentIntent,
+        trigger: PaymentTrigger,
+        current_intent_id: str | None,
+        failure_applied: bool,
+    ) -> None:
+        lock_acquired_at = utc_now()
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            product=product,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            payment_lock_acquired_at=lock_acquired_at,
+        )
+        order.invoice_number = None
+        if current_intent_id is not None:
+            order.payment_processor_metadata = {"intent_id": current_intent_id}
+        await save_fixture(order)
+
+        failure.metadata = {
+            "organization_id": str(order.organization_id),
+            "order_id": str(order.id),
+            "payment_trigger": trigger,
+        }
+
+        await handle_failure(session, failure)
+        await session.refresh(order)
+
+        if failure_applied:
+            assert order.status == OrderStatus.draft
+            assert order.payment_lock_acquired_at is None
+        else:
+            assert order.status == OrderStatus.pending
+            assert order.payment_lock_acquired_at == lock_acquired_at
+        assert (
+            await PaymentRepository.from_session(session).get_by_processor_id(
+                PaymentProcessor.stripe, failure.id
+            )
+            is not None
+        )
+
+    @time_machine.travel("2024-01-01T12:00:00Z", tick=False)
     async def test_full_dunning_flow_with_repositories(
         self,
         session: AsyncSession,
@@ -356,6 +449,46 @@ class TestHandleFailureTrigger:
         assert payment is not None
         assert payment.trigger == PaymentTrigger.retry_dunning
 
+    async def test_payment_retry_alert_failure_keeps_dunning_schedule(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        next_payment_attempt_at = utc_now() + timedelta(days=3)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            next_payment_attempt_at=next_payment_attempt_at,
+        )
+        charge = build_stripe_charge(
+            status="failed",
+            metadata={
+                "order_id": str(order.id),
+                "payment_trigger": "retry_payment_alert",
+                "payment_retry_alert_id": "alrt_test",
+            },
+            billing_details={"email": "test@example.com"},
+            payment_method_details={"card": {"last4": "4444"}, "type": "card"},
+        )
+
+        enqueue = mocker.patch(
+            "polar.integrations.payment_retry_alert.service.enqueue_job"
+        )
+
+        await handle_failure(session, charge)
+
+        assert order.next_payment_attempt_at == next_payment_attempt_at
+        enqueue.assert_called_once_with(
+            "payment_retry_alert.report_outcome", alert_id="alrt_test", outcome="FAILED"
+        )
+
     async def test_no_trigger_for_pre_deployment_charge(
         self,
         session: AsyncSession,
@@ -393,3 +526,364 @@ class TestHandleFailureTrigger:
         )
         assert payment is not None
         assert payment.trigger is None
+
+
+@pytest.mark.anyio
+class TestHandleSuccess:
+    async def test_unconfirmed_setup_intent_is_not_enqueued(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+    ) -> None:
+        checkout = await create_checkout(save_fixture, products=[product])
+        intent = stripe_lib.SetupIntent.construct_from(
+            {
+                "id": "seti_early",
+                "metadata": {
+                    "organization_id": str(checkout.organization_id),
+                    "checkout_id": str(checkout.id),
+                },
+            },
+            None,
+        )
+        enqueue = mocker.patch("polar.integrations.stripe.payment.enqueue_job")
+
+        with pytest.raises(NotConfirmedCheckout):
+            await handle_success(session, intent)
+
+        enqueue.assert_not_called()
+
+    @pytest.mark.parametrize("recurring", [False, True])
+    async def test_charge_checkout(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        product_one_time: Product,
+        customer: Customer,
+        recurring: bool,
+    ) -> None:
+        selected_product = product if recurring else product_one_time
+        checkout = await create_checkout(
+            save_fixture,
+            products=[selected_product],
+            customer=customer,
+            status=CheckoutStatus.confirmed,
+            tax_amount=0,
+        )
+        charge = build_stripe_charge(
+            amount=checkout.total_amount,
+            currency=checkout.currency,
+            metadata={
+                "organization_id": str(checkout.organization_id),
+                "checkout_id": str(checkout.id),
+            },
+            billing_details={"email": customer.email},
+            payment_method_details={"type": "card", "card": {"last4": "4242"}},
+        )
+        stripe_method = build_stripe_payment_method(
+            details={"fingerprint": "fingerprint"}
+        )
+        charge.payment_method = stripe_method.id
+        mocker.patch(
+            "polar.payment_method.service.stripe_service.get_payment_method",
+            return_value=stripe_method,
+        )
+        enqueue = mocker.patch("polar.integrations.stripe.payment.enqueue_job")
+
+        await handle_success(session, charge)
+
+        payment = await PaymentRepository.from_session(session).get_by_processor_id(
+            PaymentProcessor.stripe, charge.id
+        )
+        assert payment is not None
+        assert payment.trigger == PaymentTrigger.purchase
+        assert checkout.status == CheckoutStatus.confirmed
+        assert payment.order_id is None
+        method = await PaymentMethodRepository.from_session(
+            session
+        ).get_by_customer_and_processor_id(
+            customer.id, PaymentProcessor.stripe, stripe_method.id
+        )
+        assert (method is not None) == recurring
+        enqueue.assert_called_once_with(
+            "checkout.success",
+            checkout_id=checkout.id,
+            payment_id=payment.id,
+            payment_method_id=method.id if method is not None else None,
+        )
+        kwargs = enqueue.call_args.kwargs
+        session.expunge_all()
+
+        await checkout_success(**kwargs)
+        await checkout_success(**kwargs)
+
+        succeeded_checkout = await CheckoutRepository.from_session(session).get_by_id(
+            checkout.id
+        )
+        assert succeeded_checkout is not None
+        assert succeeded_checkout.status == CheckoutStatus.succeeded
+        order = await OrderRepository.from_session(session).get_earliest_by_checkout_id(
+            checkout.id,
+            options=OrderRepository.from_session(session).get_eager_options(),
+        )
+        assert order is not None
+        assert order.status == OrderStatus.paid
+        payment = await PaymentRepository.from_session(session).get_by_id(payment.id)
+        assert payment is not None
+        assert payment.order_id == order.id
+        if recurring:
+            assert order.subscription is not None
+            assert method is not None
+            assert order.subscription.payment_method_id == method.id
+        else:
+            assert order.subscription is None
+
+    async def test_setup_intent_trial(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            customer=customer,
+            status=CheckoutStatus.confirmed,
+            trial_interval=TrialInterval.day,
+            trial_interval_count=7,
+            tax_amount=0,
+            payment_processor_metadata={"intent_client_secret": "current"},
+        )
+        intent = stripe_lib.SetupIntent.construct_from(
+            {
+                "id": "seti_current",
+                "client_secret": "current",
+                "metadata": {
+                    "organization_id": str(checkout.organization_id),
+                    "checkout_id": str(checkout.id),
+                },
+                "payment_method": build_stripe_payment_method(
+                    details={"fingerprint": "trial_fingerprint"}
+                ),
+            },
+            None,
+        )
+        enqueue = mocker.patch("polar.integrations.stripe.payment.enqueue_job")
+
+        await handle_success(session, intent)
+
+        kwargs = enqueue.call_args.kwargs
+        assert enqueue.call_args.args == ("checkout.success",)
+        assert kwargs["payment_id"] is None
+        assert kwargs["payment_method_id"] is not None
+        assert customer.default_payment_method_id == kwargs["payment_method_id"]
+        session.expunge_all()
+        await checkout_success(**kwargs)
+        order = await OrderRepository.from_session(session).get_earliest_by_checkout_id(
+            checkout.id,
+            options=OrderRepository.from_session(session).get_eager_options(),
+        )
+        assert order is not None
+        assert order.subscription is not None
+        assert order.subscription.status == SubscriptionStatus.trialing
+        assert order.subscription.payment_method_id == kwargs["payment_method_id"]
+        redemption = (
+            await session.execute(
+                select(TrialRedemption).where(
+                    TrialRedemption.customer_id == customer.id
+                )
+            )
+        ).scalar_one()
+        assert redemption.payment_method_fingerprint == "trial_fingerprint"
+
+    @pytest.mark.parametrize("reason", ["expired", "replaced"])
+    async def test_outdated_setup_intent(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        reason: str,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.expired
+            if reason == "expired"
+            else CheckoutStatus.open,
+            payment_processor_metadata={"intent_client_secret": "current"},
+        )
+        intent = stripe_lib.SetupIntent.construct_from(
+            {
+                "id": "seti_test",
+                "client_secret": "old" if reason == "replaced" else "current",
+                "metadata": {
+                    "organization_id": str(checkout.organization_id),
+                    "checkout_id": str(checkout.id),
+                },
+            },
+            None,
+        )
+        save_method = mocker.patch(
+            "polar.integrations.stripe.payment.payment_method_service.upsert_from_stripe_intent"
+        )
+        enqueue = mocker.patch("polar.integrations.stripe.payment.enqueue_job")
+        log = mocker.patch("polar.integrations.stripe.payment.log")
+
+        await handle_success(session, intent)
+
+        enqueue.assert_not_called()
+        save_method.assert_not_called()
+        log.info.assert_called_once()
+
+    async def test_order_payment(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            next_payment_attempt_at=utc_now(),
+            payment_lock_acquired_at=utc_now(),
+        )
+        charge = build_stripe_charge(
+            metadata={
+                "organization_id": str(product.organization_id),
+                "order_id": str(order.id),
+            },
+            billing_details={"email": customer.email},
+            payment_method_details={"type": "card", "card": {"last4": "4242"}},
+        )
+        enqueue = mocker.patch("polar.integrations.stripe.payment.enqueue_job")
+        await handle_success(session, charge)
+        payment = await PaymentRepository.from_session(session).get_by_processor_id(
+            PaymentProcessor.stripe, charge.id
+        )
+        assert payment is not None
+        assert order.status == OrderStatus.pending
+        enqueue.assert_called_once_with(
+            "order.paid", order_id=order.id, payment_id=payment.id
+        )
+        session.expunge_all()
+
+        await order_paid(**enqueue.call_args.kwargs)
+        await order_paid(**enqueue.call_args.kwargs)
+
+        paid_order = await OrderRepository.from_session(session).get_by_id(order.id)
+        assert paid_order is not None
+        assert paid_order.status == OrderStatus.paid
+        assert paid_order.next_payment_attempt_at is None
+        assert paid_order.payment_lock_acquired_at is None
+
+    async def test_order_setup_intent_saves_payment_method(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture, customer=customer, product=product
+        )
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            product=product,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            subtotal_amount=0,
+        )
+        stripe_payment_method = build_stripe_payment_method()
+        intent = stripe_lib.SetupIntent.construct_from(
+            {
+                "id": "seti_test",
+                "metadata": {
+                    "organization_id": str(order.organization_id),
+                    "order_id": str(order.id),
+                },
+                "payment_method": stripe_payment_method,
+            },
+            None,
+        )
+        enqueue = mocker.patch("polar.integrations.stripe.payment.enqueue_job")
+
+        await handle_success(session, intent)
+        await session.flush()
+
+        method = await PaymentMethodRepository.from_session(
+            session
+        ).get_by_customer_and_processor_id(
+            customer.id, PaymentProcessor.stripe, stripe_payment_method.id
+        )
+        assert method is not None
+        assert customer.default_payment_method_id == method.id
+        assert subscription.payment_method_id == method.id
+        assert order.status == OrderStatus.pending
+        enqueue.assert_called_once_with(
+            "order.paid", order_id=order.id, payment_id=None
+        )
+
+    async def test_wallet_order(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+    ) -> None:
+        wallet = await create_wallet(
+            save_fixture, customer=customer, type=WalletType.usage
+        )
+        transaction = await create_wallet_transaction(
+            save_fixture, wallet=wallet, amount=1000
+        )
+        charge = build_stripe_charge(
+            metadata={
+                "organization_id": str(customer.organization_id),
+                "wallet_transaction_id": str(transaction.id),
+            },
+            billing_details={"email": customer.email},
+            payment_method_details={"type": "card", "card": {"last4": "4242"}},
+        )
+        enqueue = mocker.patch("polar.integrations.stripe.payment.enqueue_job")
+        await handle_success(session, charge)
+        payment = await PaymentRepository.from_session(session).get_by_processor_id(
+            PaymentProcessor.stripe, charge.id
+        )
+        assert payment is not None
+        assert transaction.order_id is None
+        enqueue.assert_called_once_with(
+            "order.wallet_order",
+            wallet_transaction_id=transaction.id,
+            payment_id=payment.id,
+        )
+        session.expunge_all()
+
+        await wallet_order(**enqueue.call_args.kwargs)
+        paid_transaction = await WalletTransactionRepository.from_session(
+            session
+        ).get_by_id(transaction.id)
+        assert paid_transaction is not None
+        order_id = paid_transaction.order_id
+        assert order_id is not None
+        await wallet_order(**enqueue.call_args.kwargs)
+        paid_transaction = await WalletTransactionRepository.from_session(
+            session
+        ).get_by_id(transaction.id)
+        assert paid_transaction is not None
+        assert paid_transaction.order_id == order_id
+        payment = await PaymentRepository.from_session(session).get_by_id(payment.id)
+        assert payment is not None
+        assert payment.order_id == order_id

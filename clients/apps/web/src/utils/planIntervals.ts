@@ -24,9 +24,10 @@ export const defaultPlanInterval = (
   available: PlanInterval[],
   preferred: (string | null | undefined)[],
 ): PlanInterval => {
+  const availableIntervals = new Set(available)
   const match = preferred.find(
     (interval): interval is PlanInterval =>
-      isPlanInterval(interval) && available.includes(interval),
+      isPlanInterval(interval) && availableIntervals.has(interval),
   )
   return match ?? available[0] ?? 'month'
 }

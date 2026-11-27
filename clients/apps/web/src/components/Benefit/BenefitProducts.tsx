@@ -1,6 +1,7 @@
 import { OrderSection } from '@/components/Orders/OrderSection'
 import { Pagination } from '@/components/Products/Benefits/components/Pagination'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
+import { CatalogVersionLabel } from '@/components/Products/CatalogVersionLabel'
 import { EmptyState } from '@/components/Shared/EmptyState'
 import { useProducts } from '@/hooks/queries/products'
 import { schemas } from '@polar-sh/client'
@@ -22,10 +23,15 @@ export const BenefitProducts = ({
   organization,
 }: BenefitProductsProps) => {
   const [page, setPage] = useState(1)
+  const isPastVersion = !benefit.is_current && benefit.catalog_id !== null
 
   const { data: products, isLoading } = useProducts(organization.id, {
     benefit_id: benefit.id,
     is_archived: null,
+    ...(isPastVersion && {
+      catalog_id: benefit.catalog_id,
+      catalog_status: null,
+    }),
     sorting: ['name'],
     page,
     limit: PAGE_SIZE,
@@ -69,6 +75,10 @@ export const BenefitProducts = ({
                     columnGap="s"
                   >
                     <Text truncate>{product.name}</Text>
+                    <CatalogVersionLabel
+                      organization={organization}
+                      version={product}
+                    />
                     {product.visibility === 'private' && (
                       <Pill
                         color="gray"

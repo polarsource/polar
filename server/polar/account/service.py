@@ -29,10 +29,7 @@ class AccountService:
         statement = (
             repository.get_statement_by_org_ids(org_ids)
             .where(Account.id == id)
-            .options(
-                joinedload(Account.users),
-                joinedload(Account.organizations),
-            )
+            .options(joinedload(Account.organizations))
         )
         return await repository.get_one_or_none(statement)
 
@@ -59,9 +56,7 @@ class AccountService:
         self, session: AsyncSession, account: Account, account_update: AccountUpdate
     ) -> Account:
         repository = AccountRepository.from_session(session)
-        return await repository.update(
-            account, update_dict=account_update.model_dump(exclude_unset=True)
-        )
+        return await repository.update(account, update_dict=account_update.model_dump())
 
     async def set_platform_fee(
         self,

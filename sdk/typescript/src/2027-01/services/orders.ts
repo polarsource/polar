@@ -42,6 +42,7 @@ export const listOrders = (client: ClientBase) => {
     query?: {
       organization_id?: string | string[] | null;
       product_id?: string | string[] | null;
+      external_product_id?: string | string[] | null;
       product_billing_type?: ProductBillingType | ProductBillingType[] | null;
       discount_id?: string | string[] | null;
       customer_id?: string | string[] | null;
@@ -49,6 +50,7 @@ export const listOrders = (client: ClientBase) => {
       checkout_id?: string | string[] | null;
       subscription_id?: string | string[] | null;
       status?: OrderStatus | OrderStatus[] | null;
+      query?: string | null;
       created_after?: string | null;
       created_before?: string | null;
       page?: number;
@@ -62,6 +64,7 @@ export const listOrders = (client: ClientBase) => {
     const queryParams = {
       organization_id: query?.organization_id,
       product_id: query?.product_id,
+      external_product_id: query?.external_product_id,
       product_billing_type: query?.product_billing_type,
       discount_id: query?.discount_id,
       customer_id: query?.customer_id,
@@ -69,6 +72,7 @@ export const listOrders = (client: ClientBase) => {
       checkout_id: query?.checkout_id,
       subscription_id: query?.subscription_id,
       status: query?.status,
+      query: query?.query,
       created_after: query?.created_after,
       created_before: query?.created_before,
       page: query?.page ?? 1,
@@ -101,6 +105,7 @@ export const iterListOrders = (client: ClientBase) => {
     query?: {
       organization_id?: string | string[] | null;
       product_id?: string | string[] | null;
+      external_product_id?: string | string[] | null;
       product_billing_type?: ProductBillingType | ProductBillingType[] | null;
       discount_id?: string | string[] | null;
       customer_id?: string | string[] | null;
@@ -108,6 +113,7 @@ export const iterListOrders = (client: ClientBase) => {
       checkout_id?: string | string[] | null;
       subscription_id?: string | string[] | null;
       status?: OrderStatus | OrderStatus[] | null;
+      query?: string | null;
       created_after?: string | null;
       created_before?: string | null;
       page?: number;
@@ -180,6 +186,7 @@ export const exportOrders = (client: ClientBase) => {
     query?: {
       organization_id?: string | string[] | null;
       product_id?: string | string[] | null;
+      external_product_id?: string | string[] | null;
       status?: OrderStatus | OrderStatus[] | null;
       created_after?: string | null;
       created_before?: string | null;
@@ -192,6 +199,7 @@ export const exportOrders = (client: ClientBase) => {
     const queryParams = {
       organization_id: query?.organization_id,
       product_id: query?.product_id,
+      external_product_id: query?.external_product_id,
       status: query?.status,
       created_after: query?.created_after,
       created_before: query?.created_before,

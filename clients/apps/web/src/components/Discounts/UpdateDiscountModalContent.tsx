@@ -1,11 +1,11 @@
-import { useUpdateDiscount } from '@/hooks/queries'
+import { useCurrentProductIds, useUpdateDiscount } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import { isDiscountFixed } from '@/utils/discount'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Button, InlineModalHeader, Text } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useCallback } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useFormState } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
 import DiscountForm, { DiscountFormValues } from './DiscountForm'
 
@@ -28,27 +28,36 @@ const getInitialAmountsByCurrency = (
   }))
 }
 
-const UpdateDiscountModalContent = ({
+const UpdateDiscountModalContent = (props: UpdateDiscountModalContentProps) => {
+  const productIds = useCurrentProductIds(
+    props.organization,
+    props.discount.products.map((product) => product.id),
+  )
+  if (!productIds) {
+    return null
+  }
+  return <UpdateDiscountForm {...props} productIds={productIds} />
+}
+
+const UpdateDiscountForm = ({
   organization,
   discount,
   onDiscountUpdated,
   hideModal,
-}: UpdateDiscountModalContentProps) => {
+  productIds,
+}: UpdateDiscountModalContentProps & { productIds: string[] }) => {
   const updateDiscount = useUpdateDiscount(discount.id)
 
   const form = useForm<DiscountFormValues>({
     defaultValues: {
       ...(discount as unknown as DiscountFormValues),
-      products: discount.products.map((product) => product.id),
+      products: productIds,
       amountsByCurrency: getInitialAmountsByCurrency(discount),
     },
   })
 
-  const {
-    handleSubmit,
-    setError,
-    formState: { errors },
-  } = form
+  const { control, handleSubmit, setError } = form
+  const { errors } = useFormState({ control })
 
   const onSubmit = useCallback(
     async ({ amountsByCurrency, ...discountUpdate }: DiscountFormValues) => {
@@ -63,7 +72,9 @@ const UpdateDiscountModalContent = ({
       const { data: updatedDiscount, error } = await updateDiscount.mutateAsync(
         {
           ...safeUpdate,
-          amounts: isDiscountFixed(discount) ? amounts : null,
+          amounts: isDiscountFixed(discount) ? amounts : undefined,
+          duration_in_months: safeUpdate['duration_in_months'] ?? undefined,
+          external_id: safeUpdate['external_id'] ?? undefined,
         } as schemas['DiscountUpdate'],
       )
 

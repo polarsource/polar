@@ -3,6 +3,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import { ArrowRight } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { ChapterHeadline } from './Chapter'
+import { FeatureCarousel } from './FeatureCarousel'
 import { StillaAI } from './Logos'
 
 const STORY = {
@@ -18,6 +19,7 @@ export const CustomerStory = () => (
   <Box
     as="section"
     width="100%"
+    flexDirection="column"
     paddingVertical={{ base: '4xl', md: '5xl' }}
     marginVertical={{ base: 'none', md: '2xl' }}
     borderTopWidth={1}
@@ -88,5 +90,15 @@ export const CustomerStory = () => (
         </figure>
       </GridItem>
     </Grid>
+    {/* the features, below the story, filling the room before the first chapter */}
+    <Box
+      marginTop={{ base: '4xl', md: '5xl' }}
+      paddingTop={{ base: '4xl', md: '5xl' }}
+      borderTopWidth={1}
+      borderStyle="solid"
+      borderColor="border-primary"
+    >
+      <FeatureCarousel />
+    </Box>
   </Box>
 )

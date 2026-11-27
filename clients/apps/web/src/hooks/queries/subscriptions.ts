@@ -2,8 +2,26 @@ import { extractApiErrorMessage } from '@/utils/api/errors'
 import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { operations, schemas, unwrap } from '@polar-sh/client'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+} from '@tanstack/react-query'
+import { useEffect } from 'react'
 import { defaultRetry } from './retry'
+
+// Rows can shift between pages while they load, so one can come back twice.
+export const uniqueSubscriptions = (
+  pages: schemas['ListResource_Subscription_'][],
+): schemas['Subscription'][] => [
+  ...new Map(
+    pages.flatMap((page) => page.items.map((item) => [item.id, item])),
+  ).values(),
+]
+
+// The lists that load page by page, which mutations refetch.
+const INFINITE_SUBSCRIPTIONS_KEY = ['subscriptions', 'infinite']
 
 export const useSubscriptions = (
   organizationId?: string,
@@ -28,6 +46,86 @@ export const useSubscriptions = (
     retry: defaultRetry,
     enabled: !!organizationId,
   })
+
+export const useInfiniteSubscriptions = (
+  organizationId: string,
+  parameters?: Omit<
+    NonNullable<operations['subscriptions:list']['parameters']['query']>,
+    'organization_id' | 'page'
+  >,
+) =>
+  useInfiniteQuery({
+    queryKey: [
+      ...INFINITE_SUBSCRIPTIONS_KEY,
+      { organizationId, ...(parameters || {}) },
+    ],
+    queryFn: ({ pageParam }) =>
+      unwrap(
+        api.GET('/v1/subscriptions/', {
+          params: {
+            query: {
+              organization_id: organizationId,
+              ...parameters,
+              page: pageParam,
+            },
+          },
+        }),
+      ),
+    placeholderData: keepPreviousData,
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, _allPages, lastPageParam) =>
+      lastPage.items.length === 0 ||
+      lastPageParam >= lastPage.pagination.max_page
+        ? null
+        : lastPageParam + 1,
+    retry: defaultRetry,
+  })
+
+const ALL_PAGE_SIZE = 100
+const ALL_MAX_PAGES = 20
+
+// Loads every page up to a cap, for views that sum over all subscriptions.
+export const useAllSubscriptions = (
+  organizationId: string,
+  parameters?: Omit<
+    NonNullable<operations['subscriptions:list']['parameters']['query']>,
+    'organization_id' | 'page' | 'limit'
+  >,
+) => {
+  const {
+    data,
+    hasNextPage,
+    isFetching,
+    isError,
+    isFetchNextPageError,
+    fetchNextPage,
+    refetch,
+  } = useInfiniteSubscriptions(organizationId, {
+    ...parameters,
+    limit: ALL_PAGE_SIZE,
+  })
+  const pageCount = data?.pages.length ?? 0
+  const canLoadMore =
+    hasNextPage && pageCount < ALL_MAX_PAGES && !isFetchNextPageError
+
+  useEffect(() => {
+    if (canLoadMore && !isFetching) {
+      fetchNextPage()
+    }
+  }, [canLoadMore, isFetching, fetchNextPage])
+
+  return {
+    subscriptions: data && uniqueSubscriptions(data.pages),
+    totalCount: data?.pages[0]?.pagination.total_count,
+    isLoading: !isError && (data === undefined || canLoadMore),
+    // There are more than the cap allows, so the rest is left out.
+    isCapped: hasNextPage && pageCount >= ALL_MAX_PAGES,
+    // A page failed, so what is loaded is not everything.
+    isError,
+    // A failed page is fetched again. Any other failure reloads the list.
+    retry: () => (isFetchNextPageError ? fetchNextPage() : refetch()),
+  }
+}
 
 export const useSubscription = (
   id: string,
@@ -75,6 +173,23 @@ export const useSubscriptionMeterChargePreview = (
     enabled: options?.enabled ?? true,
   })
 
+export const useSubscriptionChangePreview = (
+  id: string,
+  change: schemas['SubscriptionChangeProduct'] | null,
+) =>
+  useQuery({
+    queryKey: ['subscriptions', { id }, 'change-preview', change],
+    queryFn: () =>
+      unwrap(
+        api.POST('/v1/subscriptions/{id}/change-preview', {
+          params: { path: { id } },
+          body: change!,
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: change !== null,
+  })
+
 export const useSubscriptionCancelPreview = (
   id: string,
   options?: { enabled?: boolean },
@@ -112,6 +227,7 @@ export const useUpdateSubscription = (id: string) =>
         },
         data,
       )
+      queryClient.invalidateQueries({ queryKey: INFINITE_SUBSCRIPTIONS_KEY })
       queryClient.setQueriesData<schemas['ListResource_Subscription_']>(
         {
           queryKey: [
@@ -147,6 +263,9 @@ export const useUpdateSubscription = (id: string) =>
       })
       queryClient.invalidateQueries({
         queryKey: ['subscriptions', { id }, 'cancel-preview'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['subscriptions', { id }, 'change-preview'],
       })
     },
   })
@@ -183,6 +302,7 @@ export const useUncancelSubscription = (id: string) =>
         },
         data,
       )
+      queryClient.invalidateQueries({ queryKey: INFINITE_SUBSCRIPTIONS_KEY })
       queryClient.setQueriesData<schemas['ListResource_Subscription_']>(
         {
           queryKey: [
@@ -219,6 +339,9 @@ export const useUncancelSubscription = (id: string) =>
       queryClient.invalidateQueries({
         queryKey: ['subscriptions', { id }, 'cancel-preview'],
       })
+      queryClient.invalidateQueries({
+        queryKey: ['subscriptions', { id }, 'change-preview'],
+      })
     },
   })
 
@@ -234,6 +357,7 @@ const applySubscriptionUpdateToCache = (
     },
     data,
   )
+  queryClient.invalidateQueries({ queryKey: INFINITE_SUBSCRIPTIONS_KEY })
   queryClient.setQueriesData<schemas['ListResource_Subscription_']>(
     {
       queryKey: [
@@ -263,6 +387,9 @@ const applySubscriptionUpdateToCache = (
   })
   queryClient.invalidateQueries({
     queryKey: ['subscriptions', { id }, 'cancel-preview'],
+  })
+  queryClient.invalidateQueries({
+    queryKey: ['subscriptions', { id }, 'change-preview'],
   })
   queryClient.invalidateQueries({
     queryKey: [
@@ -374,6 +501,7 @@ export const useClearPendingSubscriptionUpdate = (id: string) =>
         },
         data,
       )
+      queryClient.invalidateQueries({ queryKey: INFINITE_SUBSCRIPTIONS_KEY })
       queryClient.setQueriesData<schemas['ListResource_Subscription_']>(
         {
           queryKey: [
@@ -409,6 +537,9 @@ export const useClearPendingSubscriptionUpdate = (id: string) =>
       })
       queryClient.invalidateQueries({
         queryKey: ['subscriptions', { id }, 'cancel-preview'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['subscriptions', { id }, 'change-preview'],
       })
     },
   })

@@ -6,14 +6,15 @@ import pytest
 from sqlalchemy import event as sqlalchemy_event
 from sqlalchemy import select
 
-from polar.event.repository import EventRepository
+from polar.event.repository import _INSERT_STAGED_EVENTS_COLUMNS, EventRepository
 from polar.event.system import SystemEvent
 from polar.kit.utils import utc_now
+from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import Event, Organization, StagedEvent
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_customer
+from tests.fixtures.random_objects import create_customer, create_meter
 
 
 async def _create_event(
@@ -474,6 +475,151 @@ class TestGetLatestMeterReset:
 
 
 @pytest.mark.anyio
+class TestGetMetersMatchingCustomers:
+    async def test_meters_with_the_same_constant_clause(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        event = await _create_event(
+            save_fixture,
+            organization=organization,
+            ingested_at=utc_now(),
+            customer_id=customer.id,
+        )
+        # A value of the wrong type for `name` makes the filter a constant `false`
+        never_matching_filter = Filter(
+            conjunction=FilterConjunction.and_,
+            clauses=[
+                FilterClause(property="name", operator=FilterOperator.eq, value=True)
+            ],
+        )
+        never_matching_meters = [
+            await create_meter(
+                save_fixture,
+                organization=organization,
+                id=uuid.uuid4(),
+                filter=never_matching_filter,
+            )
+            for _ in range(2)
+        ]
+        # An empty filter with a count aggregation is a constant `true`
+        always_matching_filter = Filter(conjunction=FilterConjunction.and_, clauses=[])
+        always_matching_meters = [
+            await create_meter(
+                save_fixture,
+                organization=organization,
+                id=uuid.uuid4(),
+                filter=always_matching_filter,
+            )
+            for _ in range(2)
+        ]
+
+        repository = EventRepository.from_session(session)
+        matches = await repository.get_meters_matching_customers(
+            [event.id],
+            [*never_matching_meters, *always_matching_meters],
+            {customer.id},
+            set(),
+        )
+
+        for meter in never_matching_meters:
+            assert matches[meter.id] == (set(), set())
+        for meter in always_matching_meters:
+            assert matches[meter.id] == ({customer.id}, set())
+
+    async def test_meters_with_the_same_constant_false_clause(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        event = await _create_event(
+            save_fixture,
+            organization=organization,
+            ingested_at=utc_now(),
+            customer_id=customer.id,
+        )
+        never_matching_filter = Filter(
+            conjunction=FilterConjunction.and_,
+            clauses=[
+                FilterClause(property="name", operator=FilterOperator.eq, value=True)
+            ],
+        )
+        meters = [
+            await create_meter(
+                save_fixture,
+                organization=organization,
+                id=uuid.uuid4(),
+                filter=never_matching_filter,
+            )
+            for _ in range(2)
+        ]
+
+        repository = EventRepository.from_session(session)
+        matches = await repository.get_meters_matching_customers(
+            [event.id], meters, {customer.id}, set()
+        )
+
+        assert all(matches[meter.id] == (set(), set()) for meter in meters)
+
+    async def test_more_meters_than_the_chunk_size(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr("polar.event.repository._METER_MATCH_CHUNK_SIZE", 2)
+        customer = await create_customer(save_fixture, organization=organization)
+        event = await _create_event(
+            save_fixture,
+            organization=organization,
+            ingested_at=utc_now(),
+            customer_id=customer.id,
+        )
+        never_matching_filter = Filter(
+            conjunction=FilterConjunction.and_,
+            clauses=[
+                FilterClause(property="name", operator=FilterOperator.eq, value=True)
+            ],
+        )
+        always_matching_filter = Filter(conjunction=FilterConjunction.and_, clauses=[])
+        # Matching and non-matching meters interleaved, spread over 3 chunks
+        filters = [
+            always_matching_filter,
+            never_matching_filter,
+            never_matching_filter,
+            always_matching_filter,
+            always_matching_filter,
+        ]
+        meters = [
+            await create_meter(
+                save_fixture,
+                organization=organization,
+                id=uuid.uuid4(),
+                filter=filter,
+            )
+            for filter in filters
+        ]
+
+        repository = EventRepository.from_session(session)
+        matches = await repository.get_meters_matching_customers(
+            [event.id], meters, {customer.id}, set()
+        )
+
+        for meter, filter in zip(meters, filters):
+            assert matches[meter.id] == (
+                ({customer.id}, set())
+                if filter is always_matching_filter
+                else (set(), set())
+            )
+
+
+@pytest.mark.anyio
 class TestGetStagedEventsBacklog:
     async def test_empty(self, session: AsyncSession) -> None:
         repository = EventRepository.from_session(session)
@@ -506,3 +652,29 @@ class TestGetStagedEventsBacklog:
             3,
             now - timedelta(minutes=5),
         )
+
+
+@pytest.mark.anyio
+class TestInsertStagedBatch:
+    async def test_statement_covers_every_column(self) -> None:
+        assert _INSERT_STAGED_EVENTS_COLUMNS == {
+            column.name for column in StagedEvent.__table__.columns
+        }
+
+    async def test_unknown_column(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
+        repository = EventRepository.from_session(session)
+        with pytest.raises(ValueError, match="unknown"):
+            await repository.insert_staged_batch(
+                [
+                    {
+                        "timestamp": utc_now(),
+                        "name": "test",
+                        "source": EventSource.user,
+                        "organization_id": organization.id,
+                        "user_metadata": {},
+                        "unknown": 1,
+                    }
+                ]
+            )

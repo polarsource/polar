@@ -1,6 +1,6 @@
 {
   "name": "@polar-sh/nuxt",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Polar.sh integration for Nuxt",
   "repository": {
     "type": "git",
@@ -48,15 +48,15 @@
   "dependencies": {
     "@nuxt/kit": "^4.5.2",
     "@polar-sh/adapter-utils": "workspace:*",
-    "@polar-sh/sdk": "1.0.2"
+    "@polar-sh/sdk": "1.3.1"
   },
   "devDependencies": {
-    "@nuxt/devtools": "^3.4.2",
+    "@nuxt/devtools": "^3.4.4",
     "@nuxt/module-builder": "^1.0.3",
     "@nuxt/schema": "^4.5.2",
     "@nuxt/test-utils": "^4.3.2",
     "@types/node": "catalog:",
-    "nuxt": "^4.5.2",
+    "nuxt": "^4.6.4",
     "typescript": "6.0.3",
     "vitest": "catalog:",
     "vue-tsc": "3.3.11",

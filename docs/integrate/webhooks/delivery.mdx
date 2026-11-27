@@ -1,82 +1,62 @@
 ---
-title: "Handle & monitor webhook deliveries"
-sidebarTitle: "Handle incoming webhooks"
-description: "How to parse, validate and handle webhooks and monitor their
-deliveries on Polar"
+title: "Handle webhook deliveries"
+sidebarTitle: "Handle deliveries"
+description: "Verify webhook signatures in your handler, understand retries, timeouts and endpoint disabling, and inspect or redeliver events from the delivery log."
 ---
 
-<img
-  className="block dark:hidden"
-  src="/assets/integrate/webhooks/delivery.light.png"
-/>
-<img
-  className="hidden dark:block"
-  src="/assets/integrate/webhooks/delivery.dark.png"
-/>
+Once you've [set up an endpoint](/integrate/webhooks/endpoints), Polar sends it a signed `POST` request for each event. Your handler verifies the signature, parses the payload and returns a `2xx` status. Anything else counts as a failed delivery, and Polar retries it.
 
-Once a webhook endpoint is setup you will have access to the delivery overview
-page. Here you can:
+The examples use API version `2026-10`. The endpoint's API version must match the version of your SDK import, so the SDK can parse the payloads.
 
-- See historic deliveries
-- Review payload sent
-- Trigger redelivery in case of failure
+## Validate and parse webhooks
 
-Now, let's integrate our endpoint route to validate, parse & handle incoming webhooks.
-
-## Validate & parse webhooks
-
-You now need to setup a route handler for the endpoint registered on Polar to
-receive, validate and parse webhooks before handling them according to your
-needs.
-
-### Using our SDKs
-
-Our TypeScript & Python SDKs come with a built-in helper function to easily
-validate and parse the webhook event - see full examples below.
+The TypeScript and Python SDKs verify the signature and return a typed event in one call. Pass the **raw** request body: if your framework has already parsed the JSON, the signature won't match.
 
 <CodeGroup>
-```typescript icon="square-js" JS (Express)
-import express, { NextFunction, Request, Response } from 'express'
-import { webhooks } from '@polar-sh/sdk/2026-10'
+```typescript TypeScript
+import express, { NextFunction, Request, Response } from "express";
+import { webhooks } from "@polar-sh/sdk/2026-10";
 
-const app = express()
+const app = express();
 
 app.post(
-  '/webhook',
-  express.raw({ type: 'application/json' }),
+  "/api/webhooks",
+  express.raw({ type: "application/json" }),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const event = await webhooks.validateEvent(
         req.body,
         {
-          'webhook-id': req.header('webhook-id') ?? '',
-          'webhook-timestamp': req.header('webhook-timestamp') ?? '',
-          'webhook-signature': req.header('webhook-signature') ?? '',
+          "webhook-id": req.header("webhook-id") ?? "",
+          "webhook-timestamp": req.header("webhook-timestamp") ?? "",
+          "webhook-signature": req.header("webhook-signature") ?? "",
         },
-        process.env['POLAR_WEBHOOK_SECRET'] ?? '',
-      )
+        process.env.POLAR_WEBHOOK_SECRET!,
+      );
 
-      // Process the event
+      if (event.type === "order.paid") {
+        // Queue the work and return quickly
+      }
 
-      res.status(202).send('')
+      res.status(202).send("");
     } catch (error) {
       if (error instanceof webhooks.PolarWebhookVerificationError) {
-        res.status(403).send('')
-        return
+        res.status(403).send("");
+        return;
       }
       if (error instanceof webhooks.PolarWebhookUnknownTypeError) {
-        // Event type added after this SDK version: acknowledge it so Polar doesn't retry
-        res.status(202).send('')
-        return
+        res.status(202).send("");
+        return;
       }
-      next(error)
+      next(error);
     }
   },
-)
+);
 ```
 
-```python Python (Flask)
+```python Python
 import os
+
 from flask import Flask, request
 from polar.v2026_10.webhooks import (
     PolarWebhookUnknownTypeError,
@@ -86,70 +66,135 @@ from polar.v2026_10.webhooks import (
 
 app = Flask(__name__)
 
-@app.route('/webhook', methods=['POST'])
+
+@app.post("/api/webhooks")
 def webhook():
     try:
         event = validate_event(
             request.get_data(),
             dict(request.headers),
-            os.getenv('POLAR_WEBHOOK_SECRET', ''),
+            os.environ["POLAR_WEBHOOK_SECRET"],
         )
-
-        # Process the event
-
-        return "", 202
     except PolarWebhookVerificationError:
         return "", 403
     except PolarWebhookUnknownTypeError:
-        # Event type added after this SDK version: acknowledge it so Polar doesn't retry
         return "", 202
-```
 
+    if event.type == "order.paid":
+        # Queue the work and return quickly
+        ...
+
+    return "", 202
+```
 </CodeGroup>
 
-Both examples above expect an environment variable named `POLAR_WEBHOOK_SECRET`
-to be set to the secret you configured during the endpoint setup.
+`POLAR_WEBHOOK_SECRET` is the secret from the endpoint page in the dashboard, or the one `polar webhook listen` prints while you develop.
+
+| Error | Meaning | Respond with |
+| --- | --- | --- |
+| `PolarWebhookVerificationError` | Missing headers, a bad signature, or a timestamp more than 5 minutes from your server's clock | `403` |
+| `PolarWebhookUnknownTypeError` | An event type that your SDK version doesn't know yet | `202`, so Polar doesn't retry it |
+| `PolarWebhookError` | The body isn't a valid payload | `400` |
+
+Using Next.js, Nuxt, TanStack Start or Better Auth? A [framework adapter](/integrate/sdk/adapters/introduction) gives you this handler in a few lines.
+
+<Visibility for="agents">
+  Always verify the signature before acting on a payload, using the raw body. Return `403` on `PolarWebhookVerificationError` and `202` on `PolarWebhookUnknownTypeError`. Make handlers idempotent on the `webhook-id` header, since retries and redeliveries reuse it. Pin the SDK import (`@polar-sh/sdk/2026-10`, `polar.v2026_10`) to the endpoint's API version.
+</Visibility>
 
 ### Custom validation
 
-Use a [Standard Webhooks library](https://github.com/standard-webhooks/standard-webhooks/tree/main/libraries)
-or follow the
-[specification](https://github.com/standard-webhooks/standard-webhooks/blob/main/spec/standard-webhooks.md).
+Without an SDK, use a [Standard Webhooks library](https://github.com/standard-webhooks/standard-webhooks/tree/main/libraries) or follow the [specification](https://github.com/standard-webhooks/standard-webhooks/blob/main/spec/standard-webhooks.md). Each request has these headers:
 
-Secrets generated on or after 8 September 2026, 00:00 UTC are Standard Webhooks.
-Older secrets are Polar HMAC.
+| Header | Content |
+| --- | --- |
+| `webhook-id` | The event ID. The same on every retry and redelivery, so use it to deduplicate. |
+| `webhook-timestamp` | Unix timestamp of this attempt, in seconds |
+| `webhook-signature` | `v1,` followed by the base64 HMAC-SHA256 of `{webhook-id}.{webhook-timestamp}.{body}` |
+| `webhook-api-version` | The endpoint's API version, such as `2026-10` |
 
-<Info>
-  **Signing schemes**
+The HMAC key depends on when the endpoint's secret was generated:
 
-  Polar sends one `webhook-signature`. The HMAC key is which secret you have.
+- **On or after 8 September 2026, 00:00 UTC:** Standard Webhooks. Pass the `whsec_…` secret to the library as-is.
+- **Before that:** Polar's original HMAC. The key is the UTF-8 bytes of the full `whsec_…` string. Base64-encode that string before you pass it to a Standard Webhooks library.
 
-  **Before 8 September 2026, 00:00 UTC:** Polar HMAC. Key is the UTF-8 bytes of
-  the full `whsec_…` string. Base64-encode that string before you hand it to a
-  Standard Webhooks library.
+The endpoint page in the dashboard shows which scheme applies. Polar SDKs 1.0.0-alpha.19 and later try both keys, so you only pass the `whsec_…` secret.
 
-  **On or after that instant:** [Standard Webhooks](https://github.com/standard-webhooks/standard-webhooks/blob/main/spec/standard-webhooks.md).
-  Pass the `whsec_…` secret to the library as-is.
+## Retries and timeouts
 
-  Polar SDKs 1.0.0-alpha.19 and later try both keys. Pass the `whsec_…` secret
-  from the dashboard.
-</Info>
+A delivery succeeds when your endpoint returns a `2xx` status within **10 seconds**. Everything else fails: other status codes, timeouts, network and TLS errors, and redirects. Polar doesn't follow redirects.
 
-## IP Allowlist
+A failed delivery is retried with exponential backoff, up to 20 minutes between attempts, for **10 attempts** in total. An event fails when all 10 attempts fail.
 
-If you are using a firewall or a reverse proxy that requires IP allowlisting, here are the IPs range you need to allow:
+Respond as fast as you can. Verify the signature, store or queue the payload, return `202`, and do the work in a background job.
 
-<Danger>
+Polar holds an event briefly while earlier events for the same endpoint are still pending, so events usually arrive in the order they happened. Order isn't guaranteed. Read timestamps and statuses from the payload rather than relying on arrival order, and handle the same event more than once safely.
+
+### Endpoint disabling
+
+Polar disables an endpoint after **10 consecutive failed events**. A delivery that fails and then succeeds on retry doesn't count. When that happens:
+
+- The endpoint stops receiving new events.
+- Events still waiting to be delivered are skipped.
+- Every member of the organization gets an email.
+
+Fix the endpoint first, then turn it back on:
+
+- Open [**Settings → Webhooks**](https://polar.sh/to/dashboard/settings/webhooks) and select the endpoint
+- Switch it from **Disabled** to **Enabled**
+
+Or run `polar webhooks update_webhook_endpoint <id> --enabled=true`. To catch up on what you missed, [redeliver](#redeliver-an-event) the skipped events.
+
+## Monitor deliveries
+
+Each endpoint's page in **Settings → Webhooks** has a **Deliveries** log with every attempt: its **ID**, **Status** (the HTTP code, or **Failed**), event **Type** and **Sent At**. Filter by status, event type, HTTP response class (2xx to 5xx) or date range, or search.
+
+Select a delivery to see:
+
+- **Event ID**, **Event Timestamp** and **Event API Version**
+- **Delivery ID** and **Sent at**
+- The **Payload** Polar sent, with **Copy payload**
+- The **Response** your endpoint returned, up to 2,048 characters
+
+Polar keeps payloads and responses for 90 days. After that the event shows as **Archived event** and can't be redelivered.
+
+From code, list deliveries with [`List Webhook Deliveries`](/api-reference/current/webhooks/list-webhook-deliveries), `polar webhooks list_webhook_deliveries --endpoint-id <id> --succeeded=false`, or the `webhooks_list_webhook_deliveries` MCP operation.
+
+### Redeliver an event
+
+Redelivery sends the same event again with the same `webhook-id`, whether the earlier attempts failed or succeeded.
+
+<Tabs>
+  <Tab title="Dashboard">
+    - Open the endpoint in **Settings → Webhooks**
+    - Select the delivery in **Deliveries**
+    - Click **Redeliver**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar webhooks redeliver_webhook_event <event_id>
+    ```
+
+    Take the event ID from `webhook_event.id` in `polar webhooks list_webhook_deliveries`. See [`polar webhooks`](/integrate/cli/reference/webhooks#polar-webhooks-redeliver_webhook_event).
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Find the failed webhook deliveries to my Polar sandbox endpoint from the last day and redeliver them.
+    ```
+
+    Uses the `webhooks_list_webhook_deliveries` and `webhooks_redeliver_webhook_event` operations of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+## IP allowlist
+
+If a firewall or reverse proxy in front of your endpoint requires an allowlist, allow these addresses:
+
+<Warning>
   **New IP address**
 
-A new IP address will soon start sending production webhooks. Allow it now so
-deliveries aren't blocked when we start using it:
-
-```
-3.134.178.243
-```
-
-</Danger>
+  `3.134.178.243` will start sending production webhooks. Allow it now so deliveries aren't blocked when Polar starts using it.
+</Warning>
 
 <CodeGroup>
 
@@ -175,75 +220,44 @@ deliveries aren't blocked when we start using it:
 
 </CodeGroup>
 
-## Failure Handling
-
-### Delivery Retries
-
-If we hit an error while trying to reach your endpoint, whether it is a temporary network error or a bug, we'll retry to send the event up to **10 times** with an exponential backoff.
-
-### Delivery Timeouts
-
-We currently timeout our requests to your endpoint after **10 seconds**, triggering a
-retry attempt after a delay as explained above. However, we strongly recommend you optimize your endpoint route to respond within **2 seconds** to ensure reliable delivery. We may lower the timeout threshold in the future, so we advise implementing your webhook handler to queue a background worker task to handle the
-payload asynchronously.
-
-### Endpoint Disabling
-
-Webhook endpoints are automatically disabled after **10 consecutive failed deliveries** (non-2xx responses). When this happens:
-
-- The endpoint is marked as disabled and will no longer receive new events.
-- All organization members will receive an email notification.
-
-To re-enable a disabled endpoint, open your organization's [webhook settings](https://polar.sh/to/dashboard/settings/webhooks) and manually enable it. Before re-enabling, ensure your endpoint is properly configured and reachable to avoid repeated disabling.
-
 ## Troubleshooting
 
 ### Not receiving webhooks
 
-Seeing deliveries on Polar, but not receiving them on your end? Below are some
-common techniques to resolve the issue depending on the reported error status.
+Deliveries show up in the log but never reach your handler? Check the HTTP status in the **Deliveries** log.
 
-**General**
+**No status or a timeout**
 
-_Start ngrok or similar_
+- Developing locally? Make sure `polar webhook listen` is running and points at the right port and path.
+- Log at each step of your handler (called, signature verified, handled) to see how far a request gets.
 
-Make sure you have started `ngrok` or whatever tunneling service you're using
-during local development.
+**`404`**
 
-_Add excessive logging_
+- Run `curl -v -X POST <endpoint-url>` to confirm the route exists.
+- Check for a trailing slash. Many frameworks resolve `/foo` to `/foo/` with a redirect.
 
-E.g
-`console.log('webhook.handler_called')`,
-`console.log('webhook.validate_signature')`,
-`console.log('webhook.signature_validated')` etc.
+**`3xx`**
 
-So you can easily confirm if the handler is called and how far it gets before
-any issues arise.
+Redirects count as failures. Set the endpoint URL to the final destination. A common cause is a host that redirects between `www` and the bare domain, as Vercel can.
 
-`HTTP 404`
+**`403`**
 
-- Try `curl -vvv -X POST <copy-paste-endpoint-url>` in your terminal to confirm the
-  route exists and see any issues along the way
-- Try adding trailing `/` to the URL on Polar. Often `/foo` is resolved to
-  `/foo/` by frameworks.
-
-`HTTP 3xx`
-
-Redirect responses (301, 302, 307, etc.) are treated as failures. Polar does not follow redirects for webhook deliveries. Update your webhook URL to the final destination URL to avoid redirects.
-
-A common cause is hosting providers like Vercel that redirect between `www` and non-`www` domains. Make sure your configured URL matches your actual domain.
-
-`HTTP 403`
-
-- Using middleware for authorization? Make sure to exclude the webhook route
-  from it since it needs to be publicly accessible
-- Using Cloudflare?
-  - Check the firewall logs to verify if they are blocking our requests and setup a custom WAF rule to accept incoming requests from Polar.
-  - Webhook delivery failures with 403 errors can occur when Cloudflare's Bot Fight Mode is enabled. Bot Fight Mode automatically blocks requests it identifies as bots, including legitimate webhook requests from Polar. Adding Polar's IP addresses to your IP Allow List or creating custom WAF rules will not resolve this issue. To fix webhook delivery problems, disable Bot Fight Mode in your Cloudflare dashboard under Security > Bots. Alternatively, you can check your Cloudflare firewall logs to confirm if requests are being blocked and create appropriate firewall rules if needed.
+- Exclude the webhook route from authentication middleware. It must be publicly reachable.
+- On Cloudflare, check the firewall logs and add a WAF rule that allows Polar's requests.
+- Cloudflare's Bot Fight Mode blocks webhook requests, and allowlisting Polar's IPs or a WAF rule doesn't help. Turn it off under **Security → Bots** in Cloudflare.
 
 ### Invalid signature exceptions
 
-Rolling your own validation? Older secrets are Polar HMAC: base64-encode the
-entire `whsec_…` string. Secrets generated on or after 8 September 2026, 00:00
-UTC are Standard Webhooks: pass the secret as-is. Polar SDKs 1.0.0-alpha.19 and
-later try both.
+- Pass the raw body, byte for byte. Parsing and re-serializing the JSON changes it.
+- Check the secret. Each endpoint has its own, `polar webhook listen` prints a different one, and resetting a secret invalidates the old one immediately.
+- Check your server's clock. The SDKs reject timestamps more than 5 minutes off.
+- Rolling your own validation? See [Custom validation](#custom-validation) for which key to use.
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Set up an endpoint](/integrate/webhooks/endpoints) | Create an endpoint, pick events and copy the secret |
+| [Webhook events](/integrate/webhooks/events) | Every event Polar sends, and when |
+| [Webhooks on your machine](/integrate/cli/webhooks) | Forward and trigger events with the CLI |
+| [List Webhook Deliveries](/api-reference/current/webhooks/list-webhook-deliveries) | API reference for the delivery log |

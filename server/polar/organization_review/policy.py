@@ -4,7 +4,7 @@ import json
 import time
 from pathlib import Path
 
-import httpx
+import httpx2
 import structlog
 from google.auth.transport.requests import Request as GoogleAuthRequest
 from google.oauth2 import service_account
@@ -68,7 +68,7 @@ async def _get_access_token() -> str:
 async def _download_policy() -> str:
     token = await _get_access_token()
     url = _DRIVE_EXPORT_URL.format(file_id=settings.ORGANIZATION_REVIEW_AUP_DOCUMENT_ID)
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    async with httpx2.AsyncClient(timeout=30.0) as client:
         response = await client.get(
             url,
             params={"mimeType": "text/markdown"},

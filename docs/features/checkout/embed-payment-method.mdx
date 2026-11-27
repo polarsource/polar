@@ -1,88 +1,103 @@
 ---
 title: "Embedded Payment Method"
 sidebarTitle: "Embedded Payment Method"
-description: "Embed our payment method flow on your site"
+description: "Let customers add or replace a card on your own site, for example to recover a failed payment in a custom billing page."
 ---
 
-<img src="https://polar.sh/docs/assets/features/checkout/embed-payment-method/polar-sdk-payment-method.png" />
+The **Embedded Payment Method** opens a Polar-hosted card form on your site, as a modal or an inline iframe. The customer adds a card and Polar attaches it to the customer, as their default payment method unless you pass `setAsDefault: false`. Card details never touch your servers.
 
-Let your customers securely add a payment method without leaving your site.
+Use it in a [custom billing portal](/features/customer-portal/custom-portal), or anywhere customers need to update their card without leaving your app.
 
-## Getting a session token
+## Create a session token
 
-Every embed is authenticated with a short-lived **customer session token**. Create it **on your server** to keep the Polar access token secret, then hand the token to the client.
+Every embed is authenticated with a short-lived token for one customer. Create a [customer session](/api-reference/current/customer-sessions/create-customer-session) on your server, so your access token stays secret, and pass its `token` to the browser:
 
-```ts
-import { createPolar } from "@polar-sh/sdk/2026-10";
-
-const polar = createPolar({ accessToken: process.env.POLAR_ACCESS_TOKEN! });
-
+<CodeGroup>
+```typescript TypeScript
 const session = await polar.customerSessions.create({
-  customer_id: "the-customer-id",
+  external_customer_id: "user_123",
 });
+
+return { token: session.token };
 ```
 
-The token expires after one hour and is scoped to that single customer.
+```python Python
+session = polar.customer_sessions.create(external_customer_id="user_123")
+
+return {"token": session.token}
+```
+
+```bash cURL
+curl -X POST https://sandbox-api.polar.sh/v1/customer-sessions/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{ "external_customer_id": "user_123" }' | jq -r .token
+```
+</CodeGroup>
+
+The token starts with `polar_mst_`, expires after one hour and is scoped to that customer. Pass `customer_id` instead of `external_customer_id` to use Polar's ID. The examples use the sandbox and API version `2026-10`.
+
+<Note>API only. Not available from the CLI or MCP server.</Note>
 
 ## Embed hosts
 
-The payment method embed only opens on a host you've allowed. It uses the same list as [Embedded Checkout](/features/checkout/embed#embed-hosts): add your site under **Settings → Preferences → Embedding** before embedding it. The list applies as soon as you save it.
+The embed only opens on a host you've allowed under **Settings → Embedding**, the same list as [Embedded checkout](/features/checkout/embed). See [Embed hosts](/features/checkout/embed-hosts) for the accepted formats.
 
-See [Writing a host](/features/checkout/embed#writing-a-host) for the accepted formats, including wildcards, ports and local development hosts.
+If the page isn't on the list, the browser refuses to load the embed: it stays blank and the console shows a message naming `frame-ancestors`. An invalid or expired token has the same effect.
 
-If the page isn't on the list, the browser refuses to frame the embed, so it stays blank and the browser console shows a message naming `frame-ancestors`. An invalid or expired session token has the same effect.
-
-## Implementation
-
-Start by installing the SDK.
+## Install the library
 
 <CodeGroup>
-  ```bash npm
-  npm install @polar-sh/checkout
-  ```
-  ```bash pnpm
-  pnpm add @polar-sh/checkout
-  ```
-  ```bash yarn
-  yarn add @polar-sh/checkout
-  ```
-  ```bash bun
-  bun add @polar-sh/checkout
-  ```
+```bash npm
+npm install @polar-sh/checkout
+```
+
+```bash pnpm
+pnpm add @polar-sh/checkout
+```
+
+```bash yarn
+yarn add @polar-sh/checkout
+```
+
+```bash bun
+bun add @polar-sh/checkout
+```
 </CodeGroup>
 
-### Modal
+## Open as a modal
 
 `PolarEmbedPaymentMethod.create()` opens the embed as a full-screen modal overlay.
 
-```ts
+```ts TypeScript
 import { PolarEmbedPaymentMethod } from "@polar-sh/checkout/payment-method";
 
 const embed = await PolarEmbedPaymentMethod.create({
-  sessionToken: session.token,
+  sessionToken: token,
 });
 
 embed.addEventListener("success", (event) => {
-  console.log({event});
+  console.log(event.detail.paymentMethodId);
 });
 ```
 
 `create()` options:
 
-| Option         | Type                | Default     | Description                                                                                                                  |
-| -------------- | ------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `sessionToken` | `string`            | —           | **Required.** Customer session token.                                                                                        |
-| `theme`        | `'light' \| 'dark'` | `light`     | Colour scheme.                                                                                                               |
-| `setAsDefault` | `boolean`           | `true`      | Whether the new card should become the customer's default payment method.                                                    |
-| `returnUrl`    | `string`            | current URL | Where to return the customer after a redirect-based payment method (Amazon Pay). Defaults to `window.location.href`. |
-| `locale`       | `string`            | `'en'`      | BCP47 locale for the embed UI and Stripe Elements (e.g. `'en'`, `'fr-FR'`). Unsupported locales fall back to English.        |
-| `onLoaded`     | `(event: CustomEvent) => void` | —           | Convenience callback for the `loaded` event. Equivalent to `embed.addEventListener('loaded', …)`. |
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `sessionToken` | `string` | | **Required.** The customer session `token`. |
+| `theme` | `'light' \| 'dark'` | `light` | Color scheme. |
+| `setAsDefault` | `boolean` | `true` | Whether the new card becomes the customer's default payment method. |
+| `returnUrl` | `string` | current URL | Where to return the customer after a [redirect-based method](#redirect-based-payment-methods). |
+| `locale` | `string` | `en` | BCP 47 locale for the form, like `en` or `fr-FR`. Unsupported locales fall back to English. |
+| `onLoaded` | `(event: CustomEvent) => void` | | Called on the `loaded` event. |
 
 ### Modal in React
 
 Open the modal from a Client Component event handler:
 
-```tsx
+```tsx React
 "use client";
 import { PolarEmbedPaymentMethod } from "@polar-sh/checkout/payment-method";
 
@@ -94,7 +109,7 @@ export function AddPaymentMethodButton({sessionToken}: Props) {
   const onClick = async () => {
     const embed = await PolarEmbedPaymentMethod.create({ sessionToken });
     embed.addEventListener("success", (event) => {
-      console.log({event});
+      console.log(event.detail.paymentMethodId);
     });
   };
 
@@ -102,46 +117,58 @@ export function AddPaymentMethodButton({sessionToken}: Props) {
 }
 ```
 
-### Inline embed (vanilla JS)
+## Embed inline
 
-Mount a chrome-less, auto-resizing iframe into an element you control:
+Mount a borderless, auto-resizing iframe into an element you control:
 
-```ts
+```ts TypeScript
 import { PolarEmbedPaymentMethod } from "@polar-sh/checkout/payment-method";
 
 const embed = PolarEmbedPaymentMethod.createInline({
-  sessionToken: session.token,
+  sessionToken: token,
   element: document.getElementById("payment-method")!,
 });
 
 embed.addEventListener("success", (event) => {
-  console.log({event});
+  console.log(event.detail.paymentMethodId);
 });
 ```
 
-`createInline()` accepts the same options as `create()` (except `returnUrl`) plus a required `element` (the container to mount into).
+`createInline()` takes the same options as `create()`, except `returnUrl`, plus a required `element` to mount into.
 
-### Inline embed (React)
+### Inline in React
 
 Use the `<PolarPaymentMethod />` component:
 
-```tsx
+```tsx React
 import { PolarPaymentMethod } from "@polar-sh/checkout/react/payment-method";
 
 return (
   <PolarPaymentMethod
-    sessionToken={session.token}
-    onSuccess={(paymentMethodId) => console.log({paymentMethodId})}
+    sessionToken={token}
+    onSuccess={(paymentMethodId) => console.log({ paymentMethodId })}
   />
 );
 ```
 
-### Code Snippet
+| Prop | Description |
+| --- | --- |
+| `sessionToken` | **Required.** The customer session `token`. |
+| `theme` | `light` or `dark`. Defaults to `light`. |
+| `setAsDefault` | Whether the new card becomes the default. Defaults to `true`. |
+| `locale` | BCP 47 locale for the form. |
+| `onLoaded` | Called when the form is ready. |
+| `onConfirmed` | Called when the customer submits the card. Disable your own close or cancel buttons until `onSuccess` or `onError`. |
+| `onSuccess` | Called with the payment method ID once it's attached to the customer. |
+| `onError` | Called with an error code when the form can't load: missing, expired or rejected token. |
+| `className`, `style` | Applied to the wrapping `div`. |
 
-The simplest integration: add the script and a trigger element with `data-polar-payment-method`. Clicking the element opens the modal.
+## Use the script tag
 
-```html
-<button data-polar-payment-method="polar_cst_xxx">Add payment method</button>
+Without a bundler, add the script and an element with `data-polar-payment-method`. Clicking the element opens the modal.
+
+```html HTML
+<button data-polar-payment-method="polar_mst_...">Add payment method</button>
 
 <script
   defer
@@ -150,48 +177,50 @@ The simplest integration: add the script and a trigger element with `data-polar-
 ></script>
 ```
 
-The same script also powers embedded checkout triggers — one tag covers every Polar embed.
+The same script powers [embedded checkout](/features/checkout/embed), so one tag covers both.
 
-| Attribute                                  | Value           | Description                                                                                       |
-| ------------------------------------------ | --------------- | ------------------------------------------------------------------------------------------------- |
-| `data-polar-payment-method`                | `string`        | **Required.** The session token. Clicking the element opens the modal.                            |
-| `data-polar-payment-method-theme`          | `light \| dark` | Optional theme override.                                                                          |
-| `data-polar-payment-method-set-as-default` | `true \| false` | Optional. Default `true`. Pass `"false"` to add the card without overriding the existing default. |
-| `data-polar-payment-method-return-url`     | `string`        | Optional. Return URL for redirect-based payment methods. Defaults to the current page.            |
-| `data-polar-payment-method-locale`         | `string`        | Optional. BCP47 locale (e.g. `'en'`, `'fr-FR'`). Unsupported locales fall back to English.        |
+| Attribute | Value | Description |
+| --- | --- | --- |
+| `data-polar-payment-method` | `string` | **Required.** The session token. |
+| `data-polar-payment-method-theme` | `light \| dark` | Theme override. |
+| `data-polar-payment-method-set-as-default` | `true \| false` | Defaults to `true`. Pass `"false"` to keep the existing default. |
+| `data-polar-payment-method-return-url` | `string` | Return URL for redirect-based methods. Defaults to the current page. |
+| `data-polar-payment-method-locale` | `string` | BCP 47 locale, like `en` or `fr-FR`. |
 
 ## Localization
 
-The embed is fully localized, pass a BCP47 code via the `locale` option (or `data-polar-payment-method-locale` attribute):
+Pass a BCP 47 locale with the `locale` option or the `data-polar-payment-method-locale` attribute:
 
-```ts
+```ts TypeScript
 const embed = await PolarEmbedPaymentMethod.create({
-  sessionToken: session.token,
+  sessionToken: token,
   locale: "fr-FR",
 });
 ```
 
-When omitted, the embed defaults to English. Unsupported locales also fall back to English. See [Localization](/features/checkout/localization) for the full list of supported languages.
+Without it, the embed is in English. Unsupported locales fall back to English. See [Localization](/features/checkout/localization#supported-languages) for the supported languages.
 
 ## Events
 
-All events are dispatched as cancelable `CustomEvent`s on the `embed` instance. Call `event.preventDefault()` to opt out of the SDK's default action.
+Events are cancelable `CustomEvent`s on the `embed` instance. Call `event.preventDefault()` to skip the default action.
 
-| Event       | Detail                        | Default action                                                      |
-| ----------- | ----------------------------- | ------------------------------------------------------------------- |
-| `loaded`    | —                             | Removes the loader spinner once the iframe is ready.                |
-| `close`     | —                             | Tears down the iframe (unless locked by a pending `confirmed`).     |
-| `confirmed` | —                             | Marks the modal as non-closable while Stripe is processing.         |
-| `success`   | `{ paymentMethodId: string }` | **Auto-closes the modal.** Call `preventDefault()` to keep it open. |
-| `error`     | `{ code: 'invalid_request' \| 'unauthorized' \| 'processing_failed' \| 'unknown' }` | Re-enables closing the modal after a failure. |
+| Event | Detail | Default action |
+| --- | --- | --- |
+| `loaded` | | Removes the loading spinner once the iframe is ready. |
+| `close` | | Removes the iframe, unless a `confirmed` payment is pending. |
+| `confirmed` | | Blocks closing the modal while the card is processed. |
+| `success` | `{ paymentMethodId: string }` | Closes the modal. Call `preventDefault()` to keep it open. |
+| `error` | `{ code: 'invalid_request' \| 'unauthorized' \| 'processing_failed' \| 'unknown' }` | Allows closing the modal again. |
+
+To check the result from your backend, list the customer's saved methods with `polar customers list_payment_methods_external user_123` or [List Customer Payment Methods](/api-reference/current/customers/list-customer-payment-methods-by-external-id). The MCP operation is `customers_list_payment_methods_external`.
 
 ## Redirect-based payment methods
 
-Some payment methods authorise on the provider's own site. The browser navigates the whole tab away and back to `returnUrl` (defaults to the page the SDK was opened from), so the modal can't survive the round-trip.
+Some payment methods authorize on the provider's site. The whole tab navigates away and back to `returnUrl`, which defaults to the page the embed was opened from, so the modal doesn't survive the round trip.
 
 Read the outcome on the returned page with the static `getRedirectResult()`:
 
-```ts
+```ts TypeScript
 import { PolarEmbedPaymentMethod } from "@polar-sh/checkout/payment-method";
 
 const result = PolarEmbedPaymentMethod.getRedirectResult();
@@ -202,9 +231,9 @@ if (result?.status === "succeeded") {
 }
 ```
 
-In React, use the `usePaymentMethodRedirectResult` hook to avoid writing your own effect:
+In React, use the `usePaymentMethodRedirectResult` hook:
 
-```tsx
+```tsx React
 import { usePaymentMethodRedirectResult } from "@polar-sh/checkout/react/payment-method";
 
 usePaymentMethodRedirectResult({
@@ -213,4 +242,13 @@ usePaymentMethodRedirectResult({
 });
 ```
 
-Either way, the status query param is stripped from the URL so a refresh won't surface a stale result. Card payments (3DS) complete inside the modal and never trigger this path.
+Either way, the status query parameter is removed from the URL, so a refresh doesn't show a stale result. Cards, including 3D Secure, complete inside the embed and never take this path.
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Build your own portal](/features/customer-portal/custom-portal) | Customer sessions and the Customer Portal API |
+| [Embed hosts](/features/checkout/embed-hosts) | Allow the sites that embed the form |
+| [Failed payments](/features/subscriptions/failed-payments) | How Polar retries after the payment method changes |
+| [Create Customer Session API](/api-reference/current/customer-sessions/create-customer-session) | API reference |

@@ -12,6 +12,7 @@ from typing import (
     get_args,
     get_origin,
 )
+from uuid import UUID
 
 from babel.dates import format_date
 from fastapi.routing import APIRoute
@@ -46,7 +47,8 @@ from polar.integrations.slack.payload import (
     get_branded_slack_payload,
 )
 from polar.kit.schemas import IDSchema, Schema
-from polar.kit.versioning import APIVersion, api_version_context
+from polar.kit.utils import generate_uuid
+from polar.kit.versioning import APIVersion, Version, api_version_context
 from polar.member.schemas import Member as MemberSchema
 from polar.models import (
     Benefit,
@@ -71,6 +73,7 @@ from polar.organization.schemas import Organization as OrganizationSchema
 from polar.product.schemas import Product as ProductSchema
 from polar.refund.schemas import Refund as RefundSchema
 from polar.subscription.schemas import Subscription as SubscriptionSchema
+from polar.version import V2027_01
 
 WebhookTypeObject = (
     tuple[Literal[WebhookEventType.checkout_created], Checkout]
@@ -155,6 +158,10 @@ def get_slack_customer_field(customer: CustomerBase) -> SlackText:
 
 
 class BaseWebhookPayload(Schema):
+    event_id: Annotated[UUID, Version(starting_from=V2027_01)] = Field(
+        default_factory=generate_uuid,
+        description="The ID of the event. Use it to discard duplicate deliveries.",
+    )
     type: WebhookEventType
     timestamp: datetime
     api_version: APIVersion
@@ -168,12 +175,27 @@ class BaseWebhookPayload(Schema):
                 return self.get_discord_payload(target)
             case WebhookFormat.slack:
                 return self.get_slack_payload(target)
+            case WebhookFormat.mcp:
+                return self.get_mcp_payload()
             case _:
                 assert_never(format)
 
     def get_raw_payload(self) -> str:
         with api_version_context(self.api_version):
             return self.model_dump_json()
+
+    def get_mcp_payload(self) -> str:
+        with api_version_context(self.api_version):
+            data = self.model_dump(mode="json")["data"]
+        return json.dumps(
+            {
+                "eventId": str(self.event_id),
+                "name": self.type,
+                "timestamp": self.timestamp.isoformat(),
+                "data": data,
+                "cursor": None,
+            }
+        )
 
     def get_discord_payload(self, target: User | Organization) -> str:
         # Generic Discord payload, override in subclasses for more specific payloads

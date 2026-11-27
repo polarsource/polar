@@ -14,7 +14,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { useFormContext } from 'react-hook-form'
+import { useFormContext, useWatch } from 'react-hook-form'
 
 const MeterForm = ({
   organizationId,
@@ -24,10 +24,10 @@ const MeterForm = ({
   readOnly?: boolean
 }) => {
   const form = useFormContext<schemas['MeterCreate']>()
-  const { control, watch } = form
+  const { control } = form
 
-  const filter = watch('filter')
-  const aggregation = watch('aggregation')
+  const filter = useWatch({ control, name: 'filter' })
+  const aggregation = useWatch({ control, name: 'aggregation' })
 
   return (
     <>

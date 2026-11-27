@@ -1,6 +1,9 @@
 import typer
 
-from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
+from polar.kit.db.postgres import (  # lint-skip: dry-run
+    AsyncSession,
+    create_async_sessionmaker,
+)
 from polar.postgres import create_async_engine
 from polar.reducer.repository import ReducerRepository
 from polar.reducer.service import reducer as reducer_service

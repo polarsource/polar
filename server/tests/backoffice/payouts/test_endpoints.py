@@ -1,18 +1,18 @@
 import re
 from collections.abc import AsyncGenerator
 
-import httpx
+import httpx2
 import pytest
 from pytest_mock import MockerFixture
 
-from polar.backoffice import app as backoffice_app
+from polar.backoffice.app import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
 from polar.enums import PayoutAccountType
 from polar.models import Account, Organization, User
+from polar.models.backoffice_user_session import BackofficeUserSession
 from polar.models.organization import OrganizationStatus
 from polar.models.payout import PayoutStatus
 from polar.models.payout_attempt import PayoutAttemptStatus
-from polar.models.user_session import UserSession
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_payout, create_payout_account
@@ -20,15 +20,14 @@ from tests.fixtures.random_objects import create_payout, create_payout_account
 
 @pytest.fixture
 async def backoffice_client(
-    session: AsyncSession, user: User
-) -> AsyncGenerator[httpx.AsyncClient]:
-    user_session = UserSession(token="0" * 64, user_agent="tests", user=user)
+    session: AsyncSession, backoffice_user_session: BackofficeUserSession
+) -> AsyncGenerator[httpx2.AsyncClient]:
     backoffice_app.dependency_overrides[get_db_session] = lambda: session
     backoffice_app.dependency_overrides[get_db_read_session] = lambda: session
-    backoffice_app.dependency_overrides[get_admin] = lambda: user_session
+    backoffice_app.dependency_overrides[get_admin] = lambda: backoffice_user_session
     try:
-        async with httpx.AsyncClient(
-            transport=httpx.ASGITransport(app=backoffice_app),
+        async with httpx2.AsyncClient(
+            transport=httpx2.ASGITransport(app=backoffice_app),
             base_url="http://test",
         ) as client:
             yield client
@@ -41,7 +40,7 @@ async def backoffice_client(
 @pytest.mark.anyio
 class TestList:
     async def test_status_filter_keeps_selected_status(
-        self, backoffice_client: httpx.AsyncClient
+        self, backoffice_client: httpx2.AsyncClient
     ) -> None:
         response = await backoffice_client.get(
             "/payouts/", params={"status": PayoutStatus.pending.value}
@@ -58,7 +57,7 @@ class TestList:
 class TestMarkPaid:
     async def test_button_and_confirmation(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
         account: Account,
@@ -87,7 +86,7 @@ class TestMarkPaid:
 
     async def test_post_creates_succeeded_attempt(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -119,7 +118,7 @@ class TestMarkPaid:
 
     async def test_stripe_payout_has_no_button(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
         account: Account,
@@ -146,7 +145,7 @@ class TestMarkPaid:
 class TestGet:
     async def test_manual_pending_shows_mark_as_paid_not_retry(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
         account: Account,
@@ -171,7 +170,7 @@ class TestGet:
 
     async def test_stripe_pending_shows_retry_button(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
         account: Account,
@@ -199,7 +198,7 @@ class TestGet:
 class TestRetry:
     async def test_get_manual_payout_returns_400(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
         account: Account,
@@ -222,7 +221,7 @@ class TestRetry:
 
     async def test_post_manual_payout_returns_400_and_does_not_enqueue(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
         account: Account,
@@ -250,7 +249,7 @@ class TestRetry:
 
     async def test_get_stripe_payout_shows_confirmation(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
         account: Account,
@@ -274,7 +273,7 @@ class TestRetry:
 
     async def test_post_stripe_payout_enqueues_task(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
         account: Account,
@@ -310,7 +309,7 @@ class TestRetry:
 class TestReleaseHeldPayout:
     async def test_held_shows_button_and_confirmation(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
         account: Account,
@@ -344,7 +343,7 @@ class TestReleaseHeldPayout:
 
     async def test_manual_confirmation_stays_pending(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
         account: Account,
@@ -370,7 +369,7 @@ class TestReleaseHeldPayout:
 
     async def test_pending_hides_button(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
         account: Account,
@@ -401,7 +400,7 @@ class TestReleaseHeldPayout:
 
     async def test_post_releases_one_payout_and_leaves_org_under_review(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -447,7 +446,7 @@ class TestReleaseHeldPayout:
 
     async def test_post_pending_does_not_enqueue(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
         account: Account,

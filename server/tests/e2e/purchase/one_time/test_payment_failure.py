@@ -9,7 +9,7 @@ from uuid import UUID
 
 import pytest
 import stripe as stripe_lib
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
 from polar.checkout.repository import CheckoutRepository
 from polar.discount.repository import DiscountRedemptionRepository

@@ -6,7 +6,7 @@ import { WindowFrame } from '../story/Frame'
 import { FrameSheet, ImageBand } from './Backdrop'
 import { DocsLink } from './DocsLink'
 
-const CLI_DOCS = '/docs/integrate/webhooks/locally'
+const CLI_DOCS = '/docs/integrate/cli/webhooks'
 
 const TRANSCRIPT = [
   '% curl -fsSL https://polar.sh/install.sh | bash',
@@ -58,7 +58,7 @@ const FEATURES: Feature[] = [
 export const Cli = () => (
   <Chapter
     id="cli"
-    name="03 CLI"
+    name="04 CLI"
     title="Localhost, wired in"
     subtitle="The whole API from the terminal"
     description="Sign in, tunnel webhooks, fire events and call any endpoint without leaving the terminal. Every command can speak JSON."

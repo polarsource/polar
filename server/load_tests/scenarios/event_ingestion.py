@@ -7,7 +7,7 @@ Simulates production event ingestion patterns based on observed Mycheli.AI traff
 - Meter slugs: v1:meter:pack (60%) and v1:meter:tier (40%)
 """
 
-from locust import HttpUser, TaskSet, between, task
+from locust import FastHttpUser, HttpUser, TaskSet, between, constant_throughput, task
 
 from load_tests.common import (
     PowerLawDistribution,
@@ -45,7 +45,7 @@ class EventIngestionTaskSet(TaskSet):
         batch = generate_event_batch(distribution=self.distribution)
 
         with self.client.post(
-            "/v1/events/ingest",
+            config.event_ingestion_url,
             json={"events": batch},
             headers=get_auth_headers(),
             name="[Events] Ingest Batch",
@@ -106,3 +106,14 @@ class EventIngestionUser(HttpUser):
             raise ValueError(
                 "LOAD_TEST_API_TOKEN is required for event ingestion tests"
             )
+
+
+class EventIngestionStressUser(FastHttpUser):
+    """
+    Stress test user for event ingestion: each user sends one batch per second,
+    so --users sets the target request rate. Targets LOAD_TEST_EVENT_INGESTION_URL.
+    """
+
+    host = config.event_ingestion_url
+    wait_time = constant_throughput(1)
+    tasks = [EventIngestionTaskSet]

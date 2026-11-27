@@ -41,6 +41,7 @@ module "redis" {
   subnet_ids = module.vpc.secondary_private_subnet_ids
   node_type  = "cache.t4g.small"
   node_count = 2
+  tags       = local.lambda_worker_tags
 }
 
 resource "aws_vpc_security_group_ingress_rule" "redis_lambda" {
@@ -134,11 +135,11 @@ locals {
   }
 
   lambda_worker_queues = {
-    "high-priority"         = {}
-    "medium-priority"       = { max_parallel_tasks = 8 }
-    "low-priority"          = { max_parallel_tasks = 16, task_time_limit_seconds = 660 }
-    "webhooks"              = { max_parallel_tasks = 16, max_retries = 250 } # Must stay above webhook_event.send's max_retries.
-    "tinybird"              = { max_parallel_tasks = 128 }
+    "high-priority"         = { memory_mb = 1024 }
+    "medium-priority"       = { max_parallel_tasks = 8, memory_mb = 1024 }
+    "low-priority"          = { max_parallel_tasks = 16, task_time_limit_seconds = 660, memory_mb = 1536 }
+    "webhooks"              = { max_parallel_tasks = 16, max_retries = 250, memory_mb = 1024 } # Must stay above webhook_event.send's max_retries.
+    "tinybird"              = { max_parallel_tasks = 128, memory_mb = 1024 }
     "invoices-and-receipts" = { max_parallel_tasks = 3, task_time_limit_seconds = 240 }
   }
 }
@@ -225,6 +226,7 @@ data "aws_iam_policy_document" "s3_access" {
       "s3:GetObjectVersionAttributes",
       "s3:DeleteObject",
       "s3:DeleteObjectVersion",
+      "s3:AbortMultipartUpload",
     ]
     resources = [
       "arn:aws:s3:::${local.files_bucket_name}/*",

@@ -19,13 +19,18 @@ export const Sheet = ({
   /** Sets the title one step larger, for sheets that are products rather than parts of a figure. */
   large?: boolean
 }) => (
-  <div className="dark:bg-polar-900 flex min-h-0 w-full flex-col rounded-xl bg-white">
+  <div className="dark:bg-polar-900 flex min-h-0 w-full min-w-0 flex-col rounded-xl bg-white">
     <Box flexDirection="column" rowGap="l" padding="xl" height="100%">
       <Box justifyContent="between" alignItems="baseline" columnGap="l">
         <Box alignItems="baseline" columnGap="m" flexWrap="wrap">
-          <Text variant={large ? 'heading-xxs' : 'body'}>{title}</Text>
+          <Text
+            as={large ? 'h3' : 'p'}
+            variant={large ? 'heading-xxs' : 'body'}
+          >
+            {title}
+          </Text>
           {subtitle ? (
-            <Text variant={large ? 'heading-xxs' : 'body'} color="muted">
+            <Text as="p" variant={large ? 'heading-xxs' : 'body'} color="muted">
               {subtitle}
             </Text>
           ) : null}
@@ -59,7 +64,7 @@ export const WindowFrame = ({
   className?: string
 }) => (
   <div
-    className={`dark:bg-polar-950 dark:border-polar-800 relative mx-auto flex w-full min-w-0 flex-col rounded-2xl border border-gray-200 bg-gray-100 p-1 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.75)] ${narrow ? 'max-w-[56rem]' : ''} ${className}`}
+    className={`dark:bg-polar-950 relative mx-auto flex w-full min-w-0 flex-col rounded-2xl bg-gray-100 p-1 ${narrow ? 'max-w-[56rem]' : ''} ${className}`}
   >
     <Box
       alignItems="center"

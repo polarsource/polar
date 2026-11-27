@@ -14,6 +14,7 @@ import { useCheckoutLinkCreate } from '@/hooks/polar/checkout_links'
 import { useInfiniteProducts } from '@/hooks/polar/products'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { useToast } from '@/providers/ToastProvider'
+import { capture } from '@/utils/posthog'
 import { Stack, useRouter } from 'expo-router'
 import { useCallback, useContext, useMemo, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
@@ -104,6 +105,9 @@ export default function CreateCheckoutLink() {
           ),
         })
 
+        capture('app:checkout_links:link:create', {
+          product_count: selectedProductIds.length,
+        })
         toast.showInfo('Checkout link created!')
         router.push(`/checkout-links`)
       } catch {

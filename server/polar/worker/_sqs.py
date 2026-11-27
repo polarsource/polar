@@ -1,4 +1,3 @@
-import asyncio
 import hashlib
 import json
 import time
@@ -7,6 +6,7 @@ from collections.abc import Iterator, Mapping
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any, NamedTuple
 
+import anyio
 import boto3
 import dramatiq
 import structlog
@@ -297,14 +297,12 @@ def pack_batches(
 async def send_jobs(jobs: list[Job]) -> None:
     if not jobs:
         return
-    await asyncio.to_thread(send_jobs_sync, jobs)
+    await anyio.to_thread.run_sync(send_jobs_sync, jobs)
 
 
 def send_jobs_sync(jobs: list[Job]) -> None:
     if not jobs:
         return
-    client = get_sqs_client()
-
     by_queue: dict[str, list[SendMessageBatchRequestEntryTypeDef]] = defaultdict(list)
     for job in jobs:
         entries = by_queue[actor_to_queue_name(job.actor)]
@@ -325,9 +323,9 @@ def send_jobs_sync(jobs: list[Job]) -> None:
         entries.append(entry)
 
     for queue_name, entries in by_queue.items():
-        queue_url = resolve_queue_url(client, queue_name)
+        queue_url = resolve_queue_url(sqs_client, queue_name)
         for batch in pack_batches(entries):
-            response = client.send_message_batch(QueueUrl=queue_url, Entries=batch)
+            response = sqs_client.send_message_batch(QueueUrl=queue_url, Entries=batch)
             failed = response.get("Failed", [])
             if failed:
                 log.error(

@@ -5,7 +5,12 @@ import structlog
 
 from polar.config import settings
 from polar.enums import TaxBehavior, TaxBehaviorOption, TaxProcessor
-from polar.kit.address import Address
+from polar.kit.address import (
+    CITY_REQUIRED_COUNTRIES,
+    POSTAL_CODE_REQUIRED_COUNTRIES,
+    STATE_REQUIRED_COUNTRIES,
+    Address,
+)
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.observability import TAX_CALCULATION_TOTAL
@@ -14,6 +19,7 @@ from ..tax_id import TaxID
 from .base import (
     AlreadyRevertedError,
     CalculationExpiredError,
+    InvalidAddressError,
     InvalidTaxIDError,
     TaxabilityReason,
     TaxBreakdownItem,
@@ -109,9 +115,21 @@ class TaxCalculationService:
             The calculation and the processor that produced it.
 
         Raises:
+            InvalidAddressError: If the address lacks fields required to
+                determine the tax jurisdiction.
             TaxCalculationTechnicalError: If all tax processors fail to calculate tax.
         """
-        for processor in settings.tax_processors:
+        if address.country in STATE_REQUIRED_COUNTRIES and not address.has_state():
+            raise InvalidAddressError("State is required.")
+        if (
+            address.country in POSTAL_CODE_REQUIRED_COUNTRIES
+            and address.postal_code is None
+        ):
+            raise InvalidAddressError("Postal code is required.")
+        if address.country in CITY_REQUIRED_COUNTRIES and address.city is None:
+            raise InvalidAddressError("City is required.")
+
+        for processor in settings.TAX_PROCESSORS:
             log.debug("Attempting tax calculation with processor", processor=processor)
             tax_processor_service = _get_tax_service(processor)
             try:
@@ -178,7 +196,7 @@ class TaxCalculationService:
             The recorded transaction ID and its processor. Transactions recorded
             from explicit amounts have a ``backfill_``-prefixed ID.
         """
-        record_processor = settings.tax_record_processor
+        record_processor = settings.TAX_RECORD_PROCESSOR
         tax_processor_service = _get_tax_service(record_processor)
         if calculation_processor != record_processor:
             log.info(
@@ -228,7 +246,7 @@ class TaxCalculationService:
             A ``backfill_``-prefixed record ID and the recording processor.
             Returning an ID does not verify completion of asynchronous processing.
         """
-        record_processor = settings.tax_record_processor
+        record_processor = settings.TAX_RECORD_PROCESSOR
         tax_processor_service = _get_tax_service(record_processor)
         backfill_reference = await tax_processor_service.backfill(
             amount,
@@ -257,6 +275,7 @@ class TaxCalculationService:
         reverted_amount: int,
         reverted_tax_amount: int,
         previous_reverted_tax_amount: int = 0,
+        previous_reverted_amount: int = 0,
     ) -> str | None:
         """Reverse a recorded tax transaction for a customer refund.
 
@@ -286,6 +305,10 @@ class TaxCalculationService:
                 minor units. Pass ``Refund.tax_amount``.
             previous_reverted_tax_amount: Tax on other succeeded refunds with a
                 recorded processor reversal, in currency minor units.
+            previous_reverted_amount: Total including tax of those same refunds,
+                in currency minor units. The reversal never exceeds
+                ``total_amount`` minus this amount, the processor's remaining
+                balance when earlier reversals matched their refund totals.
 
         Returns:
             The processor's reversal ID, or a ``backfill_``-prefixed record ID
@@ -301,7 +324,9 @@ class TaxCalculationService:
             previous_reverted_tax_amount + reverted_tax_amount, tax_amount
         )
         target = round(cumulative_tax_amount * total_amount / tax_amount)
-        reverted_amount = target - previous_target
+        reverted_amount = min(
+            target - previous_target, total_amount - previous_reverted_amount
+        )
         if reverted_amount <= 0:
             return None
         reverted_tax_amount = cumulative_tax_amount - previous_reverted_tax_amount
@@ -331,6 +356,7 @@ tax_calculation = TaxCalculationService()
 __all__ = [
     "AlreadyRevertedError",
     "CalculationExpiredError",
+    "InvalidAddressError",
     "InvalidTaxIDError",
     "TaxBreakdownItem",
     "TaxCalculation",

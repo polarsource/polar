@@ -1,7 +1,8 @@
-from pydantic import Field
+from pydantic import MISSING, Field
 
 from polar.kit.email import EmailStrDNS
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
+from polar.kit.versioning import Omissible
 from polar.member.schemas import MemberNameInput
 from polar.models.member import MemberRole
 
@@ -32,12 +33,12 @@ class CustomerPortalMemberCreate(Schema):
 class CustomerPortalMemberUpdate(Schema):
     """Schema for updating a member in the customer portal."""
 
-    name: MemberNameInput | None = Field(
-        default=None,
+    name: Omissible[MemberNameInput] = Field(
+        default=MISSING,
         description="The new name for the member.",
     )
-    role: MemberRole | None = Field(
-        default=None,
+    role: Omissible[MemberRole] = Field(
+        default=MISSING,
         description="The new role for the member.",
         examples=[MemberRole.billing_manager, MemberRole.member],
     )

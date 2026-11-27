@@ -210,7 +210,10 @@ export function DataTable<TData extends RowData>({
                             {colSpan ? (
                               <TableCell
                                 colSpan={colSpan}
-                                className={isSelectColumn ? 'w-12' : undefined}
+                                className={twMerge(
+                                  'overflow-hidden',
+                                  isSelectColumn && 'w-12',
+                                )}
                                 style={
                                   isSelectColumn
                                     ? { width: SELECTION_COLUMN_WIDTH }

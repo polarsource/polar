@@ -17,7 +17,10 @@ from polar.integrations.github_repository_benefit.service import (
     GitHubRepositoryInstallationError,
     github_repository_benefit_user_service,
 )
-from polar.kit.db.postgres import AsyncReadSession, create_async_sessionmaker
+from polar.kit.db.postgres import (  # lint-skip: dry-run
+    AsyncReadSession,
+    create_async_sessionmaker,
+)
 from polar.models import Benefit
 from polar.models.benefit import BenefitType
 from polar.organization.repository import OrganizationRepository

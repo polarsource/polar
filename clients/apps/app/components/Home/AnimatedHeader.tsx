@@ -22,7 +22,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 const DURATION = 150
 
 export const AnimatedHeader: FC = () => {
-  const { netHeaderHeight } = useHomeHeaderHeight()
+  const { netHeaderHeight, topSafeAreaHeight } = useHomeHeaderHeight()
   const theme = useTheme()
   const insets = useSafeAreaInsets()
 
@@ -140,7 +140,7 @@ export const AnimatedHeader: FC = () => {
           backgroundColor: theme.colors['background-regular'],
           zIndex: 50,
           paddingTop: Platform.select({
-            ios: insets.top,
+            ios: topSafeAreaHeight,
             android: insets.top + theme.spacing['spacing-12'],
           }),
         },

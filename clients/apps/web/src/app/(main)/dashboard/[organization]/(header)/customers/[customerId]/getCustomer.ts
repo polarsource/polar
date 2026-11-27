@@ -16,7 +16,6 @@ export const getOrganizationAndCustomerOrNotFound = async (
 ) => {
   const api = await getServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
-    api,
     params.organization,
   )
 
@@ -38,7 +37,7 @@ export const generateCustomerMetadata = async (
   section?: string,
 ): Promise<Metadata> => {
   const api = await getServerSideAPI()
-  const organization = await getOrganizationBySlug(api, params.organization)
+  const organization = await getOrganizationBySlug(params.organization)
 
   if (!organization) {
     return {

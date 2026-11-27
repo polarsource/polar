@@ -11,8 +11,8 @@ import {
   CannotCreateOrganizationError,
   HTTPValidationError,
   OrganizationsUpdate403Error,
+  OrganizationsUpdate409Error,
   ResourceNotFound,
-  SSOEnforcementRequiresConnection,
 } from "../errors";
 
 export const listOrganizations = (client: ClientBase) => {
@@ -182,7 +182,7 @@ export const updateOrganizations = (client: ClientBase) => {
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {OrganizationsUpdate403Error} You don't have the permission to update this organization, or dispute auto-accept isn't enabled for it.
    * @throws {ResourceNotFound} Organization not found.
-   * @throws {SSOEnforcementRequiresConnection} Cannot enforce SSO without an enabled connection.
+   * @throws {OrganizationsUpdate409Error} Cannot enforce SSO without an enabled connection and a verified domain.
    * @throws {HTTPValidationError} Validation Error
    */
   return async (
@@ -205,7 +205,7 @@ export const updateOrganizations = (client: ClientBase) => {
     return client.parseResponse<Organization>(response, "json", {
       403: OrganizationsUpdate403Error,
       404: ResourceNotFound,
-      409: SSOEnforcementRequiresConnection,
+      409: OrganizationsUpdate409Error,
       422: HTTPValidationError,
     });
   };

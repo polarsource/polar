@@ -6,6 +6,8 @@ const promptModules = new Set([
   'effect/cli',
   'node:readline',
   'node:readline/promises',
+  'readline',
+  'readline/promises',
 ])
 
 const isPromptModule = (

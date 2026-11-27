@@ -7,6 +7,7 @@ import structlog
 from dramatiq import Retry
 from sqlalchemy.orm import joinedload, selectinload
 
+from polar.config import settings
 from polar.exceptions import PolarTaskError
 from polar.kit.utils import utc_now
 from polar.logging import Logger
@@ -19,6 +20,7 @@ from polar.payment_method.repository import PaymentMethodRepository
 from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
+from polar.wallet.repository import WalletTransactionRepository
 from polar.worker import (
     AsyncSessionMaker,
     CronTrigger,
@@ -40,10 +42,6 @@ from .service import order as order_service
 log: Logger = structlog.get_logger()
 
 MAX_RETRIES = 10
-
-# Lets late usage events land and reducer buckets covering the period end
-# close and sync to Postgres before the order is billed.
-SUBSCRIPTION_ORDER_GRACE_PERIOD = timedelta(minutes=15)
 
 
 class OrderTaskError(PolarTaskError): ...
@@ -70,10 +68,28 @@ class OrderDoesNotExist(OrderTaskError):
         super().__init__(message)
 
 
+class PaymentDoesNotExist(OrderTaskError):
+    def __init__(self, payment_id: uuid.UUID) -> None:
+        self.payment_id = payment_id
+        message = f"The payment with id {payment_id} does not exist."
+        super().__init__(message)
+
+
+class WalletTransactionDoesNotExist(OrderTaskError):
+    def __init__(self, wallet_transaction_id: uuid.UUID) -> None:
+        self.wallet_transaction_id = wallet_transaction_id
+        message = (
+            f"The wallet transaction with id {wallet_transaction_id} does not exist."
+        )
+        super().__init__(message)
+
+
 def _defer_until_grace_period_elapsed(
     cutoff: datetime, actor_name: str, /, *args: Any, **kwargs: Any
 ) -> bool:
-    remaining_grace_period = cutoff + SUBSCRIPTION_ORDER_GRACE_PERIOD - utc_now()
+    remaining_grace_period = (
+        cutoff + settings.SUBSCRIPTION_ORDER_GRACE_PERIOD - utc_now()
+    )
     if remaining_grace_period <= timedelta(0):
         return False
     log.info(
@@ -102,6 +118,58 @@ async def order_created(order_id: Annotated[uuid.UUID, LoggableField]) -> None:
             raise OrderDoesNotExist(order_id)
 
 
+@actor(actor_name="order.paid", priority=TaskPriority.HIGH)
+async def order_paid(
+    order_id: Annotated[uuid.UUID, LoggableField],
+    payment_id: Annotated[uuid.UUID | None, LoggableField] = None,
+) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = OrderRepository.from_session(session)
+        order = await repository.get_by_id(
+            order_id, options=repository.get_eager_options(), for_update=True
+        )
+        if order is None:
+            raise OrderDoesNotExist(order_id)
+
+        payment = None
+        if payment_id is not None:
+            payment = await PaymentRepository.from_session(session).get_by_id(
+                payment_id
+            )
+            if payment is None:
+                raise PaymentDoesNotExist(payment_id)
+
+        await order_service.handle_payment(session, order, payment)
+
+
+@actor(actor_name="order.wallet_order", priority=TaskPriority.HIGH)
+async def wallet_order(
+    wallet_transaction_id: Annotated[uuid.UUID, LoggableField],
+    payment_id: Annotated[uuid.UUID | None, LoggableField] = None,
+) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = WalletTransactionRepository.from_session(session)
+        wallet_transaction = await repository.get_by_id(
+            wallet_transaction_id,
+            options=repository.get_eager_options(),
+            for_update=True,
+        )
+        if wallet_transaction is None:
+            raise WalletTransactionDoesNotExist(wallet_transaction_id)
+        if wallet_transaction.order_id is not None:
+            return
+
+        payment = None
+        if payment_id is not None:
+            payment = await PaymentRepository.from_session(session).get_by_id(
+                payment_id
+            )
+            if payment is None:
+                raise PaymentDoesNotExist(payment_id)
+
+        await order_service.create_wallet_order(session, wallet_transaction, payment)
+
+
 @actor(
     actor_name="order.create_subscription_order",
     priority=TaskPriority.LOW,
@@ -112,6 +180,9 @@ async def create_subscription_order(
     subscription_id: Annotated[uuid.UUID, LoggableField],
     order_reason: Annotated[OrderBillingReasonInternal, LoggableField],
     cutoff: Annotated[str | None, LoggableField] = None,
+    period_start: Annotated[str | None, LoggableField] = None,
+    *,
+    force: Annotated[bool, LoggableField] = False,
 ) -> None:
     async with AsyncSessionMaker() as session:
         repository = SubscriptionRepository.from_session(session)
@@ -132,14 +203,18 @@ async def create_subscription_order(
                 if cutoff is not None
                 else subscription.current_period_start
             )
-            if _defer_until_grace_period_elapsed(
+            if not force and _defer_until_grace_period_elapsed(
                 billing_cutoff,
                 "order.create_subscription_order",
                 subscription_id,
                 order_reason,
                 cutoff=billing_cutoff.isoformat(),
+                period_start=period_start,
             ):
                 return
+
+        # Only differs on cancel orders, for legacy's created_at filter: remove with legacy billing.
+        reducer_cutoff = billing_cutoff
 
         # The cancel order is the final settlement: also bill usage of the
         # ended period that synced after the period end.
@@ -148,7 +223,16 @@ async def create_subscription_order(
 
         try:
             await order_service.create_subscription_order(
-                session, subscription, order_reason, cutoff=billing_cutoff
+                session,
+                subscription,
+                order_reason,
+                cutoff=billing_cutoff,
+                reducer_cutoff=reducer_cutoff,
+                period_start=(
+                    datetime.fromisoformat(period_start)
+                    if period_start is not None
+                    else None
+                ),
             )
         except NoPendingBillingEntries:
             # Skip creating an order if there are no pending billing entries.
@@ -167,6 +251,7 @@ async def create_meter_cycle_order(
     cutoff: Annotated[str, LoggableField],
     price_ids: Annotated[list[uuid.UUID], LoggableField],
     product_id: Annotated[uuid.UUID, LoggableField],
+    period_start: Annotated[str | None, LoggableField] = None,
 ) -> None:
     billing_cutoff = datetime.fromisoformat(cutoff)
     if _defer_until_grace_period_elapsed(
@@ -176,6 +261,7 @@ async def create_meter_cycle_order(
         cutoff,
         price_ids,
         product_id,
+        period_start=period_start,
     ):
         return
 
@@ -202,6 +288,11 @@ async def create_meter_cycle_order(
             cutoff=billing_cutoff,
             price_ids=price_ids,
             product=product,
+            period_start=(
+                datetime.fromisoformat(period_start)
+                if period_start is not None
+                else None
+            ),
         )
 
 
@@ -468,6 +559,13 @@ async def process_stale_payment_lock(
             return
 
         payment_repository = PaymentRepository.from_session(session)
+        if await payment_repository.get_succeeded_by_order(order.id) is not None:
+            log.info(
+                "Successful payment already recorded, keeping payment lock",
+                order_id=order.id,
+            )
+            return
+
         if await payment_repository.has_pending_sepa_debit_for_order(order.id):
             log.info(
                 "SEPA debit still pending, keeping payment lock", order_id=order.id

@@ -13,13 +13,12 @@ import {
 } from '@/utils/auth'
 import { AlternateEmailOutlined, GitHub, Google } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
-import { ListGroup } from '@polar-sh/orbit'
+import { Button, Text } from '@polar-sh/orbit'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import EmailUpdateForm from '../Form/EmailUpdateForm'
 import { toast } from '../Toast/use-toast'
-import { twMerge } from 'tailwind-merge'
+import { SettingsGroup, SettingsGroupRow } from './SettingsGroup'
 
 const AuthenticationMethod = ({
   icon,
@@ -39,17 +38,11 @@ const AuthenticationMethod = ({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-center">
-        <div
-          className={twMerge('self-start', !hideTitle && 'relative top-[3px]')}
-        >
-          {icon}
-        </div>
+        <div className="flex self-start md:self-center">{icon}</div>
         {!hideTitle && (
           <div className="grow">
-            <div className="font-medium">{title}</div>
-            <div className="dark:text-polar-500 text-sm text-gray-500">
-              {subtitle}
-            </div>
+            <Text variant="title">{title}</Text>
+            <Text color="muted">{subtitle}</Text>
           </div>
         )}
         <div className={hideTitle ? 'w-full' : 'flex-0'}>{action}</div>
@@ -94,6 +87,7 @@ const GitHubAuthenticationMethod = ({
       action={
         oauthAccount ? (
           <Button
+            size="sm"
             variant="secondary"
             onClick={onDisconnect}
             loading={isDisconnecting}
@@ -101,7 +95,7 @@ const GitHubAuthenticationMethod = ({
             Disconnect
           </Button>
         ) : (
-          <Button asChild>
+          <Button size="sm" asChild>
             <a href={authorizeURL}>Connect</a>
           </Button>
         )
@@ -138,6 +132,7 @@ const GoogleAuthenticationMethod = ({
       action={
         oauthAccount ? (
           <Button
+            size="sm"
             variant="secondary"
             onClick={onDisconnect}
             loading={isDisconnecting}
@@ -145,7 +140,7 @@ const GoogleAuthenticationMethod = ({
             Disconnect
           </Button>
         ) : (
-          <Button asChild>
+          <Button size="sm" asChild>
             <a href={authorizeURL}>Connect</a>
           </Button>
         )
@@ -217,7 +212,7 @@ const AuthenticationSettings = () => {
     off: (
       <div className="flex flex-row items-center gap-4">
         {currentUser && (
-          <Button onClick={() => setUpdateEmailStage('form')}>
+          <Button size="sm" onClick={() => setUpdateEmailStage('form')}>
             Change Email
           </Button>
         )}
@@ -244,8 +239,8 @@ const AuthenticationSettings = () => {
 
   return (
     <div ref={listGroupRef}>
-      <ListGroup>
-        <ListGroup.Item>
+      <SettingsGroup>
+        <SettingsGroupRow>
           <GitHubAuthenticationMethod
             oauthAccount={githubAccount}
             returnTo={pathname || '/start'}
@@ -257,9 +252,9 @@ const AuthenticationSettings = () => {
                 : undefined
             }
           />
-        </ListGroup.Item>
+        </SettingsGroupRow>
 
-        <ListGroup.Item>
+        <SettingsGroupRow>
           <GoogleAuthenticationMethod
             oauthAccount={googleAccount}
             returnTo={pathname || '/start'}
@@ -271,9 +266,9 @@ const AuthenticationSettings = () => {
                 : undefined
             }
           />
-        </ListGroup.Item>
+        </SettingsGroupRow>
 
-        <ListGroup.Item>
+        <SettingsGroupRow>
           <AuthenticationMethod
             icon={<AlternateEmailOutlined />}
             title={currentUser?.email}
@@ -281,8 +276,8 @@ const AuthenticationSettings = () => {
             action={updateEmailContent[updateEmailStage]}
             hideTitle={updateEmailStage !== 'off'}
           />
-        </ListGroup.Item>
-      </ListGroup>
+        </SettingsGroupRow>
+      </SettingsGroup>
     </div>
   )
 }

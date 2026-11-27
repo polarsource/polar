@@ -1,4 +1,5 @@
 import { OrderSection } from '@/components/Orders/OrderSection'
+import { useHasPermission } from '@/hooks/permissions'
 import { useGrantsForBenefit } from '@/hooks/queries/benefits'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { getAPIParams } from '@/utils/datatable'
@@ -13,6 +14,7 @@ import { ExternalLink } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { parseAsStringLiteral, useQueryStates } from 'nuqs'
 import { useMemo } from 'react'
+import { BenefitGrantAction } from './BenefitGrantAction'
 import { BenefitGrantMemberBadge } from './BenefitGrantMemberBadge'
 import { BenefitGrantStatus } from './BenefitGrantStatus'
 import BenefitGrantStatusSelect, {
@@ -33,6 +35,10 @@ export interface BenefitPageProps {
 }
 
 export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
+  const canManageCustomers = useHasPermission(
+    organization.id,
+    'customers:manage',
+  )
   const { pagination, setPagination, sorting, setSorting, resetPage } =
     useDataTableQueryState()
 
@@ -155,8 +161,20 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
       },
     )
 
+    if (canManageCustomers) {
+      cols.push({
+        id: 'actions',
+        header: '',
+        cell: ({ row: { original: grant } }) => (
+          <Box justifyContent="end">
+            <BenefitGrantAction grant={grant} />
+          </Box>
+        ),
+      })
+    }
+
     return cols
-  }, [benefit.type, organization.slug])
+  }, [benefit.type, canManageCustomers, organization.slug])
 
   return (
     <OrderSection

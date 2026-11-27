@@ -1,8 +1,8 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, exists, select
-from sqlalchemy.orm import undefer
+from sqlalchemy import ColumnElement, Select, case, exists, func, or_, select
+from sqlalchemy.orm import undefer, with_polymorphic
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
@@ -10,7 +10,19 @@ from polar.kit.repository import (
     RepositoryExternalIDMixin,
     RepositoryIDMixin,
 )
-from polar.models import Meter, ProductPrice, Subscription, SubscriptionProductPrice
+from polar.models import (
+    Catalog,
+    CatalogMeter,
+    CustomerSeat,
+    Meter,
+    ProductPrice,
+    ProductPriceMeteredTiers,
+    ProductPriceMeteredUnit,
+    Subscription,
+    SubscriptionProductPrice,
+)
+from polar.models.catalog import CatalogStatus
+from polar.models.customer_seat import SeatStatus
 from polar.models.subscription import SubscriptionStatus
 
 
@@ -21,9 +33,70 @@ class MeterRepository(
 ):
     model = Meter
 
+    @staticmethod
+    def get_active_clause() -> ColumnElement[bool]:
+        """Meters that match events and bill: not archived, not deleted, and not
+        a draft's new version, which only goes live when the draft is published."""
+        in_draft = (
+            select(Catalog.id)
+            .where(
+                Catalog.id == Meter.catalog_id, Catalog.status == CatalogStatus.draft
+            )
+            .exists()
+        )
+        return (
+            Meter.archived_at.is_(None)
+            & Meter.deleted_at.is_(None)
+            & or_(Meter.is_current, ~in_draft)
+        )
+
+    def get_active_statement(self) -> Select[Meter]:
+        return self.get_base_statement().where(self.get_active_clause())
+
+    async def get_by_external_id_and_organization(
+        self, external_id: str, organization_id: UUID
+    ) -> Meter | None:
+        statement = self.get_base_statement().where(
+            Meter.external_id == external_id,
+            Meter.organization_id == organization_id,
+            Meter.is_current,
+        )
+        return await self.get_one_or_none(statement)
+
+    def apply_catalog_filter(
+        self,
+        statement: Select[Meter],
+        org_ids: set[AccessibleOrganizationID],
+        catalog_id: Sequence[UUID] | None,
+        catalog_status: Sequence[CatalogStatus] | None,
+    ) -> Select[Meter]:
+        catalog_members = (
+            select(CatalogMeter.meter_id)
+            .join(CatalogMeter.catalog)
+            .where(
+                Catalog.organization_id.in_(org_ids),
+                CatalogMeter.deleted_at.is_(None),
+                Catalog.deleted_at.is_(None),
+            )
+        )
+        if catalog_id is not None:
+            statement = statement.where(
+                Meter.id.in_(catalog_members.where(Catalog.id.in_(catalog_id)))
+            )
+        if catalog_status is not None:
+            in_status = Meter.id.in_(
+                catalog_members.where(Catalog.status.in_(catalog_status))
+            )
+            statement = statement.where(
+                or_(Meter.is_current, in_status)
+                if CatalogStatus.live in catalog_status
+                else in_status
+            )
+        return statement
+
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[Meter]]:
+    ) -> Select[Meter]:
         return self.get_base_statement().where(Meter.organization_id.in_(org_ids))
 
     async def get_readable_by_id(
@@ -47,6 +120,7 @@ class MeterRepository(
                 Meter.organization_id == organization_id,
                 Meter.external_id.in_(external_ids),
                 Meter.deleted_at.is_(None),
+                Meter.is_current,
             )
             .options(undefer(Meter.external_id))
         )
@@ -54,28 +128,137 @@ class MeterRepository(
             statement = statement.with_for_update()
         return await self.get_all(statement)
 
-    def get_organization_statement(self, organization_id: UUID) -> Select[tuple[Meter]]:
+    async def get_external_ids_by_id(self, organization_id: UUID) -> dict[str, str]:
+        """Map every meter version's ID to its `external_id`."""
+        statement = select(Meter.id, Meter.external_id).where(
+            Meter.organization_id == organization_id,
+            Meter.external_id.is_not(None),
+            Meter.deleted_at.is_(None),
+        )
+        result = await self.session.execute(statement)
+        return {
+            str(id): external_id
+            for id, external_id in result.tuples()
+            if external_id is not None
+        }
+
+    async def get_catalog_baseline(self, organization_id: UUID) -> Sequence[Meter]:
+        statement = (
+            self.get_base_statement()
+            .where(
+                Meter.organization_id == organization_id,
+                Meter.external_id.is_not(None),
+                Meter.deleted_at.is_(None),
+                Meter.is_current,
+            )
+            .options(undefer(Meter.external_id))
+        )
+        return await self.get_all(statement)
+
+    def get_organization_statement(self, organization_id: UUID) -> Select[Meter]:
         return (
             self.get_base_statement()
             .where(
                 Meter.organization_id == organization_id,
                 Meter.deleted_at.is_(None),
+                Meter.is_current,
             )
             .order_by(Meter.created_at, Meter.id)
             .options(undefer(Meter.external_id))
         )
 
+    async def get_billed_by_external_id(
+        self, organization_id: UUID, external_id: str, customer_id: UUID
+    ) -> Meter | None:
+        """The version of the meter the customer's subscription, or the one they
+        hold a claimed seat on, bills; or the current version when it bills none."""
+        price = with_polymorphic(
+            ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
+        )
+        claimed_seat_subscriptions = select(CustomerSeat.subscription_id).where(
+            CustomerSeat.customer_id == customer_id,
+            CustomerSeat.status == SeatStatus.claimed,
+        )
+        billed = exists().where(
+            SubscriptionProductPrice.subscription_id == Subscription.id,
+            price.id == SubscriptionProductPrice.product_price_id,
+            price.is_metered,
+            price.ProductPriceMeteredUnit.meter_id == Meter.id,
+            or_(
+                Subscription.customer_id == customer_id,
+                Subscription.id.in_(claimed_seat_subscriptions),
+            ),
+            Subscription.status.in_(SubscriptionStatus.billable_statuses()),
+            ~Subscription.is_deleted,
+            ~SubscriptionProductPrice.is_deleted,
+        )
+        statement = (
+            self.get_base_statement()
+            .where(
+                Meter.organization_id == organization_id,
+                Meter.external_id == external_id,
+                Meter.deleted_at.is_(None),
+                or_(Meter.is_current, billed),
+            )
+            .order_by(case((billed, 0), else_=1), Meter.created_at.desc())
+            .limit(1)
+        )
+        return await self.get_one_or_none(statement)
+
+    async def count_billed_customers_by_external_ids(
+        self, organization_id: UUID, external_ids: Sequence[str]
+    ) -> dict[str, int]:
+        """Count the customers with a billable subscription billing any version
+        of each external ID."""
+        if not external_ids:
+            return {}
+        price = with_polymorphic(
+            ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
+        )
+        statement = (
+            select(Meter.external_id, func.count(Subscription.customer_id.distinct()))
+            .join(
+                price,
+                price.ProductPriceMeteredUnit.meter_id == Meter.id,
+            )
+            .join(
+                SubscriptionProductPrice,
+                SubscriptionProductPrice.product_price_id == price.id,
+            )
+            .join(
+                Subscription,
+                Subscription.id == SubscriptionProductPrice.subscription_id,
+            )
+            .where(
+                Meter.organization_id == organization_id,
+                Meter.external_id.in_(external_ids),
+                price.is_metered,
+                Subscription.status.in_(SubscriptionStatus.billable_statuses()),
+                ~Subscription.is_deleted,
+                ~SubscriptionProductPrice.is_deleted,
+            )
+            .group_by(Meter.external_id)
+        )
+        result = await self.session.execute(statement)
+        return {
+            external_id: count
+            for external_id, count in result.tuples()
+            if external_id is not None
+        }
+
     async def has_billable_subscriptions(self, meter_id: UUID) -> bool:
+        price = with_polymorphic(
+            ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
+        )
         statement = select(
             exists()
             .where(
                 SubscriptionProductPrice.subscription_id == Subscription.id,
-                ProductPrice.id == SubscriptionProductPrice.product_price_id,
+                price.id == SubscriptionProductPrice.product_price_id,
             )
             .where(
-                ProductPrice.is_metered,
-                # The subclass attribute would add a polymorphic filter and drop tiered prices.
-                ProductPrice.__table__.c.meter_id == meter_id,
+                price.is_metered,
+                price.ProductPriceMeteredUnit.meter_id == meter_id,
                 Subscription.status.in_(SubscriptionStatus.billable_statuses()),
                 ~Subscription.is_deleted,
                 ~SubscriptionProductPrice.is_deleted,

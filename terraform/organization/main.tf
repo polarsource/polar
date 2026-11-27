@@ -11,8 +11,10 @@ resource "aws_organizations_organization" "current" {
   feature_set = "ALL"
   aws_service_access_principals = [
     "account.amazonaws.com",
+    "cloudtrail.amazonaws.com",
     "guardduty.amazonaws.com",
     "iam.amazonaws.com",
+    "inspector2.amazonaws.com",
     "malware-protection.guardduty.amazonaws.com",
     "sso.amazonaws.com",
   ]

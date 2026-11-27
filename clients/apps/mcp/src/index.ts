@@ -141,7 +141,8 @@ const handleMcp = Effect.fn('handleMcp')(function* (
   if (caller instanceof Response) {
     return caller
   }
-  Object.assign(yield* RequestLog, yield* readRpcFields(request), {
+  const log = yield* RequestLog
+  Object.assign(log, yield* readRpcFields(request, log.telemetry), {
     subject: yield* Effect.tryPromise(() =>
       subjectFor(caller.account ?? `token:${token}`),
     ).pipe(Effect.orElseSucceed(() => undefined)),

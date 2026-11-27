@@ -4,7 +4,7 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-import httpx
+import httpx2
 import typer
 
 from polar.config import settings
@@ -17,24 +17,25 @@ TINYBIRD_DIR = Path(__file__).resolve().parent.parent / "tinybird"
 def get_tokens(host: str | None = None) -> dict[str, str] | None:
     host = host or settings.TINYBIRD_API_URL
     try:
-        response = httpx.get(f"{host}/tokens", timeout=2)
+        response = httpx2.get(f"{host}/tokens", timeout=2)
         if response.status_code == 200:
             return response.json()
-    except httpx.RequestError:
+    except httpx2.RequestError:
         pass
     return None
 
 
-def request(method: str, url: str, **kwargs: Any) -> httpx.Response:
+def request(method: str, url: str, **kwargs: Any) -> httpx2.Response:
     """Tinybird answers /tokens before its API is up, so retry past gateway errors."""
-    for _ in range(60):
+    deadline = time.monotonic() + 60
+    while time.monotonic() < deadline:
         try:
-            response = httpx.request(method, url, **kwargs)
-        except httpx.RequestError:
-            time.sleep(1)
+            response = httpx2.request(method, url, **kwargs)
+        except httpx2.RequestError:
+            time.sleep(0.25)
             continue
         if response.status_code >= 500:
-            time.sleep(1)
+            time.sleep(0.25)
             continue
         response.raise_for_status()
         return response
@@ -108,9 +109,10 @@ def deploy_schema(host: str, workspace_token: str) -> None:
 
 
 def wait_for_ingestion(host: str, workspace_token: str) -> None:
-    for _ in range(30):
+    deadline = time.monotonic() + 15
+    while time.monotonic() < deadline:
         try:
-            r = httpx.post(
+            r = httpx2.post(
                 f"{host}/v0/events",
                 params={"name": "events_by_ingested_at", "wait": "true"},
                 content="",
@@ -122,13 +124,13 @@ def wait_for_ingestion(host: str, workspace_token: str) -> None:
             )
             if r.status_code != 403:
                 return
-        except httpx.RequestError:
+        except httpx2.RequestError:
             pass
-        time.sleep(0.5)
+        time.sleep(0.2)
 
 
 def delete_workspace(host: str, workspace_id: str, user_token: str) -> None:
-    httpx.delete(
+    httpx2.delete(
         f"{host}/v1/workspaces/{workspace_id}",
         params={"hard_delete_confirmation": "yes"},
         headers={"Authorization": f"Bearer {user_token}"},
@@ -136,14 +138,24 @@ def delete_workspace(host: str, workspace_id: str, user_token: str) -> None:
 
 
 @cli.command()
-def main() -> None:
+def main(token_file: Path | None = None) -> None:
     host = settings.TINYBIRD_API_URL
-    tokens = request("GET", f"{host}/tokens", timeout=2).json()
-    _, workspace_token = create_workspace(host, tokens)
-    deploy_schema(host, workspace_token)
-    wait_for_ingestion(host, workspace_token)
+    try:
+        tokens = request("GET", f"{host}/tokens", timeout=2).json()
+        _, workspace_token = create_workspace(host, tokens)
+        deploy_schema(host, workspace_token)
+        wait_for_ingestion(host, workspace_token)
 
-    print(workspace_token)
+        if token_file is None:
+            print(workspace_token)
+        else:
+            temporary_file = token_file.with_suffix(".tmp")
+            temporary_file.write_text(workspace_token)
+            temporary_file.replace(token_file)
+    except Exception as error:
+        if token_file is not None:
+            token_file.with_suffix(".error").write_text(type(error).__name__)
+        raise
 
 
 if __name__ == "__main__":

@@ -14,7 +14,10 @@ from sqlalchemy.dialects.postgresql import insert
 
 from polar.config import settings
 from polar.event.repository import EventRepository
-from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
+from polar.kit.db.postgres import (  # lint-skip: dry-run
+    AsyncSession,
+    create_async_sessionmaker,
+)
 from polar.kit.db.postgres import create_async_engine as _create_async_engine
 from polar.meter.repository import MeterRepository
 from polar.models import Event, Meter, MeterEvent

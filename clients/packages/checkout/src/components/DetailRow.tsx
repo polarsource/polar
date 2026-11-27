@@ -26,12 +26,17 @@ const DetailRow = ({
       <div className="flex min-w-0 flex-row items-baseline gap-x-1">
         <Truncated>{title}</Truncated>
         {subtitle && (
-          <span className="dark:text-polar-500 shrink-0 font-normal text-gray-400">
+          <span
+            dir="auto"
+            className="dark:text-polar-500 shrink-0 font-normal text-gray-400"
+          >
             {subtitle}
           </span>
         )}
       </div>
-      <span className="shrink-0">{children}</span>
+      <span dir="auto" className="shrink-0">
+        {children}
+      </span>
     </div>
   )
 }

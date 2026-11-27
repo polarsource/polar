@@ -16,10 +16,10 @@ export async function generateMetadata(props: {
   )
 
   return {
-    title: `Customer Portal | ${organization.name}`, // " | Polar is added by the template"
+    title: `Customer portal | ${organization.name}`, // " | Polar is added by the template"
     openGraph: {
-      title: `Customer Portal | ${organization.name} on Polar`,
-      description: `Customer Portal | ${organization.name} on Polar`,
+      title: `Customer portal | ${organization.name} on Polar`,
+      description: `Customer portal | ${organization.name} on Polar`,
       siteName: 'Polar',
       type: 'website',
       images: [
@@ -40,8 +40,8 @@ export async function generateMetadata(props: {
         },
       ],
       card: 'summary_large_image',
-      title: `Customer Portal | ${organization.name} on Polar`,
-      description: `Customer Portal | ${organization.name} on Polar`,
+      title: `Customer portal | ${organization.name} on Polar`,
+      description: `Customer portal | ${organization.name} on Polar`,
     },
   }
 }
@@ -78,12 +78,16 @@ export default async function Page(props: {
   })
 
   if (response.status === 401) {
-    redirect(`/${organization.slug}/portal/request`)
+    redirect(
+      `/${organization.slug}/portal/request?${new URLSearchParams(searchParams)}`,
+    )
   }
 
   if (response.status === 403) {
     // Member doesn't have billing permissions - redirect to overview
-    redirect(`/${organization.slug}/portal`)
+    redirect(
+      `/${organization.slug}/portal?${new URLSearchParams(resolvedSearchParams)}`,
+    )
   }
 
   if (error) {

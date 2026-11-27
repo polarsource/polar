@@ -19,7 +19,10 @@ export class Organizations extends Context.Service<
     listAll: Effect.Effect<ActiveOrganization[], AuthError>
     selected: Effect.Effect<OrganizationSelection | undefined, AuthError>
     select: (selection: OrganizationSelection) => Effect.Effect<void, AuthError>
-    resolve: (id?: string) => Effect.Effect<ActiveOrganization, AuthError>
+    resolve: (
+      id?: string,
+      environment?: PolarEnvironment,
+    ) => Effect.Effect<ActiveOrganization, AuthError>
   }
 >()('Organizations') {}
 
@@ -92,22 +95,34 @@ export const layer = Layer.effect(
           environment,
         }
       })
-    const find = (reference: string) =>
+    const find = (reference: string, environment?: PolarEnvironment) =>
       Effect.gen(function* () {
         const lookup = isUuid(reference) ? get : getBySlug
+        if (environment !== undefined)
+          return yield* lookup(reference, environment)
         const available = yield* auth.environments
         if (available.length === 0) {
           return yield* new AuthError({
-            message: 'Not logged in. Run polar auth login.',
+            message:
+              'Not logged in. Run polar auth login or set POLAR_ACCESS_TOKEN.',
           })
         }
         if (available.length === 1)
           return yield* lookup(reference, available[0]!)
+        const matches: ActiveOrganization[] = []
         for (const environment of available) {
           const found = yield* lookup(reference, environment).pipe(
             Effect.orElseSucceed(() => undefined),
           )
-          if (found) return found
+          if (found === undefined) continue
+          if (isUuid(reference)) return found
+          matches.push(found)
+        }
+        if (matches.length === 1) return matches[0]!
+        if (matches.length > 1) {
+          return yield* new AuthError({
+            message: `${reference} is an organization in ${matches.map((match) => match.environment).join(' and ')}. Pass its ID instead; polar auth list shows it.`,
+          })
         }
         return yield* new AuthError({
           message: `Organization ${reference} is missing or inaccessible in ${available.join(' and ')}. Check --org or run polar auth list.`,
@@ -129,9 +144,16 @@ export const layer = Layer.effect(
           yield* auth.resolve(selection.environment)
           yield* config.setActiveOrganization(selection)
         }),
-      resolve: (id) =>
+      resolve: (id, environment) =>
         Effect.gen(function* () {
-          if (id) return yield* find(id)
+          if (id !== undefined) {
+            if (id.trim() === '') {
+              return yield* new AuthError({
+                message: 'The organization is empty. Pass its ID or slug.',
+              })
+            }
+            return yield* find(id, environment)
+          }
           if (yield* auth.override) {
             const organizations = yield* listAll
             if (organizations.length === 1) return organizations[0]!
@@ -143,7 +165,7 @@ export const layer = Layer.effect(
           const selection = yield* config.getActiveOrganization
           if (!selection) {
             return yield* new AuthError({
-              message: `No active organization. Run ${orgCommand} or supply --org <id>.`,
+              message: `No active organization. Run polar auth list to see yours, then ${orgCommand} <id> or pass --org <id>.`,
             })
           }
           return yield* get(selection.id, selection.environment).pipe(

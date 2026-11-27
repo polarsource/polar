@@ -1,4 +1,4 @@
-name: Demo config plan
+name: Demo config validate
 
 on:
   pull_request:
@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
   pull-requests: write
 
 defaults:
@@ -23,27 +24,37 @@ jobs:
     timeout-minutes: 15
 
     env:
-      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
 
     steps:
-      - name: Check out code
-        uses: actions/checkout@v7.0.1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
 
-      - uses: pnpm/action-setup@v6.1.0
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           package_json_file: clients/package.json
 
       - name: Setup Node.js environment
-        uses: actions/setup-node@v7.1.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: "pnpm"
           cache-dependency-path: "clients/pnpm-lock.yaml"
 
-      - uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: clients/packages/cli/package.json
+
+      - name: Set up Turborepo Remote Cache
+        uses: vercel/setup-turborepo-remote-cache-action@49d7b1b46ba4c9251e1977986bfe18336feabc8f # v1.1.0
+        continue-on-error: true
+        with:
+          team: ${{ vars.TURBO_TEAM }}
 
       - name: 📦 Install dependencies
         run: pnpm install
@@ -55,4 +66,4 @@ jobs:
           POLAR_ENVIRONMENT: sandbox
           POLAR_ACCESS_TOKEN: ${{ secrets.DEMO_POLAR_ACCESS_TOKEN }}
           GITHUB_TOKEN: ${{ github.token }}
-        run: bun ../../packages/cli/src/cli.ts config plan --pr-comment
+        run: bun ../../packages/cli/src/cli.ts config validate --pr-comment

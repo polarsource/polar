@@ -1,9 +1,18 @@
 import { expect, test } from 'vitest'
 import { config } from '@/commands/config'
 
-test('polar config exposes pull, plan and apply', () => {
+test('polar config exposes init, validate, draft, publish, reset, generate, prune and disable', () => {
   const names = config.subcommands
     .flatMap((group) => group.commands)
     .map((command) => command.name)
-  expect(names).toEqual(['pull', 'plan', 'apply'])
+  expect(names).toEqual([
+    'init',
+    'validate',
+    'draft',
+    'publish',
+    'reset',
+    'generate',
+    'prune',
+    'disable',
+  ])
 })

@@ -3,6 +3,8 @@
 import { BenefitPage } from '@/components/Benefit/BenefitPage'
 import { BenefitProducts } from '@/components/Benefit/BenefitProducts'
 import { BenefitDetails } from '@/components/Benefit/BenefitDetails'
+import { BenefitVersionBanner } from '@/components/Benefit/BenefitVersionBanner'
+import { BenefitVersionSelect } from '@/components/Benefit/BenefitVersionSelect'
 import { DownloadablesSection } from '@/components/Benefit/Downloadables/DownloadablesSection'
 import { LicenseKeysPage } from '@/components/Benefit/LicenseKeysPage'
 import UpdateBenefitModalContent from '@/components/Benefit/UpdateBenefitModalContent'
@@ -16,7 +18,6 @@ import { Button, InlineModal, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useModal } from '@/components/Modal/useModal'
 import { useToast } from '@/components/Toast/use-toast'
-import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useDeleteBenefit } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { usePushRouteWithoutCache } from '@/utils/router'
@@ -43,7 +44,8 @@ const ClientPage: React.FC<ClientPageProps> = ({
 }: ClientPageProps) => {
   const pushRouteWithoutCache = usePushRouteWithoutCache()
   const { toast } = useToast()
-  const managedAsCode = useIsManagedAsCode(organization.id)
+  const managedAsCode =
+    organization.feature_settings?.config_as_code_enabled ?? false
 
   const {
     isShown: isEditShown,
@@ -173,6 +175,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
           </Box>
 
           <Box alignItems="center" gap="l">
+            <BenefitVersionSelect
+              organization={organization}
+              benefit={benefit}
+            />
             {!managedAsCode && (
               <Button onClick={toggleEdit}>Edit Benefit</Button>
             )}
@@ -210,6 +216,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
           rowGap="4xl"
           paddingBottom="2xl"
         >
+          <BenefitVersionBanner organization={organization} benefit={benefit} />
           <BenefitDetails benefit={benefit} organization={organization} />
           {benefit.type === 'downloadables' && (
             <DownloadablesSection benefit={benefit} />

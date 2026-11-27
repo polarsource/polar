@@ -1,60 +1,37 @@
 import { schemas } from '@polar-sh/client'
 import { Pill } from '@polar-sh/orbit'
 import { CircleX, Clock } from '@polar-sh/orbit/icons'
-import { useMemo } from 'react'
-import { twMerge } from 'tailwind-merge'
+import { StatusTooltip } from '@/components/Shared/StatusIcon'
+import { SubscriptionStatusIcon } from './SubscriptionStatusIcon'
 import {
-  getSubscriptionStatusBorderColor,
-  subscriptionStatusDisplayNames,
+  getSubscriptionStatusDescription,
+  getSubscriptionStatusLabel,
 } from './utils'
 
-const StatusLabel = ({
-  color,
-  dt,
-  eventLabel,
-  icon,
-  children,
-}: {
-  color: string
-  dt?: string | null
-  eventLabel?: string
-  icon?: React.ReactNode
-  children: React.ReactNode
-}) => {
-  let prettyEventDate = null
-  if (dt) {
-    const event = new Date(dt)
-    const now = new Date()
-    if (event.getFullYear() !== now.getFullYear()) {
-      prettyEventDate = event.toLocaleDateString('en-US', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-      })
-    } else {
-      prettyEventDate = event.toLocaleDateString('en-US', {
-        day: 'numeric',
-        month: 'short',
-      })
-    }
-  }
+const formatEventDate = (datetime: string): string => {
+  const event = new Date(datetime)
+  return event.toLocaleDateString('en-US', {
+    day: 'numeric',
+    month: 'short',
+    ...(event.getFullYear() === new Date().getFullYear()
+      ? {}
+      : { year: 'numeric' }),
+  })
+}
 
-  return (
-    <div className={`flex flex-row items-center gap-x-2`}>
-      <span className={twMerge('h-2 w-2 rounded-full border-2', color)} />
-      <span className="capitalize">{children}</span>
-      {prettyEventDate && (
-        <Pill color="gray">
-          {icon}
-          <span>
-            {eventLabel
-              ? `${eventLabel} on ${prettyEventDate}`
-              : prettyEventDate}
-          </span>
-        </Pill>
-      )}
-    </div>
-  )
+// A scheduled cancellation takes precedence. Otherwise the pause schedule is
+// shown: when a paused subscription resumes, or when an active one will pause.
+const getEvent = ({
+  status,
+  ends_at: endsAt,
+  resumes_at: resumesAt,
+  pause_at_period_end: pausesAtPeriodEnd,
+  current_period_end: periodEnd,
+}: schemas['Subscription']): { date: string | null; label?: string } => {
+  if (endsAt !== null) return { date: endsAt }
+  if (status === 'paused') return { date: resumesAt, label: 'Resumes' }
+  if (pausesAtPeriodEnd) return { date: periodEnd, label: 'Pauses' }
+  return { date: null }
 }
 
 export const SubscriptionStatus = ({
@@ -62,64 +39,29 @@ export const SubscriptionStatus = ({
 }: {
   subscription: schemas['Subscription']
 }) => {
-  const {
-    status,
-    ends_at,
-    pause_at_period_end,
-    resumes_at,
-    current_period_end,
-  } = subscription
-  const isEnding = useMemo(() => ends_at !== null, [ends_at])
-
-  const color = useMemo(
-    () =>
-      getSubscriptionStatusBorderColor(status, isEnding || pause_at_period_end),
-    [status, isEnding, pause_at_period_end],
-  )
-
-  // A scheduled cancellation takes precedence; otherwise surface the pause
-  // schedule — when a paused sub resumes, or when an active sub will pause.
-  const { eventDate, eventLabel } = useMemo<{
-    eventDate: string | null
-    eventLabel?: string
-  }>(() => {
-    if (isEnding) {
-      return { eventDate: ends_at }
-    }
-    if (status === 'paused') {
-      return { eventDate: resumes_at, eventLabel: 'Resumes' }
-    }
-    if (pause_at_period_end) {
-      return { eventDate: current_period_end, eventLabel: 'Pauses' }
-    }
-    return { eventDate: null }
-  }, [
-    isEnding,
-    ends_at,
-    status,
-    resumes_at,
-    pause_at_period_end,
-    current_period_end,
-  ])
-
-  const icon = useMemo(() => {
-    if (status === 'canceled') {
-      return <CircleX className="size-3" />
-    }
-    if (eventDate) {
-      return <Clock className="size-3" />
-    }
-    return null
-  }, [status, eventDate])
+  const event = getEvent(subscription)
+  const date = event.date ? formatEventDate(event.date) : null
 
   return (
-    <StatusLabel
-      color={color}
-      dt={eventDate}
-      eventLabel={eventLabel}
-      icon={icon}
-    >
-      {subscriptionStatusDisplayNames[subscription.status]}
-    </StatusLabel>
+    <div className="flex flex-row items-center gap-x-2">
+      <StatusTooltip
+        description={getSubscriptionStatusDescription(subscription)}
+      >
+        <span className="flex flex-row items-center gap-x-2">
+          <SubscriptionStatusIcon subscription={subscription} />
+          <span>{getSubscriptionStatusLabel(subscription)}</span>
+        </span>
+      </StatusTooltip>
+      {date && (
+        <Pill color="gray">
+          {subscription.status === 'canceled' ? (
+            <CircleX className="size-3" />
+          ) : (
+            <Clock className="size-3" />
+          )}
+          <span>{event.label ? `${event.label} on ${date}` : date}</span>
+        </Pill>
+      )}
+    </div>
   )
 }

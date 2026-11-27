@@ -1,18 +1,14 @@
 ---
 title: "Migrate from Stripe"
 sidebarTitle: "Migrate from Stripe"
-description: "Move customers, products, subscriptions, and payment data from Stripe to Polar."
+description: "Move your customers, products, subscriptions and saved cards from Stripe to Polar."
 ---
 
-import { MigrationCoexistence, MigrationSwitch } from "/snippets/migration-coexistence.jsx";
+Move your Stripe subscriptions to Polar without asking customers to enter their
+card again. Customers keep the period they already paid for, and Polar bills
+their next renewal.
 
-Polar currently supports migrations from Stripe. Polar helps you safely migrate
-customers, products, subscriptions, and payment data.
-
-<Info>
-  Stripe migrations are rolling out gradually. If **Migrations** is not available in your
-  organization settings, [contact Polar support](/support).
-</Info>
+Moving from Lemon Squeezy? See [Migrate from Lemon Squeezy](/migrate-lemon-squeezy).
 
 ## Before you begin
 
@@ -20,8 +16,15 @@ You need an active Polar organization that is ready to sell, plus access to the
 Stripe account so you can create API keys. The mode of your Stripe key must
 match the Polar environment: live for production or test for sandbox.
 
-Stripe Connect platform accounts and Stripe accounts in India cannot connect to
-the automated flow.
+Stripe accounts in India can't use the automated flow. If you run a Stripe
+Connect platform, only the subscriptions on your own Stripe account move.
+
+<Note>
+  Dashboard only. The migration tool isn't available from the CLI or MCP server.
+  It opens once your organization has finished onboarding, which means it's
+  approved or under review. Until then, **Settings → Migrations** shows **Finish
+  onboarding before migrating.** Only Admins and the Owner can start a migration.
+</Note>
 
 ## How coexistence works
 
@@ -29,25 +32,34 @@ During the migration, your merchant app talks to both billing systems. New
 customers check out on Polar. Existing subscriptions keep renewing on Stripe
 until you switch them through Polar.
 
-<MigrationCoexistence />
+```mermaid
+flowchart LR
+  APP[Your app] -->|new customers| P[Polar]
+  APP -->|existing subscribers| S[Stripe]
+  S -->|switch| P
+```
+
+Each subscription has one system responsible for its next renewal. New
+checkouts go to Polar. Stripe keeps renewing what it already has until you
+switch it.
+
+<Visibility for="agents">
+  Diagram: the merchant app sends new customers to Polar checkout and keeps existing subscribers on Stripe. At the switch step, Polar moves selected Stripe subscriptions to Polar.
+</Visibility>
 
 ## Migration overview
 
-The first and last stages happen in your application. The four stages in the
-middle match the journey under **Settings → Migrations** in Polar.
+Steps 1 and 6 happen in your application. Steps 2 to 5 happen in Polar under
+**Settings → Migrations**.
 
-1. **Move new sales to Polar** — Polar becomes the billing system for every new customer.
-2. **Connect your Stripe account** — Polar gets read and cutover access only.
-3. **Assess and import your catalog** — Products and customers land in Polar; billing stays on Stripe.
-4. **Move saved cards** — Stripe copies cards to Polar for renewals after the switch.
-5. **Switch billing to Polar** — Selected subscriptions stop renewing on Stripe and continue on Polar.
-6. **Reconcile and clean up** — Confirm your application data is correct, then complete the cleanup.
-
-The sections below walk through each stage in full.
+1. **Move new sales to Polar:** every new customer checks out on Polar.
+2. **Connect your Stripe account:** Polar only reads your data, and cancels the subscriptions you switch.
+3. **Assess and import your catalog:** products, discounts and customers are created in Polar. Billing stays on Stripe.
+4. **Move saved cards:** Stripe copies your customers' cards to Polar.
+5. **Switch billing to Polar:** the subscriptions you select stop renewing on Stripe and continue on Polar.
+6. **Reconcile and clean up:** check your application data, then remove the old Stripe code.
 
 ## 1. Move new sales to Polar
-
-**Goal:** Make Polar the billing system for every new customer.
 
 Integrate the [Polar API](/api-reference) and
 [webhooks](/integrate/webhooks/endpoints) into your application. New checkouts
@@ -68,9 +80,6 @@ your database while subscriptions still renew there.
 
 ## 2. Connect your Stripe account
 
-**Goal:** Give Polar only the access needed to prepare and perform the
-migration.
-
 Create a restricted API key in Stripe and add it to your migration in Polar.
 The Polar dashboard asks for the minimum permissions needed to read and migrate
 your billing data, then validates the account before continuing.
@@ -81,16 +90,14 @@ Nothing has moved yet. Stripe still owns every existing subscription.
 
 ## 3. Assess and import your catalog
 
-**Goal:** Decide what can move and prepare the records those subscriptions need
-in Polar.
-
 Polar assesses your recurring products, prices, customers, and subscriptions.
 You review what is ready and what needs attention, then import your selection.
 
 | After import                     | In Polar          | Still renews in |
 | -------------------------------- | ----------------- | --------------- |
-| Products and prices              | Created           | —               |
-| Customers                        | Created or reused | —               |
+| Products and prices              | Created           | Not applicable  |
+| Discounts                        | Created           | Not applicable  |
+| Customers                        | Created or reused | Not applicable  |
 | Subscriptions you plan to switch | Not created yet   | Stripe          |
 | Unsupported subscriptions        | Left alone        | Stripe          |
 
@@ -98,12 +105,10 @@ Polar does not create Polar subscriptions or change Stripe billing at this
 stage. Leave unsupported subscriptions on Stripe until you resolve them or
 choose another path.
 
-**Continue when:** You are clear on which subscriptions and related data will
-be imported.
+**Continue when:** Your selection is imported, and you know which subscriptions
+stay on Stripe.
 
 ## 4. Move saved cards
-
-**Goal:** Give Polar a payment method for the subscriptions it will renew.
 
 Follow the checklist in Polar to start an account-to-account copy in Stripe.
 Stripe sends saved card details directly to Polar's payment processor. They
@@ -117,8 +122,7 @@ Stripe accounts. See **Saved card transfer** under
 
 ## 5. Switch billing to Polar
 
-**Goal:** Make Polar responsible for future renewals of the subscriptions you
-select.
+<Warning>Switching can't be undone. Review your selection before you confirm it, and prepare Stripe and your systems as described in [Communications during the switch](#communications-during-the-switch).</Warning>
 
 Polar rechecks each selected subscription, prepares its matching Polar
 subscription, stops it on Stripe, and activates it in Polar with the same paid
@@ -128,7 +132,11 @@ for time they already paid for.
 Polar handles both sides of the switch. Do not manually activate a matching
 Polar subscription, as this can cause double billing.
 
-<MigrationSwitch />
+| Before the switch | After the switch |
+| --- | --- |
+| Renews on Stripe | Renews on Polar |
+| Paid period already paid | Same period kept |
+| Cards copied to Polar | Used at the next renewal |
 
 If a subscription renews within 24 hours, Polar leaves it on Stripe to avoid a
 billing conflict and give you time to react if something goes wrong. A
@@ -172,12 +180,7 @@ automations after the switch if subscriptions remain on Stripe.
 **Continue when:** Every selected subscription shows as moved, skipped, or
 failed, and every subscription left on Stripe has a clear next action.
 
-<Warning>Switching is not reversible. Review your selection before confirming it.</Warning>
-
 ## 6. Reconcile and clean up
-
-**Goal:** Remove the old billing paths without losing access to historical
-records.
 
 Compare the migration result with your own customer and access records. Confirm
 that each subscription bills in only one place. Retire Stripe checkout and
@@ -222,7 +225,8 @@ for payments it processes.
   <Accordion title="Subscriptions that need attention">
     Polar shows why a record cannot move automatically. Common examples include:
 
-    - Multiple subscription items or a quantity greater than one
+    - More than one item, except a plan with one add-on, or a quantity other
+      than one on the plan
     - Products without a supported recurring price in your organization's
       default currency, or with ambiguous prices
     - Past-due, unpaid, or paused subscriptions
@@ -236,27 +240,39 @@ for payments it processes.
     pricing models, so if some of your prices cannot be migrated,
     [contact Polar support](/support).
 
-    Polar also rechecks subscriptions during the switch. Subscriptions due to
-    renew within 24 hours, or set to end on a date other than their period end,
-    remain on Stripe at that point. A subscription set to cancel at the end of
-    its period does not renew, so it moves even if that end is within 24 hours.
+  </Accordion>
 
+  <Accordion title="Payment methods that can't move">
     Only cards are used. A subscription paying with another method, such as
     Link, SEPA Direct Debit, or a US bank account (ACH), still moves, but Polar
-    does not charge that method. It renews with another copied card for the same customer if there is
-    one. Otherwise its first Polar renewal fails and the customer is asked to add
-    a card.
-
+    doesn't charge that method. It renews with another copied card for the same
+    customer if there is one. Otherwise its first Polar renewal fails and the
+    customer is asked to add a card.
   </Accordion>
 
   <Accordion title="Saved card transfer">
     Only the owner of your Stripe account can start the account-to-account copy.
-    In Polar, download the customer mapping file and copy the provided destination
+    In Polar, download the customer CSV and copy the provided destination
     account ID into Stripe. After starting the copy, paste the Stripe migration
     ID (`migreq_…`) into Polar.
 
     Polar usually accepts the request within one business day. Stripe then moves
     the card data, usually within a few hours and sometimes up to 72 hours.
+
+  </Accordion>
+
+  <Accordion title="Finished and inactive migrations">
+    Polar deletes the Stripe API key it stored when a migration ends:
+
+    - **Completed:** the switch finished, with every subscription moved,
+      skipped, or failed.
+    - **Closed:** the migration had no activity for 90 days. Polar also removes
+      the records still waiting to be imported. Skipped and failed records are
+      kept.
+
+    The key stays active in Stripe, so revoke it there if you no longer need
+    it. You can no longer switch subscriptions from a completed or closed
+    migration. To move subscriptions still on Stripe, start a new migration.
 
   </Accordion>
 
@@ -279,367 +295,369 @@ for payments it processes.
 
 ## Coding assistant prompt
 
-Optional. If you use a coding assistant that can inspect your repository, expand
-the prompt below. It asks for a migration plan and reconciliation contract
-before any code changes. Review that plan before asking it to implement
+Optional. If you use a coding assistant that can inspect your repository, open
+the prompt below and paste it in. It asks for a migration plan before any code
+changes. Review that plan before asking it to implement
 anything. Never paste Stripe or Polar secrets into a conversation.
 
-```markdown title="Migration assistant prompt" icon="wand-magic-sparkles" expandable
-# Plan a safe Stripe-to-Polar migration
-
-You are a senior payments integration engineer helping migrate this
-application from Stripe to Polar. Work from the codebase in the current
-directory and current Polar documentation. Do not rely on memory for Polar
-API details.
-
-First produce a migration plan and reconciliation contract. Do not change
-code, create resources, cancel subscriptions, or start a cutover until the
-user reviews and approves that plan.
-
-## Objective
-
-Design a progressive migration in which:
-
-1. New sales use Polar first.
-2. Existing Stripe subscriptions keep renewing in Stripe while products and
-   customers are imported into Polar.
-3. Saved cards move through Stripe's secure account-to-account process.
-4. Selected subscriptions switch through Polar's migration flow.
-5. Each subscription has exactly one system responsible for its next renewal.
-6. The application can reconcile customers, subscriptions, orders, access,
-   and historical transactions across both systems.
-
-## Sources of truth
-
-Before recommending an endpoint, SDK method, webhook, field, or scope:
-
-1. Read https://polar.sh/docs/migrate.
-2. For JavaScript or TypeScript, read:
-   https://raw.githubusercontent.com/polarsource/agent-toolkit/main/skills/polar-integration/SKILL.md
-   For other languages, use the current language SDK and OpenAPI docs.
-3. Use https://polar.sh/docs/llms.txt to find the current API reference page
-   for every Polar operation you recommend.
-4. Inspect installed Polar SDK types when available.
-
-Current documentation and generated SDK types override this prompt and your
-training data. If you cannot verify an API detail, label it as unverified and
-ask for the missing context. Never invent IDs, URLs, fields, event names, or
-capabilities.
-
-Merchant migration REST endpoints exist under `/v1/merchant-migrations`, but
-are excluded from Polar's public OpenAPI schema, SDKs, and API reference. They
-are dashboard-internal, not a merchant integration API. Use **Settings →
-Migrations** for assessment, card transfer, and cutover.
-
-## Safety rules
-
-- Never expose, print, log, or commit Stripe or Polar secrets.
-- Never ask the user to paste secrets into chat.
-- Never handle raw card data.
-- Never stop, cancel, or pause Stripe billing, or activate a migrated Polar
-  subscription, outside Polar's switch. Refuse DIY cutover scripts.
-- Never treat webhooks as exactly-once delivery. Verify signatures, persist
-  the Standard Webhooks `webhook-id`, and make handlers idempotent.
-- Never use email as the durable cross-system identity.
-- Never overwrite a Polar Customer `external_id`. It is unique within an
-  organization and cannot be changed once set.
-- Never store card details, secrets, or sensitive personal data in metadata.
-- Historical Stripe payments remain in Stripe. Never manufacture Polar orders
-  for transactions Polar did not process.
-- Polar must enable Migrations for the organization.
-- Stripe Connect platform accounts and Stripe accounts in India cannot use
-  the automated flow. Direct those merchants to Polar support.
-- Subscriptions sold through Stripe Managed Payments are not moved yet and
-  stay on Stripe.
-- Unsupported pricing is not a dead end. Polar can adapt to new pricing
-  models; direct merchants with prices that cannot be migrated to Polar
-  support.
-- Switching is irreversible. Subscriptions renewing within about 24 hours
-  stay on Stripe to avoid a billing conflict. Subscriptions set to cancel at
-  the end of their period do not renew, so they move.
-- Real card copies require live Stripe accounts. Sandbox verifies application
-  behavior but cannot copy real cards.
-- The Stripe key mode must match Polar: live for production, test for sandbox.
-  Use only the restricted permissions in the current migration guide.
-
-## Phase 1: discover the current integration
-
-Inspect and report:
-
-- Framework, language, package manager, apps, and deployment boundaries
-- Authentication and the canonical user, account, workspace, or tenant ID
-- Whether billing belongs to a person, a team, or both
-- Stripe checkout, portal, customer, subscription, product, price, webhook,
-  scheduled-job, and entitlement code
-- Database tables that store Stripe IDs or billing state
-- Webhook verification, deduplication, retries, and dead-letter behavior
-- How the application grants and revokes access
-- Which system owns refunds, disputes, cancellations, invoices, and support
-- Trials, discounts, quantities, multiple items, manual invoices, metered
-  prices, pauses, non-card methods, or Connect accounts
-
-Search for Stripe SDK calls, environment variables, webhook event strings,
-provider IDs, and access checks. Ask only what the repository cannot answer.
-
-Resolve these questions before proposing changes:
-
-1. What immutable internal ID represents the billable customer?
-2. Can one customer have multiple Stripe customers or subscriptions?
-3. Must access continue when either Stripe or Polar owns the subscription?
-4. Which subscriptions should remain on Stripe?
-5. Is this Polar sandbox or production?
-
-## Phase 2: define the identity contract
-
-Use the application's immutable billable-customer ID as the Polar Customer
-`external_id`. For new Checkout Sessions, pass that value as
-`external_customer_id`; the resulting Customer exposes it as `external_id`.
-Do not use a Stripe customer ID unless it is already the application's
-canonical identity.
-
-For new Polar checkouts:
-
-- Send `external_customer_id`.
-- Use checkout `metadata` only for values belonging on the resulting order or
-  subscription.
-- Use `customer_metadata` only for values belonging on the customer.
-- Prefer stable keys such as `app_account_id`, `migration_batch_id`, and
-  `source_system`.
-- Keep canonical relationships in the application database. Metadata is
-  context, not the primary relational store.
-
-During preparation, Polar creates or reuses a Polar Customer for each selected
-Stripe customer and associates the Stripe customer ID internally for the card
-copy. Polar cannot infer the application's own customer ID. If the application
-needs that mapping, match the imported customer once using an exact, unique
-email and then set the application's canonical ID as the Polar Customer
-`external_id`. Require review for missing, duplicate, or changed emails.
-
-For a Polar Customer whose `external_id` is null, verify the current API and
-set it to the application's canonical ID through
-`PATCH /v1/customers/{id}`. Then use the external-ID lookup and state
-endpoints. Never overwrite an existing external ID.
-
-Treat skipped customers and Stripe-ID conflicts as unresolved. Never assume a
-completed import mapped every selected customer.
-
-Adapt the following mapping model to the existing database instead of creating
-duplicate tables.
-
-### Billing customer map
-
-- Canonical application customer ID
-- Stripe customer ID
-- Polar customer ID and external ID
-- Verification timestamp
-
-### Billing catalog map
-
-- Canonical internal plan or SKU
-- Stripe product and price IDs, paired with the Polar product and price IDs
-  created during preparation
-- Interval, currency, and amount used for verification
-- Verification timestamp
-
-Preparation creates new Polar products and prices for the subscriptions you
-select. Before changing application configuration, verify that every internal
-plan or SKU points to the correct new Polar product and price IDs. Imported
-products do not publicly expose their source Stripe IDs, so ask for the mapping
-when it is not available in the codebase. Never join catalogs by name alone.
-
-### Billing subscription map
-
-- Canonical internal subscription or entitlement ID
-- Stripe and Polar subscription IDs
-- Polar subscription metadata: `provider = stripe` and
-  `provider_subscription_id = <Stripe subscription ID>`
-- System that will charge the subscription next: Stripe or Polar
-- Current period boundaries, migration result, last verification, and last
-  error
-
-### Webhook receipt
-
-- Provider and environment
-- Standard Webhooks `webhook-id` with a unique constraint
-- Event type and object ID
-- Received, processed, and failed timestamps
-- Attempt count and last error
-
-Never deduplicate on `data.id`; it identifies the resource, so legitimate
-updates can share it.
-
-## Phase 3: recommend Polar integration points
-
-Verify exact paths, SDK methods, and scopes in current docs before generating
-code. Recommend only what the application needs.
-
-### New checkout path
-
-- Create Polar Checkout Sessions through the current Checkout API or SDK.
-- Pass `external_customer_id`, checkout `metadata`, and `customer_metadata`
-  according to the identity contract.
-- Redirect to Polar's hosted checkout URL.
-
-### Customer lookup and access
-
-- Get Customer and Customer State by external ID after mapping.
-- Update by Polar ID only when assigning an external ID for the first time.
-- Expect `customers:read` for lookup and `customers:write` for mapping, but
-  verify current scopes.
-
-### Webhooks
-
-Select the smallest event set that fits the access model:
-
-- `customer.state_changed` for consolidated subscriptions and benefits
-- `order.paid` for successful fulfillment
-- `order.refunded` for refund-driven behavior
-- `subscription.updated` as a catch-all, or narrower lifecycle events when
-  distinct transitions matter
-- `benefit_grant.created`, `benefit_grant.updated`, and
-  `benefit_grant.revoked` only when Polar benefits directly drive access
-
-Never treat `checkout.created` or `order.created` as proof of payment. Avoid
-granting the same entitlement from several events unless one idempotent domain
-operation owns the decision.
-
-Every handler needs signature verification, `webhook-id` deduplication,
-object-level idempotency, out-of-order handling, retries, dead-letter behavior,
-safe logging, and an API reconciliation fallback.
-
-Migration never looks like a new sale. Importing the catalog creates products,
-discounts, and customers without `product.created`, discount,
-`customer.created`, or `member.created` webhooks. During import and card
-mapping, you can receive `customer.updated`, each followed by
-`customer.state_changed`:
-
-- when the import fills in billing details or the Stripe customer ID on a
-  customer you already had in Polar
-- when you edit a customer's billing address during review
-- when Polar sets a copied card as a customer's default payment method. Link,
-  SEPA Direct Debit, ACH, and other non-card methods are never used, so they
-  never set a default or trigger this event.
-
-These events reflect customer data, not a switch. Do not grant access or
-record Polar as the billing system from them; `subscription.migrated` is the
-only cutover signal.
-
-At migration cutover, for each subscription, expect:
-
-- `subscription.updated` when the imported subscription activates
-- `subscription.migrated` with `provider` and `provider_subscription_id` to
-  match the Polar subscription to its source
-- `customer.state_changed` asynchronously after activation
-- Relevant `benefit_grant.*` events, if you attached benefits to the imported
-  products. Seat-based products grant benefits only when seats are claimed.
-- `customer.updated` if the cutover sets the copied card as the default
-- Stripe `customer.subscription.deleted` when Polar cancels the source
-  subscription. Its `cancellation_details.comment` starts with
-  `Migrated to Polar`.
-
-The Stripe cancellation is immediate, without proration or a final invoice, so
-`customer.subscription.deleted` is the expected Stripe subscription lifecycle
-event. Other Stripe events can still arrive depending on the account's
-configuration.
-
-Do not expect `subscription.created`, `subscription.active`, or
-`subscription.resumed` from migration, and do not invent a
-`merchant_migration.*` webhook. A subscription set to cancel at the end of its
-period arrives with `cancel_at_period_end` and `ends_at` set, but without a
-`subscription.canceled` event: it was already canceled on Stripe. At its end,
-Polar sends `subscription.canceled` and `subscription.revoked` as usual.
-
-After cutover, a moved subscription renews like any other Polar subscription
-and sends the usual
-[renewal events](/integrate/webhooks/events#renewal-sequences).
-
-None of these lists is in delivery order. At cutover, Polar enqueues
-`subscription.updated` before `subscription.migrated`, but retries can reorder
-them, and Stripe and Polar events can arrive in either order. Do not treat the Stripe cancellation as
-ordinary churn or revoke access while its matching migration is still being
-reconciled.
-
-## Phase 4: design coexistence and reconciliation
-
-Record which system will charge each subscription next. Never infer this only
-from non-null IDs.
-
-Before cutover:
-
-- New customers use Polar.
-- Existing subscriptions keep billing on Stripe.
-- Access can accept a valid entitlement from either provider.
-- Route cancel, pause, resume, and plan changes to the system currently billing
-  the subscription.
-
-During cutover:
-
-- Do not make plan, cancellation, pause, or resume changes while the selected
-  subscription is switching.
-- Use Polar's migration UI.
-- Do not record Polar as the system that will charge next from intent alone.
-- Verify that the application references the Polar product and price created
-  during preparation before accepting the cutover result.
-- Treat `subscription.migrated` as the cutover signal. Match its
-  `provider_subscription_id` to the source Stripe subscription, then reconcile
-  with the public Subscriptions API.
-- Handle `subscription.migrated` as an idempotent upsert that stores the Polar
-  subscription ID. Do not grant or revoke access, and do not send a welcome or
-  cancellation email.
-- Compare status and current period boundaries before recording Polar as the
-  system that will charge next.
-- Keep skipped or failed subscriptions billing on Stripe.
-
-After cutover:
-
-- Reconcile counts and IDs across the application, Stripe, and Polar.
-- Verify no moved subscription can renew in Stripe.
-- Verify every Polar subscription maps to one customer and entitlement.
-- Verify paid periods, trial ends, and payment-method coverage.
-
-The migration dashboard is the operational view for the whole batch.
-`subscription.migrated` is the definitive application signal for each
-successfully cut-over subscription. See
-[Migration Sequences](/integrate/webhooks/events#migration-sequences).
-
-## Phase 5: define cleanup gates
-
-Do not delete Stripe code because the first batch moved. Require:
-
-- No new Stripe Checkout Sessions
-- Exactly one billing system recorded per subscription
-- No moved Stripe subscription still renewable
-- Both providers' webhooks understood during coexistence
-- Scheduled jobs routed to the correct billing system or safely retired
-- Support able to find transactions from either era
-- Historical Stripe refunds and disputes still routed to Stripe
-- Stripe history retained for accounting
-- Credentials revoked only after final reconciliation
-
-## Required output
-
-Return:
-
-1. Current architecture with file paths
-2. Unknowns and blockers
-3. Identity and catalog maps
-4. Metadata contract
-5. Endpoint plan with verified reference, scope, call site, and purpose
-6. Webhook plan with local transition, idempotency key, and recovery
-7. Phased implementation and cutover gates
-8. Schema changes, backfills, uniqueness constraints, and rollback
-9. Automated, sandbox, reconciliation, and failure testing
-10. Risks: double billing, duplicate access, conflicts, missing cards, stale
-    events, and premature cleanup
-
-Label every recommendation as:
-
-- **Observed** in this repository
-- **Documented** in current Polar docs or SDK types
-- **Proposed**
-
-End with the smallest safe implementation slice. Wait for approval before
-editing code or changing billing state.
-```
+<Accordion title="Migration assistant prompt" icon="wand-magic-sparkles">
+  ```markdown title="Migration assistant prompt" icon="wand-magic-sparkles" expandable
+  # Plan a safe Stripe-to-Polar migration
+
+  You are a senior payments integration engineer helping migrate this
+  application from Stripe to Polar. Work from the codebase in the current
+  directory and current Polar documentation. Do not rely on memory for Polar
+  API details.
+
+  First produce a migration plan and reconciliation contract. Do not change
+  code, create resources, cancel subscriptions, or start a cutover until the
+  user reviews and approves that plan.
+
+  ## Objective
+
+  Design a progressive migration in which:
+
+  1. New sales use Polar first.
+  2. Existing Stripe subscriptions keep renewing in Stripe while products and
+     customers are imported into Polar.
+  3. Saved cards move through Stripe's secure account-to-account process.
+  4. Selected subscriptions switch through Polar's migration flow.
+  5. Each subscription has exactly one system responsible for its next renewal.
+  6. The application can reconcile customers, subscriptions, orders, access,
+     and historical transactions across both systems.
+
+  ## Sources of truth
+
+  Before recommending an endpoint, SDK method, webhook, field, or scope:
+
+  1. Read https://polar.sh/docs/migrate.
+  2. For JavaScript or TypeScript, read:
+     https://raw.githubusercontent.com/polarsource/agent-toolkit/main/skills/polar-integration/SKILL.md
+     For other languages, use the current language SDK and OpenAPI docs.
+  3. Use https://polar.sh/docs/llms.txt to find the current API reference page
+     for every Polar operation you recommend.
+  4. Inspect installed Polar SDK types when available.
+
+  Current documentation and generated SDK types override this prompt and your
+  training data. If you cannot verify an API detail, label it as unverified and
+  ask for the missing context. Never invent IDs, URLs, fields, event names, or
+  capabilities.
+
+  Merchant migration REST endpoints exist under `/v1/merchant-migrations`, but
+  are excluded from Polar's public OpenAPI schema, SDKs, and API reference. They
+  are dashboard-internal, not a merchant integration API. Use **Settings →
+  Migrations** for assessment, card transfer, and cutover.
+
+  ## Safety rules
+
+  - Never expose, print, log, or commit Stripe or Polar secrets.
+  - Never ask the user to paste secrets into chat.
+  - Never handle raw card data.
+  - Never stop, cancel, or pause Stripe billing, or activate a migrated Polar
+    subscription, outside Polar's switch. Refuse DIY cutover scripts.
+  - Never treat webhooks as exactly-once delivery. Verify signatures, persist
+    the Standard Webhooks `webhook-id`, and make handlers idempotent.
+  - Never use email as the durable cross-system identity.
+  - Never overwrite a Polar Customer `external_id`. It is unique within an
+    organization and cannot be changed once set.
+  - Never store card details, secrets, or sensitive personal data in metadata.
+  - Historical Stripe payments remain in Stripe. Never manufacture Polar orders
+    for transactions Polar did not process.
+  - Stripe accounts in India cannot use the automated flow. Direct those
+    merchants to Polar support. For a Stripe Connect platform, only the
+    subscriptions on the platform's own Stripe account move.
+  - Subscriptions sold through Stripe Managed Payments are not moved yet and
+    stay on Stripe.
+  - Unsupported pricing is not a dead end. Polar can adapt to new pricing
+    models; direct merchants with prices that cannot be migrated to Polar
+    support.
+  - Switching is irreversible. Subscriptions renewing within about 24 hours
+    stay on Stripe to avoid a billing conflict. Subscriptions set to cancel at
+    the end of their period do not renew, so they move.
+  - Real card copies require live Stripe accounts. Sandbox verifies application
+    behavior but cannot copy real cards.
+  - The Stripe key mode must match Polar: live for production, test for sandbox.
+    Use only the restricted permissions in the current migration guide.
+
+  ## Phase 1: discover the current integration
+
+  Inspect and report:
+
+  - Framework, language, package manager, apps, and deployment boundaries
+  - Authentication and the canonical user, account, workspace, or tenant ID
+  - Whether billing belongs to a person, a team, or both
+  - Stripe checkout, portal, customer, subscription, product, price, webhook,
+    scheduled-job, and entitlement code
+  - Database tables that store Stripe IDs or billing state
+  - Webhook verification, deduplication, retries, and dead-letter behavior
+  - How the application grants and revokes access
+  - Which system owns refunds, disputes, cancellations, invoices, and support
+  - Trials, discounts, quantities, multiple items, manual invoices, metered
+    prices, pauses, non-card methods, or Connect accounts
+
+  Search for Stripe SDK calls, environment variables, webhook event strings,
+  provider IDs, and access checks. Ask only what the repository cannot answer.
+
+  Resolve these questions before proposing changes:
+
+  1. What immutable internal ID represents the billable customer?
+  2. Can one customer have multiple Stripe customers or subscriptions?
+  3. Must access continue when either Stripe or Polar owns the subscription?
+  4. Which subscriptions should remain on Stripe?
+  5. Is this Polar sandbox or production?
+
+  ## Phase 2: define the identity contract
+
+  Use the application's immutable billable-customer ID as the Polar Customer
+  `external_id`. For new Checkout Sessions, pass that value as
+  `external_customer_id`; the resulting Customer exposes it as `external_id`.
+  Do not use a Stripe customer ID unless it is already the application's
+  canonical identity.
+
+  For new Polar checkouts:
+
+  - Send `external_customer_id`.
+  - Use checkout `metadata` only for values belonging on the resulting order or
+    subscription.
+  - Use `customer_metadata` only for values belonging on the customer.
+  - Prefer stable keys such as `app_account_id`, `migration_batch_id`, and
+    `source_system`.
+  - Keep canonical relationships in the application database. Metadata is
+    context, not the primary relational store.
+
+  During preparation, Polar creates or reuses a Polar Customer for each selected
+  Stripe customer and associates the Stripe customer ID internally for the card
+  copy. Polar cannot infer the application's own customer ID. If the application
+  needs that mapping, match the imported customer once using an exact, unique
+  email and then set the application's canonical ID as the Polar Customer
+  `external_id`. Require review for missing, duplicate, or changed emails.
+
+  For a Polar Customer whose `external_id` is null, verify the current API and
+  set it to the application's canonical ID through
+  `PATCH /v1/customers/{id}`. Then use the external-ID lookup and state
+  endpoints. Never overwrite an existing external ID.
+
+  Treat skipped customers and Stripe-ID conflicts as unresolved. Never assume a
+  completed import mapped every selected customer.
+
+  Adapt the following mapping model to the existing database instead of creating
+  duplicate tables.
+
+  ### Billing customer map
+
+  - Canonical application customer ID
+  - Stripe customer ID
+  - Polar customer ID and external ID
+  - Verification timestamp
+
+  ### Billing catalog map
+
+  - Canonical internal plan or SKU
+  - Stripe product and price IDs, paired with the Polar product and price IDs
+    created during preparation
+  - Interval, currency, and amount used for verification
+  - Verification timestamp
+
+  Preparation creates new Polar products and prices for the subscriptions you
+  select. Before changing application configuration, verify that every internal
+  plan or SKU points to the correct new Polar product and price IDs. Imported
+  products do not publicly expose their source Stripe IDs, so ask for the mapping
+  when it is not available in the codebase. Never join catalogs by name alone.
+
+  ### Billing subscription map
+
+  - Canonical internal subscription or entitlement ID
+  - Stripe and Polar subscription IDs
+  - Polar subscription metadata: `provider = stripe` and
+    `provider_subscription_id = <Stripe subscription ID>`
+  - System that will charge the subscription next: Stripe or Polar
+  - Current period boundaries, migration result, last verification, and last
+    error
+
+  ### Webhook receipt
+
+  - Provider and environment
+  - Standard Webhooks `webhook-id` with a unique constraint
+  - Event type and object ID
+  - Received, processed, and failed timestamps
+  - Attempt count and last error
+
+  Never deduplicate on `data.id`; it identifies the resource, so legitimate
+  updates can share it.
+
+  ## Phase 3: recommend Polar integration points
+
+  Verify exact paths, SDK methods, and scopes in current docs before generating
+  code. Recommend only what the application needs.
+
+  ### New checkout path
+
+  - Create Polar Checkout Sessions through the current Checkout API or SDK.
+  - Pass `external_customer_id`, checkout `metadata`, and `customer_metadata`
+    according to the identity contract.
+  - Redirect to Polar's hosted checkout URL.
+
+  ### Customer lookup and access
+
+  - Get Customer and Customer State by external ID after mapping.
+  - Update by Polar ID only when assigning an external ID for the first time.
+  - Expect `customers:read` for lookup and `customers:write` for mapping, but
+    verify current scopes.
+
+  ### Webhooks
+
+  Select the smallest event set that fits the access model:
+
+  - `customer.state_changed` for consolidated subscriptions and benefits
+  - `order.paid` for successful fulfillment
+  - `order.refunded` for refund-driven behavior
+  - `subscription.updated` as a catch-all, or narrower lifecycle events when
+    distinct transitions matter
+  - `benefit_grant.created`, `benefit_grant.updated`, and
+    `benefit_grant.revoked` only when Polar benefits directly drive access
+
+  Never treat `checkout.created` or `order.created` as proof of payment. Avoid
+  granting the same entitlement from several events unless one idempotent domain
+  operation owns the decision.
+
+  Every handler needs signature verification, `webhook-id` deduplication,
+  object-level idempotency, out-of-order handling, retries, dead-letter behavior,
+  safe logging, and an API reconciliation fallback.
+
+  Migration never looks like a new sale. Importing the catalog creates products,
+  discounts, and customers without `product.created`, discount,
+  `customer.created`, or `member.created` webhooks. During import and card
+  mapping, you can receive `customer.updated`, each followed by
+  `customer.state_changed`:
+
+  - when the import fills in billing details or the Stripe customer ID on a
+    customer you already had in Polar
+  - when you edit a customer's billing address during review
+  - when Polar sets a copied card as a customer's default payment method. Link,
+    SEPA Direct Debit, ACH, and other non-card methods are never used, so they
+    never set a default or trigger this event.
+
+  These events reflect customer data, not a switch. Do not grant access or
+  record Polar as the billing system from them; `subscription.migrated` is the
+  only cutover signal.
+
+  At migration cutover, for each subscription, expect:
+
+  - `subscription.updated` when the imported subscription activates
+  - `subscription.migrated` with `provider` and `provider_subscription_id` to
+    match the Polar subscription to its source
+  - `customer.state_changed` asynchronously after activation
+  - Relevant `benefit_grant.*` events, if you attached benefits to the imported
+    products. Seat-based products grant benefits only when seats are claimed.
+  - `customer.updated` if the cutover sets the copied card as the default
+  - Stripe `customer.subscription.deleted` when Polar cancels the source
+    subscription. Its `cancellation_details.comment` starts with
+    `Migrated to Polar`.
+
+  The Stripe cancellation is immediate, without proration or a final invoice, so
+  `customer.subscription.deleted` is the expected Stripe subscription lifecycle
+  event. Other Stripe events can still arrive depending on the account's
+  configuration.
+
+  Do not expect `subscription.created`, `subscription.active`, or
+  `subscription.resumed` from migration, and do not invent a
+  `merchant_migration.*` webhook. A subscription set to cancel at the end of its
+  period arrives with `cancel_at_period_end` and `ends_at` set, but without a
+  `subscription.canceled` event: it was already canceled on Stripe. At its end,
+  Polar sends `subscription.canceled` and `subscription.revoked` as usual.
+
+  After cutover, a moved subscription renews like any other Polar subscription
+  and sends the usual
+  [renewal events](/integrate/webhooks/events#renewal-sequences).
+
+  None of these lists is in delivery order. At cutover, Polar enqueues
+  `subscription.updated` before `subscription.migrated`, but retries can reorder
+  them, and Stripe and Polar events can arrive in either order. Do not treat the Stripe cancellation as
+  ordinary churn or revoke access while its matching migration is still being
+  reconciled.
+
+  ## Phase 4: design coexistence and reconciliation
+
+  Record which system will charge each subscription next. Never infer this only
+  from non-null IDs.
+
+  Before cutover:
+
+  - New customers use Polar.
+  - Existing subscriptions keep billing on Stripe.
+  - Access can accept a valid entitlement from either provider.
+  - Route cancel, pause, resume, and plan changes to the system currently billing
+    the subscription.
+
+  During cutover:
+
+  - Do not make plan, cancellation, pause, or resume changes while the selected
+    subscription is switching.
+  - Use Polar's migration UI.
+  - Do not record Polar as the system that will charge next from intent alone.
+  - Verify that the application references the Polar product and price created
+    during preparation before accepting the cutover result.
+  - Treat `subscription.migrated` as the cutover signal. Match its
+    `provider_subscription_id` to the source Stripe subscription, then reconcile
+    with the public Subscriptions API.
+  - Handle `subscription.migrated` as an idempotent upsert that stores the Polar
+    subscription ID. Do not grant or revoke access, and do not send a welcome or
+    cancellation email.
+  - Compare status and current period boundaries before recording Polar as the
+    system that will charge next.
+  - Keep skipped or failed subscriptions billing on Stripe.
+
+  After cutover:
+
+  - Reconcile counts and IDs across the application, Stripe, and Polar.
+  - Verify no moved subscription can renew in Stripe.
+  - Verify every Polar subscription maps to one customer and entitlement.
+  - Verify paid periods, trial ends, and payment-method coverage.
+
+  The migration dashboard is the operational view for the whole batch.
+  `subscription.migrated` is the definitive application signal for each
+  successfully cut-over subscription. See
+  [Migration Sequences](/integrate/webhooks/events#migration-sequences).
+
+  ## Phase 5: define cleanup gates
+
+  Do not delete Stripe code because the first batch moved. Require:
+
+  - No new Stripe Checkout Sessions
+  - Exactly one billing system recorded per subscription
+  - No moved Stripe subscription still renewable
+  - Both providers' webhooks understood during coexistence
+  - Scheduled jobs routed to the correct billing system or safely retired
+  - Support able to find transactions from either era
+  - Historical Stripe refunds and disputes still routed to Stripe
+  - Stripe history retained for accounting
+  - Credentials revoked only after final reconciliation
+
+  ## Required output
+
+  Return:
+
+  1. Current architecture with file paths
+  2. Unknowns and blockers
+  3. Identity and catalog maps
+  4. Metadata contract
+  5. Endpoint plan with verified reference, scope, call site, and purpose
+  6. Webhook plan with local transition, idempotency key, and recovery
+  7. Phased implementation and cutover gates
+  8. Schema changes, backfills, uniqueness constraints, and rollback
+  9. Automated, sandbox, reconciliation, and failure testing
+  10. Risks: double billing, duplicate access, conflicts, missing cards, stale
+      events, and premature cleanup
+
+  Label every recommendation as:
+
+  - **Observed** in this repository
+  - **Documented** in current Polar docs or SDK types
+  - **Proposed**
+
+  End with the smallest safe implementation slice. Wait for approval before
+  editing code or changing billing state.
+  ```
+</Accordion>
 
 Need help planning the migration? [Contact Polar support](/support).

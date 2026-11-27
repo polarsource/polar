@@ -1,132 +1,201 @@
 ---
 title: "Proration"
 sidebarTitle: "Proration"
-description: "Control how the price difference is billed when a subscription is upgraded or downgraded."
+description: "Choose how Polar bills the price difference when a subscription changes plan, seats or units mid-cycle, and how prorated amounts and downgrade credits are calculated."
 ---
 
-Whenever a subscription's price changes mid-cycle — typically because the customer switched to a different product or changed seats — there's an unused portion of the current billing period that has already been paid for. **Proration** is how Polar reconciles that difference.
+When a subscription changes price mid-cycle, part of the current period is already paid for. **Proration** is how Polar settles that difference: charge it now, add it to the next invoice, or skip it and apply the change at renewal.
 
-You pick the proration behavior either at the organization level (as the default) or per API call.
+It applies to plan changes and to seat and unit changes. You set a default for your organization and can override it on each update. The default for new organizations is `prorate`.
 
 ## Proration behaviors
 
-Polar supports three standard proration behaviors:
+The dashboard labels below are the options under **Settings → Subscriptions → Proration** and in the **Update Subscription** modal.
+
+| Behavior | Dashboard label | Change applies | Difference |
+| --- | --- | --- | --- |
+| `invoice` | **Prorate & charge now** | Now | Charged or credited now |
+| `prorate` | **Prorate on next invoice** | Now | Added to the next invoice |
+| `next_period` | **Schedule for next cycle** | Next cycle | None |
+| `auto` | **Prorate upgrades, schedule downgrades** | Upgrades now, downgrades next cycle | Upgrades charged now |
+| `reset` | **Charge full amount & reset cycle** | Now, with a new cycle | Full new price charged now |
 
 ### Prorate and charge now (`invoice`)
 
-The subscription is updated **immediately** and Polar invoices the prorated difference right away. If the update is an upgrade the customer is charged; if it's a downgrade they're credited on the new invoice.
+The change applies now and Polar invoices the prorated difference right away. An upgrade charges the customer. A downgrade credits them.
 
-Use this when you want money to change hands at the same time as the change — for example, on upgrades where you want to collect the extra revenue now.
+Use it when money should move at the same time as the change, for example to collect upgrade revenue now.
 
 ### Prorate on next invoice (`prorate`)
 
-The subscription is updated **immediately**, but the prorated difference is carried over and applied on the **next scheduled invoice** instead of triggering a charge now. The customer's billing cycle is unchanged.
+The change applies now, and the prorated difference is added to the **next scheduled invoice** instead of being charged now. The billing cycle doesn't change.
 
-This is typically the smoothest experience for the customer: their plan changes instantly, and they see the adjustment on their regular renewal invoice.
+The customer sees their plan change at once and the adjustment on their regular renewal invoice.
 
 <Note>
-  If the billing interval changes (for example, monthly to yearly), `prorate` is promoted to
-  `invoice` automatically — there's no "next invoice" on the old cycle to defer the difference to.
+  If the billing interval changes, for example monthly to yearly, `prorate` becomes `invoice`. The old cycle has no next invoice to add the difference to.
 </Note>
 
 <Warning>
-  For `invoice` and `prorate`, the subscription update is applied only if the immediate payment (if
-  any) succeeds. If the payment fails, the API returns an error and the subscription stays
-  unchanged.
+  With `invoice` and `prorate`, the change only applies if the immediate payment, if any, succeeds. If it fails, the API returns an error and the subscription stays as it was.
 </Warning>
 
 ### Schedule for next cycle (`next_period`)
 
-The change is **not applied immediately**. It's scheduled as a pending update and applied at the start of the next billing period. No proration charge or credit is issued — the new plan simply takes effect on renewal.
+The change doesn't apply now. Polar stores it in the subscription's `pending_update` and applies it at the start of the next billing period. No proration charge or credit is issued.
 
-While a `next_period` update is pending, the subscription's `pending_update` field describes the scheduled change. Submitting a new update always supersedes the pending one: if you scheduled a `next_period` change and then make another update with `invoice` or `prorate`, the pending update is discarded and the new change is applied right away.
+A new update always replaces a pending one. If you schedule a `next_period` change and then update with `invoice` or `prorate`, the pending change is dropped and the new one applies now. To drop it without another change, see [Clear a scheduled change](/features/subscriptions/manage#clear-a-scheduled-change).
 
-This behavior is the safer default for downgrades where you don't want to issue credits, and for any case where you want the current period's terms to stay intact.
+Use it for downgrades when you don't want to issue credits, or whenever the current period's terms should stay as they are.
+
+### Prorate upgrades, schedule downgrades (`auto`)
+
+<Note>
+  Available from API version 2027-01. See [Update Subscription](/api-reference/next/subscriptions/update-subscription). The CLI and the `2026-10` SDKs don't accept `auto`. You can still choose it as the organization default in the dashboard, and agents using the MCP server can pass it.
+</Note>
+
+Polar decides per change. **Upgrades** apply now like `invoice`, and **downgrades** wait for the next cycle like `next_period`. Customers can upgrade from the [Customer Portal](/features/customer-portal/introduction) right away, while downgrades wait for renewal.
+
+- **Product changes.** A longer billing interval (monthly to yearly) is an upgrade and a shorter one is a downgrade, whatever the prices. With the same interval, a higher or equal price is an upgrade and a lower price is a downgrade. Moving from a non-seat to a seat-based product, or from a non-unit to a unit-based product, always applies now.
+- **Seat and unit changes.** Adding is an upgrade, removing is a downgrade.
+- **Trials.** During a trial every change applies now, since nothing is billed until the trial ends. If the new product's trial would already be over, the trial ends and the customer is charged for the new plan.
+
+Pass an explicit `proration_behavior` on an update to override `auto` for that change.
 
 ### Charge full amount and reset cycle (`reset`)
 
-The subscription switches to the new plan **immediately**, Polar invoices the **full price of the new plan** right away, and the **billing cycle is reset** to start now. No proration is applied: the customer isn't credited for the unused portion of the old period, and they aren't charged a prorated amount — they pay the full new price and begin a fresh billing period.
-
-Because the cycle restarts, the new period's anchor day becomes the day the change was made, and all future renewals follow the new schedule.
-
-Use this when a plan change should behave like a brand-new subscription — for example, when an upgrade should restart the commitment period rather than carry over the current one.
-
 <Note>
-  The `reset` proration behavior is currently in preview. You'll only be able to use the `reset`
-  proration behavior if you are on a paid plan.
+  `reset` is in preview, and access is granted per organization. [Contact support](/support) to request it.
 </Note>
 
-## Setting the default behavior
+The subscription switches to the new plan now, Polar invoices the **full price of the new plan** and the **billing cycle restarts** today. Nothing is prorated: there's no credit for the unused part of the old period and no partial charge. Future renewals follow the new anchor date.
 
-Each organization has a default proration behavior that applies whenever you don't pass an explicit `proration_behavior` on an API call — including plan changes customers initiate from the [Customer Portal](/features/customer-portal/introduction).
+Use it when a plan change should act like a new subscription, for example when an upgrade restarts a commitment period.
 
-You can change it from **Settings → Subscriptions** in the dashboard, or via the [Update Organization](/api-reference/current/organizations/update-organization) API.
+## Set the default behavior
 
-## Overriding per update
+The organization default applies to every change without an explicit `proration_behavior`, including plan changes customers make from the [Customer Portal](/features/customer-portal/introduction).
 
-Every subscription update that changes the price — a product change or a seat change — accepts an optional `proration_behavior` that overrides the organization default for that single call:
+- Open **Settings → Subscriptions**
+- Under **Changes**, pick a **Proration** option. It saves automatically
+
+Over the API, it's `subscription_settings.proration_behavior` on [Update Organization](/api-reference/current/organizations/update-organization). Every field of `subscription_settings` is required, so send them all. See the [settings reference](/features/settings).
+
+<Note>Dashboard or API only. Not available from the CLI or MCP server.</Note>
+
+## Override per update
+
+Every update that changes the price accepts an optional `proration_behavior` that overrides the default for that call.
+
+<Tabs>
+  <Tab title="Dashboard">
+    - Open the subscription
+    - Click **Update Subscription**
+    - On the **Plan** or **Seats** tab, make the change
+    - Pick a **Proration behavior**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar subscriptions update $SUBSCRIPTION_ID \
+      --product-id $PRODUCT_ID --proration-behavior invoice
+    ```
+
+    `--proration-behavior` accepts `invoice`, `prorate`, `next_period` and `reset`.
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Upgrade Jane's (jane@example.com) subscription to the Pro product and charge the prorated difference now.
+    ```
+
+    Uses the `subscriptions_update` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
 
 <CodeGroup>
+```typescript TypeScript
+await polar.subscriptions.update(subscriptionId, {
+  product_id: productId,
+  proration_behavior: "invoice",
+});
+```
+
+```python Python
+polar.subscriptions.update(
+    subscription_id,
+    product_id=product_id,
+    proration_behavior="invoice",
+)
+```
 
 ```bash cURL
-curl --request PATCH \
-  --url https://api.polar.sh/v1/subscriptions/{subscription_id} \
-  --header 'Authorization: Bearer <YOUR_BEARER_TOKEN_HERE>' \
-  --header 'Content-Type: application/json' \
-  --data '{
-    "product_id": "<product_id>",
-    "proration_behavior": "invoice"
-  }'
+curl -X PATCH https://sandbox-api.polar.sh/v1/subscriptions/$SUBSCRIPTION_ID \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{ "product_id": "'"$PRODUCT_ID"'", "proration_behavior": "invoice" }'
 ```
-
-```py Python
-from polar.v2026_10 import Polar
-
-with Polar("<YOUR_BEARER_TOKEN_HERE>") as polar:
-    res = polar.subscriptions.update(
-        "<subscription_id>",
-        product_id="<product_id>",
-        proration_behavior="invoice",  # or "prorate" or "next_period"
-    )
-```
-
 </CodeGroup>
 
-Valid values are `invoice`, `prorate`, and `next_period`. If your organization has access to the preview `reset` behavior, you can pass `reset` here as well.
+The examples use the sandbox client from the [quickstart overview](/quickstart/overview#prerequisites), on API version `2026-10`. In that version, `proration_behavior` accepts `invoice`, `prorate`, `next_period` and, with preview access, `reset`.
 
 ## How the prorated amount is calculated
 
-Polar prorates on a **per-second** basis. If `S` seconds remain out of `T` total seconds in the current billing period:
+Polar prorates **per second**. If `S` seconds remain out of `T` in the current billing period:
 
 - Unused credit on the old plan: `old_plan_price * S / T`
-- Charge on the new plan for the remainder: `new_plan_price * S / T`
-- Prorated difference: the new-plan remainder minus the old-plan unused credit
+- Charge for the rest of the period on the new plan: `new_plan_price * S / T`
+- Prorated difference: the new-plan charge minus the old-plan credit
 
-For an upgrade the difference is positive, so the customer is charged; for a downgrade it's negative, so the customer is credited.
+An upgrade gives a positive difference, which is charged. A downgrade gives a negative one, which is credited.
+
+Polar uses the real length of the current period, so 28-, 29-, 30- and 31-day months are exact. The time of day matters too: upgrading at noon credits a different amount than at midnight.
 
 ### Upgrade
 
-A customer subscribed to a \$5/month plan on a 30-day month (2,592,000 seconds total). After 1 day (86,400 seconds elapsed, 2,505,600 seconds remaining) they upgrade to a \$20/month plan.
+A customer pays \$5/month on a 30-day month (2,592,000 seconds). After 1 day (2,505,600 seconds left) they upgrade to \$20/month.
 
-- Unused credit on the $5 plan: `\$5 * 2,505,600 / 2,592,000 = \$4.83`
-- New charge for the remaining 2,505,600 seconds on the $20 plan: `\$20 * 2,505,600 / 2,592,000 = \$19.33`
-- **Prorated difference: $14.50**
+- Unused credit on the \$5 plan: `$5 * 2,505,600 / 2,592,000 = $4.83`
+- Charge for the rest of the period on the \$20 plan: `$20 * 2,505,600 / 2,592,000 = $19.33`
+- **Prorated difference: \$14.50**
 
-With `invoice`, that \$14.50 is charged immediately. With `prorate`, it's added to the next monthly invoice (which is also the new \$20 charge for the next cycle).
+With `invoice`, \$14.50 is charged now. With `prorate`, it's added to the next monthly invoice, alongside the \$20 for the next cycle.
 
 ### Downgrade
 
-A customer subscribed to a \$20/month plan on a 30-day month (2,592,000 seconds total). After 1 day (2,505,600 seconds remaining) they downgrade to a \$5/month plan.
+A customer pays \$20/month on a 30-day month. After 1 day they downgrade to \$5/month.
 
-- Unused credit on the $20 plan: `\$20 * 2,505,600 / 2,592,000 = \$19.33`
-- New charge for the remaining 2,505,600 seconds on the $5 plan: `\$5 * 2,505,600 / 2,592,000 = \$4.83`
-- **Prorated difference: -$14.50** (credit to the customer)
+- Unused credit on the \$20 plan: `$20 * 2,505,600 / 2,592,000 = $19.33`
+- Charge for the rest of the period on the \$5 plan: `$5 * 2,505,600 / 2,592,000 = $4.83`
+- **Prorated difference: -\$14.50**, a credit to the customer
 
-With `invoice`, a credit invoice for $14.50 is issued immediately. With `prorate`, the credit is applied on the next invoice.
+With `invoice`, a \$14.50 credit invoice is issued now and added to the customer's balance. With `prorate`, the credit is applied to the next invoice.
 
-<Note>
-  Because proration is computed from the exact number of seconds remaining, the change time-of-day
-  matters: upgrading at noon credits a different amount than upgrading at midnight. Polar always
-  uses the real length of the current billing period (so 28-, 29-, 30-, and 31-day months are all
-  handled exactly).
-</Note>
+## Downgrade credits and the customer balance
+
+A downgrade credit is **never paid back to the card**. It goes to the customer's balance with Polar, which is applied to their next orders until it's used up.
+
+- With `invoice`, the credit is added to the balance now.
+- With `prorate`, the credit is deducted from the next invoice. Anything left over goes to the balance.
+
+### Returning a downgrade credit to the card
+
+To give the money back instead, [refund](/features/refunds) the **order the customer paid before the downgrade**, up to the amount they paid on it.
+
+A refund also reduces any positive balance by up to the refunded amount. So refunding the credit moves it from the balance back to the card, and the customer isn't credited twice. With the downgrade above:
+
+1. The customer downgrades with `invoice`, and \$14.50 goes to their balance.
+2. You refund \$14.50 on the original \$20 order. Enter the amount excluding tax; Polar adds the matching tax.
+3. The customer gets \$14.50 back on their card and their balance returns to zero. Their next renewal is charged the full \$5.
+
+<Warning>
+  **A refund only takes back credit that's still on the balance.** Any other proration credit stays with the customer: a `prorate` credit waiting for or already deducted from the next invoice, or balance already used by a later order. Refunding the original order in those cases pays the customer twice. Before refunding, check the customer's balance and their invoices since the change, and lower the refund by any credit that isn't on the balance.
+</Warning>
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Managing subscriptions](/features/subscriptions/manage) | Change plans, seats and units |
+| [Refunds](/features/refunds) | Full and partial refunds |
+| [Settings](/features/settings) | Organization subscription settings |
+| [Update Subscription](/api-reference/current/subscriptions/update-subscription) | API reference |

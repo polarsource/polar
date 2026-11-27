@@ -1,7 +1,8 @@
 from unittest.mock import MagicMock
 
 import pytest
-from httpx import AsyncClient
+import stripe
+from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.auth.scope import Scope
@@ -26,6 +27,7 @@ from polar.models.user_organization import OrganizationRole
 from polar.order.repository import OrderRepository
 from polar.postgres import AsyncSession
 from polar.refund.schemas import RefundCreate
+from polar.version import CURRENT_API_VERSION, V2027_01
 from tests.fixtures import random_objects as ro
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -298,6 +300,43 @@ class TestCreateRefunds(StripeRefund):
     ) -> None:
         response = await client.post("/v1/refunds/")
         assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.refunds_write}))
+    @pytest.mark.parametrize("api_version", [str(CURRENT_API_VERSION), str(V2027_01)])
+    async def test_payment_already_refunded_by_stripe(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        stripe_service_mock: MagicMock,
+        product: Product,
+        customer: Customer,
+        api_version: str,
+    ) -> None:
+        order, _, _ = await create_order_and_payment(
+            save_fixture, product=product, customer=customer, amount=1000, tax_amount=0
+        )
+        stripe_service_mock.create_refund.side_effect = stripe.InvalidRequestError(
+            "Stripe identified this payment as high risk and refunded it.",
+            param=None,
+            code="charge_not_refundable",
+        )
+
+        response = await client.post(
+            "/v1/refunds/",
+            headers={"Polar-Version": api_version},
+            json={
+                "order_id": str(order.id),
+                "reason": "service_disruption",
+                "amount": 500,
+            },
+        )
+
+        assert response.status_code == 409
+        assert response.json() == {
+            "error": "RefundPaymentAlreadyRefundedByStripe",
+            "detail": "Stripe already refunded this payment at its own expense.",
+        }
 
     @pytest.mark.auth
     async def test_tampered(

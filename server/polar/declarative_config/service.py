@@ -1,5 +1,5 @@
-from collections.abc import Iterable, Sequence
-from dataclasses import dataclass
+from collections.abc import Callable, Iterable, Mapping, Sequence
+from dataclasses import dataclass, replace
 from typing import Any, Literal
 from uuid import UUID
 
@@ -7,18 +7,34 @@ from pydantic import BaseModel, Field, create_model
 from sqlalchemy.exc import IntegrityError
 from typing_extensions import TypeForm
 
-from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.auth.models import AuthSubject, is_organization
 from polar.auth.permission import OrganizationPermission
-from polar.authz.service import assert_organization_permission
+from polar.authz.service import (
+    assert_organization_permission,
+    get_accessible_org_ids,
+)
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.repository import BenefitRepository
 from polar.benefit.service import benefit as benefit_service
 from polar.catalog.repository import CatalogRepository
+from polar.catalog.service import CatalogMembers, CatalogRemovals
 from polar.catalog.service import catalog as catalog_service
+from polar.custom_field.repository import CustomFieldRepository
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.meter.repository import MeterRepository
+from polar.meter.schemas import MeterUpdate
 from polar.meter.service import meter as meter_service
-from polar.models import Agent, Organization, Product, User
+from polar.models import (
+    Agent,
+    Benefit,
+    CustomField,
+    Meter,
+    Organization,
+    Product,
+    ProductCustomField,
+    User,
+)
+from polar.models.catalog import CatalogStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.oauth2.exceptions import InsufficientScopeError
 from polar.organization.repository import OrganizationRepository
@@ -28,21 +44,32 @@ from polar.product.repository import ProductRepository
 from polar.product.service import product as product_service
 from polar.redis import Redis
 from polar.subscription.repository import SubscriptionRepository
-from polar.webhook.repository import WebhookEndpointRepository
-from polar.webhook.schemas import WebhookEndpointCreate, WebhookEndpointUpdate
 from polar.webhook.service import webhook as webhook_service
 
-from . import benefits, catalogs, products, validation
+from . import (
+    benefits,
+    catalogs,
+    drafts,
+    external_ids,
+    products,
+    removals,
+    validation,
+)
 from .auth import SECTION_SCOPES
 from .export import EXPORTED_SECTIONS, export_config
 from .schemas import (
+    CONFIG_BENEFIT_TYPES,
     Config,
     ConfigAction,
     ConfigApplyResult,
     ConfigBenefitMeterCredit,
+    ConfigCatalog,
     ConfigCatalogChange,
+    ConfigCatalogPlan,
     ConfigChange,
+    ConfigDisable,
     ConfigExport,
+    ConfigInit,
     ConfigIssue,
     ConfigIssueSeverity,
     ConfigIssueType,
@@ -51,6 +78,8 @@ from .schemas import (
     ConfigProductPriceMeteredUnit,
     ConfigPrune,
     ConfigPruneEntry,
+    ConfigPruneReference,
+    ConfigRemoval,
     ConfigResource,
     ConfigResult,
     ConfigSettingsChange,
@@ -58,17 +87,18 @@ from .schemas import (
 )
 from .validation import (
     BenefitChange,
+    CustomFieldChange,
     MeterChange,
     ProductChange,
     ResourceChange,
     SettingsChange,
-    WebhookChange,
+    is_expressible_product,
 )
 
 _METER_EXTERNAL_ID_INDEX = "ix_meters_organization_id_external_id"
 _BENEFIT_EXTERNAL_ID_INDEX = "ix_benefits_organization_id_external_id"
 _PRODUCT_EXTERNAL_ID_INDEX = "ix_products_organization_id_external_id"
-_WEBHOOK_EXTERNAL_ID_INDEX = "ix_webhook_endpoints_organization_id_external_id"
+_CUSTOM_FIELD_SLUG_INDEX = "custom_fields_slug_organization_id_active_key"
 
 
 def _assert_scopes(
@@ -97,20 +127,16 @@ def _assert_section_scopes(
     )
 
 
-# Webhook endpoints are managed with `organization_manage`, which product
-# permissions don't imply.
-async def _assert_webhooks_permission(
+async def _assert_custom_fields_permission(
     session: AsyncReadSession,
     auth_subject: AuthSubject[User | Organization | Agent],
     config: Config,
     organization: Organization,
+    permission: OrganizationPermission,
 ) -> None:
-    if "webhooks" in config.model_fields_set:
+    if "custom_fields" in config.model_fields_set:
         await assert_organization_permission(
-            session,
-            auth_subject,
-            organization.id,
-            OrganizationPermission.organization_manage,
+            session, auth_subject, organization.id, permission
         )
 
 
@@ -127,6 +153,30 @@ class _OrganizationTarget:
 class ConfigAsCodeNotEnabled(PolarError):
     def __init__(self) -> None:
         super().__init__("Config as code is not enabled for this organization.", 403)
+
+
+class ConfigCatalogPublished(PolarError):
+    def __init__(self) -> None:
+        super().__init__(
+            "This organization published more than one catalog with config as "
+            "code, so it can't be disabled.",
+            409,
+        )
+
+
+class ConfigUnsupportedResources(PolarError):
+    def __init__(self, benefits: Sequence[str], products: Sequence[str]) -> None:
+        unsupported = [
+            *(f"benefit {name}" for name in benefits),
+            *(f"product {name}" for name in products),
+        ]
+        super().__init__(
+            "Config can only manage feature flag, meter credit and Slack shared "
+            "channel benefits, and products with fixed, metered, seat-based or "
+            "unit-based prices. "
+            f"Unsupported: {', '.join(unsupported)}.",
+            409,
+        )
 
 
 class ConfigMeterConflict(PolarError):
@@ -150,11 +200,10 @@ class ConfigProductConflict(PolarError):
         )
 
 
-class ConfigWebhookConflict(PolarError):
+class ConfigCustomFieldConflict(PolarError):
     def __init__(self) -> None:
         super().__init__(
-            "A webhook endpoint in this config was created by a concurrent request. "
-            "Retry.",
+            "A custom field in this config was created by a concurrent request. Retry.",
             409,
         )
 
@@ -182,13 +231,156 @@ class ConfigInvalid(PolarError):
         return cls._schema
 
 
+_SECTIONS = {
+    ConfigResource.meter: "meters",
+    ConfigResource.benefit: "benefits",
+    ConfigResource.product: "products",
+}
+
+
+_CONFLICTS: dict[str | None, Callable[[], PolarError]] = {
+    _METER_EXTERNAL_ID_INDEX: ConfigMeterConflict,
+    _BENEFIT_EXTERNAL_ID_INDEX: ConfigBenefitConflict,
+    _PRODUCT_EXTERNAL_ID_INDEX: ConfigProductConflict,
+}
+
+
+def _conflict(error: IntegrityError) -> PolarError:
+    conflict = _CONFLICTS.get(_constraint_name(error))
+    if conflict is None:
+        raise error
+    return conflict()
+
+
+def _removed_external_ids(removed: Sequence[ConfigRemoval]) -> CatalogRemovals:
+    return CatalogRemovals(
+        products=[
+            r.external_id for r in removed if r.resource == ConfigResource.product
+        ],
+        benefits=[
+            r.external_id for r in removed if r.resource == ConfigResource.benefit
+        ],
+        meters=[r.external_id for r in removed if r.resource == ConfigResource.meter],
+        custom_fields=[
+            r.external_id for r in removed if r.resource == ConfigResource.custom_field
+        ],
+    )
+
+
+def _external_ids_by_row_id(*ids: Mapping[str, UUID]) -> dict[str, str]:
+    return {str(id): external_id for each in ids for external_id, id in each.items()}
+
+
 class DeclarativeConfigService:
+    async def init(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization | Agent],
+        config_init: ConfigInit,
+    ) -> None:
+        organization = await get_payload_organization(
+            session, auth_subject, config_init
+        )
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            organization.id,
+            OrganizationPermission.organization_manage,
+        )
+        if not organization.is_config_as_code_enabled:
+            _assert_scopes(
+                auth_subject,
+                {_SECTIONS[ConfigResource.benefit], _SECTIONS[ConfigResource.product]},
+                write=False,
+            )
+            await self._assert_expressible(session, organization)
+        if config_init.external_ids:
+            _assert_scopes(
+                auth_subject,
+                {_SECTIONS[a.resource] for a in config_init.external_ids},
+                write=True,
+            )
+            await assert_organization_permission(
+                session,
+                auth_subject,
+                organization.id,
+                OrganizationPermission.products_manage,
+            )
+            try:
+                await external_ids.assign(
+                    session, organization, config_init.external_ids
+                )
+            except IntegrityError as e:
+                raise _conflict(e) from e
+        if not organization.is_config_as_code_enabled:
+            await self._set_enabled(session, organization, True)
+        # The catalog as it is now is the version disabling reverts to.
+        await catalog_service.get_or_create_live(session, organization)
+
+    async def disable(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization | Agent],
+        config_disable: ConfigDisable,
+    ) -> None:
+        organization = await self._get_organization(
+            session,
+            auth_subject,
+            config_disable,
+            OrganizationPermission.organization_manage,
+        )
+        repository = CatalogRepository.from_session(session)
+        await repository.lock(organization.id)
+        if await repository.count_by_organization(organization.id) > 1:
+            raise ConfigCatalogPublished()
+        draft = await repository.get_draft(organization.id)
+        if draft is not None:
+            await catalog_service.discard_draft(session, draft)
+        live = await repository.get_live(organization.id)
+        if live is not None:
+            await repository.delete(live)
+        await self._set_enabled(session, organization, False)
+
+    async def _set_enabled(
+        self, session: AsyncSession, organization: Organization, enabled: bool
+    ) -> None:
+        await OrganizationRepository.from_session(session).update(
+            organization,
+            update_dict={
+                "feature_settings": {
+                    **organization.feature_settings,
+                    "config_as_code_enabled": enabled,
+                }
+            },
+        )
+
+    async def _assert_expressible(
+        self, session: AsyncReadSession, organization: Organization
+    ) -> None:
+        benefit_names = await BenefitRepository.from_session(
+            session
+        ).get_descriptions_excluding_types(organization.id, CONFIG_BENEFIT_TYPES)
+        product_repository = ProductRepository.from_session(session)
+        product_names = [
+            product.name
+            for product in await product_repository.get_all(
+                product_repository.get_organization_statement(organization.id).where(
+                    Product.is_archived.is_(False)
+                )
+            )
+            if not is_expressible_product(product)
+        ]
+        if benefit_names or product_names:
+            raise ConfigUnsupportedResources(benefit_names, product_names)
+
     async def apply(
         self,
         session: AsyncSession,
         redis: Redis,
         auth_subject: AuthSubject[User | Organization | Agent],
         config: Config,
+        *,
+        publish: bool = True,
     ) -> ConfigApplyResult:
         _assert_section_scopes(auth_subject, config, write=True)
         organization = await self._get_organization(
@@ -201,33 +393,113 @@ class DeclarativeConfigService:
                 organization.id,
                 OrganizationPermission.organization_manage,
             )
-        await _assert_webhooks_permission(session, auth_subject, config, organization)
-        await CatalogRepository.from_session(session).lock(organization.id)
+        await _assert_custom_fields_permission(
+            session,
+            auth_subject,
+            config,
+            organization,
+            OrganizationPermission.custom_fields_manage,
+        )
+        catalog_repository = CatalogRepository.from_session(session)
+        await catalog_repository.lock(organization.id)
+        draft = await catalog_repository.get_draft(organization.id)
         changes, issues = await validation.check(
             session, organization, config, for_update=True
         )
-        issues.extend(catalogs.benefit_issues(changes))
+        removed, removal_issues = await removals.products(session, organization, config)
+        issues.extend(removal_issues)
+        removed += await removals.benefits(session, organization, config)
+        removed += await removals.meters(session, organization, config)
+        issues.extend(
+            await catalogs.cascade_meter_changes(
+                session, organization, changes, removed
+            )
+        )
+        removed += await removals.custom_fields(session, organization, config)
+        issues.extend(
+            await catalogs.cascade_benefit_changes(
+                session, organization, changes, removed
+            )
+        )
+        issues.extend(
+            await catalogs.cascade_custom_field_changes(
+                session, organization, changes, removed
+            )
+        )
         errors = [
             issue for issue in issues if issue.severity == ConfigIssueSeverity.error
         ]
         if errors:
             raise ConfigInvalid(errors)
 
+        removed_external_ids = _removed_external_ids(removed)
+        if draft is not None and publish:
+            await catalog_service.discard_draft(session, draft)
+        draft_rows = (
+            await drafts.rows(session, draft, changes)
+            if draft is not None and not publish
+            else CatalogMembers()
+        )
+        type_issues = validation.benefit_type_changes(
+            [
+                replace(change, existing=draft_rows.benefits[external_id])
+                for change in changes.benefits
+                if change.existing is None
+                and (external_id := change.config.external_id) in draft_rows.benefits
+            ]
+        )
+        if type_issues:
+            raise ConfigInvalid(type_issues)
+        limit_issues = await validation.exceeded_limits(
+            session, organization, changes, draft_rows
+        )
+        if limit_issues:
+            raise ConfigInvalid(limit_issues)
         live = await catalog_service.get_or_create_live(session, organization)
-        catalog_before, version_hash = await catalog_service.get_next_version_hash(
-            session, organization, catalogs.product_definitions(changes)
+        settings_update = (
+            {}
+            if changes.settings is None
+            else changes.settings.organization_update_dict
+        )
+        _, version_hash = await catalog_service.get_next_version_hash(
+            session,
+            organization,
+            live,
+            catalogs.definitions(changes),
+            removed_external_ids,
+            settings_update,
         )
         settings_result = await self._apply_settings(
-            session, organization, changes.settings
+            session, organization, changes.settings, draft=not publish
         )
-        webhook_results = await self._apply_webhooks(
-            session, auth_subject, organization, changes.webhooks
+        meter_results, meter_ids, new_meters = await self._apply_meters(
+            session,
+            auth_subject,
+            organization,
+            changes.meters,
+            draft_rows.meters,
+            draft=not publish,
         )
-        meter_results, meter_ids = await self._apply_meters(
-            session, organization, changes.meters
+        (
+            custom_field_results,
+            custom_field_ids,
+            new_custom_fields,
+        ) = await self._apply_custom_fields(
+            session,
+            organization,
+            changes.custom_fields,
+            draft_rows.custom_fields,
+            draft=not publish,
         )
-        benefit_results, benefit_ids = await self._apply_benefits(
-            session, redis, auth_subject, organization, changes.benefits, meter_ids
+        benefit_results, benefit_ids, new_benefits = await self._apply_benefits(
+            session,
+            redis,
+            auth_subject,
+            organization,
+            changes.benefits,
+            meter_ids,
+            draft_rows.benefits,
+            draft=not publish,
         )
         product_results, new_products = await self._apply_products(
             session,
@@ -236,20 +508,65 @@ class DeclarativeConfigService:
             changes.products,
             meter_ids,
             benefit_ids,
+            custom_field_ids,
+            draft_rows.products,
+            draft=not publish,
+            manage_custom_fields="custom_fields" in config.model_fields_set,
         )
-        if new_products:
-            assert version_hash is not None
-            await catalog_service.publish(
-                session,
-                organization,
-                live,
-                new_products,
-                version_hash,
-                name=config.catalog_name,
-            )
-        await catalogs.carry_over_references(session, changes.products, new_products)
+        catalog: ConfigCatalogChange | None = None
         if (
-            changes.settings is not None
+            new_products
+            or new_benefits
+            or new_meters
+            or new_custom_fields
+            or removed
+            or settings_update
+        ):
+            assert version_hash is not None
+            before = None if live is None else ConfigCatalog.model_validate(live)
+            members = CatalogMembers(
+                products=new_products,
+                benefits=new_benefits,
+                meters=new_meters,
+                custom_fields=new_custom_fields,
+            )
+            after = (
+                await catalog_service.publish(
+                    session,
+                    organization,
+                    live,
+                    members,
+                    version_hash,
+                    removed_external_ids,
+                    name=config.catalog_name,
+                )
+                if publish
+                else await catalog_service.save_draft(
+                    session,
+                    organization,
+                    live,
+                    members,
+                    version_hash,
+                    removed_external_ids,
+                    settings_update,
+                    name=config.catalog_name,
+                )
+            )
+            catalog = ConfigCatalogChange(
+                before=before, after=ConfigCatalog.model_validate(after)
+            )
+        elif (
+            draft is not None
+            and not publish
+            and {"products", "benefits", "meters", "custom_fields", "settings"}
+            & config.model_fields_set
+        ):
+            # The config describes the catalog and matches live: no draft left.
+            await catalog_service.discard_draft(session, draft)
+
+        if (
+            publish
+            and changes.settings is not None
             and changes.settings.action == ConfigAction.updated
         ):
             if "payments.currency" in changes.settings.update_dict:
@@ -262,14 +579,13 @@ class DeclarativeConfigService:
             )
         return ConfigApplyResult(
             changes=[
-                *webhook_results,
                 *meter_results,
+                *custom_field_results,
                 *benefit_results,
                 *product_results,
             ],
-            catalog=ConfigCatalogChange(before=catalog_before, after=version_hash)
-            if new_products and version_hash is not None
-            else None,
+            removed=removed,
+            catalog=catalog,
             settings=settings_result,
         )
 
@@ -278,36 +594,105 @@ class DeclarativeConfigService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization | Agent],
         config: Config,
+        catalog_id: UUID | None = None,
     ) -> ConfigPlan:
         _assert_section_scopes(auth_subject, config, write=False)
         organization = await self._get_organization(
             session, auth_subject, config, OrganizationPermission.products_read
         )
-        await _assert_webhooks_permission(session, auth_subject, config, organization)
+        await _assert_custom_fields_permission(
+            session,
+            auth_subject,
+            config,
+            organization,
+            OrganizationPermission.custom_fields_read,
+        )
+        base = await catalog_service.resolve(session, organization, catalog_id)
+        archived_base = (
+            base if base is not None and base.status != CatalogStatus.live else None
+        )
         changes, issues = await validation.check(
-            session, organization, config, for_update=False
+            session,
+            organization,
+            config,
+            for_update=False,
+            catalog=archived_base,
         )
-        issues.extend(catalogs.benefit_issues(changes))
-        catalog_before, catalog_after = await catalog_service.get_next_version_hash(
-            session, organization, catalogs.product_definitions(changes)
+        removed, removal_issues = await removals.products(
+            session, organization, config, catalog=archived_base
         )
-        product_changes = self._plan_changes(ConfigResource.product, changes.products)
-        catalog: ConfigCatalogChange | None = None
+        issues.extend(removal_issues)
+        removed += await removals.benefits(
+            session, organization, config, catalog=archived_base
+        )
+        removed += await removals.meters(
+            session, organization, config, catalog=archived_base
+        )
+        issues.extend(
+            await catalogs.cascade_meter_changes(
+                session, organization, changes, removed, catalog=archived_base
+            )
+        )
+        removed += await removals.custom_fields(
+            session, organization, config, catalog=archived_base
+        )
+        issues.extend(
+            await catalogs.cascade_benefit_changes(
+                session, organization, changes, removed
+            )
+        )
+        issues.extend(
+            await catalogs.cascade_custom_field_changes(
+                session, organization, changes, removed, catalog=archived_base
+            )
+        )
+        draft = await CatalogRepository.from_session(session).get_draft(organization.id)
+        issues.extend(
+            await validation.exceeded_limits(
+                session,
+                organization,
+                changes,
+                CatalogMembers()
+                if draft is None
+                else await drafts.rows(session, draft, changes),
+            )
+        )
+        catalog: ConfigCatalogPlan | None = None
+        # Apply publishes on top of live, so planning against an archived
+        # catalog has no next catalog.
+        catalog_before, catalog_after = (
+            (None, None)
+            if archived_base is not None
+            else await catalog_service.get_next_version_hash(
+                session,
+                organization,
+                base,
+                catalogs.definitions(changes),
+                _removed_external_ids(removed),
+                {}
+                if changes.settings is None
+                else changes.settings.organization_update_dict,
+            )
+        )
         if catalog_after is not None and catalog_after != catalog_before:
-            catalog = ConfigCatalogChange(before=catalog_before, after=catalog_after)
-            catalogs.add_catalog_diffs(
-                product_changes,
-                changes.products,
-                catalog_before,
-                catalog_after,
+            catalog = ConfigCatalogPlan(
+                before=None if base is None else ConfigCatalog.model_validate(base),
+                name=config.catalog_name
+                if config.catalog_name is not None
+                else await catalog_service.get_default_name(
+                    session,
+                    organization,
+                    after_baseline=base is None and catalog_before is not None,
+                ),
             )
         return ConfigPlan(
             changes=[
-                *self._plan_changes(ConfigResource.webhook, changes.webhooks),
                 *self._plan_changes(ConfigResource.meter, changes.meters),
+                *self._plan_changes(ConfigResource.custom_field, changes.custom_fields),
                 *self._plan_changes(ConfigResource.benefit, changes.benefits),
-                *product_changes,
+                *self._plan_changes(ConfigResource.product, changes.products),
             ],
+            removed=removed,
             catalog=catalog,
             settings=None
             if changes.settings is None
@@ -328,7 +713,6 @@ class DeclarativeConfigService:
             session, auth_subject, config, OrganizationPermission.products_read
         )
         meter_repository = MeterRepository.from_session(session)
-        benefit_repository = BenefitRepository.from_session(session)
         product_repository = ProductRepository.from_session(session)
         subscription_repository = SubscriptionRepository.from_session(session)
         grant_repository = BenefitGrantRepository.from_session(session)
@@ -343,35 +727,30 @@ class DeclarativeConfigService:
                 organization.id, [meter.external_id for meter in deprecated_meters]
             )
         }
-        benefit_ids = {
-            benefit.external_id: benefit.id
-            for benefit in await benefit_repository.get_all_by_external_ids(
+        product_customers = await product_repository.count_customers_by_external_ids(
+            organization.id, [p.external_id for p in deprecated_products]
+        )
+        benefit_customers = (
+            await grant_repository.count_granted_customers_by_benefit_external_ids(
                 organization.id, [b.external_id for b in deprecated_benefits]
             )
-        }
-        product_ids = {
-            product.external_id: product.id
-            for product in await product_repository.get_all_by_external_ids(
-                organization.id, [p.external_id for p in deprecated_products]
-            )
-        }
+        )
+        meter_customers = await subscription_repository.count_customers_by_meters(
+            organization.id, list(meter_ids.values())
+        )
 
         # Products first: a deprecated benefit or meter stays while a kept product uses it
         product_entries: list[ConfigPruneEntry] = []
         kept_products = [p for p in config.products if not p.deprecated]
         for product in deprecated_products:
-            product_id = product_ids.get(product.external_id)
-            in_use = (
-                product_id is not None
-                and await subscription_repository.exists_billable_by_product(product_id)
-            )
-            if in_use:
+            customers = product_customers.get(product.external_id, 0)
+            if customers:
                 kept_products.append(product)
             product_entries.append(
                 ConfigPruneEntry(
                     resource=ConfigResource.product,
                     external_id=product.external_id,
-                    in_use=in_use,
+                    customers_count=customers,
                     referenced_by=[],
                 )
             )
@@ -379,22 +758,21 @@ class DeclarativeConfigService:
         benefit_entries: list[ConfigPruneEntry] = []
         kept_benefits = [b for b in config.benefits if not b.deprecated]
         for benefit in deprecated_benefits:
-            benefit_id = benefit_ids.get(benefit.external_id)
-            in_use = benefit_id is not None and (
-                await grant_repository.exists_granted_by_benefit(benefit_id)
-            )
+            customers = benefit_customers.get(benefit.external_id, 0)
             referenced_by = [
-                product.external_id
+                ConfigPruneReference(
+                    resource=ConfigResource.product, external_id=product.external_id
+                )
                 for product in kept_products
                 if benefit.external_id in product.benefits
             ]
-            if in_use or referenced_by:
+            if customers or referenced_by:
                 kept_benefits.append(benefit)
             benefit_entries.append(
                 ConfigPruneEntry(
                     resource=ConfigResource.benefit,
                     external_id=benefit.external_id,
-                    in_use=in_use,
+                    customers_count=customers,
                     referenced_by=referenced_by,
                 )
             )
@@ -402,12 +780,11 @@ class DeclarativeConfigService:
         meter_entries: list[ConfigPruneEntry] = []
         for meter in deprecated_meters:
             meter_id = meter_ids.get(meter.external_id)
-            in_use = meter_id is not None and (
-                await subscription_repository.exists_billable_by_meter(meter_id)
-                or await grant_repository.exists_granted_by_meter(meter_id)
-            )
+            customers = 0 if meter_id is None else meter_customers.get(meter_id, 0)
             products_on_meter = [
-                product.external_id
+                ConfigPruneReference(
+                    resource=ConfigResource.product, external_id=product.external_id
+                )
                 for product in kept_products
                 if any(
                     isinstance(
@@ -419,7 +796,9 @@ class DeclarativeConfigService:
                 )
             ]
             benefits_on_meter = [
-                benefit.external_id
+                ConfigPruneReference(
+                    resource=ConfigResource.benefit, external_id=benefit.external_id
+                )
                 for benefit in kept_benefits
                 if isinstance(benefit, ConfigBenefitMeterCredit)
                 and benefit.properties.meter == meter.external_id
@@ -429,7 +808,7 @@ class DeclarativeConfigService:
                 ConfigPruneEntry(
                     resource=ConfigResource.meter,
                     external_id=meter.external_id,
-                    in_use=in_use,
+                    customers_count=customers,
                     referenced_by=referenced_by,
                 )
             )
@@ -441,6 +820,7 @@ class DeclarativeConfigService:
         session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization | Agent],
         organization_id: UUID | None,
+        catalog_id: UUID | None = None,
     ) -> ConfigExport:
         _assert_scopes(auth_subject, EXPORTED_SECTIONS, write=False)
         organization = await self._get_organization(
@@ -448,8 +828,25 @@ class DeclarativeConfigService:
             auth_subject,
             _OrganizationTarget(organization_id),
             OrganizationPermission.products_read,
+            require_enabled=False,
         )
-        return await export_config(session, organization)
+        if not organization.is_config_as_code_enabled:
+            await self._assert_expressible(session, organization)
+        catalog = await catalog_service.resolve(session, organization, catalog_id)
+        return await export_config(
+            session,
+            organization,
+            catalog,
+            include_custom_fields=bool(
+                auth_subject.scopes & set(SECTION_SCOPES["custom_fields"])
+            )
+            and organization.id
+            in await get_accessible_org_ids(
+                session,
+                auth_subject,
+                permission=OrganizationPermission.custom_fields_read,
+            ),
+        )
 
     def _plan_changes(
         self, resource: ConfigResource, changes: Sequence[ResourceChange[Any, Any]]
@@ -470,87 +867,30 @@ class DeclarativeConfigService:
         auth_subject: AuthSubject[User | Organization | Agent],
         target: OrganizationIDModel,
         permission: OrganizationPermission,
+        *,
+        require_enabled: bool = True,
     ) -> Organization:
         organization = await get_payload_organization(session, auth_subject, target)
         await assert_organization_permission(
             session, auth_subject, organization.id, permission
         )
-        if not organization.is_config_as_code_enabled:
+        if require_enabled and not organization.is_config_as_code_enabled:
             raise ConfigAsCodeNotEnabled()
         return organization
-
-    async def _apply_webhooks(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization | Agent],
-        organization: Organization,
-        changes: Sequence[WebhookChange],
-    ) -> list[ConfigResult]:
-        if not changes:
-            return []
-        # `_assert_section_scopes` rejects a webhooks section from an agent.
-        assert is_user(auth_subject) or is_organization(auth_subject)
-        repository = WebhookEndpointRepository.from_session(session)
-        results: list[ConfigResult] = []
-        for change in changes:
-            config = change.config
-            endpoint = change.existing
-            if endpoint is None:
-                try:
-                    async with session.begin_nested():
-                        endpoint = await webhook_service.create_endpoint(
-                            session,
-                            auth_subject,
-                            WebhookEndpointCreate(
-                                url=config.url,
-                                format=config.format,
-                                events=config.events,
-                                api_version=config.api_version,
-                                organization_id=None
-                                if is_organization(auth_subject)
-                                else organization.id,
-                            ),
-                            declarative_config=True,
-                        )
-                        await repository.update(
-                            endpoint, update_dict={"external_id": config.external_id}
-                        )
-                except IntegrityError as e:
-                    if _constraint_name(e) != _WEBHOOK_EXTERNAL_ID_INDEX:
-                        raise
-                    raise ConfigWebhookConflict() from e
-            elif change.update_dict:
-                await webhook_service.update_endpoint(
-                    session,
-                    auth_subject,
-                    endpoint=endpoint,
-                    update_schema=WebhookEndpointUpdate(**change.update_dict),
-                    declarative_config=True,
-                )
-            results.append(
-                ConfigResult(
-                    resource=ConfigResource.webhook,
-                    external_id=config.external_id,
-                    action=change.action,
-                )
-            )
-        return results
 
     async def _apply_settings(
         self,
         session: AsyncSession,
         organization: Organization,
         change: SettingsChange | None,
+        *,
+        draft: bool,
     ) -> ConfigSettingsResult | None:
         if change is None:
             return None
-        if change.update_dict:
-            await OrganizationRepository.from_session(session).update(
-                organization,
-                update_dict={
-                    validation.SETTINGS_FIELDS[field]: value
-                    for field, value in change.update_dict.items()
-                },
+        if change.update_dict and not draft:
+            await catalog_service.update_settings(
+                session, organization, change.organization_update_dict
             )
         return ConfigSettingsResult(action=change.action)
 
@@ -582,26 +922,70 @@ class DeclarativeConfigService:
     async def _apply_meters(
         self,
         session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization | Agent],
         organization: Organization,
         changes: Sequence[MeterChange],
-    ) -> tuple[list[ConfigResult], dict[str, UUID]]:
+        draft_meters: Mapping[str, Meter],
+        *,
+        draft: bool,
+    ) -> tuple[list[ConfigResult], dict[str, UUID], dict[str, Meter]]:
         repository = MeterRepository.from_session(session)
         results: list[ConfigResult] = []
         meter_ids: dict[str, UUID] = {}
+        new_meters: dict[str, Meter] = {}
         for change in changes:
             meter = change.existing
-            if meter is None:
+            draft_meter = draft_meters.get(change.config.external_id)
+            if draft_meter is not None and (meter is None or change.update_dict):
+                # Billing starts at publish, so a draft meter's locked fields can
+                # still change.
+                assert draft_meter.last_billed_event_id is None
+                meter = draft_meter
+                fields = validation.meter_update_dict(meter, change.config)
+                if fields:
+                    values: dict[str, Any] = {
+                        field: getattr(change.config, field)
+                        for field in fields
+                        if field != "user_metadata"
+                    }
+                    if "user_metadata" in fields:
+                        values["metadata"] = change.config.metadata
+                    meter = await meter_service.update(
+                        session,
+                        meter,
+                        MeterUpdate(**values),
+                        auth_subject,
+                        declarative_config=True,
+                    )
+                new_meters[change.config.external_id] = meter
+            elif meter is None or change.update_dict:
                 try:
                     async with session.begin_nested():
+                        # A draft's new row isn't current, so the live one stays.
+                        if meter is not None and not draft:
+                            await repository.update(
+                                meter, update_dict={"is_current": False}, flush=True
+                            )
                         meter = await meter_service.create_for_organization(
-                            session, organization, change.config
+                            session, organization, change.config, draft=draft
                         )
+                        # Metadata left out of the config is kept, as on update.
+                        if (
+                            change.existing is not None
+                            and "metadata" not in change.config.model_fields_set
+                        ):
+                            await repository.update(
+                                meter,
+                                update_dict={
+                                    "user_metadata": change.existing.user_metadata
+                                },
+                                flush=True,
+                            )
                 except IntegrityError as e:
                     if _constraint_name(e) != _METER_EXTERNAL_ID_INDEX:
                         raise
                     raise ConfigMeterConflict() from e
-            elif change.update_dict:
-                await repository.update(meter, update_dict=change.update_dict)
+                new_meters[change.config.external_id] = meter
             meter_ids[change.config.external_id] = meter.id
             results.append(
                 ConfigResult(
@@ -610,7 +994,77 @@ class DeclarativeConfigService:
                     action=change.action,
                 )
             )
-        return results, meter_ids
+        return results, meter_ids, new_meters
+
+    async def _apply_custom_fields(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        changes: Sequence[CustomFieldChange],
+        draft_custom_fields: Mapping[str, CustomField],
+        *,
+        draft: bool,
+    ) -> tuple[list[ConfigResult], dict[str, UUID], dict[str, CustomField]]:
+        repository = CustomFieldRepository.from_session(session)
+        results: list[ConfigResult] = []
+        custom_field_ids: dict[str, UUID] = {}
+        new_custom_fields: dict[str, CustomField] = {}
+        for change in changes:
+            config = change.config
+            custom_field = change.existing
+            draft_custom_field = draft_custom_fields.get(config.slug)
+            if (
+                draft_custom_field is not None
+                and draft_custom_field.type == config.type
+                and (custom_field is None or change.update_dict)
+            ):
+                custom_field = await repository.update(
+                    draft_custom_field,
+                    update_dict=validation.custom_field_update_dict(
+                        draft_custom_field, config
+                    ),
+                    flush=True,
+                )
+                new_custom_fields[config.slug] = custom_field
+            elif custom_field is None or change.update_dict:
+                try:
+                    async with session.begin_nested():
+                        # A draft's new row isn't current, so the live one stays.
+                        if custom_field is not None and not draft:
+                            await repository.update(
+                                custom_field,
+                                update_dict={"is_current": False},
+                                flush=True,
+                            )
+                        custom_field = await repository.create(
+                            config.type.get_model()(
+                                slug=config.slug,
+                                name=config.name,
+                                properties=config.properties,
+                                # Metadata left out of the config is kept.
+                                user_metadata=config.metadata
+                                if change.existing is None
+                                or "metadata" in config.model_fields_set
+                                else change.existing.user_metadata,
+                                is_current=not draft,
+                                organization=organization,
+                            ),
+                            flush=True,
+                        )
+                except IntegrityError as e:
+                    if _constraint_name(e) != _CUSTOM_FIELD_SLUG_INDEX:
+                        raise
+                    raise ConfigCustomFieldConflict() from e
+                new_custom_fields[config.slug] = custom_field
+            custom_field_ids[config.slug] = custom_field.id
+            results.append(
+                ConfigResult(
+                    resource=ConfigResource.custom_field,
+                    external_id=config.slug,
+                    action=change.action,
+                )
+            )
+        return results, custom_field_ids, new_custom_fields
 
     async def _apply_benefits(
         self,
@@ -620,15 +1074,40 @@ class DeclarativeConfigService:
         organization: Organization,
         changes: Sequence[BenefitChange],
         meter_ids: dict[str, UUID],
-    ) -> tuple[list[ConfigResult], dict[str, UUID]]:
+        draft_benefits: Mapping[str, Benefit],
+        *,
+        draft: bool,
+    ) -> tuple[list[ConfigResult], dict[str, UUID], dict[str, Benefit]]:
         repository = BenefitRepository.from_session(session)
+        meter_external_ids = _external_ids_by_row_id(meter_ids)
         results: list[ConfigResult] = []
         benefit_ids: dict[str, UUID] = {}
+        new_benefits: dict[str, Benefit] = {}
         for change in changes:
             benefit = change.existing
-            if benefit is None:
+            draft_benefit = draft_benefits.get(change.config.external_id)
+            if draft_benefit is not None and (benefit is None or change.update_dict):
+                benefit = draft_benefit
+                if validation.benefit_update_dict(
+                    benefit, change.config, meter_external_ids
+                ):
+                    await benefit_service.update(
+                        session,
+                        redis,
+                        benefit,
+                        benefits.benefit_update(change.config, meter_ids),
+                        auth_subject,
+                        declarative_config=True,
+                    )
+                new_benefits[change.config.external_id] = benefit
+            elif benefit is None or change.update_dict:
                 try:
                     async with session.begin_nested():
+                        # A draft's new row isn't current, so the live one stays.
+                        if benefit is not None and not draft:
+                            await repository.update(
+                                benefit, update_dict={"is_current": False}, flush=True
+                            )
                         benefit = await benefit_service.user_create(
                             session,
                             redis,
@@ -640,25 +1119,39 @@ class DeclarativeConfigService:
                                 meter_ids,
                             ),
                             auth_subject,
+                            notify=False,
                             declarative_config=True,
                         )
+                        update_dict: dict[str, Any] = {
+                            "external_id": change.config.external_id,
+                            "is_current": not draft,
+                        }
+                        previous = change.existing or change.previous
+                        if previous is not None:
+                            update_dict["is_tax_applicable"] = (
+                                previous.is_tax_applicable
+                            )
+                            # Metadata left out of the config is kept, as on update.
+                            if "metadata" not in change.config.model_fields_set:
+                                update_dict["user_metadata"] = previous.user_metadata
                         await repository.update(
-                            benefit,
-                            update_dict={"external_id": change.config.external_id},
+                            benefit, update_dict=update_dict, flush=True
                         )
                 except IntegrityError as e:
                     if _constraint_name(e) != _BENEFIT_EXTERNAL_ID_INDEX:
                         raise
                     raise ConfigBenefitConflict() from e
-            elif change.update_dict:
-                await benefit_service.update(
-                    session,
-                    redis,
-                    benefit,
-                    benefits.benefit_update(change, meter_ids),
-                    auth_subject,
-                    declarative_config=True,
+                new_benefits[change.config.external_id] = benefit
+                await webhook_service.send(
+                    session, organization, WebhookEventType.benefit_created, benefit
                 )
+                if change.existing is not None and not draft:
+                    await webhook_service.send(
+                        session,
+                        organization,
+                        WebhookEventType.benefit_updated,
+                        change.existing,
+                    )
             benefit_ids[change.config.external_id] = benefit.id
             results.append(
                 ConfigResult(
@@ -667,7 +1160,7 @@ class DeclarativeConfigService:
                     action=change.action,
                 )
             )
-        return results, benefit_ids
+        return results, benefit_ids, new_benefits
 
     async def _apply_products(
         self,
@@ -677,24 +1170,61 @@ class DeclarativeConfigService:
         changes: Sequence[ProductChange],
         meter_ids: dict[str, UUID],
         benefit_ids: dict[str, UUID],
+        custom_field_ids: dict[str, UUID],
+        draft_products: Mapping[str, Product],
+        *,
+        draft: bool,
+        manage_custom_fields: bool,
     ) -> tuple[list[ConfigResult], dict[str, Product]]:
         repository = ProductRepository.from_session(session)
-        external_ids = {
-            str(id): external_id
-            for ids in (meter_ids, benefit_ids)
-            for external_id, id in ids.items()
-        }
+        external_ids = _external_ids_by_row_id(meter_ids, benefit_ids)
         results: list[ConfigResult] = []
         new_products: dict[str, Product] = {}
         for change in changes:
             config = change.config
             product = change.existing
             copy_on_write = product is not None and bool(change.update_dict)
+            draft_product = draft_products.get(config.external_id)
+            in_place = (
+                draft_product
+                if draft_product is not None and (product is None or copy_on_write)
+                else None
+            )
             try:
-                if product is None or copy_on_write:
+                if in_place is not None:
+                    product = in_place
+                    fields = validation.product_update_dict(
+                        product,
+                        config,
+                        external_ids,
+                        _external_ids_by_row_id(custom_field_ids)
+                        if manage_custom_fields
+                        else None,
+                    )
+                    product_update = products.product_update(
+                        config, meter_ids, custom_field_ids, fields
+                    )
+                    if product_update.model_fields_set:
+                        product = await product_service.update(
+                            session,
+                            product,
+                            product_update,
+                            auth_subject,
+                            declarative_config=True,
+                        )
+                    if "benefits" in fields:
+                        await product_service.update_benefits(
+                            session,
+                            product,
+                            [benefit_ids[benefit] for benefit in config.benefits],
+                            auth_subject,
+                            notify=False,
+                            declarative_config=True,
+                        )
+                elif product is None or copy_on_write:
                     try:
                         async with session.begin_nested():
-                            if product is not None:
+                            if product is not None and not draft:
                                 await repository.update(
                                     product,
                                     update_dict={"is_current": False},
@@ -708,31 +1238,61 @@ class DeclarativeConfigService:
                                     if is_organization(auth_subject)
                                     else organization.id,
                                     meter_ids,
+                                    custom_field_ids if manage_custom_fields else None,
                                 ),
                                 auth_subject,
+                                notify=False,
                                 declarative_config=True,
                             )
-                            if change.existing is not None:
-                                catalog_service.copy_product_settings(
-                                    change.existing, product
-                                )
+                            update_dict: dict[str, Any] = {
+                                "external_id": config.external_id,
+                                "is_current": not draft,
+                            }
+                            previous = change.existing or change.previous
+                            if previous is not None:
+                                catalog_service.copy_product_settings(previous, product)
+                                if not manage_custom_fields:
+                                    product.attached_custom_fields = [
+                                        ProductCustomField(
+                                            custom_field=attached.custom_field,
+                                            order=attached.order,
+                                            required=attached.required,
+                                        )
+                                        for attached in previous.attached_custom_fields
+                                    ]
+                                if config.meter_interval is None:
+                                    update_dict["meter_interval"] = (
+                                        previous.meter_interval
+                                    )
+                                    update_dict["meter_interval_count"] = (
+                                        previous.meter_interval_count
+                                    )
                             await repository.update(
-                                product, update_dict={"external_id": config.external_id}
+                                product, update_dict=update_dict, flush=True
                             )
                     except IntegrityError as e:
                         if _constraint_name(e) != _PRODUCT_EXTERNAL_ID_INDEX:
                             raise
                         raise ConfigProductConflict() from e
-                if (change.existing is None or copy_on_write) and config.benefits:
+                if (
+                    in_place is None
+                    and (change.existing is None or copy_on_write)
+                    and config.benefits
+                ):
                     await product_service.update_benefits(
                         session,
                         product,
                         [benefit_ids[benefit] for benefit in config.benefits],
                         auth_subject,
+                        notify=False,
                         declarative_config=True,
                     )
             except PolarRequestValidationError as e:
                 raise products.product_error(e, change.index, external_ids) from e
+            if in_place is None and (change.existing is None or copy_on_write):
+                await product_service.notify_created(session, product)
+                if change.existing is not None and not draft:
+                    await product_service.notify_retired(session, change.existing)
             if (change.existing is None or copy_on_write) and not product.is_archived:
                 new_products[config.external_id] = product
             results.append(

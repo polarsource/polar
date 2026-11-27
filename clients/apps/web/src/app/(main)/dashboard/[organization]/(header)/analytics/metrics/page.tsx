@@ -4,67 +4,67 @@ import {
   fromISODate,
   METRIC_GROUPS,
   metricGroupSlug,
+  parseAsISODate,
+  TIME_INTERVALS,
   toISODate,
 } from '@/utils/metrics'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { schemas, unwrap } from '@polar-sh/client'
 import { endOfDay, max, subMonths } from 'date-fns'
 import { redirect, RedirectType } from 'next/navigation'
+import { createLoader, parseAsStringLiteral } from 'nuqs/server'
 
 const RECURRING_ONLY_GROUPS = new Set(['subscriptions', 'cancellations'])
+
+const loadMetricsSearchParams = createLoader({
+  start_date: parseAsISODate,
+  end_date: parseAsISODate,
+  interval: parseAsStringLiteral(TIME_INTERVALS),
+})
 
 export default async function Page(props: {
   params: Promise<{ organization: string }>
   searchParams: Promise<{
     start_date?: string
     end_date?: string
-    interval?: schemas['TimeInterval']
+    interval?: string
     product_id?: string | string[]
+    external_product_id?: string | string[]
   }>
 }) {
   const { organization: organizationSlug } = await props.params
   const searchParams = await props.searchParams
 
   const api = await getServerSideAPI()
-  const organization = await getOrganizationBySlugOrNotFound(
-    api,
-    organizationSlug,
-  )
+  const organization = await getOrganizationBySlugOrNotFound(organizationSlug)
 
   const redirectPath = `/dashboard/${organizationSlug}/analytics/metrics`
 
-  const defaultInterval = 'day'
   const today = new Date()
   const defaultStartDate = subMonths(today, 1)
   const defaultEndDate = today
 
-  const interval = searchParams.interval || defaultInterval
+  const urlSearchParams = new URLSearchParams(
+    Object.entries(searchParams).flatMap(([key, value]) =>
+      [value ?? []].flat().map((v) => [key, v]),
+    ),
+  )
 
-  const { product_id, ...restSearchParams } = searchParams
-  const productId = product_id
-    ? Array.isArray(product_id)
-      ? product_id
-      : [product_id]
-    : undefined
+  const parsedSearchParams = loadMetricsSearchParams(searchParams)
 
-  if (!['year', 'month', 'week', 'day', 'hour'].includes(interval)) {
-    const urlSearchParams = new URLSearchParams({
-      ...restSearchParams,
-      interval: defaultInterval,
-    })
-    productId?.forEach((id) => urlSearchParams.append('product_id', id))
-    redirect(`${redirectPath}?${urlSearchParams}`, RedirectType.replace)
-  }
-
-  const startDateISOString = searchParams.start_date ?? undefined
-  const endDateISOString = searchParams.end_date ?? undefined
-
-  const startDate = startDateISOString
-    ? fromISODate(startDateISOString)
-    : defaultStartDate
-  const endDate = endDateISOString
-    ? endOfDay(fromISODate(endDateISOString))
+  const interval = parsedSearchParams.interval ?? 'day'
+  const requestedStartDate = parsedSearchParams.start_date ?? defaultStartDate
+  const requestedEndDate = parsedSearchParams.end_date
+    ? endOfDay(parsedSearchParams.end_date)
     : defaultEndDate
+  const hasInvalidDateRange =
+    (searchParams.start_date !== undefined &&
+      parsedSearchParams.start_date === null) ||
+    (searchParams.end_date !== undefined &&
+      parsedSearchParams.end_date === null) ||
+    requestedStartDate > requestedEndDate
+  const startDate = hasInvalidDateRange ? defaultStartDate : requestedStartDate
+  const endDate = hasInvalidDateRange ? defaultEndDate : requestedEndDate
 
   const [limits, recurringProducts] = await Promise.all([
     unwrap(api.GET('/v1/metrics/limits')),
@@ -121,14 +121,18 @@ export default async function Page(props: {
 
   const validInterval = findValidInterval(startDate, endDate, interval)
 
-  if (startDate < minDate || validInterval !== interval) {
-    const urlSearchParams = new URLSearchParams({
-      ...restSearchParams,
-      start_date: toISODate(max([minDate, startDate])),
-      end_date: toISODate(endDate),
-      interval: validInterval,
-    })
-    productId?.forEach((id) => urlSearchParams.append('product_id', id))
+  const hasInvalidInterval =
+    searchParams.interval !== undefined && parsedSearchParams.interval === null
+
+  if (
+    hasInvalidDateRange ||
+    hasInvalidInterval ||
+    startDate < minDate ||
+    validInterval !== interval
+  ) {
+    urlSearchParams.set('start_date', toISODate(max([minDate, startDate])))
+    urlSearchParams.set('end_date', toISODate(endDate))
+    urlSearchParams.set('interval', validInterval)
     redirect(`${redirectPath}?${urlSearchParams}`, RedirectType.replace)
   }
 

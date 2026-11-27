@@ -23,7 +23,7 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
-from polar.kit.versioning import Version
+from polar.kit.versioning import Version, VersionedJsonSchema
 from polar.models.benefit import BenefitType
 from polar.models.subscription import SubscriptionStatus
 from polar.subscription.schemas import SubscriptionMeterBase
@@ -87,7 +87,13 @@ class CustomerStateSubscription(
         ),
         examples=[None],
     )
-    started_at: datetime | None = Field(
+    started_at: Annotated[
+        datetime,
+        VersionedJsonSchema(
+            lambda schema: {"anyOf": [schema, {"type": "null"}]},
+            up_to=V2026_10,
+        ),
+    ] = Field(
         description="The timestamp when the subscription started.",
         examples=["2025-01-03T13:37:00Z"],
     )

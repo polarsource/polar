@@ -1,4 +1,5 @@
 import { listBenefitGrants as listBenefitGrantsCustomerPortal } from '@polar-sh/sdk/2026-10/services/customer_portal/benefit_grants'
+import { listCustomerMeters as listCustomerMetersCustomerPortal } from '@polar-sh/sdk/2026-10/services/customer_portal/customer_meters'
 import { listSubscriptions as listSubscriptionsCustomerPortal } from '@polar-sh/sdk/2026-10/services/customer_portal/subscriptions'
 import { getStateExternalCustomers } from '@polar-sh/sdk/2026-10/services/customers'
 import { listOrders as listOrdersCustomerPortal } from '@polar-sh/sdk/2026-10/services/customer_portal/orders'
@@ -9,6 +10,11 @@ import { APIError } from 'better-auth/api'
 import { createAuthEndpoint, sessionMiddleware } from 'better-auth/api'
 import * as z from 'zod/v4'
 import { resolveBillingPrincipal } from '../principal'
+import {
+  type ListResourceReferenceSubscription,
+  resolveReferenceAccess,
+  toEntitlementSubscription,
+} from '../reference'
 import type { PolarOptions } from '../types'
 
 const OrganizationQuery = z.object({
@@ -27,9 +33,13 @@ export const portal =
   ({ returnUrl, theme }: PortalConfig = {}) =>
   (
     polar: PolarCore,
-    rootOptions?: Pick<PolarOptions, 'experimental_organizationSync'>,
+    rootOptions?: Pick<
+      PolarOptions,
+      'experimental_organizationSync' | 'authorizeReference'
+    >,
   ) => {
     const retUrl = returnUrl ? new URL(returnUrl) : undefined
+    let warnedUnauthorizedReference = false
 
     return {
       portal: createAuthEndpoint(
@@ -248,6 +258,34 @@ export const portal =
           }
 
           if (ctx.query?.reference_id) {
+            const referenceId = ctx.query.reference_id
+            const userId = ctx.context.session.user.id
+            const { access, unauthorizedFallback } =
+              await resolveReferenceAccess({
+                context: ctx.context,
+                session: ctx.context.session,
+                referenceId,
+                mapBetterAuthRoleToPolarRole:
+                  rootOptions?.experimental_organizationSync
+                    ?.mapBetterAuthRoleToPolarRole,
+                authorizeReference: rootOptions?.authorizeReference,
+                request: ctx.request,
+              })
+
+            if (access === 'none') {
+              throw new APIError('FORBIDDEN', {
+                message:
+                  'Not allowed to list subscriptions for this reference_id',
+              })
+            }
+
+            if (unauthorizedFallback && !warnedUnauthorizedReference) {
+              warnedUnauthorizedReference = true
+              ctx.context.logger.warn(
+                'Polar: customer.subscriptions.list received a reference_id that is neither the signed-in user nor a Better Auth organization, so access to it could not be verified. Customer billing details were removed from the response. Set `authorizeReference` on polar() to authorize your own reference IDs: without it, the next major version returns only the subscriptions the signed-in user purchased.',
+              )
+            }
+
             try {
               const subscriptions: models.ListResourceSubscription =
                 await listSubscriptions(polar)({
@@ -255,13 +293,30 @@ export const portal =
                   limit: ctx.query?.limit,
                   active: ctx.query?.active,
                   metadata: {
-                    referenceId: ctx.query?.reference_id,
+                    referenceId,
                   },
+                  ...(access === 'purchased'
+                    ? { external_customer_id: userId }
+                    : {}),
                 })
 
-              return ctx.json(subscriptions)
+              const response: ListResourceReferenceSubscription =
+                access === 'redacted'
+                  ? {
+                      ...subscriptions,
+                      items: subscriptions.items.map((subscription) =>
+                        subscription.customer.external_id === userId
+                          ? subscription
+                          : toEntitlementSubscription(
+                              subscription,
+                              referenceId,
+                            ),
+                      ),
+                    }
+                  : subscriptions
+
+              return ctx.json(response)
             } catch (e: unknown) {
-              console.log(e)
               if (e instanceof Error) {
                 ctx.context.logger.error(
                   `Polar subscriptions list with reference_id failed. Error: ${e.message}`,
@@ -368,6 +423,69 @@ export const portal =
 
             throw new APIError('INTERNAL_SERVER_ERROR', {
               message: 'Orders list failed',
+            })
+          }
+        },
+      ),
+      meters: createAuthEndpoint(
+        '/customer/meters/list',
+        {
+          method: 'GET',
+          use: [sessionMiddleware],
+          query: z
+            .object({
+              organizationId: z.string().min(1).optional(),
+              page: z.coerce.number().optional(),
+              limit: z.coerce.number().optional(),
+            })
+            .optional(),
+        },
+        async (ctx) => {
+          if (!ctx.context.session.user.id) {
+            throw new APIError('BAD_REQUEST', {
+              message: 'User not found',
+            })
+          }
+
+          const principal = ctx.query?.organizationId
+            ? await resolveBillingPrincipal({
+                context: ctx.context,
+                session: ctx.context.session,
+                organizationId: ctx.query.organizationId,
+                organizationEnabled:
+                  rootOptions?.experimental_organizationSync?.enabled,
+                authorization: 'member',
+              })
+            : undefined
+
+          try {
+            const customerSession = await createCustomerSessions(polar)({
+              external_customer_id:
+                principal?.externalCustomerId ?? ctx.context.session.user.id,
+              ...(principal?.kind === 'team'
+                ? { external_member_id: principal.externalMemberId }
+                : {}),
+            })
+
+            const customerMeters: models.ListResourceCustomerCustomerMeter =
+              await listCustomerMetersCustomerPortal(polar)(
+                {
+                  page: ctx.query?.page,
+                  limit: ctx.query?.limit,
+                },
+                { accessToken: customerSession.token },
+              )
+
+            return ctx.json(customerMeters)
+          } catch (e: unknown) {
+            if (e instanceof Error) {
+              ctx.context.logger.error(
+                `Polar meters list failed. Error: ${e.message}`,
+              )
+            }
+
+            throw new APIError('INTERNAL_SERVER_ERROR', {
+              message: 'Meters list failed',
             })
           }
         },

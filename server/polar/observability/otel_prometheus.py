@@ -4,7 +4,7 @@ Simple OpenTelemetry MeterProvider that bridges to prometheus_client.
 Supports multiprocess mode via prometheus_client's PROMETHEUS_MULTIPROC_DIR.
 """
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
 from opentelemetry.metrics import (
@@ -19,27 +19,13 @@ from opentelemetry.metrics import (
     UpDownCounter,
 )
 from opentelemetry.metrics import _Gauge as Gauge
+from opentelemetry.util.types import Attributes
 from prometheus_client import Gauge as PromGauge
 
 import polar.observability.metrics  # noqa: F401  # Sets PROMETHEUS_MULTIPROC_DIR
 
 if TYPE_CHECKING:
     from opentelemetry.context import Context
-
-type Attributes = (
-    Mapping[
-        str,
-        str
-        | bool
-        | int
-        | float
-        | Sequence[str]
-        | Sequence[bool]
-        | Sequence[int]
-        | Sequence[float],
-    ]
-    | None
-)
 
 
 class PrometheusUpDownCounter(UpDownCounter):

@@ -36,16 +36,16 @@ class EventsSync(SyncServiceBase):
     def list(
         self,
         *,
+        organization_id: str | builtins.list[str] | None = None,
+        query: str | None = None,
         filter: str | None = None,
         start_timestamp: str | None = None,
         end_timestamp: str | None = None,
-        organization_id: str | builtins.list[str] | None = None,
         customer_id: str | builtins.list[str] | None = None,
         external_customer_id: str | builtins.list[str] | None = None,
         meter_id: str | None = None,
         name: str | builtins.list[str] | None = None,
         source: EventSource | builtins.list[EventSource] | None = None,
-        query: str | None = None,
         parent_id: str | None = None,
         depth: int | None = None,
         page: int = 1,
@@ -61,23 +61,23 @@ class EventsSync(SyncServiceBase):
         **Scopes**: `events:read` `events:write`
 
         Args:
+            organization_id: Filter by organization ID.
+            query: Query to filter events.
             filter: Filter events following filter clauses. JSON string following the same schema a meter filter clause.
             start_timestamp: Filter events after this timestamp.
             end_timestamp: Filter events before this timestamp.
-            organization_id: Filter by organization ID.
             customer_id: Filter by customer ID.
             external_customer_id: Filter by external customer ID.
             meter_id: Filter by a meter filter clause.
             name: Filter by event name.
             source: Filter by event source.
-            query: Query to filter events.
             parent_id: When combined with depth, use this event as the anchor instead of root events.
             depth: Fetch descendants up to this depth. When set: 0=root events only, 1=roots+children, etc. Max 5. When not set, returns all events.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -92,16 +92,16 @@ class EventsSync(SyncServiceBase):
             url="/v1/events/",
             path_params={},
             query_params={
+                "organization_id": organization_id,
+                "query": query,
                 "filter": filter,
                 "start_timestamp": start_timestamp,
                 "end_timestamp": end_timestamp,
-                "organization_id": organization_id,
                 "customer_id": customer_id,
                 "external_customer_id": external_customer_id,
                 "meter_id": meter_id,
                 "name": name,
                 "source": source,
-                "query": query,
                 "parent_id": parent_id,
                 "depth": depth,
                 "page": page,
@@ -150,7 +150,7 @@ class EventsSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -211,7 +211,7 @@ class EventsSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -256,7 +256,7 @@ class EventsSync(SyncServiceBase):
 
         Args:
             id: The event ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -297,7 +297,7 @@ class EventsSync(SyncServiceBase):
         **Scopes**: `events:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -328,16 +328,16 @@ class EventsAsync(AsyncServiceBase):
     async def list(
         self,
         *,
+        organization_id: str | builtins.list[str] | None = None,
+        query: str | None = None,
         filter: str | None = None,
         start_timestamp: str | None = None,
         end_timestamp: str | None = None,
-        organization_id: str | builtins.list[str] | None = None,
         customer_id: str | builtins.list[str] | None = None,
         external_customer_id: str | builtins.list[str] | None = None,
         meter_id: str | None = None,
         name: str | builtins.list[str] | None = None,
         source: EventSource | builtins.list[EventSource] | None = None,
-        query: str | None = None,
         parent_id: str | None = None,
         depth: int | None = None,
         page: int = 1,
@@ -353,23 +353,23 @@ class EventsAsync(AsyncServiceBase):
         **Scopes**: `events:read` `events:write`
 
         Args:
+            organization_id: Filter by organization ID.
+            query: Query to filter events.
             filter: Filter events following filter clauses. JSON string following the same schema a meter filter clause.
             start_timestamp: Filter events after this timestamp.
             end_timestamp: Filter events before this timestamp.
-            organization_id: Filter by organization ID.
             customer_id: Filter by customer ID.
             external_customer_id: Filter by external customer ID.
             meter_id: Filter by a meter filter clause.
             name: Filter by event name.
             source: Filter by event source.
-            query: Query to filter events.
             parent_id: When combined with depth, use this event as the anchor instead of root events.
             depth: Fetch descendants up to this depth. When set: 0=root events only, 1=roots+children, etc. Max 5. When not set, returns all events.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -384,16 +384,16 @@ class EventsAsync(AsyncServiceBase):
             url="/v1/events/",
             path_params={},
             query_params={
+                "organization_id": organization_id,
+                "query": query,
                 "filter": filter,
                 "start_timestamp": start_timestamp,
                 "end_timestamp": end_timestamp,
-                "organization_id": organization_id,
                 "customer_id": customer_id,
                 "external_customer_id": external_customer_id,
                 "meter_id": meter_id,
                 "name": name,
                 "source": source,
-                "query": query,
                 "parent_id": parent_id,
                 "depth": depth,
                 "page": page,
@@ -442,7 +442,7 @@ class EventsAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -503,7 +503,7 @@ class EventsAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -549,7 +549,7 @@ class EventsAsync(AsyncServiceBase):
 
         Args:
             id: The event ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -590,7 +590,7 @@ class EventsAsync(AsyncServiceBase):
         **Scopes**: `events:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters

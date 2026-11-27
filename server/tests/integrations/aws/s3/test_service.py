@@ -3,8 +3,64 @@ from unittest.mock import MagicMock
 import pytest
 from botocore.client import ClientError
 
+from polar.exceptions import NotPermitted
 from polar.integrations.aws.s3.exceptions import S3FileError
+from polar.integrations.aws.s3.schemas import S3FileUploadCompleted
 from polar.integrations.aws.s3.service import S3Service
+
+
+class TestCompleteMultipartUpload:
+    def test_completion_retry_after_abort_is_forbidden(self) -> None:
+        client = MagicMock()
+        client.complete_multipart_upload.side_effect = ClientError(
+            {"Error": {"Code": "NoSuchUpload"}}, "CompleteMultipartUpload"
+        )
+        service = S3Service(bucket="bucket", client=client)
+        completion = S3FileUploadCompleted(id="upload", path="file.pdf", parts=[])
+
+        with pytest.raises(
+            NotPermitted, match="Multipart upload is no longer available"
+        ):
+            service.complete_multipart_upload(completion, path="file.pdf", size=1)
+
+        client.abort_multipart_upload.assert_not_called()
+
+    @pytest.mark.parametrize("abort_fails", [False, True])
+    def test_invalid_completion_aborts_upload(self, abort_fails: bool) -> None:
+        client = MagicMock()
+        error = ClientError(
+            {"Error": {"Code": "InvalidRequest"}}, "CompleteMultipartUpload"
+        )
+        client.complete_multipart_upload.side_effect = error
+        if abort_fails:
+            client.abort_multipart_upload.side_effect = ClientError(
+                {"Error": {"Code": "AccessDenied"}}, "AbortMultipartUpload"
+            )
+
+        service = S3Service(bucket="bucket", client=client)
+        completion = S3FileUploadCompleted(id="upload", path="file.pdf", parts=[])
+        with pytest.raises(NotPermitted) as exc_info:
+            service.complete_multipart_upload(completion, path="file.pdf", size=1)
+
+        assert exc_info.value.__cause__ is error
+        client.abort_multipart_upload.assert_called_once_with(
+            Bucket="bucket", Key="file.pdf", UploadId="upload"
+        )
+
+    def test_other_errors_remain_unchanged(self) -> None:
+        client = MagicMock()
+        error = ClientError(
+            {"Error": {"Code": "InvalidPart"}}, "CompleteMultipartUpload"
+        )
+        client.complete_multipart_upload.side_effect = error
+        service = S3Service(bucket="bucket", client=client)
+        completion = S3FileUploadCompleted(id="upload", path="file.pdf", parts=[])
+
+        with pytest.raises(ClientError) as exc_info:
+            service.complete_multipart_upload(completion, path="file.pdf", size=1)
+
+        assert exc_info.value is error
+        client.abort_multipart_upload.assert_not_called()
 
 
 class TestGetObjectOrRaise:

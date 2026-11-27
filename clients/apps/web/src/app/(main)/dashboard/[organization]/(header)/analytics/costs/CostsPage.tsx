@@ -10,7 +10,8 @@ import {
   useEventVarianceStats,
 } from '@/hooks/queries/events'
 import { useMetrics } from '@/hooks/queries/metrics'
-import { fromISODate, toISODate } from '@/utils/metrics'
+import { buildEventDashboardPath } from '@/utils/event'
+import { fromISODate, toISODate, parseAsISODateString } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Avatar, Text } from '@polar-sh/orbit'
@@ -52,11 +53,11 @@ export default function ClientPage({
 }: ClientPageProps) {
   const [startDateISOString, setStartDateISOString] = useQueryState(
     'startDate',
-    parseAsString.withDefault(getDefaultStartDate()),
+    parseAsISODateString.withDefault(getDefaultStartDate()),
   )
   const [endDateISOString, setEndDateISOString] = useQueryState(
     'endDate',
-    parseAsString.withDefault(getDefaultEndDate()),
+    parseAsISODateString.withDefault(getDefaultEndDate()),
   )
 
   const dateRange = useMemo(
@@ -562,7 +563,10 @@ export default function ClientPage({
                     return (
                       <Link
                         key={s.event_id}
-                        href={`/dashboard/${organization.slug}/analytics/events/${s.event_id}`}
+                        href={buildEventDashboardPath(
+                          organization.slug,
+                          s.event_id,
+                        )}
                         className="dark:border-polar-700 dark:hover:bg-polar-800 flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-4 transition-colors hover:bg-gray-50 dark:bg-transparent"
                       >
                         <div className="flex items-start justify-between gap-2">

@@ -40,6 +40,16 @@ BenefitGrantsRead = Annotated[
     AuthSubject[User | Organization], Depends(_BenefitGrantsRead)
 ]
 
+BenefitGrantsWrite = Annotated[
+    AuthSubject[User | Organization],
+    Depends(
+        Authenticator(
+            required_scopes={Scope.benefits_write},
+            allowed_subjects={User, Organization},
+        )
+    ),
+]
+
 _SlackBenefitsWrite = Authenticator(
     required_scopes={
         Scope.benefits_write,

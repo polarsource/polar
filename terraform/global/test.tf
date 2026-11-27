@@ -8,6 +8,14 @@ resource "tfe_variable" "planetscale_app_password_test" {
   variable_set_id = tfe_variable_set.test.id
 }
 
+resource "tfe_variable" "planetscale_migrator_password_test" {
+  key             = "planetscale_migrator_password"
+  category        = "terraform"
+  description     = "PlanetScale migrator role password for test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
 data "tfe_project" "test" {
   name         = "test"
   organization = "polar-sh"
@@ -602,11 +610,11 @@ resource "tfe_variable" "vercel_sentry_auth_token_test" {
   }
 }
 
-resource "tfe_variable" "vercel_mcp_oauth2_client_id_test" {
-  key             = "mcp_oauth2_client_id"
+resource "tfe_variable" "protected_oauth2_client_ids_test" {
+  key             = "protected_oauth2_client_ids"
   category        = "terraform"
-  description     = "MCP OAuth2 client ID for the Vercel test frontend"
-  sensitive       = true
+  description     = "OAuth2 client IDs excluded from stale cleanup in test"
+  hcl             = true
   variable_set_id = tfe_variable_set.test.id
 
   lifecycle {
@@ -749,6 +757,17 @@ resource "tfe_variable" "private_backoffice_tailscale_ip_test" {
   }
 }
 
+resource "tfe_variable" "ec2_tailscale_oauth_client_id_test" {
+  key             = "ec2_tailscale_oauth_client_id"
+  category        = "terraform"
+  description     = "ID of the Tailscale OAuth client used by the EC2 router in test"
+  variable_set_id = tfe_variable_set.test.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
 resource "tfe_variable" "ec2_tailscale_oauth_client_secret_test" {
   key             = "ec2_tailscale_oauth_client_secret"
   category        = "terraform"
@@ -805,6 +824,66 @@ resource "tfe_variable" "redis_private_link_host_test" {
   description  = "DNS name of the Render private link to the test Redis"
   sensitive    = false
   workspace_id = data.tfe_workspace_ids.aws.ids["test"]
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "backoffice_google_client_id_test" {
+  key             = "backoffice_google_client_id"
+  category        = "terraform"
+  description     = "Backoffice Google OAuth client ID for test"
+  sensitive       = false
+  variable_set_id = tfe_variable_set.test.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "backoffice_google_client_secret_test" {
+  key             = "backoffice_google_client_secret"
+  category        = "terraform"
+  description     = "Backoffice Google OAuth client secret for test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "backoffice_google_hosted_domain_test" {
+  key             = "backoffice_google_hosted_domain"
+  category        = "terraform"
+  description     = "Backoffice Google Workspace hosted domain for test"
+  sensitive       = false
+  variable_set_id = tfe_variable_set.test.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "payment_retry_alert_api_key_test" {
+  key             = "payment_retry_alert_api_key"
+  category        = "terraform"
+  description     = "PaymentRetryAlert API key for test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "payment_retry_alert_webhook_secret_test" {
+  key             = "payment_retry_alert_webhook_secret"
+  category        = "terraform"
+  description     = "PaymentRetryAlert webhook signing secret for test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
 
   lifecycle {
     ignore_changes = [value]

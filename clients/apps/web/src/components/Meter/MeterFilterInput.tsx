@@ -21,7 +21,7 @@ import {
   Trash as TrashIcon,
   X as XIcon,
 } from '@polar-sh/orbit/icons'
-import { useFieldArray, useFormContext } from 'react-hook-form'
+import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import MeterFilterInputProperty from './MeterFilterInputProperty'
 import MeterFilterInputValue from './MeterFilterInputValue'
@@ -52,8 +52,12 @@ const MeterFilterInput = ({
   removeParent?: () => void
   organizationId: string
 }) => {
-  const { control, watch } = useFormContext()
-  const conjunction = watch(`${prefix}.conjunction`) as string
+  const { control } = useFormContext()
+  const conjunction = useWatch({
+    control,
+    name: `${prefix}.conjunction`,
+  }) as string
+  const clauseValues = useWatch({ control, name: `${prefix}.clauses` })
   const {
     fields: clauses,
     append,
@@ -96,7 +100,7 @@ const MeterFilterInput = ({
         </div>
       )}
       {clauses.map((clause, index) => {
-        const property = watch(`${prefix}.clauses.${index}.property`)
+        const property = clauseValues?.[index]?.property
 
         return (
           <div key={clause.id}>

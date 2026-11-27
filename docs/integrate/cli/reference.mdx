@@ -15,6 +15,7 @@ polar <subcommand> [flags]
 ## CLI commands
 
 - [`polar auth`](/integrate/cli/reference/auth) Manage your Polar sessions and active organization
+- [`polar agent`](/integrate/cli/reference/agent) Set up coding agents to build with Polar
 - [`polar webhook`](/integrate/cli/reference/webhook) Test webhooks against your local server
 - [`polar update`](/integrate/cli/reference/update) Update the CLI to the latest release
 
@@ -54,3 +55,13 @@ These flags work with every command.
 | `--completions` | `<bash\|zsh\|fish\|sh>` | Print shell completion script (choices: bash, zsh, fish, sh) |
 | `--log-level` | `<all\|trace\|debug\|info\|warn\|warning\|error\|fatal\|none>` | Sets the minimum log level (choices: all, trace, debug, info, warn, warning, error, fatal, none) |
 | `--json` | `boolean` | Print the result as JSON |
+
+## Environment variables
+
+The CLI reads these from your environment.
+
+| Variable | Description |
+| --- | --- |
+| `POLAR_ACCESS_TOKEN` | Use this token instead of polar auth login: an organization access token, or an OAuth or agent access token |
+| `POLAR_ENVIRONMENT` | Environment of POLAR_ACCESS_TOKEN: sandbox or production. Defaults to production |
+| `POLAR_CLI_TELEMETRY_OPTOUT` | Set to 1 to turn off anonymous telemetry. DO_NOT_TRACK=1 works too |

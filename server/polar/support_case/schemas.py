@@ -8,16 +8,20 @@ from polar.exceptions import ResourceNotFound
 from polar.kit.schemas import (
     ClassName,
     IDSchema,
+    MultipleQueryFilter,
     Schema,
     SetSchemaReference,
     TimestampedSchema,
 )
+from polar.kit.versioning import QuerySchema
+from polar.models.dispute import DisputeStatus
 from polar.models.support_case import (
     DisputeWinReason,
     SupportCaseMessageAuthorKind,
     SupportCaseMessageType,
     SupportCaseType,
 )
+from polar.organization.schemas import OrganizationID
 
 SupportCaseID = Annotated[UUID4, Path(description="The support case ID.")]
 SupportCaseAttachmentID = Annotated[UUID4, Path(description="The attachment ID.")]
@@ -142,3 +146,17 @@ SupportCaseMessageCreate = Annotated[
 
 class HumanReviewRequest(Schema):
     reason: str = Field(min_length=50, max_length=5000)
+
+
+class SupportCaseListParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    type: MultipleQueryFilter[SupportCaseType] | None = Field(
+        None, title="Type Filter", description="Filter by support case type."
+    )
+    dispute_status: MultipleQueryFilter[DisputeStatus] | None = Field(
+        None,
+        title="DisputeStatus Filter",
+        description="Filter dispute cases by the linked dispute's status.",
+    )

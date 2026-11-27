@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from typing import Annotated, Any
 
-import httpx
+import httpx2
 from fastapi import Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
 from pydantic import UUID4, Field, ValidationError
@@ -637,7 +637,7 @@ async def reply_in_plain(
         return HXRedirectResponse(
             request, str(request.url_for("feedbacks:get", id=feedback.id))
         )
-    except httpx.RequestError:
+    except httpx2.RequestError:
         await add_toast(
             request,
             "Plain request failed, please try again later.",

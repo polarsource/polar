@@ -206,6 +206,7 @@ class Transaction(RecordModel):
 
     __tablename__ = "transactions"
     __table_args__ = (
+        Index("ix_transactions_account_id_created_at", "account_id", "created_at"),
         Index(
             "ix_transactions_tax_country_not_null",
             "tax_country",

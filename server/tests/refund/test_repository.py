@@ -8,7 +8,7 @@ from tests.fixtures.random_objects import create_order_and_payment, create_refun
 
 
 @pytest.mark.anyio
-class TestGetRevertedTaxAmount:
+class TestGetRevertedAmounts:
     @pytest.mark.parametrize("recorded", [False, True], ids=["empty", "recorded"])
     async def test_returns_integer_minor_units(
         self,
@@ -38,15 +38,15 @@ class TestGetRevertedTaxAmount:
                 save_fixture,
                 order,
                 payment,
-                amount=0,
+                amount=500,
                 tax_amount=1000,
                 processor_id="previous",
             )
             previous.tax_transaction_processor_id = "tax_refund_previous"
 
-        amount = await RefundRepository.from_session(session).get_reverted_tax_amount(
+        amounts = await RefundRepository.from_session(session).get_reverted_amounts(
             order.id, exclude_refund_id=current.id
         )
 
-        assert isinstance(amount, int)
-        assert amount == (1000 if recorded else 0)
+        assert all(isinstance(amount, int) for amount in amounts)
+        assert amounts == ((1000, 1500) if recorded else (0, 0))

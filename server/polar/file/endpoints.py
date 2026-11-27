@@ -10,12 +10,10 @@ from polar.authz.service import (
 )
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.schemas import MultipleQueryFilter
 from polar.models import File
 from polar.models.file import FileServiceTypes
 from polar.openapi import APITag
 from polar.organization.resolver import get_payload_organization
-from polar.organization.schemas import OrganizationID
 from polar.postgres import (
     AsyncReadSession,
     AsyncSession,
@@ -28,6 +26,7 @@ from . import auth
 from .schemas import (
     FileCreate,
     FileDownload,
+    FileListParams,
     FilePatch,
     FileRead,
     FileReadAdapter,
@@ -59,22 +58,17 @@ def _assert_mutable(file: File) -> None:
     tags=[APITag.mcp, APITag.cli],
 )
 async def list(
+    filters: Annotated[FileListParams, Query()],
     auth_subject: auth.FileRead,
     pagination: PaginationParamsQuery,
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
-    ids: MultipleQueryFilter[UUID4] | None = Query(
-        None, title="FileID Filter", description="Filter by file ID."
-    ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[FileRead]:
     """List files."""
     results, count = await file_service.list(
         session,
         auth_subject,
-        organization_id=organization_id,
-        ids=ids,
+        organization_id=filters.organization_id,
+        ids=filters.ids,
         pagination=pagination,
     )
     return ListResource.from_paginated_results(

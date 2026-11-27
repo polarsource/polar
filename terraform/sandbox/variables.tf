@@ -19,6 +19,23 @@ variable "planetscale_app_password" {
   }
 }
 
+variable "planetscale_migrator_password" {
+  description = "Password for the PlanetScale migrator role returned by module.planetscale.migrator_role_username."
+  type        = string
+  sensitive   = true
+
+  validation {
+    condition     = length(var.planetscale_migrator_password) > 0
+    error_message = "Set planetscale_migrator_password before running sandbox migrations as the migrator role."
+  }
+}
+
+variable "planetscale_metrics_token" {
+  description = "PlanetScale service token with read_metrics_endpoints, as <token id>:<token>."
+  type        = string
+  sensitive   = true
+}
+
 variable "ghcr_auth_token" {
   description = "GitHub Container Registry auth token (Personal Access Token with read:packages scope)"
   type        = string
@@ -373,10 +390,10 @@ variable "mintlify_assistant_api_key" {
   sensitive   = true
 }
 
-variable "mcp_oauth2_client_id" {
-  description = "MCP OAuth2 client ID for the Vercel frontend"
-  type        = string
-  sensitive   = true
+variable "protected_oauth2_client_ids" {
+  description = "OAuth2 client IDs excluded from stale cleanup"
+  type        = list(string)
+  nullable    = false
 }
 
 variable "mcp_oauth2_client_secret" {
@@ -498,6 +515,36 @@ variable "linear_payout_amount_mismatch_template_id" {
 
 variable "slo_report_slack_bot_token" {
   description = "Slack Bot Token, shared with production"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "backoffice_google_client_id" {
+  description = "Backoffice Google OAuth client ID"
+  type        = string
+}
+
+variable "backoffice_google_client_secret" {
+  description = "Backoffice Google OAuth client secret"
+  type        = string
+  sensitive   = true
+}
+
+variable "backoffice_google_hosted_domain" {
+  description = "Backoffice Google Workspace hosted domain"
+  type        = string
+}
+
+variable "payment_retry_alert_api_key" {
+  description = "PaymentRetryAlert API key"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "payment_retry_alert_webhook_secret" {
+  description = "PaymentRetryAlert webhook signing secret"
   type        = string
   sensitive   = true
   default     = ""

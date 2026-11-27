@@ -10,9 +10,13 @@ from polar.kit.schemas import (
     ORDER_ID_EXAMPLE,
     PAYMENT_ID_EXAMPLE,
     IDSchema,
+    MultipleQueryFilter,
     TimestampedSchema,
 )
+from polar.kit.versioning import QuerySchema
 from polar.models.dispute import DisputeStatus
+from polar.order.schemas import OrderID
+from polar.organization.schemas import OrganizationID
 
 DisputeID = Annotated[UUID4, Path(description="The dispute ID.")]
 
@@ -141,3 +145,15 @@ class Dispute(DisputeBase):
             ),
         ),
     ]
+
+
+class DisputeListParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    order_id: MultipleQueryFilter[OrderID] | None = Field(
+        None, title="OrderID Filter", description="Filter by order ID."
+    )
+    status: MultipleQueryFilter[DisputeStatus] | None = Field(
+        None, title="Status Filter", description="Filter by dispute status."
+    )

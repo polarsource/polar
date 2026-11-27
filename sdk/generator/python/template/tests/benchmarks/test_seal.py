@@ -6,7 +6,7 @@ from redis import Redis
 
 from polar.outpost.client import APPLY_SNAPSHOT_SCRIPT
 from polar.outpost.reducer import BUCKET_SIZE
-from tests.benchmarks import BUCKET_COUNTS, CHANNEL, COLD_UNTIL, EPOCH, encode_state
+from tests.benchmarks import BUCKET_COUNTS, COLD_UNTIL, encode_state
 
 pytestmark = pytest.mark.benchmark
 
@@ -46,13 +46,8 @@ def test_apply_snapshot_seals_buckets(
             sha,
             1,
             key,
-            identity_of(buckets),
-            CHANNEL,
-            EPOCH,
             cutoff,
             cutoff + 1,
-            "meter",
-            1_000_000,
             1000,
             123456,
             1,

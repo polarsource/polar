@@ -22,31 +22,37 @@ locals {
     tax_processors                                   = "[\"numeral\",\"stripe\"]"
     tax_record_processor                             = "numeral"
     customer_portal_url_overrides                    = var.customer_portal_url_overrides
+    protected_oauth2_client_ids                      = var.protected_oauth2_client_ids
     plain_default_tier_external_id                   = var.plain_default_tier_external_id
     merchant_migration_destination_stripe_account_id = var.merchant_migration_destination_stripe_account_id
   }
 
   backend_secrets = {
-    linear_api_key                 = var.linear_api_key
-    stripe_publishable_key         = var.stripe_publishable_key_sandbox
-    discord_bot_token              = var.backend_discord_bot_token_sandbox
-    discord_client_id              = var.backend_discord_client_id_sandbox
-    discord_client_secret          = var.backend_discord_client_secret_sandbox
-    discord_proxy_url              = var.backend_discord_proxy_url
-    resend_api_key                 = var.backend_resend_api_key_sandbox
-    resend_active_users_segment_id = var.resend_active_users_segment_id
-    resend_webhook_secret          = var.backend_resend_webhook_secret
-    firecrawl_api_key              = var.firecrawl_api_key
-    logo_dev_publishable_key       = var.backend_logo_dev_publishable_key_sandbox
-    sentry_dsn                     = var.backend_sentry_dsn_sandbox
-    numeral_api_key                = var.numeral_api_key_sandbox
-    turnstile_secret               = var.turnstile_secret
+    linear_api_key                     = var.linear_api_key
+    stripe_publishable_key             = var.stripe_publishable_key_sandbox
+    discord_bot_token                  = var.backend_discord_bot_token_sandbox
+    discord_client_id                  = var.backend_discord_client_id_sandbox
+    discord_client_secret              = var.backend_discord_client_secret_sandbox
+    discord_proxy_url                  = var.backend_discord_proxy_url
+    resend_api_key                     = var.backend_resend_api_key_sandbox
+    resend_active_users_segment_id     = var.resend_active_users_segment_id
+    resend_webhook_secret              = var.backend_resend_webhook_secret
+    payment_retry_alert_api_key        = var.payment_retry_alert_api_key
+    payment_retry_alert_webhook_secret = var.payment_retry_alert_webhook_secret
+    firecrawl_api_key                  = var.firecrawl_api_key
+    logo_dev_publishable_key           = var.backend_logo_dev_publishable_key_sandbox
+    sentry_dsn                         = var.backend_sentry_dsn_sandbox
+    numeral_api_key                    = var.numeral_api_key_sandbox
+    turnstile_secret                   = var.turnstile_secret
   }
 
   google_secrets = {
-    client_id            = var.google_client_id_sandbox
-    client_secret        = var.google_client_secret_sandbox
-    service_account_json = var.google_service_account_json
+    backoffice_client_id     = var.backoffice_google_client_id
+    backoffice_client_secret = var.backoffice_google_client_secret
+    backoffice_hosted_domain = var.backoffice_google_hosted_domain
+    client_id                = var.google_client_id_sandbox
+    client_secret            = var.google_client_secret_sandbox
+    service_account_json     = var.google_service_account_json
   }
 
   pydantic_ai_gateway_secrets = { api_key = var.pydantic_ai_gateway_api_key_sandbox }

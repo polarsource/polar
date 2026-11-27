@@ -85,18 +85,22 @@ def track_completed(argv: list[str], duration_ms: int, exit_code: int) -> None:
 
 
 def track_up_step(
-    argv: list[str], step: str, duration_ms: int, success: bool, clean: bool
+    argv: list[str],
+    step: str,
+    duration_ms: int,
+    success: bool,
+    clean: bool,
+    failure_reason: str | None = None,
 ) -> None:
-    _send(
-        UP_STEP_EVENT,
-        argv,
-        {
-            "step": step,
-            "duration_ms": duration_ms,
-            "success": success,
-            "clean": clean,
-        },
-    )
+    properties: dict[str, int | str | bool] = {
+        "step": step,
+        "duration_ms": duration_ms,
+        "success": success,
+        "clean": clean,
+    }
+    if failure_reason:
+        properties["failure_reason"] = failure_reason
+    _send(UP_STEP_EVENT, argv, properties)
 
 
 def _send(event: str, argv: list[str], extra: dict[str, int | str | bool]) -> None:

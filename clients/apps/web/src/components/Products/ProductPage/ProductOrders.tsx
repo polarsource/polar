@@ -1,9 +1,10 @@
 import { OrderStatus } from '@/components/Orders/OrderStatus'
+import { useCatalog } from '@/hooks/queries/catalogs'
 import { useOrders } from '@/hooks/queries/orders'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Avatar } from '@polar-sh/orbit'
-import { Button } from '@polar-sh/orbit'
+import { Button, Text } from '@polar-sh/orbit'
 import { DataTable, DataTableColumnHeader } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Link from 'next/link'
@@ -17,6 +18,12 @@ export const ProductOrders = ({
   organization,
   product,
 }: ProductOrdersProps) => {
+  const { data: catalog } = useCatalog(
+    organization.feature_settings?.config_as_code_enabled
+      ? product.catalog_id
+      : null,
+  )
+  const versionName = catalog ? (catalog.name ?? 'Untitled') : null
   const { data: productOrders, isLoading: productOrdersIsLoading } = useOrders(
     organization.id,
     {
@@ -29,13 +36,31 @@ export const ProductOrders = ({
     <div className="flex flex-col gap-y-6">
       <div className="flex flex-row items-center justify-between gap-x-6">
         <div className="flex flex-col gap-y-1">
-          <h2 className="text-lg">Orders</h2>
+          <Text variant="heading-xxs" as="h2">
+            Orders
+          </Text>
           <p className="dark:text-polar-500 text-sm text-gray-500">
             Showing last 10 orders for {product.name}
+            {versionName && (
+              <>
+                {' on version '}
+                <Link
+                  href={`/dashboard/${organization.slug}/products/versions/${product.catalog_id}`}
+                  className="font-medium text-gray-900 hover:underline hover:decoration-current/30 hover:underline-offset-4 dark:text-white"
+                >
+                  {versionName}
+                </Link>
+              </>
+            )}
           </p>
         </div>
         <Link
-          href={`/dashboard/${organization.slug}/sales?product_id=${product.id}`}
+          href={
+            organization.feature_settings?.config_as_code_enabled &&
+            product.external_id
+              ? `/dashboard/${organization.slug}/sales?external_product_id=${encodeURIComponent(product.external_id)}`
+              : `/dashboard/${organization.slug}/sales?product_id=${product.id}`
+          }
         >
           <Button size="sm">View All</Button>
         </Link>

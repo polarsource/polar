@@ -10,6 +10,7 @@ const format = formatCurrency('accounting')
 export interface InvoiceLineItem {
   id: string
   label: string
+  description?: string | null
   amount: number
 }
 
@@ -86,8 +87,17 @@ export const InvoicePreview = ({
 
       {items.map((item, index) => (
         <Fragment key={item.id}>
-          <GridItem colSpan={2} paddingTop={index === 0 ? 'l' : 'm'}>
+          <GridItem
+            colSpan={2}
+            flexDirection="column"
+            paddingTop={index === 0 ? 'l' : 'm'}
+          >
             <Text variant="body">{item.label}</Text>
+            {item.description && (
+              <Text variant="caption" color="muted">
+                {item.description}
+              </Text>
+            )}
           </GridItem>
           <GridItem justifyContent="end" paddingTop={index === 0 ? 'l' : 'm'}>
             <Text as="span" variant="body" tabularNums>

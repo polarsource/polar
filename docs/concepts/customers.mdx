@@ -1,0 +1,68 @@
+---
+title: "Customers"
+description: "How customers map to your users with external IDs, the customer state, and teams with seats."
+---
+
+A **customer** is the person or team that buys from you. Everything they do on Polar hangs off the customer: orders, subscriptions, benefit grants, usage and payment methods.
+
+```mermaid
+flowchart LR
+  C[Customer] --> O[Orders]
+  C --> S[Subscriptions]
+  C --> G[Benefit grants]
+  C --> U[Usage]
+```
+
+Polar creates a customer automatically when someone completes a checkout. You can also create customers in advance through the API, for example when a user signs up in your application, or by hand under **Customers** in the dashboard.
+
+## External ID
+
+Your application already has its own user IDs. Set a customer's **`external_id`** (**External ID** in the dashboard) to your user's ID, and you never need to store Polar's customer ID.
+
+- It's unique within your organization and can't be changed once set.
+- Most customer endpoints have a variant that takes the external ID instead of Polar's ID.
+- Pass `external_customer_id` when creating a [checkout session](/concepts/checkout) or [ingesting events](/concepts/usage) to attach them to the right customer.
+
+## Customer state
+
+The **customer state** is a single object with everything you need to decide what a customer can access:
+
+- The customer's details
+- Their **active** subscriptions
+- Their **granted** benefits
+- Their **active** meters, with current balances
+
+Fetch it when you need it, or listen to the `customer.state_changed` webhook to be told whenever it changes. See [Customer state](/integrate/customer-state).
+
+## Individuals and teams
+
+A customer is an **individual** by default. When a customer buys a [seat-based product](/features/seat-based-pricing), they become a **team**, which separates who pays from who uses the product:
+
+- The **customer** is the billing entity. It owns orders, subscriptions and payment methods.
+- **Members** are the people under the customer. Each has a role (`owner`, `billing_manager` or `member`, shown as **Owner**, **Billing Manager** or **Member**) and receives their own benefit grants. They're listed on the customer's **Members** tab.
+- A **seat** assigns a product to a member.
+
+For team customers, identify the end user by their member, not by the customer who paid.
+
+## Customer portal
+
+Customers manage their own billing in the [customer portal](/features/customer-portal/introduction): they can update payment methods, download invoices, view usage, and cancel or change their subscriptions. They sign in with their email, or you can send them in with a [customer session](/api-reference/current/customer-sessions/create-customer-session) from your application.
+
+## In the dashboard, CLI or your agent
+
+Customers live under **Customers** in the dashboard. Open one to see their subscriptions, orders, usage and events. The same tasks work from your terminal and your agent. See the [CLI reference](/integrate/cli/reference) and the [MCP server](/integrate/mcp).
+
+| Task | Dashboard | CLI | MCP operation |
+| --- | --- | --- | --- |
+| Create a customer | **Customers → +** | `polar customers create` | `customers_create` |
+| Read a customer state by your user ID | Open the customer | `polar customers get_state_external <external_id>` | `customers_get_state_external` |
+| List a team's members | The customer's **Members** tab | `polar customers members list` | `customers_members_list` |
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Customer management](/features/customer-management) | View and edit customers, external IDs and metadata |
+| [Customer state](/integrate/customer-state) | Everything a customer has access to, in one call |
+| [Seat-based pricing](/features/seat-based-pricing) | Teams, members and seats |
+| [Customers API](/api-reference/current/customers/list-customers) | Manage customers programmatically |

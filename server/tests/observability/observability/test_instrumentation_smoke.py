@@ -1,11 +1,14 @@
-import httpx
+from importlib import import_module
+
+import httpx2
 import logfire
 import pytest
 from fastapi import APIRouter, FastAPI
 from logfire.testing import CaptureLogfire, TestExporter
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+from opentelemetry.trace import SpanKind
 
-from polar.logfire import instrument_fastapi
+from polar.logfire import instrument_fastapi, instrument_httpx
 from polar.observability.http_telemetry import HttpURLSpanProcessor
 
 
@@ -26,8 +29,10 @@ async def test_instrument_fastapi(
 
     instrument_fastapi(app)  # same call as polar/app.py:264
 
-    transport = httpx.ASGITransport(app=app)
-    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+    transport = httpx2.ASGITransport(app=app)
+    async with httpx2.AsyncClient(
+        transport=transport, base_url="http://test"
+    ) as client:
         full_match = await client.get("/v1/leaf/ping")
         """The wrong-method request exercises partial route matching,
         the only path that catches instrumentation breaking against FastAPI internals."""
@@ -66,8 +71,8 @@ async def test_instrument_fastapi_host_routed_app_hides_path_values() -> None:
     app.host("buy.example.com", host_app)
     instrument_fastapi(app)
 
-    transport = httpx.ASGITransport(app=app)
-    async with httpx.AsyncClient(
+    transport = httpx2.ASGITransport(app=app)
+    async with httpx2.AsyncClient(
         transport=transport, base_url="http://buy.example.com"
     ) as client:
         response = await client.get("/polar_cl_secret?customer_email=a@example.com")
@@ -81,4 +86,51 @@ async def test_instrument_fastapi_host_routed_app_hides_path_values() -> None:
     for span in spans:
         serialized = f"{span.name} {dict(span.attributes or {})}"
         assert "polar_cl_secret" not in serialized
+        assert "a@example.com" not in serialized
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("module_name", ["httpx", "httpx2"])
+async def test_instrument_http_clients_hides_request_values(module_name: str) -> None:
+    http = import_module(module_name)
+    core = import_module("httpcore2" if module_name == "httpx2" else "httpcore")
+    exporter = TestExporter()
+    logfire.configure(
+        send_to_logfire=False,
+        console=False,
+        additional_span_processors=[
+            HttpURLSpanProcessor(),
+            SimpleSpanProcessor(exporter),
+        ],
+    )
+    instrument_httpx()
+    response_bytes = b"HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n"
+    transport = http.HTTPTransport()
+    transport._pool._network_backend = core.MockBackend([response_bytes])
+    with http.Client(transport=transport) as client:
+        response = client.get("https://example.com/private-token?email=a@example.com")
+        assert response.status_code == 200
+
+    async_transport = http.AsyncHTTPTransport()
+    async_transport._pool._network_backend = core.AsyncMockBackend([response_bytes])
+    async with http.AsyncClient(transport=async_transport) as client:
+        response = await client.get(
+            "https://example.com/private-token?email=a@example.com"
+        )
+        assert response.status_code == 200
+
+    spans = [span for span in exporter.exported_spans if span.kind == SpanKind.CLIENT]
+    assert (
+        len(
+            [
+                span
+                for span in spans
+                if (span.attributes or {}).get("logfire.span_type") != "pending_span"
+            ]
+        )
+        == 2
+    )
+    for span in spans:
+        serialized = f"{span.name} {dict(span.attributes or {})}"
+        assert "private-token" not in serialized
         assert "a@example.com" not in serialized

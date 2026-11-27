@@ -1,18 +1,21 @@
 import revalidate from '@/app/actions'
-import { useCustomerOrders } from '@/hooks/queries/customerPortal'
 import { Client, schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
-import { DataTable } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
+import { subscriptionStatusDisplayNames } from '@/components/Subscriptions/utils'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { getThemePreset } from '@polar-sh/ui/hooks/theming'
-import { useTheme } from 'next-themes'
-import { useRouter } from 'next/navigation'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '../Modal/useModal'
 import CustomerSubscriptionDetails from './CustomerSubscriptionDetails'
 import CustomerPortalSubscription from './CustomerPortalSubscription'
-import { OrderPaymentRetryModal } from './OrderPaymentRetryModal'
+import { PortalDrawerHeader } from './PortalDialog'
+import {
+  PortalCardList,
+  PortalEmptyState,
+  PortalListItem,
+  PortalSection,
+} from './PortalPrimitives'
+import { SubscriptionStatusPill } from './SubscriptionStatusPill'
 
 interface SubscriptionsOverviewProps {
   organization: schemas['CustomerOrganization']
@@ -33,11 +36,10 @@ export const ActiveSubscriptionsOverview = ({
   }, [])
 
   return (
-    <div className="flex flex-col gap-y-4">
-      <h3 className="text-xl">Subscriptions</h3>
-      <div className="flex flex-col gap-y-4">
-        {subscriptions.length > 0 ? (
-          subscriptions.map((s) => (
+    <PortalSection title="Subscriptions">
+      {subscriptions.length > 0 ? (
+        <Box flexDirection="column" rowGap="l">
+          {subscriptions.map((s) => (
             <CustomerSubscriptionDetails
               key={s.id}
               api={api}
@@ -46,14 +48,12 @@ export const ActiveSubscriptionsOverview = ({
               onUserSubscriptionUpdate={onSubscriptionUpdate}
               customerSessionToken={customerSessionToken}
             />
-          ))
-        ) : (
-          <div className="dark:border-polar-700 flex flex-col items-center justify-center rounded-2xl border border-gray-200 p-12 text-gray-500">
-            <p>No Subscriptions Found</p>
-          </div>
-        )}
-      </div>
-    </div>
+          ))}
+        </Box>
+      ) : (
+        <PortalEmptyState title="No subscriptions found" />
+      )}
+    </PortalSection>
   )
 }
 
@@ -63,10 +63,6 @@ export const InactiveSubscriptionsOverview = ({
   api,
   customerSessionToken,
 }: SubscriptionsOverviewProps) => {
-  const router = useRouter()
-  const theme = useTheme()
-  const themingPreset = getThemePreset(theme.resolvedTheme as 'light' | 'dark')
-
   const [selectedSubscriptionId, setSelectedSubscriptionId] = useState<
     string | null
   >(null)
@@ -74,20 +70,11 @@ export const InactiveSubscriptionsOverview = ({
   // so a cancellation reflects here after the list refetches.
   const selectedSubscription =
     subscriptions.find((s) => s.id === selectedSubscriptionId) ?? null
-  const [retryPaymentSubscription, setRetryPaymentSubscription] = useState<
-    schemas['CustomerSubscription'] | null
-  >(null)
 
   const {
     isShown: isSubscriptionModalOpen,
     hide: _hideSubscriptionModal,
     show: showSubscriptionModal,
-  } = useModal()
-
-  const {
-    isShown: isRetryPaymentModalOpen,
-    hide: _hideRetryPaymentModal,
-    show: showRetryPaymentModal,
   } = useModal()
 
   const openSubscriptionModal = useCallback(
@@ -103,132 +90,55 @@ export const InactiveSubscriptionsOverview = ({
     _hideSubscriptionModal()
   }, [_hideSubscriptionModal])
 
-  const openRetryPaymentModal = useCallback(
-    (subscription: schemas['CustomerSubscription']) => {
-      setRetryPaymentSubscription(subscription)
-      showRetryPaymentModal()
-    },
-    [showRetryPaymentModal],
-  )
-
-  const hideRetryPaymentModal = useCallback(() => {
-    setRetryPaymentSubscription(null)
-    _hideRetryPaymentModal()
-  }, [_hideRetryPaymentModal])
-
-  const { data: orders } = useCustomerOrders(api, {
-    subscription_id: retryPaymentSubscription?.id,
-    limit: 10,
-    sorting: ['-created_at'],
-  })
-
-  const orderItems = orders?.items
-  const pastDueOrder = useMemo(() => {
-    if (
-      !retryPaymentSubscription ||
-      retryPaymentSubscription.status !== 'past_due' ||
-      !orderItems
-    ) {
-      return null
-    }
-    return orderItems.find((order) => order.status === 'pending')
-  }, [retryPaymentSubscription, orderItems])
-
   return (
-    <div className="flex flex-col gap-y-4">
-      <div className="flex flex-row items-center justify-between">
-        <h3 className="text-xl">Inactive Subscriptions</h3>
-      </div>
-      <DataTable
-        data={subscriptions ?? []}
-        isLoading={false}
-        columns={[
-          {
-            accessorKey: 'product.name',
-            header: 'Product',
-            cell: ({ row }) => row.original.product.name,
-          },
-          {
-            accessorKey: 'status',
-            header: 'Status',
-            cell: ({ row }) => (
-              <span className="capitalize">
-                {row.original.status.split('_').join(' ')}
-              </span>
-            ),
-          },
-          {
-            accessorKey: 'ended_at',
-            header: 'Ended At',
-            cell: ({ row }) =>
-              row.original.ended_at ? (
-                <FormattedDateTime
-                  datetime={row.original.ended_at}
-                  dateStyle="medium"
-                  resolution="day"
-                />
+    <PortalSection title="Past subscriptions">
+      <PortalCardList>
+        {subscriptions.map((subscription) => (
+          <PortalListItem
+            key={subscription.id}
+            onClick={() => openSubscriptionModal(subscription)}
+            title={subscription.product.name}
+            subtitle={
+              subscription.ended_at ? (
+                <>
+                  Ended{' '}
+                  <FormattedDateTime
+                    datetime={subscription.ended_at}
+                    dateStyle="medium"
+                    resolution="day"
+                  />
+                </>
               ) : (
-                '—'
-              ),
-          },
-          {
-            accessorKey: 'id',
-            header: '',
-            cell: ({ row }) => (
-              <span className="flex justify-end gap-2">
-                {row.original.status === 'past_due' && (
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => openRetryPaymentModal(row.original)}
-                  >
-                    Retry payment
-                  </Button>
-                )}
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => openSubscriptionModal(row.original)}
-                >
-                  Manage subscription
-                </Button>
-              </span>
-            ),
-          },
-        ]}
-      />
+                subscriptionStatusDisplayNames[subscription.status]
+              )
+            }
+            meta={<SubscriptionStatusPill subscription={subscription} />}
+          />
+        ))}
+      </PortalCardList>
 
       <InlineModal
         isShown={isSubscriptionModalOpen}
         hide={hideSubscriptionModal}
         modalContent={
           selectedSubscription ? (
-            <div className="flex flex-col overflow-y-auto p-8">
-              <CustomerPortalSubscription
-                api={api}
-                customerSessionToken={customerSessionToken}
-                subscription={selectedSubscription}
-                products={products}
+            <>
+              <PortalDrawerHeader
+                title="Subscription"
+                hide={hideSubscriptionModal}
               />
-            </div>
+              <Box flexDirection="column" padding="2xl">
+                <CustomerPortalSubscription
+                  api={api}
+                  customerSessionToken={customerSessionToken}
+                  subscription={selectedSubscription}
+                  products={products}
+                />
+              </Box>
+            </>
           ) : null
         }
       />
-
-      {pastDueOrder && retryPaymentSubscription && (
-        <OrderPaymentRetryModal
-          order={pastDueOrder}
-          api={api}
-          isOpen={isRetryPaymentModalOpen}
-          onClose={hideRetryPaymentModal}
-          onSuccess={async () => {
-            hideRetryPaymentModal()
-            await revalidate(`customer_portal`)
-            router.refresh()
-          }}
-          themingPreset={themingPreset}
-        />
-      )}
-    </div>
+    </PortalSection>
   )
 }

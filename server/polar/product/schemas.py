@@ -1,11 +1,15 @@
 import builtins
 from collections.abc import Sequence
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Annotated, Any, Literal, Self
 
 from pydantic import (
+    MISSING,
     UUID4,
     AfterValidator,
+    AwareDatetime,
+    BaseModel,
     BeforeValidator,
     Discriminator,
     Field,
@@ -49,16 +53,18 @@ from polar.kit.schemas import (
     IDSchema,
     Int32,
     MergeJSONSchema,
+    MultipleQueryFilter,
     Schema,
     SetSchemaReference,
     StripValidator,
     TimestampedSchema,
 )
 from polar.kit.trial import TrialConfigurationInputMixin, TrialConfigurationOutputMixin
-from polar.kit.versioning import Version
+from polar.kit.versioning import Omissible, QuerySchema, Version
 from polar.kit.visibility import Visibility
 from polar.meter.unit import MeterUnit
 from polar.models import Benefit as BenefitModel
+from polar.models.catalog import CatalogStatus
 from polar.models.product import ProductVisibility
 from polar.models.product_price import (
     ProductPriceAmountType,
@@ -601,6 +607,12 @@ ProductPriceCreateList = Annotated[
     list[ProductPriceCreate], Field(min_length=1), PRICE_CREATE_LIST_SCHEMA
 ]
 
+TRIAL_PAYMENT_SETUP_REQUIRED_DESCRIPTION = (
+    "Whether customers must provide a payment method to start a trial. "
+    "If `false`, customers can start a trial without entering payment details."
+)
+
+
 PRODUCT_CREATE_PRICES_DESCRIPTION = (
     "List of available prices for this product. "
     "It may combine at most one fixed price with one seat-based price "
@@ -641,6 +653,11 @@ class ProductCreateBase(MetadataInputMixin, ExternalIDInputMixin, Schema):
 
 
 class ProductCreateRecurring(TrialConfigurationInputMixin, ProductCreateBase):
+    trial_payment_setup_required: Annotated[
+        bool,
+        Version(starting_from=V2027_01),
+        Field(description=TRIAL_PAYMENT_SETUP_REQUIRED_DESCRIPTION),
+    ] = True
     recurring_interval: SubscriptionRecurringInterval = Field(
         description="The recurring interval of the product.",
     )
@@ -755,30 +772,10 @@ class ProductUpdate(
     Schema to update a product.
     """
 
-    name: ProductName | None = None
+    name: Omissible[ProductName] = MISSING
     description: ProductDescription = None
-    recurring_interval: SubscriptionRecurringInterval | None = Field(
-        default=None,
-        description=(
-            "The recurring interval of the product. "
-            "If `None`, the product is a one-time purchase. "
-            "**Can only be set on legacy recurring products. "
-            "Once set, it can't be changed.**"
-        ),
-    )
-    recurring_interval_count: int | None = Field(
-        default=None,
-        ge=1,
-        le=999,
-        description=(
-            "Number of interval units of the subscription. "
-            "If this is set to 1 the charge will happen every interval (e.g. every month), "
-            "if set to 2 it will be every other month, and so on. "
-            "Once set, it can't be changed.**"
-        ),
-    )
-    is_archived: bool | None = Field(
-        default=None,
+    is_archived: Omissible[bool] = Field(
+        default=MISSING,
         json_schema_extra=destructive_when_equals(True),
         description=(
             "Whether the product is archived. "
@@ -787,22 +784,27 @@ class ProductUpdate(
             "and subscriptions will continue normally."
         ),
     )
-    visibility: ProductVisibility | None = Field(
-        default=None,
+    visibility: Omissible[ProductVisibility] = Field(
+        default=MISSING,
         description="The visibility of the product.",
     )
-    prices: list[ProductPriceUpdate] | None = Field(
-        default=None, description=PRODUCT_UPDATE_PRICES_DESCRIPTION
+    prices: Omissible[list[ProductPriceUpdate]] = Field(
+        default=MISSING, description=PRODUCT_UPDATE_PRICES_DESCRIPTION
     )
-    medias: list[UUID4] | None = Field(
-        default=None,
+    medias: Omissible[list[UUID4]] = Field(
+        default=MISSING,
         description=(
             "List of file IDs. "
             "Each one must be on the same organization as the product, "
             "of type `product_media` and correctly uploaded."
         ),
     )
-    attached_custom_fields: AttachedCustomFieldListCreate | None = None
+    attached_custom_fields: Omissible[AttachedCustomFieldListCreate] = MISSING
+    trial_payment_setup_required: Annotated[
+        Omissible[bool],
+        Version(starting_from=V2027_01),
+        Field(description=TRIAL_PAYMENT_SETUP_REQUIRED_DESCRIPTION),
+    ] = MISSING
 
 
 class ProductBenefitsUpdate(Schema):
@@ -1164,7 +1166,40 @@ ProductMediaList = Annotated[
 ]
 
 
-class Product(MetadataOutputMixin, ExternalIDOutputMixin, ProductBase):
+class ProductVersionOutputMixin(BaseModel):
+    catalog_id: Annotated[
+        UUID4 | None,
+        Version(starting_from=V2027_01),
+        Field(
+            description=(
+                "ID of the catalog that introduced this version of the product. "
+                "None for products not managed by declarative config."
+            )
+        ),
+    ]
+    is_current: Annotated[
+        bool,
+        Version(starting_from=V2027_01),
+        Field(description="Whether this is the current version of the product."),
+    ]
+
+
+class ProductTrialOutputMixin(BaseModel):
+    trial_payment_setup_required: Annotated[
+        bool,
+        BeforeValidator(lambda v: True if v is None else v),
+        Version(starting_from=V2027_01),
+        Field(description=TRIAL_PAYMENT_SETUP_REQUIRED_DESCRIPTION),
+    ]
+
+
+class Product(
+    MetadataOutputMixin,
+    ExternalIDOutputMixin,
+    ProductVersionOutputMixin,
+    ProductTrialOutputMixin,
+    ProductBase,
+):
     """
     A product.
     """
@@ -1216,4 +1251,76 @@ class ProductNameCheck(Schema):
     )
     phrase: str | None = Field(
         description="The exact phrase that matched, when a word-list rule flagged it."
+    )
+
+
+class ProductListParams(QuerySchema):
+    id: MultipleQueryFilter[ProductID] | None = Field(
+        None, title="ProductID Filter", description="Filter by product ID."
+    )
+    external_id: Annotated[
+        MultipleQueryFilter[str] | None, Version(starting_from=V2027_01)
+    ] = Field(
+        None, title="ExternalID Filter", description="Filter by product external ID."
+    )
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    catalog_id: Annotated[
+        MultipleQueryFilter[UUID4] | None, Version(starting_from=V2027_01)
+    ] = Field(None, title="CatalogID Filter", description="Filter by catalog ID.")
+    catalog_status: Annotated[
+        MultipleQueryFilter[CatalogStatus] | None, Version(starting_from=V2027_01)
+    ] = Field(
+        None,
+        title="CatalogStatus Filter",
+        description="Filter by catalog status.",
+    )
+    query: str | None = Field(None, description="Filter by product name.")
+    is_archived: bool | None = Field(None, description="Filter on archived products.")
+    is_recurring: bool | None = Field(
+        None,
+        description="Filter on recurring products. If `true`, only subscriptions tiers are returned. If `false`, only one-time purchase products are returned. ",
+    )
+    benefit_id: MultipleQueryFilter[BenefitID] | None = Field(
+        None,
+        title="BenefitID Filter",
+        description="Filter products granting specific benefit.",
+    )
+    visibility: builtins.list[ProductVisibility] | None = Field(
+        default=None, description="Filter by visibility."
+    )
+
+
+def _flagged_at_to_utc(value: datetime) -> datetime:
+    try:
+        return value.astimezone(UTC)
+    except OverflowError as e:
+        raise ValueError("Timestamp is out of range.") from e
+
+
+class ProductFlaggedNameAttempt(Schema):
+    name: str = Field(
+        min_length=1,
+        max_length=64,
+        description="A name that showed the Acceptable Use Policy warning.",
+    )
+    category: str = Field(
+        max_length=100, description="Category the name check returned for it."
+    )
+    phrase: str | None = Field(
+        default=None,
+        max_length=64,
+        description="The word-list phrase that matched, if any.",
+    )
+    flagged_at: Annotated[AwareDatetime, AfterValidator(_flagged_at_to_utc)] = Field(
+        description="When the name check first flagged this name, from the browser."
+    )
+
+
+class ProductFlaggedNameReport(Schema):
+    attempts: list[ProductFlaggedNameAttempt] = Field(
+        min_length=1,
+        max_length=50,
+        description="Flagged names tried before create, in the order they were typed.",
     )

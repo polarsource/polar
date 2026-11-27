@@ -8,7 +8,7 @@ import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Textarea } from '@polar-sh/orbit/ui/textarea'
 import { LoaderCircle as Loader2 } from '@polar-sh/orbit/icons'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useId, useState } from 'react'
 import HumanReviewCase from './HumanReviewCase'
 
 interface AppealFormProps {
@@ -22,6 +22,7 @@ const AppealForm: React.FC<AppealFormProps> = ({
   reason,
   existingReviewStatus,
 }) => {
+  const appealReasonId = useId()
   const [appealReason, setAppealReason] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [pollingTimedOut, setPollingTimedOut] = useState(false)
@@ -142,7 +143,7 @@ const AppealForm: React.FC<AppealFormProps> = ({
       {showForm && (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">
+            <label htmlFor={appealReasonId} className="text-sm font-medium">
               Why should your organization be approved?
             </label>
             <p className="dark:text-polar-400 text-sm text-gray-500">
@@ -150,6 +151,7 @@ const AppealForm: React.FC<AppealFormProps> = ({
               any context about your business that may help us reconsider.
             </p>
             <Textarea
+              id={appealReasonId}
               value={appealReason}
               onChange={(e) => setAppealReason(e.target.value)}
               className="dark:bg-polar-800 min-h-32 w-full bg-white"

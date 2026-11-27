@@ -2,6 +2,7 @@ import uuid
 from collections.abc import Sequence
 from typing import Any
 
+from pydantic import MISSING
 from sqlalchemy import (
     Select,
     UnaryExpression,
@@ -14,6 +15,7 @@ from sqlalchemy import (
     update,
 )
 from sqlalchemy.orm import contains_eager
+from sqlalchemy.sql.elements import OrderByList
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.auth.permission import OrganizationPermission
@@ -23,11 +25,13 @@ from polar.authz.service import (
     assert_resource_permission,
 )
 from polar.custom_field.sorting import CustomFieldSortProperty
-from polar.exceptions import PolarRequestValidationError
+from polar.declarative_config.guard import assert_catalog_editable
+from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
 from polar.models import CustomField, Organization, User
+from polar.models.catalog import CatalogStatus
 from polar.models.custom_field import CustomFieldType
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncReadSession, AsyncSession
@@ -36,6 +40,15 @@ from .attachment import attached_custom_fields_models
 from .data import custom_field_data_models
 from .repository import CustomFieldRepository
 from .schemas import CustomFieldCreate, CustomFieldUpdate
+
+
+class CustomFieldVersionLocked(PolarError):
+    def __init__(self) -> None:
+        super().__init__(
+            "This custom field has other versions. Only its current version "
+            "can be updated or deleted, and its slug can't change.",
+            409,
+        )
 
 
 class CustomFieldService(ResourceServiceReader[CustomField]):
@@ -47,6 +60,8 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
         organization_id: Sequence[uuid.UUID] | None = None,
         query: str | None = None,
         type: Sequence[CustomFieldType] | None = None,
+        catalog_id: Sequence[uuid.UUID] | None = None,
+        catalog_status: Sequence[CatalogStatus] | None = None,
         pagination: PaginationParams,
         sorting: Sequence[Sorting[CustomFieldSortProperty]] = (
             (CustomFieldSortProperty.slug, False),
@@ -70,7 +85,12 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
         if type is not None:
             statement = statement.where(CustomField.type.in_(type))
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
+        if catalog_id is not None or catalog_status is not None:
+            statement = CustomFieldRepository.from_session(
+                session
+            ).apply_catalog_filter(statement, catalog_id, catalog_status)
+
+        order_by_clauses: list[OrderByList | UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
             if criterion == CustomFieldSortProperty.created_at:
@@ -112,6 +132,7 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
             organization.id,
             OrganizationPermission.custom_fields_manage,
         )
+        await assert_catalog_editable(session, organization.id)
 
         repository = CustomFieldRepository.from_session(session)
         existing_field = await repository.get_by_organization_and_slug(
@@ -152,6 +173,14 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
             custom_field,
             OrganizationPermission.custom_fields_manage,
         )
+        await assert_catalog_editable(session, custom_field.organization_id)
+        repository = CustomFieldRepository.from_session(session)
+        if not custom_field.is_current or (
+            custom_field_update.slug is not MISSING
+            and custom_field.slug != custom_field_update.slug
+            and await repository.has_versions(custom_field)
+        ):
+            raise CustomFieldVersionLocked()
 
         if custom_field.type != custom_field_update.type:
             raise PolarRequestValidationError(
@@ -166,10 +195,9 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
             )
 
         if (
-            custom_field_update.slug is not None
+            custom_field_update.slug is not MISSING
             and custom_field.slug != custom_field_update.slug
         ):
-            repository = CustomFieldRepository.from_session(session)
             existing_field = await repository.get_by_organization_and_slug(
                 custom_field.organization_id, custom_field_update.slug
             )
@@ -228,6 +256,9 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
             custom_field,
             OrganizationPermission.custom_fields_manage,
         )
+        await assert_catalog_editable(session, custom_field.organization_id)
+        if not custom_field.is_current:
+            raise CustomFieldVersionLocked()
         custom_field.set_deleted_at()
         session.add(custom_field)
 
@@ -253,7 +284,7 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
 
     def _get_readable_custom_field_statement(
         self, auth_subject: AuthSubject[User | Organization]
-    ) -> Select[tuple[CustomField]]:
+    ) -> Select[CustomField]:
         statement = (
             select(CustomField)
             .where(~CustomField.is_deleted)

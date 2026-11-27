@@ -3,8 +3,10 @@ import uuid
 from collections.abc import Sequence
 from typing import Any, cast
 
+from pydantic import MISSING
 from sqlalchemy import UnaryExpression, asc, desc
 from sqlalchemy.orm import contains_eager
+from sqlalchemy.sql.elements import OrderByList
 
 from polar.auth.models import Agent, AuthSubject
 from polar.auth.permission import OrganizationPermission
@@ -80,7 +82,7 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
                 CheckoutLink.checkout_link_products
             )
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
+        order_by_clauses: list[OrderByList | UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
             if criterion == CheckoutLinkSortProperty.created_at:
@@ -197,7 +199,9 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
             session, auth_subject, checkout_link, OrganizationPermission.products_manage
         )
 
-        if checkout_link_update.products is not None:
+        exclude = {"products", "discount_id", "seats", "units"}
+
+        if checkout_link_update.products is not MISSING:
             products = await self._get_validated_products(
                 session, checkout_link_update.products, auth_subject
             )
@@ -224,8 +228,14 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
             if not any(product.is_recurring for product in products):
                 checkout_link.trial_interval = None
                 checkout_link.trial_interval_count = None
+                checkout_link.trial_payment_setup_required = None
+                exclude |= {
+                    "trial_interval",
+                    "trial_interval_count",
+                    "trial_payment_setup_required",
+                }
 
-        if "discount_id" in checkout_link_update.model_fields_set:
+        if checkout_link_update.discount_id is not MISSING:
             if checkout_link_update.discount_id is None:
                 checkout_link.discount = None
             else:
@@ -240,14 +250,14 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         # An explicit `seats` value is strict-validated against the (possibly
         # updated) product set. A products-only change that leaves the existing lock
         # invalid auto-clears it, mirroring how trial config is dropped above.
-        if "seats" in checkout_link_update.model_fields_set:
+        if checkout_link_update.seats is not MISSING:
             if checkout_link_update.seats is not None:
                 self._validate_seats_for_products(
                     checkout_link_update.seats, checkout_link.products
                 )
             checkout_link.seats = checkout_link_update.seats
         elif (
-            checkout_link_update.products is not None
+            checkout_link_update.products is not MISSING
             and checkout_link.seats is not None
             and not self._seats_valid_for_products(
                 checkout_link.seats, checkout_link.products
@@ -256,14 +266,14 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
             checkout_link.seats = None
 
         # Same rules for a `units` lock, mirroring the seat lock above.
-        if "units" in checkout_link_update.model_fields_set:
+        if checkout_link_update.units is not MISSING:
             if checkout_link_update.units is not None:
                 self._validate_units_for_products(
                     checkout_link_update.units, checkout_link.products
                 )
             checkout_link.units = checkout_link_update.units
         elif (
-            checkout_link_update.products is not None
+            checkout_link_update.products is not MISSING
             and checkout_link.units is not None
             and not self._units_valid_for_products(
                 checkout_link.units, checkout_link.products
@@ -276,7 +286,7 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
             checkout_link,
             update_dict=checkout_link_update.model_dump(
                 exclude_unset=True,
-                exclude={"products", "discount_id", "seats", "units"},
+                exclude=exclude,
                 by_alias=True,
             ),
         )

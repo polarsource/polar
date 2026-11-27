@@ -13,7 +13,7 @@ from typing import Annotated, Any
 from urllib.parse import urlparse
 from uuid import UUID
 
-import httpx
+import httpx2
 import structlog
 import typer
 from anyio import open_file
@@ -22,7 +22,10 @@ from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import contains_eager
 
 from polar.kit.currency import get_currency_decimal_factor
-from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
+from polar.kit.db.postgres import (  # lint-skip: dry-run
+    AsyncSession,
+    create_async_sessionmaker,
+)
 from polar.models import Order, Refund, Transaction
 from polar.models.transaction import TransactionType
 from polar.postgres import create_async_engine
@@ -58,7 +61,7 @@ async def resolve_file_path(file_input: str) -> AsyncIterator[pathlib.Path]:
     temp_path = pathlib.Path(temp_dir) / "tax_filing_import.csv"
 
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx2.AsyncClient() as client:
             async with client.stream("GET", file_input) as response:
                 response.raise_for_status()
                 async with await open_file(temp_path, "wb") as f:

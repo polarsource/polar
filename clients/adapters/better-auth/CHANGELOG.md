@@ -1,5 +1,52 @@
 # @polar-sh/hono
 
+## 3.0.0
+
+### Major Changes
+
+- 10237f1: We're removing the `usage` plugin. Customer meters are now listed by the `portal` plugin with `authClient.customer.meters.list()`, which replaces `authClient.usage.meters.list()`. The `ingest` method on the client API is removed: ingest usage events from your server with the Polar SDK instead. Remove `usage()` from the `use` array of `polar()`, and add `portal()` if it is not already there.
+
+## 2.2.0
+
+### Minor Changes
+
+- ebc1f53: `customer.subscriptions.list({ query: { reference_id } })` now tailors the response to the signed-in user's relationship with the `reference_id`. Owners and admins of the Better Auth organization, and the user who purchased a subscription, get the full subscription. Other members get the fields needed for entitlement checks, such as `product_id` and `status`, without `customer`, `discount`, `custom_field_data` or the cancellation reason, and with `metadata` limited to `referenceId`. Users with no relation to the organization or user behind a `reference_id` get the subscriptions they purchased.
+
+  Add the new `authorizeReference` option to `polar()` to control access for reference IDs that are not Better Auth organizations, such as workspaces from your own tables. Without it, those IDs return subscriptions without billing details and log a warning; the next major version will only return the subscriptions the user purchased.
+
+## 2.1.5
+
+### Patch Changes
+
+- b5ead87: Update `@polar-sh/sdk` to version 1.1.0.
+- 2f927d4: Update `@polar-sh/sdk` to version 1.3.1.
+- Updated dependencies [b5ead87]
+- Updated dependencies [2f927d4]
+  - @polar-sh/adapter-utils@1.1.1
+
+## 2.1.4
+
+### Patch Changes
+
+- 4e4bb72: Export the `PolarBetterAuthPlugin` type so projects that emit declarations can wrap `polar()` in an exported function.
+
+## 2.1.3
+
+### Patch Changes
+
+- 3d1cd57: `polarClient()` is assignable to `BetterAuthClientPlugin` on better-auth 1.7, including 1.7.14, so `createAuthClient` and `inferAdditionalFields` keep their types. `checkoutEmbed` stays typed.
+- Updated dependencies [873039e]
+- Updated dependencies [44c022b]
+  - @polar-sh/checkout@0.6.0
+
+## 2.1.2
+
+### Patch Changes
+
+- Updated dependencies [609943e]
+- Updated dependencies [1ed6d86]
+  - @polar-sh/checkout@0.5.0
+
 ## 2.1.1
 
 ### Patch Changes

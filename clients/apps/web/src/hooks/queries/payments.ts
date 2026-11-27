@@ -9,6 +9,7 @@ export const usePayments = (
     NonNullable<operations['payments:list']['parameters']['query']>,
     'organization_id'
   >,
+  enabled = true,
 ) => {
   return useQuery({
     queryKey: ['payments', organizationId, { ...(parameters || {}) }],
@@ -21,5 +22,6 @@ export const usePayments = (
         }),
       ),
     retry: defaultRetry,
+    enabled,
   })
 }

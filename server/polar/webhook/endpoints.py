@@ -1,30 +1,29 @@
-from typing import Annotated, Literal
+from typing import Annotated
 
 from fastapi import Depends, Path, Query
-from pydantic import UUID4, AwareDatetime
+from pydantic import UUID4
 
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.schemas import MultipleQueryFilter, SetSchemaReference
+from polar.kit.schemas import SetSchemaReference
 from polar.kit.versioning import version
 from polar.models import WebhookEndpoint
-from polar.models.webhook_endpoint import WebhookEventType
 from polar.openapi import APITag, cli_preview, destructive, open_world
-from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
-from polar.version import V2026_10, V2027_01
+from polar.version import V2026_10
 
 from .auth import WebhooksRead, WebhooksWrite
 from .schemas import (
     DeprecatedWebhookEndpointCreateWithSecret,
     DeprecatedWebhookEndpointUpdateWithSecret,
+    WebhookDeliveryListParams,
     WebhookEndpointCreate,
+    WebhookEndpointListParams,
     WebhookEndpointUpdate,
 )
 from .schemas import WebhookDelivery as WebhookDeliverySchema
 from .schemas import WebhookEndpoint as WebhookEndpointSchema
-from .service import AmbiguousExternalWebhookEndpointID
 from .service import webhook as webhook_service
 
 router = APIRouter(
@@ -36,27 +35,21 @@ WebhookEndpointNotFound = {
     "description": "Webhook endpoint not found.",
     "model": ResourceNotFound.schema(),
 }
-AmbiguousExternalWebhookEndpoint = {
-    "description": "The external ID matches webhook endpoints in several "
-    "accessible organizations.",
-    "model": AmbiguousExternalWebhookEndpointID.schema(),
-}
 
 
 @router.get("/endpoints", response_model=ListResource[WebhookEndpointSchema])
 async def list_webhook_endpoints(
+    filters: Annotated[WebhookEndpointListParams, Query()],
     pagination: PaginationParamsQuery,
     auth_subject: WebhooksRead,
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, description="Filter by organization ID."
-    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[WebhookEndpointSchema]:
     """List webhook endpoints."""
     results, count = await webhook_service.list_endpoints(
         session,
         auth_subject,
-        organization_id=organization_id,
+        organization_id=filters.organization_id,
+        format=filters.format,
         pagination=pagination,
     )
     return ListResource.from_paginated_results(
@@ -64,31 +57,6 @@ async def list_webhook_endpoints(
         count,
         pagination,
     )
-
-
-@router.get(
-    "/endpoints/external/{external_id}",
-    summary="Get Webhook Endpoint by External ID",
-    response_model=WebhookEndpointSchema,
-    openapi_extra=cli_preview(
-        ("id", "ID"), ("name", "Name"), ("url", "URL"), ("enabled", "Enabled")
-    ),
-    responses={404: WebhookEndpointNotFound, 409: AmbiguousExternalWebhookEndpoint},
-)
-@version(starting_from=V2027_01)
-async def get_external_webhook_endpoint(
-    external_id: str,
-    auth_subject: WebhooksRead,
-    session: AsyncSession = Depends(get_db_session),
-) -> WebhookEndpoint:
-    """Get a webhook endpoint by external ID."""
-    endpoint = await webhook_service.get_external_endpoint(
-        session, auth_subject, external_id
-    )
-    if not endpoint:
-        raise ResourceNotFound()
-
-    return endpoint
 
 
 @router.get(
@@ -266,30 +234,9 @@ async def delete_webhook_endpoint(
     response_model=ListResource[WebhookDeliverySchema],
 )
 async def list_webhook_deliveries(
+    filters: Annotated[WebhookDeliveryListParams, Query()],
     pagination: PaginationParamsQuery,
     auth_subject: WebhooksRead,
-    endpoint_id: MultipleQueryFilter[UUID4] | None = Query(
-        None, description="Filter by webhook endpoint ID."
-    ),
-    start_timestamp: AwareDatetime | None = Query(
-        None, description="Filter deliveries after this timestamp."
-    ),
-    end_timestamp: AwareDatetime | None = Query(
-        None, description="Filter deliveries before this timestamp."
-    ),
-    succeeded: bool | None = Query(
-        None, description="Filter by delivery success status."
-    ),
-    query: str | None = Query(
-        None,
-        description="Query to filter webhook deliveries.",
-    ),
-    http_code_class: Literal["2xx", "3xx", "4xx", "5xx"] | None = Query(
-        None, description="Filter by HTTP response code class (2xx, 3xx, 4xx, 5xx)."
-    ),
-    event_type: MultipleQueryFilter[WebhookEventType] | None = Query(
-        None, description="Filter by webhook event type."
-    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[WebhookDeliverySchema]:
     """
@@ -300,13 +247,13 @@ async def list_webhook_deliveries(
     results, count = await webhook_service.list_deliveries(
         session,
         auth_subject,
-        endpoint_id=endpoint_id,
-        start_timestamp=start_timestamp,
-        end_timestamp=end_timestamp,
-        succeeded=succeeded,
-        query=query,
-        http_code_class=http_code_class,
-        event_type=event_type,
+        endpoint_id=filters.endpoint_id,
+        start_timestamp=filters.start_timestamp,
+        end_timestamp=filters.end_timestamp,
+        succeeded=filters.succeeded,
+        query=filters.query,
+        http_code_class=filters.http_code_class,
+        event_type=filters.event_type,
         pagination=pagination,
     )
 

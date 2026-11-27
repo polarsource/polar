@@ -14,6 +14,7 @@ export type Aggregation =
   | { func: "sum" | "min" | "max" | "avg"; property: string };
 export interface Reducer {
   id: string;
+  kind: "usage" | "credit";
   filter: Filter;
   aggregation: Aggregation;
   meter_ids?: string[];
@@ -49,13 +50,11 @@ export const quantity = (statistics: BucketStatistics, func: Aggregation["func"]
       return statistics.count ? statistics.sum / statistics.count : 0;
   }
 };
-export interface BucketUpdate {
-  customer: string;
+export interface EventMatch {
   reducer: string;
-  bucketStart: number;
-  statistics: BucketStatistics;
+  value: number | null;
 }
-export const BUCKET_SIZE = 300_000_000;
+export const BUCKET_SIZE = 300000000;
 
 export const getBucketStart = (timestamp: number): number => {
   if (!Number.isSafeInteger(timestamp)) throw new TypeError("Invalid bucket timestamp");
@@ -76,12 +75,13 @@ export const getMatcher = (filter: Filter | FilterClause): EventMatcher => {
   }
   const read = getPropertyReader(filter.property);
   if (filter.operator === "eq" || filter.operator === "ne") {
-    const expected = typeof filter.value === "boolean" ? Number(filter.value) : filter.value;
+    // Like Polar, values of different types are never equal: `true` is not 1.
+    const expected = filter.value;
     const equal = filter.operator === "eq";
     return (event) => {
       const actual = read(event);
       if (actual === undefined || actual === null) return false;
-      return ((typeof actual === "boolean" ? Number(actual) : actual) === expected) === equal;
+      return (actual === expected) === equal;
     };
   }
   if (filter.operator === "like" || filter.operator === "not_like") {
@@ -121,57 +121,33 @@ export const getMatcher = (filter: Filter | FilterClause): EventMatcher => {
   }
 };
 
+// Credit reducers count Polar's system events: no local event matches them.
 export const withMatchers = (reducers: readonly Reducer[]): ReducerMatchers =>
-  reducers.map(
-    (reducer) =>
-      [
-        reducer,
-        getMatcher(reducer.filter),
-        reducer.aggregation.func === "count"
-          ? () => 1
-          : getPropertyReader(reducer.aggregation.property),
-      ] as const,
-  );
+  reducers
+    .filter((reducer) => reducer.kind === "usage")
+    .map(
+      (reducer) =>
+        [
+          reducer,
+          getMatcher(reducer.filter),
+          reducer.aggregation.func === "count"
+            ? () => 1
+            : getPropertyReader(reducer.aggregation.property),
+        ] as const,
+    );
 
-export const reduce = (
-  matchers: ReducerMatchers,
-  events: readonly Event[],
-  oldestBucketStart: number,
-): BucketUpdate[] => {
-  const updates = new Map<string, BucketUpdate>();
-  for (const event of events) {
-    const bucketStart = getBucketStart(event.timestamp);
-    if (bucketStart < oldestBucketStart) continue;
-    for (let index = 0; index < matchers.length; index++) {
-      const [reducer, match, read] = matchers[index];
-      if (!match(event)) continue;
-      const value = read(event);
-      if (typeof value !== "number") continue;
-      if (!Number.isFinite(value)) throw new TypeError("Aggregation values must be finite");
-      // The customer comes last: the index and the bucket hold no ":".
-      const key = `${index}:${bucketStart}:${event.customer}`;
-      let update = updates.get(key);
-      if (!update) {
-        update = {
-          customer: event.customer,
-          reducer: reducer.id,
-          bucketStart,
-          statistics: emptyStatistics(),
-        };
-        updates.set(key, update);
-      }
-      const { statistics } = update;
-      if (reducer.aggregation.func === "count") {
-        statistics.count += 1;
-        continue;
-      }
-      const total = statistics.sum + value;
-      if (!Number.isFinite(total)) throw new TypeError("Aggregation values must be finite");
-      statistics.count += 1;
-      statistics.sum = total;
-      statistics.min = statistics.min === null ? value : Math.min(statistics.min, value);
-      statistics.max = statistics.max === null ? value : Math.max(statistics.max, value);
-    }
+// The reducers an event counts for, each with the event's value, or null when it only counts.
+export const matchEvent = (matchers: ReducerMatchers, event: Event): EventMatch[] => {
+  const matches: EventMatch[] = [];
+  for (const [reducer, match, read] of matchers) {
+    if (!match(event)) continue;
+    const value = read(event);
+    if (typeof value !== "number") continue;
+    if (!Number.isFinite(value)) throw new TypeError("Aggregation values must be finite");
+    matches.push({
+      reducer: reducer.id,
+      value: reducer.aggregation.func === "count" ? null : value,
+    });
   }
-  return [...updates.values()];
+  return matches;
 };

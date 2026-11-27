@@ -14,12 +14,14 @@ locals {
   staff_default_accounts = setsubtract(keys(local.staff_target_accounts), ["identity", "security"])
 
   identity_center_groups = {
-    awsadmins    = { display_name = "AWS Access" }
-    awsengineers = { display_name = "AWS Engineers" }
-    engineering  = { display_name = "Engineering" }
-    awsaccess    = { display_name = "AWS Read Only Access" }
-    finance      = { display_name = "Finance" }
-    executive    = { display_name = "Executive" }
+    awsadmins           = { display_name = "AWS Access" }
+    awsengineers        = { display_name = "AWS Engineers" }
+    engineering         = { display_name = "Engineering" }
+    awsaccess           = { display_name = "AWS Read Only Access" }
+    finance             = { display_name = "Finance" }
+    executive           = { display_name = "Executive" }
+    merchant_ops        = { display_name = "Merchant Ops" }
+    risk_compliance_ops = { display_name = "Risk Compliance Ops" }
   }
 
   access_tiers = {
@@ -30,6 +32,15 @@ locals {
       extra_policy_arns  = []
       boundary           = false
       groups             = ["finance", "executive"]
+      accounts           = ["management"]
+    }
+    support = {
+      base_name          = "PolarSupport"
+      description        = "Create and manage AWS Support cases."
+      managed_policy_arn = "arn:aws:iam::aws:policy/AWSSupportAccess"
+      extra_policy_arns  = []
+      boundary           = false
+      groups             = ["merchant_ops", "risk_compliance_ops"]
       accounts           = ["management"]
     }
     admin = {

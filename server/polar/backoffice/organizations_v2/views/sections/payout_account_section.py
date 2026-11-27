@@ -151,6 +151,22 @@ class PayoutAccountSection:
                                 ):
                                     text("Resync from Stripe")
 
+                            if (
+                                payout_account.type == PayoutAccountType.stripe
+                                and not self.org.is_deleted
+                            ):
+                                with button(
+                                    size="sm",
+                                    hx_get=str(
+                                        request.url_for(
+                                            "organizations:setup_account",
+                                            organization_id=self.org.id,
+                                        )
+                                    ),
+                                    hx_target="#modal",
+                                ):
+                                    text("Switch to Manual Payouts")
+
                             with button(
                                 variant="error",
                                 size="sm",

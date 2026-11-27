@@ -3,7 +3,7 @@ from __future__ import annotations
 import dataclasses
 import typing
 
-from polar.base import deserialize
+from polar.base import _Discriminator, deserialize
 from polar.v2026_04.outputs import (
     Benefit,
     BenefitGrantWebhook,
@@ -750,7 +750,7 @@ class WebhookSubscriptionUpdatedPayload:
     data: Subscription
 
 
-WebhookPayload: typing.TypeAlias = (
+WebhookPayload: typing.TypeAlias = typing.Annotated[
     WebhookBenefitCreatedPayload
     | WebhookBenefitGrantCreatedPayload
     | WebhookBenefitGrantCycledPayload
@@ -792,8 +792,55 @@ WebhookPayload: typing.TypeAlias = (
     | WebhookSubscriptionResumedPayload
     | WebhookSubscriptionRevokedPayload
     | WebhookSubscriptionUncanceledPayload
-    | WebhookSubscriptionUpdatedPayload
-)
+    | WebhookSubscriptionUpdatedPayload,
+    _Discriminator(
+        "type",
+        (
+            ("benefit.created", WebhookBenefitCreatedPayload),
+            ("benefit_grant.created", WebhookBenefitGrantCreatedPayload),
+            ("benefit_grant.cycled", WebhookBenefitGrantCycledPayload),
+            ("benefit_grant.revoked", WebhookBenefitGrantRevokedPayload),
+            ("benefit_grant.updated", WebhookBenefitGrantUpdatedPayload),
+            ("benefit.updated", WebhookBenefitUpdatedPayload),
+            ("checkout.created", WebhookCheckoutCreatedPayload),
+            ("checkout.expired", WebhookCheckoutExpiredPayload),
+            ("checkout.updated", WebhookCheckoutUpdatedPayload),
+            ("customer.created", WebhookCustomerCreatedPayload),
+            ("customer.deleted", WebhookCustomerDeletedPayload),
+            ("customer_seat.assigned", WebhookCustomerSeatAssignedPayload),
+            ("customer_seat.claimed", WebhookCustomerSeatClaimedPayload),
+            ("customer_seat.revoked", WebhookCustomerSeatRevokedPayload),
+            ("customer.state_changed", WebhookCustomerStateChangedPayload),
+            ("customer.updated", WebhookCustomerUpdatedPayload),
+            ("discount.created", WebhookDiscountCreatedPayload),
+            ("discount.deleted", WebhookDiscountDeletedPayload),
+            ("discount.updated", WebhookDiscountUpdatedPayload),
+            ("member.created", WebhookMemberCreatedPayload),
+            ("member.deleted", WebhookMemberDeletedPayload),
+            ("member.updated", WebhookMemberUpdatedPayload),
+            ("order.created", WebhookOrderCreatedPayload),
+            ("order.paid", WebhookOrderPaidPayload),
+            ("order.refunded", WebhookOrderRefundedPayload),
+            ("order.updated", WebhookOrderUpdatedPayload),
+            ("organization.updated", WebhookOrganizationUpdatedPayload),
+            ("product.created", WebhookProductCreatedPayload),
+            ("product.updated", WebhookProductUpdatedPayload),
+            ("refund.created", WebhookRefundCreatedPayload),
+            ("refund.updated", WebhookRefundUpdatedPayload),
+            ("subscription.active", WebhookSubscriptionActivePayload),
+            ("subscription.canceled", WebhookSubscriptionCanceledPayload),
+            ("subscription.created", WebhookSubscriptionCreatedPayload),
+            ("subscription.cycled", WebhookSubscriptionCycledPayload),
+            ("subscription.migrated", WebhookSubscriptionMigratedPayload),
+            ("subscription.past_due", WebhookSubscriptionPastDuePayload),
+            ("subscription.paused", WebhookSubscriptionPausedPayload),
+            ("subscription.resumed", WebhookSubscriptionResumedPayload),
+            ("subscription.revoked", WebhookSubscriptionRevokedPayload),
+            ("subscription.uncanceled", WebhookSubscriptionUncanceledPayload),
+            ("subscription.updated", WebhookSubscriptionUpdatedPayload),
+        ),
+    ),
+]
 
 _KNOWN_EVENT_TYPES = frozenset(
     {

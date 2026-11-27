@@ -17,7 +17,7 @@ from ..schemas.wallet import CustomerWallet
 from ..service.wallet import customer_wallet as customer_wallet_service
 from ..sorting.wallet import CustomerWalletSortProperty
 
-router = APIRouter(prefix="/wallets", tags=["wallets", APITag.public])
+router = APIRouter(prefix="/wallets", tags=["wallets", APITag.private])
 
 ListSorting = Annotated[
     list[Sorting[CustomerWalletSortProperty]],

@@ -6,7 +6,7 @@ import { Grid, Spinner } from '@polar-sh/orbit'
 import { useEvents } from '@/hooks/queries/events'
 import { useMeterQuantities } from '@/hooks/queries/meters'
 import { ParsedMetricPeriod } from '@/hooks/queries/metrics'
-import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { useDashboardOrganization } from '@/hooks/dashboardOrganization'
 import { dateRangeToInterval } from '@/utils/metrics'
 import { UTCDate } from '@date-fns/utc'
 import { schemas } from '@polar-sh/client'
@@ -17,7 +17,7 @@ import {
 } from '@polar-sh/ui/components/atoms/Card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@polar-sh/orbit'
 import { endOfMonth, startOfMonth, subMonths } from 'date-fns'
-import { useCallback, useContext, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import DateRangePicker from '../Metrics/DateRangePicker'
 import IntervalPicker, { getNextValidInterval } from '../Metrics/IntervalPicker'
 import MetricChart from '../Metrics/MetricChart'
@@ -186,7 +186,7 @@ export const MeterPage = ({
 }
 
 const MeterActivityCards = ({ meter }: { meter: schemas['Meter'] }) => {
-  const { organization } = useContext(OrganizationContext)
+  const organization = useDashboardOrganization()
 
   const dates = useMemo(
     () => ({

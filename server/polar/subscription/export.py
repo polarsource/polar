@@ -4,16 +4,19 @@ from enum import StrEnum
 from typing import Annotated
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import AfterValidator
+from pydantic import AfterValidator, AwareDatetime, Field
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.kit.csv import IterableCSVWriter
 from polar.kit.db.postgres import AsyncReadSession
-from polar.models import Subscription
+from polar.kit.schemas import MultipleQueryFilter
+from polar.kit.versioning import QuerySchema, Version
+from polar.models import Product, Subscription
 from polar.models.subscription import SubscriptionStatus
 from polar.organization.schemas import OrganizationID
 from polar.product.schemas import ProductID
+from polar.version import V2027_01
 
 from .repository import SubscriptionRepository
 
@@ -161,6 +164,7 @@ async def generate_csv(
     *,
     organization_id: Sequence[OrganizationID] | None,
     product_id: Sequence[ProductID] | None,
+    external_product_id: Sequence[str] | None = None,
     status: Sequence[SubscriptionStatus] | None,
     cancel_at_period_end: bool | None,
     started_after: datetime | None,
@@ -176,19 +180,19 @@ async def generate_csv(
     )
 
     repository = SubscriptionRepository.from_session(session)
-    statement = (
-        repository.get_readable_statement(auth_subject)
-        .where(Subscription.started_at.is_not(None))
-        .options(
-            joinedload(Subscription.customer),
-            joinedload(Subscription.product),
-            joinedload(Subscription.discount),
-        )
+    statement = repository.get_readable_statement(auth_subject).options(
+        joinedload(Subscription.customer),
+        joinedload(Subscription.product),
+        joinedload(Subscription.discount),
     )
     if organization_id is not None:
         statement = statement.where(Subscription.organization_id.in_(organization_id))
     if product_id is not None:
         statement = statement.where(Subscription.product_id.in_(product_id))
+    if external_product_id is not None:
+        statement = statement.where(
+            Subscription.product.has(Product.external_id.in_(external_product_id))
+        )
     if status is not None:
         statement = statement.where(Subscription.status.in_(status))
     if cancel_at_period_end is not None:
@@ -204,3 +208,41 @@ async def generate_csv(
     async for subscription in repository.stream(statement):
         row = _row(subscription, timezone)
         yield csv_writer.getrow(tuple(row[column] for column in export_columns))
+
+
+class SubscriptionExportParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    product_id: MultipleQueryFilter[ProductID] | None = Field(
+        None, title="ProductID Filter", description="Filter by product ID."
+    )
+    external_product_id: Annotated[
+        MultipleQueryFilter[str] | None, Version(starting_from=V2027_01)
+    ] = Field(
+        None,
+        title="ExternalProductID Filter",
+        description="Filter by product external ID.",
+    )
+    status: MultipleQueryFilter[SubscriptionStatus] | None = Field(
+        None, title="Status Filter", description="Filter by subscription status."
+    )
+    cancel_at_period_end: bool | None = Field(
+        None,
+        description="Filter by subscriptions that are set to cancel at period end.",
+    )
+    started_after: AwareDatetime | None = Field(
+        None,
+        description="Only include subscriptions started after this date. Must include a UTC offset.",
+    )
+    started_before: AwareDatetime | None = Field(
+        None,
+        description="Only include subscriptions started before this date. Must include a UTC offset.",
+    )
+    timezone: SubscriptionExportTimezone = Field(
+        "UTC", description="Time zone used to render dates in the CSV."
+    )
+    columns: MultipleQueryFilter[SubscriptionExportColumn] | None = Field(
+        None,
+        description="Columns to include in the CSV, in order. Defaults to email, started_at, product, amount, currency, status and recurring_interval.",
+    )

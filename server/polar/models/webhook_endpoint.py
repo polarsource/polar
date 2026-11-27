@@ -8,9 +8,12 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models.base import RecordModel
+from polar.kit.encryption import EncryptedString, EncryptedStringType
 from polar.kit.external_id import ExternalIDMixin
 from polar.kit.versioning import APIVersion, APIVersionType
 from polar.version import CURRENT_API_VERSION
+
+WEBHOOK_ENDPOINT_SECRET_CONTEXT = {"table": "webhook_endpoints", "column": "secret"}
 
 if TYPE_CHECKING:
     from .organization import Organization
@@ -73,6 +76,7 @@ class WebhookFormat(StrEnum):
     raw = "raw"
     discord = "discord"
     slack = "slack"
+    mcp = "mcp"
 
 
 class WebhookEndpoint(ExternalIDMixin, RecordModel):
@@ -85,12 +89,23 @@ class WebhookEndpoint(ExternalIDMixin, RecordModel):
             unique=True,
             postgresql_where=text("deleted_at IS NULL AND external_id IS NOT NULL"),
         ),
+        Index(
+            "ix_webhook_endpoints_mcp_subscription",
+            "organization_id",
+            "url",
+            "events",
+            unique=True,
+            postgresql_where=text("format = 'mcp' AND deleted_at IS NULL"),
+        ),
     )
 
     url: Mapped[str] = mapped_column(String, nullable=False)
     name: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
     format: Mapped[WebhookFormat] = mapped_column(String, nullable=False)
-    secret: Mapped[str] = mapped_column(String, nullable=False)
+    secret: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
+    secret_encrypted: Mapped[EncryptedString | None] = mapped_column(
+        EncryptedStringType(WEBHOOK_ENDPOINT_SECRET_CONTEXT), nullable=True
+    )
     secret_generated_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
@@ -101,7 +116,9 @@ class WebhookEndpoint(ExternalIDMixin, RecordModel):
         APIVersionType, nullable=False, default=CURRENT_API_VERSION
     )
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-
+    expires_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
     organization_id: Mapped[UUID] = mapped_column(
         Uuid,
         ForeignKey("organizations.id", ondelete="CASCADE"),
@@ -112,3 +129,15 @@ class WebhookEndpoint(ExternalIDMixin, RecordModel):
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", lazy="raise")
+
+    @classmethod
+    async def encrypt_secret(cls, id: UUID, secret: str) -> EncryptedString:
+        return await EncryptedString.encrypt(
+            secret, context={**WEBHOOK_ENDPOINT_SECRET_CONTEXT, "id": str(id)}
+        )
+
+    async def get_secret(self) -> str:
+        if self.secret_encrypted is None:
+            assert self.secret is not None
+            return self.secret
+        return await self.secret_encrypted.decrypt(id=str(self.id))

@@ -1,6 +1,5 @@
 'use client'
 
-import { useAuth } from '@/hooks'
 import { useCreateOrganization } from '@/hooks/queries'
 import { AupVerdict, useAupValidation } from '@/hooks/useAupValidation'
 import { schemas } from '@polar-sh/client'
@@ -19,7 +18,7 @@ import {
 import { useOnboardingV2Tracking } from '@/hooks/onboardingV2'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch, useFormState } from 'react-hook-form'
 import { ChipSelect } from '@/components/Form/ChipSelect'
 import { PRICING_MODELS, SELLING_CATEGORIES } from '@/utils/productCategories'
 import { AUPBlocker } from './AUPBlocker'
@@ -51,7 +50,6 @@ const MAX_LENGTH = 3000
 
 export function ProductDetailsStep() {
   const router = useRouter()
-  const { reloadUser } = useAuth()
   const { data, updateData, setApiLoading, showApiResponse } =
     useOnboardingData()
   const { trackStepViewed, trackStepCompleted } = useOnboardingV2Tracking()
@@ -72,16 +70,17 @@ export function ProductDetailsStep() {
       currentlySellingOn: data.currentlySellingOn || [],
     },
   })
+  const { errors } = useFormState({ control: form.control })
 
-  const { control, handleSubmit, watch, setValue } = form
+  const { control, handleSubmit, setValue } = form
 
   // oxlint-disable-next-line react/incompatible-library
-  const sellingCategories = watch('sellingCategories')
-  const pricingModel = watch('pricingModel')
-  const productDescription = watch('productDescription')
-  const supportEmail = watch('supportEmail')
-  const productUrl = watch('productUrl')
-  const currentlySellingOn = watch('currentlySellingOn')
+  const sellingCategories = useWatch({ control, name: 'sellingCategories' })
+  const pricingModel = useWatch({ control, name: 'pricingModel' })
+  const productDescription = useWatch({ control, name: 'productDescription' })
+  const supportEmail = useWatch({ control, name: 'supportEmail' })
+  const productUrl = useWatch({ control, name: 'productUrl' })
+  const currentlySellingOn = useWatch({ control, name: 'currentlySellingOn' })
 
   useEffect(() => {
     updateData({
@@ -183,7 +182,6 @@ export function ProductDetailsStep() {
       return false
     }
 
-    await reloadUser()
     updateData({
       organizationId: organization.id,
       orgSlug: organization.slug,
@@ -368,7 +366,7 @@ export function ProductDetailsStep() {
             </FormLabel>
             <ChipSelect
               options={SELLING_PLATFORMS}
-              selected={watch('currentlySellingOn')}
+              selected={currentlySellingOn}
               onChange={(val) => setValue('currentlySellingOn', val)}
             />
           </Box>
@@ -429,12 +427,10 @@ export function ProductDetailsStep() {
           </Box>
 
           <Box flexDirection="column" rowGap="s">
-            {form.formState.errors.root && (
+            {errors.root && (
               <Alert
                 variant="danger"
-                title={
-                  form.formState.errors.root.message ?? 'Something went wrong'
-                }
+                title={errors.root.message ?? 'Something went wrong'}
               />
             )}
           </Box>

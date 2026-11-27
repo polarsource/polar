@@ -12,7 +12,18 @@ from pydantic import (
 )
 
 from polar.kit.schemas import Schema, TimestampedSchema
+from polar.kit.versioning import QuerySchema
 from polar.models import SlackApp
+from polar.organization.schemas import OrganizationID
+
+
+class SlackIntegrationListParams(QuerySchema):
+    organization_id: OrganizationID
+
+
+class SlackWorkspaceUserListParams(QuerySchema):
+    integration_id: UUID4
+
 
 # Slack app IDs look like A0XXXXXXXXX (11 chars). Client IDs are numeric.dot.numeric.
 # Signing secrets and client secrets are 32-char hex blobs in practice but Slack

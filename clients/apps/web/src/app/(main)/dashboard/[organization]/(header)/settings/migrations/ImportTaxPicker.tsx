@@ -22,9 +22,11 @@ const formatMoney = formatCurrency('accounting', 'en-US')
 export function ImportTaxPicker({
   migrationId,
   row,
+  readOnly = false,
 }: {
   migrationId: string
   row: schemas['MerchantMigrationRecordItem']
+  readOnly?: boolean
 }) {
   const updateRecord = useUpdateMigrationRecord(migrationId)
   const { value, update } = useOptimisticSave<TaxBehavior>(
@@ -48,7 +50,7 @@ export function ImportTaxPicker({
     row.amount != null && row.currency
       ? formatMoney(row.amount, row.currency)
       : null
-  const locked = row.cutover_status === 'moved' || !row.record_id
+  const locked = readOnly || row.cutover_status === 'moved' || !row.record_id
 
   return (
     <DetailCell
@@ -69,16 +71,13 @@ export function ImportTaxPicker({
             </SelectContent>
           </Select>
           <Text variant="caption" color="muted">
-            {value !== 'exclusive' ? (
-              'Customer pays the listed price. Polar takes tax out of it.'
-            ) : listed ? (
-              <>
-                The customer will pay <strong>the listed price plus tax</strong>{' '}
-                instead of <strong>{listed}</strong>
-              </>
-            ) : (
-              'Tax is added on top of the listed price.'
-            )}
+            {value !== 'exclusive'
+              ? listed
+                ? `The customer pays ${listed}, tax included.`
+                : 'The customer pays the listed price, tax included.'
+              : listed
+                ? `The customer pays ${listed} plus tax.`
+                : 'Tax is added on top of the listed price.'}
           </Text>
           {updateRecord.isError ? (
             <Text variant="caption" color="error">

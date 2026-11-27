@@ -11,6 +11,7 @@ from datetime import UTC, datetime
 import pytest
 
 from polar.models import OrganizationReview
+from polar.models.backoffice_user import BackofficeUser
 from polar.models.organization import Organization, OrganizationStatus
 from polar.models.support_case import (
     ReviewAppealSupportCase,
@@ -75,7 +76,7 @@ class TestApproveDecision:
         denied_review_with_case: tuple[
             Organization, OrganizationReview, ReviewAppealSupportCase
         ],
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         organization, review, case = denied_review_with_case
 
@@ -86,7 +87,7 @@ class TestApproveDecision:
             session,
             organization,
             reason="Looks legitimate after human review.",
-            staff_user=user,
+            staff_user=backoffice_user,
         )
 
         # Org reactivated (CREATED, since onboarding gates aren't met in tests).
@@ -108,7 +109,7 @@ class TestApproveDecision:
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         # A denied org whose appeal never escalated to a human-review case:
         # approval still reactivates and records the decision, with no case to
@@ -130,7 +131,7 @@ class TestApproveDecision:
         await save_fixture(review)
 
         await organization_service.backoffice_approve(
-            session, organization, reason="No case here.", staff_user=user
+            session, organization, reason="No case here.", staff_user=backoffice_user
         )
 
         assert organization.status != OrganizationStatus.DENIED
@@ -142,20 +143,20 @@ class TestApproveDecision:
         denied_review_with_case: tuple[
             Organization, OrganizationReview, ReviewAppealSupportCase
         ],
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         # Once the case is closed (here, denied), approving must not write a
         # conflicting decision onto it — it's a no-op, so no inconsistent
         # approved-message-on-a-denied-case record is created.
         _organization, review, case = denied_review_with_case
         await appeal_case_service.deny_open_case(
-            session, review, staff_user=user, reason="Denied."
+            session, review, staff_user=backoffice_user, reason="Denied."
         )
         message_repository = SupportCaseMessageRepository.from_session(session)
         assert await message_repository.is_open(case.id) is False
 
         result = await appeal_case_service.approve_open_case(
-            session, review, staff_user=user, reason="Override."
+            session, review, staff_user=backoffice_user, reason="Override."
         )
 
         assert result is None
@@ -188,7 +189,7 @@ class TestDenyDecision:
         denied_review_with_case: tuple[
             Organization, OrganizationReview, ReviewAppealSupportCase
         ],
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         organization, review, case = denied_review_with_case
 
@@ -197,7 +198,7 @@ class TestDenyDecision:
             session,
             case,
             approved=False,
-            staff_user=user,
+            staff_user=backoffice_user,
             reason="Still doesn't meet policy.",
         )
 
@@ -219,19 +220,19 @@ class TestDenyDecision:
         denied_review_with_case: tuple[
             Organization, OrganizationReview, ReviewAppealSupportCase
         ],
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         _organization, _review, case = denied_review_with_case
 
         await appeal_case_service.record_decision(
-            session, case, approved=False, staff_user=user, reason="final"
+            session, case, approved=False, staff_user=backoffice_user, reason="final"
         )
 
         # A second decision must fail once the case is locked. (Reply-after-lock
         # is covered by test_appeal_case.py::TestReplyAndLock.)
         with pytest.raises(CaseClosedError):
             await appeal_case_service.record_decision(
-                session, case, approved=True, staff_user=user, reason="oops"
+                session, case, approved=True, staff_user=backoffice_user, reason="oops"
             )
 
     async def test_deny_open_case_closes_open_case(
@@ -240,14 +241,17 @@ class TestDenyDecision:
         denied_review_with_case: tuple[
             Organization, OrganizationReview, ReviewAppealSupportCase
         ],
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         # The deny twin of approve_open_case: keeps the case in sync on any
         # deny path, like backoffice_approve does for approval.
         _organization, review, case = denied_review_with_case
 
         await appeal_case_service.deny_open_case(
-            session, review, staff_user=user, reason="Still doesn't meet policy."
+            session,
+            review,
+            staff_user=backoffice_user,
+            reason="Still doesn't meet policy.",
         )
 
         message_repository = SupportCaseMessageRepository.from_session(session)

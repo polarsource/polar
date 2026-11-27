@@ -10,7 +10,6 @@ import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from enum import StrEnum
 from typing import Any
 
 from polar.exceptions import PolarError
@@ -21,18 +20,12 @@ _NOTES_MARKER = "NOTES:"
 _LINKABLE_SCHEMES = ("http://", "https://")
 
 
-class StripeAccountRiskLevel(StrEnum):
-    LOW = "low"
-    NORMAL = "normal"
-    ELEVATED = "elevated"
-    HIGHEST = "highest"
-    # Evaluation could not complete (e.g. unreachable URL).
-    UNKNOWN = "unknown"
-
-
 # Severe enough to store and flag for a human.
-ACTIONABLE_RISK_LEVELS: frozenset[StripeAccountRiskLevel] = frozenset(
-    {StripeAccountRiskLevel.ELEVATED, StripeAccountRiskLevel.HIGHEST}
+ACTIONABLE_RISK_LEVELS: frozenset[OrganizationRiskSignal.RiskLevel] = frozenset(
+    {
+        OrganizationRiskSignal.RiskLevel.ELEVATED,
+        OrganizationRiskSignal.RiskLevel.HIGHEST,
+    }
 )
 
 
@@ -54,7 +47,7 @@ ACCOUNT_RISK_EVENT_TYPES: dict[str, OrganizationRiskSignal.Type] = {
 
 @dataclass(frozen=True)
 class MerchantRiskSignal:
-    risk_level: StripeAccountRiskLevel
+    risk_level: OrganizationRiskSignal.RiskLevel
     account_id: str
     description: str | None
     payload: dict[str, Any]
@@ -62,7 +55,7 @@ class MerchantRiskSignal:
 
 @dataclass(frozen=True)
 class WebsiteRiskSignal:
-    risk_level: StripeAccountRiskLevel
+    risk_level: OrganizationRiskSignal.RiskLevel
     evaluation_id: str
     description: str | None
     payload: dict[str, Any]
@@ -101,11 +94,11 @@ def is_account_risk_event(event_type: str) -> bool:
     return event_type in ACCOUNT_RISK_EVENT_TYPES
 
 
-def _coerce_risk_level(value: Any) -> StripeAccountRiskLevel:
+def _coerce_risk_level(value: Any) -> OrganizationRiskSignal.RiskLevel:
     try:
-        return StripeAccountRiskLevel(value)
+        return OrganizationRiskSignal.RiskLevel(value)
     except ValueError:
-        return StripeAccountRiskLevel.UNKNOWN
+        return OrganizationRiskSignal.RiskLevel.UNKNOWN
 
 
 def _nested(payload: Mapping[str, Any], key: str) -> Mapping[str, Any]:

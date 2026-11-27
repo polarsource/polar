@@ -1,8 +1,8 @@
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock
 
-import freezegun
 import pytest
+import time_machine
 from pytest_mock import MockerFixture
 
 from polar.billing_entry.repository import BillingEntryRepository
@@ -63,7 +63,9 @@ class TestUpdateUnits:
         unit_price = product.prices[0]
         assert isinstance(unit_price, ProductPriceUnit)
 
-        with freezegun.freeze_time(datetime(2024, 1, 1, tzinfo=UTC)) as frozen_time:
+        with time_machine.travel(
+            datetime(2024, 1, 1, tzinfo=UTC), tick=False
+        ) as frozen_time:
             subscription = await create_subscription_with_units(
                 save_fixture, product=product, customer=customer, units=3
             )
@@ -116,7 +118,9 @@ class TestUpdateUnits:
             save_fixture, organization=organization, price_per_unit=2900
         )
 
-        with freezegun.freeze_time(datetime(2024, 1, 1, tzinfo=UTC)) as frozen_time:
+        with time_machine.travel(
+            datetime(2024, 1, 1, tzinfo=UTC), tick=False
+        ) as frozen_time:
             subscription = await create_subscription_with_units(
                 save_fixture, product=product, customer=customer, units=5
             )
@@ -191,7 +195,9 @@ class TestUpdateUnits:
             subscription_service, "_create_subscription_update_order", new=AsyncMock()
         )
 
-        with freezegun.freeze_time(datetime(2025, 1, 1, tzinfo=UTC)) as frozen_time:
+        with time_machine.travel(
+            datetime(2025, 1, 1, tzinfo=UTC), tick=False
+        ) as frozen_time:
             product_a = await create_product_unit_based(
                 save_fixture, organization=organization, price_per_unit=1000
             )

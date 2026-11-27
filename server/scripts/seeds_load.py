@@ -50,7 +50,7 @@ from polar.integrations.tinybird.service import DATASOURCE_EVENTS
 from polar.integrations.tinybird.service import ingest_events as tinybird_ingest_events
 from polar.kit.crypto import generate_token, generate_token_hash_pair
 from polar.kit.currency import PresentmentCurrency
-from polar.kit.db.postgres import create_async_sessionmaker
+from polar.kit.db.postgres import create_async_sessionmaker  # lint-skip: dry-run
 from polar.kit.trial import TrialInterval
 from polar.kit.utils import generate_uuid, utc_now
 from polar.kit.visibility import Visibility
@@ -78,6 +78,7 @@ from polar.models.organization import (
     OrganizationStatus,
 )
 from polar.models.organization_access_token import OrganizationAccessToken
+from polar.models.organization_domain import OrganizationDomain
 from polar.models.organization_review import OrganizationReview
 from polar.models.organization_sso_connection import (
     OrganizationSSOConnection,
@@ -109,6 +110,9 @@ from polar.models.webhook_endpoint import (
 )
 from polar.organization.schemas import OrganizationCreate
 from polar.organization.service import organization as organization_service
+from polar.organization_access_token.repository import (
+    OrganizationAccessTokenRepository,
+)
 from polar.organization_review.appeal_case import appeal_case as appeal_case_service
 from polar.postgres import AsyncSession, create_async_engine
 from polar.product.schemas import (
@@ -125,6 +129,7 @@ from polar.redis import Redis, create_redis
 from polar.support_case.service import support_case as support_case_service
 from polar.user.repository import UserRepository
 from polar.user.service import user as user_service
+from polar.version import CURRENT_API_VERSION
 from polar.webhook.service import generate_webhook_secret
 from polar.worker import JobQueueManager
 from scripts.db import assert_dev_or_testing
@@ -209,10 +214,10 @@ class OrganizationDict(TypedDict):
     details: NotRequired[OrganizationDetails]
     products: NotRequired[list["ProductDict"]]
     benefits: NotRequired[dict[str, "BenefitDict"]]
-    is_admin: NotRequired[bool]
     feature_settings: NotRequired[dict[str, bool]]
     customer_email_settings: NotRequired[OrganizationCustomerEmailSettings]
     seat_based_customers: NotRequired[list[SeatBasedCustomerDict]]
+    verified_domain: NotRequired[str]
     sso_connection: NotRequired["SSOConnectionDict"]
 
 
@@ -341,7 +346,7 @@ def _create_seed_customer(
         name=name,
         external_id=external_id,
         organization=organization,
-        _type=customer_type,
+        type=customer_type,
     )
     if created_at is not None:
         customer.created_at = created_at
@@ -1398,9 +1403,6 @@ async def _create_simple_fixture_graph(session: AsyncSession) -> None:
             "website": "https://acme-corp.com",
             "bio": "Leading provider of innovative solutions for modern businesses.",
             "status": OrganizationStatus.ACTIVE,
-            "feature_settings": {
-                "compass_enabled": True,
-            },
             "details": {
                 "about": "We provide business intelligence dashboard",
                 "switching": False,
@@ -1691,10 +1693,10 @@ async def _create_simple_fixture_graph(session: AsyncSession) -> None:
             "website": "https://polar.sh",
             "bio": "The admin organization of Polar",
             "status": OrganizationStatus.ACTIVE,
-            "is_admin": True,
             "feature_settings": {
                 "sso_enabled": True,
             },
+            "verified_domain": "polar.sh",
             "sso_connection": {
                 "name": "Local Mock SSO",
                 "issuer": "http://localhost:8080/default",
@@ -1836,8 +1838,6 @@ async def _create_simple_fixture_graph(session: AsyncSession) -> None:
         await user_repository.update(
             user,
             update_dict={
-                # Start with the user being admin, so that we can create daily and weekly products
-                "is_admin": True,
                 "identity_verification_status": IdentityVerificationStatus.verified,
                 "identity_verification_id": f"vs_{org_data['slug']}_test",
             },
@@ -1866,6 +1866,16 @@ async def _create_simple_fixture_graph(session: AsyncSession) -> None:
         if "customer_email_settings" in org_data:
             organization.customer_email_settings = org_data["customer_email_settings"]
         session.add(organization)
+
+        verified_domain = org_data.get("verified_domain")
+        if verified_domain is not None:
+            session.add(
+                OrganizationDomain(
+                    organization=organization,
+                    domain=verified_domain,
+                    verified_at=utc_now(),
+                )
+            )
 
         # Seed an enabled SSO connection pointing at the local mock OIDC IdP.
         # Written directly so the http:// mock issuer bypasses the HttpsUrl schema.
@@ -2311,13 +2321,6 @@ async def _create_simple_fixture_graph(session: AsyncSession) -> None:
                     session.add(seat)
 
                 await session.flush()
-
-        # Downgrade user from admin (for non-admin users)
-        # Preserve admin status if already granted by a previous organization
-        await user_repository.update(
-            user,
-            update_dict={"is_admin": user.is_admin or org_data.get("is_admin", False)},
-        )
 
     subscribed = await _subscribe_seeded_orgs_to_polar_self(session)
     if subscribed:
@@ -2874,7 +2877,6 @@ async def create_single_org_seed(
     await user_repository.update(
         user,
         update_dict={
-            "is_admin": True,
             "identity_verification_status": IdentityVerificationStatus.verified,
             "identity_verification_id": f"vs_{slug}_test",
         },
@@ -3076,7 +3078,13 @@ def seeds_load(
 
 
 @cli.command(name="polar-self-env")
-def polar_self_env() -> None:
+def polar_self_env(
+    keep_valid: bool = typer.Option(
+        False,
+        "--keep-valid",
+        help="Output nothing when the configured access token still works.",
+    ),
+) -> None:
     """Output Polar self-integration env vars for the seeded Polar org."""
 
     async def run() -> None:
@@ -3091,6 +3099,13 @@ def polar_self_env() -> None:
             if org is None:
                 raise typer.Exit(1)
 
+            if keep_valid and settings.POLAR_ACCESS_TOKEN:
+                configured = await OrganizationAccessTokenRepository.from_session(
+                    session
+                ).get_by_token(settings.POLAR_ACCESS_TOKEN)
+                if configured is not None and configured.organization_id == org.id:
+                    return
+
             scale_product = (
                 await session.execute(
                     select(Product).where(
@@ -3104,7 +3119,8 @@ def polar_self_env() -> None:
             if scale_product is None:
                 raise typer.Exit(1)
 
-            # Delete any existing dev seed token
+            # Keep the token already in .env when it is still valid, so a
+            # running API and worker don't start failing with 401.
             existing = (
                 (
                     await session.execute(
@@ -3117,17 +3133,36 @@ def polar_self_env() -> None:
                 .scalars()
                 .all()
             )
-            for t in existing:
-                await session.delete(t)
-
-            token, token_hash = generate_token_hash_pair(prefix="polar_oat_")
-            oat = OrganizationAccessToken(
-                organization_id=org.id,
-                token=token_hash,
-                scope=TOKEN_SCOPES,
-                comment=TOKEN_COMMENT,
+            current_token = settings.POLAR_ACCESS_TOKEN
+            kept_oat = (
+                await OrganizationAccessTokenRepository.from_session(
+                    session
+                ).get_by_token(current_token)
+                if current_token
+                else None
             )
-            session.add(oat)
+            if kept_oat is not None and (
+                kept_oat.organization_id != org.id or kept_oat.comment != TOKEN_COMMENT
+            ):
+                kept_oat = None
+
+            for t in existing:
+                if kept_oat is None or t.id != kept_oat.id:
+                    await session.delete(t)
+
+            if kept_oat is not None:
+                kept_oat.scope = TOKEN_SCOPES
+                token = current_token
+            else:
+                token, token_hash = generate_token_hash_pair(prefix="polar_oat_")
+                session.add(
+                    OrganizationAccessToken(
+                        organization=org,
+                        token=token_hash,
+                        scope=TOKEN_SCOPES,
+                        comment=TOKEN_COMMENT,
+                    )
+                )
 
             existing_webhooks = (
                 (
@@ -3141,21 +3176,41 @@ def polar_self_env() -> None:
                 .scalars()
                 .all()
             )
+            current_webhook_secret = settings.POLAR_WEBHOOK_SECRET
+            kept_webhook: WebhookEndpoint | None = None
             for w in existing_webhooks:
-                await session.delete(w)
+                if (
+                    kept_webhook is None
+                    and current_webhook_secret
+                    and w.secret == current_webhook_secret
+                    and w.deleted_at is None
+                ):
+                    w.url = WEBHOOK_URL
+                    w.format = WebhookFormat.raw
+                    w.events = WEBHOOK_EVENTS
+                    w.api_version = CURRENT_API_VERSION
+                    w.enabled = True
+                    w.expires_at = None
+                    kept_webhook = w
+                else:
+                    await session.delete(w)
 
-            webhook_secret = generate_webhook_secret()
-            webhook = WebhookEndpoint(
-                organization_id=org.id,
-                url=WEBHOOK_URL,
-                name=WEBHOOK_NAME,
-                format=WebhookFormat.raw,
-                secret=webhook_secret,
-                secret_generated_at=utc_now(),
-                events=WEBHOOK_EVENTS,
-                enabled=True,
-            )
-            session.add(webhook)
+            if kept_webhook is not None:
+                webhook_secret = current_webhook_secret
+            else:
+                webhook_secret = generate_webhook_secret()
+                session.add(
+                    WebhookEndpoint(
+                        organization=org,
+                        url=WEBHOOK_URL,
+                        name=WEBHOOK_NAME,
+                        format=WebhookFormat.raw,
+                        secret=webhook_secret,
+                        secret_generated_at=utc_now(),
+                        events=WEBHOOK_EVENTS,
+                        enabled=True,
+                    )
+                )
 
             await session.commit()
 

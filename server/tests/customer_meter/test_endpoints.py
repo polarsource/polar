@@ -3,7 +3,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
 from sqlalchemy.exc import DBAPIError
 
@@ -19,16 +19,23 @@ from polar.models import (
     Meter,
     OrderItem,
     Organization,
+    ReducerBucket,
     User,
     UserOrganization,
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.event import EventSource
+from polar.models.reducer import ReducerKind
 from polar.postgres import AsyncSession
+from polar.redis import Redis
+from polar.reducer.repository import ReducerRepository
+from polar.reducer.service import REDUCER_BUCKET_SIZE, get_reducer_bucket_start
+from polar.reducer.service import reducer as reducer_service
 from polar.version import V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    METER_TEST_EVENT,
     create_active_subscription,
     create_event,
     create_meter,
@@ -122,6 +129,43 @@ class TestListCustomerMeters:
         json = response.json()
         assert json["pagination"]["total_count"] == 1
         assert json["items"][0]["id"] == str(tool_call.id)
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_lists_every_meter_version(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        for is_current in (False, True):
+            meter = await create_meter(
+                save_fixture,
+                id=uuid.uuid4(),
+                organization=organization,
+                external_id="tool_call",
+                is_current=is_current,
+            )
+            await save_fixture(
+                CustomerMeter(
+                    customer=customer,
+                    meter=meter,
+                    consumed_units=Decimal(0),
+                    credited_units=0,
+                    balance=Decimal(0),
+                )
+            )
+
+        response = await client.get(
+            "/v1/customer-meters/", params={"external_meter_id": "tool_call"}
+        )
+
+        assert response.status_code == 200
+        assert sorted(
+            item["meter"]["is_current"] for item in response.json()["items"]
+        ) == [False, True]
 
 
 @pytest.mark.anyio
@@ -681,3 +725,108 @@ class TestReverseCustomerMeterCredit:
         )
 
         assert response.status_code == 409
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_already_invoiced_on_reducer_billing(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        organization.feature_settings = {"reducer_billing_enabled": True}
+        await save_fixture(organization)
+        await reducer_service.sync_meter(session, meter)
+        credit_reducer = await ReducerRepository.from_session(
+            session
+        ).get_by_meter_and_kind(meter.id, ReducerKind.credit)
+        assert credit_reducer is not None
+
+        now = utc_now()
+        credit = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            timestamp=now,
+            ingested_at=now,
+            metadata={
+                "meter_id": str(meter.id),
+                "units": 5,
+                "rollover": False,
+                "reason": "manual",
+            },
+        )
+        bucket_start = get_reducer_bucket_start(now)
+        await save_fixture(
+            ReducerBucket(
+                organization=organization,
+                reducer=credit_reducer,
+                customer_id=customer.id,
+                bucket_start=bucket_start,
+                bucket_end=bucket_start + REDUCER_BUCKET_SIZE,
+                count=1,
+                sum=Decimal(5),
+                min=Decimal(5),
+                max=Decimal(5),
+                sealed_at=now,
+                billed_at=now,
+            )
+        )
+
+        response = await client.post(f"/v1/customer-meters/credits/{credit.id}/reverse")
+        assert response.status_code == 409
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_counts_reducer_usage_on_reducer_billing(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        organization.feature_settings = {"reducer_billing_enabled": True}
+        await save_fixture(organization)
+        await reducer_service.sync_meter(session, meter)
+
+        credit = await client.post(
+            "/v1/customer-meters/credits",
+            json={
+                "customer_id": str(customer.id),
+                "meter_id": str(meter.id),
+                "units": 5,
+            },
+        )
+        now = utc_now()
+        await reducer_service.rollup(
+            session,
+            redis,
+            organization.id,
+            [
+                Event(
+                    name=METER_TEST_EVENT,
+                    source=EventSource.user,
+                    timestamp=now,
+                    organization_id=organization.id,
+                    customer_id=customer.id,
+                    user_metadata={"tokens": 1},
+                )
+                for _ in range(3)
+            ],
+        )
+
+        response = await client.post(
+            f"/v1/customer-meters/credits/{credit.json()['id']}/reverse"
+        )
+        assert response.status_code == 201
+        assert response.json()["metadata"]["units"] == -2

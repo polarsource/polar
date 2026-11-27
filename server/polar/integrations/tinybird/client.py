@@ -3,8 +3,9 @@ import json
 from typing import Any
 from urllib.parse import urlparse
 
+import anyio
 import clickhouse_connect
-import httpx
+import httpx2
 import logfire
 import structlog
 from opentelemetry import trace
@@ -39,7 +40,7 @@ class TinybirdOperationalError(TinybirdError):
 
     @classmethod
     def from_response(
-        cls, response: httpx.Response, endpoint: str | None = None
+        cls, response: httpx2.Response, endpoint: str | None = None
     ) -> "TinybirdOperationalError":
         message = f"{response.status_code} {response.reason_phrase}"
         if endpoint:
@@ -48,7 +49,7 @@ class TinybirdOperationalError(TinybirdError):
 
     @classmethod
     def from_request_error(
-        cls, exc: httpx.RequestError, endpoint: str | None = None
+        cls, exc: httpx2.RequestError, endpoint: str | None = None
     ) -> "TinybirdOperationalError":
         message = f"{type(exc).__name__}: {exc}"
         if endpoint:
@@ -74,7 +75,7 @@ class TinybirdRequestError(TinybirdError):
 
     @classmethod
     def from_response(
-        cls, response: httpx.Response, endpoint: str | None = None
+        cls, response: httpx2.Response, endpoint: str | None = None
     ) -> "TinybirdRequestError":
         try:
             error_body: dict[str, Any] | str = response.json()
@@ -114,24 +115,25 @@ class TinybirdClient:
         self._clickhouse_client: (
             clickhouse_connect.driver.asyncclient.AsyncClient | None
         ) = None
+        self._clickhouse_client_lock = anyio.Lock()
 
-        self._write_client = httpx.AsyncClient(
+        self._write_client = httpx2.AsyncClient(
             base_url=api_url,
             headers={"Authorization": f"Bearer {api_token}"} if api_token else {},
-            timeout=httpx.Timeout(25.0, connect=10.0),
+            timeout=httpx2.Timeout(25.0, connect=10.0),
             transport=(
-                httpx.MockTransport(lambda _: httpx.Response(200))
+                httpx2.MockTransport(lambda _: httpx2.Response(200))
                 if api_token is None
                 else None
             ),
         )
 
-        self._read_client = httpx.AsyncClient(
+        self._read_client = httpx2.AsyncClient(
             base_url=api_url,
             headers={"Authorization": f"Bearer {read_token}"} if read_token else {},
-            timeout=httpx.Timeout(60.0, connect=10.0),
+            timeout=httpx2.Timeout(60.0, connect=10.0),
             transport=(
-                httpx.MockTransport(lambda _: httpx.Response(200, json={"data": []}))
+                httpx2.MockTransport(lambda _: httpx2.Response(200, json={"data": []}))
                 if read_token is None
                 else None
             ),
@@ -140,35 +142,36 @@ class TinybirdClient:
     async def _get_clickhouse_client(
         self,
     ) -> clickhouse_connect.driver.asyncclient.AsyncClient:
-        if self._clickhouse_client is None:
-            parsed = urlparse(self._clickhouse_url)
-            self._clickhouse_client = await clickhouse_connect.get_async_client(
-                host=parsed.hostname or "localhost",
-                port=parsed.port or (443 if parsed.scheme == "https" else 7182),
-                username=self._clickhouse_username,
-                password=self._clickhouse_token or "",
-                interface="https" if parsed.scheme == "https" else "http",
-                connect_timeout=3,
-                send_receive_timeout=30,
-                query_retries=1,
-            )
+        async with self._clickhouse_client_lock:
+            if self._clickhouse_client is None:
+                parsed = urlparse(self._clickhouse_url)
+                self._clickhouse_client = await clickhouse_connect.get_async_client(
+                    host=parsed.hostname or "localhost",
+                    port=parsed.port or (443 if parsed.scheme == "https" else 7182),
+                    username=self._clickhouse_username,
+                    password=self._clickhouse_token or "",
+                    interface="https" if parsed.scheme == "https" else "http",
+                    connect_timeout=3,
+                    send_receive_timeout=30,
+                    query_retries=1,
+                )
         return self._clickhouse_client
 
     async def _request_with_retry(
         self,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         method: str,
         url: str,
         *,
         endpoint_name: str | None = None,
         **kwargs: Any,
-    ) -> httpx.Response:
-        last_response: httpx.Response | None = None
+    ) -> httpx2.Response:
+        last_response: httpx2.Response | None = None
         for attempt in range(MAX_RETRIES + 1):
             retry_delay: float | None = None
             try:
                 response = await client.request(method, url, **kwargs)
-            except httpx.RequestError as exc:
+            except httpx2.RequestError as exc:
                 if attempt >= MAX_RETRIES:
                     raise TinybirdOperationalError.from_request_error(
                         exc, endpoint=endpoint_name

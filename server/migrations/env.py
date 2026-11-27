@@ -9,11 +9,29 @@ from polar.config import settings
 from polar.models import Model
 
 # Columns removed from the models but still in the database until dropped by hand.
-UNMAPPED_COLUMNS: set[tuple[str, str]] = set()
+UNMAPPED_COLUMNS: set[tuple[str, str]] = {("discounts", "external_id")}
 
 
 def include_object(object, name, type_, reflected, compare_to):
     if type_ == "column" and (object.table.name, name) in UNMAPPED_COLUMNS:
+        return False
+    if (
+        type_ == "index"
+        and reflected
+        and compare_to is None
+        and any(
+            (object.table.name, column.name) in UNMAPPED_COLUMNS
+            for column in object.columns
+        )
+    ):
+        return False
+    if (
+        type_ == "index"
+        and reflected
+        and compare_to is None
+        and object.table.name == "events"
+        and name.startswith("ix_events_meter_")
+    ):
         return False
     # Exclude tables/indexes marked with skip_autogenerate
     return not (
@@ -44,7 +62,7 @@ config.set_main_option(
     # database; fall back to the settings URL for normal CLI usage.
     # Escape %-encoding signs to avoid Alembic treating them as interpolation markers.
     config.attributes.get(
-        "sqlalchemy.url", settings.get_postgres_dsn("asyncpg")
+        "sqlalchemy.url", settings.get_postgres_migration_dsn("asyncpg")
     ).replace("%", "%%"),
 )
 

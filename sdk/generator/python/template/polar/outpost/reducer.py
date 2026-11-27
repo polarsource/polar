@@ -35,6 +35,7 @@ Aggregation: typing.TypeAlias = CountAggregation | PropertyAggregation
 
 class Reducer(typing.TypedDict):
     id: str
+    kind: typing.Literal["usage", "credit"]
     filter: Filter
     aggregation: Aggregation
     meter_ids: typing.NotRequired[list[str]]
@@ -87,8 +88,7 @@ class BucketStatistics:
                 raise ValueError(f"Unsupported aggregation: {func}")
 
 
-Updates: typing.TypeAlias = dict[tuple[str, str, int], BucketStatistics]
-BUCKET_SIZE = 300_000_000
+BUCKET_SIZE = {{ outpost_constants.bucket_size }}
 EPOCH = datetime.datetime(1970, 1, 1, tzinfo=datetime.UTC)
 FILTER_OPERATORS = {
     "eq": operator.eq,
@@ -126,12 +126,33 @@ def get_matcher(clause: Filter | FilterClause) -> EventMatcher:
 
         filter_operator = FILTER_OPERATORS[clause["operator"]]
         if filter_operator in (operator.eq, operator.ne):
+            # Like Polar, a boolean never equals a number: `True` is not 1. The type
+            # is only looked at when the values compare equal.
+            if isinstance(expected, bool):
+                if filter_operator is operator.eq:
+                    return lambda event: read(event) is expected
 
-            def equality_matcher(event: Event) -> bool:
+                def differs_from_boolean(event: Event) -> bool:
+                    actual = read(event)
+                    return actual is not None and actual is not expected
+
+                return differs_from_boolean
+
+            if filter_operator is operator.eq:
+
+                def equals(event: Event) -> bool:
+                    actual = read(event)
+                    return actual == expected and type(actual) is not bool
+
+                return equals
+
+            def differs(event: Event) -> bool:
                 actual = read(event)
-                return actual is not None and filter_operator(actual, expected)
+                return actual is not None and (
+                    actual != expected or type(actual) is bool
+                )
 
-            return equality_matcher
+            return differs
 
         if expected_type in (int, float):
             comparable: tuple[type, ...] = (int, float)
@@ -170,6 +191,7 @@ def get_matcher(clause: Filter | FilterClause) -> EventMatcher:
     return any_matcher
 
 
+# Credit reducers count Polar's system events: no local event matches them.
 def with_matchers(
     reducers: collections.abc.Iterable[Reducer],
 ) -> list[ReducerMatcher]:
@@ -182,6 +204,7 @@ def with_matchers(
             else get_property_reader(reducer["aggregation"]["property"]),
         )
         for reducer in reducers
+        if reducer["kind"] == "usage"
     ]
 
 
@@ -193,32 +216,20 @@ def get_bucket_start(timestamp: datetime.datetime) -> int:
     return epoch - epoch % BUCKET_SIZE
 
 
-def reduce(
-    reducers: collections.abc.Sequence[ReducerMatcher],
-    events: collections.abc.Sequence[Event],
-    *,
-    oldest_bucket_start: int,
-) -> Updates:
-    updates: Updates = {}
-    for event in events:
-        bucket_start = get_bucket_start(event.timestamp)
-        if bucket_start < oldest_bucket_start:
+def match_event(
+    reducers: collections.abc.Sequence[ReducerMatcher], event: Event
+) -> list[tuple[str, int | float | None]]:
+    """The reducers an event counts for, each with the event's value, or None when it
+    only counts."""
+    matches: list[tuple[str, int | float | None]] = []
+    for reducer, matcher, read in reducers:
+        if not matcher(event):
             continue
-        for reducer, matcher, read in reducers:
-            if not matcher(event):
-                continue
-            value = read(event)
-            if not isinstance(value, (int, float)) or isinstance(value, bool):
-                continue
-            if isinstance(value, float) and not math.isfinite(value):
-                raise ValueError("Aggregation values must be finite")
-
-            update_key = (event.external_customer_id, reducer["id"], bucket_start)
-            statistics = updates.get(update_key)
-            if statistics is None:
-                statistics = updates[update_key] = BucketStatistics()
-            if reducer["aggregation"]["func"] == "count":
-                statistics.count += 1
-            else:
-                statistics.add_value(value)
-    return updates
+        value = read(event)
+        if not isinstance(value, (int, float)) or isinstance(value, bool):
+            continue
+        if isinstance(value, float) and not math.isfinite(value):
+            raise ValueError("Aggregation values must be finite")
+        counts = reducer["aggregation"]["func"] == "count"
+        matches.append((reducer["id"], None if counts else value))
+    return matches

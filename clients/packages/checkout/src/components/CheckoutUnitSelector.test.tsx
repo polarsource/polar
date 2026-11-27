@@ -134,4 +134,45 @@ describe('CheckoutUnitSelector', () => {
       expect(screen.getByText('Devices')).toBeInTheDocument()
     })
   })
+
+  describe('unit limit text', () => {
+    it.each([
+      [{ min_units: 2, max_units: null }, 'Minimum 2 licenses'],
+      [{ min_units: null, max_units: 50 }, 'Maximum 50 licenses'],
+      [{ min_units: 2, max_units: 50 }, '2 - 50 licenses'],
+    ])('renders the limit for %o', (limits, text) => {
+      const price = createUnitBasedPrice({
+        unit_label: { en: { '=1': 'license', other: 'licenses' } },
+      })
+      const checkout = createUnitCheckout({
+        ...limits,
+        product_price: price,
+        prices: { prod_1: [price] },
+      })
+
+      render(
+        <CheckoutUnitSelector
+          checkout={checkout}
+          updateCheckout={noopUpdate}
+          locale="en"
+        />,
+      )
+
+      expect(screen.getByText(text)).toBeInTheDocument()
+    })
+
+    it('hides the limit when units are fixed', () => {
+      const checkout = createUnitCheckout({ min_units: 5, max_units: 5 })
+
+      render(
+        <CheckoutUnitSelector
+          checkout={checkout}
+          updateCheckout={noopUpdate}
+          locale="en"
+        />,
+      )
+
+      expect(screen.queryByText(/5 - 5/)).not.toBeInTheDocument()
+    })
+  })
 })

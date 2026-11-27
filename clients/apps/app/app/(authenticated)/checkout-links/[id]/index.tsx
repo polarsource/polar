@@ -20,6 +20,7 @@ import {
 import { useInfiniteProducts } from '@/hooks/polar/products'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { useToast } from '@/providers/ToastProvider'
+import { capture } from '@/utils/posthog'
 import { Stack, useLocalSearchParams } from 'expo-router'
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
@@ -152,6 +153,9 @@ export default function CheckoutLinkDetails() {
           ),
         })
 
+        capture('app:checkout_links:link:update', {
+          product_count: selectedProductIds.length,
+        })
         toast.showInfo('Saved!')
       } catch {
         Alert.alert('Error', 'Failed to update checkout link')

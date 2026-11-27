@@ -23,7 +23,7 @@ class PaginationParams(NamedTuple):
     limit: int
 
 
-def count_subquery(statement: Select[Any]) -> Subquery:
+def count_subquery(statement: Select[*tuple[Any, ...]]) -> Subquery:
     """Build a count-safe subquery from a Select.
 
     `.subquery()` materializes every mapped column of the underlying entity,
@@ -37,7 +37,7 @@ def count_subquery(statement: Select[Any]) -> Subquery:
 @overload
 async def paginate[RM: RecordModel](
     session: AsyncReadSession,
-    statement: Select[tuple[RM]],
+    statement: Select[RM],
     *,
     pagination: PaginationParams,
     count_clause: _ColumnsClauseArgument[Any] | None = None,
@@ -47,7 +47,7 @@ async def paginate[RM: RecordModel](
 @overload
 async def paginate[M: Model](
     session: AsyncReadSession,
-    statement: Select[tuple[M]],
+    statement: Select[M],
     *,
     pagination: PaginationParams,
     count_clause: _ColumnsClauseArgument[Any] | None = None,
@@ -55,18 +55,18 @@ async def paginate[M: Model](
 
 
 @overload
-async def paginate[T: Any](
+async def paginate[T1, T2, *Ts](
     session: AsyncReadSession,
-    statement: Select[T],
+    statement: Select[T1, T2, *Ts],
     *,
     pagination: PaginationParams,
     count_clause: _ColumnsClauseArgument[Any] | None = None,
-) -> tuple[Sequence[T], int]: ...
+) -> tuple[Sequence[tuple[T1, T2, *Ts]], int]: ...
 
 
 async def paginate(
     session: AsyncReadSession,
-    statement: Select[Any],
+    statement: Select[*tuple[Any, ...]],
     *,
     pagination: PaginationParams,
     count_clause: _ColumnsClauseArgument[Any] | None = None,
@@ -97,11 +97,11 @@ async def paginate(
     result = await session.execute(paginated)
     results = []
     for row in result.unique().all():
-        queried_data = row._tuple()
-        if len(queried_data) == 1:
-            results.append(queried_data[0])
+        queried_row = row._tuple()
+        if len(queried_row) == 1:
+            results.append(queried_row[0])
         else:
-            results.append(queried_data)
+            results.append(queried_row)
 
     return results, count
 

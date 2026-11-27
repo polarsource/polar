@@ -9,7 +9,7 @@ from pydantic_core import PydanticCustomError
 
 from polar.config import settings
 
-if settings.is_testing():
+if settings.is_testing() or settings.is_development():
     email_validator.TEST_ENVIRONMENT = True
 
 _email_dns_resolver = caching_resolver()

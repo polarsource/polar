@@ -4,9 +4,10 @@ from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import func, select, update
+from sqlalchemy.orm import joinedload
 
 from polar.kit.repository import RepositoryBase
-from polar.models import BillingInterval, Customer, Subscription
+from polar.models import BillingInterval, Customer, ProductPrice, Subscription
 
 from .types import IntervalChangePlan
 
@@ -19,6 +20,22 @@ class BillingIntervalRepository(RepositoryBase[BillingInterval]):
     ) -> Sequence[BillingInterval]:
         statement = self.get_base_statement().where(
             BillingInterval.subscription_id == subscription_id
+        )
+        return await self.get_all(statement)
+
+    async def get_by_subscription_with_prices(
+        self, subscription_id: UUID
+    ) -> Sequence[BillingInterval]:
+        statement = (
+            self.get_base_statement()
+            .where(BillingInterval.subscription_id == subscription_id)
+            .options(
+                joinedload(BillingInterval.meter),
+                joinedload(BillingInterval.product_price).joinedload(
+                    ProductPrice.product
+                ),
+            )
+            .order_by(BillingInterval.meter_id, BillingInterval.period_start.desc())
         )
         return await self.get_all(statement)
 

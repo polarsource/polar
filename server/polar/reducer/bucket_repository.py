@@ -293,6 +293,23 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         )
         return await self.get_all(statement)
 
+    async def get_all_by_identities_starting_within(
+        self,
+        reducer: Reducer,
+        identities: Sequence[CustomerIdentity],
+        start: datetime,
+        end: datetime | None,
+    ) -> Sequence[ReducerBucket]:
+        statement = self.get_base_statement().where(
+            ReducerBucket.organization_id == reducer.organization_id,
+            ReducerBucket.reducer_id == reducer.id,
+            ReducerBucket.bucket_start >= start,
+            _is_any_customer(identities),
+        )
+        if end is not None:
+            statement = statement.where(ReducerBucket.bucket_start < end)
+        return await self.get_all(statement)
+
     async def get_all_starting_within_for_update(
         self,
         slots: Sequence[tuple[Reducer, datetime, datetime, UUID | None, str | None]],

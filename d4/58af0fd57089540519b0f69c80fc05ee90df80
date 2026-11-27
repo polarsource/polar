@@ -1,0 +1,16 @@
+server/migrations/versions/2026-11-27-1531_add_reducer_bucket_totals_covering_index.py
+  h_cc2173b7b86bcc 1-61
+server/polar/models/reducer_bucket.py
+  h_cc2173b7b86bcc 49-57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d458af0fd57089540519b0f69c80fc05ee90df80",
+  "prompts": {},
+  "humans": {
+    "h_cc2173b7b86bcc": {
+      "author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

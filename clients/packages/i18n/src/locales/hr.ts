@@ -134,6 +134,9 @@ export default {
           _mode: 'plural',
         },
         updateFailed: 'Ažuriranje jedinica nije uspjelo',
+        range: '{min} - {max} {unitLabelPlural}',
+        minimum: 'Minimalno {min} {unitLabelPlural}',
+        maximum: 'Maksimalno {max} {unitLabelPlural}',
       },
       discount: {
         until: 'Do {date}',

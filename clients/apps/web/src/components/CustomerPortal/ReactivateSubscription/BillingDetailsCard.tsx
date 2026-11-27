@@ -40,6 +40,8 @@ export const BillingDetailsCard = ({
   editing,
   onEdit,
   onCancel,
+  onSave,
+  saving,
   disabled,
 }: {
   order: schemas['CustomerOrder']
@@ -47,6 +49,8 @@ export const BillingDetailsCard = ({
   editing: boolean
   onEdit: () => void
   onCancel?: () => void
+  onSave?: () => void
+  saving?: boolean
   disabled?: boolean
 }) => (
   <ReactivationCard>
@@ -77,7 +81,16 @@ export const BillingDetailsCard = ({
       }
     >
       {editing ? (
-        <BillingDetailsFields customer={customer} />
+        <Box flexDirection="column" rowGap="l">
+          <BillingDetailsFields customer={customer} />
+          {onSave && (
+            <Box justifyContent="end">
+              <Button onClick={onSave} loading={saving} disabled={disabled}>
+                Update billing details
+              </Button>
+            </Box>
+          )}
+        </Box>
       ) : (
         <Box flexDirection="column" rowGap="xs">
           {getBillingDetailsLines(order, customer).map((line) => (

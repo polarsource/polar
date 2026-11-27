@@ -2,13 +2,19 @@
 
 import { useCustomerOrderUpdate } from '@/hooks/queries/customerPortal'
 import { setValidationErrors } from '@/utils/api/errors'
+import useDebounce from '@/utils/useDebounce'
+import { MandateText } from '@polar-sh/checkout/components'
 import { type Client, type schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Alert, Button } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
+import {
+  getTaxAddressFields,
+  type TaxAddressField,
+} from '@polar-sh/ui/lib/taxAddressFields'
 import { useElements, useStripe } from '@stripe/react-stripe-js'
-import { useEffect, useState } from 'react'
-import { useForm, useFormState } from 'react-hook-form'
+import { useEffect, useRef, useState } from 'react'
+import { useForm, useFormState, useWatch } from 'react-hook-form'
 import {
   type CustomerPortalCustomerUpdate,
   getBillingDetailsValues,
@@ -22,6 +28,20 @@ type SavedCard = schemas['PaymentMethodCard'] | schemas['PaymentMethodKrCard']
 
 const requiresPaymentMethod = (order: schemas['CustomerOrder']) =>
   order.is_payment_required || order.is_payment_setup_required
+
+// Identifies the address fields that feed tax calculation, so we only
+// recalculate when one of them changes. Null while any of them is missing.
+const getTaxAddressKey = (
+  address: Partial<Record<TaxAddressField, string | null>> | null | undefined,
+) => {
+  if (!address?.country) {
+    return null
+  }
+  const values = getTaxAddressFields(address.country).map(
+    (field) => address[field] || null,
+  )
+  return values.every(Boolean) ? JSON.stringify(values) : null
+}
 
 export const ReactivateSubscriptionForm = ({
   api,
@@ -55,8 +75,13 @@ export const ReactivateSubscriptionForm = ({
   const form = useForm<CustomerPortalCustomerUpdate>({
     defaultValues: getBillingDetailsValues({ ...order, name: customer.name }),
   })
-  const { control, handleSubmit, setError } = form
+  const { control, handleSubmit, setError, getValues, setValue } = form
   const { isDirty } = useFormState({ control })
+
+  const billingAddress = useWatch({ control, name: 'billing_address' })
+  const taxAddressKey = useDebounce(getTaxAddressKey(billingAddress), 500)
+  const orderTaxAddressKey = getTaxAddressKey(order.billing_address)
+  const latestTaxUpdate = useRef(0)
 
   useEffect(() => {
     if (state.status === 'succeeded') {
@@ -70,6 +95,7 @@ export const ReactivateSubscriptionForm = ({
   }
 
   const saveBillingDetails = async (data: CustomerPortalCustomerUpdate) => {
+    latestTaxUpdate.current++
     const { data: updated, error } = await updateOrder.mutateAsync({
       id: order.id,
       body: {
@@ -93,6 +119,44 @@ export const ReactivateSubscriptionForm = ({
     }
     return updated
   }
+
+  // Recalculate tax as soon as the tax-relevant address fields change, so
+  // the summary reflects the new total before the customer confirms.
+  useEffect(() => {
+    if (!taxAddressKey || taxAddressKey === orderTaxAddressKey) {
+      return
+    }
+    const address = getValues('billing_address')
+    if (!address?.country) {
+      return
+    }
+    // A tax ID only holds for the country it was issued in.
+    const countryChanged = address.country !== order.billing_address?.country
+    if (countryChanged) {
+      setValue('tax_id', null)
+    }
+    const request = ++latestTaxUpdate.current
+    updateOrder
+      .mutateAsync({
+        id: order.id,
+        body: {
+          billing_address: address,
+          ...(countryChanged ? { tax_id: null } : {}),
+        },
+      })
+      .then(({ data: updated, error }) => {
+        if (request !== latestTaxUpdate.current) {
+          return
+        }
+        if (updated) {
+          onOrderUpdated(updated)
+        } else if (error && 'detail' in error && Array.isArray(error.detail)) {
+          setValidationErrors(error.detail, setError)
+        }
+      })
+      .catch(() => {})
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [taxAddressKey])
 
   const needsPaymentMethod = requiresPaymentMethod(order)
   const hasPaymentSource = useNewCard ? !!elements : !!savedCardId
@@ -133,6 +197,10 @@ export const ReactivateSubscriptionForm = ({
     state.status === 'confirming' ||
     state.status === 'succeeded'
 
+  const submitLabel = order.is_payment_required
+    ? `Pay ${formatCurrency('compact')(order.due_amount, order.currency)} and subscribe`
+    : 'Reactivate subscription'
+
   return (
     <Form {...form}>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-y-6">
@@ -144,11 +212,22 @@ export const ReactivateSubscriptionForm = ({
           onCancel={
             hasCompleteBillingAddress(order.billing_address)
               ? () => {
-                  form.reset()
+                  form.reset(
+                    getBillingDetailsValues({ ...order, name: customer.name }),
+                  )
                   setEditingBilling(false)
                 }
               : undefined
           }
+          onSave={
+            hasCompleteBillingAddress(order.billing_address)
+              ? handleSubmit(async (data) => {
+                  setNotice(null)
+                  await saveBillingDetails(data)
+                })
+              : undefined
+          }
+          saving={updateOrder.isPending}
           disabled={isBusy}
         />
         {needsPaymentMethod && (
@@ -183,12 +262,14 @@ export const ReactivateSubscriptionForm = ({
           loading={isBusy}
           disabled={isBusy || (needsPaymentMethod && !hasPaymentSource)}
         >
-          {!hasCompleteBillingAddress(order.billing_address)
-            ? 'Continue'
-            : order.is_payment_required
-              ? `Pay ${formatCurrency('compact')(order.due_amount, order.currency)} and subscribe`
-              : 'Reactivate subscription'}
+          {submitLabel}
         </Button>
+        <MandateText
+          isPaymentRequired={order.is_payment_required}
+          isTrial={false}
+          isRecurring
+          buttonLabel={submitLabel}
+        />
       </form>
     </Form>
   )

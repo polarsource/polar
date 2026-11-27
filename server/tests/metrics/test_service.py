@@ -50,6 +50,7 @@ from tests.fixtures.database import (
 )
 from tests.fixtures.random_objects import (
     create_account,
+    create_active_subscription,
     create_checkout,
     create_customer,
     create_customer_seat,
@@ -5728,3 +5729,79 @@ class TestCheckoutMetrics:
 
         total_checkouts = sum(p.checkouts or 0 for p in metrics.periods)
         assert total_checkouts == expected_checkouts
+
+
+@pytest.mark.anyio
+class TestSeatMetrics:
+    @pytest.mark.auth
+    async def test_churned_seat_customers_stable_after_new_seat(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(1000, "usd")],
+        )
+        customer = await create_customer(
+            save_fixture, organization=organization, email="seat-churn@example.com"
+        )
+        first_subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            started_at=datetime(2024, 1, 1, tzinfo=UTC),
+        )
+        first_seat = await create_customer_seat(
+            save_fixture,
+            subscription=first_subscription,
+            status=SeatStatus.revoked,
+            customer=customer,
+            claimed_at=datetime(2024, 1, 1, tzinfo=UTC),
+            revoked_at=datetime(2024, 2, 15, tzinfo=UTC),
+        )
+        first_seat.created_at = datetime(2024, 1, 1, tzinfo=UTC)
+        await save_fixture(first_seat)
+
+        async def get_metrics() -> MetricsResponse:
+            return await metrics_service.get_metrics(
+                session,
+                auth_subject,
+                start_date=date(2024, 1, 1),
+                end_date=date(2024, 3, 31),
+                timezone=ZoneInfo("UTC"),
+                interval=TimeInterval.month,
+                organization_id=[organization.id],
+                metrics=["seats_total", "churned_seat_customers"],
+                now=datetime(2024, 3, 31, tzinfo=UTC),
+            )
+
+        before = await get_metrics()
+        assert before.periods[1].churned_seat_customers == 1
+        assert before.totals.churned_seat_customers == 1
+
+        second_subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            started_at=datetime(2024, 3, 5, tzinfo=UTC),
+        )
+        second_seat = await create_customer_seat(
+            save_fixture,
+            subscription=second_subscription,
+            status=SeatStatus.claimed,
+            customer=customer,
+            claimed_at=datetime(2024, 3, 5, tzinfo=UTC),
+        )
+        second_seat.created_at = datetime(2024, 3, 5, tzinfo=UTC)
+        await save_fixture(second_seat)
+
+        after = await get_metrics()
+        assert after.periods[1].churned_seat_customers == 1
+        assert after.periods[2].churned_seat_customers == 0
+        assert after.totals.churned_seat_customers == 1

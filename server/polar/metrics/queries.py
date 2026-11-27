@@ -873,6 +873,10 @@ def get_seats_cte(
             .outerjoin(ord_c, cs_c.c.order_id == ord_c.c.id)
             .where(
                 cs_c.c.id.in_(readable_seats_statement),
+                interval.sql_date_trunc(
+                    cast(SQLColumnExpression[datetime], cs_c.c.created_at)
+                )
+                <= interval.sql_date_trunc(timestamp_column),
             )
             .group_by("billing_customer_id")
             .having(

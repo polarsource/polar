@@ -16,6 +16,7 @@ from pydantic import (
 )
 from pydantic.json_schema import SkipJsonSchema
 
+from polar.billing_interval.types import BillingIntervalGenerationStatus
 from polar.custom_field.data import CustomFieldDataOutputMixin
 from polar.customer.schemas.customer import CustomerBase, CustomerID, ExternalCustomerID
 from polar.discount.schemas import DiscountID, DiscountMinimal
@@ -41,6 +42,7 @@ from polar.kit.schemas import (
 )
 from polar.kit.versioning import Omissible, QuerySchema, Version, VersionedJsonSchema
 from polar.meter.schemas import Meter
+from polar.models.billing_interval import UsagePolicy
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.openapi import destructive_when_equals
 from polar.organization.schemas import OrganizationID
@@ -725,6 +727,63 @@ class SubscriptionChangePreview(SubscriptionChargePreview):
         description=(
             "How the change would be billed, resolved from the requested "
             "or organization setting."
+        )
+    )
+
+
+class SubscriptionBillingIntervalProduct(IDSchema):
+    name: str = Field(description="The name of the product.")
+
+
+class SubscriptionBillingIntervalGeneration(Schema):
+    generation: int = Field(description="The generation number.")
+    order_id: UUID4 | None = Field(
+        description="The order that billed the usage, or `None` if it's not billed."
+    )
+    units: float = Field(description="The usage.")
+    amount: int = Field(
+        description="The usage at the interval's price before credits, in cents."
+    )
+    status: BillingIntervalGenerationStatus = Field(description="The billing status.")
+
+
+class SubscriptionBillingIntervalUsageGroup(Schema):
+    period_start: datetime = Field(description="The start of the usage.")
+    period_end: datetime = Field(description="The end of the usage.")
+    units: float = Field(description="The usage across the generations.")
+    credited_units: float = Field(
+        description=(
+            "The credits the group's order applied, or the credits pending for "
+            "the next order on the latest unbilled group."
+        )
+    )
+    amount: int = Field(
+        description="The group's usage at the interval's price before credits, in cents."
+    )
+    generations: list[SubscriptionBillingIntervalGeneration] = Field(
+        description="The usage by generation and order."
+    )
+
+
+class SubscriptionBillingInterval(IDSchema):
+    meter: Meter = Field(description="The meter of the interval.")
+    period_start: datetime = Field(description="The start of the interval.")
+    period_end: datetime | None = Field(
+        description="The end of the interval, or `None` if it's ongoing."
+    )
+    usage_policy: UsagePolicy = Field(description="How the usage is charged.")
+    product: SubscriptionBillingIntervalProduct = Field(
+        validation_alias=AliasPath("product_price", "product"),
+        description="The product of the interval's price.",
+    )
+    product_price: ProductPrice = Field(description="The price of the interval.")
+
+
+class SubscriptionBillingIntervalUsage(Schema):
+    interval: SubscriptionBillingInterval = Field(description="The billing interval.")
+    groups: list[SubscriptionBillingIntervalUsageGroup] = Field(
+        description=(
+            "The usage in the interval, grouped by the first generation it belongs to."
         )
     )
 

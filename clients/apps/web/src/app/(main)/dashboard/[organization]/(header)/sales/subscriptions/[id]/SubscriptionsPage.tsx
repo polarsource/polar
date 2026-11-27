@@ -5,6 +5,7 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { useModal } from '@/components/Modal/useModal'
 import { SubscriptionSeatsSection } from '@/components/Seats/SubscriptionSeatsSection'
 import SubscriptionActionsMenu from '@/components/Subscriptions/SubscriptionActionsMenu'
+import { SubscriptionBillingIntervals } from '@/components/Subscriptions/SubscriptionBillingIntervals'
 import { SubscriptionDetailsGrid } from '@/components/Subscriptions/SubscriptionDetailsGrid'
 import SubscriptionUsageChargePreview from '@/components/Subscriptions/SubscriptionUsageChargePreview'
 import { SubscriptionAttention } from '@/components/Subscriptions/SubscriptionAttention'
@@ -96,6 +97,11 @@ const ClientPage: React.FC<ClientPageProps> = ({
       />
 
       <SubscriptionSeatsSection subscription={subscription} />
+
+      <SubscriptionBillingIntervals
+        organization={organization}
+        subscription={subscription}
+      />
 
       <Box
         flexDirection="column"

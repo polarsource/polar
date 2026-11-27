@@ -11,22 +11,43 @@ import structlog
 
 from polar.event.repository import EventRepository
 from polar.exceptions import PolarError
+from polar.kit.utils import utc_now
 from polar.logging import Logger
-from polar.meter.aggregation import AggregationFunction
+from polar.meter.aggregation import AggregationFunction, UniqueAggregation
 from polar.models import BillingInterval, Customer, Subscription
 from polar.models.billing_interval import UsagePolicy
+from polar.models.reducer import ReducerKind
 from polar.models.subscription import SubscriptionStatus
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.product.guard import is_metered_price
 from polar.redis import Redis
+from polar.reducer.bucket_repository import (
+    CustomerIdentity,
+    ReducerBucketRepository,
+    get_customer_identities,
+)
+from polar.reducer.repository import ReducerRepository
 from polar.reducer.service import finalize_quantity, merge_summaries
 from polar.reducer.service import reducer as reducer_service
-from polar.reducer.types import MeterUsage, UsageWindow, WindowUsage
+from polar.reducer.types import (
+    BucketTotals,
+    MeterUsage,
+    UsageWindow,
+    WindowUsage,
+)
 from polar.subscription.repository import SubscriptionRepository
 
 from .repository import BillingIntervalRepository
-from .types import IntervalChangePlan, MeterCharge, SubscriptionMeterBillingState
+from .types import (
+    BillingIntervalGenerationStatus,
+    IntervalChangePlan,
+    IntervalGeneration,
+    IntervalUsage,
+    IntervalUsageGroup,
+    MeterCharge,
+    SubscriptionMeterBillingState,
+)
 
 log: Logger = structlog.get_logger()
 
@@ -107,11 +128,12 @@ class BillingIntervalService:
 
     async def get_usage_windows(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         customer: Customer,
         meter_id: UUID,
         *,
         cutoff: datetime,
+        charged_only: bool = True,
     ) -> tuple[UsageWindow, ...]:
         """The customer's chargeable usage windows on the meter before `cutoff`."""
         repository = BillingIntervalRepository.from_session(session)
@@ -125,7 +147,165 @@ class BillingIntervalService:
         ).get_started_at_by_ids(
             list({interval.subscription_id for interval in intervals})
         )
-        return resolve_ownership(intervals, subscription_starts, cutoff=cutoff)
+        return resolve_ownership(
+            intervals, subscription_starts, cutoff=cutoff, charged_only=charged_only
+        )
+
+    async def list_usage(
+        self, session: AsyncReadSession, subscription: Subscription
+    ) -> list[IntervalUsage]:
+        intervals_by_meter: dict[UUID, list[BillingInterval]] = defaultdict(list)
+        for interval in await BillingIntervalRepository.from_session(
+            session
+        ).get_by_subscription_with_prices(subscription.id):
+            if not isinstance(interval.meter.aggregation, UniqueAggregation):
+                intervals_by_meter[interval.meter_id].append(interval)
+        return [
+            usage
+            for meter_id, intervals in intervals_by_meter.items()
+            for usage in await self._get_meter_usage(
+                session, subscription, meter_id, intervals
+            )
+        ]
+
+    async def _get_meter_usage(
+        self,
+        session: AsyncReadSession,
+        subscription: Subscription,
+        meter_id: UUID,
+        intervals: Sequence[BillingInterval],
+    ) -> list[IntervalUsage]:
+        customer = subscription.customer
+        interval_ids = {interval.id for interval in intervals}
+        windows = [
+            window
+            for window in await self.get_usage_windows(
+                session, customer, meter_id, cutoff=utc_now(), charged_only=False
+            )
+            if window.interval_id in interval_ids
+        ]
+
+        identities = get_customer_identities(customer)
+        reducer = await ReducerRepository.from_session(session).get_by_meter_and_kind(
+            meter_id, ReducerKind.usage
+        )
+        if reducer is None or not windows:
+            return [IntervalUsage(interval, ()) for interval in intervals]
+        function = reducer.aggregation.func
+        usage_totals = await ReducerBucketRepository.from_session(
+            session
+        ).get_window_totals(
+            reducer, identities, [(window.start, window.end) for window in windows]
+        )
+
+        type GroupKey = tuple[UUID | None, bool]
+        usage_by_interval: dict[
+            UUID, dict[GroupKey, dict[tuple[int, UUID | None], list[BucketTotals]]]
+        ] = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+        for (
+            index,
+            root_order_id,
+            root_open,
+            generation,
+            order_id,
+        ), totals in usage_totals.items():
+            interval_id = windows[index].interval_id
+            usage_by_interval[interval_id][(root_order_id, root_open)][
+                (generation, order_id)
+            ].append(totals)
+
+        groups_by_interval: dict[
+            UUID, list[tuple[GroupKey, BucketTotals, list[IntervalGeneration]]]
+        ] = defaultdict(list)
+        for interval in intervals:
+            for key, rows in usage_by_interval[interval.id].items():
+                generations = [
+                    get_interval_generation(
+                        interval,
+                        generation,
+                        order_id,
+                        merge_totals(rows[(generation, order_id)]),
+                        function,
+                    )
+                    for generation, order_id in sorted(
+                        rows, key=lambda key: (key[0], key[1] is None, str(key[1]))
+                    )
+                ]
+                group_totals = merge_totals(
+                    [total for totals in rows.values() for total in totals]
+                )
+                groups_by_interval[interval.id].append((key, group_totals, generations))
+
+        credits = await self._get_group_credits(
+            session,
+            customer,
+            meter_id,
+            identities,
+            [
+                (key, totals.start)
+                for interval in intervals
+                if interval.usage_policy == UsagePolicy.charge
+                for key, totals, _ in groups_by_interval[interval.id]
+            ],
+        )
+
+        usages: list[IntervalUsage] = []
+        for interval in intervals:
+            groups: list[IntervalUsageGroup] = []
+            for key, group_totals, generations in groups_by_interval[interval.id]:
+                units = finalize_quantity(group_totals.summary, function)
+                groups.append(
+                    IntervalUsageGroup(
+                        group_totals.start,
+                        group_totals.end,
+                        units,
+                        credits.get((key, group_totals.start), Decimal(0)),
+                        get_amount(interval, units),
+                        tuple(generations),
+                    )
+                )
+            groups.sort(key=lambda group: group.period_start, reverse=True)
+            usages.append(IntervalUsage(interval, tuple(groups)))
+        return usages
+
+    async def _get_group_credits(
+        self,
+        session: AsyncReadSession,
+        customer: Customer,
+        meter_id: UUID,
+        identities: Sequence[CustomerIdentity],
+        groups: Sequence[tuple[tuple[UUID | None, bool], datetime]],
+    ) -> dict[tuple[tuple[UUID | None, bool], datetime], Decimal]:
+        reducer = await ReducerRepository.from_session(session).get_by_meter_and_kind(
+            meter_id, ReducerKind.credit
+        )
+        if reducer is None or not groups:
+            return {}
+        by_order = await ReducerBucketRepository.from_session(
+            session
+        ).get_totals_by_order(
+            reducer,
+            identities,
+            [order_id for (order_id, _), _ in groups if order_id is not None],
+        )
+        credits: dict[tuple[tuple[UUID | None, bool], datetime], Decimal] = {}
+        for group in sorted(groups, key=lambda group: group[1]):
+            (order_id, _), _ = group
+            if order_id in by_order:
+                credits[group] = max(
+                    Decimal(0),
+                    finalize_quantity(by_order.pop(order_id), reducer.aggregation.func),
+                )
+        unbilled = [group for group in groups if group[0][0] is None]
+        if unbilled:
+            key = (reducer.id, customer.id)
+            pending = await reducer_service.get_credits(
+                session, reducer.organization_id, [key]
+            )
+            credits[max(unbilled, key=lambda group: group[1])] = max(
+                Decimal(pending[key][1]), Decimal(0)
+            )
+        return credits
 
     async def get_meter_ids(
         self, session: AsyncReadSession, subscription: Subscription
@@ -426,6 +606,45 @@ def get_meter_charge(
     )
 
 
+def merge_totals(totals: Sequence[BucketTotals]) -> BucketTotals:
+    return BucketTotals(
+        merge_summaries([total.summary for total in totals]),
+        min(total.start for total in totals),
+        max(total.end for total in totals),
+        any(total.has_open for total in totals),
+        any(total.has_unbilled for total in totals),
+    )
+
+
+def get_amount(interval: BillingInterval, units: Decimal) -> int:
+    price = interval.product_price
+    if interval.usage_policy != UsagePolicy.charge or not is_metered_price(price):
+        return 0
+    amount, _ = price.get_amount_and_label(float(units))
+    return amount
+
+
+def get_interval_generation(
+    interval: BillingInterval,
+    generation: int,
+    order_id: UUID | None,
+    totals: BucketTotals,
+    function: AggregationFunction,
+) -> IntervalGeneration:
+    units = finalize_quantity(totals.summary, function)
+    if interval.usage_policy != UsagePolicy.charge:
+        status = BillingIntervalGenerationStatus.not_charged
+    elif totals.has_open:
+        status = BillingIntervalGenerationStatus.open
+    elif totals.has_unbilled:
+        status = BillingIntervalGenerationStatus.unbilled
+    else:
+        status = BillingIntervalGenerationStatus.billed
+    return IntervalGeneration(
+        generation, order_id, units, get_amount(interval, units), status
+    )
+
+
 def get_period_share(
     function: AggregationFunction,
     windows: Sequence[UsageWindow],
@@ -599,10 +818,12 @@ def resolve_ownership(
     subscription_starts: Mapping[UUID, datetime | None],
     *,
     cutoff: datetime,
+    charged_only: bool = True,
 ) -> tuple[UsageWindow, ...]:
     """Chargeable windows before `cutoff`, each owned by the covering interval of
     the earliest started subscription. Usage won by a trial or paused interval is
-    excluded, not passed to the next subscription."""
+    excluded, not passed to the next subscription, unless `charged_only` is
+    False."""
 
     def rank(interval: BillingInterval) -> tuple[bool, datetime, UUID]:
         started_at = subscription_starts[interval.subscription_id]
@@ -639,7 +860,7 @@ def resolve_ownership(
             if not covering:
                 continue
             owner = min(covering, key=rank)
-            if owner.usage_policy != UsagePolicy.charge:
+            if charged_only and owner.usage_policy != UsagePolicy.charge:
                 continue
             previous = windows[-1] if windows else None
             if (

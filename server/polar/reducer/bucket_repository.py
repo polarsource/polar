@@ -17,6 +17,7 @@ from sqlalchemy import (
     Uuid,
     and_,
     bindparam,
+    case,
     cast,
     column,
     false,
@@ -33,6 +34,7 @@ from sqlalchemy import (
     values,
 )
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.orm import aliased
 
 from polar.event.repository import EventRepository
 from polar.event.schemas import TIMESTAMP_AHEAD_TOLERANCE
@@ -52,6 +54,7 @@ from polar.models.event import EventSource
 from polar.models.reducer import ReducerKind
 
 from .redis_store import BucketId, get_reducer_bucket_key
+from .types import BucketTotals, UsageSummary
 
 INGESTED_BEFORE_TIMESTAMP_MARGIN = TIMESTAMP_AHEAD_TOLERANCE
 
@@ -309,6 +312,126 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         if end is not None:
             statement = statement.where(ReducerBucket.bucket_start < end)
         return await self.get_all(statement)
+
+    async def get_window_totals(
+        self,
+        reducer: Reducer,
+        identities: Sequence[CustomerIdentity],
+        windows: Sequence[tuple[datetime, datetime]],
+    ) -> dict[tuple[int, UUID | None, bool, int, UUID | None], BucketTotals]:
+        root = aliased(ReducerBucket)
+        window = case(
+            *(
+                (
+                    and_(
+                        ReducerBucket.bucket_start >= start,
+                        ReducerBucket.bucket_start < end,
+                    ),
+                    index,
+                )
+                for index, (start, end) in enumerate(windows)
+            ),
+        ).label("window")
+        statement = (
+            select(
+                window,
+                root.order_id,
+                root.sealed_at.is_(None),
+                ReducerBucket.generation,
+                ReducerBucket.order_id,
+                func.sum(ReducerBucket.count),
+                func.sum(ReducerBucket.sum),
+                func.min(ReducerBucket.min),
+                func.max(ReducerBucket.max),
+                func.min(ReducerBucket.bucket_start),
+                func.max(ReducerBucket.bucket_end),
+                func.bool_or(ReducerBucket.sealed_at.is_(None)),
+                func.bool_or(ReducerBucket.billed_at.is_(None)),
+            )
+            .outerjoin(
+                root,
+                and_(
+                    root.organization_id == ReducerBucket.organization_id,
+                    root.reducer_id == ReducerBucket.reducer_id,
+                    root.customer_id.is_not_distinct_from(ReducerBucket.customer_id),
+                    root.external_customer_id.is_not_distinct_from(
+                        ReducerBucket.external_customer_id
+                    ),
+                    root.bucket_start == ReducerBucket.bucket_start,
+                    root.generation == 1,
+                ),
+            )
+            .where(
+                ReducerBucket.organization_id == reducer.organization_id,
+                ReducerBucket.reducer_id == reducer.id,
+                ReducerBucket.bucket_start >= min(start for start, _ in windows),
+                ReducerBucket.bucket_start < max(end for _, end in windows),
+                ReducerBucket.count > 0,
+                _is_any_customer(identities),
+            )
+            .group_by(
+                window,
+                root.order_id,
+                root.sealed_at.is_(None),
+                ReducerBucket.generation,
+                ReducerBucket.order_id,
+            )
+        )
+        result = await self.session.execute(statement)
+        return {
+            (index, root_order_id, root_open, generation, order_id): BucketTotals(
+                UsageSummary(int(count), total, minimum, maximum),
+                start,
+                end,
+                has_open,
+                has_unbilled,
+            )
+            for (
+                index,
+                root_order_id,
+                root_open,
+                generation,
+                order_id,
+                count,
+                total,
+                minimum,
+                maximum,
+                start,
+                end,
+                has_open,
+                has_unbilled,
+            ) in result.tuples().all()
+            if index is not None
+        }
+
+    async def get_totals_by_order(
+        self,
+        reducer: Reducer,
+        identities: Sequence[CustomerIdentity],
+        order_ids: Sequence[UUID],
+    ) -> dict[UUID, UsageSummary]:
+        statement = (
+            select(
+                ReducerBucket.order_id,
+                func.sum(ReducerBucket.count),
+                func.sum(ReducerBucket.sum),
+                func.min(ReducerBucket.min),
+                func.max(ReducerBucket.max),
+            )
+            .where(
+                ReducerBucket.organization_id == reducer.organization_id,
+                ReducerBucket.reducer_id == reducer.id,
+                ReducerBucket.order_id.in_(order_ids),
+                _is_any_customer(identities),
+            )
+            .group_by(ReducerBucket.order_id)
+        )
+        result = await self.session.execute(statement)
+        return {
+            order_id: UsageSummary(int(count), total, minimum, maximum)
+            for order_id, count, total, minimum, maximum in result.tuples().all()
+            if order_id is not None
+        }
 
     async def get_all_starting_within_for_update(
         self,

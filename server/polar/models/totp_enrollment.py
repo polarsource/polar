@@ -15,8 +15,8 @@ class TOTPEnrollment(RecordModel):
     __tablename__ = "totp_enrollments"
 
     enabled: Mapped[bool] = mapped_column(nullable=False)
-    secret_encrypted: Mapped[EncryptedString | None] = mapped_column(
-        EncryptedStringType(TOTP_ENROLLMENT_SECRET_CONTEXT), nullable=True
+    secret_encrypted: Mapped[EncryptedString] = mapped_column(
+        EncryptedStringType(TOTP_ENROLLMENT_SECRET_CONTEXT), nullable=False
     )
     algorithm: Mapped[TOTPAlgorithm] = mapped_column(String, nullable=False)
     code_length: Mapped[int] = mapped_column(SmallInteger, nullable=False)
@@ -34,7 +34,6 @@ class TOTPEnrollment(RecordModel):
         )
 
     async def get_secret(self) -> str:
-        assert self.secret_encrypted is not None
         return await self.secret_encrypted.decrypt(id=str(self.id))
 
     async def to_dataclass(self) -> TOTPEnrollmentDataclass:

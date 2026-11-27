@@ -42,7 +42,6 @@ export type IngestionEvent =
   | models.EventCreateCustomer
   | models.EventCreateExternalCustomer
 
-// The camelCase event of the old SDK that 0.4 users pass to ingest()
 export type IngestionCamelCaseEvent = {
   name: string
   timestamp?: Date | string
@@ -118,7 +117,6 @@ const snakeCaseKeys: Record<string, string> = {
   externalMemberId: 'external_member_id',
 }
 
-// SDK 1.x sends events as given, and the API ignores camelCase keys
 const encodeEvent = (
   event: IngestionEvent | IngestionCamelCaseEvent,
 ): IngestionEvent =>

@@ -2,14 +2,14 @@ import { trace } from '@opentelemetry/api'
 import { SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base'
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
 import { PolarTraceExporter } from '@polar-sh/ingestion'
+import { createPolar } from '@polar-sh/sdk/2026-10'
 import { after } from 'next/server'
 
+const polar = createPolar({ accessToken: process.env.POLAR_ACCESS_TOKEN! })
+const metering = polar.metering()
+
 const provider = new NodeTracerProvider({
-  spanProcessors: [
-    new SimpleSpanProcessor(
-      new PolarTraceExporter({ accessToken: process.env.POLAR_ACCESS_TOKEN }),
-    ),
-  ],
+  spanProcessors: [new SimpleSpanProcessor(new PolarTraceExporter(metering))],
 })
 provider.register()
 

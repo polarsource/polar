@@ -6,6 +6,7 @@ import {
   SimpleSpanProcessor,
 } from '@opentelemetry/sdk-trace-base'
 import { ExportResultCode } from '@opentelemetry/core'
+import type { Metering } from '@polar-sh/sdk/metering'
 
 const mockEventsIngest = vi.fn()
 
@@ -404,6 +405,35 @@ describe('PolarTraceExporter', () => {
     it('should resolve immediately', async () => {
       const result = await polarExporter.shutdown()
       expect(result).toBeUndefined()
+    })
+  })
+
+  describe('with polar.metering()', () => {
+    it('should track spans with a customer and flush on shutdown', async () => {
+      const metering = { track: vi.fn(), flush: vi.fn() }
+      const exporter = new PolarTraceExporter(metering as unknown as Metering)
+      const meteringProvider = new NodeTracerProvider({
+        spanProcessors: [new SimpleSpanProcessor(exporter)],
+      })
+      const tracer = meteringProvider.getTracer('test-tracer')
+
+      const parent = tracer.startSpan('report_generated', {
+        attributes: { externalCustomerId: 'external-123', pages: 12 },
+      })
+      parent.end()
+      tracer.startSpan('no-customer').end()
+
+      await meteringProvider.shutdown()
+
+      expect(metering.track).toHaveBeenCalledExactlyOnceWith({
+        name: 'report_generated',
+        external_customer_id: 'external-123',
+        metadata: { externalCustomerId: 'external-123', pages: 12 },
+        parent_id: undefined,
+        external_id: parent.spanContext().spanId,
+      })
+      expect(metering.flush).toHaveBeenCalledOnce()
+      expect(mockEventsIngest).not.toHaveBeenCalled()
     })
   })
 })

@@ -1,7 +1,8 @@
 import type { SpanExporter, ReadableSpan } from '@opentelemetry/sdk-trace-base'
 import { ExportResultCode, type ExportResult } from '@opentelemetry/core'
+import type { Metering } from '@polar-sh/sdk/metering'
 import {
-  createTokenClient,
+  Ingestion,
   type IngestionEvent,
   type IngestionTokenConfig,
 } from '../ingestion'
@@ -58,7 +59,17 @@ const convertSpanToPolarEvent = (span: ReadableSpan): IngestionEvent | null => {
 }
 
 export class PolarTraceExporter implements SpanExporter {
-  constructor(private options: IngestionTokenConfig) {}
+  private ingest: (events: IngestionEvent[]) => Promise<unknown>
+  private metering?: Metering
+
+  constructor(options: IngestionTokenConfig | Metering) {
+    if ('track' in options) {
+      this.metering = options
+      this.ingest = Ingestion(options).ingest
+    } else {
+      this.ingest = Ingestion(options).ingest
+    }
+  }
 
   async export(
     spans: ReadableSpan[],
@@ -75,11 +86,7 @@ export class PolarTraceExporter implements SpanExporter {
         .map(convertSpanToPolarEvent)
         .filter((event) => event !== null)
 
-      const polar = createTokenClient(this.options)
-
-      await polar.events.ingest({
-        events: payload,
-      })
+      await this.ingest(payload)
 
       resultCallback({ code: ExportResultCode.SUCCESS })
     } catch (err) {
@@ -87,7 +94,11 @@ export class PolarTraceExporter implements SpanExporter {
     }
   }
 
+  async forceFlush() {
+    await this.metering?.flush()
+  }
+
   shutdown() {
-    return Promise.resolve()
+    return this.forceFlush()
   }
 }

@@ -1,7 +1,7 @@
 import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
-import { UsageBillingMock } from './UsageBillingMock'
+import { HeroTiles } from '../Hero/HeroTiles'
 
 interface Feature {
   label: string
@@ -31,7 +31,7 @@ export const UsageBilling = () => (
         gap={{ base: '3xl', lg: '3xl' }}
         alignItems="center"
       >
-        <UsageBillingMock />
+        <HeroTiles />
         <Box flexDirection="column" rowGap="3xl">
           <Box display="block">
             <Text variant="heading-s" as="span">

@@ -1831,6 +1831,28 @@ class TestCreate:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
+    async def test_customer_email_on_previous_meter_version(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        customer: Customer,
+        pro_versions: tuple[Product, Product],
+    ) -> None:
+        pro_v1, pro_v2 = pro_versions
+
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductsCreate(products=[pro_v2.id], customer_email=customer.email),
+            auth_subject,
+        )
+
+        assert (checkout.product, checkout.customer) == (pro_v1, None)
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
     async def test_ad_hoc_prices_keep_the_requested_version(
         self,
         session: AsyncSession,

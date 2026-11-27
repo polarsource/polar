@@ -25,6 +25,7 @@ type Settings = {
   payments: { currency: string; tax: schemas['TaxBehaviorOption'] }
   subscriptions: schemas['ConfigSettingsSubscriptionsRead']
   customer_portal: schemas['ConfigSettingsCustomerPortalRead']
+  customer_notifications: schemas['ConfigSettingsCustomerNotificationsRead']
 }
 
 export const plural = (count: number, noun: string) =>
@@ -139,10 +140,30 @@ export const customerPortalSettings = ({
   show_metered_usage: usage.show,
 })
 
+export const customerEmailSettings = (
+  emails: schemas['OrganizationCustomerEmailSettings'],
+): Settings['customer_notifications'] => ({
+  send_order_confirmation: emails.order_confirmation,
+  send_subscription_confirmation: emails.subscription_confirmation,
+  send_trial_conversion_reminder: emails.subscription_trial_conversion_reminder,
+  send_trial_converted: emails.subscription_cycled_after_trial,
+  send_renewal_reminder: emails.subscription_renewal_reminder,
+  send_subscription_cycled: emails.subscription_cycled,
+  send_card_expiring: emails.payment_method_expiration_reminder,
+  send_subscription_past_due: emails.subscription_past_due,
+  send_subscription_updated: emails.subscription_updated,
+  send_subscription_paused: emails.subscription_paused,
+  send_subscription_resumed: emails.subscription_resumed,
+  send_subscription_canceled: emails.subscription_cancellation,
+  send_subscription_uncanceled: emails.subscription_uncanceled,
+  send_subscription_revoked: emails.subscription_revoked,
+})
+
 export const settingsFields = ({
   payments,
   subscriptions,
   customer_portal,
+  customer_notifications,
 }: Settings) => ({
   default_payment_currency: payments.currency.toUpperCase(),
   default_tax_behavior: taxBehaviorOptionDisplayNames[payments.tax],
@@ -162,6 +183,12 @@ export const settingsFields = ({
   allow_pausing: yesNo(customer_portal.allow_pausing),
   allow_email_changes: yesNo(customer_portal.allow_email_changes),
   show_metered_usage: yesNo(customer_portal.show_metered_usage),
+  ...Object.fromEntries(
+    Object.entries(customer_notifications).map(([field, send]) => [
+      field,
+      yesNo(send),
+    ]),
+  ),
 })
 
 const listFieldLabels: Record<string, string> = {

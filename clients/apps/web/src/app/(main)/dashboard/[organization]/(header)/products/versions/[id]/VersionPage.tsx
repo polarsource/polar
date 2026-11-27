@@ -19,7 +19,12 @@ import { notFound } from 'next/navigation'
 import { Fragment } from 'react'
 import { PublishedAt } from '../PublishedAt'
 import { VersionDiff } from './VersionDiff'
-import { customerPortalSettings, fieldLabel, settingsFields } from './format'
+import {
+  customerEmailSettings,
+  customerPortalSettings,
+  fieldLabel,
+  settingsFields,
+} from './format'
 import { VersionTitle } from './VersionTitle'
 
 type Organization = schemas['Organization']
@@ -204,6 +209,9 @@ export default function VersionPage({
           subscriptions: organization.subscription_settings,
           customer_portal: customerPortalSettings(
             organization.customer_portal_settings,
+          ),
+          customer_notifications: customerEmailSettings(
+            organization.customer_email_settings,
           ),
         })
       : undefined

@@ -178,14 +178,22 @@ Call `await actor.warmup()` inside the client context to warm the customer's sta
 across all configured Outpost reducers before reading a meter.
 
 ```python
-async with PolarAsync(token, outpost={"redis": "redis://localhost:6379"}) as polar:
+from polar.metering.queue.redis import RedisEventQueue
+
+redis_url = "redis://localhost:6379"
+async with PolarAsync(
+    token,
+    event_queue=RedisEventQueue(redis_url, stream="my-app:production:org:events"),
+    outpost={"redis": redis_url},
+) as polar:
     actor = polar.actor(external_customer_id="customer_123")
     await actor.track(name="api_request")
     usage = await actor.meter("meter_uuid")
 ```
 
-For durable delivery, pass a `RedisEventQueue` as `event_queue`. Use a different
-queue stream for each Polar environment and organization. When Outpost and the
+Outpost needs a `RedisEventQueue` as `event_queue`: an event Outpost has counted stays in
+Redis until Polar takes it. Use a different queue stream for each Polar environment and
+organization. When Outpost and the
 queue use the same Redis URL, they share a Redis client. If you pass your own
 asynchronous Redis client, close it after `PolarAsync` exits.
 

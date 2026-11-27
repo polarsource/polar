@@ -1,16 +1,11 @@
 import * as Option from 'effect/Option'
 import * as Schema from 'effect/Schema'
+import { type FetchClient, meteredClient, postedPath } from './fetch'
 import type { Ingest, Usage } from './usage'
 
-type Fetch = (
-  input: string | URL | Request,
-  init?: RequestInit,
-) => Promise<Response>
-
-export type LLMStrategyOpenAI = {
+export type LLMStrategyOpenAI = FetchClient & {
   readonly chat: object
   readonly responses: object
-  withOptions(options: { fetch: Fetch }): unknown
 }
 
 export const isOpenAI = (model: object): model is LLMStrategyOpenAI =>
@@ -67,17 +62,10 @@ const openAIUsage = ({ usage }: typeof OpenAIPayload.Type): Usage =>
         cachedInputTokens: usage.input_tokens_details?.cached_tokens ?? 0,
       }
 
-const generation = (input: string | URL | Request, init?: RequestInit) => {
-  const url = input instanceof Request ? input.url : String(input)
-  const method =
-    init?.method ?? (input instanceof Request ? input.method : 'GET')
-
-  return method.toUpperCase() === 'POST'
-    ? /\/(chat\/completions|responses(\/compact)?)$/.exec(
-        new URL(url).pathname,
-      )?.[1]
-    : undefined
-}
+const generation = (input: string | URL | Request, init?: RequestInit) =>
+  /\/(chat\/completions|responses(\/compact)?)$/.exec(
+    postedPath(input, init) ?? '',
+  )?.[1]
 
 const decodeChatStream = Schema.decodeUnknownOption(
   Schema.fromJsonString(
@@ -110,76 +98,23 @@ const withUsage = (input: string | URL | Request, init?: RequestInit) => {
     : init
 }
 
-// The SDK's helpers (parse, stream, runTools) bypass a wrapped create(), so meter at fetch
-export const openAIClient = (client: LLMStrategyOpenAI, ingest: Ingest) => {
-  const meter = async (text: string, request?: RequestInit) => {
-    const payload = Option.getOrUndefined(decodePayload(text))
+export const openAIClient = (client: LLMStrategyOpenAI, ingest: Ingest) =>
+  meteredClient(client, {
+    generates: (input, init) => generation(input, init) !== undefined,
+    request: withUsage,
+    read: (request) => async (text) => {
+      const payload = Option.getOrUndefined(decodePayload(text))
 
-    if (!payload) {
-      return
-    }
-
-    const body = 'response' in payload ? payload.response : payload
-    const model =
-      body.model ?? Option.getOrUndefined(decodeModel(request?.body))?.model
-
-    if (model) {
-      await ingest({ vendor: 'openai', model }, openAIUsage(body))
-    }
-  }
-
-  const meterEvents = () => {
-    const decoder = new TextDecoder()
-    let buffer = ''
-
-    return new TransformStream<Uint8Array, Uint8Array>({
-      transform: async (chunk, controller) => {
-        const text = buffer + decoder.decode(chunk, { stream: true })
-        const lines = text.split('\n')
-        buffer = lines.pop() ?? ''
-
-        for (const line of lines) {
-          if (line.startsWith('data:')) {
-            await meter(line.slice(5))
-          }
-        }
-
-        controller.enqueue(chunk)
-      },
-    })
-  }
-
-  // Private in the SDK's types, but it holds the app's own fetch
-  const fetch: Fetch = Reflect.get(client, 'fetch') ?? globalThis.fetch
-
-  return client.withOptions({
-    fetch: async (input, init) => {
-      const response = await fetch(input, withUsage(input, init))
-      const type = response.headers.get('content-type') ?? ''
-
-      if (!response.ok || !response.body || !generation(input, init)) {
-        return response
+      if (!payload) {
+        return
       }
 
-      if (type.includes('text/event-stream')) {
-        return new Response(response.body.pipeThrough(meterEvents()), {
-          status: response.status,
-          statusText: response.statusText,
-          headers: response.headers,
-        })
-      }
+      const body = 'response' in payload ? payload.response : payload
+      const model =
+        body.model ?? Option.getOrUndefined(decodeModel(request?.body))?.model
 
-      if (type.includes('application/json')) {
-        await meter(
-          await response
-            .clone()
-            .text()
-            .catch(() => ''),
-          init,
-        )
+      if (model) {
+        await ingest({ vendor: 'openai', model }, openAIUsage(body))
       }
-
-      return response
     },
   })
-}

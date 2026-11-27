@@ -101,9 +101,9 @@ Want to report events regarding Large Language Model usage, S3 file uploads or s
 
 ### LLM Strategy
 
-Wrap any LLM model from the `@ai-sdk/*` library, a TanStack AI text adapter, or an OpenAI client, to automatically fire prompt- & completion tokens used by every model call.
+Wrap any LLM model from the `@ai-sdk/*` library, a TanStack AI text adapter, or an OpenAI or Anthropic client, to automatically fire prompt- & completion tokens used by every model call.
 
-Works with AI SDK 5, 6 and 7, TanStack AI 1.x, and the OpenAI SDK 7.x.
+Works with AI SDK 5, 6 and 7, TanStack AI 1.x, the OpenAI SDK 7.x, and the Anthropic SDK 0.130 and later.
 
 ```
 pnpm add @polar-sh/ingestion ai @ai-sdk/openai
@@ -232,6 +232,66 @@ export async function POST(req: Request) {
   })
 
   return Response.json({ text: response.output_text })
+}
+```
+
+#### Anthropic SDK
+
+Pass an `@anthropic-ai/sdk` client. `client()` returns a copy of it, and every Messages call made with that copy is ingested, streamed or not, including `messages.stream()`, `messages.parse()`, the tool runner and `beta.messages`. Anthropic reports cache reads and writes apart from the input tokens, so both are added to `inputTokens`, and cache reads are also reported as `cachedInputTokens`. Cache writes aren't reported on their own. Anthropic bills them above the input rate (1.25x for a 5-minute cache, 2x for a 1-hour cache), so the cost example below, which prices them as plain input tokens, comes out a little low when you use prompt caching. A streamed message is ingested when it finishes, so a stream you abort isn't. Token counting and message batches aren't ingested. The Bedrock and Vertex clients are untested.
+
+```
+pnpm add @polar-sh/ingestion @anthropic-ai/sdk
+```
+
+```typescript
+import Anthropic from '@anthropic-ai/sdk'
+import { Ingestion } from '@polar-sh/ingestion'
+import { LLMStrategy } from '@polar-sh/ingestion/strategies/LLM'
+
+// Cents per million tokens
+const prices: Record<
+  string,
+  { input: number; cachedInput: number; output: number }
+> = {
+  'claude-opus-5-5': { input: 400, cachedInput: 20, output: 2000 },
+  'claude-sonnet-5-5': { input: 200, cachedInput: 10, output: 1000 },
+}
+
+const llmIngestion = Ingestion({ accessToken: process.env.POLAR_ACCESS_TOKEN })
+  .strategy(new LLMStrategy(new Anthropic()))
+  // The model is picked per call, and ctx.model is the name the API reports.
+  // ctx.inputTokens includes the cached tokens, which Anthropic bills at a lower rate
+  .cost((ctx) => {
+    const price = prices[ctx.model]
+
+    return {
+      amount: price
+        ? ((ctx.inputTokens - ctx.cachedInputTokens) * price.input +
+            ctx.cachedInputTokens * price.cachedInput +
+            ctx.outputTokens * price.output) /
+          1_000_000
+        : 0,
+      currency: 'usd',
+    }
+  })
+  .ingest('anthropic-usage')
+
+export async function POST(req: Request) {
+  const { prompt } = await req.json()
+
+  const anthropic = llmIngestion.client({
+    customerId: req.headers.get('X-Polar-Customer-Id') ?? '',
+  })
+
+  const text = await anthropic.messages
+    .stream({
+      model: 'claude-opus-5-5',
+      max_tokens: 64000,
+      messages: [{ role: 'user', content: prompt }],
+    })
+    .finalText()
+
+  return Response.json({ text })
 }
 ```
 

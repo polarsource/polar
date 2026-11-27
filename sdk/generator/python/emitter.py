@@ -154,8 +154,6 @@ class PythonEmitter(EmitterBase):
             ("tests", "__init__.py"),
             ("tests", "test_base.py"),
             ("tests", "metering", "__init__.py"),
-            ("tests", "metering", "conftest.py"),
-            ("tests", "metering", "test_metering.py"),
             ("tests", "metering", "queue", "__init__.py"),
             ("tests", "metering", "queue", "test_memory.py"),
             ("tests", "metering", "queue", "test_redis.py"),

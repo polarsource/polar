@@ -1,25 +1,46 @@
 ---
-title: "Create an OAuth 2.0 Client"
+title: "Create an OAuth 2.0 client"
 sidebarTitle: "Create a client"
+description: "Register an OAuth 2.0 client in Polar to get the Client ID and Client Secret your app needs before it can connect users."
 ---
 
-Before being able to make authentication requests, you'll need an **OAuth2 Client**. It's the entity that'll identify you, as a third-party developer, between Polar and the final user.
+An **OAuth 2.0 client** identifies your app to Polar and to the users who connect it. Create one before you [connect users](/integrate/oauth2/connect).
 
-You can manage them from your [User Settings](https://polar.sh/settings#oauth)
+Clients belong to your user account, not to an organization. Create a separate client in the [sandbox](/integrate/sandbox) for development.
 
-Here are the required fields:
+## Create a client
 
-* *Application Name*: the name of the application that'll be shown to the final users.
-* *Client Type*: the type of client you are creating. [Read more](#public-clients)
-* *Redirect URIs*: for security reasons, you need to declare your application URL where the users will be redirected after granting access to their data.
-  <Note>
-  When configuring your OAuth client, you must use an `https://` URL for security reasons. We block `http://` URLs, except when the hostname is `localhost`. This exception allows you to use `http://localhost` for convenient testing in development mode.
-  </Note>
-* *Scopes*: the list of scopes your app will be able to ask for. To improve privacy and security, select only the scopes you really need for your application.
-* *Homepage URL*: the URL of your application. It'll be shown to the final users on the authorization page.
+- Open [**Account Settings → OAuth Apps**](https://polar.sh/dashboard/account/developer)
+- Click **Create OAuth App**
+- Fill in the fields below
+- Click **Create**
 
-Optionally, you can also add a **terms of service** and **privacy policy** URL. They'll be shown to the final users on the authorization page.
+| Field | Description |
+| --- | --- |
+| **Application Name** | Shown to users on the consent screen. |
+| **Client Type** | **Confidential Client** for apps with a server that can keep a secret. **Public Client** for single-page, mobile and desktop apps. See [Public clients](/integrate/oauth2/connect#public-clients). |
+| **Redirect URIs** | Where Polar sends users after they approve access. Must use `https://`, except on `localhost`, so `http://localhost` works during development. |
+| **Scopes** | The scopes your app may request. Select only the ones it needs. |
+| **Homepage URL** | Your app's URL, shown on the consent screen. |
+| **Terms of Service**, **Privacy Policy** | Optional links, shown on the consent screen. |
 
-Once your client is created, you'll get a **Client ID** and a **Client Secret**. You'll need those values to make authentication requests.
+<Note>Dashboard or API only. Not available from the CLI or MCP server.</Note>
 
-Those values are super sensitive and should be kept secret. They allow making authentication requests on Polar!
+You can also register clients from code with [Create Client](/api-reference/current/oauth2/create-client), which follows the OAuth 2.0 Dynamic Client Registration standard.
+
+## Store the credentials
+
+After you create the client, Polar shows its **Client ID** (`polar_ci_…`) and **Client Secret** (`polar_cs_…`).
+
+To find them later, open the app in **Account Settings → OAuth Apps** and click **Reveal client secret**. The same page lets you edit the client's fields or delete it.
+
+<Warning>
+  The Client Secret lets anyone request tokens as your app. Keep it on your server, never in a browser or mobile app, and never commit it. A public client has no secret to protect, which is why it must use PKCE.
+</Warning>
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Connect users](/integrate/oauth2/connect) | Authorize users and exchange codes for tokens |
+| [OAuth 2.0 overview](/integrate/oauth2/introduction) | When to use OAuth 2.0 instead of an access token |

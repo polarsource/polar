@@ -6,6 +6,7 @@ import { schemas } from '@polar-sh/client'
 import { SegmentedControl } from '@polar-sh/orbit'
 import { useState } from 'react'
 import { ContextCard } from '../Shared/ContextCard'
+import { buildCustomerEventsPath } from '@/utils/event'
 
 type SourceFilter = 'system' | 'all'
 
@@ -49,7 +50,7 @@ export const CustomerTimeline = ({
           customerId={customer.id}
           source={source === 'system' ? 'system' : undefined}
           limit={20}
-          viewAllHref={`/dashboard/${organization.slug}/analytics/events?customerIds=${customer.id}`}
+          viewAllHref={buildCustomerEventsPath(organization.slug, customer.id)}
           emptyMessage="Events from this customer will appear here."
         />
       </div>

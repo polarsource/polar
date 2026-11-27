@@ -14,7 +14,8 @@ from polar.backoffice.routing import BackofficeRouter
 from polar.dispute.repository import DisputeRepository
 from polar.file.service import file as file_service
 from polar.kit.pagination import PaginationParamsQuery, count_subquery
-from polar.models import Organization, User
+from polar.models import BackofficeUser, Organization, User
+from polar.models.backoffice_user_session import BackofficeUserSession
 from polar.models.support_case import (
     DisputeSupportCase,
     SupportCase,
@@ -23,7 +24,6 @@ from polar.models.support_case import (
     SupportCaseMessageAuthorKind,
     SupportCaseType,
 )
-from polar.models.user_session import UserSession
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.support_case.pdf import is_mergeable
 from polar.support_case.repository import (
@@ -334,7 +334,7 @@ async def take_case(
     case_id: UUID4,
     return_to: Annotated[str | None, Query()] = None,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: BackofficeUserSession = Depends(get_admin),
 ) -> HXRedirectResponse:
     """Assign a case to the acting staff member (advisory; any case type)."""
     case = await SupportCaseRepository.from_session(session).get_by_id(case_id)
@@ -350,7 +350,7 @@ async def release_case(
     case_id: UUID4,
     return_to: Annotated[str | None, Query()] = None,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: BackofficeUserSession = Depends(get_admin),
 ) -> HXRedirectResponse:
     """Clear a case's assignee."""
     case = await SupportCaseRepository.from_session(session).get_by_id(case_id)
@@ -366,7 +366,7 @@ async def reply_case(
     case_id: UUID4,
     return_to: Annotated[str | None, Query()] = None,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: BackofficeUserSession = Depends(get_admin),
 ) -> HXRedirectResponse:
     """Post a staff reply (or internal note) to any case, then notify the
     organization if it's merchant-visible. Internal notes are allowed on closed
@@ -411,7 +411,7 @@ async def reply_case(
 async def download_attachment(
     attachment_id: UUID4,
     session: AsyncSession = Depends(get_db_read_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: BackofficeUserSession = Depends(get_admin),
 ) -> RedirectResponse:
     """Redirect to a presigned download URL for a case attachment."""
     del user_session  # admin gate only
@@ -433,7 +433,7 @@ async def merge_case_attachments(
     request: Request,
     case_id: UUID4,
     session: AsyncSession = Depends(get_db_read_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: BackofficeUserSession = Depends(get_admin),
 ) -> None:
     """Enqueue the merge and respond with the region in its pending,
     self-polling state."""
@@ -498,7 +498,7 @@ async def merged_attachments_partial(
     merging: Annotated[int, Query(ge=0)] = 0,
     attempts: Annotated[int, Query(ge=0)] = 0,
     session: AsyncSession = Depends(get_db_read_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: BackofficeUserSession = Depends(get_admin),
 ) -> None:
     """The "Merged PDFs" region, polled while a merge is running."""
     del user_session
@@ -522,7 +522,7 @@ async def case_detail(
     case_id: UUID4,
     return_to: Annotated[str | None, Query()] = None,
     session: AsyncSession = Depends(get_db_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: BackofficeUserSession = Depends(get_admin),
 ) -> None:
     case, organization = await _load_case_and_organization(session, case_id)
 
@@ -532,15 +532,32 @@ async def case_detail(
     is_open = await message_repository.is_open(case.id)
     messages = await message_repository.list_by_case(case.id, visible_to=None)
 
-    author_ids = {m.author_user_id for m in messages if m.author_user_id is not None}
-    if case.assigned_user_id is not None:
-        author_ids.add(case.assigned_user_id)
+    author_ids = {
+        m.author_user_id
+        for m in messages
+        if m.author_user_id is not None
+        and m.author_kind != SupportCaseMessageAuthorKind.platform
+    }
+    backoffice_ids = {
+        m.backoffice_author_user_id
+        for m in messages
+        if m.backoffice_author_user_id is not None
+    }
+    if case.backoffice_assigned_user_id is not None:
+        backoffice_ids.add(case.backoffice_assigned_user_id)
     author_emails: dict[uuid.UUID, str] = {}
     if author_ids:
-        email_result = await session.execute(
+        result = await session.execute(
             select(User.id, User.email).where(User.id.in_(author_ids))
         )
-        author_emails = {row.id: row.email for row in email_result.all()}
+        author_emails.update((row.id, row.email) for row in result)
+    if backoffice_ids:
+        result = await session.execute(
+            select(BackofficeUser.id, BackofficeUser.email).where(
+                BackofficeUser.id.in_(backoffice_ids)
+            )
+        )
+        author_emails.update((row.id, row.email) for row in result)
 
     attachments_by_message: dict[uuid.UUID, list[SupportCaseAttachment]] = {}
     attachments = await SupportCaseAttachmentRepository.from_session(
@@ -604,7 +621,7 @@ async def list_cases(
     type: Annotated[str, Query()] = "all",
     self_service: Annotated[str, Query()] = "all",
     session: AsyncSession = Depends(get_db_read_session),
-    user_session: UserSession = Depends(get_admin),
+    user_session: BackofficeUserSession = Depends(get_admin),
 ) -> None:
     statement = cases_statement(
         status=status,

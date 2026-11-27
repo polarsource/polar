@@ -2,19 +2,25 @@ import type { ActiveOrganization } from '@/schemas/Auth'
 import type {
   AppliedEntry,
   LoadedConfig,
+  PlanCatalogs,
   PlanResult,
 } from '@/schemas/BillingConfig'
-import { name } from '@/utils/billing-config/describe'
+import { isSet, name } from '@/utils/billing-config/describe'
 import {
   type Mark,
   fieldChanges,
   lineDiff,
+  updatedIds,
   valueLines,
 } from '@/utils/billing-config/entries'
 import { formatProblems } from '@/utils/billing-config/problems'
-import { errors, unchanged } from '@/utils/billing-config/review'
-import { shownDiff } from '@/utils/billing-config/sentences'
-import { documents } from '@/utils/billing-config/tree'
+import {
+  catalogChange,
+  draftNote,
+  errors,
+  unchanged,
+} from '@/utils/billing-config/review'
+import { shownDiff, usedMeters } from '@/utils/billing-config/sentences'
 
 const HEADINGS: Record<string, string> = {
   settings: 'Settings',
@@ -29,8 +35,6 @@ const heading = (section: string) => {
     HEADINGS[section] ?? `${words.charAt(0).toUpperCase()}${words.slice(1)}`
   )
 }
-
-const isSet = (value: unknown) => value !== null && value !== undefined
 
 const escape = (text: string) => text.replace(/[\\`*_[\]|<>]/g, '\\$&')
 
@@ -58,12 +62,68 @@ const valueRows = (
     : [`${mark}   ${field}`, ...lines.map((line) => `${mark}     ${line}`)]
 }
 
-const entryLines = (
-  { section, id, action, diff }: AppliedEntry,
-  document: unknown,
+const ids = (input: unknown): string[] =>
+  Array.isArray(input) ? input.map((id) => name(id)) : []
+
+const ENTRY_MARKS: Record<AppliedEntry['action'], string> = {
+  created: '+',
+  removed: '-',
+  updated: ' ',
+  unchanged: ' ',
+}
+
+const changeRows = (
+  {
+    field,
+    before,
+    after,
+  }: { field: string; before?: unknown; after?: unknown },
+  created: boolean,
+  width: number,
 ) => {
+  const inline =
+    created ||
+    !isSet(before) ||
+    !isSet(after) ||
+    (single(before) && single(after))
+  if (!inline) {
+    return [
+      `    ${field}`,
+      ...lineDiff(valueLines(before), valueLines(after)).map(
+        ({ mark, line }) => `${mark}     ${line}`,
+      ),
+    ]
+  }
+  return [
+    ...(!created && isSet(before) ? valueRows('-', width, field, before) : []),
+    ...(isSet(after) ? valueRows('+', width, field, after) : []),
+  ]
+}
+
+const entryLines = (
+  entry: AppliedEntry,
+  updated: { benefits: ReadonlySet<string>; meters: ReadonlySet<string> },
+) => {
+  const { section, id, action, diff } = entry
   const created = action === 'created'
-  const changes = fieldChanges(shownDiff(section, diff, document), section)
+  const benefits = diff.find(({ field }) => field === 'benefits')
+  const grantedBefore = ids(benefits?.before)
+  const granted = ids(benefits?.after)
+  const regranted = granted.filter(
+    (id) => grantedBefore.includes(id) && updated.benefits.has(id),
+  )
+  // A product granting an updated benefit lists the same ids before and after
+  const sameIds =
+    grantedBefore.length === granted.length &&
+    granted.every((id) => grantedBefore.includes(id))
+  const changes = fieldChanges(
+    shownDiff(
+      section,
+      sameIds ? diff.filter(({ field }) => field !== 'benefits') : diff,
+      undefined,
+    ),
+    section,
+  )
   const width = Math.max(
     0,
     ...changes
@@ -71,51 +131,66 @@ const entryLines = (
       .map(({ field }) => field.length),
   )
   return [
-    `${created ? '+' : ' '} ${name(id)}`,
-    ...changes.flatMap(({ field, before, after }) =>
-      created ||
-      !isSet(before) ||
-      !isSet(after) ||
-      (single(before) && single(after))
-        ? [
-            ...(!created && isSet(before)
-              ? valueRows('-', width, field, before)
-              : []),
-            ...(isSet(after) ? valueRows('+', width, field, after) : []),
-          ]
-        : [
-            `    ${field}`,
-            ...lineDiff(valueLines(before), valueLines(after)).map(
-              ({ mark, line }) => `${mark}     ${line}`,
-            ),
-          ],
-    ),
+    `${ENTRY_MARKS[action]} ${name(id)}`,
+    ...changes.flatMap((change) => changeRows(change, created, width)),
+    ...usedMeters(entry, 'after')
+      .filter((id) => updated.meters.has(id))
+      .map((id) => `    meter  ${id} (updated)`),
+    ...regranted.map((id) => `    benefits  ${id} (updated)`),
   ]
 }
+
+const pendingDraft = (
+  config: LoadedConfig,
+  { entries }: PlanResult,
+  catalogs: PlanCatalogs | undefined,
+) =>
+  catalogs?.draft
+    ? `\n>\n> ${escape(plain(draftNote(config.file, catalogs.draft, entries).join(' ')))}`
+    : ''
+
+const conflicted = (catalogs: PlanCatalogs | undefined) =>
+  (catalogs?.draft?.conflicts.length ?? 0) > 0
 
 const callout = (
   config: LoadedConfig,
   organization: ActiveOrganization,
   result: PlanResult,
+  catalogs: PlanCatalogs | undefined,
 ) => {
   const where = `**${escape(organization.name)}** in ${organization.environment}`
   if (errors(result.issues) > 0) {
-    return `> [!CAUTION]\n> \`${config.file}\` can't be applied to ${where}. Fix the errors below first.`
+    return `> [!CAUTION]\n> \`${config.file}\` can't be saved to the draft of ${where}. Fix the errors below first.`
   }
-  return `> [!NOTE]\n> Applying the config in this pull request changes billing for ${where}. Review every change below before it's applied.`
+  if (conflicted(catalogs)) {
+    return `> [!WARNING]\n> The unpublished draft of ${where} has changes this config doesn't. \`polar config draft\` stops until they are in the file or discarded with \`--force\`.`
+  }
+  return `> [!NOTE]\n> Publishing the config in this pull request changes billing for ${where}. Review every change below before it's published.${pendingDraft(config, result, catalogs)}`
 }
 
 const metadata = (
   config: LoadedConfig,
   organization: ActiveOrganization,
-  { entries }: PlanResult,
+  { entries, catalog }: PlanResult,
 ) => {
   const count = (action: AppliedEntry['action']) =>
     entries.filter((entry) => entry.action === action).length
+  const columns = [
+    ['Organization', escape(organization.name)],
+    ['Environment', organization.environment],
+    ['Config', `\`${config.file}\``],
+    [
+      'Changes',
+      `${count('updated')} to change, ${count('created')} to add, ${count('removed') > 0 ? `${count('removed')} to remove, ` : ''}${count('unchanged')} unchanged`,
+    ],
+    ...(catalog
+      ? [['Catalog', escape(catalogChange(catalog, (text) => text))]]
+      : []),
+  ]
   return [
-    '| Organization | Environment | Config | Changes |',
-    '| --- | --- | --- | --- |',
-    `| ${escape(organization.name)} | ${organization.environment} | \`${config.file}\` | ${count('updated')} to change, ${count('created')} to add, ${count('unchanged')} unchanged |`,
+    `| ${columns.map(([label]) => label).join(' | ')} |`,
+    `| ${columns.map(() => '---').join(' | ')} |`,
+    `| ${columns.map(([, value]) => value).join(' | ')} |`,
   ].join('\n')
 }
 
@@ -123,44 +198,47 @@ export const planMarkdown = (
   config: LoadedConfig,
   organization: ActiveOrganization,
   result: PlanResult,
-) =>
-  unchanged(result.entries) && errors(result.issues) === 0
-    ? undefined
-    : [
-        '## Polar billing plan updated',
-        callout(config, organization, result),
-        metadata(config, organization, result),
-        ...[
-          ...new Set([
-            ...Object.keys(HEADINGS),
-            ...result.entries.map(({ section }) => section),
-          ]),
-        ].flatMap((section) => {
-          const webhooks = documents(config.input, 'webhooks')
-          const changed = result.entries.filter(
-            (entry) =>
-              entry.section === section && entry.action !== 'unchanged',
-          )
-          return changed.length === 0
-            ? []
-            : [
-                `#### ${escape(heading(section))}`,
-                codeBlock(
-                  plain(
-                    changed
-                      .flatMap((entry) =>
-                        entryLines(entry, webhooks.get(name(entry.id))),
-                      )
-                      .join('\n'),
-                  ),
-                  'diff',
-                ),
-              ]
-        }),
-        ...(result.issues.length > 0
-          ? [
-              '#### Problems',
-              codeBlock(plain(formatProblems(config, result.issues))),
-            ]
-          : []),
-      ].join('\n\n')
+  catalogs?: PlanCatalogs,
+) => {
+  const nothingToSay =
+    unchanged(result.entries) &&
+    errors(result.issues) === 0 &&
+    !conflicted(catalogs)
+  if (nothingToSay) return undefined
+  const updated = {
+    benefits: updatedIds(result.entries, 'benefits'),
+    meters: updatedIds(result.entries, 'meters'),
+  }
+  const sections = [
+    ...new Set([
+      ...Object.keys(HEADINGS),
+      ...result.entries.map(({ section }) => section),
+    ]),
+  ].flatMap((section) => {
+    const changed = result.entries.filter(
+      (entry) => entry.section === section && entry.action !== 'unchanged',
+    )
+    if (changed.length === 0) return []
+    return [
+      `#### ${escape(heading(section))}`,
+      codeBlock(
+        plain(
+          changed.flatMap((entry) => entryLines(entry, updated)).join('\n'),
+        ),
+        'diff',
+      ),
+    ]
+  })
+  return [
+    '## Polar billing config changed',
+    callout(config, organization, result, catalogs),
+    metadata(config, organization, result),
+    ...sections,
+    ...(result.issues.length > 0
+      ? [
+          '#### Problems',
+          codeBlock(plain(formatProblems(config, result.issues))),
+        ]
+      : []),
+  ].join('\n\n')
+}

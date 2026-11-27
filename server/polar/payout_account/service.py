@@ -6,7 +6,8 @@ import structlog
 from sqlalchemy.orm import selectinload
 
 from polar.auth.models import AuthSubject
-from polar.authz.service import get_accessible_org_ids
+from polar.auth.permission import OrganizationPermission
+from polar.authz.service import assert_organization_permission, get_accessible_org_ids
 from polar.enums import PayoutAccountType
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import StripeAccountRejectReason, stripe
@@ -40,6 +41,14 @@ class PayoutAccountExternalLinkUnsupported(PayoutAccountServiceError):
         self.account_type = account_type
         message = f"Unsupported payout account type for external link: {account_type}"
         super().__init__(message, 404)
+
+
+class PayoutAccountRejected(PayoutAccountServiceError):
+    def __init__(self) -> None:
+        super().__init__(
+            "Stripe rejected this payout account. Check your Stripe dashboard for details.",
+            409,
+        )
 
 
 class PayoutAccountSyncUnsupported(PayoutAccountServiceError):
@@ -127,6 +136,12 @@ class PayoutAccountService:
         organization = await get_payload_organization(
             session, auth_subject, payout_account_create
         )
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            organization.id,
+            OrganizationPermission.finance_manage,
+        )
 
         current = None
         if organization.payout_account_id is not None:
@@ -165,9 +180,17 @@ class PayoutAccountService:
         match payout_account.type:
             case PayoutAccountType.stripe:
                 assert payout_account.stripe_id is not None
-                account_link = await stripe.create_account_link(
-                    payout_account.stripe_id, return_path, payout_account.id
-                )
+                try:
+                    account_link = await stripe.create_account_link(
+                        payout_account.stripe_id, return_path, payout_account.id
+                    )
+                except stripe_lib.InvalidRequestError as e:
+                    # shortcut: match the observed message until a specific Stripe error code is available.
+                    if not (e.user_message or "").startswith(
+                        "An account link cannot be created for this account because the account has been rejected."
+                    ):
+                        raise
+                    raise PayoutAccountRejected() from e
                 return PayoutAccountLink(url=account_link.url)
             case _:
                 raise PayoutAccountExternalLinkUnsupported(payout_account.type)

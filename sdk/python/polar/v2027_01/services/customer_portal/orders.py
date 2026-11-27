@@ -10,16 +10,19 @@ from polar.base import (
     parse_response_json,
 )
 from polar.v2027_01.errors import (
+    CustomerPortalOrdersPay409Error,
     HTTPValidationError,
     ManualRetryLimitExceeded,
     MissingInvoiceBillingDetails,
     OrderNotEligibleForInvoice,
-    OrderNotEligibleForRetry,
-    PaymentAlreadyInProgress,
+    PaymentError,
     ResourceNotFound,
 )
 from polar.v2027_01.inputs import (
-    CustomerOrderConfirmPayment,
+    CustomerOrderCreate,
+    CustomerOrderPayConfirmationToken,
+    CustomerOrderPayPaymentMethod,
+    CustomerOrderPayWithoutCredentials,
     CustomerOrderUpdate,
 )
 from polar.v2027_01.literals import (
@@ -29,8 +32,6 @@ from polar.v2027_01.literals import (
 from polar.v2027_01.outputs import (
     CustomerOrder,
     CustomerOrderInvoice,
-    CustomerOrderPaymentConfirmation,
-    CustomerOrderPaymentStatus,
     CustomerOrderReceipt,
     ListResourceCustomerOrder,
 )
@@ -63,7 +64,7 @@ class OrdersSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -121,7 +122,7 @@ class OrdersSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -151,6 +152,43 @@ class OrdersSync(SyncServiceBase):
                 break
             page += 1
 
+    def create(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[CustomerOrderCreate],
+    ) -> CustomerOrder:
+        """
+        Prepare a draft order for the first paid period of an ended trial.
+
+        Args:
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
+            request_access_token: Access token override for this request.
+
+            **kwargs: Request body parameters
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="POST",
+            url="/v1/customer-portal/orders/",
+            path_params={},
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+            body=kwargs,
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, CustomerOrder, method_errors)
+
     def get(
         self,
         id: str,
@@ -163,7 +201,7 @@ class OrdersSync(SyncServiceBase):
 
         Args:
             id: The order ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -204,7 +242,7 @@ class OrdersSync(SyncServiceBase):
 
         Args:
             id: The order ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -234,6 +272,85 @@ class OrdersSync(SyncServiceBase):
         }
         return parse_response_json(response, CustomerOrder, method_errors)
 
+    @typing.overload
+    def pay(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[CustomerOrderPayPaymentMethod],
+    ) -> CustomerOrder: ...
+
+    @typing.overload
+    def pay(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[CustomerOrderPayConfirmationToken],
+    ) -> CustomerOrder: ...
+
+    @typing.overload
+    def pay(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[CustomerOrderPayWithoutCredentials],
+    ) -> CustomerOrder: ...
+
+    def pay(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Any,
+    ) -> CustomerOrder:
+        """
+        Submit payment for an order for asynchronous settlement.
+
+        Args:
+            id: The order ID.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
+            request_access_token: Access token override for this request.
+
+            **kwargs: Request body parameters
+
+        Raises:
+            PaymentError: Payment failed.
+            ResourceNotFound: Order not found.
+            CustomerPortalOrdersPay409Error: Order is not eligible for retry or payment is already in progress.
+            HTTPValidationError: Validation Error
+            ManualRetryLimitExceeded: Manual retry limit exceeded.
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="PATCH",
+            url="/v1/customer-portal/orders/{id}/pay",
+            path_params={
+                "id": id,
+            },
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+            body=kwargs,
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            402: PaymentError,
+            404: ResourceNotFound,
+            409: CustomerPortalOrdersPay409Error,
+            422: HTTPValidationError,
+            429: ManualRetryLimitExceeded,
+        }
+        return parse_response_json(response, CustomerOrder, method_errors)
+
     def invoice(
         self,
         id: str,
@@ -246,7 +363,7 @@ class OrdersSync(SyncServiceBase):
 
         Args:
             id: The order ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -286,7 +403,7 @@ class OrdersSync(SyncServiceBase):
 
         Args:
             id: The order ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -328,7 +445,7 @@ class OrdersSync(SyncServiceBase):
 
         Args:
             id: The order ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -355,95 +472,6 @@ class OrdersSync(SyncServiceBase):
             422: HTTPValidationError,
         }
         return parse_response_json(response, CustomerOrderReceipt, method_errors)
-
-    def get_payment_status(
-        self,
-        id: str,
-        *,
-        request_timeout: RequestTimeout | None = None,
-        request_access_token: str | None = None,
-    ) -> CustomerOrderPaymentStatus:
-        """
-        Get the current payment status for an order.
-
-        Args:
-            id: The order ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
-            request_access_token: Access token override for this request.
-
-
-        Raises:
-            ResourceNotFound: Order not found.
-            HTTPValidationError: Validation Error
-            PolarNetworkError: Raised when a network error occurs while making the request.
-            PolarRateLimitError: Raised when the rate limit is exceeded.
-            PolarServerError: Raised when the server returns a 5xx error response.
-        """
-        request = self.client.build_request(
-            method="GET",
-            url="/v1/customer-portal/orders/{id}/payment-status",
-            path_params={
-                "id": id,
-            },
-            query_params={},
-            request_timeout=request_timeout,
-            request_access_token=request_access_token,
-        )
-        response = self.client.send_request(request)
-        method_errors = {
-            404: ResourceNotFound,
-            422: HTTPValidationError,
-        }
-        return parse_response_json(response, CustomerOrderPaymentStatus, method_errors)
-
-    def confirm_retry_payment(
-        self,
-        id: str,
-        *,
-        request_timeout: RequestTimeout | None = None,
-        request_access_token: str | None = None,
-        **kwargs: typing.Unpack[CustomerOrderConfirmPayment],
-    ) -> CustomerOrderPaymentConfirmation:
-        """
-        Confirm a retry payment using a Stripe confirmation token.
-
-        Args:
-            id: The order ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
-            request_access_token: Access token override for this request.
-
-            **kwargs: Request body parameters
-
-        Raises:
-            ResourceNotFound: Order not found.
-            PaymentAlreadyInProgress: Payment already in progress.
-            OrderNotEligibleForRetry: Order not eligible for retry or payment confirmation failed.
-            ManualRetryLimitExceeded: Manual retry limit exceeded.
-            PolarNetworkError: Raised when a network error occurs while making the request.
-            PolarRateLimitError: Raised when the rate limit is exceeded.
-            PolarServerError: Raised when the server returns a 5xx error response.
-        """
-        request = self.client.build_request(
-            method="POST",
-            url="/v1/customer-portal/orders/{id}/confirm-payment",
-            path_params={
-                "id": id,
-            },
-            query_params={},
-            request_timeout=request_timeout,
-            request_access_token=request_access_token,
-            body=kwargs,
-        )
-        response = self.client.send_request(request)
-        method_errors = {
-            404: ResourceNotFound,
-            409: PaymentAlreadyInProgress,
-            422: OrderNotEligibleForRetry,
-            429: ManualRetryLimitExceeded,
-        }
-        return parse_response_json(
-            response, CustomerOrderPaymentConfirmation, method_errors
-        )
 
 
 class OrdersAsync(AsyncServiceBase):
@@ -473,7 +501,7 @@ class OrdersAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -531,7 +559,7 @@ class OrdersAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -562,6 +590,43 @@ class OrdersAsync(AsyncServiceBase):
                 break
             page += 1
 
+    async def create(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[CustomerOrderCreate],
+    ) -> CustomerOrder:
+        """
+        Prepare a draft order for the first paid period of an ended trial.
+
+        Args:
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
+            request_access_token: Access token override for this request.
+
+            **kwargs: Request body parameters
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="POST",
+            url="/v1/customer-portal/orders/",
+            path_params={},
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+            body=kwargs,
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, CustomerOrder, method_errors)
+
     async def get(
         self,
         id: str,
@@ -574,7 +639,7 @@ class OrdersAsync(AsyncServiceBase):
 
         Args:
             id: The order ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -615,7 +680,7 @@ class OrdersAsync(AsyncServiceBase):
 
         Args:
             id: The order ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -645,6 +710,85 @@ class OrdersAsync(AsyncServiceBase):
         }
         return parse_response_json(response, CustomerOrder, method_errors)
 
+    @typing.overload
+    async def pay(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[CustomerOrderPayPaymentMethod],
+    ) -> CustomerOrder: ...
+
+    @typing.overload
+    async def pay(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[CustomerOrderPayConfirmationToken],
+    ) -> CustomerOrder: ...
+
+    @typing.overload
+    async def pay(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[CustomerOrderPayWithoutCredentials],
+    ) -> CustomerOrder: ...
+
+    async def pay(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Any,
+    ) -> CustomerOrder:
+        """
+        Submit payment for an order for asynchronous settlement.
+
+        Args:
+            id: The order ID.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
+            request_access_token: Access token override for this request.
+
+            **kwargs: Request body parameters
+
+        Raises:
+            PaymentError: Payment failed.
+            ResourceNotFound: Order not found.
+            CustomerPortalOrdersPay409Error: Order is not eligible for retry or payment is already in progress.
+            HTTPValidationError: Validation Error
+            ManualRetryLimitExceeded: Manual retry limit exceeded.
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="PATCH",
+            url="/v1/customer-portal/orders/{id}/pay",
+            path_params={
+                "id": id,
+            },
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+            body=kwargs,
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            402: PaymentError,
+            404: ResourceNotFound,
+            409: CustomerPortalOrdersPay409Error,
+            422: HTTPValidationError,
+            429: ManualRetryLimitExceeded,
+        }
+        return parse_response_json(response, CustomerOrder, method_errors)
+
     async def invoice(
         self,
         id: str,
@@ -657,7 +801,7 @@ class OrdersAsync(AsyncServiceBase):
 
         Args:
             id: The order ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -697,7 +841,7 @@ class OrdersAsync(AsyncServiceBase):
 
         Args:
             id: The order ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -739,7 +883,7 @@ class OrdersAsync(AsyncServiceBase):
 
         Args:
             id: The order ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -766,92 +910,3 @@ class OrdersAsync(AsyncServiceBase):
             422: HTTPValidationError,
         }
         return parse_response_json(response, CustomerOrderReceipt, method_errors)
-
-    async def get_payment_status(
-        self,
-        id: str,
-        *,
-        request_timeout: RequestTimeout | None = None,
-        request_access_token: str | None = None,
-    ) -> CustomerOrderPaymentStatus:
-        """
-        Get the current payment status for an order.
-
-        Args:
-            id: The order ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
-            request_access_token: Access token override for this request.
-
-
-        Raises:
-            ResourceNotFound: Order not found.
-            HTTPValidationError: Validation Error
-            PolarNetworkError: Raised when a network error occurs while making the request.
-            PolarRateLimitError: Raised when the rate limit is exceeded.
-            PolarServerError: Raised when the server returns a 5xx error response.
-        """
-        request = self.client.build_request(
-            method="GET",
-            url="/v1/customer-portal/orders/{id}/payment-status",
-            path_params={
-                "id": id,
-            },
-            query_params={},
-            request_timeout=request_timeout,
-            request_access_token=request_access_token,
-        )
-        response = await self.client.send_request(request)
-        method_errors = {
-            404: ResourceNotFound,
-            422: HTTPValidationError,
-        }
-        return parse_response_json(response, CustomerOrderPaymentStatus, method_errors)
-
-    async def confirm_retry_payment(
-        self,
-        id: str,
-        *,
-        request_timeout: RequestTimeout | None = None,
-        request_access_token: str | None = None,
-        **kwargs: typing.Unpack[CustomerOrderConfirmPayment],
-    ) -> CustomerOrderPaymentConfirmation:
-        """
-        Confirm a retry payment using a Stripe confirmation token.
-
-        Args:
-            id: The order ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
-            request_access_token: Access token override for this request.
-
-            **kwargs: Request body parameters
-
-        Raises:
-            ResourceNotFound: Order not found.
-            PaymentAlreadyInProgress: Payment already in progress.
-            OrderNotEligibleForRetry: Order not eligible for retry or payment confirmation failed.
-            ManualRetryLimitExceeded: Manual retry limit exceeded.
-            PolarNetworkError: Raised when a network error occurs while making the request.
-            PolarRateLimitError: Raised when the rate limit is exceeded.
-            PolarServerError: Raised when the server returns a 5xx error response.
-        """
-        request = self.client.build_request(
-            method="POST",
-            url="/v1/customer-portal/orders/{id}/confirm-payment",
-            path_params={
-                "id": id,
-            },
-            query_params={},
-            request_timeout=request_timeout,
-            request_access_token=request_access_token,
-            body=kwargs,
-        )
-        response = await self.client.send_request(request)
-        method_errors = {
-            404: ResourceNotFound,
-            409: PaymentAlreadyInProgress,
-            422: OrderNotEligibleForRetry,
-            429: ManualRetryLimitExceeded,
-        }
-        return parse_response_json(
-            response, CustomerOrderPaymentConfirmation, method_errors
-        )

@@ -174,7 +174,7 @@ async def run_batched_update(
                         await batch_session.commit()
 
                 # https://github.com/sqlalchemy/sqlalchemy/commit/67f62aac5b49b6d048ca39019e5bd123d3c9cfb2
-                rows_updated = cast(CursorResult[Any], result).rowcount
+                rows_updated = cast(CursorResult[*tuple[Any, ...]], result).rowcount
 
                 if rows_updated == 0:
                     progress.update(

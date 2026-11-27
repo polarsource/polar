@@ -1,7 +1,7 @@
 import { bench, describe } from "vitest";
 
 import { BUCKET_COUNTS, encodeState } from "./benchmark";
-import { consumedUnits, decodeState } from "./client";
+import { consumedUnits, decodeState } from "./state";
 
 describe("decodeState", () => {
   for (const buckets of BUCKET_COUNTS) {

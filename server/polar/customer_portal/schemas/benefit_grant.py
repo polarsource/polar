@@ -1,8 +1,9 @@
 from datetime import datetime
 from typing import Annotated, Literal, TypedDict
 
-from pydantic import UUID4, Discriminator, EmailStr, TypeAdapter
+from pydantic import UUID4, Discriminator, EmailStr, Field, TypeAdapter
 
+from polar.benefit.strategies.base.schemas import BenefitGrantManualTimestamps
 from polar.benefit.strategies.custom.properties import BenefitGrantCustomProperties
 from polar.benefit.strategies.custom.schemas import BenefitCustomSubscriber
 from polar.benefit.strategies.discord.properties import BenefitGrantDiscordProperties
@@ -43,18 +44,24 @@ from polar.kit.schemas import (
     ClassName,
     IDSchema,
     MergeJSONSchema,
+    MultipleQueryFilter,
     Schema,
     SetSchemaReference,
     TimestampedSchema,
 )
+from polar.kit.versioning import QuerySchema
 from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import BenefitGrantError
 from polar.models.customer import CustomerOAuthPlatform
+from polar.order.schemas import OrderID
+from polar.subscription.schemas import SubscriptionID
 
 from .customer import CustomerPortalCustomer, CustomerPortalOAuthAccount
 
 
-class CustomerBenefitGrantBase(IDSchema, TimestampedSchema):
+class CustomerBenefitGrantBase(
+    IDSchema, TimestampedSchema, BenefitGrantManualTimestamps
+):
     granted_at: datetime | None
     revoked_at: datetime | None
     customer_id: UUID4
@@ -209,3 +216,25 @@ CustomerBenefitGrantUpdate = Annotated[
     MergeJSONSchema({"title": "CustomerBenefitGrantUpdate"}),
     Discriminator("benefit_type"),
 ]
+
+
+class CustomerPortalBenefitGrantListParams(QuerySchema):
+    query: str | None = Field(None, description="Filter by benefit description.")
+    type: MultipleQueryFilter[BenefitType] | None = Field(
+        None, title="BenefitType Filter", description="Filter by benefit type."
+    )
+    benefit_id: MultipleQueryFilter[UUID4] | None = Field(
+        None, title="BenefitID Filter", description="Filter by benefit ID."
+    )
+    checkout_id: MultipleQueryFilter[UUID4] | None = Field(
+        None, title="CheckoutID Filter", description="Filter by checkout ID."
+    )
+    order_id: MultipleQueryFilter[OrderID] | None = Field(
+        None, title="OrderID Filter", description="Filter by order ID."
+    )
+    subscription_id: MultipleQueryFilter[SubscriptionID] | None = Field(
+        None, title="SubscriptionID Filter", description="Filter by subscription ID."
+    )
+    member_id: MultipleQueryFilter[UUID4] | None = Field(
+        None, title="MemberID Filter", description="Filter by member ID."
+    )

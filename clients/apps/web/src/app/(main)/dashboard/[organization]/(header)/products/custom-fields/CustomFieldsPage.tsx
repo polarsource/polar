@@ -1,0 +1,218 @@
+'use client'
+
+import CreateCustomFieldModalContent from '@/components/CustomFields/CreateCustomFieldModalContent'
+import CustomFieldTypeLabel from '@/components/CustomFields/CustomFieldTypeLabel'
+import UpdateCustomFieldModalContent from '@/components/CustomFields/UpdateCustomFieldModalContent'
+import { ManagedAsCodeBadge } from '@/components/Dashboard/ManagedAsCodeBadge'
+import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { InlineModal } from '@polar-sh/orbit'
+import { toast } from '@/components/Toast/use-toast'
+import { useCustomFields, useDeleteCustomField } from '@/hooks/queries'
+import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
+import { extractApiErrorMessage } from '@/utils/api/errors'
+import { getAPIParams } from '@/utils/datatable'
+import { MoreVertOutlined } from '@polar-sh/orbit/icons'
+import { enums, schemas } from '@polar-sh/client'
+import { Button, Truncated } from '@polar-sh/orbit'
+import {
+  DataTable,
+  DataTableColumnDef,
+  DataTableColumnHeader,
+} from '@polar-sh/orbit'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@polar-sh/ui/components/ui/dropdown-menu'
+import { parseAsStringLiteral, useQueryStates } from 'nuqs'
+import React, { useCallback, useState } from 'react'
+
+const filterParsers = {
+  type: parseAsStringLiteral(enums.customFieldTypeValues),
+}
+
+interface ClientPageProps {
+  organization: schemas['Organization']
+}
+
+const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
+  const { pagination, setPagination, sorting, setSorting } =
+    useDataTableQueryState({
+      defaultSorting: [{ id: 'slug', desc: false }],
+    })
+
+  const [{ type }] = useQueryStates(filterParsers)
+  const managedAsCode =
+    organization.feature_settings?.config_as_code_enabled ?? false
+
+  const [showNewModal, setShowNewModal] = useState(false)
+  const [showUpdateModal, setShowUpdateModal] = useState(false)
+  const [selectedCustomField, setSelectedCustomField] =
+    useState<schemas['CustomField']>()
+  const onCustomFieldSelected = useCallback(
+    (customField: schemas['CustomField']) => {
+      setSelectedCustomField(customField)
+      setShowUpdateModal(true)
+    },
+    [],
+  )
+  const deleteCustomField = useDeleteCustomField()
+
+  const handleDeleteCustomField = useCallback(
+    (customField: schemas['CustomField']) => () => {
+      deleteCustomField.mutateAsync(customField).then(({ error }) => {
+        if (error) {
+          toast({
+            title: 'Custom Field Deletion Failed',
+            description: `Error deleting custom field ${customField.name}: ${extractApiErrorMessage(error)}`,
+          })
+        }
+        toast({
+          title: 'Custom Field Deleted',
+          description: `Custom field ${customField.name} successfully deleted`,
+        })
+      })
+    },
+    [deleteCustomField],
+  )
+
+  const customFieldsHook = useCustomFields(organization.id, {
+    ...getAPIParams(pagination, sorting),
+    type: type ?? undefined,
+    catalog_status: 'live',
+  })
+
+  const customFields = customFieldsHook.data?.items || []
+  const rowCount = customFieldsHook.data?.pagination.total_count ?? 0
+  const pageCount = customFieldsHook.data?.pagination.max_page ?? 1
+
+  const columns: DataTableColumnDef<schemas['CustomField']>[] = [
+    {
+      accessorKey: 'slug',
+      enableSorting: true,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Slug" />
+      ),
+      cell: ({ getValue }) => {
+        return <Truncated>{getValue() as string}</Truncated>
+      },
+    },
+    {
+      accessorKey: 'name',
+      enableSorting: true,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Name" />
+      ),
+      cell: ({ getValue }) => <Truncated>{getValue() as string}</Truncated>,
+    },
+    {
+      accessorKey: 'type',
+      enableSorting: true,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Type" />
+      ),
+      cell: ({ getValue }) => {
+        return (
+          <CustomFieldTypeLabel
+            type={getValue() as schemas['CustomFieldType']}
+          />
+        )
+      },
+    },
+  ]
+  const actionColumns: DataTableColumnDef<schemas['CustomField']>[] = [
+    {
+      id: 'actions',
+      enableSorting: false,
+      cell: ({ row: { original: customField } }) => (
+        <div className="flex flex-row justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger className="focus:outline-none" asChild>
+              <Button
+                className={
+                  'border-none bg-transparent text-[16px] opacity-50 transition-opacity hover:opacity-100 dark:bg-transparent'
+                }
+                size="icon"
+                variant="secondary"
+              >
+                <MoreVertOutlined fontSize="inherit" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="dark:bg-polar-800 bg-gray-50 shadow-lg"
+            >
+              <DropdownMenuItem
+                onClick={() => onCustomFieldSelected(customField)}
+              >
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleDeleteCustomField(customField)}>
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ),
+    },
+  ]
+
+  return (
+    <DashboardBody
+      wrapperClassName="max-w-(--breakpoint-md)!"
+      title="Custom Fields"
+      header={
+        managedAsCode ? (
+          <ManagedAsCodeBadge />
+        ) : (
+          <Button type="button" onClick={() => setShowNewModal(true)}>
+            New
+          </Button>
+        )
+      }
+    >
+      <div className="flex flex-col gap-8">
+        {customFields && pageCount !== undefined && (
+          <DataTable
+            columns={managedAsCode ? columns : [...columns, ...actionColumns]}
+            data={customFields}
+            rowCount={rowCount}
+            pageCount={pageCount}
+            pagination={pagination}
+            onPaginationChange={setPagination}
+            sorting={sorting}
+            onSortingChange={setSorting}
+            isLoading={customFieldsHook.isLoading}
+          />
+        )}
+      </div>
+      <InlineModal
+        isShown={showNewModal}
+        hide={() => setShowNewModal(false)}
+        modalContent={
+          <CreateCustomFieldModalContent
+            organization={organization}
+            onCustomFieldCreated={() => setShowNewModal(false)}
+            hideModal={() => setShowNewModal(false)}
+          />
+        }
+      />
+      <InlineModal
+        isShown={showUpdateModal}
+        hide={() => setShowUpdateModal(false)}
+        modalContent={
+          selectedCustomField ? (
+            <UpdateCustomFieldModalContent
+              customField={selectedCustomField}
+              onCustomFieldUpdated={() => setShowUpdateModal(false)}
+              hideModal={() => setShowUpdateModal(false)}
+            />
+          ) : null
+        }
+      />
+    </DashboardBody>
+  )
+}
+
+export default ClientPage

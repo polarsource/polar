@@ -6,12 +6,14 @@ import { useModal } from '@/components/Modal/useModal'
 import { SubscriptionSeatsSection } from '@/components/Seats/SubscriptionSeatsSection'
 import SubscriptionActionsMenu from '@/components/Subscriptions/SubscriptionActionsMenu'
 import { SubscriptionDetailsGrid } from '@/components/Subscriptions/SubscriptionDetailsGrid'
-import SubscriptionInvoicePreview from '@/components/Subscriptions/SubscriptionInvoicePreview'
 import SubscriptionUsageChargePreview from '@/components/Subscriptions/SubscriptionUsageChargePreview'
-import SubscriptionOrdersSection from '@/components/Subscriptions/SubscriptionOrdersSection'
+import { SubscriptionAttention } from '@/components/Subscriptions/SubscriptionAttention'
+import { SubscriptionBenefitGrants } from '@/components/Subscriptions/SubscriptionBenefitGrants'
+import { SubscriptionBillingHistory } from '@/components/Subscriptions/SubscriptionBillingHistory'
+import { SubscriptionSidePanel } from '@/components/Subscriptions/SubscriptionSidePanel'
 import { SubscriptionSecondaryDetails } from '@/components/Subscriptions/SubscriptionSecondaryDetails'
 import UpdateSubscriptionModal from '@/components/Subscriptions/UpdateSubscriptionModal'
-import { useCustomFields, useProduct, useSubscription } from '@/hooks/queries'
+import { useProduct, useSubscription } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { Button, InlineModal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -30,7 +32,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
     _subscription.id,
     _subscription,
   )
-  const { data: customFields } = useCustomFields(organization.id)
   const { data: product } = useProduct(_subscription.product.id)
   const {
     hide: hideUpdateModal,
@@ -60,15 +61,15 @@ const ClientPage: React.FC<ClientPageProps> = ({
           <SubscriptionActionsMenu subscription={subscription} />
         </Box>
       }
-      contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none"
-      contextViewTitle="Customer"
-      contextView={
-        <CustomerContextView
+      detailView={
+        <SubscriptionSidePanel
           organization={organization}
-          customer={subscription.customer}
+          subscription={subscription}
         />
       }
     >
+      <SubscriptionAttention subscription={subscription} />
+
       <SubscriptionDetailsGrid
         subscription={subscription}
         product={product}
@@ -76,24 +77,30 @@ const ClientPage: React.FC<ClientPageProps> = ({
       />
 
       <SubscriptionUsageChargePreview subscription={subscription} />
-      <SubscriptionInvoicePreview subscription={subscription} />
 
-      <SubscriptionSecondaryDetails
-        subscription={subscription}
-        customFields={customFields?.items}
-      />
-
-      <SubscriptionSeatsSection subscription={subscription} />
-
-      <SubscriptionOrdersSection
+      <SubscriptionBillingHistory
         organization={organization}
         subscription={subscription}
       />
 
+      <SubscriptionBenefitGrants
+        organization={organization}
+        subscription={subscription}
+      />
+
+      <SubscriptionSecondaryDetails
+        subscription={subscription}
+        customFields={product?.attached_custom_fields.map(
+          ({ custom_field }) => custom_field,
+        )}
+      />
+
+      <SubscriptionSeatsSection subscription={subscription} />
+
       <Box
         flexDirection="column"
         rowGap="l"
-        display={{ base: 'flex', md: 'none' }}
+        display={{ base: 'flex', lg: 'none' }}
       >
         <Text variant="heading-xs" as="h3">
           Customer

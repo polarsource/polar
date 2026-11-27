@@ -31,6 +31,7 @@ from polar.models import (
     Agent,
     Benefit,
     BillingEntry,
+    Catalog,
     Checkout,
     CheckoutLink,
     CheckoutLinkProduct,
@@ -55,6 +56,7 @@ from polar.models import (
     Order,
     OrderItem,
     Organization,
+    OrganizationEmail,
     OrganizationReview,
     Payment,
     PaymentMethod,
@@ -129,6 +131,7 @@ from polar.models.pledge import Pledge, PledgeState, PledgeType
 from polar.models.product_price import (
     ProductPriceAmountType,
 )
+from polar.models.reducer import ReducerKind
 from polar.models.subscription import SubscriptionStatus
 from polar.models.support_case import (
     DisputeSupportCase,
@@ -224,6 +227,18 @@ async def create_organization(
         organization.capabilities = {**STATUS_CAPABILITIES[status]}
     await save_fixture(organization)
     return organization
+
+
+async def create_verified_organization_email(
+    save_fixture: SaveFixture, organization: Organization, email: str
+) -> OrganizationEmail:
+    organization.email = email
+    await save_fixture(organization)
+    organization_email = OrganizationEmail(
+        organization=organization, email=email, verified_at=utc_now()
+    )
+    await save_fixture(organization_email)
+    return organization_email
 
 
 @pytest.fixture
@@ -511,8 +526,11 @@ async def create_product(
     attached_custom_fields: Sequence[tuple[CustomField, bool]] = [],
     trial_interval: TrialInterval | None = None,
     trial_interval_count: int | None = None,
+    trial_payment_setup_required: bool = True,
     is_tax_applicable: bool = True,
     external_id: str | None = None,
+    is_current: bool = True,
+    catalog: Catalog | None = None,
 ) -> Product:
     recurring_interval_count = (
         None if recurring_interval is None else recurring_interval_count
@@ -533,7 +551,10 @@ async def create_product(
         organization=organization,
         trial_interval=trial_interval,
         trial_interval_count=trial_interval_count,
+        trial_payment_setup_required=trial_payment_setup_required,
         external_id=external_id,
+        is_current=is_current,
+        catalog=catalog,
         all_prices=[],
         prices=[],
         product_benefits=[],
@@ -882,7 +903,6 @@ async def create_discount(
     max_redemptions: int | None = None,
     max_redemptions_per_customer: int | None = None,
     products: list[Product] | None = None,
-    external_id: str | None = None,
 ) -> DiscountFixed: ...
 @typing.overload
 async def create_discount(
@@ -900,7 +920,6 @@ async def create_discount(
     max_redemptions: int | None = None,
     max_redemptions_per_customer: int | None = None,
     products: list[Product] | None = None,
-    external_id: str | None = None,
 ) -> DiscountPercentage: ...
 async def create_discount(
     save_fixture: SaveFixture,
@@ -918,7 +937,6 @@ async def create_discount(
     max_redemptions: int | None = None,
     max_redemptions_per_customer: int | None = None,
     products: list[Product] | None = None,
-    external_id: str | None = None,
 ) -> Discount:
     model = type.get_model()
     custom_field = model(
@@ -934,7 +952,6 @@ async def create_discount(
         max_redemptions=max_redemptions,
         max_redemptions_per_customer=max_redemptions_per_customer,
         redemptions_count=0,
-        external_id=external_id,
     )
     if isinstance(custom_field, DiscountFixed):
         assert amounts is not None
@@ -1028,7 +1045,7 @@ async def create_customer(
     *,
     organization: Organization,
     external_id: str | None = None,
-    email: str = "customer@example.com",
+    email: str | None = "customer@example.com",
     email_verified: bool = False,
     name: str = "Customer",
     billing_name: str | None = None,
@@ -1205,6 +1222,8 @@ async def create_benefit(
     deletable: bool = True,
     properties: dict[str, Any] | None = None,
     external_id: str | None = None,
+    is_current: bool = True,
+    catalog: Catalog | None = None,
 ) -> Benefit:
     if properties is None:
         properties = {"note": None}
@@ -1217,6 +1236,8 @@ async def create_benefit(
         deletable=deletable,
         properties=properties,
         external_id=external_id,
+        is_current=is_current,
+        catalog=catalog,
     )
     await save_fixture(benefit)
     return benefit
@@ -1312,7 +1333,7 @@ async def create_subscription(
         trial_end=trial_end,
         cancel_at_period_end=cancel_at_period_end,
         canceled_at=canceled_at,
-        started_at=started_at,
+        started_at=started_at or created_at or now,
         ended_at=ended_at,
         ends_at=ends_at,
         organization=product.organization,
@@ -1356,6 +1377,7 @@ async def create_trialing_subscription(
     discount: Discount | None = None,
     user_metadata: dict[str, Any] | None = None,
     scheduler_locked_at: datetime | None = None,
+    payment_method: PaymentMethod | None = None,
 ) -> Subscription:
     now = utc_now()
     trial_start = now
@@ -1377,6 +1399,7 @@ async def create_trialing_subscription(
         trial_end=trial_end,
         user_metadata=user_metadata or {},
         scheduler_locked_at=scheduler_locked_at,
+        payment_method=payment_method,
     )
 
 
@@ -1785,6 +1808,7 @@ async def create_checkout_link(
     success_url: str | None = None,
     trial_interval: TrialInterval | None = None,
     trial_interval_count: int | None = None,
+    trial_payment_setup_required: bool | None = None,
     seats: int | None = None,
     units: int | None = None,
     user_metadata: dict[str, Any] | None = None,
@@ -1805,6 +1829,7 @@ async def create_checkout_link(
         discount=discount,
         trial_interval=trial_interval,
         trial_interval_count=trial_interval_count,
+        trial_payment_setup_required=trial_payment_setup_required,
         seats=seats,
         units=units,
         user_metadata=user_metadata,
@@ -2045,6 +2070,7 @@ async def create_refund(
     processor_reason: str = "requested_by_customer",
     processor_balance_transaction_id: str = "STRIPE_BALANCE_TRANSACTION_ID",
     dispute: Dispute | None = None,
+    revoke_benefits: bool = False,
 ) -> Refund:
     refund = Refund(
         status=status,
@@ -2062,6 +2088,7 @@ async def create_refund(
         processor_id=processor_id,
         processor_reason=processor_reason,
         processor_balance_transaction_id=processor_balance_transaction_id,
+        revoke_benefits=revoke_benefits,
     )
     await save_fixture(refund)
     return refund
@@ -2274,6 +2301,10 @@ async def create_meter(
     last_billed_event: Event | None = None,
     external_id: str | None = None,
     user_metadata: dict[str, str | int | bool] | None = None,
+    is_current: bool = True,
+    catalog: Catalog | None = None,
+    archived_at: datetime | None = None,
+    deleted_at: datetime | None = None,
 ) -> Meter:
     meter = Meter(
         id=id,
@@ -2284,6 +2315,10 @@ async def create_meter(
         last_billed_event=last_billed_event,
         external_id=external_id,
         user_metadata=user_metadata or {},
+        is_current=is_current,
+        catalog=catalog,
+        archived_at=archived_at,
+        deleted_at=deleted_at,
     )
     await save_fixture(meter)
     return meter
@@ -2299,6 +2334,7 @@ async def create_reducer(
     *,
     organization: Organization,
     meters: Sequence[Meter],
+    kind: ReducerKind = ReducerKind.usage,
 ) -> Reducer:
     """Create a reducer with the filter and aggregation of the first meter,
     used by all the given meters."""
@@ -2307,6 +2343,7 @@ async def create_reducer(
         organization=organization,
         filter=meter.filter,
         aggregation=meter.aggregation,
+        kind=kind,
     )
     await save_fixture(reducer)
     for m in meters:
@@ -2752,7 +2789,6 @@ async def create_webhook_endpoint(
     *,
     organization: Organization,
     events: list[WebhookEventType] | None = None,
-    external_id: str | None = None,
 ) -> WebhookEndpoint:
     webhook_endpoint = WebhookEndpoint(
         url="https://example.com/webhook",
@@ -2760,7 +2796,6 @@ async def create_webhook_endpoint(
         secret="SECRET",
         events=events or list(WebhookEventType),
         organization=organization,
-        external_id=external_id,
     )
     await save_fixture(webhook_endpoint)
     return webhook_endpoint
@@ -2918,10 +2953,12 @@ async def create_email_log(
     *,
     created_at: datetime,
     status: EmailLogStatus = EmailLogStatus.sent,
+    error: str | None = None,
 ) -> EmailLog:
     email_log = EmailLog(
         created_at=created_at,
         status=status,
+        error=error,
         processor=EmailSender.resend,
         to_email_addr="customer@example.com",
         from_email_addr="acme@polar.sh",

@@ -1,7 +1,19 @@
-import { useProducts, useSelectedProducts } from '@/hooks/queries'
-import { Check as CheckIcon, ExpandMoreOutlined } from '@polar-sh/orbit/icons'
-import { operations, schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import {
+  latestVersions,
+  useInfiniteProducts,
+  useProducts,
+  useSelectedProducts,
+} from '@/hooks/queries'
+import { useInViewport } from '@/hooks/utils'
+import {
+  Check as CheckIcon,
+  ChevronRight,
+  CloseOutlined,
+  ExpandMoreOutlined,
+} from '@polar-sh/orbit/icons'
+import { schemas } from '@polar-sh/client'
+import { Button, Spinner, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import {
   Command,
   CommandEmpty,
@@ -16,80 +28,50 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@polar-sh/ui/components/ui/popover'
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import ProductPriceTypeLabel, {
-  type ProductPriceType,
-} from './ProductPriceTypeLabel'
+import { CatalogVersionLabel } from './CatalogVersionLabel'
+import ProductPriceTypeLabel from './ProductPriceTypeLabel'
 
-const ProductsCommandGroup = ({
-  groupedProducts,
-  productPriceType,
-  onSelectProduct,
-  onSelectProductType,
-  selectedProducts,
-  className,
-}: {
-  groupedProducts: Record<ProductPriceType, schemas['Product'][]>
-  productPriceType: ProductPriceType
-  onSelectProduct: (product: schemas['Product']) => void
-  onSelectProductType: (productPriceType: ProductPriceType) => void
-  selectedProducts: schemas['Product'][]
-  className?: string
-}) => {
-  const areAllSelected = useMemo(() => {
-    return groupedProducts[productPriceType].every((product) =>
-      selectedProducts.some(({ id }) => id === product.id),
-    )
-  }, [groupedProducts, productPriceType, selectedProducts])
-
-  if (groupedProducts[productPriceType].length === 0) {
-    return null
-  }
-
-  return (
-    <CommandGroup className={className}>
-      <CommandItem
-        className="flex flex-row items-center justify-between py-2 text-black dark:text-white"
-        key={productPriceType}
-        value={productPriceType}
-        onSelect={() => onSelectProductType(productPriceType)}
-      >
-        <div className="flew-row flex items-center gap-2 font-medium">
-          <ProductPriceTypeLabel productPriceType={productPriceType} />
-        </div>
-
-        <div className="text-xs opacity-70">
-          {!areAllSelected ? (
-            <>Select all {groupedProducts[productPriceType].length}</>
-          ) : (
-            <>Deselect all</>
-          )}
-        </div>
-      </CommandItem>
-      {groupedProducts[productPriceType].map((product) => {
-        const isSelected = selectedProducts.some(({ id }) => id === product.id)
-
-        return (
-          <CommandItem
-            className="flex flex-row items-center justify-between text-black dark:text-white"
-            key={product.id}
-            value={product.id}
-            onSelect={() => onSelectProduct(product)}
-          >
-            {`${product.name} ${product.is_archived ? '(Archived)' : ''}`}
-            <CheckIcon
-              className={twMerge(
-                'h-4 w-4',
-                isSelected ? 'visible' : 'invisible',
-              )}
-            />
-          </CommandItem>
-        )
-      })}
-    </CommandGroup>
-  )
+export interface ProductFilter {
+  product_id: string[] | null
+  external_product_id: string[] | null
 }
+
+const highlightClassName =
+  'rounded-lg data-[selected=true]:bg-gray-100 dark:data-[selected=true]:bg-polar-800 data-[selected=true]:text-black dark:data-[selected=true]:text-white'
+
+const ProductItem = ({
+  organization,
+  product,
+  removed,
+  isSelected,
+  onSelect,
+}: {
+  organization: schemas['Organization']
+  product: schemas['Product']
+  removed: boolean
+  isSelected: boolean
+  onSelect: () => void
+}) => (
+  <CommandItem
+    className={twMerge(
+      highlightClassName,
+      'flex flex-row items-center justify-between text-black dark:text-white [&_span_svg]:size-3',
+    )}
+    value={product.id}
+    onSelect={onSelect}
+  >
+    <Box alignItems="center" columnGap="s">
+      <Text color={removed ? 'muted' : 'default'}>{product.name}</Text>
+      <CatalogVersionLabel organization={organization} version={product} />
+    </Box>
+    <CheckIcon
+      className={twMerge('h-4 w-4', isSelected ? 'visible' : 'invisible')}
+    />
+  </CommandItem>
+)
+
 interface ProductSelectProps {
   organization: schemas['Organization']
   value: string[]
@@ -97,6 +79,8 @@ interface ProductSelectProps {
   emptyLabel?: string
   className?: string
   includeArchived?: boolean
+  recurringOnly?: boolean
+  filterByExternalId?: boolean
 }
 
 const ProductSelect: React.FC<ProductSelectProps> = ({
@@ -106,129 +90,173 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
   emptyLabel,
   className,
   includeArchived = false,
+  recurringOnly = false,
+  filterByExternalId = false,
 }) => {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
+  const [removedOpen, setRemovedOpen] = useState(false)
+
+  const selectionValue = (product: schemas['Product']) =>
+    filterByExternalId ? product.external_id : product.id
+  const isSelected = (product: schemas['Product']) => {
+    const productValue = selectionValue(product)
+    return !!productValue && value.includes(productValue)
+  }
 
   // Selected products, with a dedicated hook to exhaust pagination
-  const { data: selectedProducts } = useSelectedProducts(value, includeArchived)
-
-  // Queried products, show a selection of products based on the query
-  const queriedProductsParameters = useMemo<
-    Omit<
-      NonNullable<operations['products:list']['parameters']['query']>,
-      'organization_id'
-    >
-  >(
-    () => ({
-      is_archived: includeArchived ? null : false,
-      ...(query ? { query } : {}),
-      sorting: ['name'],
-      limit: 50,
-    }),
-    [query, includeArchived],
+  const { data: selectedProducts } = useSelectedProducts(
+    filterByExternalId
+      ? { organization_id: organization.id, external_id: value }
+      : { id: value },
+    { includeArchived, includeAllVersions: includeArchived },
   )
-  const { data: queriedProducts } = useProducts(
+
+  const liveParameters = {
+    ...(recurringOnly ? { is_recurring: true } : {}),
+    ...(query ? { query } : {}),
+    sorting: ['name' as const],
+    limit: 50,
+  }
+  const {
+    data: liveProducts,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteProducts(organization.id, liveParameters)
+  const { ref: loadMoreRef, inViewport } = useInViewport<HTMLElement>()
+  useEffect(() => {
+    if (inViewport && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage()
+    }
+  }, [inViewport, hasNextPage, isFetchingNextPage, fetchNextPage])
+  // Archived products and products removed from the live catalog
+  const { data: withRemovedProducts } = useProducts(
     organization.id,
-    queriedProductsParameters,
+    { ...liveParameters, is_archived: null, catalog_status: null, limit: 100 },
+    { enabled: includeArchived },
   )
 
-  // Products displayed in the selector
-  const displayedProducts = useMemo(() => {
-    let products = queriedProducts?.items || []
-    // If no current query, show selected products no matter what
-    if (!query) {
-      for (const product of selectedProducts || []) {
-        if (!products.some(({ id }) => id === product.id)) {
-          products = [...products, product]
-        }
-      }
-    }
-    return products
-  }, [queriedProducts, selectedProducts, query])
+  const candidates = [
+    ...(liveProducts?.pages.flatMap((page) => page.items) ?? []),
+    ...(withRemovedProducts?.items ?? []),
+    // Keep selections visible when not searching
+    ...(query ? [] : (selectedProducts ?? [])),
+  ]
+  const uniqueProducts = [
+    ...new Map(candidates.map((product) => [product.id, product])).values(),
+  ]
+  const displayedProducts = filterByExternalId
+    ? latestVersions(uniqueProducts.filter(({ external_id }) => external_id))
+    : uniqueProducts
+  // An old version is only removed when its product has no current version left.
+  // Look the current versions up directly: search and pagination can leave them out of the list.
+  const oldVersionExternalIds = displayedProducts
+    .filter((product) => !product.is_current)
+    .flatMap((product) => product.external_id ?? [])
+  const { data: currentVersions } = useSelectedProducts({
+    organization_id: organization.id,
+    external_id: [...new Set(oldVersionExternalIds)],
+  })
+  const stillSold = new Set(
+    currentVersions?.map((product) => product.external_id),
+  )
+  const isRemoved = (product: schemas['Product']) =>
+    product.is_archived ||
+    (!product.is_current && !stillSold.has(product.external_id))
+  const removedProducts = displayedProducts
+    .filter(isRemoved)
+    .sort((a, b) => a.name.localeCompare(b.name))
+  const currentProducts = displayedProducts.filter(
+    (product) => !isRemoved(product),
+  )
+  const productGroups = (['one_time', 'recurring'] as const)
+    .map((type) => ({
+      type,
+      products: currentProducts.filter(
+        (product) => product.is_recurring === (type === 'recurring'),
+      ),
+    }))
+    .filter(({ products }) => products.length > 0)
+  const showRemoved = removedOpen || !!query
 
-  // Group displayed products by product price type
-  const groupedProducts = useMemo<
-    Record<ProductPriceType, schemas['Product'][]>
-  >(() => {
-    return displayedProducts.reduce<
-      Record<ProductPriceType, schemas['Product'][]>
-    >(
-      (acc, product) => {
-        const type = product.is_recurring ? 'recurring' : 'one_time'
-        acc[type].push(product)
-        return acc
-      },
-      {
-        one_time: [],
-        recurring: [],
-      },
+  const hasSelection = value.length > 0
+  const selectedName = latestVersions(selectedProducts ?? []).find(
+    (product) => selectionValue(product) === value[0],
+  )?.name
+  const buttonLabel =
+    value.length === 0
+      ? emptyLabel || 'All products'
+      : value.length === 1
+        ? (selectedName ?? '1 product')
+        : `${value.length} products`
+
+  const onOpenChange = (next: boolean) => {
+    if (next) {
+      setRemovedOpen(removedProducts.some(isSelected))
+    }
+    setOpen(next)
+  }
+
+  const onSelectProduct = (product: schemas['Product']) => {
+    const productValue = selectionValue(product)
+    if (!productValue) {
+      return
+    }
+    onChange(
+      value.includes(productValue)
+        ? value.filter((v) => v !== productValue)
+        : [...value, productValue],
     )
-  }, [displayedProducts])
+  }
 
-  const buttonLabel = useMemo(() => {
-    if (value.length === 0) {
-      return emptyLabel || 'All products'
-    }
-    if (value.length === 1) {
-      return selectedProducts?.[0].name
-    }
-    return `${value.length} products`
-  }, [value, emptyLabel, selectedProducts])
-
-  const onSelectProduct = useCallback(
-    (product: schemas['Product']) => {
-      if (value.includes(product.id)) {
-        onChange(value.filter((id) => id !== product.id))
-      } else {
-        onChange([...value, product.id])
-      }
-    },
-    [onChange, value],
-  )
-
-  const onSelectProductType = useCallback(
-    (productPriceType: ProductPriceType) => {
-      const products = groupedProducts[productPriceType]
-      const allSelected = products.every((product) =>
-        value.includes(product.id),
-      )
-      if (allSelected) {
-        onChange(
-          value.filter((id) => !products.some((product) => id === product.id)),
-        )
-      } else {
-        onChange([
-          ...value,
-          ...products
-            .filter((product) => !value.includes(product.id))
-            .map(({ id }) => id),
-        ])
-      }
-    },
-    [groupedProducts, onChange, value],
-  )
+  const onSelectAll = (products: schemas['Product'][]) => {
+    const groupValues = products.flatMap(
+      (product) => selectionValue(product) ?? [],
+    )
+    const allSelected = groupValues.every((v) => value.includes(v))
+    onChange(
+      allSelected
+        ? value.filter((v) => !groupValues.includes(v))
+        : [...new Set([...value, ...groupValues])],
+    )
+  }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          size="lg"
-          variant="ghost"
-          role="combobox"
-          aria-expanded={open}
-          className={twMerge(
-            'ring-offset-background placeholder:text-muted-foreground focus:ring-ring dark:bg-polar-800 font-medium dark:hover:bg-polar-700 dark:border-polar-700 dark:hover:border-polar-700 flex h-10 w-full! flex-row items-center justify-between gap-x-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-sans shadow-xs transition-colors hover:border-gray-300 hover:bg-white focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1',
-            className,
-          )}
-          wrapperClassNames="justify-between w-full min-w-0 sm:min-w-[200px]"
-        >
-          <div className="overflow-hidden text-ellipsis whitespace-nowrap">
-            {buttonLabel}
-          </div>
-          <ExpandMoreOutlined className="ml-2 h-4 w-4 opacity-50" />
-        </Button>
-      </PopoverTrigger>
+    <Popover open={open} onOpenChange={onOpenChange}>
+      <Box position="relative" display="block" width="100%" minWidth={0}>
+        <PopoverTrigger asChild>
+          <Button
+            size="lg"
+            variant="ghost"
+            role="combobox"
+            aria-expanded={open}
+            className={twMerge(
+              'ring-offset-background placeholder:text-muted-foreground focus:ring-ring dark:bg-polar-800 font-medium dark:hover:bg-polar-700 dark:border-polar-700 dark:hover:border-polar-700 flex h-10 w-full! flex-row items-center justify-between gap-x-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-sans shadow-xs transition-colors hover:border-gray-300 hover:bg-white focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1',
+              hasSelection && 'pr-12',
+              className,
+            )}
+            wrapperClassNames="justify-between w-full min-w-0 sm:min-w-[200px]"
+          >
+            <div className="overflow-hidden text-ellipsis whitespace-nowrap">
+              {buttonLabel}
+            </div>
+            {!hasSelection && (
+              <ExpandMoreOutlined className="ml-2 h-4 w-4 opacity-50" />
+            )}
+          </Button>
+        </PopoverTrigger>
+        {hasSelection && (
+          <button
+            type="button"
+            aria-label="Clear products"
+            onClick={() => onChange([])}
+            className="dark:border-polar-700 dark:text-polar-400 absolute inset-y-0 right-0 flex cursor-pointer items-center border-l border-gray-200 px-3 text-gray-500 hover:text-black dark:hover:text-white"
+          >
+            <CloseOutlined fontSize="small" />
+          </button>
+        )}
+      </Box>
       <PopoverContent className="p-0" side="bottom" align="start">
         <Command shouldFilter={false}>
           <CommandInput
@@ -238,31 +266,90 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
             onValueChange={setQuery}
           />
           <CommandList>
-            {queriedProducts?.items && queriedProducts.items.length ? (
-              <>
-                <ProductsCommandGroup
-                  groupedProducts={groupedProducts}
-                  productPriceType="one_time"
-                  onSelectProduct={onSelectProduct}
-                  onSelectProductType={onSelectProductType}
-                  selectedProducts={
-                    value.length > 0 ? selectedProducts || [] : []
-                  }
-                />
-                {groupedProducts.one_time.length > 0 &&
-                  groupedProducts.recurring.length > 0 && <CommandSeparator />}
-                <ProductsCommandGroup
-                  groupedProducts={groupedProducts}
-                  productPriceType="recurring"
-                  onSelectProduct={onSelectProduct}
-                  onSelectProductType={onSelectProductType}
-                  selectedProducts={
-                    value.length > 0 ? selectedProducts || [] : []
-                  }
-                />
-              </>
-            ) : (
+            {displayedProducts.length === 0 && (
               <CommandEmpty>No products found</CommandEmpty>
+            )}
+            {productGroups.map(({ type, products }, index) => (
+              <React.Fragment key={type}>
+                {index > 0 && <CommandSeparator />}
+                <CommandGroup
+                  heading={
+                    productGroups.length > 1 ? (
+                      <Box justifyContent="between" alignItems="center">
+                        <ProductPriceTypeLabel productPriceType={type} />
+                        <button
+                          type="button"
+                          className="cursor-pointer hover:text-black dark:hover:text-white"
+                          onClick={() => onSelectAll(products)}
+                        >
+                          {products.every(isSelected)
+                            ? 'Deselect all'
+                            : `Select all ${products.length}`}
+                        </button>
+                      </Box>
+                    ) : undefined
+                  }
+                >
+                  {products.map((product) => (
+                    <ProductItem
+                      key={product.id}
+                      organization={organization}
+                      product={product}
+                      removed={false}
+                      isSelected={isSelected(product)}
+                      onSelect={() => onSelectProduct(product)}
+                    />
+                  ))}
+                </CommandGroup>
+              </React.Fragment>
+            ))}
+            {hasNextPage && (
+              <Box
+                ref={loadMoreRef}
+                justifyContent="center"
+                paddingVertical="m"
+              >
+                <Spinner />
+              </Box>
+            )}
+            {removedProducts.length > 0 && (
+              <>
+                {productGroups.length > 0 && <CommandSeparator />}
+                <CommandGroup heading={query ? 'Removed' : undefined}>
+                  {!query && (
+                    <CommandItem
+                      className={twMerge(
+                        highlightClassName,
+                        'flex flex-row items-center gap-x-2 [&_svg]:size-3.5',
+                      )}
+                      value="removed"
+                      onSelect={() => setRemovedOpen(!removedOpen)}
+                    >
+                      <ChevronRight
+                        className={twMerge(
+                          'dark:text-polar-500 text-gray-500 transition-transform',
+                          showRemoved && 'rotate-90',
+                        )}
+                      />
+                      <Text color="muted">Removed products</Text>
+                      <Text variant="caption" color="muted">
+                        {removedProducts.length}
+                      </Text>
+                    </CommandItem>
+                  )}
+                  {showRemoved &&
+                    removedProducts.map((product) => (
+                      <ProductItem
+                        key={product.id}
+                        organization={organization}
+                        product={product}
+                        removed
+                        isSelected={isSelected(product)}
+                        onSelect={() => onSelectProduct(product)}
+                      />
+                    ))}
+                </CommandGroup>
+              </>
             )}
           </CommandList>
         </Command>

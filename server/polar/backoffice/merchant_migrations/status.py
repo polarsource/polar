@@ -21,7 +21,11 @@ from polar.merchant_migration.pan_transfer import (
 )
 from polar.merchant_migration.repository import RecordCounts
 from polar.models import MerchantMigration
-from polar.models.merchant_migration import MerchantMigrationStep
+from polar.models.merchant_migration import (
+    MERCHANT_MIGRATION_FINISHED_STEPS,
+    MerchantMigrationSourcePlatform,
+    MerchantMigrationStep,
+)
 from polar.models.merchant_migration_record import (
     MerchantMigrationRecordStatus,
     MerchantMigrationRecordType,
@@ -35,20 +39,21 @@ STEP_LABELS: dict[MerchantMigrationStep, str] = {
     MerchantMigrationStep.source_setup: "Source connected",
     MerchantMigrationStep.pre_check: "Pre-check run",
     MerchantMigrationStep.create_catalog: "Catalog imported",
+    MerchantMigrationStep.set_up_benefits: "Setting up benefits",
     MerchantMigrationStep.copy_cards: "Moving cards",
     MerchantMigrationStep.activate_subscriptions: "Activating subscriptions",
-    MerchantMigrationStep.cleanup: "Cleanup",
     MerchantMigrationStep.completed: "Completed",
+    MerchantMigrationStep.closed: "Closed (inactive)",
 }
 
-STEP_ORDER = list(MerchantMigrationStep)
+STEP_ORDER: list[MerchantMigrationStep] = [
+    step for step in MerchantMigrationStep if step != MerchantMigrationStep.closed
+]
+# Only Lemon Squeezy brings benefits over.
+_STEP_ORDER_WITHOUT_BENEFITS: list[MerchantMigrationStep] = [
+    step for step in STEP_ORDER if step != MerchantMigrationStep.set_up_benefits
+]
 
-# A cutover that leaves no switchable subscription unattempted lands on
-# `cleanup`; there is no close-out step after that. Ops reads those the same
-# way the merchant dashboard does: finished.
-FINISHED_STEPS = frozenset(
-    {MerchantMigrationStep.cleanup, MerchantMigrationStep.completed}
-)
 
 METHOD_LABELS: dict[PanTransferMethod, str] = {
     PanTransferMethod.pan_copy: "Stripe to Stripe copy",
@@ -68,6 +73,7 @@ OWNER_LABELS: dict[PanStepOwner, str] = {
 # operator does about it.
 PAN_STEP_LABELS: dict[str, str] = {
     "share_destination_account": "Share Polar's Stripe account",
+    "request_copy": "Merchant requests the copy from their provider",
     "start_copy": "Merchant starts the copy in Stripe",
     "authorize_copy": "Accept the incoming copy",
     "stripe_copy": "Stripe copies the cards",
@@ -191,20 +197,26 @@ def progress(counts: RecordCounts, migration_id: UUID) -> RecordProgress:
     )
 
 
-def step_position(step: MerchantMigrationStep) -> tuple[int, int]:
-    """1-based position of the migration's step, for a `3 of 7` readout."""
-    return STEP_ORDER.index(visible_step(step)) + 1, len(STEP_ORDER)
+def step_position(migration: MerchantMigration) -> tuple[int, int]:
+    """1-based position of the migration's step, for a `3 of 7` readout. A
+    closed migration reads as the last step."""
+    order = (
+        STEP_ORDER
+        if migration.source_platform == MerchantMigrationSourcePlatform.lemon_squeezy
+        else _STEP_ORDER_WITHOUT_BENEFITS
+    )
+    if migration.step == MerchantMigrationStep.closed:
+        return len(order), len(order)
+    return order.index(visible_step(migration.step)) + 1, len(order)
 
 
 def is_finished(migration: MerchantMigration) -> bool:
     """Whether the merchant's work on this migration is done."""
-    return migration.step in FINISHED_STEPS
+    return migration.step in MERCHANT_MIGRATION_FINISHED_STEPS
 
 
 def visible_step(step: MerchantMigrationStep) -> MerchantMigrationStep:
-    """The step ops should read. `cleanup` displays as completed."""
-    if step == MerchantMigrationStep.cleanup:
-        return MerchantMigrationStep.completed
+    """The step ops should read."""
     return step
 
 
@@ -281,9 +293,14 @@ def _pan_attention(step: PanTransferStep) -> Attention:
 def attention(migration: MerchantMigration, failed_records: int) -> Attention:
     """Triage one migration into a single badge.
 
-    Failed ledger rows win over everything else: the import gave up on them, and
-    nothing in the checklist will pick them back up on its own.
+    A closed migration is done. Otherwise failed ledger rows win over everything
+    else: the import gave up on them, and nothing in the checklist will pick them
+    back up on its own.
     """
+    if migration.step == MerchantMigrationStep.closed:
+        return Attention(
+            AttentionLevel.done, "Closed", "Closed after 90 days without activity", None
+        )
     step = current_pan_step(migration)
     if failed_records:
         return Attention(
@@ -314,6 +331,7 @@ def attention(migration: MerchantMigration, failed_records: int) -> Attention:
             MerchantMigrationStep.source_setup
             | MerchantMigrationStep.pre_check
             | MerchantMigrationStep.create_catalog
+            | MerchantMigrationStep.set_up_benefits
         ):
             return Attention(
                 AttentionLevel.waiting_merchant,

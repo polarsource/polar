@@ -2,7 +2,7 @@ import uuid
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
 from polar.kit.utils import utc_now
 from polar.member.repository import MemberRepository
@@ -1350,6 +1350,27 @@ class TestUpdateCustomer:
         assert response.status_code == 422
 
     @pytest.mark.auth
+    @pytest.mark.parametrize(
+        ("api_version", "expected_status_code"),
+        [("2026-10", 200), ("2027-01", 422)],
+    )
+    async def test_null_type(
+        self,
+        api_version: str,
+        expected_status_code: int,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        customer: Customer,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/customers/{customer.id}",
+            headers={"Polar-Version": api_version},
+            json={"type": None},
+        )
+
+        assert response.status_code == expected_status_code
+
+    @pytest.mark.auth
     async def test_email_update(
         self,
         save_fixture: SaveFixture,
@@ -1393,37 +1414,19 @@ class TestUpdateCustomer:
         assert json["metadata"] == {"test": "test"}
 
     @pytest.mark.auth
-    async def test_empty_external_id_converts_to_none(
+    async def test_empty_external_id_is_rejected(
         self,
-        save_fixture: SaveFixture,
         client: AsyncClient,
         user_organization: UserOrganization,
-        organization: Organization,
+        customer: Customer,
     ) -> None:
-        # Create two customers with None external_id
-        customer1 = await create_customer(
-            save_fixture,
-            organization=organization,
-            email="customer1@example.com",
-            external_id=None,
-        )
-        customer2 = await create_customer(
-            save_fixture,
-            organization=organization,
-            email="customer2@example.com",
-            external_id=None,
-        )
-
-        # Try to update customer1 with empty string external_id
-        # This should be converted to None and not cause a conflict
         response = await client.patch(
-            f"/v1/customers/{customer1.id}",
+            f"/v1/customers/{customer.id}",
             json={"external_id": ""},
         )
 
-        assert response.status_code == 200
-        json = response.json()
-        assert json["external_id"] is None
+        assert response.status_code == 422
+        assert response.json()["detail"][0]["loc"] == ["body", "external_id"]
 
     @pytest.mark.auth
     async def test_external_id_conflict(

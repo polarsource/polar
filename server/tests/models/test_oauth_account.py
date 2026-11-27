@@ -21,15 +21,13 @@ async def _build(user: User) -> OAuthAccount:
 
 @pytest.mark.anyio
 class TestSetTokens:
-    async def test_dual_writes_plain_and_encrypted(self, user: User) -> None:
+    async def test_writes_encrypted(self, user: User) -> None:
         oauth_account = await _build(user)
 
         await oauth_account.set_tokens(
             access_token="the-access-token", refresh_token="the-refresh-token"
         )
 
-        assert oauth_account.access_token == "the-access-token"
-        assert oauth_account.refresh_token == "the-refresh-token"
         assert isinstance(oauth_account.access_token_encrypted, EncryptedString)
         assert isinstance(oauth_account.refresh_token_encrypted, EncryptedString)
         assert (
@@ -64,7 +62,6 @@ class TestSetTokens:
             access_token="the-access-token", refresh_token=None
         )
 
-        assert oauth_account.refresh_token is None
         assert oauth_account.refresh_token_encrypted is None
 
 
@@ -116,7 +113,6 @@ class TestGetTokens:
     async def test_access_token_requires_encrypted(self, user: User) -> None:
         oauth_account = await _build(user)
         oauth_account.id = OAuthAccount.generate_id()
-        oauth_account.access_token = "the-access-token"
 
         with pytest.raises(ValueError, match="access_token_encrypted is required"):
             await oauth_account.get_access_token()
@@ -124,8 +120,6 @@ class TestGetTokens:
     async def test_refresh_token_none_without_encrypted(self, user: User) -> None:
         oauth_account = await _build(user)
         oauth_account.id = OAuthAccount.generate_id()
-        oauth_account.access_token = "the-access-token"
-        oauth_account.refresh_token = "the-refresh-token"
 
         assert await oauth_account.get_refresh_token() is None
 
@@ -190,5 +184,4 @@ class TestPersistence:
             select(OAuthAccount).where(OAuthAccount.id == oauth_account_id)
         )
         assert loaded is not None
-        assert loaded.refresh_token is None
         assert loaded.refresh_token_encrypted is None

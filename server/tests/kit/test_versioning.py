@@ -2,7 +2,7 @@ import dataclasses
 from typing import Annotated, Any, Literal
 
 import pytest
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Query, Request
 from fastapi.openapi.utils import get_openapi
 from fastapi.routing import iter_route_contexts
 from fastapi.testclient import TestClient
@@ -16,9 +16,12 @@ from pydantic import (
     computed_field,
 )
 
+from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.versioning import (
     APIVersion,
+    QuerySchema,
     Version,
+    VersionedJsonSchema,
     add_versioned_routers,
     api_version_context,
     prune_version_omitted_schemas,
@@ -30,6 +33,85 @@ from polar.routing import APIRouter
 
 CURRENT_VERSION = APIVersion(2026, 4)
 NEXT_VERSION = APIVersion(2026, 10)
+
+
+class VersionedQueryFilters(QuerySchema):
+    query: str | None = None
+    external_id: Annotated[list[int] | None, Version(starting_from=NEXT_VERSION)] = None
+
+
+class OtherQueryFilters(QuerySchema):
+    enabled: bool = False
+
+
+@pytest.fixture
+def query_client() -> TestClient:
+    app = FastAPI()
+    router = APIRouter(tags=[APITag.public])
+
+    @router.get("/filters")
+    async def filters(
+        filters: Annotated[VersionedQueryFilters, Query()],
+        other: Annotated[OtherQueryFilters, Query()],
+        pagination: PaginationParamsQuery,
+    ) -> dict[str, Any]:
+        return {
+            "external_id": filters.external_id,
+            "query": filters.query,
+            "enabled": other.enabled,
+            "page": pagination.page,
+        }
+
+    add_versioned_routers(
+        app, router, [], [CURRENT_VERSION, NEXT_VERSION], CURRENT_VERSION
+    )
+    return TestClient(app)
+
+
+class TestVersionedQueryModels:
+    @pytest.mark.parametrize("api_version", [CURRENT_VERSION, NEXT_VERSION])
+    def test_composable_filters(
+        self, query_client: TestClient, api_version: APIVersion
+    ) -> None:
+        response = query_client.get(
+            "/filters?external_id=1&external_id=2&query=test&enabled=true&page=2",
+            headers={"Polar-Version": str(api_version)},
+        )
+        assert response.status_code == 200
+        assert response.json() == {
+            "external_id": [1, 2] if api_version == NEXT_VERSION else None,
+            "query": "test",
+            "enabled": True,
+            "page": 2,
+        }
+
+    @pytest.mark.parametrize("api_version", [CURRENT_VERSION, NEXT_VERSION])
+    def test_invalid_versioned_filter(
+        self, query_client: TestClient, api_version: APIVersion
+    ) -> None:
+        response = query_client.get(
+            "/filters?external_id=invalid",
+            headers={"Polar-Version": str(api_version)},
+        )
+        assert response.status_code == (422 if api_version == NEXT_VERSION else 200)
+        if api_version == NEXT_VERSION:
+            assert response.json()["detail"][0]["loc"] == ["query", "external_id", 0]
+        else:
+            assert response.json()["external_id"] is None
+
+    @pytest.mark.parametrize("api_version", [CURRENT_VERSION, NEXT_VERSION])
+    def test_openapi_parameters(
+        self, query_client: TestClient, api_version: APIVersion
+    ) -> None:
+        response = query_client.get(f"/{api_version}/openapi.json")
+        assert response.status_code == 200
+        parameters = response.json()["paths"]["/filters"]["get"]["parameters"]
+        names = {parameter["name"] for parameter in parameters}
+        assert names == (
+            {"query", "enabled", "page", "limit", "external_id"}
+            if api_version == NEXT_VERSION
+            else {"query", "enabled", "page", "limit"}
+        )
 
 
 class VersionedProduct(BaseModel):
@@ -344,3 +426,31 @@ def test_rejects_overlapping_versioned_routes() -> None:
             [next_version],
             next_version,
         )
+
+
+@pytest.mark.parametrize(
+    ("api_version", "expected"),
+    [
+        (APIVersion(2026, 1), {"type": "string"}),
+        (CURRENT_VERSION, {"anyOf": [{"type": "string"}, {"type": "null"}]}),
+        (NEXT_VERSION, {"type": "string"}),
+    ],
+)
+def test_versioned_json_schema(
+    api_version: APIVersion, expected: dict[str, Any]
+) -> None:
+    class Resource(BaseModel):
+        value: Annotated[
+            str,
+            VersionedJsonSchema(
+                lambda schema: {"anyOf": [schema, {"type": "null"}]},
+                starting_from=CURRENT_VERSION,
+                up_to=CURRENT_VERSION,
+            ),
+        ]
+
+    with api_version_context(api_version):
+        schema = Resource.model_json_schema(mode="serialization")
+        assert schema["required"] == ["value"]
+        assert schema["properties"]["value"] == {**expected, "title": "Value"}
+        assert Resource(value="present").model_dump() == {"value": "present"}

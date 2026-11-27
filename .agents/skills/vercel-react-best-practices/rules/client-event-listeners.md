@@ -57,7 +57,7 @@ function useKeyboardShortcut(key: string, callback: () => void) {
   useSWRSubscription('global-keydown', () => {
     const handler = (e: KeyboardEvent) => {
       if (e.metaKey && keyCallbacks.has(e.key)) {
-        keyCallbacks.get(e.key)!.forEach(cb => cb())
+        keyCallbacks.get(e.key)!.forEach((cb) => cb())
       }
     }
     window.addEventListener('keydown', handler)
@@ -67,8 +67,12 @@ function useKeyboardShortcut(key: string, callback: () => void) {
 
 function Profile() {
   // Multiple shortcuts will share the same listener
-  useKeyboardShortcut('p', () => { /* ... */ }) 
-  useKeyboardShortcut('k', () => { /* ... */ })
+  useKeyboardShortcut('p', () => {
+    /* ... */
+  })
+  useKeyboardShortcut('k', () => {
+    /* ... */
+  })
   // ...
 }
 ```

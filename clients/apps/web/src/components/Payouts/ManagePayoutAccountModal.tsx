@@ -10,7 +10,7 @@ import {
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { api } from '@/utils/client'
 import { permissionDeniedMessage } from '@/utils/permissions'
-import { schemas, unwrap } from '@polar-sh/client'
+import { ClientResponseError, schemas, unwrap } from '@polar-sh/client'
 import {
   Button,
   Text,
@@ -89,12 +89,18 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
               }),
         )
         window.open(link.url, '_blank', 'noopener,noreferrer')
-      } catch {
+      } catch (error) {
+        const responseError =
+          error instanceof ClientResponseError ? error.error : undefined
+        const description =
+          responseError?.error === 'PayoutAccountRejected'
+            ? extractApiErrorMessage({ detail: responseError.detail })
+            : 'An error occurred while generating the link.'
         toast({
           title: payoutAccount.is_payout_ready
             ? 'Failed to open Stripe dashboard'
             : 'Failed to open Stripe onboarding',
-          description: 'An error occurred while generating the link.',
+          description,
         })
       } finally {
         setLoadingDashboardId(null)

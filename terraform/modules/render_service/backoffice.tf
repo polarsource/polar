@@ -112,6 +112,19 @@ resource "render_private_service" "backoffice" {
   }
 }
 
+resource "render_env_group" "backoffice_google" {
+  count          = nonsensitive(var.private_backoffice != null) ? 1 : 0
+  environment_id = var.render_environment_id
+  name           = "backoffice-google-${var.environment}"
+  env_vars       = { for name, value in var.environment_groups.backoffice_google : name => { value = value } }
+}
+
+resource "render_env_group_link" "backoffice_google" {
+  count        = nonsensitive(var.private_backoffice != null) ? 1 : 0
+  env_group_id = render_env_group.backoffice_google[0].id
+  service_ids  = render_private_service.backoffice[*].id
+}
+
 output "private_backoffice_service_id" {
   description = "The ID of the private backoffice service."
   value       = one(render_private_service.backoffice[*].id)

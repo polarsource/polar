@@ -3,6 +3,7 @@ from typing import Annotated, Any, Literal
 
 from annotated_types import Ge, MaxLen, MinLen
 from pydantic import (
+    MISSING,
     UUID4,
     AliasChoices,
     Discriminator,
@@ -20,7 +21,12 @@ from polar.custom_field.data import (
     CustomFieldDataOutputMixin,
 )
 from polar.custom_field.schemas import AttachedCustomField
-from polar.customer.schemas.customer import CustomerNameInput
+from polar.customer.schemas.customer import (
+    CustomerBillingNameInput,
+    CustomerID,
+    CustomerNameInput,
+    ExternalCustomerID,
+)
 from polar.discount.schemas import (
     DiscountFixedBase,
     DiscountOnceForeverDurationBase,
@@ -45,6 +51,7 @@ from polar.kit.schemas import (
     HttpUrlToStr,
     IDSchema,
     Int32,
+    MultipleQueryFilter,
     Schema,
     SetSchemaReference,
     StripValidator,
@@ -55,23 +62,25 @@ from polar.kit.trial import (
     TrialConfigurationOutputMixin,
     TrialInterval,
 )
-from polar.kit.versioning import Version
+from polar.kit.versioning import Omissible, QuerySchema, Version
 from polar.models.checkout import (
     CheckoutBillingAddressFields,
     CheckoutCustomerBillingAddressFields,
     CheckoutStatus,
 )
 from polar.models.discount import DiscountDuration, DiscountType
-from polar.organization.schemas import OrganizationPublicBase
+from polar.organization.schemas import OrganizationID, OrganizationPublicBase
 from polar.product.schemas import (
     BenefitPublicList,
     ProductBase,
+    ProductID,
     ProductMediaList,
     ProductPrice,
     ProductPriceCreateList,
     ProductPriceList,
+    ProductVersionOutputMixin,
 )
-from polar.version import V2026_10
+from polar.version import V2026_10, V2027_01
 
 Amount = Annotated[
     int,
@@ -308,7 +317,7 @@ class CheckoutCreateBase(
     customer_name: CustomerNameInput | None = None
     customer_email: CustomerEmail | None = None
     customer_ip_address: CustomerIPAddress | None = None
-    customer_billing_name: Annotated[str | None, EmptyStrToNoneValidator] = None
+    customer_billing_name: CustomerBillingNameInput | None = None
     customer_billing_address: CustomerBillingAddressInput | None = None
     customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
     customer_metadata: MetadataField = Field(
@@ -453,32 +462,32 @@ CheckoutCreate = Annotated[
 
 
 class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
-    product_id: UUID4 | None = Field(
-        default=None,
+    product_id: Omissible[UUID4] = Field(
+        default=MISSING,
         description=(
             "ID of the product to checkout. "
             "Must be present in the checkout's product list."
         ),
     )
-    amount: Amount | None = None
-    seats: Int32 | None = Field(
-        default=None,
+    amount: Omissible[Amount] = MISSING
+    seats: Omissible[Int32] = Field(
+        default=MISSING,
         ge=1,
         le=10000,
         description="Number of seats for seat-based pricing.",
     )
-    units: Int32 | None = Field(
-        default=None,
+    units: Omissible[Int32] = Field(
+        default=MISSING,
         ge=1,
         description="Number of units for unit-based pricing.",
     )
-    is_business_customer: bool | None = None
-    customer_name: CustomerNameInput | None = None
-    customer_email: CustomerEmail | None = None
-    customer_billing_name: Annotated[str | None, EmptyStrToNoneValidator] = None
-    customer_billing_address: CustomerBillingAddressInput | None = None
-    customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
-    locale: Locale | None = None
+    is_business_customer: Omissible[bool] = MISSING
+    customer_name: Omissible[CustomerNameInput | None] = MISSING
+    customer_email: Omissible[CustomerEmail | None] = MISSING
+    customer_billing_name: Omissible[CustomerBillingNameInput | None] = MISSING
+    customer_billing_address: Omissible[CustomerBillingAddressInput] = MISSING
+    customer_tax_id: Annotated[Omissible[str | None], EmptyStrToNoneValidator] = MISSING
+    locale: Omissible[Locale | None] = MISSING
 
 
 class CheckoutUpdate(
@@ -486,36 +495,38 @@ class CheckoutUpdate(
 ):
     """Update an existing checkout session using an access token."""
 
-    currency: CheckoutCurrency | None = None
-    discount_id: UUID4 | None = Field(
-        default=None, description="ID of the discount to apply to the checkout."
+    currency: Omissible[CheckoutCurrency] = MISSING
+    discount_id: Omissible[UUID4 | None] = Field(
+        default=MISSING, description="ID of the discount to apply to the checkout."
     )
-    allow_discount_codes: bool | None = Field(
-        default=None, description=_allow_discount_codes_description
+    allow_discount_codes: Omissible[bool] = Field(
+        default=MISSING, description=_allow_discount_codes_description
     )
-    require_billing_address: bool | None = Field(
-        default=None, description=_require_billing_address_description
+    require_billing_address: Omissible[bool] = Field(
+        default=MISSING, description=_require_billing_address_description
     )
-    allow_trial: bool | None = Field(default=None, description=_allow_trial_description)
-    customer_ip_address: CustomerIPAddress | None = None
-    customer_metadata: MetadataField | None = Field(
-        default=None, description=_customer_metadata_description
+    allow_trial: Omissible[bool] = Field(
+        default=MISSING, description=_allow_trial_description
     )
-    success_url: SuccessURL = None
-    return_url: ReturnURL = None
-    embed_origin: EmbedOrigin = None
+    customer_ip_address: Omissible[CustomerIPAddress | None] = MISSING
+    customer_metadata: Omissible[MetadataField] = Field(
+        default=MISSING, description=_customer_metadata_description
+    )
+    success_url: Omissible[SuccessURL] = MISSING
+    return_url: Omissible[ReturnURL] = MISSING
+    embed_origin: Omissible[EmbedOrigin] = MISSING
 
 
 class CheckoutUpdatePublic(CheckoutUpdateBase):
     """Update an existing checkout session using the client secret."""
 
-    payment_method_type: PaymentMethodTypeInput = None
-    discount_code: Annotated[str, StripValidator] | None = Field(
-        default=None, description="Discount code to apply to the checkout."
+    payment_method_type: Omissible[PaymentMethodTypeInput] = MISSING
+    discount_code: Omissible[Annotated[str, StripValidator] | None] = Field(
+        default=MISSING, description="Discount code to apply to the checkout."
     )
 
-    allow_trial: Literal[False] | None = Field(
-        default=None,
+    allow_trial: Omissible[Literal[False]] = Field(
+        default=MISSING,
         description=(
             "Disable the trial period for the checkout session. "
             "It's mainly useful when the trial is blocked because the customer "
@@ -530,8 +541,8 @@ class CheckoutConfirmBase(CheckoutUpdatePublic): ...
 class CheckoutConfirmStripe(CheckoutConfirmBase):
     """Confirm a checkout session using a Stripe confirmation token."""
 
-    confirmation_token_id: str | None = Field(
-        None,
+    confirmation_token_id: Omissible[str] = Field(
+        MISSING,
         description=(
             "ID of the Stripe confirmation token. "
             "Required for fixed prices and custom prices."
@@ -764,7 +775,7 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
 class CheckoutOrganization(OrganizationPublicBase): ...
 
 
-class CheckoutProduct(ProductBase):
+class CheckoutProduct(ProductVersionOutputMixin, ProductBase):
     """Product data for a checkout session."""
 
     prices: ProductPriceList
@@ -880,6 +891,11 @@ class CheckoutPublic(CheckoutBase):
     discount: CheckoutDiscount | None
     organization: CheckoutOrganization
     attached_custom_fields: list[AttachedCustomField] | None
+    payment_method_types: Annotated[
+        list[str],
+        Version(starting_from=V2027_01),
+        Field(description="Payment method types to offer in the payment form."),
+    ]
 
 
 class CheckoutPublicConfirmed(CheckoutPublic):
@@ -898,3 +914,41 @@ class CheckoutEmbedPolicy(Schema):
     """The `frame-ancestors` sources admitting the hosts allowed to embed."""
 
     frame_ancestors: list[str]
+
+
+class CheckoutListParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    product_id: MultipleQueryFilter[ProductID] | None = Field(
+        None, title="ProductID Filter", description="Filter by product ID."
+    )
+    external_product_id: Annotated[
+        MultipleQueryFilter[str] | None, Version(starting_from=V2027_01)
+    ] = Field(
+        None,
+        title="ExternalProductID Filter",
+        description="Filter by product external ID.",
+    )
+    customer_id: MultipleQueryFilter[CustomerID] | None = Field(
+        None, title="CustomerID Filter", description="Filter by customer ID."
+    )
+    external_customer_id: MultipleQueryFilter[ExternalCustomerID] | None = Field(
+        None,
+        title="ExternalCustomerID Filter",
+        description="Filter by customer external ID.",
+    )
+    status: MultipleQueryFilter[CheckoutStatus] | None = Field(
+        None,
+        title="Status Filter",
+        description="Filter by checkout session status.",
+    )
+    query: str | None = Field(None, description="Filter by customer email.")
+    created_after: Annotated[datetime | None, Version(starting_from=V2027_01)] = Field(
+        None,
+        description="Only include checkout sessions created after this date.",
+    )
+    created_before: Annotated[datetime | None, Version(starting_from=V2027_01)] = Field(
+        None,
+        description="Only include checkout sessions created before this date.",
+    )

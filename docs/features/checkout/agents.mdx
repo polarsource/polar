@@ -1,0 +1,61 @@
+---
+title: "Checkout for AI agents"
+sidebarTitle: "AI agents"
+description: "How AI agents create Checkout Links and Sessions, and the WebMCP tools they use to fill in and submit Polar's hosted checkout in the browser."
+---
+
+AI agents work with checkout on two sides. A developer's agent **creates** checkouts for you, from the CLI, the MCP server or the API. A buyer's agent **completes** a checkout in the browser, using the WebMCP tools on Polar's hosted checkout page.
+
+## Create checkouts with an agent
+
+| What | How |
+| --- | --- |
+| A [Checkout Link](/features/checkout/links) | `polar checkout_links create`, or the `checkout_links_create` operation of the [MCP server](/integrate/mcp) |
+| A [Checkout Session](/features/checkout/session) | API only: `POST /v1/checkouts/` from your backend. There's no CLI command or MCP operation |
+| Inspect sessions | `polar checkouts list` and `get`, or `checkouts_list` and `checkouts_get` |
+
+```text Prompt
+Create a Checkout Link for my Pro product in my Polar sandbox and give me the URL.
+```
+
+## Complete a checkout in the browser
+
+Polar's hosted checkout registers **WebMCP** tools: functions a browser exposes to an AI agent through `navigator.modelContext`. An agent in a WebMCP-capable browser calls them to read the order, fill in the buyer's details and pay, instead of clicking through the form.
+
+The tools are on the hosted checkout page only. They're not available in [embedded checkout](/features/checkout/embed), and you don't need to turn anything on.
+
+| Tool | What it does |
+| --- | --- |
+| `get_checkout_state` | Returns the order (product, price, seats or amount, discount code, other products on offer), amounts, customer details, the billing address fields required for the selected country, missing required fields, validation errors and the payment form status. Read-only. |
+| `set_customer_details` | Sets the email, cardholder name and billing address in one call. Only the given fields change. The country is an ISO 3166-1 alpha-2 code, like `US`. |
+| `update_order` | Switches to another product on offer (by name or ID), sets the seats of a per-seat product, sets the amount of a pay-what-you-want product, or applies a discount code. An empty code removes it. |
+| `focus_card_number` | Puts the keyboard focus in the card number field. Pass `clear: true` to empty the card fields first. |
+| `submit_checkout` | Submits and pays. Returns `confirmed` once the payment succeeds, or the errors to fix. |
+
+Amounts are integers in the smallest unit of the checkout currency, as everywhere in the API: `1500` is $15.00 in USD.
+
+### Card details are typed, not set
+
+The card form is a Stripe iframe on another origin, so no tool can fill it. The agent calls `focus_card_number`, then types the card number, Tab, the expiry as `MMYY`, Tab, and the CVC. It checks `payment.card_complete` with `get_checkout_state` before calling `submit_checkout`.
+
+If the card issuer asks for authentication, `submit_checkout` can end with a navigation instead of a result. The purchase is complete once the page URL ends in `/confirmation`.
+
+<Visibility for="agents">
+  To complete a Polar checkout with WebMCP:
+
+  1. Call `get_checkout_state` and check `missing_required_fields`.
+  2. Call `set_customer_details` with `email`, `name` and `billing_address` (always with `country`).
+  3. Call `update_order` only if the user asked for another product, seat count, amount or discount code.
+  4. If `payment.required` isn't `false`, call `focus_card_number`, then type the card number, Tab, expiry as MMYY, Tab, CVC. Focus doesn't move between card fields by itself.
+  5. Call `get_checkout_state` and confirm `payment.card_complete` is `true`. If not, call `focus_card_number` with `clear: true` and type again.
+  6. Call `submit_checkout` once. It's consequential: it charges the buyer. Get the user's confirmation first.
+</Visibility>
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Checkout Sessions](/features/checkout/session) | Create sessions from your backend |
+| [Checkout Links](/features/checkout/links) | Reusable checkout URLs |
+| [MCP server](/integrate/mcp) | Connect your agent to Polar |
+| [Build with agents](/agents/overview) | Every way agents work with Polar |

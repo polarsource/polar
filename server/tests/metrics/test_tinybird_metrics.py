@@ -20,7 +20,6 @@ from polar.config import settings
 from polar.enums import SubscriptionRecurringInterval
 from polar.event.system import SystemEvent
 from polar.integrations.tinybird import service as tinybird_service
-from polar.integrations.tinybird.client import TinybirdClient
 from polar.integrations.tinybird.service import DATASOURCE_EVENTS, _event_to_tinybird
 from polar.kit.db.postgres import create_async_engine, create_async_sessionmaker
 from polar.kit.time_queries import TimeInterval
@@ -42,7 +41,13 @@ from polar.models.order import OrderStatus
 from polar.models.product import ProductBillingType
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.postgres import AsyncSession
-from tests.fixtures.database import get_database_url, save_fixture_factory
+from tests.fixtures.database import (
+    SKIP_DB_DROP,
+    TEMPLATE_DATABASE,
+    clone_template_database,
+    get_database_url,
+    save_fixture_factory,
+)
 from tests.fixtures.random_objects import (
     create_account,
     create_customer,
@@ -54,9 +59,7 @@ from tests.fixtures.random_objects import (
     create_subscription,
     create_user,
 )
-from tests.fixtures.tinybird import tinybird_available
-
-pytestmark = pytest.mark.xdist_group(name="tinybird")
+from tests.fixtures.tinybird import SynchronousIngestTinybirdClient, tinybird_available
 
 MONTHLY_PRICE = 50_00
 MONTHLY_PLUS_PRICE = 80_00
@@ -1584,12 +1587,15 @@ async def tinybird_metrics_database_url(worker_id: str) -> AsyncIterator[str]:
     # The harness commits shared seed data once for speed, so it can't use the
     # worker database that regular tests rely on transaction rollbacks to isolate.
     database_id = f"{worker_id}_tinybird_metrics"
-    sync_database_url = get_database_url(database_id, "psycopg2")
+    sync_database_url = get_database_url(database_id, "psycopg")
 
     if database_exists(sync_database_url):
         drop_database(sync_database_url)
 
-    create_database(sync_database_url)
+    if TEMPLATE_DATABASE:
+        clone_template_database(sync_database_url)
+    else:
+        create_database(sync_database_url)
 
     async_database_url = get_database_url(database_id)
     engine = create_async_engine(
@@ -1600,22 +1606,24 @@ async def tinybird_metrics_database_url(worker_id: str) -> AsyncIterator[str]:
     )
 
     try:
-        async with engine.begin() as conn:
-            await conn.execute(CreateSequence(Customer.short_id_sequence))
-            for entity in entities_registry.entities():
-                if isinstance(entity, PGTrigger):
-                    continue
-                await conn.execute(entity.to_sql_statement_create())
-            await conn.run_sync(Model.metadata.create_all)
-            for entity in entities_registry.entities():
-                if not isinstance(entity, PGTrigger):
-                    continue
-                await conn.execute(entity.to_sql_statement_create())
+        if not TEMPLATE_DATABASE:
+            async with engine.begin() as conn:
+                await conn.execute(CreateSequence(Customer.short_id_sequence))
+                for entity in entities_registry.entities():
+                    if isinstance(entity, PGTrigger):
+                        continue
+                    await conn.execute(entity.to_sql_statement_create())
+                await conn.run_sync(Model.metadata.create_all)
+                for entity in entities_registry.entities():
+                    if not isinstance(entity, PGTrigger):
+                        continue
+                    await conn.execute(entity.to_sql_statement_create())
 
         yield async_database_url
     finally:
         await engine.dispose()
-        drop_database(sync_database_url)
+        if not SKIP_DB_DROP:
+            drop_database(sync_database_url)
 
 
 @pytest.fixture(scope="module")
@@ -1634,7 +1642,7 @@ async def metrics_harness(
     session = create_async_sessionmaker(engine)()
     save_fixture = save_fixture_factory(session)
 
-    tinybird_client = TinybirdClient(
+    tinybird_client = SynchronousIngestTinybirdClient(
         api_url=settings.TINYBIRD_API_URL,
         clickhouse_url=settings.TINYBIRD_CLICKHOUSE_URL,
         api_token=tinybird_workspace,

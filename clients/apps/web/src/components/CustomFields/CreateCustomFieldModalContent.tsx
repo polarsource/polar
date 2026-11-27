@@ -5,7 +5,7 @@ import { schemas } from '@polar-sh/client'
 import { Button, InlineModalHeader } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useCallback } from 'react'
-import { SubmitHandler, useForm } from 'react-hook-form'
+import { SubmitHandler, useForm, useFormState } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
 import CustomFieldForm from './CustomFieldForm'
 
@@ -30,11 +30,8 @@ const CreateCustomFieldModalContent = ({
     },
   })
 
-  const {
-    handleSubmit,
-    setError,
-    formState: { errors },
-  } = form
+  const { control, handleSubmit, setError } = form
+  const { errors } = useFormState({ control })
 
   const onSubmit: SubmitHandler<schemas['CustomFieldCreate']> = useCallback(
     async (customFieldCreate) => {

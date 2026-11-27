@@ -11,7 +11,13 @@ import { EmptyState } from '@/components/Shared/EmptyState'
 import { useClientSidePagination } from '@/hooks/useClientSidePagination'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
-import { Alert, DataTable, DataTableColumnDef, Text } from '@polar-sh/orbit'
+import {
+  Alert,
+  DataTable,
+  DataTableColumnDef,
+  Text,
+  Truncated,
+} from '@polar-sh/orbit'
 import { ShieldCheck } from '@polar-sh/orbit/icons'
 import { useRouter } from 'next/navigation'
 
@@ -35,7 +41,11 @@ const columns: DataTableColumnDef<AtRiskItem>[] = [
     id: 'product',
     enableSorting: false,
     header: 'Product',
-    cell: ({ row: { original } }) => original.subscription.product.name,
+    cell: ({ row: { original } }) => (
+      <Truncated>
+        <Text as="span">{original.subscription.product.name}</Text>
+      </Truncated>
+    ),
   },
   {
     id: 'amount',

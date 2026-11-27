@@ -1,5 +1,6 @@
 import type { ClientBase, RequestOptions } from "../../base";
 import type {
+  CatalogStatus,
   ListResourceProduct,
   MetadataQuery,
   Product,
@@ -36,6 +37,8 @@ export const listProducts = (client: ClientBase) => {
       id?: string | string[] | null;
       external_id?: string | string[] | null;
       organization_id?: string | string[] | null;
+      catalog_id?: string | string[] | null;
+      catalog_status?: CatalogStatus | CatalogStatus[] | null;
       query?: string | null;
       is_archived?: boolean | null;
       is_recurring?: boolean | null;
@@ -53,6 +56,8 @@ export const listProducts = (client: ClientBase) => {
       id: query?.id,
       external_id: query?.external_id,
       organization_id: query?.organization_id,
+      catalog_id: query?.catalog_id,
+      catalog_status: query?.catalog_status,
       query: query?.query,
       is_archived: query?.is_archived,
       is_recurring: query?.is_recurring,
@@ -89,6 +94,8 @@ export const iterListProducts = (client: ClientBase) => {
       id?: string | string[] | null;
       external_id?: string | string[] | null;
       organization_id?: string | string[] | null;
+      catalog_id?: string | string[] | null;
+      catalog_status?: CatalogStatus | CatalogStatus[] | null;
       query?: string | null;
       is_archived?: boolean | null;
       is_recurring?: boolean | null;
@@ -130,6 +137,7 @@ export const createProducts = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
+   * @throws {NotPermitted} Organization product limit reached.
    * @throws {HTTPValidationError} Validation Error
    */
   return async (body: ProductCreate, requestOptions?: RequestOptions): Promise<Product> => {
@@ -138,6 +146,7 @@ export const createProducts = (client: ClientBase) => {
     const request = client.buildRequest("POST", "/v1/products/", pathParams, queryParams, body);
     const response = await client.sendRequest(request, requestOptions);
     return client.parseResponse<Product>(response, "json", {
+      403: NotPermitted,
       422: HTTPValidationError,
     });
   };

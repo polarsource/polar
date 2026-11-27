@@ -3,17 +3,24 @@ from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
 from polar.models import Customer, Order, Organization, Product, User, UserOrganization
+from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderStatus
 from polar.order.service import PaymentFailed, PaymentFailedReason
+from polar.version import V2026_10, V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_order, create_product_unit_based
+from tests.fixtures.random_objects import (
+    create_discount,
+    create_order,
+    create_product,
+    create_product_unit_based,
+)
 
 
 @pytest.fixture
@@ -69,6 +76,39 @@ class TestListOrders:
 
         json = response.json()
         assert json["pagination"]["total_count"] == len(orders)
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.orders_read}),
+    )
+    async def test_fixed_discount(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.forever,
+            organization=organization,
+        )
+        await create_order(
+            save_fixture, product=product, customer=customer, discount=discount
+        )
+
+        response = await client.get("/v1/orders/")
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        item_discount = json["items"][0]["discount"]
+        assert item_discount["amount"] == 1000
+        assert item_discount["currency"] == "usd"
 
     @pytest.mark.auth
     async def test_metadata_filter(
@@ -173,6 +213,45 @@ class TestListOrders:
         assert {item["status"] for item in json["items"]} == {
             OrderStatus.paid.value,
             OrderStatus.refunded.value,
+        }
+
+    @pytest.mark.auth
+    @pytest.mark.api_version(V2027_01)
+    async def test_external_product_id(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        old_pro = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="pro",
+        )
+        old_pro.is_current = False
+        await save_fixture(old_pro)
+        new_pro = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="pro",
+        )
+        for product in (old_pro, new_pro, product_second):
+            await create_order(save_fixture, product=product, customer=customer)
+
+        response = await client.get(
+            "/v1/orders/", params={"external_product_id": "pro"}
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert {item["product_id"] for item in json["items"]} == {
+            str(old_pro.id),
+            str(new_pro.id),
         }
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_read}))
@@ -421,6 +500,45 @@ class TestExportOrders:
         assert order2.invoice_number is not None
         assert order1.invoice_number in csv_lines[1]
         assert order2.invoice_number not in response.text
+
+    @pytest.mark.auth
+    @pytest.mark.api_version(V2027_01)
+    async def test_filter_by_external_product_id(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        old_pro = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            name="Pro v1",
+            external_id="pro",
+        )
+        old_pro.is_current = False
+        await save_fixture(old_pro)
+        new_pro = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            name="Pro v2",
+            external_id="pro",
+        )
+        for product in (old_pro, new_pro, product_second):
+            await create_order(save_fixture, product=product, customer=customer)
+
+        response = await client.get(
+            "/v1/orders/export",
+            params={"external_product_id": "pro", "columns": ["product"]},
+        )
+
+        assert response.status_code == 200
+        csv_lines = response.text.strip().split("\r\n")
+        assert sorted(csv_lines[1:]) == ["Pro v1", "Pro v2"]
 
     @pytest.mark.auth
     async def test_filter_by_status(
@@ -807,6 +925,131 @@ class TestCreateOrder:
         assert body["invoice_number"] is None
         assert body["customer_id"] == str(customer.id)
         assert body["product_id"] == str(product_one_time.id)
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_write}))
+    async def test_valid_external_ids(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        off_session_organization: Organization,
+        customer_external_id: Customer,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=off_session_organization,
+            recurring_interval=None,
+            external_id="topup",
+            is_current=False,
+        )
+        current = await create_product(
+            save_fixture,
+            organization=off_session_organization,
+            recurring_interval=None,
+            external_id="topup",
+        )
+
+        response = await client.post(
+            "/v1/orders/",
+            json={
+                "organization_id": str(off_session_organization.id),
+                "external_customer_id": customer_external_id.external_id,
+                "external_product_id": "topup",
+            },
+        )
+
+        assert response.status_code == 201
+        body = response.json()
+        assert body["status"] == OrderStatus.draft
+        assert body["customer_id"] == str(customer_external_id.id)
+        assert body["product_id"] == str(current.id)
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_write}))
+    async def test_unknown_external_ids(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+        off_session_organization: Organization,
+        product_one_time: Product,
+        customer_external_id: Customer,
+    ) -> None:
+        product_one_time.external_id = "topup"
+        await save_fixture(product_one_time)
+
+        unknown_product = await client.post(
+            "/v1/orders/",
+            json={
+                "organization_id": str(off_session_organization.id),
+                "external_customer_id": customer_external_id.external_id,
+                "external_product_id": "unknown",
+            },
+        )
+        unknown_customer = await client.post(
+            "/v1/orders/",
+            json={
+                "organization_id": str(off_session_organization.id),
+                "external_customer_id": "unknown",
+                "external_product_id": "topup",
+            },
+        )
+
+        assert unknown_product.status_code == 422
+        assert unknown_product.json()["detail"][0]["loc"] == [
+            "body",
+            "external_product_id",
+        ]
+        assert unknown_customer.status_code == 422
+        assert unknown_customer.json()["detail"][0]["loc"] == [
+            "body",
+            "external_customer_id",
+        ]
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_write}))
+    async def test_product_id_with_external_customer_id(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        off_session_organization: Organization,
+        product_one_time: Product,
+        customer_external_id: Customer,
+    ) -> None:
+        response = await client.post(
+            "/v1/orders/",
+            json={
+                "organization_id": str(off_session_organization.id),
+                "external_customer_id": customer_external_id.external_id,
+                "product_id": str(product_one_time.id),
+            },
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.api_version(V2026_10)
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_write}))
+    async def test_external_ids_before_2027_01(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        off_session_organization: Organization,
+        customer_external_id: Customer,
+    ) -> None:
+        response = await client.post(
+            "/v1/orders/",
+            json={
+                "organization_id": str(off_session_organization.id),
+                "external_customer_id": customer_external_id.external_id,
+                "external_product_id": "topup",
+            },
+        )
+
+        assert response.status_code == 422
+        assert {
+            (error["type"], tuple(error["loc"])) for error in response.json()["detail"]
+        } >= {("missing", ("body", "customer_id")), ("missing", ("body", "product_id"))}
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_write}))
     async def test_missing_organization_id(

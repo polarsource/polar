@@ -8,31 +8,51 @@ import {
   ValidationErrors,
 } from '@/schemas/BillingConfig'
 import {
+  type CatalogOptions,
   type Clients,
   entries,
   post,
   requiredScopes,
   transportErrors,
   unexpected,
+  withDefaultCurrency,
 } from '@/services/billing-config/api'
 import { issues } from '@/services/billing-config/issues'
+import { withSuggestions } from '@/services/billing-config/suggest'
 
 export const plan =
   (clients: Clients) =>
-  (config: LoadedConfig, organization: ActiveOrganization) =>
+  (
+    config: LoadedConfig,
+    organization: ActiveOrganization,
+    options: CatalogOptions = {},
+  ) =>
     Effect.gen(function* () {
       const response = yield* post(
         clients,
-        '/config/plan',
+        options.catalogId === undefined
+          ? '/config/validate'
+          : `/config/validate?catalog_id=${options.catalogId}`,
         config,
         organization,
+        options,
       )
       if (response.status === 200) {
         const body =
           yield* HttpClientResponse.schemaBodyJson(PlanResponse)(response)
         return {
-          entries: entries(body.changes, body.settings),
-          issues: issues(config, body.issues),
+          entries: yield* withDefaultCurrency(
+            clients,
+            organization,
+            entries(body.changes, body.settings, body.removed),
+          ),
+          ...(body.catalog ? { catalog: body.catalog } : {}),
+          issues: yield* withSuggestions(
+            clients,
+            organization,
+            config,
+            issues(config, body.issues),
+          ),
         } satisfies PlanResult
       }
       if (response.status === 422) {
@@ -40,7 +60,12 @@ export const plan =
           yield* HttpClientResponse.schemaBodyJson(ValidationErrors)(response)
         return {
           entries: [],
-          issues: issues(config, detail),
+          issues: yield* withSuggestions(
+            clients,
+            organization,
+            config,
+            issues(config, detail),
+          ),
         } satisfies PlanResult
       }
       return yield* unexpected(

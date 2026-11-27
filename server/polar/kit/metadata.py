@@ -36,6 +36,18 @@ _MetadataValueString = Annotated[
 ]
 MetadataValue = _MetadataValueString | int | float | bool
 
+# Meters sum numeric event metadata as double precision; this keeps sums from overflowing.
+MAXIMUM_EVENT_NUMERIC_VALUE = 2**53 - 1
+_EventMetadataValueInt = Annotated[
+    int, Field(ge=-MAXIMUM_EVENT_NUMERIC_VALUE, le=MAXIMUM_EVENT_NUMERIC_VALUE)
+]
+_EventMetadataValueFloat = Annotated[
+    float, Field(ge=-MAXIMUM_EVENT_NUMERIC_VALUE, le=MAXIMUM_EVENT_NUMERIC_VALUE)
+]
+EventMetadataValue = (
+    _MetadataValueString | _EventMetadataValueInt | _EventMetadataValueFloat | bool
+)
+
 METADATA_DESCRIPTION = inspect.cleandoc(
     f"""
     {{heading}}
@@ -165,8 +177,8 @@ def get_metadata_clause[M: MetadataMixin](
 
 
 def apply_metadata_clause[M: MetadataMixin](
-    model: type[M], statement: Select[tuple[M]], query: MetadataQuery
-) -> Select[tuple[M]]:
+    model: type[M], statement: Select[M], query: MetadataQuery
+) -> Select[M]:
     clause = get_metadata_clause(model, query)
     return statement.where(clause)
 

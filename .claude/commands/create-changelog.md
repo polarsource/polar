@@ -43,7 +43,7 @@ High-signal, externally visible changes:
 - Dependency bumps, CI/CD, dx, test additions, lint changes.
 - Legal or policy text updates.
 - Organization status, review, appeal, or onboarding lifecycle plumbing.
-- **Docs-only changes.** If the PR only touches `docs/` or `handbook/`, the feature likely shipped weeks ago. Do not include it. Verify by grepping the code for the feature before including it.
+- **Docs-only changes.** If the PR only touches `docs/`, the feature likely shipped weeks ago. Do not include it. Verify by grepping the code for the feature before including it.
 
 When in doubt, leave it out. It is much better to ship a short changelog than a bloated one. **The cap is 10, not a target.** A given week or month often has fewer than 5 items that pass the bar. Apply this smell test before including anything: "would a merchant or customer actually notice this in their week?" If the honest answer is no, drop it, even if it ships visible UI.
 

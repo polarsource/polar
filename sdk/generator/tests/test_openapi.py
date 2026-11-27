@@ -13,9 +13,12 @@ def test_generate_openapi(
 
     def run_openapi_generator(*arguments: str) -> str:
         commands.append(arguments)
-        if arguments == ("versions",):
-            return "2026-04\n2026-10\n"
-        return json.dumps({"info": {"version": arguments[1]}})
+        return json.dumps(
+            {
+                "2026-04": {"info": {"version": "2026-04"}},
+                "2026-10": {"info": {"version": "2026-10"}},
+            }
+        )
 
     monkeypatch.setattr(
         "generator.openapi._run_openapi_generator", run_openapi_generator
@@ -24,11 +27,7 @@ def test_generate_openapi(
 
     generate_openapi(output)
 
-    assert commands == [
-        ("versions",),
-        ("generate", "2026-04"),
-        ("generate", "2026-10"),
-    ]
+    assert commands == [("generate-all",)]
     assert sorted(path.name for path in output.iterdir()) == [
         "2026-04.openapi.json",
         "2026-10.openapi.json",

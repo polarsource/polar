@@ -3,15 +3,56 @@ import type { ActiveOrganization, AuthError } from '@/schemas/Auth'
 import type {
   ApplyResult,
   BillingConfigError,
+  Catalog,
+  Catalogs,
   LoadedConfig,
   PlanResult,
-  PullResult,
+  PruneEntry,
 } from '@/schemas/BillingConfig'
+import type { CatalogOptions } from '@/services/billing-config/api'
 import { apply } from '@/services/billing-config/apply'
+import { disable } from '@/services/billing-config/disable'
+import {
+  type Generated,
+  type GenerateOptions,
+  write,
+} from '@/services/billing-config/generate/write'
+import {
+  init,
+  type InitTarget,
+  type NameResources,
+  type Prepared,
+} from '@/services/billing-config/init'
 import { loader } from '@/services/billing-config/load'
 import { plan } from '@/services/billing-config/plan'
-import { pull } from '@/services/billing-config/pull'
+import { deprecations, prune } from '@/services/billing-config/prune'
+import { catalogs, publish } from '@/services/billing-config/publish'
+import {
+  type ApproveReset,
+  type ResetResult,
+  reset,
+} from '@/services/billing-config/reset'
 import { authenticatedClient } from '@/services/client'
+import { type Ran, run } from '@/utils/run'
+
+export type {
+  InitTarget,
+  NameResources,
+  Prepared,
+} from '@/services/billing-config/init'
+export type { ResetPending, ResetResult } from '@/services/billing-config/reset'
+export {
+  languageFor,
+  LANGUAGES,
+  MANIFESTS,
+  projectRoot,
+  projectsAt,
+} from '@/services/billing-config/languages'
+export {
+  GENERATED_LANGUAGES,
+  GENERATORS,
+} from '@/services/billing-config/generate'
+export { output, type Ran, type Run } from '@/utils/run'
 
 export class BillingConfig extends Context.Service<
   BillingConfig,
@@ -20,16 +61,52 @@ export class BillingConfig extends Context.Service<
     plan: (
       config: LoadedConfig,
       organization: ActiveOrganization,
+      options?: CatalogOptions,
     ) => Effect.Effect<PlanResult, AuthError | BillingConfigError>
     apply: (
       config: LoadedConfig,
       organization: ActiveOrganization,
+      options?: CatalogOptions,
     ) => Effect.Effect<ApplyResult, AuthError | BillingConfigError>
-    pull: (
+    init: <E, R>(
+      organization: ActiveOrganization,
+      target: InitTarget,
+      name: NameResources<E, R>,
+    ) => Effect.Effect<Prepared, AuthError | BillingConfigError | E, R>
+    install: (
+      command: ReadonlyArray<string>,
+      directory: string,
+    ) => Effect.Effect<Ran>
+    deprecations: (
+      config: LoadedConfig,
+      organization: ActiveOrganization,
+    ) => Effect.Effect<
+      ReadonlyArray<PruneEntry>,
+      AuthError | BillingConfigError
+    >
+    prune: (
+      config: LoadedConfig,
+      entries: ReadonlyArray<PruneEntry>,
+    ) => Effect.Effect<void, BillingConfigError>
+    catalogs: (
+      organization: ActiveOrganization,
+    ) => Effect.Effect<Catalogs, AuthError | BillingConfigError>
+    publish: (
+      organization: ActiveOrganization,
+      draft: Catalog,
+    ) => Effect.Effect<Catalog, AuthError | BillingConfigError>
+    disable: (
+      organization: ActiveOrganization,
+    ) => Effect.Effect<void, AuthError | BillingConfigError>
+    reset: <E, R>(
       organization: ActiveOrganization,
       file: string | undefined,
-      force: boolean,
-    ) => Effect.Effect<PullResult, AuthError | BillingConfigError>
+      approve: ApproveReset<E, R>,
+    ) => Effect.Effect<ResetResult, AuthError | BillingConfigError | E, R>
+    generate: (
+      config: LoadedConfig,
+      options: GenerateOptions,
+    ) => Effect.Effect<Generated, BillingConfigError>
   }
 >()('BillingConfig') {}
 
@@ -45,7 +122,15 @@ const make = Effect.gen(function* () {
     load,
     plan: plan(clients),
     apply: apply(clients),
-    pull: pull(fs, load, clients),
+    init: init(fs, clients),
+    install: run,
+    deprecations: deprecations(clients),
+    prune: prune(fs, load),
+    catalogs: catalogs(clients),
+    publish: publish(clients),
+    disable: disable(clients),
+    reset: reset(fs, clients),
+    generate: write(fs),
   })
 })
 

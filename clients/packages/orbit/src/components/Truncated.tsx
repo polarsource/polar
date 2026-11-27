@@ -89,8 +89,9 @@ export const Truncated = ({
                     paddingVertical="s"
                     boxShadow="m"
                     maxWidth={320}
+                    style={{ overflowWrap: 'anywhere' }}
                   >
-                    <Text>{children}</Text>
+                    <Text as="span">{children}</Text>
                   </Box>
                 )}
               </TooltipPrimitive.Content>

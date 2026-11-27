@@ -115,3 +115,25 @@ export const useOrganizationLicenseKeys = ({
     retry: defaultRetry,
     enabled: !!organization_id,
   })
+
+export const useLicenseKeyActivationDeactivate = (
+  licenseKey: schemas['LicenseKeyRead'],
+) =>
+  useMutation({
+    mutationFn: (activationId: string) =>
+      api.POST('/v1/license-keys/deactivate', {
+        body: {
+          key: licenseKey.key,
+          organization_id: licenseKey.organization_id,
+          activation_id: activationId,
+        },
+      }),
+    onSuccess: async (result) => {
+      if (result.error) {
+        return
+      }
+      await getQueryClient().invalidateQueries({
+        queryKey: ['license_keys', licenseKey.id],
+      })
+    },
+  })

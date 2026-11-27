@@ -17,7 +17,7 @@ class EventTypeRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[EventType]]:
+    ) -> Select[EventType]:
         return self.get_base_statement().where(EventType.organization_id.in_(org_ids))
 
     async def get_by_name_and_organization(

@@ -6,14 +6,19 @@ from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock
 from uuid import UUID
 
-import freezegun
 import pytest
+import time_machine
 from dateutil.relativedelta import relativedelta
 from pytest_mock import MockerFixture
 
 from polar.billing_entry.repository import BillingEntryRepository
-from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
+from polar.enums import (
+    ProrationBehaviorSetting,
+    SubscriptionProrationBehavior,
+    SubscriptionRecurringInterval,
+)
 from polar.event.system import SystemEvent
+from polar.kit.trial import TrialInterval
 from polar.models import (
     BillingEntry,
     Customer,
@@ -46,7 +51,11 @@ from tests.fixtures.random_objects import (
     create_product_price_fixed,
     create_subscription,
     create_subscription_with_seats,
+    create_trialing_subscription,
 )
+
+MONTH = SubscriptionRecurringInterval.month
+YEAR = SubscriptionRecurringInterval.year
 
 # Graduated seat schedule: 1–50 @ $0 (included), 51–100 @ $20,
 # 101–200 @ $17.50, 201+ @ $15.
@@ -336,7 +345,7 @@ class TestUpdateProductProrations:
             prices=[(new_product_param[1], "usd")],
         )
 
-        with freezegun.freeze_time(cycle_start) as frozen_time:
+        with time_machine.travel(cycle_start, tick=False) as frozen_time:
             # Assert default setting: "Invoice later"
             assert (
                 organization.subscription_settings["proration_behavior"]
@@ -483,7 +492,7 @@ class TestUpdateProductProrations:
         previous_period_end = subscription.current_period_end
 
         update_time = datetime(2025, 6, 16, tzinfo=UTC)
-        with freezegun.freeze_time(update_time):
+        with time_machine.travel(update_time, tick=False):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -545,7 +554,7 @@ class TestUpdateProductProrations:
         previous_period_end = subscription.current_period_end
 
         update_time = datetime(2025, 6, 16, tzinfo=UTC)
-        with freezegun.freeze_time(update_time):
+        with time_machine.travel(update_time, tick=False):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -609,7 +618,7 @@ class TestUpdateProductProrations:
         previous_period_end = subscription.current_period_end
 
         update_time = datetime(2025, 6, 16, tzinfo=UTC)
-        with freezegun.freeze_time(update_time):
+        with time_machine.travel(update_time, tick=False):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -688,7 +697,7 @@ class TestUpdateProductProrations:
         )
 
         update_time = datetime(2025, 6, 16, tzinfo=UTC)
-        with freezegun.freeze_time(update_time):
+        with time_machine.travel(update_time, tick=False):
             new_anchor_day = update_time.day
             new_period_end = subscription.recurring_interval.get_next_period(
                 update_time, new_anchor_day, subscription.recurring_interval_count
@@ -792,7 +801,7 @@ class TestUpdateProductProrations:
         session.add(organization)
         await session.flush()
 
-        with freezegun.freeze_time(cycle_start) as frozen_time:
+        with time_machine.travel(cycle_start, tick=False) as frozen_time:
             subscription = await create_active_subscription(
                 save_fixture,
                 product=old_product,
@@ -846,7 +855,9 @@ class TestUpdateProductProrations:
             for i in range(4)
         ]
 
-        with freezegun.freeze_time(datetime(2025, 6, 1, tzinfo=UTC)) as frozen_time:
+        with time_machine.travel(
+            datetime(2025, 6, 1, tzinfo=UTC), tick=False
+        ) as frozen_time:
             # Create 3 subscriptions starting June 1st, June 2nd, June 3rd respectively
             subscriptions = []
             for i in range(3):
@@ -976,7 +987,7 @@ class TestUpdateProductProrations:
             for i in range(4)
         ]
 
-        with freezegun.freeze_time(cycle_start) as frozen_time:
+        with time_machine.travel(cycle_start, tick=False) as frozen_time:
             subscription = await create_active_subscription(
                 save_fixture,
                 product=products[0],
@@ -1122,7 +1133,7 @@ class TestUpdateProductProrations:
             prices=[(meter, Decimal(50), None, "usd"), (30000, "usd")],
         )
 
-        with freezegun.freeze_time(cycle_start) as frozen_time:
+        with time_machine.travel(cycle_start, tick=False) as frozen_time:
             subscription = await create_active_subscription(
                 save_fixture,
                 product=old_product,
@@ -1299,7 +1310,7 @@ class TestUpdateProductProrations:
         else:
             new_discount_arg = "unset"
 
-        with freezegun.freeze_time(cycle_start) as frozen_time:
+        with time_machine.travel(cycle_start, tick=False) as frozen_time:
             subscription = await create_active_subscription(
                 save_fixture,
                 product=old_product,
@@ -1479,7 +1490,7 @@ class TestImmediateSeatChangeWithPendingProductChange:
             new=AsyncMock(),
         )
 
-        with freezegun.freeze_time(cycle_start) as frozen_time:
+        with time_machine.travel(cycle_start, tick=False) as frozen_time:
             product_a = await create_product(
                 save_fixture,
                 organization=organization,
@@ -1709,7 +1720,7 @@ class TestComposedStaticPriceDiscountAllocation:
             prices=[(300_00, "usd"), ("seat", 200_00, "usd")],
         )
 
-        with freezegun.freeze_time(UPDATE_TIME):
+        with time_machine.travel(UPDATE_TIME, tick=False):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -1779,7 +1790,7 @@ class TestComposedStaticPriceDiscountAllocation:
             prices=[(200_00, "usd"), ("seat", 120_00, "usd")],
         )
 
-        with freezegun.freeze_time(UPDATE_TIME):
+        with time_machine.travel(UPDATE_TIME, tick=False):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -1849,7 +1860,7 @@ class TestComposedStaticPriceDiscountAllocation:
             discount=discount,
         )
 
-        with freezegun.freeze_time(UPDATE_TIME):
+        with time_machine.travel(UPDATE_TIME, tick=False):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -1914,7 +1925,7 @@ class TestComposedStaticPriceDiscountAllocation:
             discount=discount,
         )
 
-        with freezegun.freeze_time(UPDATE_TIME):
+        with time_machine.travel(UPDATE_TIME, tick=False):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -1976,7 +1987,9 @@ class TestFixedSeatProrations:
         fixed_price = next(p for p in product.prices if is_fixed_price(p))
         seat_price = next(p for p in product.prices if is_seat_price(p))
 
-        with freezegun.freeze_time(datetime(2024, 1, 1, tzinfo=UTC)) as frozen_time:
+        with time_machine.travel(
+            datetime(2024, 1, 1, tzinfo=UTC), tick=False
+        ) as frozen_time:
             subscription = await create_subscription_with_seats(
                 save_fixture,
                 product=product,
@@ -2122,7 +2135,7 @@ class TestProrationDiscountProductApplicability:
             current_period_end=CYCLE_END,
         )
 
-        with freezegun.freeze_time(UPDATE_TIME):
+        with time_machine.travel(UPDATE_TIME, tick=False):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -2176,7 +2189,7 @@ class TestProrationDiscountProductApplicability:
             current_period_end=CYCLE_END,
         )
 
-        with freezegun.freeze_time(UPDATE_TIME):
+        with time_machine.travel(UPDATE_TIME, tick=False):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -2228,7 +2241,7 @@ class TestProrationDiscountProductApplicability:
             current_period_end=CYCLE_END,
         )
 
-        with freezegun.freeze_time(UPDATE_TIME):
+        with time_machine.travel(UPDATE_TIME, tick=False):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -2253,3 +2266,244 @@ class TestProrationDiscountProductApplicability:
         pro_debit = (_fixed_price_id(pro), BillingEntryDirection.debit)
         assert discounts[pro_debit] == 10_00
         assert amounts[pro_debit] == int((PRO_AMOUNT - 10_00) * 0.5)
+
+
+@pytest.mark.anyio
+class TestAutoProrationBehavior:
+    @pytest.mark.parametrize(
+        (
+            "old_interval",
+            "old_amount",
+            "new_interval",
+            "new_amount",
+            "setting",
+            "requested",
+            "immediate",
+        ),
+        [
+            pytest.param(
+                MONTH, 100_00, MONTH, 300_00, "auto", None, True, id="higher-price"
+            ),
+            pytest.param(
+                MONTH, 100_00, MONTH, 100_00, "auto", None, True, id="same-price"
+            ),
+            pytest.param(
+                MONTH, 300_00, MONTH, 100_00, "auto", None, False, id="lower-price"
+            ),
+            pytest.param(
+                MONTH, 100_00, YEAR, 1000_00, "auto", None, True, id="longer-interval"
+            ),
+            pytest.param(
+                YEAR, 1000_00, MONTH, 100_00, "auto", None, False, id="shorter-interval"
+            ),
+            pytest.param(
+                MONTH,
+                300_00,
+                MONTH,
+                100_00,
+                "auto",
+                SubscriptionProrationBehavior.invoice,
+                True,
+                id="explicit-behavior-overrides-auto",
+            ),
+            pytest.param(
+                MONTH,
+                300_00,
+                MONTH,
+                100_00,
+                SubscriptionProrationBehavior.invoice,
+                "auto",
+                False,
+                id="explicit-auto-overrides-setting",
+            ),
+        ],
+    )
+    async def test_product_change(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        organization: Organization,
+        customer: Customer,
+        old_interval: SubscriptionRecurringInterval,
+        old_amount: int,
+        new_interval: SubscriptionRecurringInterval,
+        new_amount: int,
+        setting: ProrationBehaviorSetting,
+        requested: ProrationBehaviorSetting | None,
+        immediate: bool,
+    ) -> None:
+        order_mock = mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+        organization.subscription_settings = {
+            **organization.subscription_settings,
+            "proration_behavior": setting,
+        }
+        await save_fixture(organization)
+        old_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=old_interval,
+            prices=[(old_amount, "usd")],
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=new_interval,
+            prices=[(new_amount, "usd")],
+        )
+
+        with time_machine.travel(
+            datetime(2025, 6, 1, tzinfo=UTC), tick=False
+        ) as frozen_time:
+            subscription = await create_active_subscription(
+                save_fixture, product=old_product, customer=customer
+            )
+            frozen_time.move_to(datetime(2025, 6, 16, tzinfo=UTC))
+
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                updated = await subscription_service.update_product(
+                    session,
+                    ctx,
+                    subscription,
+                    product_id=new_product.id,
+                    proration_behavior=requested,
+                )
+            await session.flush()
+
+        events = await get_all_by_name(session, SystemEvent.subscription_updated)
+        assert len(events) == 1
+        assert events[0].user_metadata["proration_behavior"] == (
+            SubscriptionProrationBehavior.invoice
+            if immediate
+            else SubscriptionProrationBehavior.next_period
+        )
+        assert order_mock.await_count == int(immediate)
+        if immediate:
+            assert updated.product_id == new_product.id
+            assert updated.pending_update is None
+        else:
+            assert updated.product_id == old_product.id
+            assert updated.pending_update is not None
+            assert updated.pending_update.product_id == new_product.id
+
+    async def test_trialing_product_downgrade(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        order_mock = mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+        old_product, new_product = [
+            await create_product(
+                save_fixture,
+                organization=organization,
+                recurring_interval=MONTH,
+                prices=[(amount, "usd")],
+                trial_interval=TrialInterval.month,
+                trial_interval_count=1,
+            )
+            for amount in (300_00, 100_00)
+        ]
+        subscription = await create_trialing_subscription(
+            save_fixture, product=old_product, customer=customer
+        )
+        trial_end = subscription.trial_end
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=new_product.id,
+                proration_behavior="auto",
+            )
+        await session.flush()
+
+        order_mock.assert_not_awaited()
+        assert updated.product_id == new_product.id
+        assert updated.pending_update is None
+        assert updated.trial_end == trial_end
+
+    @pytest.mark.parametrize(
+        ("new_seats", "trialing", "immediate"),
+        [
+            pytest.param(100, False, True, id="seat-increase"),
+            pytest.param(60, False, False, id="seat-decrease"),
+            pytest.param(60, True, True, id="trialing-seat-decrease"),
+        ],
+    )
+    async def test_seat_change(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        organization: Organization,
+        customer: Customer,
+        new_seats: int,
+        trialing: bool,
+        immediate: bool,
+    ) -> None:
+        order_mock = mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+        product = await create_product_fixed_and_seat(
+            save_fixture,
+            organization=organization,
+            fixed_amount=99900,
+            tiers=GRADUATED_SEAT_TIERS,
+            seat_tier_type=SeatTierType.graduated,
+        )
+
+        with time_machine.travel(
+            datetime(2024, 1, 1, tzinfo=UTC), tick=False
+        ) as frozen_time:
+            subscription = await create_subscription_with_seats(
+                save_fixture,
+                product=product,
+                customer=customer,
+                seats=80,
+                **(
+                    {
+                        "status": SubscriptionStatus.trialing,
+                        "trial_start": datetime(2024, 1, 1, tzinfo=UTC),
+                        "trial_end": datetime(2024, 2, 1, tzinfo=UTC),
+                    }
+                    if trialing
+                    else {}
+                ),
+            )
+            frozen_time.move_to(datetime(2024, 1, 16, tzinfo=UTC))
+
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                updated = await subscription_service.update_seats(
+                    session,
+                    ctx,
+                    subscription,
+                    seats=new_seats,
+                    proration_behavior="auto",
+                )
+            await session.flush()
+
+        assert order_mock.await_count == int(immediate and not trialing)
+        if immediate:
+            assert updated.seats == new_seats
+            assert updated.pending_update is None
+        else:
+            assert updated.seats == 80
+            assert updated.pending_update is not None
+            assert updated.pending_update.seats == new_seats

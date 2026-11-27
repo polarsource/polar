@@ -9,6 +9,7 @@ import CountryPicker from './ui/CountryPicker'
 import CountryStatePicker, {
   COUNTRIES_WITH_FIXED_STATE_OPTIONS,
 } from './ui/CountryStatePicker'
+import { usesStateLabel } from '@polar-sh/ui/lib/states'
 import { Input } from './ui/Input'
 import { Checkbox } from './ui/Checkbox'
 import {
@@ -34,9 +35,20 @@ import {
   StripePaymentElementChangeEvent,
 } from '@stripe/stripe-js'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { UseFormReturn, WatchObserver } from 'react-hook-form'
+import {
+  UseFormReturn,
+  WatchObserver,
+  useWatch,
+  useFormState,
+} from 'react-hook-form'
 import { hasProductCheckout } from '../guards'
 import { useDebouncedCallback } from '../hooks/debounce'
+import {
+  type CheckoutSubmitResult,
+  errorDetail,
+  flattenFormErrors,
+  useCheckoutWebMCP,
+} from '../hooks/webmcp'
 import { isDisplayedField, isRequiredField } from '../utils/address'
 import { isTemporaryDiscount } from '../utils/discount'
 import { convertLocaleToStripeElementLocale } from '../utils/locale'
@@ -78,8 +90,11 @@ interface BaseCheckoutFormProps {
   locale?: AcceptedLocale
   isWalletPayment?: boolean
   isPaymentFormReady?: boolean
+  isPaymentFormComplete?: boolean
+  focusPaymentForm?: (options: { clear: boolean }) => boolean
   beforeSubmit?: React.ReactNode
   embed?: boolean
+  webMCP?: boolean
 }
 
 const BaseCheckoutForm = ({
@@ -95,20 +110,17 @@ const BaseCheckoutForm = ({
   locale: localeProp,
   isWalletPayment,
   isPaymentFormReady = true,
+  isPaymentFormComplete = false,
+  focusPaymentForm,
   beforeSubmit,
   embed,
+  webMCP = false,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
   const interval = hasProductCheckout(checkout)
     ? checkout.product.recurring_interval
     : null
-  const {
-    control,
-    handleSubmit,
-    watch,
-    clearErrors,
-    resetField,
-    formState: { errors },
-  } = form
+  const { control, handleSubmit, watch, clearErrors, resetField } = form
+  const { errors } = useFormState({ control })
 
   const { trialUnavailable } = useCheckoutForm()
 
@@ -121,7 +133,10 @@ const BaseCheckoutForm = ({
 
   const t = useTranslations(locale)
 
-  const country = watch('customer_billing_address.country')
+  const country = useWatch({
+    control,
+    name: 'customer_billing_address.country',
+  })
   const watcher: WatchObserver<schemas['CheckoutUpdatePublic']> = useCallback(
     async (value, { name }) => {
       if (!name) {
@@ -202,7 +217,7 @@ const BaseCheckoutForm = ({
     [checkout, update, clearErrors],
   )
 
-  const discountCode = watch('discount_code')
+  const discountCode = useWatch({ control, name: 'discount_code' })
 
   useEffect(() => {
     if (!discountCode && !checkout.discount) {
@@ -226,7 +241,7 @@ const BaseCheckoutForm = ({
     return () => subscription.unsubscribe()
   }, [watch, debouncedWatcher])
 
-  const taxId = watch('customer_tax_id')
+  const taxId = useWatch({ control, name: 'customer_tax_id' })
   const addTaxID = useCallback(async () => {
     if (!taxId) {
       return
@@ -276,8 +291,42 @@ const BaseCheckoutForm = ({
       if (!isShownToBuyer(error)) {
         throw error
       }
+      return error
     }
   }
+
+  const submitForAgent = async (): Promise<CheckoutSubmitResult> => {
+    let result: CheckoutSubmitResult = {
+      status: 'failed',
+      message: 'The checkout was not submitted',
+    }
+    await handleSubmit(
+      async (data) => {
+        const error = await onSubmit(data)
+        result = error
+          ? {
+              status: 'failed',
+              message: errorDetail(error) || 'The payment failed',
+            }
+          : { status: 'confirmed' }
+      },
+      (errors) => {
+        result = { status: 'invalid', errors: flattenFormErrors(errors) }
+      },
+    )()
+    return result
+  }
+
+  useCheckoutWebMCP({
+    enabled: webMCP && !embed && !disabled,
+    checkout,
+    form,
+    update,
+    submit: submitForAgent,
+    focusPaymentForm,
+    isPaymentFormReady,
+    isPaymentFormComplete,
+  })
 
   const validTaxID = !!checkout.customer_tax_id
 
@@ -301,6 +350,10 @@ const BaseCheckoutForm = ({
 
     return t('checkout.cta.getFree')
   }, [checkout, interval, t])
+
+  const isShortUSBillingAddress =
+    checkout.customer_billing_address?.country === 'US' &&
+    !isDisplayedField(checkout.billing_address_fields.line1)
 
   return (
     <div
@@ -378,7 +431,14 @@ const BaseCheckoutForm = ({
               {(checkout.is_payment_form_required ||
                 checkout.require_billing_address) && (
                 <>
-                  <FormItem>
+                  <FormItem
+                    className={
+                      // Hacky CSS which will be removed once the experiment (checkout_us_short_billing_address) is concluded
+                      isShortUSBillingAddress
+                        ? 'grid grid-cols-2 gap-x-2 [&>*]:col-span-2 [&>.grid]:col-span-1 [&>.grid+*]:col-span-1'
+                        : undefined
+                    }
+                  >
                     <FormLabel>
                       {t('checkout.form.billingAddress.label')}
                     </FormLabel>
@@ -450,7 +510,16 @@ const BaseCheckoutForm = ({
                       isDisplayedField(
                         checkout.billing_address_fields.city,
                       )) && (
-                      <div className="grid grid-cols-2 gap-x-2">
+                      <div
+                        className={
+                          isDisplayedField(
+                            checkout.billing_address_fields.postal_code,
+                          ) &&
+                          isDisplayedField(checkout.billing_address_fields.city)
+                            ? 'grid grid-cols-2 gap-x-2'
+                            : 'grid grid-cols-1'
+                        }
+                      >
                         {isDisplayedField(
                           checkout.billing_address_fields.postal_code,
                         ) && (
@@ -529,27 +598,39 @@ const BaseCheckoutForm = ({
                               ? t('checkout.form.fieldRequired')
                               : false,
                           }}
-                          render={({ field }) => (
-                            <>
-                              <CountryStatePicker
-                                name={field.name}
-                                autoComplete="billing address-level1"
-                                data-testid="billing-state"
-                                country={country}
-                                value={field.value || ''}
-                                onChange={field.onChange}
-                                placeholder={
-                                  country === 'US'
-                                    ? t('checkout.form.billingAddress.state')
-                                    : t('checkout.form.billingAddress.province')
-                                }
-                                fallbackPlaceholder={t(
-                                  'checkout.form.billingAddress.stateProvince',
-                                )}
-                              />
-                              <FormMessage />
-                            </>
-                          )}
+                          render={({ field }) => {
+                            const statePicker = (
+                              <>
+                                <CountryStatePicker
+                                  name={field.name}
+                                  autoComplete="billing address-level1"
+                                  data-testid="billing-state"
+                                  country={country}
+                                  value={field.value || ''}
+                                  onChange={field.onChange}
+                                  placeholder={
+                                    usesStateLabel(country)
+                                      ? t('checkout.form.billingAddress.state')
+                                      : t(
+                                          'checkout.form.billingAddress.province',
+                                        )
+                                  }
+                                  fallbackPlaceholder={t(
+                                    'checkout.form.billingAddress.stateProvince',
+                                  )}
+                                />
+                                <FormMessage />
+                              </>
+                            )
+                            return isShortUSBillingAddress ? (
+                              // Hacky CSS which will be removed once the experiment (checkout_us_short_billing_address) is concluded
+                              <div className="flex flex-col gap-2 [&>div]:mb-0">
+                                {statePicker}
+                              </div>
+                            ) : (
+                              statePicker
+                            )
+                          }}
                         />
                       </FormControl>
                     )}
@@ -667,7 +748,7 @@ const BaseCheckoutForm = ({
                                   value={field.value || ''}
                                   disabled={validTaxID}
                                 />
-                                <div className="absolute inset-y-0 right-1 z-10 flex items-center gap-1">
+                                <div className="inset-e-1 absolute inset-y-0 z-10 flex items-center gap-1">
                                   {!validTaxID && taxId && (
                                     <Button
                                       type="button"
@@ -803,6 +884,7 @@ interface CheckoutFormProps {
   locale?: AcceptedLocale
   beforeSubmit?: React.ReactNode
   embed?: boolean
+  webMCP?: boolean
 }
 
 const StripeCheckoutForm = (props: CheckoutFormProps) => {
@@ -833,6 +915,8 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     : false
   const t = useTranslations(locale ?? 'en')
   const [isPaymentElementReady, setIsPaymentElementReady] = useState(false)
+  const [isPaymentElementComplete, setIsPaymentElementComplete] =
+    useState(false)
   if (!checkout.is_payment_form_required && isPaymentElementReady) {
     setIsPaymentElementReady(false)
   }
@@ -852,6 +936,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
   const onPaymentElementChange = useCallback(
     async (event: StripePaymentElementChangeEvent) => {
       setSelectedPaymentMethod(event.value.type)
+      setIsPaymentElementComplete(event.value.type === 'card' && event.complete)
       if (event.value.type !== checkout.payment_method_type) {
         try {
           await update({ payment_method_type: event.value.type })
@@ -898,10 +983,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
       stripe={stripePromise}
       options={{
         ...elementsOptions,
-        excludedPaymentMethodTypes:
-          elementsOptions.mode === 'payment'
-            ? undefined
-            : ['bancontact', 'ideal', 'sepa_debit', 'sofort'],
+        paymentMethodTypes: checkout.payment_method_types,
         locale: locale ? convertLocaleToStripeElementLocale(locale) : undefined,
         customerSessionClientSecret: (
           checkout.payment_processor_metadata as {
@@ -925,6 +1007,18 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
             confirm={(data) => confirm(data, stripe, elements)}
             isWalletPayment={isWalletPayment}
             isPaymentFormReady={isPaymentFormReady}
+            isPaymentFormComplete={isPaymentElementComplete}
+            focusPaymentForm={({ clear }) => {
+              const paymentElement = elements?.getElement('payment')
+              if (!paymentElement) {
+                return false
+              }
+              if (clear) {
+                paymentElement.clear()
+              }
+              paymentElement.focus()
+              return true
+            }}
           >
             {checkout.is_payment_form_required && (
               <PaymentElement

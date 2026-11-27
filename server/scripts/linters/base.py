@@ -12,6 +12,7 @@ class Rule:
     skip_code: str
     summary: str
     check: Callable[[ast.Module], list[Violation]]
+    root: str = "polar"
 
 
 _SKIP_RE = re.compile(r"#\s*lint-skip(?::\s*(?P<codes>[^#]*))?")

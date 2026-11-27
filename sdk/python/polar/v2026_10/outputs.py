@@ -5,7 +5,7 @@ import typing
 
 import typing_extensions
 
-from polar.base import _register_extra_items_typed_dict
+from polar.base import _Discriminator, _register_extra_items_typed_dict
 from polar.v2026_10.literals import (
     BenefitType,
     BenefitVisibility,
@@ -4480,31 +4480,6 @@ class CustomerOrderInvoice:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
-class CustomerOrderPaymentConfirmation:
-    """Response after confirming a retry payment."""
-
-    status: str
-    """Payment status after confirmation."""
-
-    client_secret: str | None = None
-    """Client secret for handling additional actions."""
-
-    error: str | None = None
-    """Error message if confirmation failed."""
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
-class CustomerOrderPaymentStatus:
-    """Payment status for an order."""
-
-    status: str
-    """Current payment status."""
-
-    error: str | None = None
-    """Error message if payment failed."""
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
 class CustomerOrderProduct:
     id: str
     """The ID of the object."""
@@ -5646,31 +5621,6 @@ class CustomerUpdatedMetadata:
     customer_external_id: str | None
 
     updated_fields: CustomerUpdatedFields
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
-class CustomerWallet:
-    """A wallet represents your balance with an organization.
-
-    You can top-up your wallet and use the balance to pay for usage."""
-
-    id: str
-    """The ID of the object."""
-
-    created_at: str
-    """Creation timestamp of the object."""
-
-    modified_at: str | None
-    """Last modification timestamp of the object."""
-
-    customer_id: str
-    """The ID of the customer that owns the wallet."""
-
-    balance: int
-    """The current balance of the wallet, in cents."""
-
-    currency: str
-    """The currency of the wallet."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -7119,13 +7069,6 @@ class ListResourceCustomerSubscription:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
-class ListResourceCustomerWallet:
-    items: list[CustomerWallet]
-
-    pagination: Pagination
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
 class ListResourceDiscount:
     items: list[Discount]
 
@@ -7266,13 +7209,6 @@ class ListResourceWithCursorPaginationEvent:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
-class ManualRetryLimitExceeded:
-    error: typing.Literal["ManualRetryLimitExceeded"]
-
-    detail: str
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
 class Member:
     """A member of a customer."""
 
@@ -7332,7 +7268,20 @@ class Meter:
     filter: Filter
     """The filter to apply on events that'll be used to calculate the meter."""
 
-    aggregation: CountAggregation | PropertyAggregation | UniqueAggregation
+    aggregation: typing.Annotated[
+        CountAggregation | PropertyAggregation | UniqueAggregation,
+        _Discriminator(
+            "func",
+            (
+                ("avg", PropertyAggregation),
+                ("count", CountAggregation),
+                ("max", PropertyAggregation),
+                ("min", PropertyAggregation),
+                ("sum", PropertyAggregation),
+                ("unique", UniqueAggregation),
+            ),
+        ),
+    ]
     """The aggregation to apply on the filtered events to calculate the meter."""
 
     organization_id: str
@@ -7477,29 +7426,6 @@ class Metric:
 
     type: MetricType
     """Type of the metric, useful to know the unit or format of the value."""
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
-class MetricDashboardSchema:
-    """A user-defined metrics dashboard."""
-
-    created_at: str
-    """Creation timestamp of the object."""
-
-    modified_at: str | None
-    """Last modification timestamp of the object."""
-
-    id: str
-    """The ID of the object."""
-
-    name: str
-    """Display name for the dashboard."""
-
-    metrics: list[str]
-    """List of metric slugs displayed in this dashboard."""
-
-    organization_id: str
-    """The ID of the organization owning this dashboard."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -8172,13 +8098,6 @@ class OrderNotDraft:
 @dataclasses.dataclass(kw_only=True, slots=True)
 class OrderNotEligibleForInvoice:
     error: typing.Literal["OrderNotEligibleForInvoice"]
-
-    detail: str
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
-class OrderNotEligibleForRetry:
-    error: typing.Literal["OrderNotEligibleForRetry"]
 
     detail: str
 
@@ -8869,13 +8788,6 @@ class PaymentActionRequired:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
-class PaymentAlreadyInProgress:
-    error: typing.Literal["PaymentAlreadyInProgress"]
-
-    detail: str
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
 class PaymentError:
     error: typing.Literal["PaymentError"]
 
@@ -9540,6 +9452,13 @@ class RefundDispute:
 
     payment_id: str
     """The ID of the payment associated with the dispute."""
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class RefundPaymentAlreadyRefundedByStripe:
+    error: typing.Literal["RefundPaymentAlreadyRefundedByStripe"]
+
+    detail: str
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -11284,7 +11203,7 @@ class WebhookEvent:
     """Whether this event is archived. Archived events can't be redelivered, and the payload is not accessible anymore."""
 
 
-Benefit: typing.TypeAlias = (
+Benefit: typing.TypeAlias = typing.Annotated[
     BenefitCustom
     | BenefitDiscord
     | BenefitGitHubRepository
@@ -11292,8 +11211,21 @@ Benefit: typing.TypeAlias = (
     | BenefitLicenseKeys
     | BenefitMeterCredit
     | BenefitFeatureFlag
-    | BenefitSlackSharedChannel
-)
+    | BenefitSlackSharedChannel,
+    _Discriminator(
+        "type",
+        (
+            ("custom", BenefitCustom),
+            ("discord", BenefitDiscord),
+            ("downloadables", BenefitDownloadables),
+            ("feature_flag", BenefitFeatureFlag),
+            ("github_repository", BenefitGitHubRepository),
+            ("license_keys", BenefitLicenseKeys),
+            ("meter_credit", BenefitMeterCredit),
+            ("slack_shared_channel", BenefitSlackSharedChannel),
+        ),
+    ),
+]
 
 BenefitGrantWebhook: typing.TypeAlias = (
     BenefitGrantDiscordWebhook
@@ -11306,7 +11238,7 @@ BenefitGrantWebhook: typing.TypeAlias = (
     | BenefitGrantSlackSharedChannelWebhook
 )
 
-BenefitPublic: typing.TypeAlias = (
+BenefitPublic: typing.TypeAlias = typing.Annotated[
     BenefitCustomPublic
     | BenefitDiscordPublic
     | BenefitGitHubRepositoryPublic
@@ -11314,8 +11246,21 @@ BenefitPublic: typing.TypeAlias = (
     | BenefitLicenseKeysPublic
     | BenefitFeatureFlagPublic
     | BenefitSlackSharedChannelPublic
-    | BenefitMeterCreditPublic
-)
+    | BenefitMeterCreditPublic,
+    _Discriminator(
+        "type",
+        (
+            ("custom", BenefitCustomPublic),
+            ("discord", BenefitDiscordPublic),
+            ("downloadables", BenefitDownloadablesPublic),
+            ("feature_flag", BenefitFeatureFlagPublic),
+            ("github_repository", BenefitGitHubRepositoryPublic),
+            ("license_keys", BenefitLicenseKeysPublic),
+            ("meter_credit", BenefitMeterCreditPublic),
+            ("slack_shared_channel", BenefitSlackSharedChannelPublic),
+        ),
+    ),
+]
 
 CheckoutForbiddenError: typing.TypeAlias = (
     AlreadyActiveSubscriptionError
@@ -11326,15 +11271,34 @@ CheckoutForbiddenError: typing.TypeAlias = (
     | DiscountRedemptionLimitReached
 )
 
-CustomField: typing.TypeAlias = (
+CustomField: typing.TypeAlias = typing.Annotated[
     CustomFieldText
     | CustomFieldNumber
     | CustomFieldDate
     | CustomFieldCheckbox
-    | CustomFieldSelect
-)
+    | CustomFieldSelect,
+    _Discriminator(
+        "type",
+        (
+            ("checkbox", CustomFieldCheckbox),
+            ("date", CustomFieldDate),
+            ("number", CustomFieldNumber),
+            ("select", CustomFieldSelect),
+            ("text", CustomFieldText),
+        ),
+    ),
+]
 
-Customer: typing.TypeAlias = CustomerIndividual | CustomerTeam
+Customer: typing.TypeAlias = typing.Annotated[
+    CustomerIndividual | CustomerTeam,
+    _Discriminator(
+        "type",
+        (
+            ("individual", CustomerIndividual),
+            ("team", CustomerTeam),
+        ),
+    ),
+]
 
 CustomerBenefitGrant: typing.TypeAlias = (
     CustomerBenefitGrantDiscord
@@ -11351,12 +11315,28 @@ CustomerPaymentMethod: typing.TypeAlias = (
     PaymentMethodCard | PaymentMethodKrCard | PaymentMethodGeneric
 )
 
-CustomerPaymentMethodCreateResponse: typing.TypeAlias = (
+CustomerPaymentMethodCreateResponse: typing.TypeAlias = typing.Annotated[
     CustomerPaymentMethodCreateSucceededResponse
-    | CustomerPaymentMethodCreateRequiresActionResponse
-)
+    | CustomerPaymentMethodCreateRequiresActionResponse,
+    _Discriminator(
+        "status",
+        (
+            ("requires_action", CustomerPaymentMethodCreateRequiresActionResponse),
+            ("succeeded", CustomerPaymentMethodCreateSucceededResponse),
+        ),
+    ),
+]
 
-CustomerState: typing.TypeAlias = CustomerStateIndividual | CustomerStateTeam
+CustomerState: typing.TypeAlias = typing.Annotated[
+    CustomerStateIndividual | CustomerStateTeam,
+    _Discriminator(
+        "type",
+        (
+            ("individual", CustomerStateIndividual),
+            ("team", CustomerStateTeam),
+        ),
+    ),
+]
 
 Discount: typing.TypeAlias = (
     DiscountFixedOnceForeverDuration
@@ -11365,16 +11345,32 @@ Discount: typing.TypeAlias = (
     | DiscountPercentageRepeatDuration
 )
 
-FileRead: typing.TypeAlias = (
+FileRead: typing.TypeAlias = typing.Annotated[
     DownloadableFileRead
     | ProductMediaFileRead
     | OrganizationAvatarFileRead
-    | SupportCaseAttachmentFileRead
-)
+    | SupportCaseAttachmentFileRead,
+    _Discriminator(
+        "service",
+        (
+            ("downloadable", DownloadableFileRead),
+            ("organization_avatar", OrganizationAvatarFileRead),
+            ("product_media", ProductMediaFileRead),
+            ("support_case_attachment", SupportCaseAttachmentFileRead),
+        ),
+    ),
+]
 
-LegacyRecurringProductPrice: typing.TypeAlias = (
-    LegacyRecurringProductPriceFixed | LegacyRecurringProductPriceCustom
-)
+LegacyRecurringProductPrice: typing.TypeAlias = typing.Annotated[
+    LegacyRecurringProductPriceFixed | LegacyRecurringProductPriceCustom,
+    _Discriminator(
+        "amount_type",
+        (
+            ("custom", LegacyRecurringProductPriceCustom),
+            ("fixed", LegacyRecurringProductPriceFixed),
+        ),
+    ),
+]
 
 Payment: typing.TypeAlias = CardPayment | KrCardPayment | GenericPayment
 
@@ -11384,16 +11380,27 @@ PaymentMethod: typing.TypeAlias = (
     | CustomerPaymentMethodGeneric
 )
 
-ProductPrice: typing.TypeAlias = (
+ProductPrice: typing.TypeAlias = typing.Annotated[
     ProductPriceFixed
     | ProductPriceCustom
     | ProductPriceSeatBased
     | ProductPriceUnitBased
     | ProductPriceMeteredUnit
-    | ProductPriceMeteredTiers
-)
+    | ProductPriceMeteredTiers,
+    _Discriminator(
+        "amount_type",
+        (
+            ("custom", ProductPriceCustom),
+            ("fixed", ProductPriceFixed),
+            ("metered_tiers", ProductPriceMeteredTiers),
+            ("metered_unit", ProductPriceMeteredUnit),
+            ("seat_based", ProductPriceSeatBased),
+            ("unit_based", ProductPriceUnitBased),
+        ),
+    ),
+]
 
-SystemEvent: typing.TypeAlias = (
+SystemEvent: typing.TypeAlias = typing.Annotated[
     MeterCreditEvent
     | MeterResetEvent
     | BenefitGrantedEvent
@@ -11430,10 +11437,64 @@ SystemEvent: typing.TypeAlias = (
     | BalanceRefundEvent
     | BalanceRefundReversalEvent
     | BalanceDisputeEvent
-    | BalanceDisputeReversalEvent
-)
+    | BalanceDisputeReversalEvent,
+    _Discriminator(
+        "name",
+        (
+            ("balance.credit_order", BalanceCreditOrderEvent),
+            ("balance.dispute", BalanceDisputeEvent),
+            ("balance.dispute_reversal", BalanceDisputeReversalEvent),
+            ("balance.order", BalanceOrderEvent),
+            ("balance.refund", BalanceRefundEvent),
+            ("balance.refund_reversal", BalanceRefundReversalEvent),
+            ("benefit.cycled", BenefitCycledEvent),
+            ("benefit.granted", BenefitGrantedEvent),
+            ("benefit.revoked", BenefitRevokedEvent),
+            ("benefit.updated", BenefitUpdatedEvent),
+            ("checkout.created", CheckoutCreatedEvent),
+            ("customer.created", CustomerCreatedEvent),
+            ("customer.deleted", CustomerDeletedEvent),
+            ("customer.updated", CustomerUpdatedEvent),
+            ("meter.credited", MeterCreditEvent),
+            ("meter.reset", MeterResetEvent),
+            ("order.paid", OrderPaidEvent),
+            ("order.refunded", OrderRefundedEvent),
+            ("order.unvoided", OrderUnvoidedEvent),
+            ("order.voided", OrderVoidedEvent),
+            (
+                "subscription.billing_period_updated",
+                SubscriptionBillingPeriodUpdatedEvent,
+            ),
+            ("subscription.canceled", SubscriptionCanceledEvent),
+            ("subscription.created", SubscriptionCreatedEvent),
+            ("subscription.cycled", SubscriptionCycledEvent),
+            ("subscription.migrated", SubscriptionMigratedEvent),
+            ("subscription.past_due", SubscriptionPastDueEvent),
+            ("subscription.paused", SubscriptionPausedEvent),
+            ("subscription.product_updated", SubscriptionProductUpdatedEvent),
+            ("subscription.reactivated", SubscriptionReactivatedEvent),
+            ("subscription.reinstated", SubscriptionReinstatedEvent),
+            ("subscription.resumed", SubscriptionResumedEvent),
+            ("subscription.revoked", SubscriptionRevokedEvent),
+            ("subscription.seats_updated", SubscriptionSeatsUpdatedEvent),
+            ("subscription.uncanceled", SubscriptionUncanceledEvent),
+            ("subscription.units_updated", SubscriptionUnitsUpdatedEvent),
+            ("subscription.update_cleared", SubscriptionUpdateClearedEvent),
+            ("subscription.updated", SubscriptionUpdatedEvent),
+        ),
+    ),
+]
 
-Event: typing.TypeAlias = SystemEvent | UserEvent
+Event: typing.TypeAlias = typing.Annotated[
+    SystemEvent | UserEvent,
+    _Discriminator(
+        "source",
+        (
+            ("system", SystemEvent),
+            ("user", UserEvent),
+        ),
+    ),
+]
 
 
 _register_extra_items_typed_dict(

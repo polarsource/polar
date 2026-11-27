@@ -7,7 +7,7 @@ never enters the process; :class:`LocalSigner` signs in process from the
 configured key set, so local development and CI need no cloud access.
 
 See ADR-0010:
-``handbook/engineering/decisions/0010-jwks-signing-keys-in-kms.mdx``.
+``adr/0010-jwks-signing-keys-in-kms.md``.
 """
 
 import base64

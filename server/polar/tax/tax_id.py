@@ -114,7 +114,7 @@ class TaxIDFormat(StrEnum):
     vn_tin = "vn_tin"
     za_vat = "za_vat"
 
-    # Additional tax ID formats that are not supported by Stripe but are used for validation purposes only.
+    # Additional tax ID formats used for validation purposes only.
     mu_tan = "mu_tan"
 
     def is_stripe_supported(self) -> bool:
@@ -124,6 +124,9 @@ class TaxIDFormat(StrEnum):
         Returns:
             True if the tax ID format is supported by Stripe, False otherwise.
         """
+        return self not in {self.mu_tan}
+
+    def is_numeral_supported(self) -> bool:
         return self not in {self.mu_tan}
 
 
@@ -263,6 +266,20 @@ class StdNumValidator(ValidatorProtocol):
             return self.module.validate(number)
         except stdnum.exceptions.ValidationError as e:
             raise InvalidTaxID(number, country) from e
+
+
+def _normalize_eu_vat(number: str) -> str:
+    if number.startswith("GR"):
+        return f"EL{number[2:]}"
+    return number
+
+
+class EUVATValidator(StdNumValidator):
+    def __init__(self) -> None:
+        super().__init__(TaxIDFormat.eu_vat)
+
+    def validate(self, number: str, country: str) -> str:
+        return _normalize_eu_vat(super().validate(number, country))
 
 
 class CAGSTHSTValidator(ValidatorProtocol):
@@ -517,6 +534,8 @@ def _get_validator(tax_id_type: TaxIDFormat) -> ValidatorProtocol:
             return ZAVATValidator()
         case TaxIDFormat.mu_tan:
             return MUTANValidator()
+        case TaxIDFormat.eu_vat:
+            return EUVATValidator()
         case _:
             return StdNumValidator(tax_id_type)
 

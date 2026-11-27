@@ -8,7 +8,6 @@ import {
   resolveBenefitIcon,
 } from '@/components/Benefit/utils'
 import { useModal } from '@/components/Modal/useModal'
-import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useInfiniteBenefits } from '@/hooks/queries'
 import { useInViewport } from '@/hooks/utils'
 import { usePushRouteWithoutCache } from '@/utils/router'
@@ -80,7 +79,8 @@ export const BenefitListSidebar = ({
     hide: hideCreateBenefitModal,
     show: showCreateBenefitModal,
   } = useModal(false)
-  const managedAsCode = useIsManagedAsCode(organization.id)
+  const managedAsCode =
+    organization.feature_settings?.config_as_code_enabled ?? false
 
   const { ref: loadingRef, inViewport } = useInViewport<HTMLDivElement>()
 

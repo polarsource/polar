@@ -1,5 +1,6 @@
 'use client'
 
+import type { MetricsProductFilter } from '@/hooks/queries/metrics'
 import CancellationsDistributionChart from '@/components/Metrics/CancellationsDistributionChart'
 import CancellationsStackedChart from '@/components/Metrics/CancellationsStackedChart'
 import MetricChartBox from '@/components/Metrics/MetricChartBox'
@@ -13,7 +14,7 @@ interface CancellationsContentProps {
   organizationId: string
   startDate: Date
   endDate: Date
-  productId?: string[]
+  productFilter?: MetricsProductFilter
 }
 
 export function CancellationsContent({
@@ -22,7 +23,7 @@ export function CancellationsContent({
   organizationId,
   startDate,
   endDate,
-  productId,
+  productFilter,
 }: CancellationsContentProps) {
   return (
     <div className="flex flex-col gap-y-6">
@@ -36,7 +37,7 @@ export function CancellationsContent({
               organizationId={organizationId}
               startDate={startDate}
               endDate={endDate}
-              productId={productId}
+              productFilter={productFilter}
             />
           </div>
           <div className="dark:border-polar-700 border-t-0 border-r border-b border-l-0 border-gray-200 p-4">
@@ -46,7 +47,7 @@ export function CancellationsContent({
               organizationId={organizationId}
               startDate={startDate}
               endDate={endDate}
-              productId={productId}
+              productFilter={productFilter}
             />
           </div>
           {CANCELLATION_CHART_METRICS.map((metricKey) => (

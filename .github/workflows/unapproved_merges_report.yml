@@ -12,9 +12,14 @@ jobs:
   report:
     runs-on: ubuntu-latest
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
       - name: Collect PRs merged without approval
         id: collect
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             const now = new Date();
@@ -84,10 +89,10 @@ jobs:
 
       - name: Post report to Slack
         if: steps.collect.outputs.count != '0'
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           SLACK_BOT_TOKEN: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
-          SLACK_CHANNEL: C093CJXJXPT
+          SLACK_CHANNEL: C092KH96Q23
           REVIEWER_SLACK_ID: U06QWNPA23V
           REPORT: ${{ steps.collect.outputs.report }}
           WINDOW_START: ${{ steps.collect.outputs.window_start }}
@@ -157,14 +162,14 @@ jobs:
 
       - name: Notify Slack on failure
         if: failure()
-        uses: slackapi/slack-github-action@v4.0.0
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
         with:
           method: chat.postMessage
           token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
           errors: true
           payload: |
             {
-              "channel": "C093CJXJXPT",
+              "channel": "C092KH96Q23",
               "text": "Unapproved merges report failed",
               "blocks": [
                 {

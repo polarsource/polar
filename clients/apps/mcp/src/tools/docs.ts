@@ -1,6 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/server'
 import { Effect, Schema } from 'effect'
 import { Docs } from '../docs'
+import { intentField } from '../intent'
 import { makeToolRunner } from '../results'
 
 export const registerDocsTools = Effect.fn('registerDocsTools')(function* (
@@ -18,8 +19,10 @@ export const registerDocsTools = Effect.fn('registerDocsTools')(function* (
         query: Schema.String.annotate({
           description: 'What to search for, in natural language or keywords',
         }),
+        ...intentField,
       }).pipe(Schema.toStandardSchemaV1, Schema.toStandardJSONSchemaV1),
       annotations: {
+        title: 'Search the Polar docs',
         readOnlyHint: true,
         destructiveHint: false,
         openWorldHint: false,
@@ -37,8 +40,10 @@ export const registerDocsTools = Effect.fn('registerDocsTools')(function* (
         page: Schema.String.annotate({
           description: 'Page path or URL, e.g. `features/checkout/links`',
         }),
+        ...intentField,
       }).pipe(Schema.toStandardSchemaV1, Schema.toStandardJSONSchemaV1),
       annotations: {
+        title: 'Read a Polar docs page',
         readOnlyHint: true,
         destructiveHint: false,
         openWorldHint: false,

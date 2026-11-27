@@ -2,10 +2,11 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import UUID4, Field, field_validator, model_validator
 
 from polar.kit.email import EmailStrDNS
 from polar.kit.schemas import Schema, TimestampedSchema
+from polar.kit.versioning import QuerySchema
 from polar.member.schemas import Member
 from polar.models.customer_seat import SeatStatus
 
@@ -185,3 +186,8 @@ class CustomerSeatClaimResponse(Schema):
 
 
 CustomerSeatID = UUID
+
+
+class CustomerSeatListParams(QuerySchema):
+    subscription_id: UUID4 | None = Field(None)
+    order_id: UUID4 | None = Field(None)

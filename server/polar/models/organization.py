@@ -15,6 +15,7 @@ from typing import (
 from urllib.parse import urlparse
 from uuid import UUID
 
+from pydantic import Field
 from pydantic.json_schema import WithJsonSchema
 from sqlalchemy import (
     TIMESTAMP,
@@ -39,7 +40,9 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
 from polar.enums import (
+    AutoProrationBehavior,
     InvoiceNumbering,
+    ProrationBehaviorSetting,
     SubscriptionProrationBehavior,
     TaxBehaviorOption,
 )
@@ -47,6 +50,8 @@ from polar.exceptions import PolarError
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.db.models import RateLimitGroupMixin, RecordModel
 from polar.kit.extensions.sqlalchemy import StringEnum
+from polar.kit.versioning import Version
+from polar.version import V2027_01
 
 from .account import Account
 
@@ -85,19 +90,28 @@ class OrganizationDetails(TypedDict, total=False):
     previous_annual_revenue: int
 
 
+DEFAULT_TRIAL_ENDED_REACTIVATION_PERIOD = 14
+
+
 class OrganizationSubscriptionSettings(TypedDict):
     allow_multiple_subscriptions: bool
-    proration_behavior: Annotated[
-        SubscriptionProrationBehavior,
-        WithJsonSchema(
-            {
-                "enum": ["invoice", "prorate", "next_period"],
-                "title": "PublicSubscriptionProrationBehavior",
-                "type": "string",
-            }
-        ),
-    ]
+    proration_behavior: (
+        Annotated[
+            SubscriptionProrationBehavior,
+            WithJsonSchema(
+                {
+                    "enum": ["invoice", "prorate", "next_period"],
+                    "title": "PublicSubscriptionProrationBehavior",
+                    "type": "string",
+                }
+            ),
+        ]
+        | AutoProrationBehavior
+    )
     benefit_revocation_grace_period: int
+    trial_ended_reactivation_period: Annotated[
+        NotRequired[int], Field(ge=0), Version(starting_from=V2027_01)
+    ]
     prevent_trial_abuse: bool
     # Legacy - to be removed separately
     allow_customer_updates: bool
@@ -109,6 +123,7 @@ def _default_subscription_settings() -> OrganizationSubscriptionSettings:
         "allow_customer_updates": True,
         "proration_behavior": SubscriptionProrationBehavior.prorate,
         "benefit_revocation_grace_period": 0,
+        "trial_ended_reactivation_period": DEFAULT_TRIAL_ENDED_REACTIVATION_PERIOD,
         "prevent_trial_abuse": False,
     }
 
@@ -761,20 +776,23 @@ class Organization(RateLimitGroupMixin, RecordModel):
         )
 
     @property
-    def is_compass_enabled(self) -> bool:
-        return self.feature_settings.get("compass_enabled", False)
-
-    @property
-    def is_merchant_migration_enabled(self) -> bool:
-        return self.feature_settings.get("merchant_migration_enabled", False)
-
-    @property
     def is_config_as_code_enabled(self) -> bool:
         return self.feature_settings.get("config_as_code_enabled", False)
 
     @property
-    def is_staged_events_ingest_enabled(self) -> bool:
-        return self.feature_settings.get("staged_events_ingest_enabled", False)
+    def is_reducer_billing_enabled(self) -> bool:
+        return self.feature_settings.get("reducer_billing_enabled", False)
+
+    products_limit: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=settings.ORGANIZATION_DEFAULT_PRODUCTS_LIMIT,
+    )
+    benefits_limit: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=settings.ORGANIZATION_DEFAULT_BENEFITS_LIMIT,
+    )
 
     sso_enforced: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
@@ -923,14 +941,21 @@ class Organization(RateLimitGroupMixin, RecordModel):
         return self.subscription_settings["allow_multiple_subscriptions"]
 
     @property
-    def proration_behavior(self) -> SubscriptionProrationBehavior:
-        return SubscriptionProrationBehavior(
-            self.subscription_settings["proration_behavior"]
-        )
+    def proration_behavior(self) -> ProrationBehaviorSetting:
+        value = self.subscription_settings["proration_behavior"]
+        if value == "auto":
+            return "auto"
+        return SubscriptionProrationBehavior(value)
 
     @property
     def benefit_revocation_grace_period(self) -> int:
         return self.subscription_settings["benefit_revocation_grace_period"]
+
+    @property
+    def trial_ended_reactivation_period(self) -> int:
+        return self.subscription_settings.get(
+            "trial_ended_reactivation_period", DEFAULT_TRIAL_ENDED_REACTIVATION_PERIOD
+        )
 
     @property
     def prevent_trial_abuse(self) -> bool:

@@ -5,12 +5,11 @@ import { BUCKET_SIZE, type Reducer } from "./reducer";
 export const {
   cold_until: COLD_UNTIL,
   bucket_counts: BUCKET_COUNTS,
-  channel: CHANNEL,
-  epoch: EPOCH,
   snapshot: SNAPSHOT,
 } = benchmark;
 export const REDUCER = benchmark.reducer as Reducer;
-// Events pending in one bucket: a batch the buffer just delivered, and a backlog after a 429.
+export const CREDIT_REDUCER = benchmark.credit_reducer as Reducer;
+// Events pending in one bucket: a batch a flusher just delivered, and a backlog after a 429.
 export const PENDING_COUNTS = [1, 100, 1000];
 // What WRITE_BUCKET stores per event: its value.
 const PENDING_ENTRY = "7";
@@ -36,10 +35,6 @@ export const pendingEntries = (ids: string[]): string[] => ids.flatMap((id) => [
 // The flat field list decodeState reads: one `bucket:<start>:<statistic>` entry per bucket.
 export const encodeState = (buckets: number): string[] => {
   const fields = [
-    "epoch",
-    EPOCH,
-    "revision",
-    "4242",
     "cold_until",
     String(COLD_UNTIL),
     "snapshot_version",
@@ -52,10 +47,6 @@ export const encodeState = (buckets: number): string[] => {
     "1",
     "cold:max",
     "999",
-    "credited:meter",
-    "1000000",
-    "credited_version:meter",
-    String(COLD_UNTIL + 1),
   ];
   for (let index = 0; index < buckets; index++) {
     const prefix = `bucket:${COLD_UNTIL + index * BUCKET_SIZE}:`;

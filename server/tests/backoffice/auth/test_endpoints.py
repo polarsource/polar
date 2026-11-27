@@ -1,0 +1,410 @@
+from collections.abc import AsyncIterator
+from unittest.mock import Mock
+from urllib.parse import parse_qs, urlsplit
+
+import httpx
+import httpx2
+import jwt
+import pytest
+from cryptography.hazmat.primitives.asymmetric import rsa
+from pydantic import SecretStr
+from sqlalchemy import select
+from starlette.applications import Starlette
+
+from polar.auth.service import auth as auth_service
+from polar.backoffice.app import app as backoffice_app
+from polar.backoffice.auth.factor import GOOGLE_DISCOVERY_ENDPOINT
+from polar.config import Environment, settings
+from polar.kit.utils import utc_now
+from polar.models import BackofficeUser, BackofficeUserSession, User
+from polar.postgres import AsyncSession, get_db_session
+
+
+@pytest.fixture
+async def client(
+    session: AsyncSession, monkeypatch: pytest.MonkeyPatch
+) -> AsyncIterator[httpx2.AsyncClient]:
+    monkeypatch.setattr(settings, "BASE_URL", "http://localhost")
+    monkeypatch.setattr(settings, "BACKOFFICE_HOST", None)
+    monkeypatch.setattr(settings, "BACKOFFICE_GOOGLE_CLIENT_ID", "backoffice-client")
+    monkeypatch.setattr(
+        settings, "BACKOFFICE_GOOGLE_CLIENT_SECRET", SecretStr("client-secret")
+    )
+    monkeypatch.setattr(settings, "BACKOFFICE_GOOGLE_HOSTED_DOMAIN", "polar.sh")
+    monkeypatch.setitem(
+        backoffice_app.dependency_overrides, get_db_session, lambda: session
+    )
+    app = Starlette()
+    app.mount("/backoffice", backoffice_app)
+    async with httpx2.AsyncClient(
+        transport=httpx2.ASGITransport(app=app), base_url="http://localhost"
+    ) as client:
+        yield client
+
+
+@pytest.fixture
+def claims(oauth_http_mocks: dict[tuple[str, str], Mock]) -> dict[str, object]:
+    issuer = "https://accounts.google.com"
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    public_key = jwt.get_algorithm_by_name("RS256").to_jwk(
+        key.public_key(), as_dict=True
+    )
+    now = int(utc_now().timestamp())
+    claims: dict[str, object] = {
+        "iss": issuer,
+        "aud": "backoffice-client",
+        "exp": now + 3600,
+        "iat": now,
+        "email": "staff@polar.sh",
+        "email_verified": True,
+        "hd": "polar.sh",
+        "sub": "google-subject",
+    }
+    oauth_http_mocks["GET", GOOGLE_DISCOVERY_ENDPOINT] = Mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "issuer": issuer,
+                "authorization_endpoint": f"{issuer}/auth",
+                "token_endpoint": "https://oauth2.googleapis.com/token",
+                "jwks_uri": f"{issuer}/jwks",
+                "id_token_signing_alg_values_supported": ["RS256"],
+                "token_endpoint_auth_methods_supported": ["client_secret_post"],
+            },
+        )
+    )
+    oauth_http_mocks["GET", f"{issuer}/jwks"] = Mock(
+        return_value=httpx.Response(
+            200, json={"keys": [{**public_key, "kid": "test-key", "alg": "RS256"}]}
+        )
+    )
+
+    def exchange(request: httpx.Request) -> httpx.Response:
+        data = parse_qs(request.content.decode())
+        assert data["client_id"] == ["backoffice-client"]
+        assert data["client_secret"] == ["client-secret"]
+        assert data["redirect_uri"] == ["http://localhost/backoffice/auth/callback"]
+        assert data["code_verifier"]
+        return httpx.Response(
+            200,
+            json={
+                "access_token": "google-access-token",
+                "expires_in": 3600,
+                "id_token": jwt.encode(
+                    claims, key, algorithm="RS256", headers={"kid": "test-key"}
+                ),
+            },
+        )
+
+    oauth_http_mocks["POST", "https://oauth2.googleapis.com/token"] = Mock(
+        side_effect=exchange
+    )
+    return claims
+
+
+async def start_login(
+    client: httpx2.AsyncClient, claims: dict[str, object], return_to: str | None = None
+) -> str:
+    response = await client.get(
+        "/backoffice/auth/", params={"return_to": return_to} if return_to else None
+    )
+    assert response.status_code == 303
+    params = parse_qs(urlsplit(response.headers["location"]).query)
+    assert params["client_id"] == ["backoffice-client"]
+    assert params["redirect_uri"] == ["http://localhost/backoffice/auth/callback"]
+    assert params["code_challenge_method"] == ["S256"]
+    claims["nonce"] = params["nonce"][0]
+    return params["state"][0]
+
+
+@pytest.mark.anyio
+class TestGoogleLogin:
+    async def test_provision_reuse_and_logout(
+        self,
+        client: httpx2.AsyncClient,
+        session: AsyncSession,
+        claims: dict[str, object],
+    ) -> None:
+        state = await start_login(client, claims)
+        params = {"state": state, "code": "google-code"}
+        response = await client.get("/backoffice/auth/callback", params=params)
+        assert response.status_code == 303
+        assert settings.AUTHENTICATION_SESSION_COOKIE_KEY not in client.cookies
+        assert settings.USER_SESSION_COOKIE_KEY not in client.cookies
+        assert (
+            settings.BACKOFFICE_AUTHENTICATION_SESSION_COOKIE_KEY not in client.cookies
+        )
+        token = client.cookies[settings.BACKOFFICE_USER_SESSION_COOKIE_KEY]
+        user = (await session.scalars(select(BackofficeUser))).one()
+        assert user.provider_id == "google-subject"
+        assert user.email == "staff@polar.sh"
+        user_id = user.id
+        response = await client.get("/backoffice/auth/")
+        assert response.status_code == 303
+        assert response.headers["location"] == "http://localhost/backoffice/"
+        assert "set-cookie" not in response.headers
+        assert (await client.get("/backoffice/")).status_code == 200
+        assert (
+            await client.get("/backoffice/auth/callback", params=params)
+        ).status_code == 401
+
+        user_session = (await session.scalars(select(BackofficeUserSession))).one()
+        user_session.expires_at = utc_now()
+        await session.flush()
+
+        claims["email"] = "renamed@polar.sh"
+        response = await client.get(
+            "/backoffice/auth/callback",
+            params={"state": await start_login(client, claims), "code": "google-code"},
+        )
+        assert response.status_code == 303
+        assert client.cookies[settings.BACKOFFICE_USER_SESSION_COOKIE_KEY] != token
+        session.expire_all()
+        user = (await session.scalars(select(BackofficeUser))).one()
+        assert user.id == user_id
+        assert user.email == "renamed@polar.sh"
+        assert len((await session.scalars(select(BackofficeUserSession))).all()) == 1
+
+        response = await client.get(
+            "/backoffice/auth/logout", headers={"Sec-Fetch-Site": "cross-site"}
+        )
+        assert response.status_code == 403
+
+        response = await client.get(
+            "/backoffice/auth/logout",
+            headers={"Sec-Fetch-Site": "same-origin"},
+        )
+        assert response.status_code == 303
+        assert settings.BACKOFFICE_USER_SESSION_COOKIE_KEY not in client.cookies
+        assert (await session.scalars(select(BackofficeUserSession))).first() is None
+
+    async def test_dashboard_session_does_not_authorize_backoffice(
+        self, client: httpx2.AsyncClient, session: AsyncSession, user: User
+    ) -> None:
+        token, _ = await auth_service._create_user_session(
+            session, user, user_agent="tests", scopes=[]
+        )
+        client.cookies.set(settings.USER_SESSION_COOKIE_KEY, token)
+
+        response = await client.get("/backoffice/orders/?query=a")
+        assert response.status_code == 303
+        assert (
+            response.headers["location"]
+            == "http://localhost/backoffice/auth/?return_to=%2Fbackoffice%2Forders%2F%3Fquery%3Da"
+        )
+
+        response = await client.get(
+            "/backoffice/orders/1/refund",
+            headers={
+                "HX-Request": "true",
+                "HX-Current-URL": "http://localhost/backoffice/orders/1",
+            },
+        )
+        assert response.status_code == 401
+        assert (
+            response.headers["HX-Redirect"]
+            == "http://localhost/backoffice/auth/?return_to=%2Fbackoffice%2Forders%2F1"
+        )
+
+    @pytest.mark.parametrize(
+        ("existing_provider_id", "expected_status"),
+        [(None, 303), ("other-subject", 409)],
+    )
+    async def test_links_preexisting_staff_by_email(
+        self,
+        client: httpx2.AsyncClient,
+        session: AsyncSession,
+        claims: dict[str, object],
+        existing_provider_id: str | None,
+        expected_status: int,
+    ) -> None:
+        staff = BackofficeUser(email="STAFF@polar.sh", provider_id=existing_provider_id)
+        session.add(staff)
+        await session.flush()
+
+        state = await start_login(client, claims)
+        response = await client.get(
+            "/backoffice/auth/callback", params={"state": state, "code": "google-code"}
+        )
+        assert response.status_code == expected_status
+        assert (await session.scalars(select(BackofficeUser))).one() == staff
+        assert staff.provider_id == (existing_provider_id or "google-subject")
+        assert (settings.BACKOFFICE_USER_SESSION_COOKIE_KEY in client.cookies) == (
+            expected_status == 303
+        )
+
+    @pytest.mark.parametrize(
+        ("return_to", "location"),
+        [
+            (
+                "/backoffice/orders/?query=a",
+                "http://localhost/backoffice/orders/?query=a",
+            ),
+            ("https://evil.test/backoffice/", "http://localhost/backoffice/"),
+            ("//evil.test/backoffice/", "http://localhost/backoffice/"),
+            ("/v1/orders/", "http://localhost/backoffice/"),
+        ],
+    )
+    async def test_callback_redirects_to_return_to(
+        self,
+        client: httpx2.AsyncClient,
+        claims: dict[str, object],
+        return_to: str,
+        location: str,
+    ) -> None:
+        state = await start_login(client, claims, return_to)
+        response = await client.get(
+            "/backoffice/auth/callback", params={"state": state, "code": "google-code"}
+        )
+        assert response.status_code == 303
+        assert response.headers["location"] == location
+
+    async def test_callback_rejects_state_from_another_flow(
+        self, client: httpx2.AsyncClient, claims: dict[str, object]
+    ) -> None:
+        old_state = await start_login(client, claims)
+        await start_login(client, claims)
+        response = await client.get(
+            "/backoffice/auth/callback", params={"state": old_state, "code": "code"}
+        )
+        assert response.status_code == 401
+        assert settings.BACKOFFICE_USER_SESSION_COOKIE_KEY not in client.cookies
+
+    @pytest.mark.parametrize(
+        ("claim", "value"),
+        [("hd", None), ("hd", "other.test"), ("email_verified", False)],
+    )
+    async def test_rejects_ineligible_claims(
+        self,
+        client: httpx2.AsyncClient,
+        session: AsyncSession,
+        claims: dict[str, object],
+        claim: str,
+        value: object,
+    ) -> None:
+        claims[claim] = value
+        response = await client.get(
+            "/backoffice/auth/callback",
+            params={"state": await start_login(client, claims), "code": "google-code"},
+        )
+        assert response.status_code == 403
+        assert (await session.scalars(select(BackofficeUser))).first() is None
+        assert settings.BACKOFFICE_USER_SESSION_COOKIE_KEY not in client.cookies
+
+    @pytest.mark.parametrize("claim", ["aud", "nonce"])
+    async def test_rejects_invalid_id_token(
+        self, client: httpx2.AsyncClient, claims: dict[str, object], claim: str
+    ) -> None:
+        state = await start_login(client, claims)
+        claims[claim] = "invalid"
+        response = await client.get(
+            "/backoffice/auth/callback", params={"state": state, "code": "google-code"}
+        )
+        assert response.status_code == 401
+        assert settings.BACKOFFICE_USER_SESSION_COOKIE_KEY not in client.cookies
+
+    async def test_session_survives_hash_secret_rotation(
+        self,
+        client: httpx2.AsyncClient,
+        session: AsyncSession,
+        claims: dict[str, object],
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr(
+            settings, "HASH_SECRETS", {"v1": "secret1", "v2": "secret2"}
+        )
+        monkeypatch.setattr(settings, "CURRENT_HASH_SECRET_ID", "v1")
+        response = await client.get(
+            "/backoffice/auth/callback",
+            params={"state": await start_login(client, claims), "code": "google-code"},
+        )
+        assert response.status_code == 303
+        assert (
+            (await session.scalars(select(BackofficeUserSession)))
+            .one()
+            .token_hash.startswith("v1$")
+        )
+
+        monkeypatch.setattr(settings, "CURRENT_HASH_SECRET_ID", "v2")
+        response = await client.get("/backoffice/auth/")
+        assert response.status_code == 303
+        assert response.headers["location"] == "http://localhost/backoffice/"
+        assert "set-cookie" not in response.headers
+        assert (
+            (await session.scalars(select(BackofficeUserSession)))
+            .one()
+            .token_hash.startswith("v2$")
+        )
+
+
+@pytest.mark.anyio
+class TestDevelopmentSignIn:
+    async def test_signs_in_without_google(
+        self,
+        client: httpx2.AsyncClient,
+        session: AsyncSession,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr(settings, "ENV", Environment.development)
+        monkeypatch.setattr(settings, "BACKOFFICE_DEVELOPMENT_MODE", True)
+        monkeypatch.setattr(settings, "BACKOFFICE_GOOGLE_CLIENT_ID", "")
+
+        response = await client.get(
+            "/backoffice/auth/", params={"return_to": "/backoffice/orders/?query=a"}
+        )
+        assert response.status_code == 303
+        assert (
+            response.headers["location"]
+            == "http://localhost/backoffice/orders/?query=a"
+        )
+
+        response = await client.get("/backoffice/")
+        assert response.status_code == 200
+
+        user = (
+            await session.scalars(
+                select(BackofficeUser).where(
+                    BackofficeUser.provider_id == "development"
+                )
+            )
+        ).one()
+        assert user.email == "admin@polar.sh"
+
+    @pytest.mark.parametrize(
+        ("env", "development_mode", "url"),
+        [
+            (Environment.production, True, "http://localhost/backoffice/auth/"),
+            (Environment.testing, True, "http://localhost/backoffice/auth/"),
+            (Environment.development, False, "http://localhost/backoffice/auth/"),
+            (
+                Environment.development,
+                True,
+                "http://backoffice.polar.sh/backoffice/auth/",
+            ),
+        ],
+    )
+    async def test_refused_outside_local_development(
+        self,
+        client: httpx2.AsyncClient,
+        monkeypatch: pytest.MonkeyPatch,
+        env: Environment,
+        development_mode: bool,
+        url: str,
+    ) -> None:
+        monkeypatch.setattr(settings, "ENV", env)
+        monkeypatch.setattr(settings, "BACKOFFICE_DEVELOPMENT_MODE", development_mode)
+        monkeypatch.setattr(settings, "BACKOFFICE_GOOGLE_CLIENT_ID", "")
+
+        response = await client.get(url)
+        assert response.status_code == 404
+
+    async def test_google_wins_when_configured(
+        self,
+        client: httpx2.AsyncClient,
+        claims: dict[str, object],
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr(settings, "ENV", Environment.development)
+        monkeypatch.setattr(settings, "BACKOFFICE_DEVELOPMENT_MODE", True)
+
+        await start_login(client, claims)

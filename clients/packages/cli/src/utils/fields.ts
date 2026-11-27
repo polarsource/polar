@@ -54,7 +54,7 @@ const unmatched = (
 }
 
 export const selectFields = (result: unknown, fields: string): Selection => {
-  const paths = fields
+  let paths = fields
     .split(',')
     .map((field) => field.trim())
     .filter((field) => field !== '')
@@ -69,6 +69,14 @@ export const selectFields = (result: unknown, fields: string): Selection => {
   const rows = (
     listed ? (result['items'] as unknown[]) : [result].flat()
   ).filter(isRow)
+  if (listed && !rows.some((row) => 'items' in row)) {
+    paths = paths
+      .map((path) => (path[0] === 'items' ? path.slice(1) : path))
+      .filter((path) => path.length > 0)
+    if (paths.length === 0) {
+      return { _tag: 'Selected', value: result, unmatched: [] }
+    }
+  }
   const misses = paths.flatMap((path) => unmatched(rows, path))
   const unknown = misses.filter(({ parent }) => parent === '')
   if (unknown.length > 0) {

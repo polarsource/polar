@@ -4,7 +4,7 @@ import { isValidationError, schemas } from '@polar-sh/client'
 import { Button, InlineModalHeader, Text } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useCallback } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useFormState } from 'react-hook-form'
 import { useToast } from '../Toast/use-toast'
 import MeterForm from './MeterForm'
 
@@ -45,11 +45,8 @@ const CreateMeterModalContent = ({
     },
   })
 
-  const {
-    handleSubmit,
-    setError,
-    formState: { errors },
-  } = form
+  const { control, handleSubmit, setError } = form
+  const { errors, isValid } = useFormState({ control })
 
   const createMeter = useCreateMeter(organization.id)
 
@@ -109,7 +106,7 @@ const CreateMeterModalContent = ({
                 className="self-start"
                 type="button"
                 loading={createMeter.isPending}
-                disabled={createMeter.isPending || !form.formState.isValid}
+                disabled={createMeter.isPending || !isValid}
                 onClick={handleSubmit(handleCreateNewMeter)}
               >
                 Create

@@ -72,6 +72,12 @@ class DisputePaymentNotFoundError(DisputeError):
         super().__init__(message)
 
 
+class DisputeAlertTransactionNotLinkedError(DisputeError):
+    def __init__(self, alert_id: str) -> None:
+        self.alert_id = alert_id
+        super().__init__(f"ChargebackStop alert {alert_id} has no linked transaction.")
+
+
 class DisputeNotOpenError(DisputeError):
     def __init__(self, dispute_id: uuid.UUID) -> None:
         self.dispute_id = dispute_id
@@ -398,6 +404,8 @@ class DisputeService:
 
         # ChargebackStop uses PaymentIntent ID, but we use Charge ID
         payment_intent_id = alert["integration_transaction_id"]
+        if payment_intent_id is None:
+            raise DisputeAlertTransactionNotLinkedError(alert["id"])
         payment_intent = await stripe_service.get_payment_intent(payment_intent_id)
         latest_charge = payment_intent.latest_charge
         assert latest_charge is not None

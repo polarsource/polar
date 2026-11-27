@@ -1,4 +1,7 @@
+from decimal import Decimal
+
 import pytest
+from pydantic import ValidationError
 from sqlalchemy import func, select
 
 from polar.meter.aggregation import (
@@ -20,6 +23,17 @@ def test_strip_metadata_prefix() -> None:
         func=AggregationFunction.sum, property="metadata.property"
     )
     assert aggregation.property == "property"
+
+
+@pytest.mark.parametrize(
+    "property",
+    ["a.b.c.d.e.f", "a" * 256, ".".join(["a"] * 500)],
+)
+def test_property_bounds(property: str) -> None:
+    with pytest.raises(ValidationError):
+        PropertyAggregation(func=AggregationFunction.sum, property=property)
+    with pytest.raises(ValidationError):
+        UniqueAggregation(property=property)
 
 
 @pytest.mark.parametrize(
@@ -306,3 +320,17 @@ class TestAggregationMatches:
             user_metadata={"_llm": {"other_field": 100}},
         )
         assert agg.matches(event) is False
+
+
+class TestPropertyAggregationGetValue:
+    def test_decimal_before_database_round_trip(
+        self, organization: Organization
+    ) -> None:
+        agg = PropertyAggregation(func=AggregationFunction.sum, property="_cost.amount")
+        event = Event(
+            name="test",
+            organization_id=organization.id,
+            source=EventSource.user,
+            user_metadata={"_cost": {"amount": Decimal("0.25"), "currency": "usd"}},
+        )
+        assert agg.get_value(event) == 0.25

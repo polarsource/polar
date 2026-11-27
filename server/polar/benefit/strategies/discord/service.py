@@ -1,6 +1,6 @@
 from typing import Any, Unpack, cast
 
-import httpx
+import httpx2
 import structlog
 from httpx_oauth.oauth2 import RefreshTokenError
 
@@ -89,7 +89,7 @@ class BenefitDiscordService(
             await discord_bot_service.add_member(
                 guild_id, role_id, oauth_account.account_id, oauth_account.access_token
             )
-        except httpx.HTTPStatusError as e:
+        except httpx2.HTTPStatusError as e:
             bound_logger.warning(
                 "HTTP error while adding member",
                 error_type=type(e).__name__,
@@ -105,7 +105,7 @@ class BenefitDiscordService(
                     f"Discord error: {e.response.text}"
                 ) from e
             raise BenefitRetriableError() from e
-        except httpx.HTTPError as e:
+        except httpx2.HTTPError as e:
             bound_logger.warning(
                 "HTTP error while adding member",
                 error_type=type(e).__name__,
@@ -166,7 +166,7 @@ class BenefitDiscordService(
                 await discord_bot_service.remove_member_role(
                     guild_id, role_id, account_id
                 )
-        except httpx.HTTPStatusError as e:
+        except httpx2.HTTPStatusError as e:
             bound_logger.warning(
                 "HTTP error while removing member",
                 error_type=type(e).__name__,
@@ -182,7 +182,7 @@ class BenefitDiscordService(
                     f"Discord error: {e.response.text}"
                 ) from e
             raise BenefitRetriableError() from e
-        except httpx.HTTPError as e:
+        except httpx2.HTTPError as e:
             bound_logger.warning(
                 "HTTP error while removing member",
                 error_type=type(e).__name__,
@@ -274,7 +274,7 @@ class BenefitDiscordService(
         oauth_account = None
         is_member_account = False
         if member is not None:
-            oauth_account = member.get_oauth_account(
+            oauth_account = await member.get_oauth_account(
                 account_id, CustomerOAuthPlatform.discord
             )
             if oauth_account is not None:
@@ -282,7 +282,7 @@ class BenefitDiscordService(
 
         # Fall back to customer OAuth account
         if oauth_account is None:
-            oauth_account = customer.get_oauth_account(
+            oauth_account = await customer.get_oauth_account(
                 account_id, CustomerOAuthPlatform.discord
             )
 
@@ -327,11 +327,15 @@ class BenefitDiscordService(
             oauth_account.refresh_token = refreshed_token_data["refresh_token"]
 
             if is_member_account and member is not None:
-                member.set_oauth_account(oauth_account, CustomerOAuthPlatform.discord)
+                await member.set_oauth_account(
+                    oauth_account, CustomerOAuthPlatform.discord
+                )
                 member_repository = MemberRepository.from_session(self.session)
                 await member_repository.update(member)
             else:
-                customer.set_oauth_account(oauth_account, CustomerOAuthPlatform.discord)
+                await customer.set_oauth_account(
+                    oauth_account, CustomerOAuthPlatform.discord
+                )
                 customer_repository = CustomerRepository.from_session(self.session)
                 await customer_repository.update(customer)
 

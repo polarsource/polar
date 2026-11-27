@@ -70,7 +70,6 @@ class StripeAccountCountry(StrEnum):
     MX = "MX"
     MD = "MD"
     MN = "MN"
-    MA = "MA"
     NA = "NA"
     NL = "NL"
     NZ = "NZ"

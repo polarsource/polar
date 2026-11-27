@@ -160,18 +160,20 @@ const usageName = (error: unknown) => {
     : undefined
 }
 
+const failureName = (error: unknown, tag: unknown, reasonTag: unknown) => {
+  if (tag === undefined) return error instanceof Error ? error.name : 'Unknown'
+  return reasonTag === undefined
+    ? String(tag)
+    : `${String(tag)}:${String(reasonTag)}`
+}
+
 export const describeFailure = (error: unknown): Failure => {
   const tag = field(error, '_tag')
   const errors = field(error, 'errors')
   const reason =
     field(error, 'reason') ?? (Array.isArray(errors) ? errors[0] : undefined)
   const reasonTag = field(reason, '_tag')
-  const name =
-    tag !== undefined
-      ? `${String(tag)}${reasonTag !== undefined ? `:${String(reasonTag)}` : ''}`
-      : error instanceof Error
-        ? error.name
-        : 'Unknown'
+  const name = failureName(error, tag, reasonTag)
   const message =
     tag === 'ShowHelp'
       ? usageName(reason)

@@ -15,7 +15,7 @@ const AgentProgress = ({
 
   useEffect(() => {
     if (index >= messages.length - 1) return
-    const timer = setTimeout(() => setIndex(index + 1), messages[index]?.ms)
+    const timer = setTimeout(() => setIndex((i) => i + 1), messages[index]?.ms)
     return () => clearTimeout(timer)
   }, [index, messages])
 

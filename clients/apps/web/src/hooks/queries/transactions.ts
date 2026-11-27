@@ -1,32 +1,12 @@
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
-import { UseQueryResult, useQuery } from '@tanstack/react-query'
+import {
+  UseQueryResult,
+  keepPreviousData,
+  useInfiniteQuery,
+  useQuery,
+} from '@tanstack/react-query'
 import { defaultRetry } from './retry'
-
-export const useSearchTransactions = (variables: {
-  account_id?: string
-  payment_user_id?: string
-  payment_organization_id?: string
-  exclude_platform_fees?: boolean
-  type?: schemas['TransactionType']
-  page?: number
-  limit?: number
-  sorting?: schemas['TransactionSortProperty'][]
-}): UseQueryResult<schemas['ListResource_Transaction_']> =>
-  useQuery({
-    queryKey: ['transactions', { ...variables }],
-    queryFn: () =>
-      unwrap(
-        api.GET('/v1/transactions/search', {
-          params: { query: { ...variables } },
-        }),
-      ),
-    retry: defaultRetry,
-    enabled:
-      !!variables.account_id ||
-      !!variables.payment_user_id ||
-      !!variables.payment_organization_id,
-  })
 
 export const useTransactionsSummary = (
   accountId: string,
@@ -41,6 +21,44 @@ export const useTransactionsSummary = (
           },
         }),
       ),
+    retry: defaultRetry,
+    enabled: !!accountId,
+  })
+
+export const uniqueTransactions = (
+  pages: schemas['ListResource_Transaction_'][],
+): schemas['Transaction'][] => [
+  ...new Map(
+    pages.flatMap((page) => page.items.map((item) => [item.id, item])),
+  ).values(),
+]
+
+export const useInfiniteTransactions = (
+  accountId: string | undefined,
+  parameters: {
+    type?: schemas['TransactionType']
+    exclude_platform_fees?: boolean
+    limit?: number
+    sorting?: schemas['TransactionSortProperty'][]
+  },
+) =>
+  useInfiniteQuery({
+    queryKey: ['transactions', 'infinite', { accountId, ...parameters }],
+    queryFn: ({ pageParam }) =>
+      unwrap(
+        api.GET('/v1/transactions/search', {
+          params: {
+            query: { account_id: accountId, ...parameters, page: pageParam },
+          },
+        }),
+      ),
+    placeholderData: keepPreviousData,
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, _allPages, lastPageParam) =>
+      lastPage.items.length === 0 ||
+      lastPageParam >= lastPage.pagination.max_page
+        ? null
+        : lastPageParam + 1,
     retry: defaultRetry,
     enabled: !!accountId,
   })

@@ -1,0 +1,128 @@
+---
+title: "Review Checklist"
+sidebarTitle: "Checklist"
+description: "Everything you need to complete before you can submit your account for review and start accepting payments"
+---
+
+Before your organization can accept payments, you submit it for our [account review](/merchant-of-record/account-reviews). You do this from [**Finance → Account**](https://polar.sh/to/dashboard/finance/account), which shows a checklist of everything we need first.
+
+The **Submit for review** button stays disabled until every required item is complete. Items that only show a warning don't block you.
+
+| Item | Required | Complete when |
+| --- | --- | --- |
+| [Create your first product](#create-your-first-product) | Yes | You have at least one product that isn't archived |
+| [Set up checkout](#set-up-checkout) | Yes | You have a checkout link that delivers something, or an API key (a webhook is recommended) |
+| [Verify your identity](#verify-your-identity) | Yes | The organization owner passed Stripe Identity verification |
+| [Connect a payout account](#connect-a-payout-account) | Yes | Your Stripe account can receive payouts |
+| [Describe what you sell](#describe-what-you-sell) | Yes | Your product description is at least 30 characters |
+| [Add your product website](#add-your-product-website) | Yes | Polar can load your website |
+| [Add a support email](#add-a-support-email) | Yes | You verified your support email with the code we send to it |
+| [Add social links](#add-social-links) | No | You added at least one public profile |
+
+Once you submit, the checklist locks and an automated review runs, typically in one to two minutes. If it passes, you can accept payments right away. If it doesn't, you can appeal. See [Your first review](/merchant-of-record/account-reviews#your-first-review) and [Appeals](/merchant-of-record/account-reviews#appeals).
+
+## Create your first product
+
+Create at least one [product](/features/products) that isn't archived. This is what your customers buy, and what we review against our [Acceptable Use Policy](https://polar.sh/legal/acceptable-use-policy).
+
+## Set up checkout
+
+We need to see how customers pay you and how they get what they paid for. You can choose either path:
+
+- **Checkout link (no code).** Create a [checkout link](/features/checkout/links). Every checkout link must be able to deliver something to the customer, so each one needs either:
+  - a **success URL**, so you handle delivery after the redirect, or
+  - a [benefit](/features/benefits/introduction) on every product in the link that Polar delivers on its own, such as a license key, file download, GitHub repository access, Discord or Slack invite, or custom note.
+- **API integration.** Create an organization access token (API key). We also recommend a [webhook endpoint](/integrate/webhooks/endpoints); without one, the item shows a warning but doesn't block submission.
+
+<AccordionGroup>
+  <Accordion title="I created a checkout link, but the item is still incomplete">
+    At least one of your checkout links has no success URL and contains a product with no benefit that Polar can deliver. A customer could pay and receive nothing.
+
+    Add a success URL to the link, or add a benefit to the product. Feature flag and meter credit benefits don't count: they deliver nothing unless your app integrates with the API. Archive any checkout link you no longer use, since every link is checked.
+  </Accordion>
+  <Accordion title="Do I need a webhook if I use the API?">
+    A webhook is recommended, not required. With an API key and no webhook, the item shows a warning but doesn't block submission. Without a webhook, you won't hear about refunds, cancellations or failed renewals, so we strongly recommend adding one.
+  </Accordion>
+</AccordionGroup>
+
+## Verify your identity
+
+The organization **owner** verifies their identity through Stripe Identity, with a passport, ID card or driver's license and a selfie. It takes about five minutes.
+
+<AccordionGroup>
+  <Accordion title="The item says I'm not allowed to complete it">
+    Only the organization owner can complete identity verification. Ask the owner to log in and complete it from **Finance → Account**. To change the owner, see [Transfer ownership](/features/team-management#transfer-ownership).
+  </Accordion>
+  <Accordion title="It says &quot;Awaiting external verification&quot;">
+    Stripe is still processing your verification. This usually takes a few minutes. The checklist updates on its own once Stripe is done.
+  </Accordion>
+  <Accordion title="My identity verification was rejected">
+    Stripe couldn't verify your document or selfie. Common causes are an expired document, a blurry or cropped photo, or a name that doesn't match. Click **Try again** in the checklist to start a new verification. If it keeps failing, contact [support@polar.sh](mailto:support@polar.sh).
+  </Accordion>
+</AccordionGroup>
+
+## Connect a payout account
+
+Connect a [payout account](/features/finance/accounts) through Stripe Connect Express. We don't collect money we can't pay out, so this is required before you go live.
+
+<AccordionGroup>
+  <Accordion title="It says &quot;Additional information required&quot;">
+    Your Stripe onboarding isn't finished, or Stripe is asking for more details. Open the payout account from **Finance → Account** and complete the remaining steps in Stripe.
+  </Accordion>
+  <Accordion title="It says &quot;Payouts are currently disabled&quot;">
+    You completed onboarding, but Stripe has disabled payouts on the account. Open the account in Stripe to see why. This is often a bank account Stripe couldn't verify. See [Country & Currency Requirements](/features/finance/accounts).
+  </Accordion>
+</AccordionGroup>
+
+## Describe what you sell
+
+Tell us what you sell, who it's for and how you price it, in at least 30 characters. The more specific you are, the faster we can review your account.
+
+## Add your product website
+
+Add the website where customers learn about your product. It must start with `https://`. When you load the checklist, Polar requests the page and expects a successful response within 5 seconds.
+
+You can also verify that you own the domain by adding a DNS TXT record. This is optional, but it helps your review. See [Domains](/features/domains).
+
+<AccordionGroup>
+  <Accordion title="It says &quot;We could not reach this URL&quot;">
+    Polar couldn't load your website. Check that:
+
+    - The site is live and public. A page behind a login, password, "coming soon" gate or IP allowlist can't be reached.
+    - It responds within 5 seconds.
+    - It returns a success status, not a 4xx or 5xx error.
+    - The domain resolves to a public IP address.
+
+    **Bot protection is the most common cause.** If your site sits behind Cloudflare, Vercel, Netlify, AWS WAF or a similar service with bot protection, attack mode or a firewall, our request may get a challenge page or a `403` instead of your site. Allow requests with this user agent:
+
+    ```
+    Polar/1.0 (+https://polar.sh)
+    ```
+
+    In Cloudflare, add a [WAF custom rule](https://developers.cloudflare.com/waf/custom-rules/skip/) that skips bot protection for that user agent. In Vercel, add a [firewall bypass rule](https://vercel.com/docs/vercel-firewall/vercel-waf/custom-rules) for it, and make sure Vercel Authentication or Password Protection is off for your production domain.
+
+    Then reload **Finance → Account** to run the check again.
+  </Accordion>
+  <Accordion title="Can I use a page on GitHub, Framer or the Chrome Web Store?">
+    Yes, as long as it's public and loads without a login.
+  </Accordion>
+</AccordionGroup>
+
+## Add a support email
+
+Add the email address customers can reach you at, and verify it with the code we send to it. Verification is required.
+
+We prefer a business email on the same domain as your website. This isn't required, but the item shows a warning when:
+
+- **Business email is preferred:** you use a personal address, such as Gmail, Outlook or iCloud.
+- **Email domain does not match your organization website:** your email domain differs from your website's. Websites hosted on GitHub, Figma, Framer or the Chrome Web Store are exempt.
+
+<AccordionGroup>
+  <Accordion title="I didn't receive the verification code">
+    Check your spam folder, and that the address has no typo. After a few seconds, a **Resend** button appears in the checklist so you can request a new code.
+  </Accordion>
+</AccordionGroup>
+
+## Add social links
+
+Optional. Linking a public profile, such as X, GitHub or LinkedIn, can speed up your review. Only our review team sees it.

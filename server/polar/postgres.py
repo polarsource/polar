@@ -17,23 +17,24 @@ from polar.kit.db.postgres import create_async_engine as _create_async_engine
 from polar.kit.db.postgres import create_sync_engine as _create_sync_engine
 
 type ProcessName = Literal["app", "worker", "scheduler", "script"]
+type AsyncDriver = Literal["asyncpg", "psycopg"]
 
 
 def create_async_engine(
     process_name: ProcessName,
     *,
+    driver: AsyncDriver = "asyncpg",
     pool_logging_name: str | None = None,
     pool_pre_ping: bool = False,
 ) -> AsyncEngine:
     return _create_async_engine(
-        dsn=str(settings.get_postgres_dsn("asyncpg")),
+        dsn=str(settings.get_postgres_dsn(driver)),
         application_name=f"{settings.ENV.value}.{process_name}",
         pool_logging_name=pool_logging_name or process_name,
         debug=settings.SQLALCHEMY_DEBUG,
         pool_size=settings.DATABASE_POOL_SIZE,
         pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
         pool_pre_ping=pool_pre_ping,
-        command_timeout=settings.DATABASE_COMMAND_TIMEOUT_SECONDS,
         connect_timeout=settings.DATABASE_CONNECT_TIMEOUT_SECONDS,
         statement_cache_size=settings.DATABASE_STATEMENT_CACHE_SIZE,
         prepared_statement_cache_size=settings.DATABASE_PREPARED_STATEMENT_CACHE_SIZE,
@@ -42,17 +43,19 @@ def create_async_engine(
 
 
 def create_async_read_engine(
-    process_name: ProcessName, *, pool_pre_ping: bool = False
+    process_name: ProcessName,
+    *,
+    driver: AsyncDriver = "asyncpg",
+    pool_pre_ping: bool = False,
 ) -> AsyncEngine:
     return _create_async_engine(
-        dsn=str(settings.get_postgres_read_dsn("asyncpg")),
+        dsn=str(settings.get_postgres_read_dsn(driver)),
         application_name=f"{settings.ENV.value}.{process_name}",
         pool_logging_name=f"{process_name}_read",
         debug=settings.SQLALCHEMY_DEBUG,
         pool_size=settings.DATABASE_POOL_SIZE,
         pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
         pool_pre_ping=pool_pre_ping,
-        command_timeout=settings.DATABASE_COMMAND_TIMEOUT_SECONDS,
         connect_timeout=settings.DATABASE_CONNECT_TIMEOUT_SECONDS,
         statement_cache_size=settings.DATABASE_STATEMENT_CACHE_SIZE,
         prepared_statement_cache_size=settings.DATABASE_PREPARED_STATEMENT_CACHE_SIZE,
@@ -62,13 +65,12 @@ def create_async_read_engine(
 
 def create_sync_engine(process_name: ProcessName) -> Engine:
     return _create_sync_engine(
-        dsn=str(settings.get_postgres_dsn("psycopg2")),
+        dsn=str(settings.get_postgres_dsn("psycopg")),
         application_name=f"{settings.ENV.value}.{process_name}",
         pool_logging_name=f"{process_name}_sync",
         debug=settings.SQLALCHEMY_DEBUG,
         pool_size=settings.DATABASE_SYNC_POOL_SIZE,
         pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
-        command_timeout=settings.DATABASE_COMMAND_TIMEOUT_SECONDS,
         connect_timeout=settings.DATABASE_CONNECT_TIMEOUT_SECONDS,
         sslmode="require" if settings.POSTGRES_SSL else None,
     )
@@ -95,6 +97,7 @@ async def get_db_read_session(request: Request) -> AsyncGenerator[AsyncReadSessi
 
 
 __all__ = [
+    "AsyncDriver",
     "AsyncEngine",
     "AsyncReadSession",
     "AsyncSession",

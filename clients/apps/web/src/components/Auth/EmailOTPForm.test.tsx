@@ -90,6 +90,7 @@ describe('EmailOTPForm', () => {
     scriptState.onReady = undefined
     scriptState.src = ''
     turnstile.render
+      .mockReset()
       .mockReturnValueOnce('first-widget')
       .mockReturnValueOnce('second-widget')
     Object.assign(window, { turnstile: undefined })

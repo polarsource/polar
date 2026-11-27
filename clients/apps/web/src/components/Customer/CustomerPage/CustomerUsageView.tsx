@@ -1,5 +1,6 @@
 'use client'
 
+import { CatalogVersionLabel } from '@/components/Products/CatalogVersionLabel'
 import { AddCreditsModal } from '@/components/Customer/AddCredits/AddCreditsModal'
 import { useModal } from '@/components/Modal/useModal'
 import { estimateMeteredCost } from '@/components/Products/ProductForm/Pricing/utils'
@@ -18,6 +19,8 @@ import {
   DataTable,
   DataTableColumnHeader,
   InlineModal,
+  Text,
+  Truncated,
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Suspense, useMemo, useState } from 'react'
@@ -192,18 +195,26 @@ export const CustomerUsageView = ({
             accessorKey: 'meter.name',
             size: 200,
             cell: ({ row }) => (
-              <div className="flex items-center gap-x-2">
+              <Box alignItems="center" columnGap="s" minWidth={0}>
                 <span
                   className="h-2 w-2 shrink-0 rounded-full"
                   style={{ backgroundColor: row.original.color }}
                 />
-                <span>{row.original.meter.name}</span>
+                <Truncated>
+                  <Text as="span">{row.original.meter.name}</Text>
+                </Truncated>
+                <CatalogVersionLabel
+                  organization={organization}
+                  version={row.original.meter}
+                />
                 {row.original.subscription && (
-                  <span className="dark:text-polar-500 text-gray-500">
-                    {row.original.subscription.product.name}
-                  </span>
+                  <Truncated>
+                    <Text as="span" color="muted">
+                      {row.original.subscription.product.name}
+                    </Text>
+                  </Truncated>
                 )}
-              </div>
+              </Box>
             ),
           },
           {

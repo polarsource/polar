@@ -14,6 +14,7 @@
     "polar-cli/commands-output-json": "error",
     "polar-cli/flag-conventions": "error",
     "polar-cli/no-ansi-escapes": "error",
+    "polar-cli/no-deep-ternary": "error",
     "polar-cli/no-double-cast": "error",
     "polar-cli/no-effect-run-outside-entrypoint": "error",
     "polar-cli/no-hardcoded-hosts": "error",
@@ -25,14 +26,17 @@
     "polar-cli/shared-flags": "error",
     "polar-cli/test-colocation": "error",
     "polar-cli/utils-boundaries": "error",
-    "no-console": "error"
+    "no-console": "error",
+    "complexity": ["error", { "max": 15 }],
+    "max-depth": ["error", { "max": 3 }]
   },
   "overrides": [
     {
       "files": ["scripts/**"],
       "rules": {
         "polar-cli/no-effect-run-outside-entrypoint": "off",
-        "no-console": "off"
+        "no-console": "off",
+        "complexity": "off"
       }
     }
   ]

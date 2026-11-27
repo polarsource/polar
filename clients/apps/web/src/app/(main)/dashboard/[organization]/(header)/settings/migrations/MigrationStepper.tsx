@@ -2,7 +2,7 @@ import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { STATE_COLORS, STATE_LABELS, StepMarker, StepState } from './stepMarker'
-import { currentPosition, MIGRATION_STEPS } from './steps'
+import { currentPosition, migrationSteps } from './steps'
 
 // One derived control: every segment carries the same 2px top track, and the
 // filled length of that track is the only dimension encoding progress. Position
@@ -11,18 +11,23 @@ import { currentPosition, MIGRATION_STEPS } from './steps'
 export function MigrationStepper({
   migration,
   panCurrentStepKey,
+  benefitsOnly,
 }: {
   migration: schemas['MerchantMigration']
   panCurrentStepKey?: string | null
+  benefitsOnly: boolean
 }) {
-  const position = currentPosition(migration, panCurrentStepKey)
+  if (migration.step === 'closed') {
+    return null
+  }
+  const steps = migrationSteps(migration.source_platform, benefitsOnly)
+  const position = currentPosition(migration, panCurrentStepKey, benefitsOnly)
   // A completed migration has every step behind it.
-  const current =
-    position.kind === 'completed' ? MIGRATION_STEPS.length : position.index
+  const current = position.kind === 'completed' ? steps.length : position.index
 
   return (
     <Box as="ol" alignItems="stretch" columnGap="s">
-      {MIGRATION_STEPS.map((def, index) => {
+      {steps.map((def, index) => {
         const state: StepState =
           index < current ? 'done' : index === current ? 'current' : 'upcoming'
         return <Segment key={def.key} label={def.short} state={state} />

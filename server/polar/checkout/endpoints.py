@@ -8,32 +8,28 @@ from sse_starlette.sse import EventSourceResponse
 
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_resource_permission
-from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
 from polar.exceptions import NotPermitted, PaymentNotReady, ResourceNotFound
+from polar.kit.http import get_ip_address
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import (
-    MultipleQueryFilter,
     SetSchemaReference,
 )
 from polar.kit.versioning import version
 from polar.models import Checkout
-from polar.models.checkout import CheckoutStatus
 from polar.openapi import APITag
 from polar.organization.embed_hosts import (
     csp_frame_ancestors,
     match_origin,
     parse_origin,
 )
-from polar.organization.schemas import OrganizationID
 from polar.postgres import (
     AsyncReadSession,
     AsyncSession,
     get_db_read_session,
     get_db_session,
 )
-from polar.product.schemas import ProductID
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 from polar.version import V2027_01
@@ -45,6 +41,7 @@ from .schemas import (
     CheckoutConfirm,
     CheckoutCreate,
     CheckoutEmbedPolicy,
+    CheckoutListParams,
     CheckoutOpened,
     CheckoutPublic,
     CheckoutPublicConfirmed,
@@ -120,41 +117,25 @@ CheckoutForbiddenError = {
     tags=[APITag.mcp, APITag.cli],
 )
 async def list(
+    filters: Annotated[CheckoutListParams, Query()],
     auth_subject: auth.CheckoutRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
-    product_id: MultipleQueryFilter[ProductID] | None = Query(
-        None, title="ProductID Filter", description="Filter by product ID."
-    ),
-    customer_id: MultipleQueryFilter[CustomerID] | None = Query(
-        None, title="CustomerID Filter", description="Filter by customer ID."
-    ),
-    external_customer_id: MultipleQueryFilter[ExternalCustomerID] | None = Query(
-        None,
-        title="ExternalCustomerID Filter",
-        description="Filter by customer external ID.",
-    ),
-    status: MultipleQueryFilter[CheckoutStatus] | None = Query(
-        None,
-        title="Status Filter",
-        description="Filter by checkout session status.",
-    ),
-    query: str | None = Query(None, description="Filter by customer email."),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[CheckoutSchema]:
     """List checkout sessions."""
     results, count = await checkout_service.list(
         session,
         auth_subject,
-        organization_id=organization_id,
-        product_id=product_id,
-        customer_id=customer_id,
-        external_customer_id=external_customer_id,
-        status=status,
-        query=query,
+        organization_id=filters.organization_id,
+        product_id=filters.product_id,
+        external_product_id=filters.external_product_id,
+        customer_id=filters.customer_id,
+        external_customer_id=filters.external_customer_id,
+        status=filters.status,
+        query=filters.query,
+        created_after=filters.created_after,
+        created_before=filters.created_before,
         pagination=pagination,
         sorting=sorting,
     )
@@ -383,9 +364,11 @@ async def client_update_v2027_01(
     },
 )
 async def client_confirm(
+    request: Request,
     client_secret: CheckoutClientSecret,
     checkout_confirm: legacy_schemas.CheckoutConfirm,
     auth_subject: auth.CheckoutWeb,
+    ip_geolocation_client: ip_geolocation.IPGeolocationClient,
     session: AsyncSession = Depends(get_db_session),
 ) -> Checkout:
     """
@@ -398,7 +381,12 @@ async def client_confirm(
     )
 
     return await checkout_service.confirm(
-        session, auth_subject, checkout, checkout_confirm
+        session,
+        auth_subject,
+        checkout,
+        checkout_confirm,
+        ip_geolocation_client,
+        get_ip_address(request),
     )
 
 
@@ -418,9 +406,11 @@ async def client_confirm(
 )
 @version(starting_from=V2027_01)
 async def client_confirm_v2027_01(
+    request: Request,
     client_secret: CheckoutClientSecret,
     checkout_confirm: CheckoutConfirm,
     auth_subject: auth.CheckoutWeb,
+    ip_geolocation_client: ip_geolocation.IPGeolocationClient,
     session: AsyncSession = Depends(get_db_session),
 ) -> Checkout:
     """
@@ -433,7 +423,12 @@ async def client_confirm_v2027_01(
     )
 
     return await checkout_service.confirm(
-        session, auth_subject, checkout, checkout_confirm
+        session,
+        auth_subject,
+        checkout,
+        checkout_confirm,
+        ip_geolocation_client,
+        get_ip_address(request),
     )
 
 

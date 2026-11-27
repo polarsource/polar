@@ -21,7 +21,6 @@ class TestGetBillingPlan:
         # Create mock OAuth account
         oauth = OAuthAccount(
             platform=OAuthPlatform.github_repository_benefit,
-            access_token="test_token",
             account_id="12345",
         )
 
@@ -82,7 +81,6 @@ class TestGetBillingPlan:
         # Create mock OAuth account
         oauth = OAuthAccount(
             platform=OAuthPlatform.github_repository_benefit,
-            access_token="test_token",
             account_id="12345",
         )
 

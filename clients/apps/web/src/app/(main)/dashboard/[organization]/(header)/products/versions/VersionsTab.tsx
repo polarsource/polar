@@ -1,0 +1,93 @@
+'use client'
+
+import { schemas } from '@polar-sh/client'
+import { Grid, List, ListItem, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
+import { ChevronRight, CircleCheck } from '@polar-sh/orbit/icons'
+import Link from 'next/link'
+import { PublishedAt } from './PublishedAt'
+
+const columns = 'minmax(0, 1fr) 96px 128px repeat(3, 32px) 16px'
+
+export const kinds = [
+  { change: 'added', glyph: '+', color: 'text-success' },
+  { change: 'changed', glyph: '~', color: 'text-secondary' },
+  { change: 'removed', glyph: '-', color: 'text-danger' },
+] as const
+
+const Counts = ({ catalog }: { catalog: schemas['Catalog'] }) =>
+  kinds.map(({ change, glyph, color }) => {
+    const count = catalog.changes?.[`${change}_count`]
+    return (
+      <Box
+        key={change}
+        as="span"
+        color={color}
+        justifyContent="end"
+        title={count ? `${count} ${change}` : undefined}
+      >
+        <Text as="span" color="inherit" tabularNums>
+          {count ? (
+            <span className="font-mono">
+              {glyph}
+              {count}
+            </span>
+          ) : null}
+        </Text>
+      </Box>
+    )
+  })
+
+export const VersionsTab = ({
+  organization,
+  catalogs,
+}: {
+  organization: schemas['Organization']
+  catalogs: schemas['Catalog'][]
+}) => {
+  // The draft is shown above the list
+  const published = catalogs.filter(({ status }) => status !== 'draft')
+  if (!published.length) return null
+
+  return (
+    <List size="small">
+      {published.map((catalog) => (
+        <Link
+          key={catalog.id}
+          href={`/dashboard/${organization.slug}/products/versions/${catalog.id}`}
+          className="block"
+        >
+          <ListItem onSelect={() => {}}>
+            <Grid
+              templateColumns={columns}
+              columnGap="l"
+              alignItems="center"
+              width="100%"
+            >
+              <span className="truncate text-base">
+                {catalog.name ?? 'Untitled'}
+              </span>
+              <Box alignItems="center" columnGap="xs" color="text-secondary">
+                {catalog.status === 'live' ? (
+                  <>
+                    <CircleCheck size={14} aria-hidden />
+                    <Text as="span" color="inherit">
+                      Current
+                    </Text>
+                  </>
+                ) : null}
+              </Box>
+              <Text color="muted" tabularNums>
+                <PublishedAt catalog={catalog} />
+              </Text>
+              <Counts catalog={catalog} />
+              <Text color="muted">
+                <ChevronRight size={16} aria-hidden="true" />
+              </Text>
+            </Grid>
+          </ListItem>
+        </Link>
+      ))}
+    </List>
+  )
+}

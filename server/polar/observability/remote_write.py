@@ -20,9 +20,9 @@ import time
 from collections.abc import Generator
 from typing import IO
 
-import httpx
-import snappy
+import httpx2
 import structlog
+from cramjam import snappy
 from prometheus_client import CollectorRegistry, Metric, multiprocess
 from prometheus_client.samples import Sample
 
@@ -128,7 +128,7 @@ def _collect_metrics() -> Generator[tuple[list[tuple[str, str]], float]]:
             yield labels, sample.value
 
 
-def _push_metrics(client: httpx.Client, url: str, headers: dict[str, str]) -> None:
+def _push_metrics(client: httpx2.Client, url: str, headers: dict[str, str]) -> None:
     timestamp_ms = int(time.time() * 1000)
 
     timeseries_list: list[bytes] = []
@@ -140,7 +140,7 @@ def _push_metrics(client: httpx.Client, url: str, headers: dict[str, str]) -> No
         return
 
     write_request = _encode_write_request(timeseries_list)
-    compressed = snappy.compress(write_request)
+    compressed = bytes(snappy.compress_raw(write_request))
 
     max_retries = 3
     for attempt in range(max_retries):
@@ -175,7 +175,7 @@ def _push_metrics(client: httpx.Client, url: str, headers: dict[str, str]) -> No
             )
             return
 
-        except (httpx.TimeoutException, httpx.NetworkError) as e:
+        except (httpx2.TimeoutException, httpx2.NetworkError) as e:
             if attempt < max_retries - 1:
                 log.warning(
                     "prometheus_remote_write_retry",
@@ -233,7 +233,7 @@ def _run_push_loop(
         redis = create_redis("worker")
 
     try:
-        with httpx.Client(timeout=httpx.Timeout(30.0, connect=5.0)) as client:
+        with httpx2.Client(timeout=httpx2.Timeout(30.0, connect=5.0)) as client:
             while not shutdown_event.is_set():
                 start_time = time.monotonic()
                 try:
@@ -253,7 +253,7 @@ def _run_push_loop(
                     shutdown_event.wait(sleep_time)
     finally:
         if loop and redis:
-            loop.run_until_complete(redis.close())
+            loop.run_until_complete(redis.aclose())
             loop.close()
 
 

@@ -1,16 +1,102 @@
 import builtins
 import collections.abc
+import dataclasses
 import types
 import typing
 
 import adaptix
 import adaptix.load_error
-import httpx
+import httpx2
 import typing_extensions
+from adaptix._internal.morphing.provider_template import LoaderProvider
+from adaptix._internal.morphing.request_cls import LoaderRequest
+from adaptix._internal.provider.loc_stack_filtering import LocStack, LocStackChecker
+from adaptix._internal.provider.location import GenericParamLoc
+from adaptix.provider import CannotProvide, Mediator
+
+from polar import _httpx_compat
 
 _EnvironmentT = typing.TypeVar("_EnvironmentT", bound=str)
 _ModelT = typing.TypeVar("_ModelT")
-RequestTimeout: typing.TypeAlias = float | httpx.Timeout
+RequestTimeout: typing.TypeAlias = _httpx_compat.RequestTimeout
+
+
+class _OpenEnumMarker:
+    pass
+
+
+_OPEN_ENUM = _OpenEnumMarker()
+
+
+@dataclasses.dataclass(frozen=True)
+class _Discriminator:
+    field: str
+    variants: tuple[tuple[str, typing.Any], ...]
+
+
+class _DiscriminatedUnionProvider(LoaderProvider):
+    def provide_loader(
+        self, mediator: Mediator, request: LoaderRequest
+    ) -> collections.abc.Callable[[typing.Any], typing.Any]:
+        hint = request.last_loc.type
+        if typing.get_origin(hint) is not typing.Annotated:
+            raise CannotProvide
+        discriminator = next(
+            (
+                item
+                for item in typing.get_args(hint)[1:]
+                if isinstance(item, _Discriminator)
+            ),
+            None,
+        )
+        if discriminator is None:
+            raise CannotProvide
+        loaders = {
+            tag: mediator.mandatory_provide(
+                request.with_loc_stack(
+                    request.loc_stack.append_with(
+                        GenericParamLoc(type=variant, generic_pos=index)
+                    )
+                )
+            )
+            for index, (tag, variant) in enumerate(discriminator.variants)
+        }
+        field = discriminator.field
+        nullable = type(None) in typing.get_args(typing.get_args(hint)[0])
+
+        def load(data: object) -> typing.Any:
+            if data is None and nullable:
+                return None
+            if not isinstance(data, collections.abc.Mapping):
+                raise adaptix.load_error.TypeLoadError(collections.abc.Mapping, data)
+            if field not in data:
+                raise adaptix.load_error.NoRequiredFieldsLoadError({field}, data)
+            tag = data[field]
+            if not isinstance(tag, str) or tag not in loaders:
+                raise adaptix.load_error.BadVariantLoadError(tuple(loaders), tag)
+            return loaders[tag](data)
+
+        return load
+
+
+class _ScalarUnionProvider(LoaderProvider):
+    def provide_loader(
+        self, mediator: Mediator, request: LoaderRequest
+    ) -> collections.abc.Callable[[typing.Any], typing.Any]:
+        hint = request.last_loc.type
+        if typing.get_origin(hint) not in (typing.Union, types.UnionType):
+            raise CannotProvide
+        scalar_types = frozenset(typing.get_args(hint))
+        if not scalar_types <= {str, int, float, bool, type(None)}:
+            raise CannotProvide
+        fallback = mediator.provide_from_next()
+
+        def load(data: object) -> typing.Any:
+            if type(data) in scalar_types:
+                return data
+            return fallback(data)
+
+        return load
 
 
 class PolarError(Exception):
@@ -80,7 +166,7 @@ def _default_headers(
     headers = {
         "Polar-Version": version,
         "Authorization": f"Bearer {access_token}",
-        "User-Agent": "polar-sdk-python/1.0.3a5",
+        "User-Agent": "polar-sdk-python/1.3.3",
     }
     if organization_id is not None:
         headers["Polar-Organization"] = organization_id
@@ -97,7 +183,7 @@ class BuildRequestMixin:
         body: typing.Any | None = None,
         request_timeout: RequestTimeout | None = None,
         request_access_token: str | None = None,
-    ) -> httpx.Request:
+    ) -> httpx2.Request:
         url = url.format(**(path_params or {}))
 
         params: dict[str, typing.Any] = {}
@@ -112,7 +198,11 @@ class BuildRequestMixin:
             else:
                 params[k] = v
 
-        timeout = self._client.timeout if request_timeout is None else request_timeout
+        timeout = (
+            self._client.timeout
+            if request_timeout is None
+            else _httpx_compat.to_httpx2_timeout(request_timeout)
+        )
         headers: dict[str, str] | None = None
         if request_access_token is not None:
             headers = {"Authorization": f"Bearer {request_access_token}"}
@@ -130,9 +220,9 @@ class SyncClientBase(BuildRequestMixin):
         timeout: RequestTimeout | None = 5.0,
         organization_id: str | None = None,
     ) -> None:
-        self._client = httpx.Client(
+        self._client = httpx2.Client(
             base_url=base_url,
-            timeout=timeout,
+            timeout=_httpx_compat.to_httpx2_timeout(timeout),
             headers=_default_headers(version, access_token, organization_id),
         )
 
@@ -148,10 +238,10 @@ class SyncClientBase(BuildRequestMixin):
     ) -> None:
         self._client.__exit__(exc_type, exc_val, exc_tb)
 
-    def send_request(self, request: httpx.Request) -> httpx.Response:
+    def send_request(self, request: httpx2.Request) -> httpx2.Response:
         try:
             return self._client.send(request)
-        except httpx.RequestError as e:
+        except httpx2.RequestError as e:
             raise PolarNetworkError(str(e)) from e
 
 
@@ -164,9 +254,9 @@ class AsyncClientBase(BuildRequestMixin):
         timeout: RequestTimeout | None = 5.0,
         organization_id: str | None = None,
     ) -> None:
-        self._client = httpx.AsyncClient(
+        self._client = httpx2.AsyncClient(
             base_url=base_url,
-            timeout=timeout,
+            timeout=_httpx_compat.to_httpx2_timeout(timeout),
             headers=_default_headers(version, access_token, organization_id),
         )
 
@@ -182,10 +272,10 @@ class AsyncClientBase(BuildRequestMixin):
     ) -> None:
         await self._client.__aexit__(exc_type, exc_val, exc_tb)
 
-    async def send_request(self, request: httpx.Request) -> httpx.Response:
+    async def send_request(self, request: httpx2.Request) -> httpx2.Response:
         try:
             return await self._client.send(request)
-        except httpx.RequestError as e:
+        except httpx2.RequestError as e:
             raise PolarNetworkError(str(e)) from e
 
 
@@ -213,12 +303,29 @@ def _load_exact_float(data: object) -> float:
     raise adaptix.load_error.TypeLoadError(float, data)
 
 
+class _OpenEnumChecker(LocStackChecker):
+    def check_loc_stack(self, mediator: object, loc_stack: LocStack) -> bool:
+        hint = loc_stack.last.type
+        return typing.get_origin(hint) is typing.Annotated and any(
+            metadata is _OPEN_ENUM for metadata in typing.get_args(hint)[1:]
+        )
+
+
+def _load_open_enum(data: object) -> str:
+    if isinstance(data, str):
+        return data
+    raise adaptix.load_error.TypeLoadError(str, data)
+
+
 # Adaptix's float loader also accepts int, and union cases are tried in an
 # order that puts float first, so int | float would always coerce to float.
 # P[Union][float] targets float only as a member of that union (not standalone
 # float fields, which should still coerce JSON ints).
 _retort = adaptix.Retort(
     recipe=[
+        _DiscriminatedUnionProvider(),
+        _ScalarUnionProvider(),
+        adaptix.loader(_OpenEnumChecker(), _load_open_enum),
         adaptix.loader(
             adaptix.P[int | float][float]
             | adaptix.P[int | float | None][float]
@@ -276,12 +383,9 @@ def deserialize(data: object, model: typing_extensions.TypeForm[_ModelT]) -> _Mo
         raise PolarDeserializationError(e) from e
 
 
-E = typing.TypeVar("E", bound=PolarClientError)
-
-
 def _handle_errors(
-    response: httpx.Response,
-    errors: dict[int, type[E]] | None = None,
+    response: httpx2.Response,
+    errors: collections.abc.Mapping[int, type[PolarClientError]] | None = None,
 ) -> None:
     status_code = response.status_code
 
@@ -312,9 +416,9 @@ def _handle_errors(
 
 
 def parse_response_json(
-    response: httpx.Response,
+    response: httpx2.Response,
     response_model: typing.Any | None = None,
-    errors: dict[int, type[E]] | None = None,
+    errors: collections.abc.Mapping[int, type[PolarClientError]] | None = None,
 ) -> typing.Any:
     _handle_errors(response, errors)
 
@@ -328,15 +432,15 @@ def parse_response_json(
 
 
 def parse_response_text(
-    response: httpx.Response,
-    errors: dict[int, type[E]] | None = None,
+    response: httpx2.Response,
+    errors: collections.abc.Mapping[int, type[PolarClientError]] | None = None,
 ) -> str:
     _handle_errors(response, errors)
     return response.text
 
 
 def parse_response_none(
-    response: httpx.Response,
-    errors: dict[int, type[E]] | None = None,
+    response: httpx2.Response,
+    errors: collections.abc.Mapping[int, type[PolarClientError]] | None = None,
 ) -> None:
     _handle_errors(response, errors)

@@ -1,6 +1,19 @@
 # Shared tooling for the Render and Lambda builds.
 FROM ghcr.io/astral-sh/uv:0.13.4 AS uv
-FROM tailscale/tailscale:v1.98.4 AS tailscale
+
+# Keep the published containerboot helper; install client and daemon from release archives.
+FROM tailscale/tailscale:v1.104.2 AS tailscale
+ARG TARGETARCH
+ARG TAILSCALE_VERSION
+RUN version="${TAILSCALE_VERSION:?Set the TAILSCALE_VERSION build argument}" \
+  && sed -i -e 's|^mozilla/emSign_ECC_Root_CA_-_G3.crt|!&|' \
+    -e 's|^mozilla/Comodo_AAA_Services_root.crt|!&|' /etc/ca-certificates.conf \
+  && update-ca-certificates \
+  && wget -q "https://pkgs.tailscale.com/stable/tailscale_${version}_${TARGETARCH}.tgz" -O /tmp/tailscale.tgz \
+  && tar xzf /tmp/tailscale.tgz --strip-components=1 -C /usr/local/bin \
+    "tailscale_${version}_${TARGETARCH}/tailscale" \
+    "tailscale_${version}_${TARGETARCH}/tailscaled" \
+  && rm /tmp/tailscale.tgz
 
 # Build the email renderer and backoffice assets with the same Node/pnpm setup.
 FROM node:24-slim AS node-builder
@@ -66,7 +79,9 @@ COPY --from=uv /uv /uvx /bin/
 COPY --from=tailscale /usr/local/bin/tailscaled /usr/local/bin/tailscale /usr/local/bin/containerboot /usr/local/bin/
 COPY --from=build-backoffice-proxy /usr/bin/caddy /usr/local/bin/caddy
 
+# Empty PYTHONTZPATH makes zoneinfo use the tzdata package pinned in uv.lock
 ENV PYTHONUNBUFFERED=1 \
+  PYTHONTZPATH="" \
   UV_COMPILE_BYTECODE=1 \
   UV_LINK_MODE=copy \
   UV_NO_SYNC=1 \
@@ -84,7 +99,8 @@ RUN --mount=type=bind,source=uv.lock,target=uv.lock \
   && update-ca-certificates \
   && uv sync --no-group dev --frozen \
   && uv tool install tinybird --python 3.13 \
-  && apt-get autoremove -y build-essential
+  && apt-get autoremove -y build-essential git \
+  && rm -rf /var/lib/apt/lists/*
 
 # Copy build artifacts in their own layers before the source, so they keep their
 # digests and are not re-uploaded when only the source changes.
@@ -106,6 +122,11 @@ CMD ["uv", "run", "uvicorn", "polar.app:app", \
   "--timeout-graceful-shutdown", "30"]
 
 FROM public.ecr.aws/lambda/python:3.14 AS lambda-base
+
+ARG DNF_REFRESH_DATE
+RUN dnf upgrade -y --releasever=latest \
+  && dnf clean all \
+  && rm /usr/local/bin/aws-lambda-rie
 
 RUN trust extract --overwrite --format=pem-bundle \
     --filter='pkcs11:object=Comodo%20AAA%20Services%20root;type=cert' \
@@ -144,6 +165,9 @@ COPY --from=build-emails-bin /app/bin/react-email-pkg /app/server/
 COPY --from=build-backoffice /app/static /app/server/polar/backoffice/static
 COPY . /app/server/
 
+# Lambda's filesystem is read-only, so without precompiled bytecode every cold start recompiles polar/.
+RUN python3 -m compileall -q -j 0 --invalidation-mode unchecked-hash /app/server/polar
+
 COPY --from=tailscale /usr/local/bin/tailscaled /usr/local/bin/tailscale /var/runtime/
 
 WORKDIR /app/server
@@ -163,6 +187,7 @@ ENV RELEASE_VERSION=${RELEASE_VERSION} \
   LAMBDA_TASK_ROOT=/app/server \
   PATH="/app/server/.venv/bin:$PATH" \
   PYTHONPATH="/app/server:/app/server/.venv/lib/python3.14/site-packages" \
+  PYTHONTZPATH="" \
   POLAR_EMAIL_RENDERER_BINARY_PATH=/app/server/react-email-pkg \
   POLAR_IP_GEOLOCATION_DATABASE_DIRECTORY_PATH=/data \
   POLAR_IP_GEOLOCATION_DATABASE_NAME=country_asn.mmdb

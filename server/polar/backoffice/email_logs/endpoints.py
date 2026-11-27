@@ -10,16 +10,19 @@ from sqlalchemy import or_
 from tagflow import classes, tag, text
 
 from polar.backoffice.routing import BackofficeRouter
+from polar.config import settings
 from polar.email.react import render_from_json
 from polar.email.repository import EmailLogRepository
 from polar.email.schemas import EmailTemplate
+from polar.email.sender import EmailSenderError, email_sender
 from polar.kit.pagination import PaginationParamsQuery
 from polar.logging import Logger
 from polar.models.email_log import EmailLog, EmailLogStatus
 from polar.postgres import AsyncSession, get_db_read_session
 
-from ..components import button, datatable, description_list, input
+from ..components import button, datatable, description_list, input, modal
 from ..layout import layout
+from ..toast import add_toast
 
 log: Logger = structlog.get_logger()
 
@@ -183,8 +186,24 @@ async def get_email_log(
         "email_logs:list",
     ):
         with tag.div(classes="flex flex-col gap-4"):
-            with tag.h1(classes="text-4xl"):
-                text(email_log.subject)
+            with tag.div(classes="flex justify-between items-center"):
+                with tag.h1(classes="text-4xl"):
+                    text(email_log.subject)
+                # Only hard bounces put the address on Resend's suppression list
+                if (
+                    not settings.is_sandbox()
+                    and email_log.error is not None
+                    and email_log.error.startswith(
+                        ("email.suppressed", "email.bounced; type=Permanent")
+                    )
+                ):
+                    with button(
+                        hx_get=str(
+                            request.url_for("email_logs:unsuppress", id=email_log.id)
+                        ),
+                        hx_target="#modal",
+                    ):
+                        text("Unsuppress")
 
             with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
                 with tag.div(classes="flex flex-col gap-4"):
@@ -268,6 +287,57 @@ async def get_email_log(
                         else:
                             with tag.p(classes="text-gray-500"):
                                 text("No template to render")
+
+
+@router.api_route(
+    "/{id}/unsuppress", name="email_logs:unsuppress", methods=["GET", "POST"]
+)
+async def unsuppress(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_read_session),
+) -> Any:
+    if settings.is_sandbox():
+        raise HTTPException(status_code=404)
+
+    repository = EmailLogRepository.from_session(session)
+    email_log = await repository.get_by_id(id)
+
+    if email_log is None:
+        raise HTTPException(status_code=404)
+
+    if request.method == "POST":
+        try:
+            removed = await email_sender.remove_suppression(email_log.to_email_addr)
+        except EmailSenderError as e:
+            await add_toast(request, f"Failed to unsuppress: {e}", "error")
+            return
+        if removed:
+            await add_toast(
+                request, f"{email_log.to_email_addr} has been unsuppressed.", "success"
+            )
+        else:
+            await add_toast(
+                request, f"{email_log.to_email_addr} wasn't on the suppression list."
+            )
+        return
+
+    with modal(f"Unsuppress {email_log.to_email_addr}", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.p():
+                text("This removes the address from the Resend suppression list, ")
+                text("so emails to it will be attempted again.")
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(
+                    type="button",
+                    variant="primary",
+                    hx_post=str(request.url),
+                    hx_target="#modal",
+                ):
+                    text("Unsuppress")
 
 
 class StatusItem(description_list.DescriptionListItem[EmailLog]):

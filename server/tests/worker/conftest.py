@@ -1,7 +1,7 @@
 """Conftest for worker tests - isolated from main infrastructure fixtures.
 
 These tests use FakeRedis and mock objects, so they don't need the full
-Polar infrastructure (database, Minio, etc.). We override the session-scoped
+Polar infrastructure (database, Redis, etc.). We override the session-scoped
 autouse fixtures from the main test suite to prevent connection attempts.
 """
 
@@ -19,15 +19,6 @@ def setup_prometheus_test_env(tmp_path_factory: pytest.TempPathFactory) -> None:
     """Set up prometheus multiprocess directory for all tests."""
     prom_dir = tmp_path_factory.mktemp("prometheus_multiproc")
     os.environ["PROMETHEUS_MULTIPROC_DIR"] = str(prom_dir)
-
-
-@pytest.fixture(scope="session", autouse=True)
-def empty_test_bucket(worker_id: str) -> Any:
-    """Override the main test bucket fixture to avoid Minio connections.
-
-    The worker tests use FakeRedis and don't need S3/Minio access.
-    """
-    return None
 
 
 @pytest.fixture(scope="session", autouse=True)

@@ -1,15 +1,36 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
 
+const sharedTest = {
+  environment: 'jsdom',
+  setupFiles: ['./vitest.setup.ts'],
+  fsModuleCache: true,
+  isolate: false,
+  sequence: { shuffle: { tests: true } },
+  env: {
+    TZ: 'UTC',
+  },
+} as const
+
 export default defineConfig({
-  plugins: [react()],
   test: {
-    environment: 'jsdom',
-    setupFiles: ['./vitest.setup.ts'],
-    fsModuleCache: true,
-    env: {
-      TZ: 'UTC',
-    },
+    sequence: { shuffle: { files: true } },
+    projects: [
+      {
+        plugins: [react()],
+        test: { ...sharedTest, name: 'uncompiled' },
+      },
+      {
+        plugins: [
+          react({ babel: { plugins: [['babel-plugin-react-compiler', {}]] } }),
+        ],
+        test: {
+          ...sharedTest,
+          name: 'compiled',
+          fsModuleCachePath: 'node_modules/.vitest-cache-compiled',
+        },
+      },
+    ],
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],

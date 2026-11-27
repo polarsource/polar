@@ -36,7 +36,6 @@ from sqlalchemy.orm import (
 )
 from sqlalchemy.sql.elements import BinaryExpression
 
-from polar.config import settings
 from polar.kit.db.models import Model
 from polar.kit.metadata import MetadataMixin, get_nested_metadata_value
 from polar.kit.utils import generate_uuid, utc_now
@@ -63,10 +62,9 @@ class CustomerComparator(Relationship.Comparator[Customer]):
                     and_(
                         Event.external_customer_id.is_not(None),
                         Event.external_customer_id == other.external_id,
-                        Event.organization_id == other.organization_id,
                     ),
                 )
-            return clause
+            return and_(Event.organization_id == other.organization_id, clause)
 
         raise NotImplementedError()
 
@@ -133,11 +131,6 @@ class Event(Model, MetadataMixin):
             literal_column("ingested_at DESC"),
         ),
         Index(
-            "ix_events_external_customer_id_pattern",
-            "external_customer_id",
-            postgresql_ops={"external_customer_id": "text_pattern_ops"},
-        ),
-        Index(
             "ix_events_organization_id_source_id",
             "organization_id",
             "source",
@@ -173,24 +166,6 @@ class Event(Model, MetadataMixin):
             "pending_parent_external_id",
             postgresql_where="pending_parent_external_id IS NOT NULL",
         ),
-        # Cover usage aggregation for a very active meter in production.
-        *(
-            (
-                Index(
-                    "ix_events_meter_a266c3bf-a7a0-4883-950c-b1f995b6193d",
-                    "external_customer_id",
-                    "ingested_at",
-                    postgresql_include=["user_metadata"],
-                    postgresql_where=(
-                        "organization_id = 'd49ecf1e-4cb2-41f2-827d-ea48b03706f6'::uuid "
-                        "AND source = 'user' AND name = 'credit_usage' "
-                        "AND external_customer_id IS NOT NULL"
-                    ),
-                ),
-            )
-            if settings.is_production()
-            else ()
-        ),
         {
             "postgresql_with": {
                 "autovacuum_vacuum_threshold": 1000,
@@ -212,7 +187,7 @@ class Event(Model, MetadataMixin):
     )
     name: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
     source: Mapped[EventSource] = mapped_column(
-        String, nullable=False, default=EventSource.system, index=True
+        String, nullable=False, default=EventSource.system
     )
 
     customer_id: Mapped[UUID | None] = mapped_column(
@@ -223,11 +198,7 @@ class Event(Model, MetadataMixin):
         String, nullable=True, index=True
     )
 
-    member_id: Mapped[UUID | None] = mapped_column(
-        Uuid,
-        nullable=True,
-        index=True,
-    )
+    member_id: Mapped[UUID | None] = mapped_column(Uuid, nullable=True)
 
     external_member_id: Mapped[str | None] = mapped_column(String, nullable=True)
 
@@ -259,11 +230,11 @@ class Event(Model, MetadataMixin):
         return relationship(
             Customer,
             primaryjoin=(
+                "and_("
+                "Event.organization_id == Customer.organization_id,"
                 "or_("
                 "Event.customer_id == Customer.id,"
-                "and_("
-                "Event.external_customer_id == Customer.external_id,"
-                "Event.organization_id == Customer.organization_id"
+                "Event.external_customer_id == Customer.external_id"
                 ")"
                 ")"
             ),

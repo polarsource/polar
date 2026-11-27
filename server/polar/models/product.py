@@ -42,7 +42,7 @@ from polar.kit.metadata import MetadataMixin
 from polar.kit.schemas import SetSchemaReference
 from polar.kit.trial import TrialConfigurationMixin
 from polar.kit.visibility import Visibility, VisibilityMixin
-from polar.models.product_price import ProductPriceAmountType
+from polar.models.product_price import PRICES_ORDER_BY, ProductPriceAmountType
 from polar.tax.calculation import TaxCode
 
 from .product_price import ProductPrice
@@ -155,6 +155,9 @@ class Product(
     is_tax_applicable: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True
     )
+    trial_payment_setup_required: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True
+    )
     tax_code: Mapped[TaxCode] = mapped_column(
         StringEnum(TaxCode),
         nullable=False,
@@ -195,10 +198,7 @@ class Product(
                 "ProductPrice.source == 'catalog'"
                 ")"
             ),
-            order_by="(case("
-            "(ProductPrice.amount_type.in_(['fixed', 'custom']), 0), "
-            "(ProductPrice.amount_type == 'metered_unit', 1), "
-            "), ProductPrice.created_at)",
+            order_by=PRICES_ORDER_BY,
             viewonly=True,
         )
 
@@ -267,6 +267,8 @@ class Product(
             ),
             # References come from other flows, never from a product flush
             expire_on_flush=False,
+            deferred=True,
+            raiseload=True,
         )
 
     def get_price(

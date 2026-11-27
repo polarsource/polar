@@ -32,6 +32,11 @@ class TaxCalculationLogicalError(TaxError):
         super().__init__(message)
 
 
+class InvalidAddressError(TaxCalculationLogicalError):
+    def __init__(self, message: str = "The provided address is invalid.") -> None:
+        super().__init__(message)
+
+
 class InvalidTaxIDError(TaxCalculationLogicalError):
     def __init__(self) -> None:
         message = "The provided tax ID is invalid."
@@ -52,6 +57,11 @@ class CalculationExpiredError(TaxRecordError):
         super().__init__(message)
 
 
+class UnsupportedCountryError(TaxRecordError):
+    def __init__(self, country: str) -> None:
+        super().__init__(f"Tax recording is not supported for country {country}.")
+
+
 class TaxRevertError(TaxError):
     def __init__(
         self, message: str = "An error occurred while reverting the tax record."
@@ -69,16 +79,21 @@ class TaxCode(StrEnum):
     general_electronically_supplied_services = (
         "general_electronically_supplied_services"
     )
+    live_online_seminar = "live_online_seminar"
 
     def to_stripe(self) -> str:
         match self:
             case TaxCode.general_electronically_supplied_services:
                 return "txcd_10000000"
+            case TaxCode.live_online_seminar:
+                return "txcd_20060045"
 
     def to_numeral(self) -> str:
         match self:
             case TaxCode.general_electronically_supplied_services:
                 return "SAAS_GENERAL"
+            case TaxCode.live_online_seminar:
+                return "WEB_BASED_SEMINAR"
 
 
 class TaxabilityReason(StrEnum):

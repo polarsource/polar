@@ -18,7 +18,6 @@ interface MetricChartProps {
   metric: schemas['Metric']
   height?: number
   width?: number
-  grid?: boolean
   onDataIndexHover?: (index: number | null) => void
   simple?: boolean
   showYAxis?: boolean
@@ -34,7 +33,6 @@ const MetricChart = ({
   metric,
   height,
   width,
-  grid,
   onDataIndexHover,
   simple = false,
   showYAxis = false,
@@ -112,7 +110,6 @@ const MetricChart = ({
         valueFormatter={valueFormatter}
         height={height}
         width={width}
-        showGrid={grid}
         showYAxis={showYAxis}
         chartType={chartType}
         onDataIndexHover={onDataIndexHover}

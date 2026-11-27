@@ -1,9 +1,11 @@
 import contextlib
+import functools
+import gc
 from collections.abc import AsyncIterator
 from typing import TypedDict
 
 import structlog
-from fastapi import FastAPI
+from fastapi import APIRouter, FastAPI
 
 from polar import worker  # noqa
 from polar.agent.endpoints import auth_md_router
@@ -16,7 +18,7 @@ from polar.auth.exception_handlers import (
 )
 from polar.auth.middlewares import AuthSubjectMiddleware
 from polar.auth.models import ORGANIZATION_HEADER
-from polar.backoffice import app as backoffice_app
+from polar.backoffice.app import app as backoffice_app
 from polar.checkout import ip_geolocation
 from polar.checkout_link.app import app as checkout_link_redirect_app
 from polar.config import settings
@@ -38,6 +40,7 @@ from polar.logfire import (
     configure_logfire,
     instrument_fastapi,
     instrument_httpx,
+    instrument_redis,
     instrument_sqlalchemy,
 )
 from polar.logging import Logger
@@ -65,6 +68,7 @@ from polar.observability.remote_write import (
 )
 from polar.observability.slo import start_slo_metrics, stop_slo_metrics
 from polar.postgres import (
+    AsyncDriver,
     create_async_engine,
     create_async_read_engine,
     create_sync_engine,
@@ -95,6 +99,7 @@ def configure_cors(app: FastAPI) -> None:
             allow_credentials=True,  # Cookies are allowed, but only there!
             allow_methods=["*"],
             allow_headers=["*"],
+            expose_headers=["Content-Disposition"],
         )
         configs.append(polar_frontend_config)
 
@@ -125,7 +130,9 @@ class State(TypedDict):
 
 
 @contextlib.asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncIterator[State]:
+async def lifespan(
+    app: FastAPI, *, database_driver: AsyncDriver = "asyncpg"
+) -> AsyncIterator[State]:
     log.info("Starting Polar API")
 
     # Fail the deploy on a misconfigured secret
@@ -146,23 +153,26 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
     # Initialize SLO target metrics for critical endpoints (refreshed every 5 minutes)
     start_slo_metrics()
 
-    async_engine = async_read_engine = create_async_engine("app")
+    async_engine = async_read_engine = create_async_engine(
+        "app", driver=database_driver
+    )
     async_sessionmaker = async_read_sessionmaker = create_async_sessionmaker(
         async_engine
     )
     instrument_engines = [async_engine.sync_engine]
 
     if settings.is_read_replica_configured():
-        async_read_engine = create_async_read_engine("app")
+        async_read_engine = create_async_read_engine("app", driver=database_driver)
         async_read_sessionmaker = create_async_sessionmaker(async_read_engine)
         instrument_engines.append(async_read_engine.sync_engine)
 
     sync_engine = create_sync_engine("app")
     sync_sessionmaker = create_sync_sessionmaker(sync_engine)
     instrument_engines.append(sync_engine)
-    instrument_sqlalchemy(instrument_engines)
-
     redis = create_redis("app")
+    if not settings.LOGFIRE_ROOT_SPANS_ONLY:
+        instrument_sqlalchemy(instrument_engines)
+        instrument_redis(redis)
 
     try:
         ip_geolocation_client = ip_geolocation.get_client()
@@ -174,6 +184,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
         ip_geolocation_client = None
 
     log.info("Polar API started")
+
+    if settings.is_test():
+        gc.collect()
+        gc.freeze()
 
     yield {
         "async_engine": async_engine,
@@ -191,10 +205,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
     stop_slo_metrics()
     stop_remote_write_pusher()
 
-    await redis.close(True)
+    await redis.aclose(True)
     rate_limit_redis = getattr(app.state, "rate_limit_redis", None)
     if rate_limit_redis is not None:
-        await rate_limit_redis.close(True)
+        await rate_limit_redis.aclose(True)
     await async_engine.dispose()
     if async_read_engine is not async_engine:
         await async_read_engine.dispose()
@@ -205,8 +219,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
     log.info("Polar API stopped")
 
 
-def create_app() -> FastAPI:
-    app = FastAPI(lifespan=lifespan, openapi_url=None)
+def create_app(
+    api_router: APIRouter = router, database_driver: AsyncDriver = "asyncpg"
+) -> FastAPI:
+    app = FastAPI(
+        lifespan=functools.partial(lifespan, database_driver=database_driver),
+        openapi_url=None,
+    )
 
     app.add_middleware(OperationalErrorMiddleware)
     if settings.is_sandbox():
@@ -220,6 +239,9 @@ def create_app() -> FastAPI:
         app.add_middleware(rate_limit.get_middleware, redis=rate_limit_redis)
         app.add_middleware(AuthSubjectMiddleware)
         app.add_middleware(TransactionalMiddleware)
+        app.add_middleware(
+            rate_limit.get_authentication_middleware, redis=rate_limit_redis
+        )
         app.add_middleware(rate_limit.get_ip_middleware, redis=rate_limit_redis)
     app.add_middleware(PathRewriteMiddleware, pattern=r"^/api/v1", replacement="/v1")
     if settings.is_vercel():
@@ -230,8 +252,6 @@ def create_app() -> FastAPI:
     app.add_middleware(MaxBodySizeMiddleware, limit=settings.API_MAX_REQUEST_BODY_SIZE)
     if not settings.is_testing():
         app.add_middleware(HttpMetricsMiddleware)
-
-    configure_cors(app)
 
     add_exception_handlers(app)
     app.add_exception_handler(OAuth2Error, oauth2_error_exception_handler)
@@ -260,20 +280,25 @@ def create_app() -> FastAPI:
 
     add_versioned_routers(
         app,
-        router,
+        api_router,
         get_webhook_routes(),
         VERSIONS,
         CURRENT_API_VERSION,
     )
+    configure_cors(app)
 
     return app
 
 
-configure_sentry()
-configure_logfire("server")
-configure_logging(logfire=True)
-configure_posthog()
+if not settings.is_testing():
+    configure_sentry()
+    configure_logfire("server")
+    configure_logging(logfire=True)
+    configure_posthog()
+else:
+    configure_logging(logfire=False)
 
 app = create_app()
-instrument_fastapi(app)
-instrument_httpx()
+if not settings.is_testing():
+    instrument_fastapi(app)
+    instrument_httpx()

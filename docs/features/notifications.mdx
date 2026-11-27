@@ -1,0 +1,70 @@
+---
+title: "Notifications"
+description: "Choose which sales notifications each team member gets, and which emails Polar sends to your customers."
+---
+
+Polar sends two kinds of notifications:
+
+- **Team notifications** go to the members of your organization: a new order, a new subscription, a prevented chargeback. Each member picks their own.
+- **Customer notifications** are the emails Polar sends your customers about their orders and subscriptions. They're set once for the whole organization.
+
+## Team notifications
+
+Open [**Settings → Notifications**](https://polar.sh/to/dashboard/settings/notifications). These settings are personal: they apply only to you, and every member keeps their own.
+
+The **Emails** section has one toggle per notification:
+
+| Setting | You're notified when | Default |
+| --- | --- | --- |
+| **New One-Time Purchases** | A customer makes a one-time purchase | On |
+| **New Subscriptions** | A paid subscription starts | On |
+| **New Trials** | A customer starts a trial | On |
+| **Subscription Renewals** | A renewal payment is collected | Off |
+| **Subscription Cancellations** | A customer cancels a subscription | Off |
+| **Exclude Free Products** | Skips subscription, trial, renewal and cancellation notifications for free products | Off |
+| **Prevented Chargebacks** | Polar refunds an order to prevent a chargeback. Admins and the Owner only. | On |
+
+The **Devices** section lists the devices registered to receive these notifications as push notifications.
+
+<Note>Dashboard only. Team notification settings aren't available from the API, CLI or MCP server.</Note>
+
+## Customer notifications
+
+Open [**Settings → Customer Notifications**](https://polar.sh/to/dashboard/settings/customer-notifications). Every email is on by default. Turn one off to stop Polar sending it to all your customers, for example because your application sends its own.
+
+| Group | Email | Sent when | API field |
+| --- | --- | --- | --- |
+| Purchases | **Order confirmation** | A customer completes a one-time purchase | `order_confirmation` |
+| Purchases | **Subscription confirmation** | A customer starts a new subscription | `subscription_confirmation` |
+| Trials | **Trial conversion reminder** | Before a trial ends and converts to a paid subscription | `subscription_trial_conversion_reminder` |
+| Trials | **Trial converted** | A trial ends and the subscription becomes paid | `subscription_cycled_after_trial` |
+| Renewals | **Renewal reminder** | 7 days before a subscription with a long billing cycle renews | `subscription_renewal_reminder` |
+| Renewals | **Subscription cycled** | A subscription renews or is invoiced for usage | `subscription_cycled` |
+| Renewals | **Card expiring** | Before a card backing an active subscription expires | `payment_method_expiration_reminder` |
+| Renewals | **Subscription past due** | A subscription payment fails and becomes overdue | `subscription_past_due` |
+| Subscription changes | **Subscription updated** | A customer changes their subscription to a different product | `subscription_updated` |
+| Subscription changes | **Subscription paused** | A customer pauses their subscription | `subscription_paused` |
+| Subscription changes | **Subscription resumed** | A paused subscription resumes and billing restarts | `subscription_resumed` |
+| Subscription changes | **Subscription canceled** | A customer cancels their subscription | `subscription_cancellation` |
+| Subscription changes | **Subscription uncanceled** | A customer reactivates a canceled subscription | `subscription_uncanceled` |
+| Subscription changes | **Subscription revoked** | A canceled subscription ends at the end of its billing cycle | `subscription_revoked` |
+
+<Warning>
+  In the sandbox, customer emails are only delivered to members of your organization. Sub-addressed aliases such as `you+test@example.com` work, so you can test with several customers.
+</Warning>
+
+### From the API
+
+Set `customer_email_settings` with [Update Organization](/api-reference/current/organizations/update-organization). The object takes every field in the table above, so send all of them, not only the one you change. There's no CLI command or MCP operation for it.
+
+<Visibility for="agents">
+  Read the current values from `GET /v1/organizations/{id}` first, change the one field, and send the full `customer_email_settings` object back in `PATCH /v1/organizations/{id}` with `Polar-Version: 2026-10`. The token needs the `organizations:write` scope. Use the sandbox until the user says otherwise.
+</Visibility>
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Settings](/features/settings) | Every organization setting in one place |
+| [Team management](/features/team-management) | Members and roles |
+| [Subscriptions](/features/subscriptions/introduction) | The subscription lifecycle behind these emails |

@@ -19,11 +19,13 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.auth.scope import Scope
+from polar.config import settings
 from polar.kit.db.postgres import AsyncSession
 from polar.models import Organization, User, UserOrganization
 from polar.redis import Redis
 from polar.worker._httpx import HTTPXMiddleware
 from polar.worker._redis import RedisMiddleware
+from polar.worker._runner import build_registry
 from polar.worker._sqlalchemy import SQLAlchemyMiddleware
 from tests.e2e.infra import (
     DrainFn,
@@ -34,7 +36,6 @@ from tests.e2e.infra import (
 )
 from tests.e2e.infra.email_capture import create_email_sender_mock
 from tests.e2e.infra.external_mocks import *
-from tests.e2e.infra.task_drain import build_actor_registry
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 
@@ -56,18 +57,17 @@ E2E_AUTH = pytest.mark.auth(
 
 @pytest.fixture(scope="session")
 def actor_registry() -> dict[str, Any]:
-    return build_actor_registry()
+    return build_registry()
 
 
 @pytest.fixture(autouse=True)
 def _isolate_broker_redis() -> Iterator[None]:
     """Give each test its own broker Redis so ``group().run()`` can't leak
-    messages between parallel pytest-xdist workers.
+    messages or completion barriers between parallel workers or touch real Redis.
 
     Replacing ``broker.client`` alone is not enough: the broker registers Lua
-    scripts (``broker.scripts``) against the original client at init time, so
-    ``broker.enqueue()`` would still write to the old Redis.  We must
-    re-register the scripts on the new client as well.
+    scripts (``broker.scripts``) against the original client at init time, and
+    the ``GroupCallbacks`` / ``Results`` middlewares hold separate Redis clients.
     """
     broker = dramatiq.get_broker()
     original_client = broker.client  # type: ignore[attr-defined]
@@ -78,9 +78,18 @@ def _isolate_broker_redis() -> Iterator[None]:
         name: fake.register_script(script.script)
         for name, script in original_scripts.items()
     }
+    original_middleware_clients: list[tuple[Any, Any]] = []
+    for mw in broker.middleware:
+        for attr in ("rate_limiter_backend", "backend"):
+            backend = getattr(mw, attr, None)
+            if backend is not None and hasattr(backend, "client"):
+                original_middleware_clients.append((backend, backend.client))
+                backend.client = fake
     yield
     broker.client = original_client  # type: ignore[attr-defined]
     broker.scripts = original_scripts  # type: ignore[attr-defined]
+    for backend, client in original_middleware_clients:
+        backend.client = client
 
 
 @pytest.fixture(autouse=True)
@@ -100,7 +109,7 @@ def _patch_worker_middlewares(
 @pytest.fixture(autouse=True)
 def _disable_subscription_order_grace_period(mocker: MockerFixture) -> None:
     # The task drain never runs delayed messages, so a deferred order would be lost.
-    mocker.patch("polar.order.tasks.SUBSCRIPTION_ORDER_GRACE_PERIOD", timedelta(0))
+    mocker.patch.object(settings, "SUBSCRIPTION_ORDER_GRACE_PERIOD", timedelta(0))
 
 
 @pytest.fixture(autouse=True)
@@ -120,6 +129,7 @@ def email_capture() -> EmailCapture:
 def mock_email_sender(mocker: MockerFixture, email_capture: EmailCapture) -> MagicMock:
     mock = create_email_sender_mock(email_capture)
     mocker.patch("polar.email.tasks.email_sender", new=mock)
+    mocker.patch("polar.email.tasks.render_from_json", return_value="<html></html>")
     return mock
 
 

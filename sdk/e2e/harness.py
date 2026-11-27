@@ -14,11 +14,19 @@ import uuid
 
 import anyio
 from anyio.streams.buffered import BufferedByteReceiveStream
-from polar.outpost.client import Configuration, EventInput, Snapshot
+from polar.outpost.client import EventInput, Snapshot
+from polar.outpost.reducer import Reducer
 from redis.asyncio import Redis
 from redis.exceptions import ConnectionError as RedisConnectionError
 
 ROOT = pathlib.Path(__file__).resolve().parent
+
+
+# Polar's configuration as a scenario writes it: the fake Polar adds its organization.
+class ScenarioConfiguration(typing.TypedDict):
+    reducers: list[Reducer]
+
+
 RETRYABLE_READ_ERRORS = ("Customer snapshot is not ready", "Redis is unavailable")
 
 
@@ -69,14 +77,6 @@ class IngestStep(TimelineStep):
     arguments: IngestArguments
     failure: Failure | None = None
     operation: typing.ClassVar[typing.Literal["ingest"]] = "ingest"
-
-
-# Polar ingested these events: the client stops counting them as pending.
-@dataclasses.dataclass(frozen=True)
-class ConfirmStep(TimelineStep):
-    client: str
-    arguments: IngestArguments
-    operation: typing.ClassVar[typing.Literal["confirm"]] = "confirm"
 
 
 @dataclasses.dataclass(frozen=True)
@@ -139,7 +139,6 @@ class IngestedStep(TimelineStep):
 
 Step: typing.TypeAlias = (
     IngestStep
-    | ConfirmStep
     | ReadStep
     | ActorStep
     | RestartStep
@@ -153,9 +152,10 @@ Step: typing.TypeAlias = (
 @dataclasses.dataclass(frozen=True)
 class Scenario:
     name: str
-    configuration: Configuration
+    configuration: ScenarioConfiguration
     snapshots: list[Snapshot]
     steps: list[Step]
+    initial_reads: tuple[ReadStep, ...] = ()
 
 
 class ClientError(Exception):
@@ -332,8 +332,9 @@ async def run(
     namespace = uuid.uuid4().hex
     customers = set()
     payloads = [*scenario.snapshots]
-    for step in scenario.steps:
-        if isinstance(step, IngestStep | ConfirmStep):
+    steps = (*scenario.initial_reads, *scenario.steps)
+    for step in steps:
+        if isinstance(step, IngestStep):
             payloads.extend(step.arguments["events"])
         elif not isinstance(step, RestartStep | RedisStep):
             payloads.append(step.arguments)
@@ -374,9 +375,7 @@ async def run(
         clients: dict[str, Process] = {}
         contexts: dict[str, typing.Any] = {}
         client_names = dict.fromkeys(
-            step.client
-            for step in scenario.steps
-            if step.client not in ("polar", "redis")
+            step.client for step in steps if step.client not in ("polar", "redis")
         )
         locks = {name: anyio.Lock() for name in [*client_names, "polar", "redis"]}
 
@@ -472,6 +471,9 @@ async def run(
                 await anyio.sleep(0.02)
 
         try:
+            for step in scenario.initial_reads:
+                await execute(step)
+            started = anyio.current_time()
             async with anyio.create_task_group() as tasks:
                 for step in scenario.steps:
                     tasks.start_soon(execute, step)

@@ -29,7 +29,6 @@ import {
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
-import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 const ROW_STAGGER = 0.06
@@ -40,7 +39,6 @@ interface Props {
 }
 
 export const AccountPageDetailsRequired = ({ organization }: Props) => {
-  const router = useRouter()
   const { data: reviewState, isLoading } = useOrganizationReviewState(
     organization.id,
   )
@@ -92,8 +90,6 @@ export const AccountPageDetailsRequired = ({ organization }: Props) => {
       organization_id: organization.id,
       section: 'cta',
     })
-
-    router.refresh()
   }
 
   const remainingSteps = steps.filter(

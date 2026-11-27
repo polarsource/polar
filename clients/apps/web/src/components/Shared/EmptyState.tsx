@@ -10,6 +10,8 @@ interface EmptyStateProps {
   actions?: (ButtonProps & { text: string })[]
   /** Grow to fill the parent's remaining space, e.g. to match sibling list heights. */
   fill?: boolean
+  /** Drop the border when the parent is already a bordered surface. */
+  bordered?: boolean
 }
 
 export const EmptyState = ({
@@ -18,6 +20,7 @@ export const EmptyState = ({
   description,
   actions,
   fill = false,
+  bordered = true,
 }: EmptyStateProps) => {
   return (
     <Box
@@ -26,13 +29,15 @@ export const EmptyState = ({
       justifyContent="center"
       gap="m"
       borderRadius="m"
-      borderWidth={1}
+      borderWidth={bordered ? 1 : 0}
       borderStyle="solid"
       borderColor="border-primary"
       padding="3xl"
       flexGrow={fill ? 1 : undefined}
     >
-      <div className="dark:text-polar-500 text-5xl text-gray-500">{icon}</div>
+      <Box alignItems="center" justifyContent="center" color="text-secondary">
+        {icon}
+      </Box>
       <Box flexDirection="column" alignItems="center" textAlign="center">
         <Text variant="body" as="h3">
           {title}

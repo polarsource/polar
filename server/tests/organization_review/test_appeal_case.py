@@ -6,6 +6,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.models import OrganizationReview
+from polar.models.backoffice_user import BackofficeUser
 from polar.models.organization import Organization
 from polar.models.support_case import (
     SupportCaseMessageAuthorKind,
@@ -101,7 +102,7 @@ class TestRequestHumanReview:
         assert len(participants) == 1
         assert participants[0].kind == SupportCaseParticipantKind.merchant
         assert participants[0].organization_id == denied_review.organization_id
-        assert participants[0].platform_user_id is None
+        assert participants[0].backoffice_platform_user_id is None
 
         message_repository = SupportCaseMessageRepository.from_session(session)
         messages = await message_repository.list_by_case(case.id)
@@ -154,6 +155,7 @@ class TestReplyAndLock:
         denied_review: OrganizationReview,
         organization: Organization,
         user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         case = await appeal_case_service.request_human_review(
             session,
@@ -172,7 +174,11 @@ class TestReplyAndLock:
         )
 
         await appeal_case_service.record_decision(
-            session, case, approved=False, staff_user=user, reason="denied again"
+            session,
+            case,
+            approved=False,
+            staff_user=backoffice_user,
+            reason="denied again",
         )
 
         message_repository = SupportCaseMessageRepository.from_session(session)
@@ -260,6 +266,7 @@ class TestReplyNotifiesMerchant:
         denied_review: OrganizationReview,
         organization: Organization,
         user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         enqueue = mocker.patch("polar.organization_review.appeal_case.enqueue_job")
         case = await appeal_case_service.request_human_review(
@@ -274,7 +281,11 @@ class TestReplyNotifiesMerchant:
             "polar.organization_review.appeal_case.publish_appeal_update"
         )
         message = await appeal_case_service.record_decision(
-            session, case, approved=False, staff_user=user, reason="denied again"
+            session,
+            case,
+            approved=False,
+            staff_user=backoffice_user,
+            reason="denied again",
         )
         enqueue.assert_called_once_with(
             "support_case.notify_organization_of_new_message", message_id=message.id

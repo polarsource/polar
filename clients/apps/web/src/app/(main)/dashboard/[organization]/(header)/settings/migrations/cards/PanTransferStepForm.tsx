@@ -116,6 +116,7 @@ export function PanTransferStepForm({
 
       <Box
         width={compact ? '100%' : undefined}
+        gridColumn={compact && fields.length === 0 ? '1 / -1' : undefined}
         justifyContent={compact ? { base: 'start', md: 'end' } : undefined}
       >
         <Button

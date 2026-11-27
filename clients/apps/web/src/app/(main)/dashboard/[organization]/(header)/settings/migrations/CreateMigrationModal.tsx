@@ -1,11 +1,24 @@
 import { useCreateMerchantMigration } from '@/hooks/queries/merchantMigrations'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
-import { Alert, Button, InlineModalHeader, Input, Text } from '@polar-sh/orbit'
+import {
+  Alert,
+  Button,
+  InlineModalHeader,
+  Input,
+  SegmentedControl,
+  Text,
+} from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useState } from 'react'
 import { ConnectGuide } from './ConnectGuide'
-import { StripeMark } from './StripeMark'
+import { LemonSqueezyConnectForm } from './LemonSqueezyConnectForm'
+import { SourceMark } from './SourceMark'
+import {
+  CONNECTABLE_SOURCES,
+  ConnectableSource,
+  SOURCE_LABELS,
+} from './sources'
 import {
   parseMissingStripeScopes,
   stripeKeyError,
@@ -23,6 +36,9 @@ export function CreateMigrationModal({
   onCreated: (migration: schemas['MerchantMigration']) => void
   onClose: () => void
 }) {
+  const [source, setSource] = useState<ConnectableSource>(
+    CONNECTABLE_SOURCES[0],
+  )
   const [apiKey, setApiKey] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [missingResources, setMissingResources] = useState<string[]>([])
@@ -64,79 +80,101 @@ export function CreateMigrationModal({
   return (
     <>
       <InlineModalHeader hide={onClose}>
-        <Text variant="body">New migration</Text>
+        <Text variant="heading-xxs" as="h2">
+          New migration
+        </Text>
       </InlineModalHeader>
 
-      <Box
-        as="form"
-        onSubmit={handleSubmit}
-        flexDirection="column"
-        rowGap="xl"
-        paddingHorizontal="2xl"
-        paddingBottom="2xl"
-      >
-        <Box alignItems="center" columnGap="m">
-          <StripeMark size={48} />
-          <Box flexDirection="column" rowGap="xs">
-            <Text variant="heading-xs" as="h2">
-              Stripe
-            </Text>
-            <Text variant="caption" color="muted">
-              The only source available for now.
-            </Text>
-          </Box>
-        </Box>
-
-        <Text color="muted">
-          Connect Stripe with a restricted API key so Polar can read your
-          billing. Nothing in Stripe changes until you approve each step.
-        </Text>
-
-        <ConnectGuide missingResources={missingResources} />
-
-        <Box flexDirection="column" rowGap="xs">
-          <Input
-            type="password"
-            placeholder={stripeKeyPlaceholder()}
-            value={apiKey}
-            aria-invalid={keyError !== null}
-            onChange={(e) => {
-              setApiKey(e.target.value)
-              setError(null)
-              setMissingResources([])
-            }}
-            autoFocus
-          />
-          {keyError ? (
-            <Text variant="caption" color="danger" role="alert">
-              {keyError}
-            </Text>
-          ) : null}
-        </Box>
-
-        {error && !keyError ? (
-          <Alert
-            variant="danger"
-            title={
-              missingResources.length > 0
-                ? 'This key is missing permissions'
-                : "We couldn't connect this account"
-            }
-            description={error}
-          />
-        ) : null}
-
-        <Button
-          type="submit"
-          disabled={
-            !apiKey.trim() || keyError !== null || createMigration.isPending
-          }
-          loading={createMigration.isPending}
-          fullWidth
-        >
-          Validate &amp; create migration
-        </Button>
+      <Box paddingHorizontal="2xl" paddingBottom="xl">
+        <SegmentedControl
+          variant="tabs"
+          value={source}
+          onChange={setSource}
+          options={CONNECTABLE_SOURCES.map((value) => ({
+            value,
+            label: SOURCE_LABELS[value],
+          }))}
+        />
       </Box>
+
+      <Box
+        alignItems="center"
+        columnGap="s"
+        paddingHorizontal="2xl"
+        paddingBottom="xl"
+      >
+        <SourceMark source={source} size={28} />
+        <Text variant="title" as="h3">
+          {SOURCE_LABELS[source]}
+        </Text>
+      </Box>
+
+      {source === 'lemon_squeezy' ? (
+        <Box flexDirection="column" paddingHorizontal="2xl" paddingBottom="2xl">
+          <LemonSqueezyConnectForm
+            organizationId={organizationId}
+            onCreated={onCreated}
+          />
+        </Box>
+      ) : (
+        <Box
+          as="form"
+          onSubmit={handleSubmit}
+          flexDirection="column"
+          rowGap="xl"
+          paddingHorizontal="2xl"
+          paddingBottom="2xl"
+        >
+          <Text color="muted">
+            Connect Stripe with a restricted API key so Polar can read your
+            billing. Nothing in Stripe changes until you approve each step.
+          </Text>
+
+          <ConnectGuide missingResources={missingResources} />
+
+          <Box flexDirection="column" rowGap="xs">
+            <Input
+              type="password"
+              placeholder={stripeKeyPlaceholder()}
+              value={apiKey}
+              aria-invalid={keyError !== null}
+              onChange={(e) => {
+                setApiKey(e.target.value)
+                setError(null)
+                setMissingResources([])
+              }}
+            />
+            {keyError ? (
+              <Text variant="caption" color="danger" role="alert">
+                {keyError}
+              </Text>
+            ) : null}
+          </Box>
+
+          {error && !keyError ? (
+            <Alert
+              variant="danger"
+              title={
+                missingResources.length > 0
+                  ? 'This key is missing permissions'
+                  : "We couldn't connect this account"
+              }
+              description={error}
+            />
+          ) : null}
+
+          <Button
+            type="submit"
+            disabled={
+              !apiKey.trim() || keyError !== null || createMigration.isPending
+            }
+            loading={createMigration.isPending}
+            fullWidth
+          >
+            Validate &amp; create migration
+          </Button>
+        </Box>
+      )}
     </>
   )
 }

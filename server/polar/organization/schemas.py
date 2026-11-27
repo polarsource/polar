@@ -5,6 +5,7 @@ from typing import Annotated, Any, Literal, Self
 from urllib.parse import urlparse
 
 from pydantic import (
+    MISSING,
     UUID4,
     AfterValidator,
     BeforeValidator,
@@ -18,7 +19,7 @@ from pydantic.networks import HttpUrl
 
 from polar.auth.permission import ROLE_PERMISSIONS, OrganizationPermission
 from polar.config import settings
-from polar.enums import SubscriptionProrationBehavior, TaxBehaviorOption
+from polar.enums import ProrationBehaviorSetting, TaxBehaviorOption
 from polar.kit.address import CountryAlpha2, CountryAlpha2Input
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.email import EmailStrDNS
@@ -31,7 +32,7 @@ from polar.kit.schemas import (
     SlugValidator,
     TimestampedSchema,
 )
-from polar.kit.versioning import Version
+from polar.kit.versioning import Omissible, QuerySchema, Version
 from polar.models.organization import (
     OrganizationCustomerEmailSettings,
     OrganizationCustomerPortalSettings,
@@ -234,13 +235,16 @@ class OrganizationFeatureSettings(Schema):
             "disputes on its behalf. Requires `disputes_enabled`."
         ),
     )
-    compass_enabled: bool = Field(
-        False,
-        description=(
-            "If this organization has the split product navigation "
-            "(Billing / Compass / Customers) enabled in the dashboard"
+    compass_enabled: Annotated[
+        bool,
+        Version(up_to=V2026_10),
+        Field(
+            description=(
+                "If this organization has the split product navigation "
+                "(Billing / Compass / Customers) enabled in the dashboard"
+            ),
         ),
-    )
+    ] = False
     merchant_migration_enabled: bool = Field(
         False,
         description=(
@@ -248,16 +252,6 @@ class OrganizationFeatureSettings(Schema):
             "provider (e.g. Stripe) to Polar."
         ),
     )
-    staged_events_ingest_enabled: Annotated[
-        bool,
-        Version(starting_from=V2027_01),
-        Field(
-            description=(
-                "If this organization's ingested events are queued in "
-                "`staged_events` and moved to `events` out of band."
-            ),
-        ),
-    ] = False
     config_as_code_enabled: Annotated[
         bool,
         Version(starting_from=V2027_01),
@@ -265,6 +259,16 @@ class OrganizationFeatureSettings(Schema):
             description=(
                 "If this organization can manage its configuration from a "
                 "declarative config document."
+            ),
+        ),
+    ] = False
+    reducer_billing_enabled: Annotated[
+        bool,
+        Version(starting_from=V2027_01),
+        Field(
+            description=(
+                "If this organization's metered usage is billed from the reducer "
+                "instead of the legacy billing entries."
             ),
         ),
     ] = False
@@ -286,8 +290,8 @@ class OrganizationFeatureSettingsUpdate(Schema):
         False,
         description="If this organization has checkout localization enabled",
     )
-    overview_metrics: OverviewMetrics = Field(
-        None,
+    overview_metrics: Omissible[list[str]] = Field(
+        MISSING,
         description="Ordered list of metric slugs shown on the dashboard overview.",
     )
 
@@ -441,7 +445,7 @@ class OrganizationBase(IDSchema, TimestampedSchema):
     avatar_url: str | None = Field(
         description="Avatar URL shown in checkout, customer portal, emails etc."
     )
-    proration_behavior: SubscriptionProrationBehavior = Field(
+    proration_behavior: ProrationBehaviorSetting = Field(
         description="Proration behavior applied when customer updates their subscription from the portal.",
     )
     allow_customer_updates: bool = Field(
@@ -653,6 +657,18 @@ class OrganizationEmbedStatus(Schema):
             "such as `*.vercel.app`."
         )
     )
+    wallet_hosts: list[str] = Field(
+        description=(
+            "Entries of `embed_hosts` registered with Stripe for wallet payments, "
+            "such as Apple Pay and Google Pay."
+        )
+    )
+    pending_wallet_hosts: list[str] = Field(
+        description=(
+            "Entries of `embed_hosts` that get wallet payments once the "
+            "organization can take payments."
+        )
+    )
 
 
 class OrganizationKYC(Organization):
@@ -714,38 +730,38 @@ class OrganizationCreate(Schema):
 
 
 class OrganizationUpdate(Schema):
-    name: NameInput | None = None
+    name: Omissible[NameInput] = MISSING
     avatar_url: AvatarUrl | None = None
 
     email: EmailStrDNS | None = Field(None, description="Public support email.")
     website: HttpUrlToStr | None = Field(
         None, description="Official website of the organization."
     )
-    socials: list[OrganizationSocialLink] | None = Field(
-        None, description="Links to social profiles."
+    socials: Omissible[list[OrganizationSocialLink]] = Field(
+        MISSING, description="Links to social profiles."
     )
-    details: OrganizationDetailsInput | None = Field(
-        None,
+    details: Omissible[OrganizationDetailsInput] = Field(
+        MISSING,
         description="Additional, private, business details Polar needs about active organizations for compliance (KYC).",
     )
     country: CountryAlpha2Input | None = Field(
         None, description="Two-letter country code (ISO 3166-1 alpha-2)."
     )
 
-    feature_settings: OrganizationFeatureSettingsUpdate | None = None
-    subscription_settings: OrganizationSubscriptionSettings | None = None
-    customer_email_settings: OrganizationCustomerEmailSettings | None = None
-    customer_portal_settings: OrganizationCustomerPortalSettings | None = None
-    dispute_settings: OrganizationDisputeSettingsUpdate | None = None
-    embed_hosts: EmbedHostsInput | None = None
-    default_presentment_currency: PresentmentCurrency | None = Field(
-        None, description="Default presentment currency for the organization"
+    feature_settings: Omissible[OrganizationFeatureSettingsUpdate] = MISSING
+    subscription_settings: Omissible[OrganizationSubscriptionSettings] = MISSING
+    customer_email_settings: Omissible[OrganizationCustomerEmailSettings] = MISSING
+    customer_portal_settings: Omissible[OrganizationCustomerPortalSettings] = MISSING
+    dispute_settings: Omissible[OrganizationDisputeSettingsUpdate] = MISSING
+    embed_hosts: Omissible[EmbedHostsInput] = MISSING
+    default_presentment_currency: Omissible[PresentmentCurrency] = Field(
+        MISSING, description="Default presentment currency for the organization"
     )
-    default_tax_behavior: TaxBehaviorOption | None = Field(
-        None, description="Default tax behavior applied on products."
+    default_tax_behavior: Omissible[TaxBehaviorOption] = Field(
+        MISSING, description="Default tax behavior applied on products."
     )
-    sso_enforced: bool | None = Field(
-        None,
+    sso_enforced: Omissible[bool] = Field(
+        MISSING,
         description=(
             "Whether members must access this organization through its SSO "
             "connection. Turning this on requires an active SSO session for "
@@ -882,6 +898,7 @@ class OrganizationReviewCheckReason(StrEnum):
     IDENTITY_REJECTED = "identity.rejected"
     IDENTITY_PERSONAL_EMAIL = "identity.personal_email"
     IDENTITY_DOMAIN_MISMATCH = "identity.domain_mismatch"
+    IDENTITY_EMAIL_UNVERIFIED = "identity.email_unverified"
 
     # Product URL
     PRODUCT_URL_UNREACHABLE = "product_url.unreachable"
@@ -1017,3 +1034,7 @@ class OrganizationPayoutAccountSet(Schema):
     payout_account_id: UUID4 = Field(
         description="ID of the payout account to set on the organization."
     )
+
+
+class OrganizationListParams(QuerySchema):
+    slug: str | None = Field(None, description="Filter by slug.")

@@ -255,7 +255,7 @@ async def reingest_missing_events(
                 f"Enqueued customer_meter.update_customer for {len(customer_ids)} customers"
             )
     finally:
-        await redis.close()
+        await redis.aclose()
         await engine.dispose()
 
 

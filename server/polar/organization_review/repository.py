@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from uuid import UUID
 
-from sqlalchemy import func, select, update
+from sqlalchemy import NotNullable, func, select, update
 from sqlalchemy.orm import joinedload, selectinload
 
 from polar.kit.repository.base import (
@@ -10,6 +10,7 @@ from polar.kit.repository.base import (
     RepositorySoftDeletionMixin,
 )
 from polar.kit.utils import utc_now
+from polar.models.backoffice_user import BackofficeUser
 from polar.models.checkout import Checkout
 from polar.models.checkout_link import CheckoutLink
 from polar.models.checkout_link_product import CheckoutLinkProduct
@@ -27,7 +28,7 @@ from polar.models.product_price import ProductPrice, ProductPriceSource
 from polar.models.refund import Refund, RefundStatus
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
-from polar.models.webhook_endpoint import WebhookEndpoint
+from polar.models.webhook_endpoint import WebhookEndpoint, WebhookFormat
 from polar.organization_review.report import AnyAgentReport
 from polar.organization_review.schemas import (
     ActorType,
@@ -35,6 +36,11 @@ from polar.organization_review.schemas import (
     DecisionType,
     ReviewContext,
     ReviewVerdict,
+)
+
+FLAGGED_PRODUCT_NAME_TYPES = (
+    OrganizationRiskSignal.Type.FLAGGED_PRODUCT_NAME_RENAMED,
+    OrganizationRiskSignal.Type.FLAGGED_PRODUCT_NAME_KEPT,
 )
 
 
@@ -98,7 +104,7 @@ class OrganizationReviewRepository(
             )
             .options(
                 selectinload(OrganizationAgentReview.review_feedbacks).joinedload(
-                    OrganizationReviewFeedback.reviewer
+                    OrganizationReviewFeedback.backoffice_reviewer
                 ),
             )
             .order_by(OrganizationAgentReview.reviewed_at.desc())
@@ -271,7 +277,7 @@ class OrganizationReviewRepository(
         decision: DecisionType,
         review_context: ReviewContext,
         agent_review_id: UUID | None = None,
-        reviewer_id: UUID | None = None,
+        backoffice_reviewer: BackofficeUser | None = None,
         verdict: ReviewVerdict | None = None,
         risk_score: float | None = None,
         reason: str | None = None,
@@ -280,6 +286,7 @@ class OrganizationReviewRepository(
     ) -> OrganizationReviewFeedback:
         """Record a review decision (agent or human)."""
         feedback = OrganizationReviewFeedback(
+            backoffice_reviewer=backoffice_reviewer,
             organization_id=organization_id,
             actor_type=actor_type,
             decision=decision,
@@ -290,7 +297,6 @@ class OrganizationReviewRepository(
             violated_aup_section=violated_aup_section,
             is_current=is_current,
             agent_review_id=agent_review_id,
-            reviewer_id=reviewer_id,
         )
         self.session.add(feedback)
         return feedback
@@ -299,7 +305,7 @@ class OrganizationReviewRepository(
         self,
         *,
         organization_id: UUID,
-        reviewer_id: UUID,
+        backoffice_reviewer: BackofficeUser,
         decision: DecisionType,
         review_context: ReviewContext | None = None,
         reason: str | None = None,
@@ -337,10 +343,10 @@ class OrganizationReviewRepository(
         return await self.save_review_decision(
             organization_id=organization_id,
             actor_type=ActorType.HUMAN,
+            backoffice_reviewer=backoffice_reviewer,
             decision=decision,
             review_context=derived_context,
             agent_review_id=agent_review_id,
-            reviewer_id=reviewer_id,
             verdict=verdict,
             risk_score=risk_score,
             reason=reason,
@@ -429,7 +435,7 @@ class OrganizationReviewRepository(
             )
             .options(
                 joinedload(OrganizationReviewFeedback.agent_review),
-                joinedload(OrganizationReviewFeedback.reviewer),
+                joinedload(OrganizationReviewFeedback.backoffice_reviewer),
             )
             .order_by(OrganizationReviewFeedback.created_at.asc())
         )
@@ -448,7 +454,7 @@ class OrganizationReviewRepository(
         """
         cutoff = utc_now() - timedelta(days=months * 30)
         statement = (
-            select(Checkout.return_url)
+            select(NotNullable(Checkout.return_url))
             .where(
                 Checkout.organization_id == organization_id,
                 Checkout.return_url.is_not(None),
@@ -471,7 +477,7 @@ class OrganizationReviewRepository(
         """
         cutoff = utc_now() - timedelta(days=months * 30)
         statement = (
-            select(Checkout._success_url)
+            select(NotNullable(Checkout._success_url))
             .where(
                 Checkout.organization_id == organization_id,
                 Checkout._success_url.is_not(None),
@@ -517,6 +523,7 @@ class OrganizationReviewRepository(
         """Get webhook endpoints for the organization."""
         statement = select(WebhookEndpoint).where(
             WebhookEndpoint.organization_id == organization_id,
+            WebhookEndpoint.format != WebhookFormat.mcp,
             ~WebhookEndpoint.is_deleted,
         )
         result = await self.session.execute(statement)
@@ -539,7 +546,38 @@ class OrganizationRiskSignalRepository(
             .where(
                 OrganizationRiskSignal.organization_id == organization_id,
                 OrganizationRiskSignal.risk_level
-                != OrganizationRiskSignal.UNKNOWN_RISK_LEVEL,
+                != OrganizationRiskSignal.RiskLevel.UNKNOWN,
+            )
+            .order_by(OrganizationRiskSignal.created_at.desc())
+            .limit(limit)
+        )
+        result = await self.session.execute(statement)
+        return list(result.scalars().all())
+
+    async def has_flagged_product_name(
+        self, organization_id: UUID, product_id: UUID
+    ) -> bool:
+        statement = (
+            self.get_base_statement()
+            .where(
+                OrganizationRiskSignal.organization_id == organization_id,
+                OrganizationRiskSignal.type.in_(FLAGGED_PRODUCT_NAME_TYPES),
+                OrganizationRiskSignal.payload["product_id"].astext == str(product_id),
+            )
+            .limit(1)
+        )
+        result = await self.session.execute(statement)
+        return result.scalars().first() is not None
+
+    async def list_flagged_product_names(
+        self, organization_id: UUID, *, limit: int = 100
+    ) -> list[OrganizationRiskSignal]:
+        """Name check findings for an organization, most recent first."""
+        statement = (
+            self.get_base_statement()
+            .where(
+                OrganizationRiskSignal.organization_id == organization_id,
+                OrganizationRiskSignal.type.in_(FLAGGED_PRODUCT_NAME_TYPES),
             )
             .order_by(OrganizationRiskSignal.created_at.desc())
             .limit(limit)

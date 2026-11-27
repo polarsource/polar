@@ -8,6 +8,7 @@ from pydantic import ValidationError
 
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.kit.utils import generate_uuid
+from polar.kit.versioning import all_api_versions
 from polar.models import Organization
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.redis import Redis
@@ -128,7 +129,8 @@ async def trigger_event(
     redis: Redis, organization: Organization, request: TriggerRequest
 ) -> TriggerResponse:
     fixtures = TriggerFixtures(organization, seed=request.seed)
-    payload = json.loads(fixtures.build(request.event).model_dump_json())
+    with all_api_versions():
+        payload = json.loads(fixtures.build(request.event).model_dump_json())
     apply_overrides(payload, request.overrides)
 
     try:

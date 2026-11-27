@@ -1,10 +1,11 @@
 from datetime import datetime, timedelta
 from enum import StrEnum
 
-from pydantic import UUID4
+from pydantic import MISSING, UUID4, Field
 
 from polar.auth.scope import SCOPES_SUPPORTED, Scope
-from polar.kit.schemas import Schema, TimestampedSchema
+from polar.kit.schemas import MultipleQueryFilter, Schema, TimestampedSchema
+from polar.kit.versioning import Omissible, QuerySchema
 from polar.organization.schemas import OrganizationID
 
 AvailableScope = StrEnum(  # type: ignore
@@ -21,8 +22,8 @@ class OrganizationAccessTokenCreate(Schema):
 
 
 class OrganizationAccessTokenUpdate(Schema):
-    comment: str | None = None
-    scopes: list[AvailableScope] | None = None  # pyright: ignore
+    comment: Omissible[str] = MISSING
+    scopes: Omissible[list[AvailableScope]] = MISSING  # pyright: ignore
 
 
 class OrganizationAccessToken(TimestampedSchema):
@@ -37,3 +38,9 @@ class OrganizationAccessToken(TimestampedSchema):
 class OrganizationAccessTokenCreateResponse(Schema):
     organization_access_token: OrganizationAccessToken
     token: str
+
+
+class OrganizationAccessTokenListParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )

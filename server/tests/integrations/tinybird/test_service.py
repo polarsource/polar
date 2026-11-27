@@ -3,10 +3,10 @@ import json
 import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any
+from unittest.mock import Mock
 
-import httpx
+import httpx2
 import pytest
-import respx
 from sqlalchemy import select
 
 from polar.integrations.tinybird.client import (
@@ -37,8 +37,6 @@ from polar.models import Event
 from polar.models.event import EventSource
 from polar.worker import MAX_JOB_PAYLOAD_BYTES
 from tests.fixtures.tinybird import tinybird_available
-
-pytestmark = pytest.mark.xdist_group(name="tinybird")
 
 
 def create_test_event(
@@ -215,7 +213,16 @@ class TestQueryWildcardsAreLiteral:
             assert (
                 f"positionCaseInsensitiveUTF8(`events_by_timestamp`.`{column}`," in sql
             )
-        assert list(params.values()).count("100%_x") == 3
+        assert "`events_by_timestamp`.`external_id` =" in sql
+        assert "`events_by_timestamp`.`id` =" not in sql
+        assert list(params.values()).count("100%_x") == 4
+
+    def test_filter_by_query_event_id(self) -> None:
+        event_id = uuid.uuid4()
+        query = TinybirdEventsQuery([uuid.uuid4()]).filter_by_query(str(event_id))
+        sql, params = compile_clause(query._filters[-1])
+        assert "`events_by_timestamp`.`id` =" in sql
+        assert str(event_id) in params.values()
 
     def test_like_operator(self) -> None:
         clause = FilterClause(
@@ -252,6 +259,13 @@ class TestQueryWildcardsAreLiteral:
         ],
     )
     def test_like_operator_matches_strings_only(self, clause: FilterClause) -> None:
+        query = TinybirdEventsQuery([uuid.uuid4()])
+        sql, _ = compile_clause(query._translate_filter_clause(clause))
+        assert sql == "false"
+
+    @pytest.mark.parametrize("operator", [FilterOperator.eq, FilterOperator.ne])
+    def test_boolean_timestamp_matches_nothing(self, operator: FilterOperator) -> None:
+        clause = FilterClause(property="timestamp", operator=operator, value=True)
         query = TinybirdEventsQuery([uuid.uuid4()])
         sql, _ = compile_clause(query._translate_filter_clause(clause))
         assert sql == "false"
@@ -328,6 +342,27 @@ class TestQueryBindsValuesInsteadOfInlining:
         sql, _ = _compile(statement)
         assert "{organization_id_1_1:String}" in sql
         assert "{cost_amount_1_1:Float64}" in sql
+
+
+@pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")
+@pytest.mark.anyio
+class TestTinybirdIngest:
+    async def test_wait_makes_events_queryable(
+        self, tinybird_client: TinybirdClient
+    ) -> None:
+        event = create_test_event()
+
+        await TinybirdClient.ingest(
+            tinybird_client, DATASOURCE_EVENTS, [_event_to_tinybird(event)], wait=True
+        )
+
+        stats = await TinybirdEventTypesQuery(
+            event.organization_id
+        ).get_event_type_stats()
+
+        assert len(stats) == 1
+        assert stats[0].name == event.name
+        assert stats[0].occurrences == 1
 
 
 @pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")
@@ -871,7 +906,9 @@ class TestTinybirdDelete:
 
 @pytest.mark.anyio
 class TestRequestWithRetry:
-    async def test_retries_on_timeout(self) -> None:
+    async def test_retries_on_timeout(
+        self, http_mocks: dict[tuple[str, str], Mock]
+    ) -> None:
         client = TinybirdClient(
             api_url="https://api.tinybird.co",
             clickhouse_url="https://clickhouse.tinybird.co",
@@ -883,23 +920,24 @@ class TestRequestWithRetry:
 
         call_count = 0
 
-        def side_effect(request: httpx.Request) -> httpx.Response:
+        def side_effect(request: httpx2.Request) -> httpx2.Response:
             nonlocal call_count
             call_count += 1
             if call_count <= 2:
-                raise httpx.ReadTimeout("timed out", request=request)
-            return httpx.Response(200, json={"data": []})
+                raise httpx2.ReadTimeout("timed out", request=request)
+            return httpx2.Response(200, json={"data": []})
 
-        with respx.mock:
-            respx.get("https://api.tinybird.co/v0/pipes/metrics.json").mock(
-                side_effect=side_effect
-            )
-            result = await client.endpoint("metrics")
+        http_mocks["GET", "https://api.tinybird.co/v0/pipes/metrics.json"] = Mock(
+            side_effect=side_effect
+        )
+        result = await client.endpoint("metrics")
 
         assert result == []
         assert call_count == 3
 
-    async def test_raises_after_all_retries_exhausted_on_timeout(self) -> None:
+    async def test_raises_after_all_retries_exhausted_on_timeout(
+        self, http_mocks: dict[tuple[str, str], Mock]
+    ) -> None:
         client = TinybirdClient(
             api_url="https://api.tinybird.co",
             clickhouse_url="https://clickhouse.tinybird.co",
@@ -909,17 +947,18 @@ class TestRequestWithRetry:
             clickhouse_token="test_token",
         )
 
-        def side_effect(request: httpx.Request) -> httpx.Response:
-            raise httpx.ConnectTimeout("connect timed out", request=request)
+        def side_effect(request: httpx2.Request) -> httpx2.Response:
+            raise httpx2.ConnectTimeout("connect timed out", request=request)
 
-        with respx.mock:
-            respx.get("https://api.tinybird.co/v0/pipes/metrics.json").mock(
-                side_effect=side_effect
-            )
-            with pytest.raises(TinybirdOperationalError):
-                await client.endpoint("metrics")
+        http_mocks["GET", "https://api.tinybird.co/v0/pipes/metrics.json"] = Mock(
+            side_effect=side_effect
+        )
+        with pytest.raises(TinybirdOperationalError):
+            await client.endpoint("metrics")
 
-    async def test_retries_on_connection_error(self) -> None:
+    async def test_retries_on_connection_error(
+        self, http_mocks: dict[tuple[str, str], Mock]
+    ) -> None:
         client = TinybirdClient(
             api_url="https://api.tinybird.co",
             clickhouse_url="https://clickhouse.tinybird.co",
@@ -931,23 +970,24 @@ class TestRequestWithRetry:
 
         call_count = 0
 
-        def side_effect(request: httpx.Request) -> httpx.Response:
+        def side_effect(request: httpx2.Request) -> httpx2.Response:
             nonlocal call_count
             call_count += 1
             if call_count == 1:
-                raise httpx.ConnectError("connection refused", request=request)
-            return httpx.Response(200, json={"data": []})
+                raise httpx2.ConnectError("connection refused", request=request)
+            return httpx2.Response(200, json={"data": []})
 
-        with respx.mock:
-            respx.get("https://api.tinybird.co/v0/pipes/metrics.json").mock(
-                side_effect=side_effect
-            )
-            result = await client.endpoint("metrics")
+        http_mocks["GET", "https://api.tinybird.co/v0/pipes/metrics.json"] = Mock(
+            side_effect=side_effect
+        )
+        result = await client.endpoint("metrics")
 
         assert result == []
         assert call_count == 2
 
-    async def test_total_attempts_is_max_retries_plus_one(self) -> None:
+    async def test_total_attempts_is_max_retries_plus_one(
+        self, http_mocks: dict[tuple[str, str], Mock]
+    ) -> None:
         client = TinybirdClient(
             api_url="https://api.tinybird.co",
             clickhouse_url="https://clickhouse.tinybird.co",
@@ -959,24 +999,25 @@ class TestRequestWithRetry:
 
         call_count = 0
 
-        def side_effect(request: httpx.Request) -> httpx.Response:
+        def side_effect(request: httpx2.Request) -> httpx2.Response:
             nonlocal call_count
             call_count += 1
-            raise httpx.ReadTimeout("timed out", request=request)
+            raise httpx2.ReadTimeout("timed out", request=request)
 
-        with respx.mock:
-            respx.get("https://api.tinybird.co/v0/pipes/metrics.json").mock(
-                side_effect=side_effect
-            )
-            with pytest.raises(TinybirdOperationalError):
-                await client.endpoint("metrics")
+        http_mocks["GET", "https://api.tinybird.co/v0/pipes/metrics.json"] = Mock(
+            side_effect=side_effect
+        )
+        with pytest.raises(TinybirdOperationalError):
+            await client.endpoint("metrics")
 
         assert call_count == MAX_RETRIES + 1
 
 
 @pytest.mark.anyio
 class TestTinybirdRequestError:
-    async def test_endpoint_400_raises_request_error_with_body(self) -> None:
+    async def test_endpoint_400_raises_request_error_with_body(
+        self, http_mocks: dict[tuple[str, str], Mock]
+    ) -> None:
         error_response = {
             "error": "[Error] Illegal type UUID of argument for aggregate function"
         }
@@ -989,21 +1030,22 @@ class TestTinybirdRequestError:
             clickhouse_token="test_token",
         )
 
-        with respx.mock:
-            respx.get("https://api.tinybird.co/v0/pipes/metrics.json").mock(
-                return_value=httpx.Response(400, json=error_response)
-            )
+        http_mocks["GET", "https://api.tinybird.co/v0/pipes/metrics.json"] = Mock(
+            return_value=httpx2.Response(400, json=error_response)
+        )
 
-            with pytest.raises(TinybirdRequestError) as exc_info:
-                await client.endpoint("metrics", {"org_ids": "123"})
+        with pytest.raises(TinybirdRequestError) as exc_info:
+            await client.endpoint("metrics", {"org_ids": "123"})
 
-            error = exc_info.value
-            assert error.status_code == 400
-            assert error.endpoint == "metrics"
-            assert error.error_body == error_response
-            assert "Illegal type UUID" in str(error)
+        error = exc_info.value
+        assert error.status_code == 400
+        assert error.endpoint == "metrics"
+        assert error.error_body == error_response
+        assert "Illegal type UUID" in str(error)
 
-    async def test_endpoint_500_raises_operational_error(self) -> None:
+    async def test_endpoint_500_raises_operational_error(
+        self, http_mocks: dict[tuple[str, str], Mock]
+    ) -> None:
         client = TinybirdClient(
             api_url="https://api.tinybird.co",
             clickhouse_url="https://clickhouse.tinybird.co",
@@ -1013,10 +1055,9 @@ class TestTinybirdRequestError:
             clickhouse_token="test_token",
         )
 
-        with respx.mock:
-            respx.get("https://api.tinybird.co/v0/pipes/metrics.json").mock(
-                return_value=httpx.Response(500, text="Internal Server Error")
-            )
+        http_mocks["GET", "https://api.tinybird.co/v0/pipes/metrics.json"] = Mock(
+            return_value=httpx2.Response(500, text="Internal Server Error")
+        )
 
-            with pytest.raises(TinybirdOperationalError, match="500"):
-                await client.endpoint("metrics")
+        with pytest.raises(TinybirdOperationalError, match="500"):
+            await client.endpoint("metrics")

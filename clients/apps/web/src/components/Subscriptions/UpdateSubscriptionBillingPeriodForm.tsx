@@ -4,6 +4,7 @@ import { useUpdateSubscription } from '@/hooks/queries/subscriptions'
 import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import DateTimePicker from '@polar-sh/ui/components/atoms/DateTimePicker'
 import {
   Form,
@@ -73,15 +74,12 @@ export const UpdateSubscriptionBillingPeriodForm = ({
   )
 
   return (
-    <div className="dark:bg-polar-800 flex flex-col gap-y-4 rounded-2xl bg-gray-50 p-6">
-      <div className="flex flex-col gap-y-2">
-        <h3 className="text-lg font-medium">Update Billing Period</h3>
-        <p className="dark:text-polar-500 mt-1 text-sm text-gray-500">
-          Extend the current billing period by setting a new end date in the
-          future. This is useful for providing additional free subscription time
-          to a customer.
-        </p>
-      </div>
+    <Box flexDirection="column" rowGap="l">
+      <p className="dark:text-polar-500 text-sm text-gray-500">
+        Extend the current billing period by setting a new end date in the
+        future. This is useful for providing additional free subscription time
+        to a customer.
+      </p>
 
       <Form {...form}>
         <form className="flex flex-col gap-6" onSubmit={handleSubmit(onSubmit)}>
@@ -96,7 +94,7 @@ export const UpdateSubscriptionBillingPeriodForm = ({
             }}
             render={({ field }) => {
               return (
-                <FormItem className="flex flex-col gap-y-2">
+                <FormItem>
                   <FormLabel>Billing Period End Date</FormLabel>
 
                   <DateTimePicker
@@ -128,6 +126,6 @@ export const UpdateSubscriptionBillingPeriodForm = ({
           </Button>
         </form>
       </Form>
-    </div>
+    </Box>
   )
 }

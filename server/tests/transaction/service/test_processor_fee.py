@@ -156,7 +156,12 @@ class TestCreateRefundFees:
         session.expunge_all()
 
         fee_transactions = await processor_fee_transaction_service.create_refund_fees(
-            session, refund=refund, refund_transaction=refund_transaction
+            session,
+            refund=refund,
+            refund_transaction=refund_transaction,
+            balance_transaction=stripe_lib.BalanceTransaction.construct_from(
+                {"id": "STRIPE_BALANCE_TRANSACTION_ID", "fee": 100}, None
+            ),
         )
         assert len(fee_transactions) == 0
 
@@ -176,18 +181,19 @@ class TestCreateRefundFees:
         payment = await create_payment(save_fixture, customer.organization, order=order)
         refund = await create_refund(save_fixture, order, payment)
         refund_transaction = await create_refund_transaction(save_fixture)
-        stripe_service_mock.get_balance_transaction.return_value = (
-            stripe_lib.BalanceTransaction.construct_from(
-                {"id": "STRIPE_BALANCE_TRANSACTION_ID", "fee": 100}, None
-            )
-        )
 
         # then
         session.expunge_all()
 
         fee_transactions = await processor_fee_transaction_service.create_refund_fees(
-            session, refund=refund, refund_transaction=refund_transaction
+            session,
+            refund=refund,
+            refund_transaction=refund_transaction,
+            balance_transaction=stripe_lib.BalanceTransaction.construct_from(
+                {"id": "STRIPE_BALANCE_TRANSACTION_ID", "fee": 100}, None
+            ),
         )
+        stripe_service_mock.get_balance_transaction.assert_not_called()
         assert len(fee_transactions) == 1
 
         refund_fee_transaction = fee_transactions[0]

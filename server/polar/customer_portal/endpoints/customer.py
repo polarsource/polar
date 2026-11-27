@@ -106,7 +106,7 @@ async def get_embed_policy(
     },
 )
 async def export(
-    auth_subject: auth.CustomerPortalUnionRead,
+    auth_subject: auth.CustomerPortalUnionBillingRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Response:
     """Export all data for the authenticated customer as a JSON file."""

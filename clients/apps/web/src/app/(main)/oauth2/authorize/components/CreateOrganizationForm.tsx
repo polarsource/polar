@@ -1,9 +1,7 @@
 'use client'
 
-import revalidate from '@/app/actions'
 import { CurrencySelector } from '@/components/CurrencySelector'
 import { useToast } from '@/components/Toast/use-toast'
-import { useAuth } from '@/hooks'
 import { useCreateOrganization } from '@/hooks/queries'
 import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
@@ -23,7 +21,7 @@ import {
   useState,
 } from 'react'
 import { createPortal } from 'react-dom'
-import { useForm, useWatch } from 'react-hook-form'
+import { useForm, useWatch, useFormState } from 'react-hook-form'
 import slugify from 'slugify'
 import SupportedUseCases from './SupportedUseCases'
 
@@ -44,7 +42,6 @@ const CreateOrganizationForm = ({
   actionsContainer: HTMLElement | null
   onCreated: (organization: schemas['Organization']) => void
 }) => {
-  const { currentUser, reloadUser } = useAuth()
   const createOrganization = useCreateOrganization()
   const { toast } = useToast()
   const [editedSlug, setEditedSlug] = useState(false)
@@ -58,13 +55,8 @@ const CreateOrganizationForm = ({
     },
   })
 
-  const {
-    control,
-    handleSubmit,
-    setError,
-    setValue,
-    formState: { errors },
-  } = form
+  const { control, handleSubmit, setError, setValue } = form
+  const { errors } = useFormState({ control })
 
   const { name, slug, terms } = useWatch({ control })
 
@@ -97,8 +89,6 @@ const CreateOrganizationForm = ({
       return
     }
 
-    await revalidate(`users:${currentUser?.id}:organizations`, { expire: 0 })
-    await reloadUser()
     onCreated(organization)
   }
 

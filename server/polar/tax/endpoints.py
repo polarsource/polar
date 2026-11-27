@@ -1,16 +1,18 @@
-from datetime import date
+from typing import Annotated
 
 from fastapi import Depends, Query
 
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.schemas import MultipleQueryFilter
 from polar.openapi import APITag
-from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncReadSession, get_db_read_session
 from polar.routing import APIRouter
 
 from . import auth, sorting
-from .schemas import TaxJurisdiction, TaxSummary
+from .schemas import (
+    TaxJurisdiction,
+    TaxReportParams,
+    TaxSummary,
+)
 from .service import tax as tax_service
 
 router = APIRouter(prefix="/taxes", tags=["taxes", APITag.private])
@@ -22,28 +24,18 @@ router = APIRouter(prefix="/taxes", tags=["taxes", APITag.private])
     response_model=ListResource[TaxJurisdiction],
 )
 async def list_jurisdictions(
+    filters: Annotated[TaxReportParams, Query()],
     auth_subject: auth.TaxRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
-    start_date: date | None = Query(
-        None,
-        description="Only include tax remitted on or after this date.",
-    ),
-    end_date: date | None = Query(
-        None,
-        description="Only include tax remitted on or before this date.",
-    ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[TaxJurisdiction]:
     results, count = await tax_service.list_jurisdictions(
         session,
         auth_subject,
-        organization_id=organization_id,
-        start_date=start_date,
-        end_date=end_date,
+        organization_id=filters.organization_id,
+        start_date=filters.start_date,
+        end_date=filters.end_date,
         pagination=pagination,
         sorting=sorting,
     )
@@ -57,24 +49,14 @@ async def list_jurisdictions(
     response_model=TaxSummary,
 )
 async def get_summary(
+    filters: Annotated[TaxReportParams, Query()],
     auth_subject: auth.TaxRead,
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
-    start_date: date | None = Query(
-        None,
-        description="Only include tax remitted on or after this date.",
-    ),
-    end_date: date | None = Query(
-        None,
-        description="Only include tax remitted on or before this date.",
-    ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> TaxSummary:
     return await tax_service.get_summary(
         session,
         auth_subject,
-        organization_id=organization_id,
-        start_date=start_date,
-        end_date=end_date,
+        organization_id=filters.organization_id,
+        start_date=filters.start_date,
+        end_date=filters.end_date,
     )

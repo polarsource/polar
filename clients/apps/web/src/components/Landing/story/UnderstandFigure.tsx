@@ -32,7 +32,7 @@ export const UnderstandFigure = () => {
               <Text variant="caption" color="muted">
                 Gross margin
               </Text>
-              <Text variant="heading-xs" tabularNums>
+              <Text variant="heading-xs" as="p" tabularNums>
                 {percent(marginShown)}
               </Text>
             </Box>
@@ -40,7 +40,7 @@ export const UnderstandFigure = () => {
               <Text variant="caption" color="muted">
                 Inference cost
               </Text>
-              <Text variant="heading-xs" tabularNums>
+              <Text variant="heading-xs" as="p" tabularNums>
                 {dollars(cost, 2)}
               </Text>
             </Box>
@@ -75,22 +75,6 @@ export const UnderstandFigure = () => {
                 </Box>
               </Box>
             ))}
-          </Box>
-          <Box
-            marginTop="auto"
-            paddingTop="l"
-            borderTopWidth={1}
-            borderStyle="solid"
-            borderColor="border-primary"
-            flexDirection="column"
-            rowGap="s"
-          >
-            <Text variant="caption" color="muted">
-              Attach the cost to the events you already send
-            </Text>
-            <pre className="m-0 overflow-x-auto font-mono text-[13px] leading-6 text-white">
-              {"_cost: { amount: 0.0021, currency: 'usd' }"}
-            </pre>
           </Box>
         </Sheet>
       </Grid>

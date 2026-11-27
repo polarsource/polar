@@ -1,6 +1,5 @@
 import socket
-import sys
-from typing import TYPE_CHECKING, Any, Literal
+from typing import Any, Literal
 
 import redis as _sync_redis
 import redis.asyncio as _async_redis
@@ -11,18 +10,10 @@ from redis.backoff import default_backoff
 
 from polar.config import settings
 
-# https://github.com/python/typeshed/issues/7597#issuecomment-1117551641
-# Redis is generic at type checking, but not at runtime...
-if TYPE_CHECKING:
-    Redis = _async_redis.Redis[str]
-    _Pipeline = _async_redis.client.Pipeline[str]
-    _SyncRedis = _sync_redis.Redis[bytes]
-    _SyncPipeline = _sync_redis.client.Pipeline[bytes]
-else:
-    Redis = _async_redis.Redis
-    _Pipeline = _async_redis.client.Pipeline
-    _SyncRedis = _sync_redis.Redis
-    _SyncPipeline = _sync_redis.client.Pipeline
+Redis = _async_redis.Redis
+_Pipeline = _async_redis.client.Pipeline
+_SyncRedis = _sync_redis.Redis
+_SyncPipeline = _sync_redis.client.Pipeline
 
 
 # A demoted primary answers READONLY until DNS flips; dropping idle connections on
@@ -31,42 +22,76 @@ else:
 
 
 class FailoverPipeline(_Pipeline):
-    async def _disconnect_raise_on_watching(self, conn: Any, error: Exception) -> None:
+    async def _disconnect_raise_on_watching(
+        self,
+        conn: Any,
+        error: Exception,
+        failure_count: int | None = None,
+        start_time: float | None = None,
+        command_name: str | None = None,
+    ) -> None:
         if isinstance(error, ReadOnlyError):
             await self.connection_pool.disconnect(inuse_connections=False)
-        await super()._disconnect_raise_on_watching(conn, error)  # type: ignore[misc]
+        await super()._disconnect_raise_on_watching(
+            conn, error, failure_count, start_time, command_name
+        )
 
 
 class FailoverRedis(Redis):
-    async def _close_connection(self, conn: Any) -> None:
-        if isinstance(sys.exc_info()[1], ReadOnlyError):
+    async def _close_connection(
+        self,
+        conn: Any,
+        error: BaseException | None = None,
+        failure_count: int | None = None,
+        start_time: float | None = None,
+        command_name: str | None = None,
+    ) -> None:
+        if isinstance(error, ReadOnlyError):
             await self.connection_pool.disconnect(inuse_connections=False)
-        await super()._close_connection(conn)  # type: ignore[misc]
+        await super()._close_connection(
+            conn, error, failure_count, start_time, command_name
+        )
 
     def pipeline(
         self, transaction: bool = True, shard_hint: str | None = None
-    ) -> "_Pipeline":
+    ) -> _Pipeline:
         return FailoverPipeline(
             self.connection_pool, self.response_callbacks, transaction, shard_hint
         )
 
 
 class SyncFailoverPipeline(_SyncPipeline):
-    def _disconnect_raise_on_watching(self, conn: Any, error: Exception) -> None:
+    def _disconnect_raise_on_watching(
+        self,
+        conn: Any,
+        error: Exception,
+        failure_count: int | None = None,
+        start_time: float | None = None,
+        command_name: str | None = None,
+    ) -> None:
         if isinstance(error, ReadOnlyError):
             self.connection_pool.disconnect(inuse_connections=False)
-        super()._disconnect_raise_on_watching(conn, error)  # type: ignore[misc]
+        super()._disconnect_raise_on_watching(
+            conn, error, failure_count, start_time, command_name
+        )
 
 
 class SyncFailoverRedis(_SyncRedis):
-    def _close_connection(self, conn: Any) -> None:
-        if isinstance(sys.exc_info()[1], ReadOnlyError):
+    def _close_connection(
+        self,
+        conn: Any,
+        error: Exception | None = None,
+        failure_count: int | None = None,
+        start_time: float | None = None,
+        command_name: str | None = None,
+    ) -> None:
+        if isinstance(error, ReadOnlyError):
             self.connection_pool.disconnect(inuse_connections=False)
-        super()._close_connection(conn)  # type: ignore[misc]
+        super()._close_connection(conn, error, failure_count, start_time, command_name)
 
     def pipeline(
         self, transaction: bool = True, shard_hint: str | None = None
-    ) -> "_SyncPipeline":
+    ) -> _SyncPipeline:
         return SyncFailoverPipeline(
             self.connection_pool, self.response_callbacks, transaction, shard_hint
         )
@@ -78,6 +103,9 @@ REDIS_RETRY_ON_ERRROR: list[type[RedisError]] = [
     TimeoutError,
 ]
 REDIS_RETRY = Retry(default_backoff(), retries=50)
+
+# Unbounded: each eventstream subscriber holds a connection.
+REDIS_CONNECTION_OPTIONS: dict[str, Any] = {"max_connections": 2**31}
 
 # TCP_KEEPIDLE is Linux, TCP_KEEPALIVE its macOS equivalent
 REDIS_KEEPALIVE_OPTIONS: dict[int, int] = {
@@ -106,6 +134,7 @@ def create_redis(process_name: ProcessName) -> Redis:
         socket_keepalive=True,
         socket_keepalive_options=REDIS_KEEPALIVE_OPTIONS,
         health_check_interval=30,
+        **REDIS_CONNECTION_OPTIONS,
     )
 
 
@@ -114,6 +143,7 @@ async def get_redis(connection: HTTPConnection) -> Redis:
 
 
 __all__ = [
+    "REDIS_CONNECTION_OPTIONS",
     "REDIS_RETRY",
     "REDIS_RETRY_ON_ERRROR",
     "FailoverRedis",

@@ -1,6 +1,6 @@
 import { Redis } from "ioredis";
 import { once } from "node:events";
-import { afterAll, beforeAll, bench, describe, vi } from "vitest";
+import { afterAll, beforeAll, bench, describe } from "vitest";
 
 import { BUCKET_COUNTS, REDUCER, SNAPSHOT, encodeState } from "./benchmark";
 import { Outpost } from "./client";
@@ -20,15 +20,13 @@ let polar: PolarServer;
 let outpost: Outpost;
 
 beforeAll(async () => {
-  // Telemetry on, as in production, with its export stubbed.
-  vi.stubGlobal("fetch", async () => new Response(null, { status: 200 }));
   redisServer = await startRedisServer();
   // Local buckets since the snapshot, as earlier writers leave them; the snapshot keeps them.
   const redis = new Redis(redisServer.socket);
   await once(redis, "ready");
   for (const buckets of BUCKET_COUNTS)
     await redis.hset(
-      `outpost:v1:state:external:${customerOf(buckets)}:${REDUCER.id}`,
+      `outpost:v1:org:state:external:${customerOf(buckets)}:${REDUCER.id}`,
       ...encodeState(buckets),
     );
   redis.disconnect();
@@ -45,7 +43,6 @@ afterAll(async () => {
   await outpost?.close();
   await polar?.stop();
   await redisServer?.stop();
-  vi.unstubAllGlobals();
 });
 
 describe("meter", () => {

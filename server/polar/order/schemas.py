@@ -1,13 +1,17 @@
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Any, Self
 
 from fastapi import Path
 from pydantic import (
+    MISSING,
     UUID4,
     AliasChoices,
     AliasPath,
     BeforeValidator,
+    ConfigDict,
+    Discriminator,
     Field,
+    Tag,
     computed_field,
     field_serializer,
     model_validator,
@@ -18,30 +22,39 @@ from polar.custom_field.data import (
     CustomFieldDataInputMixin,
     CustomFieldDataOutputMixin,
 )
-from polar.customer.schemas.customer import CustomerBase
+from polar.customer.schemas.customer import CustomerBase, CustomerID, ExternalCustomerID
 from polar.discount.schemas import DiscountMinimal
 from polar.exceptions import ResourceNotFound
 from polar.kit.address import Address, AddressInput
 from polar.kit.currency import format_currency
+from polar.kit.external_id import ExternalID
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import (
+    EmptyStrToNoneValidator,
     IDSchema,
     Int32,
     MergeJSONSchema,
+    MultipleQueryFilter,
     Schema,
     TimestampedSchema,
     empty_str_to_none,
 )
-from polar.kit.versioning import Version
+from polar.kit.versioning import Omissible, QuerySchema, Version
 from polar.models.order import (
     OrderBillingReason,
     OrderBillingReasonInternal,
     OrderStatus,
 )
+from polar.models.product import ProductBillingType
 from polar.organization.schemas import OrganizationID
-from polar.product.schemas import ProductBase, ProductPrice
-from polar.subscription.schemas import SubscriptionBase
-from polar.version import V2026_10
+from polar.product.schemas import (
+    ProductBase,
+    ProductID,
+    ProductPrice,
+    ProductVersionOutputMixin,
+)
+from polar.subscription.schemas import SubscriptionBase, SubscriptionID
+from polar.version import V2026_10, V2027_01
 
 OrderID = Annotated[UUID4, Path(description="The order ID.")]
 
@@ -222,7 +235,7 @@ class OrderUser(Schema):
     github_username: str | None = Field(None)
 
 
-class OrderProduct(ProductBase, MetadataOutputMixin): ...
+class OrderProduct(ProductVersionOutputMixin, ProductBase, MetadataOutputMixin): ...
 
 
 OrderDiscount = Annotated[DiscountMinimal, MergeJSONSchema({"title": "OrderDiscount"})]
@@ -310,9 +323,7 @@ class Order(CustomFieldDataOutputMixin, MetadataOutputMixin, OrderBase):
     )
 
 
-class OrderCreate(MetadataInputMixin, CustomFieldDataInputMixin):
-    """Schema to create a draft order for an off-session charge."""
-
+class OrderCreateBase(MetadataInputMixin, CustomFieldDataInputMixin):
     organization_id: OrganizationID | None = Field(
         default=None,
         description=(
@@ -320,15 +331,6 @@ class OrderCreate(MetadataInputMixin, CustomFieldDataInputMixin):
             "**Required unless you use an organization token.** "
             "The customer and product must belong to this organization."
         ),
-    )
-    customer_id: UUID4 = Field(
-        description="The ID of the customer the order is for. "
-        "Must belong to the order's organization."
-    )
-    product_id: UUID4 = Field(
-        description="The ID of the one-time product to charge for. "
-        "Must belong to the order's organization. "
-        "Only fixed-price, free and unit-based products are supported."
     )
     currency: str | None = Field(
         None,
@@ -372,22 +374,87 @@ class OrderCreate(MetadataInputMixin, CustomFieldDataInputMixin):
     )
 
     @model_validator(mode="after")
-    def _validate_amount_and_units(self) -> "OrderCreate":
+    def _validate_amount_and_units(self) -> Self:
         if self.amount is not None and self.units is not None:
             raise ValueError("amount and units can't be set together")
         return self
+
+
+class OrderCreate(OrderCreateBase):
+    """Schema to create a draft order for an off-session charge."""
+
+    customer_id: UUID4 = Field(
+        description="The ID of the customer the order is for. "
+        "Must belong to the order's organization."
+    )
+    product_id: UUID4 = Field(
+        description="The ID of the one-time product to charge for. "
+        "Must belong to the order's organization. "
+        "Only fixed-price, free and unit-based products are supported."
+    )
+
+
+class OrderCreateExternal(OrderCreateBase):
+    """
+    Schema to create a draft order for an off-session charge,
+    referencing the customer and product by their external IDs.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    external_customer_id: str = Field(
+        min_length=1,
+        description="The ID of the customer in your system the order is for. "
+        "Must belong to the order's organization.",
+        examples=["usr_1337"],
+    )
+    external_product_id: ExternalID = Field(
+        description="The ID of the one-time product in your system to charge for. "
+        "Resolves to the current version of the product. "
+        "Must belong to the order's organization. "
+        "Only fixed-price, free and unit-based products are supported.",
+        examples=["ext_1337"],
+    )
+
+
+def _order_create_discriminator(v: Any) -> str:
+    if isinstance(v, dict):
+        external = "external_customer_id" in v or "external_product_id" in v
+        return "external" if external else "polar"
+    return "external" if isinstance(v, OrderCreateExternal) else "polar"
+
+
+OrderCreateV2027_01 = Annotated[
+    Annotated[OrderCreate, Tag("polar")]
+    | Annotated[OrderCreateExternal, Tag("external")],
+    Discriminator(_order_create_discriminator),
+]
 
 
 class OrderUpdateBase(Schema):
     billing_name: str | None = Field(
         None, description="The name of the customer that should appear on the invoice."
     )
-    billing_address: AddressInput | None = Field(
-        None,
+    billing_address: Omissible[AddressInput] = Field(
+        MISSING,
         description=(
             "The address of the customer that should appear on the invoice. "
-            "Country and state fields cannot be updated."
+            "Address fields used for tax calculation can only be updated on draft orders."
         ),
+    )
+    tax_id: Annotated[
+        Omissible[str | None],
+        EmptyStrToNoneValidator,
+        Version(starting_from=V2027_01),
+    ] = Field(
+        MISSING,
+        description="Tax ID for the billing address on a draft order. Set to null to remove it.",
+    )
+    discount_code: Annotated[
+        Omissible[str | None], EmptyStrToNoneValidator, Version(starting_from=V2027_01)
+    ] = Field(
+        MISSING,
+        description="Discount code to apply to the draft order. Set to null to remove it.",
     )
 
 
@@ -418,3 +485,61 @@ class OrderReceipt(Schema):
     """Order's receipt data."""
 
     url: str = Field(..., description="The URL to the receipt PDF.")
+
+
+class OrderListParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    product_id: MultipleQueryFilter[ProductID] | None = Field(
+        None, title="ProductID Filter", description="Filter by product ID."
+    )
+    external_product_id: Annotated[
+        MultipleQueryFilter[str] | None, Version(starting_from=V2027_01)
+    ] = Field(
+        None,
+        title="ExternalProductID Filter",
+        description="Filter by product external ID.",
+    )
+    product_billing_type: MultipleQueryFilter[ProductBillingType] | None = Field(
+        None,
+        title="ProductBillingType Filter",
+        description=(
+            "Filter by product billing type. "
+            "`recurring` will filter data corresponding "
+            "to subscriptions creations or renewals. "
+            "`one_time` will filter data corresponding to one-time purchases."
+        ),
+    )
+    discount_id: MultipleQueryFilter[UUID4] | None = Field(
+        None, title="DiscountID Filter", description="Filter by discount ID."
+    )
+    customer_id: MultipleQueryFilter[CustomerID] | None = Field(
+        None, title="CustomerID Filter", description="Filter by customer ID."
+    )
+    external_customer_id: MultipleQueryFilter[ExternalCustomerID] | None = Field(
+        None,
+        title="ExternalCustomerID Filter",
+        description="Filter by customer external ID.",
+    )
+    checkout_id: MultipleQueryFilter[UUID4] | None = Field(
+        None, title="CheckoutID Filter", description="Filter by checkout ID."
+    )
+    subscription_id: MultipleQueryFilter[SubscriptionID] | None = Field(
+        None, title="SubscriptionID Filter", description="Filter by subscription ID."
+    )
+    status: MultipleQueryFilter[OrderStatus] | None = Field(
+        None, title="Status Filter", description="Filter by order status."
+    )
+    query: Annotated[str | None, Version(starting_from=V2027_01)] = Field(
+        None,
+        description="Filter by customer name, email or external ID, invoice number, or an order, customer, subscription or checkout ID.",
+    )
+    created_after: datetime | None = Field(
+        None,
+        description="Only include orders created after this date",
+    )
+    created_before: datetime | None = Field(
+        None,
+        description="Only include orders created before this date",
+    )

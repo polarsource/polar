@@ -17,7 +17,7 @@ from polar.enums import PaymentProcessor
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
-from polar.models import Checkout, Customer, Order, PaymentMethod, Subscription
+from polar.models import Customer, Order, PaymentMethod, Subscription
 from polar.models.organization import resolve_default_customer_email_settings
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
@@ -111,6 +111,19 @@ class PaymentMethodService:
     ) -> PaymentMethod:
         repository = PaymentMethodRepository.from_session(session)
 
+        method_type = stripe_payment_method.type
+        method_metadata = stripe_payment_method[method_type]
+
+        # Atomic insert-if-missing, so concurrent calls for the same payment
+        # method don't fail with a unique constraint violation.
+        await repository.insert_on_conflict_do_nothing(
+            customer_id=customer.id,
+            processor=PaymentProcessor.stripe,
+            processor_id=stripe_payment_method.id,
+            type=method_type,
+            method_metadata=method_metadata,
+        )
+
         payment_method = await repository.get_by_customer_and_processor_id(
             customer.id,
             PaymentProcessor.stripe,
@@ -118,17 +131,10 @@ class PaymentMethodService:
             include_deleted=True,
             options=repository.get_eager_options(),
         )
-        if payment_method is None:
-            payment_method = PaymentMethod(
-                processor=PaymentProcessor.stripe,
-                processor_id=stripe_payment_method.id,
-                customer=customer,
-            )
+        assert payment_method is not None
 
-        payment_method.type = stripe_payment_method.type
-        payment_method.method_metadata = stripe_payment_method[
-            stripe_payment_method.type
-        ]
+        payment_method.type = method_type
+        payment_method.method_metadata = method_metadata
         payment_method.deleted_at = None  # Restore if it was soft-deleted
 
         return await repository.update(payment_method, flush=flush)
@@ -137,14 +143,25 @@ class PaymentMethodService:
         self,
         session: AsyncSession,
         intent: stripe_lib.Charge | stripe_lib.SetupIntent,
-        checkout: Checkout,
+        customer: Customer,
     ) -> PaymentMethod:
         stripe_payment_method = await self.resolve_from_stripe_intent(intent)
 
-        assert checkout.customer is not None
-        return await self.upsert_from_stripe(
-            session, checkout.customer, stripe_payment_method
+        payment_method = await self.upsert_from_stripe(
+            session, customer, stripe_payment_method, flush=True
         )
+
+        if customer.default_payment_method_id is None:
+            await session.refresh(
+                customer, {"default_payment_method_id"}, with_for_update=True
+            )
+
+        if customer.default_payment_method_id is None:
+            await CustomerRepository.from_session(session).update(
+                customer, update_dict={"default_payment_method": payment_method}
+            )
+
+        return payment_method
 
     async def upsert_from_stripe_payment_intent_for_order(
         self,

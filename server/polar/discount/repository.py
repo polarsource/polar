@@ -3,6 +3,8 @@ from uuid import UUID
 from sqlalchemy import (
     ColumnElement,
     ColumnExpressionArgument,
+    and_,
+    delete,
     distinct,
     func,
     or_,
@@ -16,7 +18,6 @@ from polar.models import (
     Checkout,
     Customer,
     Discount,
-    DiscountProduct,
     DiscountRedemption,
     Order,
     Payment,
@@ -30,19 +31,6 @@ from polar.models.refund import RefundReason, RefundStatus
 
 class DiscountRepository(RepositoryBase[Discount], RepositoryIDMixin[Discount, UUID]):
     model = Discount
-
-    async def add_product(self, product_id: UUID, new_product_id: UUID) -> None:
-        """Extend the discounts restricted to a product to another product."""
-        discount_ids = await self.session.scalars(
-            select(DiscountProduct.discount_id).where(
-                DiscountProduct.product_id == product_id,
-                DiscountProduct.deleted_at.is_(None),
-            )
-        )
-        self.session.add_all(
-            DiscountProduct(discount_id=discount_id, product_id=new_product_id)
-            for discount_id in discount_ids
-        )
 
     async def get_by_code_and_organization_for_update(
         self,
@@ -64,21 +52,16 @@ class DiscountRepository(RepositoryBase[Discount], RepositoryIDMixin[Discount, U
         )
         return await self.get_one_or_none(statement)
 
-    async def get_by_external_id_and_organization(
-        self, external_id: str, organization_id: UUID
-    ) -> Discount | None:
-        statement = select(Discount).where(
-            Discount.external_id == external_id,
-            Discount.organization_id == organization_id,
-            ~Discount.is_deleted,
-        )
-        return await self.get_one_or_none(statement)
-
 
 class DiscountRedemptionRepository(
     RepositoryBase[DiscountRedemption], RepositoryIDMixin[DiscountRedemption, UUID]
 ):
     model = DiscountRedemption
+
+    async def delete_by_order_id(self, order_id: UUID) -> None:
+        await self.session.execute(
+            delete(DiscountRedemption).where(DiscountRedemption.order_id == order_id)
+        )
 
     async def set_subscription_by_checkout(
         self, checkout_id: UUID, subscription_id: UUID
@@ -94,7 +77,7 @@ class DiscountRedemptionRepository(
         self,
         discount_id: UUID,
         *,
-        exclude_checkout_id: UUID,
+        exclude_checkout_id: UUID | None,
         customer_id: UUID | None = None,
         customer_email: str | None = None,
         payment_method_fingerprint: str | None = None,
@@ -145,8 +128,14 @@ class DiscountRedemptionRepository(
         # NULL-safe: a checkout-less redemption never matches a checkout-less order.
         redemption_orders = select(Order.id).where(
             or_(
-                Order.checkout_id == DiscountRedemption.checkout_id,
-                Order.subscription_id == DiscountRedemption.subscription_id,
+                Order.id == DiscountRedemption.order_id,
+                and_(
+                    DiscountRedemption.order_id.is_(None),
+                    or_(
+                        Order.checkout_id == DiscountRedemption.checkout_id,
+                        Order.subscription_id == DiscountRedemption.subscription_id,
+                    ),
+                ),
             )
         )
         chargeback_prevented = (
@@ -170,23 +159,35 @@ class DiscountRedemptionRepository(
             .join(Customer, Customer.id == Subscription.customer_id, isouter=True)
             .where(
                 DiscountRedemption.discount_id == discount_id,
-                # NULL-safe: subscription-only redemptions have no checkout.
-                DiscountRedemption.checkout_id.is_distinct_from(exclude_checkout_id),
                 or_(*clauses),
                 or_(
                     ~redemption_orders.exists(),
                     redemption_orders.where(
-                        Order.status.in_(OrderStatus.paid_statuses())
+                        or_(
+                            Order.status.in_(OrderStatus.paid_statuses()),
+                            and_(
+                                DiscountRedemption.order_id.is_not(None),
+                                Order.status == OrderStatus.pending,
+                            ),
+                        )
                     ).exists(),
                     redemption_orders.where(chargeback_prevented).exists(),
                 ),
             )
         )
 
+        if exclude_checkout_id is not None:
+            statement = statement.where(
+                DiscountRedemption.checkout_id.is_distinct_from(exclude_checkout_id)
+            )
+
         if payment_method_fingerprint is not None:
             statement = statement.join(
                 Payment,
-                (Payment.checkout_id == DiscountRedemption.checkout_id)
+                or_(
+                    Payment.checkout_id == DiscountRedemption.checkout_id,
+                    Payment.order_id == DiscountRedemption.order_id,
+                )
                 # A retried checkout keeps its declined attempts.
                 & (Payment.status == PaymentStatus.succeeded),
                 isouter=True,

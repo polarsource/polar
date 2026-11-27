@@ -2,12 +2,14 @@ import uuid
 from typing import Any
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
 from polar.auth.scope import Scope
+from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
 from polar.models import (
     Benefit,
+    Catalog,
     Customer,
     Downloadable,
     Member,
@@ -16,6 +18,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.benefit import BenefitType
+from polar.models.catalog import CatalogStatus
 from polar.models.downloadable import DownloadableStatus
 from polar.models.file import FileServiceTypes
 from polar.version import V2027_01
@@ -297,6 +300,31 @@ class TestGetBenefit:
 
         assert response.status_code == 404
 
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_catalog_id(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        benefit_organization: Benefit,
+        user_organization: UserOrganization,
+    ) -> None:
+        catalog = Catalog(
+            organization=organization,
+            version_hash="abc123",
+            status=CatalogStatus.archived,
+            published_at=utc_now(),
+        )
+        await save_fixture(catalog)
+        benefit_organization.catalog = catalog
+        await save_fixture(benefit_organization)
+
+        response = await client.get(f"/v1/benefits/{benefit_organization.id}")
+
+        assert response.status_code == 200
+        assert response.json()["catalog_id"] == str(catalog.id)
+
 
 @pytest.mark.anyio
 class TestListBenefitFiles:
@@ -451,6 +479,36 @@ class TestListBenefitFiles:
 
 @pytest.mark.anyio
 class TestCreateBenefit:
+    @pytest.mark.auth
+    async def test_organization_limit(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        benefit_organization: Benefit,
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+    ) -> None:
+        organization.benefits_limit = 1
+        benefit_organization.deleted_at = utc_now()
+        await save_fixture(organization)
+        await save_fixture(benefit_organization)
+        payload = {
+            "organization_id": str(organization.id),
+            "type": "custom",
+            "description": "Benefit",
+            "properties": {"note": None},
+        }
+
+        response = await client.post("/v1/benefits/", json=payload)
+        assert response.status_code == 201
+
+        response = await client.post("/v1/benefits/", json=payload)
+        assert response.status_code == 403
+        assert (
+            response.json()["detail"]
+            == "Organization has reached its limit of 1 benefits."
+        )
+
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
             "/v1/benefits/",

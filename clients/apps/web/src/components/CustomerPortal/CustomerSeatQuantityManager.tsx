@@ -4,9 +4,11 @@ import { useCustomerUpdateSubscription } from '@/hooks/queries/customerPortal'
 import { setValidationErrors } from '@/utils/api/errors'
 import { Client, isValidationError, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { Minus as MinusIcon, Plus as PlusIcon } from '@polar-sh/orbit/icons'
+import { PortalText } from './PortalPrimitives'
 import { useCallback, useMemo } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
 
 interface CustomerSeatQuantityManagerProps {
@@ -30,7 +32,7 @@ export const CustomerSeatQuantityManager = ({
 
   const assignedSeats = totalSeats - availableSeats
 
-  const { handleSubmit, watch, setValue, setError } = useForm<{
+  const { control, handleSubmit, setValue, setError } = useForm<{
     seats: number
   }>({
     values: {
@@ -39,13 +41,20 @@ export const CustomerSeatQuantityManager = ({
   })
 
   // oxlint-disable-next-line react-hooks/incompatible-library
-  const seats = watch('seats')
+  const seats = useWatch({ control, name: 'seats' })
   const canDecrease = seats !== undefined && seats > assignedSeats
   const hasChanges = seats !== totalSeats
 
+  const resolvedProrationBehavior =
+    prorationBehavior === 'auto'
+      ? seats > totalSeats
+        ? 'invoice'
+        : 'next_period'
+      : prorationBehavior
+
   const invoicingMessage = useMemo((): string | null => {
-    if (!prorationBehavior) return null
-    switch (prorationBehavior) {
+    if (!resolvedProrationBehavior) return null
+    switch (resolvedProrationBehavior) {
       case 'invoice':
         return "You'll be charged immediately, with a proration for the current period."
       case 'prorate':
@@ -55,7 +64,7 @@ export const CustomerSeatQuantityManager = ({
       case 'reset':
         return "You'll be charged the full new amount immediately, and your billing period restarts today."
     }
-  }, [prorationBehavior])
+  }, [resolvedProrationBehavior])
 
   const onSubmit = useCallback(
     async (data: { seats: number }) => {
@@ -80,7 +89,7 @@ export const CustomerSeatQuantityManager = ({
         } else {
           const descriptionMessage = (() => {
             const seatText = `${data.seats} ${data.seats === 1 ? 'seat' : 'seats'}`
-            switch (prorationBehavior) {
+            switch (resolvedProrationBehavior) {
               case 'invoice':
                 return `Subscription now has ${seatText}. You'll be charged immediately with a proration for the current month.`
               case 'prorate':
@@ -112,7 +121,13 @@ export const CustomerSeatQuantityManager = ({
         }
       }
     },
-    [updateSubscription, subscriptionId, prorationBehavior, onUpdate, setError],
+    [
+      updateSubscription,
+      subscriptionId,
+      resolvedProrationBehavior,
+      onUpdate,
+      setError,
+    ],
   )
 
   const handleIncrement = () => {
@@ -128,58 +143,71 @@ export const CustomerSeatQuantityManager = ({
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="rounded-2xl border p-4">
-      <div className="flex flex-col gap-2 text-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <span className="font-medium">Total seats</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Button
-              type="button"
-              variant="secondary"
-              size="icon"
-              onClick={handleDecrement}
-              disabled={!canDecrease || updateSubscription.isPending}
-            >
-              <MinusIcon className="h-4 w-4" />
-            </Button>
-
-            <span className="dark:text-polar-200 flex h-8 min-w-8 items-center justify-center px-2 font-medium">
-              {seats}
-            </span>
-
-            <Button
-              type="button"
-              variant="secondary"
-              size="icon"
-              onClick={handleIncrement}
-              disabled={updateSubscription.isPending}
-            >
-              <PlusIcon className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
+    <Box
+      as="form"
+      onSubmit={handleSubmit(onSubmit)}
+      flexDirection="column"
+      rowGap="l"
+      padding="l"
+      borderWidth={1}
+      borderStyle="solid"
+      borderColor="border-primary"
+      borderRadius="l"
+    >
+      <Box alignItems="center" justifyContent="between">
+        <PortalText tone="primary" className="text-sm">
+          Total seats
+        </PortalText>
+        <Box alignItems="center" columnGap="xs">
+          <Button
+            type="button"
+            variant="secondary"
+            size="icon"
+            onClick={handleDecrement}
+            disabled={!canDecrease || updateSubscription.isPending}
+            aria-label="Remove a seat"
+          >
+            <MinusIcon className="h-4 w-4" />
+          </Button>
+          <Box
+            as="span"
+            minWidth={40}
+            justifyContent="center"
+            display="inline-flex"
+            color="text-primary"
+          >
+            <span className="tabular-nums">{seats}</span>
+          </Box>
+          <Button
+            type="button"
+            variant="secondary"
+            size="icon"
+            onClick={handleIncrement}
+            disabled={updateSubscription.isPending}
+            aria-label="Add a seat"
+          >
+            <PlusIcon className="h-4 w-4" />
+          </Button>
+        </Box>
+      </Box>
 
       {hasChanges && (
-        <div className="mt-4 flex flex-col gap-3">
+        <Box flexDirection="column" rowGap="m">
           {invoicingMessage && (
-            <span className="dark:text-polar-500 text-sm text-gray-500">
+            <PortalText tone="secondary" className="text-sm">
               {invoicingMessage}
-            </span>
+            </PortalText>
           )}
-          <div className="flex flex-row-reverse gap-3">
+          <Box justifyContent="end">
             <Button
               loading={updateSubscription.isPending}
               onClick={handleSubmit(onSubmit)}
-              className="w-full"
             >
               Update seats
             </Button>
-          </div>
-        </div>
+          </Box>
+        </Box>
       )}
-    </form>
+    </Box>
   )
 }

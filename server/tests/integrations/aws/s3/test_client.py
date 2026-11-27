@@ -31,7 +31,7 @@ def test_endpoint_url_does_not_select_static_credentials(
 ) -> None:
     mocker.patch.object(settings, "ENV", Environment.production)
 
-    kwargs = get_boto3_client_kwargs(mocker, endpoint_url="http://127.0.0.1:9000")
+    kwargs = get_boto3_client_kwargs(mocker, endpoint_url="http://s3.test.invalid")
 
     assert kwargs["aws_access_key_id"] is None
     assert kwargs["aws_secret_access_key"] is None

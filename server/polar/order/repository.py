@@ -3,8 +3,20 @@ from datetime import datetime
 from typing import TYPE_CHECKING, cast
 from uuid import UUID
 
-from sqlalchemy import CursorResult, Select, case, func, select, update
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy import (
+    ColumnElement,
+    CursorResult,
+    NotNullable,
+    Select,
+    SQLColumnExpression,
+    case,
+    exists,
+    func,
+    or_,
+    select,
+    update,
+)
+from sqlalchemy.orm import contains_eager, joinedload, raiseload, selectinload
 
 from polar.auth.models import (
     AuthSubject,
@@ -35,21 +47,42 @@ from polar.metrics.fx import (
 from polar.models import (
     Customer,
     Discount,
+    Dispute,
     Order,
     OrderItem,
     Organization,
+    Payment,
     Product,
     ProductPrice,
+    Refund,
     Subscription,
     Transaction,
 )
+from polar.models.dispute import DisputeStatus
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
+from polar.models.payment import PaymentStatus
+from polar.models.refund import RefundStatus
 from polar.models.subscription import SubscriptionStatus
 
 from .sorting import OrderSortProperty
 
 if TYPE_CHECKING:
     from sqlalchemy.orm.strategy_options import _AbstractLoad
+
+
+def order_benefits_revoked_clause(
+    order_id: SQLColumnExpression[UUID | None] | UUID,
+) -> ColumnElement[bool]:
+    revoking_refund = exists().where(
+        Refund.order_id == order_id,
+        Refund.revoke_benefits.is_(True),
+        Refund.status.in_([RefundStatus.pending, RefundStatus.succeeded]),
+    )
+    revoking_dispute = exists().where(
+        Dispute.order_id == order_id,
+        Dispute.status.in_(DisputeStatus.closed_statuses()),
+    )
+    return or_(revoking_refund, revoking_dispute)
 
 
 class OrderRepository(
@@ -59,6 +92,17 @@ class OrderRepository(
     RepositoryBase[Order],
 ):
     model = Order
+
+    async def has_draft_for_subscription(self, subscription_id: UUID) -> bool:
+        statement = select(
+            self.get_base_statement()
+            .where(
+                Order.subscription_id == subscription_id,
+                Order.status == OrderStatus.draft,
+            )
+            .exists()
+        )
+        return bool(await self.session.scalar(statement))
 
     async def get_revenue_by_customer(
         self,
@@ -185,7 +229,7 @@ class OrderRepository(
             func.sum(Order.net_amount - Order.refunded_amount), 0
         )
         statement = (
-            select(Order.product_id)
+            select(NotNullable(Order.product_id))
             .where(
                 Order.organization_id == organization_id,
                 Order.status.in_(OrderStatus.paid_statuses()),
@@ -420,6 +464,11 @@ class OrderRepository(
         result = cast(CursorResult[Order], await self.session.execute(statement))
         return result.rowcount > 0
 
+    async def refresh_for_payment_update(self, order: Order) -> None:
+        await self.session.refresh(
+            order, with_for_update={"of": Order, "key_share": True}
+        )
+
     async def release_payment_lock(self, order: Order) -> Order:
         """Release a payment lock for an order."""
         statement = (
@@ -460,14 +509,40 @@ class OrderRepository(
         async for order in self.stream(statement):
             yield order
 
+    async def get_pending_with_succeeded_payment_ids(
+        self, since: datetime, older_than: datetime, *, limit: int
+    ) -> tuple[list[UUID], int]:
+        statement = (
+            select(Order.id, func.count().over())
+            .where(
+                Order.deleted_at.is_(None),
+                Order.status == OrderStatus.pending,
+                Order.created_at > since,
+                func.coalesce(Order.modified_at, Order.created_at) < older_than,
+                select(Payment.id)
+                .where(
+                    Payment.order_id == Order.id,
+                    Payment.deleted_at.is_(None),
+                    Payment.status == PaymentStatus.succeeded,
+                    func.coalesce(Payment.modified_at, Payment.created_at) < older_than,
+                )
+                .exists(),
+            )
+            .order_by(Order.created_at.asc(), Order.id.asc())
+            .limit(limit)
+        )
+        result = await self.session.execute(statement)
+        rows = result.fetchall()
+        return [row[0] for row in rows], rows[0][1] if rows else 0
+
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[Order]]:
+    ) -> Select[Order]:
         return self.get_base_statement().where(Order.organization_id.in_(org_ids))
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization | Customer | Member]
-    ) -> Select[tuple[Order]]:
+    ) -> Select[Order]:
         statement = self.get_base_statement()
 
         if is_user(auth_subject):
@@ -498,21 +573,43 @@ class OrderRepository(
         return statement
 
     def get_eager_options(
-        self,
-        *,
-        customer_load: "_AbstractLoad | None" = None,
-        product_load: "_AbstractLoad | None" = None,
-        discount_load: "_AbstractLoad | None" = None,
+        self, *, product_load: "_AbstractLoad | None" = None
     ) -> Options:
         return (
-            customer_load if customer_load else joinedload(Order.customer),
+            joinedload(Order.customer),
             joinedload(Order.organization),
-            discount_load if discount_load else joinedload(Order.discount),
+            joinedload(Order.discount),
             product_load if product_load else joinedload(Order.product),
             joinedload(Order.subscription).joinedload(Subscription.customer),
             selectinload(Order.items)
             .joinedload(OrderItem.product_price)
             .joinedload(ProductPrice.product),
+        )
+
+    def get_list_eager_options(self) -> Options:
+        """
+        Options for statements joining `Order.customer`, `Order.discount` and
+        `Order.product`, that only load what the `Order` schema serializes.
+        """
+        skip_product_collections = (
+            raiseload(Product.prices),
+            raiseload(Product.product_benefits),
+        )
+        return (
+            contains_eager(Order.customer),
+            contains_eager(Order.product).options(*skip_product_collections),
+            contains_eager(Order.discount).options(
+                selectinload(Discount.organization),
+                raiseload(Discount.discount_products),
+            ),
+            joinedload(Order.subscription).options(
+                joinedload(Subscription.customer),
+                raiseload(Subscription.discount),
+            ),
+            selectinload(Order.items)
+            .joinedload(OrderItem.product_price)
+            .joinedload(ProductPrice.product)
+            .options(*skip_product_collections),
         )
 
     def get_sorting_clause(self, property: OrderSortProperty) -> SortingClause:

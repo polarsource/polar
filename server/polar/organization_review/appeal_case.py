@@ -3,7 +3,7 @@ from uuid import UUID
 
 from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError
-from polar.models import File, Organization, User
+from polar.models import BackofficeUser, File, Organization, User
 from polar.models.organization_review import OrganizationReview
 from polar.models.support_case import (
     ReviewAppealSupportCase,
@@ -120,7 +120,7 @@ class AppealCaseService:
         reply: ReviewAppealSupportCaseMessageCreate,
         *,
         author_kind: SupportCaseMessageAuthorKind,
-        author_user: User | None = None,
+        author_user: User | BackofficeUser | None = None,
         files: Sequence[File] = (),
         internal: bool = False,
     ) -> SupportCaseMessage:
@@ -155,7 +155,7 @@ class AppealCaseService:
         case: ReviewAppealSupportCase,
         *,
         approved: bool,
-        staff_user: User,
+        staff_user: BackofficeUser,
         reason: str | None = None,
     ) -> SupportCaseMessage:
         await self._assert_open(session, case)
@@ -195,7 +195,7 @@ class AppealCaseService:
         session: AsyncSession,
         review: OrganizationReview,
         *,
-        staff_user: User,
+        staff_user: BackofficeUser,
         reason: str | None = None,
     ) -> SupportCaseMessage | None:
         """Close the review's appeal case as approved, if one is open."""
@@ -208,7 +208,7 @@ class AppealCaseService:
         session: AsyncSession,
         review: OrganizationReview,
         *,
-        staff_user: User,
+        staff_user: BackofficeUser,
         reason: str | None = None,
     ) -> SupportCaseMessage | None:
         """Close the review's appeal case as denied, if one is open."""
@@ -222,7 +222,7 @@ class AppealCaseService:
         review: OrganizationReview,
         *,
         approved: bool,
-        staff_user: User,
+        staff_user: BackofficeUser,
         reason: str | None = None,
     ) -> SupportCaseMessage | None:
         """Record an appeal decision on the review's case and close it, if a

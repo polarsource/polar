@@ -1,10 +1,11 @@
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from datetime import datetime
+from typing import cast
 from uuid import UUID
 
-from sqlalchemy import Select
+from sqlalchemy import Select, exists, func, select, update
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import contains_eager, joinedload
+from sqlalchemy.orm import contains_eager
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
@@ -15,8 +16,9 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.kit.repository.base import Options
-from polar.meter.aggregation import AggregationFunction
-from polar.models import Customer, CustomerMeter, Meter, MeterReducer
+from polar.kit.utils import utc_now
+from polar.meter.repository import MeterRepository
+from polar.models import Customer, CustomerMeter, Meter
 
 from .sorting import CustomerMeterSortProperty
 
@@ -42,22 +44,51 @@ class CustomerMeterRepository(
         )
         return await self.get_all(statement)
 
-    async def get_all_by_highest_consumed_units(
-        self, aggregation_function: AggregationFunction, limit: int
-    ) -> Sequence[CustomerMeter]:
-        statement = (
-            self.get_base_statement()
-            .join(CustomerMeter.meter)
-            .where(
-                Meter.aggregation["func"].astext == aggregation_function,
-                Meter.archived_at.is_(None),
-                Meter.deleted_at.is_(None),
-            )
-            .order_by(CustomerMeter.consumed_units.desc())
-            .limit(limit)
-            .options(joinedload(CustomerMeter.customer))
+    async def has_previous_meter_versions(
+        self,
+        customer_id: UUID | None = None,
+        *,
+        email: str | None = None,
+        organization_id: UUID | None = None,
+    ) -> bool:
+        """Whether the customer, by ID or by email in the organization, has a
+        customer meter on a meter that isn't current."""
+        clause = exists().where(
+            CustomerMeter.meter_id == Meter.id,
+            ~CustomerMeter.is_deleted,
+            Meter.is_current.is_(False),
+            Meter.external_id.is_not(None),
         )
-        return await self.get_all(statement)
+        if customer_id is not None:
+            clause = clause.where(CustomerMeter.customer_id == customer_id)
+        else:
+            assert email is not None
+            assert organization_id is not None
+            clause = clause.where(
+                CustomerMeter.customer_id == Customer.id,
+                func.lower(Customer.email) == email.lower(),
+                Customer.organization_id == organization_id,
+                ~Customer.is_deleted,
+            )
+        return bool(await self.session.scalar(select(clause)))
+
+    async def get_meter_versions(
+        self, customer_id: UUID, external_ids: Collection[str]
+    ) -> dict[str, set[UUID]]:
+        """The meters the customer has a customer meter on, by `external_id`."""
+        statement = (
+            select(Meter.external_id, Meter.id)
+            .join(CustomerMeter, CustomerMeter.meter_id == Meter.id)
+            .where(
+                CustomerMeter.customer_id == customer_id,
+                ~CustomerMeter.is_deleted,
+                Meter.external_id.in_(external_ids),
+            )
+        )
+        versions: dict[str, set[UUID]] = {}
+        for external_id, meter_id in await self.session.execute(statement):
+            versions.setdefault(cast(str, external_id), set()).add(meter_id)
+        return versions
 
     async def get_by_customer_and_meter(
         self,
@@ -75,19 +106,6 @@ class CustomerMeterRepository(
             .options(*options)
         )
         return await self.get_one_or_none(statement)
-
-    async def get_all_by_customer_and_reducer(
-        self, customer_id: UUID, reducer_id: UUID
-    ) -> Sequence[CustomerMeter]:
-        statement = (
-            self.get_base_statement()
-            .join(MeterReducer, MeterReducer.meter_id == CustomerMeter.meter_id)
-            .where(
-                CustomerMeter.customer_id == customer_id,
-                MeterReducer.reducer_id == reducer_id,
-            )
-        )
-        return await self.get_all(statement)
 
     async def get_by_customer_and_meter_for_update(
         self,
@@ -147,14 +165,47 @@ class CustomerMeterRepository(
             raise
         return customer_meter
 
+    async def get_unactivated_meters(
+        self, customer_ids: Collection[UUID]
+    ) -> Sequence[Meter]:
+        unactivated_meter_ids = (
+            self.get_base_statement()
+            .with_only_columns(CustomerMeter.meter_id)
+            .where(
+                CustomerMeter.customer_id.in_(customer_ids),
+                CustomerMeter.activated_at.is_(None),
+            )
+        )
+        result = await self.session.execute(
+            select(Meter).where(
+                Meter.id.in_(unactivated_meter_ids),
+                MeterRepository.get_active_clause(),
+            )
+        )
+        return result.scalars().all()
+
+    async def activate(self, meter_id: UUID, customer_ids: Collection[UUID]) -> None:
+        await self.session.execute(
+            update(CustomerMeter)
+            .where(
+                CustomerMeter.meter_id == meter_id,
+                CustomerMeter.customer_id.in_(customer_ids),
+                CustomerMeter.activated_at.is_(None),
+                CustomerMeter.deleted_at.is_(None),
+            )
+            .values(activated_at=utc_now())
+        )
+
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[CustomerMeter]]:
+    ) -> Select[CustomerMeter]:
         return (
             self.get_base_statement()
             .join(CustomerMeter.customer)
             .options(
-                contains_eager(CustomerMeter.customer),
+                contains_eager(CustomerMeter.customer).joinedload(
+                    Customer.organization
+                ),
             )
             .where(Customer.organization_id.in_(org_ids))
         )

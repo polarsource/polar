@@ -1,120 +1,90 @@
-import uuid
-from contextlib import aclosing
 from typing import Annotated
 
 import anyio.to_thread
-import structlog
-from anyio import create_memory_object_stream, create_task_group
-from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
-from fastapi import Body, Depends, Response, WebSocket
+from fastapi import Body, Depends, Query, Response
 
+from polar.exceptions import ResourceNotFound
 from polar.kit.db.postgres import AsyncSessionMaker
-from polar.logging import Logger
-from polar.models import Organization
 from polar.openapi import APITag
+from polar.postgres import AsyncSession, get_db_session, get_db_sessionmaker
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
 from . import stream
-from .auth import OutpostWrite, authenticate
+from .auth import OutpostWrite
 from .schemas import (
-    ConnectionOutgoingMessage,
-    ConnectionOutgoingMessagePayload,
-    OutgoingMessage,
-    OutgoingMessageType,
+    Changes,
+    Configuration,
+    Confirmation,
+    ConfirmRequest,
+    MeterUsageRequest,
+    Snapshot,
 )
 from .service import outpost as outpost_service
-
-log: Logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/outpost", tags=["outpost", APITag.private])
 
 
-async def send_messages(
-    websocket: WebSocket, receive_stream: MemoryObjectReceiveStream[OutgoingMessage]
-) -> None:
-    async with receive_stream:
-        async for message in receive_stream:
-            log.debug("Sending message", type=message.type)
-            await websocket.send_text(message.model_dump_json())
+@router.get("/changes", response_model=Changes)
+async def changes(
+    auth_subject: OutpostWrite,
+    cursor: Annotated[stream.Cursor | None, Query()] = None,
+    limit: Annotated[int, Query(ge=1, le=1000)] = 500,
+    redis: Redis = Depends(get_redis),
+    # The primary: a change is logged after its commit, a replica may not have it yet.
+    session: AsyncSession = Depends(get_db_session),
+) -> Changes:
+    """The snapshots that changed since the cursor.
+
+    When no cursor is provided, returns the cursor to start pulling from."""
+    return await outpost_service.get_changes(
+        session, redis, auth_subject.subject, cursor, limit
+    )
 
 
-async def handle_messages(
-    organization: Organization,
-    sessionmaker: AsyncSessionMaker,
-    incoming_receive_stream: MemoryObjectReceiveStream[str],
-    outgoing_send_stream: MemoryObjectSendStream[OutgoingMessage],
-) -> None:
-    async with incoming_receive_stream, outgoing_send_stream:
-        async for payload in incoming_receive_stream:
-            async with sessionmaker() as session:
-                await outpost_service.handle_incoming_message(
-                    session, organization, payload, outgoing_send_stream
-                )
+ReducerNotFound = {
+    "description": "Reducer not found.",
+    "model": ResourceNotFound.schema(),
+}
 
 
-async def handle_events(
-    redis: Redis,
-    sessionmaker: AsyncSessionMaker,
-    organization: Organization,
-    outgoing_send_stream: MemoryObjectSendStream[OutgoingMessage],
-) -> None:
-    async with (
-        outgoing_send_stream,
-        aclosing(stream.subscribe(redis, organization.id)) as events,
-    ):
-        async for event in events:
-            async with sessionmaker() as session:
-                await outpost_service.handle_event(
-                    session, organization, event, outgoing_send_stream
-                )
+@router.get("/configuration", response_model=Configuration)
+async def configuration(
+    auth_subject: OutpostWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Configuration:
+    """The reducers Outpost runs."""
+    return await outpost_service.get_configuration(session, auth_subject.subject)
 
 
-@router.websocket("/")
-async def outpost(websocket: WebSocket, redis: Redis = Depends(get_redis)) -> None:
-    auth_subject = await authenticate(websocket)
-    if auth_subject is None:
-        return
+@router.post("/meter-usage", response_model=list[Snapshot])
+async def meter_usage(
+    payload: MeterUsageRequest,
+    auth_subject: OutpostWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> list[Snapshot]:
+    """The snapshot of every identity of each requested customer. An identity whose
+    reducer Polar does not know has none."""
+    return await outpost_service.get_requested_meter_usage(
+        session, auth_subject.subject, payload.identities
+    )
 
-    sessionmaker: AsyncSessionMaker = websocket.state.async_sessionmaker
-    connection_id = uuid.uuid4()
-    structlog.contextvars.bind_contextvars(outpost_connection_id=str(connection_id))
 
-    incoming_send_stream, incoming_receive_stream = create_memory_object_stream[str](16)
-    outgoing_send_stream, outgoing_receive_stream = create_memory_object_stream[
-        OutgoingMessage
-    ]()
-    async with (
-        incoming_send_stream,
-        incoming_receive_stream,
-        outgoing_send_stream,
-        outgoing_receive_stream,
-        create_task_group() as task_group,
-    ):
-        task_group.start_soon(send_messages, websocket, outgoing_receive_stream)
-        await outgoing_send_stream.send(
-            ConnectionOutgoingMessage(
-                type=OutgoingMessageType.connection,
-                payload=ConnectionOutgoingMessagePayload(id=connection_id),
-            )
-        )
-        task_group.start_soon(
-            handle_events,
-            redis,
-            sessionmaker,
-            auth_subject.subject,
-            outgoing_send_stream.clone(),
-        )
-        task_group.start_soon(
-            handle_messages,
-            auth_subject.subject,
-            sessionmaker,
-            incoming_receive_stream,
-            outgoing_send_stream.clone(),
-        )
-        async for payload in websocket.iter_text():
-            await incoming_send_stream.send(payload)
-        task_group.cancel_scope.cancel()
+@router.post(
+    "/confirm",
+    response_model=Confirmation,
+    responses={404: ReducerNotFound},
+)
+async def confirm(
+    payload: ConfirmRequest,
+    auth_subject: OutpostWrite,
+    sessionmaker: AsyncSessionMaker = Depends(get_db_sessionmaker),
+) -> Confirmation:
+    """The pending ids Polar counts, with the snapshot that counts them."""
+    # Its own session in REPEATABLE READ (see comment in service.py)
+    # so that the ids and the totals come from one snapshot.
+    async with sessionmaker() as session:
+        return await outpost_service.confirm(session, auth_subject.subject, payload)
 
 
 @router.post("/telemetry", include_in_schema=False)

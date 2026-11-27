@@ -1,5 +1,7 @@
 import pytest
+from botocore.stub import ANY, Stubber
 
+from polar.config import settings
 from polar.invoice.service import invoice as invoice_service
 from polar.kit.address import Address, CountryAlpha2
 from polar.models import Customer, Order, Product
@@ -23,7 +25,7 @@ async def order_with_billing(
 
 @pytest.mark.anyio
 async def test_create_order_invoice(
-    save_fixture: SaveFixture, product: Product, customer: Customer
+    save_fixture: SaveFixture, product: Product, customer: Customer, s3_stub: Stubber
 ) -> None:
     order = await create_order(
         save_fixture,
@@ -40,7 +42,20 @@ async def test_create_order_invoice(
         invoice_number="POLAR-0001",
     )
 
+    s3_stub.add_response(
+        "put_object",
+        {},
+        {
+            "Bucket": settings.S3_CUSTOMER_INVOICES_BUCKET_NAME,
+            "Key": "Invoice-POLAR-0001.pdf",
+            "ContentType": "application/pdf",
+            "Body": ANY,
+        },
+    )
+
     invoice_path = await invoice_service.create_order_invoice(order)
+
+    assert invoice_path == "Invoice-POLAR-0001.pdf"
 
 
 @pytest.mark.anyio

@@ -63,14 +63,30 @@ describe('SwitchRecordModal', () => {
     expect(screen.getByText('No payment method')).toBeTruthy()
     expect(screen.getByText('ada@example.com', { selector: 'h2' })).toBeTruthy()
     expect(screen.getByText('Email')).toBeTruthy()
-    expect(screen.getByText('Stripe customer ID')).toBeTruthy()
+    expect(screen.getByText('Source customer ID')).toBeTruthy()
     expect(screen.getByText('cus_123')).toBeTruthy()
-    expect(screen.getByText('Stripe product ID')).toBeTruthy()
-    expect(screen.getByText('Renewal on Stripe')).toBeTruthy()
+    expect(screen.getByText('Source product ID')).toBeTruthy()
+    expect(screen.getByText('Renewal at source')).toBeTruthy()
     expect(screen.getByText('Tax after switch')).toBeTruthy()
     expect(screen.queryByText('This one failed')).toBeNull()
-    expect(screen.getAllByText('Left on Stripe').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Not switched').length).toBeGreaterThan(0)
     expect(screen.getByText('active')).toBeTruthy()
-    expect(screen.getByText('Stripe subscription ID')).toBeTruthy()
+    expect(screen.getByText('Source subscription ID')).toBeTruthy()
+  })
+
+  it('keeps the tax setting visible but disabled when read-only', () => {
+    render(
+      <SwitchRecordModal
+        row={row}
+        migrationId="mig_1"
+        readOnly
+        onClose={() => {}}
+      />,
+    )
+
+    expect(screen.getByText('Tax after switch')).toBeTruthy()
+    expect((screen.getByRole('combobox') as HTMLButtonElement).disabled).toBe(
+      true,
+    )
   })
 })

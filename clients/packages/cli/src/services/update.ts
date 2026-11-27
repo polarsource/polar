@@ -7,6 +7,7 @@ import type { CLIRelease } from '@/services/github-releases'
 
 export class UpdateError extends Data.TaggedError('UpdateError')<{
   message: string
+  hint?: string
   cause?: unknown
 }> {}
 
@@ -77,25 +78,19 @@ export const replaceBinary = (
       yield* fs.rename(tempPath, binaryPath)
     }).pipe(
       Effect.tapError(() => fs.remove(tempPath).pipe(Effect.ignore)),
-      Effect.catchReason('PlatformError', 'PermissionDenied', () =>
-        Effect.gen(function* () {
-          const proc = Bun.spawn(['sudo', 'mv', newBinaryPath, binaryPath], {
-            stdout: 'inherit',
-            stderr: 'inherit',
-            stdin: 'inherit',
-          })
-          const exitCode = yield* Effect.tryPromise({
-            try: () => proc.exited,
-            catch: (cause) =>
-              new UpdateError({ message: 'Failed to run sudo mv', cause }),
-          })
-          if (exitCode !== 0) {
-            return yield* new UpdateError({ message: 'sudo mv failed' })
-          }
-        }),
+      Effect.catchReason(
+        'PlatformError',
+        'PermissionDenied',
+        () =>
+          new UpdateError({
+            message: `Cannot update polar in ${dirname(binaryPath)}`,
+            hint: 'Run the install script again to move it to ~/.polar/bin: curl -fsSL https://polar.sh/install.sh | bash',
+          }),
       ),
-      Effect.mapError(
-        (cause) => new UpdateError({ message: cause.message, cause }),
+      Effect.mapError((cause) =>
+        cause instanceof UpdateError
+          ? cause
+          : new UpdateError({ message: cause.message, cause }),
       ),
     )
 

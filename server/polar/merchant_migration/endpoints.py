@@ -14,10 +14,13 @@ from polar.models.merchant_migration_record import (
     MerchantMigrationRecordStatus,
 )
 from polar.openapi import APITag
-from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncReadSession, get_db_read_session, get_db_session
 from polar.routing import APIRouter
 
+from .adapters.lemon_squeezy import (
+    LemonSqueezyStoreNotFound,
+    LemonSqueezyStoreRequired,
+)
 from .auth import MerchantMigrationRead, MerchantMigrationWrite
 from .pan_transfer import (
     PanStepNotActionable,
@@ -30,10 +33,13 @@ from .pan_transfer import (
 )
 from .schemas import MerchantMigration as MerchantMigrationSchema
 from .schemas import (
+    MerchantMigrationBenefits,
+    MerchantMigrationBenefitsCreate,
     MerchantMigrationCreate,
     MerchantMigrationCutoverReport,
     MerchantMigrationCutoverRequest,
     MerchantMigrationImportRequest,
+    MerchantMigrationListParams,
     MerchantMigrationRecordItem,
     MerchantMigrationRecordSummary,
     MerchantMigrationRecordTaxUpdate,
@@ -46,6 +52,8 @@ from .schemas import (
     PrecheckRecordStatus,
 )
 from .service import (
+    BenefitsNotReady,
+    BenefitsUnavailable,
     CatalogImportBlocked,
     CatalogImportNotReady,
     CutoverNotStarted,
@@ -53,6 +61,7 @@ from .service import (
     MerchantMigrationNotEnabled,
     MerchantMigrationNotFound,
     MerchantMigrationRecordNotFound,
+    MigrationNotFinishable,
     MigrationOperationInProgress,
     MissingStripeScopes,
     OrganizationNotOnboarded,
@@ -79,15 +88,15 @@ router = APIRouter(
     summary="List Merchant Migrations",
 )
 async def list(
+    filters: Annotated[MerchantMigrationListParams, Query()],
     auth_subject: MerchantMigrationRead,
     pagination: PaginationParamsQuery,
-    organization_id: Annotated[OrganizationID, Query()],
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[MerchantMigrationSchema]:
     results, count = await merchant_migration_service.list(
         session,
         auth_subject,
-        organization_id=organization_id,
+        organization_id=filters.organization_id,
         pagination=pagination,
     )
     return ListResource.from_paginated_results(
@@ -104,13 +113,15 @@ async def list(
     summary="Create Merchant Migration",
     responses={
         400: {
-            "description": "The Stripe API key is invalid, wrong mode, or missing "
-            "permissions, or the account it belongs to can't be migrated.",
+            "description": "The API key is invalid, in the wrong mode or missing "
+            "permissions, the Lemon Squeezy store needs choosing, or the account "
+            "it belongs to can't be migrated.",
             "model": InvalidSourceCredentials.schema()
             | MissingStripeScopes.schema()
             | SourceAccountNotMigratable.schema()
             | SourceKeyModeMismatch.schema()
-            | UnsupportedMigrationSource.schema(),
+            | LemonSqueezyStoreRequired.schema()
+            | LemonSqueezyStoreNotFound.schema(),
         },
         403: {
             "description": "Not allowed to manage this organization, "
@@ -120,11 +131,11 @@ async def list(
             | OrganizationNotOnboarded.schema(),
         },
         409: {
-            "description": "The Stripe account is already used by another migration.",
+            "description": "The source account is already used by another migration.",
             "model": SourceAccountAlreadyMigrated.schema(),
         },
         502: {
-            "description": "Couldn't reach Stripe to validate the key.",
+            "description": "Couldn't reach the source provider to validate the key.",
             "model": SourceVerificationUnavailable.schema(),
         },
     },
@@ -268,6 +279,108 @@ async def export_customer_ids(
 
 
 @router.get(
+    "/{id}/benefits",
+    response_model=MerchantMigrationBenefits,
+    summary="List Merchant Migration Benefits",
+    responses={
+        400: {
+            "description": "The source isn't connected.",
+            "model": SourceNotConnected.schema(),
+        },
+        403: {
+            "description": "Not allowed to manage this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "Merchant migration not found.",
+            "model": MerchantMigrationNotFound.schema(),
+        },
+        409: {
+            "description": "Only Lemon Squeezy migrations bring benefits over.",
+            "model": BenefitsUnavailable.schema(),
+        },
+    },
+)
+async def benefits(
+    id: UUID4,
+    auth_subject: MerchantMigrationRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> MerchantMigrationBenefits:
+    return await merchant_migration_service.get_benefits(session, auth_subject, id)
+
+
+@router.post(
+    "/{id}/benefits",
+    response_model=MerchantMigrationSchema,
+    summary="Set Up Merchant Migration Benefits",
+    responses={
+        400: {
+            "description": "The source isn't connected.",
+            "model": SourceNotConnected.schema(),
+        },
+        403: {
+            "description": "Not allowed to manage this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "Merchant migration not found.",
+            "model": MerchantMigrationNotFound.schema(),
+        },
+        409: {
+            "description": "Only Lemon Squeezy migrations bring benefits over, "
+            "the catalog isn't imported yet, or another operation is still running.",
+            "model": BenefitsUnavailable.schema()
+            | BenefitsNotReady.schema()
+            | MigrationOperationInProgress.schema(),
+        },
+    },
+)
+async def set_up_benefits(
+    id: UUID4,
+    benefits_create: MerchantMigrationBenefitsCreate,
+    auth_subject: MerchantMigrationWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> MerchantMigration:
+    return await merchant_migration_service.set_up_benefits(
+        session, auth_subject, id, benefits_create
+    )
+
+
+@router.post(
+    "/{id}/finish",
+    response_model=MerchantMigrationSchema,
+    summary="Finish Merchant Migration Without Subscriptions",
+    responses={
+        403: {
+            "description": "Not allowed to manage this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "Merchant migration not found.",
+            "model": MerchantMigrationNotFound.schema(),
+        },
+        409: {
+            "description": "Only Lemon Squeezy migrations bring benefits over, "
+            "benefits aren't set up yet, another operation is still running, "
+            "or there are subscriptions to move.",
+            "model": BenefitsUnavailable.schema()
+            | BenefitsNotReady.schema()
+            | MigrationOperationInProgress.schema()
+            | MigrationNotFinishable.schema(),
+        },
+    },
+)
+async def finish(
+    id: UUID4,
+    auth_subject: MerchantMigrationWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> MerchantMigration:
+    return await merchant_migration_service.finish_without_subscriptions(
+        session, auth_subject, id
+    )
+
+
+@router.get(
     "/{id}/pan-transfer",
     response_model=PanTransferChecklist,
     summary="Get Merchant Migration Card Transfer",
@@ -304,10 +417,11 @@ async def pan_transfer(
             "model": MerchantMigrationNotFound.schema(),
         },
         409: {
-            "description": "The catalog isn't imported yet, the transfer already "
-            "started, card transfers aren't configured, or another operation "
-            "is still running.",
+            "description": "The catalog isn't imported yet, benefits failed to "
+            "set up, the transfer already started, card transfers aren't "
+            "configured, or another operation is still running.",
             "model": PanTransferNotReady.schema()
+            | BenefitsNotReady.schema()
             | PanTransferAlreadyStarted.schema()
             | PanTransferUnavailable.schema()
             | MigrationOperationInProgress.schema(),

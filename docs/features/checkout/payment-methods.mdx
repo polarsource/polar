@@ -1,45 +1,69 @@
 ---
-title: "Payment Methods"
-sidebarTitle: "Payment Methods"
-description: "Payment methods supported by Polar Checkout"
+title: "Payment methods"
+sidebarTitle: "Payment methods"
+description: "Check which payment methods customers see at checkout, and the currency, country and amount rules behind each one."
 ---
 
-Polar automatically shows the payment methods available for each checkout. The options a customer sees depend on their location, the checkout currency, the type of purchase, and their device or browser.
+Polar picks the payment methods for each checkout automatically. What a customer sees depends on the checkout currency, their country, the amount, the type of purchase, and their device or browser.
 
-You don't need to enable individual payment methods.
+You don't enable payment methods yourself. There's no setting or plan that unlocks more.
 
 ## Cards and wallets
 
-| Payment method | Availability |
-| --- | --- |
-| Credit and debit cards | Worldwide, in every supported currency. One-time purchases and recurring subscriptions |
-| Apple Pay | Shown in Safari on an Apple device signed in to an Apple account with Apple Pay configured |
-| Google Pay | Shown in Google Chrome when signed in to a Google account with Google Pay configured |
-| Link | Shown to customers who saved their details with Stripe Link, which autofills their payment and address details |
-| Amazon Pay | Customers in the United States and Germany, for checkouts priced in USD |
-| Cash App Pay | Customers in the United States, for checkouts priced in USD |
-| WeChat Pay | Customers in mainland China, Hong Kong, and Macao, for checkouts priced in USD or CNY. One-time purchases only |
+| Payment method | Availability | Minimum |
+| --- | --- | --- |
+| Credit and debit cards | Every supported currency and country. One-time purchases and subscriptions. | |
+| Apple Pay | Safari on an Apple device with Apple Pay set up | |
+| Google Pay | Google Chrome, signed in to a Google account with Google Pay set up | |
+| Link | Customers who saved their details with Stripe Link | |
+| Amazon Pay | Customers in the United States and Germany, in USD | $0.50 |
+| Cash App Pay | Customers in the United States, in USD | $0.50 |
+| Alipay | Customers in mainland China, Hong Kong and Macao, in CNY or USD. One-time purchases only. | $0.50 in USD |
+| WeChat Pay | Customers in mainland China, Hong Kong and Macao, in CNY or USD. One-time purchases only. | $0.50 in USD |
 
 <Note>
-  **On Polar's hosted checkout, wallets need no setup.** They're enabled by default and appear automatically whenever the customer's device and browser support them.
-
-  Domain validation is only required for [Embedded Checkout](/features/checkout/embed#enable-wallets-in-embedded-checkout), where the checkout runs on your own domain.
+  **Wallets need no setup on Polar's hosted checkout.** They appear whenever the customer's device and browser support them. Only [Embedded Checkout](/features/checkout/embed#enable-wallets-in-embedded-checkout) needs a [verified domain](/features/domains), because the checkout runs on your domain.
 </Note>
 
 ## Local payment methods
 
-| Payment method | Customer location | Currency | Purchase type |
+| Payment method | Shown when | Purchase type | Amount |
 | --- | --- | --- | --- |
-| Bancontact | Belgium | EUR | One-time purchases |
-| EPS | Austria | EUR | One-time purchases |
-| iDEAL / Wero | Netherlands | EUR | One-time purchases |
-| UPI | India | INR | One-time purchases and recurring subscriptions |
-| Kakao Pay | South Korea | KRW | One-time purchases and recurring subscriptions |
-| Naver Pay | South Korea | KRW | One-time purchases and recurring subscriptions |
-| Samsung Pay | South Korea | KRW | One-time purchases |
+| Bancontact | Customer in Belgium, in EUR | One-time purchases | €0.45 minimum |
+| EPS | Customer in Austria, in EUR | One-time purchases | €1.00 minimum |
+| iDEAL / Wero | Customer in the Netherlands, in EUR | One-time purchases | €0.01 minimum |
+| UPI | Checkout in INR, any country | One-time purchases and subscriptions | ₹50 to ₹100,000 |
+| Korean cards | Checkout in KRW, any country | One-time purchases and subscriptions | ₩675 minimum |
+| Kakao Pay | Checkout in KRW, any country | One-time purchases and subscriptions | ₩675 minimum |
+| Naver Pay | Checkout in KRW, any country | One-time purchases and subscriptions | ₩675 minimum |
+| Samsung Pay | Checkout in KRW, any country | One-time purchases | ₩675 minimum |
+
+UPI and the Korean methods depend on the currency and the amount. They appear when the checkout is priced in INR or KRW and the amount is within the limits in the table above.
+
+## One-time purchases only
+
+Methods marked "One-time purchases" can't be saved for later charges. Polar hides them whenever the checkout saves a payment method: subscriptions, and checkouts with nothing to pay today, such as a free trial. In those cases the customer sees cards and the reusable methods.
+
+## See which method a customer used
+
+In the dashboard, open **Customers** and select the customer. The **Method** column under **Recent Payments** shows how each payment was made.
+
+From the API, CLI or your agent:
+
+- A Checkout Session's `payment_method_type` is the method the customer paid with.
+- A customer's saved methods are listed with `polar customers list_payment_methods <id>` or `list_payment_methods_external <external_id>` (MCP `customers_list_payment_methods`, `customers_list_payment_methods_external`). See [List customer payment methods](/api-reference/current/customers/list-customer-payment-methods).
 
 ## Other payment methods
 
-The list above is everything we support today. There's no setting or plan that unlocks more, and payment methods can't be enabled per organization.
+The tables above are everything Polar supports today. Payment methods can't be enabled per organization.
 
-PayPal is by far the most common thing people ask about. We don't have a timeline to share.
+PayPal is the most common request. There's no timeline to share.
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Checkout](/concepts/checkout) | How checkout works |
+| [Embedded checkout](/features/checkout/embed) | Wallets on your own domain |
+| [Embedded Payment Method](/features/checkout/embed-payment-method) | Let customers add a card on your site |
+| [Failed payments](/features/subscriptions/failed-payments) | What happens when a renewal fails |

@@ -12,6 +12,7 @@ interface ShareChartModalProps {
   interval: schemas['TimeInterval']
   data: ParsedMetricsResponse
   previousData?: ParsedMetricsResponse
+  context?: string
 }
 
 export const ShareChartModal = ({
@@ -19,6 +20,7 @@ export const ShareChartModal = ({
   interval,
   data,
   previousData,
+  context,
 }: ShareChartModalProps) => {
   const chartRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -138,12 +140,12 @@ export const ShareChartModal = ({
             }}
           >
             <MetricChartBox
-              className="dark:border-polar-600/50 rounded-3xl lg:rounded-3xl"
-              chartClassName="rounded-2xl"
+              className="dark:border-polar-700 dark:bg-polar-900 rounded-3xl border border-transparent bg-white p-8 shadow-xs"
               data={data}
               previousData={previousData}
               interval={interval}
               metric={metric}
+              context={context}
               shareable={false}
               exportable={false}
               height={200}

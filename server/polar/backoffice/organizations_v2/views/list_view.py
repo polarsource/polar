@@ -39,9 +39,7 @@ MIN_SEARCH_LENGTH = 3
 DeletedFilter = Literal["exclude", "include", "only"]
 
 
-def apply_deleted_filter[T: tuple[Any, ...]](
-    stmt: Select[T], deleted: DeletedFilter
-) -> Select[T]:
+def apply_deleted_filter[*Ts](stmt: Select[*Ts], deleted: DeletedFilter) -> Select[*Ts]:
     if deleted == "only":
         return stmt.where(Organization.deleted_at.is_not(None))
     if deleted == "exclude":
@@ -477,6 +475,7 @@ class OrganizationListView:
         selected_risk_level: str | None = None,
         selected_days_in_status: str | None = None,
         selected_has_appeal: str | None = None,
+        selected_flagged_names: str | None = None,
         selected_deleted: DeletedFilter = "exclude",
         signals_by_org: dict[uuid.UUID, Signals] | None = None,
         open_case_org_ids: set[uuid.UUID] | None = None,
@@ -699,6 +698,26 @@ class OrganizationListView:
                                     ):
                                         opt_attrs = {"value": opt_value}
                                         if selected_deleted == opt_value:
+                                            opt_attrs["selected"] = ""
+                                        with tag.option(**opt_attrs):
+                                            text(opt_label)
+
+                            with tag.div():
+                                with tag.label(classes="label"):
+                                    with tag.span(
+                                        classes="label-text text-xs font-semibold"
+                                    ):
+                                        text("Flagged Names")
+                                with tag.select(
+                                    classes="select select-bordered select-sm w-full filter-select",
+                                    name="flagged_names",
+                                ):
+                                    for opt_value, opt_label in (
+                                        ("", "All"),
+                                        ("true", "Has flagged names"),
+                                    ):
+                                        opt_attrs = {"value": opt_value}
+                                        if (selected_flagged_names or "") == opt_value:
                                             opt_attrs["selected"] = ""
                                         with tag.option(**opt_attrs):
                                             text(opt_label)

@@ -1,47 +1,111 @@
 ---
-title: "Shared Slack Channel"
-sidebarTitle: "Slack"
-description: "Give customers a shared Slack channel via Slack Connect"
+title: "Shared Slack Channel benefit"
+sidebarTitle: "Shared Slack Channel"
+description: "Create a Slack Connect channel between your workspace and each customer's when they buy, and archive it when access ends."
 ---
 
-The Shared Slack Channel benefit automatically provisions a dedicated Slack channel for each customer and shares it with their workspace through [Slack Connect](https://slack.com/connect).
+A **Shared Slack Channel benefit** creates a dedicated Slack channel for each customer in your workspace and shares it with the customer's own workspace through [Slack Connect](https://slack.com/connect). Use it for premium support or account management.
 
-- A new channel is created in your Slack workspace for every customer who gets the benefit
-- The channel is shared with the customer's own workspace — no need for them to join yours
+- One new channel per customer who gets the benefit
+- The channel is shared with the customer's workspace, so they don't join yours
 - Channels can be archived automatically when the benefit is revoked
 
 <Note>
-  The Shared Slack Channel benefit is currently in preview. If you're on a paid plan, you'll be able
-  to create a Shared Slack Channel benefit.
+  The Shared Slack Channel benefit is in preview. Access is granted per organization. [Contact support](/support) to request it.
 </Note>
 
-## Create Shared Slack Channel Benefit
+## What the customer gets
 
-1. Go to [`Benefits`](https://polar.sh/to/dashboard/products/benefits)
-2. Click `+ New Benefit` to create a new benefit
-3. Choose `Shared Slack Channel` as the `Type`
+A shared channel with your team, named from your template, with your team members already in it.
 
-### **Connect your Slack workspace**
+## Create it
 
-The first time you create this benefit, you'll be prompted to connect the Slack workspace where channels should be created. You can reuse the same workspace across multiple benefits.
+Connecting a Slack app happens in the dashboard. Once it's connected, you can also create benefits from the CLI or your agent.
 
-### **Channel name template**
+### Connect a Slack app
 
-Channel names are generated from a template, so every customer's channel follows the same naming convention. The template supports the following placeholders:
+Polar posts as a Slack app you create in your own workspace:
 
-- `{customer_name}` — the customer's name
-- `{customer_email_local}` — the local part of the customer's email (everything before the `@`)
-- `{metadata.<key>}` — any value stored in the customer's metadata, e.g. `{metadata.company}`
+- Open **Catalog** → **Benefits**
+- Click **Create Benefit** and choose **Shared Slack Channel** as the **Type**
+- Under **Slack app**, choose **Create new Slack app**
+- Click **Create app on api.slack.com**, choose "From an app manifest", pick your workspace and paste the manifest Polar shows
+- Copy the app's **App ID**, **Client ID**, **Client Secret** and **Signing Secret** from its Basic Information page into Polar
+- Click **Save and authorize** and approve the app in Slack
 
-For example, `support-{customer_email_local}` produces a channel like `support-jane` for `jane@acme.com`.
+You can reuse the same Slack app across benefits.
 
-### **Other options**
+### Create the benefit
 
-- **Private channel** — create the channel as private. Recommended, and enabled by default.
-- **Welcome message** — an optional message posted to the channel right after it's created.
-- **Team invitees** — members of your Slack workspace to automatically invite to every channel created for this benefit.
-- **Archive on revoke** — archive the channel when the benefit is revoked (for example, when a subscription is canceled). Enabled by default.
+<Tabs>
+  <Tab title="Dashboard">
+    - Select your **Slack app**
+    - Set the **Channel name template**, e.g. `support-{customer_email_local}`
+    - Choose **Team members to invite**
+    - Optionally write a **Welcome message**
+    - Click **Create**
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar benefits create --data '{
+      "type": "slack_shared_channel",
+      "description": "Shared Slack channel",
+      "properties": {
+        "slack_integration_id": "<slack_integration_id>",
+        "channel_name_template": "support-{customer_email_local}",
+        "team_invitees": ["U012AB3CD"]
+      }
+    }'
+    ```
 
-## Customer Experience
+    Copy `slack_integration_id` from an existing Shared Slack Channel benefit with `polar benefits get <id>`. See [`polar benefits`](/integrate/cli/reference/benefits).
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    Create a Shared Slack Channel benefit using my connected Slack app, with channels named support-{customer_email_local}, in my Polar sandbox organization.
+    ```
 
-When a customer is granted the benefit, they're asked for the email address of an admin in their own Slack workspace. Polar creates the channel, invites your team members, posts your welcome message, and sends a Slack Connect invitation to that admin. Once they accept, the shared channel appears in their workspace and you can start talking right away.
+    Uses the `benefits_create` operation of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+## Options
+
+| Dashboard | API property | Default |
+| --- | --- | --- |
+| **Slack app** | `properties.slack_integration_id` | Required |
+| **Channel name template** | `properties.channel_name_template` | Required, up to 80 characters |
+| **Create channel as private** | `properties.private` | `true` |
+| **Team members to invite** | `properties.team_invitees` (Slack user IDs) | None |
+| **Welcome message (optional)** | `properties.welcome_message` | None, up to 4,000 characters |
+| **Archive channel on revocation** | `properties.archive_on_revoke` | `true` |
+
+### Channel name template
+
+Every customer's channel follows the same template. It supports these placeholders:
+
+- `{customer_name}`: the customer's name
+- `{customer_email_local}`: the part of the customer's email before the `@`
+- `{metadata.<key>}`: a value from the customer's metadata, e.g. `{metadata.company}`
+
+`support-{customer_email_local}` produces `support-jane` for `jane@example.com`. Names are converted to lowercase Slack-safe slugs and cut to 80 characters. Polar rejects templates with other placeholders.
+
+## Customer experience
+
+When a customer gets the benefit, the checkout confirmation page and the [Customer Portal](/features/customer-portal/introduction) ask for the email address of an admin in their own Slack workspace. Polar creates the channel, invites your team members, posts your welcome message and sends a Slack Connect invitation to that admin. Once they accept, the channel appears in their workspace.
+
+## Revocation
+
+When the benefit is revoked, for example when a subscription ends, Polar archives the channel. Turn off **Archive channel on revocation** to keep it open.
+
+## Visibility
+
+Always visible. The customer has to enter their Slack admin's email in the portal, so this benefit can't be hidden.
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Manage benefits](/features/benefits/introduction) | Attach, update, delete and grant benefits |
+| [Benefits](/concepts/benefits) | How grants and revocation work |
+| [Create Benefit API](/api-reference/current/benefits/create-benefit) | Request schema for `slack_shared_channel` |

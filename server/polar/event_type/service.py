@@ -1,6 +1,8 @@
 from collections.abc import Sequence
 from uuid import UUID
 
+from pydantic import MISSING
+
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
@@ -20,7 +22,7 @@ from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.models import EventType, Organization, User
 from polar.models.event import EventSource
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncReadSession, AsyncSession
 
 
 class EventTypeService:
@@ -129,6 +131,15 @@ class EventTypeService:
 
         return results, total_count
 
+    async def build_with_stats(
+        self, session: AsyncReadSession, stats: list[TinybirdEventTypeStats]
+    ) -> list[EventTypeWithStats]:
+        event_type_repository = EventTypeRepository.from_session(session)
+        event_types_by_key = await event_type_repository.get_by_names_and_organization(
+            list({s.name for s in stats}), list({s.organization_id for s in stats})
+        )
+        return self._build_event_types_from_tinybird(stats, event_types_by_key)
+
     def _resolve_label(
         self,
         stat: TinybirdEventTypeStats,
@@ -200,13 +211,14 @@ class EventTypeService:
         label: str,
         auth_subject: AuthSubject[User | Organization],
         *,
-        label_property_selector: str | None = None,
+        label_property_selector: str | None | MISSING = MISSING,
     ) -> EventType:
         await assert_resource_permission(
             session, auth_subject, event_type, OrganizationPermission.analytics_manage
         )
         event_type.label = label
-        event_type.label_property_selector = label_property_selector
+        if label_property_selector is not MISSING:
+            event_type.label_property_selector = label_property_selector
         session.add(event_type)
         return event_type
 

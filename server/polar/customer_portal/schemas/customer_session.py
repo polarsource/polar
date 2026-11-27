@@ -2,16 +2,20 @@ from datetime import datetime
 
 from pydantic import UUID4, Field
 
-from polar.customer_portal.service.customer_session import (
-    CustomerSessionCodeInvalidOrExpired,
-)
 from polar.kit.email import EmailStrDNS
 from polar.kit.schemas import IDSchema, Schema
 
 
-class CustomerSessionCodeRequest(Schema):
-    email: EmailStrDNS
+class CustomerSessionCodeAuthenticateResponse(Schema):
+    token: str
+
+
+class CustomerSessionAuthenticationStart(Schema):
     organization_id: UUID4
+
+
+class CustomerSessionEmailOTPRequest(Schema):
+    email: EmailStrDNS
     customer_id: UUID4 | None = Field(
         default=None,
         description=(
@@ -19,20 +23,11 @@ class CustomerSessionCodeRequest(Schema):
             "share the same email."
         ),
     )
+    turnstile_token: str = Field(alias="cf-turnstile-response")
 
 
-class CustomerSessionCodeAuthenticateRequest(Schema):
+class CustomerSessionEmailOTPVerify(Schema):
     code: str
-
-
-class CustomerSessionCodeAuthenticateResponse(Schema):
-    token: str
-
-
-CustomerSessionCodeInvalidOrExpiredResponse = {
-    "description": "Invalid or expired verification code.",
-    "model": CustomerSessionCodeInvalidOrExpired.schema(),
-}
 
 
 class CustomerCustomerSession(Schema):

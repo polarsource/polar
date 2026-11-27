@@ -222,8 +222,10 @@ Sign out first so no sessions are left in your OS keychain, then remove the bina
 \`\`\`bash
 polar auth logout --all
 npm uninstall -g ${MAIN_PACKAGE}          # npm
-rm /usr/local/bin/polar                   # install.sh
+rm ~/.polar/bin/polar                     # install.sh
 \`\`\`
+
+The install script also added a \`# Polar CLI\` line to your shell profile, which you can delete. If you installed before the CLI moved to \`~/.polar/bin\`, remove \`/usr/local/bin/polar\` as well.
 
 On Windows, delete \`%USERPROFILE%\\.polar\\bin\` and remove it from your user \`PATH\`.
 

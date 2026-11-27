@@ -1,6 +1,6 @@
 # Frontend Development Guide
 
-Next.js web application with TypeScript, TanStack Query, and Tailwind CSS.
+Next.js web application with TypeScript, TanStack Query, and the Orbit design system.
 
 ## Quick Commands
 
@@ -11,8 +11,8 @@ pnpm dev          # Start dev server (http://127.0.0.1:3000)
 pnpm build        # Production build
 pnpm lint         # oxlint across the repo — prints nothing when clean
 pnpm format:check # oxfmt --check, a CI gate; covers Markdown too. `pnpm exec oxfmt <file>` fixes
-pnpm test         # turbo test across the workspace (12 packages define tests)
-pnpm typecheck    # turbo tsc across the workspace (15 packages define typecheck)
+pnpm test         # turbo test across the workspace
+pnpm typecheck    # turbo tsc across the workspace
 pnpm generate     # Regenerate the API client (in packages/client)
 ```
 
@@ -42,6 +42,30 @@ Notes that save time:
 ## Post-Feature Checklist
 
 After finishing a feature, always run `pnpm lint` and check for any new errors or warnings introduced by your changes. Fix them before considering the feature complete.
+
+## React Compiler
+
+`apps/web` and `apps/orbit` build with the React Compiler (`reactCompiler: true` in
+`next.config.mjs`), and the web vitest suite runs through it. `packages/checkout` and
+`packages/orbit` are compiled as part of the web bundle via `transpilePackages`; their npm builds
+are not.
+
+- Do not add `useMemo`, `useCallback` or `React.memo` for performance. The compiler memoizes
+  components and hooks itself, and `react/preserve-manual-memoization` rejects manual memoization
+  whose dependencies it cannot verify. Use them only when a stable identity is needed for
+  correctness, such as an effect dependency or an external subscription.
+- Keep render pure. No `ref.current` reads during render, no mutation of props or state, and no
+  `new Date()`, `Date.now()` or `Math.random()` whose result must change on re-render: the compiler
+  caches values until their inputs change, so these run once per mount. Put time-dependent values
+  in state or an effect.
+- react-hook-form: read values with `useWatch({ control, name })` and state with
+  `useFormState({ control })`. Never call `watch()` or read `formState` in render; the
+  `react/incompatible-library` and `polar/no-form-state-read` lint rules reject it. This applies in
+  `packages/checkout` and `packages/ui` too, since the web app compiles their source.
+- An `oxlint-disable` of any `react/*` rule turns the compiler off for that whole component. Fix
+  the code instead.
+- `pnpm test` in `apps/web` and `packages/checkout` runs the suite uncompiled (with coverage) and
+  then compiled. The compiled run is the regression guard for compiler behaviour.
 
 ## Project Structure
 
@@ -121,197 +145,31 @@ import { Box } from '@polar-sh/orbit/Box'
 
 ### Polymorphism via `as`
 
-Box defaults to a `<div>`, but the underlying element is selectable for semantics &
-accessibility. Allowed values:
-
-```ts
-;'div' |
-  'span' |
-  'section' |
-  'article' |
-  'aside' |
-  'main' |
-  'nav' |
-  'header' |
-  'footer' |
-  'form' |
-  'fieldset' |
-  'label' |
-  'ul' |
-  'ol' |
-  'li'
-```
+`as` picks a semantic element (`section`, `nav`, `ul`, `li`, `label`, `form`, …; the full list is
+`BoxElement` in `packages/orbit/src/components/Box.tsx`). DOM props for that element are typed
+and forwarded.
 
 ```tsx
-<Box as="section" padding="xl">…</Box>
 <Box as="ul" flexDirection="column" rowGap="s">
   <Box as="li">Item</Box>
 </Box>
-<Box as="nav" alignItems="center" columnGap="m">…</Box>
 ```
 
-DOM props for the chosen element are typed and forwarded (e.g. `onClick`, `htmlFor` on
-`label`, `action` on `form`).
+### Tokens and props
 
-### Design Tokens
+Style props are camelCase CSS property names that take token **names**, not raw values. Spacing
+props have short aliases (`p`, `px`, `py`, `m`, `mx`, `g`, …). Read the source rather than
+guessing:
 
-Tokens are split across two tiers: `packages/orbit/src/tokens/value.stylex.ts` defines
-primitive values (literal colors, sizes), and `packages/orbit/src/tokens/semantics.stylex.ts`
-defines semantic tokens (background-primary, text-secondary, etc.) that reference them.
-Box accepts token **names**, not raw values.
+- Props and aliases: `packages/orbit/src/utils/types.ts` (`BoxStyleProps`)
+- Primitive tokens: `packages/orbit/src/tokens/value.stylex.ts`
+- Semantic colors (`background-card`, `text-secondary`, `border-primary`, …):
+  `packages/orbit/src/tokens/semantics.stylex.ts`
 
-**Spacing** (`SpacingToken`) — used for padding, margin, gap. The scale is mirrored into
-negative tokens (`-xs` … `-5xl`) for margins and offsets; padding and gap accept positive
-tokens only (`PositiveSpacingToken`), since negative values are invalid CSS there:
-
-| Token  | Value |
-| ------ | ----- |
-| `none` | 0     |
-| `xs`   | 4px   |
-| `s`    | 8px   |
-| `m`    | 12px  |
-| `l`    | 16px  |
-| `xl`   | 24px  |
-| `2xl`  | 32px  |
-| `3xl`  | 48px  |
-| `4xl`  | 64px  |
-| `5xl`  | 96px  |
-
-**Colors** (`ColorToken`) — used for `backgroundColor`, `color`, `borderColor`. Each token
-auto-resolves light vs dark.
-
-| Token                  | Use                           |
-| ---------------------- | ----------------------------- |
-| `background-primary`   | Page background               |
-| `background-secondary` | Sectioned/raised surface      |
-| `background-card`      | Card / inset panel surface    |
-| `background-warning`   | Warning surface               |
-| `background-success`   | Success surface               |
-| `background-danger`    | Danger surface                |
-| `text-primary`         | Primary copy                  |
-| `text-secondary`       | De-emphasised copy            |
-| `text-tertiary`        | Hints, captions, placeholders |
-| `text-success`         | Success text                  |
-| `text-danger`          | Danger text                   |
-| `text-warning`         | Warning text                  |
-| `border-primary`       | Default borders & dividers    |
-| `border-secondary`     | Subtle/secondary dividers     |
-| `border-warning`       | Warning borders               |
-
-**Border radius** (`BorderRadiusToken`): `none`, `s` (8), `m` (12), `l` (16), `xl` (32),
-`full` (9999).
-
-**Shadow** (`ShadowToken`): `none`, `s`, `m`, `l`, `xl`.
-
-**Motion** — durations (`DurationToken`) and easings (`EasingToken`) for transitions:
-
-| Duration  | Value | Easing       | Curve                      |
-| --------- | ----- | ------------ | -------------------------- |
-| `instant` | 0ms   | `standard`   | general-purpose, symmetric |
-| `fast`    | 120ms | `decelerate` | enter (fast → settle)      |
-| `base`    | 200ms | `accelerate` | exit (settle → fast)       |
-| `slow`    | 320ms | `spring`     | slight overshoot           |
-| `slower`  | 480ms |              |                            |
-
-Durations are CSS variables, so motion can be globally tuned (or zeroed for reduced
-motion). Easings are compile-time constants.
-
-**Breakpoints** (`BreakpointKey`): `sm` (640), `md` (768), `lg` (1024), `xl` (1280). Used
-as keys in responsive prop objects (see below).
-
-### Prop Reference
-
-Every prop accepts a single token/value or a responsive object (see "Responsive &
-pseudo-states" below).
-
-**Spacing** (token-based; aliases listed in parens):
-
-```
-padding (p), paddingTop (pt), paddingRight (pr), paddingBottom (pb), paddingLeft (pl),
-paddingHorizontal (px), paddingVertical (py)
-margin  (m), marginTop  (mt), marginRight  (mr), marginBottom  (mb), marginLeft  (ml),
-marginHorizontal  (mx), marginVertical  (my)   // margin tokens also accept 'auto' and
-                                               // negative tokens: '-xs' … '-5xl'
-gap (g), rowGap, columnGap
-```
-
-**Color** (token-based): `backgroundColor`, `color`, `borderColor`.
-
-**Border**:
-
-```
-borderRadius, borderTopLeftRadius, borderTopRightRadius,
-borderBottomLeftRadius, borderBottomRightRadius                  // BorderRadiusToken
-borderWidth, borderTopWidth, borderRightWidth,
-borderBottomWidth, borderLeftWidth                                // number (px)
-borderStyle: 'solid' | 'dashed' | 'dotted' | 'none'
-```
-
-**Shadow**: `boxShadow` — ShadowToken.
-
-**Layout**:
-
-```
-display: 'flex' | 'grid' | 'block' | 'inline' | 'inline-flex' | 'inline-block' | 'none' | 'contents'
-         // defaults to 'flex' for block-level elements (see "display defaults to flex" above)
-overflow / overflowX / overflowY: 'hidden' | 'auto' | 'scroll' | 'visible'
-width, height, minWidth, maxWidth, minHeight, maxHeight: string | number   // numbers → px
-aspectRatio: string                                                         // '16 / 9'
-```
-
-**Flex**:
-
-```
-flex, flexDirection ('row'|'column'|'row-reverse'|'column-reverse'),
-flexWrap ('wrap'|'nowrap'|'wrap-reverse'),
-flexGrow, flexShrink, flexBasis,
-alignItems / alignSelf  ('start'|'end'|'center'|'baseline'|'stretch'  [+ 'auto' on alignSelf]),
-justifyContent ('start'|'end'|'center'|'between'|'around'|'evenly'),
-alignContent   ('start'|'end'|'center'|'between'|'around'|'evenly'|'stretch')
-```
-
-**Grid**:
-
-```
-gridTemplateColumns, gridTemplateRows, gridColumn, gridRow,
-gridAutoFlow ('row'|'column'|'dense'|'row-dense'|'column-dense'),
-gridAutoColumns, gridAutoRows
-```
-
-**Position**:
-
-```
-position: 'relative'|'absolute'|'fixed'|'sticky'|'static'
-top, right, bottom, left, inset: SpacingToken | string | number   // tokens may be negative ('-l')
-zIndex: number | string
-```
-
-**Motion** (transitions; pair with pseudo-state props to animate hover/focus/active):
-
-```
-transitionProperty: 'none'|'all'|'common'|'colors'|'opacity'|'shadow'|'transform'
-transitionDuration: DurationToken                     // 'instant'|'fast'|'base'|'slow'|'slower'
-transitionTimingFunction (alias: ease): EasingToken   // 'standard'|'decelerate'|'accelerate'|'spring'
-transitionDelay: DurationToken
-transform: string                                      // e.g. 'translateY(-2px)', 'scale(1.02)'
-transformOrigin: string
-willChange: string
-```
-
-`transitionProperty` keywords expand to real property lists — `colors` → color +
-background-color + border-color, `common` → colors + box-shadow + opacity + transform.
-Without `transitionProperty`, `transitionDuration` applies to `all`.
-
-**Visual**:
-
-```
-opacity: number
-cursor: 'pointer'|'default'|'not-allowed'|'grab'|'grabbing'|'text'|'move'|'wait'
-pointerEvents: 'none'|'auto'
-visibility: 'visible'|'hidden'
-userSelect: 'none'|'text'|'all'|'auto'
-textAlign: 'left'|'center'|'right'|'justify'
-```
+The ones you'll use most: spacing `none` `xs` `s` `m` `l` `xl` `2xl`…`5xl` (4px steps up to
+`l`, negatives `-xs`…`-5xl` for margins and offsets only); radius `none` `s` `m` `l` `xl`
+`full`; shadow `none` `s` `m` `l` `xl`; breakpoints `sm` `md` `lg` `xl`. Pair
+`transitionProperty`, `transitionDuration` and `ease` with pseudo-state values to animate.
 
 ### Responsive & Pseudo-state Values
 
@@ -393,81 +251,6 @@ you add a transition:
 </Box>
 ```
 
-**Responsive grid** — prefer the `Grid` primitive (see below); it defaults to
-`display: grid` and uses short prop names:
-
-```tsx
-<Grid
-  templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', xl: 'repeat(4, 1fr)' }}
-  gap="l"
->
-  {items.map((item) => (
-    <Card key={item.id} {...item} />
-  ))}
-</Grid>
-```
-
-**Sticky toolbar**:
-
-```tsx
-<Box
-  position="sticky"
-  top={0}
-  zIndex={10}
-  backgroundColor="background-primary"
-  borderBottomWidth={1}
-  borderStyle="solid"
-  borderColor="border-primary"
-  paddingHorizontal="xl"
-  paddingVertical="m"
-  alignItems="center"
-  justifyContent="between"
->
-  …
-</Box>
-```
-
-**Loading skeleton**:
-
-```tsx
-<Box
-  height={128}
-  borderRadius="m"
-  backgroundColor="background-card"
-  className="animate-pulse"
-/>
-```
-
-**Empty state**:
-
-```tsx
-<Box
-  flexDirection="column"
-  alignItems="center"
-  justifyContent="center"
-  paddingVertical="3xl"
-  rowGap="l"
->
-  <Text color="muted">No items found</Text>
-  <Button variant="secondary">Create First Item</Button>
-</Box>
-```
-
-**Error surface**:
-
-```tsx
-<Box
-  borderRadius="m"
-  backgroundColor="background-warning"
-  borderWidth={1}
-  borderStyle="solid"
-  borderColor="border-warning"
-  padding="l"
->
-  <Text>{error.message}</Text>
-</Box>
-```
-
 ### `className` and `style` (escape hatches)
 
 Box accepts `className` and `style` for things outside the design system (animation
@@ -530,12 +313,12 @@ Use these instead of hand-rolled tailwind components:
 import { Text } from '@polar-sh/orbit' // typography (variant-driven)
 import { Button, Grid } from '@polar-sh/orbit'
 import { Avatar, SegmentedControl } from '@polar-sh/orbit'
-import { Alert } from '@polar-sh/orbit' // tinted callout (info/warning/danger/success)
+import { Alert } from '@polar-sh/orbit' // callout (info/warning/danger/success)
 import { ButtonGroup } from '@polar-sh/orbit' // one or two primary/ghost actions
 ```
 
 `Alert` takes a `variant` (`info` | `warning` | `danger` | `success`, default `info`), a
-`title`, and an optional `description`; the variant abstracts away the icon and all colors.
+`title`, and an optional `description`; the variant abstracts away the icon and its accent color.
 It also accepts `loading` (swaps the icon for a spinner), `onDismiss` (renders a dismiss
 button), and `actions` (one or two `ButtonGroup` CTAs, rendered bottom-right). `ButtonGroup`
 takes an `actions` tuple of at most two `{ text, onClick, loading?, disabled? }` — the first
@@ -612,25 +395,25 @@ const useAppStore = create<AppState>((set) => ({
 ## Form Handling
 
 ```tsx
-import { useForm } from 'react-hook-form'
+import { useForm, useFormState } from 'react-hook-form'
 
 const MyForm = () => {
   const form = useForm({
     defaultValues: { name: '', email: '' },
   })
+  const { errors } = useFormState({ control: form.control })
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)}>
       <Input {...form.register('name')} />
-      {form.formState.errors.name && (
-        <span className="text-sm text-red-500">
-          {form.formState.errors.name.message}
-        </span>
-      )}
+      {errors.name && <Text color="danger">{errors.name.message}</Text>}
     </form>
   )
 }
 ```
+
+Read field values with `useWatch({ control, name })`, never `watch()`; see
+[React Compiler](#react-compiler) for why.
 
 ## Imports
 

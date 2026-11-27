@@ -1,18 +1,28 @@
+import html
+import uuid
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
 
-import httpx
+import httpx2
 import pytest
 from pytest_mock import MockerFixture
 
-from polar.backoffice import app as backoffice_app
+from polar.backoffice.app import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
 from polar.backoffice.organizations_v2.endpoints import _stripe_reject_reason_for_aup
-from polar.models import PayoutAccount
+from polar.enums import PayoutAccountType
+from polar.kit.utils import utc_now
+from polar.models import (
+    BackofficeUser,
+    OrganizationDomain,
+    OrganizationEmail,
+    PayoutAccount,
+    UserOrganization,
+)
+from polar.models.backoffice_user_session import BackofficeUserSession
 from polar.models.organization import Organization, OrganizationStatus
 from polar.models.organization_risk_signal import OrganizationRiskSignal
 from polar.models.user import User
-from polar.models.user_session import UserSession
 from polar.organization_review.repository import OrganizationReviewRepository
 from polar.organization_review.schemas import AUPSection
 from polar.payout_account.repository import PayoutAccountRepository
@@ -27,14 +37,13 @@ from tests.fixtures.random_objects import (
 
 @pytest.fixture
 async def backoffice_client(
-    session: AsyncSession, user: User
-) -> AsyncGenerator[httpx.AsyncClient]:
-    user_session = UserSession(token="0" * 64, user_agent="tests", user=user)
+    session: AsyncSession, backoffice_user_session: BackofficeUserSession
+) -> AsyncGenerator[httpx2.AsyncClient]:
     backoffice_app.dependency_overrides[get_db_session] = lambda: session
-    backoffice_app.dependency_overrides[get_admin] = lambda: user_session
+    backoffice_app.dependency_overrides[get_admin] = lambda: backoffice_user_session
     try:
-        async with httpx.AsyncClient(
-            transport=httpx.ASGITransport(app=backoffice_app),
+        async with httpx2.AsyncClient(
+            transport=httpx2.ASGITransport(app=backoffice_app),
             base_url="http://test",
         ) as client:
             yield client
@@ -98,7 +107,7 @@ class TestDenyDialog:
     )
     async def test_stores_violated_aup_section(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         session: AsyncSession,
         organization: Organization,
         section: AUPSection,
@@ -132,7 +141,7 @@ class TestDenyDialog:
 
     async def test_missing_aup_section_does_not_deny(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
@@ -151,7 +160,7 @@ class TestDenyDialog:
 
     async def test_invalid_aup_section_does_not_deny(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
@@ -174,7 +183,7 @@ class TestDenyDialog:
     async def test_disables_stripe_account_when_opted_in(
         self,
         mocker: MockerFixture,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         session: AsyncSession,
         organization: Organization,
         stripe_payout_account: PayoutAccount,
@@ -206,7 +215,7 @@ class TestDenyDialog:
 
     async def test_invalid_stripe_reject_reason_does_not_deny(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
@@ -234,7 +243,7 @@ class TestBlockDialog:
     async def test_disables_stripe_account_when_opted_in(
         self,
         mocker: MockerFixture,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         session: AsyncSession,
         organization: Organization,
         stripe_payout_account: PayoutAccount,
@@ -260,7 +269,7 @@ class TestBlockDialog:
 
     async def test_invalid_stripe_reject_reason_does_not_block(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
@@ -283,7 +292,7 @@ class TestBlockDialog:
 class TestResetOnboardingDialog:
     async def test_warns_that_held_payouts_are_canceled(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         organization: Organization,
     ) -> None:
         response = await backoffice_client.get(
@@ -296,10 +305,10 @@ class TestResetOnboardingDialog:
 
     async def test_resets_organization(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         session: AsyncSession,
         organization: Organization,
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         organization.status = OrganizationStatus.ACTIVE
         organization.details_submitted_at = datetime.now(UTC)
@@ -314,11 +323,11 @@ class TestResetOnboardingDialog:
         assert organization.details_submitted_at is None
         assert organization.onboarding_resubmission_requested_at is not None
         assert organization.internal_notes is not None
-        assert user.email in organization.internal_notes
+        assert backoffice_user.email in organization.internal_notes
 
     async def test_shows_error_when_organization_was_already_reset(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
@@ -340,7 +349,7 @@ class TestResetOnboardingDialog:
 class TestOffboardDialog:
     async def test_missing_aup_section_does_not_offboard(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
@@ -362,10 +371,60 @@ class TestOffboardDialog:
 
 
 @pytest.mark.anyio
+class TestSetupManualAccount:
+    async def test_switch_from_stripe(
+        self,
+        backoffice_client: httpx2.AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,
+    ) -> None:
+        stripe_account = await create_payout_account(
+            save_fixture, organization, user, country="FR", currency="eur"
+        )
+        account_page = f"/organizations/{organization.id}?section=account"
+        response = await backoffice_client.get(account_page)
+        assert response.status_code == 200
+        assert "Switch to Manual Payouts" in response.text
+
+        url = f"/organizations/{organization.id}/setup-account"
+        response = await backoffice_client.get(url)
+        assert response.status_code == 200
+        assert "Switch to Manual Payouts" in response.text
+        assert 'value="FR"' in response.text
+        assert str(stripe_account.id) in response.text
+
+        response = await backoffice_client.post(url, data={"country": "FR"})
+        assert response.status_code == 409
+
+        data = {"previous_payout_account_id": str(stripe_account.id), "country": "FR"}
+        response = await backoffice_client.post(url, data=data)
+        assert response.status_code == 303
+        await session.refresh(organization, ["payout_account"])
+        manual = organization.payout_account
+        assert manual is not None
+        assert manual.type == PayoutAccountType.manual
+        assert (manual.country, manual.currency) == ("FR", "usd")
+        assert manual.admin_id == user.id
+        await session.refresh(stripe_account)
+        assert stripe_account.type == PayoutAccountType.stripe
+        assert stripe_account.deleted_at is None
+
+        response = await backoffice_client.post(url, data=data)
+        assert response.status_code == 409
+
+        response = await backoffice_client.get(account_page)
+        assert response.status_code == 200
+        assert "Switch to Manual Payouts" not in response.text
+
+
+@pytest.mark.anyio
 class TestDeletePayoutAccount:
     async def test_soft_deleted_organization_can_open_delete_modal(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
         stripe_payout_account: PayoutAccount,
@@ -382,7 +441,7 @@ class TestDeletePayoutAccount:
 
     async def test_shared_account_only_unlinks_this_organization(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         session: AsyncSession,
         save_fixture: SaveFixture,
         mocker: MockerFixture,
@@ -421,6 +480,94 @@ class TestDeletePayoutAccount:
 
 
 @pytest.mark.anyio
+class TestFlaggedProductNames:
+    async def _create_signal(
+        self,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product_id: uuid.UUID,
+        type: OrganizationRiskSignal.Type = (
+            OrganizationRiskSignal.Type.FLAGGED_PRODUCT_NAME_RENAMED
+        ),
+    ) -> None:
+        await save_fixture(
+            OrganizationRiskSignal(
+                organization=organization,
+                source=OrganizationRiskSignal.Source.POLAR,
+                type=type,
+                risk_level=OrganizationRiskSignal.RiskLevel.UNKNOWN,
+                payload={
+                    "attempts": [
+                        {
+                            "name": "Coaching Package",
+                            "category": "human services",
+                            "phrase": None,
+                            "flagged_at": "2026-11-02T14:51:02Z",
+                        },
+                        {
+                            "name": "Casino Night",
+                            "category": "gambling",
+                            "phrase": "Casino",
+                            "flagged_at": "2026-11-02T14:51:18Z",
+                        },
+                    ],
+                    "product_id": str(product_id),
+                    "product_name": "Night Games",
+                },
+            )
+        )
+
+    async def test_reviews_section_shows_the_timeline(
+        self,
+        backoffice_client: httpx2.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        product_id = uuid.uuid4()
+        await self._create_signal(save_fixture, organization, product_id)
+
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}?section=reviews"
+        )
+
+        assert response.status_code == 200
+        page = html.unescape(response.text)
+        assert f"/products/{product_id}" in page
+        timeline = [
+            "2026-11-02 14:51:02 UTC",
+            'Tried "Coaching Package"',
+            "2026-11-02 14:51:18 UTC",
+            'Tried "Casino Night"',
+            'Created as "Night Games"',
+        ]
+        positions = [page.index(entry) for entry in timeline]
+        assert positions == sorted(positions)
+
+    @pytest.mark.parametrize(
+        "type",
+        [
+            OrganizationRiskSignal.Type.FLAGGED_PRODUCT_NAME_RENAMED,
+            OrganizationRiskSignal.Type.FLAGGED_PRODUCT_NAME_KEPT,
+        ],
+    )
+    async def test_list_filter(
+        self,
+        backoffice_client: httpx2.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        organization_second: Organization,
+        type: OrganizationRiskSignal.Type,
+    ) -> None:
+        await self._create_signal(save_fixture, organization, uuid.uuid4(), type)
+
+        response = await backoffice_client.get("/organizations/?flagged_names=true")
+
+        assert response.status_code == 200
+        assert organization.name in response.text
+        assert organization_second.name not in response.text
+
+
+@pytest.mark.anyio
 class TestDetailRiskSignals:
     async def _create_signal(
         self, save_fixture: SaveFixture, organization: Organization
@@ -441,7 +588,7 @@ class TestDetailRiskSignals:
 
     async def test_reviews_section_shows_signals(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -460,7 +607,7 @@ class TestDetailRiskSignals:
 
     async def test_overview_section_shows_signals(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -471,12 +618,12 @@ class TestDetailRiskSignals:
         )
 
         assert response.status_code == 200
-        assert "External Risk Signals" in response.text
+        assert "Risk Signals" in response.text
         assert "Fraudulent Website" in response.text
 
     async def test_reviews_section_without_signals(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         organization: Organization,
     ) -> None:
         response = await backoffice_client.get(
@@ -492,7 +639,7 @@ class TestDetailRiskSignals:
 class TestEditFeatures:
     async def test_disabling_sso_lifts_enforcement(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -512,7 +659,7 @@ class TestEditFeatures:
 
     async def test_keeps_enforcement_while_sso_enabled(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -535,7 +682,7 @@ class TestEditOrganization:
     async def test_syncs_customer_slug_when_slug_changes(
         self,
         mocker: MockerFixture,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -565,7 +712,7 @@ class TestEditOrganization:
     async def test_does_not_sync_customer_slug_when_slug_unchanged(
         self,
         mocker: MockerFixture,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -595,7 +742,7 @@ class TestEditOrganization:
 class TestOverviewLazyCards:
     async def test_overview_defers_slow_cards(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         organization: Organization,
     ) -> None:
         response = await backoffice_client.get(
@@ -618,7 +765,7 @@ class TestOverviewLazyCards:
 
     async def test_payment_metrics_fragment(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         organization: Organization,
     ) -> None:
         response = await backoffice_client.get(
@@ -632,7 +779,7 @@ class TestOverviewLazyCards:
 
     async def test_setup_checklist_fragment(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         organization: Organization,
     ) -> None:
         response = await backoffice_client.get(
@@ -645,12 +792,152 @@ class TestOverviewLazyCards:
         assert "Payout Account" in response.text
         assert "<html" not in response.text
 
+    async def test_setup_checklist_support_email_not_verified(
+        self,
+        backoffice_client: httpx2.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.email = "support@acme.com"
+        await save_fixture(organization)
+
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}/overview/setup-checklist"
+        )
+
+        assert "Not verified" in response.text
+
+    async def test_setup_checklist_support_email_verified(
+        self,
+        backoffice_client: httpx2.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.email = "support@acme.com"
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationEmail(
+                organization=organization,
+                email="support@acme.com",
+                verified_at=utc_now(),
+            )
+        )
+
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}/overview/setup-checklist"
+        )
+
+        assert "Verified" in response.text
+        assert "Not verified" not in response.text
+
+    async def test_setup_checklist_website_domain_not_verified(
+        self,
+        backoffice_client: httpx2.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.website = "https://www.acme.com"
+        await save_fixture(organization)
+
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}/overview/setup-checklist"
+        )
+
+        assert "Not verified" in response.text
+
+    async def test_setup_checklist_website_domain_verified(
+        self,
+        backoffice_client: httpx2.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.website = "https://www.acme.com"
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization, domain="acme.com", verified_at=utc_now()
+            )
+        )
+
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}/overview/setup-checklist"
+        )
+
+        assert "Verified" in response.text
+        assert "Not verified" not in response.text
+
+    async def test_setup_checklist_website_domain_other_verified(
+        self,
+        backoffice_client: httpx2.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.website = "https://www.acme.com"
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization, domain="other.com", verified_at=utc_now()
+            )
+        )
+
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}/overview/setup-checklist"
+        )
+
+        assert "Other domain verified" in response.text
+        assert "other.com" in response.text
+
+    async def test_setup_checklist_website_domain_pending(
+        self,
+        backoffice_client: httpx2.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.website = "https://www.acme.com"
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization,
+                domain="acme.com",
+                verification_record_value="TOKEN",
+            )
+        )
+
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}/overview/setup-checklist"
+        )
+
+        assert "Pending verification" in response.text
+
+    async def test_setup_checklist_website_domain_lost(
+        self,
+        backoffice_client: httpx2.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.website = "https://www.acme.com"
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization,
+                domain="acme.com",
+                verification_record_value="TOKEN",
+                verification_lost_at=datetime(2026, 10, 1, tzinfo=UTC),
+            )
+        )
+
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}/overview/setup-checklist"
+        )
+
+        assert "Lost on 2026-10-01" in response.text
+
 
 @pytest.mark.anyio
 class TestListSearch:
     async def test_matches_slug_case_insensitively(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -666,7 +953,7 @@ class TestListSearch:
 
     async def test_search_shorter_than_minimum_matches_nothing(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         organization: Organization,
     ) -> None:
         response = await backoffice_client.get(
@@ -679,7 +966,7 @@ class TestListSearch:
 
     async def test_ranks_exact_then_prefix_then_substring(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         user: User,
     ) -> None:
@@ -712,7 +999,7 @@ class TestListSearch:
 class TestStatusCounts:
     async def test_whitespace_only_search_excludes_deleted(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -727,3 +1014,34 @@ class TestStatusCounts:
         # Active tab badge: the list treats a blank search as no search and
         # hides deleted organizations, so the counts must agree.
         assert 'badge badge-success ml-2">0<' in response.text
+
+
+@pytest.mark.anyio
+class TestEditCatalogLimits:
+    async def test_update(
+        self,
+        backoffice_client: httpx2.AsyncClient,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        url = f"/organizations/{organization.id}/edit-catalog-limits"
+        response = await backoffice_client.get(url)
+        assert response.status_code == 200
+        assert 'name="products_limit"' in response.text
+        assert 'name="benefits_limit"' in response.text
+
+        response = await backoffice_client.post(
+            url, data={"products_limit": "25", "benefits_limit": "0"}
+        )
+        assert response.status_code == 303
+        await session.refresh(organization)
+        assert organization.products_limit == 25
+        assert organization.benefits_limit == 0
+
+        response = await backoffice_client.post(
+            url, data={"products_limit": "-1", "benefits_limit": "2147483648"}
+        )
+        assert response.status_code == 200
+        await session.refresh(organization)
+        assert organization.products_limit == 25
+        assert organization.benefits_limit == 0

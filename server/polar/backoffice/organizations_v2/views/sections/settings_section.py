@@ -150,6 +150,29 @@ class SettingsSection:
                             else:
                                 text(formatters.currency(threshold, "usd"))
 
+            with card(bordered=True):
+                with tag.div(classes="flex items-center justify-between mb-4"):
+                    with tag.h2(classes="text-lg font-bold"):
+                        text("Catalog Limits")
+                    with button(
+                        variant="secondary",
+                        size="sm",
+                        ghost=True,
+                        hx_get=str(
+                            request.url_for(
+                                "organizations:edit_catalog_limits",
+                                organization_id=self.org.id,
+                            )
+                        ),
+                        hx_target="#modal",
+                    ):
+                        text("Edit")
+                with tag.div(classes="space-y-2"):
+                    with tag.div():
+                        text(f"Products: {self.org.products_limit}")
+                    with tag.div():
+                        text(f"Benefits: {self.org.benefits_limit}")
+
             # Rate limit group card
             with card(bordered=True):
                 with tag.div(classes="flex items-center justify-between mb-4"):

@@ -19,15 +19,16 @@ from polar.enums import (
 from polar.exceptions import PolarRequestValidationError
 from polar.integrations.stripe.account_risk import (
     MerchantRiskSignal,
-    StripeAccountRiskLevel,
     UnknownAccountRiskEvaluation,
     WebsiteRiskSignal,
 )
 from polar.kit.http import UrlReachability
+from polar.kit.utils import utc_now
 from polar.models import (
     Agent,
     Customer,
     Organization,
+    OrganizationDomain,
     OrganizationRiskSignal,
     PayoutAccount,
     Product,
@@ -35,7 +36,9 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.account import Account
+from polar.models.backoffice_user import BackofficeUser
 from polar.models.benefit import BenefitType
+from polar.models.discount import Discount, DiscountDuration, DiscountType
 from polar.models.member import MemberRole
 from polar.models.order import OrderStatus
 from polar.models.organization import (
@@ -51,6 +54,7 @@ from polar.models.organization import (
 )
 from polar.models.organization_access_token import OrganizationAccessToken
 from polar.models.organization_review import OrganizationReview
+from polar.models.subscription import SubscriptionStatus
 from polar.models.user import IdentityVerificationStatus
 from polar.models.user_organization import OrganizationRole
 from polar.oauth2.service.oauth2_token import oauth2_token as oauth2_token_service
@@ -77,6 +81,9 @@ from polar.organization.service import (
     PayoutAccountAlreadyLinked,
 )
 from polar.organization.service import organization as organization_service
+from polar.organization_email.service import (
+    organization_email as organization_email_service,
+)
 from polar.organization_review.appeal_case import appeal_case as appeal_case_service
 from polar.organization_review.repository import (
     OrganizationReviewRepository,
@@ -95,12 +102,15 @@ from tests.fixtures.random_objects import (
     create_active_subscription,
     create_benefit,
     create_checkout_link,
+    create_discount,
     create_dispute,
     create_order,
     create_organization,
     create_payment,
     create_payout_account,
     create_product,
+    create_subscription,
+    create_verified_organization_email,
     create_webhook_endpoint,
     set_product_benefits,
 )
@@ -206,7 +216,10 @@ class TestCreate:
 
         assert organization.name == "My New Organization"
         assert organization.slug == slug
-        assert organization.feature_settings == {"meter_cycling_enabled": True}
+        assert organization.feature_settings == {
+            "meter_cycling_enabled": True,
+            "reducer_billing_enabled": True,
+        }
 
         user_organization = await user_organization_service.get_by_user_and_org(
             session, auth_subject.subject.id, organization.id
@@ -216,6 +229,31 @@ class TestCreate:
 
         enqueue_job_mock.assert_called_once_with(
             "organization.created", organization_id=organization.id
+        )
+
+    @pytest.mark.auth
+    async def test_subscription_settings_without_trial_ended_reactivation_period(
+        self, auth_subject: AuthSubject[User], session: AsyncSession
+    ) -> None:
+        organization = await organization_service.create(
+            session,
+            OrganizationCreate(
+                name="My New Organization",
+                slug="my-new-organization",
+                subscription_settings=OrganizationSubscriptionSettings(
+                    allow_multiple_subscriptions=True,
+                    proration_behavior=SubscriptionProrationBehavior.invoice,
+                    benefit_revocation_grace_period=0,
+                    prevent_trial_abuse=False,
+                    allow_customer_updates=True,
+                ),
+            ),
+            auth_subject,
+        )
+
+        assert organization.allow_multiple_subscriptions is True
+        assert (
+            organization.subscription_settings["trial_ended_reactivation_period"] == 14
         )
 
     @pytest.mark.auth
@@ -273,6 +311,7 @@ class TestCreate:
         assert organization.feature_settings == {
             "checkout_localization_enabled": True,
             "meter_cycling_enabled": True,
+            "reducer_billing_enabled": True,
         }
 
     @pytest.mark.auth
@@ -351,9 +390,7 @@ class TestCreate:
         create_customer_mock = mocker.patch(
             "polar.organization.service.polar_self_service.enqueue_create_customer"
         )
-        posthog_mock = mocker.patch(
-            "polar.organization.service.posthog.auth_subject_event"
-        )
+        posthog_mock = mocker.patch("polar.organization.service.posthog")
 
         organization = await organization_service.create(
             session,
@@ -362,9 +399,19 @@ class TestCreate:
         )
 
         assert agent.organization_id == organization.id
+        posthog_mock.agent_event.assert_called_once_with(
+            agent,
+            "organization",
+            "create",
+            {
+                "organization_id": str(organization.id),
+                "organization_slug": "agent-organization",
+            },
+        )
+        posthog_mock.user_event.assert_not_called()
         assert organization.account is not None
         await session.refresh(organization)
-        assert organization.is_config_as_code_enabled
+        assert not organization.is_config_as_code_enabled
         assert (
             await user_organization_service.get_member_count(session, organization.id)
             == 0
@@ -373,7 +420,6 @@ class TestCreate:
         enqueue_job_mock.assert_called_once_with(
             "organization.created", organization_id=organization.id
         )
-        posthog_mock.assert_not_called()
 
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
     async def test_agent_create_fails_when_a_concurrent_create_linked_an_organization_first(
@@ -451,12 +497,16 @@ class TestUpdateReviewSubmission:
         self,
         mocker: MockerFixture,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
         enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
         organization.status = OrganizationStatus.CREATED
         session.add(organization)
         await session.flush()
+        await create_verified_organization_email(
+            save_fixture, organization, "support@example.com"
+        )
         await organization_service.update(
             session,
             organization,
@@ -491,12 +541,15 @@ class TestUpdateReviewSubmission:
         self,
         mocker: MockerFixture,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
         mocker.patch("polar.organization.service.enqueue_job")
         organization.status = OrganizationStatus.CREATED
         organization.website = "https://example.com"
-        organization.email = "support@example.com"
+        await create_verified_organization_email(
+            save_fixture, organization, "support@example.com"
+        )
         organization.details = {
             "product_description": "Subscription SaaS for software teams and agencies.",
             "selling_categories": ["Software / SaaS"],
@@ -744,6 +797,88 @@ async def test_get_next_invoice_number_multiple_customers(
 
 
 @pytest.mark.anyio
+class TestUpdateEmbedHosts:
+    @pytest.mark.auth
+    async def test_registers_new_hosts_under_verified_domain(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.embed_hosts = ["acme.com"]
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization, domain="acme.com", verified_at=utc_now()
+            )
+        )
+        enqueue_job_mock = mocker.patch("polar.organization_domain.service.enqueue_job")
+
+        await organization_service.update(
+            session,
+            organization,
+            OrganizationUpdate(
+                embed_hosts=["acme.com", "shop.acme.com", "*.acme.com", "other.com"]
+            ),
+        )
+
+        enqueue_job_mock.assert_called_once_with(
+            "organization_domain.register_payment_method_domains",
+            domains=["shop.acme.com"],
+        )
+
+    @pytest.mark.auth
+    async def test_pending_domain_not_registered(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization,
+                domain="acme.com",
+                verification_record_value="TOKEN",
+            )
+        )
+        enqueue_job_mock = mocker.patch("polar.organization_domain.service.enqueue_job")
+
+        await organization_service.update(
+            session, organization, OrganizationUpdate(embed_hosts=["shop.acme.com"])
+        )
+
+        enqueue_job_mock.assert_not_called()
+
+    @pytest.mark.auth
+    async def test_unregisters_removed_hosts(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.embed_hosts = ["acme.com", "shop.acme.com"]
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization, domain="acme.com", verified_at=utc_now()
+            )
+        )
+        enqueue_job_mock = mocker.patch("polar.organization_domain.service.enqueue_job")
+
+        await organization_service.update(
+            session, organization, OrganizationUpdate(embed_hosts=["acme.com"])
+        )
+
+        enqueue_job_mock.assert_called_once_with(
+            "organization_domain.unregister_payment_method_domains",
+            domains=["shop.acme.com"],
+        )
+
+
+@pytest.mark.anyio
 class TestUpdateWebsite:
     @pytest.mark.auth
     async def test_change_enqueues_payout_account_website_sync(
@@ -789,6 +924,75 @@ class TestUpdateWebsite:
             if call.args and call.args[0] == "organization.sync_payout_account_website"
         ]
         assert sync_calls == []
+
+
+@pytest.mark.anyio
+class TestUpdateEmail:
+    @pytest.mark.auth
+    async def test_change_records_unverified_email(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.organization.service.enqueue_job")
+
+        await organization_service.update(
+            session, organization, OrganizationUpdate(email="support@acme.com")
+        )
+
+        current = await organization_email_service.get_current(session, organization)
+        assert current is not None
+        assert current.email == "support@acme.com"
+        assert current.verified_at is None
+
+    @pytest.mark.auth
+    async def test_unchanged_email_records_nothing(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.email = "support@acme.com"
+        await save_fixture(organization)
+        mocker.patch("polar.organization.service.enqueue_job")
+
+        await organization_service.update(
+            session, organization, OrganizationUpdate(email="support@acme.com")
+        )
+
+        assert (
+            await organization_email_service.get_current(session, organization) is None
+        )
+
+
+@pytest.mark.anyio
+class TestSubmitForReviewEmail:
+    @pytest.mark.auth
+    async def test_unverified_email(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.organization.service.enqueue_job")
+        organization.status = OrganizationStatus.CREATED
+        organization.website = "https://example.com"
+        organization.email = "other@example.com"
+        organization.details = {
+            "product_description": "Subscription SaaS for software teams and agencies.",
+            "selling_categories": ["Software / SaaS"],
+            "pricing_models": ["Subscription"],
+            "switching": False,
+        }
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await organization_service.submit_for_review(session, organization)
+
+        assert [e["loc"] for e in exc_info.value.errors()] == [("body", "email")]
+
+        assert organization.details_submitted_at is None
 
 
 @pytest.mark.anyio
@@ -1126,6 +1330,24 @@ class TestConfirmOrganizationReviewed:
         assert result.initially_reviewed_at == initially_reviewed_at
         assert result.next_review_threshold == 15000
 
+    async def test_registers_payment_method_domains(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        organization.status = OrganizationStatus.REVIEW
+
+        await organization_service.confirm_organization_reviewed(
+            session, organization, 15000
+        )
+
+        enqueue_job_mock.assert_any_call(
+            "organization_domain.register_organization_payment_method_domains",
+            organization_id=organization.id,
+        )
+
     @pytest.mark.parametrize(
         "status", [OrganizationStatus.REVIEW, OrganizationStatus.SNOOZED]
     )
@@ -1454,6 +1676,21 @@ class TestDenyOrganization:
             call.args and call.args[0] == "payout_account.reject_stripe_account"
             for call in enqueue_job_mock.call_args_list
         )
+
+    async def test_enqueues_polar_self_subscription_revocation(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.REVIEW
+        enqueue_revoke_mock = mocker.patch(
+            "polar.organization.service.polar_self_service.enqueue_revoke_subscription"
+        )
+
+        await organization_service.deny_organization(session, organization)
+
+        enqueue_revoke_mock.assert_called_once_with(organization_id=organization.id)
 
 
 @pytest.mark.anyio
@@ -1864,6 +2101,57 @@ class TestGetActivationReadiness:
             [] if reviewed else ["No organization review has been submitted"]
         )
 
+    @pytest.mark.parametrize(
+        "verdict",
+        [OrganizationReview.Verdict.FAIL, OrganizationReview.Verdict.UNCERTAIN],
+    )
+    @pytest.mark.parametrize(
+        "appeal_decision", [None, OrganizationReview.AppealDecision.REJECTED]
+    )
+    async def test_unapproved_review_after_database_reload(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+        verdict: OrganizationReview.Verdict,
+        appeal_decision: OrganizationReview.AppealDecision | None,
+    ) -> None:
+        await _setup_passing_org(save_fixture, organization, user)
+        organization.status = OrganizationStatus.CREATED
+        organization.details_submitted_at = datetime.now(UTC)
+        await save_fixture(organization)
+
+        review = OrganizationReview(
+            organization=organization,
+            verdict=verdict,
+            appeal_decision=appeal_decision,
+            risk_score=80.0,
+            violated_sections=[],
+            reason="Not approved",
+            model_used="test",
+        )
+        session.add(review)
+        await session.flush()
+        await session.refresh(review)
+
+        assert type(review.verdict) is str
+        if appeal_decision is not None:
+            assert type(review.appeal_decision) is str
+
+        readiness = await organization_service.get_activation_readiness(
+            session, organization
+        )
+
+        expected_missing = f"Review verdict is {verdict}"
+        if appeal_decision is not None:
+            expected_missing += f" (appeal {appeal_decision})"
+        assert readiness.onboarding_ready is True
+        assert readiness.is_ready is False
+        assert [item.missing for item in readiness.missing] == [expected_missing]
+        assert await organization_service.maybe_activate(session, organization) is False
+        assert organization.status == OrganizationStatus.CREATED
+
 
 @pytest.mark.anyio
 class TestBackofficeSubmitAndMaybeActivate:
@@ -1899,12 +2187,15 @@ class TestBackofficeSubmitAndMaybeActivate:
         self,
         mocker: MockerFixture,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
         mocker.patch("polar.organization.service.enqueue_job")
         organization.status = OrganizationStatus.CREATED
         organization.website = "https://example.com"
-        organization.email = "support@example.com"
+        await create_verified_organization_email(
+            save_fixture, organization, "support@example.com"
+        )
         organization.details = {
             "product_description": "Subscription SaaS for software teams and agencies.",
             "selling_categories": ["Software / SaaS"],
@@ -1963,25 +2254,28 @@ class TestBackofficeApprove:
         self,
         session: AsyncSession,
         organization: Organization,
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         organization.status = OrganizationStatus.REVIEW
 
         with pytest.raises(OrganizationError, match="DENIED or BLOCKED"):
             await organization_service.backoffice_approve(
-                session, organization, reason="Test", staff_user=user
+                session, organization, reason="Test", staff_user=backoffice_user
             )
 
     async def test_reverts_to_created_when_not_activation_ready(
         self,
         session: AsyncSession,
         organization: Organization,
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         organization.status = OrganizationStatus.DENIED
 
         await organization_service.backoffice_approve(
-            session, organization, reason="Support escalation", staff_user=user
+            session,
+            organization,
+            reason="Support escalation",
+            staff_user=backoffice_user,
         )
 
         assert organization.status == OrganizationStatus.CREATED
@@ -1990,7 +2284,7 @@ class TestBackofficeApprove:
         self,
         session: AsyncSession,
         organization: Organization,
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         """Support-contact escalation: AI rejected the appeal, admin overrides."""
         organization.status = OrganizationStatus.DENIED
@@ -2012,7 +2306,11 @@ class TestBackofficeApprove:
         await session.flush()
 
         await organization_service.backoffice_approve(
-            session, organization, 15000, reason="Appeal re-examined", staff_user=user
+            session,
+            organization,
+            15000,
+            reason="Appeal re-examined",
+            staff_user=backoffice_user,
         )
 
         assert organization.status == OrganizationStatus.CREATED
@@ -2028,7 +2326,7 @@ class TestSetOrganizationUnderReview:
         mocker: MockerFixture,
         session: AsyncSession,
         organization: Organization,
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         # Given organization active
         organization.status = OrganizationStatus.ACTIVE
@@ -2037,7 +2335,10 @@ class TestSetOrganizationUnderReview:
 
         # When
         result = await organization_service.set_organization_under_review(
-            session, organization, actor_type=ActorType.HUMAN, reviewer_id=user.id
+            session,
+            organization,
+            actor_type=ActorType.HUMAN,
+            backoffice_reviewer=backoffice_user,
         )
 
         # Then
@@ -2051,7 +2352,7 @@ class TestSetOrganizationUnderReview:
         ).get_current_decision(organization.id)
         assert decision is not None
         assert decision.actor_type == ActorType.HUMAN
-        assert decision.reviewer_id == user.id
+        assert decision.backoffice_reviewer_id == backoffice_user.id
 
     async def test_set_organization_under_review_from_offboarding(
         self,
@@ -2078,7 +2379,7 @@ class TestHandleAccountRiskSignal:
     def _merchant(
         self,
         account_id: str,
-        level: StripeAccountRiskLevel,
+        level: OrganizationRiskSignal.RiskLevel,
         *,
         description: str | None = "Indicators: disputes",
     ) -> MerchantRiskSignal:
@@ -2092,7 +2393,7 @@ class TestHandleAccountRiskSignal:
     def _website(
         self,
         evaluation_id: str,
-        level: StripeAccountRiskLevel,
+        level: OrganizationRiskSignal.RiskLevel,
         *,
         description: str | None = "Deceptive website",
     ) -> WebsiteRiskSignal:
@@ -2119,7 +2420,7 @@ class TestHandleAccountRiskSignal:
             organization=organization,
             source=OrganizationRiskSignal.Source.STRIPE,
             type=OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE,
-            risk_level=OrganizationRiskSignal.UNKNOWN_RISK_LEVEL,
+            risk_level=OrganizationRiskSignal.RiskLevel.UNKNOWN,
             account_evaluation_id=evaluation_id,
         )
         await save_fixture(signal)
@@ -2142,7 +2443,7 @@ class TestHandleAccountRiskSignal:
 
         await organization_service.handle_account_risk_signal(
             session,
-            self._merchant("acct_risk", StripeAccountRiskLevel.ELEVATED),
+            self._merchant("acct_risk", OrganizationRiskSignal.RiskLevel.ELEVATED),
         )
 
         assert organization.status == OrganizationStatus.REVIEW
@@ -2155,7 +2456,7 @@ class TestHandleAccountRiskSignal:
         ).get_current_decision(organization.id)
         assert decision is not None
         assert decision.actor_type == ActorType.STRIPE
-        assert decision.reviewer_id is None
+        assert decision.backoffice_reviewer_id is None
 
     async def test_actionable_website_matches_org_by_evaluation_id(
         self,
@@ -2177,7 +2478,7 @@ class TestHandleAccountRiskSignal:
 
         await organization_service.handle_account_risk_signal(
             session,
-            self._website("acctevl_456", StripeAccountRiskLevel.HIGHEST),
+            self._website("acctevl_456", OrganizationRiskSignal.RiskLevel.HIGHEST),
         )
 
         assert organization.status == OrganizationStatus.REVIEW
@@ -2208,7 +2509,9 @@ class TestHandleAccountRiskSignal:
         with pytest.raises(UnknownAccountRiskEvaluation):
             await organization_service.handle_account_risk_signal(
                 session,
-                self._website("acctevl_unknown", StripeAccountRiskLevel.HIGHEST),
+                self._website(
+                    "acctevl_unknown", OrganizationRiskSignal.RiskLevel.HIGHEST
+                ),
             )
 
         assert organization.status == OrganizationStatus.ACTIVE
@@ -2230,7 +2533,7 @@ class TestHandleAccountRiskSignal:
 
         await organization_service.handle_account_risk_signal(
             session,
-            self._website("acctevl_456", StripeAccountRiskLevel.LOW),
+            self._website("acctevl_456", OrganizationRiskSignal.RiskLevel.LOW),
         )
 
         assert organization.status == OrganizationStatus.ACTIVE
@@ -2337,13 +2640,15 @@ async def _setup_passing_org(
     organization: Organization,
     user: User,
 ) -> Product:
-    organization.email = "support@example.com"
     organization.website = "https://example.com"
     organization.socials = [{"platform": "x", "url": "https://x.com/polar"}]
     organization.details = {
         "product_description": "Subscription SaaS for software teams and agencies."
     }
     await save_fixture(organization)
+    await create_verified_organization_email(
+        save_fixture, organization, "support@example.com"
+    )
 
     user.identity_verification_status = IdentityVerificationStatus.verified
     await save_fixture(user)
@@ -2393,6 +2698,22 @@ def _sub(
 
 @pytest.mark.anyio
 class TestGetReviewState:
+    async def test_email_unverified_is_pending(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.email = "support@example.com"
+        await save_fixture(organization)
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.IDENTITY_EMAIL)
+
+        assert step.status == OrganizationReviewCheckStatus.PENDING
+        assert step.reasons == [OrganizationReviewCheckReason.IDENTITY_EMAIL_UNVERIFIED]
+        assert state.can_submit is False
+
     """Test the merchant self-review checklist."""
 
     @pytest.fixture(autouse=True)
@@ -2467,8 +2788,9 @@ class TestGetReviewState:
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        organization.email = "support@example.com"
-        await save_fixture(organization)
+        await create_verified_organization_email(
+            save_fixture, organization, "support@example.com"
+        )
 
         state = await organization_service.get_review_state(session, organization)
         step = _step(state, OrganizationReviewCheckKey.IDENTITY_EMAIL)
@@ -2485,8 +2807,9 @@ class TestGetReviewState:
         # Free/personal email — the merchant can still submit, but we surface
         # this as a soft warning so reviewers know the support address isn't
         # tied to a business domain.
-        organization.email = "founder@gmail.com"
-        await save_fixture(organization)
+        await create_verified_organization_email(
+            save_fixture, organization, "founder@gmail.com"
+        )
 
         state = await organization_service.get_review_state(session, organization)
         step = _step(state, OrganizationReviewCheckKey.IDENTITY_EMAIL)
@@ -2513,9 +2836,11 @@ class TestGetReviewState:
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        organization.email = "support@otherdomain.com"
         organization.website = "https://example.com"
         await save_fixture(organization)
+        await create_verified_organization_email(
+            save_fixture, organization, "support@otherdomain.com"
+        )
 
         state = await organization_service.get_review_state(session, organization)
         step = _step(state, OrganizationReviewCheckKey.IDENTITY_EMAIL)
@@ -2529,9 +2854,11 @@ class TestGetReviewState:
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        organization.email = "support@example.com"
         organization.website = "https://www.example.com/products"
         await save_fixture(organization)
+        await create_verified_organization_email(
+            save_fixture, organization, "support@example.com"
+        )
 
         state = await organization_service.get_review_state(session, organization)
         step = _step(state, OrganizationReviewCheckKey.IDENTITY_EMAIL)
@@ -2556,9 +2883,11 @@ class TestGetReviewState:
         # The merchant's support email lives on the apex domain while the
         # product is hosted on a subdomain — they still belong to the same
         # organization, so this must not be flagged as a mismatch.
-        organization.email = "support@example.com"
         organization.website = website
         await save_fixture(organization)
+        await create_verified_organization_email(
+            save_fixture, organization, "support@example.com"
+        )
 
         state = await organization_service.get_review_state(session, organization)
         step = _step(state, OrganizationReviewCheckKey.IDENTITY_EMAIL)
@@ -2575,9 +2904,11 @@ class TestGetReviewState:
         organization: Organization,
     ) -> None:
         # Reverse relationship: support email on a subdomain, website on the apex.
-        organization.email = "support@mail.example.com"
         organization.website = "https://example.com"
         await save_fixture(organization)
+        await create_verified_organization_email(
+            save_fixture, organization, "support@mail.example.com"
+        )
 
         state = await organization_service.get_review_state(session, organization)
         step = _step(state, OrganizationReviewCheckKey.IDENTITY_EMAIL)
@@ -2601,9 +2932,11 @@ class TestGetReviewState:
         organization: Organization,
         website: str,
     ) -> None:
-        organization.email = "support@acme.com"
         organization.website = website
         await save_fixture(organization)
+        await create_verified_organization_email(
+            save_fixture, organization, "support@acme.com"
+        )
 
         state = await organization_service.get_review_state(session, organization)
         step = _step(state, OrganizationReviewCheckKey.IDENTITY_EMAIL)
@@ -3999,6 +4332,9 @@ class TestCheckCanDelete:
         assert result.can_delete_immediately is False
         assert "has_orders" in [r.value for r in result.blocked_reasons]
 
+    @pytest.mark.parametrize(
+        "discount_type", [None, DiscountType.fixed, DiscountType.percentage]
+    )
     async def test_blocked_with_paid_active_subscriptions(
         self,
         session: AsyncSession,
@@ -4006,16 +4342,32 @@ class TestCheckCanDelete:
         organization: Organization,
         product: Product,
         customer: Customer,
+        discount_type: DiscountType | None,
     ) -> None:
         """Organization with paid active subscriptions cannot be immediately deleted."""
-        from polar.models.subscription import SubscriptionStatus
-        from tests.fixtures.random_objects import create_subscription
-
+        discount: Discount | None = None
+        if discount_type == DiscountType.fixed:
+            discount = await create_discount(
+                save_fixture,
+                organization=organization,
+                type=DiscountType.fixed,
+                amounts={"usd": 100},
+                duration=DiscountDuration.forever,
+            )
+        elif discount_type == DiscountType.percentage:
+            discount = await create_discount(
+                save_fixture,
+                organization=organization,
+                type=DiscountType.percentage,
+                basis_points=5000,
+                duration=DiscountDuration.forever,
+            )
         await create_subscription(
             save_fixture,
             product=product,
             customer=customer,
             status=SubscriptionStatus.active,
+            discount=discount,
         )
 
         result = await organization_service.check_can_delete(session, organization)
@@ -4448,6 +4800,53 @@ class TestSoftDeleteOrganization:
         assert result.slug != original_slug
         assert original_slug not in result.slug
         assert result.slug_history == []
+
+    async def test_releases_verified_domains(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization, domain="example.com", verified_at=utc_now()
+            )
+        )
+
+        await organization_service.soft_delete_organization(session, organization)
+
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization_second,
+                domain="example.com",
+                verified_at=utc_now(),
+            )
+        )
+
+    async def test_unregisters_payment_method_domains(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.organization.service.polar_self_service")
+        organization.embed_hosts = ["acme.com"]
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization, domain="acme.com", verified_at=utc_now()
+            )
+        )
+        enqueue_job_mock = mocker.patch("polar.organization_domain.service.enqueue_job")
+
+        await organization_service.soft_delete_organization(session, organization)
+
+        enqueue_job_mock.assert_called_once_with(
+            "organization_domain.unregister_payment_method_domains",
+            domains=["acme.com"],
+        )
 
 
 @pytest.mark.anyio
@@ -5559,7 +5958,7 @@ class TestStatusTransitions:
         mocker: MockerFixture,
         session: AsyncSession,
         organization: Organization,
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         organization.status = current
         organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
@@ -5570,7 +5969,7 @@ class TestStatusTransitions:
             organization,
             15000,
             reason="Merchant provided additional docs",
-            staff_user=user,
+            staff_user=backoffice_user,
         )
 
         assert result.status == OrganizationStatus.CREATED
@@ -5584,7 +5983,7 @@ class TestStatusTransitions:
         mocker: MockerFixture,
         session: AsyncSession,
         organization: Organization,
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         organization.status = OrganizationStatus.DENIED
         organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
@@ -5595,7 +5994,7 @@ class TestStatusTransitions:
             organization,
             reason="Lives on the support case, not the note",
             internal_note="Appeal approved — see support case.",
-            staff_user=user,
+            staff_user=backoffice_user,
         )
 
         assert result.internal_notes is not None
@@ -5616,6 +6015,7 @@ class TestStatusTransitions:
         save_fixture: SaveFixture,
         organization: Organization,
         user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         organization.status = current
         organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
@@ -5642,7 +6042,7 @@ class TestStatusTransitions:
             organization,
             15000,
             reason="Merchant provided additional docs",
-            staff_user=user,
+            staff_user=backoffice_user,
         )
 
         assert result.status == OrganizationStatus.ACTIVE
@@ -5806,6 +6206,37 @@ class TestSetCapability:
         assert result.capabilities is not None
         assert result.capabilities["payouts"] is False
         assert result.capabilities["checkout_payments"] is True
+
+    @pytest.mark.parametrize(
+        ("value", "job"),
+        [
+            (
+                False,
+                "organization_domain.unregister_organization_payment_method_domains",
+            ),
+            (True, "organization_domain.register_organization_payment_method_domains"),
+        ],
+    )
+    async def test_checkout_payments_updates_payment_method_domains(
+        self,
+        value: bool,
+        job: str,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization_domain.service.enqueue_job")
+        organization.set_status(OrganizationStatus.ACTIVE)
+        organization.capabilities = {
+            **organization.capabilities,
+            "checkout_payments": not value,
+        }
+
+        await organization_service.set_capability(
+            session, organization, "checkout_payments", value, reason="Test"
+        )
+
+        enqueue_job_mock.assert_called_once_with(job, organization_id=organization.id)
 
     async def test_appends_internal_note_with_reason(
         self,
@@ -6116,4 +6547,29 @@ class TestSetStatus:
         assert organization.status == OrganizationStatus.DENIED
         on_status_changed.assert_called_once_with(
             organization.id, OrganizationStatus.ACTIVE, OrganizationStatus.DENIED
+        )
+
+    async def test_approval_registers_payment_method_domains(
+        self, mocker: MockerFixture, organization: Organization
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization_domain.service.enqueue_job")
+        organization.status = OrganizationStatus.REVIEW
+
+        organization_service.set_status(organization, OrganizationStatus.ACTIVE)
+
+        enqueue_job_mock.assert_called_once_with(
+            "organization_domain.register_organization_payment_method_domains",
+            organization_id=organization.id,
+        )
+
+    async def test_leaving_active_unregisters_payment_method_domains(
+        self, mocker: MockerFixture, organization: Organization
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization_domain.service.enqueue_job")
+
+        organization_service.set_status(organization, OrganizationStatus.DENIED)
+
+        enqueue_job_mock.assert_called_once_with(
+            "organization_domain.unregister_organization_payment_method_domains",
+            organization_id=organization.id,
         )

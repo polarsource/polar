@@ -126,7 +126,7 @@ const splitName = (name: string) => {
 
 export const DesignPartnerForm = ({
   compact = false,
-  submitLabel = 'Become a design partner',
+  submitLabel = 'Submit for review',
 }: {
   /** Asks only for the company, website and contact, for early access rather than a design partner application. */
   compact?: boolean

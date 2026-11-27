@@ -30,8 +30,8 @@ export function SubscriptionCycledAfterTrial({
         <Text as="span" weight="medium">
           {product.name}
         </Text>{' '}
-        trial is over and your subscription is now active. Your first invoice is
-        attached.
+        trial is over and your subscription is now active.
+        {order.is_invoice_generated && ' Your first invoice is attached.'}
         {order.receipt_number && (
           <>
             {' '}

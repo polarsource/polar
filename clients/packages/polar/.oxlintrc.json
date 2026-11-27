@@ -11,7 +11,6 @@
     "polar-sdk/internal-boundaries": "error",
     "polar-sdk/no-internal-leak": "error",
     "polar-sdk/no-terminal-output": "error",
-    "polar-sdk/schema-is-pure": "error",
     "polar-sdk/test-colocation": "error",
     "no-restricted-imports": [
       "error",

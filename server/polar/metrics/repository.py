@@ -14,7 +14,7 @@ class MetricDashboardRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[MetricDashboard]]:
+    ) -> Select[MetricDashboard]:
         statement = self.get_base_statement()
         statement = statement.where(MetricDashboard.organization_id.in_(org_ids))
         return statement

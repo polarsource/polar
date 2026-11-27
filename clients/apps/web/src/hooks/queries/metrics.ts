@@ -5,12 +5,16 @@ import { operations, schemas, unwrap } from '@polar-sh/client'
 import { UseQueryResult, useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
-interface GetMetricsRequest {
+export interface MetricsProductFilter {
+  product_id?: string[]
+  external_product_id?: string[]
+}
+
+interface GetMetricsRequest extends MetricsProductFilter {
   startDate: Date
   endDate: Date
   interval: schemas['TimeInterval']
   organization_id?: string
-  product_id?: string[]
   customer_id?: string[]
   metrics?: string[]
 }

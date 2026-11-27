@@ -2,7 +2,13 @@ import { getQueryClient } from '@/utils/api/query'
 import { runBulk } from '@/utils/bulk'
 import { api } from '@/utils/client'
 import { operations, schemas, unwrap } from '@polar-sh/client'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useMutation,
+  useQueries,
+  useQuery,
+} from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 const invalidateDiscountsQueries = ({
@@ -61,6 +67,50 @@ export const useDiscounts = (
         }),
       ),
     retry: defaultRetry,
+  })
+
+export const useInfiniteDiscounts = (
+  organizationId: string,
+  parameters?: Omit<
+    NonNullable<operations['discounts:list']['parameters']['query']>,
+    'organization_id' | 'page'
+  >,
+) =>
+  useInfiniteQuery({
+    queryKey: [
+      'discounts',
+      { organizationId, infinite: true, ...(parameters || {}) },
+    ],
+    queryFn: ({ pageParam }) =>
+      unwrap(
+        api.GET('/v1/discounts/', {
+          params: {
+            query: {
+              organization_id: organizationId,
+              ...parameters,
+              page: pageParam,
+            },
+          },
+        }),
+      ),
+    retry: defaultRetry,
+    placeholderData: keepPreviousData,
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, _allPages, lastPageParam) =>
+      lastPage.items.length === 0 ||
+      lastPageParam >= lastPage.pagination.max_page
+        ? null
+        : lastPageParam + 1,
+  })
+
+export const useDiscountsByIds = (organizationId: string, ids: string[]) =>
+  useQueries({
+    queries: ids.map((id) => ({
+      queryKey: ['discounts', 'detail', { organizationId, id }],
+      queryFn: () =>
+        unwrap(api.GET('/v1/discounts/{id}', { params: { path: { id } } })),
+      retry: defaultRetry,
+    })),
   })
 
 export const useCreateDiscount = (organizationId: string) =>

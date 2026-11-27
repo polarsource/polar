@@ -9,6 +9,7 @@ from polar.models.user_organization import OrganizationRole
 
 def test_finance_role_permissions() -> None:
     assert ROLE_PERMISSIONS[OrganizationRole.finance] == {
+        OrganizationPermission.members_read,
         OrganizationPermission.sales_read,
         OrganizationPermission.sales_manage,
         OrganizationPermission.finance_read,

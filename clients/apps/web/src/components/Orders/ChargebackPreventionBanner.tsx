@@ -8,7 +8,7 @@ import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { ExternalLink as ExternalLinkIcon } from '@polar-sh/orbit/icons'
 import type { ReactNode } from 'react'
 
-const REFUNDS_DOCS_URL = 'https://docs.polar.sh/features/refunds'
+const REFUNDS_DOCS_URL = 'https://polar.sh/docs/features/refunds'
 
 const BannerColumn = ({
   divided = false,

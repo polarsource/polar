@@ -1,6 +1,9 @@
 from typing import Literal
 
+from pydantic import MISSING
+
 from polar.kit.schemas import Schema
+from polar.kit.versioning import Omissible
 from polar.models.benefit import BenefitType
 
 from ..base.schemas import (
@@ -41,7 +44,7 @@ class BenefitFeatureFlagCreate(BenefitCreateBase):
 
 class BenefitFeatureFlagUpdate(BenefitUpdateVisibilityMixin, BenefitUpdateBase):
     type: Literal[BenefitType.feature_flag]
-    properties: BenefitFeatureFlagProperties | None = None
+    properties: Omissible[BenefitFeatureFlagProperties] = MISSING
 
 
 class BenefitFeatureFlag(BenefitBase):

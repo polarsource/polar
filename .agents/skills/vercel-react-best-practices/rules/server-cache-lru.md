@@ -16,7 +16,7 @@ import { LRUCache } from 'lru-cache'
 
 const cache = new LRUCache<string, any>({
   max: 1000,
-  ttl: 5 * 60 * 1000  // 5 minutes
+  ttl: 5 * 60 * 1000, // 5 minutes
 })
 
 export async function getUser(id: string) {

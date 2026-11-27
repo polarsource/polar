@@ -10,9 +10,9 @@ from polar.models.organization import Organization
 SECTION_SCOPES = {
     "settings": (Scope.organizations_read, Scope.organizations_write),
     "meters": (Scope.meters_read, Scope.meters_write),
+    "custom_fields": (Scope.custom_fields_read, Scope.custom_fields_write),
     "benefits": (Scope.benefits_read, Scope.benefits_write),
     "products": (Scope.products_read, Scope.products_write),
-    "webhooks": (Scope.webhooks_read, Scope.webhooks_write),
 }
 
 _ConfigRead = Authenticator(
@@ -26,3 +26,11 @@ _ConfigWrite = Authenticator(
     allowed_subjects={User, Organization, Agent},
 )
 ConfigWrite = Annotated[AuthSubject[User | Organization | Agent], Depends(_ConfigWrite)]
+
+_ConfigOrganizationWrite = Authenticator(
+    required_scopes={Scope.organizations_write},
+    allowed_subjects={User, Organization, Agent},
+)
+ConfigOrganizationWrite = Annotated[
+    AuthSubject[User | Organization | Agent], Depends(_ConfigOrganizationWrite)
+]

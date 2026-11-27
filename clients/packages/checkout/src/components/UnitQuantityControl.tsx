@@ -76,7 +76,7 @@ export const UnitQuantityControl = ({
         size="icon"
         onClick={() => void onUpdate(units - 1)}
         disabled={units <= minimumUnits || isUpdating || isEditing}
-        className={`${quantityButtonClassName} rounded-l-lg`}
+        className={`${quantityButtonClassName} rounded-s-lg`}
         aria-label="Decrease units"
       >
         <MinusIcon className="h-3 w-3" />
@@ -116,7 +116,7 @@ export const UnitQuantityControl = ({
         disabled={
           (hasMaximumLimit && units >= maximumUnits) || isUpdating || isEditing
         }
-        className={`${quantityButtonClassName} rounded-r-lg`}
+        className={`${quantityButtonClassName} rounded-e-lg`}
         aria-label="Increase units"
       >
         <PlusIcon className="h-3 w-3" />

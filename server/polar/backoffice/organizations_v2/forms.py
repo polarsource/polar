@@ -11,7 +11,7 @@ from pydantic import (
 
 from polar.backoffice import forms
 from polar.enums import RateLimitGroup
-from polar.kit.schemas import EmptyStrToNone, HttpUrlToStr
+from polar.kit.schemas import EmptyStrToNone, HttpUrlToStr, Int32
 from polar.organization.schemas import NameInput, SlugInput
 
 
@@ -63,6 +63,19 @@ class UpdateRateLimitGroupForm(forms.BaseForm):
         ),
         AfterValidator(_validate_backoffice_rate_limit_group),
         Field(title="Rate Limit Group"),
+    ]
+
+
+class UpdateCatalogLimitsForm(forms.BaseForm):
+    products_limit: Annotated[
+        Int32,
+        forms.InputField(type="number", min=0),
+        Field(ge=0, title="Products Limit"),
+    ]
+    benefits_limit: Annotated[
+        Int32,
+        forms.InputField(type="number", min=0),
+        Field(ge=0, title="Benefits Limit"),
     ]
 
 

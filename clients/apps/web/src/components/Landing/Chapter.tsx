@@ -17,7 +17,7 @@ const ChapterMarker = ({ name, note }: ChapterMarkerProps) => {
       alignItems="start"
       display={{ md: 'flex', base: 'none' }}
     >
-      <Text variant="heading-s">
+      <Text variant="heading-s" as="p">
         {number ? (
           <Text as="span" variant="heading-s" color="muted">
             <span className="mr-4">{number}</span>
@@ -26,7 +26,7 @@ const ChapterMarker = ({ name, note }: ChapterMarkerProps) => {
         {label}
       </Text>
       {note ? (
-        <Text variant="heading-s" color="muted">
+        <Text variant="heading-s" as="p" color="muted">
           {note}
         </Text>
       ) : null}
@@ -60,6 +60,8 @@ export type ChapterProps = PropsWithChildren<{
   subtitle: string
   description?: ReactNode
   cta?: ReactNode
+  /** The hairline over the chapter; off where the section before it already closes with one. */
+  rule?: boolean
 }>
 
 /**
@@ -78,6 +80,7 @@ export const Chapter = ({
   subtitle,
   description,
   cta,
+  rule = true,
   children,
 }: ChapterProps) => (
   <Box
@@ -88,7 +91,7 @@ export const Chapter = ({
     rowGap={{ base: '3xl', md: '5xl' }}
     paddingVertical={{ base: '4xl', md: '5xl' }}
     marginVertical={{ base: 'none', md: '2xl' }}
-    borderTopWidth={1}
+    borderTopWidth={rule ? 1 : 0}
     borderStyle="solid"
     borderColor="border-primary"
   >

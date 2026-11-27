@@ -3,6 +3,7 @@ from typing import Any, Literal
 from unittest.mock import AsyncMock
 
 import pytest
+from pydantic import ValidationError
 from pytest_mock import MockerFixture
 from sqlalchemy.exc import DBAPIError, IntegrityError
 
@@ -193,73 +194,6 @@ class TestCreate:
                 auth_subject,
             )
 
-    @pytest.mark.auth
-    async def test_existing_external_id(
-        self,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        await create_discount(
-            save_fixture,
-            type=DiscountType.fixed,
-            amounts={"usd": 1000},
-            duration=DiscountDuration.once,
-            organization=organization,
-            external_id="ext_1337",
-        )
-
-        with pytest.raises(PolarRequestValidationError) as e:
-            await discount_service.create(
-                session,
-                DiscountFixedCreate(
-                    duration=DiscountDuration.once,
-                    amounts={PresentmentCurrency.usd: 1000},
-                    name="Discount",
-                    external_id="ext_1337",
-                    organization_id=organization.id,
-                ),
-                auth_subject,
-            )
-
-        assert e.value.errors()[0]["loc"] == ("body", "external_id")
-
-    @pytest.mark.auth
-    async def test_external_id_of_deleted_discount(
-        self,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        deleted_discount = await create_discount(
-            save_fixture,
-            type=DiscountType.fixed,
-            amounts={"usd": 1000},
-            duration=DiscountDuration.once,
-            organization=organization,
-            external_id="ext_1337",
-        )
-        deleted_discount.set_deleted_at()
-        await save_fixture(deleted_discount)
-
-        discount = await discount_service.create(
-            session,
-            DiscountFixedCreate(
-                duration=DiscountDuration.once,
-                amounts={PresentmentCurrency.usd: 1000},
-                name="Discount",
-                external_id="ext_1337",
-                organization_id=organization.id,
-            ),
-            auth_subject,
-        )
-
-        assert discount.external_id == "ext_1337"
-
 
 @pytest.mark.anyio
 class TestUpdate:
@@ -430,47 +364,9 @@ class TestUpdate:
             "basis_points",
         ],
     )
-    @pytest.mark.auth
-    async def test_update_forbidden_field_null_with_redemptions(
-        self,
-        auth_subject: AuthSubject[User],
-        user_organization: UserOrganization,
-        field: Literal["amounts", "basis_points"],
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-        product: Product,
-    ) -> None:
-        discount: Discount
-        if field == "amounts":
-            discount = await create_discount(
-                save_fixture,
-                type=DiscountType.fixed,
-                amounts={"usd": 5000},
-                duration=DiscountDuration.once,
-                organization=organization,
-            )
-        else:
-            discount = await create_discount(
-                save_fixture,
-                type=DiscountType.percentage,
-                basis_points=5000,
-                duration=DiscountDuration.once,
-                organization=organization,
-            )
-        checkout = await create_checkout(save_fixture, products=[product])
-        await create_discount_redemption(
-            save_fixture, discount=discount, checkout=checkout
-        )
-        await session.refresh(discount, ["organization", "redemptions_count"])
-
-        with pytest.raises(PolarRequestValidationError):
-            await discount_service.update(
-                session,
-                discount,
-                discount_update=DiscountUpdate.model_validate({field: None}),
-                auth_subject=auth_subject,
-            )
+    async def test_update_rejects_null_amount(self, field: str) -> None:
+        with pytest.raises(ValidationError):
+            DiscountUpdate.model_validate({field: None})
 
     @pytest.mark.parametrize(
         ("type", "payload"),
@@ -721,34 +617,6 @@ class TestUpdate:
         )
 
         assert updated_discount.code == "mycode"
-
-    @pytest.mark.auth
-    async def test_external_id_cannot_be_changed(
-        self,
-        auth_subject: AuthSubject[User],
-        user_organization: UserOrganization,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> None:
-        discount = await create_discount(
-            save_fixture,
-            type=DiscountType.percentage,
-            basis_points=1000,
-            duration=DiscountDuration.once,
-            organization=organization,
-            external_id="ext_1337",
-        )
-
-        with pytest.raises(PolarRequestValidationError) as e:
-            await discount_service.update(
-                session,
-                discount,
-                discount_update=DiscountUpdate(external_id="ext_42"),
-                auth_subject=auth_subject,
-            )
-
-        assert e.value.errors()[0]["loc"] == ("body", "external_id")
 
     @pytest.mark.auth
     async def test_webhook(

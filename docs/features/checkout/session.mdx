@@ -1,198 +1,272 @@
 ---
-title: "Checkout API"
-sidebarTitle: "Checkout API"
-description: "Create checkout sessions programmatically for complete control"
+title: "Checkout Sessions"
+sidebarTitle: "Checkout Sessions"
+description: "Create checkout sessions from your backend: link the customer, prefill fields, and set discounts, trials, seats, currency and ad-hoc prices."
 ---
 
-If you want to integrate more deeply the checkout process with your website or application, you can use our dedicated API.
+A **Checkout Session** is one purchase attempt. Create it from your backend when you know who's buying, then redirect the customer to its `url`. Sessions expire after 24 hours. For a permanent URL that needs no code, use a [Checkout Link](/features/checkout/links). See [Checkout](/concepts/checkout) for how the two compare.
 
-The first step is to [create a Checkout session](/api-reference/current/checkouts/create-checkout-session). For this you'll need at least your **Product ID**.
+<Note>API only. Not available from the CLI or MCP server. You can list and inspect sessions from both, see [Inspect sessions](#inspect-sessions).</Note>
 
-You can retrieve your Product ID from Products in your dashboard, click on "context-menu" button in front of your product and click on Copy Product ID.
+The examples use the sandbox client from the [quickstart overview](/quickstart/overview#prerequisites), on API version `2026-10`.
 
-The API will return you an object containing all the information about the session, including **an URL where you should redirect your customer** so they can complete their order.
+## Create a session
 
-<Tip>
-  You can force the checkout page theme by appending `?theme=dark` or `?theme=light` to the session URL. Without it, the theme follows the customer's system preference.
-</Tip>
-
-## Multiple products
-
-You can create a checkout session with multiple products. This is useful if you want to allow your customers to choose between different products before they checkout. Products are shown in the order you pass them in the `products` array.
-
-<img
-  className="block dark:hidden"
-  src="/assets/features/checkout/session/checkout_multiple_products.light.png"
-/>
-<img
-  className="hidden dark:block"
-  src="/assets/features/checkout/session/checkout_multiple_products.dark.png"
-/>
-
-## Ad-hoc prices
-
-For advanced use cases where you need complete control over pricing, you can create ad-hoc prices directly when creating a checkout session. Ad-hoc prices are temporary prices that exist only for that specific checkout session and don't appear in your product's catalog.
-
-This is useful when you need to:
-- Apply dynamic pricing based on user-specific factors
-- Create custom pricing tiers for specific customers
-- Implement usage-based or calculated pricing that varies per checkout
-- Test pricing variations without modifying your product catalog
-
-When creating a checkout session, you can pass a `prices` parameter that maps product IDs to an array of price definitions. These prices will be created on-the-fly and associated with the checkout session.
-
-<Note>
-Ad-hoc prices are marked with `source: "ad_hoc"` in the API response, while catalog prices have `source: "catalog"`. Ad-hoc prices are temporary and specific to the checkout session.
-</Note>
-
-### Example
+Pass the products to offer and your user's ID, then redirect to `url`:
 
 <CodeGroup>
-```ts TypeScript
-import { createPolar } from "@polar-sh/sdk/2026-10";
-
-const polar = createPolar({
-  accessToken: process.env.POLAR_ACCESS_TOKEN!,
+```typescript TypeScript
+const checkout = await polar.checkouts.create({
+  products: [product.id],
+  external_customer_id: "user_123",
+  success_url: "https://example.com/billing?checkout_id={CHECKOUT_ID}",
 });
 
-async function run() {
-  const checkout = await polar.checkouts.create({
-    products: ["productId"],
-    prices: {
-      "productId": [
-        {
-          amount_type: "fixed",
-          price_amount: 10000, // $100.00
-          price_currency: "usd",
-        }
-      ]
-    }
-  });
-
-  console.log(checkout.url);
-}
-
-run();
+redirect(checkout.url);
 ```
 
-```py Python
-from polar.v2026_10 import Polar
+```python Python
+checkout = polar.checkouts.create(
+    products=[product.id],
+    external_customer_id="user_123",
+    success_url="https://example.com/billing?checkout_id={CHECKOUT_ID}",
+)
 
-with Polar("<YOUR_BEARER_TOKEN_HERE>") as polar:
-    checkout = polar.checkouts.create(
-        products=["<product_id>"],
-        prices={
-            "<product_id>": [
-                {
-                    "amount_type": "fixed",
-                    "price_amount": 10000,  # $100.00
-                    "price_currency": "usd",
-                }
-            ]
-        },
-    )
+return redirect(checkout.url)
+```
 
-    print(checkout.url)
+```bash cURL
+curl -X POST https://sandbox-api.polar.sh/v1/checkouts/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "products": ["'"$PRODUCT_ID"'"],
+    "external_customer_id": "user_123",
+    "success_url": "https://example.com/billing?checkout_id={CHECKOUT_ID}"
+  }'
 ```
 </CodeGroup>
 
-### Price types
+With several IDs in `products`, the checkout shows each product as an option, in that order, with the first one preselected. The customer buys one of them. Products aren't bundled into a single order.
 
-Ad-hoc prices support all the same price types as catalog prices:
+<Visibility for="agents">
+  Rules for creating checkout sessions:
 
-- **Fixed**: A fixed amount price
-- **Custom**: Pay-what-you-want pricing
-- **Free**: No charge
-- **Seat-based**: Pricing based on number of seats
-- **Metered**: Usage-based pricing tied to a meter
+  - Create sessions on the server. The access token must never reach the browser.
+  - Pass the application's user ID as `external_customer_id`. Don't store Polar customer IDs.
+  - Create a new session each time the user clicks to buy. Don't cache or share session URLs: they expire after 24 hours.
+  - When the request comes from your backend, forward the end user's IP as `customer_ip_address`.
+  - Fulfill access from the `customer.state_changed` or `order.paid` webhook, not from the `success_url` redirect.
+  - Over HTTP, this is `POST /v1/checkouts/` with the `Polar-Version: 2026-10` header.
+</Visibility>
 
-For the complete schema of each price type, refer to the [Checkout API reference](/api-reference/current/checkouts/create-checkout-session).
+## Redirect and return
 
-## External Customer ID
+| Field | What it does |
+| --- | --- |
+| `success_url` | Where the customer goes after paying. `{CHECKOUT_ID}` is replaced with the session ID, so you can fetch it with [`GET /v1/checkouts/{id}`](/api-reference/current/checkouts/get-checkout-session). Without it, the customer stays on Polar's confirmation page. |
+| `return_url` | Shows a back button on the checkout that returns to this URL. |
 
-Quite often, you'll have your own users management system in your application, where your customer already have an ID. To ease reconciliation between Polar and your system, you can inform us about your customer ID when creating a checkout session through the [`external_customer_id`](/api-reference/current/checkouts/create-checkout-session) field.
+The redirect to `success_url` isn't proof of payment. Grant access from [webhooks](/integrate/webhooks/events) or the [customer state](/integrate/customer-state).
 
-After a successful checkout, we'll create a Customer on Polar with the external ID you provided. It'll be provided through the `customer.external_id` property in webhooks you may have configured.
+## External customer ID
 
-<Note>
-  When `customer_id` or `external_customer_id` is set, the customer's email is pre-filled and the email field is **disabled** on the checkout page. This ensures the order is always linked to the authenticated customer in your system.
-</Note>
+Set `external_customer_id` to your user's ID. If a customer with that external ID exists, the order is linked to them. Otherwise Polar creates the customer with that external ID when the checkout succeeds. To use Polar's ID instead, pass `customer_id`.
 
-## Customer IP address
+When the session resolves to an existing customer, their email is prefilled and the email field is locked. An `external_customer_id` that matches no customer leaves the email editable. See [External ID](/concepts/customers#external-id).
 
-When you create a checkout session, Polar uses the IP address of the request to detect the customer's country. This drives features like:
+## Prefill customer details
 
-- **Currency auto-detection** for [products with multiple payment currencies](/features/products)
-- **Pre-filling the billing country** on the checkout page, which is also used to compute taxes
+| Field | Notes |
+| --- | --- |
+| `customer_email`, `customer_name` | Prefilled and editable. |
+| `customer_billing_name`, `customer_billing_address`, `customer_tax_id` | Prefill invoice details. Prefilling an address turns on `require_billing_address`. |
+| `require_billing_address` | Ask for the full address instead of only the country. Customers in the US always enter their full address. |
+| `is_business_customer` | Ask for a billing name and full address, for B2B purchases. |
+| `custom_field_data` | Prefill [custom fields](/features/custom-fields), keyed by slug. |
 
-If you use [checkout links](/features/checkout/links), this works automatically. But if you create sessions through the API from a **backend, proxy, or edge function** (e.g. your own API, a Cloudflare Worker, a Next.js route handler), Polar will see *your server's* IP — not the customer's — and the detection will be wrong.
+## Discounts
 
-In that case, forward the customer's IP address as `customer_ip_address` in the request body:
+Set `discount_id` to apply a discount automatically. `allow_discount_codes` controls whether the customer can enter a code. With a preset discount and codes turned off, the customer can't change the discount. See [Discounts](/features/discounts).
+
+## Trials
+
+A product's trial applies by default. Set `allow_trial: false` to remove it for this session, or set `trial_interval` and `trial_interval_count` to override its length. See [Trials](/features/subscriptions/trials).
+
+## Seats, units and amounts
+
+| Field | Applies to |
+| --- | --- |
+| `seats`, `min_seats`, `max_seats` | [Seat-based](/features/seat-based-pricing) prices |
+| `units`, `min_units`, `max_units` | [Unit-based](/features/unit-based-pricing) prices |
+| `amount` | Pay-what-you-want prices: the prefilled amount, in cents |
+
+## Ad-hoc prices
+
+**Ad-hoc prices** exist only for one session. Use them for per-customer pricing without changing your catalog. Pass `prices`, keyed by product ID:
 
 <CodeGroup>
-```ts TypeScript
-import { createPolar } from "@polar-sh/sdk/2026-10";
-
-const polar = createPolar({
-  accessToken: process.env.POLAR_ACCESS_TOKEN!,
-});
-
+```typescript TypeScript
 const checkout = await polar.checkouts.create({
-  products: ["productId"],
+  products: [product.id],
+  prices: {
+    [product.id]: [
+      { amount_type: "fixed", price_amount: 10000, price_currency: "usd" },
+    ],
+  },
+});
+```
+
+```python Python
+checkout = polar.checkouts.create(
+    products=[product.id],
+    prices={
+        product.id: [
+            {"amount_type": "fixed", "price_amount": 10000, "price_currency": "usd"},
+        ],
+    },
+)
+```
+
+```bash cURL
+curl -X POST https://sandbox-api.polar.sh/v1/checkouts/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "products": ["'"$PRODUCT_ID"'"],
+    "prices": {
+      "'"$PRODUCT_ID"'": [
+        { "amount_type": "fixed", "price_amount": 10000, "price_currency": "usd" }
+      ]
+    }
+  }'
+```
+</CodeGroup>
+
+The `amount_type` is one of `fixed`, `custom` (pay what you want), `seat_based`, `unit_based`, `metered_unit` or `metered_tiers`. A free price is `fixed` with `price_amount: 0`. Combine at most one `fixed` and one `seat_based` price, or use one `custom` price alone, plus any number of metered prices.
+
+Ad-hoc prices have `source: "ad_hoc"` in responses. Catalog prices have `source: "catalog"`.
+
+## Currency and customer IP address
+
+Without `currency`, Polar picks it from the customer's country, based on their IP, and falls back to your organization's default currency. The IP also prefills the billing country, which drives tax. See [Products](/features/products) for multi-currency prices.
+
+When you create sessions from a backend, proxy or edge function, Polar sees your server's IP. Forward the customer's IP as `customer_ip_address`:
+
+<CodeGroup>
+```typescript TypeScript
+const checkout = await polar.checkouts.create({
+  products: [product.id],
   customer_ip_address: request.headers.get("CF-Connecting-IP") ?? undefined,
 });
 ```
 
-```py Python
-from polar.v2026_10 import Polar
+```python Python
+checkout = polar.checkouts.create(
+    products=[product.id],
+    customer_ip_address=request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or None,
+)
+```
 
-with Polar("<YOUR_BEARER_TOKEN_HERE>") as polar:
-    checkout = polar.checkouts.create(
-        products=["<product_id>"],
-        customer_ip_address=request.headers.get("True-Client-IP") or request.client.host,
-    )
+```bash cURL
+curl -X POST https://sandbox-api.polar.sh/v1/checkouts/ \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{ "products": ["'"$PRODUCT_ID"'"], "customer_ip_address": "203.0.113.7" }'
 ```
 </CodeGroup>
 
-The exact way to read the connecting IP depends on your runtime — for example, `CF-Connecting-IP` on Cloudflare Workers, `x-forwarded-for` behind most proxies, or `True-Client-IP`/`request.client.host` in FastAPI.
+The header depends on your runtime: `CF-Connecting-IP` on Cloudflare Workers, `X-Forwarded-For` behind most proxies. With `customer_ip_address` set, you don't need to set the billing country yourself.
 
-<Note>
-  When `customer_ip_address` is provided, you don't need to set `customer_billing_address.country` yourself — Polar will derive both the country and the currency from the IP.
-</Note>
+## Metadata
 
-## SDK examples
+| Field | Copied to |
+| --- | --- |
+| `metadata` | The order and subscription created by the checkout |
+| `customer_metadata` | The customer created by the checkout |
 
-Using our SDK, creating a checkout session is quite straightforward.
+## Upgrade a free subscription
+
+Set `subscription_id` to the ID of a subscription on a free price. When the checkout succeeds, Polar upgrades that subscription instead of creating a new one.
+
+## Embedding and language
+
+- `embed_origin`: the origin of the page that embeds the checkout, like `https://example.com`. Required to embed a session. See [Embedded checkout](/features/checkout/embed#embed-a-checkout-session).
+- `locale`: the checkout language, when [localization](/features/checkout/localization) is enabled.
+- Append `?theme=dark` or `?theme=light` to the session `url` to force a theme.
+
+## Update a session
+
+Change an open session from your backend with [`PATCH /v1/checkouts/{id}`](/api-reference/current/checkouts/update-checkout-session), for example to switch the product or apply a discount:
 
 <CodeGroup>
-    ```ts TypeScript
-    import { createPolar } from "@polar-sh/sdk/2026-10";
+```typescript TypeScript
+await polar.checkouts.update(checkout.id, { discount_id: discount.id });
+```
 
-    const polar = createPolar({
-      accessToken: process.env.POLAR_ACCESS_TOKEN!,
-    });
+```python Python
+polar.checkouts.update(checkout.id, discount_id=discount.id)
+```
 
-    async function run() {
-      const checkout = await polar.checkouts.create({
-        products: ["productId"]
-      });
-
-      console.log(checkout.url)
-    }
-
-    run();
-    ```
-
-    ```py Python
-    from polar.v2026_10 import Polar
-
-    with Polar("<YOUR_BEARER_TOKEN_HERE>") as polar:
-        checkout = polar.checkouts.create(
-            allow_discount_codes=True,
-            products=["<product_id>"],
-        )
-
-        print(checkout.url)
-    ```
-
+```bash cURL
+curl -X PATCH https://sandbox-api.polar.sh/v1/checkouts/$CHECKOUT_ID \
+  -H "Authorization: Bearer $POLAR_ACCESS_TOKEN" \
+  -H "Polar-Version: 2026-10" \
+  -H "Content-Type: application/json" \
+  -d '{ "discount_id": "'"$DISCOUNT_ID"'" }'
+```
 </CodeGroup>
+
+The `/v1/checkouts/client/{client_secret}` endpoints are what Polar's checkout page calls. They take the session's `client_secret` instead of an access token. Use them only to build your own checkout UI.
+
+## Session lifecycle
+
+A session starts `open` and expires 24 hours after creation (`expires_at`). Paying moves it to `confirmed`, then `succeeded` or `failed`. A session never completed becomes `expired`.
+
+| Dashboard | API `status` |
+| --- | --- |
+| **Open** | `open` |
+| **Confirmed** | `confirmed` |
+| **Succeeded** | `succeeded` |
+| **Expired** | `expired` |
+| **Failed** | `failed` |
+
+## Inspect sessions
+
+Find sessions in the dashboard, from the CLI or with your agent:
+
+<Tabs>
+  <Tab title="Dashboard">
+    - Open **Sales → Checkouts**
+    - Filter by **Status**, **Product** or **Customer**, or search
+    - Select a session
+  </Tab>
+  <Tab title="CLI">
+    ```bash
+    polar checkouts list --external-customer-id user_123 --status open
+    polar checkouts get <checkout_id>
+    ```
+
+    See [`polar checkouts`](/integrate/cli/reference/checkouts).
+  </Tab>
+  <Tab title="Prompt">
+    ```text Prompt
+    List the open checkout sessions for user_123 in my Polar sandbox.
+    ```
+
+    Uses the `checkouts_list` and `checkouts_get` operations of the [Polar MCP server](/integrate/mcp).
+  </Tab>
+</Tabs>
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Checkout](/concepts/checkout) | Checkout Links vs. Checkout Sessions, and what a checkout creates |
+| [Checkout Links](/features/checkout/links) | Reusable checkout URLs with no code |
+| [Embedded checkout](/features/checkout/embed) | Open the checkout on your own site |
+| [Checkout for AI agents](/features/checkout/agents) | How agents create and complete checkouts |
+| [Create Checkout Session API](/api-reference/current/checkouts/create-checkout-session) | Every field, with its schema |

@@ -38,18 +38,23 @@ class TestBuildSSOFactor:
                 "issuer": "https://idp.example.com",
                 "client_id": "client-id",
                 "auth_method": OIDCAuthMethod.client_secret,
-                "client_secret": "secret",
                 "authorization_parameters": {},
             }
         )
+        connection.client_secret_encrypted = (
+            await OrganizationSSOConnection.encrypt_client_secret(
+                connection.id, "secret"
+            )
+        )
 
-        factor = build_sso_factor(
+        factor = await build_sso_factor(
             connection,
             organization_slug="acme",
             state_service=OAuth2StateService(session),
         )
 
         assert isinstance(factor, SSOClientSecretFactor)
+        assert factor._client_secret == "secret"
         assert factor.identifier == str(connection.id)
         assert factor.connection_id == connection.id
         assert factor.organization_slug == "acme"
@@ -69,7 +74,7 @@ class TestBuildSSOFactor:
             }
         )
 
-        factor = build_sso_factor(
+        factor = await build_sso_factor(
             connection,
             organization_slug="acme",
             state_service=OAuth2StateService(session),
@@ -95,7 +100,7 @@ class TestBuildSSOFactor:
             }
         )
 
-        factor = build_sso_factor(
+        factor = await build_sso_factor(
             connection,
             organization_slug="acme",
             state_service=OAuth2StateService(session),

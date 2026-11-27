@@ -1,7 +1,7 @@
 import uuid
 from collections.abc import Sequence
 
-from pydantic import BaseModel
+from pydantic import MISSING, BaseModel
 from sqlalchemy import case, delete
 
 from polar.auth.models import Agent, AuthSubject
@@ -11,6 +11,7 @@ from polar.authz.service import (
     assert_resource_permission,
     get_accessible_org_ids,
 )
+from polar.catalog.repository import CatalogRepository
 from polar.declarative_config.guard import (
     DeclarativeConfigManaged,
     assert_catalog_editable,
@@ -23,6 +24,7 @@ from polar.kit.sorting import Sorting
 from polar.kit.visibility import Visibility
 from polar.models import Benefit, Organization, ProductBenefit, User
 from polar.models.benefit import BenefitType
+from polar.models.catalog import CatalogStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.resolver import get_payload_organization
 from polar.redis import Redis
@@ -47,6 +49,8 @@ class BenefitService:
         id_in: Sequence[uuid.UUID] | None = None,
         id_not_in: Sequence[uuid.UUID] | None = None,
         external_id: Sequence[str] | None = None,
+        catalog_id: Sequence[uuid.UUID] | None = None,
+        catalog_status: Sequence[CatalogStatus] | None = None,
         visibility: Sequence[Visibility] | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
@@ -69,6 +73,11 @@ class BenefitService:
 
         if id_in is not None:
             statement = statement.where(Benefit.id.in_(id_in))
+
+        if catalog_id is not None or catalog_status is not None:
+            statement = repository.apply_catalog_filter(
+                statement, org_ids, catalog_id, catalog_status
+            )
 
         if id_not_in is not None:
             statement = statement.where(Benefit.id.notin_(id_not_in))
@@ -134,8 +143,11 @@ class BenefitService:
         create_schema: BenefitCreate,
         auth_subject: AuthSubject[User | Organization | Agent],
         *,
+        notify: bool = True,
         declarative_config: bool = False,
     ) -> Benefit:
+        """``notify=False`` skips the ``benefit.created`` webhook, for a benefit
+        that isn't final yet."""
         organization = await get_payload_organization(
             session, auth_subject, create_schema
         )
@@ -164,8 +176,17 @@ class BenefitService:
             )
 
         repository = BenefitRepository.from_session(session)
+        await CatalogRepository.from_session(session).lock(organization.id)
         if (
-            create_schema.external_id is not None
+            await repository.count_by_organization_id(organization.id)
+            >= organization.benefits_limit
+        ):
+            raise NotPermitted(
+                f"Organization has reached its limit of {organization.benefits_limit} benefits."
+            )
+
+        if (
+            create_schema.external_id is not MISSING
             and await repository.get_by_external_id_and_organization(
                 create_schema.external_id, organization.id
             )
@@ -231,9 +252,10 @@ class BenefitService:
         session.add(benefit)
         await session.flush()
 
-        await webhook_service.send(
-            session, organization, WebhookEventType.benefit_created, benefit
-        )
+        if notify:
+            await webhook_service.send(
+                session, organization, WebhookEventType.benefit_created, benefit
+            )
 
         return benefit
 
@@ -266,7 +288,7 @@ class BenefitService:
             )
 
         if (
-            "external_id" in benefit_update.model_fields_set
+            benefit_update.external_id is not MISSING
             and benefit_update.external_id != benefit.external_id
         ):
             repository = BenefitRepository.from_session(session)
@@ -281,11 +303,8 @@ class BenefitService:
                         }
                     ]
                 )
-            if (
-                benefit_update.external_id is not None
-                and await repository.get_by_external_id_and_organization(
-                    benefit_update.external_id, benefit.organization_id
-                )
+            if await repository.get_by_external_id_and_organization(
+                benefit_update.external_id, benefit.organization_id
             ):
                 raise PolarRequestValidationError(
                     [
@@ -324,10 +343,8 @@ class BenefitService:
                 )
             update_dict["visibility"] = benefit.type.resolve_visibility(visibility)
 
-        properties_update: BaseModel | None = getattr(
-            benefit_update, "properties", None
-        )
-        if properties_update is not None:
+        properties_update: BaseModel | MISSING = benefit_update.properties
+        if properties_update is not MISSING:
             benefit_strategy = get_benefit_strategy(benefit.type, session, redis)
             update_dict["properties"] = await benefit_strategy.validate_properties(
                 auth_subject,

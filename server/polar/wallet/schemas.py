@@ -3,8 +3,17 @@ from typing import Annotated
 from fastapi import Path
 from pydantic import UUID4, Field
 
+from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.exceptions import ResourceNotFound
-from polar.kit.schemas import CUSTOMER_ID_EXAMPLE, IDSchema, Schema, TimestampedSchema
+from polar.kit.schemas import (
+    CUSTOMER_ID_EXAMPLE,
+    IDSchema,
+    MultipleQueryFilter,
+    TimestampedSchema,
+)
+from polar.kit.versioning import QuerySchema
+from polar.models.wallet import WalletType
+from polar.organization.schemas import OrganizationID
 
 WalletID = Annotated[UUID4, Path(description="The wallet ID.")]
 
@@ -29,22 +38,22 @@ class Wallet(WalletBase):
     """
     A wallet represents a customer's balance in your organization.
 
-    They can top-up their wallet, and use the balance to pay for usage.
+    The balance can be used to pay for usage.
     """
 
 
-class WalletTopUpCreate(Schema):
-    """
-    Request schema to top-up a wallet.
-    """
-
-    amount: int = Field(
-        description="The amount to top-up the wallet by, in cents.", examples=[20_00]
+class WalletListParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
     )
-    currency: str = Field(
-        pattern="usd",
-        description=(
-            "The currency. Currently, only `usd` is supported. "
-            "It should match the wallet's currency."
-        ),
+    type: MultipleQueryFilter[WalletType] | None = Field(
+        None, title="Wallet Type Filter", description="Filter by wallet type."
+    )
+    customer_id: MultipleQueryFilter[CustomerID] | None = Field(
+        None, title="CustomerID Filter", description="Filter by customer ID."
+    )
+    external_customer_id: MultipleQueryFilter[ExternalCustomerID] | None = Field(
+        None,
+        title="ExternalCustomerID Filter",
+        description="Filter by customer external ID.",
     )

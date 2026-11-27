@@ -1,4 +1,5 @@
 import uuid
+from datetime import timedelta
 
 import pytest
 from sqlalchemy import text
@@ -243,6 +244,80 @@ class TestListByEmailAndOrganization:
         # Access customer without additional query (eager loaded)
         assert members[0].customer.id == customer.id
         assert members[0].customer.name == "Test Customer"
+
+
+@pytest.mark.anyio
+class TestGetOwnerByCustomerId:
+    async def test_include_deleted_prefers_active_owner(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        deleted_owner = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="deleted-owner@example.com",
+            role=MemberRole.owner,
+            deleted_at=utc_now(),
+        )
+        active_owner = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="active-owner@example.com",
+            role=MemberRole.owner,
+        )
+        await save_fixture(deleted_owner)
+        await save_fixture(active_owner)
+
+        repository = MemberRepository.from_session(session)
+        owner = await repository.get_owner_by_customer_id(
+            customer.id, include_deleted=True
+        )
+
+        assert owner is not None
+        assert owner.id == active_owner.id
+
+        owner = await repository.get_owner_by_customer_id(customer.id)
+
+        assert owner is not None
+        assert owner.id == active_owner.id
+
+    async def test_include_deleted_returns_most_recently_deleted_owner(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        now = utc_now()
+        older_owner = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="older-owner@example.com",
+            role=MemberRole.owner,
+            deleted_at=now - timedelta(days=2),
+        )
+        newer_owner = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="newer-owner@example.com",
+            role=MemberRole.owner,
+            deleted_at=now - timedelta(days=1),
+        )
+        await save_fixture(older_owner)
+        await save_fixture(newer_owner)
+
+        repository = MemberRepository.from_session(session)
+        owner = await repository.get_owner_by_customer_id(
+            customer.id, include_deleted=True
+        )
+
+        assert owner is not None
+        assert owner.id == newer_owner.id
+
+        assert await repository.get_owner_by_customer_id(customer.id) is None
 
 
 @pytest.mark.anyio

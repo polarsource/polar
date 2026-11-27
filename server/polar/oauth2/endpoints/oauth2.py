@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import Sequence
 from typing import Literal, cast
 
@@ -80,8 +81,10 @@ async def create(
     request.state.parsed_data = client_configuration.model_dump(
         mode="json", exclude_none=True
     )
-    return authorization_server.create_endpoint_response(
-        ClientRegistrationEndpoint.ENDPOINT_NAME, request
+    return await asyncio.to_thread(
+        authorization_server.create_endpoint_response,
+        ClientRegistrationEndpoint.ENDPOINT_NAME,
+        request,
     )
 
 
@@ -99,8 +102,10 @@ async def get(
 ) -> Response:
     """Get an OAuth2 client by Client ID."""
     request.state.user = auth_subject.subject if is_user(auth_subject) else None
-    return authorization_server.create_endpoint_response(
-        ClientConfigurationEndpoint.ENDPOINT_NAME, request
+    return await asyncio.to_thread(
+        authorization_server.create_endpoint_response,
+        ClientConfigurationEndpoint.ENDPOINT_NAME,
+        request,
     )
 
 
@@ -122,8 +127,10 @@ async def update(
     request.state.parsed_data = client_configuration.model_dump(
         mode="json", exclude_none=True
     )
-    return authorization_server.create_endpoint_response(
-        ClientConfigurationEndpoint.ENDPOINT_NAME, request
+    return await asyncio.to_thread(
+        authorization_server.create_endpoint_response,
+        ClientConfigurationEndpoint.ENDPOINT_NAME,
+        request,
     )
 
 
@@ -143,8 +150,10 @@ async def delete(
 ) -> Response:
     """Delete an OAuth2 client."""
     request.state.user = auth_subject.subject if is_user(auth_subject) else None
-    return authorization_server.create_endpoint_response(
-        ClientConfigurationEndpoint.ENDPOINT_NAME, request
+    return await asyncio.to_thread(
+        authorization_server.create_endpoint_response,
+        ClientConfigurationEndpoint.ENDPOINT_NAME,
+        request,
     )
 
 
@@ -157,15 +166,16 @@ async def authorize(
 ) -> AuthorizeResponse:
     user = auth_subject.subject if is_user(auth_subject) else None
     await request.form()
-    grant: AuthorizationCodeGrant = authorization_server.get_consent_grant(
-        request=request, end_user=user
+    grant: AuthorizationCodeGrant = await asyncio.to_thread(
+        authorization_server.get_consent_grant, request=request, end_user=user
     )
 
     if grant.prompt == "login":
         raise HTTPException(status_code=401)
     elif grant.prompt == "none":
         request.state.auth_subject = auth_subject if is_user(auth_subject) else None
-        return authorization_server.create_authorization_response(
+        return await asyncio.to_thread(
+            authorization_server.create_authorization_response,
             request=request,
             grant_user=user,
             save_consent=False,
@@ -186,13 +196,10 @@ async def authorize(
             if organization.id in accessible_org_ids
         ]
 
-    payload = grant.request.payload
-    assert payload is not None
-
     return authorize_response_adapter.validate_python(
         {
             "client": grant.client,
-            "scopes": payload.scope,
+            "scopes": grant.request.scope,
             "sub_type": grant.sub_type,
             "sub": grant.sub,
             "organizations": organizations,
@@ -211,7 +218,8 @@ async def consent(
     await request.form()
     request.state.auth_subject = auth_subject
     grant_user = auth_subject.subject if action == "allow" else None
-    return authorization_server.create_authorization_response(
+    return await asyncio.to_thread(
+        authorization_server.create_authorization_response,
         request=request,
         grant_user=grant_user,
         save_consent=True,
@@ -252,7 +260,7 @@ async def token(
 ) -> Response:
     """Request an access token using a valid grant."""
     await request.form()
-    return authorization_server.create_token_response(request)
+    return await asyncio.to_thread(authorization_server.create_token_response, request)
 
 
 @router.post(
@@ -279,8 +287,10 @@ async def revoke(
 ) -> Response:
     """Revoke an access token or a refresh token."""
     await request.form()
-    return authorization_server.create_endpoint_response(
-        RevocationEndpoint.ENDPOINT_NAME, request
+    return await asyncio.to_thread(
+        authorization_server.create_endpoint_response,
+        RevocationEndpoint.ENDPOINT_NAME,
+        request,
     )
 
 
@@ -310,8 +320,10 @@ async def introspect(
 ) -> Response:
     """Get information about an access token."""
     await request.form()
-    return authorization_server.create_endpoint_response(
-        IntrospectionEndpoint.ENDPOINT_NAME, request
+    return await asyncio.to_thread(
+        authorization_server.create_endpoint_response,
+        IntrospectionEndpoint.ENDPOINT_NAME,
+        request,
     )
 
 

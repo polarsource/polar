@@ -5,7 +5,8 @@ import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { OpsUpdate } from './OpsUpdate'
-import { STEP_COPY, StepInputField } from './panTransferCopy'
+import type { MigrationSource } from '../sources'
+import { StepInputField, stepCopy } from './panTransferCopy'
 import { PanTransferStepBody } from './PanTransferStepBody'
 import { STATE_LABELS, StepMarker, StepState } from '../stepMarker'
 
@@ -14,6 +15,7 @@ interface Props {
   current: boolean
   destinationAccountId: string | null
   migrationId: string
+  source: MigrationSource
   sourceStripeAccountId?: string
 }
 
@@ -22,9 +24,10 @@ export function PanTransferStepItem({
   current,
   destinationAccountId,
   migrationId,
+  source,
   sourceStripeAccountId,
 }: Props) {
-  const copy = STEP_COPY[step.key]
+  const copy = stepCopy(step.key, source)
   // Keep the row on an unknown key so the count and order still line up.
   const title = copy?.title ?? step.key
   const done = step.status === 'completed'
@@ -43,9 +46,7 @@ export function PanTransferStepItem({
       </Box>
 
       <Box flex={1} minWidth={0} flexDirection="column" rowGap="m">
-        <Text variant="caption" color={current ? 'default' : 'muted'}>
-          {title}
-        </Text>
+        <Text color={current ? 'default' : 'muted'}>{title}</Text>
 
         {done && <CompletedSummary step={step} fields={copy?.inputs ?? []} />}
 
@@ -60,10 +61,11 @@ export function PanTransferStepItem({
               copy={copy}
               destinationAccountId={destinationAccountId}
               migrationId={migrationId}
+              source={source}
               sourceStripeAccountId={sourceStripeAccountId}
             />
           ) : (
-            <Text variant="caption" color="muted">
+            <Text color="muted">
               This step needs a newer version of this page. Please refresh.
             </Text>
           ))}

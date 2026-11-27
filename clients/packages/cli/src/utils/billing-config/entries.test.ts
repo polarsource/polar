@@ -106,6 +106,31 @@ describe('formatRows', () => {
     )
   })
 
+  test('merges the meter cycle into one row', () => {
+    const output = stripAnsi(
+      formatRows(
+        '',
+        [
+          { field: 'meter_interval', before: null, after: 'week' },
+          { field: 'meter_interval_count', before: null, after: 2 },
+        ],
+        'updated',
+      ).join('\n'),
+    )
+    expect(output).toBe('meter cycle  with billing → per 2 weeks')
+  })
+
+  test('keeps a count-only meter cycle change as its own row', () => {
+    const output = stripAnsi(
+      formatRows(
+        '',
+        [{ field: 'meter_interval_count', before: 1, after: 2 }],
+        'updated',
+      ).join('\n'),
+    )
+    expect(output).toBe('meter_interval_count  1 → 2')
+  })
+
   test('leaves out price groups that did not change', () => {
     const output = stripAnsi(
       formatRows(
@@ -189,6 +214,27 @@ describe('lineDiff', () => {
   })
 })
 
+describe('formatRows with wide values', () => {
+  test('stacks a change that would not fit on one row', () => {
+    const before =
+      '4c12c56eb4452fe6ff96fc1f1c5d6865863b2ccdb79a71f33b82b4f48e85d957'
+    const after =
+      'bb3fc5e5582aebd4d08beccdef425659478ac62cfb44f39cf6ab9dfe6834529c'
+    const output = stripAnsi(
+      formatRows(
+        '      ',
+        [{ field: 'catalog', before, after }],
+        'updated',
+      ).join('\n'),
+    )
+    expect(output).toBe(
+      ['      catalog', `        - "${before}"`, `        + "${after}"`].join(
+        '\n',
+      ),
+    )
+  })
+})
+
 describe('tally and planSummary', () => {
   const entries = [
     { section: 'meters', id: 'a', action: 'created' as const, diff: [] },
@@ -204,7 +250,7 @@ describe('tally and planSummary', () => {
   test('summarises a plan with additions in green and changes in yellow', () => {
     const summary = planSummary(entries)
     expect(stripAnsi(summary)).toBe(
-      '  Plan: 1 to change, 2 to add, 1 unchanged',
+      '  Changes: 1 to change, 2 to add, 1 unchanged',
     )
     expect(summary).toContain(ui.yellow('1 to change'))
     expect(summary).toContain(ui.green('2 to add'))

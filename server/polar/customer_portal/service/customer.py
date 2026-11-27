@@ -3,8 +3,12 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 import stripe as stripe_lib
+import structlog
+from pydantic import MISSING
+from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Customer, Member
+from polar.checkout import ip_geolocation
 from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.integrations.stripe.service import stripe as stripe_service
@@ -12,11 +16,12 @@ from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.http import add_query_parameters
 from polar.kit.pagination import PaginationParams
 from polar.models import Customer as CustomerModel
-from polar.models import PaymentMethod
+from polar.models import PaymentMethod, Subscription
 from polar.order.service import order as order_service
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.postgres import AsyncSession
+from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
 from polar.tax.tax_id import (
     IncompatibleTaxIDFormat,
@@ -41,6 +46,9 @@ if TYPE_CHECKING:
         CustomerCreateParamsTaxIdDatum,
     )
     from stripe.params._modify_customer_params import ModifyCustomerParams
+
+
+log = structlog.get_logger()
 
 
 class CustomerError(PolarError): ...
@@ -69,37 +77,20 @@ class CustomerService:
         customer: CustomerModel,
         customer_update: CustomerPortalCustomerUpdate,
     ) -> CustomerModel:
-        if customer_update.billing_name is not None:
+        previous_billing_country = (
+            customer.billing_address.country
+            if customer.billing_address is not None
+            else None
+        )
+
+        if isinstance(customer_update.billing_name, str):
             customer.billing_name = customer_update.billing_name
 
-        if "billing_address" in customer_update.model_fields_set:
-            if customer_update.billing_address is None:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "missing",
-                            "loc": ("body", "billing_address"),
-                            "msg": "Customer billing address cannot be reset to null once set.",
-                            "input": customer_update.billing_address,
-                        }
-                    ]
-                )
-            else:
-                customer.billing_address = customer_update.billing_address
+        if customer_update.billing_address is not MISSING:
+            customer.billing_address = customer_update.billing_address
 
         new_default_payment_method: PaymentMethod | None = None
-        if "default_payment_method_id" in customer_update.model_fields_set:
-            if customer_update.default_payment_method_id is None:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "missing",
-                            "loc": ("body", "default_payment_method_id"),
-                            "msg": "Default payment method cannot be reset to null.",
-                            "input": customer_update.default_payment_method_id,
-                        }
-                    ]
-                )
+        if customer_update.default_payment_method_id is not MISSING:
             payment_method_repository = PaymentMethodRepository.from_session(session)
             new_default_payment_method = (
                 await payment_method_repository.get_by_id_and_customer(
@@ -118,7 +109,7 @@ class CustomerService:
                     ]
                 )
 
-        if "tax_id" in customer_update.model_fields_set:
+        if customer_update.tax_id is not MISSING:
             if customer_update.tax_id is None:
                 # Explicitly clearing the tax ID.
                 customer.tax_id = None
@@ -154,7 +145,7 @@ class CustomerService:
                         ]
                     ) from e
         elif (
-            "billing_address" in customer_update.model_fields_set
+            customer_update.billing_address is not MISSING
             and customer.tax_id is not None
         ):
             # Billing address changed while an existing tax ID is set:
@@ -213,10 +204,6 @@ class CustomerService:
                 params["name"] = customer.billing_name
             if customer.billing_address is not None:
                 params["address"] = customer.billing_address.to_dict()
-            if new_default_payment_method is not None:
-                params["invoice_settings"] = {
-                    "default_payment_method": new_default_payment_method.processor_id,
-                }
             stripe_tax_id: CustomerCreateParamsTaxIdDatum | None = None
             if customer.tax_id is not None:
                 try:
@@ -235,7 +222,81 @@ class CustomerService:
                 session, customer, new_default_payment_method
             )
 
+        await self._log_unconfirmed_billing_country(
+            session, customer, previous_billing_country
+        )
+
         return customer
+
+    async def _log_unconfirmed_billing_country(
+        self,
+        session: AsyncSession,
+        customer: CustomerModel,
+        previous_billing_country: str | None,
+    ) -> None:
+        billing_address = customer.billing_address
+        if (
+            billing_address is None
+            or billing_address.country == previous_billing_country
+        ):
+            return
+
+        subscriptions = await SubscriptionRepository.from_session(
+            session
+        ).list_payable_by_customer(
+            customer.id, options=(joinedload(Subscription.checkout),)
+        )
+        if not subscriptions:
+            return
+
+        payment_methods = await PaymentMethodRepository.from_session(
+            session
+        ).list_by_customer(customer.id)
+        country_by_payment_method_id: dict[UUID | None, str | None] = {
+            payment_method.id: payment_method.country
+            for payment_method in payment_methods
+        }
+        countries_by_subscription = [
+            (
+                (subscription.checkout.customer_signals or {}).get("ip_country")
+                if subscription.checkout is not None
+                else None,
+                country_by_payment_method_id.get(
+                    subscription.payment_method_id or customer.default_payment_method_id
+                ),
+            )
+            for subscription in subscriptions
+        ]
+        matching_countries = ip_geolocation.get_matching_countries(
+            billing_address.country
+        )
+        unconfirmed_countries = [
+            countries
+            for countries in countries_by_subscription
+            if matching_countries.isdisjoint(countries)
+        ]
+        if not unconfirmed_countries:
+            return
+
+        checkout_ip_countries = sorted(
+            {ip_country for ip_country, _ in unconfirmed_countries if ip_country}
+        )
+        payment_method_countries = sorted(
+            {country for _, country in unconfirmed_countries if country}
+        )
+        # Shadow mode: measure how often this triggers before blocking on it.
+        log.info(
+            "customer_portal.billing_country_mismatch"
+            if checkout_ip_countries or payment_method_countries
+            else "customer_portal.billing_country_unverified",
+            customer_id=str(customer.id),
+            organization_id=str(customer.organization_id),
+            checkout_ip_countries=checkout_ip_countries,
+            payment_method_countries=payment_method_countries,
+            unconfirmed_subscription_count=len(unconfirmed_countries),
+            billing_country=billing_address.country,
+            previous_billing_country=previous_billing_country,
+        )
 
     async def list_payment_methods(
         self,
@@ -389,8 +450,6 @@ class CustomerService:
         setup_intent: stripe_lib.SetupIntent,
         set_default: bool,
     ) -> CustomerPaymentMethodCreateResponse:
-        assert customer.stripe_customer_id is not None
-
         if setup_intent.status == "requires_action":
             assert setup_intent.client_secret is not None
             return CustomerPaymentMethodCreateRequiresActionResponse(
@@ -412,12 +471,6 @@ class CustomerService:
         stripe_payment_method = await payment_method_service.resolve_from_stripe_intent(
             setup_intent
         )
-        if set_default:
-            await stripe_service.update_customer(
-                customer.stripe_customer_id,
-                invoice_settings={"default_payment_method": stripe_payment_method.id},
-            )
-
         payment_method = await payment_method_service.upsert_from_stripe(
             session,
             customer,

@@ -160,6 +160,19 @@ const timelineRenderers: TimelineRendererMap = {
     sentiment: 'negative',
     summary: ({ metadata }) => benefitsDisplayNames[metadata.benefit_type],
   },
+  'benefit.manually_granted': {
+    importance: 'medium',
+    summary: ({ metadata }) => benefitsDisplayNames[metadata.benefit_type],
+  },
+  'benefit.manually_revoked': {
+    importance: 'medium',
+    sentiment: 'negative',
+    summary: ({ metadata }) => benefitsDisplayNames[metadata.benefit_type],
+  },
+  'benefit.unrevoked': {
+    importance: 'medium',
+    summary: ({ metadata }) => benefitsDisplayNames[metadata.benefit_type],
+  },
   'benefit.cycled': {
     importance: 'low',
     summary: ({ metadata }) => benefitsDisplayNames[metadata.benefit_type],

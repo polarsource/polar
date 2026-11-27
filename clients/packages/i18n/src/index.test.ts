@@ -8,7 +8,12 @@ vi.mock('./config', async (importOriginal) => {
   }
 })
 
-import { getTranslationLocale, isAcceptedLocale } from './index'
+import {
+  getLocaleDirection,
+  getTranslationLocale,
+  isAcceptedLocale,
+  SUPPORTED_LOCALES,
+} from './index'
 
 describe('isAcceptedLocale', () => {
   it('accepts a supported language', () => {
@@ -40,4 +45,24 @@ describe('getTranslationLocale', () => {
   it('returns a region-only supported locale as is', () => {
     expect(getTranslationLocale('zh-TW' as never)).toBe('zh-TW')
   })
+})
+
+describe('getLocaleDirection', () => {
+  it.each(['ar', 'ar-EG', 'he', 'he-IL', 'AR'])('is rtl for %s', (locale) => {
+    expect(getLocaleDirection(locale)).toBe('rtl')
+  })
+
+  it.each([...SUPPORTED_LOCALES])(
+    'is ltr for supported locale %s',
+    (locale) => {
+      expect(getLocaleDirection(locale)).toBe('ltr')
+    },
+  )
+
+  it.each(['fa', 'ur', 'yi'])(
+    'is ltr for right-to-left languages we do not ship (%s)',
+    (locale) => {
+      expect(getLocaleDirection(locale)).toBe('ltr')
+    },
+  )
 })

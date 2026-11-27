@@ -5,7 +5,7 @@ import typing
 
 import typing_extensions
 
-from polar.base import _register_extra_items_typed_dict
+from polar.base import _Discriminator, _register_extra_items_typed_dict
 from polar.v2027_01.literals import (
     BenefitType,
     BenefitVisibility,
@@ -85,6 +85,13 @@ class AddressDict:
     state: str | None = None
 
     country: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class AlreadyActiveSubscription:
+    error: typing.Literal["AlreadyActiveSubscription"]
+
+    detail: str
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -769,6 +776,12 @@ class BenefitCustom:
     visibility: BenefitVisibility
     """The visibility of the benefit in the customer portal."""
 
+    catalog_id: str | None
+    """ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."""
+
+    is_current: bool
+    """Whether this is the current version of the benefit."""
+
     properties: BenefitCustomProperties
 
     visibility_configurable: bool
@@ -935,6 +948,12 @@ class BenefitDiscord:
 
     visibility: BenefitVisibility
     """The visibility of the benefit in the customer portal."""
+
+    catalog_id: str | None
+    """ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."""
+
+    is_current: bool
+    """Whether this is the current version of the benefit."""
 
     properties: BenefitDiscordProperties
 
@@ -1105,6 +1124,12 @@ class BenefitDownloadables:
     visibility: BenefitVisibility
     """The visibility of the benefit in the customer portal."""
 
+    catalog_id: str | None
+    """ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."""
+
+    is_current: bool
+    """Whether this is the current version of the benefit."""
+
     properties: BenefitDownloadablesProperties
 
     visibility_configurable: bool
@@ -1225,6 +1250,12 @@ class BenefitFeatureFlag:
     visibility: BenefitVisibility
     """The visibility of the benefit in the customer portal."""
 
+    catalog_id: str | None
+    """ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."""
+
+    is_current: bool
+    """Whether this is the current version of the benefit."""
+
     properties: BenefitFeatureFlagProperties
 
     visibility_configurable: bool
@@ -1342,6 +1373,12 @@ class BenefitGitHubRepository:
     visibility: BenefitVisibility
     """The visibility of the benefit in the customer portal."""
 
+    catalog_id: str | None
+    """ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."""
+
+    is_current: bool
+    """Whether this is the current version of the benefit."""
+
     properties: BenefitGitHubRepositoryProperties
 
     visibility_configurable: bool
@@ -1436,6 +1473,12 @@ class BenefitGitHubRepositorySubscriberProperties:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitGrant:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was manually revoked, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -1493,11 +1536,24 @@ class BenefitGrant:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class BenefitGrantAlreadyExists:
+    error: typing.Literal["BenefitGrantAlreadyExists"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitGrantCustomProperties: ...
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitGrantCustomWebhook:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was manually revoked, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -1561,6 +1617,12 @@ class BenefitGrantDiscordProperties:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitGrantDiscordWebhook:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was manually revoked, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -1618,6 +1680,12 @@ class BenefitGrantDownloadablesProperties:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitGrantDownloadablesWebhook:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was manually revoked, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -1683,6 +1751,12 @@ class BenefitGrantFeatureFlagProperties: ...
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitGrantFeatureFlagWebhook:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was manually revoked, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -1748,6 +1822,12 @@ class BenefitGrantGitHubRepositoryProperties:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitGrantGitHubRepositoryWebhook:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was manually revoked, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -1809,6 +1889,12 @@ class BenefitGrantLicenseKeysProperties:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitGrantLicenseKeysWebhook:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was manually revoked, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -1881,6 +1967,12 @@ class BenefitGrantMeterCreditProperties:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitGrantMeterCreditWebhook:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was manually revoked, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -1948,6 +2040,12 @@ class BenefitGrantSlackSharedChannelProperties:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitGrantSlackSharedChannelWebhook:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was manually revoked, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -2094,6 +2192,12 @@ class BenefitLicenseKeys:
     visibility: BenefitVisibility
     """The visibility of the benefit in the customer portal."""
 
+    catalog_id: str | None
+    """ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."""
+
+    is_current: bool
+    """Whether this is the current version of the benefit."""
+
     properties: BenefitLicenseKeysProperties
 
     visibility_configurable: bool
@@ -2184,6 +2288,98 @@ class BenefitLicenseKeysSubscriberProperties:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class BenefitManuallyGrantedEvent:
+    """An event created by Polar when a benefit grant is created manually."""
+
+    id: str
+    """The ID of the object."""
+
+    timestamp: str
+    """The timestamp of the event."""
+
+    organization_id: str
+    """The ID of the organization owning the event."""
+
+    customer_id: str | None
+    """ID of the customer in your Polar organization associated with the event."""
+
+    customer: Customer | None
+    """The customer associated with the event."""
+
+    external_customer_id: str | None
+    """ID of the customer in your system associated with the event."""
+
+    member_id: str | None = None
+    """ID of the member within the customer's organization who performed the action inside B2B."""
+
+    external_member_id: str | None = None
+    """ID of the member in your system within the customer's organization who performed the action inside B2B."""
+
+    child_count: int = 0
+    """Number of direct child events linked to this event."""
+
+    parent_id: str | None = None
+    """The ID of the parent event."""
+
+    label: str
+    """Human readable label of the event type."""
+
+    source: typing.Literal["system"]
+    """The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API."""
+
+    name: typing.Literal["benefit.manually_granted"]
+    """The name of the event."""
+
+    metadata: BenefitGrantMetadata
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class BenefitManuallyRevokedEvent:
+    """An event created by Polar when a benefit grant is manually revoked."""
+
+    id: str
+    """The ID of the object."""
+
+    timestamp: str
+    """The timestamp of the event."""
+
+    organization_id: str
+    """The ID of the organization owning the event."""
+
+    customer_id: str | None
+    """ID of the customer in your Polar organization associated with the event."""
+
+    customer: Customer | None
+    """The customer associated with the event."""
+
+    external_customer_id: str | None
+    """ID of the customer in your system associated with the event."""
+
+    member_id: str | None = None
+    """ID of the member within the customer's organization who performed the action inside B2B."""
+
+    external_member_id: str | None = None
+    """ID of the member in your system within the customer's organization who performed the action inside B2B."""
+
+    child_count: int = 0
+    """Number of direct child events linked to this event."""
+
+    parent_id: str | None = None
+    """The ID of the parent event."""
+
+    label: str
+    """Human readable label of the event type."""
+
+    source: typing.Literal["system"]
+    """The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API."""
+
+    name: typing.Literal["benefit.manually_revoked"]
+    """The name of the event."""
+
+    metadata: BenefitGrantMetadata
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitMeterCredit:
     """A benefit of type `meter_unit`.
 
@@ -2222,6 +2418,12 @@ class BenefitMeterCredit:
 
     visibility: BenefitVisibility
     """The visibility of the benefit in the customer portal."""
+
+    catalog_id: str | None
+    """ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."""
+
+    is_current: bool
+    """Whether this is the current version of the benefit."""
 
     properties: BenefitMeterCreditProperties
 
@@ -2409,6 +2611,12 @@ class BenefitSlackSharedChannel:
     visibility: BenefitVisibility
     """The visibility of the benefit in the customer portal."""
 
+    catalog_id: str | None
+    """ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."""
+
+    is_current: bool
+    """Whether this is the current version of the benefit."""
+
     properties: BenefitSlackSharedChannelProperties
 
     visibility_configurable: bool
@@ -2521,11 +2729,57 @@ class BenefitSubscriberOrganization:
     avatar_url: str | None
     """Avatar URL shown in checkout, customer portal, emails etc."""
 
-    proration_behavior: SubscriptionProrationBehavior
+    proration_behavior: SubscriptionProrationBehavior | typing.Literal["auto"]
     """Proration behavior applied when customer updates their subscription from the portal."""
 
     allow_customer_updates: bool
     """Whether customers can update their subscriptions from the customer portal."""
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class BenefitUnrevokedEvent:
+    """An event created by Polar when a manual revocation is cleared."""
+
+    id: str
+    """The ID of the object."""
+
+    timestamp: str
+    """The timestamp of the event."""
+
+    organization_id: str
+    """The ID of the organization owning the event."""
+
+    customer_id: str | None
+    """ID of the customer in your Polar organization associated with the event."""
+
+    customer: Customer | None
+    """The customer associated with the event."""
+
+    external_customer_id: str | None
+    """ID of the customer in your system associated with the event."""
+
+    member_id: str | None = None
+    """ID of the member within the customer's organization who performed the action inside B2B."""
+
+    external_member_id: str | None = None
+    """ID of the member in your system within the customer's organization who performed the action inside B2B."""
+
+    child_count: int = 0
+    """Number of direct child events linked to this event."""
+
+    parent_id: str | None = None
+    """The ID of the parent event."""
+
+    label: str
+    """Human readable label of the event type."""
+
+    source: typing.Literal["system"]
+    """The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API."""
+
+    name: typing.Literal["benefit.unrevoked"]
+    """The name of the event."""
+
+    metadata: BenefitGrantMetadata
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -2750,9 +3004,6 @@ class Checkout:
     product_id: str | None
     """ID of the product to checkout."""
 
-    product_price_id: str | None
-    """ID of the product price to checkout."""
-
     discount_id: str | None
     """ID of the discount applied to the checkout."""
 
@@ -2823,10 +3074,10 @@ class Checkout:
     product: CheckoutProduct | None
     """Product selected to checkout."""
 
-    product_price: LegacyRecurringProductPrice | ProductPrice | None
+    product_price: ProductPrice | None
     """Price of the selected product."""
 
-    prices: dict[str, list[LegacyRecurringProductPrice | ProductPrice]] | None
+    prices: dict[str, list[ProductPrice]] | None
     """Mapping of product IDs to their list of prices."""
 
     discount: (
@@ -2922,10 +3173,6 @@ class CheckoutDiscountFixedOnceForeverDuration:
 
     type: DiscountType
 
-    amount: int
-
-    currency: str
-
     amounts: dict[str, int]
     """Map of currency to fixed amount to discount from the total."""
 
@@ -2947,10 +3194,6 @@ class CheckoutDiscountFixedRepeatDuration:
     duration_in_months: int
 
     type: DiscountType
-
-    amount: int
-
-    currency: str
 
     amounts: dict[str, int]
     """Map of currency to fixed amount to discount from the total."""
@@ -3027,6 +3270,9 @@ class CheckoutLink:
 
     payment_processor: PaymentProcessor
     """Payment processor used."""
+
+    trial_payment_setup_required: bool | None
+    """Whether customers must provide a payment method to start a trial. If `false`, customers can start a trial without entering payment details. If `null`, the product's setting is used."""
 
     client_secret: str
     """Client secret used to access the checkout link."""
@@ -3122,7 +3368,7 @@ class CheckoutLinkProduct:
     organization_id: str
     """The ID of the organization owning the product."""
 
-    prices: list[LegacyRecurringProductPrice | ProductPrice]
+    prices: list[ProductPrice]
     """List of prices for this product."""
 
     benefits: list[BenefitPublic]
@@ -3159,7 +3405,7 @@ class CheckoutOrganization:
     avatar_url: str | None
     """Avatar URL shown in checkout, customer portal, emails etc."""
 
-    proration_behavior: SubscriptionProrationBehavior
+    proration_behavior: SubscriptionProrationBehavior | typing.Literal["auto"]
     """Proration behavior applied when customer updates their subscription from the portal."""
 
     allow_customer_updates: bool
@@ -3215,7 +3461,13 @@ class CheckoutProduct:
     organization_id: str
     """The ID of the organization owning the product."""
 
-    prices: list[LegacyRecurringProductPrice | ProductPrice]
+    catalog_id: str | None
+    """ID of the catalog that introduced this version of the product. None for products not managed by declarative config."""
+
+    is_current: bool
+    """Whether this is the current version of the product."""
+
+    prices: list[ProductPrice]
     """List of prices for this product."""
 
     benefits: list[BenefitPublic]
@@ -3330,9 +3582,6 @@ class CheckoutPublic:
     product_id: str | None
     """ID of the product to checkout."""
 
-    product_price_id: str | None
-    """ID of the product price to checkout."""
-
     discount_id: str | None
     """ID of the discount applied to the checkout."""
 
@@ -3392,10 +3641,10 @@ class CheckoutPublic:
     product: CheckoutProduct | None
     """Product selected to checkout."""
 
-    product_price: LegacyRecurringProductPrice | ProductPrice | None
+    product_price: ProductPrice | None
     """Price of the selected product."""
 
-    prices: dict[str, list[LegacyRecurringProductPrice | ProductPrice]] | None
+    prices: dict[str, list[ProductPrice]] | None
     """Mapping of product IDs to their list of prices."""
 
     discount: (
@@ -3409,6 +3658,9 @@ class CheckoutPublic:
     organization: CheckoutOrganization
 
     attached_custom_fields: list[AttachedCustomField] | None
+
+    payment_method_types: list[str]
+    """Payment method types to offer in the payment form."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -3510,9 +3762,6 @@ class CheckoutPublicConfirmed:
     product_id: str | None
     """ID of the product to checkout."""
 
-    product_price_id: str | None
-    """ID of the product price to checkout."""
-
     discount_id: str | None
     """ID of the discount applied to the checkout."""
 
@@ -3572,10 +3821,10 @@ class CheckoutPublicConfirmed:
     product: CheckoutProduct | None
     """Product selected to checkout."""
 
-    product_price: LegacyRecurringProductPrice | ProductPrice | None
+    product_price: ProductPrice | None
     """Price of the selected product."""
 
-    prices: dict[str, list[LegacyRecurringProductPrice | ProductPrice]] | None
+    prices: dict[str, list[ProductPrice]] | None
     """Mapping of product IDs to their list of prices."""
 
     discount: (
@@ -3589,6 +3838,9 @@ class CheckoutPublicConfirmed:
     organization: CheckoutOrganization
 
     attached_custom_fields: list[AttachedCustomField] | None
+
+    payment_method_types: list[str]
+    """Payment method types to offer in the payment form."""
 
     customer_session_token: str | None
 
@@ -3642,6 +3894,12 @@ class CustomFieldCheckbox:
     organization_id: str
     """The ID of the organization owning the custom field."""
 
+    catalog_id: str | None
+    """ID of the catalog that introduced this version of the custom field. None for custom fields not managed by declarative config."""
+
+    is_current: bool
+    """Whether this is the current version of the custom field."""
+
     properties: CustomFieldCheckboxProperties
 
 
@@ -3679,6 +3937,12 @@ class CustomFieldDate:
 
     organization_id: str
     """The ID of the organization owning the custom field."""
+
+    catalog_id: str | None
+    """ID of the catalog that introduced this version of the custom field. None for custom fields not managed by declarative config."""
+
+    is_current: bool
+    """Whether this is the current version of the custom field."""
 
     properties: CustomFieldDateProperties
 
@@ -3722,6 +3986,12 @@ class CustomFieldNumber:
     organization_id: str
     """The ID of the organization owning the custom field."""
 
+    catalog_id: str | None
+    """ID of the catalog that introduced this version of the custom field. None for custom fields not managed by declarative config."""
+
+    is_current: bool
+    """Whether this is the current version of the custom field."""
+
     properties: CustomFieldNumberProperties
 
 
@@ -3763,6 +4033,12 @@ class CustomFieldSelect:
 
     organization_id: str
     """The ID of the organization owning the custom field."""
+
+    catalog_id: str | None
+    """ID of the catalog that introduced this version of the custom field. None for custom fields not managed by declarative config."""
+
+    is_current: bool
+    """Whether this is the current version of the custom field."""
 
     properties: CustomFieldSelectProperties
 
@@ -3811,6 +4087,12 @@ class CustomFieldText:
     organization_id: str
     """The ID of the organization owning the custom field."""
 
+    catalog_id: str | None
+    """ID of the catalog that introduced this version of the custom field. None for custom fields not managed by declarative config."""
+
+    is_current: bool
+    """Whether this is the current version of the custom field."""
+
     properties: CustomFieldTextProperties
 
 
@@ -3831,6 +4113,12 @@ class CustomFieldTextProperties:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class CustomerBenefitGrantCustom:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was manually revoked, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -3869,6 +4157,12 @@ class CustomerBenefitGrantCustom:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class CustomerBenefitGrantDiscord:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was manually revoked, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -3909,6 +4203,12 @@ class CustomerBenefitGrantDiscord:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class CustomerBenefitGrantDownloadables:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was manually revoked, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -3947,6 +4247,12 @@ class CustomerBenefitGrantDownloadables:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class CustomerBenefitGrantFeatureFlag:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was manually revoked, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -3985,6 +4291,12 @@ class CustomerBenefitGrantFeatureFlag:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class CustomerBenefitGrantGitHubRepository:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was manually revoked, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -4025,6 +4337,12 @@ class CustomerBenefitGrantGitHubRepository:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class CustomerBenefitGrantLicenseKeys:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was manually revoked, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -4071,6 +4389,12 @@ class CustomerBenefitGrantMember:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class CustomerBenefitGrantMeterCredit:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was manually revoked, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -4109,6 +4433,12 @@ class CustomerBenefitGrantMeterCredit:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class CustomerBenefitGrantSlackSharedChannel:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was manually revoked, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -4505,6 +4835,8 @@ class CustomerOrder:
     next_payment_attempt_at: str | None = None
     """When the next automatic payment retry is scheduled. `null` if the order is not in dunning or all retries have been exhausted."""
 
+    tax_id: list[typing.Any] | None
+
     product: CustomerOrderProduct | None
 
     subscription: CustomerOrderSubscription | None
@@ -4514,6 +4846,14 @@ class CustomerOrder:
 
     description: str
     """A summary description of the order."""
+
+    is_payment_required: bool
+    """Whether the order has a positive amount due after discounts, taxes, and applied balance."""
+
+    is_payment_setup_required: bool
+    """Whether a payment method must be set up for future subscription charges, even if the order has no amount due."""
+
+    payment_processor_metadata: dict[str, str]
 
     refundable_amount: int
     """Amount in cents that can still be refunded (net, before taxes). Accounts for any applied customer balance and previous refunds."""
@@ -4528,31 +4868,6 @@ class CustomerOrderInvoice:
 
     url: str
     """The URL to the invoice."""
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
-class CustomerOrderPaymentConfirmation:
-    """Response after confirming a retry payment."""
-
-    status: str
-    """Payment status after confirmation."""
-
-    client_secret: str | None = None
-    """Client secret for handling additional actions."""
-
-    error: str | None = None
-    """Error message if confirmation failed."""
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
-class CustomerOrderPaymentStatus:
-    """Payment status for an order."""
-
-    status: str
-    """Current payment status."""
-
-    error: str | None = None
-    """Error message if payment failed."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -4602,7 +4917,7 @@ class CustomerOrderProduct:
     organization_id: str
     """The ID of the organization owning the product."""
 
-    prices: list[LegacyRecurringProductPrice | ProductPrice]
+    prices: list[ProductPrice]
     """List of prices for this product."""
 
     benefits: list[BenefitPublic]
@@ -4672,7 +4987,7 @@ class CustomerOrderSubscription:
     canceled_at: str | None
     """The timestamp when the subscription was canceled. The subscription might still be active if `cancel_at_period_end` is `true`."""
 
-    started_at: str | None
+    started_at: str
     """The timestamp when the subscription started."""
 
     ends_at: str | None
@@ -4735,7 +5050,7 @@ class CustomerOrganization:
     avatar_url: str | None
     """Avatar URL shown in checkout, customer portal, emails etc."""
 
-    proration_behavior: SubscriptionProrationBehavior
+    proration_behavior: SubscriptionProrationBehavior | typing.Literal["auto"]
     """Proration behavior applied when customer updates their subscription from the portal."""
 
     allow_customer_updates: bool
@@ -4978,7 +5293,7 @@ class CustomerProduct:
     organization_id: str
     """The ID of the organization owning the product."""
 
-    prices: list[LegacyRecurringProductPrice | ProductPrice]
+    prices: list[ProductPrice]
     """List of available prices for this product."""
 
     benefits: list[BenefitPublic]
@@ -5249,7 +5564,7 @@ class CustomerStateSubscription:
     canceled_at: str | None
     """The timestamp when the subscription was canceled. The subscription might still be active if `cancel_at_period_end` is `true`."""
 
-    started_at: str | None
+    started_at: str
     """The timestamp when the subscription started."""
 
     ends_at: str | None
@@ -5414,7 +5729,7 @@ class CustomerSubscription:
     canceled_at: str | None
     """The timestamp when the subscription was canceled. The subscription might still be active if `cancel_at_period_end` is `true`."""
 
-    started_at: str | None
+    started_at: str
     """The timestamp when the subscription started."""
 
     ends_at: str | None
@@ -5458,7 +5773,10 @@ class CustomerSubscription:
 
     product: CustomerSubscriptionProduct
 
-    prices: list[LegacyRecurringProductPrice | ProductPrice]
+    payment_method_id: str | None
+    """ID of the payment method pinned to the subscription, if any."""
+
+    prices: list[ProductPrice]
     """List of enabled prices for the subscription."""
 
     meters: list[CustomerSubscriptionMeter]
@@ -5556,7 +5874,7 @@ class CustomerSubscriptionProduct:
     organization_id: str
     """The ID of the organization owning the product."""
 
-    prices: list[LegacyRecurringProductPrice | ProductPrice]
+    prices: list[ProductPrice]
     """List of prices for this product."""
 
     benefits: list[BenefitPublic]
@@ -5697,41 +6015,12 @@ class CustomerUpdatedMetadata:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
-class CustomerWallet:
-    """A wallet represents your balance with an organization.
-
-    You can top-up your wallet and use the balance to pay for usage."""
-
-    id: str
-    """The ID of the object."""
-
-    created_at: str
-    """Creation timestamp of the object."""
-
-    modified_at: str | None
-    """Last modification timestamp of the object."""
-
-    customer_id: str
-    """The ID of the customer that owns the wallet."""
-
-    balance: int
-    """The current balance of the wallet, in cents."""
-
-    currency: str
-    """The currency of the wallet."""
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
 class DiscountFixedOnceForeverDuration:
     """Schema for a fixed amount discount that is applied once or forever."""
 
     duration: DiscountDuration
 
     type: DiscountType
-
-    amount: int
-
-    currency: str
 
     amounts: dict[str, int]
     """Map of currency to fixed amount to discount from the total."""
@@ -5782,10 +6071,6 @@ class DiscountFixedOnceForeverDurationBase:
     duration: DiscountDuration
 
     type: DiscountType
-
-    amount: int
-
-    currency: str
 
     amounts: dict[str, int]
     """Map of currency to fixed amount to discount from the total."""
@@ -5840,10 +6125,6 @@ class DiscountFixedRepeatDuration:
 
     type: DiscountType
 
-    amount: int
-
-    currency: str
-
     amounts: dict[str, int]
     """Map of currency to fixed amount to discount from the total."""
 
@@ -5895,10 +6176,6 @@ class DiscountFixedRepeatDurationBase:
     duration_in_months: int
 
     type: DiscountType
-
-    amount: int
-
-    currency: str
 
     amounts: dict[str, int]
     """Map of currency to fixed amount to discount from the total."""
@@ -6806,100 +7083,6 @@ class LLMMetadata:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
-class LegacyRecurringProductPriceCustom:
-    """A pay-what-you-want recurring price for a product, i.e. a subscription.
-
-    **Deprecated**: The recurring interval should be set on the product itself."""
-
-    created_at: str
-    """Creation timestamp of the object."""
-
-    modified_at: str | None
-    """Last modification timestamp of the object."""
-
-    id: str
-    """The ID of the price."""
-
-    source: ProductPriceSource
-    """The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session."""
-
-    amount_type: typing.Literal["custom"]
-
-    price_currency: str
-    """The currency in which the customer will be charged."""
-
-    tax_behavior: TaxBehaviorOption | None
-    """The tax behavior of the price. If null, it defaults to the organization's default tax behavior."""
-
-    is_archived: bool
-    """Whether the price is archived and no longer available."""
-
-    product_id: str
-    """The ID of the product owning the price."""
-
-    type: typing.Literal["recurring"]
-    """The type of the price."""
-
-    recurring_interval: RecurringInterval
-    """The recurring interval of the price."""
-
-    minimum_amount: int
-    """The minimum amount the customer can pay. If 0, the price is 'free or pay what you want'."""
-
-    maximum_amount: int | None
-    """The maximum amount the customer can pay."""
-
-    preset_amount: int | None
-    """The initial amount shown to the customer."""
-
-    legacy: typing.Literal[True]
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
-class LegacyRecurringProductPriceFixed:
-    """A recurring price for a product, i.e. a subscription.
-
-    **Deprecated**: The recurring interval should be set on the product itself."""
-
-    created_at: str
-    """Creation timestamp of the object."""
-
-    modified_at: str | None
-    """Last modification timestamp of the object."""
-
-    id: str
-    """The ID of the price."""
-
-    source: ProductPriceSource
-    """The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session."""
-
-    amount_type: typing.Literal["fixed"]
-
-    price_currency: str
-    """The currency in which the customer will be charged."""
-
-    tax_behavior: TaxBehaviorOption | None
-    """The tax behavior of the price. If null, it defaults to the organization's default tax behavior."""
-
-    is_archived: bool
-    """Whether the price is archived and no longer available."""
-
-    product_id: str
-    """The ID of the product owning the price."""
-
-    type: typing.Literal["recurring"]
-    """The type of the price."""
-
-    recurring_interval: RecurringInterval
-    """The recurring interval of the price."""
-
-    price_amount: int
-    """The price in cents."""
-
-    legacy: typing.Literal[True]
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
 class LicenseKeyActivationBase:
     id: str
 
@@ -7238,13 +7421,6 @@ class ListResourceCustomerSubscription:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
-class ListResourceCustomerWallet:
-    items: list[CustomerWallet]
-
-    pagination: Pagination
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
 class ListResourceDiscount:
     items: list[Discount]
 
@@ -7454,7 +7630,20 @@ class Meter:
     filter: Filter
     """The filter to apply on events that'll be used to calculate the meter."""
 
-    aggregation: CountAggregation | PropertyAggregation | UniqueAggregation
+    aggregation: typing.Annotated[
+        CountAggregation | PropertyAggregation | UniqueAggregation,
+        _Discriminator(
+            "func",
+            (
+                ("avg", PropertyAggregation),
+                ("count", CountAggregation),
+                ("max", PropertyAggregation),
+                ("min", PropertyAggregation),
+                ("sum", PropertyAggregation),
+                ("unique", UniqueAggregation),
+            ),
+        ),
+    ]
     """The aggregation to apply on the filtered events to calculate the meter."""
 
     organization_id: str
@@ -7462,6 +7651,12 @@ class Meter:
 
     archived_at: str | None = None
     """Whether the meter is archived and the time it was archived."""
+
+    catalog_id: str | None
+    """ID of the catalog that introduced this version of the meter. None for meters not managed by declarative config."""
+
+    is_current: bool
+    """Whether this is the current version of the meter."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -7601,29 +7796,6 @@ class Metric:
 
     type: MetricType
     """Type of the metric, useful to know the unit or format of the value."""
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
-class MetricDashboardSchema:
-    """A user-defined metrics dashboard."""
-
-    created_at: str
-    """Creation timestamp of the object."""
-
-    modified_at: str | None
-    """Last modification timestamp of the object."""
-
-    id: str
-    """The ID of the object."""
-
-    name: str
-    """Display name for the dashboard."""
-
-    metrics: list[str]
-    """List of metric slugs displayed in this dashboard."""
-
-    organization_id: str
-    """The ID of the organization owning this dashboard."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -8025,6 +8197,13 @@ class MetricsTotals:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class MissingBillingDetails:
+    error: typing.Literal["MissingBillingDetails"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class MissingInvoiceBillingDetails:
     error: typing.Literal["MissingInvoiceBillingDetails"]
 
@@ -8041,6 +8220,13 @@ class NotOpenCheckout:
 @dataclasses.dataclass(kw_only=True, slots=True)
 class NotPermitted:
     error: typing.Literal["NotPermitted"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class NotTrialEndedSubscription:
+    error: typing.Literal["NotTrialEndedSubscription"]
 
     detail: str
 
@@ -8433,6 +8619,12 @@ class OrderProduct:
     organization_id: str
     """The ID of the organization owning the product."""
 
+    catalog_id: str | None
+    """ID of the catalog that introduced this version of the product. None for products not managed by declarative config."""
+
+    is_current: bool
+    """Whether this is the current version of the product."""
+
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class OrderReceipt:
@@ -8549,7 +8741,7 @@ class OrderSubscription:
     canceled_at: str | None
     """The timestamp when the subscription was canceled. The subscription might still be active if `cancel_at_period_end` is `true`."""
 
-    started_at: str | None
+    started_at: str
     """The timestamp when the subscription started."""
 
     ends_at: str | None
@@ -8722,7 +8914,7 @@ class Organization:
     avatar_url: str | None
     """Avatar URL shown in checkout, customer portal, emails etc."""
 
-    proration_behavior: SubscriptionProrationBehavior
+    proration_behavior: SubscriptionProrationBehavior | typing.Literal["auto"]
     """Proration behavior applied when customer updates their subscription from the portal."""
 
     allow_customer_updates: bool
@@ -8929,14 +9121,20 @@ class OrganizationFeatureSettings:
     dispute_auto_accept_enabled: bool = False
     """If this organization can set a threshold below which Polar concedes disputes on its behalf. Requires `disputes_enabled`."""
 
-    compass_enabled: bool = False
-    """If this organization has the split product navigation (Billing / Compass / Customers) enabled in the dashboard"""
-
     merchant_migration_enabled: bool = False
     """If this organization can migrate its billing from another provider (e.g. Stripe) to Polar."""
 
+    staged_events_ingest_enabled: bool = False
+    """If this organization's ingested events are queued in `staged_events` and moved to `events` out of band."""
+
     config_as_code_enabled: bool = False
     """If this organization can manage its configuration from a declarative config document."""
+
+    reducer_billing_enabled: bool = False
+    """If this organization's metered usage is billed from the reducer instead of the legacy billing entries."""
+
+    lemon_squeezy_migration_enabled: bool = False
+    """If this organization can migrate its billing from Lemon Squeezy to Polar."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -8959,9 +9157,11 @@ class OrganizationSocialLink:
 class OrganizationSubscriptionSettings:
     allow_multiple_subscriptions: bool
 
-    proration_behavior: PublicSubscriptionProrationBehavior
+    proration_behavior: PublicSubscriptionProrationBehavior | typing.Literal["auto"]
 
     benefit_revocation_grace_period: int
+
+    trial_ended_reactivation_period: int | None = None
 
     prevent_trial_abuse: bool
 
@@ -9220,6 +9420,15 @@ class Product:
     organization_id: str
     """The ID of the organization owning the product."""
 
+    trial_payment_setup_required: bool
+    """Whether customers must provide a payment method to start a trial. If `false`, customers can start a trial without entering payment details."""
+
+    catalog_id: str | None
+    """ID of the catalog that introduced this version of the product. None for products not managed by declarative config."""
+
+    is_current: bool
+    """Whether this is the current version of the product."""
+
     external_id: str | None
     """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
 
@@ -9228,7 +9437,7 @@ class Product:
     is_deletable: bool
     """Whether the product can be permanently deleted. Products referenced by an order, subscription, trial or discount cannot be deleted."""
 
-    prices: list[LegacyRecurringProductPrice | ProductPrice]
+    prices: list[ProductPrice]
     """List of prices for this product."""
 
     benefits: list[Benefit]
@@ -9644,6 +9853,13 @@ class RefundDispute:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class RefundPaymentAlreadyRefundedByStripe:
+    error: typing.Literal["RefundPaymentAlreadyRefundedByStripe"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class RefundedAlready:
     error: typing.Literal["RefundedAlready"]
 
@@ -9756,6 +9972,13 @@ class SSOEnforcementRequiresConnection:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class SSORequiresVerifiedDomain:
+    error: typing.Literal["SSORequiresVerifiedDomain"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class SeatClaimInfo:
     """Read-only information about a seat claim invitation.
     Safe for email scanners - no side effects when fetched."""
@@ -9848,7 +10071,7 @@ class Subscription:
     canceled_at: str | None
     """The timestamp when the subscription was canceled. The subscription might still be active if `cancel_at_period_end` is `true`."""
 
-    started_at: str | None
+    started_at: str
     """The timestamp when the subscription started."""
 
     ends_at: str | None
@@ -9907,7 +10130,7 @@ class Subscription:
         | None
     )
 
-    prices: list[LegacyRecurringProductPrice | ProductPrice]
+    prices: list[ProductPrice]
     """List of enabled prices for the subscription."""
 
     meters: list[SubscriptionMeter]
@@ -11407,7 +11630,7 @@ class WebhookEvent:
     """Whether this event is archived. Archived events can't be redelivered, and the payload is not accessible anymore."""
 
 
-Benefit: typing.TypeAlias = (
+Benefit: typing.TypeAlias = typing.Annotated[
     BenefitCustom
     | BenefitDiscord
     | BenefitGitHubRepository
@@ -11415,8 +11638,21 @@ Benefit: typing.TypeAlias = (
     | BenefitLicenseKeys
     | BenefitMeterCredit
     | BenefitFeatureFlag
-    | BenefitSlackSharedChannel
-)
+    | BenefitSlackSharedChannel,
+    _Discriminator(
+        "type",
+        (
+            ("custom", BenefitCustom),
+            ("discord", BenefitDiscord),
+            ("downloadables", BenefitDownloadables),
+            ("feature_flag", BenefitFeatureFlag),
+            ("github_repository", BenefitGitHubRepository),
+            ("license_keys", BenefitLicenseKeys),
+            ("meter_credit", BenefitMeterCredit),
+            ("slack_shared_channel", BenefitSlackSharedChannel),
+        ),
+    ),
+]
 
 BenefitGrantWebhook: typing.TypeAlias = (
     BenefitGrantDiscordWebhook
@@ -11429,7 +11665,7 @@ BenefitGrantWebhook: typing.TypeAlias = (
     | BenefitGrantSlackSharedChannelWebhook
 )
 
-BenefitPublic: typing.TypeAlias = (
+BenefitPublic: typing.TypeAlias = typing.Annotated[
     BenefitCustomPublic
     | BenefitDiscordPublic
     | BenefitGitHubRepositoryPublic
@@ -11437,8 +11673,21 @@ BenefitPublic: typing.TypeAlias = (
     | BenefitLicenseKeysPublic
     | BenefitFeatureFlagPublic
     | BenefitSlackSharedChannelPublic
-    | BenefitMeterCreditPublic
-)
+    | BenefitMeterCreditPublic,
+    _Discriminator(
+        "type",
+        (
+            ("custom", BenefitCustomPublic),
+            ("discord", BenefitDiscordPublic),
+            ("downloadables", BenefitDownloadablesPublic),
+            ("feature_flag", BenefitFeatureFlagPublic),
+            ("github_repository", BenefitGitHubRepositoryPublic),
+            ("license_keys", BenefitLicenseKeysPublic),
+            ("meter_credit", BenefitMeterCreditPublic),
+            ("slack_shared_channel", BenefitSlackSharedChannelPublic),
+        ),
+    ),
+]
 
 CheckoutForbiddenError: typing.TypeAlias = (
     AlreadyActiveSubscriptionError
@@ -11451,15 +11700,34 @@ CheckoutForbiddenError: typing.TypeAlias = (
 
 CheckoutPaymentError: typing.TypeAlias = PaymentError | SharedPaymentTokenError
 
-CustomField: typing.TypeAlias = (
+CustomField: typing.TypeAlias = typing.Annotated[
     CustomFieldText
     | CustomFieldNumber
     | CustomFieldDate
     | CustomFieldCheckbox
-    | CustomFieldSelect
-)
+    | CustomFieldSelect,
+    _Discriminator(
+        "type",
+        (
+            ("checkbox", CustomFieldCheckbox),
+            ("date", CustomFieldDate),
+            ("number", CustomFieldNumber),
+            ("select", CustomFieldSelect),
+            ("text", CustomFieldText),
+        ),
+    ),
+]
 
-Customer: typing.TypeAlias = CustomerIndividual | CustomerTeam
+Customer: typing.TypeAlias = typing.Annotated[
+    CustomerIndividual | CustomerTeam,
+    _Discriminator(
+        "type",
+        (
+            ("individual", CustomerIndividual),
+            ("team", CustomerTeam),
+        ),
+    ),
+]
 
 CustomerBenefitGrant: typing.TypeAlias = (
     CustomerBenefitGrantDiscord
@@ -11476,12 +11744,28 @@ CustomerPaymentMethod: typing.TypeAlias = (
     PaymentMethodCard | PaymentMethodKrCard | PaymentMethodGeneric
 )
 
-CustomerPaymentMethodCreateResponse: typing.TypeAlias = (
+CustomerPaymentMethodCreateResponse: typing.TypeAlias = typing.Annotated[
     CustomerPaymentMethodCreateSucceededResponse
-    | CustomerPaymentMethodCreateRequiresActionResponse
-)
+    | CustomerPaymentMethodCreateRequiresActionResponse,
+    _Discriminator(
+        "status",
+        (
+            ("requires_action", CustomerPaymentMethodCreateRequiresActionResponse),
+            ("succeeded", CustomerPaymentMethodCreateSucceededResponse),
+        ),
+    ),
+]
 
-CustomerState: typing.TypeAlias = CustomerStateIndividual | CustomerStateTeam
+CustomerState: typing.TypeAlias = typing.Annotated[
+    CustomerStateIndividual | CustomerStateTeam,
+    _Discriminator(
+        "type",
+        (
+            ("individual", CustomerStateIndividual),
+            ("team", CustomerStateTeam),
+        ),
+    ),
+]
 
 Discount: typing.TypeAlias = (
     DiscountFixedOnceForeverDuration
@@ -11490,16 +11774,21 @@ Discount: typing.TypeAlias = (
     | DiscountPercentageRepeatDuration
 )
 
-FileRead: typing.TypeAlias = (
+FileRead: typing.TypeAlias = typing.Annotated[
     DownloadableFileRead
     | ProductMediaFileRead
     | OrganizationAvatarFileRead
-    | SupportCaseAttachmentFileRead
-)
-
-LegacyRecurringProductPrice: typing.TypeAlias = (
-    LegacyRecurringProductPriceFixed | LegacyRecurringProductPriceCustom
-)
+    | SupportCaseAttachmentFileRead,
+    _Discriminator(
+        "service",
+        (
+            ("downloadable", DownloadableFileRead),
+            ("organization_avatar", OrganizationAvatarFileRead),
+            ("product_media", ProductMediaFileRead),
+            ("support_case_attachment", SupportCaseAttachmentFileRead),
+        ),
+    ),
+]
 
 Payment: typing.TypeAlias = CardPayment | KrCardPayment | GenericPayment
 
@@ -11509,22 +11798,36 @@ PaymentMethod: typing.TypeAlias = (
     | CustomerPaymentMethodGeneric
 )
 
-ProductPrice: typing.TypeAlias = (
+ProductPrice: typing.TypeAlias = typing.Annotated[
     ProductPriceFixed
     | ProductPriceCustom
     | ProductPriceSeatBased
     | ProductPriceUnitBased
     | ProductPriceMeteredUnit
-    | ProductPriceMeteredTiers
-)
+    | ProductPriceMeteredTiers,
+    _Discriminator(
+        "amount_type",
+        (
+            ("custom", ProductPriceCustom),
+            ("fixed", ProductPriceFixed),
+            ("metered_tiers", ProductPriceMeteredTiers),
+            ("metered_unit", ProductPriceMeteredUnit),
+            ("seat_based", ProductPriceSeatBased),
+            ("unit_based", ProductPriceUnitBased),
+        ),
+    ),
+]
 
-SystemEvent: typing.TypeAlias = (
+SystemEvent: typing.TypeAlias = typing.Annotated[
     MeterCreditEvent
     | MeterResetEvent
     | BenefitGrantedEvent
     | BenefitCycledEvent
     | BenefitUpdatedEvent
     | BenefitRevokedEvent
+    | BenefitManuallyGrantedEvent
+    | BenefitManuallyRevokedEvent
+    | BenefitUnrevokedEvent
     | SubscriptionCreatedEvent
     | SubscriptionUpdatedEvent
     | SubscriptionCycledEvent
@@ -11555,10 +11858,67 @@ SystemEvent: typing.TypeAlias = (
     | BalanceRefundEvent
     | BalanceRefundReversalEvent
     | BalanceDisputeEvent
-    | BalanceDisputeReversalEvent
-)
+    | BalanceDisputeReversalEvent,
+    _Discriminator(
+        "name",
+        (
+            ("balance.credit_order", BalanceCreditOrderEvent),
+            ("balance.dispute", BalanceDisputeEvent),
+            ("balance.dispute_reversal", BalanceDisputeReversalEvent),
+            ("balance.order", BalanceOrderEvent),
+            ("balance.refund", BalanceRefundEvent),
+            ("balance.refund_reversal", BalanceRefundReversalEvent),
+            ("benefit.cycled", BenefitCycledEvent),
+            ("benefit.granted", BenefitGrantedEvent),
+            ("benefit.manually_granted", BenefitManuallyGrantedEvent),
+            ("benefit.manually_revoked", BenefitManuallyRevokedEvent),
+            ("benefit.revoked", BenefitRevokedEvent),
+            ("benefit.unrevoked", BenefitUnrevokedEvent),
+            ("benefit.updated", BenefitUpdatedEvent),
+            ("checkout.created", CheckoutCreatedEvent),
+            ("customer.created", CustomerCreatedEvent),
+            ("customer.deleted", CustomerDeletedEvent),
+            ("customer.updated", CustomerUpdatedEvent),
+            ("meter.credited", MeterCreditEvent),
+            ("meter.reset", MeterResetEvent),
+            ("order.paid", OrderPaidEvent),
+            ("order.refunded", OrderRefundedEvent),
+            ("order.unvoided", OrderUnvoidedEvent),
+            ("order.voided", OrderVoidedEvent),
+            (
+                "subscription.billing_period_updated",
+                SubscriptionBillingPeriodUpdatedEvent,
+            ),
+            ("subscription.canceled", SubscriptionCanceledEvent),
+            ("subscription.created", SubscriptionCreatedEvent),
+            ("subscription.cycled", SubscriptionCycledEvent),
+            ("subscription.migrated", SubscriptionMigratedEvent),
+            ("subscription.past_due", SubscriptionPastDueEvent),
+            ("subscription.paused", SubscriptionPausedEvent),
+            ("subscription.product_updated", SubscriptionProductUpdatedEvent),
+            ("subscription.reactivated", SubscriptionReactivatedEvent),
+            ("subscription.reinstated", SubscriptionReinstatedEvent),
+            ("subscription.resumed", SubscriptionResumedEvent),
+            ("subscription.revoked", SubscriptionRevokedEvent),
+            ("subscription.seats_updated", SubscriptionSeatsUpdatedEvent),
+            ("subscription.uncanceled", SubscriptionUncanceledEvent),
+            ("subscription.units_updated", SubscriptionUnitsUpdatedEvent),
+            ("subscription.update_cleared", SubscriptionUpdateClearedEvent),
+            ("subscription.updated", SubscriptionUpdatedEvent),
+        ),
+    ),
+]
 
-Event: typing.TypeAlias = SystemEvent | UserEvent
+Event: typing.TypeAlias = typing.Annotated[
+    SystemEvent | UserEvent,
+    _Discriminator(
+        "source",
+        (
+            ("system", SystemEvent),
+            ("user", UserEvent),
+        ),
+    ),
+]
 
 
 _register_extra_items_typed_dict(

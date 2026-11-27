@@ -1,0 +1,34 @@
+---
+title: "Third-party integrations"
+sidebarTitle: "Integrations"
+description: "Find third-party tools that connect to Polar for affiliates, support, websites, regional pricing and automation, with links to their setup guides."
+---
+
+These tools connect to your Polar organization. Each one is built and maintained by its vendor, so follow the vendor's guide to set it up and contact them for support.
+
+| Integration | What it does | How it connects | Setup guide |
+| --- | --- | --- | --- |
+| **Affonso** | Run an affiliate program and track affiliate-driven sales | An organization access token and a webhook endpoint | [affonso.io](https://affonso.io/polar-affiliate-program) |
+| **EvenDeals** (formerly ParityDeals) | Show discounts by country or holiday, for purchasing power parity pricing. Creates and manages discounts in Polar. | OAuth | [evendeals.com](https://www.evendeals.com/integrations/polar) |
+| **Fernand** | Show customer payments and product access next to each support conversation | **Connect Polar** in Fernand's integration settings | [getfernand.com](https://getfernand.com/) |
+| **Framer** | Sell products on a Framer site without building a checkout | The Polar plugin in the Framer Marketplace | [framer.com](https://www.framer.com/marketplace/plugins/polar/) |
+| **Raycast** | View orders, subscriptions and customers from Raycast | The Polar extension in the Raycast Store | [raycast.com](https://www.raycast.com/emilwidlund/polar) |
+| **Zapier** | Trigger workflows in other apps from Polar events | Connect your Polar account in Zapier | [zapier.com](https://zapier.com/apps/polar/integrations) |
+
+## Before you connect one
+
+- **Prefer OAuth** when the vendor offers it, over pasting a long-lived token.
+- **Scope access tokens.** If a tool asks for an [organization access token](/integrate/oat), give it only the scopes it needs, and give each tool its own token so you can revoke it on its own.
+- **Try it in the sandbox first** if the vendor supports it. See [Sandbox](/integrate/sandbox).
+
+## Build your own
+
+To connect a tool that isn't listed, use the Polar API with [webhooks](/integrate/webhooks/endpoints), or [OAuth](/integrate/oauth2/introduction) for an app other Polar users can connect. For quick lookups from your terminal or agent, `polar orders list`, `polar subscriptions list` and `polar customers list` in the [CLI](/integrate/cli/introduction), or the [MCP server](/integrate/mcp), cover what most dashboards show.
+
+## Learn more
+
+| Resource | Description |
+| --- | --- |
+| [Access tokens](/integrate/oat) | Create a token for a tool, with scopes |
+| [OAuth](/integrate/oauth2/introduction) | Let a third-party app act on behalf of a Polar user |
+| [Webhook endpoints](/integrate/webhooks/endpoints) | Send Polar events to another service |

@@ -6,7 +6,7 @@ import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy import select
 
-from polar.config import settings
+from polar.config import Environment, settings
 from polar.email.repository import EmailLogRepository
 from polar.email.sender import SendEmailError
 from polar.email.tasks import email_log_prune, email_send
@@ -16,6 +16,11 @@ from polar.models.email_log import EmailLog, EmailLogStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_email_log
+
+BOUNCED = (2, EmailLogStatus.failed, "email.bounced; type=Permanent")
+OLD_BOUNCE = (24 * 31, EmailLogStatus.failed, "email.bounced; type=Permanent")
+SUPPRESSED = (1, EmailLogStatus.failed, "email.suppressed")
+SENT = (1, EmailLogStatus.sent, None)
 
 
 @contextlib.asynccontextmanager
@@ -273,6 +278,108 @@ class TestEmailSend:
             )
 
         log_exception.assert_called_once_with("Failed to write email log")
+
+    @pytest.mark.parametrize(
+        ("history", "removes_suppression"),
+        [
+            pytest.param([BOUNCED, SUPPRESSED], True, id="first bounce"),
+            pytest.param([BOUNCED, SENT], False, id="latest sent"),
+            pytest.param([BOUNCED, BOUNCED], False, id="bounced again"),
+            pytest.param([OLD_BOUNCE, BOUNCED], True, id="old bounce expired"),
+        ],
+    )
+    async def test_unsuppress_after_failed_delivery(
+        self,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        history: list[tuple[int, EmailLogStatus, str | None]],
+        removes_suppression: bool,
+    ) -> None:
+        for hours_ago, status, error in history:
+            await create_email_log(
+                save_fixture,
+                created_at=utc_now() - timedelta(hours=hours_ago),
+                status=status,
+                error=error,
+            )
+        mocker.patch.object(settings, "ENV", Environment.production)
+        mocker.patch("polar.email.tasks.email_sender.send", return_value=None)
+        remove_suppression = mocker.patch(
+            "polar.email.tasks.email_sender.remove_suppression"
+        )
+
+        await email_send(
+            to_email_addr="customer@example.com",
+            subject="Sign in to Polar",
+            html_content="<p>123456</p>",
+            from_name="Polar",
+            from_email_addr="noreply@polar.sh",
+            email_headers=None,
+            reply_to_name=None,
+            reply_to_email_addr=None,
+            unsuppress=True,
+        )
+
+        assert remove_suppression.called is removes_suppression
+
+    async def test_unsuppress_failure_still_sends(
+        self,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+    ) -> None:
+        await create_email_log(
+            save_fixture, created_at=utc_now(), status=EmailLogStatus.failed
+        )
+        mocker.patch.object(settings, "ENV", Environment.production)
+        send = mocker.patch("polar.email.tasks.email_sender.send", return_value=None)
+        mocker.patch(
+            "polar.email.tasks.email_sender.remove_suppression",
+            side_effect=RuntimeError("database down"),
+        )
+
+        await email_send(
+            to_email_addr="customer@example.com",
+            subject="Sign in to Polar",
+            html_content="<p>123456</p>",
+            from_name="Polar",
+            from_email_addr="noreply@polar.sh",
+            email_headers=None,
+            reply_to_name=None,
+            reply_to_email_addr=None,
+            unsuppress=True,
+        )
+
+        send.assert_called_once()
+
+    @pytest.mark.parametrize("environment", [Environment.sandbox, Environment.test])
+    async def test_unsuppress_skipped_outside_production(
+        self,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        environment: Environment,
+    ) -> None:
+        await create_email_log(
+            save_fixture, created_at=utc_now(), status=EmailLogStatus.failed
+        )
+        mocker.patch.object(settings, "ENV", environment)
+        mocker.patch("polar.email.tasks.email_sender.send", return_value=None)
+        remove_suppression = mocker.patch(
+            "polar.email.tasks.email_sender.remove_suppression"
+        )
+
+        await email_send(
+            to_email_addr="customer@example.com",
+            subject="Sign in to Polar",
+            html_content="<p>123456</p>",
+            from_name="Polar",
+            from_email_addr="noreply@polar.sh",
+            email_headers=None,
+            reply_to_name=None,
+            reply_to_email_addr=None,
+            unsuppress=True,
+        )
+
+        remove_suppression.assert_not_called()
 
 
 @pytest.mark.anyio

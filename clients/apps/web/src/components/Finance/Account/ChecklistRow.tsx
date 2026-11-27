@@ -2,15 +2,16 @@
 
 import { LoadingBox } from '@/components/Shared/LoadingBox'
 import { ORGANIZATION_ACCESS_TOKEN_RESUME_PARAM } from '@/components/Settings/organizationAccessTokenContinuation'
+import { useOrganizationDomains } from '@/hooks/queries'
 import { useAccountSetup } from '@/providers/accountSetup'
-import { OrganizationContext } from '@/providers/maintainerOrganization'
+import { useDashboardOrganization } from '@/hooks/dashboardOrganization'
 import { schemas } from '@polar-sh/client'
 import { Pill, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
 import { AnimatePresence, m } from 'motion/react'
 import { useSearchParams } from 'next/navigation'
-import { useContext, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { StatusIcon } from './StatusIcon'
 import { COMMON_REASON_LABELS, STEP_CONFIG } from './sections'
 import {
@@ -18,6 +19,7 @@ import {
   STEP_ACTION_LABELS,
   STEP_DESCRIPTIONS,
 } from './sections/stepLabels'
+import { findWebsiteDomain, websiteHost } from './sections/websiteDomain'
 
 interface Props {
   step?: schemas['OrganizationReviewCheck']
@@ -42,23 +44,29 @@ const collapsedActionLabel = (
 }
 
 export const ChecklistRow = ({ step, isLoading }: Props) => {
-  const { organization } = useContext(OrganizationContext)
+  const organization = useDashboardOrganization()
   const { targetStepKey, setTargetStepKey } = useAccountSetup()
   const searchParams = useSearchParams()
   const isTokenCreationResume =
     step?.key === 'setup_readiness' &&
     searchParams.has(ORGANIZATION_ACCESS_TOKEN_RESUME_PARAM)
-  const [isExpanded, setIsExpanded] = useState(isTokenCreationResume)
+  const [expandedToggle, setExpandedToggle] = useState<boolean | null>(null)
   const [isDeepLinkTarget] = useState(
     () => targetStepKey != null && step?.key === targetStepKey,
   )
+  const { data: domains } = useOrganizationDomains(organization.id)
+  const isEmailUnverified =
+    step?.key === 'identity.email' &&
+    !!step.reasons?.includes('identity.email_unverified')
+  const isExpanded =
+    expandedToggle ?? (isTokenCreationResume || isEmailUnverified)
 
   useEffect(() => {
     if (!isDeepLinkTarget) {
       return
     }
     setTargetStepKey(null)
-    const timeout = setTimeout(() => setIsExpanded(true), 750)
+    const timeout = setTimeout(() => setExpandedToggle(true), 750)
     return () => clearTimeout(timeout)
   }, [isDeepLinkTarget, setTargetStepKey])
 
@@ -74,10 +82,25 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
     )
   }
 
+  const websiteDomainHost =
+    step.key === 'product_url' && step.status === 'passed' && step.value
+      ? websiteHost(step.value)
+      : null
+  const websiteDomain =
+    websiteDomainHost && domains
+      ? findWebsiteDomain(websiteDomainHost, domains.items)
+      : undefined
+  const isDomainUnverified =
+    !!websiteDomainHost && !!domains && !websiteDomain?.verified_at
+  const status =
+    isDomainUnverified || isEmailUnverified ? 'warning' : step.status
+
   const stepConfig = STEP_CONFIG[step.key]
   const renderSection = stepConfig?.render
-  const label = stepConfig?.label ?? step.key
-  const isOptional = OPTIONAL_STEP_KEYS.has(step.key)
+  const label = isDomainUnverified
+    ? 'Verify your product website'
+    : (stepConfig?.label ?? step.key)
+  const isOptional = OPTIONAL_STEP_KEYS.has(step.key) || isDomainUnverified
   const reasonItems = (step.reasons ?? [])
     .map(
       (reason) =>
@@ -101,7 +124,19 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
     <Box flexDirection="column">
       <Box flexDirection="column" rowGap="m">
         <Box alignItems="center" columnGap="s">
-          <StatusIcon status={step.status} reasons={step.reasons} />
+          <StatusIcon
+            status={status}
+            reasons={step.reasons}
+            icon={
+              isEmailUnverified
+                ? 'waiting'
+                : isDomainUnverified
+                  ? websiteDomain
+                    ? 'waiting'
+                    : 'dashed'
+                  : undefined
+            }
+          />
           <Box flexDirection="column" rowGap="none">
             <Box alignItems="center" columnGap="s">
               <Text variant="label">{label}</Text>
@@ -118,10 +153,14 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setIsExpanded((prev) => !prev)}
+                onClick={() => setExpandedToggle(!isExpanded)}
                 aria-expanded={isExpanded}
               >
-                {isExpanded ? 'Close' : collapsedActionLabel(step)}
+                {isExpanded
+                  ? 'Close'
+                  : isEmailUnverified
+                    ? 'Verify'
+                    : collapsedActionLabel({ ...step, status })}
               </Button>
             </Box>
           )}

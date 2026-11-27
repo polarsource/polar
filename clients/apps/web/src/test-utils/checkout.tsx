@@ -1,6 +1,5 @@
 import CheckoutPage from '@/app/(checkout)/checkout/[clientSecret]/CheckoutPage'
 import { CheckoutConfirmation } from '@/components/Checkout/CheckoutConfirmation'
-import { UserContextProvider } from '@/providers/auth'
 import type { ProductCheckoutPublic } from '@polar-sh/checkout/guards'
 import {
   CheckoutFormProvider,
@@ -12,6 +11,7 @@ import {
   createSeatBasedPrice,
 } from '@polar-sh/checkout/test-utils'
 import type { schemas } from '@polar-sh/client'
+import type { AcceptedLocale } from '@polar-sh/i18n'
 import { fireEvent, screen } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import {
@@ -152,6 +152,7 @@ export interface ServeCheckoutOptions {
   discounts?: Record<string, CheckoutDiscount>
   fulfillment?: StreamEvent[]
   benefitGrants?: schemas['CustomerBenefitGrant'][]
+  customerSessionExpired?: boolean
 }
 
 const validationError = (field: string, message: string) =>
@@ -207,6 +208,7 @@ export const serveCheckout = (
     discounts = {},
     fulfillment = FULFILLED,
     benefitGrants = [],
+    customerSessionExpired = false,
   }: ServeCheckoutOptions = {},
 ): CheckoutApi => {
   let current = initial
@@ -302,6 +304,12 @@ export const serveCheckout = (
       `${API_URL}/v1/customer-portal/benefit-grants/`,
       async ({ request }) => {
         await record(request)
+        if (customerSessionExpired) {
+          return HttpResponse.json(
+            { error: 'invalid_token', error_description: 'Token expired' },
+            { status: 401 },
+          )
+        }
         return HttpResponse.json({
           items: grants,
           pagination: { total_count: grants.length, max_page: 1 },
@@ -356,17 +364,17 @@ export interface CheckoutRenderResult extends ProvidersRenderResult {
 export interface RenderCheckoutOptions
   extends ProviderOptions, ServeCheckoutOptions {
   checkout?: Partial<ProductCheckoutPublic>
-  authenticatedUser?: schemas['UserRead']
   embed?: boolean
   theme?: 'light' | 'dark'
+  locale?: AcceptedLocale
   distinctId?: string | null
 }
 
 export const renderCheckout = ({
   checkout: overrides,
-  authenticatedUser,
   embed = false,
   theme = 'light',
+  locale = 'en',
   distinctId = DISTINCT_ID,
   paymentStatus,
   discounts,
@@ -386,20 +394,15 @@ export const renderCheckout = ({
     : 'polar_distinct_id=; max-age=0; path=/'
 
   const result = renderWithProviders(
-    <UserContextProvider
-      user={authenticatedUser}
-      userOrganizations={authenticatedUser?.organizations ?? []}
+    <CheckoutProvider
+      clientSecret={checkout.client_secret}
+      initialCheckout={checkout}
+      serverURL={API_URL}
     >
-      <CheckoutProvider
-        clientSecret={checkout.client_secret}
-        initialCheckout={checkout}
-        serverURL={API_URL}
-      >
-        <CheckoutFormProvider locale="en">
-          <CheckoutPage embed={embed} theme={theme} locale="en" />
-        </CheckoutFormProvider>
-      </CheckoutProvider>
-    </UserContextProvider>,
+      <CheckoutFormProvider locale={locale}>
+        <CheckoutPage embed={embed} theme={theme} locale={locale} />
+      </CheckoutFormProvider>
+    </CheckoutProvider>,
     {
       pathname: `/checkout/${checkout.client_secret}`,
       searchParams: embed ? 'embed=true' : '',
@@ -503,6 +506,7 @@ export const renderConfirmation = ({
   discounts,
   fulfillment,
   benefitGrants,
+  customerSessionExpired,
   ...providerOptions
 }: RenderConfirmationOptions = {}): CheckoutRenderResult => {
   const checkout = createWebCheckout({ status: 'succeeded', ...overrides })
@@ -511,6 +515,7 @@ export const renderConfirmation = ({
     discounts,
     fulfillment,
     benefitGrants,
+    customerSessionExpired,
   })
 
   const result = renderWithProviders(

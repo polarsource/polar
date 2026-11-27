@@ -134,11 +134,11 @@ class TestGetAncestorsBatch:
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     @pytest.mark.parametrize(
-        "staged_events_ingest_enabled", [False, True], ids=["events", "staged_events"]
+        "reducer_billing_enabled", [False, True], ids=["events", "staged_events"]
     )
     async def test_batch_ingest_out_of_order(
         self,
-        staged_events_ingest_enabled: bool,
+        reducer_billing_enabled: bool,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -149,7 +149,7 @@ class TestGetAncestorsBatch:
         events are ingested in a single batch, even when out of order.
         """
         organization.feature_settings = {
-            "staged_events_ingest_enabled": staged_events_ingest_enabled
+            "reducer_billing_enabled": reducer_billing_enabled
         }
         await save_fixture(organization)
         customer = await create_customer(

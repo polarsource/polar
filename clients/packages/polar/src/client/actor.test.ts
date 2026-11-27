@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 import { z } from 'zod'
-import type { RuntimeSDKConfig } from '../schema/runtime'
+import type { RuntimeSDKConfig } from '@polar-sh/config/runtime'
 import { errors, type Polar } from '../sdk'
 import { createActor, EventValidationError } from './actor'
 
@@ -78,32 +78,12 @@ describe('actor benefits', () => {
 
   it('returns not granted when no matching grant exists', async () => {
     const list = vi.fn().mockResolvedValue({ items: [] })
-    const iterList = vi.fn(async function* () {
-      yield { external_id: 'custom_meters' }
-    })
-    const sdk = {
-      benefitGrants: { list },
-      benefits: { iterList },
-    } as unknown as Polar
+    const sdk = { benefitGrants: { list } } as unknown as Polar
     const actor = createActor(config, sdk)({ customerId: 'customer-id' })
 
     await expect(actor.access('custom_meters')).resolves.toEqual({
       granted: false,
     })
-    await actor.access('custom_meters')
-    expect(iterList).toHaveBeenCalledOnce()
-  })
-
-  it('rejects a benefit that is not deployed', async () => {
-    const list = vi.fn().mockResolvedValue({ items: [] })
-    const iterList = vi.fn(async function* () {})
-    const sdk = {
-      benefitGrants: { list },
-      benefits: { iterList },
-    } as unknown as Polar
-    const actor = createActor(config, sdk)({ customerId: 'customer-id' })
-
-    await expect(actor.access('custom_meters')).rejects.toThrow('not deployed')
   })
 })
 

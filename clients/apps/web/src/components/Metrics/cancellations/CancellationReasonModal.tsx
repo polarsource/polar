@@ -1,5 +1,6 @@
 'use client'
 
+import type { MetricsProductFilter } from '@/hooks/queries/metrics'
 import { useSubscriptions } from '@/hooks/queries'
 import { Modal } from '@polar-sh/orbit'
 import { schemas } from '@polar-sh/client'
@@ -17,7 +18,7 @@ interface CancellationReasonModalProps {
   organizationId: string
   startDate: Date
   endDate: Date
-  productId?: string[]
+  productFilter?: MetricsProductFilter
   totalCount?: number
 }
 
@@ -27,7 +28,7 @@ export function CancellationReasonModal({
   organizationId,
   startDate,
   endDate,
-  productId,
+  productFilter,
   totalCount = 0,
 }: CancellationReasonModalProps) {
   const [page, setPage] = useState(1)
@@ -36,7 +37,7 @@ export function CancellationReasonModal({
     customer_cancellation_reason: [reason],
     canceled_at_after: startDate.toISOString(),
     canceled_at_before: endDate.toISOString(),
-    ...(productId && productId.length > 0 ? { product_id: productId } : {}),
+    ...productFilter,
     page,
     limit: 20,
   })

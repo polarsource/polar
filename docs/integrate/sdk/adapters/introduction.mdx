@@ -1,10 +1,10 @@
 ---
-title: "Framework Adapters"
+title: "Framework adapters"
 sidebarTitle: "Overview"
-description: "Drop-in adapters that wire Polar checkouts and webhooks into your framework"
+description: "Pick a Polar framework adapter for Next.js, Nuxt, TanStack Start, Laravel or Better Auth, or see which adapters are deprecated."
 ---
 
-Framework adapters make it dead simple to add Polar checkouts and webhooks to your stack. Pick your framework to get started.
+A **framework adapter** adds Polar routes to your app in a few lines: a checkout route that redirects to a Checkout Session, a Customer Portal route, and a webhook route that verifies signatures and calls your handlers. The JavaScript adapters are built on the [TypeScript SDK](/integrate/sdk/typescript) and use API version `2026-10`.
 
 <Columns cols={2}>
   <Card
@@ -36,16 +36,18 @@ Framework adapters make it dead simple to add Polar checkouts and webhooks to yo
   />
 
   <Card
-    title="BetterAuth"
+    title="Better Auth"
     icon="shield-halved"
     href="/integrate/sdk/adapters/better-auth"
     horizontal
   />
 </Columns>
 
-## Legacy adapters
+Better Auth goes further: it creates a Polar customer when a user signs up and links the two with `external_id`. The Laravel adapter is the community-maintained `danestves/laravel-polar` package, not supported by Polar.
 
-These adapters are deprecated. For these frameworks, we recommend a direct integration using our [SDKs](/integrate/sdk/introduction) instead.
+## Deprecated adapters
+
+These adapters are deprecated and no longer maintained. For these frameworks, call the [SDK](/integrate/sdk/introduction) directly instead. The [`polar-integration` skill](https://github.com/polarsource/agent-toolkit/tree/main/skills/polar-integration) helps your coding agent migrate.
 
 <Columns cols={2}>
   <Card title="Astro" href="/integrate/sdk/adapters/astro" horizontal />

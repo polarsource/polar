@@ -4,8 +4,12 @@ import stripe as stripe_lib
 import structlog
 
 from polar.checkout.repository import CheckoutRepository
+from polar.checkout.service import NotConfirmedCheckout
 from polar.checkout.service import checkout as checkout_service
 from polar.exceptions import PolarError
+from polar.integrations.payment_retry_alert.service import (
+    payment_retry_alert as payment_retry_alert_service,
+)
 from polar.integrations.stripe.service import (
     STRIPE_METADATA_PAYMENT_TRIGGER,
 )
@@ -31,7 +35,9 @@ from polar.organization.repository import OrganizationRepository
 from polar.payment.service import payment as payment_service
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.postgres import AsyncSession
+from polar.subscription.service import subscription as subscription_service
 from polar.wallet.repository import WalletRepository, WalletTransactionRepository
+from polar.worker import enqueue_job
 
 log: Logger = structlog.get_logger()
 
@@ -40,22 +46,6 @@ class OrderDoesNotExist(PolarError):
     def __init__(self, order_id: str) -> None:
         self.order_id = order_id
         message = f"Order with id {order_id} does not exist."
-        super().__init__(message)
-
-
-class OutdatedCheckoutIntent(PolarError):
-    """
-    Raised when a received succeeded setup intent is different from the current one
-    associated with the checkout.
-
-    Usually happens after a TrialAlreadyRedeemed error, where we convert the checkout
-    to a paid one and create a new intent.
-    """
-
-    def __init__(self, checkout_id: uuid.UUID, intent_id: str) -> None:
-        self.checkout_id = checkout_id
-        self.intent_id = intent_id
-        message = f"Intent with id {intent_id} for checkout {checkout_id} is outdated."
         super().__init__(message)
 
 
@@ -229,6 +219,7 @@ async def handle_success(
         payment = await payment_service.upsert_from_stripe_charge(
             session, object, organization, checkout, wallet, order, trigger=trigger
         )
+        payment_retry_alert_service.enqueue_outcome_report(object.metadata, payment)
 
     if checkout is not None:
         if object.OBJECT_NAME == "setup_intent":
@@ -239,36 +230,52 @@ async def handle_success(
                 checkout_intent_client_secret is not None
                 and object.client_secret != checkout_intent_client_secret
             ):
-                raise OutdatedCheckoutIntent(checkout.id, object.id)
+                log.info(
+                    "Skipping outdated checkout intent",
+                    checkout_id=checkout.id,
+                    intent_id=object.id,
+                )
+                return
 
-            # Metadata marker is set when confirmation was denied because of trial abuse detection
-            if checkout.status == CheckoutStatus.open:
-                updated_object = await stripe_service.get_setup_intent(object.id)
-                if (
-                    updated_object.metadata
-                    and updated_object.metadata.get("polar_trial_abuse_detected")
-                    == "true"
-                ):
-                    raise OutdatedCheckoutIntent(checkout.id, object.id)
+        if checkout.status not in {CheckoutStatus.confirmed, CheckoutStatus.succeeded}:
+            raise NotConfirmedCheckout(checkout)
 
         payment_method: PaymentMethod | None = None
         if checkout.should_save_payment_method:
+            assert checkout.customer is not None
             payment_method = await payment_method_service.upsert_from_stripe_intent(
-                session, object, checkout
+                session, object, checkout.customer
             )
+            await session.flush()
 
-        await checkout_service.handle_success(
-            session,
-            checkout,
-            payment=payment,
-            payment_method=payment_method,
+        enqueue_job(
+            "checkout.success",
+            checkout_id=checkout.id,
+            payment_id=payment.id if payment is not None else None,
+            payment_method_id=payment_method.id if payment_method is not None else None,
+        )
+
+    if order is not None:
+        if checkout is None and object.OBJECT_NAME == "setup_intent":
+            payment_method = await payment_method_service.upsert_from_stripe_intent(
+                session, object, order.customer
+            )
+            if order.subscription is not None:
+                await subscription_service.update_payment_method_from_retry(
+                    session, order.subscription, payment_method
+                )
+        enqueue_job(
+            "order.paid",
+            order_id=order.id,
+            payment_id=payment.id if payment is not None else None,
         )
 
     if wallet_transaction is not None:
-        await order_service.create_wallet_order(session, wallet_transaction, payment)
-
-    if order is not None:
-        await order_service.handle_payment(session, order, payment)
+        enqueue_job(
+            "order.wallet_order",
+            wallet_transaction_id=wallet_transaction.id,
+            payment_id=payment.id if payment is not None else None,
+        )
 
 
 async def handle_failure(
@@ -299,6 +306,9 @@ async def handle_failure(
     elif object.OBJECT_NAME == "setup_intent":
         intent_id = object.id
 
+    if payment is not None:
+        payment_retry_alert_service.enqueue_outcome_report(object.metadata, payment)
+
     if checkout is not None:
         current_intent_id = checkout.payment_processor_metadata.get("intent_id")
         if (
@@ -309,6 +319,19 @@ async def handle_failure(
             await checkout_service.handle_failure(session, checkout, payment=payment)
 
     if order is not None:
+        # Only on-session customer retries persist the current intent on the order.
+        if trigger == PaymentTrigger.retry_customer:
+            await OrderRepository.from_session(session).refresh_for_payment_update(
+                order
+            )
+            current_intent_id = order.payment_processor_metadata.get("intent_id")
+            if (
+                current_intent_id is not None
+                and intent_id is not None
+                and current_intent_id != intent_id
+            ):
+                return
+
         # Failures from triggers that don't count toward the dunning ceiling
         # also shouldn't progress the dunning state machine — otherwise a
         # one-shot recovery attempt (manual portal retry, post-card-update

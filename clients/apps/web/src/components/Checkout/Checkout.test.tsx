@@ -2,7 +2,7 @@ import {
   createCheckout,
   createCustomPrice,
 } from '@polar-sh/checkout/test-utils'
-import type { schemas } from '@polar-sh/client'
+import { type AcceptedLocale, SUPPORTED_LOCALES } from '@polar-sh/i18n'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import {
@@ -36,6 +36,15 @@ describe('Checkout page', () => {
     expect(posthog.events.map((e) => e.event)).toContain(
       'storefront:checkout:page:view',
     )
+  })
+
+  it('reports the rendered locale and checkout id on the page view', () => {
+    const { checkout, posthog } = renderCheckout({ locale: 'de' })
+
+    expect(posthog.events).toContainEqual({
+      event: 'storefront:checkout:page:view',
+      properties: { checkout_id: checkout.id, locale: 'de' },
+    })
   })
 
   it('blocks payment when the organization has been denied', async () => {
@@ -125,31 +134,6 @@ describe('Checkout page', () => {
       (await screen.findAllByText('Polar Penguin is in test mode')).length,
     ).toBeGreaterThan(0)
     expect(screen.getByRole('button', { name: 'Get for free' })).toBeEnabled()
-    expect(
-      screen.queryByRole('link', { name: /find out why/i }),
-    ).not.toBeInTheDocument()
-  })
-
-  it('links organization members to the reason for test mode', async () => {
-    renderCheckout({
-      checkout: freeProductCheckout(),
-      authenticatedUser: {
-        member_organizations: [{ id: 'org_1' }],
-      } as schemas['UserRead'],
-      paymentStatus: {
-        payment_ready: false,
-        organization_status: 'created',
-        onboarding_resubmission_requested_at: null,
-      },
-    })
-
-    const accountReviewLink = await screen.findByRole('link', {
-      name: /find out why/i,
-    })
-    expect(accountReviewLink).toHaveAttribute(
-      'href',
-      '/dashboard/polar-penguin/finance/account',
-    )
   })
 
   it('sends the customer to the portal login when no session comes back', async () => {
@@ -202,5 +186,31 @@ describe('Checkout page', () => {
     expect(screen.getByText('+1')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('img', { name: 'Test Product' }))
     expect(screen.getByRole('dialog')).toHaveTextContent('Test Product')
+  })
+
+  describe('text direction', () => {
+    it.each(['ar', 'he'])(
+      'lays the checkout out right-to-left for %s',
+      (locale) => {
+        renderCheckout({ locale: locale as AcceptedLocale })
+
+        expect(document.documentElement).toHaveAttribute('dir', 'rtl')
+        const layout = screen.getByText('Test Product').closest('[dir]')
+        expect(layout).not.toBe(document.documentElement)
+        expect(layout).toHaveAttribute('dir', 'rtl')
+      },
+    )
+
+    it.each([...SUPPORTED_LOCALES])(
+      'keeps the checkout left-to-right for %s',
+      (locale) => {
+        renderCheckout({ locale })
+
+        expect(document.documentElement).toHaveAttribute('dir', 'ltr')
+        const layout = screen.getByText('Test Product').closest('[dir]')
+        expect(layout).not.toBe(document.documentElement)
+        expect(layout).toHaveAttribute('dir', 'ltr')
+      },
+    )
   })
 })

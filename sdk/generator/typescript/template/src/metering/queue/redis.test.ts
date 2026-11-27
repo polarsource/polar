@@ -88,6 +88,21 @@ it("queues an event on a connection Redis closed while the instance slept", asyn
   }
 });
 
+it("fails an enqueue at once while Redis is down", async () => {
+  const server = await startRedisServer();
+  const queue = new RedisEventQueue(server.socket, { stream: "test:queue" });
+  try {
+    await queue.start({ ingest: vi.fn().mockResolvedValue(undefined) });
+    await server.stop();
+    await vi.waitFor(() => expect(queue["redis"]!.status).not.toBe("ready"));
+    const started = Date.now();
+    await expect(queue.enqueue({ name: "call", external_customer_id: "alice" })).rejects.toThrow();
+    expect(Date.now() - started).toBeLessThan(1_000);
+  } finally {
+    await queue.close();
+  }
+});
+
 it("keeps an entry until its rejection hook succeeds", async () => {
   const server = await startRedisServer();
   const redis = new Redis(server.socket);

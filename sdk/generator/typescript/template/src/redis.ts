@@ -1,5 +1,6 @@
 import { Redis } from "ioredis";
 import { randomUUID } from "node:crypto";
+import { once } from "node:events";
 import { setTimeout as sleep } from "node:timers/promises";
 
 import { PolarError } from "./base";
@@ -56,6 +57,16 @@ export const connectRedis = async (redis: Redis): Promise<void> => {
       clearTimeout(timer);
     }
   }
+};
+
+// A process that slept may wake on a socket Redis closed meanwhile: ioredis sees it on the next
+// write, then reconnects. While Redis is down, each attempt errors and this returns at once.
+export const reconnected = async (redis: Redis): Promise<boolean> => {
+  if (redis.status === "end" || (redis.status === "ready" && redis.stream.writable)) return false;
+  return once(redis, "ready", { signal: AbortSignal.timeout(DEFAULT_TIMEOUT) }).then(
+    () => true,
+    () => false,
+  );
 };
 
 // A lock holds its owner's token: only the owner extends or releases it. Past its TTL, it may be

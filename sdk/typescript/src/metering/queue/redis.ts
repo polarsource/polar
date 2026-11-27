@@ -5,7 +5,14 @@ import { randomUUID } from "node:crypto";
 import type { EventInput } from "../event";
 import type { EventQueue, EventQueueStartOptions } from "./index";
 
-import { backOff, connectRedis, createRedis, releaseLock, takeLock } from "../../redis";
+import {
+  backOff,
+  connectRedis,
+  createRedis,
+  reconnected,
+  releaseLock,
+  takeLock,
+} from "../../redis";
 import {
   type DeliveryOptions,
   deliveryTimeout,
@@ -138,13 +145,23 @@ export class RedisEventQueue implements EventQueue {
     });
     // A flusher holding the first slot reads the stream again once it lets go: it delivers the
     // event. Otherwise the instance drains the stream on its next flush.
-    const results = await this.requireRedis()
-      .pipeline()
-      .xadd(this.options.stream, "*", "event", queued)
-      .exists(`${this.options.stream}:flusher:0`)
-      .exec();
-    const failed = results?.find(([error]) => error)?.[0];
-    if (failed) throw failed;
+    const redis = this.requireRedis();
+    const append = async () => {
+      const results = await redis
+        .pipeline()
+        .xadd(this.options.stream, "*", "event", queued)
+        .exists(`${this.options.stream}:flusher:0`)
+        .exec();
+      const failed = results?.find(([error]) => error)?.[0];
+      if (failed) throw failed;
+      return results;
+    };
+    // An event that reached Redis before the connection closed goes twice: Polar keeps one per
+    // external ID.
+    const results = await append().catch(async (error: unknown) => {
+      if (!(await reconnected(redis))) throw error;
+      return append();
+    });
     if (!results?.[1]?.[1]) this.undrained = true;
   }
 

@@ -103,6 +103,29 @@ it("fails an enqueue at once while Redis is down", async () => {
   }
 });
 
+it("frees its slot once Redis comes back from a drop mid-delivery", async () => {
+  const server = await startRedisServer();
+  const redis = new Redis(server.socket);
+  const queue = new RedisEventQueue(server.socket, { stream: "test:queue" });
+  try {
+    // Redis drops while Polar takes the batch: the flusher can neither acknowledge nor let go.
+    await queue.start({
+      ingest: async () => {
+        queue["redis"]!.stream.destroy();
+      },
+    });
+    await queue.enqueue({ name: "call", external_customer_id: "alice", external_id: "event-0" });
+    await queue.flush().catch(() => {});
+    await vi.waitFor(async () => expect(await redis.exists("test:queue:flusher:0")).toBe(0), {
+      timeout: 2_000,
+    });
+  } finally {
+    await queue.close();
+    redis.disconnect();
+    await server.stop();
+  }
+});
+
 it("keeps an entry until its rejection hook succeeds", async () => {
   const server = await startRedisServer();
   const redis = new Redis(server.socket);

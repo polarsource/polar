@@ -410,6 +410,26 @@ async def test_takes_back_the_batch_of_a_flusher_that_died_on_the_next_drain(
 
 
 @pytest.mark.anyio
+async def test_frees_its_slot_once_redis_comes_back_from_a_drop_mid_delivery(
+    redis_connection: tuple[str, Redis],
+) -> None:
+    url, redis = redis_connection
+    server: FakeServer = redis.connection_pool.connection_kwargs["server"]
+
+    # Redis drops while Polar takes the batch: the flusher can neither acknowledge nor let go.
+    async def ingest(events: list[EventInput]) -> None:
+        server.connected = False
+
+    async with RedisEventQueue(url, stream=QUEUE).open(ingest=ingest) as queue:
+        await queue.enqueue(_usage("event-0", 10))
+        await queue._drain()
+        server.connected = True
+        with anyio.fail_after(2):
+            while await redis.exists(f"{QUEUE}:flusher:0"):
+                await anyio.sleep(0.01)
+
+
+@pytest.mark.anyio
 async def test_sends_only_full_batches_while_another_flusher_delivers(
     redis_connection: tuple[str, Redis],
     polar_client: httpx2.AsyncClient,

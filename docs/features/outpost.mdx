@@ -280,9 +280,9 @@ Every instance of your application that uses the same Redis shares the same stat
 
 **Only Outpost fails.** `track()` logs a warning and returns. The event still reaches Polar, and local reads catch up at the next sync.
 
-**Polar is down or busy.** Reads keep answering, with Polar's last totals plus every event tracked since. The queue keeps the events and retries, waiting longer each time, up to a minute. A customer Outpost has never seen can't be read until Polar answers.
+**Your app can't reach Polar, or Polar asks it to slow down.** Reads keep answering, with Polar's last totals plus every event tracked since. The queue keeps the events and retries, waiting longer each time, up to a minute. A customer Outpost has never seen can't be read until the connection is back.
 
-**Polar is down for a long time.** The queue grows until Redis is full, then `track()` fails. Size your Redis memory for the outage you want to survive, and watch it.
+**The network issue lasts.** The queue grows until Redis is full, then `track()` fails. Size your Redis memory for how long you want to hold events, and watch it.
 
 **Polar refuses an event.** When Polar can never accept an event, an invalid one for example, the queue drops it and passes it to `onEventRejected`. Polar doesn't bill it, and Outpost stops counting it.
 

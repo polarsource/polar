@@ -111,6 +111,7 @@
     "@types/node": "catalog:",
     "@typescript/native": "catalog:",
     "ai": "catalog:",
+    "openai": "7.62.0",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

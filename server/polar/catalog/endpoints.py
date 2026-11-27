@@ -156,7 +156,8 @@ async def publish(
     ones for new sales. Existing customers stay on their versions until moved.
 
     Requires `catalog:publish` and `products:write`, `benefits:write` when the
-    draft changes benefits, `meters:write` when it changes meters, and
+    draft changes benefits, `meters:write` when it changes meters,
+    `custom_fields:write` when it changes custom fields, and
     `organizations:write` when it changes settings."""
     draft = await catalog_service.get_draft_for_write(session, auth_subject, id)
     catalog = await catalog_service.publish_draft(

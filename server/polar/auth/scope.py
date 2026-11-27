@@ -182,12 +182,11 @@ SCOPES_SUPPORTED = [
     }
 ]
 
-# What a claimed agent's tokens carry: it acts for the user who claimed it
-# (ADR-0014), with everything an OAuth app can be granted, like our MCP client,
-# except publishing catalogs, which a person grants a token deliberately.
-CLAIMED_AGENT_SCOPES: set[Scope] = {Scope(scope) for scope in SCOPES_SUPPORTED} - {
-    Scope.catalog_publish
-}
+# Publishing catalogs is granted to a token deliberately, so it's left out of
+# OAuth clients' default scope and of claimed agents' tokens (ADR-0014).
+DEFAULT_CLIENT_SCOPES = [s for s in SCOPES_SUPPORTED if s != Scope.catalog_publish]
+
+CLAIMED_AGENT_SCOPES: set[Scope] = {Scope(scope) for scope in DEFAULT_CLIENT_SCOPES}
 
 SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.openid: "OpenID",

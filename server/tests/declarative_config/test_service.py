@@ -5810,7 +5810,6 @@ ROUND_TRIP_CONFIG: dict[str, Any] = {
 @pytest.mark.anyio
 @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
 class TestExport:
-    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_exports_custom_benefits(
         self,

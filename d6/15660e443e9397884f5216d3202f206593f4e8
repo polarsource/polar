@@ -1,0 +1,48 @@
+sdk/generator/python/template/polar/integrations/asgi/__init__.py
+  s_868513325afaca::t_4f004a7a4412a8 11,64,121
+  s_868513325afaca::t_edb7a42437733b 17-18,66-77,82-87,119-120
+  s_868513325afaca::t_c831063f3084e2 65,94,99-105,109
+  s_868513325afaca::t_fee7fc93929025 88-93,95-98,106-108,110-118
+  s_868513325afaca::t_ddbe4ad5845af7 78-81
+sdk/generator/python/template/README.md
+  s_868513325afaca::t_b026849fafac62 389
+  s_868513325afaca::t_ef411d4db3f8c9 369,390,397-418
+  s_868513325afaca::t_c0282b4e99448c 365-366,370-371,391-394,396,419-420
+  s_868513325afaca::t_b8737fb04a5fd9 367-368,372-388,395
+sdk/generator/python/template/tests/integrations/fastapi/test_metering_middleware.py
+  s_868513325afaca::t_4bf5da9461f190 4,12-16,58-60,75-87
+  s_868513325afaca::t_30f59f910bcd14 41-43
+  s_868513325afaca::t_c831063f3084e2 44,55,71
+  s_868513325afaca::t_f91135dd5fe23e 1-2,6,30,32-40
+  s_868513325afaca::t_65fd44e1209bea 3,5,7-11,17-29,31,45-54,56-57,61-70,72-74
+sdk/generator/python/template/polar/integrations/fastapi/__init__.py
+  s_868513325afaca::t_4f004a7a4412a8 6
+  s_868513325afaca::t_4bf5da9461f190 7,50,63-71,83-89
+  s_868513325afaca::t_411188145aa277 51-62,72-82
+sdk/generator/python/emitter.py
+  s_868513325afaca::t_65fd44e1209bea 159
+sdk/python/README.md
+  s_868513325afaca::t_d731ecb9f0ea91 363-418
+sdk/python/polar/integrations/asgi/__init__.py
+  s_868513325afaca::t_b1c7d3e81702e0 11,17-18,67-125
+sdk/python/polar/integrations/fastapi/__init__.py
+  s_868513325afaca::t_f97517bd7ed72f 6-7,50-92
+sdk/python/tests/integrations/fastapi/test_metering_middleware.py
+  s_868513325afaca::t_4ca33d3c30bb02 1-96
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d615660e443e9397884f5216d3202f206593f4e8",
+  "prompts": {},
+  "sessions": {
+    "s_868513325afaca": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a2138b-136c-7cf0-b8fd-2500c8a89c9c",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

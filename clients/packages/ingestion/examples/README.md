@@ -72,16 +72,16 @@ import { S3StrategyContext } from '@polar-sh/ingestion/strategies/S3'
 export default defineConfig({
   events: ({ event }) => ({
     ai_usage: event().withTokens().withCosts(),
-    uploads: event(S3StrategyContext),
-    compute: event(DeltaTimeStrategyContext),
+    file_uploaded: event(S3StrategyContext),
+    execution_time: event(DeltaTimeStrategyContext),
   }),
   meters: ({ meter, events }) => ({
     tokens: meter('Tokens')
       .on(events.ai_usage)
       .unit('token')
       .sum('_llm.total_tokens'),
-    storage: meter('Storage').on(events.uploads).sum('bytes'),
-    compute: meter('Compute').on(events.compute).sum('deltaTime'),
+    storage: meter('Storage').on(events.file_uploaded).sum('bytes'),
+    compute: meter('Compute').on(events.execution_time).sum('deltaTime'),
   }),
 })
 ```

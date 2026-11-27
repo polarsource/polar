@@ -22956,6 +22956,12 @@ export interface components {
        */
       benefit_id: string
       /**
+       * External Benefit Id
+       * @description The external ID of the benefit concerned by this grant, if any. It stays the same across benefit versions.
+       * @example premium_support
+       */
+      external_benefit_id: string | null
+      /**
        * @description The type of the benefit concerned by this grant.
        * @example custom
        */
@@ -23120,6 +23126,12 @@ export interface components {
        */
       meter_id: string
       /**
+       * External Meter Id
+       * @description The external ID of the meter, if any. It stays the same across meter versions.
+       * @example tool_call
+       */
+      external_meter_id: string | null
+      /**
        * Consumed Units
        * @description The number of consumed units.
        * @example 25
@@ -23249,6 +23261,12 @@ export interface components {
        * @example d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23
        */
       product_id: string
+      /**
+       * External Product Id
+       * @description The external ID of the subscribed product, if any. It stays the same across product versions.
+       * @example pro_monthly
+       */
+      external_product_id: string | null
       /**
        * Discount Id
        * @description The ID of the applied discount, if any.

@@ -1014,7 +1014,9 @@ class CustomerService:
 
         subscription_repository = SubscriptionRepository.from_session(session)
         customer.active_subscriptions = (
-            await subscription_repository.list_active_by_customer(customer.id)
+            await subscription_repository.list_active_by_customer(
+                customer.id, options=(joinedload(Subscription.product),)
+            )
         )
 
         benefit_grant_repository = BenefitGrantRepository.from_session(session)
@@ -1026,7 +1028,11 @@ class CustomerService:
 
         customer_meter_repository = CustomerMeterRepository.from_session(session)
         customer.active_meters = await customer_meter_repository.get_all_by_customer(
-            customer.id, options=(joinedload(CustomerMeter.customer),)
+            customer.id,
+            options=(
+                joinedload(CustomerMeter.customer),
+                joinedload(CustomerMeter.meter),
+            ),
         )
 
         state = _CustomerStateAdapter.validate_python(customer, from_attributes=True)

@@ -1,0 +1,22 @@
+server/polar/customer/service.py
+  h_cc2173b7b86bcc 1032
+server/polar/customer_meter/endpoints.py
+  h_cc2173b7b86bcc 14-19,55,87
+server/polar/customer_meter/service.py
+  h_cc2173b7b86bcc 73,124
+server/polar/customer_portal/endpoints/customer_meter.py
+  h_cc2173b7b86bcc 10,44,74
+server/polar/customer_portal/service/customer_meter.py
+  h_cc2173b7b86bcc 9,22,59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "007a317c6395231fbd14544af71f4bfe65de8606",
+  "prompts": {},
+  "humans": {
+    "h_cc2173b7b86bcc": {
+      "author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

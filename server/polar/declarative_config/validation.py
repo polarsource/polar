@@ -778,6 +778,8 @@ def benefit_properties(
         return BenefitSlackSharedChannelProperties.model_validate(
             benefit.properties
         ).model_dump(mode="json")
+    if benefit.type == BenefitType.custom:
+        return {"note": benefit.properties.get("note")}
     if benefit.type != BenefitType.meter_credit:
         return {}
     properties = cast(BenefitMeterCreditProperties, benefit.properties)
@@ -901,8 +903,8 @@ def benefit_type_changes(changes: Sequence[BenefitChange]) -> list[ConfigIssue]:
                     loc=_loc(ConfigResource.benefit, change.index, "type"),
                     msg=(
                         f"This is a {existing.type.get_display_name()} benefit. "
-                        "Only feature flag, meter credit and Slack shared channel "
-                        "benefits can be managed in the config."
+                        "Only feature flag, meter credit, Slack shared channel "
+                        "and custom benefits can be managed in the config."
                     ),
                     input=change.config.type,
                 )

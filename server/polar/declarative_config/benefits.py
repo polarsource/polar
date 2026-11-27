@@ -1,5 +1,10 @@
 from uuid import UUID
 
+from polar.benefit.strategies.custom.schemas import (
+    BenefitCustomCreate,
+    BenefitCustomProperties,
+    BenefitCustomUpdate,
+)
 from polar.benefit.strategies.feature_flag.schemas import (
     BenefitFeatureFlagCreate,
     BenefitFeatureFlagCreateProperties,
@@ -17,6 +22,7 @@ from polar.benefit.strategies.slack_shared_channel.schemas import (
 
 from .schemas import (
     ConfigBenefit,
+    ConfigBenefitCustom,
     ConfigBenefitMeterCredit,
     ConfigBenefitSlackSharedChannel,
 )
@@ -41,7 +47,17 @@ def benefit_create(
     BenefitFeatureFlagCreate
     | BenefitMeterCreditCreate
     | BenefitSlackSharedChannelCreate
+    | BenefitCustomCreate
 ):
+    if isinstance(benefit_config, ConfigBenefitCustom):
+        return BenefitCustomCreate(
+            type=benefit_config.type,
+            description=benefit_config.description,
+            metadata=benefit_config.metadata,
+            visibility=benefit_config.visibility,
+            organization_id=organization_id,
+            properties=benefit_config.properties,
+        )
     if isinstance(benefit_config, ConfigBenefitSlackSharedChannel):
         return BenefitSlackSharedChannelCreate(
             type=benefit_config.type,
@@ -76,11 +92,18 @@ def benefit_update(
     BenefitFeatureFlagUpdate
     | BenefitMeterCreditUpdate
     | BenefitSlackSharedChannelUpdate
+    | BenefitCustomUpdate
 ):
     fields = benefit_config.model_dump(
         include={"description", "visibility"}
         | ({"metadata"} & benefit_config.model_fields_set)
     )
+    if isinstance(benefit_config, ConfigBenefitCustom):
+        return BenefitCustomUpdate(
+            type=benefit_config.type,
+            **fields,
+            properties=BenefitCustomProperties(note=benefit_config.properties.note),
+        )
     if isinstance(benefit_config, ConfigBenefitSlackSharedChannel):
         return BenefitSlackSharedChannelUpdate(
             type=benefit_config.type, **fields, properties=benefit_config.properties

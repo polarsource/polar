@@ -140,6 +140,18 @@ const renderBenefit = (
       ...renderDeprecated(benefit.deprecated),
     ].join('\n')
   }
+  if (benefit.type === 'custom') {
+    helpers.add('custom')
+    return [
+      `custom(${name})`,
+      ...(benefit.properties.note === null
+        ? []
+        : [`.note(${literal(benefit.properties.note)})`]),
+      ...renderMetadata(benefit.metadata),
+      ...renderVisibility(benefit.visibility),
+      ...renderDeprecated(benefit.deprecated),
+    ].join('\n')
+  }
   if (benefit.type === 'slack_shared_channel') {
     helpers.add('slackChannel')
     const properties = benefit.properties

@@ -353,6 +353,18 @@ const cases: [string, PolarConfig][] = [
       .toJSON(),
   ],
   [
+    'custom benefits',
+    api
+      .defineConfig({
+        meters: () => ({}),
+        benefits: ({ custom }) => ({
+          support: custom('Priority support').note('Email support@acme.com'),
+          swag: custom('Swag').private().metadata({ tier: 2 }).deprecated(),
+        }),
+      })
+      .toJSON(),
+  ],
+  [
     'deprecated meters, benefits and products',
     api
       .defineConfig({

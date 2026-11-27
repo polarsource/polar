@@ -1,6 +1,6 @@
 import { Schema } from 'effect'
 import { runtimeConfig } from './runtime'
-import { BenefitConfig, flag, credits, slackChannel } from './benefit'
+import { BenefitConfig, flag, credits, slackChannel, custom } from './benefit'
 import {
   metadataKey,
   type DeclaredMetadata,
@@ -562,7 +562,7 @@ export const defineConfig = <
       definition[deprecatedKey] ? [external_id] : [],
     ),
   )
-  const benefits = input.benefits?.({ flag, credits, slackChannel })
+  const benefits = input.benefits?.({ flag, credits, slackChannel, custom })
   const benefitEntries =
     benefits === undefined ? [] : toEntries<BenefitDefinition>(benefits)
   const benefitIds = new Set(benefitEntries.map(([external_id]) => external_id))

@@ -17313,6 +17313,7 @@ export interface components {
       | components['schemas']['ConfigBenefitFeatureFlag']
       | components['schemas']['ConfigBenefitMeterCredit']
       | components['schemas']['ConfigBenefitSlackSharedChannel']
+      | components['schemas']['ConfigBenefitCustom']
     /** ConfigBenefitConflict */
     ConfigBenefitConflict: {
       /**
@@ -17323,6 +17324,78 @@ export interface components {
       error: 'ConfigBenefitConflict'
       /** Detail */
       detail: string
+    }
+    /** ConfigBenefitCustom */
+    ConfigBenefitCustom: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Deprecated
+       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it. Leaving it empty is the same as `false`.
+       * @default false
+       */
+      deprecated: boolean | null
+      /**
+       * External Id
+       * @description Your identifier for the benefit, used to match it.
+       */
+      external_id: string
+      /**
+       * Description
+       * @description The description of the benefit. Will be displayed on products having this benefit.
+       */
+      description: string
+      /**
+       * @description The visibility of the benefit.
+       * @default public
+       */
+      visibility: components['schemas']['BenefitVisibility']
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'custom'
+      properties?: components['schemas']['ConfigBenefitCustomProperties']
+    }
+    /** ConfigBenefitCustomProperties */
+    ConfigBenefitCustomProperties: {
+      /** Note */
+      note?: (string | null) | null
+    }
+    /** ConfigBenefitCustomPropertiesRead */
+    ConfigBenefitCustomPropertiesRead: {
+      /** Note */
+      note: string | null
+    }
+    /** ConfigBenefitCustomRead */
+    ConfigBenefitCustomRead: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'custom'
+      /** External Id */
+      external_id: string
+      /** Description */
+      description: string
+      visibility: components['schemas']['BenefitVisibility']
+      metadata: components['schemas']['MetadataOutputType']
+      properties: components['schemas']['ConfigBenefitCustomPropertiesRead']
     }
     /** ConfigBenefitFeatureFlag */
     ConfigBenefitFeatureFlag: {
@@ -17478,6 +17551,7 @@ export interface components {
       | components['schemas']['ConfigBenefitFeatureFlagRead']
       | components['schemas']['ConfigBenefitMeterCreditRead']
       | components['schemas']['ConfigBenefitSlackSharedChannelRead']
+      | components['schemas']['ConfigBenefitCustomRead']
     /** ConfigBenefitSlackSharedChannel */
     ConfigBenefitSlackSharedChannel: {
       /**
@@ -75970,6 +76044,12 @@ export const checkoutStatusValues: ReadonlyArray<
 export const configActionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigAction']
 > = ['created', 'updated', 'unchanged']
+export const configBenefitCustomTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigBenefitCustom']['type']
+> = ['custom']
+export const configBenefitCustomReadTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigBenefitCustomRead']['type']
+> = ['custom']
 export const configBenefitFeatureFlagTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigBenefitFeatureFlag']['type']
 > = ['feature_flag']

@@ -169,6 +169,13 @@ BETA_BENEFIT = {
     "description": "Beta access",
 }
 
+CUSTOM_SUPPORT_BENEFIT = {
+    "type": "custom",
+    "external_id": "support",
+    "description": "Priority support",
+    "properties": {"note": "Email support@acme.com"},
+}
+
 PRO_PRODUCT = {
     "external_id": "pro",
     "name": "Pro",
@@ -365,10 +372,14 @@ class TestInit:
             properties={},
         )
         await create_benefit(
-            save_fixture, organization=organization, description="Priority support"
+            save_fixture,
+            organization=organization,
+            type=BenefitType.license_keys,
+            description="License key",
+            properties={},
         )
 
-        with pytest.raises(ConfigUnsupportedResources, match="Priority support"):
+        with pytest.raises(ConfigUnsupportedResources, match="License key"):
             await declarative_config_service.init(
                 session, auth_subject, ConfigInit.model_validate({})
             )
@@ -1110,6 +1121,71 @@ class TestApply:
         assert benefits["beta"].type == BenefitType.feature_flag
         assert benefits["tool-call-credits"].visibility == Visibility.public
         assert benefits["beta"].visibility == Visibility.public
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_custom_benefit(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        repository = BenefitRepository.from_session(session)
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"benefits": [CUSTOM_SUPPORT_BENEFIT]}),
+        )
+        [created] = await repository.get_all_by_external_ids(
+            organization.id, ["support"]
+        )
+
+        unchanged = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate({"benefits": [CUSTOM_SUPPORT_BENEFIT]}),
+        )
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "benefits": [
+                        {**CUSTOM_SUPPORT_BENEFIT, "properties": {"note": "Call us"}}
+                    ]
+                }
+            ),
+        )
+        [updated] = await repository.get_all_by_external_ids(
+            organization.id, ["support"]
+        )
+
+        assert created.type == BenefitType.custom
+        assert dict(created.properties) == {"note": "Email support@acme.com"}
+        assert [change.action for change in unchanged.changes] == [
+            ConfigAction.unchanged
+        ]
+        assert updated.id != created.id
+        assert dict(updated.properties) == {"note": "Call us"}
+
+    def test_custom_benefit_note_defaults_to_none(self) -> None:
+        config = Config.model_validate(
+            {
+                "benefits": [
+                    {
+                        "type": "custom",
+                        "external_id": "support",
+                        "description": "Support",
+                    }
+                ]
+            }
+        )
+
+        assert config.model_dump(mode="json")["benefits"][0]["properties"] == {
+            "note": None
+        }
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_update_benefit(
@@ -5680,6 +5756,7 @@ ROUND_TRIP_CONFIG: dict[str, Any] = {
             "properties": {"meter": "sdk-tool-calls", "units": 1000, "rollover": True},
         },
         {**BETA_BENEFIT, "visibility": "private", "metadata": {"tier": 1}},
+        CUSTOM_SUPPORT_BENEFIT,
     ],
     "products": [
         {
@@ -5733,6 +5810,33 @@ ROUND_TRIP_CONFIG: dict[str, Any] = {
 @pytest.mark.anyio
 @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
 class TestExport:
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_exports_custom_benefits(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_benefit(
+            save_fixture,
+            organization=organization,
+            description="Priority support",
+            external_id="support",
+            properties={"note": "Email support@acme.com"},
+        )
+
+        exported = await declarative_config_service.export(session, auth_subject, None)
+        plan = await declarative_config_service.plan(
+            session, auth_subject, Config.model_validate(exported.config.model_dump())
+        )
+
+        assert exported.config.model_dump(mode="json")["benefits"] == [
+            {**CUSTOM_SUPPORT_BENEFIT, "visibility": "public", "metadata": {}}
+        ]
+        assert [change.action for change in plan.changes] == [ConfigAction.unchanged]
+
     @pytest.mark.auth(
         AuthSubjectFixture(
             subject="organization",

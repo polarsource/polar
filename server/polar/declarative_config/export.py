@@ -164,7 +164,11 @@ def _benefit_entry(
         properties = cast(BenefitMeterCreditProperties, benefit.properties)
         if str(properties["meter_id"]) not in meter_external_ids:
             return None
-    if benefit.type in (BenefitType.meter_credit, BenefitType.slack_shared_channel):
+    if benefit.type in (
+        BenefitType.meter_credit,
+        BenefitType.slack_shared_channel,
+        BenefitType.custom,
+    ):
         data["properties"] = benefit_properties(benefit, meter_external_ids)
     config = _config_benefit.validate_python(data)
     return _benefit_read.validate_python(_dump(config))

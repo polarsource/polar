@@ -336,6 +336,31 @@ test('slack channels serialize with their defaults', () => {
   ])
 })
 
+test('custom benefits serialize their note', () => {
+  const config = defineConfig({
+    meters: () => ({}),
+    benefits: ({ custom }) => ({
+      support: custom('Priority support').note('Email support@acme.com'),
+      swag: custom('Swag').private(),
+    }),
+  })
+  expect(config.toJSON().benefits).toEqual([
+    {
+      external_id: 'support',
+      type: 'custom',
+      description: 'Priority support',
+      properties: { note: 'Email support@acme.com' },
+    },
+    {
+      external_id: 'swag',
+      type: 'custom',
+      description: 'Swag',
+      visibility: 'private',
+      properties: { note: null },
+    },
+  ])
+})
+
 test('meter credits only accept declared meter keys', () => {
   expect(() =>
     defineConfig({

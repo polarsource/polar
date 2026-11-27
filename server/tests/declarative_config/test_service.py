@@ -5517,13 +5517,13 @@ ROUND_TRIP_CONFIG: dict[str, Any] = {
             "benefit_revocation_grace_period": 2,
             "prevent_trial_abuse": True,
         },
-        "portal": {
+        "customer_portal": {
+            "allow_plan_changes": False,
+            "allow_unit_changes": True,
+            "allow_seat_management": False,
+            "allow_pausing": True,
+            "allow_email_changes": True,
             "show_usage": False,
-            "update_plan": False,
-            "update_seats": False,
-            "update_units": True,
-            "pause": True,
-            "allow_email_change": True,
         },
     },
     "meters": [{**TOOL_CALLS_METER, "metadata": {"team": "billing"}}],
@@ -6689,7 +6689,11 @@ class TestCatalogDrafts:
             redis,
             auth_subject,
             Config.model_validate(
-                {"settings": {"portal": {"show_usage": False, "pause": True}}}
+                {
+                    "settings": {
+                        "customer_portal": {"show_usage": False, "allow_pausing": True}
+                    }
+                }
             ),
             publish=False,
         )

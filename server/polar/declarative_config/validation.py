@@ -121,12 +121,16 @@ SETTINGS_FIELDS = {
     "subscriptions.proration_behavior": "proration_behavior",
     "subscriptions.benefit_revocation_grace_period": "benefit_revocation_grace_period",
     "subscriptions.prevent_trial_abuse": "prevent_trial_abuse",
-    "portal.show_usage": "customer_portal_usage_show",
-    "portal.update_plan": "customer_portal_subscription_update_plan",
-    "portal.update_seats": "customer_portal_subscription_update_seats",
-    "portal.update_units": "customer_portal_subscription_update_units",
-    "portal.pause": "customer_portal_subscription_pause",
-    "portal.allow_email_change": "customer_portal_customer_allow_email_change",
+    "customer_portal.allow_plan_changes": "customer_portal_subscription_update_plan",
+    "customer_portal.allow_unit_changes": "customer_portal_subscription_update_units",
+    "customer_portal.allow_seat_management": (
+        "customer_portal_subscription_update_seats"
+    ),
+    "customer_portal.allow_pausing": "customer_portal_subscription_pause",
+    "customer_portal.allow_email_changes": (
+        "customer_portal_customer_allow_email_change"
+    ),
+    "customer_portal.show_usage": "customer_portal_usage_show",
 }
 
 

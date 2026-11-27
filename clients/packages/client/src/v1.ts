@@ -18597,7 +18597,9 @@ export interface components {
         | components['schemas']['ConfigSettingsSubscriptions']
         | null
       /** @description Customer portal settings. */
-      portal?: components['schemas']['ConfigSettingsPortal'] | null
+      customer_portal?:
+        | components['schemas']['ConfigSettingsCustomerPortal']
+        | null
     }
     /** ConfigSettingsChange */
     ConfigSettingsChange: {
@@ -18608,6 +18610,54 @@ export interface components {
        * @description Settings that applying the config changes.
        */
       diff: components['schemas']['ConfigFieldChange'][]
+    }
+    /** ConfigSettingsCustomerPortal */
+    ConfigSettingsCustomerPortal: {
+      /**
+       * Allow Plan Changes
+       * @description Whether customers can switch their subscription to another product.
+       */
+      allow_plan_changes?: boolean | null
+      /**
+       * Allow Unit Changes
+       * @description Whether customers can change the number of units on their subscriptions.
+       */
+      allow_unit_changes?: boolean | null
+      /**
+       * Allow Seat Management
+       * @description Whether customers can assign and manage seats on their subscriptions.
+       */
+      allow_seat_management?: boolean | null
+      /**
+       * Allow Pausing
+       * @description Whether customers can pause and resume their subscriptions.
+       */
+      allow_pausing?: boolean | null
+      /**
+       * Allow Email Changes
+       * @description Whether customers can change their email address.
+       */
+      allow_email_changes?: boolean | null
+      /**
+       * Show Usage
+       * @description Whether customers see their metered usage in the customer portal.
+       */
+      show_usage?: boolean | null
+    }
+    /** ConfigSettingsCustomerPortalRead */
+    ConfigSettingsCustomerPortalRead: {
+      /** Allow Plan Changes */
+      allow_plan_changes: boolean
+      /** Allow Unit Changes */
+      allow_unit_changes: boolean
+      /** Allow Seat Management */
+      allow_seat_management: boolean
+      /** Allow Pausing */
+      allow_pausing: boolean
+      /** Allow Email Changes */
+      allow_email_changes: boolean
+      /** Show Usage */
+      show_usage: boolean
     }
     /** ConfigSettingsPayments */
     ConfigSettingsPayments: {
@@ -18621,59 +18671,11 @@ export interface components {
       currency: components['schemas']['PresentmentCurrency']
       tax: components['schemas']['TaxBehaviorOption']
     }
-    /** ConfigSettingsPortal */
-    ConfigSettingsPortal: {
-      /**
-       * Show Usage
-       * @description Whether customers see their metered usage in the customer portal.
-       */
-      show_usage?: boolean | null
-      /**
-       * Update Plan
-       * @description Whether customers can switch their subscription to another product.
-       */
-      update_plan?: boolean | null
-      /**
-       * Update Seats
-       * @description Whether customers can assign and manage seats on their subscriptions.
-       */
-      update_seats?: boolean | null
-      /**
-       * Update Units
-       * @description Whether customers can change the number of units on their subscriptions.
-       */
-      update_units?: boolean | null
-      /**
-       * Pause
-       * @description Whether customers can pause and resume their subscriptions.
-       */
-      pause?: boolean | null
-      /**
-       * Allow Email Change
-       * @description Whether customers can change their email address.
-       */
-      allow_email_change?: boolean | null
-    }
-    /** ConfigSettingsPortalRead */
-    ConfigSettingsPortalRead: {
-      /** Show Usage */
-      show_usage: boolean
-      /** Update Plan */
-      update_plan: boolean
-      /** Update Seats */
-      update_seats: boolean
-      /** Update Units */
-      update_units: boolean
-      /** Pause */
-      pause: boolean
-      /** Allow Email Change */
-      allow_email_change: boolean
-    }
     /** ConfigSettingsRead */
     ConfigSettingsRead: {
       payments: components['schemas']['ConfigSettingsPaymentsRead']
       subscriptions: components['schemas']['ConfigSettingsSubscriptionsRead']
-      portal: components['schemas']['ConfigSettingsPortalRead']
+      customer_portal: components['schemas']['ConfigSettingsCustomerPortalRead']
     }
     /** ConfigSettingsResult */
     ConfigSettingsResult: {

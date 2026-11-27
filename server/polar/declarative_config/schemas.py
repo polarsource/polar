@@ -524,40 +524,40 @@ class ConfigSettingsSubscriptions(Schema):
     )
 
 
-class ConfigSettingsPortal(Schema):
+class ConfigSettingsCustomerPortal(Schema):
     model_config = ConfigDict(extra="forbid")
 
-    show_usage: bool | None = Field(
-        default=None,
-        description=(
-            "Whether customers see their metered usage in the customer portal."
-        ),
-    )
-    update_plan: bool | None = Field(
+    allow_plan_changes: bool | None = Field(
         default=None,
         description=(
             "Whether customers can switch their subscription to another product."
         ),
     )
-    update_seats: bool | None = Field(
-        default=None,
-        description=(
-            "Whether customers can assign and manage seats on their subscriptions."
-        ),
-    )
-    update_units: bool | None = Field(
+    allow_unit_changes: bool | None = Field(
         default=None,
         description=(
             "Whether customers can change the number of units on their subscriptions."
         ),
     )
-    pause: bool | None = Field(
+    allow_seat_management: bool | None = Field(
+        default=None,
+        description=(
+            "Whether customers can assign and manage seats on their subscriptions."
+        ),
+    )
+    allow_pausing: bool | None = Field(
         default=None,
         description="Whether customers can pause and resume their subscriptions.",
     )
-    allow_email_change: bool | None = Field(
+    allow_email_changes: bool | None = Field(
         default=None,
         description="Whether customers can change their email address.",
+    )
+    show_usage: bool | None = Field(
+        default=None,
+        description=(
+            "Whether customers see their metered usage in the customer portal."
+        ),
     )
 
 
@@ -572,7 +572,7 @@ class ConfigSettings(Schema):
         default=None,
         description="Subscription settings.",
     )
-    portal: ConfigSettingsPortal | None = Field(
+    customer_portal: ConfigSettingsCustomerPortal | None = Field(
         default=None,
         description="Customer portal settings.",
     )
@@ -1064,19 +1064,19 @@ class ConfigSettingsSubscriptionsRead(_ConfigRead):
     prevent_trial_abuse: bool
 
 
-class ConfigSettingsPortalRead(_ConfigRead):
+class ConfigSettingsCustomerPortalRead(_ConfigRead):
+    allow_plan_changes: bool
+    allow_unit_changes: bool
+    allow_seat_management: bool
+    allow_pausing: bool
+    allow_email_changes: bool
     show_usage: bool
-    update_plan: bool
-    update_seats: bool
-    update_units: bool
-    pause: bool
-    allow_email_change: bool
 
 
 class ConfigSettingsRead(_ConfigRead):
     payments: ConfigSettingsPaymentsRead
     subscriptions: ConfigSettingsSubscriptionsRead
-    portal: ConfigSettingsPortalRead
+    customer_portal: ConfigSettingsCustomerPortalRead
 
 
 class ConfigExportDocument(_ConfigRead):

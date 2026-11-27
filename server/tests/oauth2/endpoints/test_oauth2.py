@@ -256,6 +256,7 @@ class TestOAuth2Register:
         assert response.status_code == 201
         scopes = response.json()["scope"].split()
         assert Scope.products_write in scopes
+        assert Scope.catalogs_read in scopes
         assert Scope.catalogs_write not in scopes
 
     @pytest.mark.auth(AuthSubjectFixture(subject="user"))

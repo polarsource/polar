@@ -47,7 +47,7 @@ export const catalogs =
         ),
       )
       if (response.status !== 200) {
-        return yield* unexpected(response, organization, ['products:read'])
+        return yield* unexpected(response, organization, ['catalogs:read'])
       }
       const { items } =
         yield* HttpClientResponse.schemaBodyJson(CatalogList)(response)

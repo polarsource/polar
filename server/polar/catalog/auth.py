@@ -7,7 +7,7 @@ from polar.auth.models import Agent, AuthSubject, Organization, User
 from polar.auth.scope import Scope
 
 _CatalogRead = Authenticator(
-    required_scopes={Scope.products_read, Scope.products_write},
+    required_scopes={Scope.catalogs_read, Scope.catalogs_write},
     allowed_subjects={User, Organization, Agent},
 )
 CatalogRead = Annotated[AuthSubject[User | Organization | Agent], Depends(_CatalogRead)]

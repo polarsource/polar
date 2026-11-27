@@ -122,7 +122,10 @@ const customerEmailGroups: { title: string; emails: CustomerEmail[] }[] = [
 
 const OrganizationCustomerEmailSettings: React.FC<
   OrganizationCustomerEmailSettingsProps
-> = ({ organization, readOnly }) => {
+> = ({ organization, readOnly: _readOnly }) => {
+  const readOnly =
+    _readOnly ||
+    (organization.feature_settings?.config_as_code_enabled ?? false)
   const updateOrganization = useUpdateOrganization()
 
   const { value: settings, update } = useOptimisticSave(

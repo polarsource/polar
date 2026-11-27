@@ -28,6 +28,8 @@ interface OrganizationSubscriptionSettingsProps {
 const OrganizationSubscriptionSettings: React.FC<
   OrganizationSubscriptionSettingsProps
 > = ({ organization, readOnly }) => {
+  const managedReadOnly =
+    readOnly || (organization.feature_settings?.config_as_code_enabled ?? false)
   const form = useForm<schemas['OrganizationSubscriptionSettings']>({
     defaultValues: {
       trial_ended_reactivation_period: DEFAULT_TRIAL_ENDED_REACTIVATION_PERIOD,
@@ -93,7 +95,7 @@ const OrganizationSubscriptionSettings: React.FC<
                     <FormControl>
                       <Switch
                         checked={field.value}
-                        disabled={readOnly}
+                        disabled={managedReadOnly}
                         onCheckedChange={field.onChange}
                       />
                     </FormControl>
@@ -116,7 +118,7 @@ const OrganizationSubscriptionSettings: React.FC<
                     <FormControl>
                       <Switch
                         checked={field.value}
-                        disabled={readOnly}
+                        disabled={managedReadOnly}
                         onCheckedChange={field.onChange}
                       />
                     </FormControl>
@@ -164,7 +166,7 @@ const OrganizationSubscriptionSettings: React.FC<
                         organization={organization}
                         value={field.value}
                         onValueChange={field.onChange}
-                        disabled={readOnly}
+                        disabled={managedReadOnly}
                       />
                     </FormControl>
                     <FormMessage />
@@ -184,7 +186,7 @@ const OrganizationSubscriptionSettings: React.FC<
                     <FormControl>
                       <BenefitRevocationGracePeriod
                         value={field.value}
-                        disabled={readOnly}
+                        disabled={managedReadOnly}
                         onValueChange={(value) => field.onChange(Number(value))}
                       />
                     </FormControl>

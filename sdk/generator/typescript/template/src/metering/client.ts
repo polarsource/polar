@@ -15,8 +15,6 @@ import type { EventQueue, EventQueueHooks, EventQueueStartOptions } from "./queu
 import { MemoryEventQueue } from "./queue/memory";
 import type { RedisEventQueue } from "./queue/redis";
 
-const OUTPOST_START_RETRY_DELAY_MS = 1000;
-
 interface OutpostBackend {
   start(): Promise<unknown>;
   close(): Promise<void>;
@@ -42,9 +40,9 @@ export interface PolarEventOptions {
 
 export class PolarEventClient {
   private readonly running: Pick<EventQueue, "close">[] = [];
-  private startingOutpost?: Promise<OutpostBackend | undefined>;
-  private outpostRetryAt = 0;
+  private startingOutpost?: Promise<OutpostBackend>;
   private startingQueue?: Promise<void>;
+  private queueStartupFailure?: { error: unknown };
   private outpost?: OutpostBackend;
   private readonly queue: EventQueue | null;
   private closing?: Promise<void>;
@@ -133,8 +131,8 @@ export class PolarEventClient {
     validateActor(input);
     this.begin();
     try {
+      const outpost = await this.startOutpost();
       try {
-        const outpost = await this.startOutpost();
         if (outpost) return await outpost.meter({ ...input, meter_id: meterId });
       } catch (error) {
         if (!(error instanceof UnknownMeterError || error instanceof PolarOutpostError))
@@ -190,9 +188,11 @@ export class PolarEventClient {
     this.begin();
     try {
       const outpost = await this.startOutpost();
-      await outpost?.actor(customer);
-    } catch (error) {
-      if (!(error instanceof PolarOutpostError)) throw error;
+      try {
+        await outpost?.actor(customer);
+      } catch (error) {
+        if (!(error instanceof PolarOutpostError)) throw error;
+      }
     } finally {
       if (--this.activeOperations === 0) this.onDrained?.();
     }
@@ -205,33 +205,23 @@ export class PolarEventClient {
 
   private begin(): void {
     if (this.closing) throw new Error("Polar client is closed");
+    if (this.queueStartupFailure) throw this.queueStartupFailure.error;
     this.activeOperations++;
   }
 
-  private startOutpost(): Promise<OutpostBackend | undefined> | undefined {
-    if (!this.options.outpost || Date.now() < this.outpostRetryAt) return;
-    this.startingOutpost ??= this.openOutpost(this.options.outpost).then((outpost) => {
-      if (outpost === undefined) {
-        this.outpostRetryAt = Date.now() + OUTPOST_START_RETRY_DELAY_MS;
-        this.startingOutpost = undefined;
-      }
-      return outpost;
-    });
+  private startOutpost(): Promise<OutpostBackend> | undefined {
+    if (!this.options.outpost) return;
+    this.startingOutpost ??= this.openOutpost(this.options.outpost);
     return this.startingOutpost;
   }
 
-  private async openOutpost(createOutpost: OutpostFactory): Promise<OutpostBackend | undefined> {
+  private async openOutpost(createOutpost: OutpostFactory): Promise<OutpostBackend> {
     this.checkShutdownDeadline();
-    try {
-      const outpost = createOutpost(this.client);
-      await outpost.start();
-      await this.registerResource(outpost);
-      this.outpost = outpost;
-      return outpost;
-    } catch (error) {
-      if (!(error instanceof PolarOutpostError)) throw error;
-      return undefined;
-    }
+    const outpost = createOutpost(this.client);
+    await outpost.start();
+    await this.registerResource(outpost);
+    this.outpost = outpost;
+    return outpost;
   }
 
   private startQueue(queue: EventQueue): Promise<void> {
@@ -246,8 +236,8 @@ export class PolarEventClient {
     this.checkShutdownDeadline();
     const options: EventQueueStartOptions = {
       ingest: createIngest(this.client),
-      onAck: this.options.outpost || this.options.onEventAck ? this.onAck.bind(this) : undefined,
-      onRejected: this.options.outpost || this.options.onEventRejected ? this.onRejected.bind(this) : undefined,
+      onAck: outpost || this.options.onEventAck ? this.onAck.bind(this) : undefined,
+      onRejected: outpost || this.options.onEventRejected ? this.onRejected.bind(this) : undefined,
     };
     try {
       const redis = outpost?.redisForUrl(queue.redisUrl) as
@@ -256,17 +246,18 @@ export class PolarEventClient {
       if (redis && queue.startWithRedis) await queue.startWithRedis(options, redis);
       else await queue.start(options);
     } catch (error) {
+      this.queueStartupFailure = { error };
       if (!outpost) throw error;
       this.outpost = undefined;
       const timeout = this.shutdownDeadline === undefined
         ? deliveryTimeout()
         : Math.max(0, this.shutdownDeadline - Date.now());
-      const cleanup = this.closeResources(timeout);
-      this.startingOutpost = cleanup.then(() => undefined, () => undefined);
       try {
-        await cleanup;
+        await this.closeResources(timeout);
       } catch (cleanupError) {
-        throw new AggregateError([error, cleanupError], "Polar client startup and cleanup failed");
+        const failure = new AggregateError([error, cleanupError], "Polar client startup and cleanup failed");
+        this.queueStartupFailure = { error: failure };
+        throw failure;
       }
       throw error;
     }
@@ -292,8 +283,7 @@ export class PolarEventClient {
       }
       throw error;
     }
-    if (resource === this.queue) this.running.push(resource);
-    else this.running.unshift(resource);
+    this.running.push(resource);
   }
 
   private async onAck(events: EventInput[]): Promise<void> {

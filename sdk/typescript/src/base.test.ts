@@ -464,52 +464,28 @@ test("warms the actor's customer without starting the delivery queue", async () 
   }
 });
 
-test("keeps delivering events during Outpost startup failure and resumes local reads", async () => {
-  const now = vi.spyOn(Date, "now").mockReturnValue(0);
-  const startOutpost = vi
-    .spyOn(Outpost.prototype, "start")
-    .mockRejectedValueOnce(new UnavailableRedisError())
-    .mockImplementation(async function (this: Outpost) {
-      return this;
-    });
-  const local = { meter_id: "meter", consumed_units: 2, credited_units: 3, balance: 1 };
-  vi.spyOn(Outpost.prototype, "meter").mockResolvedValue(local);
-  const reduce = vi.spyOn(Outpost.prototype, "track").mockResolvedValue(undefined);
-  const ack = vi.spyOn(Outpost.prototype, "onAck").mockResolvedValue(undefined);
-  const close = vi.spyOn(Outpost.prototype, "close").mockResolvedValue(undefined);
-  const fetch = vi
-    .spyOn(globalThis, "fetch")
-    .mockResolvedValueOnce(new Response('{"items":[]}'))
-    .mockImplementation(async () => new Response(null, { status: 202 }));
+test("propagates an Outpost startup failure without starting delivery or using the API", async () => {
+  const failure = new UnavailableRedisError();
+  const startOutpost = vi.spyOn(Outpost.prototype, "start").mockRejectedValue(failure);
+  const fetch = vi.spyOn(globalThis, "fetch");
+  const queue = { start: vi.fn(), enqueue: vi.fn(), close: vi.fn(), flush: vi.fn() };
   const polar = createPolar({
     accessToken: "token",
+    eventQueue: queue,
     outpost: outpost({ redis: "redis://localhost" }),
   });
   try {
-    await expect(polar.meter("meter", event)).resolves.toBeNull();
-    await polar.track(event);
-    await polar.flush();
+    const actor = polar.actor({ external_customer_id: "alice" });
+    await expect(actor.meter("meter")).rejects.toBe(failure);
+    await expect(actor.warmup()).rejects.toBe(failure);
+    await expect(polar.track(event)).rejects.toBe(failure);
+    await expect(polar.flush()).rejects.toBe(failure);
     expect(startOutpost).toHaveBeenCalledOnce();
-    expect(fetch).toHaveBeenNthCalledWith(
-      2,
-      "https://api.polar.sh/v1/events/ingest",
-      expect.objectContaining({ method: "POST" }),
-    );
-    expect(ack).not.toHaveBeenCalled();
-
-    now.mockReturnValue(1000);
-    await expect(
-      Promise.all([polar.meter("meter", event), polar.meter("meter", event)]),
-    ).resolves.toEqual([local, local]);
-    expect(startOutpost).toHaveBeenCalledTimes(2);
-    expect(fetch).toHaveBeenCalledTimes(2);
-    await polar.track(event);
-    expect(reduce).toHaveBeenCalledOnce();
+    expect(queue.start).not.toHaveBeenCalled();
+    expect(fetch).not.toHaveBeenCalled();
   } finally {
     await polar.close();
   }
-  expect(ack).toHaveBeenCalledExactlyOnceWith([reduce.mock.calls[0][0]]);
-  expect(ack.mock.invocationCallOrder[0]).toBeLessThan(close.mock.invocationCallOrder[0]);
 });
 
 test("closes Outpost when the delivery queue fails to start", async () => {
@@ -529,14 +505,15 @@ test("closes Outpost when the delivery queue fails to start", async () => {
     eventQueue: queue,
     outpost: outpost({ redis: "redis://localhost" }),
   });
-  const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response('{"items":[]}'));
+  const fetch = vi.spyOn(globalThis, "fetch");
   try {
     await expect(polar.track(event)).rejects.toBe(failure);
     expect(closeOutpost).toHaveBeenCalledOnce();
     expect(queue.enqueue).not.toHaveBeenCalled();
     await expect(polar.flush()).rejects.toBe(failure);
-    await expect(polar.meter("meter", event)).resolves.toBeNull();
-    expect(fetch).toHaveBeenCalledOnce();
+    await expect(polar.meter("meter", event)).rejects.toBe(failure);
+    await expect(polar.actor(event).warmup()).rejects.toBe(failure);
+    expect(fetch).not.toHaveBeenCalled();
   } finally {
     await polar.close();
   }

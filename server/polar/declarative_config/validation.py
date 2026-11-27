@@ -130,7 +130,7 @@ SETTINGS_FIELDS = {
     "customer_portal.allow_email_changes": (
         "customer_portal_customer_allow_email_change"
     ),
-    "customer_portal.show_usage": "customer_portal_usage_show",
+    "customer_portal.show_metered_usage": "customer_portal_usage_show",
 }
 
 

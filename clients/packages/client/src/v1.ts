@@ -18639,10 +18639,10 @@ export interface components {
        */
       allow_email_changes?: boolean | null
       /**
-       * Show Usage
+       * Show Metered Usage
        * @description Whether customers see their metered usage in the customer portal.
        */
-      show_usage?: boolean | null
+      show_metered_usage?: boolean | null
     }
     /** ConfigSettingsCustomerPortalRead */
     ConfigSettingsCustomerPortalRead: {
@@ -18656,8 +18656,8 @@ export interface components {
       allow_pausing: boolean
       /** Allow Email Changes */
       allow_email_changes: boolean
-      /** Show Usage */
-      show_usage: boolean
+      /** Show Metered Usage */
+      show_metered_usage: boolean
     }
     /** ConfigSettingsPayments */
     ConfigSettingsPayments: {

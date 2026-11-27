@@ -553,7 +553,7 @@ class ConfigSettingsCustomerPortal(Schema):
         default=None,
         description="Whether customers can change their email address.",
     )
-    show_usage: bool | None = Field(
+    show_metered_usage: bool | None = Field(
         default=None,
         description=(
             "Whether customers see their metered usage in the customer portal."
@@ -1070,7 +1070,7 @@ class ConfigSettingsCustomerPortalRead(_ConfigRead):
     allow_seat_management: bool
     allow_pausing: bool
     allow_email_changes: bool
-    show_usage: bool
+    show_metered_usage: bool
 
 
 class ConfigSettingsRead(_ConfigRead):

@@ -5523,7 +5523,7 @@ ROUND_TRIP_CONFIG: dict[str, Any] = {
             "allow_seat_management": False,
             "allow_pausing": True,
             "allow_email_changes": True,
-            "show_usage": False,
+            "show_metered_usage": False,
         },
     },
     "meters": [{**TOOL_CALLS_METER, "metadata": {"team": "billing"}}],
@@ -6691,7 +6691,10 @@ class TestCatalogDrafts:
             Config.model_validate(
                 {
                     "settings": {
-                        "customer_portal": {"show_usage": False, "allow_pausing": True}
+                        "customer_portal": {
+                            "show_metered_usage": False,
+                            "allow_pausing": True,
+                        }
                     }
                 }
             ),

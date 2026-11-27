@@ -216,7 +216,7 @@ const DownloadablesEditForm = ({
 
   const filesQuery = useFiles(organization.id, initial.fileIds)
 
-  if (initial.fileIds.length > 0 && !filesQuery.data) {
+  if (initial.fileIds.length > 0 && (!filesQuery.data || filesQuery.isError)) {
     if (filesQuery.isError) {
       return (
         <Alert

@@ -135,8 +135,16 @@ export class RedisEventQueue implements EventQueue {
       external_id: event.external_id || randomUUID(),
       timestamp: event.timestamp ?? new Date().toISOString(),
     });
-    await this.requireRedis().xadd(this.options.stream, "*", "event", queued);
-    this.undrained = true;
+    // A flusher holding the first slot reads the stream again once it lets go: it delivers the
+    // event. Otherwise the instance drains the stream on its next flush.
+    const results = await this.requireRedis()
+      .pipeline()
+      .xadd(this.options.stream, "*", "event", queued)
+      .exists(`${this.options.stream}:flusher:0`)
+      .exec();
+    const failed = results?.find(([error]) => error)?.[0];
+    if (failed) throw failed;
+    if (!results?.[1]?.[1]) this.undrained = true;
   }
 
   async flush(options?: DeliveryOptions): Promise<void> {

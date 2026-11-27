@@ -2620,6 +2620,18 @@ describe("Redis cost", () => {
     expect((await redisCost(() => outpost.track(event()))).commands).toEqual({ evalsha: 1 });
   });
 
+  it("queues an event in two commands and flushes at no cost while a flusher holds the first slot", async () => {
+    const queue = await startQueue();
+    clearInterval(queue["timer"]);
+    // A serverless instance flushes on every request: the flusher in flight delivers its event.
+    await redis.set("outpost:v1:org-1:queue:flusher:0", "other", "PX", 30_000);
+    const cost = await redisCost(async () => {
+      await queue.enqueue(event());
+      await queue.flush();
+    });
+    expect(cost.commands).toEqual({ xadd: 1, exists: 1 });
+  });
+
   it("warms a known customer over eleven reducers in one command, readiness alone", async () => {
     reducers = [
       ...Array.from(

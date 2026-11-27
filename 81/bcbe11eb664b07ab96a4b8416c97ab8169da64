@@ -1,0 +1,25 @@
+server/polar/dispute/service.py
+  s_8ceaf4309cbe68::t_370b285d00592b 132
+server/tests/dispute/test_endpoints.py
+  s_8ceaf4309cbe68::t_370b285d00592b 207-218,238
+  s_8ceaf4309cbe68::t_02a1e675ebec8f 206
+server/polar/dispute/endpoints.py
+  s_8ceaf4309cbe68::t_370b285d00592b 6,93,98-100
+  s_8ceaf4309cbe68::t_f044dc4de8572b 101
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "81bcbe11eb664b07ab96a4b8416c97ab8169da64",
+  "prompts": {},
+  "sessions": {
+    "s_8ceaf4309cbe68": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a21c1b-bc29-7773-8efe-fc6f647b169f",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

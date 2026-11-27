@@ -1,7 +1,7 @@
 # Written by the Lambda in terraform/production/planetscale.tf.
 locals {
   planetscale_audit_log_writer_account = "538043300756"
-  planetscale_audit_log_writer_role    = "arn:aws:iam::538043300756:role/polar-production-planetscale-audit-log"
+  planetscale_audit_log_writer_role    = "arn:aws:iam::${local.planetscale_audit_log_writer_account}:role/polar-production-planetscale-audit-log"
 }
 
 resource "aws_s3_bucket" "planetscale_audit_log" {

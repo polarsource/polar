@@ -17193,7 +17193,7 @@ export interface components {
     }
     /** Config */
     Config: {
-      /** @description Organization settings to update. Left untouched when omitted. */
+      /** @description Organization settings to update. */
       settings?: components['schemas']['ConfigSettings'] | null
       /**
        * Catalog Name
@@ -18590,13 +18590,13 @@ export interface components {
     }
     /** ConfigSettings */
     ConfigSettings: {
-      /** @description Payment settings. Left untouched when omitted. */
+      /** @description Payment settings. */
       payments?: components['schemas']['ConfigSettingsPayments'] | null
-      /** @description Subscription settings. Left untouched when omitted. */
+      /** @description Subscription settings. */
       subscriptions?:
         | components['schemas']['ConfigSettingsSubscriptions']
         | null
-      /** @description Customer portal settings. Left untouched when omitted. */
+      /** @description Customer portal settings. */
       portal?: components['schemas']['ConfigSettingsPortal'] | null
     }
     /** ConfigSettingsChange */
@@ -18611,9 +18611,9 @@ export interface components {
     }
     /** ConfigSettingsPayments */
     ConfigSettingsPayments: {
-      /** @description The organization's default presentment currency. Every active product must have a price in it. Left untouched when omitted. */
+      /** @description The organization's default presentment currency. Every active product must have a price in it. */
       currency?: components['schemas']['PresentmentCurrency'] | null
-      /** @description The organization's default tax behavior, used by prices without their own. Left untouched when omitted. */
+      /** @description The organization's default tax behavior, used by prices without their own. */
       tax?: components['schemas']['TaxBehaviorOption'] | null
     }
     /** ConfigSettingsPaymentsRead */
@@ -18625,32 +18625,32 @@ export interface components {
     ConfigSettingsPortal: {
       /**
        * Show Usage
-       * @description Whether customers see their metered usage in the customer portal. Left untouched when omitted.
+       * @description Whether customers see their metered usage in the customer portal.
        */
       show_usage?: boolean | null
       /**
        * Update Plan
-       * @description Whether customers can switch their subscription to another product. Left untouched when omitted.
+       * @description Whether customers can switch their subscription to another product.
        */
       update_plan?: boolean | null
       /**
        * Update Seats
-       * @description Whether customers can assign and manage seats on their subscriptions. Left untouched when omitted.
+       * @description Whether customers can assign and manage seats on their subscriptions.
        */
       update_seats?: boolean | null
       /**
        * Update Units
-       * @description Whether customers can change the number of units on their subscriptions. Left untouched when omitted.
+       * @description Whether customers can change the number of units on their subscriptions.
        */
       update_units?: boolean | null
       /**
        * Pause
-       * @description Whether customers can pause and resume their subscriptions. Left untouched when omitted.
+       * @description Whether customers can pause and resume their subscriptions.
        */
       pause?: boolean | null
       /**
        * Allow Email Change
-       * @description Whether customers can change their email address. Left untouched when omitted.
+       * @description Whether customers can change their email address.
        */
       allow_email_change?: boolean | null
     }
@@ -18684,12 +18684,12 @@ export interface components {
     ConfigSettingsSubscriptions: {
       /**
        * Allow Multiple Subscriptions
-       * @description Whether a customer can have several active subscriptions at once. Left untouched when omitted.
+       * @description Whether a customer can have several active subscriptions at once.
        */
       allow_multiple_subscriptions?: boolean | null
       /**
        * Proration Behavior
-       * @description How customers are billed when their subscription changes. Left untouched when omitted.
+       * @description How customers are billed when their subscription changes.
        */
       proration_behavior?:
         | components['schemas']['SubscriptionProrationBehavior']
@@ -18697,12 +18697,12 @@ export interface components {
         | null
       /**
        * Benefit Revocation Grace Period
-       * @description Days to wait before revoking benefits while a failed payment is retried. Left untouched when omitted.
+       * @description Days to wait before revoking benefits while a failed payment is retried.
        */
       benefit_revocation_grace_period?: number | null
       /**
        * Prevent Trial Abuse
-       * @description Whether a customer who already had a trial is refused another one. Left untouched when omitted.
+       * @description Whether a customer who already had a trial is refused another one.
        */
       prevent_trial_abuse?: boolean | null
     }

@@ -485,15 +485,13 @@ class ConfigSettingsPayments(Schema):
         default=None,
         description=(
             "The organization's default presentment currency. "
-            "Every active product must have a price in it. "
-            "Left untouched when omitted."
+            "Every active product must have a price in it."
         ),
     )
     tax: TaxBehaviorOption | None = Field(
         default=None,
         description=(
-            "The organization's default tax behavior, used by prices "
-            "without their own. Left untouched when omitted."
+            "The organization's default tax behavior, used by prices without their own."
         ),
     )
 
@@ -504,30 +502,24 @@ class ConfigSettingsSubscriptions(Schema):
     allow_multiple_subscriptions: bool | None = Field(
         default=None,
         description=(
-            "Whether a customer can have several active subscriptions at "
-            "once. Left untouched when omitted."
+            "Whether a customer can have several active subscriptions at once."
         ),
     )
     proration_behavior: ProrationBehaviorSetting | None = Field(
         default=None,
-        description=(
-            "How customers are billed when their subscription changes. "
-            "Left untouched when omitted."
-        ),
+        description="How customers are billed when their subscription changes.",
     )
     benefit_revocation_grace_period: int | None = Field(
         default=None,
         ge=0,
         description=(
-            "Days to wait before revoking benefits while a failed payment "
-            "is retried. Left untouched when omitted."
+            "Days to wait before revoking benefits while a failed payment is retried."
         ),
     )
     prevent_trial_abuse: bool | None = Field(
         default=None,
         description=(
-            "Whether a customer who already had a trial is refused another "
-            "one. Left untouched when omitted."
+            "Whether a customer who already had a trial is refused another one."
         ),
     )
 
@@ -538,44 +530,34 @@ class ConfigSettingsPortal(Schema):
     show_usage: bool | None = Field(
         default=None,
         description=(
-            "Whether customers see their metered usage in the customer portal. "
-            "Left untouched when omitted."
+            "Whether customers see their metered usage in the customer portal."
         ),
     )
     update_plan: bool | None = Field(
         default=None,
         description=(
-            "Whether customers can switch their subscription to another "
-            "product. Left untouched when omitted."
+            "Whether customers can switch their subscription to another product."
         ),
     )
     update_seats: bool | None = Field(
         default=None,
         description=(
-            "Whether customers can assign and manage seats on their "
-            "subscriptions. Left untouched when omitted."
+            "Whether customers can assign and manage seats on their subscriptions."
         ),
     )
     update_units: bool | None = Field(
         default=None,
         description=(
-            "Whether customers can change the number of units on their "
-            "subscriptions. Left untouched when omitted."
+            "Whether customers can change the number of units on their subscriptions."
         ),
     )
     pause: bool | None = Field(
         default=None,
-        description=(
-            "Whether customers can pause and resume their subscriptions. "
-            "Left untouched when omitted."
-        ),
+        description="Whether customers can pause and resume their subscriptions.",
     )
     allow_email_change: bool | None = Field(
         default=None,
-        description=(
-            "Whether customers can change their email address. "
-            "Left untouched when omitted."
-        ),
+        description="Whether customers can change their email address.",
     )
 
 
@@ -584,15 +566,15 @@ class ConfigSettings(Schema):
 
     payments: ConfigSettingsPayments | None = Field(
         default=None,
-        description="Payment settings. Left untouched when omitted.",
+        description="Payment settings.",
     )
     subscriptions: ConfigSettingsSubscriptions | None = Field(
         default=None,
-        description="Subscription settings. Left untouched when omitted.",
+        description="Subscription settings.",
     )
     portal: ConfigSettingsPortal | None = Field(
         default=None,
-        description="Customer portal settings. Left untouched when omitted.",
+        description="Customer portal settings.",
     )
 
 
@@ -601,7 +583,7 @@ class Config(Schema):
 
     settings: ConfigSettings | None = Field(
         default=None,
-        description="Organization settings to update. Left untouched when omitted.",
+        description="Organization settings to update.",
     )
     catalog_name: str | None = Field(
         default=None,

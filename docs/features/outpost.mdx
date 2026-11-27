@@ -1,5 +1,5 @@
 ---
-title: "Zero-latency metering (Outpost)"
+title: "Zero-latency metering"
 sidebarTitle: "Zero-latency metering"
 tag: "Beta"
 description: "Read a customer's balance from your own Redis, right after you track an event."
@@ -245,7 +245,15 @@ A long-running server delivers on its own, every second. A serverless function f
 
 ## Performance and sizing
 
-Measured on Polar's test environment on 2026-11-27, not a guarantee: the TypeScript SDK on Vercel with `RedisEventQueue` and Outpost, 1,000 customers, one event per request, 10,000 events per second for 6.5 minutes. A local read took 1.7 ms at the median, 14 ms at p95 and 25 ms at p99, and every balance matched Polar's after the run. On that setup, the Redis instance was the limit, near 12,000 events per second.
+A local read took 1.7 ms at the median at 10,000 events per second:
+
+| Local read (`meter()`) | Latency |
+| ---------------------- | ------- |
+| Median                 | 1.7 ms  |
+| p95                    | 14 ms   |
+| p99                    | 25 ms   |
+
+Measured on Polar's test environment on 2026-11-27, not a guarantee: the TypeScript SDK on Vercel with `RedisEventQueue` and Outpost, 1,000 customers, one event per request, 10,000 events per second for 6.5 minutes. Every balance matched Polar's after the run. On that setup, the Redis instance was the limit, near 12,000 events per second.
 
 If you hit limits on Outpost performance, reach out [to the team](/support).
 

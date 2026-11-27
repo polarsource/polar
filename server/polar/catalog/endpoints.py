@@ -155,9 +155,9 @@ async def publish(
     """Publish the draft catalog. Its new products and benefits replace the live
     ones for new sales. Existing customers stay on their versions until moved.
 
-    Requires `products:write`, `benefits:write` when the draft changes
-    benefits, `meters:write` when it changes meters, and `organizations:write`
-    when it changes settings."""
+    Requires `catalog:publish` and `products:write`, `benefits:write` when the
+    draft changes benefits, `meters:write` when it changes meters, and
+    `organizations:write` when it changes settings."""
     draft = await catalog_service.get_draft_for_write(session, auth_subject, id)
     catalog = await catalog_service.publish_draft(
         session, auth_subject, draft.organization, draft

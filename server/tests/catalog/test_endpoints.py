@@ -396,6 +396,25 @@ class TestPublish:
         assert response.status_code == 403
 
     @pytest.mark.auth(*_with_scopes(Scope.products_write))
+    async def test_without_catalog_publish(
+        self, client: AsyncClient, products_only_draft: Catalog
+    ) -> None:
+        response = await client.post(f"/v1/catalogs/{products_only_draft.id}/publish")
+
+        assert response.status_code == 403
+        assert response.json()["error"] == "insufficient_scope"
+        assert "catalog:publish" in response.headers["www-authenticate"]
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_unclaimed_agent(
+        self, client: AsyncClient, products_only_draft: Catalog
+    ) -> None:
+        response = await client.post(f"/v1/catalogs/{products_only_draft.id}/publish")
+
+        assert response.status_code == 403
+        assert response.json()["error"] == "insufficient_scope"
+
+    @pytest.mark.auth(*_with_scopes(Scope.products_write, Scope.catalog_publish))
     async def test_products_only(
         self, client: AsyncClient, products_only_draft: Catalog
     ) -> None:
@@ -404,7 +423,7 @@ class TestPublish:
         assert response.status_code == 200
         assert response.json()["status"] == CatalogStatus.live
 
-    @pytest.mark.auth(*_with_scopes(Scope.products_write))
+    @pytest.mark.auth(*_with_scopes(Scope.products_write, Scope.catalog_publish))
     async def test_benefit_changes_without_benefits_write(
         self, client: AsyncClient, benefits_draft: Catalog
     ) -> None:
@@ -413,7 +432,7 @@ class TestPublish:
         assert response.status_code == 403
         assert response.json()["error"] == "insufficient_scope"
 
-    @pytest.mark.auth(*_with_scopes(Scope.products_write))
+    @pytest.mark.auth(*_with_scopes(Scope.products_write, Scope.catalog_publish))
     async def test_removes_live_benefit_without_benefits_write(
         self,
         save_fixture: SaveFixture,
@@ -433,7 +452,9 @@ class TestPublish:
         assert response.status_code == 403
         assert response.json()["error"] == "insufficient_scope"
 
-    @pytest.mark.auth(*_with_scopes(Scope.products_write, Scope.benefits_write))
+    @pytest.mark.auth(
+        *_with_scopes(Scope.products_write, Scope.catalog_publish, Scope.benefits_write)
+    )
     async def test_meter_changes_without_meters_write(
         self, client: AsyncClient, meters_draft: Catalog
     ) -> None:
@@ -442,7 +463,9 @@ class TestPublish:
         assert response.status_code == 403
         assert response.json()["error"] == "insufficient_scope"
 
-    @pytest.mark.auth(*_with_scopes(Scope.products_write, Scope.meters_write))
+    @pytest.mark.auth(
+        *_with_scopes(Scope.products_write, Scope.catalog_publish, Scope.meters_write)
+    )
     async def test_meter_changes(
         self, mocker: MockerFixture, client: AsyncClient, meters_draft: Catalog
     ) -> None:
@@ -453,7 +476,9 @@ class TestPublish:
         assert response.status_code == 200
         assert response.json()["status"] == CatalogStatus.live
 
-    @pytest.mark.auth(*_with_scopes(Scope.products_write, Scope.benefits_write))
+    @pytest.mark.auth(
+        *_with_scopes(Scope.products_write, Scope.catalog_publish, Scope.benefits_write)
+    )
     async def test_benefit_changes(
         self, client: AsyncClient, benefits_draft: Catalog
     ) -> None:

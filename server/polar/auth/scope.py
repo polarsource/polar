@@ -39,6 +39,8 @@ class Scope(StrEnum):
     benefits_read = "benefits:read"
     benefits_write = "benefits:write"
 
+    catalog_publish = "catalog:publish"
+
     events_read = "events:read"
     events_write = "events:write"
 
@@ -181,8 +183,11 @@ SCOPES_SUPPORTED = [
 ]
 
 # What a claimed agent's tokens carry: it acts for the user who claimed it
-# (ADR-0014), with everything an OAuth app can be granted, like our MCP client.
-CLAIMED_AGENT_SCOPES: set[Scope] = {Scope(scope) for scope in SCOPES_SUPPORTED}
+# (ADR-0014), with everything an OAuth app can be granted, like our MCP client,
+# except publishing catalogs, which a person grants a token deliberately.
+CLAIMED_AGENT_SCOPES: set[Scope] = {Scope(scope) for scope in SCOPES_SUPPORTED} - {
+    Scope.catalog_publish
+}
 
 SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.openid: "OpenID",
@@ -208,6 +213,7 @@ SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.products_write: "Create or modify products",
     Scope.benefits_read: "Read benefits",
     Scope.benefits_write: "Create or modify benefits",
+    Scope.catalog_publish: "Publish catalog changes",
     Scope.events_read: "Read events",
     Scope.events_write: "Create events",
     Scope.meters_read: "Read meters",

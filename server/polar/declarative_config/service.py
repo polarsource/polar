@@ -9,6 +9,7 @@ from typing_extensions import TypeForm
 
 from polar.auth.models import AuthSubject, is_organization
 from polar.auth.permission import OrganizationPermission
+from polar.auth.scope import Scope
 from polar.authz.service import (
     assert_organization_permission,
     get_accessible_org_ids,
@@ -383,6 +384,8 @@ class DeclarativeConfigService:
         publish: bool = True,
     ) -> ConfigApplyResult:
         _assert_section_scopes(auth_subject, config, write=True)
+        if publish and Scope.catalog_publish not in auth_subject.scopes:
+            raise InsufficientScopeError({str(Scope.catalog_publish)})
         organization = await self._get_organization(
             session, auth_subject, config, OrganizationPermission.products_manage
         )

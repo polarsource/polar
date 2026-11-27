@@ -781,6 +781,32 @@ class TestApply:
                 session, redis, auth_subject, Config.model_validate({"meters": []})
             )
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.meters_write})
+    )
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_publish_without_catalog_publish(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        with pytest.raises(InsufficientScopeError):
+            await declarative_config_service.apply(
+                session,
+                redis,
+                auth_subject,
+                Config.model_validate({"meters": [TOOL_CALLS_METER]}),
+            )
+
+        assert (
+            await MeterRepository.from_session(session).get_all_by_external_ids(
+                organization.id, ["sdk-tool-calls"]
+            )
+            == []
+        )
+
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_create(
         self,

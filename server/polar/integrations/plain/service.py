@@ -900,7 +900,9 @@ class PlainService:
         email = request.customer.email
 
         customer_repository = CustomerRepository.from_session(session)
-        customer_ids = await customer_repository.get_ids_by_email(email)
+        customer_ids = await customer_repository.get_ids_by_email(
+            email, include_deleted=True
+        )
         if not customer_ids:
             return None
 

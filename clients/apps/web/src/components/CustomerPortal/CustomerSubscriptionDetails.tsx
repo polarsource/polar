@@ -106,7 +106,7 @@ const CustomerSubscriptionDetails = ({
       {isTrialing && !isCanceled && (
         <TrialBillingDetailsAlert subscription={subscription} />
       )}
-      {isTrialEnded && <TrialEndedAlert subscription={subscription} />}
+      {isTrialEnded && <TrialEndedAlert />}
 
       <CustomerSubscriptionHeader subscription={subscription} />
 
@@ -186,10 +186,7 @@ const CustomerSubscriptionDetails = ({
       <Box columnGap="s" rowGap="s" flexWrap="wrap" justifyContent="end">
         {isTrialEnded ? (
           canManageBilling && (
-            <TrialEndedSubscriptionActions
-              api={api}
-              subscription={subscription}
-            />
+            <TrialEndedSubscriptionActions subscription={subscription} />
           )
         ) : isTrialing && !isCanceled ? (
           canManageBilling && (

@@ -185,10 +185,7 @@ const CustomerPortalSubscription = ({
         {(showCancelAction || showPauseAction || showReactivateAction) && (
           <Box columnGap="s" rowGap="s" flexWrap="wrap" justifyContent="end">
             {showReactivateAction && (
-              <TrialEndedSubscriptionActions
-                api={api}
-                subscription={subscription}
-              />
+              <TrialEndedSubscriptionActions subscription={subscription} />
             )}
             {showCancelAction && (
               <Button variant="secondary" onClick={showCancelModal}>

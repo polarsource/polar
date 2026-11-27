@@ -649,38 +649,40 @@ export const useCustomerResumeSubscription = (api: Client) =>
     },
   })
 
-export const useCustomerReactivateSubscription = (api: Client) =>
+export const useCustomerOrderUpdate = (api: Client) =>
   useMutation({
-    mutationFn: async (variables: { id: string }) => {
-      const result = await api.PATCH('/v1/customer-portal/subscriptions/{id}', {
+    mutationFn: (variables: {
+      id: string
+      body: schemas['CustomerOrderUpdate']
+    }) =>
+      api.PATCH('/v1/customer-portal/orders/{id}', {
         params: { path: { id: variables.id } },
-        body: {
-          reactivate: true,
-        },
-      })
-      if (result.error) {
-        throw new Error(
-          extractApiErrorMessage(
-            result.error,
-            'Failed to reactivate subscription',
-          ),
-        )
-      }
-      return result
-    },
-    onSuccess: () => {
-      const queryClient = getQueryClient()
-      queryClient.invalidateQueries({
-        queryKey: ['customer_subscriptions'],
-      })
-      queryClient.invalidateQueries({
-        queryKey: ['customer_orders'],
-      })
-      queryClient.invalidateQueries({
-        queryKey: ['customer_benefit_grants'],
-      })
-    },
+        body: variables.body,
+      }),
   })
+
+export const useCustomerOrderPay = (api: Client) =>
+  useMutation({
+    mutationFn: (variables: {
+      id: string
+      body: schemas['CustomerOrderPay']
+    }) =>
+      api.PATCH('/v1/customer-portal/orders/{id}/pay', {
+        params: { path: { id: variables.id } },
+        body: variables.body,
+      }),
+  })
+
+export const invalidateReactivatedSubscription = () => {
+  const queryClient = getQueryClient()
+  for (const queryKey of [
+    ['customer_subscriptions'],
+    ['customer_orders'],
+    ['customer_benefit_grants'],
+  ]) {
+    queryClient.invalidateQueries({ queryKey })
+  }
+}
 
 export const useCustomerCustomerMeters = (
   api: Client,

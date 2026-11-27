@@ -73,7 +73,7 @@ const SidebarHeader = ({
   )
 }
 
-const PoweredByPolar = () => (
+export const PoweredByPolar = () => (
   <a
     href="https://polar.sh?utm_source=customer_portal"
     target="_blank"

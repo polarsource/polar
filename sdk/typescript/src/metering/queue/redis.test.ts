@@ -35,6 +35,10 @@ it("keeps an entry until its rejection hook succeeds", async () => {
     await queue.start({ ingest: createIngest(client), onAck, onRejected });
     await queue.enqueue({ name: "call", external_customer_id: "alice" });
     await queue.flush();
+    // Redis keeps what a drain fails to deliver: the next flush takes it.
+    expect(attempts).toHaveLength(1);
+    expect(await redis.xlen(stream)).toBe(1);
+    await queue.flush();
     expect(attempts).toHaveLength(2);
     expect(attempts[0]).toEqual(attempts[1]);
     expect(attempts[0].external_id).toBeTruthy();

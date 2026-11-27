@@ -1619,6 +1619,18 @@ it("sends only full batches while another flusher delivers, and the rest once no
   expect(delivered()[1]).toEqual(["event-1001"]);
 });
 
+it("returns from a flush once its drain ends, while another flusher still delivers", async () => {
+  const outpost = await startQueue();
+  const stream = "outpost:v1:org-1:queue";
+  await outpost.enqueue(usage("event-0", 10));
+  // Another flusher holds a batch in flight.
+  await redis.xreadgroup("GROUP", "polar", "other", "STREAMS", stream, ">");
+  await outpost.enqueue(usage("event-1", 10));
+  // A serverless instance flushes after each response: it must not wait on the fleet's stream.
+  await expect(outpost.flush({ timeoutMs: 500 })).resolves.toBeUndefined();
+  expect(delivered()).toEqual([]);
+});
+
 it("delivers what another instance queued while it flushed", async () => {
   const [first, second] = [await startQueue(), await startQueue()];
   await first.enqueue(usage("event-0", 10));

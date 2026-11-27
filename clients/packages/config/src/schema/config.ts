@@ -56,6 +56,7 @@ export const SettingsConfig = Schema.Struct({
       allow_multiple_subscriptions: Schema.optionalKey(Schema.Boolean),
       proration_behavior: Schema.optionalKey(ProrationBehavior),
       benefit_revocation_grace_period: Schema.optionalKey(Days),
+      trial_ended_reactivation_period: Schema.optionalKey(Days),
       prevent_trial_abuse: Schema.optionalKey(Schema.Boolean),
     }),
   ),
@@ -112,10 +113,12 @@ export type GracePeriod =
 
 type SubscriptionsInput = Omit<
   NonNullable<CamelKeys<SettingsConfig>['subscriptions']>,
-  'benefitRevocationGracePeriod'
+  'benefitRevocationGracePeriod' | 'trialEndedReactivationPeriod'
 > & {
   /** How long to wait before revoking benefits during payment retries, like `'7 days'` or `'immediately'`. */
   readonly benefitRevocationGracePeriod?: GracePeriod
+  /** How long a customer can add a payment method after a trial ends without one, before the subscription is canceled, like `'14 days'`. */
+  readonly trialEndedReactivationPeriod?: GracePeriod
 }
 
 export type SettingsInput = Omit<CamelKeys<SettingsConfig>, 'subscriptions'> & {
@@ -134,15 +137,21 @@ const days = (period: GracePeriod): number =>
   period === 'immediately' ? 0 : Number(period.split(' ')[0])
 
 const settingsJSON = (settings: SettingsInput): object => {
-  const period = settings.subscriptions?.benefitRevocationGracePeriod
+  const { benefitRevocationGracePeriod, trialEndedReactivationPeriod } =
+    settings.subscriptions ?? {}
   return snakeKeys(
-    period === undefined
+    settings.subscriptions === undefined
       ? settings
       : {
           ...settings,
           subscriptions: {
             ...settings.subscriptions,
-            benefitRevocationGracePeriod: days(period),
+            ...(benefitRevocationGracePeriod !== undefined && {
+              benefitRevocationGracePeriod: days(benefitRevocationGracePeriod),
+            }),
+            ...(trialEndedReactivationPeriod !== undefined && {
+              trialEndedReactivationPeriod: days(trialEndedReactivationPeriod),
+            }),
           },
         },
   )

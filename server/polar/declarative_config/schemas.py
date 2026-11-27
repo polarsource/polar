@@ -58,6 +58,7 @@ from polar.models.custom_field import (
     CustomFieldTextProperties,
     CustomFieldType,
 )
+from polar.models.organization import DEFAULT_TRIAL_ENDED_REACTIVATION_PERIOD
 from polar.models.product import ProductVisibility
 from polar.models.product_price import ProductPriceAmountType
 from polar.organization.schemas import OrganizationID
@@ -521,6 +522,15 @@ class ConfigSettingsSubscriptions(Schema):
         description=(
             "Days to wait before revoking benefits while a failed payment is "
             "retried. Defaults to `0`."
+        ),
+    )
+    trial_ended_reactivation_period: int = Field(
+        default=DEFAULT_TRIAL_ENDED_REACTIVATION_PERIOD,
+        ge=0,
+        description=(
+            "Days a customer can add a payment method to reactivate a "
+            "subscription whose trial ended without one, before it's canceled. "
+            f"Defaults to `{DEFAULT_TRIAL_ENDED_REACTIVATION_PERIOD}`."
         ),
     )
     prevent_trial_abuse: bool = Field(
@@ -1188,6 +1198,7 @@ class ConfigSettingsSubscriptionsRead(_ConfigRead):
     allow_multiple_subscriptions: bool
     proration_behavior: ProrationBehaviorSetting
     benefit_revocation_grace_period: int
+    trial_ended_reactivation_period: int
     prevent_trial_abuse: bool
 
 

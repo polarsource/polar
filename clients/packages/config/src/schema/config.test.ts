@@ -28,6 +28,7 @@ test('defineConfig passes settings through', () => {
         allowMultipleSubscriptions: false,
         prorationBehavior: 'prorate',
         benefitRevocationGracePeriod: '7 days',
+        trialEndedReactivationPeriod: '21 days',
         preventTrialAbuse: true,
       },
     },
@@ -39,6 +40,7 @@ test('defineConfig passes settings through', () => {
       allow_multiple_subscriptions: false,
       proration_behavior: 'prorate',
       benefit_revocation_grace_period: 7,
+      trial_ended_reactivation_period: 21,
       prevent_trial_abuse: true,
     },
   })

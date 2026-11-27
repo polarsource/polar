@@ -41,10 +41,12 @@ const ClientPage = ({
   organization,
   email,
   loggedOut = false,
+  returnTo,
 }: {
   organization: schemas['CustomerOrganization']
   email?: string
   loggedOut?: boolean
+  returnTo?: string
 }) => {
   const router = useRouter()
   const form = useForm<{ email: string }>({
@@ -106,7 +108,14 @@ const ClientPage = ({
           }
           return
         }
-        router.push(`/${organization.slug}/portal/authenticate`)
+        const authenticateURL = new URL(
+          `/${organization.slug}/portal/authenticate`,
+          window.location.origin,
+        )
+        if (returnTo) {
+          authenticateURL.searchParams.set('return_to', returnTo)
+        }
+        router.push(authenticateURL.toString())
       } catch {
         setShowCustomerPicker(false)
         setError('email', {
@@ -124,6 +133,7 @@ const ClientPage = ({
       setError,
       router,
       organization,
+      returnTo,
     ],
   )
 

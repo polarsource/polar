@@ -4,6 +4,7 @@ import { useCustomerPortalSessionAuthenticate } from '@/hooks/queries/customerPo
 import { setValidationErrors } from '@/utils/api/errors'
 import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
+import { getPortalSignInRedirect } from '@/utils/customerPortal'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import {
@@ -28,8 +29,10 @@ import { PortalAuthHeader, PortalAuthShell } from '../PortalShell'
 
 const ClientPage = ({
   organization,
+  returnTo,
 }: {
   organization: schemas['CustomerOrganization']
+  returnTo?: string
 }) => {
   const router = useRouter()
   const form = useForm<{ code: string }>()
@@ -59,15 +62,20 @@ const ClientPage = ({
 
       // Invalidate cached queries before redirect to ensure fresh data
       const queryClient = getQueryClient()
-      queryClient.invalidateQueries({ queryKey: ['portal_authenticated_user'] })
+      queryClient.invalidateQueries({
+        queryKey: ['portal_authenticated_user'],
+      })
       queryClient.invalidateQueries({ queryKey: ['customer_portal_session'] })
       queryClient.invalidateQueries({ queryKey: ['customer'] })
 
-      router.push(
-        `/${organization.slug}/portal/?customer_session_token=${data.token}`,
+      const redirectURL = new URL(
+        getPortalSignInRedirect(organization.slug, returnTo),
+        window.location.origin,
       )
+      redirectURL.searchParams.set('customer_session_token', data.token)
+      router.push(redirectURL.toString())
     },
-    [sessionRequest, setError, router, organization],
+    [sessionRequest, setError, router, organization, returnTo],
   )
 
   return (
@@ -134,7 +142,13 @@ const ClientPage = ({
 
             <PortalText tone="secondary" className="text-sm">
               Didn&apos;t get a code?{' '}
-              <Link href="request" className="underline hover:no-underline">
+              <Link
+                href={{
+                  pathname: `/${organization.slug}/portal/request`,
+                  query: returnTo ? { return_to: returnTo } : undefined,
+                }}
+                className="underline hover:no-underline"
+              >
                 Request a new one
               </Link>
             </PortalText>

@@ -36,6 +36,12 @@ variable "planetscale_metrics_token" {
   sensitive   = true
 }
 
+variable "planetscale_audit_log_token" {
+  description = "PlanetScale service token with read_audit_logs."
+  type        = string
+  sensitive   = true
+}
+
 variable "ghcr_auth_token" {
   description = "GitHub Container Registry auth token (Personal Access Token with read:packages scope)"
   type        = string

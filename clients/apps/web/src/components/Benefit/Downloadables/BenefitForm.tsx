@@ -5,6 +5,7 @@ import { FileRead } from '@/components/FileUpload/Upload'
 import { toast } from '@/components/Toast/use-toast'
 import { useFiles } from '@/hooks/queries/files'
 import { FileUploadOutlined as FileUploadIcon } from '@polar-sh/orbit/icons'
+import { Alert, Text } from '@polar-sh/orbit'
 import { schemas } from '@polar-sh/client'
 import { ReactElement, useCallback, useEffect, useRef, useState } from 'react'
 import { useFormContext, useFormState } from 'react-hook-form'
@@ -209,14 +210,33 @@ const DownloadablesEditForm = ({
 
   // Capture initial values once on mount to keep query key stable during uploads
   const [initial] = useState(() => ({
-    fileIds: getValues('properties.files'),
+    fileIds: getValues('properties.files') ?? [],
     archivedFiles: getValues('properties.archived') ?? {},
   }))
 
   const filesQuery = useFiles(organization.id, initial.fileIds)
 
-  if (filesQuery.isLoading) {
-    return <div>Loading...</div>
+  if (initial.fileIds.length > 0 && !filesQuery.data) {
+    if (filesQuery.isError) {
+      return (
+        <Alert
+          variant="danger"
+          title="Could not load files"
+          description="Existing files could not be loaded. Please try again."
+          actions={[
+            {
+              text: 'Retry',
+              onClick: () => {
+                void filesQuery.refetch()
+              },
+              loading: filesQuery.isFetching,
+            },
+          ]}
+        />
+      )
+    }
+
+    return <Text color="muted">Loading...</Text>
   }
 
   return (

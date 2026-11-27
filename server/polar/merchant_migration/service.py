@@ -291,6 +291,13 @@ class SourceAccountAlreadyMigrated(MerchantMigrationError):
         )
 
 
+class SourceUnavailable(MerchantMigrationError):
+    def __init__(self) -> None:
+        super().__init__(
+            "We couldn't reach Lemon Squeezy right now. Please try again.", 502
+        )
+
+
 class BenefitsUnavailable(MerchantMigrationError):
     def __init__(self) -> None:
         super().__init__(
@@ -1048,9 +1055,13 @@ class MerchantMigrationService:
     ) -> MerchantMigrationBenefits:
         """What the source gives buyers, read live from the source."""
         migration = await self._get_manageable(session, auth_subject, migration_id)
-        proposals = await list_proposals(
-            session, migration.organization_id, await self._benefits_adapter(migration)
-        )
+        adapter = await self._benefits_adapter(migration)
+        try:
+            proposals = await list_proposals(
+                session, migration.organization_id, adapter
+            )
+        except httpx2.HTTPError as e:
+            raise SourceUnavailable() from e
         product_ids = {
             product_id for proposal in proposals for product_id in proposal.product_ids
         }

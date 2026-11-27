@@ -94,6 +94,7 @@ from polar.merchant_migration.service import (
     SourceAccountNotMigratable,
     SourceKeyModeMismatch,
     SourceNotConnected,
+    SourceUnavailable,
     SourceVerificationUnavailable,
     UnsupportedMigrationSource,
 )
@@ -6207,6 +6208,38 @@ class TestSetUpBenefits:
             merchant_migration_id=migration.id,
             run=_run(migration),
         )
+
+
+@pytest.mark.anyio
+class TestGetBenefits:
+    @pytest.mark.auth
+    async def test_source_error_is_unavailable(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _lemon_squeezy_imported_migration(
+            mocker, session, save_fixture, auth_subject, organization
+        )
+        adapter = mocker.Mock(spec=LemonSqueezyAdapter)
+        request = httpx2.Request("GET", "https://api.lemonsqueezy.com/v1/files")
+        adapter.list_benefits = mocker.AsyncMock(
+            side_effect=httpx2.HTTPStatusError(
+                "Server error",
+                request=request,
+                response=httpx2.Response(500, request=request),
+            )
+        )
+        mocker.patch.object(
+            service, "_benefits_adapter", new=mocker.AsyncMock(return_value=adapter)
+        )
+
+        with pytest.raises(SourceUnavailable):
+            await service.get_benefits(session, auth_subject, migration.id)
 
 
 @pytest.mark.anyio

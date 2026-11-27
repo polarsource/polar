@@ -1,0 +1,20 @@
+.github/workflows/lint_server.yaml
+  s_868513325afaca::t_9f7325b75a22f8 1-10,12-39,41-80
+  s_868513325afaca::t_c2ae691a6552e2 11,40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c9c180a4b84e3d6b7406733999c5e2198d55c7f5",
+  "prompts": {},
+  "sessions": {
+    "s_868513325afaca": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a2138b-136c-7cf0-b8fd-2500c8a89c9c",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

@@ -38,10 +38,7 @@ from polar.models import (
     ProductMedia,
 )
 from polar.models.catalog import CatalogStatus
-from polar.models.organization import (
-    OrganizationCustomerEmailSettings,
-    resolve_default_customer_email_settings,
-)
+from polar.models.organization import resolve_default_customer_email_settings
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.oauth2.exceptions import InsufficientScopeError
 from polar.organization.repository import OrganizationRepository
@@ -168,8 +165,20 @@ PORTAL_SETTINGS = {
     "customer_portal_customer_allow_email_change": ("customer", "allow_email_change"),
 }
 EMAIL_SETTINGS = {
-    f"customer_email_{key}": key
-    for key in OrganizationCustomerEmailSettings.__annotations__
+    "customer_email_order_confirmation": "order_confirmation",
+    "customer_email_subscription_confirmation": "subscription_confirmation",
+    "customer_email_subscription_trial_conversion_reminder": "subscription_trial_conversion_reminder",
+    "customer_email_subscription_cycled_after_trial": "subscription_cycled_after_trial",
+    "customer_email_subscription_renewal_reminder": "subscription_renewal_reminder",
+    "customer_email_subscription_cycled": "subscription_cycled",
+    "customer_email_payment_method_expiration_reminder": "payment_method_expiration_reminder",
+    "customer_email_subscription_past_due": "subscription_past_due",
+    "customer_email_subscription_updated": "subscription_updated",
+    "customer_email_subscription_paused": "subscription_paused",
+    "customer_email_subscription_resumed": "subscription_resumed",
+    "customer_email_subscription_cancellation": "subscription_cancellation",
+    "customer_email_subscription_uncanceled": "subscription_uncanceled",
+    "customer_email_subscription_revoked": "subscription_revoked",
 }
 CATALOG_SETTINGS = (
     *PAYMENT_SETTINGS,

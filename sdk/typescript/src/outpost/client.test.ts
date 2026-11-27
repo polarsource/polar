@@ -15,13 +15,13 @@ import { PolarEventClient } from "../metering/client";
 import { UnknownMeterError } from "../metering/errors";
 import { createIngest } from "../metering/event";
 import { RedisEventQueue } from "../metering/queue/redis";
-import { Outpost, outpost, type OutpostOptions, isSampled } from "./client";
+import { Outpost, outpost, type OutpostOptions, isSampled, TELEMETRY_ENV } from "./client";
 import { PolarOutpostError, UnavailableRedisError } from "./errors";
 import { NotReadyError } from "./index";
 import { BUCKET_SIZE, getBucketStart, type Reducer } from "./reducer";
 import { APPLY_SNAPSHOT_SCRIPT, CONFIRM_SCRIPT } from "./scripts";
 import { decodeState } from "./state";
-import { SAMPLE_RATE_ATTRIBUTE, TELEMETRY_ENV } from "./telemetry";
+import { SAMPLE_RATE_ATTRIBUTE } from "./telemetry";
 import { startRedisServer, type RedisServer } from "./testing";
 
 const { exported, metrics } = vi.hoisted(() => ({
@@ -2003,6 +2003,17 @@ it("sends telemetry spans tagged with the connection ID", async () => {
   ).toEqual(["primary"]);
   for (const span of exported.filter((span) => span.name !== "outpost.redis.connect"))
     expect(span.attributes["outpost.connection_id"]).toBe(connectionId);
+});
+
+it("refuses a start that overlaps another", async () => {
+  const outpost = new Outpost(redisServer.socket, { client: core, snapshotTimeout: 100 });
+  outposts.push(outpost);
+  const [first, second] = await Promise.allSettled([outpost.start(), outpost.start()]);
+  expect(first.status).toBe("fulfilled");
+  expect(second).toMatchObject({
+    status: "rejected",
+    reason: new Error("Outpost is already connected"),
+  });
 });
 
 it.each([

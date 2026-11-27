@@ -1,6 +1,9 @@
 'use client'
 
-import { usePortalAuthenticatedUser } from '@/hooks/queries/customerPortal'
+import {
+  useCustomerPortalLogout,
+  usePortalAuthenticatedUser,
+} from '@/hooks/queries/customerPortal'
 import { createClientSideAPI } from '@/utils/client'
 import { hasBillingPermission } from '@/utils/customerPortal'
 import { Client, schemas } from '@polar-sh/client'
@@ -8,7 +11,7 @@ import { type AcceptedLocale } from '@polar-sh/i18n'
 import { Box } from '@polar-sh/orbit/Box'
 import { PortalText } from '@/components/CustomerPortal/PortalPrimitives'
 import Link from 'next/link'
-import { usePathname, useSearchParams } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 const links = (
   organization: schemas['CustomerOrganization'],
@@ -64,7 +67,14 @@ const NavigationContent = ({
   currentPath: string
   searchParams: URLSearchParams
 }) => {
+  const router = useRouter()
   const { data: authenticatedUser } = usePortalAuthenticatedUser(api)
+  const logout = useCustomerPortalLogout(api)
+
+  const onLogout = async () => {
+    await logout.mutateAsync().catch(() => undefined)
+    router.replace(`/${organization.slug}/portal/request?logged_out=true`)
+  }
 
   const buildPath = (path: string) => {
     return `${path}?${searchParams.toString()}`
@@ -114,10 +124,30 @@ const NavigationContent = ({
           marginTop="auto"
           display={{ base: 'none', md: 'flex' }}
         >
-          <Box paddingBottom="xs">
+          <Box
+            paddingBottom="xs"
+            justifyContent="between"
+            alignItems="center"
+            columnGap="s"
+          >
             <PortalText tone="tertiary" className="text-xs">
               Signed in as
             </PortalText>
+            <button
+              type="button"
+              onClick={onLogout}
+              disabled={logout.isPending}
+              className="cursor-pointer text-xs"
+            >
+              <Box
+                as="span"
+                color={{ base: 'text-tertiary', hover: 'text-primary' }}
+                transitionProperty="colors"
+                transitionDuration="fast"
+              >
+                Log out
+              </Box>
+            </button>
           </Box>
           {authenticatedUser.name ? (
             <PortalText tone="primary" block className="truncate text-sm">

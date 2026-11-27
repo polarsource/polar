@@ -207,6 +207,14 @@ export const usePortalAuthenticatedUser = (api: Client) =>
     retry: defaultRetry,
   })
 
+export const useCustomerPortalLogout = (api: Client) => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => api.POST('/v1/customer-portal/customer-session/logout'),
+    onSettled: () => queryClient.clear(),
+  })
+}
+
 export const useCustomerPaymentMethods = (api: Client) =>
   useQuery({
     queryKey: ['customer_payment_methods'],

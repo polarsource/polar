@@ -49,6 +49,7 @@ export default async function Page(props: {
   searchParams: Promise<{
     customer_session_token?: string
     email?: string
+    logged_out?: string
   }>
 }) {
   const searchParams = await props.searchParams
@@ -59,5 +60,11 @@ export default async function Page(props: {
     params.organization,
   )
 
-  return <RequestPage organization={organization} email={searchParams.email} />
+  return (
+    <RequestPage
+      organization={organization}
+      email={searchParams.email}
+      loggedOut={searchParams.logged_out === 'true'}
+    />
+  )
 }

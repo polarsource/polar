@@ -91,3 +91,38 @@ class TestGetProductsWithoutCurrency:
         # only an ad_hoc price (which must not be counted)
         assert len(results) == 1
         assert results[0].id == product.id
+
+
+@pytest.mark.anyio
+class TestGetEagerOptions:
+    async def test_excludes_ad_hoc_prices(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            prices=[(1000, "usd")],
+        )
+        archived_price = await create_product_price_fixed(
+            save_fixture, product=product, amount=500, is_archived=True
+        )
+        ad_hoc_price = await create_product_price_fixed(
+            save_fixture, product=product, amount=900
+        )
+        ad_hoc_price.source = ProductPriceSource.ad_hoc
+        await save_fixture(ad_hoc_price)
+        session.expunge_all()
+
+        repository = ProductRepository(session)
+        loaded = await repository.get_by_id(
+            product.id, options=repository.get_eager_options()
+        )
+
+        assert loaded is not None
+        price_ids = {price.id for price in loaded.all_prices}
+        assert price_ids == {product.prices[0].id, archived_price.id}
+        assert ad_hoc_price.id not in price_ids

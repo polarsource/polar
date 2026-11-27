@@ -476,7 +476,11 @@ class ProductRepository(
             joinedload(Product.organization),
             selectinload(Product.product_medias),
             selectinload(Product.attached_custom_fields),
-            selectinload(Product.all_prices),
+            selectinload(
+                Product.all_prices.and_(
+                    ProductPrice.source == ProductPriceSource.catalog
+                )
+            ),
         )
 
     def apply_catalog_filter(

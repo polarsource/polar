@@ -71,5 +71,9 @@ export const getPortalSignInRedirect = (
   returnTo: string | null | undefined,
 ): string => {
   const portalPath = `/${organizationSlug}/portal/`
-  return returnTo?.startsWith(portalPath) ? returnTo : portalPath
+  if (!returnTo?.startsWith(portalPath)) {
+    return portalPath
+  }
+  const { pathname } = new URL(returnTo, 'https://polar.sh')
+  return pathname.startsWith(portalPath) ? returnTo : portalPath
 }
